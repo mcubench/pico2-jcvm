@@ -20,6 +20,17 @@
 - Commit: pending
 - Artifacts/logs: Windows output supplied in conversation; no local artifact.
 
+## 2026-11-03 Add interpreted SensitiveResult checks across SIO 10 minutes
+
+- Step/experiment: `ctx02-sensitive-result-sio-java-caps-20261103`
+- When: '2026-11-03 15:20 UTC' - '2026-11-03 15:30 UTC'
+- Change: Extended the cross-AID contract/service/client test CAP fixture with two card-side interpreted SIO cases. A service `Util.arrayCopyNonAtomic` success is asserted by `SensitiveResult.assertEquals` in the caller after return; a service call that throws `ArrayIndexOutOfBoundsException` is caught and verified to leave the sensitive result unassigned. Updated CTX-02 TODO, HANDOFF and QKB.
+- Validation: `./tools/build-pc` passed. `./tools/build-sio-cross-aid-fixture` converted contract, service and client CAPs with zero conversion errors (each expected existing int-support warning); `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` passed. `SIO_CROSS_AID_REUSE_FIXTURE=1 ./tools/env python3 -u tools/tests/sio_cross_aid_vpcd_test.py` passed on local VPCD with `TEST:SUMMARY pass=27 fail=0`, including both new cases and all existing restart/firewall/DELETE/reinstall checks. Physical test was unavailable: authorized helper found zero readers. No firmware or upstream CAP was changed.
+- Result: Actual CAP bytecode confirms successful SIO result state survives return to the caller, while a failed SensitiveResult API operation clears it; both are distinct from native-only Context tests.
+- Decision: Keep CTX-02 open for other API result producers, object-result GC rooting through applet SIO, and physical coverage. Use small Java Card helper methods in the fixture: adding inline code to the already large `process()` caused converter internal error, while helper extraction converted successfully.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T152735Z.log`; generated CAP fixtures under ignored `build/sio-cross-aid-fixture/`.
+
 ## 2026-11-03 Complete JCAlgTest 1.8.4 BASIC on physical Pico 2 25 minutes
 
 - Step/experiment: `jcalgtest-184-basic-physical-current-client-20261103`

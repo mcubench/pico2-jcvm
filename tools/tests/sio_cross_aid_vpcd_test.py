@@ -159,6 +159,28 @@ def main() -> int:
             print("TEST:PASS cross-AID SIO byte/short args, global AID and "
                   "null array; response=45679000")
             response = vpcd.exchange(
+                connection, bytes.fromhex("8021000000"),
+                "SensitiveResult from service API survives SIO context switch"
+            )
+            if response != bytes.fromhex("6A289000"):
+                raise RuntimeError(
+                    "cross-context SensitiveResult assertion returned "
+                    f"{response.hex().upper()}, expected 6A289000"
+                )
+            print("TEST:PASS interpreted client applet asserts service "
+                  "Util.arrayCopyNonAtomic result after SIO returns")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8022000000"),
+                "failed sensitive service API leaves result unassigned"
+            )
+            if response != bytes.fromhex("6A2B9000"):
+                raise RuntimeError(
+                    "failed cross-context sensitive API assertion returned "
+                    f"{response.hex().upper()}, expected 6A2B9000"
+                )
+            print("TEST:PASS failed service Util.arrayCopyNonAtomic clears "
+                  "SensitiveResult before the caller assertion")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )
@@ -545,7 +567,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=25 fail=0")
+            print("TEST:SUMMARY pass=27 fail=0")
             return 0
         finally:
             if connection is not None:

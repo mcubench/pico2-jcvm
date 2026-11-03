@@ -53,6 +53,25 @@ public final class ServiceApplet extends Applet implements Probe {
     return value == 0x12345678 ? 0x76543210 : 0x6F010001;
   }
 
+  public short sensitiveCopy() {
+    byte[] source = { 0x12, 0x34 };
+    byte[] destination = { 0, 0 };
+    return Util.arrayCopyNonAtomic(source, (short)0, destination, (short)0,
+                                   (short)2);
+  }
+
+  public short sensitiveFailedCopy() {
+    byte[] source = { 0x12, 0x34 };
+    byte[] destination = { 0, 0 };
+    try {
+      Util.arrayCopyNonAtomic(source, (short)1, destination, (short)0,
+                              (short)2);
+      return (short)0x6A2C;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      return (short)0x0123;
+    }
+  }
+
   public short throwSecurityException() {
     throw new SecurityException();
   }

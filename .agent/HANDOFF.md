@@ -1,3 +1,31 @@
+# Current session — Java-level SensitiveResult across SIO — 2026-11-03 15:30 UTC
+
+Added cross-AID CAP fixtures that exercise Java Card `SensitiveResult` from an
+interpreted client applet after a service applet returns. The service performs
+successful `Util.arrayCopyNonAtomic`; the client then asserts the returned short
+after the SIO context switch. A second case has the service call array-copy with
+an invalid range, catch the resulting `ArrayIndexOutOfBoundsException`, and
+verify that the caller cannot assert a stale sensitive result. Both pass in
+VPCD. The full cross-AID suite passes 27/27, including old firewall, exception,
+restart, DELETE, and same-AID reinstall cases. No runtime firmware or upstream
+CAP was changed.
+
+Validation: `./tools/build-pc` passed; `./tools/build-sio-cross-aid-fixture`
+converted all 3 test CAPs with zero conversion errors (expected int-support
+warnings); Python syntax check passed; elevated local VPCD test passed
+`TEST:SUMMARY pass=27 fail=0`. The initial converter internal error was caused
+by enlarging the client's already large `process()` method; moving the check to
+a private helper fixed conversion. No physical Pico reader is currently
+available in this VM (`pico2-pcsc-reader` found zero), so no hardware run was
+attempted. Exact log: `artifacts/logs/sio-cross-aid-vpcd-20261103T152735Z.log`.
+
+CTX-02 remains open: add Java-level assertions for other sensitive-result
+producers (including AID/JCSystem, PIN and enabled crypto paths), object-result
+GC rooting through actual interpreted SIO, and physical coverage. Preserve
+unrelated dirty files. See latest `TODO.md` CTX-02 entry and progress record.
+
+---
+
 # Current session — classify Windows GPPro and certutil results — 2026-11-03 15:16 UTC
 
 The latest Windows 10 report changes the earlier MUTE diagnosis. GPPro 20.01.23

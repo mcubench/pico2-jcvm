@@ -5,6 +5,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
+import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
 
 public final class ClientApplet extends Applet {
@@ -24,6 +25,27 @@ public final class ClientApplet extends Applet {
 
   public static void install(byte[] buffer, short offset, byte length) {
     new ClientApplet();
+  }
+
+  private short checkSensitiveResult(Probe probe) {
+    short copied = probe.sensitiveCopy();
+    try {
+      SensitiveResult.assertEquals(copied);
+      return copied == 2 ? (short)0x6A28 : (short)0x6A29;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short)0x6A2A;
+    }
+  }
+
+  private short checkFailedSensitiveResult(Probe probe) {
+    short result = probe.sensitiveFailedCopy();
+    if (result != (short)0x0123) return (short)0x6A2C;
+    try {
+      SensitiveResult.assertEquals((short)0x0123);
+      return (short)0x6A2D;
+    } catch (SecurityException correctlyUnassigned) {
+      return (short)0x6A2B;
+    }
   }
 
   public void process(APDU apdu) {
@@ -117,6 +139,12 @@ public final class ClientApplet extends Applet {
           JCSystem.ARRAY_TYPE_OBJECT, (short)1);
       global[0] = this;
       result = probe.retainForeignReference(global);
+    } else if (buffer[1] == 0x21) {
+      Probe probe = (Probe) shareable;
+      result = checkSensitiveResult(probe);
+    } else if (buffer[1] == 0x22) {
+      Probe probe = (Probe) shareable;
+      result = checkFailedSensitiveResult(probe);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

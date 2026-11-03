@@ -1,5 +1,19 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## JC305 converter internal error when a test applet method grows — 2026-11-03
+
+- **Symptom:** After adding a SensitiveResult assertion branch directly to the
+  already large `ClientApplet.process()` method in the cross-AID fixture,
+  Java Card 3.0.5 conversion of the client CAP terminated with
+  `ConverterInternalError` in `InstrContainer.reset` / `MethodConverter`.
+- **Resolution:** Move the added logic into a small private helper and keep the
+  dispatch branch in `process()` to a helper call. Rebuilding the test fixture
+  then converted all three CAPs with zero conversion errors. This is a fixture
+  converter limitation/workaround; it does not establish a firmware defect.
+- **Viable practice:** For large applet `process()` dispatchers, put new test
+  logic in helper methods and keep branch bodies short. If conversion still
+  fails, isolate conversion by package before attributing it to VM behavior.
+
 ## Windows GPPro succeeds; certutil lacks ATR card-type mapping — 2026-11-03
 
 - **Observation:** User's Windows 10 / Java 8 run of GPPro 20.01.23 sees both

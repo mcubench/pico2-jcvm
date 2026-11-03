@@ -524,8 +524,17 @@ Archive text is historical evidence, not current device state or priorities.
 - [ ] **Complete Java-level SensitiveResult coverage across SIO calls.**
   Status: same-context assertions and a native two-Context regression pass for
   boolean/short/object results, GC rooting, and reset rejection of stale state.
-  Remaining: Java-level SIO-sensitive results after CTX-01 plus producers beyond
-  the tested JavacardxSec subset.
+  The unchanged API has now also been exercised through interpreted three-
+  package CAPs: the service applet's successful `Util.arrayCopyNonAtomic`
+  result is asserted by the caller after the SIO context switch, and an invalid
+  service copy clears the result so the caller's assertion throws
+  `SecurityException`. The VPCD cross-AID suite passes 27/27 including both
+  cases and the existing lifecycle/firewall regressions. This is emulator
+  evidence, not physical acceptance.
+  Remaining: exercise additional result producers (AID/JCSystem, PIN, digest,
+  signature and key APIs where enabled), including normal and exceptional
+  returns; verify GC rooting of object results through an interpreted SIO call;
+  and repeat selected coverage on physical hardware when available.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.
