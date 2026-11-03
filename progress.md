@@ -2261,7 +2261,7 @@
   client archive and local toolchain are already prepared.
 - Decision: Use this as the short physical-device procedure; the current board
   still runs the ARM smoke image and must be reflashed with CHOUPI first.
-- Commit: pending
+- Commit: `2a71b5a`
 - Artifacts/logs: none.
 
 ## 2026-10-14 — Verify offline CHOUPI host-build dependencies
