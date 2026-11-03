@@ -20957,5 +20957,5 @@
 - Validation: The first VPCD attempt failed with restricted-loopback `EPERM`; elevated rerun passed 20/20 with Descriptor omitted. Descriptor-included VPCD passed 20/20. Exact-reader physical regression on Pico 2 `8E464F4E2BBC0A19` passed cross-AID calls, global Object[] owner firewall (`6B319000`), reset and stale-proxy checks, exception handling, GP DELETE, and cleanup. CAP conversion completed with zero errors and the existing int-support warning.
 - Result: Cross-owner object identity comparison and subsequent foreign virtual-call denial pass in emulator and hardware. The test does not expose compact handles, so an equal-handle collision is not proven by this particular integration run.
 - Decision: Retain the integration regression; continue CTX-01 with deterministic collision and foreign-owner lifecycle coverage.
-- Commit: `pending`
+- Commit: `9288592`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T114056Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T114257Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T114515Z.log`.
