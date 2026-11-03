@@ -20632,7 +20632,7 @@
 - Validation: `./tools/build arm --profile current` and `./tools/build riscv --profile current` passed. Elevated `picotool info` found no BOOTSEL devices; `pcsc_scan -r` found runtime readers `8E464F4E2BBC0A19` and `2BED26ED20556535`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'` passed for each board. Both returned ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`. ARM firmware end `0x100cf988`, using 850,312/1,048,576 bytes with 198,264 bytes remaining (80.9% used).
 - Result: Both available cards are responsive. Their installed package inventories differ, but the JCAlgTest/power-up probe results match. This is not a cold-power test and the flashed image hash was not measured.
 - Decision: Continue using identified runtime boards for read-only checks. Do not flash until a specific BOOTSEL target is visible; continue global Object[] reference ownership work offline.
-- Commit: `pending`
+- Commit: `9015f69`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T160303Z.log` SHA-256 `50d66044c9d3ceca4caf9b2e11bbf23a6bddda940dd80af35554ca5060e207f2`; `artifacts/logs/pico-powerup-persistence-20261102T160327Z.log` SHA-256 `e8ecf4a053d5b39aa1795c8fd20a18a01ac97a0bdb6ac478f267a16b5d9aadbd`.
 
 
@@ -21289,3 +21289,16 @@
   before enabling that store path; then design persistent owner encoding.
 - Commit: `pending`
 - Artifacts/logs: source inspection only; no test log.
+
+## 2026-11-03 Record foreign-store audit commit metadata 1 minute
+
+- Step/experiment: `ctx01-foreign-reference-store-audit-metadata-20261103`
+- When: '2026-11-03 16:36 UTC' - '2026-11-03 16:37 UTC'
+- Change: Recorded implementation commit `9015f69` in the source-audit progress
+  record.
+- Validation: Confirmed the commit contains the TODO, QKB, HANDOFF and progress
+  record describing the owner-aware lookup prerequisite. No source code changed.
+- Result: The CTX-01 audit finding is traceable to commit `9015f69`.
+- Decision: Continue with the owner-aware lookup design and implementation.
+- Commit: metadata-only follow-up
+- Artifacts/logs: none.

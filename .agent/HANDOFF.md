@@ -13,6 +13,7 @@ owner-aware GC roots. Details are in TODO CTX-01 and QKB. No code changed and no
 build or test was run for this source audit. Next implementation prerequisite:
 add safe retained-Context/Heap resolution by owner package and test typed
 `aastore` with equal compact handles; keep fail-closed guards until then.
+Audit record commit: `9015f69`.
 
 ## Follow-up: verify false Signature results across SIO — 2026-11-03 16:34 UTC
 
