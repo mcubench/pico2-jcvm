@@ -6,7 +6,7 @@
 - Validation: After refreshing `sudo -n /usr/local/sbin/pico2-pcsc-reader`, `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=2s 15s ./tools/env java -cp build/jcalgtest-single-apdu SingleApdu 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' B0752A000307081000` returned SELECT `9000`, then mode APDU `9000` with JCAlgTest status byte `03`. Repeated once with identical result. This uses the upstream CAP and physically connected 2BED.
 - Result: The exact request does not reproduce the prior long-run `SCARD_E_NOT_TRANSACTED`; status `03` is expected unsupported. The cause remains cumulative/time-dependent or transport-related and is not proven.
 - Decision: Leave the 1.8.4 installation intact. Keep the full BASIC run marked incomplete; continue investigating long-run reader loss or use another board if it becomes a PC/SC reader.
-- Commit: `<to be recorded after commit>`
+- Commit: `510cef4`
 - Artifacts/logs: `artifacts/logs/jcalgtest-184-single-hmac-mode-2bed-20261103.log` SHA-256 `592674c04c5a3c2eb2383c3fa704d7c54acd12af4945424e2f0e70a80c4bf17d`.
 
 ## 2026-11-03 Extended JCAlgTest 1.8.4 physical BASIC attempt 24 minutes
