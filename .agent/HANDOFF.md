@@ -1,3 +1,25 @@
+## Current session — cover foreign references at native Util entry — 2026-11-03 11:28 UTC
+
+Added a test-only cross-AID Shareable method that passes a caller-owned byte
+array directly to native `Util.arrayCopyNonAtomic`. The applet catches the
+expected `SecurityException`; expected APDU result is `6A269000`. This verifies
+the generated native dispatcher checks the owner tag before JNI code resolves
+the handle with `Heap::getArray()`.
+
+Validation passed: VPCD cross-AID suite 20/20 with Descriptor absent and 20/20
+included; physical Pico 2 `8E464F4E2BBC0A19` passed the native Util call, reset
+stale-proxy path, GP DELETE stale-proxy path, and fixture cleanup. The first
+VPCD attempt intentionally reused stale generated fixture CAPs and returned
+the default `45679000`; rebuilding the fixtures resolved that test setup
+mismatch. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261103T112302Z.log`,
+`artifacts/logs/sio-cross-aid-vpcd-20261103T112447Z.log`, and
+`artifacts/logs/sio-cross-aid-physical-20261103T112637Z.log`.
+
+Next: continue CTX-01's remaining native/reference-consumer, stale-owner,
+GC-root, multi-package and channel-policy audit. This single JNI path does not
+establish blanket firewall acceptance. Preserve unrelated changes.
+
 ## Current session — support explicit JCAlgTest version in power-up probe — 2026-11-03 11:19 UTC
 
 The read-only `tools/test-pico-powerup` probe hardcoded applet version

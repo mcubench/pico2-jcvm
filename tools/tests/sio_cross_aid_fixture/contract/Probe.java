@@ -9,6 +9,7 @@ public interface Probe extends Shareable {
   int exerciseWide(int value);
   short throwSecurityException();
   short inspectPrivateArray(byte[] value);
+  short inspectPrivateArrayNative(byte[] value);
   short inspectGlobalReference(Object[] values);
   byte[] echoArray(byte[] value);
   boolean sameReference(byte[] reference);

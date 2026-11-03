@@ -82,6 +82,15 @@ public final class SioCrossAidPhysicalProbe {
                                  "5A319000, got " + actual);
       }
 
+      response = channel.transmit(new CommandAPDU(hex("801F000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:nativeUtilForeignArray response=" + actual);
+      if (!actual.equals("6A269000")) {
+        throw new AssertionError("native Util arrayCopy on foreign array " +
+                                 "should raise catchable SecurityException " +
+                                 "6A269000, got " + actual);
+      }
+
       response = channel.transmit(new CommandAPDU(hex("801B000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:globalObjectArrayFirewall response=" + actual);

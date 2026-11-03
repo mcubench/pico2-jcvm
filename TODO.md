@@ -454,6 +454,13 @@ Archive text is historical evidence, not current device state or priorities.
   (`6A0A9000`), fresh-lookup denial (`6A049000`), and fixture cleanup. See
   `.agent/QKB.md` and the 2026-11-03 progress record. Other CTX-01 lifecycle,
   GC-root, multi-package, and channel-policy acceptance remains open.
+  A new test-only SIO method passes a caller-owned byte array into native
+  `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner
+  before resolving the compact handle in the service heap; the applet catches
+  `SecurityException` and returns `6A269000`. VPCD passes with Descriptor
+  omitted and included, and physical Pico 2 `8E464F4E2BBC0A19` passes the same
+  APDU and full fixture cleanup. This covers one native reference-consumer
+  path, not the remaining native APIs or the full lifecycle audit.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress
   records. Preserve unrelated ongoing source changes while continuing this work.
 

@@ -5,6 +5,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
+import javacard.framework.Util;
 import sio.contract.Probe;
 
 public final class ServiceApplet extends Applet implements Probe {
@@ -60,6 +61,17 @@ public final class ServiceApplet extends Applet implements Probe {
       return (short) forwarded.length;
     } catch (SecurityException expected) {
       return (short) 0x5A31;
+    }
+  }
+
+  public short inspectPrivateArrayNative(byte[] value) {
+    byte[] destination = new byte[1];
+    try {
+      Util.arrayCopyNonAtomic(value, (short) 0, destination, (short) 0,
+                              (short) 1);
+      return (short) 0x6B36;
+    } catch (SecurityException expected) {
+      return (short) 0x6B37;
     }
   }
 

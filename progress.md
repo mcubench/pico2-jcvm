@@ -20916,3 +20916,14 @@
 - Decision: Commit the focused tooling and documentation update; continue CTX-01 lifecycle/firewall work.
 - Commit: `3baffb4`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T111821Z.log` and `artifacts/logs/pico-powerup-persistence-20261103T111840Z.log`.
+
+## 2026-11-03 Verify SIO foreign-array firewall at native Util boundary 9 minutes
+
+- Step/experiment: `ctx-01-native-reference-firewall-util-arraycopy-20261103`
+- When: '2026-11-03 11:19 UTC' - '2026-11-03 11:28 UTC'
+- Change: Extended the test-only three-package SIO fixture with a service method that passes a caller-owned byte array directly into native `Util.arrayCopyNonAtomic`, catches `SecurityException`, and reports an APDU status. Added the assertion to VPCD and physical probes and updated CTX-01, QKB, and HANDOFF.
+- Validation: The first VPCD run reused stale generated CAPs and returned the fixture's default `45679000`; rerunning without the reuse flag rebuilt the fixtures. The cross-AID VPCD suite then passed 20/20 with Descriptor omitted and 20/20 included. The expanded physical test passed on Pico 2 `8E464F4E2BBC0A19`, including native Util foreign-array denial `6A269000`, prior array/owner firewall cases, reset stale-proxy check, GP DELETE stale-proxy check, and cleanup. Fixture CAP conversion completed with zero errors and the existing int-support warning. Firmware builds were not required because firmware source did not change.
+- Result: One generated JNI native-reference path is now verified to reject a foreign owner before the native body resolves the compact handle in the service heap. This does not close the full native API or lifecycle audit.
+- Decision: Commit the focused fixture and acceptance coverage; continue CTX-01's remaining stale-owner, GC-root and multi-package audit.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T112302Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T112447Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T112637Z.log`.

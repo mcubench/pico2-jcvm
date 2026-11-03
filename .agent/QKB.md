@@ -4835,3 +4835,18 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Windows MUTE remains open:** Windows `certutil -scinfo` reported PRESENT /
   MUTE. Firmware source sends valid ATR `3B 80 01 81`; a correlated Windows
   transport trace is still needed to find why Windows does not accept it.
+
+## Foreign SIO array rejected at native Util dispatch — 2026-11-03
+
+- **Regression:** A test-only Shareable method receives a caller-owned byte
+  array and passes it directly to `Util.arrayCopyNonAtomic`, without first
+  reading its length or elements in Java Card bytecode. The applet catches
+  `SecurityException` and reports `6A269000`.
+- **Result:** The unchanged native dispatcher pops references through the
+  owner-checking `Stack::pop_Reference()` before the JNI body can call
+  `Heap::getArray()`. VPCD passes 20/20 with Descriptor absent and present;
+  physical Pico 2 `8E464F4E2BBC0A19` passes the same APDU and cleanup.
+  This verifies one native reference-consuming path, not all native APIs.
+- **Evidence:** `artifacts/logs/sio-cross-aid-vpcd-20261103T112302Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T112447Z.log`, and
+  `artifacts/logs/sio-cross-aid-physical-20261103T112637Z.log`.

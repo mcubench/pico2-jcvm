@@ -210,6 +210,18 @@ def main() -> int:
                 )
             print("TEST:PASS checkcast and instanceof reject owner-tagged "
                   "foreign references with catchable SecurityException")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("801F000000"),
+                "native Util API rejects an owner-tagged foreign array"
+            )
+            if response != bytes.fromhex("6A269000"):
+                raise RuntimeError(
+                    f"foreign array passed to native Util API returned "
+                    f"{response.hex().upper()}, expected caught "
+                    "SecurityException 6A269000"
+                )
+            print("TEST:PASS native Util arrayCopy rejects foreign array "
+                  "before resolving it in the server heap")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

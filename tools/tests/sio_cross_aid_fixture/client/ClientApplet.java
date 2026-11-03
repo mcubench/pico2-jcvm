@@ -80,6 +80,12 @@ public final class ClientApplet extends Applet {
                        instanceofResult == (short)0x6B32
                    ? (short)0x6A24
                    : (short)0x6A25;
+    } else if (buffer[1] == 0x1F) {
+      Probe probe = (Probe) shareable;
+      short nativeResult = probe.inspectPrivateArrayNative(
+          new byte[] { 0x2D });
+      result = nativeResult == (short)0x6B37
+          ? (short)0x6A26 : (short)0x6A27;
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();
