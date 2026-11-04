@@ -147,7 +147,7 @@ bool isCryptoExceptionCatchType(Package source_package,
  *   Platform, v3.0.5, Classic Edition.
  */
 void Bytecodes::bc_athrow() {
-  jref_t objectref;
+  Stack::ReferenceValue thrown_reference{};
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ATHROW");
@@ -161,13 +161,13 @@ void Bytecodes::bc_athrow() {
     std::fflush(stdout);
   }
 #endif
-  objectref = stack.pop_Reference();
+  thrown_reference = stack.pop_ReferenceValue();
 #ifndef PC_VERSION
   std::printf("CHOUPI:ATHROW ref=%08X\r\n",
-              static_cast<unsigned>(objectref.compact()));
+              static_cast<unsigned>(thrown_reference.reference.compact()));
   std::fflush(stdout);
 #endif
-  this->doThrow(objectref);
+  this->doThrow(thrown_reference.reference, thrown_reference.owner);
 
   return;
 }
@@ -176,7 +176,7 @@ void Bytecodes::bc_athrow() {
  * Throwing an exception
  *
  */
-void Bytecodes::doThrow(jref_t objectref) {
+void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
   if (objectref.isNullPointer()) {
     throw Exceptions::NullPointerException;
   }
@@ -198,6 +198,11 @@ void Bytecodes::doThrow(jref_t objectref) {
   const bool trace_dispatch = trace_setting != nullptr &&
                               std::strcmp(trace_setting, "1") == 0;
   if (trace_dispatch) {
+    std::fprintf(stderr,
+                 "CHOUPI:EXCEPTION_START ref=%04X owner=%u depth=%u\n",
+                 static_cast<unsigned>(objectref.compact()),
+                 static_cast<unsigned>(reference_owner),
+                 static_cast<unsigned>(stack.frameDepth()));
     const auto *exception_header = exception_package.getCap().getHeader();
     std::fprintf(stderr, "CHOUPI:EXCEPTION_AID package=%u aid=",
                  static_cast<unsigned>(exception_package.getPackageID()));
@@ -404,7 +409,7 @@ void Bytecodes::doThrow(jref_t objectref) {
           throw Exceptions::SecurityException;
         }
         stack.getCurrentFrame().clearOperands();
-        stack.push_Reference(objectref);
+        stack.push_Reference(objectref, reference_owner);
         stack.getPC().setValue(methods.data() + handler_method_offset);
         return;
       }
@@ -460,7 +465,13 @@ void Bytecodes::doThrow(jref_t objectref) {
 
   if (this->enforce_exception_boundary &&
       stack.frameDepth() <= this->exception_boundary_depth) {
-    throw UncaughtJavaException{objectref.compact()};
+    uint8_t uncaught_owner = reference_owner;
+    if (uncaught_owner == Stack::kCurrentReferenceOwner) {
+      uncaught_owner = heap.isRuntimeExceptionReference(objectref)
+                           ? Stack::kGlobalReferenceOwner
+                           : static_cast<uint8_t>(context.getAppletID());
+    }
+    throw UncaughtJavaException{objectref.compact(), uncaught_owner};
   }
 
   throw Exceptions::SecurityException;

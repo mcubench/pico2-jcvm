@@ -270,6 +270,19 @@ def main() -> int:
                   "server applet object when its compact handle collides "
                   "with the client applet object")
             response = vpcd.exchange(
+                connection, bytes.fromhex("802B000000"),
+                "propagate exact exception type and reason across SIO"
+            )
+            if response != bytes.fromhex("6A669000"):
+                raise RuntimeError(
+                    "SIO exception propagation result "
+                    f"{response.hex().upper()}, expected both exception "
+                    "types/reason and a successful follow-up call 6A669000"
+                )
+            print("TEST:PASS SIO preserves CryptoException reason and concrete "
+                  "ArrayIndexOutOfBoundsException identity, then allows a "
+                  "successful follow-up call")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )
@@ -655,7 +668,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=32 fail=0")
+            print("TEST:SUMMARY pass=33 fail=0")
             return 0
         finally:
             if connection is not None:

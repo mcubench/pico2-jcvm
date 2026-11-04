@@ -6,6 +6,7 @@ import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
+import javacard.security.CryptoException;
 import javacard.security.MessageDigest;
 import javacard.security.AESKey;
 import javacard.security.KeyBuilder;
@@ -211,6 +212,15 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public short throwSecurityException() {
     throw new SecurityException();
+  }
+
+  public short throwCryptoException() {
+    CryptoException.throwIt((short) 0x1234);
+    return (short) 0;
+  }
+
+  public short throwArrayIndexOutOfBoundsException() {
+    throw new ArrayIndexOutOfBoundsException();
   }
 
   public short inspectPrivateArray(byte[] value) {

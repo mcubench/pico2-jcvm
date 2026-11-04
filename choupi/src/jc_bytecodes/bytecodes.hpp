@@ -381,7 +381,8 @@ public:
   void bc_impdep1(); /* 0xfe */
   void bc_impdep2(); /* 0xff */
 
-  void doThrow(jref_t objectref);
+  void doThrow(jref_t objectref,
+               uint8_t reference_owner = Stack::kCurrentReferenceOwner);
 };
 
 } // namespace jcvm

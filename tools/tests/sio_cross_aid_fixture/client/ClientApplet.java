@@ -5,6 +5,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
+import javacard.security.CryptoException;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
 
@@ -62,6 +63,31 @@ public final class ClientApplet extends Applet {
     } catch (SecurityException resultWasNotPreserved) {
       return (short)0x6A36;
     }
+  }
+
+  private short checkSioExceptionPropagation(Probe probe) {
+    try {
+      probe.throwCryptoException();
+      return (short) 0x6A60;
+    } catch (CryptoException expected) {
+      if (expected.getReason() != (short) 0x1234) return (short) 0x6A61;
+    } catch (SecurityException substitutedException) {
+      return (short) 0x6A62;
+    }
+
+    try {
+      probe.throwArrayIndexOutOfBoundsException();
+      return (short) 0x6A63;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      // Preserve the concrete subclass through the SIO boundary.
+    } catch (IndexOutOfBoundsException wrongSubclass) {
+      return (short) 0x6A64;
+    } catch (SecurityException substitutedException) {
+      return (short) 0x6A65;
+    }
+
+    return probe.exerciseWide(0x12345678) == 0x76543210
+        ? (short) 0x6A66 : (short) 0x6A67;
   }
 
   private short checkSensitiveDigestResult(Probe probe) {
@@ -249,6 +275,8 @@ public final class ClientApplet extends Applet {
           result = (short)0x6A59;
         }
       }
+    } else if (buffer[1] == 0x2B) {
+      result = checkSioExceptionPropagation((Probe) shareable);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

@@ -1,3 +1,21 @@
+## SIO exception references belong to the server context (2026-11-04)
+
+An uncaught Java exception from a nested SIO server interpreter cannot be
+re-thrown in the caller by passing its compact handle directly: compact
+reference IDs are local to each applet heap and can collide. Resolving a server
+handle through the caller heap can produce a different object or an index
+exception, losing the original exception identity and reason.
+
+**Viable solution:** carry the reference owner with the uncaught exception,
+validate that it belongs to the server applet or a JCRE-rooted exception, and
+copy the exception instance into the caller heap before dispatching its throw.
+Preserve its class and scalar fields; reject private server object-graph edges
+rather than exposing or misrouting them. Restore the caller context before
+throw dispatch. `tools/tests/sio_cross_aid_vpcd_test.py` exercises exact
+`CryptoException` reason, subclass catch identity, and a successful subsequent
+SIO call. VPCD passed 33/33 cases on 2026-11-04. Preserve this owner check for
+future cross-context exception marshalling.
+
 # Java Card arithmetic must wrap without C++ signed-overflow or shift UB — fixed 2026-11-04
 
 - **Symptom:** Java Card arithmetic bytecodes can encounter C++ signed overflow,

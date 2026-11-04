@@ -18,6 +18,8 @@ public interface Probe extends Shareable {
   short sensitiveObjectResult();
   int exerciseWide(int value);
   short throwSecurityException();
+  short throwCryptoException();
+  short throwArrayIndexOutOfBoundsException();
   short inspectPrivateArray(byte[] value);
   short inspectPrivateArrayNative(byte[] value);
   short inspectGlobalReference(Object[] values);

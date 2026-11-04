@@ -624,6 +624,18 @@ jref_t Heap::addRuntimeException(const jpackage_ID_t packageID,
   return reference;
 }
 
+bool Heap::isRuntimeExceptionReference(const jref_t reference) const noexcept {
+  if (reference == this->runtime_crypto_exception_rom ||
+      reference == this->runtime_crypto_exception_imported) {
+    return !reference.isNullPointer();
+  }
+  for (const RuntimeExceptionRoot &root :
+       this->shared_storage->runtime_exception_roots) {
+    if (root.reference == reference) return true;
+  }
+  return false;
+}
+
 bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   jref_t &reference) const noexcept {

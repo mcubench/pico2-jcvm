@@ -192,9 +192,10 @@ during the review.
 
 ### RV-20261103-21
 
-- [ ] **P2: SIO loses exception class/reason.**
+- [x] **P2: SIO loses exception class/reason.**
   Owner: CTX-01/02. Evidence: Source; [review R21](docs/review_20261103.md#r21--cross-context-sio-calls-replace-server-exceptions-with-securityexception).
   Acceptance: distinguish a transport/firewall denial from a Java exception crossing the SIO boundary. Implement owner-safe exception propagation and caller context restoration, including subclass identity and reason. Test at least two exception classes with distinct catch blocks and a successful follow-up call.
+  Progress: The caller now receives a caller-heap copy of an uncaught server exception after verifying its owner. Concrete exception class and scalar fields are preserved; non-global server-private object references fail closed. Caller context restoration is checked. The cross-AID VPCD test passed 33/33 cases, including `CryptoException` reason `0x1234`, exact `ArrayIndexOutOfBoundsException` catch identity, and a subsequent successful SIO call. PC, ARM, and RISC-V `max_crypto` builds passed. Physical testing was not run.
 
 ### RV-20261103-22
 

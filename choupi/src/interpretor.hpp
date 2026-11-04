@@ -87,6 +87,9 @@ public:
   uint16_t lastUncaughtExceptionReference() const noexcept {
     return last_uncaught_exception_reference;
   }
+  uint8_t lastUncaughtExceptionOwner() const noexcept {
+    return last_uncaught_exception_owner;
+  }
   uint8_t lastExceptionOpcode() const noexcept {
     return last_exception_opcode;
   }
@@ -138,6 +141,7 @@ private:
   Exceptions last_exception_id = Exceptions::NotYetImplemented;
   uint16_t last_exception_reason = 0;
   uint16_t last_uncaught_exception_reference = 0;
+  uint8_t last_uncaught_exception_owner = 0xFF;
   uint8_t last_exception_opcode = 0;
   uint32_t last_exception_pc = 0;
   uint32_t last_exception_prefix = 0;

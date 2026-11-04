@@ -1,36 +1,33 @@
-# Current session — defined Java Card arithmetic wrapping and shifts — 2026-11-04 14:49 CET
+# Current session — preserve SIO exception identity and reason — 2026-11-04 15:42 CET
 
-RV-20261103-20 is implemented. Int/short arithmetic, negation, increments,
-shifts and signed value reconstruction now avoid C++ signed overflow, invalid
-shift counts and implementation-defined conversion from unsigned words. Short
-shifts sign-extend to 32 bits before shifting, then retain the low 16 bits.
-Signed reconstruction is used for operand/local stack reads, CAP byte streams,
-arrays, instance fields and persistent values. `TODO.md` is checked and the
-arithmetic issue is documented in `.agent/QKB.md`.
+RV-20261103-21 is implemented. When an SIO server interpreter ends with a Java
+exception, the caller now receives an owner-checked exception instance in its
+own heap, with concrete class identity and scalar reason fields preserved.
+Private server object-graph references fail closed. Caller applet state is
+restored before exception dispatch and also guarded by scope cleanup.
 
-Validation passed: PC, ARM and RISC-V `max_crypto` builds, `./tools/test-jcarray`,
-and `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` (`TEST:SUMMARY
-pass=5 fail=0`). The CAP fixture includes overflow, `iinc`/`sinc`, all int/short
-shift forms and negative shift distances. Generated JCA inspection confirmed
-both increment bytecodes. Existing Rust and packed-member compiler warnings
-remain. No physical token was tested.
+Validation passed: `./tools/build-pc --profile max_crypto`,
+`./tools/build arm --profile max_crypto`, `./tools/build riscv --profile
+max_crypto`, and the complete VPCD SIO test (`TEST:SUMMARY pass=33 fail=0`).
+The test verifies `CryptoException` reason `0x1234`, concrete
+`ArrayIndexOutOfBoundsException` identity, and a successful follow-up SIO call.
+No physical device was used.
 
-Current applet-free ARM max image:
+Current applet-free max_crypto ARM image for external Windows testing:
 
-- `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,010,496 bytes, SHA-256
-  `b1543eba771770db6e671351122ddaee810c23803034a3b8482197cedf58f0ef`.
-- Firmware-only `build/arm/pico2_choupi.uf2`, 1,913,344 bytes, SHA-256
-  `1506bd0429e6413ef78bf2e3f43942ab0ed1a896d8ba85c48ba7e4e84cff28b6`.
-- Linker end `0x100E97E4`, 92,188 bytes free before `0x10100000`. The combined
-  UF2 was verified to include the current firmware and 4,096 `0xFF` blocks
-  erasing `0x10100000`–`0x101FFFFF`.
-- Updated instructions: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
-- VPCD log: `artifacts/logs/division-vpcd-20261104T134625Z.log`, SHA-256
-  `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`.
+- `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,012,544 bytes, SHA-256
+  `088987ee16747f2f7f048e23444ffcc559a3ef01dfad854356d6b9d656cd8f99`.
+- Firmware-only source `build/arm/pico2_choupi.uf2`, 1,915,392 bytes, SHA-256
+  `398a73319dc924d8ce5508bf3baee5dc11ed2454cf5052b776f4c63edba29cd3`.
+- Firmware end `0x100E9B0C`, leaving 91,380 bytes before `0x10100000`. The
+  combined UF2 was checked against the current firmware and 4,096 all-`0xFF`
+  blocks over `0x10100000`–`0x101FFFFF`.
+- Details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+- VPCD evidence: `artifacts/logs/sio-cross-aid-vpcd-20261104T142957Z.log`.
 
-RV-20 source commit is `f85a564`; preserve unrelated dirty worktree changes
-when staging. Continue with RV-20261103-21, SIO exception class/reason propagation
-and owner-safe caller context restoration. Physical testing remains pending.
+The source and metadata are prepared for a scoped commit; preserve all unrelated
+worktree changes. Physical validation remains pending. Next, continue with
+RV-20261103-22, inherited interface membership checks.
 
 ---
 

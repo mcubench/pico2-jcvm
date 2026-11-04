@@ -196,6 +196,8 @@ public:
   /// Get a per-context JCRE-owned Java runtime exception instance.
   jref_t addRuntimeException(const jpackage_ID_t packageID,
                              const jclass_index_t classIndex);
+  /// Whether the reference is a VM-rooted JCRE exception instance.
+  bool isRuntimeExceptionReference(jref_t reference) const noexcept;
   /// Look up or update a package/static-field reference cached for this heap.
   bool getStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number,

@@ -84,6 +84,7 @@ struct ISOExceptionStatusWord {
 
 struct UncaughtJavaException {
   uint16_t reference = 0;
+  uint8_t owner = 0xFF;
 };
 
 } // namespace jcvm

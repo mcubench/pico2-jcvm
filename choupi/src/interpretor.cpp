@@ -517,6 +517,7 @@ uint16_t Interpretor::run() noexcept {
 #endif
       this->last_exception_id = Exceptions::NotYetImplemented;
       this->last_uncaught_exception_reference = uncaught.reference;
+      this->last_uncaught_exception_owner = uncaught.owner;
       this->status_word = 0x6f00;
       stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;

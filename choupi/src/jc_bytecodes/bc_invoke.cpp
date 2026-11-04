@@ -40,6 +40,8 @@
 #include "../jc_handlers/jc_import.hpp"
 #include "../jc_handlers/jc_method.hpp"
 #include "../jc_handlers/package.hpp"
+#include "../jc_types/jc_field.hpp"
+#include "../jc_types/jc_instance.hpp"
 #include "../interpretor.hpp"
 #include "../stack.hpp"
 #include "shareable_arguments.hpp"
@@ -58,6 +60,44 @@ namespace {
 constexpr uint8_t JC_CAP_DESCRIPTOR_ACC_INTERFACE = 0x80;
 
 enum class ShareableSignatureStatus { Found, DescriptorUnavailable, Invalid };
+
+bool isReferenceFieldType(const FieldType type) noexcept {
+  return type == FIELD_TYPE_OBJECT || type == FIELD_TYPE_GLOBAL_AID_OBJECT ||
+         type == FIELD_TYPE_SHAREABLE_PROXY_OBJECT ||
+         type == FIELD_TYPE_ARRAY_OBJECT ||
+         type == FIELD_TYPE_TRANSIENT_ARRAY_OBJECT;
+}
+
+jref_t copySioExceptionToCaller(Context &caller, Context &server,
+                                const uint16_t compact_reference) {
+  const auto source = server.getHeap().getInstance(jref_t(compact_reference));
+  if (source == nullptr) throw Exceptions::SecurityException;
+
+  const jref_t local_reference = caller.getHeap().addInstance(
+      source->getPackageID(), source->getClassIndex());
+  const auto destination = caller.getHeap().getInstance(local_reference);
+  if (destination == nullptr) throw Exceptions::SecurityException;
+
+  auto *source_fields = source->getFields();
+  auto *destination_fields = destination->getFields();
+  if (source_fields == nullptr || destination_fields == nullptr ||
+      source_fields->size() != destination_fields->size()) {
+    throw Exceptions::SecurityException;
+  }
+  for (uint16_t index = 0; index < source_fields->size(); ++index) {
+    const jc_field_t field = source_fields->at(index);
+    if (isReferenceFieldType(field.type) && field.value != 0) {
+      const jref_t reference(field.value);
+      if (!reference.isGlobalArray() && !reference.isGlobalInstance()) {
+        // Do not make references into the server applet's private object graph
+        // reachable from the caller through a copied exception.
+        throw Exceptions::SecurityException;
+      }
+    }
+    destination_fields->at(index) = field;
+  }
+  return local_reference;
+}
 
 ShareableSignatureStatus getShareableMethodSignature(
     const Package &package, const jc_cap_interface_info *interface_info,
@@ -975,15 +1015,17 @@ void Bytecodes::bc_invokeinterface() {
     const uint8_t client_owner = static_cast<uint8_t>(context.getAppletID());
     bool client_state_restored = false;
     const auto restore_client_state = [&]() {
-      if (!client_state_restored) {
-        client_state_restored = true;
-        (void)context.activateAppletInstance(client_owner, client_aid,
-                                             client_aid_length);
+      if (client_state_restored) return true;
+      if (!context.activateAppletInstance(client_owner, client_aid,
+                                          client_aid_length)) {
+        return false;
       }
+      client_state_restored = true;
+      return true;
     };
     struct ClientStateRestore {
       decltype(restore_client_state) &restore;
-      ~ClientStateRestore() { this->restore(); }
+      ~ClientStateRestore() { (void)this->restore(); }
     } client_state_restore{restore_client_state};
     TRACE_JCVM_DEBUG("SIO_INVOKE target AID len=%u %02X%02X%02X%02X%02X%02X%02X%02X%02X ref=%04X",
                      static_cast<unsigned>(server_aid_length), server_aid[0],
@@ -1072,13 +1114,47 @@ void Bytecodes::bc_invokeinterface() {
     Interpretor server_interpretor(
         *server_context, target_method.second,
         target_method.first.getPackageID(), initial_locals.data(),
-        initial_local_count);
+        initial_local_count, true);
     const uint16_t status = server_interpretor.run();
+    if (const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+        trace_setting != nullptr && std::strcmp(trace_setting, "1") == 0) {
+      std::fprintf(stderr,
+                   "CHOUPI:SIO_SERVER_RESULT status=%04X uncaught_ref=%04X "
+                   "uncaught_owner=%u server_owner=%u\n",
+                   static_cast<unsigned>(status),
+                   static_cast<unsigned>(
+                       server_interpretor.lastUncaughtExceptionReference()),
+                   static_cast<unsigned>(
+                       server_interpretor.lastUncaughtExceptionOwner()),
+                   static_cast<unsigned>(server_context->getAppletID()));
+    }
+    if (!restore_client_state()) {
+      TRACE_JCVM_DEBUG("SIO_INVOKE caller context restoration failed");
+      throw Exceptions::SecurityException;
+    }
     TRACE_JCVM_DEBUG("SIO_INVOKE server status=%04X return_kind=%u",
                      static_cast<unsigned>(status),
                      static_cast<unsigned>(
                          server_context->getStack().getRootReturnKind()));
     if (status != 0x9000) {
+      const uint16_t uncaught_reference =
+          server_interpretor.lastUncaughtExceptionReference();
+      if (status == 0x6f00 && uncaught_reference != 0) {
+        // The server's compact reference is meaningful only in its heap.
+        // Copy the exception object into the caller heap, retaining its class
+        // and scalar reason fields while refusing private object-graph edges.
+        const uint8_t exception_owner =
+            server_interpretor.lastUncaughtExceptionOwner();
+        if (exception_owner != Stack::kGlobalReferenceOwner &&
+            exception_owner !=
+                static_cast<uint8_t>(server_context->getAppletID())) {
+          throw Exceptions::SecurityException;
+        }
+        const jref_t caller_exception = copySioExceptionToCaller(
+            context, *server_context, uncaught_reference);
+        this->doThrow(caller_exception);
+        return;
+      }
       throw Exceptions::SecurityException;
     }
 
