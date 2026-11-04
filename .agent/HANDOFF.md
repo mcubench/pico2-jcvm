@@ -1,4 +1,4 @@
-# Current session — RV-28 method body bounds — 2026-11-04 20:14 CET
+# Current session — RV-28 method body bounds — 2026-11-04 20:29 CET
 
 RV-20261103-28 has a partial native-opcode-origin fix in the worktree. Added
 `src/cap_execution_policy.hpp` with the dynamic package range 56–63; the range
@@ -53,8 +53,9 @@ exception diagnostics are committed as `2496a92`; progress/handoff SHA
 metadata follow-up is `a0ef034`. Added `tools/test-cap-method-body-deploy-caps`
 to repeat the offline check against all 11 deployed 3.0.5 API CAPs; it passes
 978 concrete methods with 3 descriptor clamps. This script and its records are
-committed as `f0c276a`. Next continue RV-28 with same-method instruction-boundary
-validation. No malformed runtime, sanitizer or physical test was run.
+committed as `f0c276a`; metadata follow-up is `6eddba2`. Next continue RV-28
+with same-method instruction-boundary validation. No malformed runtime,
+sanitizer or physical test was run.
 
 ---
 
