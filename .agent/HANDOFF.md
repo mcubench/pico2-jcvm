@@ -1,3 +1,23 @@
+# Current session — refresh current max_crypto empty-card image — 2026-11-04 08:46 CET
+
+Rebuilt the current worktree for PC, ARM and RISC-V using repository wrappers;
+all three `max_crypto` builds passed. The ARM image is
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,
+1,912,320 bytes, SHA-256
+`b964b6cf96fe9989d0740ff3fe9783d2a9c54ab9f92241282ba71ed6e7b71d57`, with
+92,780 bytes remaining in the firmware window. It enables 147/150 declared
+JCAlgTest capabilities, including RSA and ECC. Its bytes match
+`build/arm/pico2_choupi.uf2`. No applet/CAP is bundled. This rebuild was not
+flashed or runtime-tested on hardware. Firmware flashing does not remove CAPs
+already persisted on a card; Windows GPPro empty-card steps are in
+`artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+The separate in-progress RV-20261103-11 transient Cipher-key lifecycle
+investigation remains unresolved. Continue its VPCD failure tracing only after
+this external image handoff; do not claim that this image passed hardware tests.
+
+---
+
 # Current session — enforce an immutable execution deadline — 2026-11-04 05:13 CET
 
 RV-20261103-10 is implemented. `ExecutionBudget` records the time and limit

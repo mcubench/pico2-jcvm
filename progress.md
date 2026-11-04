@@ -21564,3 +21564,14 @@
 - Decision: Close RV-20261103-08. Continue with RV-20261103-09, object-sensitive results and roots with missing owner provenance.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T031510Z.log` SHA-256 `8d31156959a9222acdbff0d34eeaa889442cb13131d665fa05b7bffaeb833c0a`; `artifacts/logs/cycle-choupi-20261104T032120Z.log` SHA-256 `7da2144f5187c2080738f303f4995f89b3075581c5b84be13708dd37aa5f7ea3`.
+## 2026-11-04 Refresh current max_crypto empty-card firmware 2 minutes
+
+- Step/experiment: `max-crypto-current-empty-card-artifact`
+- When: '2026-11-04 07:46 UTC' - '2026-11-04 07:48 UTC'
+- Change: Rebuilt current ARM `max_crypto` image from the current worktree and refreshed the downloadable firmware-only artifact and its README. The firmware bundle does not contain an applet/CAP.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. ARM flash-boundary check passed. Build reports 147/150 declared capabilities enabled and 92,780 bytes remaining.
+- Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 1,912,320 bytes, SHA-256 `b964b6cf96fe9989d0740ff3fe9783d2a9c54ab9f92241282ba71ed6e7b71d57`. It matches `build/arm/pico2_choupi.uf2`. Hardware was not available for testing this rebuild; flashing firmware does not erase CAPs already stored on a token.
+- Decision: Provide this current image for external validation. Delete existing applet and package AIDs on the target card before testing if it must be empty.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
