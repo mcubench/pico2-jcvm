@@ -1481,8 +1481,9 @@ void FlashMemory_Handler::setPersistentField_Instance(
 
     case FieldType::FIELD_TYPE_INT: {
       jc_field_t field_low = fields->at(++idx);
-      jint_t value = SHORTS_TO_INT(static_cast<jshort_t>(field.value),
-                                   static_cast<jshort_t>(field_low.value));
+      jint_t value = signedIntFromBits(SHORTS_TO_INT(
+          signedShortFromBits(field.value),
+          signedShortFromBits(field_low.value)));
       const uint8_t data[] = {
           field.type,
           static_cast<uint8_t>(HIGH_BYTE_SHORT(INT_2_MSSHORTS(value))),
@@ -1646,7 +1647,7 @@ FlashMemory_Handler::getPersistentField_Short(const fs::Tag &tag) {
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  return BYTES_TO_SHORT(data[1], data[2]);
+  return signedShortFromBits(BYTES_TO_SHORT(data[1], data[2]));
 }
 
 /**
@@ -1699,7 +1700,7 @@ const jint_t FlashMemory_Handler::getPersistentField_Int(const fs::Tag &tag) {
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  return BYTES_TO_INT(data[1], data[2], data[3], data[4]);
+  return signedIntFromBits(BYTES_TO_INT(data[1], data[2], data[3], data[4]));
 }
 
 /**
@@ -1960,7 +1961,7 @@ FlashMemory_Handler::getPersistentField_Array_Short(const fs::Tag &tag,
     throw Exceptions::IOException;
   }
 
-  return static_cast<const jshort_t>(BYTES_TO_SHORT(value_high, value_low));
+  return signedShortFromBits(BYTES_TO_SHORT(value_high, value_low));
 }
 
 /*

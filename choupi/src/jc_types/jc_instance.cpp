@@ -213,7 +213,7 @@ jshort_t JC_Instance::getNativeSessionField_Short(
       index >= this->native_session_fields->size()) {
     return 0;
   }
-  return static_cast<jshort_t>((*this->native_session_fields)[index].value);
+  return signedShortFromBits((*this->native_session_fields)[index].value);
 }
 
 void JC_Instance::setNativeSessionField_Byte(const uint16_t index,
@@ -382,14 +382,14 @@ const jbyte_t JC_Instance::getField_Byte(const uint16_t index) {
 const jshort_t JC_Instance::getField_Short(const uint16_t index) {
   if (this->isPersistent()) {
     const auto fields = this->getFields();
-    return static_cast<jshort_t>(fields->at(index).value);
+    return signedShortFromBits(fields->at(index).value);
   } else {
 
 #ifdef JCVM_TYPED_HEAP
     // TODO: the instance data value type should be verified.
 #endif /* JCVM_TYPED_HEAP */
 
-    return (jshort_t)(this->fields->at(index).value);
+    return signedShortFromBits(this->fields->at(index).value);
   }
 }
 
@@ -406,8 +406,7 @@ const jint_t JC_Instance::getField_Int(const uint16_t index) {
     const jword_t field_high_part = fields->at(index).value;
     const jword_t field_low_part =
         fields->at(static_cast<uint16_t>(index + 1)).value;
-    return static_cast<jint_t>(
-        SHORTS_TO_INT(field_high_part, field_low_part));
+    return signedIntFromBits(SHORTS_TO_INT(field_high_part, field_low_part));
   } else {
 
     const jword_t field_high_part = this->fields->at(index).value;
@@ -418,7 +417,7 @@ const jint_t JC_Instance::getField_Int(const uint16_t index) {
     // TODO: the instance data value type should be verified.
 #endif /* JCVM_TYPED_HEAP */
 
-    return (jint_t)(SHORTS_TO_INT(field_high_part, field_low_part));
+    return signedIntFromBits(SHORTS_TO_INT(field_high_part, field_low_part));
   }
 }
 

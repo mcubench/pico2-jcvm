@@ -31,6 +31,8 @@
 #include "jc_config.h"
 #include "types.hpp"
 
+#include <limits>
+
 namespace jcvm {
 
 #define MAX(a, b)                                                              \
@@ -56,17 +58,86 @@ namespace jcvm {
 #define BYTE_TO_WORD BYTE_TO_SHORT
 
 #ifdef JCVM_INT_SUPPORTED
-#define INT_2_LSSHORTS(x) static_cast<uint16_t>(x & 0x0000FFFF)
-#define INT_2_MSSHORTS(x) INT_2_LSSHORTS(x >> 16)
+#define INT_2_LSSHORTS(x)                                                     \
+  static_cast<uint16_t>(static_cast<uint32_t>(x) & 0x0000FFFFu)
+#define INT_2_MSSHORTS(x)                                                     \
+  static_cast<uint16_t>(static_cast<uint32_t>(x) >> 16)
 #endif /* JCVM_INT_SUPPORTED */
 
-#define BYTES_TO_SHORT(x, y) static_cast<uint16_t>((x << 8) | (y & 0x00FF))
+#define BYTES_TO_SHORT(x, y)                                                  \
+  static_cast<uint16_t>((static_cast<uint16_t>(static_cast<uint8_t>(x)) << 8) | \
+                         static_cast<uint8_t>(y))
 
 #ifdef JCVM_INT_SUPPORTED
-#define SHORTS_TO_INT(x, y) static_cast<uint32_t>((x << 16) | (y & 0x0FFFF))
+#define SHORTS_TO_INT(x, y)                                                   \
+  ((static_cast<uint32_t>(static_cast<uint16_t>(x)) << 16) |                  \
+   static_cast<uint16_t>(y))
 #define BYTES_TO_INT(w, x, y, z)                                               \
-  ((BYTES_TO_SHORT(w, x) << 16) | (BYTES_TO_SHORT(y, z) & 0x0FFFF))
+  ((static_cast<uint32_t>(BYTES_TO_SHORT(w, x)) << 16) |                      \
+   static_cast<uint32_t>(BYTES_TO_SHORT(y, z)))
+
+inline jint_t signedIntFromBits(const uint32_t bits) noexcept {
+  if (bits <= static_cast<uint32_t>(std::numeric_limits<jint_t>::max())) {
+    return static_cast<jint_t>(bits);
+  }
+  return static_cast<jint_t>(-1 - static_cast<jint_t>(~bits));
+}
+
+inline jint_t wrappingIntAdd(const jint_t left, const jint_t right) noexcept {
+  return signedIntFromBits(static_cast<uint32_t>(left) +
+                           static_cast<uint32_t>(right));
+}
+
+inline jint_t wrappingIntSubtract(const jint_t left,
+                                  const jint_t right) noexcept {
+  return signedIntFromBits(static_cast<uint32_t>(left) -
+                           static_cast<uint32_t>(right));
+}
+
+inline jint_t wrappingIntMultiply(const jint_t left,
+                                  const jint_t right) noexcept {
+  return signedIntFromBits(static_cast<uint32_t>(left) *
+                           static_cast<uint32_t>(right));
+}
 #endif /* JCVM_INT_SUPPORTED */
+
+inline jshort_t signedShortFromBits(const uint16_t bits) noexcept {
+  if (bits <= static_cast<uint16_t>(std::numeric_limits<jshort_t>::max())) {
+    return static_cast<jshort_t>(bits);
+  }
+  return static_cast<jshort_t>(-1 - static_cast<jshort_t>(
+                                   static_cast<uint16_t>(~bits)));
+}
+
+inline jbyte_t signedByteFromBits(const uint8_t bits) noexcept {
+  if (bits <= 0x7fu) return static_cast<jbyte_t>(bits);
+  return static_cast<jbyte_t>(-1 - static_cast<jbyte_t>(
+                                  static_cast<uint8_t>(~bits)));
+}
+
+inline jshort_t wrappingShortAdd(const jshort_t left,
+                                 const jshort_t right) noexcept {
+  return signedShortFromBits(static_cast<uint16_t>(left) +
+                             static_cast<uint16_t>(right));
+}
+
+inline jshort_t wrappingShortSubtract(const jshort_t left,
+                                      const jshort_t right) noexcept {
+  return signedShortFromBits(static_cast<uint16_t>(left) -
+                             static_cast<uint16_t>(right));
+}
+
+inline jshort_t wrappingShortMultiply(const jshort_t left,
+                                      const jshort_t right) noexcept {
+  return signedShortFromBits(static_cast<uint16_t>(
+      static_cast<uint32_t>(static_cast<uint16_t>(left)) *
+      static_cast<uint32_t>(static_cast<uint16_t>(right))));
+}
+
+inline jshort_t wrappingShortNegate(const jshort_t value) noexcept {
+  return signedShortFromBits(static_cast<uint16_t>(0u -
+                                                    static_cast<uint16_t>(value)));
+}
 
 #define CLEAR_BYTE_MSB(x) (x & 0x7F)
 

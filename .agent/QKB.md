@@ -1,3 +1,27 @@
+# Java Card arithmetic must wrap without C++ signed-overflow or shift UB — fixed 2026-11-04
+
+- **Symptom:** Java Card arithmetic bytecodes can encounter C++ signed overflow,
+  left shifts of negative values, invalid shift counts, and signed reconstruction
+  from serialized words. The previous `iushr`/`sushr` correction term also used
+  an invalid negative shift count.
+- **Cause:** C++ signed arithmetic and left shifts do not provide Java's
+  two's-complement wrapping contract; right shifting negative signed values
+  was implementation-defined. Narrow signed reconstruction from unsigned
+  words was also implementation-defined.
+- **Viable fix:** perform arithmetic and bit shifts on unsigned fixed-width
+  words, mask distances after converting to unsigned, then reconstruct signed
+  results explicitly. For Java Card short shifts, sign-extend the short to
+  32 bits, shift using the 32-bit operation, then narrow the result to 16 bits.
+  Use the same explicit decode for signed short/int values read from stack
+  words, CAP bytes, arrays, instances, and persistent storage.
+- **Validation:** the division CAP fixture exercises int/short wraparound,
+  negation, `iinc`/`sinc`, int and short left/arithmetic-right/logical-right
+  shifts, negative shift distances and division boundaries. VPCD passes
+  `TEST:SUMMARY pass=5 fail=0`; PC, ARM, RISC-V builds and
+  `./tools/test-jcarray` pass. No physical token was tested.
+- **Artifacts:** `artifacts/logs/division-vpcd-20261104T134625Z.log`, SHA-256
+  `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`.
+
 # Signed minimum division returns the dividend — fixed 2026-11-04
 
 - **Symptom:** `MIN_VALUE / -1` returned zero for Java Card `sdiv` and `idiv`.

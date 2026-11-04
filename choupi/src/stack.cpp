@@ -316,7 +316,7 @@ jshort_t Stack::pop_Short() {
   if (this->getValueKind(current_frame.getTOS() - 1) != ValueKind::Primitive) {
     throw Exceptions::SecurityException;
   }
-  return (jshort_t)current_frame.pop_Value();
+  return signedShortFromBits(current_frame.pop_Value());
 }
 
 #ifdef JCVM_INT_SUPPORTED
@@ -338,7 +338,7 @@ jint_t Stack::pop_Int() {
   }
   const jword_t high_word = current_frame.pop_Value();
   const jword_t low_word = current_frame.pop_Value();
-  return SHORTS_TO_INT(high_word, low_word);
+  return signedIntFromBits(SHORTS_TO_INT(high_word, low_word));
 }
 #endif /* JCVM_INT_SUPPORTED */
 
@@ -571,7 +571,7 @@ jshort_t Stack::readLocal_Short(const uint8_t local_number) {
       ValueKind::Primitive) {
     throw Exceptions::SecurityException;
   }
-  return (jshort_t)current_frame.readLocal_Value(local_number);
+  return signedShortFromBits(current_frame.readLocal_Value(local_number));
 }
 
 #ifdef JCVM_INT_SUPPORTED
@@ -588,9 +588,9 @@ jint_t Stack::readLocal_Int(const uint8_t local_number) {
           ValueKind::IntHighWord) {
     throw Exceptions::SecurityException;
   }
-  return (jint_t)SHORTS_TO_INT(
+  return signedIntFromBits(SHORTS_TO_INT(
       current_frame.readLocal_Value((uint8_t)(local_number + 1)),
-      current_frame.readLocal_Value(local_number));
+      current_frame.readLocal_Value(local_number)));
 }
 #endif /* JCVM_INT_SUPPORTED */
 

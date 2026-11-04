@@ -34,6 +34,15 @@
 
 namespace jcvm {
 
+namespace {
+uint32_t arithmeticShiftRight(const uint32_t bits, const uint8_t shift) {
+  if (shift == 0) return bits;
+  uint32_t result = bits >> shift;
+  if ((bits & 0x80000000u) != 0) result |= 0xffffffffu << (32 - shift);
+  return result;
+}
+} // namespace
+
 #ifdef JCVM_INT_SUPPORTED
 /**
  * Convert int to byte
@@ -72,7 +81,7 @@ void Bytecodes::bc_i2b() {
   TRACE_JCVM_DEBUG("I2B");
 
   value = stack.pop_Int();
-  stack.push_Byte((jbyte_t)value);
+  stack.push_Byte(signedByteFromBits(static_cast<uint8_t>(value)));
 
   return;
 }
@@ -115,7 +124,7 @@ void Bytecodes::bc_i2s() {
   TRACE_JCVM_DEBUG("I2S");
 
   value = stack.pop_Int();
-  stack.push_Short((jshort_t)value);
+  stack.push_Short(signedShortFromBits(static_cast<uint16_t>(value)));
 
   return;
 }
@@ -161,7 +170,7 @@ void Bytecodes::bc_iadd() {
   value2 = stack.pop_Int();
   value1 = stack.pop_Int();
 
-  stack.push_Int((jint_t)(value1 + value2));
+  stack.push_Int(wrappingIntAdd(value1, value2));
 
   return;
 }
@@ -317,7 +326,7 @@ void Bytecodes::bc_iinc() {
   TRACE_JCVM_DEBUG("IINC 0x%02X 0x%02X", index, const_value);
 
   local_value = stack.readLocal_Int(index);
-  local_value += const_value;
+  local_value = wrappingIntAdd(local_value, const_value);
   stack.writeLocal_Int(index, local_value);
 
   return;
@@ -369,7 +378,7 @@ void Bytecodes::bc_iinc_w() {
   TRACE_JCVM_DEBUG("IINC_W 0x%02X 0x%04X", index, const_value);
 
   local_value = stack.readLocal_Int(index);
-  local_value += const_value;
+  local_value = wrappingIntAdd(local_value, const_value);
 
   stack.writeLocal_Int(index, local_value);
 
@@ -417,7 +426,7 @@ void Bytecodes::bc_imul() {
 
   value2 = stack.pop_Int();
   value1 = stack.pop_Int();
-  stack.push_Int((jint_t)(value1 * value2));
+  stack.push_Int(wrappingIntMultiply(value1, value2));
 
   return;
 }
@@ -463,7 +472,7 @@ void Bytecodes::bc_ineg() {
   TRACE_JCVM_DEBUG("INEG");
 
   value = stack.pop_Int();
-  stack.push_Int(-value);
+  stack.push_Int(wrappingIntSubtract(0, value));
 
   return;
 }
@@ -629,7 +638,9 @@ void Bytecodes::bc_ishl() {
    * [source: ISO/IEC 9899, §6.5.7 -- Bitwise shift operators]
    */
 
-  stack.push_Int(value1 << (value2 & 0x1f));
+  stack.push_Int(signedIntFromBits(
+      static_cast<uint32_t>(value1) <<
+      (static_cast<uint32_t>(value2) & 0x1fu)));
 
   return;
 }
@@ -688,13 +699,9 @@ void Bytecodes::bc_ishr() {
    * [source: ISO/IEC 9899, §6.5.7 -- Bitwise shift operators]
    */
 
-  // In ISO C, the operator >> is toolchain/platform dependent for
-  // negative values
-  if (value1 < 0) {
-    stack.push_Int((jint_t)(~((~value1) >> (value2 & 0x1f))));
-  } else {
-    stack.push_Int((jint_t)(value1 >> (value2 & 0x1f)));
-  }
+  stack.push_Int(signedIntFromBits(arithmeticShiftRight(
+      static_cast<uint32_t>(value1), static_cast<uint8_t>(
+          static_cast<uint32_t>(value2) & 0x1fu))));
 
   return;
 }
@@ -741,7 +748,7 @@ void Bytecodes::bc_isub() {
 
   value2 = stack.pop_Int();
   value1 = stack.pop_Int();
-  stack.push_Int((jint_t)(value1 - value2));
+  stack.push_Int(wrappingIntSubtract(value1, value2));
 
   return;
 }
@@ -787,14 +794,10 @@ void Bytecodes::bc_iushr() {
 
   TRACE_JCVM_DEBUG("IUSHR");
 
-  s = stack.pop_Int() & 0x1F;
+  s = static_cast<jint_t>(static_cast<uint32_t>(stack.pop_Int()) & 0x1fu);
   value = stack.pop_Int();
 
-  if (value > 0) {
-    stack.push_Int((jint_t)(value >> s));
-  } else {
-    stack.push_Int((jint_t)((value >> s) + (2 << ~s)));
-  }
+  stack.push_Int(signedIntFromBits(static_cast<uint32_t>(value) >> s));
 
   return;
 }
@@ -875,7 +878,7 @@ void Bytecodes::bc_s2b() {
 
   value = stack.pop_Byte();
 
-  stack.push_Short((jshort_t)value);
+  stack.push_Short(signedShortFromBits(static_cast<uint16_t>(value)));
 
   return;
 }
@@ -953,7 +956,7 @@ void Bytecodes::bc_sadd() {
 
   value2 = stack.pop_Short();
   value1 = stack.pop_Short();
-  stack.push_Short((jshort_t)(value1 + value2));
+  stack.push_Short(wrappingShortAdd(value1, value2));
 
   return;
 }
@@ -1079,7 +1082,7 @@ void Bytecodes::bc_sinc() {
   TRACE_JCVM_DEBUG("SINC 0x%02X 0x%02X", index, const_value);
 
   local_value = stack.readLocal_Short(index);
-  local_value += const_value;
+  local_value = wrappingShortAdd(local_value, const_value);
   stack.writeLocal_Short(index, local_value);
 
   return;
@@ -1121,7 +1124,7 @@ void Bytecodes::bc_sinc_w() {
   TRACE_JCVM_DEBUG("SINC_W 0x%02X 0x%04X", index, const_value);
 
   local_value = stack.readLocal_Short(index);
-  local_value += const_value;
+  local_value = wrappingShortAdd(local_value, const_value);
   stack.writeLocal_Short(index, local_value);
 
   return;
@@ -1159,7 +1162,7 @@ void Bytecodes::bc_smul() {
 
   value2 = stack.pop_Short();
   value1 = stack.pop_Short();
-  stack.push_Short((jshort_t)(value1 * value2));
+  stack.push_Short(wrappingShortMultiply(value1, value2));
 
   return;
 }
@@ -1198,7 +1201,7 @@ void Bytecodes::bc_sneg() {
   TRACE_JCVM_DEBUG("SNEG");
 
   value = stack.pop_Short();
-  stack.push_Short((jshort_t)-value);
+  stack.push_Short(wrappingShortNegate(value));
 
   return;
 }
@@ -1346,7 +1349,11 @@ void Bytecodes::bc_sshl() {
    * [source: ISO/IEC 9899, §6.5.7 -- Bitwise shift operators]
    */
 
-  stack.push_Short(value1 << (value2 & 0x1f));
+  const uint32_t extended =
+      static_cast<uint32_t>(static_cast<int32_t>(value1));
+  const uint32_t shifted =
+      extended << (static_cast<uint16_t>(value2) & 0x1fu);
+  stack.push_Short(signedShortFromBits(static_cast<uint16_t>(shifted)));
 
   return;
 }
@@ -1404,13 +1411,11 @@ void Bytecodes::bc_sshr() {
    * [source: ISO/IEC 9899, §6.5.7 -- Bitwise shift operators]
    */
 
-  // In ISO C, the operator >> is toolchain/platform dependent for
-  // negative values
-  if (value1 < 0) {
-    stack.push_Short((jshort_t)(~((~value1) >> (value2 & 0x1f))));
-  } else {
-    stack.push_Short((jshort_t)(value1 >> (value2 & 0x1f)));
-  }
+  const uint32_t extended =
+      static_cast<uint32_t>(static_cast<int32_t>(value1));
+  const uint32_t shifted = arithmeticShiftRight(
+      extended, static_cast<uint8_t>(static_cast<uint16_t>(value2) & 0x1fu));
+  stack.push_Short(signedShortFromBits(static_cast<uint16_t>(shifted)));
 
   return;
 }
@@ -1449,7 +1454,7 @@ void Bytecodes::bc_ssub() {
 
   value2 = stack.pop_Short();
   value1 = stack.pop_Short();
-  stack.push_Short((jshort_t)(value1 - value2));
+  stack.push_Short(wrappingShortSubtract(value1, value2));
 
   return;
 }
@@ -1501,7 +1506,7 @@ void Bytecodes::bc_sushr() {
 
   TRACE_JCVM_DEBUG("SUSHR");
 
-  s = stack.pop_Short() & 0x1f;
+  s = static_cast<jshort_t>(static_cast<uint16_t>(stack.pop_Short()) & 0x1fu);
   value = stack.pop_Short();
 
   /*
@@ -1516,11 +1521,10 @@ void Bytecodes::bc_sushr() {
    * [source: ISO/IEC 9899, §6.5.7 -- Bitwise shift operators]
    */
 
-  if (value > 0) {
-    stack.push_Short((jshort_t)(value >> s));
-  } else {
-    stack.push_Short((jshort_t)((value >> s) + (2 << ~s)));
-  }
+  const uint32_t extended =
+      static_cast<uint32_t>(static_cast<int32_t>(value));
+  stack.push_Short(signedShortFromBits(
+      static_cast<uint16_t>(extended >> s)));
 
   return;
 }

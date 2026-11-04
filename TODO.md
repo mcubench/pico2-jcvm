@@ -185,9 +185,10 @@ during the review.
 
 ### RV-20261103-20
 
-- [ ] **P2: Shifts, overflow and word assembly invoke UB.**
+- [x] **P2: Shifts, overflow and word assembly invoke UB.**
   Owner: HARD-01, PROFILE-01. Evidence: Sanitizer; [review R20](docs/review_20261103.md#r20--arithmetic-and-word-reconstruction-use-undefined-c-operations).
-  Acceptance: implement wrapping operations and reconstruction in unsigned fixed-width types with explicit signed interpretation. Respect Java Card short-shift semantics, which use sign extension to 32 bits; do not blindly substitute a 16-bit logical shift. ,
+  Acceptance: implement wrapping operations and reconstruction in unsigned fixed-width types with explicit signed interpretation. Respect Java Card short-shift semantics, which use sign extension to 32 bits; do not blindly substitute a 16-bit logical shift.
+  Progress: Arithmetic and word reconstruction now use unsigned fixed-width operations and explicit signed decoding. Short shifts sign-extend to 32 bits before shifting and narrow the result. The division CAP fixture covers wrapping int/short arithmetic, negation, `iinc`/`sinc`, shifts including negative distances, and minimum division; VPCD passes. PC, ARM, RISC-V and array regression builds/tests pass. No physical-token run was performed.
 
 ### RV-20261103-21
 

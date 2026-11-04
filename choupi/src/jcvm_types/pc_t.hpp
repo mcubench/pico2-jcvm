@@ -85,7 +85,7 @@ public:
     this->inc();
     jbyte_t lsb = (jbyte_t) * (this->value);
     this->inc();
-    return BYTES_TO_SHORT(msb, lsb);
+    return signedShortFromBits(BYTES_TO_SHORT(msb, lsb));
   }
 
 #ifdef JCVM_INT_SUPPORTED
@@ -101,7 +101,7 @@ public:
     this->inc();
     jbyte_t lsb1 = (jbyte_t) * (this->value);
     this->inc();
-    return BYTES_TO_INT(msb0, lsb0, msb1, lsb1);
+    return signedIntFromBits(BYTES_TO_INT(msb0, lsb0, msb1, lsb1));
   }
 #endif /* JCVM_INT_SUPPORTED */
 

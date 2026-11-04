@@ -1,3 +1,39 @@
+# Current session — defined Java Card arithmetic wrapping and shifts — 2026-11-04 14:49 CET
+
+RV-20261103-20 is implemented. Int/short arithmetic, negation, increments,
+shifts and signed value reconstruction now avoid C++ signed overflow, invalid
+shift counts and implementation-defined conversion from unsigned words. Short
+shifts sign-extend to 32 bits before shifting, then retain the low 16 bits.
+Signed reconstruction is used for operand/local stack reads, CAP byte streams,
+arrays, instance fields and persistent values. `TODO.md` is checked and the
+arithmetic issue is documented in `.agent/QKB.md`.
+
+Validation passed: PC, ARM and RISC-V `max_crypto` builds, `./tools/test-jcarray`,
+and `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` (`TEST:SUMMARY
+pass=5 fail=0`). The CAP fixture includes overflow, `iinc`/`sinc`, all int/short
+shift forms and negative shift distances. Generated JCA inspection confirmed
+both increment bytecodes. Existing Rust and packed-member compiler warnings
+remain. No physical token was tested.
+
+Current applet-free ARM max image:
+
+- `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,010,496 bytes, SHA-256
+  `b1543eba771770db6e671351122ddaee810c23803034a3b8482197cedf58f0ef`.
+- Firmware-only `build/arm/pico2_choupi.uf2`, 1,913,344 bytes, SHA-256
+  `1506bd0429e6413ef78bf2e3f43942ab0ed1a896d8ba85c48ba7e4e84cff28b6`.
+- Linker end `0x100E97E4`, 92,188 bytes free before `0x10100000`. The combined
+  UF2 was verified to include the current firmware and 4,096 `0xFF` blocks
+  erasing `0x10100000`–`0x101FFFFF`.
+- Updated instructions: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+- VPCD log: `artifacts/logs/division-vpcd-20261104T134625Z.log`, SHA-256
+  `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`.
+
+RV-20 source commit is pending; preserve unrelated dirty worktree changes when
+staging. Continue with RV-20261103-21, SIO exception class/reason propagation
+and owner-safe caller context restoration. Physical testing remains pending.
+
+---
+
 # Current session — fix signed minimum division — 2026-11-04 14:05 CET
 
 RV-20261103-19 is implemented. `bc_sdiv()` and `bc_idiv()` now push the

@@ -362,9 +362,9 @@ jshort_t JC_Array::getShortEntry(const uint16_t index)
     if (this->isTransientArray()) {
       const uint16_t offset = (uint16_t)(index * sizeof(jshort_t));
 
-      return BYTES_TO_SHORT(
+      return signedShortFromBits(BYTES_TO_SHORT(
           this->array[tag.len + sizeof(tag.len) + offset],
-          this->array[tag.len + sizeof(tag.len) + offset + 1]);
+          this->array[tag.len + sizeof(tag.len) + offset + 1]));
     } else {
       return FlashMemory_Handler::getPersistentField_Array_Short(
           tag, index
@@ -377,8 +377,8 @@ jshort_t JC_Array::getShortEntry(const uint16_t index)
   } else {
     const uint16_t offset = (uint16_t)(index * sizeof(jshort_t));
 
-    return BYTES_TO_SHORT(this->array[offset],
-                          this->array[(uint16_t)(offset + 1)]);
+    return signedShortFromBits(BYTES_TO_SHORT(
+        this->array[offset], this->array[(uint16_t)(offset + 1)]));
   }
 }
 
@@ -410,10 +410,10 @@ jint_t JC_Array::getIntEntry(const uint16_t index)
     if (this->isTransientArray()) {
       const uint16_t offset = (uint16_t)(index * sizeof(jint_t));
 
-      return BYTES_TO_INT(this->array[tag.len + sizeof(tag.len) + offset],
+      return signedIntFromBits(BYTES_TO_INT(this->array[tag.len + sizeof(tag.len) + offset],
                           this->array[tag.len + sizeof(tag.len) + offset + 1],
                           this->array[tag.len + sizeof(tag.len) + offset + 2],
-                          this->array[tag.len + sizeof(tag.len) + offset + 3]);
+                          this->array[tag.len + sizeof(tag.len) + offset + 3]));
     } else {
       return FlashMemory_Handler::getPersistentField_Array_Int(tag, index
 #ifdef JCVM_SECURE_HEAP_ACCESS
@@ -425,8 +425,10 @@ jint_t JC_Array::getIntEntry(const uint16_t index)
   } else {
     const uint16_t offset = (uint16_t)(index * sizeof(jint_t));
 
-    return BYTES_TO_INT(this->array[offset], this->array[offset + 1],
-                        this->array[offset + 2], this->array[offset + 3]);
+    return signedIntFromBits(BYTES_TO_INT(this->array[offset],
+                                          this->array[offset + 1],
+                                          this->array[offset + 2],
+                                          this->array[offset + 3]));
   }
 }
 #endif /* JCVM_INT_SUPPORTED */

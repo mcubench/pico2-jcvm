@@ -21696,3 +21696,14 @@
 - Decision: Close RV-19. Continue with RV-20 arithmetic defined behavior and preserve the generated fixture as test-only Java Card bytecode source; no upstream CAP was modified. Refresh the current empty-card firmware artifact for Windows testing.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/division-vpcd-20261104T125922Z.log` SHA-256 `1311ba904a36128b897cb62acb95434bf11d19975f241d8480e07b5b512768ba`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`.
+
+## 2026-11-04 Define Java Card arithmetic wrap and shifts 15 minutes
+
+- Step/experiment: `rv-20261103-20-defined-arithmetic`
+- When: '2026-11-04 14:34 CET' - '2026-11-04 14:49 CET'
+- Change: Reworked int/short add, subtract, multiply, negate, increments, shifts and byte/word reconstruction to operate on unsigned fixed-width values and decode signed results explicitly. Short shifts now sign-extend to 32 bits before shifting and narrow to 16 bits. Applied signed reconstruction consistently to stack locals, CAP byte reads, arrays, instance fields and persistent storage. Extended the test-only division CAP fixture with wraparound, `iinc`/`sinc`, and negative shift-distance cases; generated JCA inspection confirmed the increment bytecodes.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/test-jcarray` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` passed `TEST:SUMMARY pass=5 fail=0`. Existing Rust and packed-member warnings remain. No physical token was tested. The current empty-card image was regenerated and checked against the firmware UF2 block-for-block; 4,096 storage blocks spanning `0x10100000`–`0x101FFFFF` are all `0xFF`.
+- Result: Java Card overflow, signed shifts, negative shift distances, short shift extension, and signed word decoding no longer depend on undefined or implementation-defined C++ behavior. ARM firmware is 1,913,344 bytes, ends at `0x100E97E4`, and leaves 92,188 bytes before the storage boundary. The empty-card UF2 is 4,010,496 bytes.
+- Decision: Close RV-20. Continue with RV-21 owner-safe exception propagation across SIO calls. The max-profile Windows test image remains applet-free; no hardware flashing was performed.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/division-vpcd-20261104T134625Z.log` SHA-256 `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`; `build/arm/pico2_choupi.uf2` SHA-256 `1506bd0429e6413ef78bf2e3f43942ab0ed1a896d8ba85c48ba7e4e84cff28b6`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2` SHA-256 `b1543eba771770db6e671351122ddaee810c23803034a3b8482197cedf58f0ef`.
