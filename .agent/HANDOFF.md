@@ -65,9 +65,12 @@ bytes (opcode, atype, 16-bit constant-pool index). Tests pass: boundary 12/12,
 PC bounds 17/17, deployed scan 11 packages / 978 methods / 8,720 branch and
 switch targets with zero out-of-range or misaligned targets (three one-byte
 Descriptor overcounts clamp to the next method). ARM and RISC-V max_crypto
-builds pass. No physical, malformed-CAP runtime, or sanitizer test was run.
-The implementation is committed as `f4fe3f7`. Continue RV-28 with malformed
-CAP runtime/sanitizer coverage, nested linkage checks, and heap field-kind/access
+builds pass. No physical or malformed-CAP interpreter/runtime test was run.
+The boundary helper now also builds through `tools/env cmake` with ASan/UBSan
+and passes 100,000 deterministic malformed spans (0–32 bytes), 13/13 checks;
+this does not exercise CAP installation or interpreter execution. The
+implementation is committed as `f4fe3f7`. Continue RV-28 with malformed CAP
+runtime/sanitizer coverage, nested linkage checks, and heap field-kind/access
 validation.
 
 ---

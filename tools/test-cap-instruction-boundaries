@@ -2,10 +2,13 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="$(mktemp -d)"
-trap 'rm -rf "${build_dir}"' EXIT
+build_dir="${repo_root}/build/tests/cap-instruction-boundaries"
 
-"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
-  "${repo_root}/tools/tests/cap_instruction_boundaries_test.cpp" \
-  -o "${build_dir}/cap_instruction_boundaries_test"
-"${build_dir}/cap_instruction_boundaries_test"
+"${repo_root}/tools/env" cmake \
+  -S "${repo_root}/tools/tests/cap_instruction_boundaries" \
+  -B "${build_dir}"
+"${repo_root}/tools/env" cmake --build "${build_dir}" \
+  --target cap_instruction_boundaries_test
+ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+  "${build_dir}/cap_instruction_boundaries_test"

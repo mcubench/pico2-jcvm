@@ -20,9 +20,12 @@ even when the count is too large. In the deployed 3.0.5 API CAP suite, 975 of
 978 concrete method counts end exactly at the next method; three exceed it by
 one byte and are clamped. Uploaded CAP calls fail closed when a valid range
 cannot be resolved. Operand fetches, relative PC updates, and exception
-diagnostics are checked against that body. This does not prove that a branch
-target is an instruction boundary. The VM also does not yet verify nested
-constant-pool linkage or
-enforce heap field kinds. Malformed-CAP runtime/sanitizer coverage is still
-required before claiming safe execution of malformed or hostile CAP programs.
-Valid upstream CAPs remain the compatibility baseline.
+diagnostics are checked against that body. For dynamic/uploaded packages, each
+taken short, wide, and switch branch also requires a decoded instruction-start
+target. The width decoder fails closed on unknown or truncated instructions
+and bounds variable-size switch tables. It does not statically check untaken
+edges or control-flow stack types. The VM also does not yet verify nested
+constant-pool linkage or enforce heap field kinds/access. Malformed-CAP
+runtime/sanitizer coverage is still required before claiming safe execution of
+malformed or hostile CAP programs. Valid upstream CAPs remain the compatibility
+baseline.

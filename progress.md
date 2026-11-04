@@ -21851,3 +21851,14 @@
 - Decision: Keep RV-28 open; next cover malformed CAP runtime behavior under sanitizers, nested linkage/import validation, and heap field-kind/access checks.
 - Commit: `pending`
 - Artifacts/logs: `tools/test-cap-instruction-boundaries`, `tools/test-cap-bytecode-pc-bounds`, and `tools/test-cap-method-body-deploy-caps`; build output only, no archived hardware log.
+
+## 2026-11-04 Sanitize malformed branch decoder inputs 8 minutes
+
+- Step/experiment: `rv-20261103-28-boundary-decoder-sanitizer-fuzz`
+- When: '2026-11-04 20:55 CET' - '2026-11-04 21:03 CET'
+- Change: Routed the instruction-boundary test through `tools/env cmake`, added ASan/UBSan flags, and fuzzed the decoder with 100,000 deterministic byte spans of length 0–32. Synced the trust-model documentation and clarified that helper fuzzing does not test CAP installation or interpreter execution.
+- Validation: `./tools/test-cap-instruction-boundaries` passed 13/13 and printed `FUZZ:SUMMARY inputs=100000 max_bytes=32`; no ASan/UBSan finding. The test wrapper configured and built successfully through the repository environment wrapper. No production firmware source changed, so ARM/RISC-V builds were not rerun. No physical or malformed-CAP interpreter/runtime test was run.
+- Result: The width and boundary helpers remained memory-safe for the deterministic malformed-bytecode corpus under ASan/UBSan. This is helper-level evidence only.
+- Decision: Keep RV-28 open. Next pursue a malformed CAP runtime fixture, then nested-linkage validation and heap field-kind/access enforcement.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-cap-instruction-boundaries`; sanitizer output was emitted to stdout and not archived.

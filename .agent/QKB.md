@@ -8,10 +8,11 @@
   slot range 56–63 as untrusted at execution time. Reject `impdep1` and
   `impdep2` when the current executing package is in that range. Keep the range
   in `cap_execution_policy.hpp` and use it from the runtime package policy.
-- **Coverage/limits:** The package-range policy test and three builds pass.
-  There is not yet a malformed CAP runtime fixture or sanitizer test; this
-  solves only native opcode origin and does not bound instruction fetches or
-  verify heap field kinds.
+- **Coverage/limits:** The package-range policy test and builds pass. A
+  separate ASan/UBSan decoder harness now fuzzes 100,000 deterministic
+  malformed bytecode spans, but there is still no malformed CAP runtime
+  fixture. This solves only native opcode origin and does not verify heap
+  field kinds.
 
 ## Method component must contain the complete CAP method header — verified 2026-11-04
 
@@ -6154,7 +6155,13 @@ original terminology/status; check current summary and later fixes before reuse.
   methods, and 8,720 branch/switch destinations; all are in range and aligned,
   with three one-byte Descriptor overcounts clamped at the next method. ARM
   and RISC-V max_crypto builds pass. No physical or malformed-CAP
-  runtime/sanitizer test was run.
+  interpreter/runtime test was run.
+- **Decoder sanitizer follow-up:** The focused boundary runner now uses the
+  repository `tools/env cmake` wrapper and ASan/UBSan. It runs the known-answer
+  cases plus 100,000 deterministic malformed spans (0–32 bytes); currently
+  13/13 checks pass with no sanitizer findings. This validates the decoder's
+  memory/undefined-behavior bounds only, not malformed CAP installation or
+  interpreter execution.
 - **Scope limit:** This checks taken destinations, but does not statically
   verify untaken edges, control-flow stack types, nested linkage/import
   integrity, or heap field kinds/access. Runtime tests remain required.

@@ -1,6 +1,8 @@
 #include "../../src/cap_instruction_boundaries.hpp"
 
+#include <array>
 #include <cstdio>
+#include <cstdint>
 
 int main() {
   bool passed = true;
@@ -79,7 +81,35 @@ int main() {
             unknown_opcode, sizeof(unknown_opcode)),
         "unknown opcode is rejected");
 
-  std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : 0,
+  uint32_t random = 0x8f31a5c7u;
+  constexpr std::size_t fuzz_inputs = 100000;
+  constexpr std::size_t fuzz_size = 32;
+  for (std::size_t input = 0; input < fuzz_inputs; ++input) {
+    std::array<uint8_t, fuzz_size> bytes{};
+    for (auto &byte : bytes) {
+      random ^= random << 13;
+      random ^= random >> 17;
+      random ^= random << 5;
+      byte = static_cast<uint8_t>(random >> 24);
+    }
+    const std::size_t size = input % (fuzz_size + 1);
+    (void)jcvm::cap_instruction_boundaries::validate_control_flow(
+        bytes.data(), size);
+    for (std::size_t offset = 0; offset < size; ++offset) {
+      std::size_t width = 0;
+      if (jcvm::cap_instruction_boundaries::instruction_width(
+              bytes.data(), size, offset, width)) {
+        if (width == 0 || width > size - offset) passed = false;
+      }
+      (void)jcvm::cap_instruction_boundaries::is_instruction_start(
+          bytes.data(), size, offset);
+    }
+  }
+  check(passed, "100000 deterministic malformed bytecode inputs stay bounded");
+  std::printf("FUZZ:SUMMARY inputs=%zu max_bytes=%zu\n", fuzz_inputs,
+              fuzz_size);
+
+  std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : count - 1,
               passed ? 0 : 1);
   return passed ? 0 : 1;
 }
