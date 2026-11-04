@@ -9,6 +9,8 @@ require_command grep
 require_command stdbuf
 require_command pcsc_scan
 
+"${repo_root}/tools/build-algtest-v182-load-code" >/dev/null
+
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
 load_code="${repo_root}/build/algtest-v182-load-code.bin"

@@ -72,6 +72,7 @@ def install(scp: vpcd.Scp03, cap: tuple[bytes, bytes, list[bytes]]) -> None:
 
 
 def main() -> int:
+    vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
         subprocess.run([str(ROOT / "tools/build-sio-cross-aid-fixture")],
                        cwd=ROOT, check=True, timeout=180)

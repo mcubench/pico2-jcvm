@@ -29,6 +29,7 @@ def select(connection: socket.socket, aid: bytes, label: str) -> None:
 
 
 def main() -> int:
+    vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SAME_CAP_REUSE_FIXTURE") != "1":
         subprocess.run([str(ROOT / "tools/build-same-cap-sibling-fixture")],
                        cwd=ROOT, check=True, timeout=180)

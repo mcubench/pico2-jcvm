@@ -1,3 +1,36 @@
+# Current session — CAP fixture completeness and VPCD diagnosis — 2026-11-04 23:50 CET
+
+The reusable `tools/build-algtest-v182-load-code` now extracts the unchanged
+upstream AlgTest 1.8.2 CAP components in load order, including Descriptor, and
+writes the ignored input at `build/algtest-v182-load-code.bin` (30,836 bytes;
+SHA-256 `b1967af560baa602a1330704d98589fe2cc85f32c25a2595efe7639e087314e7`).
+Several probe CAP builders now include Descriptor in their LOAD inputs. Six
+generated fixtures were byte-for-byte checked against the complete component
+sequence. The Python VPCD applet harness now polls the emulator process and log
+while waiting for its VPCD connection, so early install failures can surface
+without waiting out the whole connect timeout.
+
+Validation this session: `./tools/test-cap-method-body-deploy-caps` passed 11
+packages / 978 methods / 8,720 branch targets, and the decoder sanitizer passed
+13/13 checks over 100,000 malformed spans. ARM, RISC-V, and PC max_crypto
+builds passed. A new VPCD integration attempt timed out after 120 seconds before
+connection, without process exit or INSTALL failure marker; startup/runtime
+hang remains unresolved. Do not claim the helper fixes JCAlgTest installation.
+
+The user reported all three tokens in BOOTSEL, but this VM did not enumerate
+them: authorized `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb -d 2e8a:` returned
+no devices. `tools/flash --chipid D92E743D5F640C0F ...` waited for enumeration
+and was stopped before writing. The image remains the previously verified
+applet-free max_crypto UF2 (4,022,784 bytes, SHA-256
+`9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`); no
+hardware runtime test was done. Continue offline until guest USB enumeration
+returns, and resume JCAlgTest startup diagnosis using the corrected fixture.
+
+This worktree still has unrelated pre-existing modifications; stage only the
+fixture builders, LOAD helper, VPCD harness changes, and their progress/QKB/
+handoff record. Relevant dirty runtime files include `choupi/src/heap.cpp`,
+`choupi/src/heap.hpp`, and `src/cap_load.cpp`; do not discard them.
+
 # Current session — flash applet-free max_crypto to three identified boards — 2026-11-04 22:20 CET
 
 The temporary PC-only branch-alignment A/B edit was restored; `git diff --

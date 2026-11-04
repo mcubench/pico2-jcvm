@@ -17,10 +17,12 @@ from zipfile import ZipFile
 from cryptography.hazmat.primitives import cmac
 from cryptography.hazmat.primitives.ciphers import algorithms
 
+from cap_load_code import ensure_algtest_v182_load_code
+
 
 COMPONENTS = (
     "Header", "Directory", "Applet", "Import", "ConstantPool", "Class",
-    "Method", "StaticField", "RefLocation",
+    "Method", "StaticField", "RefLocation", "Descriptor",
 )
 ISD_AID = bytes.fromhex("A000000151000000")
 STATIC_KEY = bytes.fromhex("404142434445464748494A4B4C4D4E4F")
@@ -322,6 +324,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     args = parser.parse_args()
     root = args.root.resolve()
+    ensure_algtest_v182_load_code(root)
     cap_dir = root / "AlgTest_JavaCard/deploy/caps"
     core_cap = cap_dir / "AlgTestApiCore_305.cap"
     multi_cap = cap_dir / "AlgTestApiMulti_305.cap"

@@ -59,7 +59,7 @@ from zipfile import ZipFile
 
 source, load_target, class_target = sys.argv[1:]
 components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
-              "Class", "Method", "StaticField", "RefLocation")
+              "Class", "Method", "StaticField", "RefLocation", "Descriptor")
 with ZipFile(source) as cap:
     chunks = []
     for component in components:

@@ -55,7 +55,7 @@ from zipfile import ZipFile
 
 source, target = sys.argv[1:]
 components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
-              "Class", "Method", "StaticField", "RefLocation")
+              "Class", "Method", "StaticField", "RefLocation", "Descriptor")
 with ZipFile(source) as cap, open(target, "wb") as output:
     for component in components:
         name = f"cipherlife/javacard/{component}.cap"

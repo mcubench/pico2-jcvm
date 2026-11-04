@@ -14,6 +14,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cap_load_code import ensure_algtest_v182_load_code
+
 
 DEFAULT_APPLET_AID = bytes.fromhex("4A43416C675465737431")
 
@@ -60,6 +63,53 @@ def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
     return response
 
 
+def accept_emulator_connection(
+    listener: socket.socket,
+    process: subprocess.Popen[bytes],
+    timeout: float,
+    log_path: Path,
+    log_start: int,
+    phase: str,
+) -> tuple[socket.socket, tuple[str, int]]:
+    """Accept VPCD while detecting emulator exit or an INSTALL failure early."""
+    deadline = time.monotonic() + timeout
+    failure_markers = (
+        "ERROR: PC applet INSTALL failed",
+        "VPCD:INSTALL_FAIL",
+    )
+    while True:
+        return_code = process.poll()
+        if return_code is not None:
+            reason = f"emulator exited with status {return_code}"
+        else:
+            reason = ""
+        try:
+            with log_path.open("rb") as captured_log:
+                captured_log.seek(log_start)
+                log_text = captured_log.read().decode("utf-8", errors="replace")
+        except FileNotFoundError:
+            log_text = ""
+        if not reason:
+            marker = next((item for item in failure_markers if item in log_text), None)
+            if marker is not None:
+                reason = f"emulator reported {marker} before VPCD connect"
+        if reason:
+            raise RuntimeError(
+                f"{phase}: {reason}; log tail:\n{log_text[-4000:]}"
+            )
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise socket.timeout(
+                f"timed out waiting {timeout:.1f}s for {phase} VPCD connect"
+            )
+        listener.settimeout(min(remaining, 0.2))
+        try:
+            return listener.accept()
+        except socket.timeout:
+            continue
+
+
 def run_emulator(
     args: argparse.Namespace, memory: Path, pass_number: int,
     pre_restart: bool = False,
@@ -70,7 +120,6 @@ def run_emulator(
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
         listener.listen(1)
-        listener.settimeout(args.connect_timeout)
         host, port = listener.getsockname()
 
         command = [
@@ -127,7 +176,10 @@ def run_emulator(
             connection = None
             try:
                 connect_started = time.monotonic()
-                connection, _ = listener.accept()
+                connection, _ = accept_emulator_connection(
+                    listener, process, args.connect_timeout, args.log,
+                    log_start, f"pass {pass_number}",
+                )
                 print(
                     "VPCD:PHASE name=connect status=ok "
                     f"elapsed_s={time.monotonic() - connect_started:.3f}"
@@ -613,6 +665,9 @@ def parse_args() -> argparse.Namespace:
             len(args.expect_resume_apdu_response) != len(args.resume_apdu):
         parser.error("--expect-resume-apdu-response must be repeated once for each --resume-apdu")
     args.repo = args.repo.resolve()
+    default_cap_code = repo / "build/algtest-v182-load-code.bin"
+    if args.cap_code == default_cap_code:
+        ensure_algtest_v182_load_code(args.repo)
     for name in ("emulator", "memory", "cap_code", "rom_mask"):
         setattr(args, name, getattr(args, name).resolve())
         if name == "memory" and args.uses_generated_empty_memory:

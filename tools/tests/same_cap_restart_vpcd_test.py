@@ -42,6 +42,7 @@ def connect(listener: socket.socket, process: subprocess.Popen[bytes],
 
 
 def main() -> int:
+    vpcd.ensure_algtest_v182_load_code(ROOT)
     subprocess.run([str(ROOT / "tools/build-same-cap-sibling-fixture")],
                    cwd=ROOT, check=True, timeout=180)
     cap_path = (ROOT / "build/same-cap-sibling-fixture/cap/"

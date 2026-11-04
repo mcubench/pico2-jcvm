@@ -6246,3 +6246,32 @@ original terminology/status; check current summary and later fixes before reuse.
   test, build, historical image, or a decoder sanitizer pass.
 - **Validation:** All local links in the refreshed architecture document
   resolve. This corrects documentation; it is not a new runtime fix or test.
+
+## VPCD pre-connect waits hide emulator INSTALL failures — 2026-11-04
+
+- **Finding:** `pc_vpcd_applet_test.py` called `listener.accept()` once with the
+  whole connect timeout while the emulator performed its initial applet
+  installation. If the emulator exited or logged an INSTALL failure first,
+  the harness could still wait for the full timeout and report only a generic
+  socket timeout.
+- **Viable harness fix:** Poll the listener in short intervals while checking
+  the emulator process and its per-run log. Return early on process exit or
+  `ERROR: PC applet INSTALL failed` / `VPCD:INSTALL_FAIL`, and include the
+  captured log tail. This avoids masking known failures but does not bound CPU
+  use inside an emulator that stays alive without producing output.
+- **CAP fixture correction:** Probe and VPCD helpers that pass CAP load bytes
+  to the runtime must append the unchanged CAP's `Descriptor.cap` after
+  `RefLocation.cap` (after `Export.cap` when present). Several old generated
+  inputs omitted Descriptor, causing uploaded-method execution to lack its
+  method-body metadata. Added a repeatable extractor for the unchanged
+  AlgTest 1.8.2 CAP and invoked it from default VPCD entry points. It emits
+  30,836 bytes, SHA-256
+  `b1967af560baa602a1330704d98589fe2cc85f32c25a2595efe7639e087314e7`.
+- **Validation / limits:** Six generated probe inputs were byte-for-byte
+  compared with their ordered CAP components and include Descriptor. CAP
+  method scan and malformed branch decoder sanitizer passed. A new 120-second
+  JCAlgTest VPCD attempt still timed out before connection, with neither an
+  INSTALL failure marker nor process exit. A static branch check is not a
+  confirmed cause. The host claimed BOOTSEL boards were not visible in the VM:
+  authorized `lsusb` returned no RP2350 devices; the identified-chip flash
+  wrapper therefore made no write and was stopped.

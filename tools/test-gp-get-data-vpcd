@@ -12,6 +12,7 @@ require_command pcsc_scan
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out_dir="${repo_root}/artifacts/results/gp-get-data-vpcd-${timestamp}"
 mkdir -p "${out_dir}"
+"${repo_root}/tools/build-algtest-v182-load-code" > "${out_dir}/cap-load-code.log"
 "${repo_root}/tools/build-pc" > "${out_dir}/build-pc.log" 2>&1
 
 reader="Virtual PCD 00 00"

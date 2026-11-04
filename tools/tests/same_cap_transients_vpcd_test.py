@@ -29,6 +29,7 @@ def select(connection: socket.socket, aid: bytes, label: str) -> None:
 
 
 def main() -> int:
+    vpcd.ensure_algtest_v182_load_code(ROOT)
     subprocess.run([str(ROOT / "tools/build-same-cap-transient-fixture")],
                    cwd=ROOT, check=True, timeout=180)
     cap_path = (ROOT / "build/same-cap-transient-fixture/cap/"

@@ -19,7 +19,7 @@ import pc_vpcd_multipackage_test as vpcd  # noqa: E402
 
 COMPONENTS = (
     "Header", "Directory", "Applet", "Import", "ConstantPool", "Class",
-    "Method", "StaticField", "RefLocation",
+    "Method", "StaticField", "RefLocation", "Descriptor",
 )
 
 
@@ -32,7 +32,7 @@ def cap_components(path: Path, include_export: bool = False
         names = set(cap.namelist())
         components = list(COMPONENTS)
         if include_export:
-            components.append("Export")
+            components.insert(components.index("Descriptor"), "Export")
         code = b"".join(
             cap.read(f"{folder}/{component}.cap")
             for component in components
@@ -150,6 +150,7 @@ def start_case(label: str, root: Path, emulator: Path, rom_mask: Path,
 
 
 def main() -> int:
+    vpcd.ensure_algtest_v182_load_code(ROOT)
     root = ROOT
     subprocess.run([str(root / "tools/build-rmi-external-fixture")],
                    cwd=root, check=True)
