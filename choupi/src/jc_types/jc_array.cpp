@@ -675,7 +675,13 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
   if (foreign_reference && this->isPersistent()) {
     // Persistent foreign references need a stable cross-package object
     // identity in the flash format. Keep failing closed until that format is
-    // implemented; volatile applet-owned arrays can retain the owner tag.
+    // implemented.
+    throw Exceptions::SecurityException;
+  }
+  if (foreign_reference && !this->getOwner().isGlobalHeap()) {
+    // An applet heap's GC cannot follow a compact child handle into another
+    // package heap. Only runtime-global arrays retain foreign entries because
+    // Context routes those roots to the recorded owner package.
     throw Exceptions::SecurityException;
   }
   if (foreign_reference &&

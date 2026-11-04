@@ -11,6 +11,12 @@
 #include <cstdio>
 #include <vector>
 
+namespace jcvm {
+uint32_t FlashMemory_Handler::persistentWriteRollbackGeneration() noexcept {
+  return 0;
+}
+} // namespace jcvm
+
 namespace {
 struct VisitedReferences {
   std::array<uint16_t, 40> values{};
@@ -444,6 +450,56 @@ void verify_global_object_array_package_ownership() {
   owner_context.visitRootReferences(record_reference, &cleared_roots);
   assert(!contains(cleared_roots, local_array));
   jcvm::Heap::releaseGlobalArray(global_array);
+}
+
+void verify_local_array_rejects_foreign_references_before_owner_reuse() {
+  constexpr jcvm::jpackage_ID_t owner_package = 20;
+  constexpr jcvm::jpackage_ID_t receiver_package = 21;
+  jcvm::Context owner_context(7, owner_package);
+  jcvm::Context receiver_context(8, receiver_package);
+
+  const jcvm::jref_t foreign_collision =
+      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+  const jcvm::jref_t foreign_noncollision =
+      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+  const jcvm::jref_t receiver_collision =
+      receiver_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+  const jcvm::jref_t receiver_array = receiver_context.getHeap().addArray(
+      2, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto local_array = receiver_context.getHeap().getArray(receiver_array);
+  assert(foreign_collision == receiver_collision);
+  assert(foreign_noncollision != receiver_collision);
+
+  for (uint16_t index = 0; index < 2; ++index) {
+    const auto foreign = index == 0 ? foreign_collision : foreign_noncollision;
+    bool rejected = false;
+    try {
+      local_array->setReferenceEntry(index, foreign, receiver_context,
+                                     owner_package);
+    } catch (jcvm::Exceptions error) {
+      rejected = error == jcvm::Exceptions::SecurityException;
+    }
+    assert(rejected);
+    assert(local_array->getReferenceEntry(index).isNullPointer());
+    assert(local_array->getReferenceEntryOwner(index) == 0xff);
+  }
+
+  const std::vector<jcvm::jref_t> no_roots;
+  const auto owner_gc =
+      owner_context.getHeap().collectUnreachableFrom(no_roots);
+  assert(owner_gc.complete);
+  assert(owner_gc.arrays_reclaimed == 2);
+  const auto reused_collision =
+      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto reused_noncollision =
+      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+  assert(reused_collision == foreign_collision);
+  assert(reused_noncollision == foreign_noncollision);
+
+  std::puts("RMI_REGISTRY:PASS local_foreign_array_store_rejected=2 "
+            "colliding_handle=1 noncolliding_handle=1 owner_reclaimed=2 "
+            "owner_slots_reused_without_alias=1");
 }
 
 void verify_shareable_proxy_registry() {
@@ -940,6 +996,7 @@ int main() {
   verify_owner_id_space_exhaustion_and_reclamation();
   verify_heap_owner_facades_share_package_roots();
   verify_global_object_array_package_ownership();
+  verify_local_array_rejects_foreign_references_before_owner_reuse();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();

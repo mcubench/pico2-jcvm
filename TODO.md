@@ -102,9 +102,10 @@ during the review.
 
 ### RV-20261103-08
 
-- [ ] **P1: Foreign retained references are traced in the wrong heap.**
+- [x] **P1: Foreign retained references are traced in the wrong heap.**
   Owner: CTX-01/03, PERSIST-01. Evidence: Reproduced; [review R08](docs/review_20261103.md#r08--gc-drops-reference-owner-tags-in-volatile-object-arrays).
   Acceptance: carry owner provenance through graph edges and route foreign roots to the owning package, or disable this newly allowed retention until that is safe. Include owner slot reuse, package deletion and non-colliding handles.
+  Progress: Fail closed when an applet-owned array is asked to retain a foreign-package reference. Runtime-global Object arrays remain owner-tagged and their roots continue to be routed through the owning package context. Regression tests reject colliding and non-colliding foreign handles, collect the owner arrays, then reuse both compact slots without aliasing. The cross-AID VPCD suite passes all 31 checks, including service package DELETE/reinstall after the rejected retention attempt.
 
 ### RV-20261103-09
 

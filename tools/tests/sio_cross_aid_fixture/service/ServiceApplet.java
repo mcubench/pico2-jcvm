@@ -269,7 +269,7 @@ public final class ServiceApplet extends Applet implements Probe {
       local[0] = foreign;
       arrayStored = local[0] == foreign;
     } catch (SecurityException denied) {
-      // Applet-owned arrays may retain non-temporary foreign object refs.
+      // Applet-owned arrays cannot route foreign owner roots through GC.
     }
     short failures = 0;
     if (!staticStored) failures |= 1;

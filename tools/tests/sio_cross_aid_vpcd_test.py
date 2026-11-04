@@ -330,15 +330,14 @@ def main() -> int:
                 connection, bytes.fromhex("8020000000"),
                 "retain ordinary foreign object reference in applet state"
             )
-            if response != bytes.fromhex("6B439000"):
+            if response != bytes.fromhex("6B479000"):
                 raise RuntimeError(
                     f"foreign object retention result {response.hex().upper()}, "
-                    "expected the current static/instance gap and successful "
-                    "transient-array retention 6B439000"
+                    "expected all foreign applet-state retention attempts to "
+                    "fail closed with 6B479000"
                 )
-            print("TEST:PASS foreign reference retained in an applet-owned "
-                  "transient Object[]; static and instance field retention "
-                  "remain open")
+            print("TEST:PASS foreign references cannot be retained in applet "
+                  "state whose GC cannot route owner-package roots")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):
