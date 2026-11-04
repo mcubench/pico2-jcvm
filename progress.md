@@ -21840,3 +21840,14 @@
 - Decision: Continue RV-28 by validating branch targets against decoded instruction starts; runtime/sanitizer and physical tests remain open.
 - Commit: pending
 - Artifacts/logs: `tools/test-cap-method-body-deploy-caps` (prints per-package results; no separate log).
+
+## 2026-11-04 Validate taken CAP branch instruction boundaries 26 minutes
+
+- Step/experiment: `rv-20261103-28-taken-branch-instruction-boundaries`
+- When: '2026-11-04 20:29 CET' - '2026-11-04 20:55 CET'
+- Change: Added an instruction-width decoder for dynamic CAP methods and required taken short, wide, and switch branch targets to land at decoded instruction starts. Kept trusted ROM branch behavior unchanged. Added focused decoder and PC integration tests, and extended the deployed CAP archive scan to check every branch/switch destination.
+- Validation: `./tools/test-cap-instruction-boundaries` passed 12/12; `./tools/test-cap-bytecode-pc-bounds` passed 17/17; `./tools/test-cap-method-body-deploy-caps` passed across 11 packages, 978 concrete methods and 8,720 destinations with zero out-of-range or misaligned targets. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. Scoped `git -c core.whitespace=cr-at-eol diff --check` passed. No malformed-CAP runtime/sanitizer or physical test was run.
+- Result: Dynamic taken branches cannot enter decoded instruction operands or inline switch data. Three upstream Descriptor method counts still clamp by one byte to the next method. ARM firmware ends at `0x100eaf84`, leaving 86,140 bytes before the `0x10100000` storage limit.
+- Decision: Keep RV-28 open; next cover malformed CAP runtime behavior under sanitizers, nested linkage/import validation, and heap field-kind/access checks.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-cap-instruction-boundaries`, `tools/test-cap-bytecode-pc-bounds`, and `tools/test-cap-method-body-deploy-caps`; build output only, no archived hardware log.

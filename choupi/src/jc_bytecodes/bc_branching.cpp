@@ -29,9 +29,28 @@
 #include "../jc_handlers/flashmemory.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
+#include "../../../src/cap_execution_policy.hpp"
 
 
 namespace jcvm {
+
+namespace {
+
+void update_branch(Context &context, pc_t &pc, const int64_t offset) {
+  const bool check_alignment =
+      cap_execution_policy::is_dynamic_package(context.getCurrentPackageID());
+  pc.updateBranchFromOffset(offset, check_alignment);
+}
+
+void set_branch(Context &context, pc_t &pc, const uint8_t *origin,
+                const int64_t offset) {
+  const bool check_alignment =
+      cap_execution_policy::is_dynamic_package(context.getCurrentPackageID());
+  pc.setBranchFromOffset(origin, offset, check_alignment);
+}
+
+} // namespace
+
 
 /**
  * Branch if short comparison equals zero
@@ -74,7 +93,7 @@ void Bytecodes::bc_ifeq() {
   TRACE_JCVM_DEBUG("IFEQ 0x%02X", branch);
 
   if (value == 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -121,7 +140,7 @@ void Bytecodes::bc_ifne() {
   TRACE_JCVM_DEBUG("IFNE 0x%02X", branch);
 
   if (value != 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -168,7 +187,7 @@ void Bytecodes::bc_iflt() {
   TRACE_JCVM_DEBUG("IFLT 0x%02X", branch);
 
   if (value < 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -215,7 +234,7 @@ void Bytecodes::bc_ifge() {
   TRACE_JCVM_DEBUG("IFGE 0x%02X", branch);
 
   if (value >= 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -262,7 +281,7 @@ void Bytecodes::bc_ifgt() {
   TRACE_JCVM_DEBUG("IFGT 0x%02X", branch);
 
   if (value > 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -309,7 +328,7 @@ void Bytecodes::bc_ifle() {
   TRACE_JCVM_DEBUG("IFLE 0x%02X", branch);
 
   if (value <= 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -359,7 +378,7 @@ void Bytecodes::bc_ifnull() {
   TRACE_JCVM_DEBUG("IFNULL 0x%02X", branch);
 
   if (value.isNullPointer()) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -409,7 +428,7 @@ void Bytecodes::bc_ifnonnull() {
   TRACE_JCVM_DEBUG("IFNONNULL 0x%02X", branch);
 
   if (!(value.isNullPointer())) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -458,7 +477,7 @@ void Bytecodes::bc_if_acmpeq() {
 
   if (Stack::referencesEqual(value1, value2,
                              this->context.getCurrentPackageID())) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -507,7 +526,7 @@ void Bytecodes::bc_if_acmpne() {
 
   if (!Stack::referencesEqual(value1, value2,
                               this->context.getCurrentPackageID())) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -555,7 +574,7 @@ void Bytecodes::bc_if_scmpeq() {
   TRACE_JCVM_DEBUG("IF_SCMPEQ 0x%02X", branch);
 
   if (value1 == value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -604,7 +623,7 @@ void Bytecodes::bc_if_scmpne() /* 0x6b */
   TRACE_JCVM_DEBUG("IF_SCMPNE 0x%02X", branch);
 
   if (value1 != value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -652,7 +671,7 @@ void Bytecodes::bc_if_scmplt() {
   TRACE_JCVM_DEBUG("IF_SCMPLT 0x%02X", branch);
 
   if (value1 < value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -700,7 +719,7 @@ void Bytecodes::bc_if_scmpge() {
   TRACE_JCVM_DEBUG("IF_SCMPGE 0x%02X", branch);
 
   if (value1 >= value2) {
-    pc.updateFromOffset(branch - 2);
+    update_branch(this->context, pc, branch - 2);
   }
 
   return;
@@ -748,7 +767,7 @@ void Bytecodes::bc_if_scmpgt() {
   TRACE_JCVM_DEBUG("IF_SCMPGT 0x%02X", branch);
 
   if (value1 > value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -796,7 +815,7 @@ void Bytecodes::bc_if_scmple() {
   TRACE_JCVM_DEBUG("IF_SCMPLE 0x%02X", branch);
 
   if (value1 <= value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -831,7 +850,7 @@ void Bytecodes::bc_goto() {
 
   TRACE_JCVM_DEBUG("GOTO 0x%02X", branch);
 
-  pc.updateFromOffset(branch - sizeof(branch) - 1);
+  update_branch(this->context, pc, branch - sizeof(branch) - 1);
   return;
 }
 
@@ -878,7 +897,7 @@ void Bytecodes::bc_jsr() {
 
   // NOTE: -2 because of the branch offset value and -1 due to getNextByte
   // function increases the PC after reading.
-  pc.updateFromOffset(branch - 3);
+  update_branch(this->context, pc, branch - 3);
 
   ret_addr = stack.savePC();
   stack.push_ReturnAddress(ret_addr);
@@ -1034,7 +1053,7 @@ void Bytecodes::bc_stableswitch() {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setFromOffset(base_pc, target_offset);
+    set_branch(this->context, pc, base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1157,7 +1176,7 @@ void Bytecodes::bc_itableswitch() {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setFromOffset(base_pc, target_offset);
+    set_branch(this->context, pc, base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1269,7 +1288,7 @@ void Bytecodes::bc_slookupswitch() {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setFromOffset(base_pc, target_offset);
+    set_branch(this->context, pc, base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1388,7 +1407,7 @@ void Bytecodes::bc_ilookupswitch() {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setFromOffset(base_pc, target_offset);
+    set_branch(this->context, pc, base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1440,7 +1459,7 @@ void Bytecodes::bc_ifeq_w() {
   TRACE_JCVM_DEBUG("IFEQ_W 0x%04X", branch);
 
   if (value == 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1488,7 +1507,7 @@ void Bytecodes::bc_ifne_w() {
   TRACE_JCVM_DEBUG("IFNE_W 0x%04X", branch);
 
   if (value != 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1536,7 +1555,7 @@ void Bytecodes::bc_iflt_w() {
   TRACE_JCVM_DEBUG("IFLT_W 0x%04X", branch);
 
   if (value < 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1584,7 +1603,7 @@ void Bytecodes::bc_ifge_w() {
   TRACE_JCVM_DEBUG("IFGE_W 0x%04X", branch);
 
   if (value >= 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1632,7 +1651,7 @@ void Bytecodes::bc_ifgt_w() {
   TRACE_JCVM_DEBUG("IFGT_W 0x%04X", branch);
 
   if (value > 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1680,7 +1699,7 @@ void Bytecodes::bc_ifle_w() {
   TRACE_JCVM_DEBUG("IFLE_W 0x%04X", branch);
 
   if (value <= 0x00) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1728,7 +1747,7 @@ void Bytecodes::bc_ifnull_w() {
   TRACE_JCVM_DEBUG("IFNULL_W 0x%04X", branch);
 
   if (value.isNullPointer()) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1777,7 +1796,7 @@ void Bytecodes::bc_ifnonnull_w() {
   TRACE_JCVM_DEBUG("IFNONNULL_W 0x%04X", branch);
 
   if (!(value.isNullPointer())) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1829,7 +1848,7 @@ void Bytecodes::bc_if_acmpeq_w() {
 
   if (Stack::referencesEqual(value1, value2,
                              this->context.getCurrentPackageID())) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1881,7 +1900,7 @@ void Bytecodes::bc_if_acmpne_w() {
 
   if (!Stack::referencesEqual(value1, value2,
                               this->context.getCurrentPackageID())) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1932,7 +1951,7 @@ void Bytecodes::bc_if_scmpeq_w() {
   TRACE_JCVM_DEBUG("IF_SCMPEQ_W 0x%04X", branch);
 
   if (value1 == value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -1983,7 +2002,7 @@ void Bytecodes::bc_if_scmpne_w() {
   TRACE_JCVM_DEBUG("IF_SCMPNE_W 0x%04X", branch);
 
   if (value1 != value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -2034,7 +2053,7 @@ void Bytecodes::bc_if_scmplt_w() {
   TRACE_JCVM_DEBUG("IF_SCMPLT_W 0x%04X", branch);
 
   if (value1 < value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -2085,7 +2104,7 @@ void Bytecodes::bc_if_scmpge_w() {
   TRACE_JCVM_DEBUG("IF_SCMPGE_W 0x%04X", branch);
 
   if (value1 >= value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -2136,7 +2155,7 @@ void Bytecodes::bc_if_scmpgt_w() {
   TRACE_JCVM_DEBUG("IF_SCMPGT_W 0x%04X", branch);
 
   if (value1 > value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -2187,7 +2206,7 @@ void Bytecodes::bc_if_scmple_w() {
   TRACE_JCVM_DEBUG("IF_SCMPLE_W 0x%04X", branch);
 
   if (value1 <= value2) {
-    pc.updateFromOffset(branch - sizeof(branch) - 1);
+    update_branch(this->context, pc, branch - sizeof(branch) - 1);
   }
 
   return;
@@ -2225,7 +2244,7 @@ void Bytecodes::bc_goto_w() {
 
   TRACE_JCVM_DEBUG("GOTO_W 0x%04X", branch);
 
-  pc.updateFromOffset(branch - sizeof(branch) - 1);
+  update_branch(this->context, pc, branch - sizeof(branch) - 1);
 
   return;
 }

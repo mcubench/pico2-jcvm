@@ -53,9 +53,22 @@ exception diagnostics are committed as `2496a92`; progress/handoff SHA
 metadata follow-up is `a0ef034`. Added `tools/test-cap-method-body-deploy-caps`
 to repeat the offline check against all 11 deployed 3.0.5 API CAPs; it passes
 978 concrete methods with 3 descriptor clamps. This script and its records are
-committed as `f0c276a`; metadata follow-up is `6eddba2`. Next continue RV-28
-with same-method instruction-boundary validation. No malformed runtime,
-sanitizer or physical test was run.
+committed as `f0c276a`; metadata follow-up is `6eddba2`.
+
+RV-28 dynamic branch instruction-boundary validation is implemented in the
+current worktree. Taken short, wide, and switch branches in dynamic package IDs
+56–63 use checked PC offsets and require the target to be a decoded instruction
+start. Trusted ROM branches keep the existing range-only behavior. The width
+decoder bounds variable switch payloads and rejects unknown/truncated
+instructions; CHOUPI handlers confirm `checkcast` and `instanceof` are four
+bytes (opcode, atype, 16-bit constant-pool index). Tests pass: boundary 12/12,
+PC bounds 17/17, deployed scan 11 packages / 978 methods / 8,720 branch and
+switch targets with zero out-of-range or misaligned targets (three one-byte
+Descriptor overcounts clamp to the next method). ARM and RISC-V max_crypto
+builds pass. No physical, malformed-CAP runtime, or sanitizer test was run.
+The implementation and metadata updates are pending a scoped commit. Continue
+RV-28 with malformed CAP runtime/sanitizer coverage, nested linkage checks, and
+heap field-kind/access validation.
 
 ---
 

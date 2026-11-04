@@ -6132,3 +6132,29 @@ original terminology/status; check current summary and later fixes before reuse.
   malformed-CAP runtime/sanitizer testing remain open. Reproduce the archive
   scan with `./tools/test-cap-method-body-deploy-caps`; it reads deployed CAP
   zip entries without changing them and checks the pinned suite totals.
+
+## Uploaded CAP branch instruction boundaries — 2026-11-04
+
+- **Finding:** Method-body bounds alone permit a relative branch to land inside
+  an instruction operand or inline switch payload. The interpreter must reject
+  such a target before installing the next PC. The check applies only when a
+  dynamic/uploaded package takes the branch; checking unused control flow in
+  advance would reject methods based on an edge they never execute.
+- **Viable solution:** Calculate the target with checked PC range arithmetic,
+  then decode widths from the method start through the target and require an
+  exact instruction boundary. Apply this to taken short, wide, and switch
+  branches for dynamic package IDs 56–63. Decoder widths must match CHOUPI
+  handlers: `checkcast` and `instanceof` consume an `atype` byte and a 16-bit
+  constant-pool index (4 bytes total). Decode switch sizes with remaining-span
+  checks before iteration. Unknown, truncated, or malformed instructions fail
+  closed. Trusted ROM branches retain prior range-only behavior.
+- **Validation:** `./tools/test-cap-instruction-boundaries` passes 12/12 and
+  `./tools/test-cap-bytecode-pc-bounds` passes 17/17. The deployed CAP scan
+  `./tools/test-cap-method-body-deploy-caps` checks 11 packages, 978 concrete
+  methods, and 8,720 branch/switch destinations; all are in range and aligned,
+  with three one-byte Descriptor overcounts clamped at the next method. ARM
+  and RISC-V max_crypto builds pass. No physical or malformed-CAP
+  runtime/sanitizer test was run.
+- **Scope limit:** This checks taken destinations, but does not statically
+  verify untaken edges, control-flow stack types, nested linkage/import
+  integrity, or heap field kinds/access. Runtime tests remain required.

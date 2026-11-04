@@ -32,6 +32,7 @@
 #include "../exceptions.hpp"
 #include "../jc_utils.hpp"
 #include "../types.hpp"
+#include "../../../src/cap_instruction_boundaries.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -54,6 +55,24 @@ private:
     return this->begin != nullptr && this->end != nullptr &&
            start < limit && candidate >= start &&
            (allow_end ? candidate <= limit : candidate < limit);
+  }
+
+  bool offset_target(const uint8_t *origin, const int64_t offset,
+                     uintptr_t &target) const noexcept {
+    if (!this->contains(origin, true)) return false;
+    target = this->address(origin);
+    if (offset >= 0) {
+      const uint64_t distance = static_cast<uint64_t>(offset);
+      if (distance > this->address(this->end) - target) return false;
+      target += static_cast<uintptr_t>(distance);
+    } else {
+      const uint64_t distance =
+          static_cast<uint64_t>(-(offset + 1)) + static_cast<uint64_t>(1);
+      if (distance > target - this->address(this->begin)) return false;
+      target -= static_cast<uintptr_t>(distance);
+    }
+    return target >= this->address(this->begin) &&
+           target < this->address(this->end);
   }
 
   void require_readable(const size_t length) const {
@@ -98,29 +117,36 @@ public:
 
   /// Set the PC to origin + offset without forming an out-of-range pointer.
   void setFromOffset(const uint8_t *origin, const int64_t offset) {
-    if (!this->contains(origin, true)) {
+    uintptr_t target = 0;
+    if (!this->offset_target(origin, offset, target))
       throw Exceptions::SecurityException;
-    }
-    uintptr_t target = this->address(origin);
-    if (offset >= 0) {
-      const uint64_t distance = static_cast<uint64_t>(offset);
-      if (distance > this->address(this->end) - target) {
+    this->value = reinterpret_cast<const uint8_t *>(target);
+  }
+
+  /// Set a branch target, optionally requiring the target to start an opcode.
+  void setBranchFromOffset(const uint8_t *origin, const int64_t offset,
+                           const bool require_instruction_start) {
+    uintptr_t target = 0;
+    if (!this->offset_target(origin, offset, target))
+      throw Exceptions::SecurityException;
+    if (require_instruction_start) {
+      const std::size_t code_size = static_cast<std::size_t>(
+          this->address(this->end) - this->address(this->begin));
+      const std::size_t target_offset = static_cast<std::size_t>(
+          target - this->address(this->begin));
+      if (!cap_instruction_boundaries::is_instruction_start(
+              this->begin, code_size, target_offset)) {
         throw Exceptions::SecurityException;
       }
-      target += distance;
-    } else {
-      const uint64_t distance =
-          static_cast<uint64_t>(-(offset + 1)) + static_cast<uint64_t>(1);
-      if (distance > target - this->address(this->begin)) {
-        throw Exceptions::SecurityException;
-      }
-      target -= distance;
     }
-    const auto *next = reinterpret_cast<const uint8_t *>(target);
-    if (!this->contains(next, false)) {
-      throw Exceptions::SecurityException;
-    }
-    this->value = next;
+    this->value = reinterpret_cast<const uint8_t *>(target);
+  }
+
+  /// Branch relative to the current PC value, with optional opcode alignment.
+  void updateBranchFromOffset(const int64_t offset,
+                              const bool require_instruction_start) {
+    this->setBranchFromOffset(this->value, offset,
+                              require_instruction_start);
   }
 
   /// Check an offset range without forming a potentially out-of-range pointer.

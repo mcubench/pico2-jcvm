@@ -65,6 +65,19 @@ int main() {
   check(!truncated.canReadAtOffset(bytes + 4, 1, 1),
         "relative diagnostic read beyond method is rejected");
 
+  const uint8_t code[] = {0x00, 0x11, 0x00, 0x00, 0x00};
+  jcvm::pc_t branch(code, code, code + sizeof(code));
+  branch.setBranchFromOffset(code, 4, true);
+  check(branch.getValue() == code + 4,
+        "dynamic branch to a decoded instruction start is accepted");
+  check(throws_security([&] {
+          branch.setBranchFromOffset(code, 2, true);
+        }),
+        "dynamic branch into a decoded instruction operand is rejected");
+  branch.setBranchFromOffset(code, 2, false);
+  check(branch.getValue() == code + 2,
+        "trusted branch skips dynamic instruction-alignment policy");
+
   std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : 0,
               passed ? 0 : 1);
   return passed ? 0 : 1;
