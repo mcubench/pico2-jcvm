@@ -123,6 +123,25 @@ public:
     this->value = next;
   }
 
+  /// Check an offset range without forming a potentially out-of-range pointer.
+  bool canReadAtOffset(const uint8_t *origin, const int64_t offset,
+                       const size_t length) const noexcept {
+    if (!this->contains(origin, true)) return false;
+    uintptr_t target = this->address(origin);
+    if (offset >= 0) {
+      const uint64_t distance = static_cast<uint64_t>(offset);
+      if (distance > this->address(this->end) - target) return false;
+      target += static_cast<uintptr_t>(distance);
+    } else {
+      const uint64_t distance =
+          static_cast<uint64_t>(-(offset + 1)) + static_cast<uint64_t>(1);
+      if (distance > target - this->address(this->begin)) return false;
+      target -= static_cast<uintptr_t>(distance);
+    }
+    return target < this->address(this->end) &&
+           length <= this->address(this->end) - target;
+  }
+
   /**
    * Returns the PC value.
    */

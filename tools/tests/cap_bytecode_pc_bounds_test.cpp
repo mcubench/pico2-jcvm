@@ -58,6 +58,12 @@ int main() {
         "minimum signed branch offset is rejected without overflow");
   check(throws_security([&] { truncated.setValue(end); }),
         "one-past-end program counter is rejected");
+  check(truncated.canReadAtOffset(bytes + 2, 1, 2),
+        "relative diagnostic read within method is allowed");
+  check(!truncated.canReadAtOffset(bytes + 2, -3, 1),
+        "relative diagnostic read before method is rejected");
+  check(!truncated.canReadAtOffset(bytes + 4, 1, 1),
+        "relative diagnostic read beyond method is rejected");
 
   std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : 0,
               passed ? 0 : 1);

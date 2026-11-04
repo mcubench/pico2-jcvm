@@ -30,6 +30,8 @@
 #include "../heap.hpp"
 #include "../stack.hpp"
 #include "../../../src/cap_method_bounds.hpp"
+#include "../../../src/cap_method_body_bounds.hpp"
+#include "../../../src/cap_execution_policy.hpp"
 #include <cstdio>
 
 namespace jcvm {
@@ -173,6 +175,32 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
   if (new_pc_address < method_begin_address ||
       new_pc_address >= method_end_address) {
     throw Exceptions::SecurityException;
+  }
+
+  const std::size_t handler_table_bytes =
+      static_cast<std::size_t>(method_component->handler_count) *
+      sizeof(jc_cap_exception_handler_info);
+  const std::size_t method_stream_offset =
+      static_cast<std::size_t>(new_pc_address - method_begin_address);
+  const std::size_t component_method_offset =
+      handler_table_bytes + 1 + method_stream_offset;
+  const auto *descriptor = this->package.getCap().getDescriptor();
+  cap_method_body_bounds::Range body{};
+  bool have_body_bounds = false;
+  if (descriptor != nullptr && component_method_offset <= UINT16_MAX) {
+    const std::size_t descriptor_size = NTOHS(descriptor->size);
+    have_body_bounds = cap_method_body_bounds::find(
+        &descriptor->class_count, descriptor_size, methods.data(),
+        methods.size(), handler_table_bytes,
+        static_cast<uint16_t>(component_method_offset), body);
+  }
+  if (!have_body_bounds && cap_execution_policy::is_dynamic_package(
+                               this->package.getPackageID())) {
+    throw Exceptions::SecurityException;
+  }
+  if (have_body_bounds) {
+    method_begin = methods.data() + body.begin;
+    method_end = methods.data() + body.end;
   }
 
   // pushing the new frame

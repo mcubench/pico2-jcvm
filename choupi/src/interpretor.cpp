@@ -431,14 +431,19 @@ uint16_t Interpretor::run() noexcept {
       this->last_exception_prefix = 0;
       this->last_exception_operand = 0;
       if (bytecode == 0x8b) {
-        this->last_exception_prefix =
-            (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
-            (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
-            (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
-            static_cast<uint32_t>(instruction_pc[-1]);
-        this->last_exception_operand = static_cast<uint16_t>(
-            (static_cast<uint16_t>(instruction_pc[1]) << 8) |
-            instruction_pc[2]);
+        const pc_t &pc = stack.getPC();
+        if (pc.canReadAtOffset(instruction_pc, -4, 4)) {
+          this->last_exception_prefix =
+              (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
+              (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
+              (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
+              static_cast<uint32_t>(instruction_pc[-1]);
+        }
+        if (pc.canReadAtOffset(instruction_pc, 1, 2)) {
+          this->last_exception_operand = static_cast<uint16_t>(
+              (static_cast<uint16_t>(instruction_pc[1]) << 8) |
+              instruction_pc[2]);
+        }
       }
       this->last_exception_stack_depth = operand_depth;
       this->last_exception_opcode_history = this->opcode_history;
@@ -557,16 +562,22 @@ uint16_t Interpretor::run() noexcept {
       this->last_exception_opcode = bytecode;
       this->last_exception_pc =
           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
-      this->last_exception_prefix = bytecode == 0x8b
-          ? (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
-                (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
-                (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
-                static_cast<uint32_t>(instruction_pc[-1])
-          : 0;
+      this->last_exception_prefix = 0;
+      this->last_exception_operand = 0;
       if (bytecode == 0x8b) {
-        this->last_exception_operand = static_cast<uint16_t>(
-            (static_cast<uint16_t>(instruction_pc[1]) << 8) |
-            instruction_pc[2]);
+        const pc_t &pc = stack.getPC();
+        if (pc.canReadAtOffset(instruction_pc, -4, 4)) {
+          this->last_exception_prefix =
+              (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
+              (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
+              (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
+              static_cast<uint32_t>(instruction_pc[-1]);
+        }
+        if (pc.canReadAtOffset(instruction_pc, 1, 2)) {
+          this->last_exception_operand = static_cast<uint16_t>(
+              (static_cast<uint16_t>(instruction_pc[1]) << 8) |
+              instruction_pc[2]);
+        }
       }
       this->last_exception_stack_depth = static_cast<uint8_t>(
           stack.getCurrentFrame().getTOS() -
@@ -589,12 +600,23 @@ uint16_t Interpretor::run() noexcept {
       this->last_exception_opcode = bytecode;
       this->last_exception_pc =
           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
-      this->last_exception_prefix = bytecode == 0x8b
-          ? (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
-                (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
-                (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
-                static_cast<uint32_t>(instruction_pc[-1])
-          : 0;
+      this->last_exception_prefix = 0;
+      this->last_exception_operand = 0;
+      if (bytecode == 0x8b) {
+        const pc_t &pc = stack.getPC();
+        if (pc.canReadAtOffset(instruction_pc, -4, 4)) {
+          this->last_exception_prefix =
+              (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
+              (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
+              (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
+              static_cast<uint32_t>(instruction_pc[-1]);
+        }
+        if (pc.canReadAtOffset(instruction_pc, 1, 2)) {
+          this->last_exception_operand = static_cast<uint16_t>(
+              (static_cast<uint16_t>(instruction_pc[1]) << 8) |
+              instruction_pc[2]);
+        }
+      }
       this->last_exception_stack_depth = static_cast<uint8_t>(
           stack.getCurrentFrame().getTOS() -
           stack.getCurrentFrame().getOP());

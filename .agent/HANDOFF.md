@@ -1,4 +1,4 @@
-# Current session — RV-28 bytecode fetch bounds — 2026-11-04 19:44 CET
+# Current session — RV-28 method body bounds — 2026-11-04 20:14 CET
 
 RV-20261103-28 has a partial native-opcode-origin fix in the worktree. Added
 `src/cap_execution_policy.hpp` with the dynamic package range 56–63; the range
@@ -13,26 +13,32 @@ against offsets outside the Method component and truncated normal (2-byte) or
 extended (5-byte) headers before later code reads packed fields. The helper
 test covers exact-fit and truncated headers at several offsets.
 
-Bounded bytecode reads and relative PC updates to the Method component for
-each frame. `pc_t` verifies full byte/short/int reads before advancing and
-uses checked integer-address math for branch targets. Invalid access raises
-`SecurityException`. Frame creation is allowed to propagate it, and `jsr`
-return addresses preserve the verified three-byte continuation. The focused
-`./tools/test-cap-bytecode-pc-bounds` passes 11/11.
+Bounded bytecode reads and relative PC updates to each method's exact body,
+using its Descriptor `method_offset` and `bytecode_count`. Uploaded CAP calls
+fail closed when no valid descriptor range is found. The trusted ROM path
+retains Method-component fallback where descriptor metadata is absent or
+unusable. Exception diagnostics now check bounds before reading adjacent
+`invokevirtual` bytes. The next descriptor method offset caps each body. In
+the deployed 3.0.5 suite, 975/978 concrete method counts match the next start;
+three counts exceed it by one byte and are clamped. Focused tests pass: method
+body 7/7, PC bounds 14/14, method header 7/7, native opcode policy 5/5. An
+offline scan confirmed ranges for 978 concrete methods across 11 deployed
+3.0.5 API CAPs.
 
 Validation: `./tools/test-cap-native-opcode-policy` passes 5/5,
-`./tools/test-cap-method-bounds` passes 7/7 and
-`./tools/test-cap-bytecode-pc-bounds` passes 11/11. `./tools/build arm` and
+`./tools/test-cap-method-bounds` passes 7/7,
+`./tools/test-cap-bytecode-pc-bounds` passes 14/14 and
+`./tools/test-cap-method-body-bounds` passes 7/7. `./tools/build arm` and
 `./tools/build riscv` pass; the ARM wrapper also rebuilt the PC emulator. A
 valid upstream JCAlgTest PC VPCD integration retry timed out before
 `VPCD:APPLET_INSTALLED` or socket connect. The startup log is
 `artifacts/logs/host-vpcd-jcalgtest-20261014.log`. Existing Rust and
 packed-member warnings remain. No malformed CAP, sanitizer execution, firmware
-flash, or physical test was performed. RV-28 stays open: current fetch bounds
-cover the Method component rather than individual method bodies and do not
-prove branch targets are instruction boundaries. Nested linkage, heap
-field-kind/access checks, and malformed input runtime/sanitizer tests also
-remain required. Do not claim the interpreter fully validates uploaded code.
+flash, or physical test was performed. RV-28 stays open: branch targets are
+bounded to the method body but are not verified as instruction boundaries.
+Nested linkage, heap field-kind/access checks, and malformed input
+runtime/sanitizer tests also remain required. Do not claim the interpreter
+fully validates uploaded code.
 
 The native opcode boundary step is committed as `788df11` (metadata follow-up
 `7d77b7e`). The method-header bounds step is committed as `85906fd`. Preserve
@@ -41,7 +47,10 @@ changes; it was not edited for these steps. Continue offline unless authorized
 physical runtime access becomes available.
 
 The Method-component bytecode fetch bounds and focused test are committed as
-`8d4d3cf`; the progress/handoff hash metadata follow-up is being recorded.
+`8d4d3cf`; progress/handoff SHA metadata follow-up is `88531a2`. Per-method
+body bounds, hard clamping at the next descriptor method offset, and guarded
+exception diagnostics are the current uncommitted step. Focused tests and
+both target builds pass. No physical test was run.
 
 ---
 

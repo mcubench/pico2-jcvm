@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="$(mktemp -d)"
+trap 'rm -rf "${build_dir}"' EXIT
+
+"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
+  "${repo_root}/tools/tests/cap_method_body_bounds_test.cpp" \
+  -o "${build_dir}/cap_method_body_bounds_test"
+"${build_dir}/cap_method_body_bounds_test"

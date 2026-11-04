@@ -6115,3 +6115,18 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Validation:** New `./tools/test-cap-bytecode-pc-bounds` passes 11/11;
   method-header tests pass 7/7; native-opcode policy tests pass 5/5. ARM and
   RISC-V wrapper builds pass. No malformed CAP or physical device was used.
+- **Method-specific refinement:** The Descriptor component records method
+  offsets and bytecode counts, so frames can use exact method-body ranges
+  instead of only the whole Method component. Uploaded CAP execution fails
+  closed if the method range is absent or invalid; trusted ROM methods without
+  a usable descriptor retain the component-wide fallback. Interpreter error
+  diagnostics that inspect `invokevirtual` bytes also check the current PC
+  bounds before reading around the opcode. `./tools/test-cap-method-body-bounds`
+  passes 7/7. The next listed method offset is a hard cap on the current body.
+  An offline scan confirmed ranges for 978 concrete methods across all 11
+  deployed `*_305.cap` API packages: 975 Descriptor byte counts exactly match
+  the next method, while three counts (Crypto offsets 3471 and 10306; Security
+  offset 12569) exceed the next method by one byte and are clamped. This keeps
+  the upstream deployed suite usable without allowing a body to consume the
+  next method header. Branch instruction-boundary verification and
+  malformed-CAP runtime/sanitizer testing remain open.
