@@ -30,12 +30,12 @@ Latest applet-free max_crypto ARM artifacts for Windows testing:
   `58cdfabe3db6561fa8236e50e126c6467437c26bf15b84a88fd09c244a2d0f66`.
 - Image details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
-RV-24 is marked complete in TODO. Source and metadata commits are still
-pending. Preserve unrelated dirty files, including AGENTS.md, heap and CAP
-loader changes, review artifacts, crypto probes and upstream submodules. Stage
-only RV-24 files. After committing, update the source SHA in this record and
-progress.md with a metadata follow-up commit. Then continue at RV-25: unify
-CCID/card-session command routing. Do not use physical hardware unless
+RV-24 is marked complete in TODO. Implementation commit:
+`2688698c9a20204f90c13a46d280b42345cea253`. A metadata follow-up commit for
+the progress SHA and this handoff remains. Preserve unrelated dirty files,
+including AGENTS.md, heap and CAP loader changes, review artifacts, crypto
+probes and upstream submodules. After the metadata commit, continue at RV-25:
+unify CCID/card-session command routing. Do not use physical hardware unless
 explicitly requested and present.
 
 ---
