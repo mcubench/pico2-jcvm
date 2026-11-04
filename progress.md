@@ -21909,3 +21909,4 @@
 - Commit: pending; the primary commit reference is appended after commit.
 - Artifacts/logs: `docs/FIRMWARE_JCVM_ARCHITECTURE.md`, `.agent/HANDOFF.md`,
   `.agent/QKB.md`; no new runtime logs.
+- Commit: `dadcb9e9943c2261e8b801863dac9826f45426e3` (resolves the pending primary-step reference above).
