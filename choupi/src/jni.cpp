@@ -377,6 +377,11 @@ std::shared_ptr<JC_Array> makeTransientArray(const jshort_t length,
     array = std::make_shared<JC_Array>(
         heap, static_cast<uint16_t>(length), type, true,
         getTransientClearEvent(event));
+  } catch (const Exceptions exception) {
+    if (exception != Exceptions::FullMemoryException) throw;
+    Context::getActiveContext().setPendingSystemExceptionReason(
+        5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
   } catch (const std::bad_alloc &) {
     Context::getActiveContext().setPendingSystemExceptionReason(2);
     throw Exceptions::SystemException;
@@ -1590,6 +1595,11 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
                                       JAVA_ARRAY_T_REFERENCE,
                                       any_reference_type, true,
                                       getTransientClearEvent(event));
+  } catch (const Exceptions exception) {
+    if (exception != Exceptions::FullMemoryException) throw;
+    Context::getActiveContext().setPendingSystemExceptionReason(
+        5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
   } catch (const std::bad_alloc &) {
     Context::getActiveContext().setPendingSystemExceptionReason(2);
     throw Exceptions::SystemException;
@@ -1632,6 +1642,10 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
 
   try {
     return Heap::addGlobalArray(static_cast<uint16_t>(length), array_type);
+  } catch (const Exceptions exception) {
+    if (exception != Exceptions::FullMemoryException) throw;
+    context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
   } catch (const std::bad_alloc &) {
     context.setPendingSystemExceptionReason(2);
     throw Exceptions::SystemException;

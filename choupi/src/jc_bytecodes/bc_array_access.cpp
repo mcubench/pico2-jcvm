@@ -119,7 +119,13 @@ void Bytecodes::bc_newarray() {
     throw Exceptions::SecurityException;
   }
 
-  array_ref = heap.addArray(count, array_type);
+  try {
+    array_ref = heap.addArray(count, array_type);
+  } catch (Exceptions exception) {
+    if (exception != Exceptions::FullMemoryException) throw;
+    context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
+  }
   stack.push_Reference(array_ref);
 
   return;
@@ -179,7 +185,13 @@ void Bytecodes::bc_anewarray() {
     throw Exceptions::NegativeArraySizeException;
   }
 
-  array_ref = heap.addArray(count, JAVA_ARRAY_T_REFERENCE, index);
+  try {
+    array_ref = heap.addArray(count, JAVA_ARRAY_T_REFERENCE, index);
+  } catch (Exceptions exception) {
+    if (exception != Exceptions::FullMemoryException) throw;
+    context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
+  }
   stack.push_Reference(array_ref);
 
   return;

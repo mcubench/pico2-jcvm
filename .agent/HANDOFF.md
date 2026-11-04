@@ -1,3 +1,36 @@
+# Current session — reject array backing-size overflow — 2026-11-04 13:53 CET
+
+RV-20261103-18 is implemented in the current worktree. `JC_Array` checks
+element-count × element-width in 32-bit arithmetic and accounts for persistent
+array record headers before narrowing to the 16-bit backing length. Overflow
+now raises `SystemException.NO_RESOURCE` at global/transient factories and
+`newarray`/`anewarray`; persistent record serialization also computes its size
+wide and rejects values above 65,535 bytes.
+
+`./tools/test-jcarray` passed, including `int[16383]` accepted, `int[16384]`
+rejected, and byte/short/int record limits. PC, ARM and RISC-V `max_crypto`
+builds passed. Existing dependency/packed-member warnings remain. No physical
+token validation was performed. The refreshed empty-card Windows image is
+`build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,010,496 bytes, SHA-256
+`b30953d6e4ce191638150af647992089a14f6d99f5bb3c167bd31574f8cb49fd`; current
+firmware-only image is 1,913,344 bytes, SHA-256
+`32bdc2bb486a05ef8730b47cbafa4b0662b16bb686684b5fd2dc4e493f6f75fb`. It
+ends at `0x100E9764`, leaving 92,316 bytes before storage. The combined image
+was recognized by picotool as RP2350 ARM Secure and verified to erase the full
+`0x10100000`–`0x101FFFFF` storage span.
+
+RV-17 was closed using its accepted documentation branch: the compatibility
+profile states the present 2,046-byte digest input cap and `ILLEGAL_USE`; a
+transaction-safe incremental context remains planned. Documentation commits
+are `95931ce` and metadata follow-up `2fcba66`.
+
+RV-18 source and validation are ready to commit; this handoff/progress commit
+will follow. Next: review RV-19 signed minimum division, preserve unrelated
+worktree changes, and continue using the current empty-card image instructions
+in `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+---
+
 # Current session — document the MessageDigest input limit — 2026-11-04 13:32 CET
 
 RV-20261103-17 took the contract-narrowing branch allowed by its acceptance

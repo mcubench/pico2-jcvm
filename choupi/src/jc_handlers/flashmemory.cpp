@@ -620,7 +620,7 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
 
   uint8_t *data = nullptr;
   uint16_t header = sizeof(FieldType) + sizeof(array.size());
-  uint16_t array_size = 0;
+  uint32_t array_size = 0;
 
   if (array.isTransientArray()) {
     header += sizeof(ClearEvent);
@@ -635,10 +635,15 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
       (type == FieldType::FIELD_TYPE_ARRAY_OBJECT)) {
     array_size = header;
   } else {
-    array_size = header + array.size() * array.getEntrySize();
+    array_size = static_cast<uint32_t>(header) +
+                 static_cast<uint32_t>(array.size()) * array.getEntrySize();
   }
 
-  data = new uint8_t[array_size];
+  if (array_size > 0xffffu) {
+    throw Exceptions::IOException;
+  }
+
+  data = new uint8_t[static_cast<uint16_t>(array_size)];
   std::unique_ptr<uint8_t[]> data_owner(data);
 
   uint8_t pos = 0;

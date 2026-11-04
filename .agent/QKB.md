@@ -1,3 +1,19 @@
+# JC_Array byte-length overflow — fixed 2026-11-04
+
+- **Symptom:** requesting 16,384 `int` elements returned a zero-length array
+  (`INT_ARRAY requested=16384 actual=0`).
+- **Cause:** array element count was multiplied by element width and implicitly
+  narrowed to the 16-bit `JCVMArray` length. Persistent record header arithmetic
+  also used 16-bit totals.
+- **Viable solution:** calculate data and record sizes in 32 bits before
+  narrowing. Reject unrepresentable arrays with `SystemException.NO_RESOURCE`
+  at Java Card allocation entry points and reject any oversized serialization
+  record. Regression coverage accepts `int[16383]`, rejects `int[16384]`, and
+  checks byte/short/int persistent header boundaries. `./tools/test-jcarray`
+  and PC/ARM/RISC-V max-profile builds passed.
+
+---
+
 # CBC `doFinal()` must reset the active IV to zero — fixed 2026-11-04
 
 - **Finding:** `Cipher.doFinal()` copied the caller-supplied initialization IV

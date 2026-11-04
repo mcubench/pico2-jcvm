@@ -83,6 +83,10 @@ private:
 
   ///  Get an entry size from the size type.
   static const uint16_t getEntrySize(const jc_array_type type);
+  /// Convert a logical element count to the 16-bit backing byte length.
+  static uint16_t checkedBackingLength(const uint16_t size,
+                                       const jc_array_type type,
+                                       const bool is_transient);
 
   /// Compute tag value
   fs::Tag computeTag() const noexcept;

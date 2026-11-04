@@ -280,6 +280,48 @@ int main() {
   std::cout << "TEST:PASS restored_transient_lengths_and_zero_values\n";
   std::cout << "TEST:PASS restored_transient_maximum_backing_lengths\n";
 
+  jcvm::JC_Array largest_int_array(heap, 16383, jcvm::JAVA_ARRAY_T_INT,
+                                   true, jcvm::CLEAR_ON_RESET);
+  if (largest_int_array.size() != 16383 ||
+      largest_int_array.getEntrySize() != sizeof(uint32_t)) {
+    std::cerr << "largest int array backing boundary failed\n";
+    return 1;
+  }
+  try {
+    jcvm::JC_Array overflowing_int_array(heap, 16384,
+                                         jcvm::JAVA_ARRAY_T_INT, true,
+                                         jcvm::CLEAR_ON_RESET);
+    (void)overflowing_int_array;
+    std::cerr << "overflowing int array was accepted\n";
+    return 1;
+  } catch (const jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::FullMemoryException) {
+      std::cerr << "overflowing int array raised the wrong exception\n";
+      return 1;
+    }
+  }
+  std::cout << "TEST:PASS int_array_backing_length_overflow_rejected\n";
+
+  const auto ordinary_array_fits = [&](const jcvm::jc_array_type type,
+                                       const uint16_t length,
+                                       const bool expected) {
+    try {
+      jcvm::JC_Array array(heap, length, type);
+      return expected && array.size() == length;
+    } catch (const jcvm::Exceptions error) {
+      return !expected && error == jcvm::Exceptions::FullMemoryException;
+    }
+  };
+  if (!ordinary_array_fits(jcvm::JAVA_ARRAY_T_BYTE, 32767, true) ||
+      !ordinary_array_fits(jcvm::JAVA_ARRAY_T_SHORT, 32766, true) ||
+      !ordinary_array_fits(jcvm::JAVA_ARRAY_T_SHORT, 32767, false) ||
+      !ordinary_array_fits(jcvm::JAVA_ARRAY_T_INT, 16383, true) ||
+      !ordinary_array_fits(jcvm::JAVA_ARRAY_T_INT, 16384, false)) {
+    std::cerr << "persistent array record boundary check failed\n";
+    return 1;
+  }
+  std::cout << "TEST:PASS primitive_array_record_boundaries\n";
+
   for (uint16_t index = 0; index < bytes.size(); ++index) {
     bytes.setByteEntry(index, static_cast<jcvm::jbyte_t>(index + 1));
   }

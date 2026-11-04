@@ -171,9 +171,10 @@ during the review.
 
 ### RV-20261103-18
 
-- [ ] **P2: Legal `int[]` length silently becomes zero.**
+- [x] **P2: Legal `int[]` length silently becomes zero.**
   Owner: PROFILE-01, API-01. Evidence: Reproduced; [review R18](docs/review_20261103.md#r18--large-int-array-allocation-silently-wraps-its-byte-length).
   Acceptance: use checked wide arithmetic before allocation/serialization. Either support the logical length or reject it with the documented Java Card resource error before returning an object. Test boundaries around 16,383/16,384 ints and record/header limits for all primitive types.
+  Progress: `JC_Array` now checks element-width multiplication and the persistent field-record header in 32-bit arithmetic before narrowing. Requests that cannot fit raise the Java Card resource exception (`SystemException.NO_RESOURCE`) in array factories and `newarray`/`anewarray`; persistent serialization uses a widened size and rejects any residual oversized record. Tests accept `int[16383]`, reject `int[16384]`, and check byte/short/int persistent record boundaries.
 
 ### RV-20261103-19
 
