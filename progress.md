@@ -21930,5 +21930,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 timeout ... ./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 10 ...` remained in emulator startup and timed out before connection. At approximately one second, `ps` showed the emulator at 27.8% CPU and guest at 39.1% CPU; the processes were running rather than blocked in a wait state. This is one sample, not a sustained measurement. No physical device was used.
 - Result: Confirms active execution during the stall, but does not prove an infinite loop or identify the hot function. Dynamic branch-target validation decodes the method prefix for each target and is a candidate for profiling.
 - Decision: Profile the exact AlgTest install workload and branch checks next; keep the cause open until a reproducible measurement or trace identifies it.
-- Commit: pending; the primary commit reference is appended after commit.
+- Commit: `e986901` (primary process-state diagnostic/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-live2-20261104.log`; process snapshot was printed to the command output and not separately archived.
