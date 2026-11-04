@@ -29,39 +29,99 @@
 #define _PC_T_HPP
 
 #include "../jc_config.h"
+#include "../exceptions.hpp"
 #include "../jc_utils.hpp"
 #include "../types.hpp"
+
+#include <cstddef>
+#include <cstdint>
 
 namespace jcvm {
 class pc_t {
 private:
   const uint8_t *value;
-  /**
-   * Incrementing PC value
-   */
-  void inc() noexcept { this->value += 1; }
+  const uint8_t *begin;
+  const uint8_t *end;
+
+  uintptr_t address(const uint8_t *pointer) const noexcept {
+    return reinterpret_cast<uintptr_t>(pointer);
+  }
+
+  bool contains(const uint8_t *pointer, const bool allow_end) const noexcept {
+    const uintptr_t start = address(this->begin);
+    const uintptr_t limit = address(this->end);
+    const uintptr_t candidate = address(pointer);
+    return this->begin != nullptr && this->end != nullptr &&
+           start < limit && candidate >= start &&
+           (allow_end ? candidate <= limit : candidate < limit);
+  }
+
+  void require_readable(const size_t length) const {
+    if (!this->contains(this->value, false) ||
+        length > address(this->end) - address(this->value)) {
+      throw Exceptions::SecurityException;
+    }
+  }
 
 public:
-  /**
-   * Defaut constructor
-   *
-   * @param[value] initial PC value
-   */
-  pc_t(const uint8_t *value) { this->value = value; }
+  pc_t(const uint8_t *value, const uint8_t *begin, const uint8_t *end)
+      : value(value), begin(begin), end(end) {
+    if (!this->contains(value, false)) {
+      throw Exceptions::SecurityException;
+    }
+  }
 
   /**
    * Sets the new PC value
    *
    * @param[value] new PC value
    */
-  void setValue(pc_t pc) { this->value = pc.value; }
+  void setValue(pc_t pc) {
+    if (this->begin != pc.begin || this->end != pc.end ||
+        !this->contains(pc.value, false)) {
+      throw Exceptions::SecurityException;
+    }
+    this->value = pc.value;
+  }
 
   /**
    * Sets the new PC value
    *
    * @param[value] new PC value
    */
-  void setValue(const uint8_t *value) { this->value = value; }
+  void setValue(const uint8_t *value) {
+    if (!this->contains(value, false)) {
+      throw Exceptions::SecurityException;
+    }
+    this->value = value;
+  }
+
+  /// Set the PC to origin + offset without forming an out-of-range pointer.
+  void setFromOffset(const uint8_t *origin, const int64_t offset) {
+    if (!this->contains(origin, true)) {
+      throw Exceptions::SecurityException;
+    }
+    uintptr_t target = this->address(origin);
+    if (offset >= 0) {
+      const uint64_t distance = static_cast<uint64_t>(offset);
+      if (distance > this->address(this->end) - target) {
+        throw Exceptions::SecurityException;
+      }
+      target += distance;
+    } else {
+      const uint64_t distance =
+          static_cast<uint64_t>(-(offset + 1)) + static_cast<uint64_t>(1);
+      if (distance > target - this->address(this->begin)) {
+        throw Exceptions::SecurityException;
+      }
+      target -= distance;
+    }
+    const auto *next = reinterpret_cast<const uint8_t *>(target);
+    if (!this->contains(next, false)) {
+      throw Exceptions::SecurityException;
+    }
+    this->value = next;
+  }
 
   /**
    * Returns the PC value.
@@ -71,20 +131,21 @@ public:
   /**
    * Gets next byte value and increment the PC value.
    */
-  jbyte_t getNextByte() noexcept {
-    jbyte_t ret = (jbyte_t) * (this->value);
-    this->inc();
+  jbyte_t getNextByte() {
+    this->require_readable(1);
+    jbyte_t ret = static_cast<jbyte_t>(*this->value);
+    ++this->value;
     return ret;
   }
 
   /**
    * Gets next 2-byte value and increment the PC value.
    */
-  jshort_t getNextShort() noexcept {
-    jbyte_t msb = (jbyte_t) * (this->value);
-    this->inc();
-    jbyte_t lsb = (jbyte_t) * (this->value);
-    this->inc();
+  jshort_t getNextShort() {
+    this->require_readable(2);
+    jbyte_t msb = static_cast<jbyte_t>(this->value[0]);
+    jbyte_t lsb = static_cast<jbyte_t>(this->value[1]);
+    this->value += 2;
     return signedShortFromBits(BYTES_TO_SHORT(msb, lsb));
   }
 
@@ -92,15 +153,13 @@ public:
   /**
    * Gets next 4-byte value and increment the PC value.
    */
-  jint_t getNextInt() noexcept {
-    jbyte_t msb0 = (jbyte_t) * (this->value);
-    this->inc();
-    jbyte_t lsb0 = (jbyte_t) * (this->value);
-    this->inc();
-    jbyte_t msb1 = (jbyte_t) * (this->value);
-    this->inc();
-    jbyte_t lsb1 = (jbyte_t) * (this->value);
-    this->inc();
+  jint_t getNextInt() {
+    this->require_readable(4);
+    jbyte_t msb0 = static_cast<jbyte_t>(this->value[0]);
+    jbyte_t lsb0 = static_cast<jbyte_t>(this->value[1]);
+    jbyte_t msb1 = static_cast<jbyte_t>(this->value[2]);
+    jbyte_t lsb1 = static_cast<jbyte_t>(this->value[3]);
+    this->value += 4;
     return signedIntFromBits(BYTES_TO_INT(msb0, lsb0, msb1, lsb1));
   }
 #endif /* JCVM_INT_SUPPORTED */
@@ -110,7 +169,9 @@ public:
    *
    * @param [offset] relative offset used to update the PC value
    */
-  void updateFromOffset(const jshort_t offset) { this->value += offset; }
+  void updateFromOffset(const int64_t offset) {
+    this->setFromOffset(this->value, offset);
+  }
 };
 
 } // namespace jcvm

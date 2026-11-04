@@ -50,11 +50,9 @@ namespace jcvm {
  */
 void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
                        const uint8_t max_operand_stack, const uint8_t *pc,
-                       const bool arguments_on_caller_stack)
-#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
-    noexcept
-#endif
-{
+                       const uint8_t *method_begin,
+                       const uint8_t *method_end,
+                       const bool arguments_on_caller_stack) {
   jword_t *new_fp, *new_op, *new_tos, *new_eos;
 
   if (this->frames.empty()) { // the first frame is pushing.
@@ -90,7 +88,7 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
     new_fp = previous_frame.getTOS();
   }
 
-  pc_t new_pc(pc);
+  pc_t new_pc(pc, method_begin, method_end);
 
 #ifdef JCRE_STACK_OVERFLOW_PROTECTION
 

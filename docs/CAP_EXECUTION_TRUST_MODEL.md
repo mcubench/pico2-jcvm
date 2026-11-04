@@ -12,9 +12,12 @@ dispatch an applet-supplied native method index. The VM therefore rejects
 `impdep1` and `impdep2` while the current executing package is dynamically
 allocated.
 
-This is one boundary only. Runtime method lookup checks that the normal or
-extended method header fits inside the Method component before reading it. It
-does not yet bound instruction fetches or method bodies, validate branch
-targets, verify nested constant-pool linkage, or enforce heap field kinds.
-Those checks remain required before claiming safe execution of malformed or
-hostile CAP programs. Valid upstream CAPs remain the compatibility baseline.
+Runtime method lookup checks that the normal or extended method header fits
+inside the Method component before reading it. Each interpreter frame now
+limits bytecode operand fetches and relative PC updates to that component and
+rejects reads or targets outside it. These bounds are component-wide: they do
+not yet isolate individual method bodies or prove that a branch target is an
+instruction boundary. The VM also does not yet verify nested constant-pool
+linkage or enforce heap field kinds. Malformed-CAP runtime/sanitizer coverage
+is still required before claiming safe execution of malformed or hostile CAP
+programs. Valid upstream CAPs remain the compatibility baseline.

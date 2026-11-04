@@ -990,10 +990,11 @@ void Bytecodes::bc_stableswitch() {
   pc_t &pc = stack.getPC();
 
 #ifdef JCRE_SWITCH_PROTECTION
-  jshort_t nb_offsets;
+  int32_t nb_offsets;
 #endif /* JCRE_SWITCH_PROTECTION */
 
-  const uint8_t *base_pc = pc.getValue() - 1, *new_pc = nullptr;
+  const uint8_t *base_pc = pc.getValue() - 1;
+  int64_t target_offset = 0;
 
   TRACE_JCVM_DEBUG("STABLESWITCH");
 
@@ -1002,7 +1003,7 @@ void Bytecodes::bc_stableswitch() {
   high_value = pc.getNextShort();
 
 #ifdef JCRE_SWITCH_PROTECTION
-  nb_offsets = (jshort_t)(high_value - low_value + 1);
+  nb_offsets = static_cast<int32_t>(high_value) - low_value + 1;
 #endif /* JCRE_SWITCH_PROTECTION */
 
   if (low_value > high_value) {
@@ -1013,13 +1014,14 @@ void Bytecodes::bc_stableswitch() {
   index = stack.pop_Short();
 
   if ((index < low_value) || (index > high_value)) {
-    new_pc = base_pc + default_value;
+    target_offset = default_value;
   } else {
     int16_t seek;
-    pc.updateFromOffset((index - low_value) * sizeof(jshort_t));
+    pc.updateFromOffset((static_cast<int64_t>(index) - low_value) *
+                        sizeof(jshort_t));
     seek =
         pc.getNextShort(); // FlashMemory_Handler::getShortFromAddr(stack.getPC());
-    new_pc = base_pc + seek;
+    target_offset = seek;
   }
 
 #ifdef JCRE_SWITCH_PROTECTION
@@ -1027,12 +1029,12 @@ void Bytecodes::bc_stableswitch() {
   // Naive countermeasure: the offset must point an instruction. The
   // pointed instruction must be out of the stableswitch instruction
   // parameter
-  if ((new_pc >= base_pc) &&
-      (new_pc <= (base_pc + nb_offsets * sizeof(jshort_t)))) {
+  if (target_offset >= 0 &&
+      target_offset <= nb_offsets * static_cast<int32_t>(sizeof(jshort_t))) {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setValue(new_pc);
+    pc.setFromOffset(base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1108,10 +1110,11 @@ void Bytecodes::bc_itableswitch() {
   pc_t &pc = stack.getPC();
 
 #ifdef JCRE_SWITCH_PROTECTION
-  jint_t nb_offsets;
+  int64_t nb_offsets;
 #endif /* JCRE_SWITCH_PROTECTION */
 
-  const uint8_t *base_pc = pc.getValue() - 1, *new_pc = nullptr;
+  const uint8_t *base_pc = pc.getValue() - 1;
+  int64_t target_offset = 0;
 
   TRACE_JCVM_DEBUG("ITABLESWITCH");
 
@@ -1122,7 +1125,7 @@ void Bytecodes::bc_itableswitch() {
   high_value = pc.getNextShort();
 
 #ifdef JCRE_SWITCH_PROTECTION
-  nb_offsets = (jint_t)(high_value - low_value + 1);
+  nb_offsets = static_cast<int64_t>(high_value) - low_value + 1;
 #endif /* JCRE_SWITCH_PROTECTION */
 
   if (low_value > high_value) {
@@ -1133,13 +1136,14 @@ void Bytecodes::bc_itableswitch() {
   index = stack.pop_Int();
 
   if ((index < low_value) || (index > high_value)) {
-    new_pc = base_pc + default_value;
+    target_offset = default_value;
   } else {
     int16_t seek;
 
-    pc.updateFromOffset((index - low_value) * sizeof(jshort_t));
+    pc.updateFromOffset((static_cast<int64_t>(index) - low_value) *
+                        sizeof(jshort_t));
     seek = pc.getNextShort();
-    new_pc = base_pc + seek;
+    target_offset = seek;
   }
 
 #ifdef JCRE_SWITCH_PROTECTION
@@ -1147,12 +1151,13 @@ void Bytecodes::bc_itableswitch() {
   // Naive countermeasure: the offset must point an instruction. The
   // pointed instruction must be out of the stableswitch instruction
   // parameter
-  if ((new_pc >= base_pc) &&
-      (new_pc <= (base_pc + nb_offsets * sizeof(jshort_t)))) {
+  if (target_offset >= 0 &&
+      static_cast<int64_t>(target_offset) <=
+          nb_offsets * static_cast<int64_t>(sizeof(jshort_t))) {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setValue(new_pc);
+    pc.setFromOffset(base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1223,15 +1228,21 @@ void Bytecodes::bc_slookupswitch() {
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  const uint8_t *base_pc = pc.getValue() - 1, *new_pc = nullptr;
+  const uint8_t *base_pc = pc.getValue() - 1;
+  int64_t target_offset = 0;
 
   TRACE_JCVM_DEBUG("SLOOKUPSWITCH");
 
   default_value = pc.getNextShort();
   npairs = pc.getNextShort();
+#ifdef JCRE_SWITCH_PROTECTION
+  const int64_t switch_data_bytes =
+      1 + 2 * sizeof(jshort_t) +
+      static_cast<int64_t>(npairs) * 2 * sizeof(jshort_t);
+#endif /* JCRE_SWITCH_PROTECTION */
 
   // set the new_pc to the default value
-  new_pc = base_pc + default_value;
+  target_offset = default_value;
 
   key = stack.pop_Short();
 
@@ -1243,7 +1254,7 @@ void Bytecodes::bc_slookupswitch() {
 
     if (match == key) { // key found :)
       // set the correct new_pc value.
-      new_pc = base_pc + offset;
+      target_offset = offset;
       break; // quit the loop for ...
     }
   }
@@ -1253,12 +1264,12 @@ void Bytecodes::bc_slookupswitch() {
   // Naive countermeasure: the offset must point an instruction. The
   // pointed instruction must be out of the stableswitch instruction
   // parameter
-  if ((new_pc >= base_pc) &&
-      (new_pc <= (base_pc + nb_offsets * sizeof(jshort_t)))) {
+  if (target_offset >= 0 &&
+      target_offset <= switch_data_bytes) {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setValue(new_pc);
+    pc.setFromOffset(base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 
@@ -1336,15 +1347,21 @@ void Bytecodes::bc_ilookupswitch() {
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  const uint8_t *base_pc = pc.getValue() - 1, *new_pc = nullptr;
+  const uint8_t *base_pc = pc.getValue() - 1;
+  int64_t target_offset = 0;
 
   TRACE_JCVM_DEBUG("ILOOKUPSWITCH");
 
   default_value = pc.getNextShort();
   npairs = pc.getNextShort();
+#ifdef JCRE_SWITCH_PROTECTION
+  const int64_t switch_data_bytes =
+      1 + 2 * sizeof(jshort_t) +
+      static_cast<int64_t>(npairs) * (sizeof(jint_t) + sizeof(jshort_t));
+#endif /* JCRE_SWITCH_PROTECTION */
 
   // set the new_pc to the default value
-  new_pc = base_pc + default_value;
+  target_offset = default_value;
 
   key = stack.pop_Int();
 
@@ -1356,7 +1373,7 @@ void Bytecodes::bc_ilookupswitch() {
     offset = pc.getNextShort();
 
     if (match == key) { // key found :)
-      new_pc = base_pc + offset;
+      target_offset = offset;
       break; // quit the loop for ...
     }
   }
@@ -1366,12 +1383,12 @@ void Bytecodes::bc_ilookupswitch() {
   // Naive countermeasure: the offset must point an instruction. The
   // pointed instruction must be out of the stableswitch instruction
   // parameter
-  if ((new_pc >= base_pc) &&
-      (new_pc <= (base_pc + offset * sizeof(jshort_t)))) {
+  if (target_offset >= 0 &&
+      target_offset <= switch_data_bytes) {
     throw Exceptions::SecurityException;
   } else {
 #endif /* JCRE_SWITCH_PROTECTION */
-    pc.setValue(new_pc);
+    pc.setFromOffset(base_pc, target_offset);
 #ifdef JCRE_SWITCH_PROTECTION
   }
 

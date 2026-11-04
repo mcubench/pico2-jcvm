@@ -1,4 +1,4 @@
-# Current session — RV-28 CAP method header bounds — 2026-11-04 19:27 CET
+# Current session — RV-28 bytecode fetch bounds — 2026-11-04 19:44 CET
 
 RV-20261103-28 has a partial native-opcode-origin fix in the worktree. Added
 `src/cap_execution_policy.hpp` with the dynamic package range 56–63; the range
@@ -13,17 +13,26 @@ against offsets outside the Method component and truncated normal (2-byte) or
 extended (5-byte) headers before later code reads packed fields. The helper
 test covers exact-fit and truncated headers at several offsets.
 
-Validation: `./tools/test-cap-native-opcode-policy` passes 5/5 and
-`./tools/test-cap-method-bounds` passes 7/7. `./tools/build arm` and
+Bounded bytecode reads and relative PC updates to the Method component for
+each frame. `pc_t` verifies full byte/short/int reads before advancing and
+uses checked integer-address math for branch targets. Invalid access raises
+`SecurityException`. Frame creation is allowed to propagate it, and `jsr`
+return addresses preserve the verified three-byte continuation. The focused
+`./tools/test-cap-bytecode-pc-bounds` passes 11/11.
+
+Validation: `./tools/test-cap-native-opcode-policy` passes 5/5,
+`./tools/test-cap-method-bounds` passes 7/7 and
+`./tools/test-cap-bytecode-pc-bounds` passes 11/11. `./tools/build arm` and
 `./tools/build riscv` pass; the ARM wrapper also rebuilt the PC emulator. A
 valid upstream JCAlgTest PC VPCD integration retry timed out before
 `VPCD:APPLET_INSTALLED` or socket connect. The startup log is
 `artifacts/logs/host-vpcd-jcalgtest-20261014.log`. Existing Rust and
 packed-member warnings remain. No malformed CAP, sanitizer execution, firmware
-flash, or physical test was performed. RV-28 stays open: instruction/body
-bounds, branch targets, nested linkage, heap field-kind/access checks, and
-malformed input runtime tests are still required. Do not claim the interpreter
-fully validates uploaded code.
+flash, or physical test was performed. RV-28 stays open: current fetch bounds
+cover the Method component rather than individual method bodies and do not
+prove branch targets are instruction boundaries. Nested linkage, heap
+field-kind/access checks, and malformed input runtime/sanitizer tests also
+remain required. Do not claim the interpreter fully validates uploaded code.
 
 The native opcode boundary step is committed as `788df11` (metadata follow-up
 `7d77b7e`). The method-header bounds step is committed as `85906fd`. Preserve

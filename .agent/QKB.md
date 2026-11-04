@@ -6093,3 +6093,25 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Current decision:** Do not treat the absent PC/SC reader as firmware
   evidence and do not claim a physical test. Continue offline. The VM's current
   USB/PCSC attachment state must be restored before physical acceptance.
+
+## Uploaded CAP bytecode fetch bounds — 2026-11-04
+
+- **Finding:** The interpreter's PC was a raw pointer. Truncated operands and
+  relative branches could read or point outside the enclosing CAP Method
+  component, even after validating a method header.
+- **Viable solution:** Carry the Method component's `[begin, end)` bounds in
+  every frame PC. Check the full operand width before reading, calculate
+  relative targets through checked integer-address offsets (including safe
+  handling of the minimum signed offset), and throw `SecurityException` before
+  advancing or installing an invalid PC. Remove `noexcept` from frame creation
+  so this boundary exception reaches normal interpreter handling. Preserve
+  `jsr` return semantics by saving the verified three-byte continuation, not
+  the already-updated branch PC.
+- **Scope limit:** These are Method-component bounds, not per-method bounds;
+  a branch can still land in another method or in inline switch data within the
+  same component. Instruction-boundary verification and malformed-CAP runtime
+  testing remain open. Do not treat the helper test or successful firmware
+  builds as proof of complete CAP validation.
+- **Validation:** New `./tools/test-cap-bytecode-pc-bounds` passes 11/11;
+  method-header tests pass 7/7; native-opcode policy tests pass 5/5. ARM and
+  RISC-V wrapper builds pass. No malformed CAP or physical device was used.

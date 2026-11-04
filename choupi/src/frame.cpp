@@ -224,8 +224,9 @@ uint8_t Frame::savePC() {
   if (this->old_pcs.size() >= 256) {
     throw Exceptions::StackOverflowException;
   }
-  old_pc_t old_pc = {
-      .isUsed = false, .pc = pc_t(this->instruction_pc + 3)};
+  pc_t saved_pc = this->pc;
+  saved_pc.setValue(this->instruction_pc + 3);
+  old_pc_t old_pc = {.isUsed = false, .pc = saved_pc};
   this->old_pcs.push_back(old_pc);
   return (this->old_pcs.size() - 1);
 }

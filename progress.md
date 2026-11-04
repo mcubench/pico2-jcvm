@@ -21808,3 +21808,13 @@
 - Decision: Keep RV-28 open. Next bound bytecode fetch and branch targets, then add malformed-CAP sanitizer coverage and field-kind/access checks.
 - Commit: `pending`
 - Artifacts/logs: `tools/test-cap-method-bounds`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (second appended pre-connect timeout).
+# 2026-11-04 Bound bytecode fetches to CAP Method component 20 minutes
+
+- Step/experiment: `rv-20261103-28-bytecode-fetch-bounds`
+- When: '2026-11-04 19:27 CET' - '2026-11-04 19:47 CET'
+- Change: Added per-frame Method-component bounds to `pc_t`; byte, short, and int fetches check their full width before reading; relative branch and switch targets use overflow-safe integer-address calculations and reject out-of-component addresses with `SecurityException`. Frame creation propagates this exception. Preserved `jsr`'s return PC at the verified three-byte continuation. Documented the component-wide scope and remaining same-method target validation in the trust model, TODO, QKB, and handoff.
+- Validation: `./tools/test-cap-bytecode-pc-bounds` passed 11/11; `./tools/test-cap-method-bounds` passed 7/7; `./tools/test-cap-native-opcode-policy` passed 5/5; `./tools/build arm` and `./tools/build riscv` passed; scoped `git diff --check` passed. No malformed-CAP runtime/sanitizer test or physical test was run.
+- Result: Current ARM firmware ends at `0x100d27f8`, leaving 186,376 bytes before the storage limit. Invalid operand widths and relative offsets cannot access beyond their frame's Method component. Branches can still enter another method or switch data within that component; instruction-boundary and malformed-input behavior are not established.
+- Decision: Keep RV-28 open. Next, establish individual method body ranges and instruction-boundary branch validation, then add malformed-CAP runtime tests; heap field-kind checks and nested-linkage validation remain separate gates.
+- Commit: pending
+- Artifacts/logs: `tools/test-cap-bytecode-pc-bounds`; firmware build output only, no archived runtime log.

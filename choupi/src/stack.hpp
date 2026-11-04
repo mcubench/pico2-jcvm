@@ -135,11 +135,8 @@ public:
   // Pushing a new frame regarding the invoked method header.
   void push_Frame(const uint8_t nargs, const uint8_t max_locals,
                   const uint8_t max_operand_stack, const uint8_t *pc,
-                  const bool arguments_on_caller_stack = true)
-#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
-      noexcept
-#endif
-      ;
+                  const uint8_t *method_begin, const uint8_t *method_end,
+                  const bool arguments_on_caller_stack = true);
 
   // Popping the current frame without return value
   void pop_Frame();

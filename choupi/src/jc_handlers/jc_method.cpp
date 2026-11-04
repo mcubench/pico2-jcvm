@@ -155,8 +155,29 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
 
 #endif /* JCVM_FIREWALL_CHECKS */
 
+  const auto *method_component = this->package.getCap().getMethod();
+  if (method_component == nullptr) {
+    throw Exceptions::SecurityException;
+  }
+  const auto methods = method_component->methods();
+  if (methods.size() == 0 || methods.data() == nullptr) {
+    throw Exceptions::SecurityException;
+  }
+  const uint8_t *method_begin = methods.data();
+  const uint8_t *method_end = method_begin + methods.size();
+  const uintptr_t method_begin_address =
+      reinterpret_cast<uintptr_t>(method_begin);
+  const uintptr_t method_end_address =
+      reinterpret_cast<uintptr_t>(method_end);
+  const uintptr_t new_pc_address = reinterpret_cast<uintptr_t>(new_pc);
+  if (new_pc_address < method_begin_address ||
+      new_pc_address >= method_end_address) {
+    throw Exceptions::SecurityException;
+  }
+
   // pushing the new frame
   this->context.getStack().push_Frame(nargs, max_locals, max_stack, new_pc,
+                                      method_begin, method_end,
                                       arguments_on_caller_stack);
 
   //  and updating executed package ID.
