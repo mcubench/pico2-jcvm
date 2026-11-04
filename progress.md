@@ -21672,7 +21672,7 @@
 - Validation: Inspected `choupi/src/native_message_digest.cpp` and RV-15 transaction/reset coverage. No runtime source changed; build, VPCD tests and hardware checks were intentionally skipped.
 - Result: The declared compatibility profile now matches the current fixed-buffer behavior. Removing this limit still requires transaction-abort-safe native digest context rollback and large-message, block-boundary, empty-final and reuse tests.
 - Decision: Close the documentation branch of RV-17 acceptance; continue implementation with RV-18 checked `int[]` length allocation. Existing firmware images remain current because firmware source did not change.
-- Commit: `pending`
+- Commit: `788df11`
 - Artifacts/logs: none.
 
 ## 2026-11-04 Check array backing and record sizes 20 minutes

@@ -16,10 +16,10 @@ branch targets, nested linkage, heap field-kind/access checks, and malformed
 input runtime tests are still required. Do not claim the interpreter fully
 validates uploaded code.
 
-RV-28 implementation and progress metadata are pending scoped commits. Preserve
-all pre-existing worktree changes, including the unrelated `src/cap_load.cpp`
-changes; it was not edited for this step. Continue offline unless authorized
-physical runtime access becomes available.
+RV-28 native-opcode source and progress entry are committed as `788df11`.
+Preserve all pre-existing worktree changes, including the unrelated
+`src/cap_load.cpp` changes; it was not edited for this step. Continue offline
+unless authorized physical runtime access becomes available.
 
 ---
 
