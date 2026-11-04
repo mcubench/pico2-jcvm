@@ -141,9 +141,12 @@ public:
   /// restores overwritten values and erases records created by the transaction.
   static bool beginPersistentWriteTransaction(
       bool enforce_commit_capacity = false) noexcept;
+  static bool beginAppletWriteTransaction() noexcept;
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;
   static bool persistentWriteTransactionActive() noexcept;
+  static bool appletWriteTransactionActive() noexcept;
+  static bool abortAppletWriteTransaction() noexcept;
   /// Java Card commit buffer size, saturated at the positive short limit.
   static uint16_t maxCommitCapacity() noexcept;
   /// Remaining budget for persistent payload snapshots and journal metadata.

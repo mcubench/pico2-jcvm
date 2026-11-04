@@ -80,6 +80,7 @@ struct PersistentWriteSnapshot {
 std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
 bool persistent_write_transaction_active = false;
 bool persistent_write_capacity_enforced = false;
+bool persistent_write_transaction_applet_owned = false;
 uint32_t persistent_write_transaction_used_bytes = 0;
 uint32_t persistent_write_rollback_generation = 0;
 
@@ -251,6 +252,7 @@ bool rollback_persistent_writes() noexcept {
   }
   persistent_write_transaction_active = false;
   persistent_write_capacity_enforced = false;
+  persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
   if (fs_sync() != 0) {
     success = false;
@@ -412,8 +414,15 @@ bool FlashMemory_Handler::beginPersistentWriteTransaction(
   }
   persistent_write_snapshots.clear();
   persistent_write_capacity_enforced = enforce_commit_capacity;
+  persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
   persistent_write_transaction_active = true;
+  return true;
+}
+
+bool FlashMemory_Handler::beginAppletWriteTransaction() noexcept {
+  if (!beginPersistentWriteTransaction(true)) return false;
+  persistent_write_transaction_applet_owned = true;
   return true;
 }
 
@@ -434,6 +443,7 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
   }
   persistent_write_snapshots.clear();
   persistent_write_capacity_enforced = false;
+  persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
   return true;
 }
@@ -453,6 +463,16 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
 
 bool FlashMemory_Handler::persistentWriteTransactionActive() noexcept {
   return persistent_write_transaction_active;
+}
+
+bool FlashMemory_Handler::appletWriteTransactionActive() noexcept {
+  return persistent_write_transaction_active &&
+         persistent_write_transaction_applet_owned;
+}
+
+bool FlashMemory_Handler::abortAppletWriteTransaction() noexcept {
+  if (!appletWriteTransactionActive()) return true;
+  return rollbackPersistentWriteTransaction();
 }
 
 uint16_t FlashMemory_Handler::maxCommitCapacity() noexcept {

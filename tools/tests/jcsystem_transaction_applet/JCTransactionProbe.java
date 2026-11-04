@@ -34,6 +34,8 @@ public final class JCTransactionProbe extends Applet {
   private byte lastSelectProcessWasReselect;
   private byte selectingAppletProbeFlags;
   private byte rejectNextSelect;
+  private byte beginTransactionOnNextSelect;
+  private byte beginTransactionOnNextDeselect;
   private byte currentApduHiddenOutsideProcess;
   private byte currentApduBufferHiddenOutsideProcess;
   private byte lastApduExceptionReason = (byte)0x7f;
@@ -46,18 +48,19 @@ public final class JCTransactionProbe extends Applet {
   private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
-  private final byte[] transactionCapacityArray = new byte[32767];
+  private final byte[] transactionCapacityArray;
 
   private JCTransactionProbe() {
-    this(null, (short)0, (byte)0, false);
+    this(null, (short)0, (byte)0, false, true);
   }
 
   private JCTransactionProbe(byte[] requestedAID, short offset, byte length) {
-    this(requestedAID, offset, length, true);
+    this(requestedAID, offset, length, true, true);
   }
 
   private JCTransactionProbe(byte[] requestedAID, short offset, byte length,
-                             boolean explicitAID) {
+                             boolean explicitAID, boolean allocateCapacityArray) {
+    transactionCapacityArray = allocateCapacityArray ? new byte[32767] : new byte[1];
     installSawAIDNullBeforeRegister =
         JCSystem.getAID() == null ? (byte)1 : (byte)0;
     if (explicitAID) {
@@ -87,6 +90,8 @@ public final class JCTransactionProbe extends Applet {
   public static void install(byte[] bArray, short bOffset, byte bLength) {
     if (bLength == 10) {
       new JCTransactionProbe(bArray, bOffset, bLength);
+    } else if (bLength == 1 && bArray[bOffset] == (byte)0x7f) {
+      new JCTransactionProbe(null, (short)0, (byte)0, false, false);
     } else {
       new JCTransactionProbe();
     }
@@ -110,14 +115,23 @@ public final class JCTransactionProbe extends Applet {
     } catch (SecurityException expected) {
       currentApduBufferHiddenOutsideProcess = 1;
     }
-    if (rejectNextSelect != 0) {
-      rejectNextSelect = 0;
-      return false;
+    boolean rejectSelection = rejectNextSelect != 0;
+    if (rejectSelection) rejectNextSelect = 0;
+    if (beginTransactionOnNextSelect != 0) {
+      beginTransactionOnNextSelect = 0;
+      JCSystem.beginTransaction();
+      value = 0x44;
     }
+    if (rejectSelection) return false;
     return true;
   }
 
   public void deselect() {
+    if (beginTransactionOnNextDeselect != 0) {
+      beginTransactionOnNextDeselect = 0;
+      JCSystem.beginTransaction();
+      value = 0x55;
+    }
     deselectCount++;
     deselectSawAppletActive =
         JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
@@ -951,6 +965,31 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = reason;
         buffer[1] = transactionCapacityArray[0];
         length = 2;
+        break;
+      }
+      case 85: {
+        JCSystem.beginTransaction();
+        value = 0x22;
+        buffer[0] = 1;
+        break;
+      }
+      case 86: {
+        JCSystem.beginTransaction();
+        value = 0x33;
+        TransactionException.throwIt(TransactionException.IN_PROGRESS);
+        break;
+      }
+      case 87: {
+        beginTransactionOnNextDeselect = 1;
+        buffer[0] = 1;
+        length = 1;
+        break;
+      }
+      case 88: {
+        beginTransactionOnNextSelect = 1;
+        rejectNextSelect = 1;
+        buffer[0] = 1;
+        length = 1;
         break;
       }
       case 84: {

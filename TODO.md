@@ -95,9 +95,10 @@ during the review.
 
 ### RV-20261103-07
 
-- [ ] **P1: Missing automatic transaction abortion.**
+- [x] **P1: Missing automatic transaction abortion.**
   Owner: PERSIST-02/03, PROFILE-01. Evidence: Source; [review R07](docs/review_20261103.md#r07--applet-transactions-can-escape-lifecycle-and-reset-boundaries).
   Acceptance: add a lifecycle transaction guard that distinguishes runtime-internal INSTALL transactions from applet transactions. Validate normal return, uncaught exception, timeout, rejected selection, deselection and warm reset, followed by an unrelated applet command.
+  Progress: runtime-owned CAP INSTALL transactions are now distinct from applet-owned transactions. JCSystem begin/commit/abort only act on the latter; applet transactions are aborted at process, select, deselect and card-reset boundaries. Normal process return with an open transaction maps to `6F00`, rejected selection remains `6999`, and deselection with an open transaction returns `6F00`. VPCD regressions pass normal return, uncaught transaction exception, deselect and rejected-select rollback plus fresh applet selection. Storage tests verify the reset abort helper does not consume a runtime INSTALL transaction. Interpreter errors, including timeout, use the same process-exit cleanup; no dedicated 120-second timeout injection or reset-interruption-during-bytecode test is available because the synchronous interpreter cannot receive a warm-reset request while executing an APDU.
 
 ### RV-20261103-08
 

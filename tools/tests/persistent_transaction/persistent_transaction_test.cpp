@@ -1179,6 +1179,44 @@ int main() {
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "failed_snapshot_commit_closes_transaction");
 
+  const auto transaction_owner_tag = make_tag(6);
+  const std::vector<uint8_t> transaction_owner_original{0x31, 0x41};
+  seed(transaction_owner_tag.value, transaction_owner_tag.len,
+       transaction_owner_original);
+  bool internal_transaction_isolated =
+      FlashMemory_Handler::beginPersistentWriteTransaction() &&
+      FlashMemory_Handler::writePersistentRecord(
+          transaction_owner_tag, journal_record, sizeof(journal_record)) &&
+      !FlashMemory_Handler::appletWriteTransactionActive() &&
+      FlashMemory_Handler::abortAppletWriteTransaction() &&
+      FlashMemory_Handler::persistentWriteTransactionActive() &&
+      read(transaction_owner_tag.value, transaction_owner_tag.len) ==
+          std::vector<uint8_t>(journal_record,
+                               journal_record + sizeof(journal_record));
+  if (FlashMemory_Handler::persistentWriteTransactionActive()) {
+    internal_transaction_isolated =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+        internal_transaction_isolated;
+  }
+  internal_transaction_isolated = internal_transaction_isolated &&
+      read(transaction_owner_tag.value, transaction_owner_tag.len) ==
+          transaction_owner_original;
+  expect(internal_transaction_isolated,
+         "applet_abort_guard_does_not_rollback_runtime_transaction");
+
+  const bool applet_transaction_aborted =
+      FlashMemory_Handler::beginAppletWriteTransaction() &&
+      FlashMemory_Handler::appletWriteTransactionActive() &&
+      FlashMemory_Handler::writePersistentRecord(
+          transaction_owner_tag, journal_record, sizeof(journal_record)) &&
+      FlashMemory_Handler::abortAppletWriteTransaction() &&
+      !FlashMemory_Handler::persistentWriteTransactionActive() &&
+      !FlashMemory_Handler::appletWriteTransactionActive() &&
+      read(transaction_owner_tag.value, transaction_owner_tag.len) ==
+          transaction_owner_original;
+  expect(applet_transaction_aborted,
+         "applet_transaction_guard_rolls_back_owned_transaction");
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

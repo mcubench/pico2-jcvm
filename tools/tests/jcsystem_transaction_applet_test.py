@@ -47,10 +47,10 @@ def exchange(connection: socket.socket, apdu: bytes, label: str) -> bytes:
 def main() -> int:
     repo = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--timeout", type=float, default=90)
+    parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 84),
+        "--case", type=int, action="append", choices=range(1, 89),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -68,6 +68,14 @@ def main() -> int:
         help="emulator flash image to initialize or restore",
     )
     parser.add_argument(
+        "--cap-code", type=Path,
+        help="override the generated CAP component image used for applet install",
+    )
+    parser.add_argument(
+        "--light-install", action="store_true",
+        help="skip the probe's 32,767-byte array for tests that do not need capacity coverage",
+    )
+    parser.add_argument(
         "--install-params",
         help="hex bytes passed as the applet's proprietary install parameters",
     )
@@ -82,10 +90,12 @@ def main() -> int:
     args = parser.parse_args()
     if not 0 <= args.gc_pressure_rounds <= 1000:
         parser.error("--gc-pressure-rounds must be between 0 and 1000")
+    if args.light_install and args.install_params is not None:
+        parser.error("--light-install cannot be combined with --install-params")
     build = repo / "build/jcsystem-transaction-probe"
     emulator = repo / "build/choupi-pc/choupi"
     memory = args.memory.resolve()
-    cap_code = build / "load-code.bin"
+    cap_code = args.cap_code.resolve() if args.cap_code else build / "load-code.bin"
     rom_mask = repo / "build/choupi-pc/flash"
     for path in (emulator, cap_code, rom_mask):
         if not path.is_file():
@@ -121,19 +131,19 @@ def main() -> int:
             command.extend(("--package-id", str(args.package_id)))
         else:
             command.append("--install")
-            if args.install_params is not None:
-                if len(args.install_params) % 2 or any(
+            install_params = "7f" if args.light_install else args.install_params
+            if install_params is not None:
+                if len(install_params) % 2 or any(
                     char not in "0123456789abcdefABCDEF"
-                    for char in args.install_params
+                    for char in install_params
                 ):
                     raise SystemExit("--install-params must be even-length hex")
-                command.extend(("--install-params", args.install_params))
+                command.extend(("--install-params", install_params))
         command.append("-s")
         started = time.monotonic()
         with log_path.open("w+b") as log:
             process = subprocess.Popen(
                 command, cwd=repo, stdout=log, stderr=log,
-                start_new_session=True,
             )
             connection = None
             try:
@@ -271,6 +281,10 @@ def main() -> int:
                     (81, b"\x01", "unread static alias restores the reclaimed persistent array from flash"),
                     (82, b"\x01", "nested persistent array aliases and leaf identity survive restore"),
                     (83, bytes((3, 0)), "persistent write capacity overflow is catchable and does not mutate the array"),
+                    (85, b"", "normal process return auto-aborts applet transaction"),
+                    (86, b"", "uncaught exception auto-aborts applet transaction"),
+                    (87, b"\x01", "arm transaction during deselect lifecycle callback"),
+                    (88, b"\x01", "arm transaction during rejected select callback"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -278,6 +292,99 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 in (85, 86):
+                        value_before = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 58, 0x00, 0x00)),
+                            f"{label}: capture persistent value",
+                        )
+                        send_message(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                        )
+                        response = receive_message(connection)
+                        if response != b"\x6f\x00":
+                            raise RuntimeError(
+                                f"{label}: expected SW=6F00 after abort, got "
+                                f"{response.hex().upper()}"
+                            )
+                        print(f"TEST:APDU {label} response={response.hex().upper()}")
+                        value = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 58, 0x00, 0x00)),
+                            f"{label}: verify persistent rollback",
+                        )
+                        if value != value_before:
+                            raise RuntimeError(
+                                f"{label}: persistent value was not restored: "
+                                f"{value.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
+                    if p1 == 87:
+                        data = exchange(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                            label,
+                        )
+                        if data != expected:
+                            raise RuntimeError(f"{label}: malformed arm response")
+                        value_before = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 58, 0x00, 0x00)),
+                            "capture value before deselect transaction",
+                        )
+                        exchange(
+                            connection,
+                            bytes.fromhex("00A4040008A00000015100000000"),
+                            "deselect callback opens a transaction",
+                        )
+                        exchange(connection, select, "select after deselect rollback")
+                        value = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 58, 0x00, 0x00)),
+                            "verify deselect transaction rollback",
+                        )
+                        if value != value_before:
+                            raise RuntimeError(
+                                "deselect transaction was not rolled back: "
+                                f"{value.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
+                    if p1 == 88:
+                        data = exchange(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                            label,
+                        )
+                        if data != expected:
+                            raise RuntimeError(f"{label}: malformed arm response")
+                        value_before = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 58, 0x00, 0x00)),
+                            "capture value before rejected-select transaction",
+                        )
+                        send_message(connection, select)
+                        rejected = receive_message(connection)
+                        if rejected[-2:] != b"\x69\x99":
+                            raise RuntimeError(
+                                f"{label}: expected SW=6999, got "
+                                f"{rejected.hex().upper()}"
+                            )
+                        exchange(connection, select, "fresh select after transactional rejection")
+                        value = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 58, 0x00, 0x00)),
+                            "verify rejected select transaction rollback",
+                        )
+                        if value != value_before:
+                            raise RuntimeError(
+                                "rejected select transaction was not rolled back: "
+                                f"{value.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
                     if p1 == 77:
                         exchange(
                             connection,

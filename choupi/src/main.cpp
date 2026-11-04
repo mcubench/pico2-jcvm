@@ -1020,6 +1020,12 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
   }
 }
 void choupi_vm_clear_selected_applet(void) {
+  // Reader reset implicitly deselects applets without calling deselect().
+  // Only abort applet-owned work here; runtime-owned INSTALL transactions are
+  // controlled by CapLoadSession and must not be consumed by this guard.
+  if (!jcvm::FlashMemory_Handler::abortAppletWriteTransaction()) {
+    TRACE_JCVM_ERR("Failed to abort applet transaction during card reset");
+  }
   pending_apdu_response.queue(nullptr, 0);
   selected_applet_reselection_pending = false;
   selected_applet_is_reselecting = false;
@@ -1403,7 +1409,15 @@ uint16_t choupi_vm_select_applet(void) {
   selected_applet_reselection_pending = false;
   selected_applet_is_selecting = true;
   selected_applet_context->setAppletActive(true);
-  const uint16_t status = invoke_selected_applet_method(6, &selected);
+  uint16_t status = invoke_selected_applet_method(6, &selected);
+  const bool transaction_left_open =
+      jcvm::FlashMemory_Handler::appletWriteTransactionActive();
+  if (transaction_left_open &&
+      !jcvm::FlashMemory_Handler::abortAppletWriteTransaction()) {
+    status = 0x6f00;
+  } else if (transaction_left_open && status == 0x9000) {
+    status = 0x6999;
+  }
   selected_applet_is_selecting = false;
   selected_applet_is_reselecting = false;
   if (status != 0x9000) {
@@ -1435,7 +1449,15 @@ extern "C" uint16_t choupi_vm_deselect_applet(
     selected_applet_is_active = false;
     return 0x9000;
   }
-  const uint16_t status = invoke_selected_applet_method(4, nullptr);
+  uint16_t status = invoke_selected_applet_method(4, nullptr);
+  const bool transaction_left_open =
+      jcvm::FlashMemory_Handler::appletWriteTransactionActive();
+  if (transaction_left_open &&
+      !jcvm::FlashMemory_Handler::abortAppletWriteTransaction()) {
+    status = 0x6f00;
+  } else if (transaction_left_open && status == 0x9000) {
+    status = 0x6f00;
+  }
   selected_applet_context->setAppletActive(false);
   selected_applet_context->getHeap().clearTransientArrays(
       jcvm::ClearEvent::CLEAR_ON_DESELECT);
@@ -1710,6 +1732,20 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
   } catch (...) {
     status = 0x6f00;
     data_length = 0;
+  }
+
+  const bool transaction_left_open =
+      jcvm::FlashMemory_Handler::appletWriteTransactionActive();
+  if (transaction_left_open) {
+    const bool aborted =
+        jcvm::FlashMemory_Handler::abortAppletWriteTransaction();
+    pending_apdu_response.queue(nullptr, 0);
+    data_length = 0;
+    if (!aborted || status == 0x9000) {
+      // A normal process return with an open transaction is treated as an
+      // uncaught exception by Java Card RE 3.0.5.
+      status = 0x6f00;
+    }
   }
 
 #ifdef PC_VERSION

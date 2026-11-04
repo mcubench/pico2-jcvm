@@ -1774,16 +1774,16 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_lookupAID(
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_beginTransaction() {
-  return FlashMemory_Handler::beginPersistentWriteTransaction(true) ? 0 : 1;
+  return FlashMemory_Handler::beginAppletWriteTransaction() ? 0 : 1;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_abortTransaction() {
-  if (!FlashMemory_Handler::persistentWriteTransactionActive()) return 1;
-  return FlashMemory_Handler::rollbackPersistentWriteTransaction() ? 0 : 2;
+  if (!FlashMemory_Handler::appletWriteTransactionActive()) return 1;
+  return FlashMemory_Handler::abortAppletWriteTransaction() ? 0 : 2;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_commitTransaction() {
-  if (!FlashMemory_Handler::persistentWriteTransactionActive()) return 1;
+  if (!FlashMemory_Handler::appletWriteTransactionActive()) return 1;
   return FlashMemory_Handler::commitPersistentWriteTransaction() ? 0 : 2;
 }
 
