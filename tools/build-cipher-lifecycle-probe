@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_dir="${repo_root}/tools/tests/cipher_lifecycle_applet"
+build_dir="${repo_root}/build/cipher-lifecycle-probe"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+mkdir -p "${build_dir}/classes" "${build_dir}/output"
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar" \
+  -d "${build_dir}/classes" "${source_dir}/CipherLifecycleProbe.java" \
+  > "${build_dir}/compile.log" 2>&1
+
+cat > "${build_dir}/build.xml" <<EOF_ANT
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="build" name="CipherLifecycleProbe">
+  <property name="repo" location="${repo_root}"/>
+  <property name="kit" location="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit"/>
+  <target name="build">
+    <java classname="com.sun.javacard.converter.Main" fork="true"
+          dir="\${basedir}/output" failonerror="true">
+      <classpath><pathelement location="\${kit}/lib/tools.jar"/></classpath>
+      <arg value="-i"/><arg value="-classdir"/><arg value="\${basedir}/classes"/>
+      <arg value="-exportpath"/><arg value="\${kit}/api_export_files"/>
+      <arg value="-d"/><arg value="\${basedir}/output"/><arg value="-out"/>
+      <arg value="JCA"/><arg value="-applet"/>
+      <arg value="0xA0:0x00:0x00:0x01:0x51:0x00:0x02:0x03:0x01"/>
+      <arg value="cipherlife.CipherLifecycleProbe"/><arg value="cipherlife"/>
+      <arg value="0xA0:0x00:0x00:0x01:0x51:0x00:0x02:0x03"/>
+      <arg value="1.0"/>
+    </java>
+  </target>
+</project>
+EOF_ANT
+
+JAVA_HOME="${java8_home}" "${repo_root}/tools/env" ant \
+  -f "${build_dir}/build.xml" > "${build_dir}/build.log" 2>&1
+"${repo_root}/tools/env" java -cp "${kit}/lib/tools.jar" \
+  com.sun.javacard.jcasm.cap.Main -nobanner \
+  -o "${build_dir}/output/cipher-lifecycle-probe.cap" \
+  "${build_dir}/output/cipherlife/javacard/cipherlife.jca" \
+  > "${build_dir}/capgen.log" 2>&1
+
+python3 - "${build_dir}/output/cipher-lifecycle-probe.cap" \
+  "${build_dir}/load-code.bin" <<'PY'
+import sys
+from zipfile import ZipFile
+
+source, target = sys.argv[1:]
+components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
+              "Class", "Method", "StaticField", "RefLocation")
+with ZipFile(source) as cap, open(target, "wb") as output:
+    for component in components:
+        name = f"cipherlife/javacard/{component}.cap"
+        try:
+            output.write(cap.read(name))
+        except KeyError as error:
+            raise SystemExit(f"CAP is missing required component {name}") from error
+print(f"CAP:PASS file={source} load_code={target}")
+PY

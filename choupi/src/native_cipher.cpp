@@ -66,6 +66,7 @@ constexpr uint8_t kRsaPrivateTransientReset = 22;
 constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kRsaCrtTransientReset = 24;
 constexpr uint8_t kRsaCrtTransientDeselect = 25;
+constexpr jbyte_t kCipherKeyWorkspaceMarker = static_cast<jbyte_t>(0xA5);
 
 struct CipherSpec {
   uint8_t algorithm;
@@ -375,7 +376,23 @@ void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
 std::vector<unsigned char> symmetricKey(JC_Instance &cipher) {
   auto key = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
-  return readArray(key, 0, key->size());
+  if (key->size() < 2 || key->getByteEntry(0) != kCipherKeyWorkspaceMarker)
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  return readArray(key, 1, static_cast<uint16_t>(key->size() - 1));
+}
+
+void allocateKeyWorkspace(JC_Instance &cipher, uint16_t field,
+                          uint16_t length, ClearEvent event) {
+  Heap &heap = Context::getActiveContext().getHeap();
+  cipher.setField_Reference(field, heap.addArray(
+      JC_Array(heap, length, JAVA_ARRAY_T_BYTE, true, event)));
+}
+
+void checkKeyWorkspace(JC_Instance &cipher) {
+  auto key = byteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
+  if (key->size() == 0 || key->getByteEntry(0) != kCipherKeyWorkspaceMarker)
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
 }
 
 std::vector<unsigned char> cipherIv(JC_Instance &cipher, uint16_t blockSize) {
@@ -527,14 +544,20 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   auto cipherKey = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
-  (void)cipherKey;
-  cipher.setField_Reference(
+  for (uint16_t i = 0; i < cipherKey->size(); ++i)
+    cipherKey->setByteEntry(i, 0);
+  const ClearEvent keyClearEvent =
+      (type == kAesTransientDeselect || type == kDesTransientDeselect)
+          ? ClearEvent::CLEAR_ON_DESELECT : ClearEvent::CLEAR_ON_RESET;
+  allocateKeyWorkspace(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA,
-      allocateByteArray(bytes));
+      static_cast<uint16_t>(bytes + 1), keyClearEvent);
   cipherKey = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
+  cipherKey->setByteEntry(0, kCipherKeyWorkspaceMarker);
   for (uint16_t i = 0; i < bytes; ++i)
-    cipherKey->setByteEntry(i, keyData->getByteEntry(i));
+    cipherKey->setByteEntry(static_cast<uint16_t>(i + 1),
+                            keyData->getByteEntry(i));
   const uint16_t blockSize = aes ? 16 : 8;
   auto iv = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_IV);
@@ -586,6 +609,7 @@ jshort_t updateSymmetric(JC_Instance &cipher,
   if (cipher.getField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED) == 0)
     throwCryptoException(CryptoExceptionReason::InvalidInit);
+  checkKeyWorkspace(cipher);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
   appendToVector(cipher, input, inputOffset, inputLength);
@@ -640,6 +664,7 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
   if (cipher.getField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED) == 0)
     throwCryptoException(CryptoExceptionReason::InvalidInit);
+  checkKeyWorkspace(cipher);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
   appendToVector(cipher, input, inputOffset, inputLength);

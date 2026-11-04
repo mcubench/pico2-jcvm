@@ -485,6 +485,32 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
     const auto source_package = context.getCurrentPackage();
     auto type_out_classref =
         ConstantPool_Handler(source_package).getClassRef(index);
+
+    // JC305 CAPs encode interface references in the same Classref form as
+    // class references. NativeKey deliberately implements the union of key
+    // interfaces in ROM, so its runtime key type must be checked against the
+    // JC305 interface namespace before resolving the token in the class
+    // namespace. The latter may not contain an entry for an interface token.
+    if (type_out_classref.isExternalClassRef() && !objectref.isArray()) {
+      Import_Handler imported_packages(source_package);
+      const auto *imported_package = imported_packages.getPackageAID(
+          type_out_classref.external_classref.package_token & 0x7f);
+      constexpr uint8_t security_aid[] = {
+          0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
+      if (imported_package != nullptr && imported_package->AID_length == 7 &&
+          std::memcmp(imported_package->AID, security_aid,
+                      sizeof(security_aid)) == 0) {
+        auto instance = heap.getInstance(objectref);
+        if (instance != nullptr) {
+          const auto native_key_result = nativeKeyInterfaceMatch(
+              *instance, type_out_classref.external_classref.class_token);
+          if (native_key_result.has_value()) {
+            return *native_key_result ? TRUE : FALSE;
+          }
+        }
+      }
+    }
+
     ConstantPool_Handler type_out_cp(source_package);
     auto [type_out_package, type_out_class] =
         type_out_cp.resolveClassref(type_out_classref);
@@ -536,32 +562,6 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
     // resolution supplies the class candidate; when that candidate does not
     // match, also try the interface candidate from the independent token map.
     auto type_out_ref = std::make_pair(type_out_package, type_out_class);
-    const auto target_interface =
-        interface_candidate.second != nullptr
-            ? interface_candidate
-            : (IS_INTERFACE(type_out_class)
-                   ? type_out_ref
-                   : std::make_pair(
-                         type_out_package,
-                         static_cast<const uint8_t *>(nullptr)));
-    if (target_interface.second != nullptr) {
-      if (usesJC305CompatibilityTokens(source_package) &&
-          type_out_classref.isExternalClassRef()) {
-        const auto *imported_package = Import_Handler(source_package).getPackageAID(
-            type_out_classref.external_classref.package_token & 0x7f);
-        constexpr uint8_t security_aid[] = {
-            0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
-        if (imported_package != nullptr && imported_package->AID_length == 7 &&
-            std::memcmp(imported_package->AID, security_aid,
-                        sizeof(security_aid)) == 0) {
-          if (const auto native_key_result = nativeKeyInterfaceMatch(
-                  *instance, type_out_classref.external_classref.class_token);
-              native_key_result.has_value()) {
-            return *native_key_result ? TRUE : FALSE;
-          }
-        }
-      }
-    }
     const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
     const bool trace_cast = trace_setting != nullptr &&
                             std::strcmp(trace_setting, "1") == 0;

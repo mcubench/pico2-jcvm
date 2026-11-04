@@ -41,6 +41,7 @@ constexpr uint8_t kRsaPrivateTransientReset = 22;
 constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kRsaCrtTransientReset = 24;
 constexpr uint8_t kRsaCrtTransientDeselect = 25;
+constexpr jbyte_t kCipherKeyWorkspaceMarker = static_cast<jbyte_t>(0xA5);
 
 bool rsaCrtKeyType(uint8_t type) {
   return type == kRsaCrtPrivate || type == kRsaCrtTransientReset ||
@@ -351,6 +352,26 @@ void allocateCipherArray(JC_Instance &cipher, const uint16_t field,
       heap.addArray(length, JAVA_ARRAY_T_BYTE));
 }
 
+void allocateTransientCipherArray(JC_Instance &cipher, const uint16_t field,
+                                  const uint16_t length, ClearEvent event) {
+  Heap &heap = Context::getActiveContext().getHeap();
+  cipher.setField_Reference(field, heap.addArray(
+      JC_Array(heap, length, JAVA_ARRAY_T_BYTE, true, event)));
+}
+
+void checkKeyWorkspace(JC_Instance &cipher) {
+  auto marker = getByteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
+  if (marker->size() == 0 || marker->getByteEntry(0) != kCipherKeyWorkspaceMarker)
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+}
+
+void wipeCipherArray(JC_Instance &cipher, uint16_t field) {
+  auto array = getByteArray(cipher, field);
+  for (uint16_t i = 0; i < array->size(); ++i)
+    array->setByteEntry(i, 0);
+}
+
 void loadKeyComponent(const JC_Instance &key, const uint16_t valueField,
                       const uint16_t lengthField, JC_Array &destination,
                       const uint16_t destinationOffset,
@@ -433,6 +454,10 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
                           type == kRsaPrivateTransientReset ||
                           type == kRsaPrivateTransientDeselect ||
                           rsaCrtKeyType(type);
+  ClearEvent keyClearEvent = ClearEvent::CLEAR_ON_RESET;
+  if (type == kRsaPrivateTransientDeselect ||
+      type == kRsaCrtTransientDeselect)
+    keyClearEvent = ClearEvent::CLEAR_ON_DESELECT;
   if (lengths->size() < 7 ||
       (rsaCrtKeyType(type)
            ? (lengths->getShortEntry(2) <= 0 ||
@@ -455,12 +480,34 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
   if (keyBits <= 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint16_t keyLength = static_cast<uint16_t>((keyBits + 7) / 8);
   const uint16_t crtPartLength = static_cast<uint16_t>((keyLength + 1U) / 2U);
-  allocateCipherArray(*cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, keyLength);
-  allocateCipherArray(*cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
-      rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
-                          : keyLength);
+  wipeCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
+  wipeCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
+  wipeCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT);
+  if (privateKey) {
+    allocateTransientCipherArray(*cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS,
+        keyLength, keyClearEvent);
+    allocateTransientCipherArray(*cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
+        rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
+                            : keyLength, keyClearEvent);
+  } else {
+    allocateCipherArray(*cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, keyLength);
+    allocateCipherArray(*cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
+        rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
+                            : keyLength);
+  }
+  allocateTransientCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA, 1,
+      keyClearEvent);
+  getByteArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA)
+      ->setByteEntry(0, kCipherKeyWorkspaceMarker);
   allocateCipherArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED, 0);
   auto modulus = getByteArray(*cipher,
@@ -529,6 +576,7 @@ jshort_t updateRsaCipher(std::shared_ptr<JC_Instance> cipher,
   if (!cipher->getField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED))
     throwCryptoException(CryptoExceptionReason::InvalidInit);
+  checkKeyWorkspace(*cipher);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
   appendInput(*cipher, input, inputOffset, inputLength);
@@ -542,6 +590,7 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
   if (!cipher->getField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED))
     throwCryptoException(CryptoExceptionReason::InvalidInit);
+  checkKeyWorkspace(*cipher);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
   appendInput(*cipher, input, inputOffset, inputLength);

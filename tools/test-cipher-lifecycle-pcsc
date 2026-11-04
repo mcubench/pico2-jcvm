@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-lifecycle-pcsc '<exact PC/SC reader name>'"
+require_command timeout
+
+reader_name="$1"
+build_dir="${repo_root}/build/cipher-lifecycle-probe"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+package_aid="A000000151000203"
+applet_aid="A00000015100020301"
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+java_build="${build_dir}/physical-client"
+log_dir="${repo_root}/artifacts/logs"
+log_file="${log_dir}/cipher-lifecycle-pcsc-$(date -u +%Y%m%dT%H%M%SZ).log"
+timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-60}"
+[[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+[[ -s "${build_dir}/output/cipher-lifecycle-probe.cap" ]] || \
+  die "probe CAP missing; run ./tools/build-cipher-lifecycle-probe"
+
+mkdir -p "${java_build}" "${log_dir}"
+"${repo_root}/tools/env" javac -d "${java_build}" \
+  "${repo_root}/tools/tests/CipherLifecyclePcscProbe.java"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+list_file="${build_dir}/physical-gp-list-${timestamp}.log"
+install_file="${build_dir}/physical-install-${timestamp}.log"
+"${gp[@]}" --list >"${list_file}" 2>&1 || die "GPPro list failed; see ${list_file}"
+if grep -Fq "APP: ${applet_aid} " "${list_file}" || \
+   grep -Fq "PKG: ${package_aid} " "${list_file}"; then
+  die "lifecycle probe AID is already present; refusing to replace existing card data"
+fi
+
+installed_here=0
+cleanup() {
+  local status=$?
+  trap - EXIT
+  local cleanup_status=0
+  if (( installed_here )); then
+    local cleanup_list="${build_dir}/physical-cleanup-${timestamp}.log"
+    if timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+        >"${cleanup_list}" 2>&1; then
+      if grep -Fq "APP: ${applet_aid} " "${cleanup_list}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${applet_aid}" >>"${log_file}" 2>&1 || cleanup_status=1
+      fi
+      if (( cleanup_status == 0 )) && grep -Fq "PKG: ${package_aid} " "${cleanup_list}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${package_aid}" >>"${log_file}" 2>&1 || cleanup_status=1
+      fi
+      if (( cleanup_status == 0 )); then
+        timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+          >"${cleanup_list}" 2>&1 || cleanup_status=1
+        if grep -Fq "APP: ${applet_aid} " "${cleanup_list}" || \
+           grep -Fq "PKG: ${package_aid} " "${cleanup_list}"; then
+          cleanup_status=1
+        fi
+      fi
+    else
+      cleanup_status=1
+    fi
+  fi
+  if (( cleanup_status != 0 )); then
+    printf 'PCSC:CLEANUP_FAIL package=%s\n' "${package_aid}" | tee -a "${log_file}"
+    status=1
+  elif (( installed_here )); then
+    printf 'PCSC:CLEANUP_PASS package=%s\n' "${package_aid}" | tee -a "${log_file}"
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+installed_here=1
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" \
+  --install "${build_dir}/output/cipher-lifecycle-probe.cap" \
+  >"${install_file}" 2>&1 || die "GPPro install failed; see ${install_file}"
+printf 'PCSC:LOG %s\n' "${log_file}"
+timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+  "${repo_root}/tools/env" java -cp "${java_build}" \
+  CipherLifecyclePcscProbe "${reader_name}" | tee "${log_file}"

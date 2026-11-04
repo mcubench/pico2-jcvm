@@ -180,17 +180,40 @@ def run_emulator(
                 if args.select_only:
                     return
 
-                if args.apdu:
-                    for index, apdu in enumerate(args.apdu, start=1):
+                custom_apdus = args.resume_apdu if resume else args.apdu
+                expected_custom_responses = (
+                    args.expect_resume_apdu_response if resume
+                    else args.expect_apdu_response
+                )
+                if args.apdu or args.resume_apdu:
+                    for index, apdu in enumerate(custom_apdus, start=1):
                         response = exchange(connection, apdu,
                                             f"custom APDU {index}")
-                        if args.expect_apdu_response is not None and \
-                                response != args.expect_apdu_response[index - 1]:
+                        if expected_custom_responses is not None and \
+                                response != expected_custom_responses[index - 1]:
                             raise RuntimeError(
                                 f"custom APDU {index} response mismatch: "
-                                f"expected={args.expect_apdu_response[index - 1].hex().upper()} "
+                                f"expected={expected_custom_responses[index - 1].hex().upper()} "
                                 f"actual={response.hex().upper()}"
                             )
+                        if not resume and index in args.reset_after_custom_apdu:
+                            send_message(connection, b"\x02")  # reader reset
+                            send_message(connection, b"\x04")  # ATR request
+                            atr = receive_message(connection)
+                            if atr != bytes.fromhex("3B800181"):
+                                raise RuntimeError(
+                                    "unexpected ATR after VPCD reset: "
+                                    f"{atr.hex().upper()}"
+                                )
+                            print("TEST:PASS VPCD reader reset ATR=3B800181")
+                            select_response = exchange(
+                                connection, select,
+                                f"target applet SELECT after reset {index}")
+                            if select_response[-2:] != b"\x90\x00":
+                                raise RuntimeError(
+                                    "applet SELECT after reset failed: "
+                                    f"{select_response.hex().upper()}"
+                                )
                     return
 
                 version = exchange(
@@ -495,6 +518,13 @@ def parse_args() -> argparse.Namespace:
         help="stop after a successful SELECT instead of sending the JCAlgTest GETVERSION APDU",
     )
     parser.add_argument(
+        "--reset-after-custom-apdu",
+        type=int,
+        action="append",
+        default=[],
+        help="send VPCD reader reset after this one-based custom APDU index",
+    )
+    parser.add_argument(
         "--select-p2",
         type=lambda value: int(value, 0),
         choices=(0x00, 0x10),
@@ -515,6 +545,17 @@ def parse_args() -> argparse.Namespace:
         "--expect-apdu-response",
         action="append",
         help="expected response for each --apdu, including SW1/SW2; repeat in matching order",
+    )
+    parser.add_argument(
+        "--resume-apdu",
+        action="append",
+        default=[],
+        help="send APDUs after restarting the emulator and restoring the installed applet",
+    )
+    parser.add_argument(
+        "--expect-resume-apdu-response",
+        action="append",
+        help="expected response for each --resume-apdu, including SW1/SW2",
     )
     parser.add_argument(
         "--flash-copy",
@@ -546,9 +587,14 @@ def parse_args() -> argparse.Namespace:
     try:
         args.applet_aid = bytes.fromhex(args.applet_aid)
         args.apdu = [bytes.fromhex(value) for value in args.apdu]
+        args.resume_apdu = [bytes.fromhex(value) for value in args.resume_apdu]
         args.expect_apdu_response = (
             [bytes.fromhex(value) for value in args.expect_apdu_response]
             if args.expect_apdu_response is not None else None
+        )
+        args.expect_resume_apdu_response = (
+            [bytes.fromhex(value) for value in args.expect_resume_apdu_response]
+            if args.expect_resume_apdu_response is not None else None
         )
         args.expect_select_data = (
             bytes.fromhex(args.expect_select_data)
@@ -558,11 +604,14 @@ def parse_args() -> argparse.Namespace:
         parser.error(f"AID, APDUs, and expected SELECT data must be valid hexadecimal: {error}")
     if not 5 <= len(args.applet_aid) <= 16:
         parser.error("--applet-aid must contain 5 to 16 bytes")
-    if any(len(apdu) < 4 for apdu in args.apdu):
+    if any(len(apdu) < 4 for apdu in args.apdu + args.resume_apdu):
         parser.error("each --apdu must contain at least four bytes")
     if args.expect_apdu_response is not None and \
             len(args.expect_apdu_response) != len(args.apdu):
         parser.error("--expect-apdu-response must be repeated once for each --apdu")
+    if args.expect_resume_apdu_response is not None and \
+            len(args.expect_resume_apdu_response) != len(args.resume_apdu):
+        parser.error("--expect-resume-apdu-response must be repeated once for each --resume-apdu")
     args.repo = args.repo.resolve()
     for name in ("emulator", "memory", "cap_code", "rom_mask"):
         setattr(args, name, getattr(args, name).resolve())
@@ -801,18 +850,18 @@ def main() -> int:
             return 1
         print("TEST:PASS install journal recovered after clear sync failure")
     if args.select_only:
-        checks_per_pass = 2  # ATR and target-app SELECT.
-    elif args.apdu:
-        checks_per_pass = 2 + len(args.apdu)
+        total_checks = args.passes * 2  # ATR and target-app SELECT.
+    elif args.apdu or args.resume_apdu:
+        total_checks = args.passes * 2 + len(args.apdu) + len(args.resume_apdu)
     else:
-        checks_per_pass = 15  # ATR, SELECT, APDU results, and support assertions.
+        total_checks = args.passes * 15  # ATR, SELECT, APDUs and support assertions.
     pre_restart_checks = (
         2 if args.verify_install_process_restart and
         not args.verify_install_metadata_error_restart else 0
     )
     print(
         "TEST:SUMMARY "
-        f"pass={args.passes * checks_per_pass + pre_restart_checks} fail=0"
+        f"pass={total_checks + pre_restart_checks} fail=0"
     )
     return 0
 

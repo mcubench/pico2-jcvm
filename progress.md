@@ -21575,3 +21575,14 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
+## 2026-11-04 Clear Cipher key workspaces with transient key lifetime 68 minutes
+
+- Step/experiment: `rv-20261103-11-cipher-key-workspace-lifecycle`
+- When: '2026-11-04 07:47 UTC' - '2026-11-04 08:55 UTC'
+- Change: Symmetric Cipher copies and RSA private Cipher modulus/exponent copies now use transient arrays whose reset/deselect event follows the source key. A transient marker is validated by `update`/`doFinal`, returning `CryptoException.UNINITIALIZED_KEY` if the sensitive workspace was cleared. Fixed NativeKey interface-token resolution before class-token lookup so a transient RSA private key can be cast using JC305 tokens. Added a repeatable AES/RSA CAP lifecycle probe, PC/SC client and PC VPCD process-resume APDUs. Corrected the probe's short response commands to include Le.
+- Validation: `./tools/test-cipher-lifecycle-vpcd` passed `TEST:SUMMARY pass=29 fail=0`; it exercised AES and RSA key setup and Cipher use, clearing after deselect and reader reset, re-populating the source keys before asserting that retained Cipher copies were invalid, and direct use after a separate emulator process restored the applet. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Java client compilation, Python byte-compilation, and shell syntax checks passed. Authorized hardware refresh returned USB access but `pcsc_scan -r` showed only Virtual PCD 00 00/01; physical validation was skipped.
+- Result: In every tested boundary, repopulating source transient key bytes did not restore the retained Cipher workspace; calls returned `42 9000`. A first false `6F00` was caused by sending a four-byte APDU without Le; valid case-2 framing returned `019000`. Fresh restore also exposed a separate transient RSA key repopulation failure with `ArrayIndexOutOfBoundsException` (`62 9000`), recorded under RV-20261103-13. ARM endpoint is `0x100e9200`, leaving 93,696 bytes.
+- Decision: Keep RV-11 open until physical validation, with PC VPCD acceptance passing. Continue the separately tracked transient-array restore bug under RV-13.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261104T084348Z.log` SHA-256 `e487a385b643a8d0bd6f346b9bb2a71600fced1b121c682721199adacb2bc73a`; `artifacts/logs/cipher-lifecycle-vpcd-restore-direct.log` SHA-256 `937c85f629c47615b08a44493b85e614c376cc7059238e706c5a8d0e00ba718f`.
+
