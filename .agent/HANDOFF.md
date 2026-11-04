@@ -1,3 +1,26 @@
+# Current session — document the MessageDigest input limit — 2026-11-04 13:32 CET
+
+RV-20261103-17 took the contract-narrowing branch allowed by its acceptance
+criteria. `docs/supported-profile.md` now explicitly limits cumulative
+`MessageDigest.update()` plus `doFinal()` input to 2,046 bytes and records
+`CryptoException.ILLEGAL_USE` above that limit. No runtime code changed and no
+build or test was run; the source was inspected to confirm the fixed transient
+buffer and error path.
+
+Native incremental contexts remain open work. A context must roll back if an
+applet transaction aborts after `update()`, while reset clears intermediate
+state. Existing RV-15 VPCD tests cover transaction abort and reset behavior for
+the current buffer model. Before removing the limit, add transaction-aware
+snapshot/rollback for native contexts, then test >2,046 bytes across APDUs and
+hash block boundaries, empty final input, reuse after completion, reset, and
+transaction abort. No hardware test was run. The current max empty-card image
+still matches the prior RV-16 build because firmware source is unchanged.
+
+Documentation commit: pending. Continue with RV-20261103-18 checked `int[]`
+length allocation, preserving unrelated worktree changes.
+
+---
+
 # Current session — RV-16 CBC post-final IV state fixed — 2026-11-04 13:20 CET
 
 RV-20261103-16 is implemented in the current worktree. After successful AES or

@@ -42,6 +42,12 @@ by Java Card.
   key-pair generation. The upstream JCAlgTest 1.8.2 CAP mislabels its 3072-bit
   generation probes as 4096-bit requests; this profile does not alter the CAP
   or claim those requests as supported.
+- `MessageDigest.update()` currently retains the complete message in a
+  2,046-byte transient buffer. The cumulative bytes passed through `update()`
+  and `doFinal()` must not exceed 2,046; larger inputs fail with
+  `CryptoException.ILLEGAL_USE`. Streaming beyond this limit is not part of the
+  currently declared compatibility contract. Incremental native digest state
+  remains planned, including transaction-abort-safe state handling.
 
 ## Evidence and remaining work
 

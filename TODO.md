@@ -164,9 +164,10 @@ during the review.
 
 ### RV-20261103-17
 
-- [ ] **P2: Streaming digest is a small whole-message buffer.**
+- [x] **P2: Streaming digest is a small whole-message buffer.**
   Owner: PROFILE-01, API-01. Evidence: Source; [review R17](docs/review_20261103.md#r17--messagedigest-update-is-limited-to-2046-total-bytes).
   Acceptance: use native incremental digest contexts with correct reset/transaction lifetime, or explicitly narrow the declared compatibility contract until implemented. Test more than 2,046 cumulative bytes across APDUs and block boundaries, including empty final input and reuse after completion.
+  Progress: Chose the contract-narrowing branch for this step: `docs/supported-profile.md` now states the 2,046-byte cumulative limit and `CryptoException.ILLEGAL_USE` behavior. Native incremental contexts remain unimplemented because transaction-abort-safe digest context rollback must be designed with the JCVM transaction lifecycle; the boundary and multi-APDU tests remain required before expanding the contract.
 
 ### RV-20261103-18
 

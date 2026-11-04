@@ -21663,3 +21663,14 @@
 - Decision: Close RV-20261103-16 implementation using PC VPCD and cross-target build validation; hardware remains unverified. For Windows testing with an empty card, use `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, which clears previous CAP and filesystem data. Continue with RV-20261103-17, streaming digest behavior beyond the current cumulative input limit.
 - Commit: `b36c5fb5a5e25a912a1c9d1ccc8505f4b353ed83`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261104T120640Z.log` SHA-256 `1e67eb5eec3a133139518b2b10f4f83feacc038b431e60037ad12112162a6a4f`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Declare current MessageDigest input limit 2 minutes
+
+- Step/experiment: `rv-20261103-17-digest-contract-limit`
+- When: '2026-11-04 13:30 CET' - '2026-11-04 13:32 CET'
+- Change: Documented in `docs/supported-profile.md` that cumulative `MessageDigest.update()` and `doFinal()` input is limited to 2,046 bytes and larger input fails with `CryptoException.ILLEGAL_USE`. Updated RV-17 to record this contract-narrowing branch and retain incremental native digest contexts as open work.
+- Validation: Inspected `choupi/src/native_message_digest.cpp` and RV-15 transaction/reset coverage. No runtime source changed; build, VPCD tests and hardware checks were intentionally skipped.
+- Result: The declared compatibility profile now matches the current fixed-buffer behavior. Removing this limit still requires transaction-abort-safe native digest context rollback and large-message, block-boundary, empty-final and reuse tests.
+- Decision: Close the documentation branch of RV-17 acceptance; continue implementation with RV-18 checked `int[]` length allocation. Existing firmware images remain current because firmware source did not change.
+- Commit: `pending`
+- Artifacts/logs: none.
