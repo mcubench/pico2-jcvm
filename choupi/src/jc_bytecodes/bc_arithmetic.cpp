@@ -266,7 +266,7 @@ void Bytecodes::bc_idiv() {
     throw Exceptions::ArithmeticException;
   } else if ((value1 == std::numeric_limits<jint_t>::min()) &&
              (value2 == (jint_t)-1)) {
-    stack.push_Int((jint_t)(0));
+    stack.push_Int(value1);
   } else {
     stack.push_Int((jint_t)(value1 / value2));
   }
@@ -1036,7 +1036,7 @@ void Bytecodes::bc_sdiv() {
     throw Exceptions::ArithmeticException;
   } else if ((value1 == std::numeric_limits<jshort_t>::min()) &&
              (value2 == (jshort_t)-1)) {
-    stack.push_Short((jshort_t)(0));
+    stack.push_Short(value1);
   } else {
     stack.push_Short((jshort_t)(value1 / value2));
   }

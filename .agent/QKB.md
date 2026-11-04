@@ -1,3 +1,18 @@
+# Signed minimum division returns the dividend — fixed 2026-11-04
+
+- **Symptom:** `MIN_VALUE / -1` returned zero for Java Card `sdiv` and `idiv`.
+- **Cause:** the overflow edge branches explicitly pushed zero, despite the
+  bytecode contract requiring the unchanged minimum value and no exception.
+- **Viable fix:** push the original dividend for that special case. The
+  isolated division CAP includes `sdiv`, `idiv`, `srem`, and `irem`; VPCD
+  verifies minimum overflow, positive/negative sign combinations, remainders,
+  and caught division-by-zero exceptions. `TEST:SUMMARY pass=5 fail=0`; ARM and
+  RISC-V builds pass.
+- **Artifact:** `artifacts/logs/division-vpcd-20261104T125922Z.log`, SHA-256
+  `1311ba904a36128b897cb62acb95434bf11d19975f241d8480e07b5b512768ba`.
+
+---
+
 # JC_Array byte-length overflow — fixed 2026-11-04
 
 - **Symptom:** requesting 16,384 `int` elements returned a zero-length array

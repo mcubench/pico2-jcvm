@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+profile="${JCVM_PROFILE:-max_crypto}"
+memory="${repo_root}/build/algtest-v182-current-empty-flash.bin"
+flash_copy="${repo_root}/build/division-probe/vpcd-flash.bin"
+log="${repo_root}/artifacts/logs/division-vpcd-$(date -u +%Y%m%dT%H%M%SZ).log"
+
+"${repo_root}/tools/build-pc" --profile "${profile}"
+"${repo_root}/tools/build-division-probe"
+
+args=(
+  --emulator "${repo_root}/build/choupi-pc/choupi"
+  --memory "${memory}"
+  --flash-copy "${flash_copy}"
+  --cap-code "${repo_root}/build/division-probe/load-code.bin"
+  --rom-mask "${repo_root}/build/choupi-pc/flash"
+  --applet-aid A00000015100020401
+  --package-id 57
+  --passes 1
+  --connect-timeout 300
+  --apdu-timeout 120
+  --log "${log}"
+  --apdu 00A4040008A00000015100000000
+  --expect-apdu-response 6F0A8408A0000001510000009000
+  --apdu 00A4040009A0000001510002040100
+  --expect-apdu-response 9000
+  --apdu 8001000000
+  --expect-apdu-response 019000
+)
+
+printf 'VPCD:LOG %s\n' "${log}"
+CHOUPI_VM_TRACE_EXCEPTIONS=1 "${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/tests/pc_vpcd_applet_test.py" "${args[@]}"

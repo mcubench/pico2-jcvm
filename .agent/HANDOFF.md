@@ -1,3 +1,33 @@
+# Current session — fix signed minimum division — 2026-11-04 14:05 CET
+
+RV-20261103-19 is implemented. `bc_sdiv()` and `bc_idiv()` now push the
+minimum dividend unchanged for `MIN_VALUE / -1`. Added a standalone Java Card
+CAP test fixture that executes `sdiv`, `idiv`, `srem`, `irem`, signed quotient
+and remainder combinations, and catches divide-by-zero exceptions. The
+generated JCA was inspected to confirm those exact bytecodes are present.
+
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` passed
+`TEST:SUMMARY pass=5 fail=0`. VPCD setup took 114.859 seconds to connect and
+about 27 seconds each to select the target and install; the custom arithmetic
+APDU itself completed in 2 ms. The fixture log is
+`artifacts/logs/division-vpcd-20261104T125922Z.log`, SHA-256
+`1311ba904a36128b897cb62acb95434bf11d19975f241d8480e07b5b512768ba`.
+ARM and RISC-V `max_crypto` builds passed. No physical token was tested.
+
+The max empty-card image was refreshed: `build/arm/pico2_choupi_max_crypto_empty_card.uf2`,
+4,010,496 bytes, SHA-256
+`ee1978b2748dcc10f1bd5ec24bfe6d2938441aa8653e26435c878f27eca5cf21`;
+firmware-only image: 1,913,344 bytes, SHA-256
+`6bc3ec2b0d379a6a4f8d6d37c2fc27bcfcdf269a1e3a46aaf675adadfd1be99c`.
+Firmware endpoint is `0x100E9764`, leaving 92,316 bytes. The combined image
+was recognized by picotool as RP2350 ARM Secure and verified to erase the full
+`0x10100000`–`0x101FFFFF` storage range.
+
+Commit: pending. Next priority is RV-20 defined arithmetic wrapping, shifts,
+and word reconstruction. Preserve unrelated worktree changes.
+
+---
+
 # Current session — reject array backing-size overflow — 2026-11-04 13:53 CET
 
 RV-20261103-18 is implemented in the current worktree. `JC_Array` checks

@@ -21685,3 +21685,14 @@
 - Decision: Close RV-18 implementation. Physical validation remains pending. Continue to RV-19 minimum signed division behavior.
 - Commit: `pending`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Preserve signed minimum division result 12 minutes
+
+- Step/experiment: `rv-20261103-19-minimum-signed-division`
+- When: '2026-11-04 13:53 CET' - '2026-11-04 14:05 CET'
+- Change: Fixed `bc_sdiv()` and `bc_idiv()` to return the original minimum signed dividend for division by `-1`. Added an isolated Java Card CAP fixture and build/VPCD wrappers covering the actual `sdiv`, `idiv`, `srem`, and `irem` bytecodes, sign combinations and divide-by-zero exceptions.
+- Validation: `bash -n tools/build-division-probe tools/test-division-vpcd` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` passed `TEST:SUMMARY pass=5 fail=0`; generated JCA inspection confirmed all four target bytecodes. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The test wrapper's PC build and CAP conversion passed. Existing compiler/dependency warnings remain. No physical token run occurred.
+- Result: Both minimum-overflow divisions return the unchanged dividend; signed quotient/remainder cases and Java Card divide-by-zero exception handling pass. VPCD took 114.859 seconds to connect, 26.991 seconds to select the applet, and 27.341 seconds for the next selection/install phase; the arithmetic APDU took 2 ms. ARM image remains 1,913,344 bytes, ends at `0x100E9764` and leaves 92,316 bytes. Empty-card UF2 is 4,010,496 bytes.
+- Decision: Close RV-19. Continue with RV-20 arithmetic defined behavior and preserve the generated fixture as test-only Java Card bytecode source; no upstream CAP was modified. Refresh the current empty-card firmware artifact for Windows testing.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/division-vpcd-20261104T125922Z.log` SHA-256 `1311ba904a36128b897cb62acb95434bf11d19975f241d8480e07b5b512768ba`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`.

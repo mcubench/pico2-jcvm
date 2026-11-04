@@ -178,9 +178,10 @@ during the review.
 
 ### RV-20261103-19
 
-- [ ] **P2: `MIN_VALUE / -1` has wrong result.**
+- [x] **P2: `MIN_VALUE / -1` has wrong result.**
   Owner: PROFILE-01. Evidence: Reproduced; [review R19](docs/review_20261103.md#r19--minimum-value-division-returns-zero).
   Acceptance: return the minimum dividend for division and add short/int edge vectors for sign combinations, remainder and division by zero. Test actual bytecode execution on both compiler targets after the change.
+  Progress: `sdiv` and `idiv` now return the unchanged minimum dividend for division by `-1`. Added an isolated Java Card CAP fixture that exercises both bytecodes, sign combinations, `srem`/`irem`, and caught divide-by-zero exceptions. Its converted JCA was inspected to confirm it contains `sdiv`, `idiv`, `srem`, and `irem`; the VPCD run passed. ARM and RISC-V builds passed. Physical hardware was not tested.
 
 ### RV-20261103-20
 
