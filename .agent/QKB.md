@@ -1041,6 +1041,7 @@
   RISC-V `max_crypto` builds passed. Hardware scan showed only VPCD readers.
 - **Artifacts:** `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log`
   SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`.
+- **Commit:** `4e67103` (`Clear deselect transients during card reset`).
 
 ## Same-CAP sibling state survives emulator restart — verified 2026-11-02
 

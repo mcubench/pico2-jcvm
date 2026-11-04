@@ -21236,7 +21236,7 @@
   input passes. ARM endpoint is `0x100e8820`, leaving 96,224 bytes in 1 MiB.
 - Decision: Continue CTX-02 with remaining result producers, object-result GC
   rooting, and physical validation.
-- Commit: `pending`
+- Commit: `4e67103`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T162028Z.log`;
   no hardware log.
 

@@ -24,8 +24,9 @@ The initial regression attempts timed out during emulator startup/CAP LOAD at
 the fixture defaults; the bounded 300-second connect and 120-second APDU run
 passed.
 
-Source changes are not yet committed. Preserve unrelated pre-existing dirty
-files, including `AGENTS.md`, docs/review artifacts, SDK submodules,
+Source changes are committed as `4e67103` (`Clear deselect transients during
+card reset`). Preserve unrelated pre-existing dirty files, including
+`AGENTS.md`, docs/review artifacts, SDK submodules,
 `choupi/src/heap.*`, `src/cap_load.cpp`, physical and symmetric-crypto probes,
 and the untracked AlgTest logs/device data. RV-11 remains open for physical
 validation even though its PC regression and builds passed. Next priority:
