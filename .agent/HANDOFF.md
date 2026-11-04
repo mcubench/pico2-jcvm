@@ -18,10 +18,10 @@ connected; the appended log ends during emulator startup before
 which is entered only after SELECT, but leaves production runtime acceptance
 unverified. No physical token or USB/PCSC was used.
 
-The four implementation files remain uncommitted pending this step's metadata
-and scoped commit. Keep RV-27 open until a PC production runtime test exercises
-the restore callback. Preserve all unrelated existing changes. Continue offline
-until physical reader access returns.
+The implementation and first progress entry are committed as `35041e5`.
+Preserve unrelated worktree changes. Keep RV-27 open until a PC production
+runtime test exercises the restore callback. Continue offline until physical
+reader access returns.
 
 ---
 
