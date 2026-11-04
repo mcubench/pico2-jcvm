@@ -31,11 +31,13 @@ Latest applet-free max_crypto ARM binary for external Windows testing:
 - Binary details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 RV-24 is committed as `2688698c9a20204f90c13a46d280b42345cea253`, with
-metadata follow-up `35fc5aa`. RV-25 source/docs/tests are uncommitted. Preserve
-all unrelated dirty files, especially AGENTS.md, heap and CAP loader edits,
-review artifacts, crypto probes and upstream submodules. Stage only RV-25 files
-when its current step is complete. No user-provided CAP or Java Card API source
-was modified.
+metadata follow-up `35fc5aa`. RV-25 first-pass source/docs/tests are committed
+as `0f98760fd411aed6741d8359d80e37fa040f8b79`; the progress SHA metadata
+follow-up is pending. Preserve all unrelated dirty files, especially AGENTS.md,
+heap and CAP loader edits, review artifacts, crypto probes and upstream
+submodules. The next work is physical/runtime CCID validation when a board is
+available, plus fixes uncovered there. No user-provided CAP or Java Card API
+source was modified.
 
 ---
 

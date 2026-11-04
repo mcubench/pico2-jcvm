@@ -21762,5 +21762,5 @@
 - Validation: `./tools/test-ccid-apdu-route` passed `TEST:SUMMARY pass=12 fail=0`; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. No physical CCID or PCSC test was performed; production USB behavior remains unverified.
 - Result: The classifier has one route for explicit/default ISD selection, applet selection, public/protected card-manager APDUs, active applet APDUs, no-applet APDUs, invalid slots, powered-off state and SCP authentication failure. Current firmware-only ARM UF2 is 1,918,464 bytes, SHA-256 `689bbc0985df4e3096012c42cbabe3c7198199109f0c9f70acfbf80c909565e7`; endpoint `0x100EA1D4`, leaving 89,644 bytes. Current applet-free empty-card UF2 is 4,015,616 bytes, SHA-256 `6a4e25626a465b125ecd89a40a442c78a8111984f9876c1685acce57c6c2e50e`. It contains all 4,096 0xFF blocks from `0x10100000` through `0x101FFFFF` and picotool recognizes RP2350 ARM Secure.
 - Decision: Keep RV-25 open until CCID response/status and end-to-end routing are validated through production runtime. Do not claim physical acceptance.
-- Commit: `pending`
+- Commit: `0f98760fd411aed6741d8359d80e37fa040f8b79`
 - Artifacts/logs: `tools/test-ccid-apdu-route`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
