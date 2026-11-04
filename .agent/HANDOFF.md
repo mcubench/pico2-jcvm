@@ -8,6 +8,7 @@ unscoped enum from being interpreted as an array component token. Native
 heap tests include compile-time rejection of the old call shape and runtime
 checks that 64-byte and 128-byte workspaces are `CLEAR_ON_RESET` transients.
 VPCD ECDSA and RSA-SHA1 cases now send 80-byte inputs to exercise growth.
+Implementation commit: `e0d203f` (`Allocate Signature workspaces as transients`).
 
 Validation passed: `./tools/test-jcarray`; the complete asymmetric VPCD suite
 (`PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd`) with

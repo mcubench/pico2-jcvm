@@ -39,7 +39,7 @@
 - Validation: Cross-checked the exact user-provided trace against `.agent/QKB.md`, pinned GlobalPlatformPro CPLC date parsing, and the Windows acceptance guides. No firmware or device state changed. No build/test needed for this backlog correction.
 - Result: Basic Windows reader activation and APDU exchange are evidenced on two reader slots; profile installation and complete JCAlgTest acceptance remain open.
 - Decision: Preserve AC-01 as open until both packaged workflows and reports are run on Windows; do not treat certutil's missing provider mapping as a firmware APDU failure.
-- Commit: pending
+- Commit: `e0d203f` (implementation; progress SHA reference is recorded in the metadata follow-up commit)
 - Artifacts/logs: Windows output supplied in conversation; no local artifact.
 
 ## 2026-11-03 Fix native Cipher SensitiveResult propagation 13 minutes
