@@ -1,3 +1,37 @@
+# Current session — restore transient array shape and zero data — 2026-11-04 12:52 CET
+
+RV-20261103-13 implementation is ready to commit. Restored tagged transient
+arrays now store their logical element count separately from serialized tag
+bytes, zero initialize their new data buffers, and reject backing allocations
+above 65,535 bytes before narrowing. Native tests cover byte, boolean, short,
+int and reference types, including zero defaults, reset clear, last valid index,
+maximum backing capacity and oversized rejection.
+
+`./tools/test-jcarray` passed. The extended
+`SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120
+PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed
+`TEST:SUMMARY pass=6 fail=0`; a restarted emulator restored the installed
+writer applet and reported both transient array lengths as four, with zeroed
+contents. PC, ARM and RISC-V `max_crypto` builds passed; ARM image endpoint is
+`0x100e926c` with 93,588 bytes remaining. The authorized USB helper reported
+one node but `pcsc_scan -r` exposed only Virtual PCD 00 00/01. RV-13 and
+physical verification of RV-11/RV-12 therefore remain open.
+
+The current implementation changes are uncommitted. The successful fresh
+restore log is `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log`
+(SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`).
+The first two restart attempts correctly failed because the test omitted VPCD
+`--restore-applet` metadata and then passed a CAP archive instead of contiguous
+CAP components; the final run uses explicit applet records and the component
+image. Preserve unrelated changes from the user/review work: `AGENTS.md`, docs
+and review artifacts, SDK submodules, `choupi/src/heap.*`, `src/cap_load.cpp`,
+physical/symmetric probes, and AlgTest logs/device data.
+
+After committing RV-13 source and progress, continue the next open priority in
+`TODO.md`; keep physical tests pending until `pcsc_scan -r` lists a real Pico.
+
+---
+
 # Current session — reset clears both transient event classes — 2026-11-04 12:16 CET
 
 RV-20261103-12 reset cleanup is implemented in the worktree. The reset

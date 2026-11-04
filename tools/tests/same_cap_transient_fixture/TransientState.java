@@ -10,9 +10,9 @@ final class TransientState {
   static void initialize() {
     if (deselectBytes == null) {
       deselectBytes = JCSystem.makeTransientByteArray(
-          (short)1, JCSystem.CLEAR_ON_DESELECT);
+          (short)4, JCSystem.CLEAR_ON_DESELECT);
       resetBytes = JCSystem.makeTransientByteArray(
-          (short)1, JCSystem.CLEAR_ON_RESET);
+          (short)4, JCSystem.CLEAR_ON_RESET);
     }
   }
 

@@ -21597,3 +21597,14 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log` SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`; initial default-timeout attempts also logged as `artifacts/logs/same-cap-transient-vpcd-20261104T090735Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T090906Z.log`.
 
+## 2026-11-04 Restore logical size and zero transient storage 35 minutes
+
+- Step/experiment: `rv-20261103-13-transient-array-restore`
+- When: '2026-11-04 09:17 UTC' - '2026-11-04 09:52 UTC'
+- Change: Restored persistent transient arrays now retain a separate logical element count rather than deriving it from the serialized tag prefix. Restore buffers are zero initialized and backing sizes exceeding 65,535 bytes throw `FullMemoryException` before narrowing. Added native array unit cases and a same-CAP process-restart restore check. Updated isolated test stubs to link against current in-progress heap rollback hooks.
+- Validation: `./tools/test-jcarray` passed its full suite, including byte/boolean/short/int/reference restored arrays, zero values, clearing, largest backing lengths, final valid entries and oversized rejection. `SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=6 fail=0`, including fresh emulator-process restoration with expected transient array lengths `04 04` and zero values. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Python/shell syntax and `git diff --check` passed. Physical scan exposed only Virtual PCD readers, so hardware validation was skipped.
+- Result: Test confirms restored arrays report their logical length four regardless of the three-byte tag prefix, contain zero data after process restore, and retain their shape after clear. Maximum tag+header+data backing allocations fit in 65,535 bytes; the next byte-array size is rejected. ARM firmware endpoint `0x100e926c`, leaving 93,588 bytes.
+- Decision: Keep RV-13 open for physical restore validation and broader persisted transient-key coverage; continue to the next high-priority TODO after this commit.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log` SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`; earlier rejected restart attempts are `artifacts/logs/same-cap-transient-vpcd-20261104T093323Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T093949Z.log`.
+

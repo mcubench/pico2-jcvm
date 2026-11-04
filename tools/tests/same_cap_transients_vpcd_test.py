@@ -41,6 +41,9 @@ def main() -> int:
             f"applets={[aid.hex().upper() for aid in applet_aids]}"
         )
 
+    cap_components = ROOT / "build/same-cap-transient-fixture/cap-components.bin"
+    cap_components.write_bytes(code)
+
     emulator = ROOT / "build/choupi-pc/choupi"
     rom_mask = ROOT / "build/choupi-pc/flash"
     dummy = ROOT / "build/algtest-v182-load-code.bin"
@@ -54,12 +57,19 @@ def main() -> int:
     Path(f"{memory}.cap-registry").unlink(missing_ok=True)
     log_path = ROOT / f"artifacts/logs/same-cap-transient-vpcd-{timestamp}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
         listener.listen(1)
         host, port = listener.getsockname()
+        resume_command = [
+            str(emulator), "-m", str(memory), "-s", "--vpcd",
+            f"{host}:{port}", "--applet-aid", WRITER_AID.hex(),
+            "--restore-applet", "56", "22", WRITER_AID.hex(),
+            WRITER_AID.hex(), str(cap_components),
+            "--restore-applet", "56", "0", READER_AID.hex(),
+            READER_AID.hex(), str(cap_components), "--rom-mask", str(rom_mask),
+        ]
         command = [
             str(ROOT / "tools/env"), str(emulator), "-m", str(memory), "-s",
             "--vpcd", f"{host}:{port}", "--applet-aid",
@@ -157,7 +167,38 @@ def main() -> int:
                     f"{response.hex().upper()}"
                 )
             print("TEST:PASS card reset cleared both sibling transient arrays")
-            print("TEST:SUMMARY pass=5 fail=0")
+            connection.close()
+            connection = None
+            process.terminate()
+            process.wait(timeout=10)
+            with log_path.open("ab") as log:
+                process = subprocess.Popen(resume_command, cwd=ROOT, stdout=log,
+                                           stderr=log, start_new_session=True)
+            connection, _ = vpcd.accept_vpcd(
+                listener, process, CONNECT_TIMEOUT, log_path,
+                "same-CAP fresh-process restore")
+            connection.settimeout(APDU_TIMEOUT)
+            vpcd.send_message(connection, b"\x01")
+            vpcd.send_message(connection, b"\x04")
+            if vpcd.receive_message(connection) != bytes.fromhex("3B800181"):
+                raise RuntimeError("unexpected fresh-process ATR")
+            select(connection, WRITER_AID, "SELECT writer after fresh restore")
+            response = vpcd.exchange(connection, bytes.fromhex("8013000000"),
+                                     "read restored transient array lengths")
+            if response != bytes.fromhex("04049000"):
+                raise RuntimeError(
+                    "restored transient arrays reported wrong logical lengths: "
+                    f"{response.hex().upper()}"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("8011000000"),
+                                     "read zeroed arrays after fresh restore")
+            if response != bytes.fromhex("00009000"):
+                raise RuntimeError(
+                    "restored transient arrays were not zero initialized: "
+                    f"{response.hex().upper()}"
+                )
+            print("TEST:PASS fresh restore preserves transient lengths and zeros")
+            print("TEST:SUMMARY pass=6 fail=0")
         finally:
             if connection is not None:
                 connection.close()

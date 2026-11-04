@@ -24,6 +24,11 @@ public final class TransientWriterApplet extends Applet {
       buffer[0] = TransientState.deselectCount;
       apdu.setOutgoingAndSend((short)0, (short)1);
       return;
+    } else if (buffer[1] == 0x13) {
+      buffer[0] = (byte)TransientState.deselectBytes.length;
+      buffer[1] = (byte)TransientState.resetBytes.length;
+      apdu.setOutgoingAndSend((short)0, (short)2);
+      return;
     } else if (buffer[1] != 0x11) {
       ISOException.throwIt((short)0x6d00);
     }

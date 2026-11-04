@@ -131,6 +131,99 @@ int main() {
     return 1;
   }
 
+  jcvm::fs::Tag restored_tag{};
+  restored_tag.len = 3;
+  restored_tag.value[0] = 0xa0;
+  restored_tag.value[1] = 0x42;
+  restored_tag.value[2] = 0x01;
+  jcvm::JC_Array restored_bytes(heap, jcvm::JAVA_ARRAY_T_BYTE, 0,
+                                restored_tag, true, jcvm::CLEAR_ON_RESET, 4);
+  jcvm::JC_Array restored_shorts(heap, jcvm::JAVA_ARRAY_T_SHORT, 0,
+                                 restored_tag, true, jcvm::CLEAR_ON_RESET, 4);
+  jcvm::JC_Array restored_ints(heap, jcvm::JAVA_ARRAY_T_INT, 0,
+                               restored_tag, true, jcvm::CLEAR_ON_RESET, 4);
+  jcvm::JC_Array restored_references(
+      heap, jcvm::JAVA_ARRAY_T_REFERENCE, 0xffff, restored_tag, true,
+      jcvm::CLEAR_ON_RESET, 4);
+  if (restored_bytes.size() != 4 || restored_shorts.size() != 4 ||
+      restored_ints.size() != 4 || restored_references.size() != 4 ||
+      restored_bytes.getByteEntry(0) != 0 ||
+      restored_bytes.getByteEntry(3) != 0 ||
+      restored_shorts.getShortEntry(0) != 0 ||
+      restored_shorts.getShortEntry(3) != 0 ||
+      restored_ints.getIntEntry(0) != 0 ||
+      restored_ints.getIntEntry(3) != 0 ||
+      !restored_references.getReferenceEntry(0).isNullPointer() ||
+      !restored_references.getReferenceEntry(3).isNullPointer()) {
+    std::cerr << "restored transient logical length or zero initialization failed\n";
+    return 1;
+  }
+  restored_bytes.setByteEntry(0, 0x5a);
+  restored_shorts.setShortEntry(0, 0x1234);
+  restored_ints.setIntEntry(0, 0x12345678);
+  restored_bytes.clearTransientData();
+  restored_shorts.clearTransientData();
+  restored_ints.clearTransientData();
+  restored_references.clearTransientData();
+  if (restored_bytes.size() != 4 || restored_shorts.size() != 4 ||
+      restored_ints.size() != 4 || restored_references.size() != 4 ||
+      restored_bytes.getByteEntry(0) != 0 ||
+      restored_shorts.getShortEntry(0) != 0 ||
+      restored_ints.getIntEntry(0) != 0 ||
+      !restored_references.getReferenceEntry(0).isNullPointer()) {
+    std::cerr << "clearing a restored transient array changed its size or values\n";
+    return 1;
+  }
+
+  const auto check_largest_restored_array = [&](const jcvm::jc_array_type type,
+                                                 const uint16_t entry_size) {
+    const uint16_t maximum_length = static_cast<uint16_t>(
+        (0xffffu - restored_tag.len - sizeof(uint8_t)) / entry_size);
+    jcvm::JC_Array largest(heap, type, 0xffff, restored_tag, true,
+                           jcvm::CLEAR_ON_RESET, maximum_length);
+    if (largest.size() != maximum_length ||
+        largest.getEntrySize() != entry_size) {
+      return false;
+    }
+    switch (type) {
+    case jcvm::JAVA_ARRAY_T_BYTE:
+    case jcvm::JAVA_ARRAY_T_BOOLEAN:
+      return largest.getByteEntry(maximum_length - 1) == 0;
+    case jcvm::JAVA_ARRAY_T_SHORT:
+      return largest.getShortEntry(maximum_length - 1) == 0;
+    case jcvm::JAVA_ARRAY_T_INT:
+      return largest.getIntEntry(maximum_length - 1) == 0;
+    case jcvm::JAVA_ARRAY_T_REFERENCE:
+      return largest.getReferenceEntry(maximum_length - 1).isNullPointer();
+    }
+    return false;
+  };
+  if (!check_largest_restored_array(jcvm::JAVA_ARRAY_T_BYTE, sizeof(uint8_t)) ||
+      !check_largest_restored_array(jcvm::JAVA_ARRAY_T_BOOLEAN,
+                                    sizeof(uint8_t)) ||
+      !check_largest_restored_array(jcvm::JAVA_ARRAY_T_SHORT, sizeof(uint16_t)) ||
+      !check_largest_restored_array(jcvm::JAVA_ARRAY_T_INT, sizeof(uint32_t)) ||
+      !check_largest_restored_array(jcvm::JAVA_ARRAY_T_REFERENCE,
+                                    sizeof(jcvm::jref_t))) {
+    std::cerr << "largest restored transient array boundary failed\n";
+    return 1;
+  }
+  try {
+    jcvm::JC_Array oversized(
+        heap, jcvm::JAVA_ARRAY_T_BYTE, 0, restored_tag, true,
+        jcvm::CLEAR_ON_RESET,
+        static_cast<uint16_t>(0xffffu - restored_tag.len));
+    std::cerr << "oversized restored transient array was accepted\n";
+    return 1;
+  } catch (const jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::FullMemoryException) {
+      std::cerr << "oversized restored array raised the wrong exception\n";
+      return 1;
+    }
+  }
+  std::cout << "TEST:PASS restored_transient_lengths_and_zero_values\n";
+  std::cout << "TEST:PASS restored_transient_maximum_backing_lengths\n";
+
   for (uint16_t index = 0; index < bytes.size(); ++index) {
     bytes.setByteEntry(index, static_cast<jcvm::jbyte_t>(index + 1));
   }

@@ -1,6 +1,8 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_class.hpp"
 #include "jc_handlers/jc_cp.hpp"
+#include "jc_handlers/jc_export.hpp"
+#include "jc_handlers/jc_import.hpp"
 #include "jc_types/jc_instance.hpp"
 
 #include <cstdint>
@@ -21,6 +23,37 @@ extern "C" uint8_t fs_read_1b_at(const uint8_t *, uint8_t, uint32_t,
 
 namespace jcvm {
 Package::Package(jpackage_ID_t packageID) noexcept : ID(packageID) {}
+
+JC_Cap Package::getCap() const { return JC_Cap(0, nullptr, false); }
+
+JC_Cap::JC_Cap(uint16_t, const uint8_t *, bool) {}
+
+const jc_cap_import_component *JC_Cap::getImport() const noexcept {
+  return nullptr;
+}
+
+const jc_cap_package_info *Import_Handler::getPackageAID(const uint8_t) {
+  return nullptr;
+}
+
+const jpackage_ID_t
+Import_Handler::getPackageIndex(const jc_cap_package_info *) {
+  return 0;
+}
+
+uint8_t remap_imported_class_token(const jc_cap_package_info &,
+                                   const uint8_t token) noexcept {
+  return token;
+}
+
+const jclass_index_t
+Export_Handler::getExportedClassOffset(const uint16_t) const {
+  return 0;
+}
+
+uint32_t FlashMemory_Handler::persistentWriteRollbackGeneration() noexcept {
+  return 0;
+}
 
 JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
                          const jclass_index_t claz_index)

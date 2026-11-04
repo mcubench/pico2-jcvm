@@ -139,6 +139,7 @@ during the review.
   Owner: PERSIST-02, PROFILE-01. Evidence: Reproduced/source; [review R13](docs/review_20261103.md#r13--restored-transient-arrays-have-the-wrong-length-and-uninitialized-storage).
   Acceptance: represent logical length separately or calculate it correctly; initialize only the data region and preserve its tag metadata. Validate byte/short/int/reference arrays after fresh restore and after clear/reset, including the largest accepted sizes.
   New evidence: After process restart, directly using retained AES and RSA Cipher workspaces correctly returns `UninitializedKey`. Attempting to repopulate the retained RSA transient key in the same restored applet instead returns the fixture's generic exception marker for `ArrayIndexOutOfBoundsException` (`62 9000`); transient component arrays therefore need restore-capacity coverage here.
+  Progress: restored `JC_Array` objects now keep their logical element count separately from serialized tag bytes, zero initialize backing storage, and reject tag-plus-data backing lengths above 65,535 bytes with `FullMemoryException`. Native tests cover byte/boolean/short/int/reference lengths, zero values, clear behavior, last valid elements and maximum backing sizes. A same-CAP VPCD test restarts the emulator and confirms both transient byte arrays restore with logical length four and zero values. Physical testing remains pending.
 
 ### RV-20261103-14
 

@@ -49,6 +49,16 @@ void checkArrayEntryIndex(const JC_Array &array, const uint16_t index) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
 }
+
+uint16_t restoredArrayBackingLength(const uint8_t tag_length,
+                                   const uint32_t data_length) {
+  const uint32_t backing_length =
+      static_cast<uint32_t>(tag_length) + sizeof(uint8_t) + data_length;
+  if (backing_length > 0xffffu) {
+    throw Exceptions::FullMemoryException;
+  }
+  return static_cast<uint16_t>(backing_length);
+}
 } // namespace
 
 /**
@@ -57,7 +67,7 @@ void checkArrayEntryIndex(const JC_Array &array, const uint16_t index) {
 JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
                    const bool isTransientArray, const ClearEvent event)
     : JC_Object(owner, false), isTransient(isTransientArray),
-      type(type), reference_type(0xFFFF),
+      type(type), logical_length(size), reference_type(0xFFFF),
       array(size * JC_Array::getEntrySize(type)), clear(event),
       global_reference_owners(),
       reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? size : 0,
@@ -90,7 +100,7 @@ JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
                    const jc_cp_offset_t reference_type,
                    const bool isTransientArray, const ClearEvent event)
     : JC_Object(owner, false), isTransient(isTransientArray),
-      type(type), reference_type(reference_type),
+      type(type), logical_length(size), reference_type(reference_type),
       array(size * JC_Array::getEntrySize(type)), clear(event),
       global_reference_owners(
           owner.isGlobalHeap() && type == JAVA_ARRAY_T_REFERENCE
@@ -108,15 +118,17 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                    const bool isTransientArray, const ClearEvent event,
                    const uint16_t length)
     : JC_Object(owner, true), isTransient(isTransientArray), type(type),
-      reference_type(reference_type),
-      array(tag.len +
-                (isTransientArray ? length * JC_Array::getEntrySize(type) : 0) +
-                sizeof(uint8_t),
-            new uint8_t[tag.len +
-                        (isTransientArray
-                             ? length * JC_Array::getEntrySize(type)
-                             : 0) +
-                        sizeof(uint8_t)],
+      logical_length(length), reference_type(reference_type),
+      array(restoredArrayBackingLength(
+                tag.len, isTransientArray
+                            ? static_cast<uint32_t>(length) *
+                                  JC_Array::getEntrySize(type)
+                            : 0),
+            new uint8_t[restoredArrayBackingLength(
+                tag.len, isTransientArray
+                            ? static_cast<uint32_t>(length) *
+                                  JC_Array::getEntrySize(type)
+                            : 0)]{},
             true),
       clear(event), global_reference_owners(),
       reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? length : 0,
@@ -236,6 +248,9 @@ jc_cp_offset_t JC_Array::getReferenceType() const
  * @return array size.
  */
 uint16_t JC_Array::size() const {
+  if (this->isTransientArray() && this->isPersistent()) {
+    return this->logical_length;
+  }
   uint32_t length = 0;
 
   if (this->isTransientArray()) {

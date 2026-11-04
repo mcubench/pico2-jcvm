@@ -1,3 +1,33 @@
+# Restored transient array length and initialization — verified 2026-11-04
+
+- **Finding:** A restored transient array allocated its serialized tag prefix
+  plus the requested element bytes, then `size()` divided the entire byte
+  buffer by element width. A byte array of logical length four and a three-byte
+  tag therefore appeared to have eight elements. The tagged constructor also
+  allocated raw uninitialized bytes, leaving default transient contents
+  unspecified after restore.
+- **Viable fix:** Keep logical element count independently of the serialized
+  tag prefix for persistent transient arrays. Zero initialize the restore
+  buffer, including transient data, and reject a tag/header/data allocation
+  larger than the 16-bit `JCVMArray` backing length before narrowing it.
+- **Validation:** `./tools/test-jcarray` passed its complete suite, including
+  byte, boolean, short, int and reference restore lengths, zero initialization,
+  clear behavior, final valid index, maximum backing sizes and oversized
+  rejection. `SAME_CAP_CONNECT_TIMEOUT_S=300
+  SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1
+  ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=6 fail=0`,
+  including fresh emulator-process restore of transient static arrays with
+  expected lengths `04 04` and zero values. PC, ARM and RISC-V `max_crypto`
+  builds passed. Authorized scan found only VPCD readers; no physical test was
+  available.
+- **Implementation boundary:** Transient arrays still restore as zeroed
+  objects; their contents are not persisted. The logical length is metadata
+  needed to preserve the original Java Card array shape.
+- **Artifacts:** `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log`
+  SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`.
+
+---
+
 # Transient Cipher key copies and VPCD lifecycle test framing — 2026-11-04
 
 - **Finding:** Symmetric Cipher key bytes and RSA Cipher modulus/exponent

@@ -59,6 +59,8 @@ private:
   const bool isTransient;
   /// Array type elements.
   const jc_array_type type;
+  /// Logical element count, excluding any serialized tag prefix.
+  const uint16_t logical_length;
   /* In case of array of reference, the element type should be saved.
    * cp_offset is a 2-byte offset in the constant pool component.
    */
