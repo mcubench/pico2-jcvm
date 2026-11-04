@@ -12,7 +12,9 @@ dispatch an applet-supplied native method index. The VM therefore rejects
 `impdep1` and `impdep2` while the current executing package is dynamically
 allocated.
 
-This is one boundary only. It does not certify instruction fetches, method
-headers, branch targets, constant-pool linkage, or heap field types. Those
-checks remain required before claiming safe execution of malformed or hostile
-CAP programs. Valid upstream CAPs remain the compatibility baseline.
+This is one boundary only. Runtime method lookup checks that the normal or
+extended method header fits inside the Method component before reading it. It
+does not yet bound instruction fetches or method bodies, validate branch
+targets, verify nested constant-pool linkage, or enforce heap field kinds.
+Those checks remain required before claiming safe execution of malformed or
+hostile CAP programs. Valid upstream CAPs remain the compatibility baseline.

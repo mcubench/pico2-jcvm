@@ -1,4 +1,4 @@
-# Current session — RV-28 uploaded-CAP native opcode boundary — 2026-11-04 19:15 CET
+# Current session — RV-28 CAP method header bounds — 2026-11-04 19:27 CET
 
 RV-20261103-28 has a partial native-opcode-origin fix in the worktree. Added
 `src/cap_execution_policy.hpp` with the dynamic package range 56–63; the range
@@ -8,18 +8,36 @@ when the current method belongs to an uploaded CAP. Added
 `docs/CAP_EXECUTION_TRUST_MODEL.md` to state that GP authentication does not
 make uploaded bytecode trusted. ROM/framework CAPs remain permitted.
 
-Validation: `./tools/test-cap-native-opcode-policy` passes 5/5. PC max_crypto,
-ARM current, and RISC-V current builds pass. Existing Rust and packed-member
-warnings remain. No malformed CAP, sanitizer execution, firmware flash, or
-physical test was performed. RV-28 stays open: method/instruction fetch bounds,
-branch targets, nested linkage, heap field-kind/access checks, and malformed
-input runtime tests are still required. Do not claim the interpreter fully
-validates uploaded code.
+Added `src/cap_method_bounds.hpp` and guarded `Method_Handler::getMethodFromOffset`
+against offsets outside the Method component and truncated normal (2-byte) or
+extended (5-byte) headers before later code reads packed fields. The helper
+test covers exact-fit and truncated headers at several offsets.
 
-RV-28 native-opcode source and progress entry are committed as `788df11`.
-Preserve all pre-existing worktree changes, including the unrelated
-`src/cap_load.cpp` changes; it was not edited for this step. Continue offline
-unless authorized physical runtime access becomes available.
+Validation: `./tools/test-cap-native-opcode-policy` passes 5/5 and
+`./tools/test-cap-method-bounds` passes 7/7. `./tools/build arm` and
+`./tools/build riscv` pass; the ARM wrapper also rebuilt the PC emulator. A
+valid upstream JCAlgTest PC VPCD integration retry timed out before
+`VPCD:APPLET_INSTALLED` or socket connect. The startup log is
+`artifacts/logs/host-vpcd-jcalgtest-20261014.log`. Existing Rust and
+packed-member warnings remain. No malformed CAP, sanitizer execution, firmware
+flash, or physical test was performed. RV-28 stays open: instruction/body
+bounds, branch targets, nested linkage, heap field-kind/access checks, and
+malformed input runtime tests are still required. Do not claim the interpreter
+fully validates uploaded code.
+
+The native opcode boundary step is committed as `788df11` (metadata follow-up
+`7d77b7e`). Preserve all pre-existing worktree changes, including the unrelated
+`src/cap_load.cpp` changes; it was not edited for these steps. The current
+method-header step is pending scoped commits. Continue offline unless
+authorized physical runtime access becomes available.
+
+---
+
+# Prior session — RV-28 uploaded-CAP native opcode boundary — 2026-11-04 19:15 CET
+
+The first RV-28 slice rejects `impdep1` and `impdep2` in dynamic package IDs
+56–63. It is committed as `788df11`, with the progress metadata follow-up
+`7d77b7e`.
 
 ---
 

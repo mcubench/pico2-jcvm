@@ -29,6 +29,7 @@
 #include "../debug.hpp"
 #include "../heap.hpp"
 #include "../stack.hpp"
+#include "../../../src/cap_method_bounds.hpp"
 #include <cstdio>
 
 namespace jcvm {
@@ -80,8 +81,19 @@ const uint8_t *Method_Handler::getMethodFromOffset(const uint16_t method_offset)
                      static_cast<unsigned>(methods.size()));
   }
 
-  // NOTE: The method offset starts from 1.
-  return &(methods.at(method_array_offset - 1));
+  // NOTE: The method offset starts from 1. Validate the complete CAP method
+  // header before callMethod/getArgumentCount reads its packed fields.
+  const uint16_t method_index =
+      static_cast<uint16_t>(method_array_offset - 1);
+  if (method_index >= methods.size()) {
+    throw Exceptions::SecurityException;
+  }
+  const uint8_t *method = methods.data() + method_index;
+  if (!cap_method_bounds::header_fits(
+          methods.size(), method_index, methods.at(method_index))) {
+    throw Exceptions::SecurityException;
+  }
+  return method;
 }
 
 /**

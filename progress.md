@@ -21797,3 +21797,14 @@
 - Decision: Keep RV-28 open; next address bytecode/method bounds and runtime malformed-CAP coverage, then field type enforcement. Do not claim hostile CAP validation complete.
 - Commit: `pending`
 - Artifacts/logs: `tools/test-cap-native-opcode-policy`; `docs/CAP_EXECUTION_TRUST_MODEL.md`; no firmware log.
+
+## 2026-11-04 Bound CAP method header reads 12 minutes
+
+- Step/experiment: `rv-20261103-28-method-header-bounds-first-pass`
+- When: '2026-11-04 19:15 CET' - '2026-11-04 19:27 CET'
+- Change: Added checked normal/extended CAP method-header sizing and validated each method offset plus full 2-byte normal or 5-byte extended header against the Method component before returning a pointer to code that reads those fields. Added exact-fit, truncation, and component-end boundary tests. Updated the trust-model documentation to describe the remaining execution gaps.
+- Validation: `./tools/test-cap-method-bounds` passed `TEST:SUMMARY pass=7 fail=0`; `./tools/test-cap-native-opcode-policy` passed `TEST:SUMMARY pass=5 fail=0`; `./tools/build arm` and `./tools/build riscv` passed (the ARM wrapper rebuilt the PC emulator). `git -c core.whitespace=cr-at-eol diff --check -- <scoped files>` passed. The valid upstream PC VPCD applet integration retry timed out before `VPCD:APPLET_INSTALLED` or socket connect; no malformed CAP, sanitizer, or physical hardware test was run.
+- Result: Method lookup no longer returns an out-of-component or truncated method header pointer. Instruction body/branch bounds and heap field-kind validation are still absent; integration acceptance remains unverified due startup timeout. Firmware was not flashed; image size not measured.
+- Decision: Keep RV-28 open. Next bound bytecode fetch and branch targets, then add malformed-CAP sanitizer coverage and field-kind/access checks.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-cap-method-bounds`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (second appended pre-connect timeout).

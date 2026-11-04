@@ -13,6 +13,21 @@
   solves only native opcode origin and does not bound instruction fetches or
   verify heap field kinds.
 
+## Method component must contain the complete CAP method header — verified 2026-11-04
+
+- **Finding:** `getMethodFromOffset()` previously checked the first method byte
+  via `JCVMArray::at()`, then `callMethod()` and `getArgumentCount()` read
+  normal or extended packed header fields without ensuring the full 2-byte or
+  5-byte header remained in the Method component.
+- **Viable solution:** Before returning a method pointer, check its offset and
+  confirm the complete header length against the remaining component bytes.
+  The current helper checks truncation and component-end boundaries.
+- **Coverage/limits:** Focused bounds test passes 7/7 and ARM/RISC-V/PC builds
+  pass. The instruction body, branch targets, and all nested linkage are not
+  bounded by this check. The valid JCAlgTest VPCD integration currently times
+  out during emulator startup before applet installation and does not exercise
+  this path.
+
 ## PC VPCD applet integration timeout before socket connect — observed 2026-11-04
 
 - **Finding:** An elevated `PICO2_HOST_USB_ACCESS=1
