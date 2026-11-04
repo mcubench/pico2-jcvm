@@ -21709,13 +21709,13 @@
 - Artifacts/logs: `artifacts/logs/division-vpcd-20261104T134625Z.log` SHA-256 `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`; `build/arm/pico2_choupi.uf2` SHA-256 `1506bd0429e6413ef78bf2e3f43942ab0ed1a896d8ba85c48ba7e4e84cff28b6`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2` SHA-256 `b1543eba771770db6e671351122ddaee810c23803034a3b8482197cedf58f0ef`.
 
 
-## 2026-11-04 Preserve SIO exception identity and reason 54 minutes
+## 2026-11-04 Preserve SIO exception identity and reason 56 minutes
 
 - Step/experiment: `rv-20261103-21-sio-exception-propagation`
-- When: '2026-11-04 14:49 CET' - '2026-11-04 15:43 CET'
+- When: '2026-11-04 14:49 CET' - '2026-11-04 15:45 CET'
 - Change: Nested SIO calls now carry uncaught exception owner identity, restore the caller context before dispatch, and copy the thrown object into the caller heap with concrete class and scalar reason fields intact. References to private server objects are rejected to prevent crossing heap ownership. Added test fixture calls for `CryptoException` reason `0x1234`, concrete `ArrayIndexOutOfBoundsException`, and a successful follow-up SIO invocation.
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The full elevated VPCD suite passed `TEST:SUMMARY pass=33 fail=0`; `bash -n` and Python bytecode compilation passed earlier in the step. Generated UF2 inspection confirmed all current firmware payload blocks and 4,096 all-`0xFF` blocks at `0x10100000`–`0x101FFFFF`. Existing Rust/C++ dependency warnings remain. No physical device was accessed.
 - Result: Java exceptions now cross the SIO boundary without replacing their type or scalar reason; the client can catch the original subclass, and a follow-up server call succeeds. Current ARM max firmware is 1,915,392 bytes, ends at `0x100E9B0C`, leaving 91,380 bytes. The empty-card max UF2 is 4,012,544 bytes. Firmware SHA-256: `398a73319dc924d8ce5508bf3baee5dc11ed2454cf5052b776f4c63edba29cd3`; empty-card UF2 SHA-256: `088987ee16747f2f7f048e23444ffcc559a3ef01dfad854356d6b9d656cd8f99`.
 - Decision: Close RV-21. Continue with RV-22 inherited interface membership. Do not flash or claim physical validation until separately requested and available.
-- Commit: `pending`
+- Commit: `2e3f58f`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T142957Z.log`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.

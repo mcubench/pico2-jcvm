@@ -25,8 +25,9 @@ Current applet-free max_crypto ARM image for external Windows testing:
 - Details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 - VPCD evidence: `artifacts/logs/sio-cross-aid-vpcd-20261104T142957Z.log`.
 
-The source and metadata are prepared for a scoped commit; preserve all unrelated
-worktree changes. Physical validation remains pending. Next, continue with
+Source, regression fixture, TODO, QKB, progress and image instructions are
+committed as `2e3f58f`. Unrelated worktree changes remain unstaged and
+preserved. Physical validation remains pending. Next, continue with
 RV-20261103-22, inherited interface membership checks.
 
 ---
