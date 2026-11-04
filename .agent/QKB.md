@@ -6019,3 +6019,31 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Validation:** Shared route tests pass 12/12 and ARM/RISC-V builds pass.
   This does not validate USB CCID response status or end-to-end routing on a
   physical token; that remains required before RV-25 closes.
+
+## CCID final response and endpoint recovery — 2026-11-04
+
+- **Finding:** If the outstanding time-extension IN transfer survived the
+  driver's 100 ms wait, or if final `usbd_edpt_xfer` rejected the response
+  synchronously, the driver discarded the final response and left Bulk-OUT
+  unarmed. Async IN failures had a rearm path, but synchronous rejection did
+  not produce an endpoint callback.
+- **Viable solution:** Keep the final response in the shared TX buffer and
+  retry from the main USB task after the extension completes. Retry at 1 ms
+  intervals, cap synchronous IN rejection at 32 attempts, then drop the
+  response and queue Bulk-OUT so the host can retry. Apply the same retry cap
+  to the terminating ZLP. If queuing Bulk-OUT itself fails, retain that rearm
+  request and retry at 1 ms intervals. Async endpoint failures continue to
+  abort the response and rearm OUT.
+- **Validation:** Shared progress-flow tests pass 15/15 and ARM/RISC-V builds
+  pass. No physical or production CCID runtime validation is available yet;
+  test slot-status/APDU recovery on hardware before closing RV-26.
+
+## PC/SC reader unavailable despite USB identity — 2026-11-04
+
+- **Observation:** The authorized reader helper reported one USB node with
+  access granted and `lsusb -d 2e8a:` briefly showed `2e8a:0009 Pico2 JCVM
+  CCID`, but repeated `pcsc_scan -r` calls listed only `Virtual PCD 00 00` and
+  `Virtual PCD 00 01`.
+- **Current decision:** Do not treat the absent PC/SC reader as firmware
+  evidence and do not claim a physical test. Continue offline. The VM's current
+  USB/PCSC attachment state must be restored before physical acceptance.

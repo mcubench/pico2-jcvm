@@ -1,3 +1,45 @@
+# Current session — RV-26 CCID response recovery first pass — 2026-11-04 20:43 CET
+
+RV-20261103-26 first pass is implemented. `send_response` no longer blocks for
+100 ms waiting for an extension and then discards the final response. It
+retains the response in `tx_buffer`, retries nonblocking from the main USB task
+after extension completion, and throttles retries to 1 ms. Thirty-two
+synchronous final IN submission failures trigger a recoverable abort and
+Bulk-OUT rearm so the host can retry. Bulk-OUT submission failures also retain
+and retry the rearm request. ZLP submission uses the same retry service.
+
+`./tools/test-ccid-progress-flow` passes `TEST:SUMMARY pass=15 fail=0`; ARM and
+RISC-V max_crypto wrappers pass. Production callback recovery is unverified.
+The authorized helper briefly saw a USB node and `lsusb` showed
+`2e8a:0009 Pico2 JCVM CCID`, but repeated `pcsc_scan -r` only showed both
+Virtual PCD readers. No physical runtime test was performed. RV-25 production
+CCID route runtime validation is also still open.
+
+Latest applet-free max_crypto ARM binary for external Windows testing:
+
+- Empty-card image: `build/arm/pico2_choupi_max_crypto_empty_card.uf2`,
+  4,016,640 bytes, SHA-256
+  `7112f8f52a14ef60027904648338f85c7e7dee8e02739c9a52de8046fa6b5d2e`.
+- Firmware-only image: `build/arm/pico2_choupi.uf2`, 1,919,488 bytes,
+  SHA-256 `692c1fb42f8c7dd2aa92a37b6b23aa999f93c657eeb7144f63e66e2cbd72dbed`.
+- Firmware endpoint `0x100EA3BC`, 89,156 bytes remain before storage at
+  `0x10100000`; combined image contains 4,096 all-`0xFF` blocks through
+  `0x101FFFFF`. Picotool reports RP2350 ARM Secure. The image has no bundled
+  CAP/applet and was not flashed.
+- Details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+RV-24 source commit `2688698c9a20204f90c13a46d280b42345cea253`, metadata
+follow-up `35fc5aa`. RV-25 first-pass source commit
+`0f98760fd411aed6741d8359d80e37fa040f8b79`, metadata follow-up `ed4d390`.
+RV-26 source/docs/progress are uncommitted. Preserve unrelated files, including
+AGENTS.md, heap/CAP loader changes, review artifacts, crypto probes and
+upstream submodules. Stage only RV-26 files. Next offline priority after this
+commit is RV-27 test/session correctness; return to RV-25/26 runtime tests if a
+physical CCID reader becomes available. No CAP or Java Card API source was
+changed.
+
+---
+
 # Current session — RV-25 production CCID routing first pass — 2026-11-04 20:23 CET
 
 RV-20261103-25 is in progress. Added `src/ccid_apdu_route.hpp`, a shared

@@ -84,6 +84,15 @@ uint8_t ep_out = 0;
 uint8_t ep_in = 0;
 volatile bool message_pending = false;
 volatile bool tx_zlp_pending = false;
+bool pending_final_response = false;
+uint8_t pending_final_response_rhport = 0;
+uint16_t pending_final_response_length = 0;
+uint32_t pending_response_retry_after_us = 0;
+uint8_t pending_response_submit_failures = 0;
+constexpr uint32_t kPendingResponseRetryIntervalUs = 1000;
+bool pending_out_rearm = false;
+uint8_t pending_out_rearm_rhport = 0;
+uint32_t pending_out_rearm_after_us = 0;
 uint8_t pending_rhport = 0;
 volatile uint8_t debug_stage = 0;
 volatile uint8_t debug_endpoint = 0;
@@ -291,22 +300,104 @@ uint16_t build_dynamic_get_status_page(
   return 0x9000;
 }
 
+bool try_queue_out(uint8_t rhport) {
+  const size_t transfer_length = ccid_rx::next_transfer_size(
+      sizeof(rx_buffer), kEndpointSize, rx_length, rx_expected);
+  if (transfer_length == 0) {
+    ++debug_invalid_messages;
+    rx_length = 0;
+    rx_expected = 0;
+    rx_armed_length = 0;
+    return true;
+  }
+  if (!usbd_edpt_xfer(rhport, ep_out, rx_buffer + rx_length,
+                      static_cast<uint16_t>(transfer_length))) {
+    ++debug_out_rearm_errors;
+    return false;
+  }
+  rx_armed_length = transfer_length;
+  return true;
+}
+
 void queue_out(uint8_t rhport) {
-  if (ep_out != 0 && !usbd_edpt_busy(rhport, ep_out)) {
-    const size_t transfer_length = ccid_rx::next_transfer_size(
-        sizeof(rx_buffer), kEndpointSize, rx_length, rx_expected);
-    if (transfer_length == 0) {
-      ++debug_invalid_messages;
-      rx_length = 0;
-      rx_expected = 0;
-      rx_armed_length = 0;
+  if (ep_out == 0) return;
+  if (usbd_edpt_busy(rhport, ep_out)) {
+    pending_out_rearm = false;
+    return;
+  }
+  if (try_queue_out(rhport)) {
+    pending_out_rearm = false;
+  } else {
+    pending_out_rearm = true;
+    pending_out_rearm_rhport = rhport;
+    pending_out_rearm_after_us = time_us_32() + kPendingResponseRetryIntervalUs;
+  }
+}
+
+void service_pending_out_rearm() {
+  if (!pending_out_rearm ||
+      static_cast<int32_t>(time_us_32() - pending_out_rearm_after_us) < 0) {
+    return;
+  }
+  pending_out_rearm_after_us =
+      time_us_32() + kPendingResponseRetryIntervalUs;
+  (void)choupi::retry_pending_ccid_transfer(
+      pending_out_rearm, false,
+      [] { return usbd_edpt_busy(pending_out_rearm_rhport, ep_out); },
+      [] { return try_queue_out(pending_out_rearm_rhport); });
+}
+
+void service_pending_final_response() {
+  const uint32_t now = time_us_32();
+  if (static_cast<int32_t>(now - pending_response_retry_after_us) < 0) return;
+  pending_response_retry_after_us = now + kPendingResponseRetryIntervalUs;
+  bool submit_attempted = false;
+  const bool submitted = choupi::retry_pending_ccid_transfer(
+      pending_final_response, native_extension_in_flight,
+      [] {
+        return usbd_edpt_busy(pending_final_response_rhport, ep_in);
+      },
+      [&] {
+        submit_attempted = true;
+        return usbd_edpt_xfer(pending_final_response_rhport, ep_in, tx_buffer,
+                              pending_final_response_length);
+      });
+  if (submitted) {
+    pending_final_response_length = 0;
+    pending_response_submit_failures = 0;
+    return;
+  }
+  if (submit_attempted) {
+    ++debug_in_submit_errors;
+    if (choupi::record_pending_ccid_submit_failure(
+            pending_response_submit_failures)) {
+      // A permanently rejected IN transfer must not leave Bulk-OUT disarmed.
+      // Drop this response so the host can retry the APDU after rearming.
+      pending_final_response = false;
+      pending_final_response_length = 0;
+      pending_response_submit_failures = 0;
+      tx_zlp_pending = false;
+      queue_out(pending_final_response_rhport);
       return;
     }
-    if (!usbd_edpt_xfer(rhport, ep_out, rx_buffer + rx_length,
-                        static_cast<uint16_t>(transfer_length))) {
-      ++debug_out_rearm_errors;
+  }
+
+  // Submit the terminating ZLP from the main USB task and keep retrying if
+  // TinyUSB temporarily refuses the endpoint transfer.
+  if (!pending_final_response && tx_zlp_pending &&
+      !native_extension_in_flight &&
+      !usbd_edpt_busy(pending_final_response_rhport, ep_in)) {
+    if (usbd_edpt_xfer(pending_final_response_rhport, ep_in, nullptr, 0)) {
+      tx_zlp_pending = false;
+      pending_response_submit_failures = 0;
     } else {
-      rx_armed_length = transfer_length;
+      ++debug_in_submit_errors;
+      if (choupi::record_pending_ccid_submit_failure(
+              pending_response_submit_failures)) {
+        tx_zlp_pending = false;
+        pending_response_submit_failures = 0;
+        queue_out(pending_final_response_rhport);
+      }
     }
   }
 }
@@ -371,21 +462,12 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   // host can distinguish completion from a longer CCID response. TinyUSB's
   // low-level endpoint API leaves this class-specific framing to the driver.
   tx_zlp_pending = response_requires_zlp(transfer_length);
-  const bool submitted = choupi::submit_final_after_ccid_extension(
-      native_extension_in_flight,
-      [&] {
-        const absolute_time_t deadline = make_timeout_time_ms(100);
-        choupi::wait_for_ccid_extension(
-            native_extension_in_flight, deadline,
-            [](absolute_time_t until) { return time_reached(until); },
-            [] { choupi::service_usb_task(); },
-            [](unsigned delay) { sleep_us(delay); });
-      },
-      [&] { return usbd_edpt_xfer(rhport, ep_in, tx_buffer, transfer_length); });
-  if (!submitted) {
-    tx_zlp_pending = false;
-    ++debug_in_submit_errors;
-  }
+  pending_final_response_rhport = rhport;
+  pending_final_response_length = transfer_length;
+  pending_final_response = true;
+  pending_response_submit_failures = 0;
+  pending_response_retry_after_us = 0;
+  service_pending_final_response();
 }
 
 class NativeOperationScope {
@@ -966,6 +1048,14 @@ void driver_init() {
   rx_armed_length = 0;
   message_pending = false;
   tx_zlp_pending = false;
+  pending_final_response = false;
+  pending_final_response_rhport = 0;
+  pending_final_response_length = 0;
+  pending_response_submit_failures = 0;
+  pending_response_retry_after_us = 0;
+  pending_out_rearm = false;
+  pending_out_rearm_rhport = 0;
+  pending_out_rearm_after_us = 0;
   native_operation_active = false;
   native_extension_in_flight = false;
   slot_state = 1;
@@ -979,6 +1069,13 @@ void driver_init() {
 bool driver_deinit() {
   native_operation_active = false;
   native_extension_in_flight = false;
+  tx_zlp_pending = false;
+  pending_final_response = false;
+  pending_final_response_length = 0;
+  pending_response_submit_failures = 0;
+  pending_response_retry_after_us = 0;
+  pending_out_rearm = false;
+  pending_out_rearm_after_us = 0;
   choupi_reader_led_set_reader_mode(false);
   return true;
 }
@@ -990,6 +1087,14 @@ void driver_reset(uint8_t) {
   rx_armed_length = 0;
   message_pending = false;
   tx_zlp_pending = false;
+  pending_final_response = false;
+  pending_final_response_rhport = 0;
+  pending_final_response_length = 0;
+  pending_response_submit_failures = 0;
+  pending_response_retry_after_us = 0;
+  pending_out_rearm = false;
+  pending_out_rearm_rhport = 0;
+  pending_out_rearm_after_us = 0;
   native_operation_active = false;
   native_extension_in_flight = false;
   slot_state = 1;
@@ -1070,6 +1175,9 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     rx_armed_length = 0;
     message_pending = false;
     tx_zlp_pending = false;
+    pending_final_response = false;
+    pending_final_response_length = 0;
+    pending_response_submit_failures = 0;
     native_extension_in_flight = false;
     queue_out(rhport);
     return true;
@@ -1085,12 +1193,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
       return true;
     }
     if (tx_zlp_pending) {
-      tx_zlp_pending = false;
-      if (!usbd_edpt_xfer(rhport, ep_in, nullptr, 0)) {
-        ++debug_in_submit_errors;
-        debug_stage = 7;
-        queue_out(rhport);
-      }
+      debug_stage = 7;
       return true;
     }
     debug_stage = 7;
@@ -1156,6 +1259,8 @@ extern "C" void choupi_ccid_task(void) {
         debug_stage = 5;
         process_message(rhport);
       });
+  service_pending_final_response();
+  service_pending_out_rearm();
 }
 
 namespace {

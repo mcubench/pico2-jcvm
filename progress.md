@@ -21764,3 +21764,14 @@
 - Decision: Keep RV-25 open until CCID response/status and end-to-end routing are validated through production runtime. Do not claim physical acceptance.
 - Commit: `0f98760fd411aed6741d8359d80e37fa040f8b79`
 - Artifacts/logs: `tools/test-ccid-apdu-route`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Retain CCID final responses and recover endpoint 15 minutes
+
+- Step/experiment: `rv-20261103-26-ccid-final-response-recovery-first-pass`
+- When: '2026-11-04 20:30 CET' - '2026-11-04 20:45 CET'
+- Change: Replaced the 100 ms blocking extension wait/final-submit drop with a retained response retried from the main USB task. Synchronous final IN and ZLP submissions retry every 1 ms up to 32 failures, after which the response is aborted and Bulk-OUT is rearmed for host retry. Bulk-OUT submission failures now retain a rearm request and retry from the main task. Endpoint async errors clear pending state and rearm OUT.
+- Validation: `./tools/test-ccid-progress-flow` passed `TEST:SUMMARY pass=15 fail=0`; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. No physical CCID runtime test was possible: PC/SC listed only Virtual PCD readers despite a brief `2e8a:0009` USB enumeration.
+- Result: Final responses remain queued across late extension completion and synchronous IN rejection, with bounded retries and a recoverable OUT rearm path. Latest ARM firmware is 1,919,488 bytes, SHA-256 `692c1fb42f8c7dd2aa92a37b6b23aa999f93c657eeb7144f63e66e2cbd72dbed`, ending at `0x100EA3BC` with 89,156 bytes before `0x10100000`. Applet-free empty-card UF2 is 4,016,640 bytes, SHA-256 `7112f8f52a14ef60027904648338f85c7e7dee8e02739c9a52de8046fa6b5d2e`.
+- Decision: Keep RV-26 open until production USB callbacks demonstrate recovery through a subsequent slot-status command and APDU. RV-25 also remains open for production routing runtime validation.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-ccid-progress-flow`; current firmware and empty-card UF2 under `build/arm/`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.

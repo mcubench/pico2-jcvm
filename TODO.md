@@ -230,6 +230,7 @@ during the review.
 - [ ] **P2: Lost final response can stall subsequent commands.**
   Owner: HOST-01. Evidence: Source; [review R26](docs/review_20261103.md#r26--failed-final-ccid-submission-can-leave-the-reader-unarmed).
   Acceptance: retain a pending final response for bounded retry, or transition to an explicit recoverable abort/reset state that safely rearms the endpoint. Test extension completion just after the wait bound, failed IN submission and subsequent slot-status/APDU recovery.
+  Progress: Final CCID responses are retained while extensions complete; final IN submissions retry without blocking, with 1 ms spacing and an explicit host-retry abort after 32 submission failures. Bulk-OUT rearm rejection is also retried from the main task. The shared progress-flow test passes 15/15 and ARM/RISC-V builds pass. Driver callback recovery and subsequent APDU/slot-status behavior remain untested at production runtime.
 
 ### RV-20261103-27
 

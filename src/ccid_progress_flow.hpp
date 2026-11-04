@@ -6,6 +6,13 @@
 
 namespace choupi {
 
+inline constexpr uint8_t kMaxPendingCcidSubmitFailures = 32;
+
+inline bool record_pending_ccid_submit_failure(uint8_t &failure_count) {
+  if (failure_count < kMaxPendingCcidSubmitFailures) ++failure_count;
+  return failure_count >= kMaxPendingCcidSubmitFailures;
+}
+
 template <typename Pending, typename Dispatch>
 void dispatch_pending_ccid_task(bool &task_active, Pending &message_pending,
                                 Dispatch &&dispatch) {
@@ -58,6 +65,17 @@ bool submit_final_after_ccid_extension(InFlight &extension_in_flight,
   if (extension_in_flight) wait();
   if (extension_in_flight) return false;
   return submit();
+}
+
+template <typename Pending, typename InFlight, typename EndpointBusy,
+          typename Submit>
+bool retry_pending_ccid_transfer(Pending &pending, const InFlight in_flight,
+                                EndpointBusy &&endpoint_busy,
+                                Submit &&submit) {
+  if (!pending || in_flight || endpoint_busy()) return false;
+  if (!submit()) return false;
+  pending = false;
+  return true;
 }
 
 } // namespace choupi

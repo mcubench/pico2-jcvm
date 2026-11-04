@@ -130,6 +130,65 @@ int main() {
       });
   check(!timed_out && !final_submitted,
         "stuck extension prevents competing final response submission");
+
+  bool pending_response = true;
+  bool response_in_flight = true;
+  bool endpoint_busy = false;
+  unsigned final_submit_attempts = 0;
+  const bool extension_waiting = choupi::retry_pending_ccid_transfer(
+      pending_response, response_in_flight, [&] { return endpoint_busy; },
+      [&] {
+        ++final_submit_attempts;
+        return true;
+      });
+  check(!extension_waiting && pending_response && final_submit_attempts == 0,
+        "final response remains pending while time extension is in flight");
+  response_in_flight = false;
+  endpoint_busy = true;
+  const bool endpoint_waiting = choupi::retry_pending_ccid_transfer(
+      pending_response, response_in_flight, [&] { return endpoint_busy; },
+      [&] {
+        ++final_submit_attempts;
+        return true;
+      });
+  check(!endpoint_waiting && pending_response && final_submit_attempts == 0,
+        "pending final response waits for endpoint availability");
+  endpoint_busy = false;
+  const bool rejected_submit = choupi::retry_pending_ccid_transfer(
+      pending_response, response_in_flight, [&] { return endpoint_busy; },
+      [&] {
+        ++final_submit_attempts;
+        return false;
+      });
+  check(!rejected_submit && pending_response && final_submit_attempts == 1,
+        "synchronous IN submission failure retains final response for retry");
+  const bool retried_submit = choupi::retry_pending_ccid_transfer(
+      pending_response, response_in_flight, [&] { return endpoint_busy; },
+      [&] {
+        ++final_submit_attempts;
+        return true;
+      });
+  check(retried_submit && !pending_response && final_submit_attempts == 2,
+        "final response submits after late extension completion");
+  uint8_t submit_failures = 0;
+  bool retries_exhausted = false;
+  for (uint8_t attempt = 0;
+       attempt < choupi::kMaxPendingCcidSubmitFailures; ++attempt) {
+    retries_exhausted =
+        choupi::record_pending_ccid_submit_failure(submit_failures);
+  }
+  check(retries_exhausted && submit_failures ==
+                                  choupi::kMaxPendingCcidSubmitFailures,
+        "bounded IN retries reach explicit recoverable abort threshold");
+  bool out_rearm_pending = true;
+  unsigned out_rearm_attempts = 0;
+  const bool out_rearmed = choupi::retry_pending_ccid_transfer(
+      out_rearm_pending, false, [] { return false; }, [&] {
+        ++out_rearm_attempts;
+        return true;
+      });
+  check(out_rearmed && !out_rearm_pending && out_rearm_attempts == 1,
+        "aborted response can rearm Bulk-OUT for the host retry");
   check(!task_active && !progress_active,
         "production-shared guards release on return");
   std::printf("TEST:SUMMARY pass=%u fail=0\n", checks);
