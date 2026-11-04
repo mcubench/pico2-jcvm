@@ -28,8 +28,8 @@ Current applet-free ARM max image:
 - VPCD log: `artifacts/logs/division-vpcd-20261104T134625Z.log`, SHA-256
   `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`.
 
-RV-20 source commit is pending; preserve unrelated dirty worktree changes when
-staging. Continue with RV-20261103-21, SIO exception class/reason propagation
+RV-20 source commit is `f85a564`; preserve unrelated dirty worktree changes
+when staging. Continue with RV-20261103-21, SIO exception class/reason propagation
 and owner-safe caller context restoration. Physical testing remains pending.
 
 ---
