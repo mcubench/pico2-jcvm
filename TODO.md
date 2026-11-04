@@ -115,9 +115,9 @@ during the review.
 
 ### RV-20261103-10
 
-- [ ] **P1: Claimed finite execution budget is renewable.**
+- [x] **P1: Claimed finite execution budget is renewable.**
   Owner: HARD-01, API-03. Evidence: Source; [review R10](docs/review_20261103.md#r10--the-applet-timeout-is-renewable-through-native-and-nested-calls).
-  Acceptance: separate an immutable top-level deadline from watchdog/progress timestamps; share that deadline across nested calls and enforce it in interruptible native loops. Use an injectable clock to test native progress, repeated SIO, nesting and timeout unwind without waiting minutes. Preserve successful long RSA behavior within the chosen policy.
+  Resolution: An RAII execution-budget scope establishes one immutable 600-second top-level deadline; nested interpreter entries share it. Native RNG callbacks update a separate progress timestamp and service watchdog/CCID work without extending the deadline, and stop RSA key generation when it expires. A fake-clock regression covers wraparound, progress, repeated nested/SIO scopes, deadline expiration, RAII unwind and a fresh following operation. The 600-second cap preserves the observed physical RSA-CRT-3072 workload (72.612 seconds on the current run; historical maximum 171.517 seconds). PC/ARM/RISC-V builds pass, VPCD asymmetric suite passes 99/99, and physical cycle plus RSA-CRT-3072 pass; see `progress.md` and `.agent/QKB.md`.
 
 ### RV-20261103-11
 

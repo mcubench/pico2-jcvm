@@ -1,4 +1,42 @@
-# Current session — preserve SensitiveResult object ownership — 2026-11-04 04:43 CET
+# Current session — enforce an immutable execution deadline — 2026-11-04 05:13 CET
+
+RV-20261103-10 is implemented. `ExecutionBudget` records the time and limit
+when the outermost RP2350 interpreter scope starts; nested interpreter runs
+share it. Native RSA RNG callbacks update a separate service timestamp and
+continue watchdog/CCID servicing, but return failure after the hard deadline.
+Applet budget is now 600 seconds to preserve the measured RSA-CRT-3072
+operation; INSTALL remains at 5 seconds. A fake-clock test covers wraparound,
+progress, repeated nested/SIO scopes, expiration/unwind and a fresh next scope.
+
+The first broad VPCD attempt hit the fixture's default 60-second setup connect
+timeout before an APDU. The slow setup took 77.145 seconds, so the asymmetric
+VPCD runner now uses a finite 300-second connect timeout and 600-second APDU
+timeout. It passed `TEST:SUMMARY pass=99 fail=0` across 97 vectors. PC, ARM and
+RISC-V `max_crypto` builds passed. Pico 2 `2BED26ED20556535` passed final
+flash verification and finite serial. Its physical RSA-CRT-3072 generation
+and components APDU returned `019000` in 72,612 ms; GPPro cleanup deleted the
+temporary test package.
+
+VPCD log:
+`artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` (SHA-256
+`1061bf7665519fd6024bbe41eca55844feacf872f00454d9bc582415acc98d23`). Physical
+APDU log: `artifacts/logs/asymm-crypto-pcsc-20261104T040227Z.log` (SHA-256
+`08b7397d42936035d7042e834495fa5d3ecc33e05e55b7875c83a02995ba9f2f`). Cycle
+log: `artifacts/logs/cycle-choupi-20261104T040104Z.log` (SHA-256
+`52689d2718db2a4d79917c1f9dfee35ea2ea9a3b0d02407b5218ce8caaf2ce1c`). Current
+ARM UF2 `build/arm/pico2_choupi.uf2`: 1,909,248 bytes, SHA-256
+`61a8f2462d80871942dd8b62000cf646b54cdb5c6647c0563d49d96f383eb5d6`.
+
+Validation limit: the 600-second expiration was tested using the production
+budget manager with an injected fake clock, not by waiting for a real hardware
+timeout. The broad VPCD suite exercises RSA but does not force its interpreter
+clock to expire. Source commit is `07de73e` (`Enforce immutable applet
+execution deadlines`); TODO/progress/QKB/HANDOFF metadata follow-up remains.
+Next priority: RV-20261103-11, transient-key lifetime retained by Cipher.
+
+---
+
+# Previous session — preserve SensitiveResult object ownership — 2026-11-04 04:43 CET
 
 Completed RV-20261103-09. VM-wide object `SensitiveResult` now stores a
 `Stack::ReferenceValue` containing package owner and handle. Assertions compare
@@ -26,8 +64,9 @@ ARM UF2 `build/arm/pico2_choupi.uf2`: 1,908,736 bytes, SHA-256
 
 Implementation source commit: `562870f` (`Preserve SensitiveResult object
 ownership`). TODO, progress, QKB and HANDOFF metadata are now updated; metadata
-follow-up commit remains. Preserve all unrelated pre-existing changes noted
-below. Next priority is RV-10, non-renewable top-level execution deadlines.
+follow-up commit is `6636737` (`Record RV-09 owner provenance validation`).
+Preserve all unrelated pre-existing changes noted below. Next priority is
+RV-10, non-renewable top-level execution deadlines.
 
 ---
 

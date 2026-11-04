@@ -6,7 +6,7 @@
 - Validation: `./tools/test-execution-budget` passed; PC, ARM and RISC-V `max_crypto` builds passed; `python3 tools/tests/test_asymm_crypto_vpcd.py` passed `TEST:SUMMARY pass=99 fail=0` (97 vectors); elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed finite serial; elevated `./tools/test-asymm-crypto-pcsc ... 'RSA-CRT 3072-bit generation and components'` passed `019000` and package cleanup.
 - Result: VPCD fixture CAP setup needed 77.145 seconds, exceeding its previous 60-second connect timeout; the 300-second finite connect limit resolved the harness failure. Physical RSA-CRT-3072 completed in 72,612 ms. The current ARM UF2 is 1,909,248 bytes, SHA-256 `61a8f2462d80871942dd8b62000cf646b54cdb5c6647c0563d49d96f383eb5d6`. The cycle log includes an existing `WATCHDOG_RECOVERY cause=other` marker, but no `FAULT` or test failure; repeated runtime summaries pass.
 - Decision: RV-10 implementation acceptance is complete; exact 600-second expiration was tested through the production budget manager with fake time, not by waiting for the hardware timeout. Continue with RV-11 Cipher/transient-key lifetime.
-- Commit: pending source commit; metadata follow-up will record its SHA.
+- Commit: `07de73e`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256 `1061bf7665519fd6024bbe41eca55844feacf872f00454d9bc582415acc98d23`; `artifacts/logs/asymm-crypto-pcsc-20261104T040227Z.log` SHA-256 `08b7397d42936035d7042e834495fa5d3ecc33e05e55b7875c83a02995ba9f2f`; `artifacts/logs/cycle-choupi-20261104T040104Z.log` SHA-256 `52689d2718db2a4d79917c1f9dfee35ea2ea9a3b0d02407b5218ce8caaf2ce1c`.
 
 ## 2026-11-04 Preserve SensitiveResult object ownership 19 minutes

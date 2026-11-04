@@ -1,3 +1,38 @@
+# Non-renewable applet execution deadline — 2026-11-04
+
+- **Finding:** The RP2350 interpreter compared elapsed time against a global
+  progress timestamp. Native RSA key generation refreshed that timestamp from
+  the RNG callback, and nested interpreter calls reset it on entry, so a long
+  top-level APDU could renew its apparent limit indefinitely.
+- **Viable fix:** `ExecutionBudget` captures the start and limit only when the
+  outermost interpreter scope begins. Nested SIO/lifecycle interpreter scopes
+  share the same deadline. Native RNG progress only updates its separate
+  service timestamp, services watchdog/CCID work, and returns failure once the
+  hard deadline expires. Applet timeout remains 600 seconds to retain the
+  known RSA-CRT-3072 operation; INSTALL remains 5 seconds.
+- **Validation:** `./tools/test-execution-budget` passes fake-clock wraparound,
+  progress, nested/repeated scope, expiration/unwind and fresh-operation cases.
+  PC/ARM/RISC-V `max_crypto` builds pass. The asymmetric VPCD suite passes
+  `TEST:SUMMARY pass=99 fail=0`; its finite setup connect timeout is 300 seconds
+  because the initial CAP setup took 77.145 seconds, and APDU timeout is 600
+  seconds. Physical Pico 2 `2BED26ED20556535` passes finite runtime and RSA-CRT
+  3072 generation/components (`019000`, 72,612 ms); the temporary package was
+  deleted. Historical RSA-CRT-3072 measured 171.517 seconds.
+- **Limit:** Fake-clock verification exercises the production deadline scope
+  manager directly; a 600-second timeout was not induced on hardware. The PC
+  VPCD build exercises crypto and nested calls, while its runtime clock is not
+  configured to force an interpreter timeout.
+- **Artifacts:** VPCD emulator log
+  `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256
+  `1061bf7665519fd6024bbe41eca55844feacf872f00454d9bc582415acc98d23`;
+  physical RSA log `artifacts/logs/asymm-crypto-pcsc-20261104T040227Z.log`
+  SHA-256 `08b7397d42936035d7042e834495fa5d3ecc33e05e55b7875c83a02995ba9f2f`;
+  cycle log `artifacts/logs/cycle-choupi-20261104T040104Z.log` SHA-256
+  `52689d2718db2a4d79917c1f9dfee35ea2ea9a3b0d02407b5218ce8caaf2ce1c`.
+- **Commit:** `07de73e` (`Enforce immutable applet execution deadlines`).
+
+---
+
 # SensitiveResult object references need package provenance — 2026-11-04
 
 - **Finding:** VM-wide `SensitiveResult` stored object results as compact
