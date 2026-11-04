@@ -1,3 +1,33 @@
+# Current session — static reference rollback invalidation — 2026-11-04 01:10 CET
+
+Implemented RV-20261103-03. Heap static-reference cache entries now record the
+persistent-write rollback generation. Reads and GC root enumeration ignore a
+root cached before a rollback or failed commit; the next read resolves the
+restored record and recaches its canonical reference. Regression coverage in
+`tools/tests/persistent_transaction/persistent_transaction_test.cpp` checks a
+null substitution followed by abort, an object substitution followed by an
+injected failed commit, canonical original-array restoration, and GC root
+retention.
+
+Validation passed: `./tools/test-persistent-transaction` with
+`TEST:SUMMARY fail=0`, both ARM/RISC-V `max_crypto` builds, and hardware cycle on
+Pico 2 `2BED26ED20556535`. The wrapper first hit reset-interface discovery
+failure, recovered via CDC BOOTSEL, verified flash, and finite serial ended
+`TEST:SUMMARY pass=1 fail=0`. Current max ARM artifact was refreshed to the exact
+output: 1,905,664 bytes, SHA-256
+`1bcfd83bb1660c9122b8419e65c76846a4716cc16c4453a1a33999eef2cb41da`, end
+`0x100e89b8`, 95,816 bytes remaining. The image has no bundled CAP; flashing
+does not clear persistent token contents.
+
+Implementation and metadata commits are pending. Preserve pre-existing heap
+changes: `choupi/src/heap.cpp` has a pre-existing removal hunk for
+`releaseGlobalAIDObject`, and `heap.hpp` has its matching removal. Stage only the
+new generation-field/cache hunks from those files. The persistence test file's
+RV-02 changes are already committed; stage its new RV-03 block only as usual.
+After commit, continue with RV-20261103-04: make DELETE prefix erasure rollback
+aware at the storage layer, beginning with current implementation mapping and a
+failure-injection regression.
+
 # Current session — persistent array identity and alias preservation — 2026-11-04 01:01 CET
 
 Implemented RV-20261103-02 in `choupi/src/jc_handlers/flashmemory.cpp`.

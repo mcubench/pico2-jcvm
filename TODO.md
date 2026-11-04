@@ -67,9 +67,10 @@ during the review.
 
 ### RV-20261103-03
 
-- [ ] **P1: Aborted static reference remains cached.**
+- [x] **P1: Aborted static reference remains cached.**
   Owner: PERSIST-02/03. Evidence: Reproduced; [review R03](docs/review_20261103.md#r03--transaction-abort-does-not-restore-cached-static-references).
   Acceptance: restore or invalidate cached static references on successful abort and failed commit; preserve canonical object identity when reloading. Cover null, object and array substitutions, aliases and collection immediately after abort.
+  Progress: static cache roots now carry `persistentWriteRollbackGeneration`; lookups and GC enumeration skip roots from an earlier generation. The persistence regression covers a null substitution followed by abort, an object substitution followed by failed commit, canonical array handle restoration, and GC retaining the restored root. `./tools/test-persistent-transaction` passes; ARM/RISC-V builds and physical 2BED flash/finite monitor pass.
 
 ### RV-20261103-04
 

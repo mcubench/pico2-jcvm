@@ -57,6 +57,7 @@ public:
     jpackage_ID_t package_id;
     uint16_t field_number;
     jref_t reference;
+    uint32_t rollback_generation;
   };
 
   struct RuntimeExceptionRoot {

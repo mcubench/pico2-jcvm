@@ -1,3 +1,28 @@
+## Static reference roots must expire after transaction rollback — 2026-11-04
+
+- **Finding/fix:** `Static_Handler::getPersistentRef()` returns the heap's
+  cached root before consulting the restored persistent record. A transaction
+  that cached a replacement (including null) could therefore return stale state
+  after abort; the stale root also remained visible to GC. Static roots now
+  capture `FlashMemory_Handler::persistentWriteRollbackGeneration()`. Root
+  lookup and root enumeration ignore entries whose generation is stale.
+  Successful rollback and failed commit both advance that generation when
+  persistent records were snapshotted. The next static read reloads from the
+  restored record and caches its canonical heap handle.
+- **Regression coverage:** `./tools/test-persistent-transaction` passes. The
+  regression aborts a null substitution, verifies the stale cache is hidden,
+  reloads the original canonical array reference and checks it remains a GC
+  root. It also substitutes an object during a transaction, injects a failed
+  sync/commit, and checks the original array is restored canonically.
+- **Build/hardware:** ARM and RISC-V `max_crypto` wrapper builds passed. The
+  physical cycle recovered Pico 2 `2BED26ED20556535` through CDC-triggered
+  BOOTSEL after reset-interface discovery failed, then flash verification and
+  finite serial monitoring passed (`TEST:SUMMARY pass=1 fail=0`).
+- **Current ARM image:** 1,905,664 bytes; SHA-256
+  `1bcfd83bb1660c9122b8419e65c76846a4716cc16c4453a1a33999eef2cb41da`; end
+  `0x100e89b8`, 95,816 bytes remaining. It has no bundled CAP, but reflashing
+  does not clear persistent token contents.
+
 ## Persistent array replacement needs durable object identity — 2026-11-04
 
 - **Finding/fix:** Array body storage keyed only by the first static field could

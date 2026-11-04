@@ -4,11 +4,11 @@ Image: pico2-jcvm-max_crypto-arm-empty-card-current.uf2
 Source build output: build/arm/pico2_choupi.uf2
 Profile: max_crypto (147 of 150 declared JCAlgTest capabilities enabled)
 Image size: 1,905,664 bytes
-SHA-256: 96d1f3486ba9fd910d58c0ede2e5dfc863f562700e44a34037cd93e50e1a0f26
+SHA-256: 1bcfd83bb1660c9122b8419e65c76846a4716cc16c4453a1a33999eef2cb41da
 
 The image was rebuilt using `./tools/build arm --profile max_crypto`; the
 matching RISC-V core wrapper build also passed. The build enables RSA and ECC
-support. ARM flash-boundary validation passed with 95,856 bytes remaining in
+support. ARM flash-boundary validation passed with 95,816 bytes remaining in
 the firmware window. The UF2 is a direct copy of the build output; the two
 files have matching SHA-256 hashes.
 

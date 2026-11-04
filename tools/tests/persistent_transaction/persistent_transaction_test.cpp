@@ -514,6 +514,81 @@ int main() {
            "recreated_heap_restores_alias_graph_and_reclaims_only_garbage");
   }
 
+  // Static roots cached during a transaction must not survive rollback.
+  // The restored value should resolve to the canonical pre-transaction handle.
+  {
+    jcvm::Heap heap(7);
+    const auto field = FlashMemory_Handler::getStaticFieldTag(22, 1);
+    const auto original = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(original)->setByteEntry(0, 0x55);
+    FlashMemory_Handler::setPersistentField_Reference(field, original, heap);
+    heap.setStaticReferenceRoot(22, 1, original);
+
+    const bool began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    if (began) {
+      FlashMemory_Handler::setPersistentField_Reference(field, {}, heap);
+      heap.setStaticReferenceRoot(22, 1, {});
+    }
+    const bool aborted = FlashMemory_Handler::rollbackPersistentWriteTransaction();
+
+    jcvm::jref_t cached_after_abort;
+    const bool stale_cache_was_invalidated =
+        !heap.getStaticReferenceRoot(22, 1, cached_after_abort);
+    bool restored_canonical_reference = false;
+    try {
+      const auto restored = FlashMemory_Handler::getPersistentField_ReferenceStrict(
+          field, heap);
+      restored_canonical_reference = restored == original &&
+          heap.getArray(restored)->getByteEntry(0) == 0x55;
+      heap.setStaticReferenceRoot(22, 1, restored);
+    } catch (jcvm::Exceptions) {
+      restored_canonical_reference = false;
+    }
+    expect(began && aborted && stale_cache_was_invalidated,
+           "static_reference_cache_invalidated_after_transaction_abort");
+    expect(restored_canonical_reference,
+           "static_reference_abort_reload_preserves_canonical_handle");
+
+    const auto replacement_instance_tag =
+        FlashMemory_Handler::getAppletInstanceTag(22, 2, 3);
+    const auto replacement_instance = heap.addInstance(
+        jcvm::JC_Instance(heap, 2, 3, replacement_instance_tag));
+    bool failed_commit_invalidates_cache =
+        FlashMemory_Handler::beginPersistentWriteTransaction();
+    if (failed_commit_invalidates_cache) {
+      FlashMemory_Handler::setPersistentField_Reference(
+          field, replacement_instance, heap);
+      heap.setStaticReferenceRoot(22, 1, replacement_instance);
+      persistent_transaction_test::fail_one_sync();
+      failed_commit_invalidates_cache =
+          !FlashMemory_Handler::commitPersistentWriteTransaction();
+    }
+    jcvm::jref_t cached_after_failed_commit;
+    failed_commit_invalidates_cache = failed_commit_invalidates_cache &&
+        !heap.getStaticReferenceRoot(22, 1, cached_after_failed_commit);
+    bool failed_commit_restores_canonical_array = false;
+    try {
+      const auto restored = FlashMemory_Handler::getPersistentField_ReferenceStrict(
+          field, heap);
+      failed_commit_restores_canonical_array = restored == original &&
+          heap.getArray(restored)->getByteEntry(0) == 0x55;
+      heap.setStaticReferenceRoot(22, 1, restored);
+    } catch (jcvm::Exceptions) {
+      failed_commit_restores_canonical_array = false;
+    }
+    expect(failed_commit_invalidates_cache,
+           "static_reference_cache_invalidated_after_failed_commit");
+    expect(failed_commit_restores_canonical_array,
+           "failed_static_reference_commit_restores_canonical_array");
+
+    std::vector<jcvm::jref_t> static_roots;
+    heap.appendRootReferences(static_roots);
+    auto collected = heap.collectUnreachableFrom(static_roots);
+    expect(collected.complete && collected.arrays_reachable == 1 &&
+               collected.arrays_reclaimed == 0,
+           "restored_static_reference_is_a_gc_root_after_abort");
+  }
+
   // Retarget the original field after another field aliases its array. The
   // first field's new array body must get a distinct persistent identity;
   // clearing and aborting replacements must not change the old alias.

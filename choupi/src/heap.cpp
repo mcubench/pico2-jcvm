@@ -611,7 +611,9 @@ bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   jref_t &reference) const noexcept {
   for (const StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
-    if (root.package_id == package_id && root.field_number == field_number) {
+    if (root.package_id == package_id && root.field_number == field_number &&
+        root.rollback_generation ==
+            FlashMemory_Handler::persistentWriteRollbackGeneration()) {
       reference = root.reference;
       return true;
     }
@@ -636,11 +638,14 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
   for (StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
     if (root.package_id == package_id && root.field_number == field_number) {
       root.reference = reference;
+      root.rollback_generation =
+          FlashMemory_Handler::persistentWriteRollbackGeneration();
       return;
     }
   }
   this->shared_storage->static_reference_roots.push_back(
-      StaticReferenceRoot{package_id, field_number, reference});
+      StaticReferenceRoot{package_id, field_number, reference,
+                          FlashMemory_Handler::persistentWriteRollbackGeneration()});
 }
 
 void Heap::appendRootReferences(std::vector<jref_t> &references) const {
@@ -662,7 +667,9 @@ void Heap::visitRootReferences(const ReferenceVisitor visitor,
     }
   }
   for (const StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
-    if (!root.reference.isNullPointer()) {
+    if (root.rollback_generation ==
+            FlashMemory_Handler::persistentWriteRollbackGeneration() &&
+        !root.reference.isNullPointer()) {
       visitor(root.reference, visitor_context);
     }
   }

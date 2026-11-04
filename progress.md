@@ -21463,3 +21463,15 @@
 - Decision: Close RV-20261103-02. Continue with RV-20261103-03, aborted static reference cache restoration.
 - Commit: `bdd5cd4` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261103T235906Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; review probe output recorded in `.agent/QKB.md`.
+
+
+## 2026-11-04 Invalidate cached static references after rollback 10 minutes
+
+- Step/experiment: `rv-20261103-03-static-reference-rollback-generation`
+- When: '2026-11-04 01:00 CET' - '2026-11-04 01:10 CET'
+- Change: Added the persistent-write rollback generation to cached static roots. Cache lookup and GC root enumeration now skip stale-generation roots so rollback and failed-commit reads reload the restored persistent value. Added regressions for null and object substitutions, abort, failed commit, canonical array handle restoration and GC roots.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed flash verification and finite serial monitor on identified Pico 2 2BED (`TEST:SUMMARY pass=1 fail=0`) after CDC BOOTSEL recovery.
+- Result: Static roots from pre-rollback state no longer satisfy reads or GC. The original persistent array resolves to the same canonical handle after abort or failed commit. Current ARM UF2 is 1,905,664 bytes, SHA-256 `1bcfd83bb1660c9122b8419e65c76846a4716cc16c4453a1a33999eef2cb41da`, end `0x100e89b8`, 95,816 bytes remaining.
+- Decision: Close RV-20261103-03. Next is RV-20261103-04, making DELETE prefix erases participate in rollback/recovery at the storage boundary.
+- Commit: pending implementation commit and metadata follow-up
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T000827Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.
