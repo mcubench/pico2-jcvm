@@ -21694,7 +21694,7 @@
 - Validation: `bash -n tools/build-division-probe tools/test-division-vpcd` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` passed `TEST:SUMMARY pass=5 fail=0`; generated JCA inspection confirmed all four target bytecodes. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The test wrapper's PC build and CAP conversion passed. Existing compiler/dependency warnings remain. No physical token run occurred.
 - Result: Both minimum-overflow divisions return the unchanged dividend; signed quotient/remainder cases and Java Card divide-by-zero exception handling pass. VPCD took 114.859 seconds to connect, 26.991 seconds to select the applet, and 27.341 seconds for the next selection/install phase; the arithmetic APDU took 2 ms. ARM image remains 1,913,344 bytes, ends at `0x100E9764` and leaves 92,316 bytes. Empty-card UF2 is 4,010,496 bytes.
 - Decision: Close RV-19. Continue with RV-20 arithmetic defined behavior and preserve the generated fixture as test-only Java Card bytecode source; no upstream CAP was modified. Refresh the current empty-card firmware artifact for Windows testing.
-- Commit: `pending`
+- Commit: `f4fe3f7`
 - Artifacts/logs: `artifacts/logs/division-vpcd-20261104T125922Z.log` SHA-256 `1311ba904a36128b897cb62acb95434bf11d19975f241d8480e07b5b512768ba`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`.
 
 ## 2026-11-04 Define Java Card arithmetic wrap and shifts 15 minutes
