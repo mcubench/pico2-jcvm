@@ -21862,3 +21862,14 @@
 - Decision: Keep RV-28 open. Next pursue a malformed CAP runtime fixture, then nested-linkage validation and heap field-kind/access enforcement.
 - Commit: `9ed7d6a`
 - Artifacts/logs: `tools/test-cap-instruction-boundaries`; sanitizer output was emitted to stdout and not archived.
+
+## 2026-11-04 Refresh max_crypto empty-card Windows image 10 minutes
+
+- Step/experiment: `max-crypto-empty-card-image-refresh-rv28`
+- When: '2026-11-04 21:04 CET' - '2026-11-04 21:14 CET'
+- Change: Regenerated the combined applet-free max_crypto UF2 from the current ARM build and an erased 1 MiB storage image. Updated the current firmware artifact README and handoff hashes/sizes.
+- Validation: `./tools/env picotool info -a build/arm/pico2_choupi_max_crypto_empty_card.uf2` identified RP2350 ARM Secure. An independent UF2 address-map check confirmed 3,761 firmware blocks exactly match `build/arm/pico2_choupi.uf2`, plus 4,096 all-`0xFF` blocks covering `0x10100000`–`0x101FFFFF`. Firmware-only image is 1,925,632 bytes (SHA-256 `d484379d46065ddaf32fb1360a48f528e1059e24568250ab30f81fc67dd73d0e`); empty-card image is 4,022,784 bytes (SHA-256 `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`). No hardware flash/test was run.
+- Result: The combined UF2 is current and erases existing CAP/persistent data when copied to the Pico 2 BOOTSEL drive. It includes no preinstalled applet.
+- Decision: Provide this exact image for Windows testing; continue RV-28 offline.
+- Commit: `pending`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, `artifacts/firmware/README-max_crypto-current-20261103.txt`.

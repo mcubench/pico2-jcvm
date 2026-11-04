@@ -1,5 +1,20 @@
 # Current session — RV-28 method body bounds — 2026-11-04 20:29 CET
 
+Current max_crypto image for external Windows testing is freshly rebuilt from
+the RV-28 source and remains applet-free:
+
+- Empty-card UF2: `build/arm/pico2_choupi_max_crypto_empty_card.uf2`,
+  4,022,784 bytes, SHA-256
+  `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`.
+- Firmware-only UF2: `build/arm/pico2_choupi.uf2`, 1,925,632 bytes, SHA-256
+  `d484379d46065ddaf32fb1360a48f528e1059e24568250ab30f81fc67dd73d0e`.
+- Firmware end `0x100eaf84`; 86,140 bytes remain before storage at
+  `0x10100000`. `picotool info -a` reports RP2350 ARM Secure. An address-map
+  check confirmed all 3,761 firmware blocks are preserved and the full
+  4,096-block `0x10100000`–`0x101fffff` storage region is `0xFF`. It has not
+  been flashed. Image details are in
+  `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
 RV-20261103-28 has a partial native-opcode-origin fix in the worktree. Added
 `src/cap_execution_policy.hpp` with the dynamic package range 56–63; the range
 is now also used by `FlashMemory_Handler`. The interpreter throws
