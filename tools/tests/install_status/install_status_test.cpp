@@ -20,6 +20,7 @@ int main() {
       {8, 0x6581, "rollback_failed"},
       {9, 0x6f00, "unexpected_exception"},
       {10, 0x6a88, "missing_imported_package"},
+      {12, 0x6a80, "instance_registry_conflict"},
       {0, 0x6a80, "unknown_stage"},
   };
   for (const auto &test : cases) {

@@ -4,6 +4,16 @@
 #include <cstddef>
 #include <cstdint>
 
+inline constexpr uint8_t CAP_STORE_MAX_PACKAGE_INSTANCES = 40;
+
+enum class CapInstancePreflightResult : uint8_t {
+  available,
+  invalid_instance_aid,
+  package_missing,
+  duplicate_instance_aid,
+  package_full,
+};
+
 bool cap_store_initialize() noexcept;
 bool cap_store_find_package(const uint8_t *package_aid,
                             uint8_t package_aid_length,
@@ -41,6 +51,9 @@ bool cap_store_find_instance(const uint8_t *instance_aid,
                              uint8_t &package_id, uint8_t *applet_aid,
                              uint8_t &applet_aid_length,
                              uint16_t &class_index) noexcept;
+CapInstancePreflightResult cap_store_preflight_package_instance(
+    uint8_t package_id, const uint8_t *instance_aid,
+    uint8_t instance_aid_length) noexcept;
 uint8_t cap_store_package_instance_count(uint8_t package_id) noexcept;
 bool cap_store_package_instance_at(uint8_t package_id, uint8_t index,
                                    uint8_t *applet_aid,

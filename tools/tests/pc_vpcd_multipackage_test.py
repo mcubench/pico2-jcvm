@@ -257,11 +257,13 @@ def load_package(scp: Scp03, code: bytes, package_aid: bytes) -> None:
 
 
 def install_applet(scp: Scp03, package_aid: bytes, applet_aid: bytes,
-                   instance_aid: bytes) -> None:
+                   instance_aid: bytes,
+                   expected_statuses: tuple[int, ...] = (0x9000, 0x6310)
+                   ) -> bytes:
     data = (lv(package_aid) + lv(applet_aid) + lv(instance_aid) +
             bytes.fromhex("03000000") + b"\x00\x00")
-    scp.command(0xE6, 0x0C, 0x00, data,
-                f"INSTALL {instance_aid.hex()}")
+    return scp.command(0xE6, 0x0C, 0x00, data,
+                       f"INSTALL {instance_aid.hex()}", expected_statuses)
 
 
 def get_status(scp: Scp03, p1: int) -> bytes:
@@ -454,10 +456,37 @@ def main() -> int:
                 bytes.fromhex("A000000151000005") + index.to_bytes(2, "big")
                 for index in range(16)
             ]
-            for instance_aid in pagination_aids:
+            for pagination_index, instance_aid in enumerate(pagination_aids, 1):
                 install_applet(scp, lookup_package, lookup_applets[0],
                                instance_aid)
+                print(
+                    f"TEST:TRACE pagination install "
+                    f"{pagination_index}/{len(pagination_aids)}"
+                )
             print("TEST:PASS loaded 3 packages and installed 21 applet instances")
+
+            installed_aids_before_duplicate = get_status(scp, 0x40)
+            duplicate_response = install_applet(
+                scp, lookup_package, lookup_applets[0], lookup_second_aid,
+                (0x6a80,))
+            if duplicate_response[-2:] != b"\x6a\x80" or get_status(
+                    scp, 0x40) != installed_aids_before_duplicate:
+                raise RuntimeError(
+                    "duplicate INSTALL did not fail without changing the registry: "
+                    f"response={duplicate_response.hex().upper()}"
+                )
+            print("TEST:PASS duplicate INSTALL rejected before registry mutation")
+            retry_instance_aid = bytes.fromhex("A00000015100000601")
+            install_applet(scp, lookup_package, lookup_applets[0],
+                           retry_instance_aid)
+            delete_object(scp, retry_instance_aid, False,
+                          "DELETE applet after rejected duplicate retry")
+            if get_status(scp, 0x40) != installed_aids_before_duplicate:
+                raise RuntimeError(
+                    "fresh INSTALL after duplicate rejection changed registry "
+                    "after its test instance was deleted"
+                )
+            print("TEST:PASS fresh INSTALL succeeds after duplicate rejection")
 
             scp.command(0xF2, 0x20, 0x02, b"\x4f\x00",
                         "GET STATUS continuation baseline")

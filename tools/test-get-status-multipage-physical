@@ -12,6 +12,7 @@ multi_cap="${repo_root}/AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_305.cap"
 package_aid="4A43416C675465737441706D"
 multi_a="${package_aid}41"
 multi_b="${package_aid}42"
+multi_c="${package_aid}43"
 jcalgtest="4A43416C675465737431"
 owned=0
 log="${repo_root}/artifacts/logs/physical-get-status-multipage-$(date -u +%Y%m%dT%H%M%SZ).log"
@@ -40,7 +41,7 @@ cleanup() {
     cat "${listing}" >>"${log}"
     cleanup_status=1
   else
-    for aid in "${multi_a}" "${multi_b}"; do
+    for aid in "${multi_a}" "${multi_b}" "${multi_c}"; do
       if grep -Fq "APP: ${aid} " "${listing}"; then
         gp --delete "${aid}" >>"${log}" 2>&1 || cleanup_status=1
       fi
@@ -53,6 +54,7 @@ cleanup() {
     gp --list >"${listing}" 2>&1
     if (($? != 0)) || grep -Fq "APP: ${multi_a} " "${listing}" || \
        grep -Fq "APP: ${multi_b} " "${listing}" || \
+       grep -Fq "APP: ${multi_c} " "${listing}" || \
        grep -Fq "PKG: ${package_aid} " "${listing}"; then
       cat "${listing}" >>"${log}"
       cleanup_status=1
@@ -74,7 +76,7 @@ printf 'PHYSICAL_TEST:START reader=%s cap=%s\n' "${reader}" \
 initial_list="${log}.initial-list"
 gp --list >"${initial_list}" 2>&1 || die "initial GPPro list failed"
 cat "${initial_list}"
-for aid in "${package_aid}" "${multi_a}" "${multi_b}"; do
+for aid in "${package_aid}" "${multi_a}" "${multi_b}" "${multi_c}"; do
   if grep -Fq "PKG: ${aid} " "${initial_list}" || \
      grep -Fq "APP: ${aid} " "${initial_list}"; then
     die "refusing to overwrite existing test AID ${aid}"
@@ -85,10 +87,31 @@ rm -f "${initial_list}"
 owned=1
 gp --load "${multi_cap}"
 gp --create "${multi_a}" --applet "${multi_a}" --package "${package_aid}"
+duplicate_log="${log}.duplicate-install"
+if gp --create "${multi_a}" --applet "${multi_a}" \
+    --package "${package_aid}" >"${duplicate_log}" 2>&1; then
+  cat "${duplicate_log}"
+  die "duplicate applet instance AID unexpectedly installed"
+fi
+if ! grep -Eiq '6a80' "${duplicate_log}"; then
+  cat "${duplicate_log}"
+  die "duplicate INSTALL did not return expected 6A80 status"
+fi
+printf 'PHYSICAL_TEST:PASS duplicate INSTALL returned 6A80\n'
+duplicate_list="${log}.duplicate-list"
+gp --list >"${duplicate_list}" 2>&1 || die "GPPro list after duplicate failed"
+duplicate_count="$(grep -F -c "APP: ${multi_a} " "${duplicate_list}" || true)"
+if [[ "${duplicate_count}" != 1 ]]; then
+  cat "${duplicate_list}"
+  die "duplicate INSTALL changed registry; instance count=${duplicate_count}"
+fi
+rm -f "${duplicate_list}"
+gp --create "${multi_c}" --applet "${multi_a}" --package "${package_aid}"
+printf 'PHYSICAL_TEST:PASS fresh INSTALL succeeded after duplicate rejection\n'
 gp --create "${multi_b}" --applet "${multi_b}" --package "${package_aid}"
 installed_list="${log}.installed-list"
 gp --list >"${installed_list}" 2>&1 || die "GPPro listing failed after Multi installation"
-for aid in "${jcalgtest}" "${multi_a}" "${multi_b}"; do
+for aid in "${jcalgtest}" "${multi_a}" "${multi_b}" "${multi_c}"; do
   grep -Fq "APP: ${aid} " "${installed_list}" || \
     die "expected installed applet is missing: ${aid}"
 done
@@ -97,4 +120,4 @@ rm -f "${installed_list}"
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" python3 \
   "${repo_root}/tools/tests/physical_get_status_le.py" --reader "${reader}" \
   --le 40 --expected-aid "${jcalgtest}" --expected-aid "${multi_a}" \
-  --expected-aid "${multi_b}"
+  --expected-aid "${multi_b}" --expected-aid "${multi_c}"

@@ -38,7 +38,7 @@ constexpr uint32_t kMetadataMirrorOffset =
 constexpr uint32_t kMetadataMirrorSectorSize =
     flash_layout::cap_metadata_mirror_sector_size;
 constexpr uint8_t kFirstPackageId = 56;
-constexpr uint8_t kMaxPackageInstances = 40;
+constexpr uint8_t kMaxPackageInstances = CAP_STORE_MAX_PACKAGE_INSTANCES;
 constexpr uint32_t kXipBase = 0x10000000;
 constexpr uint32_t kHeaderMagic = 0x33415043; // "CAP3" in little endian
 constexpr uint16_t kHeaderVersion = 5;
@@ -705,6 +705,32 @@ bool cap_store_find_instance(const uint8_t *instance_aid,
     }
   }
   return false;
+}
+
+CapInstancePreflightResult cap_store_preflight_package_instance(
+    uint8_t package_id, const uint8_t *instance_aid,
+    uint8_t instance_aid_length) noexcept {
+  if (!aid_valid(instance_aid, instance_aid_length)) {
+    return CapInstancePreflightResult::invalid_instance_aid;
+  }
+  if (find_slot(package_id) < 0) {
+    return CapInstancePreflightResult::package_missing;
+  }
+  uint8_t existing_package_id = 0xff;
+  uint8_t existing_applet_aid[16]{};
+  uint8_t existing_applet_aid_length = 0;
+  uint16_t existing_class_index = 0xffff;
+  if (cap_store_find_instance(instance_aid, instance_aid_length,
+                              existing_package_id, existing_applet_aid,
+                              existing_applet_aid_length,
+                              existing_class_index)) {
+    return CapInstancePreflightResult::duplicate_instance_aid;
+  }
+  if (cap_store_package_instance_count(package_id) >=
+      CAP_STORE_MAX_PACKAGE_INSTANCES) {
+    return CapInstancePreflightResult::package_full;
+  }
+  return CapInstancePreflightResult::available;
 }
 
 uint8_t cap_store_package_instance_count(uint8_t package_id) noexcept {

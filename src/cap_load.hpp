@@ -48,6 +48,8 @@ public:
       return 0x6f00; // unexpected internal error
     case 10:
       return 0x6a88; // an imported package is not resident
+    case 12:
+      return 0x6a80; // duplicate instance AID or full applet registry
     default:
       return 0x6a80;
     }

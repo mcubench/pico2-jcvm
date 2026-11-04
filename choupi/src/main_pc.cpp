@@ -144,17 +144,6 @@ const HostCapPackage *host_package_read(uint8_t package_id) noexcept {
   return nullptr;
 }
 
-HostAppletInstance *host_instance(HostCapPackage &package,
-                                  const uint8_t *aid,
-                                  uint8_t aid_length) noexcept {
-  if (aid == nullptr) return nullptr;
-  for (auto &instance : package.instances)
-    if (instance.instance_aid.size() == aid_length &&
-        std::memcmp(instance.instance_aid.data(), aid, aid_length) == 0)
-      return &instance;
-  return nullptr;
-}
-
 extern "C" uint8_t choupi_cap_package_applet_aid(
     uint8_t package_id, uint8_t applet_index, uint8_t *aid,
     uint8_t *aid_length);
@@ -252,13 +241,36 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
       applet_class_index == 0xffff) {
     return 1;
   }
-  HostAppletInstance *stored = host_instance(*package, instance_aid,
-                                             instance_aid_length);
-  if (stored == nullptr) {
-    if (package->instances.size() >= 0xff) return 1;
-    package->instances.emplace_back();
-    stored = &package->instances.back();
+  uint8_t existing_package_id = 0xff;
+  uint8_t existing_applet_aid[16]{};
+  uint8_t existing_applet_aid_length = 0;
+  uint16_t existing_class_index = 0xffff;
+  if (cap_store_find_instance(instance_aid, instance_aid_length,
+                              existing_package_id, existing_applet_aid,
+                              existing_applet_aid_length,
+                              existing_class_index)) {
+    uint8_t existing_owner = 0xff;
+    return existing_package_id == package_id &&
+           existing_applet_aid_length == applet_aid_length &&
+           std::memcmp(existing_applet_aid, applet_aid,
+                       applet_aid_length) == 0 &&
+           existing_class_index == applet_class_index &&
+           cap_store_applet_owner(instance_aid, instance_aid_length,
+                                  existing_owner) &&
+           existing_owner == owner_id
+        ? 0
+        : 1;
   }
+
+  if (owner_id != 0) {
+    for (const auto &existing_package : host_cap_packages)
+      for (const auto &instance : existing_package.instances)
+        if (instance.owner_id == owner_id) return 1;
+  }
+  if (package->instances.size() >= CAP_STORE_MAX_PACKAGE_INSTANCES)
+    return 1;
+  package->instances.emplace_back();
+  HostAppletInstance *stored = &package->instances.back();
   stored->applet_aid.assign(applet_aid, applet_aid + applet_aid_length);
   stored->instance_aid.assign(instance_aid, instance_aid + instance_aid_length);
   stored->class_index = applet_class_index;
@@ -446,6 +458,33 @@ bool cap_store_find_instance(const uint8_t *aid, uint8_t aid_length,
     }
   }
   return false;
+}
+
+CapInstancePreflightResult cap_store_preflight_package_instance(
+    uint8_t package_id, const uint8_t *instance_aid,
+    uint8_t instance_aid_length) noexcept {
+  if (instance_aid == nullptr || instance_aid_length < 5 ||
+      instance_aid_length > 16) {
+    return CapInstancePreflightResult::invalid_instance_aid;
+  }
+  if (host_package_read(package_id) == nullptr) {
+    return CapInstancePreflightResult::package_missing;
+  }
+  uint8_t existing_package_id = 0xff;
+  uint8_t existing_applet_aid[16]{};
+  uint8_t existing_applet_aid_length = 0;
+  uint16_t existing_class_index = 0xffff;
+  if (cap_store_find_instance(instance_aid, instance_aid_length,
+                              existing_package_id, existing_applet_aid,
+                              existing_applet_aid_length,
+                              existing_class_index)) {
+    return CapInstancePreflightResult::duplicate_instance_aid;
+  }
+  if (cap_store_package_instance_count(package_id) >=
+      CAP_STORE_MAX_PACKAGE_INSTANCES) {
+    return CapInstancePreflightResult::package_full;
+  }
+  return CapInstancePreflightResult::available;
 }
 
 uint8_t cap_store_package_instance_count(uint8_t package_id) noexcept {

@@ -321,6 +321,7 @@ bool recover_pending_install_journals() noexcept {
     uint8_t existing_applet_aid[16]{};
     uint8_t existing_applet_aid_length = 0;
     uint16_t existing_class_index = 0xffff;
+    uint8_t existing_owner = 0xff;
     if (cap_store_find_instance(record.instance_aid,
                                 record.instance_aid_length,
                                 existing_package_id, existing_applet_aid,
@@ -330,7 +331,11 @@ bool recover_pending_install_journals() noexcept {
           !aid_matches(record.applet_aid, record.applet_aid_length,
                        existing_applet_aid,
                        existing_applet_aid_length) ||
-          existing_class_index != record.applet_class_index) {
+          existing_class_index != record.applet_class_index ||
+          !cap_store_applet_owner(record.instance_aid,
+                                  record.instance_aid_length,
+                                  existing_owner) ||
+          existing_owner != record.applet_owner) {
         recovered_all = false;
         continue;
       }
@@ -894,6 +899,12 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     install_failure_stage_ = 11;
     return false;
   }
+  if (cap_store_preflight_package_instance(
+          resolved_package_id, instance_aid,
+          instance_aid_length) != CapInstancePreflightResult::available) {
+    install_failure_stage_ = 12;
+    return false;
+  }
   uint8_t applet_owner = 0;
   if (!cap_store_allocate_applet_owner(applet_owner)) {
     install_failure_stage_ = 11;
@@ -937,6 +948,12 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     if (install_vm_status_ != 0x9000 || applet_registered == 0 ||
         applet_class_index == 0xffff) {
       install_failure_stage_ = rollback() ? 5 : 8;
+      return false;
+    }
+    if (cap_store_preflight_package_instance(
+            resolved_package_id, instance_aid,
+            instance_aid_length) != CapInstancePreflightResult::available) {
+      install_failure_stage_ = rollback() ? 12 : 8;
       return false;
     }
     InstallJournalRecord journal{};

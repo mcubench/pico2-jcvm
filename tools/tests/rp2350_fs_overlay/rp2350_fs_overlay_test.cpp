@@ -811,6 +811,70 @@ int main() {
     (void)fs_sync();
   }
 
+  {
+    constexpr uint8_t cap_code[] = {0xc4, 0x01, 0x00};
+    constexpr uint8_t package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x59};
+    constexpr uint8_t applet_aid[] = {0xa0, 0x00, 0x00, 0x01, 0x59};
+    constexpr uint8_t first_instance_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x59};
+    const bool package_seeded = cap_store_write_package(
+        59, package_aid, sizeof(package_aid), cap_code, sizeof(cap_code));
+    const auto empty_preflight = cap_store_preflight_package_instance(
+        59, first_instance_aid, sizeof(first_instance_aid));
+    const bool first_instance_stored = package_seeded &&
+        empty_preflight == CapInstancePreflightResult::available &&
+        cap_store_mark_package_installed(
+            59, applet_aid, sizeof(applet_aid), first_instance_aid,
+            sizeof(first_instance_aid), 1, 0);
+    const auto duplicate_same_package = cap_store_preflight_package_instance(
+        59, first_instance_aid, sizeof(first_instance_aid));
+    constexpr uint8_t second_instance_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x5a};
+    const auto distinct_preflight = cap_store_preflight_package_instance(
+        59, second_instance_aid, sizeof(second_instance_aid));
+    expect(first_instance_stored &&
+               duplicate_same_package ==
+                   CapInstancePreflightResult::duplicate_instance_aid &&
+               cap_store_package_instance_count(59) == 1 &&
+               distinct_preflight == CapInstancePreflightResult::available,
+           "install_preflight_rejects_same_package_duplicate_without_mutation");
+
+    constexpr uint8_t other_package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x58};
+    const bool other_package_seeded = cap_store_write_package(
+        58, other_package_aid, sizeof(other_package_aid), cap_code,
+        sizeof(cap_code));
+    const auto duplicate_other_package = cap_store_preflight_package_instance(
+        58, first_instance_aid, sizeof(first_instance_aid));
+    expect(other_package_seeded &&
+               duplicate_other_package ==
+                   CapInstancePreflightResult::duplicate_instance_aid &&
+               cap_store_package_instance_count(58) == 0,
+           "install_preflight_rejects_cross_package_duplicate");
+
+    constexpr uint8_t full_package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x57};
+    constexpr uint8_t full_applet_aid[] = {0xa0, 0x00, 0x00, 0x01, 0x57};
+    bool full_package_seeded = cap_store_write_package(
+        57, full_package_aid, sizeof(full_package_aid), cap_code,
+        sizeof(cap_code));
+    for (uint8_t index = 0; index < CAP_STORE_MAX_PACKAGE_INSTANCES; ++index) {
+      const uint8_t full_instance_aid[] = {0xa0, 0x00, 0x57, 0x00, index};
+      full_package_seeded = full_package_seeded &&
+          cap_store_mark_package_installed(
+              57, full_applet_aid, sizeof(full_applet_aid),
+              full_instance_aid, sizeof(full_instance_aid), index, 0);
+    }
+    constexpr uint8_t overflow_instance_aid[] = {0xa0, 0x00, 0x57, 0xff,
+                                                 0xff};
+    const auto full_preflight = cap_store_preflight_package_instance(
+        57, overflow_instance_aid, sizeof(overflow_instance_aid));
+    expect(full_package_seeded &&
+               cap_store_package_instance_count(57) ==
+                   CAP_STORE_MAX_PACKAGE_INSTANCES &&
+               full_preflight == CapInstancePreflightResult::package_full,
+           "install_preflight_rejects_full_instance_registry");
+    (void)cap_store_delete_package(57);
+    (void)cap_store_delete_package(58);
+    (void)cap_store_delete_package(59);
+  }
+
   persistent_transaction_active = true;
   expect(fs_write(transaction_tag_a, sizeof(transaction_tag_a),
                   transaction_new_a, sizeof(transaction_new_a)) == 0 &&
