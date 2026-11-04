@@ -32,6 +32,7 @@
 #include "../jc_config.h"
 #include "../jc_types/jc_field.hpp"
 #include "../jc_types/jref_t.hpp"
+#include "../../../src/cap_execution_policy.hpp"
 
 #include "jc_cap.hpp"
 
@@ -86,12 +87,13 @@ private:
 
 public:
   // Reserve the final eight package IDs for independently loaded CAP slots.
-  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_ID_FIRST = 56;
-  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_COUNT = 8;
+  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_ID_FIRST =
+      cap_execution_policy::kFirstDynamicPackageId;
+  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_COUNT =
+      cap_execution_policy::kDynamicPackageCount;
   static constexpr jpackage_ID_t DYNAMIC_PACKAGE_ID = JCVM_MAX_PACKAGES - 1;
   static constexpr bool isDynamicPackageID(jpackage_ID_t id) noexcept {
-    return id >= DYNAMIC_PACKAGE_ID_FIRST &&
-           id < DYNAMIC_PACKAGE_ID_FIRST + DYNAMIC_PACKAGE_COUNT;
+    return cap_execution_policy::is_dynamic_package(id);
   }
 
   ///  Compute tag to access to persistant data

@@ -1,3 +1,18 @@
+## Uploaded CAPs must not execute VM-internal native bytecodes — verified 2026-11-04
+
+- **Finding:** `impdep1` popped an applet-controlled native method index and
+  dispatched it through `callJCNativeMethod`. GP authentication validates the
+  transport/installing principal, not the trustworthiness of the instruction
+  stream.
+- **Viable solution:** Treat every package ID in the card manager's dynamic
+  slot range 56–63 as untrusted at execution time. Reject `impdep1` and
+  `impdep2` when the current executing package is in that range. Keep the range
+  in `cap_execution_policy.hpp` and use it from the runtime package policy.
+- **Coverage/limits:** The package-range policy test and three builds pass.
+  There is not yet a malformed CAP runtime fixture or sanitizer test; this
+  solves only native opcode origin and does not bound instruction fetches or
+  verify heap field kinds.
+
 ## PC VPCD applet integration timeout before socket connect — observed 2026-11-04
 
 - **Finding:** An elevated `PICO2_HOST_USB_ACCESS=1

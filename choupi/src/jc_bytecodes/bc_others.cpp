@@ -26,6 +26,8 @@
 */
 
 #include "../debug.hpp"
+#include "../exceptions.hpp"
+#include "../../../src/cap_execution_policy.hpp"
 #include "bytecodes.hpp"
 
 namespace jcvm {
@@ -84,6 +86,14 @@ void Bytecodes::bc_impdep1() {
 
   TRACE_JCVM_DEBUG("IMPDEP1");
 
+  // impdep1 is an internal ROM-to-native bridge, not an applet bytecode.
+  // CAP loading accepts authenticated third-party programs, so authentication
+  // does not make their instruction stream trusted.
+  if (cap_execution_policy::is_dynamic_package(
+          this->context.getCurrentPackageID())) {
+    throw Exceptions::SecurityException;
+  }
+
   index = stack.pop_Short();
   last_native_method_index = static_cast<uint16_t>(index);
   callJCNativeMethod(this->context, index);
@@ -112,6 +122,11 @@ void Bytecodes::bc_impdep2() {
   // Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("IMPDEP2");
+
+  if (cap_execution_policy::is_dynamic_package(
+          this->context.getCurrentPackageID())) {
+    throw Exceptions::SecurityException;
+  }
 
   throw Exceptions::NotYetImplemented;
 

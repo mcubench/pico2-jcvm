@@ -1,4 +1,29 @@
-# Current session — RV-27 VPCD selection and restore correctness — 2026-11-04 19:02 CET
+# Current session — RV-28 uploaded-CAP native opcode boundary — 2026-11-04 19:15 CET
+
+RV-20261103-28 has a partial native-opcode-origin fix in the worktree. Added
+`src/cap_execution_policy.hpp` with the dynamic package range 56–63; the range
+is now also used by `FlashMemory_Handler`. The interpreter throws
+`SecurityException` instead of dispatching `impdep1` or accepting `impdep2`
+when the current method belongs to an uploaded CAP. Added
+`docs/CAP_EXECUTION_TRUST_MODEL.md` to state that GP authentication does not
+make uploaded bytecode trusted. ROM/framework CAPs remain permitted.
+
+Validation: `./tools/test-cap-native-opcode-policy` passes 5/5. PC max_crypto,
+ARM current, and RISC-V current builds pass. Existing Rust and packed-member
+warnings remain. No malformed CAP, sanitizer execution, firmware flash, or
+physical test was performed. RV-28 stays open: method/instruction fetch bounds,
+branch targets, nested linkage, heap field-kind/access checks, and malformed
+input runtime tests are still required. Do not claim the interpreter fully
+validates uploaded code.
+
+RV-28 implementation and progress metadata are pending scoped commits. Preserve
+all pre-existing worktree changes, including the unrelated `src/cap_load.cpp`
+changes; it was not edited for this step. Continue offline unless authorized
+physical runtime access becomes available.
+
+---
+
+# Prior session — RV-27 VPCD selection and restore correctness — 2026-11-04 19:02 CET
 
 RV-20261103-27 has a first implementation pass in the working tree. The stale
 session test now builds against `Session(CardCallbacks)`. `Session` tracks the

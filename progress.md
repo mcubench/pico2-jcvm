@@ -21786,3 +21786,14 @@
 - Decision: Keep RV-27 open and diagnose the pre-connect integration timeout before closing acceptance. No firmware was flashed.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (appended; integration startup timeout); focused runner `tools/test-vpcd-session`.
+
+## 2026-11-04 Reject native bytecodes from uploaded CAPs 13 minutes
+
+- Step/experiment: `rv-20261103-28-native-opcode-origin-first-pass`
+- When: '2026-11-04 19:02 CET' - '2026-11-04 19:15 CET'
+- Change: Documented the uploaded-CAP trust model and centralized the dynamic package range 56–63 in `src/cap_execution_policy.hpp`. `impdep1` now throws `SecurityException` before popping or dispatching a native method index when executing dynamic CAP code; `impdep2` also rejects dynamic-package execution. `FlashMemory_Handler` uses the same policy. Added a boundary test for fixed/dynamic package IDs.
+- Validation: `./tools/test-cap-native-opcode-policy` passed `TEST:SUMMARY pass=5 fail=0`; `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Existing Rust and packed-CAP-member warnings appeared. `git -c core.whitespace=cr-at-eol diff --check -- <scoped files>` passed; the setting accounts for existing CRLF line endings. No malformed-CAP runtime/sanitizer test or physical validation was run.
+- Result: Uploaded package bytecode can no longer enter the native API dispatcher by executing `impdep1`; valid ROM package dispatch remains allowed. The instruction fetch/method bounds, branch target validation, and heap field-kind gaps remain unresolved. The current ARM image has not been flashed; image size was not measured.
+- Decision: Keep RV-28 open; next address bytecode/method bounds and runtime malformed-CAP coverage, then field type enforcement. Do not claim hostile CAP validation complete.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-cap-native-opcode-policy`; `docs/CAP_EXECUTION_TRUST_MODEL.md`; no firmware log.
