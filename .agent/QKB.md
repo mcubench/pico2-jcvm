@@ -1,3 +1,26 @@
+## Flash succeeds but VirtualBox drops Pico runtime USB after reboot — observed 2026-11-04
+
+- **Finding:** With three RP2350 boards in BOOTSEL, `picotool info -a`
+  identified `D92E743D5F640C0F`, `8E464F4E2BBC0A19`, and
+  `2BED26ED20556535`. The applet-free max_crypto image
+  `build/arm/pico2_choupi_max_crypto_empty_card.uf2` (SHA-256
+  `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`) was
+  flashed to each board separately using `tools/flash --chipid`; all three
+  commands reported `OK`, reboot, and `FLASH:PASS`.
+- **Observed limit:** After the first reboot, the serial monitor could not find
+  a USB serial device. USB enumeration then showed the other two BOOTSEL boards
+  but no runtime Pico. After all three flashes, `lsusb` showed no Pico and
+  `pcsc_scan -r` showed only `Virtual PCD 00 00` and `Virtual PCD 00 01`.
+  This proves flash write/verify, not that firmware booted or works on hardware.
+- **Host limitation:** Guest has `VBoxClient` but no `VBoxManage`; the VM
+  cannot reattach devices after VirtualBox hands them back to the Windows host
+  on re-enumeration. Reattach the runtime devices in VirtualBox on the host
+  before PC/SC or serial tests. Do not classify disappearance from this guest
+  as a firmware crash without host-side enumeration evidence.
+- **Next:** Continue offline until the USB devices are attached to the guest;
+  then identify readers/chip IDs again, run finite serial monitors, and check
+  PC/SC. Keep per-board attribution.
+
 ## Uploaded CAPs must not execute VM-internal native bytecodes — verified 2026-11-04
 
 - **Finding:** `impdep1` popped an applet-controlled native method index and

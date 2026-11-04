@@ -21932,3 +21932,14 @@
 - Decision: Profile the exact AlgTest install workload and branch checks next; keep the cause open until a reproducible measurement or trace identifies it.
 - Commit: `e986901` (primary process-state diagnostic/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-live2-20261104.log`; process snapshot was printed to the command output and not separately archived.
+
+## 2026-11-04 Compare branch-check path and flash three max images 20 minutes
+
+- Step/experiment: `rv-20261103-28-branch-check-ab-and-three-board-max-flash`
+- When: '2026-11-04 22:00 CET' - '2026-11-04 22:20 CET'
+- Change: Temporarily disabled only dynamic branch instruction-start validation for a PC-emulator A/B test, then restored `bc_branching.cpp` exactly. Built current max_crypto ARM and RISC-V images and flashed the combined applet-free image to three individually identified BOOTSEL RP2350s. Recorded device attribution and the VirtualBox runtime USB reattachment limitation in QKB and handoff.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed after source restoration. The branch-check-disabled VPCD attempt still timed out before applet installation or socket connection. `tools/flash --chipid` reported 100% flash, 100% verify, `OK`, reboot, and `FLASH:PASS` on chips `D92E743D5F640C0F`, `8E464F4E2BBC0A19`, and `2BED26ED20556535`. Finite monitor failed with `ERROR: no USB serial device found`; later USB inventory had no Pico and PC/SC listed only the two virtual readers. No runtime serial or PC/SC hardware test completed.
+- Result: Instruction-start validation alone does not explain the JCAlgTest VPCD stall. All three boards accepted and verified the current 4,022,784-byte empty-card max_crypto UF2 (SHA-256 `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`); runtime behavior remains unverified because VirtualBox detached devices on reboot.
+- Decision: Keep JCAlgTest startup cause open and continue offline. Resume physical verification only when the runtime USB devices are attached to the guest; do not treat missing guest enumeration as firmware failure.
+- Commit: pending; the primary commit reference is appended after commit.
+- Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-no-boundary-check-20261104.log` (SHA-256 `d7e6b149b44386452476a3b292a9fc41728ece4917cca53075bee8f28dd5c796`); flash/USB output remained in command transcript, not separately archived.

@@ -1,3 +1,35 @@
+# Current session — flash applet-free max_crypto to three identified boards — 2026-11-04 22:20 CET
+
+The temporary PC-only branch-alignment A/B edit was restored; `git diff --
+choupi/src/jc_bytecodes/bc_branching.cpp` is empty. `./tools/build-pc --profile
+max_crypto`, `./tools/build arm --profile max_crypto`, and
+`./tools/build riscv --profile max_crypto` all passed on the restored source.
+The VPCD test with branch-start checks disabled still timed out before
+`VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED`, so this check alone is not the
+JCAlgTest stall cause.
+
+I enumerated three BOOTSEL chips and individually flashed the current combined
+empty-card image to all three by chip ID:
+
+- `D92E743D5F640C0F`
+- `8E464F4E2BBC0A19`
+- `2BED26ED20556535`
+
+Each `tools/flash --chipid ... build/arm/pico2_choupi_max_crypto_empty_card.uf2`
+reported full flash verification `OK` and `FLASH:PASS`. The monitor then
+reported `ERROR: no USB serial device found`; subsequent `lsusb` showed no
+Pico and `pcsc_scan -r` showed only the two virtual readers. The VM has
+`VBoxClient` but no `VBoxManage`, so host-side VirtualBox reattachment is
+currently unavailable from this guest. Treat these as flash-verified but
+runtime-unverified. QKB has the detailed finding. Once attached back to the
+VM, run chip/reader inventory, finite monitor, and PC/SC empty-card checks.
+
+The image SHA-256 is
+`9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`; exact
+path and size remain in `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+---
+
 # Current session — isolate JCAlgTest VPCD startup timeout — 2026-11-04 21:55 CET
 
 The previous JCAlgTest VPCD attempt timed out before `VPCD:CONNECTED` or
