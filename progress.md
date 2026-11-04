@@ -61,7 +61,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Fixture CAP conversion and Python syntax check passed. Elevated local VPCD cross-AID integration passed `TEST:SUMMARY pass=31 fail=0`, including the SHA known-answer and both SensitiveResult outcomes. Authorized physical-reader refresh found zero Pico devices, so physical flash/validation was skipped.
 - Result: A real runtime defect was found: SHA-256 returned 32 but left SensitiveResult unset. The fixed interpreter path returns 32 with the expected SHA-256 of `1234`, and exceptions leave the result unassigned. ARM image uses `0x100d09d8` endpoint with 194,088 bytes remaining in the current 1 MiB window.
 - Decision: Keep CTX-02 open for additional PIN/signature/key result producers, object-result GC rooting after locals drop, and physical acceptance of this native change when a device is passed through.
-- Commit: pending
+- Commit: `f0c276a`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T154309Z.log`.
 
 ## 2026-11-03 Verify object SensitiveResult producers across SIO 5 minutes

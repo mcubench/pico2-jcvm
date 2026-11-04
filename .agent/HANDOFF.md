@@ -52,10 +52,9 @@ body bounds, hard clamping at the next descriptor method offset, and guarded
 exception diagnostics are committed as `2496a92`; progress/handoff SHA
 metadata follow-up is `a0ef034`. Added `tools/test-cap-method-body-deploy-caps`
 to repeat the offline check against all 11 deployed 3.0.5 API CAPs; it passes
-978 concrete methods with 3 descriptor clamps. This script is the current
-uncommitted documentation/test step. Next continue RV-28 with same-method
-instruction-boundary validation. No malformed runtime, sanitizer or physical
-test was run.
+978 concrete methods with 3 descriptor clamps. This script and its records are
+committed as `f0c276a`. Next continue RV-28 with same-method instruction-boundary
+validation. No malformed runtime, sanitizer or physical test was run.
 
 ---
 
