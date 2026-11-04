@@ -24,8 +24,8 @@ profile states the present 2,046-byte digest input cap and `ILLEGAL_USE`; a
 transaction-safe incremental context remains planned. Documentation commits
 are `95931ce` and metadata follow-up `2fcba66`.
 
-RV-18 source and validation are ready to commit; this handoff/progress commit
-will follow. Next: review RV-19 signed minimum division, preserve unrelated
+RV-18 implementation commit is `d4c12cc`; progress SHA follow-up remains. Next:
+review RV-19 signed minimum division, preserve unrelated
 worktree changes, and continue using the current empty-card image instructions
 in `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 

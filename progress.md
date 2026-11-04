@@ -21562,7 +21562,7 @@
 - Validation: `./tools/test-rmi-registry` passed, including both collision and non-collision cases and reuse of both collected slots. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The elevated-loopback `python3 tools/tests/sio_cross_aid_vpcd_test.py` suite passed `TEST:SUMMARY pass=31 fail=0`, including service package deletion, same-AID reinstall and old-proxy rejection. Pico 2 `2BED26ED20556535` passed final ARM flash verification and finite serial (`TEST:SUMMARY pass=1 fail=0`).
 - Result: Foreign references can no longer remain in package-local Object arrays whose collector cannot route owner provenance. Runtime-global-array references and cross-AID proxy behavior remain covered by passing cases. ARM UF2 is 1,908,736 bytes, SHA-256 `7f0eeba6e0af85d859e4d5c7a5a777a97f2d23b1e15f9addd8344acc465d8e13`, firmware end `0x100e8e30`, 94,672 bytes remaining. The image bundles no CAP; flashing does not clear token-resident packages.
 - Decision: Close RV-20261103-08. Continue with RV-20261103-09, object-sensitive results and roots with missing owner provenance.
-- Commit: `pending`
+- Commit: `d4c12cc` (implementation; progress SHA follow-up follows)
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T031510Z.log` SHA-256 `8d31156959a9222acdbff0d34eeaa889442cb13131d665fa05b7bffaeb833c0a`; `artifacts/logs/cycle-choupi-20261104T032120Z.log` SHA-256 `7da2144f5187c2080738f303f4995f89b3075581c5b84be13708dd37aa5f7ea3`.
 ## 2026-11-04 Refresh current max_crypto empty-card firmware 2 minutes
 
