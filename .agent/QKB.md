@@ -1,3 +1,36 @@
+## Transactional DELETE snapshots before bulk namespace erase — 2026-11-04
+
+- **Finding/fix:** `fs_erase_prefix()` and `fs_erase_package_state()` bypassed
+  persistent-write before-images. Added `FlashMemory_Handler` wrappers that
+  require an active transaction, enumerate the complete read-only tag set,
+  snapshot every matching existing record, and only then call the backend bulk
+  erase. Applet cleanup, static-field cleanup, orphan cleanup and package-state
+  cleanup now use these wrappers. If enumeration or snapshot allocation fails,
+  no bulk erase is started.
+- **Failure-injection evidence:** `./tools/test-rp2350-fs-overlay` links the
+  production `flashmemory.cpp` transaction/snapshot code with the production
+  RP2350 filesystem overlay. It injects a backend failure after one actual
+  overlay record has been erased, verifies partial deletion was observed, rolls
+  back, reinitializes from the committed flash snapshot, and confirms both
+  record values return. Package-level failure verifies static, applet and
+  lifecycle records, keeps an unrelated package record, and confirms the CAP
+  package, applet instance count and owner mapping remain usable. Full suite
+  result: `TEST:SUMMARY fail=0`. The persistent transaction host suite also
+  passes prefix and package preimage rollback checks.
+- **Cursor edge case:** Package-wide enumeration uses a non-null empty-prefix
+  pointer because both the RP2350 `fs_next_tag` ABI and the OS syscall reject a
+  null pointer even when prefix length is zero. The production overlay test
+  caught and verified this correction.
+- **Build/hardware:** ARM and RISC-V `max_crypto` wrappers and PC JCVM build
+  passed. Pico 2 `2BED26ED20556535` passed flash verification and finite startup
+  serial (`TEST:SUMMARY pass=1 fail=0`). The runtime cycle validates the image
+  startup path; targeted DELETE behavior was exercised in the production
+  filesystem overlay harness.
+- **Current ARM image:** 1,907,200 bytes; SHA-256
+  `b4f1120c7dfec2c653176eb5298b55de1f6d9b2e9a5a56d078b3109c9d7ab1d5`; end
+  `0x100e8b14`, 95,468 bytes remaining. It includes no bundled CAP; flashing
+  does not clear stored token packages.
+
 ## Static reference roots must expire after transaction rollback — 2026-11-04
 
 - **Finding/fix:** `Static_Handler::getPersistentRef()` returns the heap's

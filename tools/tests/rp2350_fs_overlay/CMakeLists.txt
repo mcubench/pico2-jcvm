@@ -6,7 +6,8 @@ add_executable(
   rp2350_fs_overlay_test
   rp2350_fs_overlay_test.cpp
   "${REPO_ROOT}/src/cap_store.cpp"
-  "${REPO_ROOT}/src/pico_filesystem.cpp")
+  "${REPO_ROOT}/src/pico_filesystem.cpp"
+  "${REPO_ROOT}/choupi/src/jc_handlers/flashmemory.cpp")
 target_compile_features(rp2350_fs_overlay_test PRIVATE cxx_std_17)
 target_compile_options(rp2350_fs_overlay_test PRIVATE
   -Wall -Wextra -ffunction-sections -fdata-sections

@@ -2,6 +2,7 @@
 #include "cap_store.hpp"
 #include "flash_layout.hpp"
 #include "vm_filesystem.h"
+#include "jc_handlers/flashmemory.hpp"
 
 #include <algorithm>
 #include <array>
@@ -21,6 +22,7 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
     uint32_t length);
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
+extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count);
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
 std::array<uint8_t, 2 * 1024 * 1024> committed_flash;
@@ -132,9 +134,10 @@ extern "C" const uint8_t *rp2350_fs_test_flash_base(void) {
   return fake_flash.data();
 }
 
-extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
+extern "C" uint8_t rp2350_fs_test_manual_transaction_active(void) {
   return persistent_transaction_active ? 1u : 0u;
 }
+extern "C" void choupi_record_transaction_buffer_full(void) {}
 
 void flash_range_erase(uint32_t offset, size_t count) {
   if (offset > fake_flash.size() || count > fake_flash.size() - offset ||
@@ -456,6 +459,41 @@ int main() {
                    sizeof(namespace_grandchild)) == 0,
          "erase_nested_namespace_grandchild");
 
+  {
+    constexpr uint8_t transaction_prefix[] = {0xa4, 0x31};
+    constexpr uint8_t transaction_first[] = {0xa4, 0x31, 0x01};
+    constexpr uint8_t transaction_second[] = {0xa4, 0x31, 0x02};
+    constexpr uint8_t transaction_first_value[] = {0x41, 0x42, 0x43};
+    constexpr uint8_t transaction_second_value[] = {0x51, 0x52, 0x53, 0x54};
+    const bool seeded =
+        fs_write(transaction_first, sizeof(transaction_first),
+                 transaction_first_value, sizeof(transaction_first_value)) == 0 &&
+        fs_write(transaction_second, sizeof(transaction_second),
+                 transaction_second_value, sizeof(transaction_second_value)) == 0 &&
+        fs_sync() == 0;
+    const bool began = seeded &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    jcvm::fs::Tag prefix{};
+    prefix.len = sizeof(transaction_prefix);
+    std::memcpy(prefix.value, transaction_prefix, sizeof(transaction_prefix));
+    rp2350_fs_test_fail_bulk_erase_after(1);
+    const bool erase_failed_after_mutation = began &&
+        !jcvm::FlashMemory_Handler::erasePersistentPrefix(prefix) &&
+        fs_exists(transaction_first, sizeof(transaction_first)) == 0 &&
+        fs_exists(transaction_second, sizeof(transaction_second)) != 0;
+    const bool rolled_back =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool cold_restored = rolled_back && fs_init() == 0 &&
+        fs_exists(transaction_first, sizeof(transaction_first)) != 0 &&
+        fs_exists(transaction_second, sizeof(transaction_second)) != 0 &&
+        fs_read(transaction_first, sizeof(transaction_first), actual,
+                sizeof(transaction_first_value)) == 0 &&
+        std::memcmp(actual, transaction_first_value,
+                    sizeof(transaction_first_value)) == 0;
+    expect(erase_failed_after_mutation && cold_restored,
+           "transactional_prefix_delete_recovers_real_overlay_erase_failure");
+  }
+
   constexpr uint8_t orphan_prefix[] = {0x02, 0x19};
   constexpr uint8_t orphan_parent[] = {0x02, 0x19, 0x09};
   constexpr uint8_t orphan_child[] = {0x02, 0x19, 0x09, 0x11, 0x11};
@@ -545,6 +583,110 @@ int main() {
              fs_sync() == 0,
          "multi_record_baseline_commits");
   committed_flash = fake_flash;
+
+  {
+    constexpr uint8_t delete_prefix[] = {0xa4, 0x31};
+    constexpr uint8_t delete_first[] = {0xa4, 0x31, 0x01};
+    constexpr uint8_t delete_second[] = {0xa4, 0x31, 0x02};
+    constexpr uint8_t delete_first_value[] = {0x41, 0x42, 0x43};
+    constexpr uint8_t delete_second_value[] = {0x51, 0x52, 0x53, 0x54};
+    const bool seeded =
+        fs_write(delete_first, sizeof(delete_first), delete_first_value,
+                 sizeof(delete_first_value)) == 0 &&
+        fs_write(delete_second, sizeof(delete_second), delete_second_value,
+                 sizeof(delete_second_value)) == 0 &&
+        fs_sync() == 0;
+    jcvm::fs::Tag prefix{};
+    prefix.len = sizeof(delete_prefix);
+    std::memcpy(prefix.value, delete_prefix, sizeof(delete_prefix));
+    const bool began = seeded &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    rp2350_fs_test_fail_bulk_erase_after(1);
+    const bool partial_erase_observed = began &&
+        !jcvm::FlashMemory_Handler::erasePersistentPrefix(prefix) &&
+        fs_exists(delete_first, sizeof(delete_first)) == 0 &&
+        fs_exists(delete_second, sizeof(delete_second)) != 0;
+    const bool rollback =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool restored = rollback && fs_init() == 0 &&
+        fs_exists(delete_first, sizeof(delete_first)) != 0 &&
+        fs_exists(delete_second, sizeof(delete_second)) != 0;
+    uint8_t restored_first[sizeof(delete_first_value)]{};
+    uint8_t restored_second[sizeof(delete_second_value)]{};
+    const bool values_restored = restored &&
+        fs_read(delete_first, sizeof(delete_first), restored_first,
+                sizeof(restored_first)) == 0 &&
+        fs_read(delete_second, sizeof(delete_second), restored_second,
+                sizeof(restored_second)) == 0 &&
+        std::memcmp(restored_first, delete_first_value,
+                    sizeof(restored_first)) == 0 &&
+        std::memcmp(restored_second, delete_second_value,
+                    sizeof(restored_second)) == 0;
+    expect(partial_erase_observed && values_restored,
+           "transactional_prefix_delete_restores_real_overlay_after_partial_erase");
+  }
+
+  {
+    constexpr uint8_t package_id = 56;
+    constexpr uint8_t package_static[] = {0x02, package_id, 0x01};
+    constexpr uint8_t package_applet[] = {0x03, 0x09, package_id, 0x02};
+    constexpr uint8_t package_lifecycle[] = {0x02, 0xff, package_id, 0x01};
+    constexpr uint8_t unrelated_static[] = {0x02, 57, 0x01};
+    constexpr uint8_t package_static_value[] = {0x61, 0x62};
+    constexpr uint8_t package_applet_value[] = {0x71, 0x72, 0x73};
+    constexpr uint8_t package_lifecycle_value[] = {0x81};
+    constexpr uint8_t unrelated_value[] = {0x91, 0x92};
+    constexpr uint8_t package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x56};
+    constexpr uint8_t applet_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x57};
+    constexpr uint8_t instance_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x58};
+    constexpr uint8_t cap_code[] = {0xc4, 0x01, 0x00};
+    constexpr uint8_t applet_owner = 200;
+    const bool package_seeded =
+        cap_store_write_package(package_id, package_aid, sizeof(package_aid),
+                                cap_code, sizeof(cap_code)) &&
+        cap_store_mark_package_installed(
+            package_id, applet_aid, sizeof(applet_aid), instance_aid,
+            sizeof(instance_aid), 3, applet_owner) &&
+        fs_write(package_static, sizeof(package_static), package_static_value,
+                 sizeof(package_static_value)) == 0 &&
+        fs_write(package_applet, sizeof(package_applet), package_applet_value,
+                 sizeof(package_applet_value)) == 0 &&
+        fs_write(package_lifecycle, sizeof(package_lifecycle),
+                 package_lifecycle_value, sizeof(package_lifecycle_value)) == 0 &&
+        fs_write(unrelated_static, sizeof(unrelated_static), unrelated_value,
+                 sizeof(unrelated_value)) == 0 &&
+        fs_sync() == 0;
+    const bool package_began = package_seeded &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    rp2350_fs_test_fail_bulk_erase_after(1);
+    const bool package_partial_failure = package_began &&
+        !jcvm::FlashMemory_Handler::erasePersistentPackageState(package_id) &&
+        (fs_exists(package_static, sizeof(package_static)) == 0 ||
+         fs_exists(package_applet, sizeof(package_applet)) == 0 ||
+         fs_exists(package_lifecycle, sizeof(package_lifecycle)) == 0);
+    const bool package_rolled_back =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    uint8_t found_package_id = 0;
+    uint8_t found_owner = 0;
+    const bool package_restored = package_rolled_back && fs_init() == 0 &&
+        fs_exists(package_static, sizeof(package_static)) != 0 &&
+        fs_exists(package_applet, sizeof(package_applet)) != 0 &&
+        fs_exists(package_lifecycle, sizeof(package_lifecycle)) != 0 &&
+        fs_exists(unrelated_static, sizeof(unrelated_static)) != 0 &&
+        cap_store_find_package(package_aid, sizeof(package_aid),
+                               found_package_id) &&
+        found_package_id == package_id &&
+        cap_store_package_instance_count(package_id) == 1 &&
+        cap_store_applet_owner(instance_aid, sizeof(instance_aid),
+                               found_owner) &&
+        found_owner == applet_owner;
+    expect(package_partial_failure && package_restored,
+           "transactional_package_delete_restores_static_applet_and_lifecycle_records");
+    (void)cap_store_delete_package(package_id);
+    (void)fs_erase_package_state(package_id);
+    (void)fs_erase(unrelated_static, sizeof(unrelated_static));
+    (void)fs_sync();
+  }
 
   persistent_transaction_active = true;
   expect(fs_write(transaction_tag_a, sizeof(transaction_tag_a),

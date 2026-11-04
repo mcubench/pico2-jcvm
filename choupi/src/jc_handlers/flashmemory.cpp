@@ -145,6 +145,58 @@ void snapshot_persistent_tag(const fs::Tag &tag) {
   persistent_write_snapshots.push_back(std::move(snapshot));
 }
 
+bool snapshot_matching_persistent_tags(const uint8_t *prefix,
+                                       const uint8_t prefix_length,
+                                       const int package_filter) noexcept {
+  if (!persistent_write_transaction_active || prefix_length > TAG_MAX_LENGTH ||
+      (prefix_length != 0 && prefix == nullptr)) {
+    return false;
+  }
+  try {
+    fs_tag_next_request_t request{};
+    uint16_t previous_bucket = 0;
+    uint16_t previous_offset = 0;
+    while (true) {
+      const uint8_t status = fs_next_tag(prefix, prefix_length, &request);
+      if (status == 1) return true;
+      if (status != 0 || request.bucket < previous_bucket ||
+          (request.bucket == previous_bucket &&
+           request.offset <= previous_offset)) {
+        return false;
+      }
+      previous_bucket = request.bucket;
+      previous_offset = request.offset;
+
+      const uint8_t tag_length = request.tag[0];
+      if (tag_length == 0 || tag_length > TAG_MAX_LENGTH ||
+          tag_length < prefix_length ||
+          (prefix_length != 0 &&
+           std::memcmp(request.tag + 1, prefix, prefix_length) != 0)) {
+        return false;
+      }
+      const uint8_t *tag_bytes = request.tag + 1;
+      bool matches = package_filter < 0;
+      if (package_filter >= 0) {
+        const uint8_t package_id = static_cast<uint8_t>(package_filter);
+        matches = (tag_length >= 2 && tag_bytes[0] == 0x02 &&
+                   tag_bytes[1] == package_id) ||
+                  (tag_length >= 3 && tag_bytes[0] == 0x03 &&
+                   tag_bytes[2] == package_id) ||
+                  (tag_length >= 3 && tag_bytes[0] == 0x02 &&
+                   tag_bytes[1] == 0xff && tag_bytes[2] == package_id);
+      }
+      if (matches) {
+        fs::Tag tag{};
+        tag.len = tag_length;
+        std::memcpy(tag.value, tag_bytes, tag_length);
+        snapshot_persistent_tag(tag);
+      }
+    }
+  } catch (...) {
+    return false;
+  }
+}
+
 uint8_t write_persistent_tag(const fs::Tag &tag, const uint8_t *data,
                              const uint32_t length) {
   snapshot_persistent_tag(tag);
@@ -451,6 +503,24 @@ bool FlashMemory_Handler::erasePersistentTag(const fs::Tag &tag) noexcept {
   } catch (...) {
     return false;
   }
+}
+
+bool FlashMemory_Handler::erasePersistentPrefix(
+    const fs::Tag &prefix) noexcept {
+  if (prefix.len == 0 || prefix.len > TAG_MAX_LENGTH ||
+      !snapshot_matching_persistent_tags(prefix.value, prefix.len, -1)) {
+    return false;
+  }
+  return fs_erase_prefix(prefix.value, prefix.len) == 0;
+}
+
+bool FlashMemory_Handler::erasePersistentPackageState(
+    const uint8_t package_id) noexcept {
+  const uint8_t empty_prefix = 0;
+  if (!snapshot_matching_persistent_tags(&empty_prefix, 0, package_id)) {
+    return false;
+  }
+  return fs_erase_package_state(package_id) == 0;
 }
 
 /// Get packages array length

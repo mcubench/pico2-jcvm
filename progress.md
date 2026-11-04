@@ -21475,3 +21475,15 @@
 - Decision: Close RV-20261103-03. Next is RV-20261103-04, making DELETE prefix erases participate in rollback/recovery at the storage boundary.
 - Commit: `4069880` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T000827Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.
+
+
+## 2026-11-04 Snapshot package records before transactional bulk deletion 24 minutes
+
+- Step/experiment: `rv-20261103-04-transactional-delete-erase`
+- When: '2026-11-04 01:10 CET' - '2026-11-04 01:34 CET'
+- Change: Added transaction-aware persistent prefix/package deletion wrappers. They enumerate and snapshot the full matching record set before calling backend bulk erase; DELETE cleanup call sites now use these wrappers. Added injected failure coverage using the production RP2350 overlay and persistent snapshot implementation.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including actual overlay deletion followed by rollback and cold `fs_init`, restored values, package and instance registry verification, and unrelated namespace preservation. `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/env cmake --build build/choupi-pc --parallel 2` passed. Physical cycle on Pico 2 2BED passed verified flash and finite serial (`TEST:SUMMARY pass=1 fail=0`).
+- Result: Failed package or applet bulk erases now restore their before-images before returning failure. The production overlay injection confirms actual backend mutation was rolled back; package metadata remains discoverable. PC build emitted existing Rust `cargo-clippy` cfg and packed-member warnings, with exit status 0. Current ARM UF2 1,907,200 bytes, SHA-256 `b4f1120c7dfec2c653176eb5298b55de1f6d9b2e9a5a56d078b3109c9d7ab1d5`, end `0x100e8b14`, remaining 95,468 bytes.
+- Decision: Close RV-20261103-04. Next: RV-20261103-05, cross-store lifecycle publication and recovery.
+- Commit: pending implementation commit and metadata follow-up
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T003256Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; production overlay suite output `TEST:SUMMARY fail=0`.

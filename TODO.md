@@ -74,9 +74,10 @@ during the review.
 
 ### RV-20261103-04
 
-- [ ] **P1: DELETE rollback cannot undo raw erases.**
+- [x] **P1: DELETE rollback cannot undo raw erases.**
   Owner: PERSIST-03, STORE-01. Evidence: Source; [review R04](docs/review_20261103.md#r04--delete-prefix-erases-bypass-transaction-before-images).
   Acceptance: make namespace deletion participate in a rollback/recovery protocol at the actual storage boundary. Inject a failure after one real deletion and before publication; require all prior live values and registry entries to remain usable. A passing mock rollback is insufficient.
+  Progress: transaction-aware prefix and package-state erase helpers snapshot every matching record before invoking the backend bulk erase. Delete call sites now use these helpers. The RP2350 overlay test links the production snapshot code and filesystem backend, fails bulk erase after a real overlay mutation, rolls back, reinitializes from committed flash, and verifies persistent values, package/APK instance registry metadata, lifecycle records and unrelated package data. Both target builds, PC build and physical 2BED startup pass.
 
 ### RV-20261103-05
 

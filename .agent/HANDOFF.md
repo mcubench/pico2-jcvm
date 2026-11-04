@@ -1,3 +1,34 @@
+# Current session — transactional DELETE namespace erase — 2026-11-04 01:34 CET
+
+Implemented RV-20261103-04. `FlashMemory_Handler::erasePersistentPrefix()` and
+`erasePersistentPackageState()` require an active persistent transaction, walk
+the read-only filesystem cursor to snapshot all matched values, then invoke the
+backend bulk erase. `clear_applet_persistent_state`, package static cleanup,
+orphan cleanup and package-state cleanup now call these wrappers. A failed
+enumeration/snapshot fails before destructive erase starts. Package-wide
+enumeration uses a non-null pointer for the zero-length prefix; the actual
+RP2350 `fs_next_tag` implementation rejects null even for an empty prefix.
+
+Validation passed: persistence transaction tests, plus the production RP2350
+overlay test linked with `flashmemory.cpp`. Injected backend failure after one
+actual erase restored the old records; `fs_init()` from committed flash found
+both values intact. The package-level test also retained static, applet,
+lifecycle and unrelated package data and verified CAP package lookup, applet
+instance count and owner mapping. ARM/RISC-V wrapper builds and PC JCVM build
+passed. The exact ARM image flashed and finite startup monitor passed on Pico 2
+`2BED26ED20556535` (`TEST:SUMMARY pass=1 fail=0`). Current max artifact: UF2
+1,907,200 bytes, SHA-256
+`b4f1120c7dfec2c653176eb5298b55de1f6d9b2e9a5a56d078b3109c9d7ab1d5`, end
+`0x100e8b14`, 95,468 bytes remaining. It contains no applet but preserves any
+packages already stored on a token. Targeted DELETE failure behavior was proven
+in the production overlay harness, not by an injected hardware DELETE.
+
+Implementation and metadata commits are pending. Pre-existing `src/cap_load.cpp`
+changes must be preserved: its PC filesystem wrapper and CAP load diagnostic
+hunks are unrelated; selectively stage only the four DELETE cleanup call-site
+hunks from this step. Then continue RV-20261103-05, cross-store DELETE/LOAD
+publication recovery. Preserve all other worktree edits.
+
 # Current session — static reference rollback invalidation — 2026-11-04 01:10 CET
 
 Implemented RV-20261103-03. Heap static-reference cache entries now record the

@@ -16,6 +16,8 @@
 namespace persistent_transaction_test {
 void force_cursor_stall_after_one_result();
 void fail_erase_after(unsigned int successful_erases);
+void fail_prefix_erase_after_one();
+void fail_package_state_erase_after_one();
 extern uint16_t instance_field_count;
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
@@ -512,6 +514,73 @@ int main() {
     }
     expect(restart_restore_passed,
            "recreated_heap_restores_alias_graph_and_reclaims_only_garbage");
+  }
+
+  // Bulk namespace deletion may fail after its backend has erased a real
+  // record. The snapshot preflight must let the enclosing transaction restore
+  // both the erased record and records not reached by the failing operation.
+  {
+    jcvm::fs::Tag prefix{};
+    prefix.len = 2;
+    prefix.value[0] = 0xa2;
+    prefix.value[1] = 0x10;
+    jcvm::fs::Tag first = prefix;
+    first.value[first.len++] = 0x01;
+    jcvm::fs::Tag second = prefix;
+    second.value[second.len++] = 0x02;
+    const std::vector<uint8_t> first_value{0x11, 0x12};
+    const std::vector<uint8_t> second_value{0x21, 0x22};
+    persistent_transaction_test::seed(first.value, first.len, first_value);
+    persistent_transaction_test::seed(second.value, second.len, second_value);
+
+    bool began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    persistent_transaction_test::fail_prefix_erase_after_one();
+    const bool erase_rejected = began &&
+        !FlashMemory_Handler::erasePersistentPrefix(prefix);
+    const bool rolled_back =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    expect(erase_rejected && rolled_back &&
+               persistent_transaction_test::read(first.value, first.len) ==
+                   first_value &&
+               persistent_transaction_test::read(second.value, second.len) ==
+                   second_value,
+           "failed_prefix_delete_restores_all_preimage_records");
+  }
+
+  {
+    const uint8_t package_id = 58;
+    const uint8_t static_tag[] = {0x02, package_id, 0x01};
+    const uint8_t applet_tag[] = {0x03, 0x07, package_id, 0x02};
+    const uint8_t lifecycle_tag[] = {0x02, 0xff, package_id, 0x01};
+    const uint8_t unrelated_tag[] = {0x02, 59, 0x01};
+    const std::vector<uint8_t> static_value{0x31};
+    const std::vector<uint8_t> applet_value{0x32};
+    const std::vector<uint8_t> lifecycle_value{0x33};
+    const std::vector<uint8_t> unrelated_value{0x34};
+    persistent_transaction_test::seed(static_tag, sizeof(static_tag), static_value);
+    persistent_transaction_test::seed(applet_tag, sizeof(applet_tag), applet_value);
+    persistent_transaction_test::seed(lifecycle_tag, sizeof(lifecycle_tag),
+                                      lifecycle_value);
+    persistent_transaction_test::seed(unrelated_tag, sizeof(unrelated_tag),
+                                      unrelated_value);
+    const bool began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    persistent_transaction_test::fail_package_state_erase_after_one();
+    const bool erase_rejected =
+        began && !FlashMemory_Handler::erasePersistentPackageState(package_id);
+    const bool rolled_back =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    expect(erase_rejected && rolled_back &&
+               persistent_transaction_test::read(static_tag, sizeof(static_tag)) ==
+                   static_value &&
+               persistent_transaction_test::read(applet_tag, sizeof(applet_tag)) ==
+                   applet_value &&
+               persistent_transaction_test::read(lifecycle_tag,
+                                                 sizeof(lifecycle_tag)) ==
+                   lifecycle_value &&
+               persistent_transaction_test::read(unrelated_tag,
+                                                 sizeof(unrelated_tag)) ==
+                   unrelated_value,
+           "failed_package_state_delete_restores_matching_records_only");
   }
 
   // Static roots cached during a transaction must not survive rollback.

@@ -22,6 +22,9 @@ extern "C" const uint8_t __flash_binary_end[];
 extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
 #endif
 extern "C" uint8_t choupi_persistent_write_transaction_active(void);
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" uint8_t rp2350_fs_test_manual_transaction_active(void);
+#endif
 
 namespace {
 constexpr size_t kRomFsOffset = 0x20000;
@@ -942,6 +945,13 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
   return false;
 }
 
+#ifdef RP2350_FS_OVERLAY_TEST
+int32_t fail_bulk_erase_after = -1;
+extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count) {
+  fail_bulk_erase_after = static_cast<int32_t>(count);
+}
+#endif
+
 uint8_t compact_deleted_overlay_records() {
 #ifndef RP2350_FS_OVERLAY_TEST
   const size_t files_before = overlay_file_count;
@@ -1328,6 +1338,9 @@ extern "C" uint8_t fs_init(void) {
 
 extern "C" uint8_t fs_sync(void) {
   if (choupi_persistent_write_transaction_active() != 0) return FS_STATUS_OK;
+#ifdef RP2350_FS_OVERLAY_TEST
+  if (rp2350_fs_test_manual_transaction_active() != 0) return FS_STATUS_OK;
+#endif
   return persist_overlay() ? FS_STATUS_OK : FS_STATUS_IO_UNKNOWN;
 }
 
@@ -1610,6 +1623,12 @@ uint8_t erase_overlay_records(Match matches) {
 #endif
           return FS_STATUS_IO_UNKNOWN;
         }
+#ifdef RP2350_FS_OVERLAY_TEST
+        if (fail_bulk_erase_after >= 0 && --fail_bulk_erase_after == 0) {
+          fail_bulk_erase_after = -1;
+          return FS_STATUS_IO_UNKNOWN;
+        }
+#endif
       }
     }
   }

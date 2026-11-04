@@ -377,13 +377,13 @@ bool clear_applet_persistent_state(uint8_t applet_owner,
   for (uint16_t field = 0; field <= 0xff; ++field) {
     const auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
         applet_owner, package_id, class_index, static_cast<uint8_t>(field));
-    if (fs_erase_prefix(tag.value, tag.len) != 0) return false;
+    if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(tag)) return false;
     if (class_index > UINT8_MAX) {
       const auto legacy_tag =
           jcvm::FlashMemory_Handler::getLegacyPersistentFieldTag(
               applet_owner, package_id, class_index,
               static_cast<uint8_t>(field));
-      if (fs_erase_prefix(legacy_tag.value, legacy_tag.len) != 0)
+      if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(legacy_tag))
         return false;
     }
   }
@@ -395,11 +395,11 @@ bool clear_package_static_state(uint8_t package_id) noexcept {
   for (uint16_t field = 0; field <= 0xff; ++field) {
     const auto tag = jcvm::FlashMemory_Handler::getStaticFieldTag(
         package_id, static_cast<uint8_t>(field));
-    if (fs_erase_prefix(tag.value, tag.len) != 0) return false;
+    if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(tag)) return false;
   }
   return true;
 #else
-  return fs_erase_package_state(package_id) == 0;
+  return jcvm::FlashMemory_Handler::erasePersistentPackageState(package_id);
 #endif
 }
 

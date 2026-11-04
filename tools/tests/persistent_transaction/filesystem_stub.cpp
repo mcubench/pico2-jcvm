@@ -104,6 +104,8 @@ bool fail_next_read = false;
 bool fail_next_sync = false;
 bool stall_after_one_cursor_result = false;
 bool cursor_result_returned = false;
+bool fail_prefix_after_one = false;
+bool fail_package_state_after_one = false;
 int erase_fail_after = -1;
 unsigned int sync_count = 0;
 unsigned int array_allocation_start = 0;
@@ -179,6 +181,52 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, const uint8_t tag_length) {
   return files.erase(key_for(tag, tag_length)) == 1 ? 0 : 2;
 }
 
+extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
+                                    const uint8_t prefix_length) {
+  if (prefix == nullptr || prefix_length == 0) return 3;
+  bool erased_one = false;
+  for (auto it = files.begin(); it != files.end();) {
+    if (it->first.size() >= prefix_length &&
+        std::memcmp(it->first.data(), prefix, prefix_length) == 0) {
+      it = files.erase(it);
+      if (fail_prefix_after_one && !erased_one) {
+        erased_one = true;
+        fail_prefix_after_one = false;
+        return 1;
+      }
+    } else {
+      ++it;
+    }
+  }
+  return 0;
+}
+
+extern "C" uint8_t fs_erase_package_state(const uint8_t package_id) {
+  bool erased_one = false;
+  for (auto it = files.begin(); it != files.end();) {
+    const auto &tag = it->first;
+    const bool matches =
+        (tag.size() >= 2 && static_cast<uint8_t>(tag[0]) == 0x02 &&
+         static_cast<uint8_t>(tag[1]) == package_id) ||
+        (tag.size() >= 3 && static_cast<uint8_t>(tag[0]) == 0x03 &&
+         static_cast<uint8_t>(tag[2]) == package_id) ||
+        (tag.size() >= 3 && static_cast<uint8_t>(tag[0]) == 0x02 &&
+         static_cast<uint8_t>(tag[1]) == 0xff &&
+         static_cast<uint8_t>(tag[2]) == package_id);
+    if (!matches) {
+      ++it;
+      continue;
+    }
+    it = files.erase(it);
+    if (fail_package_state_after_one && !erased_one) {
+      erased_one = true;
+      fail_package_state_after_one = false;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
                                    const uint8_t tag_length,
                                    const uint32_t offset,
@@ -236,6 +284,11 @@ namespace persistent_transaction_test {
 void force_cursor_stall_after_one_result() {
   stall_after_one_cursor_result = true;
   cursor_result_returned = false;
+}
+
+void fail_prefix_erase_after_one() { fail_prefix_after_one = true; }
+void fail_package_state_erase_after_one() {
+  fail_package_state_after_one = true;
 }
 
 void fail_erase_after(unsigned int successful_erases) {

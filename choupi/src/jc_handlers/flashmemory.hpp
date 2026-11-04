@@ -158,6 +158,10 @@ public:
                                     uint32_t length) noexcept;
   /// Erase a persistent record while preserving transaction rollback data.
   static bool erasePersistentTag(const fs::Tag &tag) noexcept;
+  /// Bulk-delete a namespace only after snapshotting all matched records.
+  static bool erasePersistentPrefix(const fs::Tag &prefix) noexcept;
+  /// Snapshot and bulk-delete all persistent state owned by a package.
+  static bool erasePersistentPackageState(uint8_t package_id) noexcept;
 
   /// Get byte data store in flash memory.
   static const jbyte_t getPersistentField_Byte(const fs::Tag &tag);
