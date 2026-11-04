@@ -1,3 +1,28 @@
+# Foreign references in applet-owned arrays — 2026-11-04
+
+- **Finding:** A volatile applet-owned Object array preserved the compact
+  handle of a foreign-package object, but its heap collector followed that
+  handle only in the receiving package's heap. Equal handles could mark an
+  unrelated object; non-colliding handles could be invalid and still leave
+  both walks marked complete. Reuse could alias a later allocation.
+- **Viable fix:** `JC_Array::setReferenceEntry()` now throws
+  `SecurityException` before mutation when an applet-owned array receives a
+  foreign-package reference. Persistent foreign references remain rejected.
+  Runtime-global Object arrays retain their owner tag because `Context`
+  enumerates their entries for the owning package; global-array retention was
+  not disabled.
+- **Regression evidence:** `./tools/test-rmi-registry` rejects both colliding
+  and non-colliding foreign handles, confirms the receiving entries remain
+  null, collects both owner arrays, and reuses their compact slots. The
+  cross-AID VPCD suite passes 31 cases, including service-package DELETE and
+  reinstall after rejected array retention. ARM/RISC-V builds and the
+  identified 2BED hardware cycle pass.
+- **Artifacts:** VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261104T031510Z.log`
+  SHA-256 `8d31156959a9222acdbff0d34eeaa889442cb13131d665fa05b7bffaeb833c0a`;
+  hardware cycle `artifacts/logs/cycle-choupi-20261104T032120Z.log`.
+
+---
+
 # VPCD transaction-probe installation latency — 2026-11-04
 
 - **Observation:** The focused PC VPCD transaction-lifecycle test took

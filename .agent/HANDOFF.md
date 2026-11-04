@@ -1,3 +1,36 @@
+# Current session — reject unsafe foreign references in applet arrays — 2026-11-04 04:23 CET
+
+Completed RV-20261103-08 implementation; source commit is `7fb08a3` and
+metadata follow-up is in progress. `JC_Array::setReferenceEntry()` now fails closed with
+`SecurityException` before mutation when an applet-owned array is given a
+foreign-package reference. Runtime-global Object arrays remain owner-tagged;
+their per-package root enumeration already routes entries to the owner heap.
+
+`./tools/test-rmi-registry` passed the production heap regression: equal and
+non-equal compact handles were both rejected, receiver entries remained null,
+the owner collector reclaimed both arrays, and both slots were safely reused.
+`python3 tools/tests/sio_cross_aid_vpcd_test.py` passed all 31 cases, including
+same-AID service package deletion/reinstall and stale proxy rejection after the
+failed retention attempt. VPCD required elevated localhost network access (no
+USB). PC, ARM and RISC-V `max_crypto` builds passed. Pico 2
+`2BED26ED20556535` flashed the current ARM image and its finite serial monitor
+passed. Cycle log `artifacts/logs/cycle-choupi-20261104T032120Z.log` (SHA-256
+`7da2144f5187c2080738f303f4995f89b3075581c5b84be13708dd37aa5f7ea3`). Current
+UF2: `build/arm/pico2_choupi.uf2`, 1,908,736 bytes, SHA-256
+`7f0eeba6e0af85d859e4d5c7a5a777a97f2d23b1e15f9addd8344acc465d8e13`, end
+`0x100e8e30`, 94,672 bytes remaining. It bundles no CAP and does not erase
+packages already stored on a token.
+
+VPCD transcript:
+`artifacts/logs/sio-cross-aid-vpcd-20261104T031510Z.log` (SHA-256
+`8d31156959a9222acdbff0d34eeaa889442cb13131d665fa05b7bffaeb833c0a`). The
+R08 workaround deliberately rejects foreign references in applet-local arrays
+instead of tracing owner provenance across heaps. Next: RV-20261103-09,
+object-sensitive result roots with missing owner provenance. Preserve all
+unrelated worktree changes, especially `AGENTS.md`, architecture docs/review
+artifacts, SDK submodules, `choupi/src/heap.*`, physical probe tooling and
+`src/cap_load.cpp` changes.
+
 # Current session — applet transaction lifecycle abort — 2026-11-04 04:00 CET
 
 Completed RV-20261103-07 and committed the implementation as `a33439d`
