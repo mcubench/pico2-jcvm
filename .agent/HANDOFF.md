@@ -1,3 +1,32 @@
+# Current session — isolate JCAlgTest VPCD startup timeout — 2026-11-04 21:55 CET
+
+The previous JCAlgTest VPCD attempt timed out before `VPCD:CONNECTED` or
+`VPCD:APPLET_INSTALLED`. I regenerated the ignored diagnostic input
+`build/algtest-v182-load-code.bin` with the unchanged upstream CAP's Descriptor
+component included (30,836 bytes; SHA-256
+`f9b0b23a0caa6adce7867d16feaa6c379d680254cf88eed08768b905d0366e5b`). The
+retry still timed out before install/socket connect. This rejects neither the
+Descriptor parser nor RV-28; it only means Descriptor omission was not enough
+to explain the stall.
+
+The restricted direct PC emulator command fails at `PTRACE_ATTACH` with
+`Operation not permitted`; elevated repository VPCD commands get through MPU
+and filesystem initialization and into remote contexts. Recent division-probe
+VPCD logs connected, so the current failure is specific to the JCAlgTest
+install/startup path. Logs:
+`artifacts/logs/rv28-jcalgtest-vpcd-20261104.log`,
+`artifacts/logs/rv28-jcalgtest-vpcd-retry-20261104.log`, and
+`artifacts/logs/rv28-jcalgtest-vpcd-cpu-20261104.log` (all ignored artifacts).
+
+Next: instrument or bisect the bounded JCAlgTest install path using the
+required elevated route; keep all upstream CAP bytes unchanged. The current
+max_crypto applet-free Windows image remains
+`build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,022,784 bytes, SHA-256
+`9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`; it has
+not been flashed.
+
+---
+
 # Architecture documentation refreshed — 2026-11-04 21:43 CET
 
 - Updated `docs/FIRMWARE_JCVM_ARCHITECTURE.md` (3,660 words) from current

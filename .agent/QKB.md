@@ -47,6 +47,23 @@
 
 ## PC VPCD upstream applet install and host-emulator timeout — observed 2026-11-04
 
+- **Update:** Re-extracted the unchanged upstream AlgTest 1.8.2 CAP into the
+  ignored `build/algtest-v182-load-code.bin`, this time including its 4,093-byte
+  `Descriptor.cap` component (final size 30,836 bytes; SHA-256
+  `f9b0b23a0caa6adce7867d16feaa6c379d680254cf88eed08768b905d0366e5b`). A
+  bounded VPCD retry still timed out before installation or socket connection.
+  Therefore the missing Descriptor hypothesis is not confirmed as the cause;
+  the generated input remains an uncommitted diagnostic artifact.
+- **Additional observation:** Direct emulator startup in the restricted
+  context fails at `PTRACE_ATTACH` with `Operation not permitted`. Via the
+  required elevated host-access route, the emulator initializes MPU/FS and
+  enters remote contexts, but AlgTest installation still does not finish
+  within the bounded run. Recent division-probe VPCD logs do connect, narrowing
+  this to AlgTest installation/startup rather than all VPCD use.
+- **Next:** Instrument or bisect the install path and Descriptor-derived
+  metadata handling. Do not infer the CAP loader is fixed, and do not treat
+  restricted ptrace failure as a firmware result.
+
 - **Finding:** After rebuilding the PC target, a one-pass VPCD test of the
   unchanged upstream `AlgTest_v1.8.2_jc305.cap` did not connect before its
   timeout. An earlier fresh-memory attempt logged `INSTALL_FAIL stage=5
