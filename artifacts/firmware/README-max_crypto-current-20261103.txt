@@ -3,12 +3,12 @@ Current max_crypto ARM firmware for RP2350 Pico 2
 Image: pico2-jcvm-max_crypto-arm-empty-card-current.uf2
 Source build output: build/arm/pico2_choupi.uf2
 Profile: max_crypto (147 of 150 declared JCAlgTest capabilities enabled)
-Image size: 1,905,664 bytes
-SHA-256: b4f1120c7dfec2c653176eb5298b55de1f6d9b2e9a5a56d078b3109c9d7ab1d5
+Image size: 1,907,712 bytes
+SHA-256: a3fa5e7ff07c166b8220b72caef3871215d57710695be7e1c3f47eae0a7eeb8e
 
-The image was rebuilt using `./tools/build arm --profile max_crypto`; the
-matching RISC-V core wrapper build also passed. The build enables RSA and ECC
-support. ARM flash-boundary validation passed with 95,468 bytes remaining in
+The image was rebuilt using `./tools/build arm --profile max_crypto`; matching
+RISC-V core and PC emulator builds also passed. The build enables RSA and ECC
+support. ARM flash-boundary validation passed with 95,020 bytes remaining in
 the firmware window. The UF2 is a direct copy of the build output; the two
 files have matching SHA-256 hashes.
 
@@ -32,15 +32,10 @@ list has no `APP:` or `PKG:` entries before installing any CAP. If other AIDs
 are listed, remove them too if the intended test requires a fully empty card.
 Install the unchanged upstream CAP only after this check.
 
-The previously packaged image hash `756fc23c...` was flashed and runtime-tested
-on 2BED (`2BED26ED20556535`) and 8E (`8E464F4E2BBC0A19`); full API 3.0.5
-Security and Crypto results are recorded in `.agent/QKB.md`. The current image
-hash above includes a CCID receive-framing fix and was rebuilt with both
-repository wrappers on 2026-11-03. Both architecture builds passed. It was
-flashed to 8E from BOOTSEL and picotool flash verification passed, but the
-finite serial monitor could not find a USB serial device afterward and PC/SC
-listed no physical reader. Runtime validation of this exact hash is therefore
-incomplete. Cycle log: `artifacts/logs/cycle-choupi-20261103T232841Z.log`.
+This image includes cross-store CAP lifecycle recovery. It was flashed and
+runtime-tested on Pico 2 `2BED26ED20556535`; the 18-second monitor repeatedly
+reported `TEST:SUMMARY pass=1 fail=0`. Cycle log:
+`artifacts/logs/cycle-choupi-20261104T005831Z.log`.
 
 The build used the shared worktree, which contains unrelated uncommitted local
 source changes; this image may not be reproducible from a clean checkout until

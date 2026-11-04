@@ -2,6 +2,7 @@
 #include "cap_store.hpp"
 #include "flash_layout.hpp"
 #include "vm_filesystem.h"
+#include "gp_lifecycle_recovery.hpp"
 #include "jc_handlers/flashmemory.hpp"
 
 #include <algorithm>
@@ -685,6 +686,128 @@ int main() {
     (void)cap_store_delete_package(package_id);
     (void)fs_erase_package_state(package_id);
     (void)fs_erase(unrelated_static, sizeof(unrelated_static));
+    (void)fs_sync();
+  }
+
+  {
+    constexpr uint8_t package_list_tag[] = {0x00};
+    uint8_t package_bits[JCVM_MAX_PACKAGES / 8]{};
+    expect(fs_write(package_list_tag, sizeof(package_list_tag), package_bits,
+                    sizeof(package_bits)) == 0 && fs_sync() == 0,
+           "lifecycle_recovery_package_bitmap_baseline");
+
+    constexpr uint8_t staged_package_id = 62;
+    constexpr uint8_t staged_package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x62};
+    constexpr uint8_t cap_code[] = {0xc4, 0x01, 0x00};
+    const bool staged_cap = cap_store_write_package(
+        staged_package_id, staged_package_aid, sizeof(staged_package_aid),
+        cap_code, sizeof(cap_code));
+    const bool staged_recovered = staged_cap &&
+        gp::recover_dynamic_lifecycle_state();
+    const bool staged_recovered_again = staged_recovered &&
+        gp::recover_dynamic_lifecycle_state();
+    uint8_t staged_package_found = 0;
+    expect(staged_recovered_again &&
+               !cap_store_find_package(staged_package_aid,
+                                       sizeof(staged_package_aid),
+                                       staged_package_found),
+           "lifecycle_recovery_removes_unenabled_staged_load");
+
+    constexpr uint8_t deleted_package_id = 63;
+    constexpr uint8_t deleted_package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x63};
+    constexpr uint8_t deleted_marker_tag[] = {0x02, 0xff, deleted_package_id,
+                                              0x02};
+    constexpr uint8_t deleted_marker = 2;
+    const bool deleted_state_seeded =
+        cap_store_write_package(deleted_package_id, deleted_package_aid,
+                                sizeof(deleted_package_aid), cap_code,
+                                sizeof(cap_code)) &&
+        fs_write(deleted_marker_tag, sizeof(deleted_marker_tag),
+                 &deleted_marker, sizeof(deleted_marker)) == 0 &&
+        fs_sync() == 0;
+    const bool deleted_state_recovered = deleted_state_seeded &&
+        gp::recover_dynamic_lifecycle_state();
+    uint8_t deleted_package_found = 0;
+    expect(deleted_state_recovered &&
+               !cap_store_find_package(deleted_package_aid,
+                                       sizeof(deleted_package_aid),
+                                       deleted_package_found),
+           "lifecycle_recovery_finishes_package_delete_after_filesystem_commit");
+
+    constexpr uint8_t enabled_orphan_id = 60;
+    constexpr uint8_t enabled_orphan_static[] = {0x02, enabled_orphan_id, 0x01};
+    constexpr uint8_t enabled_orphan_value[] = {0x61, 0x62};
+    const bool orphan_seeded =
+        fs_write(enabled_orphan_static, sizeof(enabled_orphan_static),
+                 enabled_orphan_value, sizeof(enabled_orphan_value)) == 0 &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    if (orphan_seeded) {
+      jcvm::FlashMemory_Handler::enablePackage(enabled_orphan_id);
+    }
+    const bool orphan_enabled = orphan_seeded &&
+        jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+    const bool orphan_recovered = orphan_enabled &&
+        gp::recover_dynamic_lifecycle_state();
+    const bool orphan_recovered_again = orphan_recovered &&
+        gp::recover_dynamic_lifecycle_state();
+    const uint8_t *recovered_package_bits =
+        jcvm::FlashMemory_Handler::getPackagesArray();
+    expect(orphan_recovered_again &&
+               (recovered_package_bits[enabled_orphan_id / 8] &
+                (1u << (enabled_orphan_id % 8))) == 0 &&
+               fs_exists(enabled_orphan_static, sizeof(enabled_orphan_static)) == 0,
+           "lifecycle_recovery_disables_package_without_cap_and_clears_state");
+
+    constexpr uint8_t instance_package_id = 61;
+    constexpr uint8_t instance_package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x61};
+    constexpr uint8_t instance_applet_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x62};
+    constexpr uint8_t instance_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x63};
+    constexpr uint8_t owner_id = 180;
+    const auto stale_instance_root =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(
+            owner_id, instance_package_id, 4);
+    bool instance_root_cleared =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    if (instance_root_cleared) {
+      instance_root_cleared =
+          jcvm::FlashMemory_Handler::erasePersistentTag(stale_instance_root) &&
+          jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+    }
+    bool instance_seeded = cap_store_write_package(
+        instance_package_id, instance_package_aid, sizeof(instance_package_aid),
+        cap_code, sizeof(cap_code));
+    instance_seeded = instance_root_cleared && instance_seeded &&
+        cap_store_mark_package_installed(
+        instance_package_id, instance_applet_aid, sizeof(instance_applet_aid),
+        instance_aid, sizeof(instance_aid), 4, owner_id);
+    if (instance_seeded &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+      jcvm::FlashMemory_Handler::enablePackage(instance_package_id);
+      instance_seeded =
+          jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+    } else {
+      instance_seeded = false;
+    }
+    const bool instance_recovered = instance_seeded &&
+        gp::recover_dynamic_lifecycle_state();
+    const bool instance_recovered_again = instance_recovered &&
+        gp::recover_dynamic_lifecycle_state();
+    uint32_t retained_cap_length = 0;
+    const bool retained_cap =
+        cap_store_data_for_package(instance_package_id,
+                                   &retained_cap_length) != nullptr;
+    const bool instance_registry_cleared =
+        cap_store_package_instance_count(instance_package_id) == 0;
+    expect(instance_recovered_again && instance_registry_cleared &&
+               retained_cap && retained_cap_length == sizeof(cap_code),
+           "lifecycle_recovery_removes_registry_entry_with_missing_applet_root");
+    (void)cap_store_delete_package(instance_package_id);
+    if (jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+      (void)jcvm::FlashMemory_Handler::erasePersistentPackageState(
+          instance_package_id);
+      jcvm::FlashMemory_Handler::disablePackage(instance_package_id);
+      (void)jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+    }
     (void)fs_sync();
   }
 

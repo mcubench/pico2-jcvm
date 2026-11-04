@@ -398,6 +398,7 @@ if(CHOUPI_TARGET_PC)
 
   add_executable(choupi "${JCVM_CORE_SOURCES_FILES}"
                         "${CMAKE_SOURCE_DIR}/../src/cap_load.cpp"
+                        "${CMAKE_SOURCE_DIR}/../src/gp_lifecycle_recovery.cpp"
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")

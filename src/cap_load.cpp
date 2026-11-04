@@ -1,6 +1,7 @@
 #include "cap_load.hpp"
 #include "cap_store.hpp"
 #include "gp_delete.hpp"
+#include "gp_lifecycle_recovery.hpp"
 #include "ffi.h"
 #include "vm_lifecycle.h"
 #include "vm_filesystem.h"
@@ -447,6 +448,11 @@ bool clear_orphaned_dynamic_persistent_state() noexcept {
   return true;
 }
 
+bool recover_pending_lifecycle_state() noexcept {
+  return recover_pending_install_journals() &&
+         gp::recover_dynamic_lifecycle_state();
+}
+
 bool clear_lifecycle_markers(uint8_t package_id) {
   jcvm::FlashMemory_Handler::setPersistentField_Byte(
       lifecycle_tag(package_id, 1), 0);
@@ -750,9 +756,10 @@ bool CapLoadSession::finishLoad() noexcept {
   if (!validate_cap_code(load_data_ + offset, code_length, load_package_aid_,
                          load_package_aid_length_, applet_aid_,
                          applet_aid_length_) ||
+      !recover_pending_lifecycle_state() ||
+      !clear_orphaned_dynamic_persistent_state() ||
       cap_store_find_package(load_package_aid_, load_package_aid_length_,
                              package_id_) ||
-      !clear_orphaned_dynamic_persistent_state() ||
       !allocate_dynamic_package_id(package_id_) ||
       choupi_store_cap_package(package_id_, load_package_aid_,
                                load_package_aid_length_, load_data_ + offset,
@@ -882,7 +889,8 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     return false;
   }
 
-  if (!recover_pending_install_journals()) {
+  if (!recover_pending_lifecycle_state() ||
+      !clear_orphaned_dynamic_persistent_state()) {
     install_failure_stage_ = 11;
     return false;
   }
@@ -988,8 +996,12 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
 uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
                                      bool delete_related_objects) noexcept {
   // Card-manager DELETE may target any previously installed package or
-  // instance. Restore its metadata before resolving the requested AID so the
-  // result does not depend on the applet most recently selected on the card.
+  // instance. Complete interrupted cross-store publication before resolving
+  // the requested AID.
+  if (!recover_pending_lifecycle_state() ||
+      !clear_orphaned_dynamic_persistent_state()) {
+    return 0x6581;
+  }
   if (!restoreInstalledForAid(aid, aid_length))
     (void)restorePackageForAid(aid, aid_length);
   const bool target_is_loaded_package =
@@ -1120,12 +1132,16 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
 }
 
 bool CapLoadSession::recoverPendingInstalls() noexcept {
-  return recover_pending_install_journals();
+  return recover_pending_lifecycle_state() &&
+         clear_orphaned_dynamic_persistent_state();
 }
 
 void CapLoadSession::restoreInstalled() noexcept {
   reset();
-  (void)recoverPendingInstalls();
+  if (!recover_pending_lifecycle_state() ||
+      !clear_orphaned_dynamic_persistent_state()) {
+    return;
+  }
   for (uint8_t id = kFirstDynamicPackageId;
        id < kFirstDynamicPackageId + kDynamicPackageCount; ++id) {
     const uint8_t count = cap_store_package_instance_count(id);

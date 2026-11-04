@@ -174,6 +174,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     src/reader_led.cpp
     src/cap_load.cpp
     src/cap_store.cpp
+    src/gp_lifecycle_recovery.cpp
     src/scp03.cpp
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
     "${PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c"

@@ -559,6 +559,18 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
       pc_storage_initialization_failed = true;
       return 1;
     }
+    if (!vpcd_cap_load_session.recoverPendingInstalls()) {
+      std::fprintf(stderr,
+                   "ERROR: unable to recover pending VPCD CAP lifecycle state\n");
+      pc_storage_initialization_failed = true;
+      return 1;
+    }
+    if (fs_read(&package_list_tag, 1, package_bits,
+                sizeof(package_bits)) != 0) {
+      std::fprintf(stderr, "ERROR: unable to reload PC package list\n");
+      pc_storage_initialization_failed = true;
+      return 1;
+    }
     for (uint8_t package_id = 56; package_id <= 63; ++package_id) {
       if ((package_bits[package_id / 8] & (1u << (package_id % 8))) != 0 &&
           host_package_read(package_id) == nullptr) {
@@ -571,12 +583,6 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
       }
     }
     if (vpcd_registry_resume_requested) {
-      if (!vpcd_cap_load_session.recoverPendingInstalls()) {
-        std::fprintf(stderr,
-                     "ERROR: unable to recover pending VPCD CAP installs\n");
-        pc_storage_initialization_failed = true;
-        return 1;
-      }
       uint8_t package_id = 0xff;
       uint8_t applet_aid[16]{};
       uint8_t applet_aid_length = 0;
@@ -1146,7 +1152,7 @@ uint8_t vpcd_restore_applet(void *, const uint8_t *aid, uint8_t aid_length) {
                  "VPCD:TEST_SKIPPED_INSTALL_RECOVERY_ONCE\n");
     return 1;
   }
-  (void)vpcd_cap_load_session.recoverPendingInstalls();
+  if (!vpcd_cap_load_session.recoverPendingInstalls()) return 1;
   if (!vpcd_cap_load_session.restoreInstalledForAid(aid, aid_length)) return 1;
   uint16_t class_index = 0xffff;
   if (!vpcd_cap_load_session.appletClassIndex(class_index)) return 1;
