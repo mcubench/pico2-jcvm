@@ -888,8 +888,8 @@ void Bytecodes::bc_invokestatic() {
               source_offset + index - 1);
           const uint16_t destination_index = static_cast<uint16_t>(
               destination_offset + index - 1);
-          destination->setByteEntry(destination_index,
-                                    source->getByteEntry(source_index));
+          destination->setByteEntryNonAtomic(
+              destination_index, source->getByteEntry(source_index));
         }
       } else {
         for (jshort_t index = 0; index < length; ++index) {
@@ -897,8 +897,8 @@ void Bytecodes::bc_invokestatic() {
               static_cast<uint16_t>(source_offset + index);
           const uint16_t destination_index =
               static_cast<uint16_t>(destination_offset + index);
-          destination->setByteEntry(destination_index,
-                                    source->getByteEntry(source_index));
+          destination->setByteEntryNonAtomic(
+              destination_index, source->getByteEntry(source_index));
         }
       }
       const jshort_t result = static_cast<jshort_t>(
@@ -923,7 +923,8 @@ void Bytecodes::bc_invokestatic() {
       throw Exceptions::ArrayIndexOutOfBoundsException;
     }
     for (jshort_t index = 0; index < length; ++index) {
-      array->setByteEntry(static_cast<uint16_t>(offset + index), value);
+      array->setByteEntryNonAtomic(static_cast<uint16_t>(offset + index),
+                                   value);
     }
     const jshort_t result = static_cast<jshort_t>(
         static_cast<uint16_t>(offset + length));

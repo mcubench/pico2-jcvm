@@ -21742,3 +21742,14 @@
 - Decision: Close RV-23. Continue with RV-24, implementing non-atomic persistent mutation independently from transaction journaling and validating mixed atomic/non-atomic abort behavior. Hardware validation was not requested or performed.
 - Commit: `pending`
 - Artifacts/logs: focused `artifacts/logs/sio-cross-aid-vpcd-20261104T163909Z.log` SHA-256 `7f080e5e82027e34b9314127a2b4add189f5983bfc6c05d559a43c63409bbd1b`; full regression `artifacts/logs/sio-cross-aid-vpcd-20261104T163028Z.log` SHA-256 `a4b54442ac3eb993858aaeb8a1553aa20e02834768b97e13808f1207c074af25`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Keep non-atomic array writes outside transaction journal 74 minutes
+
+- Step/experiment: `rv-20261103-24-nonatomic-util-journal-semantics`
+- When: '2026-11-04 17:56 CET' - '2026-11-04 19:10 CET'
+- Change: Added a native persistent byte-array non-atomic setter used by the `Util` native dispatch. It bypasses snapshot/capacity accounting. If a pre-existing record has an atomic before-image, the setter updates that snapshot's payload byte so abort restores atomic changes but retains non-atomic changes. Added CAP fixture cases for large-record capacity, same/different array mixing, and atomic-after-non-atomic ordering.
+- Validation: `./tools/build-pc --profile max_crypto` (passed after source changes), `./tools/build arm --profile max_crypto` (passed), `./tools/build riscv --profile max_crypto` (passed); `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --timeout 600 --case 83 --case 89 --case 90 --case 91 --case 92 --log artifacts/logs/rv24-nonatomic-vpcd-20261104.log` passed `TEST:SUMMARY pass=7 fail=0 elapsed_s=231.098`. Existing build warnings remain. No physical device was used. The refreshed combined UF2 was inspected with picotool and contains all 4,096 all-0xFF storage blocks.
+- Result: Non-atomic writes bypass transaction capacity; abort retains those bytes on existing arrays and rolls back atomic writes to the correct non-atomic baseline. Current ARM firmware is 1,917,952 bytes, SHA-256 `2457caba615ceec3c8d2979c0a76825533e06ed7f856621776c09bcf04fef3e4`, ending at `0x100EA064` with 90,012 bytes before `0x10100000`. Applet-free empty-card UF2 is 4,015,104 bytes, SHA-256 `9c712067e835f61231c1b70556acfee15fa77cf9b06cd44d31f6dc7f70d45000`. Power-loss durability during an active transaction was not evaluated.
+- Decision: Close RV-24 and proceed to RV-25, defining a single CCID/card-session dispatch contract. Do not claim physical validation.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/rv24-nonatomic-vpcd-20261104.log` SHA-256 `58cdfabe3db6561fa8236e50e126c6467437c26bf15b84a88fd09c244a2d0f66`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.

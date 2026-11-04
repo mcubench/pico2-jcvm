@@ -213,9 +213,10 @@ during the review.
 
 ### RV-20261103-24
 
-- [ ] **P2: Non-atomic APIs consume commit capacity and roll back.**
+- [x] **P2: Non-atomic APIs consume commit capacity and roll back.**
   Owner: PROFILE-01, PERSIST-03. Evidence: Source; [review R24](docs/review_20261103.md#r24--non-atomic-persistent-updates-still-enter-the-transaction-journal).
   Acceptance: provide a native mutation path with the selected non-atomic semantics, including interaction with records already journaled by atomic writes. Test mixed atomic/non-atomic writes and abort on the same and different persistent arrays, including a record larger than commit capacity. Do not weaken ordinary transaction accounting globally.
+  Progress: `Util.arrayCopyNonAtomic` and `arrayFillNonAtomic` now use a native byte-array mutation path which skips the transaction journal/capacity charge. When an existing record already has an atomic before-image, successful non-atomic updates patch that image to preserve the non-atomic baseline; a transaction-created record remains subject to rollback. Focused VPCD CAP tests including the existing capacity-overflow case passed 7/7. PC, ARM and RISC-V max_crypto builds passed. No physical token was used.
 
 ### RV-20261103-25
 

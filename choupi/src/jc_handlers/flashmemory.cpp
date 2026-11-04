@@ -146,6 +146,23 @@ void snapshot_persistent_tag(const fs::Tag &tag) {
   persistent_write_snapshots.push_back(std::move(snapshot));
 }
 
+void preserve_non_atomic_array_byte_in_snapshot(const fs::Tag &tag,
+                                                const uint16_t index,
+                                                const jbyte_t value) noexcept {
+  if (!persistent_write_transaction_active) return;
+  const size_t data_offset = 3u + static_cast<size_t>(index);
+  for (auto &snapshot : persistent_write_snapshots) {
+    if (!tags_equal(snapshot.tag, tag)) continue;
+    if (snapshot.existed &&
+        snapshot.data.size() > data_offset &&
+        snapshot.data[0] == static_cast<uint8_t>(
+                                FieldType::FIELD_TYPE_ARRAY_BYTE)) {
+      snapshot.data[data_offset] = static_cast<uint8_t>(value);
+    }
+    return;
+  }
+}
+
 bool snapshot_matching_persistent_tags(const uint8_t *prefix,
                                        const uint8_t prefix_length,
                                        const int package_filter) noexcept {
@@ -1904,6 +1921,26 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
   if (fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value)) {
     throw Exceptions::IOException;
   }
+}
+
+void FlashMemory_Handler::setPersistentField_Array_ByteNonAtomic(
+    const fs::Tag &tag, const uint16_t index, const jbyte_t value
+#ifdef JCVM_SECURE_HEAP_ACCESS
+    , Heap &heap
+#endif /* JCVM_SECURE_HEAP_ACCESS */
+) {
+#ifdef JCVM_SECURE_HEAP_ACCESS
+  auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
+  if (array->isTransientArray() ||
+      array->getType() != JAVA_ARRAY_T_BYTE || array->size() <= index) {
+    throw Exceptions::SecurityException;
+  }
+#endif /* JCVM_SECURE_HEAP_ACCESS */
+
+  if (fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value)) {
+    throw Exceptions::IOException;
+  }
+  preserve_non_atomic_array_byte_in_snapshot(tag, index, value);
 }
 
 void FlashMemory_Handler::clearPersistentField_Array_Byte(

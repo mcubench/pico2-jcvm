@@ -15,6 +15,7 @@ import javacard.framework.SensitiveArrays;
 import javacard.framework.SystemException;
 import javacard.framework.TransactionException;
 import javacard.framework.UserException;
+import javacard.framework.Util;
 import javacard.security.MessageDigest;
 import javacard.security.InitializedMessageDigest;
 import javacard.security.CryptoException;
@@ -49,6 +50,8 @@ public final class JCTransactionProbe extends Applet {
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
   private final byte[] transactionCapacityArray;
+  private final byte[] transactionSmallArray = {0x11, 0x12};
+  private final byte[] transactionOtherArray = {0x21, 0x22};
 
   private JCTransactionProbe() {
     this(null, (short)0, (byte)0, false, true);
@@ -990,6 +993,62 @@ public final class JCTransactionProbe extends Applet {
         rejectNextSelect = 1;
         buffer[0] = 1;
         length = 1;
+        break;
+      }
+      case 89: {
+        byte[] source = {0x5a};
+        JCSystem.beginTransaction();
+        short copied = Util.arrayCopyNonAtomic(
+            source, (short)0, transactionCapacityArray, (short)0,
+            (short)1);
+        short unused = JCSystem.getUnusedCommitCapacity();
+        JCSystem.abortTransaction();
+        buffer[0] = copied == 1 && unused == JCSystem.getMaxCommitCapacity()
+            ? (byte)1 : (byte)0;
+        buffer[1] = transactionCapacityArray[0];
+        length = 2;
+        break;
+      }
+      case 90: {
+        transactionSmallArray[0] = 0x11;
+        transactionSmallArray[1] = 0x12;
+        JCSystem.beginTransaction();
+        transactionSmallArray[0] = 0x32;
+        byte[] source = {0x43};
+        Util.arrayCopyNonAtomic(source, (short)0, transactionSmallArray,
+                                (short)0, (short)1);
+        JCSystem.abortTransaction();
+        buffer[0] = transactionSmallArray[0];
+        buffer[1] = transactionSmallArray[1];
+        length = 2;
+        break;
+      }
+      case 91: {
+        transactionSmallArray[0] = 0x11;
+        transactionOtherArray[0] = 0x21;
+        JCSystem.beginTransaction();
+        transactionSmallArray[0] = 0x32;
+        byte[] source = {0x54};
+        Util.arrayCopyNonAtomic(source, (short)0, transactionOtherArray,
+                                (short)0, (short)1);
+        JCSystem.abortTransaction();
+        buffer[0] = transactionSmallArray[0];
+        buffer[1] = transactionOtherArray[0];
+        length = 2;
+        break;
+      }
+      case 92: {
+        transactionSmallArray[0] = 0x11;
+        transactionSmallArray[1] = 0x12;
+        JCSystem.beginTransaction();
+        byte[] source = {0x63};
+        Util.arrayCopyNonAtomic(source, (short)0, transactionSmallArray,
+                                (short)0, (short)1);
+        transactionSmallArray[1] = 0x74;
+        JCSystem.abortTransaction();
+        buffer[0] = transactionSmallArray[0];
+        buffer[1] = transactionSmallArray[1];
+        length = 2;
         break;
       }
       case 84: {

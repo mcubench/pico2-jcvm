@@ -1,7 +1,7 @@
 Current max_crypto ARM firmware for Raspberry Pi Pico 2 / RP2350
 
-Refreshed: 2026-11-04, after RV-23 added native prevalidation for
-`Util.arrayCopyNonAtomic` and `Util.arrayFillNonAtomic`.
+Refreshed: 2026-11-04, after RV-24 added non-atomic persistent array writes
+outside the transaction journal while preserving mixed abort semantics.
 
 Profile: max_crypto (147/150 declared JCAlgTest capabilities enabled,
 including RSA and ECC). No applet or CAP is bundled.
@@ -9,8 +9,8 @@ including RSA and ECC). No applet or CAP is bundled.
 For Windows testing with a genuinely empty card, flash this combined UF2:
 
   build/arm/pico2_choupi_max_crypto_empty_card.uf2
-  Size: 4,014,592 bytes
-  SHA-256: 041144a8a5116111aef9f4e501f87355e90a4e1e9731cdf7969a75da9ac2e328
+  Size: 4,015,104 bytes
+  SHA-256: 9c712067e835f61231c1b70556acfee15fa77cf9b06cd44d31f6dc7f70d45000
 
 It contains the current ARM firmware plus 1 MiB of 0xFF blocks covering
 0x10100000–0x101FFFFF. Copying it to the Pico 2 BOOTSEL drive clears existing
@@ -20,18 +20,21 @@ the unchanged upstream CAP with GPPro after confirming the card is empty.
 Firmware-only build output:
 
   build/arm/pico2_choupi.uf2
-  Size: 1,917,440 bytes
-  SHA-256: 803997081387ed53fa4fad5f4afafa1d93447666e5b6341d886838e0fa6f3d7e
+  Size: 1,917,952 bytes
+  SHA-256: 2457caba615ceec3c8d2979c0a76825533e06ed7f856621776c09bcf04fef3e4
 
-The firmware image ends at 0x100E9F08, leaving 90,360 bytes before the
+The firmware image ends at 0x100EA064, leaving 90,012 bytes before the
 0x10100000 firmware boundary. PC, ARM and RISC-V max_crypto builds passed.
-The focused cross-AID VPCD Util test passed invalid negative and out-of-range
-copy/fill cases, null references at zero length, valid zero-length boundary
-operations, valid overlapping copy, exact exception catches, unchanged arrays
-after failure, and unassigned `SensitiveResult` after failure. PC, ARM and
-RISC-V max_crypto builds passed. The combined UF2 was verified to contain the
-current firmware blocks and 4,096 all-0xFF storage blocks. It has not been
-flashed or runtime-tested on a physical token.
+Focused VPCD tests passed 7/7: capacity overflow is catchable and leaves data
+unchanged; non-atomic copy on a record larger than commit capacity does not
+consume capacity and survives abort; mixed atomic/non-atomic updates on the
+same array preserve the non-atomic value while atomic bytes roll back; updates
+to separate arrays behave likewise; and an atomic write after a non-atomic
+write rolls back to that non-atomic baseline. The combined UF2 was verified by
+picotool as RP2350 ARM Secure and contains the current firmware blocks plus
+4,096 all-0xFF storage blocks. It has not been flashed or runtime-tested on a
+physical token. VPCD validation log:
+`artifacts/logs/rv24-nonatomic-vpcd-20261104.log`.
 
 The full cross-AID SIO VPCD regression also passed 34/34 checks. Logs:
 `artifacts/logs/sio-cross-aid-vpcd-20261104T163909Z.log` (focused Util test)

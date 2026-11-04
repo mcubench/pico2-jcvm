@@ -166,6 +166,8 @@ public:
       noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
           ;
+  /// Write a byte without adding the write itself to the transaction journal.
+  void setByteEntryNonAtomic(const uint16_t index, const jbyte_t value);
   /// Write a short element from an array.
   void setShortEntry(const uint16_t index, const jshort_t value)
 #ifndef JCVM_SECURE_HEAP_ACCESS

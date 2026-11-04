@@ -210,6 +210,15 @@ public:
                                             Heap &heap
 #endif /* JCVM_SECURE_HEAP_ACCESS */
   );
+  /// Write a persistent byte-array element outside the active transaction.
+  /// If the record already has a transaction snapshot, keep this element in
+  /// the rollback baseline so abort preserves the non-atomic write.
+  static void setPersistentField_Array_ByteNonAtomic(
+      const fs::Tag &tag, const uint16_t index, const jbyte_t value
+#ifdef JCVM_SECURE_HEAP_ACCESS
+      , Heap &heap
+#endif /* JCVM_SECURE_HEAP_ACCESS */
+  );
   /// Zero all elements of a persistent byte array with one record write.
   static void clearPersistentField_Array_Byte(const fs::Tag &tag,
                                               const uint16_t size);

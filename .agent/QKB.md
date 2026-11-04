@@ -5982,3 +5982,25 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Remaining related item:** `RV-20261103-24` still covers non-atomic
   persistent writes entering the transaction journal and the required mixed
   atomic/non-atomic abort behavior.
+
+## Persistent Util non-atomic writes and journal baseline — 2026-11-04
+
+- **Finding:** `Util.arrayCopyNonAtomic` and `arrayFillNonAtomic` previously
+  reached the ordinary persistent-array setter, which snapshots the complete
+  serialized record. That incorrectly consumed transaction commit capacity
+  and meant abort reverted non-atomic writes.
+- **Viable solution:** Use a dedicated native setter that writes the persistent
+  byte directly without adding a snapshot. If the same pre-existing record
+  already has an atomic before-image, patch only the affected array payload byte
+  in that image after the direct write. This retains earlier atomic rollback
+  while making non-atomic bytes part of the transaction baseline. Do not patch
+  a transaction-created record's `existed=false` snapshot, so abort still
+  deletes the newly created object. Existing commit-capacity accounting remains
+  unchanged.
+- **Validation:** Focused VPCD test passed 7/7, covering the existing capacity
+  overflow behavior, a large non-atomic write outside capacity, mixed writes to
+  the same/different arrays, and atomic-after-non-atomic ordering. PC, ARM and
+  RISC-V builds passed. No physical token was used.
+- **Scope limit:** VPCD tests validate transaction abort behavior. They do not
+  establish power-loss durability while the filesystem transaction overlay is
+  active.

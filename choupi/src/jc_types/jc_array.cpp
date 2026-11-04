@@ -577,6 +577,34 @@ void JC_Array::setByteEntry(const uint16_t index, const jbyte_t value)
   }
 }
 
+void JC_Array::setByteEntryNonAtomic(const uint16_t index,
+                                     const jbyte_t value) {
+  checkArrayEntryIndex(*this, index);
+#ifdef JCVM_SECURE_HEAP_ACCESS
+  if (this->type != jc_array_type::JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::SecurityException;
+  }
+#endif /* JCVM_SECURE_HEAP_ACCESS */
+
+  if (this->isPersistent()) {
+    const fs::Tag tag = this->computeTag();
+    if (this->isTransientArray()) {
+      const uint16_t offset =
+          static_cast<uint16_t>(tag.len + sizeof(tag.len) + index);
+      this->array[offset] = value;
+    } else {
+      FlashMemory_Handler::setPersistentField_Array_ByteNonAtomic(
+          tag, index, value
+#ifdef JCVM_SECURE_HEAP_ACCESS
+          , this->getOwner()
+#endif /* JCVM_SECURE_HEAP_ACCESS */
+      );
+    }
+  } else {
+    this->array[index] = value;
+  }
+}
+
 /**
  * Write a byte or a boolean element from an array.
  *

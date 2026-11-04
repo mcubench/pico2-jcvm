@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 89),
+        "--case", type=int, action="append", choices=range(1, 93),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -285,6 +285,10 @@ def main() -> int:
                     (86, b"", "uncaught exception auto-aborts applet transaction"),
                     (87, b"\x01", "arm transaction during deselect lifecycle callback"),
                     (88, b"\x01", "arm transaction during rejected select callback"),
+                    (89, b"\x01\x5a", "non-atomic arrayCopy exceeds commit capacity and survives abort"),
+                    (90, b"\x43\x12", "non-atomic same-array write survives abort after atomic write"),
+                    (91, b"\x11\x54", "non-atomic write to a different array survives while atomic array rolls back"),
+                    (92, b"\x63\x12", "atomic write after non-atomic write rolls back to non-atomic baseline"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

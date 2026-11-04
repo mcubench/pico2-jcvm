@@ -1,3 +1,45 @@
+# Current session — RV-24 non-atomic persistent writes — 2026-11-04 19:10 CET
+
+RV-20261103-24 is implemented in native C++ and validated. `Util` copy/fill
+uses a persistent byte setter that does not add an atomic transaction snapshot
+or consume commit capacity. If an existing array record already has a before
+image from an atomic mutation, non-atomic writes patch the corresponding
+payload byte in that image; abort therefore restores atomic bytes while keeping
+the non-atomic result. A transaction-created record remains deleted on abort.
+Ordinary transaction accounting was not changed.
+
+Validation passed: PC build (after implementation), ARM max_crypto build,
+RISC-V max_crypto build, and focused VPCD transaction tests
+(`TEST:SUMMARY pass=7 fail=0`, 231.098 seconds). The tests include commit
+capacity overflow, non-atomic mutation of a record larger than capacity, mixed
+atomic/non-atomic writes to the same and different arrays, and atomic-after-
+non-atomic ordering. No physical board was accessed. VPCD tests do not cover
+power-loss durability during an active filesystem transaction.
+
+Latest applet-free max_crypto ARM artifacts for Windows testing:
+
+- Empty-card image: `build/arm/pico2_choupi_max_crypto_empty_card.uf2`,
+  4,015,104 bytes, SHA-256
+  `9c712067e835f61231c1b70556acfee15fa77cf9b06cd44d31f6dc7f70d45000`.
+- Firmware-only image: `build/arm/pico2_choupi.uf2`, 1,917,952 bytes,
+  SHA-256 `2457caba615ceec3c8d2979c0a76825533e06ed7f856621776c09bcf04fef3e4`.
+- Firmware ends at `0x100EA064`, leaving 90,012 bytes before `0x10100000`.
+  Combined image contains 4,096 all-`0xFF` blocks over
+  `0x10100000`–`0x101FFFFF`; picotool identifies RP2350 ARM Secure.
+- VPCD log: `artifacts/logs/rv24-nonatomic-vpcd-20261104.log`, SHA-256
+  `58cdfabe3db6561fa8236e50e126c6467437c26bf15b84a88fd09c244a2d0f66`.
+- Image details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+RV-24 is marked complete in TODO. Source and metadata commits are still
+pending. Preserve unrelated dirty files, including AGENTS.md, heap and CAP
+loader changes, review artifacts, crypto probes and upstream submodules. Stage
+only RV-24 files. After committing, update the source SHA in this record and
+progress.md with a metadata follow-up commit. Then continue at RV-25: unify
+CCID/card-session command routing. Do not use physical hardware unless
+explicitly requested and present.
+
+---
+
 # Current session — prevalidate non-atomic Util arguments — 2026-11-04 17:43 CET
 
 RV-20261103-23 is implemented in native C++ `invokestatic` dispatch. Calls to
