@@ -6185,3 +6185,17 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Scope limit:** This checks taken destinations, but does not statically
   verify untaken edges, control-flow stack types, nested linkage/import
   integrity, or heap field kinds/access. Runtime tests remain required.
+
+
+## Architecture documentation relocation and stale boundary claims — 2026-11-04
+
+- **Issue:** The architecture snapshot moved from the repository root to
+  `docs/`, but its source links still resolved relative to the old location.
+  Several October findings also described responsibilities already changed
+  by native API, storage, SIO, and lifecycle work.
+- **Viable documentation fix:** Resolve repository source links from `docs/`
+  using `../`, retain L1–L10 identifiers with updated status, and check source
+  alongside progress/handoff. Do not infer hardware acceptance from a helper
+  test, build, historical image, or a decoder sanitizer pass.
+- **Validation:** All local links in the refreshed architecture document
+  resolve. This corrects documentation; it is not a new runtime fix or test.

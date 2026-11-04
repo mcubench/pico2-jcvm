@@ -21884,3 +21884,28 @@
 - Decision: Do not repeat the same integration command unchanged. Isolate the install-time `SecurityException` and host emulator stop handling before another VPCD attempt; continue static/sanitizer work meanwhile.
 - Commit: `26325a7`
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (append-only shared log; contains multiple historical attempts and is not isolated to this run).
+
+
+## 2026-11-04 Refresh current firmware architecture 6.2 minutes
+
+- Step/experiment: `architecture-development-events-20261104`
+- When: '2026-11-04 21:37:09 CET' - '2026-11-04 21:43:22 CET'
+- Change: Updated `docs/FIRMWARE_JCVM_ARCHITECTURE.md` from current source and
+  development records; retained ten finding IDs with implementation/acceptance
+  status. Covered native API dispatch/state, extracted filesystem/ABIs,
+  multi-package host storage, lifecycle recovery, transaction semantics,
+  SIO ownership, cooperative deadlines, CCID recovery, and partial CAP trust
+  hardening. Recorded the pre-existing relocation and fixed relative links;
+  updated handoff and QKB without changing implementation files.
+- Validation: Source/build-definition and progress/handoff inspection; document
+  checks passed for 3,660 words, 20 local links, ten findings, balanced code
+  fences, and whitespace. Builds, firmware tests, and hardware access were
+  intentionally skipped for this documentation-only step.
+- Result: Earlier architecture debt is distinguished from implemented fixes
+  and remaining production/malformed-runtime validation gaps. Historical
+  results retain their scope. No runtime/performance metric was newly measured.
+- Decision: Use the refreshed layer ownership and completion criteria for
+  follow-up work; preserve unrelated source changes and existing recovery.
+- Commit: pending; the primary commit reference is appended after commit.
+- Artifacts/logs: `docs/FIRMWARE_JCVM_ARCHITECTURE.md`, `.agent/HANDOFF.md`,
+  `.agent/QKB.md`; no new runtime logs.

@@ -1,3 +1,28 @@
+# Architecture documentation refreshed — 2026-11-04 21:43 CET
+
+- Updated `docs/FIRMWARE_JCVM_ARCHITECTURE.md` (3,660 words) from current
+  source and development records through the RV-28/VPCD diagnostic follow-up.
+  The document now distinguishes implemented changes, historical validation,
+  and remaining acceptance/refactoring work; L1–L10 retain their original IDs.
+- Replaced obsolete claims about board-owned filesystem implementation,
+  interpreted Cipher/Signature/digest providers, absent lifecycle recovery,
+  zero transaction capacity, and single-package host storage. Covered retained
+  contexts/SIO ownership, volatile native crypto state, CCID routing/retries,
+  immutable deadlines, and partial uploaded-CAP execution checks.
+- Preserved the requested `docs/` location and corrected source links relative
+  to it. The existing root-to-docs relocation is included with this update;
+  unrelated source/probe changes and other sessions' records are preserved.
+- Documentation validation passed: 20 local links resolve, all ten findings
+  are represented, code fences balance, and document whitespace checks pass.
+  No builds, runtime tests, USB/PCSC operations, or hardware validation were
+  performed for this documentation-only step. Historical test results are
+  labelled by scope; RV-25/26/27/28 acceptance gaps remain explicit.
+- Remaining priorities: malformed-CAP runtime/linkage/access validation,
+  unified production card-session policy, explicit storage durability/HAL
+  contracts, residual interpreted API behavior, and build/profile isolation.
+
+---
+
 # Current session — RV-28 method body bounds — 2026-11-04 20:29 CET
 
 Current max_crypto image for external Windows testing is freshly rebuilt from
