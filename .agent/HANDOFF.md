@@ -1,3 +1,44 @@
+# Current session — transient Cipher key workspace lifecycle — 2026-11-04 09:51 CET
+
+RV-20261103-11 implementation is committed as `73afaf2` (`Clear Cipher key
+copies with transient lifetime`). AES key copies and RSA
+private Cipher modulus/exponent workspace now use transient arrays matching the
+source key's CLEAR_ON_RESET/CLEAR_ON_DESELECT event. A transient marker is
+checked by Cipher update/doFinal so a cleared workspace returns
+`CryptoException.UNINITIALIZED_KEY` instead of using stale copies. The native
+key interface cast path now checks actual NativeKey type before resolving the
+class-token namespace; this is required for the dedicated RSA transient-key
+fixture.
+
+The repeatable `./tools/test-cipher-lifecycle-vpcd` passes `TEST:SUMMARY
+pass=29 fail=0`: AES and RSA operations, deselect, reader reset, and a fresh
+emulator process restoring the installed applet. PC, ARM and RISC-V
+`max_crypto` builds pass. ARM image endpoint is `0x100e9200`, leaving 93,696
+bytes. No physical board was available: the authorized helper granted one USB
+node but `pcsc_scan -r` listed only Virtual PCD 00 00 and 00 01. Physical
+validation remains open.
+
+A probe APDU omission was corrected: `800A0000` had no Le although the fixture
+responded with data; valid short case-2 framing is `800A000000`. The fresh
+process test also found a separate RV-20261103-13 issue: directly using restored
+Cipher copies returns `42 9000`, while repopulating the restored transient RSA
+key gives `ArrayIndexOutOfBoundsException` (`62 9000`). Track that under the
+existing transient-array restore-length item; it does not invalidate the
+workspace clear assertion. Current regression CAP source is in
+`tools/tests/cipher_lifecycle_applet/`; runner is `tools/test-cipher-lifecycle-vpcd`.
+
+The PC/ARM/RISC-V builds and Java/Python/shell syntax checks passed. Preserve
+unrelated dirty worktree files, including heap/persistence review work,
+architecture/docs changes, JCSystem physical probes, and symmetric-crypto
+scripts. The exact physical PC/SC lifecycle test is ready as
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-lifecycle-pcsc '<exact reader>'`;
+the board must be enumerated by `pcsc_scan -r` first. Next: continue with the
+RV-20261103-12 reset clearing behavior, then RV-13 transient array restore
+length; keep physical validation open until an actual Pico PC/SC reader is
+visible.
+
+---
+
 # Current session — refresh current max_crypto empty-card image — 2026-11-04 08:46 CET
 
 Rebuilt the current worktree for PC, ARM and RISC-V using repository wrappers;

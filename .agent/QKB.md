@@ -1,3 +1,36 @@
+# Transient Cipher key copies and VPCD lifecycle test framing — 2026-11-04
+
+- **Finding:** Symmetric Cipher key bytes and RSA Cipher modulus/exponent
+  copies were stored in ordinary arrays, so clearing the original transient
+  key did not clear what the retained Cipher used. A one-byte test APDU sent as
+  `800A0000` also omitted Le even though the fixture replies with one byte;
+  this produced a misleading `6F00` after the key factory had succeeded.
+- **Viable fix:** Store symmetric key copies and RSA private Cipher workspaces
+  in transient arrays with the source key's reset/deselect event, and keep a
+  transient marker checked by update/doFinal. For a short one-byte response,
+  send case-2 APDU `800A000000` (Le `00` = 256) or create a SmartcardIO
+  `CommandAPDU` with `Ne=256`.
+- **Validation:** `./tools/test-cipher-lifecycle-vpcd` passes `TEST:SUMMARY
+  pass=29 fail=0` for AES and RSA across deselect, VPCD reader reset, and a
+  separate emulator process restoring the installed applet. The sources were
+  repopulated after deselect/reset before checking that old Cipher copies
+  return `CryptoException.UNINITIALIZED_KEY` (`42 9000`). PC, ARM and RISC-V
+  `max_crypto` builds pass. Last authorized PC/SC scan found only two VPCD
+  readers; no physical-device test was possible.
+- **Related restore issue:** Direct calls on restored AES/RSA Cipher objects
+  return `42 9000` as expected. Attempting to repopulate a restored transient
+  RSA key instead raises `ArrayIndexOutOfBoundsException` (fixture marker
+  `62 9000`), consistent with the existing RV-20261103-13 transient-array
+  restore-length finding. Fix that separately; it is not a failure of the
+  workspace-clear assertion.
+- **Artifacts:** `artifacts/logs/cipher-lifecycle-vpcd-20261104T084348Z.log`
+  SHA-256 `e487a385b643a8d0bd6f346b9bb2a71600fced1b121c682721199adacb2bc73a`;
+  fresh-restore direct check `artifacts/logs/cipher-lifecycle-vpcd-restore-direct.log`
+  SHA-256 `937c85f629c47615b08a44493b85e614c376cc7059238e706c5a8d0e00ba718f`.
+- **Commit:** `73afaf2` (`Clear Cipher key copies with transient lifetime`).
+
+---
+
 # Non-renewable applet execution deadline — 2026-11-04
 
 - **Finding:** The RP2350 interpreter compared elapsed time against a global

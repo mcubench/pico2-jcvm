@@ -124,6 +124,7 @@ during the review.
 - [ ] **P1: Cipher key copies survive original transient-key clearing.**
   Owner: PROFILE-01, HARD-01. Evidence: Source; [review R11](docs/review_20261103.md#r11--cipher-copies-outlive-transient-key-clear-events).
   Acceptance: retain checked key identity and appropriate lifetime metadata, or use workspace that clears with the key. Test retained Cipher objects across deselect, reader reset and fresh restore for symmetric and RSA transient keys. Modification of a key after `init()` is separately unspecified; this finding concerns defined lifecycle clear events.
+  Progress: AES and RSA private Cipher workspaces now allocate sensitive copies as transient arrays with the source key's clear event and validate a transient marker before use. The repeatable `./tools/test-cipher-lifecycle-vpcd` regression passes 29/29 across deselect, reader reset and fresh emulator-process restore; sources are repopulated after deselect/reset before testing the retained copy. Physical PC/SC validation remains pending because only the two VPCD readers were visible at the last refresh.
 
 ### RV-20261103-12
 
@@ -136,6 +137,7 @@ during the review.
 - [ ] **P2: Restore includes tag bytes in array length.**
   Owner: PERSIST-02, PROFILE-01. Evidence: Reproduced/source; [review R13](docs/review_20261103.md#r13--restored-transient-arrays-have-the-wrong-length-and-uninitialized-storage).
   Acceptance: represent logical length separately or calculate it correctly; initialize only the data region and preserve its tag metadata. Validate byte/short/int/reference arrays after fresh restore and after clear/reset, including the largest accepted sizes.
+  New evidence: After process restart, directly using retained AES and RSA Cipher workspaces correctly returns `UninitializedKey`. Attempting to repopulate the retained RSA transient key in the same restored applet instead returns the fixture's generic exception marker for `ArrayIndexOutOfBoundsException` (`62 9000`); transient component arrays therefore need restore-capacity coverage here.
 
 ### RV-20261103-14
 
