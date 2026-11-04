@@ -21827,5 +21827,5 @@
 - Validation: `./tools/test-cap-method-body-bounds` passed 7/7; `./tools/test-cap-bytecode-pc-bounds` passed 14/14; method-header tests passed 7/7; native-opcode policy tests passed 5/5; ARM and RISC-V wrapper builds passed. An offline structural scan checked 11 deployed `*_305.cap` packages and validated 978 concrete method ranges; 975 counts ended at the next method offset and three exceeded it by one byte and were clamped. No malformed-CAP runtime/sanitizer or physical-device test was run.
 - Result: Each entered frame is limited to its Descriptor-recorded bytecode body, and malformed operand diagnostics no longer bypass PC bounds. Three upstream bytecode counts were 1 byte too long and are clamped before they can reach the next header. Branches can still land on non-instruction bytes inside a body. ARM firmware ends at `0x100d2ac0`, leaving 185,664 bytes before the storage limit.
 - Decision: Keep RV-28 open. Next verify branch targets against decoded instruction boundaries without trusting malformed instruction lengths; then run malformed-CAP runtime/sanitizer cases and continue nested-linkage and heap field-kind validation.
-- Commit: pending
-- Artifacts/logs: `tools/test-cap-method-body-bounds`; offline structural scan output (11 CAPs / 948 methods, not separately archived); no firmware runtime log.
+- Commit: `2496a92` (implementation; progress/handoff SHA follow-up pending)
+- Artifacts/logs: `tools/test-cap-method-body-bounds`; offline structural scan output (11 CAPs / 978 methods, not separately archived); no firmware runtime log.

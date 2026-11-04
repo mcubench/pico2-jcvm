@@ -49,8 +49,9 @@ physical runtime access becomes available.
 The Method-component bytecode fetch bounds and focused test are committed as
 `8d4d3cf`; progress/handoff SHA metadata follow-up is `88531a2`. Per-method
 body bounds, hard clamping at the next descriptor method offset, and guarded
-exception diagnostics are the current uncommitted step. Focused tests and
-both target builds pass. No physical test was run.
+exception diagnostics are committed as `2496a92`; progress/handoff SHA
+metadata follow-up is being recorded. Focused tests and both target builds
+pass. No physical test was run.
 
 ---
 
