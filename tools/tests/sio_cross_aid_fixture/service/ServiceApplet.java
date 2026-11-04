@@ -61,6 +61,118 @@ public final class ServiceApplet extends Applet implements Probe {
     return value == 0x12345678 ? 0x76543210 : 0x6F010001;
   }
 
+  private boolean sensitiveResultUnassigned() {
+    try {
+      SensitiveResult.assertEquals((short) 0x7777);
+      return false;
+    } catch (SecurityException expected) {
+      return true;
+    }
+  }
+
+  public short validateNonAtomicUtil() {
+    byte[] source = { 1, 2 };
+    byte[] destination = { 3, 4 };
+    try {
+      Util.arrayCopyNonAtomic(source, (short) 0, destination, (short) 0,
+                              (short) -1);
+      return (short) 0x6A71;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (destination[0] != 3 || destination[1] != 4 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A72;
+    }
+    try {
+      Util.arrayCopyNonAtomic(source, (short) 1, destination, (short) 0,
+                              (short) 2);
+      return (short) 0x6A73;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (destination[0] != 3 || destination[1] != 4 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A74;
+    }
+    try {
+      Util.arrayCopyNonAtomic(source, (short) -1, destination, (short) 0,
+                              (short) 1);
+      return (short) 0x6A81;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (destination[0] != 3 || destination[1] != 4 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A82;
+    }
+    try {
+      Util.arrayCopyNonAtomic(source, (short) 0, destination, (short) 1,
+                              (short) 2);
+      return (short) 0x6A75;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (destination[0] != 3 || destination[1] != 4 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A76;
+    }
+    byte[] invalidOverlap = { 7, 8, 9, 10 };
+    try {
+      Util.arrayCopyNonAtomic(invalidOverlap, (short) 0, invalidOverlap,
+                              (short) 3, (short) 2);
+      return (short) 0x6A83;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (invalidOverlap[0] != 7 || invalidOverlap[1] != 8 ||
+          invalidOverlap[2] != 9 || invalidOverlap[3] != 10 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A84;
+    }
+    try {
+      Util.arrayCopyNonAtomic(null, (short) 0, destination, (short) 0,
+                              (short) 0);
+      return (short) 0x6A77;
+    } catch (NullPointerException expected) {
+      if (!sensitiveResultUnassigned()) return (short) 0x6A78;
+    }
+    try {
+      Util.arrayCopyNonAtomic(source, (short) 0, null, (short) 0,
+                              (short) 0);
+      return (short) 0x6A87;
+    } catch (NullPointerException expected) {
+      if (!sensitiveResultUnassigned()) return (short) 0x6A88;
+    }
+    if (Util.arrayCopyNonAtomic(source, (short) 2, destination, (short) 2,
+                                (short) 0) != 2) return (short) 0x6A79;
+    SensitiveResult.assertEquals((short) 2);
+
+    byte[] overlap = { 1, 2, 3, 4 };
+    Util.arrayCopyNonAtomic(overlap, (short) 0, overlap, (short) 1,
+                            (short) 3);
+    if (overlap[0] != 1 || overlap[1] != 1 || overlap[2] != 2 ||
+        overlap[3] != 3) return (short) 0x6A7A;
+
+    byte[] fill = { 5, 6 };
+    try {
+      Util.arrayFillNonAtomic(fill, (short) 0, (short) -1, (byte) 9);
+      return (short) 0x6A7B;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (fill[0] != 5 || fill[1] != 6 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A7C;
+    }
+    try {
+      Util.arrayFillNonAtomic(fill, (short) -1, (short) 1, (byte) 9);
+      return (short) 0x6A85;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (fill[0] != 5 || fill[1] != 6 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A86;
+    }
+    try {
+      Util.arrayFillNonAtomic(fill, (short) 1, (short) 2, (byte) 9);
+      return (short) 0x6A89;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (fill[0] != 5 || fill[1] != 6 ||
+          !sensitiveResultUnassigned()) return (short) 0x6A8A;
+    }
+    try {
+      Util.arrayFillNonAtomic(null, (short) 0, (short) 0, (byte) 9);
+      return (short) 0x6A7D;
+    } catch (NullPointerException expected) {
+      if (!sensitiveResultUnassigned()) return (short) 0x6A7E;
+    }
+    if (Util.arrayFillNonAtomic(fill, (short) 2, (short) 0, (byte) 9) != 2)
+      return (short) 0x6A7F;
+    SensitiveResult.assertEquals((short) 2);
+    return (short) 0x6A70;
+  }
+
   public short sensitiveCopy() {
     byte[] source = { 0x12, 0x34 };
     byte[] destination = { 0, 0 };

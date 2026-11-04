@@ -5951,3 +5951,34 @@ original terminology/status; check current summary and later fixes before reuse.
   because its constructor invocation is obsolete. A review copy adapting only
   that invocation then fails two existing assertions (19 pass / 2 fail).
   See review R27; do not hide the semantic failures by rewriting expectations.
+
+## Native Util non-atomic range validation and slow VPCD CAP LOAD — 2026-11-04
+
+- **Finding:** The ROM `Util.arrayCopyNonAtomic` and `arrayFillNonAtomic`
+  implementations looped over arguments without validating complete ranges
+  first. Negative lengths could skip the loop and appear successful; invalid
+  upper bounds could throw only after earlier destination bytes had changed.
+- **Viable solution:** Intercept the framework `Util` class and exported
+  method tokens at native `invokestatic` dispatch. Reset SensitiveResult,
+  check nulls and widened offset-plus-length bounds before writing, preserve
+  same-array overlap semantics, then set the short result only on success.
+  This leaves Java Card API and upstream CAP sources unchanged.
+- **Validation:** Focused CAP-to-native VPCD test passed for negative and
+  positive overruns, null source and destination with zero length, zero-length
+  end boundaries, valid/invalid overlap, exact exception catches, unchanged
+  data after errors and unassigned SensitiveResult. Full cross-AID regression
+  passed 34/34. PC, ARM and RISC-V max_crypto builds passed. No physical token
+  was used.
+- **VPCD timing:** Initial 45-second connect/30-second APDU limits expired
+  before completion; a 90-second connect limit and 120-second APDU limit
+  completed the setup and tests. The CAP LOAD steps are slow in this VM; this
+  is a harness timeout, not evidence of a Util runtime failure. Keep finite,
+  appropriately longer timeouts for this fixture.
+- **Evidence:** Focused log
+  `artifacts/logs/sio-cross-aid-vpcd-20261104T163909Z.log` (SHA-256
+  `7f080e5e82027e34b9314127a2b4add189f5983bfc6c05d559a43c63409bbd1b`);
+  full log `artifacts/logs/sio-cross-aid-vpcd-20261104T163028Z.log` (SHA-256
+  `a4b54442ac3eb993858aaeb8a1553aa20e02834768b97e13808f1207c074af25`).
+- **Remaining related item:** `RV-20261103-24` still covers non-atomic
+  persistent writes entering the transaction journal and the required mixed
+  atomic/non-atomic abort behavior.

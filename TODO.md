@@ -206,9 +206,10 @@ during the review.
 
 ### RV-20261103-23
 
-- [ ] **P2: Invalid Util arguments can succeed or partially write.**
+- [x] **P2: Invalid Util arguments can succeed or partially write.**
   Owner: PROFILE-01. Evidence: Source; [review R23](docs/review_20261103.md#r23--non-atomic-util-methods-do-not-prevalidate-their-ranges).
   Acceptance: enforce complete validation in native API dispatch before mutation, with tests for negative/zero lengths, nulls, boundary offsets and invalid overlapping ranges. Verify exception type, destination contents and SensitiveResult after failure.
+  Progress: Native `invokestatic` dispatch now intercepts `Util.arrayCopyNonAtomic` and `arrayFillNonAtomic`, resets SensitiveResult, validates null and full range arguments before writes, preserves overlapping-copy behavior, and assigns the result only on success. Focused CAP-to-native VPCD coverage passed for negative and positive overrun ranges, null source/destination with zero length, end-boundary zero-length operations, valid and invalid overlap, exact exceptions, unchanged destination data, and unassigned SensitiveResult after failure. Full cross-AID VPCD regression passed 34/34; PC, ARM and RISC-V max_crypto builds passed. No physical device was used. Non-atomic persistent-write journal semantics remain RV-24.
 
 ### RV-20261103-24
 

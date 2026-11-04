@@ -161,6 +161,20 @@ def main() -> int:
                 print("TEST:PASS inherited interface checkcast and instanceof")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_UTIL") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("802D000000"),
+                    "prevalidate Util non-atomic copy and fill ranges"
+                )
+                if response != bytes.fromhex("6A709000"):
+                    raise RuntimeError(
+                        "non-atomic Util validation returned "
+                        f"{response.hex().upper()}, expected 6A709000"
+                    )
+                print("TEST:PASS invalid Util copy/fill calls preserve arrays, "
+                      "throw expected exceptions, and clear SensitiveResult")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
                                      "cross-AID Shareable invocation")
             expected = bytes.fromhex("45679000")

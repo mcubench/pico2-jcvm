@@ -1,33 +1,37 @@
-# Current session — resolve inherited Java Card interface membership — 2026-11-04 16:42 CET
+# Current session — prevalidate non-atomic Util arguments — 2026-11-04 17:43 CET
 
-RV-20261103-22 is implemented. Class-to-interface checks now inspect each
-superclass with correct package resolution and a 256-level bound. Interface
-target checks traverse the transitive superinterface graph with a bounded
-64-node queue, so malformed cycles or oversized graphs fail closed without
-unbounded recursion or allocation.
+RV-20261103-23 is implemented in native C++ `invokestatic` dispatch. Calls to
+`Util.arrayCopyNonAtomic` and `arrayFillNonAtomic` now clear SensitiveResult,
+validate all null and range arguments before any destination write, preserve
+overlap-copy behavior, and assign SensitiveResult only on success. Public Java
+Card API sources and upstream CAPs were not changed.
 
-Validation passed: the generated CAP fixture and PC, ARM and RISC-V
-`max_crypto` builds. The isolated VPCD CAP test passed same-package and
-imported-package superclass `instanceof` and `checkcast`, including a nested
-three-level superinterface chain. The full cross-AID VPCD suite passed
-`TEST:SUMMARY pass=34 fail=0`. No physical device was used.
+Validation passed: PC, ARM, and RISC-V `max_crypto` builds; the full cross-AID
+VPCD regression (`TEST:SUMMARY pass=34 fail=0`); and the focused CAP-to-native
+Util test covering negative/overrun ranges, null arrays at zero length,
+zero-length end boundaries, valid and invalid overlap, exact exceptions,
+unchanged data after failures, and SensitiveResult state. The VPCD test needed
+90-second connection and 120-second APDU deadlines because package LOAD is
+slow in this VM. No physical device was used.
 
 Current applet-free max_crypto ARM image for external Windows testing:
 
-- `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,012,544 bytes, SHA-256
-  `178efc20a53ab7fea314e0251bcbb05c8f84deefe2bed537d57b15764907368d`.
-- Firmware-only `build/arm/pico2_choupi.uf2`, 1,915,392 bytes, SHA-256
-  `0cc13ca28be022152134a2c66e8f23a916bce59c6917ea144c3f71b430dc70b1`.
-- Firmware end `0x100E9BEC`, leaving 91,156 bytes before `0x10100000`. The
-  combined UF2 includes the current firmware and 4,096 all-`0xFF` blocks over
-  `0x10100000`–`0x101FFFFF`.
+- `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,014,592 bytes, SHA-256
+  `041144a8a5116111aef9f4e501f87355e90a4e1e9731cdf7969a75da9ac2e328`.
+- Firmware-only `build/arm/pico2_choupi.uf2`, 1,917,440 bytes, SHA-256
+  `803997081387ed53fa4fad5f4afafa1d93447666e5b6341d886838e0fa6f3d7e`.
+- Firmware end `0x100E9F08`, leaving 90,360 bytes before `0x10100000`. The
+  combined UF2 has 4,096 all-`0xFF` blocks over `0x10100000`–`0x101FFFFF`.
 - Details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
-- Full regression log: `artifacts/logs/sio-cross-aid-vpcd-20261104T153105Z.log`.
+- Full regression log: `artifacts/logs/sio-cross-aid-vpcd-20261104T163028Z.log`.
+- Focused Util log: `artifacts/logs/sio-cross-aid-vpcd-20261104T163909Z.log`.
 
-The RV-22 source, fixture, progress, TODO, QKB and image instructions are
-committed as `a22bbd2`. Unrelated worktree changes remain preserved. Physical
-validation remains pending. Next, continue with RV-20261103-23, prevalidate
-native Util arguments before mutation.
+RV-23 is ready for a scoped commit; the progress record currently says
+`pending`. Preserve unrelated worktree changes, including `AGENTS.md`, heap,
+CAP loader, review probes, crypto fixtures and upstream submodules. Physical
+validation was not requested. Next priority is RV-20261103-24: route
+non-atomic persistent array writes outside the transaction journal while
+preserving mixed atomic/non-atomic abort semantics.
 
 ---
 

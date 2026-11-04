@@ -40,10 +40,12 @@
 #include "../jc_handlers/jc_import.hpp"
 #include "../jc_handlers/jc_method.hpp"
 #include "../jc_handlers/package.hpp"
+#include "../jc_types/jc_array.hpp"
 #include "../jc_types/jc_field.hpp"
 #include "../jc_types/jc_instance.hpp"
 #include "../interpretor.hpp"
 #include "../stack.hpp"
+#include "javacard-rom-metadata.h"
 #include "shareable_arguments.hpp"
 #include "bytecodes.hpp"
 #include "../../../src/vm_applet_context.hpp"
@@ -690,6 +692,7 @@ void Bytecodes::bc_invokestatic() {
 
   uint16_t method_offset = 0;
   bool intercept_shareable_lookup = false;
+  uint8_t intercept_util_non_atomic = 0;
   pc_t &pc = stack.getPC();
 
   uint16_t index = pc.getNextShort();
@@ -745,6 +748,18 @@ void Bytecodes::bc_invokestatic() {
         std::memcmp(package_aid->AID,
                     "\xA0\x00\x00\x00\x60\x00\x01", 7) == 0 &&
         class_token == 0 && method_token == 53;
+    // Util's non-atomic methods are implemented by the ROM API bytecode in
+    // ordinary builds. Intercept them here so invalid ranges are checked in
+    // full before any destination element can be changed.
+    if (package_aid->AID_length == 7 &&
+        std::memcmp(package_aid->AID,
+                    "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+        class_token == ROM_CLASS_EXPORT_TOKEN_JAVACARD_FRAMEWORK_UTIL) {
+      if (method_token == 1)
+        intercept_util_non_atomic = 1; // arrayCopyNonAtomic
+      if (method_token == 3)
+        intercept_util_non_atomic = 2; // arrayFillNonAtomic
+    }
     bool trace_security_call = false;
 #ifndef PC_VERSION
     trace_security_call =
@@ -828,6 +843,92 @@ void Bytecodes::bc_invokestatic() {
     (void)stack.pop_Reference();
     stack.push_Reference(choupi_vm_get_applet_shareable_interface_object(
         context, client_aid, parameter));
+    return;
+  }
+  if (intercept_util_non_atomic != 0) {
+    Context::getActiveContext().resetSensitiveResult();
+    const uint8_t expected_arguments =
+        intercept_util_non_atomic == 1 ? 5 : 4;
+    if (method_handler.getArgumentCount(method_offset) != expected_arguments) {
+      throw Exceptions::SecurityException;
+    }
+    if (intercept_util_non_atomic == 1) {
+      const jshort_t length = stack.pop_Short();
+      const jshort_t destination_offset = stack.pop_Short();
+      const jref_t destination_ref = stack.pop_Reference();
+      const jshort_t source_offset = stack.pop_Short();
+      const jref_t source_ref = stack.pop_Reference();
+      if (source_ref.isNullPointer() || destination_ref.isNullPointer()) {
+        throw Exceptions::NullPointerException;
+      }
+      auto &heap = Context::getActiveContext().getHeap();
+      auto source = heap.getArray(source_ref);
+      auto destination = heap.getArray(destination_ref);
+      if (source->getType() != JAVA_ARRAY_T_BYTE ||
+          destination->getType() != JAVA_ARRAY_T_BYTE) {
+        throw Exceptions::ArrayStoreException;
+      }
+      const auto check_range = [length](const JC_Array &array,
+                                        const jshort_t offset) {
+        if (offset < 0 || length < 0 ||
+            static_cast<uint32_t>(offset) +
+                    static_cast<uint32_t>(length) > array.size()) {
+          throw Exceptions::ArrayIndexOutOfBoundsException;
+        }
+      };
+      check_range(*source, source_offset);
+      check_range(*destination, destination_offset);
+
+      if (source == destination && destination_offset > source_offset &&
+          static_cast<uint32_t>(destination_offset) <
+              static_cast<uint32_t>(source_offset) +
+                  static_cast<uint32_t>(length)) {
+        for (jshort_t index = length; index > 0; --index) {
+          const uint16_t source_index = static_cast<uint16_t>(
+              source_offset + index - 1);
+          const uint16_t destination_index = static_cast<uint16_t>(
+              destination_offset + index - 1);
+          destination->setByteEntry(destination_index,
+                                    source->getByteEntry(source_index));
+        }
+      } else {
+        for (jshort_t index = 0; index < length; ++index) {
+          const uint16_t source_index =
+              static_cast<uint16_t>(source_offset + index);
+          const uint16_t destination_index =
+              static_cast<uint16_t>(destination_offset + index);
+          destination->setByteEntry(destination_index,
+                                    source->getByteEntry(source_index));
+        }
+      }
+      const jshort_t result = static_cast<jshort_t>(
+          static_cast<uint16_t>(destination_offset + length));
+      Context::getActiveContext().setSensitiveResultShort(result);
+      stack.push_Short(result);
+      return;
+    }
+
+    const jbyte_t value = stack.pop_Byte();
+    const jshort_t length = stack.pop_Short();
+    const jshort_t offset = stack.pop_Short();
+    const jref_t array_ref = stack.pop_Reference();
+    if (array_ref.isNullPointer()) throw Exceptions::NullPointerException;
+    auto array = Context::getActiveContext().getHeap().getArray(array_ref);
+    if (array->getType() != JAVA_ARRAY_T_BYTE) {
+      throw Exceptions::ArrayStoreException;
+    }
+    if (offset < 0 || length < 0 ||
+        static_cast<uint32_t>(offset) + static_cast<uint32_t>(length) >
+            array->size()) {
+      throw Exceptions::ArrayIndexOutOfBoundsException;
+    }
+    for (jshort_t index = 0; index < length; ++index) {
+      array->setByteEntry(static_cast<uint16_t>(offset + index), value);
+    }
+    const jshort_t result = static_cast<jshort_t>(
+        static_cast<uint16_t>(offset + length));
+    Context::getActiveContext().setSensitiveResultShort(result);
+    stack.push_Short(result);
     return;
   }
   method_handler.callStaticMethod(method_offset);
