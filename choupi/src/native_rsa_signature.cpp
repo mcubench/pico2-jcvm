@@ -168,7 +168,7 @@ void append(JC_Instance &signature, const std::shared_ptr<JC_Array> &input,
   const uint16_t countField =
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
   auto current = byteArray(signature, bufferField);
-  const jshort_t count = signature.getField_Short(countField);
+  const jshort_t count = signature.getNativeSessionField_Short(countField);
   const int32_t total = static_cast<int32_t>(count) + length;
   if (count < 0 || total > 32767)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
@@ -190,7 +190,7 @@ void append(JC_Instance &signature, const std::shared_ptr<JC_Array> &input,
   for (jshort_t i = 0; i < length; ++i)
     current->setByteEntry(static_cast<uint16_t>(count + i),
                           input->getByteEntry(static_cast<uint16_t>(offset + i)));
-  signature.setField_Short(countField, static_cast<jshort_t>(total));
+  signature.setNativeSessionField_Short(countField, static_cast<jshort_t>(total));
 }
 
 std::vector<unsigned char> bufferedData(JC_Instance &signature) {
@@ -199,7 +199,7 @@ std::vector<unsigned char> bufferedData(JC_Instance &signature) {
   const uint16_t countField =
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
   auto buffer = byteArray(signature, bufferField);
-  const jshort_t count = signature.getField_Short(countField);
+  const jshort_t count = signature.getNativeSessionField_Short(countField);
   if (count < 0 || static_cast<uint16_t>(count) > buffer->size())
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   return readArray(*buffer, 0, static_cast<uint16_t>(count));
@@ -210,12 +210,12 @@ void clearMessage(JC_Instance &signature) {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
   const uint16_t countField =
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
-  const jshort_t count = signature.getField_Short(countField);
+  const jshort_t count = signature.getNativeSessionField_Short(countField);
   if (count < 0 || static_cast<uint16_t>(count) > buffer->size())
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   for (jshort_t i = 0; i < count; ++i)
     buffer->setByteEntry(static_cast<uint16_t>(i), 0);
-  signature.setField_Short(countField, 0);
+  signature.setNativeSessionField_Short(countField, 0);
 }
 
 uint8_t signatureDigestAlgorithm(JC_Instance &signature) {
@@ -490,7 +490,7 @@ std::vector<unsigned char> encodedPss(JC_Instance &signature,
                                      uint16_t modulusLength,
                                      uint16_t modulusBits) {
   const size_t hashLength = digestLength(signatureDigestAlgorithm(signature));
-  const jshort_t configuredSaltLength = signature.getField_Short(
+  const jshort_t configuredSaltLength = signature.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
   if (configuredSaltLength < 0)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
@@ -534,7 +534,7 @@ bool verifyPss(JC_Instance &signature, const std::vector<unsigned char> &hash,
                const std::vector<unsigned char> &encoded,
                uint16_t modulusLength, uint16_t modulusBits) {
   const size_t hashLength = digestLength(signatureDigestAlgorithm(signature));
-  const jshort_t configuredSaltLength = signature.getField_Short(
+  const jshort_t configuredSaltLength = signature.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
   if (configuredSaltLength < 0 || hash.size() != hashLength ||
       encoded.size() != modulusLength || encoded.back() != 0xbc)
@@ -747,21 +747,21 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   signature.setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, keyReference);
-  signature.setField_Short(
+  signature.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH,
       isPss(signature) ? saltLength : static_cast<jshort_t>(length));
-  signature.setField_Short(
+  signature.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
-  signature.setField_Byte(
+  signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
   auto recoveryHash = byteArray(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
   for (uint16_t i = 0; i < recoveryHash->size(); ++i)
     recoveryHash->setByteEntry(i, 0);
-  signature.setField_Byte(
+  signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE,
       static_cast<jbyte_t>(mode));
-  signature.setField_Byte(
+  signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALIZED, 1);
 }
 

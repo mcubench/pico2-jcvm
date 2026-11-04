@@ -284,6 +284,25 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
             results.append((bytes((0x80, 0x15, 30, 2, len(mr_verify_data))) + mr_verify_data + b"\x00",
                             b"\x00" + recovered_length.to_bytes(2, "big") + b"\x90\x00",
                             f"RSA SHA1 ISO9796-2 MR reject altered suffix bytes={len(message)}"))
+        if message == b"JCVM ISO9796-2":
+            results.append((bytes((0x80, 0x15, 30, 3, len(mr_verify_data))) +
+                            mr_verify_data + b"\x00",
+                            b"\x01" + recovered_length.to_bytes(2, "big") +
+                            b"\x90\x00",
+                            "RSA SHA1 ISO9796-2 recovery state survives aborted transaction"))
+    transaction_digest = bytes((0x80, 0x2C, 4, 0, 3)) + b"def\x00"
+    results.append((transaction_digest, hashlib.sha256(b"abcdef").digest() +
+                    b"\x90\x00",
+                    "MessageDigest state survives an aborted transaction"))
+    staged_digest = bytes((0x80, 0x2A, 4, 0, 3)) + b"abc\x00"
+    results.append((staged_digest, b"\x01\x90\x00",
+                    "MessageDigest update before warm reset"))
+    reset_digest = bytes((0x80, 0x2B, 4, 0, 0))
+    results.append((reset_digest, hashlib.sha256(b"").digest() + b"\x90\x00",
+                    "MessageDigest starts empty after warm reset"))
+    cold_stage_digest = bytes((0x80, 0x2A, 4, 0, 3)) + b"xyz\x00"
+    results.append((cold_stage_digest, b"\x01\x90\x00",
+                    "MessageDigest update before cold restore"))
     return results
 
 
@@ -341,12 +360,16 @@ def main() -> int:
         "--memory", str(ROOT / "build/algtest-v182-current-empty-flash.bin"),
         "--cap-code", str(ROOT / "build/symm-crypto-probe/load-code.bin"),
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
-        "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
+        "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "2",
         "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-asymm-vpcd.bin"),
         "--log", str(log), "--connect-timeout", "300",
         "--apdu-timeout", "600",
     ]
     cases = vectors()
+    command.extend(("--reset-after-custom-apdu", str(len(cases) - 2),
+                    "--resume-apdu", bytes((0x80, 0x2B, 4, 0, 0)).hex(),
+                    "--expect-resume-apdu-response",
+                    (hashlib.sha256(b"").digest() + b"\x90\x00").hex()))
     for apdu, expected, _label in cases:
         command.extend(("--apdu", apdu.hex(), "--expect-apdu-response", expected.hex()))
     completed = subprocess.run(command, cwd=ROOT, check=False)

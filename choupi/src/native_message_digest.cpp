@@ -95,7 +95,7 @@ void appendInput(JC_Instance &instance,
   const jbyte_t algorithm = instance.getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_ALGORITHM);
   auto destination = digestBuffer(instance);
-  const jshort_t current = instance.getField_Short(
+  const jshort_t current = instance.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH);
   const uint16_t maximumInput = static_cast<uint8_t>(algorithm) == 4
                                     ? destination->size()
@@ -107,20 +107,20 @@ void appendInput(JC_Instance &instance,
     destination->setByteEntry(static_cast<uint16_t>(current + i),
                               source->getByteEntry(
                                   static_cast<uint16_t>(offset + i)));
-  instance.setField_Short(
+  instance.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH,
       static_cast<jshort_t>(current + length));
 }
 
 void clearInput(JC_Instance &instance) {
   auto buffer = digestBuffer(instance);
-  const jshort_t length = instance.getField_Short(
+  const jshort_t length = instance.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH);
   if (length < 0 || static_cast<uint16_t>(length) > buffer->size())
     throw Exceptions::ArrayIndexOutOfBoundsException;
   for (jshort_t i = 0; i < length; ++i)
     buffer->setByteEntry(static_cast<uint16_t>(i), 0);
-  instance.setField_Short(
+  instance.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH,
       0);
 }
@@ -148,7 +148,7 @@ jref_t javacard_security_MessageDigest_getInstance(
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTBUFFER,
       buffer);
-  instance->setField_Short(
+  instance->setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH,
       0);
   return reference;
@@ -194,7 +194,7 @@ jshort_t javacard_security_MessageDigest_doFinal(
   if (static_cast<uint8_t>(algorithm) == 4) {
     fr_gouv_ssi_nativeimpl_Sha256NativeBridge_doFinal(
         buffer,
-        instance->getField_Short(
+        instance->getNativeSessionField_Short(
             ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH),
         output, outputOffset);
     success = true;
@@ -204,7 +204,7 @@ jshort_t javacard_security_MessageDigest_doFinal(
   if (!success)
     success = fr_gouv_ssi_nativeimpl_MbedTlsDigestNativeBridge_digest(
         algorithm, buffer,
-        instance->getField_Short(
+        instance->getNativeSessionField_Short(
             ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH),
         output, outputOffset) != FALSE;
 #endif

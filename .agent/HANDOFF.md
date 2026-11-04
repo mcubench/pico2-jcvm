@@ -1,3 +1,47 @@
+# Current session — RV-15 crypto session-state lifecycle closed — 2026-11-04 12:51 CET
+
+RV-20261103-15 is implemented and validated in the current worktree. Native
+MessageDigest, Cipher and Signature operational scalar state now lives in a
+lazy, nonpersistent per-instance sidecar. `CLEAR_ON_RESET` cleanup discards
+that sidecar; persistent CAP fields still retain algorithm identity, keys and
+object configuration. RV-15 is checked off in `TODO.md`; physical-token
+validation was not run.
+
+Validation: `./tools/test-jcarray` passed. The full
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` run passed 107/107
+phases (102 asymmetric vectors), including digest state across aborted
+transactions, warm reset, cold process restore, and ISO9796-2 Signature
+recovery across an aborted transaction. `./tools/build arm --profile
+max_crypto`, `./tools/build riscv --profile max_crypto`, and
+`./tools/build-pc --profile max_crypto` passed. The PC build profile is restored
+to `max_crypto`.
+
+For Windows testing with an empty card, use the freshly regenerated
+`build/arm/pico2_choupi_max_crypto_empty_card.uf2`: 4,009,472 bytes, SHA-256
+`247b0d30bd2c0dab5fdfd5f4360a086932e5868ac82deb1993bfa26b624a5c5d`. It
+contains current ARM max_crypto firmware plus an erased 1 MiB storage region;
+flashing it removes installed CAPs and filesystem data. Firmware-only
+`build/arm/pico2_choupi.uf2` is 1,912,320 bytes, SHA-256
+`5087cb3352b61752f9c4e68a25aeb6f8ac3f59d700987a7bd3d1e04e6aec3bfc`; it
+does not erase existing card storage. The firmware ends at `0x100E9564`, with
+92,828 bytes left before `0x10100000`.
+
+The latest VPCD log is
+`artifacts/logs/asymm-crypto-keypair-vpcd-r15-20261104T1245CET.log` (SHA-256
+`d9baa259fc0afeaab65eb8e0d778b442a8d3f27bd8df9c6ee607a1f93be12629`). The
+profile README was refreshed at
+`artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+Continue with RV-20261103-16, checking CBC post-`doFinal()` IV behavior.
+Preserve all unrelated dirty files from other sessions. In particular,
+`choupi/src/heap.cpp` contains an unrelated deletion of
+`releaseGlobalAIDObject`; stage only the reset-sidecar addition. The shared
+`tools/tests/symm_crypto_applet/SymmCryptoProbe.java` contains other in-flight
+test changes; stage only the RV-15 digest/recovery additions. The implementation
+commit and this metadata follow-up commit are still pending.
+
+---
+
 # Current session — max_crypto empty-card UF2 prepared — 2026-11-04 11:45 CET
 
 For Windows validation use

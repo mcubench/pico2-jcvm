@@ -177,7 +177,8 @@ JC_Instance::JC_Instance(JC_Instance &&other) noexcept
       has_persistent_tag(other.has_persistent_tag),
       persistent_fields_loaded(other.persistent_fields_loaded),
       persistent_rollback_generation(other.persistent_rollback_generation),
-      fields(other.fields) {
+      fields(other.fields),
+      native_session_fields(std::move(other.native_session_fields)) {
   std::memcpy(this->persistent_tag_value, other.persistent_tag_value,
               sizeof(this->persistent_tag_value));
   other.persistent_tag_overflow = nullptr;
@@ -195,6 +196,52 @@ JC_Instance::~JC_Instance() noexcept {
   if (this->fields != nullptr) {
     delete this->fields;
   }
+}
+
+jbyte_t JC_Instance::getNativeSessionField_Byte(
+    const uint16_t index) const noexcept {
+  if (!this->native_session_fields ||
+      index >= this->native_session_fields->size()) {
+    return 0;
+  }
+  return static_cast<jbyte_t>((*this->native_session_fields)[index].value);
+}
+
+jshort_t JC_Instance::getNativeSessionField_Short(
+    const uint16_t index) const noexcept {
+  if (!this->native_session_fields ||
+      index >= this->native_session_fields->size()) {
+    return 0;
+  }
+  return static_cast<jshort_t>((*this->native_session_fields)[index].value);
+}
+
+void JC_Instance::setNativeSessionField_Byte(const uint16_t index,
+                                              const jbyte_t value) {
+  if (index >= this->fields->size()) throw Exceptions::ArrayIndexOutOfBoundsException;
+  if (!this->native_session_fields) {
+    this->native_session_fields =
+        std::make_unique<std::vector<jc_field_t>>(this->fields->size());
+  }
+  jc_field_t &field = this->native_session_fields->at(index);
+  field.type = FIELD_TYPE_BYTE;
+  field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
+}
+
+void JC_Instance::setNativeSessionField_Short(const uint16_t index,
+                                               const jshort_t value) {
+  if (index >= this->fields->size()) throw Exceptions::ArrayIndexOutOfBoundsException;
+  if (!this->native_session_fields) {
+    this->native_session_fields =
+        std::make_unique<std::vector<jc_field_t>>(this->fields->size());
+  }
+  jc_field_t &field = this->native_session_fields->at(index);
+  field.type = FIELD_TYPE_SHORT;
+  field.value = static_cast<jword_t>(value);
+}
+
+void JC_Instance::clearNativeSessionFields() noexcept {
+  this->native_session_fields.reset();
 }
 
 /**

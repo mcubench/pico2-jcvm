@@ -37,6 +37,9 @@
 #include "jc_object.hpp"
 #include "jref_t.hpp"
 
+#include <memory>
+#include <vector>
+
 namespace jcvm {
 
 namespace fs {
@@ -61,6 +64,10 @@ private:
    * encoded on 2 words.
    */
   JCVMArray<jc_field_t> *fields = nullptr; // instance_length-length array
+  // Native Java Card engines keep operational/session counters here instead
+  // of in persistent CAP instance fields. Allocate lazily so ordinary
+  // instances pay only the pointer-sized member cost.
+  std::unique_ptr<std::vector<jc_field_t>> native_session_fields;
 
   fs::Tag recomputeOriginalTag() const noexcept;
 
@@ -111,6 +118,14 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// set reference field from object.
   void setField_Reference(uint16_t index, jref_t ref);
+
+  /// Read/write native-only operational state without persistent journaling.
+  jbyte_t getNativeSessionField_Byte(uint16_t index) const noexcept;
+  jshort_t getNativeSessionField_Short(uint16_t index) const noexcept;
+  void setNativeSessionField_Byte(uint16_t index, jbyte_t value);
+  void setNativeSessionField_Short(uint16_t index, jshort_t value);
+  /// Drop native session metadata at card reset; never serialized.
+  void clearNativeSessionFields() noexcept;
 
   ///  Get the number of instance field.
   auto getNumberOfFields() const noexcept -> decltype(fields->size());

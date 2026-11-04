@@ -4,6 +4,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
+import javacard.framework.JCSystem;
 import javacard.security.AESKey;
 import javacard.security.DESKey;
 import javacard.security.ECPrivateKey;
@@ -23,6 +24,7 @@ import javacardx.crypto.Cipher;
 
 /** Test applet that exposes one deterministic cipher or MAC operation per APDU. */
 public final class SymmCryptoProbe extends Applet {
+  private static MessageDigest retainedDigest;
   private SymmCryptoProbe() { register(); }
 
   public static void install(byte[] data, short offset, byte length) {
@@ -41,7 +43,36 @@ public final class SymmCryptoProbe extends Applet {
     byte[] output;
     short outputLength;
     byte instruction = buffer[ISO7816.OFFSET_INS];
-    if (instruction == (byte)0x12) {
+    if (instruction == (byte)0x2a) {
+      output = new byte[(short)1];
+      try {
+        retainedDigest = MessageDigest.getInstance(algorithm, false);
+        retainedDigest.update(input, (short)0, inputLength);
+        output[0] = 1;
+      } catch (Exception exception) {
+        output[0] = (byte)0x62;
+      }
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x2b) {
+      output = new byte[(short)64];
+      outputLength = retainedDigest == null ? (short)0 :
+          retainedDigest.doFinal(input, (short)0, inputLength, output, (short)0);
+    } else if (instruction == (byte)0x2c) {
+      output = new byte[(short)64];
+      try {
+        retainedDigest = MessageDigest.getInstance(algorithm, false);
+        byte[] prefix = {(byte)0x61, (byte)0x62, (byte)0x63};
+        retainedDigest.update(prefix, (short)0, (short)prefix.length);
+        JCSystem.beginTransaction();
+        retainedDigest.update(input, (short)0, inputLength);
+        JCSystem.abortTransaction();
+        outputLength = retainedDigest.doFinal(input, (short)0, (short)0,
+                                               output, (short)0);
+      } catch (Exception exception) {
+        output[0] = (byte)0x62;
+        outputLength = (short)1;
+      }
+    } else if (instruction == (byte)0x12) {
       output = new byte[(short)64];
       outputLength = runDigest(algorithm, input, inputLength, output);
     } else if (instruction == (byte)0x13) {
@@ -676,7 +707,7 @@ public final class SymmCryptoProbe extends Applet {
       output[(short)(resultLength + 1)] = (byte)recoveredLength[0];
       return (short)(resultLength + 2);
     }
-    if (operation != 1 && operation != 2)
+    if (operation != 1 && operation != 2 && operation != 3)
       ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
     if (parameters.length < messageOffset + keyLength)
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
@@ -707,7 +738,13 @@ public final class SymmCryptoProbe extends Applet {
     short suffixLength = (short)(messageLength - recoveredLength);
     if (operation == 2 && suffixLength > 0)
       parameters[suffixOffset] ^= 1;
-    signature.update(parameters, suffixOffset, suffixLength);
+    if (operation == 3) {
+      JCSystem.beginTransaction();
+      signature.update(parameters, suffixOffset, suffixLength);
+      JCSystem.abortTransaction();
+    } else {
+      signature.update(parameters, suffixOffset, suffixLength);
+    }
     output[0] = signature.verify(new byte[0], (short)0, (short)0)
         ? (byte)1 : (byte)0;
     output[1] = (byte)(recoveredLength >> 8);

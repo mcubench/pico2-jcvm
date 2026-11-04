@@ -21630,3 +21630,14 @@
 - Commit: `093e1a3` (artifact metadata; progress SHA reference is recorded in the metadata follow-up commit); generated binaries remain ignored under `build/`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; no serial/hardware log.
 
+
+## 2026-11-04 Separate native crypto session state from persistent objects 31 minutes
+
+- Step/experiment: `rv-20261103-15-crypto-session-lifecycle`
+- When: '2026-11-04 12:20 CET' - '2026-11-04 12:51 CET'
+- Change: Added a lazily allocated, nonserialized native session-field sidecar to `JC_Instance`. Digest length; Cipher mode, initialized state, buffered length and CTR offset; and Signature mode, initialized state, message length, recovery state and output length now use the sidecar. Card reset clears it without changing persistent CAP object configuration. Added VPCD cases for digest state across an aborted transaction, warm reset and cold process restore, plus RSA ISO9796-2 recovery verification across an aborted transaction.
+- Validation: `./tools/test-jcarray` passed, including runtime-only sidecar defaults and reset clearing. `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` passed `TEST:SUMMARY pass=107 fail=0` and `asymmetric_vectors=102 ... rsa_signature_vectors=51 fail=0`. `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. No physical-token test was run. The combined empty-card UF2 passed inspection: 4,096 data blocks contain `0xFF` across `0x10100000`–`0x101FFFFF`; picotool identifies the image as RP2350 ARM Secure.
+- Result: The digest returned SHA-256(`abcdef`) after an aborted transaction, SHA-256(empty) after warm reset and after cold process restore. RSA ISO9796-2 recovery returned success after its suffix update occurred inside an aborted transaction. ARM firmware ends at `0x100E9564`, leaving 92,828 bytes. The current firmware-only UF2 is 1,912,320 bytes, SHA-256 `5087cb3352b61752f9c4e68a25aeb6f8ac3f59d700987a7bd3d1e04e6aec3bfc`; the current max empty-card UF2 is 4,009,472 bytes, SHA-256 `247b0d30bd2c0dab5fdfd5f4360a086932e5868ac82deb1993bfa26b624a5c5d`.
+- Decision: Close RV-20261103-15 implementation based on native, PC VPCD and cross-target build validation. Physical validation remains unverified. The refreshed empty-card image is `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; it erases stored CAP and filesystem data when flashed. Continue with RV-20261103-16, reused CBC object's post-final IV state.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-r15-20261104T1245CET.log` SHA-256 `d9baa259fc0afeaab65eb8e0d778b442a8d3f27bd8df9c6ee607a1f93be12629`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt`.

@@ -1,3 +1,26 @@
+# Native cryptographic intermediate state must not be persistent — fixed 2026-11-04
+
+- **Finding:** MessageDigest length, Cipher mode/initialization/buffering and
+  Signature message/recovery state were written through persistent CAP object
+  fields. They could survive a reset or be rolled back by an applet
+  transaction, even though their referenced work buffers are transient.
+- **Viable fix:** Keep native-only operational scalars in a lazily allocated,
+  nonserialized `JC_Instance` sidecar. Do not route them through persistent
+  setters or the transaction journal. Drop the sidecar when `CLEAR_ON_RESET`
+  cleanup runs; keep algorithm identity, key references and other public
+  object configuration in their CAP fields.
+- **Validation:** Native heap tests pass for default-zero, set/get and reset
+  clearing. The complete PC VPCD asymmetric suite passes 107/107 phases,
+  including digest update across an aborted transaction, warm reset followed
+  by finalization, retained digest after cold process restore, and RSA
+  ISO9796-2 message recovery across an aborted transaction. PC, ARM and RISC-V
+  `max_crypto` builds pass. No physical-token validation was run.
+- **Artifact note:** When refreshing the Windows empty-card image, regenerate
+  the combined UF2 from the current ARM build and a full 1 MiB `0xFF` storage
+  image at `0x10100000`; a firmware-only UF2 does not erase installed CAPs.
+
+---
+
 # Restored transient array length and initialization — verified 2026-11-04
 
 # Signature workspace allocation overload — verified 2026-11-04

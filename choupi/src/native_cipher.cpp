@@ -122,7 +122,7 @@ void ensureCapacity(JC_Instance &cipher, uint16_t wanted) {
   if (capacity < wanted) throw Exceptions::ArrayIndexOutOfBoundsException;
   auto nextRef = allocateByteArray(static_cast<uint16_t>(capacity));
   auto next = Context::getActiveContext().getHeap().getArray(nextRef);
-  const uint16_t oldLength = static_cast<uint16_t>(cipher.getField_Short(
+  const uint16_t oldLength = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
   for (uint16_t i = 0; i < oldLength; ++i)
     next->setByteEntry(i, current->getByteEntry(i));
@@ -131,13 +131,13 @@ void ensureCapacity(JC_Instance &cipher, uint16_t wanted) {
 }
 
 void clearBuffer(JC_Instance &cipher) {
-  const jshort_t length = cipher.getField_Short(
+  const jshort_t length = cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH);
   auto buffer = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
   for (jshort_t i = 0; i < length; ++i)
     buffer->setByteEntry(static_cast<uint16_t>(i), 0);
-  cipher.setField_Short(
+  cipher.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
 }
 
@@ -308,11 +308,11 @@ jref_t newCipher(const CipherSpec &spec) {
                         spec.cipher);
   cipher->setField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM,
                         spec.padding);
-  cipher->setField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE, 0);
-  cipher->setField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION, 0);
-  cipher->setField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED, 0);
-  cipher->setField_Short(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
-  cipher->setField_Short(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
+  cipher->setNativeSessionField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE, 0);
+  cipher->setNativeSessionField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION, 0);
+  cipher->setNativeSessionField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED, 0);
+  cipher->setNativeSessionField_Short(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
+  cipher->setNativeSessionField_Short(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA, 0);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_IV, 16);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIV, 16);
@@ -357,7 +357,7 @@ void checkRangeForOutput(const std::shared_ptr<JC_Array> &array, jshort_t offset
 
 void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
                  jshort_t offset, jshort_t length) {
-  const uint16_t oldLength = static_cast<uint16_t>(cipher.getField_Short(
+  const uint16_t oldLength = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
   const uint32_t wanted = static_cast<uint32_t>(oldLength) +
                           static_cast<uint16_t>(length);
@@ -368,7 +368,7 @@ void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
   for (jshort_t i = 0; i < length; ++i)
     buffer->setByteEntry(static_cast<uint16_t>(oldLength + i),
                          input->getByteEntry(static_cast<uint16_t>(offset + i)));
-  cipher.setField_Short(
+  cipher.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH,
       static_cast<jshort_t>(wanted));
 }
@@ -410,13 +410,13 @@ void saveIv(JC_Instance &cipher, const std::vector<unsigned char> &iv) {
 void discardBuffered(JC_Instance &cipher, uint16_t count) {
   auto buffer = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
-  const uint16_t length = static_cast<uint16_t>(cipher.getField_Short(
+  const uint16_t length = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
   for (uint16_t i = count; i < length; ++i)
     buffer->setByteEntry(i - count, buffer->getByteEntry(i));
   for (uint16_t i = length - count; i < length; ++i)
     buffer->setByteEntry(i, 0);
-  cipher.setField_Short(
+  cipher.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH,
       static_cast<jshort_t>(length - count));
 }
@@ -438,7 +438,7 @@ std::vector<unsigned char> transformSymmetric(JC_Instance &cipher,
   std::vector<unsigned char> key = symmetricKey(cipher);
   std::vector<unsigned char> iv = ecb ? std::vector<unsigned char>(blockSize, 0)
                                       : cipherIv(cipher, blockSize);
-  [[maybe_unused]] const bool encrypt = cipher.getField_Byte(
+  [[maybe_unused]] const bool encrypt = cipher.getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   int result = -1;
   if (aes) {
@@ -449,14 +449,14 @@ std::vector<unsigned char> transformSymmetric(JC_Instance &cipher,
       // These RSA workspace fields are otherwise unused by symmetric ciphers.
       std::vector<unsigned char> streamBlock =
           readArray(streamArray, 0, static_cast<uint16_t>(streamArray->size()));
-      size_t offset = static_cast<uint16_t>(cipher.getField_Short(
+      size_t offset = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH));
       result = cipherAesCtr(key, iv, offset, streamBlock, input, output);
       if (result == 0) {
         saveIv(cipher, iv);
         writeArray(streamArray, 0, streamBlock,
                    static_cast<uint16_t>(streamBlock.size()));
-        cipher.setField_Short(
+        cipher.setNativeSessionField_Short(
             ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH,
             static_cast<jshort_t>(offset));
       }
@@ -501,7 +501,7 @@ void restoreInitialIv(JC_Instance &cipher) {
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
     for (uint16_t i = 0; i < stream->size(); ++i)
       stream->setByteEntry(i, 0);
-    cipher.setField_Short(
+    cipher.setNativeSessionField_Short(
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
   }
 }
@@ -583,15 +583,15 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
     for (uint16_t i = 0; i < stream->size(); ++i)
       stream->setByteEntry(i, 0);
-    cipher.setField_Short(
+    cipher.setNativeSessionField_Short(
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
   }
   clearBuffer(cipher);
-  cipher.setField_Byte(
+  cipher.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE, requestedMode);
-  cipher.setField_Byte(
+  cipher.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION, 0);
-  cipher.setField_Byte(
+  cipher.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED, 1);
 }
 
@@ -606,7 +606,7 @@ jshort_t updateSymmetric(JC_Instance &cipher,
                          jshort_t inputOffset, jshort_t inputLength,
                          const std::shared_ptr<JC_Array> &output,
                          jshort_t outputOffset) {
-  if (cipher.getField_Byte(
+  if (cipher.getNativeSessionField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED) == 0)
     throwCryptoException(CryptoExceptionReason::InvalidInit);
   checkKeyWorkspace(cipher);
@@ -616,13 +616,13 @@ jshort_t updateSymmetric(JC_Instance &cipher,
   const uint8_t algorithm = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
   const uint16_t blockSize = isAesAlgorithm(algorithm) ? 16 : 8;
-  const uint16_t bufferedLength = static_cast<uint16_t>(cipher.getField_Short(
+  const uint16_t bufferedLength = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
   uint16_t processLength = static_cast<uint16_t>(bufferedLength - bufferedLength % blockSize);
   if (algorithm == 0xF0) processLength = bufferedLength;
   const uint8_t padding = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM));
-  const bool encrypt = cipher.getField_Byte(
+  const bool encrypt = cipher.getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   if (!encrypt && padding != 1 && processLength != 0)
     processLength = static_cast<uint16_t>(processLength - blockSize);
@@ -661,7 +661,7 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
                           jshort_t inputOffset, jshort_t inputLength,
                           const std::shared_ptr<JC_Array> &output,
                           jshort_t outputOffset) {
-  if (cipher.getField_Byte(
+  if (cipher.getNativeSessionField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED) == 0)
     throwCryptoException(CryptoExceptionReason::InvalidInit);
   checkKeyWorkspace(cipher);
@@ -673,9 +673,9 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
   const uint16_t blockSize = isAesAlgorithm(algorithm) ? 16 : 8;
   const uint8_t padding = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM));
-  const bool encrypt = cipher.getField_Byte(
+  const bool encrypt = cipher.getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
-  uint16_t dataLength = static_cast<uint16_t>(cipher.getField_Short(
+  uint16_t dataLength = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
   if (algorithm == 0xF0) {
     checkRangeForOutput(output, outputOffset, dataLength);
@@ -701,7 +701,7 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
       for (uint16_t i = dataLength; i < paddedLength; ++i)
         buffer->setByteEntry(i, static_cast<jbyte_t>(pad));
     dataLength = paddedLength;
-    cipher.setField_Short(
+    cipher.setNativeSessionField_Short(
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH,
         static_cast<jshort_t>(dataLength));
   }

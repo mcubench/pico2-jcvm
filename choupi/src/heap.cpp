@@ -500,6 +500,9 @@ void Heap::clearTransientArrays(const ClearEvent event) {
     }
   }
   if (!this->global_heap && event == ClearEvent::CLEAR_ON_RESET) {
+    for (auto &instance : this->shared_storage->instances) {
+      if (instance) instance->clearNativeSessionFields();
+    }
     Heap::clearGlobalArrays(event);
   }
 }

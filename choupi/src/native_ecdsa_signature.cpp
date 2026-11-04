@@ -229,7 +229,7 @@ std::vector<unsigned char> readMessage(JC_Instance &signature,
   const jref_t bufferRef = signature.getField_Reference(bufferField);
   auto buffer = Context::getActiveContext().getHeap().getArray(bufferRef);
   if (!buffer || buffer->getType() != JAVA_ARRAY_T_BYTE) throw Exceptions::ArrayStoreException;
-  const jshort_t oldLength = signature.getField_Short(countField);
+  const jshort_t oldLength = signature.getNativeSessionField_Short(countField);
   if (oldLength < 0 || static_cast<uint32_t>(oldLength) + length > 32767)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   const uint16_t total = static_cast<uint16_t>(oldLength + length);
@@ -249,12 +249,12 @@ std::vector<unsigned char> readMessage(JC_Instance &signature,
   for (jshort_t i = 0; i < length; ++i)
     buffer->setByteEntry(static_cast<uint16_t>(oldLength + i),
                          input->getByteEntry(static_cast<uint16_t>(offset + i)));
-  signature.setField_Short(countField, static_cast<jshort_t>(total));
+  signature.setNativeSessionField_Short(countField, static_cast<jshort_t>(total));
   std::vector<unsigned char> message(total);
   for (uint16_t i = 0; i < total; ++i)
     message[i] = static_cast<uint8_t>(buffer->getByteEntry(i));
   for (uint16_t i = 0; i < total; ++i) buffer->setByteEntry(i, 0);
-  signature.setField_Short(countField, 0);
+  signature.setNativeSessionField_Short(countField, 0);
   return message;
 }
 
@@ -355,9 +355,9 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
   }
   signature.setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, keyRef);
-  signature.setField_Short(
+  signature.setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
-  signature.setField_Byte(
+  signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
   auto recoveryHash = Context::getActiveContext().getHeap().getArray(
       signature.getField_Reference(
@@ -366,10 +366,10 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
     throw Exceptions::ArrayStoreException;
   for (uint16_t i = 0; i < recoveryHash->size(); ++i)
     recoveryHash->setByteEntry(i, 0);
-  signature.setField_Byte(
+  signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE,
       static_cast<jbyte_t>(mode));
-  signature.setField_Byte(
+  signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALIZED, 1);
 }
 

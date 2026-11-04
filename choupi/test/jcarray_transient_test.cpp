@@ -164,6 +164,29 @@ int main() {
   }
   std::cout << "TEST:PASS transient_workspace_initial_and_expanded\n";
 
+  const auto sessionInstanceReference = heap.addInstance(0, 4);
+  const auto sessionInstance = heap.getInstance(sessionInstanceReference);
+  if (!sessionInstance ||
+      sessionInstance->getNativeSessionField_Byte(0) != 0 ||
+      sessionInstance->getNativeSessionField_Short(1) != 0) {
+    std::cerr << "native session fields did not start in construction state\n";
+    return 1;
+  }
+  sessionInstance->setNativeSessionField_Byte(0, 1);
+  sessionInstance->setNativeSessionField_Short(1, 0x1234);
+  if (sessionInstance->getNativeSessionField_Byte(0) != 1 ||
+      sessionInstance->getNativeSessionField_Short(1) != 0x1234) {
+    std::cerr << "native session metadata did not retain its runtime value\n";
+    return 1;
+  }
+  heap.clearTransientArrays(jcvm::CLEAR_ON_RESET);
+  if (sessionInstance->getNativeSessionField_Byte(0) != 0 ||
+      sessionInstance->getNativeSessionField_Short(1) != 0) {
+    std::cerr << "native session metadata survived card reset\n";
+    return 1;
+  }
+  std::cout << "TEST:PASS native_session_fields_are_runtime_only_and_reset\n";
+
   jcvm::fs::Tag restored_tag{};
   restored_tag.len = 3;
   restored_tag.value[0] = 0xa0;

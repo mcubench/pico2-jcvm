@@ -72,6 +72,46 @@ jclass_index_t JC_Instance::getClassIndex() const noexcept { return 0; }
 
 auto JC_Instance::getFields() const -> decltype(fields) { return fields; }
 
+jbyte_t JC_Instance::getNativeSessionField_Byte(
+    const uint16_t index) const noexcept {
+  if (!this->native_session_fields ||
+      index >= this->native_session_fields->size()) return 0;
+  return static_cast<jbyte_t>((*this->native_session_fields)[index].value);
+}
+
+jshort_t JC_Instance::getNativeSessionField_Short(
+    const uint16_t index) const noexcept {
+  if (!this->native_session_fields ||
+      index >= this->native_session_fields->size()) return 0;
+  return static_cast<jshort_t>((*this->native_session_fields)[index].value);
+}
+
+void JC_Instance::setNativeSessionField_Byte(const uint16_t index,
+                                              const jbyte_t value) {
+  if (!this->native_session_fields) {
+    this->native_session_fields =
+        std::make_unique<std::vector<jc_field_t>>(this->fields->size());
+  }
+  jc_field_t &field = this->native_session_fields->at(index);
+  field.type = FIELD_TYPE_BYTE;
+  field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
+}
+
+void JC_Instance::setNativeSessionField_Short(const uint16_t index,
+                                               const jshort_t value) {
+  if (!this->native_session_fields) {
+    this->native_session_fields =
+        std::make_unique<std::vector<jc_field_t>>(this->fields->size());
+  }
+  jc_field_t &field = this->native_session_fields->at(index);
+  field.type = FIELD_TYPE_SHORT;
+  field.value = static_cast<jword_t>(value);
+}
+
+void JC_Instance::clearNativeSessionFields() noexcept {
+  this->native_session_fields.reset();
+}
+
 bool JC_Instance::hasLoadedFields() const noexcept {
   return !this->isPersistent();
 }

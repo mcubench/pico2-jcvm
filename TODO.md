@@ -150,9 +150,10 @@ during the review.
 
 ### RV-20261103-15
 
-- [ ] **P2: Digest/cipher/signature intermediate state has wrong lifetime.**
+- [x] **P2: Digest/cipher/signature intermediate state has wrong lifetime.**
   Owner: PROFILE-01, PERSIST-02. Evidence: Source; [review R15](docs/review_20261103.md#r15--crypto-session-metadata-is-not-reset-or-excluded-from-transactions).
   Acceptance: define native engine session state separately from persistent Java object identity. Test update → warm reset → final, update inside an aborted transaction, retained objects after cold restore and Signature recovery state. Fixing buffer allocation alone is insufficient.
+  Progress: Native crypto operational counters now live in a lazy, nonpersistent sidecar on each `JC_Instance`; card reset drops it while object identity and persistent configuration remain. PC VPCD tests cover digest update/final after warm reset, a digest update aborted inside a transaction, cold process restore, and RSA ISO9796-2 message-recovery verification across an aborted transaction. The full asymmetric VPCD suite passes 107/107 phases; native heap tests and PC/ARM/RISC-V max-profile builds pass. Physical-token validation was not run.
 
 ### RV-20261103-16
 
