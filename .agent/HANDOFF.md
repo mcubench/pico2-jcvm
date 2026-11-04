@@ -24,10 +24,10 @@ Current applet-free max_crypto ARM image for external Windows testing:
 - Details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 - Full regression log: `artifacts/logs/sio-cross-aid-vpcd-20261104T153105Z.log`.
 
-The RV-22 source, fixture and progress record are ready for a scoped commit.
-Unrelated worktree changes remain preserved. Physical validation remains
-pending. Next, continue with RV-20261103-23, prevalidate native Util arguments
-before mutation.
+The RV-22 source, fixture, progress, TODO, QKB and image instructions are
+committed as `a22bbd2`. Unrelated worktree changes remain preserved. Physical
+validation remains pending. Next, continue with RV-20261103-23, prevalidate
+native Util arguments before mutation.
 
 ---
 
