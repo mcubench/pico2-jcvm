@@ -31,12 +31,13 @@ Latest applet-free max_crypto ARM binary for external Windows testing:
 RV-24 source commit `2688698c9a20204f90c13a46d280b42345cea253`, metadata
 follow-up `35fc5aa`. RV-25 first-pass source commit
 `0f98760fd411aed6741d8359d80e37fa040f8b79`, metadata follow-up `ed4d390`.
-RV-26 source/docs/progress are uncommitted. Preserve unrelated files, including
-AGENTS.md, heap/CAP loader changes, review artifacts, crypto probes and
-upstream submodules. Stage only RV-26 files. Next offline priority after this
-commit is RV-27 test/session correctness; return to RV-25/26 runtime tests if a
-physical CCID reader becomes available. No CAP or Java Card API source was
-changed.
+RV-26 first-pass source/docs are committed as
+`d68461f7691f26645f0ccb9dad2c93b3b7ddcbae`; the progress SHA metadata
+follow-up is pending. Preserve unrelated files, including AGENTS.md, heap/CAP
+loader changes, review artifacts, crypto probes and upstream submodules. Next
+offline priority after the metadata commit is RV-27 test/session correctness;
+return to RV-25/26 runtime tests if a physical CCID reader becomes available.
+No CAP or Java Card API source was changed.
 
 ---
 

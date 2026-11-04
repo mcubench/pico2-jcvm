@@ -21773,5 +21773,5 @@
 - Validation: `./tools/test-ccid-progress-flow` passed `TEST:SUMMARY pass=15 fail=0`; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. No physical CCID runtime test was possible: PC/SC listed only Virtual PCD readers despite a brief `2e8a:0009` USB enumeration.
 - Result: Final responses remain queued across late extension completion and synchronous IN rejection, with bounded retries and a recoverable OUT rearm path. Latest ARM firmware is 1,919,488 bytes, SHA-256 `692c1fb42f8c7dd2aa92a37b6b23aa999f93c657eeb7144f63e66e2cbd72dbed`, ending at `0x100EA3BC` with 89,156 bytes before `0x10100000`. Applet-free empty-card UF2 is 4,016,640 bytes, SHA-256 `7112f8f52a14ef60027904648338f85c7e7dee8e02739c9a52de8046fa6b5d2e`.
 - Decision: Keep RV-26 open until production USB callbacks demonstrate recovery through a subsequent slot-status command and APDU. RV-25 also remains open for production routing runtime validation.
-- Commit: `pending`
+- Commit: `d68461f7691f26645f0ccb9dad2c93b3b7ddcbae`
 - Artifacts/logs: `tools/test-ccid-progress-flow`; current firmware and empty-card UF2 under `build/arm/`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
