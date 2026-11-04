@@ -21816,5 +21816,5 @@
 - Validation: `./tools/test-cap-bytecode-pc-bounds` passed 11/11; `./tools/test-cap-method-bounds` passed 7/7; `./tools/test-cap-native-opcode-policy` passed 5/5; `./tools/build arm` and `./tools/build riscv` passed; scoped `git diff --check` passed. No malformed-CAP runtime/sanitizer test or physical test was run.
 - Result: Current ARM firmware ends at `0x100d27f8`, leaving 186,376 bytes before the storage limit. Invalid operand widths and relative offsets cannot access beyond their frame's Method component. Branches can still enter another method or switch data within that component; instruction-boundary and malformed-input behavior are not established.
 - Decision: Keep RV-28 open. Next, establish individual method body ranges and instruction-boundary branch validation, then add malformed-CAP runtime tests; heap field-kind checks and nested-linkage validation remain separate gates.
-- Commit: pending
+- Commit: `8d4d3cf` (implementation; progress/handoff SHA follow-up pending)
 - Artifacts/logs: `tools/test-cap-bytecode-pc-bounds`; firmware build output only, no archived runtime log.

@@ -40,6 +40,9 @@ all pre-existing worktree changes, including the unrelated `src/cap_load.cpp`
 changes; it was not edited for these steps. Continue offline unless authorized
 physical runtime access becomes available.
 
+The Method-component bytecode fetch bounds and focused test are committed as
+`8d4d3cf`; the progress/handoff hash metadata follow-up is being recorded.
+
 ---
 
 # Prior session — RV-28 uploaded-CAP native opcode boundary — 2026-11-04 19:15 CET
