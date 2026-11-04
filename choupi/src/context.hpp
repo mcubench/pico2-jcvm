@@ -114,7 +114,7 @@ private:
   static SensitiveResultKind sensitive_result_kind;
   static bool sensitive_result_boolean;
   static jshort_t sensitive_result_short;
-  static jref_t sensitive_result_object;
+  static Stack::ReferenceValue sensitive_result_object;
   std::array<uint8_t, 1022> apdu_response_data{};
   uint16_t apdu_outgoing_offset = 0;
   uint16_t apdu_outgoing_length = 0;

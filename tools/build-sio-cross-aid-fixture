@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source_root="${repo_root}/tools/tests/sio_cross_aid_fixture"
 build_dir="${repo_root}/build/sio-cross-aid-fixture"
 kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+api_classes="${repo_root}/build/choupi-pc/javacard-api"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 
 [[ -x "${java8_home}/bin/javac" ]] || {
@@ -33,11 +34,11 @@ converter_int=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
 
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
   -source 1.7 -target 1.7 -Xlint:-options \
-  -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \
+  -classpath "${kit}/lib/api_classic.jar:${api_classes}:${build_dir}/contract-classes" \
   -d "${build_dir}/service-classes" "${source_root}/service"/*.java
 "${converter_int[@]}" \
   -classdir "${build_dir}/service-classes" \
-  -exportpath "${kit}/api_export_files:${build_dir}/contract-exp" \
+  -exportpath "${kit}/api_export_files:${api_classes}:${build_dir}/contract-exp" \
   -d "${build_dir}/service-cap" -out CAP \
   -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03:0x01 \
   sio.service.ServiceApplet sio.service \

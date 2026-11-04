@@ -236,6 +236,19 @@ public final class ClientApplet extends Applet {
     } else if (buffer[1] == 0x29) {
       Probe probe = (Probe) shareable;
       result = checkSensitiveSignatureMismatchResult(probe);
+    } else if (buffer[1] == 0x2A) {
+      Probe probe = (Probe) shareable;
+      short marker = probe.sensitiveObjectResult();
+      if (marker != (short)0x6A57) {
+        result = (short)0x6A58;
+      } else {
+        try {
+          SensitiveResult.assertEquals(this);
+          result = (short)0x6A58;
+        } catch (SecurityException foreignOwnerCollision) {
+          result = (short)0x6A59;
+        }
+      }
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

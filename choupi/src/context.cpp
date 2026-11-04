@@ -44,7 +44,7 @@ Context::SensitiveResultKind Context::sensitive_result_kind =
     Context::SensitiveResultKind::Unassigned;
 bool Context::sensitive_result_boolean = false;
 jshort_t Context::sensitive_result_short = 0;
-jref_t Context::sensitive_result_object;
+Stack::ReferenceValue Context::sensitive_result_object{};
 
 Context *Context::setActiveContext(Context *context) noexcept {
   Context *previous = active_context;
@@ -761,7 +761,7 @@ void Context::resetSensitiveResult() noexcept {
   this->sensitive_result_kind = SensitiveResultKind::Unassigned;
   this->sensitive_result_boolean = false;
   this->sensitive_result_short = 0;
-  this->sensitive_result_object = jref_t{};
+  this->sensitive_result_object = Stack::ReferenceValue{};
 }
 
 void Context::setSensitiveResultBoolean(const bool value) noexcept {
@@ -776,12 +776,16 @@ void Context::setSensitiveResultShort(const jshort_t value) noexcept {
 
 void Context::setSensitiveResultObject(const jref_t value) noexcept {
   this->sensitive_result_kind = SensitiveResultKind::Object;
-  this->sensitive_result_object = value;
+  this->sensitive_result_object =
+      Stack::ReferenceValue{value, this->getAppletPackageID()};
 }
 
 void Context::assertSensitiveResultObject(const jref_t value) const {
   if (this->sensitive_result_kind != SensitiveResultKind::Object ||
-      this->sensitive_result_object != value) {
+      !Stack::referencesEqual(
+          this->sensitive_result_object,
+          Stack::ReferenceValue{value, this->getAppletPackageID()},
+          this->getAppletPackageID())) {
     throw Exceptions::SecurityException;
   }
 }
@@ -882,14 +886,20 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
       if (!reference.isNullPointer()) visitor(reference, visitor_context);
     }
   }
-  const jref_t direct_roots[] = {
-      this->apdu_buffer_ref,
-      this->apdu_object_ref, this->apdu_outgoing_buffer_ref,
-      this->sensitive_result_object};
+  const jref_t direct_roots[] = {this->apdu_buffer_ref, this->apdu_object_ref,
+                                 this->apdu_outgoing_buffer_ref};
   for (const jref_t &reference : direct_roots) {
     if (!reference.isNullPointer()) {
       visitor(reference, visitor_context);
     }
+  }
+  if (this->sensitive_result_kind == SensitiveResultKind::Object &&
+      !this->sensitive_result_object.reference.isNullPointer() &&
+      !this->sensitive_result_object.reference.isGlobalArray() &&
+      !this->sensitive_result_object.reference.isGlobalInstance() &&
+      (this->sensitive_result_object.owner == Stack::kCurrentReferenceOwner ||
+       this->sensitive_result_object.owner == this->getAppletPackageID())) {
+    visitor(this->sensitive_result_object.reference, visitor_context);
   }
   Stack::ReferenceValue root_return_reference{};
   if (this->stack.getRootReferenceReturnValue(root_return_reference) &&

@@ -258,6 +258,18 @@ def main() -> int:
             print("TEST:PASS native Signature verify false result is "
                   "assertable across SIO")
             response = vpcd.exchange(
+                connection, bytes.fromhex("802A000000"),
+                "reject equal compact object handle from foreign SIO owner"
+            )
+            if response != bytes.fromhex("6A599000"):
+                raise RuntimeError(
+                    "foreign-owner SensitiveResult collision returned "
+                    f"{response.hex().upper()}, expected 6A599000"
+                )
+            print("TEST:PASS interpreted SIO SensitiveResult rejects the "
+                  "server applet object when its compact handle collides "
+                  "with the client applet object")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )
@@ -643,7 +655,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=31 fail=0")
+            print("TEST:SUMMARY pass=32 fail=0")
             return 0
         finally:
             if connection is not None:

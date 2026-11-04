@@ -74,6 +74,39 @@ void verify_sensitive_result_cross_context(jcvm::Context &producer,
   jcvm::Context::setActiveContext(previous);
 }
 
+void verify_sensitive_result_owner_provenance() {
+  constexpr jcvm::jpackage_ID_t producer_package = 25;
+  constexpr jcvm::jpackage_ID_t consumer_package = 26;
+  jcvm::Context producer(9, producer_package);
+  jcvm::Context consumer(10, consumer_package);
+  const auto collision = make_reference(7);
+  assert(collision.compact() == make_reference(7).compact());
+
+  const auto previous = jcvm::Context::setActiveContext(&producer);
+  producer.setSensitiveResultObject(collision);
+  VisitedReferences producer_roots;
+  producer.visitRootReferences(record_reference, &producer_roots);
+  assert(contains(producer_roots, collision));
+
+  jcvm::Context::setActiveContext(&consumer);
+  bool foreign_collision_rejected = false;
+  try {
+    consumer.assertSensitiveResultObject(collision);
+  } catch (...) {
+    foreign_collision_rejected = true;
+  }
+  assert(foreign_collision_rejected);
+  VisitedReferences consumer_roots;
+  consumer.visitRootReferences(record_reference, &consumer_roots);
+  assert(!contains(consumer_roots, collision));
+
+  producer.resetSensitiveResult();
+  producer_roots = {};
+  producer.visitRootReferences(record_reference, &producer_roots);
+  assert(!contains(producer_roots, collision));
+  jcvm::Context::setActiveContext(previous);
+}
+
 void verify_previous_context_aid() {
   jcvm::Context client(2, 1);
   jcvm::Context server(3, 1);
@@ -987,6 +1020,7 @@ int main() {
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);
   verify_sensitive_result_cross_context(context, second_context);
+  verify_sensitive_result_owner_provenance();
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
   verify_package_context_lookup();

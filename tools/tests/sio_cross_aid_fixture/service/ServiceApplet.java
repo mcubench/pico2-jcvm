@@ -12,6 +12,7 @@ import javacard.security.KeyBuilder;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 import javacardx.security.SensitiveResult;
+import fr.gouv.ssi.nativeimpl.NativeImplementation;
 import sio.contract.Probe;
 
 public final class ServiceApplet extends Applet implements Probe {
@@ -64,6 +65,11 @@ public final class ServiceApplet extends Applet implements Probe {
     byte[] destination = { 0, 0 };
     return Util.arrayCopyNonAtomic(source, (short)0, destination, (short)0,
                                    (short)2);
+  }
+
+  public short sensitiveObjectResult() {
+    NativeImplementation.setSensitiveResultObject(this);
+    return (short) 0x6A57;
   }
 
   public short sensitiveFailedCopy() {
