@@ -21619,3 +21619,14 @@
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256 `438416fff71be921de3c1705125dedccd2b2b6e52d5b5f275d26dc18a59748bb`; log reports 99 phases and 97 vectors passed.
 
+## 2026-11-04 Package current max_crypto firmware with empty card storage 15 minutes
+
+- Step/experiment: `windows-max-crypto-empty-card-uf2-20261104`
+- When: '2026-11-04 11:30 CET' - '2026-11-04 11:45 CET'
+- Change: Rebuilt the ARM `max_crypto` firmware and packaged a separate UF2 that combines it with erased (`0xFF`) bytes for the full 1 MiB application-storage region at flash addresses `0x10100000`–`0x101FFFFF`. The standard firmware UF2 contains the JCVM only; the combined image also removes previously installed CAP packages and persistent filesystem state when copied to the Pico 2 BOOTSEL drive.
+- Validation: `./tools/build arm --profile max_crypto` passed; build reported 147/150 selected capabilities and firmware end `0x100e932c` (93,396 bytes remain in the firmware window). `picotool info -a` identified the combined UF2 as RP2350 ARM Secure `pico2_choupi`. A UF2 block inspection verified 3,732 firmware blocks plus exactly 4,096 `0xFF` storage blocks, no overlap, RP2350 ARM-S family ID `0xe48bff59`, and storage coverage through `0x101FFFFF`. No board was flashed.
+- Result: Current firmware UF2 is 1,911,296 bytes (SHA-256 `9820f9dcee53120f0fca18b9f63bc2cabfbc8890cbeabbda4a9ddf7d68ef77f8`). Empty-card Windows test UF2 is 4,008,448 bytes (SHA-256 `dc3fdc634a0d06eb699e990ccbbdea19912cbc1795d65a04c91bdb64acebed04`). Neither image pre-installs JCAlgTest; only the combined image erases existing card storage during flashing.
+- Decision: Use `build/arm/pico2_choupi_max_crypto_empty_card.uf2` for Windows tests requiring a genuinely empty card, then install the unchanged upstream CAP explicitly with GPPro. Treat copying this image as destructive to stored CAPs/data. Continue with RV-20261103-15.
+- Commit: pending metadata commit; generated binaries remain ignored under `build/`.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; no serial/hardware log.
+

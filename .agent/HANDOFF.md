@@ -1,3 +1,24 @@
+# Current session — max_crypto empty-card UF2 prepared — 2026-11-04 11:45 CET
+
+For Windows validation use
+`build/arm/pico2_choupi_max_crypto_empty_card.uf2` (4,008,448 bytes, SHA-256
+`dc3fdc634a0d06eb699e990ccbbdea19912cbc1795d65a04c91bdb64acebed04`). It is
+the current ARM `max_crypto` firmware plus `0xFF` blocks covering all RP2350
+application storage from `0x10100000` through `0x101FFFFF`. Copying it to the
+Pico 2 BOOTSEL drive loads JCVM and clears previous CAP packages and persistent
+filesystem data. No applet is bundled; load the unchanged CAP later with
+GPPro. This is destructive to stored card data. No physical board was flashed.
+
+The standard current firmware is `build/arm/pico2_choupi.uf2` (1,911,296
+bytes, SHA-256 `9820f9dcee53120f0fca18b9f63bc2cabfbc8890cbeabbda4a9ddf7d68ef77f8`);
+it contains only the firmware image and does not erase prior persistent card
+storage. Use the explicit `*_empty_card.uf2` artifact for a clean Windows
+test. Build validation passed for ARM `max_crypto`; firmware end is
+`0x100e932c`. UF2 inspection confirmed the 1 MiB erased storage span with no
+overlap. Continue with RV-20261103-15 crypto intermediate-state lifetime.
+
+---
+
 # Current session — Signature workspace transient lifetime — 2026-11-04 11:30 CET
 
 RV-20261103-14 implementation is complete in the current worktree. Initial
