@@ -45,6 +45,26 @@
   access when the restricted attempt reports `Operation not permitted`; do not
   rerun in restricted mode.
 
+## PC VPCD upstream applet install and host-emulator timeout — observed 2026-11-04
+
+- **Finding:** After rebuilding the PC target, a one-pass VPCD test of the
+  unchanged upstream `AlgTest_v1.8.2_jc305.cap` did not connect before its
+  timeout. An earlier fresh-memory attempt logged `INSTALL_FAIL stage=5
+  sw=6A80 vm=6F00 exception=29 opcode=00 pc=00000000` (Java Card
+  `SecurityException`). A later attempt stopped in the Rust host emulator at
+  `choupi/os/src/arch/host/emulator.rs:683` with `Unknown ptrace signal
+  received: 639` (wait status for a stopped child). The PC-only temporary
+  branch-alignment diagnostic emitted no `CAP_BRANCH_ALIGNMENT_FAIL` marker.
+- **Current decision:** This does not establish that dynamic branch validation
+  caused the INSTALL failure; the unchanged CAP's offline scan found 1,303
+  branch targets, all in range and aligned. It also does not establish the
+  updated interpreter passes runtime, because VPCD never connected. Do not
+  repeat the same VPCD command unchanged. Investigate the install `SecurityException`
+  and host-emulator stop handling with a per-run log before retrying.
+- **Validation:** `./tools/build-pc --profile max_crypto` passed. The bounded
+  VPCD command failed with `TEST:FAIL timed out`; no SELECT/APDU or physical
+  token validation occurred. Temporary PC-only trace code was removed.
+
 ## Java Card class and interface membership crosses hierarchy links (2026-11-04)
 
 A class may inherit implemented interfaces from a superclass, and its

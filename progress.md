@@ -21873,3 +21873,14 @@
 - Decision: Provide this exact image for Windows testing; continue RV-28 offline.
 - Commit: `4583552`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Diagnose RV-28 PC VPCD timeout 22 minutes
+
+- Step/experiment: `rv-20261103-28-pc-vpcd-runtime-diagnostic`
+- When: '2026-11-04 21:14 CET' - '2026-11-04 21:36 CET'
+- Change: Rebuilt the PC target from current source and made a bounded VPCD installation/selection attempt against the unchanged upstream AlgTest 1.8.2 CAP. Added a temporary PC-only branch-alignment trace, then removed it after it produced no marker. Recorded the unresolved integration failure in QKB and handoff.
+- Validation: `./tools/build-pc --profile max_crypto` passed. The one-pass `./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 90 --apdu-timeout 45 --select-only` attempt failed `TEST:FAIL timed out` before VPCD connection. A prior rebuilt-PC attempt logged `INSTALL_FAIL stage=5 sw=6A80 vm=6F00 exception=29 opcode=00 pc=00000000`; the trace attempt later hit the Rust host emulator's `Unknown ptrace signal received: 639` at `choupi/os/src/arch/host/emulator.rs:683`. No `CAP_BRANCH_ALIGNMENT_FAIL` diagnostic appeared. Offline CAP scan passed 75 methods / 1,303 destinations, all aligned and in range. No physical token was used.
+- Result: Runtime acceptance remains unresolved; the failure is not currently attributable to branch alignment. The host emulator stopped before the VPCD test could connect.
+- Decision: Do not repeat the same integration command unchanged. Isolate the install-time `SecurityException` and host emulator stop handling before another VPCD attempt; continue static/sanitizer work meanwhile.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (append-only shared log; contains multiple historical attempts and is not isolated to this run).

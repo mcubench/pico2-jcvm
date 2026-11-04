@@ -88,6 +88,16 @@ implementation is committed as `f4fe3f7`. Continue RV-28 with malformed CAP
 runtime/sanitizer coverage, nested linkage checks, and heap field-kind/access
 validation.
 
+Latest runtime validation attempt: `./tools/build-pc --profile max_crypto`
+passes, but the one-pass VPCD run timed out before connection. A fresh-memory
+attempt reported INSTALL stage 5 / SW `6A80` / VM `6F00` / exception 29
+(`SecurityException`), and a later host-emulator attempt panicked at
+`choupi/os/src/arch/host/emulator.rs:683` on an unknown ptrace stop (status
+639). A temporary PC-only branch-target trace produced no alignment-failure
+marker and was removed. The unchanged JCAlgTest CAP's offline scan reports
+1,303 aligned in-range targets. Cause remains unresolved; don't rerun this
+VPCD command unchanged. No hardware or malformed-CAP runtime test was run.
+
 ---
 
 # Prior session — RV-28 uploaded-CAP native opcode boundary — 2026-11-04 19:15 CET
