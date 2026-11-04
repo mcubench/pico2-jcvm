@@ -1,3 +1,23 @@
+# VPCD transaction-probe installation latency — 2026-11-04
+
+- **Observation:** The focused PC VPCD transaction-lifecycle test took
+  151.984 seconds from emulator start through four APDU cases, despite using
+  the fixture's lightweight install mode. The long delay occurred before the
+  VPCD client connected, during CAP installation/setup. No CPU utilization
+  profile was captured, so this is not evidence of busy waiting.
+- **Viable test setup:** Give the focused VPCD harness a finite timeout of at
+  least 300 seconds. `--light-install` avoids the 32,767-byte capacity array
+  when testing only lifecycle transactions, though it did not materially
+  reduce this observed setup time. Run the localhost VPCD harness in elevated
+  network context; restricted sandbox socket creation returns `EPERM`. This
+  test does not access USB or a physical token.
+- **Evidence:** `./tools/test-jcsystem-transaction-applet --light-install
+  --case 85 --case 86 --case 87 --case 88` completed with
+  `TEST:SUMMARY pass=6 fail=0`; APDU emulator log:
+  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261104T025114Z.log`.
+
+---
+
 # Cross-store CAP lifecycle publication recovery — 2026-11-04
 
 - **Failure model:** CAP package bytes/registry and persistent filesystem package

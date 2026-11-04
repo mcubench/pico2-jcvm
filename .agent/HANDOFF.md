@@ -1,3 +1,46 @@
+# Current session — applet transaction lifecycle abort — 2026-11-04 04:00 CET
+
+Completed RV-20261103-07 and committed the implementation as `a33439d`
+(`Abort applet transactions at lifecycle boundaries`). Runtime-owned CAP INSTALL
+transactions now have explicit ownership and are not exposed to applet JCSystem
+commit/abort calls. Applet transactions are aborted after `process`, `select`,
+and `deselect`; implicit reader reset cleanup aborts applet-owned state without
+calling `deselect`, and reports rollback failure. A normal `process` return
+with an open transaction returns `6F00`; rejected selection remains `6999`;
+deselection with an open transaction returns `6F00`.
+
+VPCD APDU regression cases 85–88 pass for normal return, uncaught transaction
+exception, deselect and rejected selection. Each checks persistent rollback;
+the rejected select is followed by a successful select, and the deselect path
+selects the card manager before reselecting the test applet. The persistent
+transaction unit test confirms the applet abort guard leaves a runtime-owned
+INSTALL transaction intact. Local VPCD required elevated network access due
+restricted-loopback `EPERM`. Test result: `TEST:SUMMARY pass=6 fail=0`, elapsed
+151.984 s. This slow time includes PC CAP install/setup; no CPU profile was
+captured. `--light-install` skips the 32,767-byte test array for lifecycle-only
+runs, but did not materially reduce setup time.
+
+`./tools/test-persistent-transaction`, `./tools/build-pc --profile
+max_crypto`, ARM and RISC-V wrappers passed. Pico 2 `2BED26ED20556535` flashed
+the final ARM `max_crypto` CHOUPI image and finite serial passed
+`TEST:SUMMARY pass=1 fail=0`; cycle log:
+`artifacts/logs/cycle-choupi-20261104T025837Z.log` (SHA-256
+`058a5e226ba0a33fffbcc414cfc130806c6e68650741baf2f1ea7004d4c6449b`). The
+current UF2 is `build/arm/pico2_choupi.uf2`, 1,908,736 bytes, SHA-256
+`d451ce0482558b4eed6e09470c4ea69fc7bc3707c4f30e05c885634c3b51ddce`, firmware
+end `0x100e8e34`, with 94,668 bytes remaining. It bundles no CAP; flashing does
+not clear packages already stored on the token.
+
+Timeout and reset while bytecode is actively executing were not injected. All
+interpreter return/error statuses pass through the process cleanup guard, and
+the synchronous VM cannot receive a warm-reset command while executing one
+APDU. Keep this validation limitation explicit. Next TODO is RV-20261103-08:
+foreign retained-reference owner provenance. Preserve the extensive unrelated
+dirty worktree: `AGENTS.md`, deleted root architecture doc/new docs, review
+artifacts, SDK submodules, `choupi/src/heap.*`, physical probe tooling, and
+unrelated `src/cap_load.cpp` edits. RV-07 implementation and TODO are committed;
+its progress and handoff metadata follow-up is pending.
+
 # Current session — INSTALL preflight — 2026-11-04 03:09 CET
 
 Completed RV-20261103-06 and committed implementation as `b00ddcf`
