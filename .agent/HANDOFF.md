@@ -38,7 +38,8 @@ Preserve all unrelated dirty files from other sessions. In particular,
 `releaseGlobalAIDObject`; stage only the reset-sidecar addition. The shared
 `tools/tests/symm_crypto_applet/SymmCryptoProbe.java` contains other in-flight
 test changes; stage only the RV-15 digest/recovery additions. The implementation
-commit and this metadata follow-up commit are still pending.
+commit is `c163280e9ed54e0e3a3656a3bae43f63868cce4e`; the progress record's
+commit SHA is recorded by its metadata follow-up commit.
 
 ---
 
