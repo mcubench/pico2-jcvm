@@ -21309,7 +21309,7 @@
   Context/Heap resolution first. Current guards remain intact.
 - Decision: Implement owner-aware lookup and equal-handle typed-array coverage
   before enabling that store path; then design persistent owner encoding.
-- Commit: `pending`
+- Commit: `95931ce` (documentation; handoff SHA update follows)
 - Artifacts/logs: source inspection only; no test log.
 
 ## 2026-11-03 Record foreign-store audit commit metadata 1 minute

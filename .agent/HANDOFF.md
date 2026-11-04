@@ -16,7 +16,7 @@ hash block boundaries, empty final input, reuse after completion, reset, and
 transaction abort. No hardware test was run. The current max empty-card image
 still matches the prior RV-16 build because firmware source is unchanged.
 
-Documentation commit: pending. Continue with RV-20261103-18 checked `int[]`
+Documentation commit: `95931ce`. Continue with RV-20261103-18 checked `int[]`
 length allocation, preserving unrelated worktree changes.
 
 ---
