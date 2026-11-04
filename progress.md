@@ -21498,3 +21498,14 @@
 - Decision: Close RV-20261103-05. Continue with RV-20261103-06, preflighting duplicate and full-registry INSTALL before applet execution.
 - Commit: `acad726`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T005831Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Correct persistent array identity counter tag 12 minutes
+
+- Step/experiment: `rv-20261104-counter-tag-abi`
+- When: '2026-11-04 02:24 CET' - '2026-11-04 02:36 CET'
+- Change: Moved the persistent array identity counter from invalid filesystem tag namespace `0x04` to valid static metadata namespace `{0x02, 0xfe, ...}` and added a regression that reads/verifies the counter record.
+- Validation: `./tools/test-persistent-transaction`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The protected PC VPCD integration passed card startup, SELECT, GET DATA, malformed tag checks, and SCP03, then was stopped during fixture pagination after eight installs; duplicate/retry acceptance remains unverified.
+- Result: CAP static initialization no longer hits the filesystem tag namespace assertion in PC VPCD. ARM image end `0x100e8d94`, 94,828 bytes remain in the firmware window. Hardware validation of this fix was not run in this step.
+- Decision: Close the tag ABI repair. Continue RV-20261103-06 with instrumented VPCD duplicate/full-registry INSTALL scenarios.
+- Commit: `53f706e`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261104T013001Z.log` (partial, eight instance records); focused test output `TEST:SUMMARY fail=0`.

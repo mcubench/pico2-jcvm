@@ -118,6 +118,26 @@
 
 # Issue knowledge base — compacted 2026-10-29
 
+## Persistent array identity counter tag violates filesystem tag ABI — 2026-11-04
+
+- **Failure:** Installing the first CAP through PC VPCD aborted during static
+  array initialization. Rust filesystem `fs_exists` asserted that the tag's
+  namespace byte must be in `0x00..0x03`; the identity counter used `0x04`.
+  Backtrace reached `allocate_persistent_array_identity()` from
+  `initializeCapStaticArrays()` before applet INSTALL.
+- **Viable fix:** Store the private counter under valid static tag namespace
+  `{0x02, 0xfe, 'J','C','V','M','A','R','R','I','D'}`. The reserved `0xfe`
+  subnamespace avoids collision with ordinary class/static tags. The focused
+  persistence test reads the counter via that exact tag and checks version and
+  nonzero identity.
+- **Validation:** `./tools/test-persistent-transaction` passed;
+  `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile
+  max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The next
+  PC VPCD multipackage run progressed beyond first CAP static initialization,
+  but was interrupted during its 21-instance pagination setup, so INSTALL
+  preflight acceptance is still pending.
+- **Commit:** `53f706e`.
+
 ## CCID receive reset/BOOTSEL and failover — 2026-11-03
 
 - **Finding/fix:** `src/ccid_device.cpp` formerly evaluated untrusted

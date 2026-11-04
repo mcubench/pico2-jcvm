@@ -1,3 +1,30 @@
+# Current session — INSTALL preflight integration — 2026-11-04 02:36 CET
+
+Fixed RV-02 follow-up tag ABI defect in commit `53f706e`: the durable
+persistent-array identity counter used unsupported namespace byte `0x04`, which
+triggered the Rust filesystem assertion during static-array initialization on
+CAP install. The counter now uses `{0x02, 0xfe, 'J','C','V','M','A','R','R','I','D'}`
+and the persistence test verifies this record/version. Persistence tests and
+PC/ARM/RISC-V max_crypto builds pass.
+
+RV-20261103-06 remains in progress. Duplicate/full-registry INSTALL preflight
+changes are uncommitted and have passing focused CAP-store tests and status
+mapping tests. The first PC VPCD integration after the counter fix passed ATR,
+SELECT, GET DATA, malformed tag checks, and SCP03 authentication, then began
+loading/installing fixtures. It installed eight instances before the run was
+interrupted; no duplicate/retry result was reached. The test currently does
+not print per-instance progress during the 21-instance pagination fixture.
+Add progress output or run with an appropriate bounded timeout, then complete
+the integration before committing RV-06.
+
+Next: instrument pagination progress, rerun `PICO2_HOST_USB_ACCESS=1
+./tools/test-vpcd-multipackage` through the required elevated host-access path,
+and fix any newly exposed failure. Then run the overlay/install status tests,
+PC build and both architecture wrappers, refresh the authorized physical
+reader helper, and perform the physical validation if a reader is available.
+Preserve unrelated dirty worktree files and selectively stage the RV-06 source
+hunks.
+
 # Current session — cross-store CAP lifecycle recovery — 2026-11-04 02:07 CET
 
 Implemented and committed RV-20261103-05 as `acad726` (`Recover interrupted
