@@ -21683,7 +21683,7 @@
 - Validation: `./tools/test-jcarray` passed, including `int[16383]`, rejection of `int[16384]`, and byte/short/int record boundaries. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Existing dependency and packed-member warnings remain. A standalone `./tools/test-jcvmarray-allocation` attempt failed to link because its harness omits existing `FlashMemory_Handler` and `JC_Object` symbols; the repository `test-jcarray` suite covers the new boundaries and passed. No hardware test was run.
 - Result: Oversized arrays no longer wrap their backing allocation to zero or a smaller length. ARM firmware ends at `0x100E9764`, leaving 92,316 bytes. Current firmware UF2 is 1,913,344 bytes (SHA-256 `32bdc2bb486a05ef8730b47cbafa4b0662b16bb686684b5fd2dc4e493f6f75fb`). Empty-card max UF2 is 4,010,496 bytes (SHA-256 `b30953d6e4ce191638150af647992089a14f6d99f5bb3c167bd31574f8cb49fd`); picotool recognizes RP2350 ARM Secure and all 4,096 storage blocks contain `0xFF` over `0x10100000`–`0x101FFFFF`.
 - Decision: Close RV-18 implementation. Physical validation remains pending. Continue to RV-19 minimum signed division behavior.
-- Commit: `pending`
+- Commit: `85906fd`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Preserve signed minimum division result 12 minutes

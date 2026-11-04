@@ -26,10 +26,10 @@ malformed input runtime tests are still required. Do not claim the interpreter
 fully validates uploaded code.
 
 The native opcode boundary step is committed as `788df11` (metadata follow-up
-`7d77b7e`). Preserve all pre-existing worktree changes, including the unrelated
-`src/cap_load.cpp` changes; it was not edited for these steps. The current
-method-header step is pending scoped commits. Continue offline unless
-authorized physical runtime access becomes available.
+`7d77b7e`). The method-header bounds step is committed as `85906fd`. Preserve
+all pre-existing worktree changes, including the unrelated `src/cap_load.cpp`
+changes; it was not edited for these steps. Continue offline unless authorized
+physical runtime access becomes available.
 
 ---
 
