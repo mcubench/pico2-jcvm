@@ -1,3 +1,19 @@
+## Java Card class and interface membership crosses hierarchy links (2026-11-04)
+
+A class may inherit implemented interfaces from a superclass, and its
+superinterfaces can themselves inherit other interfaces. A `checkcast` or
+`instanceof` implementation that inspects only the current class or one
+interface level incorrectly rejects valid assignments. Cross-package class
+links must be resolved using the package that owns each declaring CAP link.
+
+**Viable solution:** walk superclass links with a strict upper bound and
+resolve every link from its declaring package. Traverse superinterface
+relationships with a bounded visited queue to avoid recursive stack growth and
+cycles in malformed CAP data. The generated `sio_cross_aid_fixture` validates
+same-package and imported superclass declarations plus a three-level
+superinterface chain. Full VPCD regression passed 34/34 on 2026-11-04. Keep
+both bounds fail-closed if this logic is extended.
+
 ## SIO exception references belong to the server context (2026-11-04)
 
 An uncaught Java exception from a nested SIO server interpreter cannot be

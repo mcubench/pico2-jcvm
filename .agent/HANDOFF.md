@@ -1,34 +1,33 @@
-# Current session — preserve SIO exception identity and reason — 2026-11-04 15:42 CET
+# Current session — resolve inherited Java Card interface membership — 2026-11-04 16:42 CET
 
-RV-20261103-21 is implemented. When an SIO server interpreter ends with a Java
-exception, the caller now receives an owner-checked exception instance in its
-own heap, with concrete class identity and scalar reason fields preserved.
-Private server object-graph references fail closed. Caller applet state is
-restored before exception dispatch and also guarded by scope cleanup.
+RV-20261103-22 is implemented. Class-to-interface checks now inspect each
+superclass with correct package resolution and a 256-level bound. Interface
+target checks traverse the transitive superinterface graph with a bounded
+64-node queue, so malformed cycles or oversized graphs fail closed without
+unbounded recursion or allocation.
 
-Validation passed: `./tools/build-pc --profile max_crypto`,
-`./tools/build arm --profile max_crypto`, `./tools/build riscv --profile
-max_crypto`, and the complete VPCD SIO test (`TEST:SUMMARY pass=33 fail=0`).
-The test verifies `CryptoException` reason `0x1234`, concrete
-`ArrayIndexOutOfBoundsException` identity, and a successful follow-up SIO call.
-No physical device was used.
+Validation passed: the generated CAP fixture and PC, ARM and RISC-V
+`max_crypto` builds. The isolated VPCD CAP test passed same-package and
+imported-package superclass `instanceof` and `checkcast`, including a nested
+three-level superinterface chain. The full cross-AID VPCD suite passed
+`TEST:SUMMARY pass=34 fail=0`. No physical device was used.
 
 Current applet-free max_crypto ARM image for external Windows testing:
 
 - `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,012,544 bytes, SHA-256
-  `088987ee16747f2f7f048e23444ffcc559a3ef01dfad854356d6b9d656cd8f99`.
-- Firmware-only source `build/arm/pico2_choupi.uf2`, 1,915,392 bytes, SHA-256
-  `398a73319dc924d8ce5508bf3baee5dc11ed2454cf5052b776f4c63edba29cd3`.
-- Firmware end `0x100E9B0C`, leaving 91,380 bytes before `0x10100000`. The
-  combined UF2 was checked against the current firmware and 4,096 all-`0xFF`
-  blocks over `0x10100000`–`0x101FFFFF`.
+  `178efc20a53ab7fea314e0251bcbb05c8f84deefe2bed537d57b15764907368d`.
+- Firmware-only `build/arm/pico2_choupi.uf2`, 1,915,392 bytes, SHA-256
+  `0cc13ca28be022152134a2c66e8f23a916bce59c6917ea144c3f71b430dc70b1`.
+- Firmware end `0x100E9BEC`, leaving 91,156 bytes before `0x10100000`. The
+  combined UF2 includes the current firmware and 4,096 all-`0xFF` blocks over
+  `0x10100000`–`0x101FFFFF`.
 - Details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
-- VPCD evidence: `artifacts/logs/sio-cross-aid-vpcd-20261104T142957Z.log`.
+- Full regression log: `artifacts/logs/sio-cross-aid-vpcd-20261104T153105Z.log`.
 
-Source, regression fixture, TODO, QKB, progress and image instructions are
-committed as `2e3f58f`. Unrelated worktree changes remain unstaged and
-preserved. Physical validation remains pending. Next, continue with
-RV-20261103-22, inherited interface membership checks.
+The RV-22 source, fixture and progress record are ready for a scoped commit.
+Unrelated worktree changes remain preserved. Physical validation remains
+pending. Next, continue with RV-20261103-23, prevalidate native Util arguments
+before mutation.
 
 ---
 

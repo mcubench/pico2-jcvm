@@ -148,6 +148,19 @@ def main() -> int:
             response = vpcd.exchange(connection, select_client, "SELECT client")
             if response[-2:] != b"\x90\x00":
                 raise RuntimeError(f"SELECT client failed: {response.hex().upper()}")
+            if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("802C000000"),
+                    "check inherited interfaces through same-package and imported superclasses"
+                )
+                if response != bytes.fromhex("6A6A9000"):
+                    raise RuntimeError(
+                        "inherited superclass interface checks returned "
+                        f"{response.hex().upper()}, expected 6A6A9000"
+                    )
+                print("TEST:PASS inherited interface checkcast and instanceof")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
                                      "cross-AID Shareable invocation")
             expected = bytes.fromhex("45679000")
@@ -282,6 +295,17 @@ def main() -> int:
             print("TEST:PASS SIO preserves CryptoException reason and concrete "
                   "ArrayIndexOutOfBoundsException identity, then allows a "
                   "successful follow-up call")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("802C000000"),
+                "check implemented interfaces inherited through local and imported superclasses"
+            )
+            if response != bytes.fromhex("6A6A9000"):
+                raise RuntimeError(
+                    "inherited superclass interface checks returned "
+                    f"{response.hex().upper()}, expected 6A6A9000"
+                )
+            print("TEST:PASS checkcast and instanceof find interfaces declared "
+                  "on same-package and imported superclasses")
             response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
@@ -668,7 +692,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=33 fail=0")
+            print("TEST:SUMMARY pass=34 fail=0")
             return 0
         finally:
             if connection is not None:

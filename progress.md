@@ -21719,3 +21719,15 @@
 - Decision: Close RV-21. Continue with RV-22 inherited interface membership. Do not flash or claim physical validation until separately requested and available.
 - Commit: `2e3f58f`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T142957Z.log`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+
+## 2026-11-04 Resolve inherited interface membership 57 minutes
+
+- Step/experiment: `rv-20261103-22-inherited-interface-membership`
+- When: '2026-11-04 15:45 CET' - '2026-11-04 16:42 CET'
+- Change: Class-to-interface compatibility now walks superclass metadata through up to 256 levels, resolving each class reference from the package that owns it. Interface compatibility traverses transitive superinterfaces with a 64-node visited queue, bounding cycles and workspace. The test-only CAP fixture now has a same-package superclass and an imported-package base declaring interfaces; its interface hierarchy spans three levels. Added focused runner selection for this regression.
+- Validation: `./tools/build-sio-cross-aid-fixture`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Focused VPCD inherited-interface test passed `TEST:SUMMARY pass=1 fail=0`; full cross-AID suite passed `TEST:SUMMARY pass=34 fail=0`. Both used the authorized local host-access path. Existing Rust and packed-member warnings remain. UF2 block inspection verified current firmware payloads and 4,096 all-`0xFF` blocks across `0x10100000`–`0x101FFFFF`. No physical device was accessed.
+- Result: `checkcast` and `instanceof` accept inherited interfaces declared in local and imported class ancestors and transitive superinterfaces. Current ARM firmware is 1,915,392 bytes, ends at `0x100E9BEC`, leaving 91,156 bytes. Empty-card max UF2 is 4,012,544 bytes. Firmware SHA-256: `0cc13ca28be022152134a2c66e8f23a916bce59c6917ea144c3f71b430dc70b1`; empty-card UF2 SHA-256: `178efc20a53ab7fea314e0251bcbb05c8f84deefe2bed537d57b15764907368d`.
+- Decision: Close RV-22. Continue with RV-23 argument prevalidation for native Util operations. No physical validation was performed.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T153105Z.log`; focused log `artifacts/logs/sio-cross-aid-vpcd-20261104T152600Z.log`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.

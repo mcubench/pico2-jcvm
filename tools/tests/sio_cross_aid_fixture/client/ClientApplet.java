@@ -277,6 +277,8 @@ public final class ClientApplet extends Applet {
       }
     } else if (buffer[1] == 0x2B) {
       result = checkSioExceptionPropagation((Probe) shareable);
+    } else if (buffer[1] == 0x2C) {
+      result = ((Probe) shareable).inspectInheritedInterfaces();
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

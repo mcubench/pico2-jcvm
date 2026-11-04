@@ -199,9 +199,10 @@ during the review.
 
 ### RV-20261103-22
 
-- [ ] **P2: Inherited interface membership is missed.**
+- [x] **P2: Inherited interface membership is missed.**
   Owner: PROFILE-01, CTX-01. Evidence: Source; [review R22](docs/review_20261103.md#r22--class-to-interface-casts-do-not-search-superclasses).
-  Acceptance: walk the class hierarchy with bounded cycle detection and correct package resolution; retain recursive superinterface handling. Validate same-package and imported superclass cases. This finding is source-based; no new CAP was produced to exercise it.
+  Acceptance: walk the class hierarchy with bounded cycle detection and correct package resolution; retain recursive superinterface handling. Validate same-package and imported superclass cases.
+  Progress: Class-to-interface checks now walk up to 256 superclasses, resolving each link from its declaring package. Superinterface membership uses a bounded 64-node traversal with duplicate detection. A generated test-only CAP passes `instanceof` and `checkcast` for interfaces declared on same-package and imported superclasses and through a three-level interface chain. The full VPCD cross-AID suite passed 34/34. PC, ARM, and RISC-V builds passed. No physical device was tested.
 
 ### RV-20261103-23
 

@@ -223,6 +223,17 @@ public final class ServiceApplet extends Applet implements Probe {
     throw new ArrayIndexOutOfBoundsException();
   }
 
+  public short inspectInheritedInterfaces() {
+    Object inherited = new InheritedMarker();
+    if (!(inherited instanceof LocalMarker)) return (short) 0x6A68;
+    if (!(inherited instanceof sio.contract.RootMarker)) {
+      return (short) 0x6A69;
+    }
+    LocalMarker local = (LocalMarker) inherited;
+    sio.contract.RootMarker imported = (sio.contract.RootMarker) inherited;
+    return local != null && imported != null ? (short) 0x6A6A : (short) 0x6A6B;
+  }
+
   public short inspectPrivateArray(byte[] value) {
     byte[] forwarded = value;
     try {

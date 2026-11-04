@@ -20,6 +20,7 @@ public interface Probe extends Shareable {
   short throwSecurityException();
   short throwCryptoException();
   short throwArrayIndexOutOfBoundsException();
+  short inspectInheritedInterfaces();
   short inspectPrivateArray(byte[] value);
   short inspectPrivateArrayNative(byte[] value);
   short inspectGlobalReference(Object[] values);
