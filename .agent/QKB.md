@@ -6129,4 +6129,6 @@ original terminology/status; check current summary and later fixes before reuse.
   offset 12569) exceed the next method by one byte and are clamped. This keeps
   the upstream deployed suite usable without allowing a body to consume the
   next method header. Branch instruction-boundary verification and
-  malformed-CAP runtime/sanitizer testing remain open.
+  malformed-CAP runtime/sanitizer testing remain open. Reproduce the archive
+  scan with `./tools/test-cap-method-body-deploy-caps`; it reads deployed CAP
+  zip entries without changing them and checks the pinned suite totals.

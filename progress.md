@@ -21829,3 +21829,14 @@
 - Decision: Keep RV-28 open. Next verify branch targets against decoded instruction boundaries without trusting malformed instruction lengths; then run malformed-CAP runtime/sanitizer cases and continue nested-linkage and heap field-kind validation.
 - Commit: `2496a92` (implementation; progress/handoff SHA follow-up pending)
 - Artifacts/logs: `tools/test-cap-method-body-bounds`; offline structural scan output (11 CAPs / 978 methods, not separately archived); no firmware runtime log.
+
+## 2026-11-04 Make deployed method-bound scan repeatable 4 minutes
+
+- Step/experiment: `rv-20261103-28-deployed-method-bound-scan`
+- When: '2026-11-04 20:15 CET' - '2026-11-04 20:19 CET'
+- Change: Added `tools/test-cap-method-body-deploy-caps`, a read-only archive check for the deployed 3.0.5 API CAP set. It verifies component framing, Descriptor method offsets, header sizes, bytecode counts, and that method counts do not leave gaps or exceed the next method boundary. Updated QKB and handoff with the reusable command.
+- Validation: `./tools/test-cap-method-body-deploy-caps` passed all 11 packages and 978 concrete methods; 975 counts match their next method and three one-byte excesses clamp. No firmware source changed, so target builds were not rerun. Physical/runtime testing was not run.
+- Result: The CAP compatibility evidence is now reproducible with a repository command, and all supplied CAP archives remain unchanged.
+- Decision: Continue RV-28 by validating branch targets against decoded instruction starts; runtime/sanitizer and physical tests remain open.
+- Commit: pending
+- Artifacts/logs: `tools/test-cap-method-body-deploy-caps` (prints per-package results; no separate log).

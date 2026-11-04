@@ -50,8 +50,12 @@ The Method-component bytecode fetch bounds and focused test are committed as
 `8d4d3cf`; progress/handoff SHA metadata follow-up is `88531a2`. Per-method
 body bounds, hard clamping at the next descriptor method offset, and guarded
 exception diagnostics are committed as `2496a92`; progress/handoff SHA
-metadata follow-up is being recorded. Focused tests and both target builds
-pass. No physical test was run.
+metadata follow-up is `a0ef034`. Added `tools/test-cap-method-body-deploy-caps`
+to repeat the offline check against all 11 deployed 3.0.5 API CAPs; it passes
+978 concrete methods with 3 descriptor clamps. This script is the current
+uncommitted documentation/test step. Next continue RV-28 with same-method
+instruction-boundary validation. No malformed runtime, sanitizer or physical
+test was run.
 
 ---
 

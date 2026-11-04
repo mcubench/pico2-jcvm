@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Validate Descriptor-derived method body bounds in deployed JC305 CAPs."""
+
+from pathlib import Path
+from zipfile import ZipFile
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+CAP_DIR = REPO_ROOT / "AlgTest_JavaCard" / "deploy" / "caps"
+EXPECTED_CAPS = 11
+EXPECTED_METHODS = 978
+EXPECTED_CLAMPS = 3
+
+
+def component(archive: ZipFile, suffix: str, expected_tag: int) -> bytes:
+    matches = [name for name in archive.namelist() if name.endswith(suffix)]
+    if len(matches) != 1:
+        raise ValueError(f"expected one {suffix}, found {len(matches)}")
+    data = archive.read(matches[0])
+    if len(data) < 4 or data[0] != expected_tag:
+        raise ValueError(f"invalid {suffix} component header")
+    declared_size = int.from_bytes(data[1:3], "big")
+    if declared_size + 3 != len(data):
+        raise ValueError(
+            f"{suffix} component size mismatch: declared={declared_size} "
+            f"actual={len(data) - 3}"
+        )
+    return data
+
+
+def read_be16(data: bytes, offset: int) -> int:
+    return int.from_bytes(data[offset : offset + 2], "big")
+
+
+def validate_cap(path: Path) -> tuple[int, int]:
+    with ZipFile(path) as archive:
+        method_component = component(archive, "/Method.cap", 7)
+        descriptor_component = component(archive, "/Descriptor.cap", 11)
+
+    handler_count = method_component[3]
+    handler_bytes = handler_count * 8
+    method_stream_start = 4 + handler_bytes
+    method_stream_end = len(method_component)
+    if method_stream_start > method_stream_end:
+        raise ValueError("exception handler table exceeds Method component")
+    methods = method_component[method_stream_start:method_stream_end]
+
+    descriptor_size = int.from_bytes(descriptor_component[1:3], "big")
+    payload = descriptor_component[3 : 3 + descriptor_size]
+    class_count = payload[0]
+    offset = 1
+    method_entries: list[tuple[int, int, int]] = []
+
+    for class_index in range(class_count):
+        if offset > len(payload) or len(payload) - offset < 9:
+            raise ValueError(f"short class descriptor at index {class_index}")
+        interfaces = payload[offset + 4]
+        field_count = read_be16(payload, offset + 5)
+        method_count = read_be16(payload, offset + 7)
+        method_records = offset + 9 + interfaces * 2 + field_count * 7
+        records_end = method_records + method_count * 12
+        if records_end > len(payload):
+            raise ValueError(f"short method descriptor table at class {class_index}")
+
+        for method_index in range(method_count):
+            record = method_records + method_index * 12
+            component_offset = read_be16(payload, record + 2)
+            bytecode_count = read_be16(payload, record + 6)
+            if component_offset <= handler_bytes:
+                continue  # Interface/abstract declaration without code.
+            stream_offset = component_offset - handler_bytes - 1
+            if stream_offset >= len(methods):
+                raise ValueError(f"method offset outside Method stream: {stream_offset}")
+            method_entries.append((stream_offset, bytecode_count, methods[stream_offset]))
+        offset = records_end
+
+    method_entries.sort(key=lambda entry: entry[0])
+    offsets = [entry[0] for entry in method_entries]
+    if len(set(offsets)) != len(offsets):
+        raise ValueError("duplicate concrete method offsets")
+
+    clamped = 0
+    for index, (stream_offset, bytecode_count, header) in enumerate(method_entries):
+        header_size = 5 if header & 0x80 else 2
+        body_start = stream_offset + header_size
+        body_end = body_start + bytecode_count
+        next_method = (
+            offsets[index + 1] if index + 1 < len(offsets) else len(methods)
+        )
+        if bytecode_count == 0 or body_start > len(methods):
+            raise ValueError(f"invalid bytecode length at Method offset {stream_offset}")
+        if bytecode_count > len(methods) - body_start:
+            raise ValueError(f"bytecode count exceeds Method stream at {stream_offset}")
+        if body_start >= next_method:
+            raise ValueError(f"empty/overlapping method body at {stream_offset}")
+        if body_end < next_method:
+            raise ValueError(
+                f"descriptor body leaves a gap before next method at {stream_offset}"
+            )
+        if body_end > next_method:
+            clamped += 1
+
+    print(f"CAP:PASS {path.name} concrete_methods={len(method_entries)} clamps={clamped}")
+    return len(method_entries), clamped
+
+
+def main() -> int:
+    caps = sorted(CAP_DIR.glob("*_305.cap"))
+    if len(caps) != EXPECTED_CAPS:
+        raise SystemExit(f"CAP:FAIL expected {EXPECTED_CAPS} packages, found {len(caps)}")
+
+    methods = clamps = 0
+    for cap in caps:
+        try:
+            cap_methods, cap_clamps = validate_cap(cap)
+        except (OSError, ValueError) as error:
+            raise SystemExit(f"CAP:FAIL {cap.name}: {error}") from error
+        methods += cap_methods
+        clamps += cap_clamps
+
+    if methods != EXPECTED_METHODS or clamps != EXPECTED_CLAMPS:
+        raise SystemExit(
+            "CAP:FAIL unexpected suite totals "
+            f"methods={methods} clamps={clamps}"
+        )
+    print(f"CAP:SUMMARY checked={len(caps)} concrete_methods={methods} clamps={clamps}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
