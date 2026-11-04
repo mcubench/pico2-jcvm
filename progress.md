@@ -21509,3 +21509,14 @@
 - Decision: Close the tag ABI repair. Continue RV-20261103-06 with instrumented VPCD duplicate/full-registry INSTALL scenarios.
 - Commit: `53f706e`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261104T013001Z.log` (partial, eight instance records); focused test output `TEST:SUMMARY fail=0`.
+
+## 2026-11-04 Preflight duplicate and full-registry applet INSTALL 62 minutes
+
+- Step/experiment: `rv-20261103-06-install-preflight`
+- When: '2026-11-04 02:07 CET' - '2026-11-04 03:09 CET'
+- Change: Added shared CAP-store preflight for package existence, globally unique instance AIDs and per-package capacity before applet INSTALL; rechecked before journal publication and rolled back on conflict. PC and RP2350 use the 40-instance package limit. Journal recovery validates owner identity. Added same/cross-package duplicate and full-table production overlay tests, status mapping, PC VPCD duplicate/retry checks and physical duplicate/retry validation.
+- Validation: `./tools/test-rp2350-fs-overlay` and `./tools/test-install-status` passed (`TEST:SUMMARY fail=0`); `./tools/test-persistent-transaction` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed (`TEST:SUMMARY pass=47 fail=0`). Physical ARM cycle on Pico 2 `2BED26ED20556535` flashed/verified and finite serial passed (`TEST:SUMMARY pass=1 fail=0`). Physical GPPro duplicate INSTALL returned `6A80`; registry remained unchanged; fresh instance install succeeded; GET STATUS page chain passed (`TEST:SUMMARY pass=2 fail=0`) and cleanup removed only the test package.
+- Result: Duplicate/full-registry requests are rejected before applet INSTALL execution. The physical image is 1,908,224 bytes, SHA-256 `3444fddf181ebffb71933904b69abeb3d0d921d771c64a64ce4d3603406f5407`, firmware end `0x100e8d94`, 94,828 bytes remain. This tested firmware bundles no applet; pre-existing token packages were preserved.
+- Decision: Close RV-20261103-06. Continue with RV-20261103-07, applet transaction abortion at lifecycle and reset boundaries.
+- Commit: `b00ddcf` (this metadata follow-up records its SHA)
+- Artifacts/logs: VPCD `artifacts/logs/host-vpcd-multipackage-apdu-20261104T013815Z.log` SHA-256 `3229dc8e5a9bbe28e7714654842be803a84678038db71020de8b653679b646ba`; restart log `artifacts/logs/host-vpcd-multipackage-restart-20261104T013815Z.log` SHA-256 `4ea194e85004178a34b0557aec03c057efde881fcccc7bcecbab5440cfd7a106`; physical log `artifacts/logs/physical-get-status-multipage-20261104T020406Z.log` SHA-256 `2733b5b38425e6b6d19135e85f049ef900cebae74efdb7a8afdb5a9f86405105`; cycle log `artifacts/logs/cycle-choupi-20261104T020103Z.log` SHA-256 `42aa6becad47e641843a2d81eec27ae412b9499ff5913dd191bf563aa2feb673`.

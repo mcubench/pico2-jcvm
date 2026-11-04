@@ -1,29 +1,37 @@
-# Current session — INSTALL preflight integration — 2026-11-04 02:36 CET
+# Current session — INSTALL preflight — 2026-11-04 03:09 CET
 
-Fixed RV-02 follow-up tag ABI defect in commit `53f706e`: the durable
-persistent-array identity counter used unsupported namespace byte `0x04`, which
-triggered the Rust filesystem assertion during static-array initialization on
-CAP install. The counter now uses `{0x02, 0xfe, 'J','C','V','M','A','R','R','I','D'}`
-and the persistence test verifies this record/version. Persistence tests and
-PC/ARM/RISC-V max_crypto builds pass.
+Completed RV-20261103-06 and committed implementation as `b00ddcf`
+(`Preflight applet installation before applet code`). `cap_store_preflight` now
+rejects invalid/duplicate instance AIDs, missing packages and full per-package
+instance tables before the applet INSTALL method executes. Registry invariants
+are checked again before journal publication, with transaction rollback on a
+failed recheck. Duplicate/full conflicts map to `6A80`; pending-install
+recovery also verifies that the owner ID matches its journal record. PC and
+RP2350 emulation share the 40-instance package limit.
 
-RV-20261103-06 remains in progress. Duplicate/full-registry INSTALL preflight
-changes are uncommitted and have passing focused CAP-store tests and status
-mapping tests. The first PC VPCD integration after the counter fix passed ATR,
-SELECT, GET DATA, malformed tag checks, and SCP03 authentication, then began
-loading/installing fixtures. It installed eight instances before the run was
-interrupted; no duplicate/retry result was reached. The test currently does
-not print per-instance progress during the 21-instance pagination fixture.
-Add progress output or run with an appropriate bounded timeout, then complete
-the integration before committing RV-06.
+Validation: `./tools/test-rp2350-fs-overlay` passes same-package duplicate,
+cross-package duplicate and 40-instance full-table checks;
+`./tools/test-install-status` passes all status mappings;
+`./tools/test-persistent-transaction` passes including the counter tag ABI
+regression. `./tools/build-pc --profile max_crypto`, ARM and RISC-V wrappers
+pass. Protected PC VPCD integration completed `TEST:SUMMARY pass=47 fail=0`,
+including duplicate rejection without registry mutation, clean fresh retry,
+restart, lifecycle and transient cases. On Pico 2 `2BED26ED20556535`, the
+current ARM image flashed and finite startup passed (`TEST:SUMMARY pass=1
+fail=0`); real GPPro duplicate INSTALL returned `6A80`, GET STATUS showed one
+original instance, a fresh instance installed successfully, and GET STATUS
+pagination passed (`TEST:SUMMARY pass=2 fail=0`). The temporary Multi package
+was fully removed. Physical cycle log:
+`artifacts/logs/cycle-choupi-20261104T020103Z.log`; physical APDU/cleanup log:
+`artifacts/logs/physical-get-status-multipage-20261104T020406Z.log`.
 
-Next: instrument pagination progress, rerun `PICO2_HOST_USB_ACCESS=1
-./tools/test-vpcd-multipackage` through the required elevated host-access path,
-and fix any newly exposed failure. Then run the overlay/install status tests,
-PC build and both architecture wrappers, refresh the authorized physical
-reader helper, and perform the physical validation if a reader is available.
-Preserve unrelated dirty worktree files and selectively stage the RV-06 source
-hunks.
+Counter tag correction was independently committed as `53f706e`; metadata is
+`cc306b3`. RV-06 metadata/progress commit is pending. Preserve unrelated dirty
+worktree changes, especially `AGENTS.md`, review artifacts, `choupi/src/heap.*`,
+physical probe sources, and unrelated `src/cap_load.cpp` PC wrapper,
+whitespace, CAP-load diagnostic and comment hunks. Next: continue with
+RV-20261103-07, automatic transaction abortion across applet lifecycle and
+reset boundaries.
 
 # Current session — cross-store CAP lifecycle recovery — 2026-11-04 02:07 CET
 

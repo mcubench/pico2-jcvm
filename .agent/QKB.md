@@ -118,6 +118,33 @@
 
 # Issue knowledge base — compacted 2026-10-29
 
+## Duplicate and full-registry INSTALL preflight — 2026-11-04
+
+- **Finding/fix:** CAP LOAD/INSTALL previously entered applet installation code
+  before the registry rejected a duplicate instance AID or exhausted package
+  instance capacity. `cap_store_preflight_package_instance()` now checks valid
+  instance AID, package existence, global AID uniqueness and the 40-instance
+  package limit before applet INSTALL. It rechecks publication invariants before
+  recording the install journal; a conflict after applet code rolls back the
+  persistent transaction. Replayed install journals must match the published
+  owner ID. PC and RP2350 stores use the same capacity rule. Conflict maps to
+  `6A80`.
+- **Offline regressions:** `./tools/test-rp2350-fs-overlay` passes same-package
+  and cross-package duplicate preflight, no-registry-mutation and full 40-entry
+  table tests. `./tools/test-install-status` passes all 12 status cases. The
+  complete PC VPCD multipackage suite passed `TEST:SUMMARY pass=47 fail=0`,
+  including duplicate response `6A80`, unchanged GET STATUS, fresh successful
+  retry, delete cleanup and restart/lifecycle cases.
+- **Physical evidence:** On Pico 2 `2BED26ED20556535`, upstream
+  `AlgTestApiMulti_305.cap` loaded. Reinstalling the existing instance AID
+  returned `6A80`; GPPro listing still showed exactly one A instance; a new C
+  instance using the same applet installed successfully. Physical GET STATUS
+  pagination returned each of four AIDs once (`TEST:SUMMARY pass=2 fail=0`).
+  Cleanup deleted A/B/C and the temporary package and verified removal. Logs:
+  `artifacts/logs/physical-get-status-multipage-20261104T020406Z.log` and
+  `artifacts/logs/cycle-choupi-20261104T020103Z.log`.
+- **Commits:** source/test `b00ddcf`; progress and handoff metadata pending.
+
 ## Persistent array identity counter tag violates filesystem tag ABI — 2026-11-04
 
 - **Failure:** Installing the first CAP through PC VPCD aborted during static

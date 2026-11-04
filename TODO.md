@@ -88,9 +88,10 @@ during the review.
 
 ### RV-20261103-06
 
-- [ ] **P1: Duplicate/full-registry INSTALL is rejected too late.**
+- [x] **P1: Duplicate/full-registry INSTALL is rejected too late.**
   Owner: PERSIST-03, GP-01. Evidence: Source; [review R06](docs/review_20261103.md#r06--install-checks-registry-conflicts-after-committing-applet-state).
   Acceptance: preflight/reserve registry capacity and AID ownership before invoking INSTALL, then recheck publication invariants and recover idempotently. Test duplicates in the same/different package and a full instance table; rejected requests must leave existing state untouched and future installation usable.
+  Progress: the shared CAP-store preflight now validates package presence, globally unique instance AID and package registry capacity before invoking the applet `INSTALL` method, then rechecks before journal publication; a failed recheck rolls back. PC and RP2350 stores enforce the same 40-instance limit, and recovery verifies journal owner identity. Duplicate/capacity conflict maps to `6A80`. Production overlay tests cover same-package and cross-package duplicate AIDs plus a full table. PC VPCD integration passes `TEST:SUMMARY pass=47 fail=0`, including unchanged registry and fresh retry. Physical Pico 2 `2BED26ED20556535` returned `6A80` for duplicate INSTALL, preserved one registry entry, installed a fresh instance, passed GET STATUS pagination, and removed the temporary package.
 
 ### RV-20261103-07
 
