@@ -18,6 +18,13 @@ install/startup path. Logs:
 `artifacts/logs/rv28-jcalgtest-vpcd-retry-20261104.log`, and
 `artifacts/logs/rv28-jcalgtest-vpcd-cpu-20261104.log` (all ignored artifacts).
 
+A same-shell process snapshot during another bounded attempt showed the PC
+emulator at 27.8% CPU and its guest at 39.1% CPU after roughly one second;
+they were executing rather than waiting on the VPCD socket. This single sample
+does not prove a loop. Dynamic branch checks decode from method start to each
+candidate target, so profile that path against the actual AlgTest methods.
+Latest short run log: `artifacts/logs/rv28-jcalgtest-vpcd-live2-20261104.log`.
+
 Next: instrument or bisect the bounded JCAlgTest install path using the
 required elevated route; keep all upstream CAP bytes unchanged. The current
 max_crypto applet-free Windows image remains

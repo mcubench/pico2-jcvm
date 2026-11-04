@@ -60,9 +60,16 @@
   enters remote contexts, but AlgTest installation still does not finish
   within the bounded run. Recent division-probe VPCD logs do connect, narrowing
   this to AlgTest installation/startup rather than all VPCD use.
+- **CPU sample:** In a short same-shell process snapshot, the PC emulator
+  process used 27.8% CPU and its guest process 39.1% CPU after about one
+  second. They were running rather than blocked on a socket. This is one
+  sample, not a sustained benchmark or proof of an infinite loop. Dynamic
+  branch validation currently decodes from the method start to each target;
+  measure this cost against the exact AlgTest methods before changing it.
 - **Next:** Instrument or bisect the install path and Descriptor-derived
-  metadata handling. Do not infer the CAP loader is fixed, and do not treat
-  restricted ptrace failure as a firmware result.
+  metadata handling, while profiling dynamic branch-target checks. Do not
+  infer the CAP loader is fixed, and do not treat restricted ptrace failure as
+  a firmware result.
 
 - **Finding:** After rebuilding the PC target, a one-pass VPCD test of the
   unchanged upstream `AlgTest_v1.8.2_jc305.cap` did not connect before its

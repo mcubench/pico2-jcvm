@@ -21921,3 +21921,14 @@
 - Decision: Keep RV-28 runtime acceptance open. Instrument or bisect the JCAlgTest install path through the elevated host-access route; preserve upstream CAP bytes and unrelated worktree changes.
 - Commit: `f8a6325` (primary diagnostic/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-20261104.log`, `artifacts/logs/rv28-jcalgtest-vpcd-retry-20261104.log`, `artifacts/logs/rv28-jcalgtest-vpcd-cpu-20261104.log` (ignored); regenerated ignored input `build/algtest-v182-load-code.bin`.
+
+## 2026-11-04 Capture emulator activity during JCAlgTest startup 5 minutes
+
+- Step/experiment: `rv-20261103-28-jcalgtest-vpcd-process-state`
+- When: '2026-11-04 21:55 CET' - '2026-11-04 22:00 CET'
+- Change: Captured a same-shell process snapshot during a short bounded VPCD attempt and added the observation to QKB and handoff. No source or CAP changes.
+- Validation: `PICO2_HOST_USB_ACCESS=1 timeout ... ./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 10 ...` remained in emulator startup and timed out before connection. At approximately one second, `ps` showed the emulator at 27.8% CPU and guest at 39.1% CPU; the processes were running rather than blocked in a wait state. This is one sample, not a sustained measurement. No physical device was used.
+- Result: Confirms active execution during the stall, but does not prove an infinite loop or identify the hot function. Dynamic branch-target validation decodes the method prefix for each target and is a candidate for profiling.
+- Decision: Profile the exact AlgTest install workload and branch checks next; keep the cause open until a reproducible measurement or trace identifies it.
+- Commit: pending; the primary commit reference is appended after commit.
+- Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-live2-20261104.log`; process snapshot was printed to the command output and not separately archived.
