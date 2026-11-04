@@ -26,8 +26,8 @@ Current applet-free max_crypto ARM image for external Windows testing:
 - Full regression log: `artifacts/logs/sio-cross-aid-vpcd-20261104T163028Z.log`.
 - Focused Util log: `artifacts/logs/sio-cross-aid-vpcd-20261104T163909Z.log`.
 
-RV-23 is ready for a scoped commit; the progress record currently says
-`pending`. Preserve unrelated worktree changes, including `AGENTS.md`, heap,
+RV-23 was committed as `e6f55b91560da357b7463d6bc82385cef175a47f`. Preserve
+unrelated worktree changes, including `AGENTS.md`, heap,
 CAP loader, review probes, crypto fixtures and upstream submodules. Physical
 validation was not requested. Next priority is RV-20261103-24: route
 non-atomic persistent array writes outside the transaction journal while

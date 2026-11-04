@@ -21594,7 +21594,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=5 fail=0`; it verified direct reset clears both arrays without a deselect callback and sibling applet switching still clears only `CLEAR_ON_DESELECT`. `git diff --check` passed. Authorized hardware refresh found no Pico PC/SC reader, so physical validation was not run.
 - Result: VPCD reported direct active reset with unchanged deselect counter, reset clears both arrays, sibling selection clears only the deselect array; 5/5 checks passed. ARM image endpoint `0x100e9218`, leaving 93,672 bytes. PC/ARM dependency warnings were present; no new warning attributed to changed source.
 - Decision: Keep RV-12 open for physical and inactive-context transient-key coverage; continue RV-13 restore lengths/storage next.
-- Commit: `pending`
+- Commit: `e6f55b91560da357b7463d6bc82385cef175a47f`
 - Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log` SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`; initial default-timeout attempts also logged as `artifacts/logs/same-cap-transient-vpcd-20261104T090735Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T090906Z.log`.
 
 ## 2026-11-04 Restore logical size and zero transient storage 35 minutes
