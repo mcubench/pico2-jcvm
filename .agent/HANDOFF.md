@@ -1,6 +1,7 @@
 # Current session — restore transient array shape and zero data — 2026-11-04 12:52 CET
 
-RV-20261103-13 implementation is ready to commit. Restored tagged transient
+RV-20261103-13 implementation is committed as `14b8375` (`Restore transient
+array lengths and zero values`). Restored tagged transient
 arrays now store their logical element count separately from serialized tag
 bytes, zero initialize their new data buffers, and reject backing allocations
 above 65,535 bytes before narrowing. Native tests cover byte, boolean, short,
@@ -17,7 +18,7 @@ contents. PC, ARM and RISC-V `max_crypto` builds passed; ARM image endpoint is
 one node but `pcsc_scan -r` exposed only Virtual PCD 00 00/01. RV-13 and
 physical verification of RV-11/RV-12 therefore remain open.
 
-The current implementation changes are uncommitted. The successful fresh
+The successful fresh
 restore log is `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log`
 (SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`).
 The first two restart attempts correctly failed because the test omitted VPCD
@@ -27,8 +28,8 @@ image. Preserve unrelated changes from the user/review work: `AGENTS.md`, docs
 and review artifacts, SDK submodules, `choupi/src/heap.*`, `src/cap_load.cpp`,
 physical/symmetric probes, and AlgTest logs/device data.
 
-After committing RV-13 source and progress, continue the next open priority in
-`TODO.md`; keep physical tests pending until `pcsc_scan -r` lists a real Pico.
+Continue with the next open priority in `TODO.md`; keep physical tests pending
+until `pcsc_scan -r` lists a real Pico.
 
 ---
 

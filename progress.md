@@ -21272,7 +21272,7 @@
   reader helper reported zero attached Pico 2 devices.
 - Decision: Continue CTX-01/03 audit, then return to the remaining CTX-02
   producers and physical acceptance when hardware is available.
-- Commit: `pending`
+- Commit: `14b8375`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T163223Z.log`,
   SHA-256 `61c7955c8b267f8fed7859a1c3f49aba65c76a114c609275de2efddee8eecc7a`.
 

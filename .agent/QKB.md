@@ -25,6 +25,7 @@
   needed to preserve the original Java Card array shape.
 - **Artifacts:** `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log`
   SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`.
+- **Commit:** `14b8375` (`Restore transient array lengths and zero values`).
 
 ---
 
