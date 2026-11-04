@@ -24,6 +24,7 @@
 #include "vm_filesystem.h"
 #include "usb_task_budget.hpp"
 #include "ccid_rx_framing.hpp"
+#include "ccid_apdu_route.hpp"
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -45,13 +46,7 @@ static_assert(!response_requires_zlp(63));
 static_assert(!response_requires_zlp(0));
 
 bool is_select_by_aid(const uint8_t *apdu, size_t apdu_length) {
-  if (apdu == nullptr || apdu_length < 5 || apdu[0] != 0x00 ||
-      apdu[1] != 0xa4 || apdu[2] != 0x04 || (apdu[3] & 0xef) != 0 ||
-      apdu[4] < 5 || apdu[4] > 16) {
-    return false;
-  }
-  return apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
-         apdu_length == 6u + static_cast<size_t>(apdu[4]);
+  return pico2_jcvm::ccid_is_select_by_aid(apdu, apdu_length);
 }
 
 // The standard CDC interface remains available for diagnostics. CCID is the
@@ -330,7 +325,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   tx_buffer[2] = static_cast<uint8_t>(payload_length >> 8);
   tx_buffer[3] = static_cast<uint8_t>(payload_length >> 16);
   tx_buffer[4] = static_cast<uint8_t>(payload_length >> 24);
-  tx_buffer[5] = 0; // slot
+  tx_buffer[5] = rx_buffer[5]; // echo requested slot
   tx_buffer[6] = sequence; // sequence number
   tx_buffer[7] = status;
   tx_buffer[8] = error;
@@ -452,6 +447,18 @@ void process_message(uint8_t rhport) {
     ++debug_xfr_block_count;
     const size_t apdu_length = rx_expected - 10;
     const uint8_t *apdu = rx_buffer + 10;
+    pico2_jcvm::CcidApduRoute route =
+        pico2_jcvm::route_ccid_xfr_block(
+            rx_buffer[5], apdu, apdu_length, slot_state == 0,
+            choupi_vm_is_applet_selected() != 0);
+    if (route == pico2_jcvm::CcidApduRoute::InvalidSlot) {
+      send_response(rhport, 0x80, nullptr, 0, 0x40, 0x05);
+      break;
+    }
+    if (route == pico2_jcvm::CcidApduRoute::PoweredOff) {
+      send_response(rhport, 0x80, nullptr, 0, 0x42);
+      break;
+    }
     debug_last_apdu_length =
         static_cast<uint8_t>(apdu_length < 5 ? apdu_length : 5);
     for (uint8_t index = 0; index < sizeof(debug_last_apdu_header); ++index) {
@@ -479,12 +486,20 @@ void process_message(uint8_t rhport) {
           apdu[4] == instance_aid_length &&
           std::memcmp(apdu + 5, cap_load_session.instanceAid(),
                       instance_aid_length) == 0;
-      const bool selecting_isd = apdu_length == 5 && apdu[2] == 0x04 &&
-                                  apdu[3] == 0x00 && apdu[4] == 0x00;
+      const bool selecting_isd =
+          route == pico2_jcvm::CcidApduRoute::SelectIsd;
       if (is_select_by_aid(apdu, apdu_length) || selecting_isd) {
         get_status_first_seen = false;
         (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
       }
+    }
+    if (route == pico2_jcvm::CcidApduRoute::SelectIsd) {
+      constexpr uint8_t isd_fci[] = {
+          0x6f, 0x0a, 0x84, 0x08, 0xa0, 0x00, 0x00,
+          0x01, 0x51, 0x00, 0x00, 0x00, 0x90, 0x00};
+      std::memcpy(response, isd_fci, sizeof(isd_fci));
+      send_response(rhport, 0x80, response, sizeof(isd_fci));
+      break;
     }
     // Card Recognition Data is used to discover the card and its secure
     // channel before authentication, so expose GET DATA on the open channel.
@@ -541,6 +556,13 @@ void process_message(uint8_t rhport) {
       send_response(rhport, 0x80, response, response_length);
       break;
     }
+    if (!secure_channel.active() &&
+        route == pico2_jcvm::CcidApduRoute::ProtectedCardManager) {
+      response[0] = 0x69;
+      response[1] = 0x82;
+      send_response(rhport, 0x80, response, response_length);
+      break;
+    }
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
       size_t data_length = 0;
       if (secure_channel.initializeUpdate(apdu, apdu_length, response,
@@ -571,6 +593,14 @@ void process_message(uint8_t rhport) {
     const bool authenticated = secure_channel.active() &&
                               secure_channel.verifyCommand(
                                   apdu, apdu_length, command_data_length);
+    route = pico2_jcvm::authorize_ccid_apdu_route(
+        route, secure_channel.active(), authenticated);
+    if (route == pico2_jcvm::CcidApduRoute::AuthenticationFailed) {
+      response[0] = 0x69;
+      response[1] = 0x82;
+      send_response(rhport, 0x80, response, response_length);
+      break;
+    }
     if (authenticated && apdu_length >= 4) {
       const uint8_t instruction = apdu[1];
       const uint8_t p1 = apdu[2];
@@ -775,20 +805,12 @@ void process_message(uint8_t rhport) {
       response[0] = 0x69;
       response[1] = 0x82;
     }
-    // GlobalPlatformPro selects the default applet (the ISD) using a
-    // case-1-style SELECT with an empty AID before issuing card-manager APDUs.
-    // This minimal card-manager response supplies ISD discovery; applet install
-    // and Java Card selection/dispatch are separate unfinished paths.
-    if (apdu_length == 5 && apdu[0] == 0x00 && apdu[1] == 0xa4 &&
-        apdu[2] == 0x04 && apdu[3] == 0x00 && apdu[4] == 0x00) {
-      constexpr uint8_t isd_fci[] = {
-          0x6f, 0x0a, 0x84, 0x08, 0xa0, 0x00, 0x00,
-          0x01, 0x51, 0x00, 0x00, 0x00};
-      std::memcpy(response, isd_fci, sizeof(isd_fci));
-      response[sizeof(isd_fci)] = 0x90;
-      response[sizeof(isd_fci) + 1] = 0x00;
-      response_length = sizeof(isd_fci) + 2;
-    } else if (is_select_by_aid(apdu, apdu_length)) {
+    if (authenticated &&
+        route == pico2_jcvm::CcidApduRoute::ProtectedCardManager) {
+      send_response(rhport, 0x80, response, response_length);
+      break;
+    }
+    if (route == pico2_jcvm::CcidApduRoute::SelectApplet) {
       (void)cap_load_session.restoreInstalledForAid(apdu + 5, apdu[4]);
       const uint8_t installed_aid_length =
           cap_load_session.instanceAidLength();
@@ -899,7 +921,8 @@ void process_message(uint8_t rhport) {
         response[1] = 0x82;
         response_length = 2;
       }
-    } else if (apdu_length <= UINT16_MAX) {
+    } else if (route == pico2_jcvm::CcidApduRoute::Applet &&
+               apdu_length <= UINT16_MAX) {
       uint16_t applet_response_length = 0;
       choupi_reader_led_activity();
       uint16_t status = 0xffff;
@@ -917,6 +940,10 @@ void process_message(uint8_t rhport) {
           response_length = 2;
         }
       }
+    } else if (route == pico2_jcvm::CcidApduRoute::NoApplet) {
+      response[0] = 0x69;
+      response[1] = 0x99;
+      response_length = 2;
     }
     send_response(rhport, 0x80, response, response_length);
     break;

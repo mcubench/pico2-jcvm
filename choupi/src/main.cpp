@@ -1053,6 +1053,11 @@ void choupi_vm_clear_selected_applet(void) {
   selected_applet_is_active = false;
 }
 
+uint8_t choupi_vm_is_applet_selected(void) {
+  return selected_applet_context != nullptr && selected_applet_is_active ? 1
+                                                                        : 0;
+}
+
 void choupi_vm_forget_deleted_applet_contexts(
     const uint8_t *aid, const uint8_t aid_length,
     const uint8_t package_id, const uint8_t deleting_package) {

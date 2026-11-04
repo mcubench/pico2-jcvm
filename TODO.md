@@ -223,6 +223,7 @@ during the review.
 - [ ] **P2: CCID double dispatch and explicit-ISD selection mismatch.**
   Owner: GP-01, HOST-01. Evidence: Source; [review R25](docs/review_20261103.md#r25--physical-card-management-and-applet-routing-have-different-contracts).
   Acceptance: define one card-session dispatch contract with exactly one route per command, explicit ISD identity and activation/slot checks. Test GP commands while an applet is selected, failed authentication, explicit/default ISD selection and APDUs while powered off. Cover the production CCID path, not just helper encoders.
+  Progress: Added a shared route decision used by production CCID dispatch. It resolves default/explicit ISD selection, applet SELECT, public/protected card-manager APDUs, selected/no-applet routing, SCP authentication failure, slot 0 validation and powered-off rejection. Protected GP commands now return through their card-manager response path without falling through to applet dispatch. The shared route test passes 12/12; ARM and RISC-V builds pass. Physical CCID runtime acceptance remains open.
 
 ### RV-20261103-26
 

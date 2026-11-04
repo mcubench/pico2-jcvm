@@ -21753,3 +21753,14 @@
 - Decision: Close RV-24 and proceed to RV-25, defining a single CCID/card-session dispatch contract. Do not claim physical validation.
 - Commit: `2688698c9a20204f90c13a46d280b42345cea253`
 - Artifacts/logs: `artifacts/logs/rv24-nonatomic-vpcd-20261104.log` SHA-256 `58cdfabe3db6561fa8236e50e126c6467437c26bf15b84a88fd09c244a2d0f66`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Route CCID commands once — 79 minutes
+
+- Step/experiment: `rv-20261103-25-production-ccid-routing-first-pass`
+- When: '2026-11-04 19:10 CET' - '2026-11-04 20:29 CET'
+- Change: Added a shared CCID APDU route classifier and wired it into the production CCID path. Default and explicit ISD SELECT now use the card-manager response; public/protected GP commands are separated from applet dispatch; failed SCP authentication returns before applet dispatch; nonzero XfrBlock slots and inactive slots are rejected; responses echo the requested slot. Added route unit tests.
+- Validation: `./tools/test-ccid-apdu-route` passed `TEST:SUMMARY pass=12 fail=0`; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. No physical CCID or PCSC test was performed; production USB behavior remains unverified.
+- Result: The classifier has one route for explicit/default ISD selection, applet selection, public/protected card-manager APDUs, active applet APDUs, no-applet APDUs, invalid slots, powered-off state and SCP authentication failure. Current firmware-only ARM UF2 is 1,918,464 bytes, SHA-256 `689bbc0985df4e3096012c42cbabe3c7198199109f0c9f70acfbf80c909565e7`; endpoint `0x100EA1D4`, leaving 89,644 bytes. Current applet-free empty-card UF2 is 4,015,616 bytes, SHA-256 `6a4e25626a465b125ecd89a40a442c78a8111984f9876c1685acce57c6c2e50e`. It contains all 4,096 0xFF blocks from `0x10100000` through `0x101FFFFF` and picotool recognizes RP2350 ARM Secure.
+- Decision: Keep RV-25 open until CCID response/status and end-to-end routing are validated through production runtime. Do not claim physical acceptance.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-ccid-apdu-route`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.

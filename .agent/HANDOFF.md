@@ -1,3 +1,44 @@
+# Current session — RV-25 production CCID routing first pass — 2026-11-04 20:23 CET
+
+RV-20261103-25 is in progress. Added `src/ccid_apdu_route.hpp`, a shared
+route decision used directly by `src/ccid_device.cpp`. It distinguishes
+default/explicit ISD SELECT, applet SELECT, public/protected GP manager
+commands, applet/no-applet APDUs, authentication failure, invalid CCID slot,
+and powered-off slot. The CCID driver rejects invalid/inactive XfrBlock
+requests, returns GP responses before applet dispatch, returns `6982` for
+failed SCP authentication, handles explicit ISD AID selection with its FCI,
+and echoes the request slot in CCID responses.
+
+`./tools/test-ccid-apdu-route` passes `TEST:SUMMARY pass=12 fail=0`.
+`./tools/build arm --profile max_crypto` and `./tools/build riscv --profile
+max_crypto` pass. The RISC-V wrapper builds the VM core; the full production
+CCID device build is ARM only. No physical CCID/PCSC runtime validation has
+been performed. RV-25 must remain open until route behavior and CCID status
+are exercised through production runtime, including failed authentication and
+powered-off APDUs.
+
+Latest applet-free max_crypto ARM binary for external Windows testing:
+
+- Empty-card image: `build/arm/pico2_choupi_max_crypto_empty_card.uf2`,
+  4,015,616 bytes, SHA-256
+  `6a4e25626a465b125ecd89a40a442c78a8111984f9876c1685acce57c6c2e50e`.
+- Firmware-only image: `build/arm/pico2_choupi.uf2`, 1,918,464 bytes,
+  SHA-256 `689bbc0985df4e3096012c42cbabe3c7198199109f0c9f70acfbf80c909565e7`.
+- Firmware endpoint `0x100EA1D4`, 89,644 bytes remain before storage at
+  `0x10100000`; combined image has all 4,096 erase blocks through
+  `0x101FFFFF`. Picotool reports RP2350 ARM Secure. The image has no bundled
+  CAP/applet and was not flashed or runtime-tested.
+- Binary details: `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+RV-24 is committed as `2688698c9a20204f90c13a46d280b42345cea253`, with
+metadata follow-up `35fc5aa`. RV-25 source/docs/tests are uncommitted. Preserve
+all unrelated dirty files, especially AGENTS.md, heap and CAP loader edits,
+review artifacts, crypto probes and upstream submodules. Stage only RV-25 files
+when its current step is complete. No user-provided CAP or Java Card API source
+was modified.
+
+---
+
 # Current session — RV-24 non-atomic persistent writes — 2026-11-04 19:10 CET
 
 RV-20261103-24 is implemented in native C++ and validated. `Util` copy/fill

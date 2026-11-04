@@ -6004,3 +6004,18 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Scope limit:** VPCD tests validate transaction abort behavior. They do not
   establish power-loss durability while the filesystem transaction overlay is
   active.
+
+## Production CCID route decisions — 2026-11-04
+
+- **Finding:** The Pico CCID driver previously ran card-manager handling and
+  then continued into the applet dispatch chain. It only recognized the
+  default empty-AID ISD SELECT, and did not reject XfrBlock for an inactive
+  slot or invalid slot number.
+- **Viable solution:** Use one tested route classifier in the production CCID
+  path. Resolve default and explicit ISD AID SELECT before applet SELECT;
+  route known GP commands to the manager; gate protected commands on SCP03
+  authentication and return immediately; and reject inactive/invalid slots
+  before APDU parsing/dispatch. Echo the requested slot in CCID responses.
+- **Validation:** Shared route tests pass 12/12 and ARM/RISC-V builds pass.
+  This does not validate USB CCID response status or end-to-end routing on a
+  physical token; that remains required before RV-25 closes.
