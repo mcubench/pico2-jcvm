@@ -21919,5 +21919,5 @@
 - Validation: Ran bounded VPCD install/select attempts using `PICO2_HOST_USB_ACCESS=1` and the elevated host-access path. Both timed out before `VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED`. A direct restricted emulator run failed at `PTRACE_ATTACH` with `Operation not permitted`; elevated execution reached MPU/FS initialization and remote contexts. Recent division-probe logs connect successfully. The full upstream CAP component set was inspected; no physical USB or real token was used.
 - Result: Descriptor omission alone does not explain the AlgTest install/startup stall. The corrected diagnostic LOAD-code is 30,836 bytes, SHA-256 `f9b0b23a0caa6adce7867d16feaa6c379d680254cf88eed08768b905d0366e5b`. No implementation or hardware validation was completed.
 - Decision: Keep RV-28 runtime acceptance open. Instrument or bisect the JCAlgTest install path through the elevated host-access route; preserve upstream CAP bytes and unrelated worktree changes.
-- Commit: pending; the primary commit reference is appended after commit.
+- Commit: `f8a6325` (primary diagnostic/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-20261104.log`, `artifacts/logs/rv28-jcalgtest-vpcd-retry-20261104.log`, `artifacts/logs/rv28-jcalgtest-vpcd-cpu-20261104.log` (ignored); regenerated ignored input `build/algtest-v182-load-code.bin`.
