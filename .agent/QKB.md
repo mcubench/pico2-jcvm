@@ -1,3 +1,25 @@
+# CBC `doFinal()` must reset the active IV to zero — fixed 2026-11-04
+
+- **Finding:** `Cipher.doFinal()` copied the caller-supplied initialization IV
+  back into the active CBC chaining state. A second operation on the same
+  Cipher therefore repeated the original IV instead of starting from zero.
+- **Viable fix:** After successful CBC completion, zero only the active IV
+  array. Keep the saved initialization IV unchanged so an explicit subsequent
+  `init()` can restore the caller-supplied value. Keep AES-CTR's counter and
+  keystream reset behavior on its separate path.
+- **Validation:** PC VPCD AES and DES vectors verify first use with nonzero IV,
+  second use against an independently computed zero-IV result, and explicit
+  reinitialization against the supplied-IV result. The complete symmetric
+  suite passes `TEST:SUMMARY pass=99 fail=0`; PC, ARM and RISC-V `max_crypto`
+  builds pass. The test-only retained Cipher probe accepts both
+  `UNINITIALIZED_KEY` after deselection and `INVALID_INIT` after card reset.
+  No physical-token validation was run.
+- **Artifact:** Refreshed max empty-card ARM UF2 is
+  `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; it clears all 1 MiB of
+  card storage and must be treated as destructive.
+
+---
+
 # Native cryptographic intermediate state must not be persistent — fixed 2026-11-04
 
 - **Finding:** MessageDigest length, Cipher mode/initialization/buffering and

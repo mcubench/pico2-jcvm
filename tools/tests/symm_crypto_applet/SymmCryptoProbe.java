@@ -25,6 +25,8 @@ import javacardx.crypto.Cipher;
 /** Test applet that exposes one deterministic cipher or MAC operation per APDU. */
 public final class SymmCryptoProbe extends Applet {
   private static MessageDigest retainedDigest;
+  private static Cipher retainedCbcCipher;
+  private static Key retainedCbcKey;
   private SymmCryptoProbe() { register(); }
 
   public static void install(byte[] data, short offset, byte length) {
@@ -72,6 +74,10 @@ public final class SymmCryptoProbe extends Applet {
         output[0] = (byte)0x62;
         outputLength = (short)1;
       }
+    } else if (instruction == (byte)0x2d) {
+      output = new byte[(short)32];
+      outputLength = runCbcLifecycle(algorithm, operation, input,
+                                     inputLength, output);
     } else if (instruction == (byte)0x12) {
       output = new byte[(short)64];
       outputLength = runDigest(algorithm, input, inputLength, output);
@@ -803,6 +809,50 @@ public final class SymmCryptoProbe extends Applet {
       cipher.init(key, mode);
     }
     return cipher.doFinal(input, (short)0, inputLength, output, (short)0);
+  }
+
+  private static short runCbcLifecycle(byte algorithm, byte operation,
+                                       byte[] input, short inputLength,
+                                       byte[] output) {
+    boolean aes = algorithm == 13;
+    if (!aes && algorithm != 1)
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    short blockLength = (short)(aes ? 16 : 8);
+    short inputOffset = 0;
+    if (operation == 0) {
+      if (inputLength < (short)(blockLength * 2))
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      if (aes) {
+        AESKey key = (AESKey)KeyBuilder.buildKey(KeyBuilder.TYPE_AES,
+            KeyBuilder.LENGTH_AES_128, false);
+        key.setKey(new byte[] {1, 2, 3, 4, 5, 6, 7, 8,
+            9, 10, 11, 12, 13, 14, 15, 16}, (short)0);
+        retainedCbcKey = key;
+      } else {
+        DESKey key = (DESKey)KeyBuilder.buildKey(KeyBuilder.TYPE_DES,
+            KeyBuilder.LENGTH_DES, false);
+        key.setKey(new byte[] {(byte)0x13, (byte)0x34, (byte)0x57,
+            (byte)0x79, (byte)0x9b, (byte)0xbc, (byte)0xdf,
+            (byte)0xf1}, (short)0);
+        retainedCbcKey = key;
+      }
+      retainedCbcCipher = Cipher.getInstance(algorithm, false);
+      inputOffset = blockLength;
+    } else if (operation != 1 && operation != 2) {
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    }
+    if (retainedCbcCipher == null || retainedCbcKey == null)
+      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+    if (operation == 0 || operation == 2) {
+      if (inputLength < (short)(blockLength * 2))
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      retainedCbcCipher.init(retainedCbcKey, Cipher.MODE_ENCRYPT,
+          input, (short)0, blockLength);
+      inputOffset = blockLength;
+      inputLength -= blockLength;
+    }
+    return retainedCbcCipher.doFinal(input, inputOffset, inputLength,
+                                     output, (short)0);
   }
 
   private static boolean isCbc(byte algorithm) {

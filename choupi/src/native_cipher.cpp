@@ -488,14 +488,17 @@ std::vector<unsigned char> transformSymmetric(JC_Instance &cipher,
 }
 
 void restoreInitialIv(JC_Instance &cipher) {
+  const uint8_t algorithm = static_cast<uint8_t>(cipher.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
   auto initial = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIV);
   auto current = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_IV);
-  for (uint16_t i = 0; i < initial->size(); ++i)
-    current->setByteEntry(i, initial->getByteEntry(i));
-  const uint8_t algorithm = static_cast<uint8_t>(cipher.getField_Byte(
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+  const bool cbc = (algorithm >= 1 && algorithm <= 4) || algorithm == 13 ||
+                   (algorithm >= 22 && algorithm <= 24);
+  for (uint16_t i = 0; i < current->size(); ++i) {
+    current->setByteEntry(i, cbc ? 0 : initial->getByteEntry(i));
+  }
   if (algorithm == 0xF0) {
     auto stream = byteArray(cipher,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);

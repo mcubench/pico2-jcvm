@@ -157,9 +157,10 @@ during the review.
 
 ### RV-20261103-16
 
-- [ ] **P2: Reused CBC object starts with wrong IV.**
+- [x] **P2: Reused CBC object starts with wrong IV.**
   Owner: API-03, PROFILE-01. Evidence: Source; [review R16](docs/review_20261103.md#r16--cbc-dofinal-restores-the-supplied-iv-instead-of-zero).
   Acceptance: implement the selected API version's algorithm-specific post-final state. Compare the second AES/DES CBC result to a newly initialized zero-IV engine, then verify that an explicit new `init()` restores the supplied IV. Keep CTR policy separate.
+  Progress: Successful AES and DES CBC `doFinal()` calls now clear the active IV to zero while leaving the saved initialization IV available. CTR counter restoration remains separate. VPCD vectors cover first use with a nonzero IV, reuse with a zero-IV reference, and explicit reinitialization with the original IV; the symmetric suite passes 99/99 phases. ARM and RISC-V max-profile builds pass. No physical-token run was performed.
 
 ### RV-20261103-17
 

@@ -68,6 +68,31 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
         # Java Card Cipher therefore retains the complete padded output.
         decrypted = padded if padding == "m1" else plaintext
         results.append((encoded, decrypted + b"\x90\x00", f"cipher {algorithm} decrypt"))
+
+    for algorithm, aes, block, key_bytes, iv in (
+        (13, True, 16, AES_KEY, bytes.fromhex("00112233445566778899aabbccddeeff")),
+        (1, False, 8, DES_KEY, bytes.fromhex("0102030405060708")),
+    ):
+        first = bytes(range(block))
+        second = bytes((0x30 + index) & 0xFF for index in range(block))
+        primitive = algorithms.AES(key_bytes) if aes else TripleDES(key_bytes)
+        expected_first = crypt(primitive, modes.CBC(iv), first, True)
+        expected_zero_iv = crypt(primitive, modes.CBC(bytes(block)), second, True)
+        expected_supplied_iv = crypt(primitive, modes.CBC(iv), second, True)
+
+        def lifecycle_apdu(operation: int, data: bytes) -> bytes:
+            return bytes((0x80, 0x2D, algorithm, operation, len(data))) + data + b"\x00"
+
+        results.append((lifecycle_apdu(0, iv + first),
+                        expected_first + b"\x90\x00",
+                        f"CBC {algorithm} first doFinal uses supplied IV"))
+        results.append((lifecycle_apdu(1, second),
+                        expected_zero_iv + b"\x90\x00",
+                        f"CBC {algorithm} reused doFinal starts with zero IV"))
+        results.append((lifecycle_apdu(2, iv + second),
+                        expected_supplied_iv + b"\x90\x00",
+                        f"CBC {algorithm} explicit init restores supplied IV"))
+
     return results
 
 

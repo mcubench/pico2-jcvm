@@ -1,3 +1,42 @@
+# Current session — RV-16 CBC post-final IV state fixed — 2026-11-04 13:20 CET
+
+RV-20261103-16 is implemented in the current worktree. After successful AES or
+DES CBC `doFinal()`, native Cipher now zeros the active chaining IV and keeps
+the original initialization IV for an explicit later `init()`. AES-CTR retains
+its previous counter reset path.
+
+Validation passed: `PICO2_HOST_USB_ACCESS=1
+./tools/test-symm-crypto-vpcd` reports `TEST:SUMMARY pass=99 fail=0`, including
+AES/DES vectors for first use with a nonzero IV, repeated use against a
+zero-IV reference, and a new `init()` against the supplied IV. ARM and
+RISC-V `max_crypto` builds passed; the PC VPCD build and test CAP conversion
+passed. No physical token was flashed or tested.
+
+For a clean Windows test card, the current ARM `max_crypto` combined UF2 is
+`build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,009,472 bytes, SHA-256
+`7f7538c0b83faf826682848f39d4148cb4530f2fc11c95731f52bba33e03357a`. It
+contains current firmware plus `0xFF` storage coverage at
+`0x10100000`–`0x101FFFFF` and erases CAPs/filesystem state when flashed. The
+firmware-only UF2 is 1,912,320 bytes, SHA-256
+`34e95e0e1504add5130f5a0d7d11c102f939708ce3fa82699e33e7d6d7a8680e`; it does
+not erase card storage. The firmware ends at `0x100E9590`, leaving 92,784
+bytes before the storage region.
+
+The latest passing suite log is
+`artifacts/logs/symm-crypto-kat-vpcd-20261104T120640Z.log` (SHA-256
+`1e67eb5eec3a133139518b2b10f4f83feacc038b431e60037ad12112162a6a4f`). The
+refreshed image details are in
+`artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+Continue with RV-20261103-17, incremental digest behavior beyond the current
+2,046-byte cumulative input cap. Preserve unrelated dirty worktree changes.
+In particular, `choupi/src/heap.cpp`, symmetric probe sources and associated
+test scripts contain other in-flight changes. Stage only the RV-16 native CBC
+change and the new CBC test additions from shared files. The RV-16 source and
+progress commits are still pending.
+
+---
+
 # Current session — RV-15 crypto session-state lifecycle closed — 2026-11-04 12:51 CET
 
 RV-20261103-15 is implemented and validated in the current worktree. Native
