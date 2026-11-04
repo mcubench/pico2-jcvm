@@ -1,3 +1,31 @@
+# Current session — persistent array identity and alias preservation — 2026-11-04 01:01 CET
+
+Implemented RV-20261103-02 in `choupi/src/jc_handlers/flashmemory.cpp`.
+Persistent array body keys retain the owning static-field prefix but append a
+reserved `0xffff` marker and a durable 32-bit identity. A versioned counter
+record is saved using the transactional persistent-tag writer. This prevents a
+replacement array from overwriting data that is still reachable through an
+older alias. The production persistence harness now tests reassignment,
+fresh-heap restore, collection, rollback, and identity non-reuse.
+
+Validation passed: `./tools/test-persistent-transaction`
+(`TEST:SUMMARY fail=0`), the review real-heap probe
+(`ARRAY_RETARGET old=0003 new=0005 old_byte=11 alias_byte=11 expected=11/11`),
+and ARM/RISC-V `max_crypto` builds. The physical cycle
+`PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial
+2BED26ED20556535` flashed and verified the image on 2BED and the finite monitor
+reported `TEST:SUMMARY pass=1 fail=0`. No CAP-level persistent-alias scenario
+was exercised on hardware. Updated current max ARM UF2: 1,905,664 bytes, SHA-256
+`96d1f3486ba9fd910d58c0ede2e5dfc863f562700e44a34037cd93e50e1a0f26`, ending at
+`0x100e8990` with 95,856 bytes remaining. It contains no bundled applet;
+reflashing does not erase applets already persisted on the token.
+
+Implementation commit and its metadata follow-up are still pending. Stage only
+RV-02 source/tests and its TODO/QKB/HANDOFF/progress/artifact records, preserving
+all other dirty changes. Then begin RV-20261103-03 (aborted static-reference
+cache restoration) as a new logical step. Physical access must continue using
+`PICO2_HOST_USB_ACCESS=1` and elevated host access on the first USB command.
+
 # Current session — CCID RX bounds and physical failover — 2026-11-04 00:43 CET
 
 Implemented RV-20261103-01 in the production CCID receive path. New

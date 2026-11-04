@@ -65,6 +65,14 @@ extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
   *length = 6;
 }
 
+extern "C" void path_static(uint8_t package, uint8_t field,
+                             uint8_t (*tag)[128], uint8_t *length) {
+  (*tag)[0] = 0x02;
+  (*tag)[1] = package;
+  (*tag)[2] = field;
+  *length = 3;
+}
+
 extern "C" void path_static16(uint8_t package, uint16_t static_id,
                                uint8_t (*tag)[128], uint8_t *length) {
   (*tag)[0] = 0x02;

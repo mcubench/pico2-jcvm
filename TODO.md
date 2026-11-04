@@ -60,9 +60,10 @@ during the review.
 
 ### RV-20261103-02
 
-- [ ] **P1: Replacing an array overwrites older aliases.**
+- [x] **P1: Replacing an array overwrites older aliases.**
   Owner: PERSIST-01/02. Evidence: Reproduced; [review R02](docs/review_20261103.md#r02--persistent-array-replacement-overwrites-an-older-objects-identity).
   Acceptance: assign durable identities per object allocation/generation; make fields point to those identities. Preserve A until its last reference is gone. Test replacement, clearing, aliases read in either order, GC, transactions and fresh-heap restore.
+  Progress: persistent array body tags now include a monotonically increasing durable identity under the original field prefix. Counter writes participate in transaction snapshots. Production persistence tests cover reassignment with an older alias, fresh-heap restore, GC, abort, and non-reuse after abort; `./tools/test-persistent-transaction` passes. ARM and RISC-V max_crypto builds pass. Physical ARM flash verification and finite serial passed on Pico 2 `2BED26ED20556535` (`TEST:SUMMARY pass=1 fail=0`). No CAP-level alias scenario was run on hardware.
 
 ### RV-20261103-03
 

@@ -1,3 +1,28 @@
+## Persistent array replacement needs durable object identity — 2026-11-04
+
+- **Finding/fix:** Array body storage keyed only by the first static field could
+  be overwritten when that field was cleared and assigned a new array, even
+  while another static field still aliased the old array. Persistent array body
+  tags now append a reserved `0xffff` marker and a 32-bit monotonic identity
+  while retaining the owning field prefix. A versioned counter is persisted
+  using the same snapshot-aware writer as other persistent fields; failed or
+  aborted writes do not make an identity reusable.
+- **Regression coverage:** `./tools/test-persistent-transaction` passes. The
+  test restores both old and replacement arrays in a fresh heap (`0x11` and
+  `0x22`), verifies collector reachability/reclamation, aborts a retargeting
+  transaction and confirms the old aliases remain intact, then verifies a new
+  identity is used after abort. The focused real-heap probe reports
+  `ARRAY_RETARGET old=0003 new=0005 old_byte=11 alias_byte=11 expected=11/11`.
+- **Build/hardware:** ARM and RISC-V `max_crypto` wrapper builds passed. The
+  updated ARM image flashed and verified on Pico 2 `2BED26ED20556535`; the
+  finite serial monitor passed with `TEST:SUMMARY pass=1 fail=0`. No CAP-level
+  persistent-alias exercise was performed on hardware.
+- **Firmware artifact:** The current max_crypto ARM empty-firmware UF2 is
+  1,905,664 bytes, SHA-256
+  `96d1f3486ba9fd910d58c0ede2e5dfc863f562700e44a34037cd93e50e1a0f26`, ending
+  at `0x100e8990` with 95,856 bytes remaining in the firmware window. Flashing
+  firmware does not erase stored CAPs.
+
 # Issue knowledge base — compacted 2026-10-29
 
 ## CCID receive reset/BOOTSEL and failover — 2026-11-03

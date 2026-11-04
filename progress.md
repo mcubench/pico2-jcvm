@@ -21451,3 +21451,15 @@
 - Decision: Keep API-01 open for current-image physical Security/Crypto sweeps and allocator-state capture on any future unexpected failure; continue with API-03 when a physical Pico is available.
 - Commit: `26a05bf`
 - Artifacts/logs: `artifacts/results/deploy/vpcd-full-security-current-max-20261103/security.csv` SHA-256 `7124660ce335ba7bd5034e67a30a45c45e8da1b65030cc36e5fc668b05d5e776`; `security-client-raw.log` SHA-256 `8b81f0836159f77e44eb3b36d8f897fc488f9aafc952dfabf7c95590d3b4477e`; emulator and runner hashes in `.agent/QKB.md`; `AlgTestApiSecurity_305.cap` SHA-256 `bf9fb13fa342aa6c7739eb5750897011d25801d1db50ee9a75e7a714d11fef70`.
+
+
+## 2026-11-04 Preserve persistent array aliases across field replacement 17 minutes
+
+- Step/experiment: `rv-20261103-02-persistent-array-identity`
+- When: '2026-11-04 00:44 CET' - '2026-11-04 01:01 CET'
+- Change: Persistent array body records now carry a durable 32-bit identity beneath the original field-tag prefix. A versioned persistent counter allocates identities through the transaction-aware writer. Added production persistence regressions for clearing/replacing an aliased field, fresh-heap restore, GC, transaction abort, and avoiding identity reuse after abort.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; review real-heap probe `./build/review-20261103/persistence_probe array-retarget` passed (`old=0003 new=0005 old_byte=11 alias_byte=11`). `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed flash verification and finite serial monitoring on Pico 2 2BED (`TEST:SUMMARY pass=1 fail=0`).
+- Result: Existing aliases retain the old array across reassignment; the new array restores independently. GC preserves both while referenced, abort restores the original field graph, and the next committed allocation uses a fresh ID. Current ARM UF2: 1,905,664 bytes, SHA-256 `96d1f3486ba9fd910d58c0ede2e5dfc863f562700e44a34037cd93e50e1a0f26`, end `0x100e8990`, 95,856 bytes remaining. CAP-level alias behavior was not tested on hardware.
+- Decision: Close RV-20261103-02. Continue with RV-20261103-03, aborted static reference cache restoration.
+- Commit: pending implementation commit and metadata follow-up
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261103T235906Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; review probe output recorded in `.agent/QKB.md`.

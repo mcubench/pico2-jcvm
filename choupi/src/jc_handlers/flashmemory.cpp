@@ -54,6 +54,9 @@ namespace {
 
 constexpr uint8_t kPersistentObjectAlias = 0xFE;
 constexpr uint8_t kPersistentArrayAlias = 0xFD;
+constexpr uint8_t kPersistentArrayIdentityVersion = 1;
+constexpr uint8_t kPersistentArrayIdentityCounterTagBytes[] = {
+    0x04, 'J', 'C', 'V', 'M', 'A', 'R', 'R', 'I', 'D'};
 constexpr uint8_t kMaxPersistentAliasDepth = 32;
 constexpr size_t kMaxPersistentObjectDepth = TAG_MAX_LENGTH / 2 + 1;
 constexpr uint16_t kMaxCommitCapacity = 0x7fff;
@@ -284,17 +287,63 @@ bool is_persistent_array_type(const FieldType type) noexcept {
   }
 }
 
-// Persistent array contents need an identity tag independent of the field
-// that currently references the array. Reserve the impossible array element
-// index 0xffff as a child tag for that body record. Array element indexes are
-// at most 0xfffe (the largest valid index in a 65535-element array).
-fs::Tag persistent_array_body_tag(const fs::Tag &field_tag) {
-  if (field_tag.len > TAG_MAX_LENGTH - 2) {
+uint32_t allocate_persistent_array_identity() {
+  static bool initialized = false;
+  static uint32_t last_identity = 0;
+
+  fs::Tag counter_tag;
+  counter_tag.len = sizeof(kPersistentArrayIdentityCounterTagBytes);
+  std::memcpy(counter_tag.value, kPersistentArrayIdentityCounterTagBytes,
+              counter_tag.len);
+
+  if (!initialized) {
+    if (fs_exists(counter_tag.value, counter_tag.len) != 0) {
+      const uint8_t *stored_counter = nullptr;
+      uint32_t stored_length = 0;
+      if (fs_read_inplace(counter_tag.value, counter_tag.len, &stored_counter,
+                          &stored_length) != 0 ||
+          stored_counter == nullptr || stored_length != 5 ||
+          stored_counter[0] != kPersistentArrayIdentityVersion) {
+        throw Exceptions::SecurityException;
+      }
+      last_identity = (static_cast<uint32_t>(stored_counter[1]) << 24) |
+                      (static_cast<uint32_t>(stored_counter[2]) << 16) |
+                      (static_cast<uint32_t>(stored_counter[3]) << 8) |
+                      static_cast<uint32_t>(stored_counter[4]);
+    }
+    initialized = true;
+  }
+
+  if (last_identity == UINT32_MAX) throw Exceptions::IOException;
+  const uint32_t next_identity = last_identity + 1;
+  const uint8_t encoded_counter[] = {
+      kPersistentArrayIdentityVersion,
+      static_cast<uint8_t>(next_identity >> 24),
+      static_cast<uint8_t>(next_identity >> 16),
+      static_cast<uint8_t>(next_identity >> 8),
+      static_cast<uint8_t>(next_identity)};
+  write_persistent_tag_or_throw(counter_tag, encoded_counter,
+                                sizeof(encoded_counter));
+  last_identity = next_identity;
+  return next_identity;
+}
+
+// Persistent array contents need an identity independent of the field's
+// current value. Keep the original field tag as a prefix for owner-scoped
+// enumeration and deletion. The reserved 0xffff index marks the body; the
+// following 32-bit identity distinguishes successive objects.
+fs::Tag persistent_array_body_tag(const fs::Tag &field_tag,
+                                  uint32_t identity) {
+  if (field_tag.len > TAG_MAX_LENGTH - 6) {
     throw Exceptions::IOException;
   }
   fs::Tag body_tag = field_tag;
   body_tag.value[body_tag.len++] = 0xff;
   body_tag.value[body_tag.len++] = 0xff;
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 24);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 16);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 8);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity);
   return body_tag;
 }
 
@@ -1175,12 +1224,14 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
       // Legacy arrays used their first referencing field as their storage
       // tag. Promote them to a stable body tag before the field can be
       // cleared or retargeted while aliases still refer to the same object.
-      const fs::Tag body_tag = persistent_array_body_tag(tag);
+      const fs::Tag body_tag = persistent_array_body_tag(
+          tag, allocate_persistent_array_identity());
       FlashMemory_Handler::setPersistentField_Array(body_tag, *array, heap);
       write_persistent_array_alias(tag, body_tag);
       return;
     }
-    const fs::Tag body_tag = persistent_array_body_tag(tag);
+    const fs::Tag body_tag = persistent_array_body_tag(
+        tag, allocate_persistent_array_identity());
     FlashMemory_Handler::setPersistentField_Array(body_tag, *array, heap);
     write_persistent_array_alias(tag, body_tag);
     return;

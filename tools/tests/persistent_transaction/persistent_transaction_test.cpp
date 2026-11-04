@@ -514,6 +514,126 @@ int main() {
            "recreated_heap_restores_alias_graph_and_reclaims_only_garbage");
   }
 
+  // Retarget the original field after another field aliases its array. The
+  // first field's new array body must get a distinct persistent identity;
+  // clearing and aborting replacements must not change the old alias.
+  {
+    jcvm::Heap heap(7);
+    const auto first_field = FlashMemory_Handler::getStaticFieldTag(20, 1);
+    const auto alias_field = FlashMemory_Handler::getStaticFieldTag(20, 2);
+    const auto old_array = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    const auto replacement = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(old_array)->setByteEntry(0, 0x11);
+    heap.getArray(replacement)->setByteEntry(0, 0x22);
+
+    FlashMemory_Handler::setPersistentField_Reference(first_field, old_array,
+                                                        heap);
+    FlashMemory_Handler::setPersistentField_Reference(alias_field, old_array,
+                                                        heap);
+    const auto old_alias_record =
+        persistent_transaction_test::read(alias_field.value, alias_field.len);
+    const auto old_body = [&]() {
+      if (old_alias_record.size() < 3 || old_alias_record[0] != 0xfd ||
+          static_cast<size_t>(old_alias_record[1]) + 2u !=
+              old_alias_record.size()) {
+        return std::vector<uint8_t>{};
+      }
+      return std::vector<uint8_t>(old_alias_record.begin() + 2,
+                                  old_alias_record.end());
+    }();
+
+    FlashMemory_Handler::setPersistentField_Reference(first_field, {}, heap);
+    FlashMemory_Handler::setPersistentField_Reference(first_field, replacement,
+                                                        heap);
+    const auto replacement_record =
+        persistent_transaction_test::read(first_field.value, first_field.len);
+    const std::vector<uint8_t> replacement_body =
+        replacement_record.size() >= 3 && replacement_record[0] == 0xfd &&
+                static_cast<size_t>(replacement_record[1]) + 2u ==
+                    replacement_record.size()
+            ? std::vector<uint8_t>(replacement_record.begin() + 2,
+                                   replacement_record.end())
+            : std::vector<uint8_t>{};
+
+    bool aliases_survive_fresh_heap = false;
+    bool collector_preserves_both = false;
+    bool collector_keeps_old_alias = false;
+    try {
+      jcvm::Heap restored(7);
+      const auto restored_old =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(alias_field,
+                                                                     restored);
+      const auto restored_new =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(first_field,
+                                                                     restored);
+      aliases_survive_fresh_heap =
+          !old_body.empty() && !replacement_body.empty() &&
+          old_body != replacement_body &&
+          restored.getArray(restored_old)->getByteEntry(0) == 0x11 &&
+          restored.getArray(restored_new)->getByteEntry(0) == 0x22;
+      const auto both_reachable =
+          restored.collectUnreachableFrom({restored_old, restored_new});
+      collector_preserves_both = both_reachable.complete &&
+          both_reachable.arrays_reachable == 2 &&
+          both_reachable.arrays_reclaimed == 0;
+      const auto old_only = restored.collectUnreachableFrom({restored_old});
+      collector_keeps_old_alias = old_only.complete &&
+          old_only.arrays_reachable == 1 && old_only.arrays_reclaimed == 1 &&
+          restored.getArray(restored_old)->getByteEntry(0) == 0x11;
+    } catch (jcvm::Exceptions) {
+      aliases_survive_fresh_heap = false;
+      collector_preserves_both = false;
+      collector_keeps_old_alias = false;
+    }
+    expect(aliases_survive_fresh_heap,
+           "persistent_array_reassignment_preserves_old_alias_after_restore");
+    expect(collector_preserves_both && collector_keeps_old_alias,
+           "persistent_array_identity_survives_collection");
+
+    const auto transaction_array = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(transaction_array)->setByteEntry(0, 0x33);
+    const bool began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    if (began) {
+      FlashMemory_Handler::setPersistentField_Reference(
+          first_field, transaction_array, heap);
+    }
+    const bool aborted = FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    bool abort_restores_both_fields = false;
+    try {
+      jcvm::Heap after_abort(7);
+      const auto after_abort_old =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(alias_field,
+                                                                     after_abort);
+      const auto after_abort_new =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(first_field,
+                                                                     after_abort);
+      abort_restores_both_fields =
+          after_abort.getArray(after_abort_old)->getByteEntry(0) == 0x11 &&
+          after_abort.getArray(after_abort_new)->getByteEntry(0) == 0x22;
+    } catch (jcvm::Exceptions) {
+      abort_restores_both_fields = false;
+    }
+    expect(began && aborted && abort_restores_both_fields,
+           "persistent_array_retarget_abort_preserves_prior_identities");
+
+    const auto after_abort_array = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(after_abort_array)->setByteEntry(0, 0x44);
+    FlashMemory_Handler::setPersistentField_Reference(first_field,
+                                                        after_abort_array, heap);
+    const auto after_abort_record = persistent_transaction_test::read(
+        first_field.value, first_field.len);
+    const std::vector<uint8_t> after_abort_body =
+        after_abort_record.size() >= 3 && after_abort_record[0] == 0xfd &&
+                static_cast<size_t>(after_abort_record[1]) + 2u ==
+                    after_abort_record.size()
+            ? std::vector<uint8_t>(after_abort_record.begin() + 2,
+                                   after_abort_record.end())
+            : std::vector<uint8_t>{};
+    expect(!after_abort_body.empty() && after_abort_body != old_body &&
+               after_abort_body != replacement_body,
+           "persistent_array_identity_counter_survives_transaction_abort");
+  }
+
   {
     constexpr uint8_t owner = 0x21;
     const uint8_t root_tag[] = {0x03, owner, 0x44, 0x55, 0xff};
