@@ -6,7 +6,7 @@
 - Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto` passed; elevated `python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 32/32; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed finite serial (`TEST:SUMMARY pass=1 fail=0`).
 - Result: Interpreted service and client applet objects both had compact handle `0002`, owners 57 and 58. Cross-owner assertion correctly threw SecurityException; diagnostic collision records confirm the exact handle/owner pair. Firmware UF2 is 1,908,736 bytes, SHA-256 `b3c521ea19a8cb1832d97f99faa8a4f4817d136798a50d10d076b2675041e617`. The cycle used CDC BOOTSEL recovery after reset-interface discovery failed.
 - Decision: RV-09 acceptance is complete. Continue with RV-10, the renewable execution-budget finding.
-- Commit: pending source commit; metadata follow-up will record its SHA.
+- Commit: `562870f`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T033440Z.log` SHA-256 `dc83725821ea28cad699e0ed59a52641f06f3c4821edef227e12b2a7f365b930`; `artifacts/logs/cycle-choupi-20261104T034116Z.log` SHA-256 `cd60290d67e2b46bceeb5bd2c41f1d7fdfe14551f0ce91fe1331cc2a743bb28e`.
 
 ## 2026-11-03 Classify Windows GPPro and certutil results 3 minutes

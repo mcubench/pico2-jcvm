@@ -1,4 +1,37 @@
-# Current session — reject unsafe foreign references in applet arrays — 2026-11-04 04:23 CET
+# Current session — preserve SensitiveResult object ownership — 2026-11-04 04:43 CET
+
+Completed RV-20261103-09. VM-wide object `SensitiveResult` now stores a
+`Stack::ReferenceValue` containing package owner and handle. Assertions compare
+normalized owner+handle identity. `Context::visitRootReferences()` roots
+package-local result objects only in their owning heap; global arrays/instances
+are handled by global registries. The existing public Java Card API is
+unchanged; only native VM state and test fixture CAP sources changed.
+
+`./tools/test-rmi-registry` passed the owner-collision/root regression. The
+interpreted SIO test uses service and client applet objects that both have
+compact handle `0002`, owned by packages 57 and 58; client assertion now catches
+`SecurityException`. The cross-AID VPCD suite passed `TEST:SUMMARY pass=32
+fail=0`. PC, ARM and RISC-V `max_crypto` builds passed. Pico 2
+`2BED26ED20556535` was reflashed; finite serial reported
+`TEST:SUMMARY pass=1 fail=0`. The cycle recovered from a missing reset interface
+via CDC BOOTSEL and verified the UF2.
+
+VPCD log:
+`artifacts/logs/sio-cross-aid-vpcd-20261104T033440Z.log` (SHA-256
+`dc83725821ea28cad699e0ed59a52641f06f3c4821edef227e12b2a7f365b930`). Cycle
+log: `artifacts/logs/cycle-choupi-20261104T034116Z.log` (SHA-256
+`cd60290d67e2b46bceeb5bd2c41f1d7fdfe14551f0ce91fe1331cc2a743bb28e`). Current
+ARM UF2 `build/arm/pico2_choupi.uf2`: 1,908,736 bytes, SHA-256
+`b3c521ea19a8cb1832d97f99faa8a4f4817d136798a50d10d076b2675041e617`.
+
+Implementation source commit: `562870f` (`Preserve SensitiveResult object
+ownership`). TODO, progress, QKB and HANDOFF metadata are now updated; metadata
+follow-up commit remains. Preserve all unrelated pre-existing changes noted
+below. Next priority is RV-10, non-renewable top-level execution deadlines.
+
+---
+
+# Previous session — reject unsafe foreign references in applet arrays — 2026-11-04 04:23 CET
 
 Completed RV-20261103-08 implementation; source commit is `7fb08a3` and
 metadata follow-up is in progress. `JC_Array::setReferenceEntry()` now fails closed with

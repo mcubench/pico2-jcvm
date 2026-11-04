@@ -109,9 +109,9 @@ during the review.
 
 ### RV-20261103-09
 
-- [ ] **P2: Object result assertions and roots confuse owners.**
+- [x] **P2: Object result assertions and roots confuse owners.**
   Owner: CTX-02. Evidence: Reproduced; [review R09](docs/review_20261103.md#r09--object-sensitive-results-have-no-owner-provenance).
-  Acceptance: store owner plus handle, normalize global references, compare full identity and root only in the owning heap. Add an interpreted SIO producer/assertion test with distinct owners and equal compact values.
+  Resolution: `SensitiveResult` object values now retain package owner plus handle, assertions compare normalized full identity, and GC roots only package-local results in the owning heap. Native unit coverage and an interpreted SIO fixture prove equal compact handle `0002` across package IDs 57 and 58 is rejected. VPCD 32/32, PC/ARM/RISC-V builds, and Pico 2 `2BED26ED20556535` finite runtime validation passed; see `progress.md` and `.agent/QKB.md`.
 
 ### RV-20261103-10
 

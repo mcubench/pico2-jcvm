@@ -1,3 +1,29 @@
+# SensitiveResult object references need package provenance — 2026-11-04
+
+- **Finding:** VM-wide `SensitiveResult` stored object results as compact
+  `jref_t` alone. A result produced by package A could compare equal to a
+  package B object with the same handle. Every Context also enumerated that
+  handle in its own roots, retaining an unrelated object or aliasing an invalid
+  one.
+- **Viable fix:** Store a `Stack::ReferenceValue` with the producer package ID.
+  Assertions compare via `Stack::referencesEqual`, which normalizes global
+  arrays/instances and null. Context root enumeration retains a non-global
+  object only in the result's owning package heap; global objects remain rooted
+  by their global registries.
+- **Regression evidence:** The RMI registry test confirms equal handle rejection
+  across package IDs and producer-only GC rooting. The interpreted SIO test
+  has service and client applet references both use compact handle `0002`
+  (owners 57 and 58); the client's assertion correctly throws
+  `SecurityException`. The cross-AID VPCD suite passes 32/32. PC/ARM/RISC-V
+  builds and physical Pico 2 `2BED26ED20556535` cycle pass.
+- **Commit:** `562870f` (`Preserve SensitiveResult object ownership`).
+- **Artifacts:** VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261104T033440Z.log`
+  SHA-256 `dc83725821ea28cad699e0ed59a52641f06f3c4821edef227e12b2a7f365b930`;
+  physical cycle `artifacts/logs/cycle-choupi-20261104T034116Z.log` SHA-256
+  `cd60290d67e2b46bceeb5bd2c41f1d7fdfe14551f0ce91fe1331cc2a743bb28e`.
+
+---
+
 # Foreign references in applet-owned arrays — 2026-11-04
 
 - **Finding:** A volatile applet-owned Object array preserved the compact
