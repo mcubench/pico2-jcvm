@@ -27,6 +27,7 @@
 
 #include "interpretor.hpp"
 #include "debug.hpp"
+#include "execution_budget.hpp"
 #include "jc_bytecodes/bytecode_values.hpp"
 #include "jc_bytecodes/bytecodes.hpp"
 #include "jc_types/jc_array.hpp"
@@ -43,10 +44,13 @@
 extern "C" void choupi_watchdog_update(void);
 extern "C" void choupi_vm_cooperative_progress(void);
 extern "C" uint32_t choupi_time_us_32(void);
-static volatile uint32_t applet_execution_progress_us = 0;
+static jcvm::ExecutionBudget applet_execution_budget;
+static constexpr uint32_t kAppletExecutionBudgetUs = 600000000u;
 
-extern "C" void choupi_vm_native_progress(void) {
-  applet_execution_progress_us = choupi_time_us_32();
+extern "C" bool choupi_vm_native_progress(void) {
+  const uint32_t now_us = choupi_time_us_32();
+  applet_execution_budget.reportProgress(now_us);
+  return !applet_execution_budget.expired(now_us);
 }
 #endif
 
@@ -141,6 +145,13 @@ Interpretor::Interpretor(
  */
 uint16_t Interpretor::run() noexcept {
 
+#ifndef PC_VERSION
+  const uint32_t applet_execution_budget_us =
+      this->installMethodEntry ? 5000000u : kAppletExecutionBudgetUs;
+  jcvm::ExecutionBudgetScope execution_scope(
+      applet_execution_budget, this->startsAtMethodOffset,
+      choupi_time_us_32(), applet_execution_budget_us);
+#endif
   Context &context = this->getCurrentContext();
   ActiveContextScope active_context(context);
   Package package = context.getCurrentPackage();
@@ -377,10 +388,7 @@ uint16_t Interpretor::run() noexcept {
   }
 #endif
 #ifndef PC_VERSION
-  const uint32_t execution_start_time_us = choupi_time_us_32();
-  applet_execution_progress_us = execution_start_time_us;
-  const uint32_t applet_execution_budget_us =
-      this->installMethodEntry ? 5000000u : 120000000u;
+  applet_execution_budget.reportProgress(choupi_time_us_32());
 #endif
   while (stack.frameDepth() > this->entryFrameDepth) {
 #ifndef PC_VERSION
@@ -411,13 +419,11 @@ uint16_t Interpretor::run() noexcept {
           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc)),
           bytecode, instruction_count);
     }
-    // Bound applet bytecode that makes no forward progress, while allowing
-    // native crypto operations to run longer when their RNG callback reports
-    // progress (it also services the watchdog and CCID time extensions).
+    // Bound the complete top-level applet operation. Nested interpreter
+    // entries share its immutable deadline; native progress updates only the
+    // service timestamp and cannot renew the execution budget.
     if (this->startsAtMethodOffset && (instruction_count & 0xffu) == 0 &&
-        static_cast<uint32_t>(choupi_time_us_32() -
-                              applet_execution_progress_us) >=
-            applet_execution_budget_us) {
+        applet_execution_budget.expired(choupi_time_us_32())) {
       this->last_exception_id = Exceptions::RuntimeException;
       this->last_exception_opcode = bytecode;
       this->last_exception_pc =

@@ -341,7 +341,8 @@ def main() -> int:
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
         "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-asymm-vpcd.bin"),
-        "--log", str(log), "--apdu-timeout", "180",
+        "--log", str(log), "--connect-timeout", "300",
+        "--apdu-timeout", "600",
     ]
     cases = vectors()
     for apdu, expected, _label in cases:

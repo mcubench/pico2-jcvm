@@ -16,7 +16,7 @@
 #include <vector>
 
 #if !defined(PC_VERSION)
-extern "C" void choupi_native_crypto_progress(void);
+extern "C" bool choupi_native_crypto_progress(void);
 #endif
 
 #if JC_SUPPORT_KEYPAIR_EC_FP
@@ -67,7 +67,9 @@ int randomBytes(void *, unsigned char *output, size_t length) {
   // and can exceed the RP2350 watchdog and CCID response intervals. Mbed TLS
   // requests fresh randomness throughout candidate generation and primality
   // testing, so service both at this bounded callback boundary.
-  choupi_native_crypto_progress();
+  if (!choupi_native_crypto_progress()) {
+    return -1;
+  }
 #endif
 #ifdef PC_VERSION
   static std::random_device source;

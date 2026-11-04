@@ -20,16 +20,17 @@ extern "C" char __StackLimit;
 
 extern "C" void choupi_ccid_task(void);
 extern "C" void choupi_ccid_native_crypto_progress(void);
-extern "C" void choupi_vm_native_progress(void);
+extern "C" bool choupi_vm_native_progress(void);
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
 extern "C" void choupi_vm_cooperative_progress(void) {
   watchdog_update();
   choupi_ccid_native_crypto_progress();
 }
-extern "C" void choupi_native_crypto_progress(void) {
-  choupi_vm_native_progress();
+extern "C" bool choupi_native_crypto_progress(void) {
+  const bool within_budget = choupi_vm_native_progress();
   choupi_vm_cooperative_progress();
+  return within_budget;
 }
 extern "C" uint32_t choupi_time_us_32(void) { return time_us_32(); }
 extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
