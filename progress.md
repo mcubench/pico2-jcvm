@@ -21860,5 +21860,5 @@
 - Validation: `./tools/test-cap-instruction-boundaries` passed 13/13 and printed `FUZZ:SUMMARY inputs=100000 max_bytes=32`; no ASan/UBSan finding. The test wrapper configured and built successfully through the repository environment wrapper. No production firmware source changed, so ARM/RISC-V builds were not rerun. No physical or malformed-CAP interpreter/runtime test was run.
 - Result: The width and boundary helpers remained memory-safe for the deterministic malformed-bytecode corpus under ASan/UBSan. This is helper-level evidence only.
 - Decision: Keep RV-28 open. Next pursue a malformed CAP runtime fixture, then nested-linkage validation and heap field-kind/access enforcement.
-- Commit: `pending`
+- Commit: `9ed7d6a`
 - Artifacts/logs: `tools/test-cap-instruction-boundaries`; sanitizer output was emitted to stdout and not archived.
