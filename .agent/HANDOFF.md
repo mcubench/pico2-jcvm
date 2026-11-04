@@ -32,8 +32,10 @@ Continue with RV-20261103-17, incremental digest behavior beyond the current
 2,046-byte cumulative input cap. Preserve unrelated dirty worktree changes.
 In particular, `choupi/src/heap.cpp`, symmetric probe sources and associated
 test scripts contain other in-flight changes. Stage only the RV-16 native CBC
-change and the new CBC test additions from shared files. The RV-16 source and
-progress commits are still pending.
+change and the new CBC test additions from shared files. RV-16 source commit is
+`b36c5fb5a5e25a912a1c9d1ccc8505f4b353ed83`. `progress.md` has two identical
+RV-16 entries from an accidental append; both are preserved per the no-delete
+history rule and carry the source commit SHA.
 
 ---
 
