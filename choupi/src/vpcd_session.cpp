@@ -92,7 +92,7 @@ SessionResult Session::handle_message(const uint8_t *message,
   if (message_length == 1) {
     switch (message[0]) {
     case kControlOff:
-      clear_or_deselect(false);
+      selected_ = false;
       card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
@@ -106,7 +106,7 @@ SessionResult Session::handle_message(const uint8_t *message,
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlReset:
-      clear_or_deselect(false);
+      selected_ = false;
       card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
@@ -225,8 +225,11 @@ SessionResult Session::handle_message(const uint8_t *message,
 }
 
 void Session::disconnect() {
-  clear_or_deselect(false);
+  selected_ = false;
   card_manager_selected_ = false;
+  if (callbacks_.clear != nullptr) {
+    callbacks_.clear(callbacks_.context);
+  }
   if (callbacks_.reset_card_manager != nullptr) {
     callbacks_.reset_card_manager(callbacks_.context);
   }

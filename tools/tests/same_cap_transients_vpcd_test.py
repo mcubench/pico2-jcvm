@@ -99,6 +99,40 @@ def main() -> int:
                 )
             print("TEST:PASS writer initialized both transient arrays")
 
+            response = vpcd.exchange(connection, bytes.fromhex("8012000000"),
+                                     "read deselect callback count")
+            if response != bytes.fromhex("009000"):
+                raise RuntimeError(
+                    f"unexpected initial deselect count {response.hex().upper()}"
+                )
+            vpcd.send_message(connection, b"\x02")
+            vpcd.send_message(connection, b"\x04")
+            if vpcd.receive_message(connection) != bytes.fromhex("3B800181"):
+                raise RuntimeError("unexpected direct-reset ATR")
+            select(connection, WRITER_AID, "SELECT writer after active reset")
+            response = vpcd.exchange(connection, bytes.fromhex("8011000000"),
+                                     "read active transient arrays after reset")
+            if response != bytes.fromhex("00009000"):
+                raise RuntimeError(
+                    "direct reset did not clear both transient classes: "
+                    f"{response.hex().upper()}"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("8012000000"),
+                                     "check reset skipped deselect callback")
+            if response != bytes.fromhex("009000"):
+                raise RuntimeError(
+                    "reset invoked deselect callback: "
+                    f"{response.hex().upper()}"
+                )
+            print("TEST:PASS active reset cleared both classes without deselect")
+
+            response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
+                                     "reinitialize transient arrays")
+            if response != bytes.fromhex("5A6B9000"):
+                raise RuntimeError(
+                    f"transient reinitialization returned {response.hex().upper()}"
+                )
+
             select(connection, READER_AID, "switch to sibling transient reader")
             response = vpcd.exchange(connection, bytes.fromhex("8020000000"),
                                      "read transients after sibling switch")

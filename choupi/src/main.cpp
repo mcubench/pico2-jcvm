@@ -1037,6 +1037,8 @@ void choupi_vm_clear_selected_applet(void) {
     selected_applet_context->clearShareableSessionState();
     selected_applet_context->getHeap().clearTransientArrays(
         jcvm::ClearEvent::CLEAR_ON_RESET);
+    selected_applet_context->getHeap().clearTransientArrays(
+        jcvm::ClearEvent::CLEAR_ON_DESELECT);
   }
   for (auto &context : inactive_applet_contexts) {
     if (context) {
@@ -1044,6 +1046,8 @@ void choupi_vm_clear_selected_applet(void) {
       context->clearShareableSessionState();
       context->getHeap().clearTransientArrays(
           jcvm::ClearEvent::CLEAR_ON_RESET);
+      context->getHeap().clearTransientArrays(
+          jcvm::ClearEvent::CLEAR_ON_DESELECT);
     }
   }
   selected_applet_is_active = false;

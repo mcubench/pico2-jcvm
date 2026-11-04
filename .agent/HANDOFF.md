@@ -1,3 +1,41 @@
+# Current session — reset clears both transient event classes — 2026-11-04 12:16 CET
+
+RV-20261103-12 reset cleanup is implemented in the worktree. The reset
+callback clears both `CLEAR_ON_RESET` and `CLEAR_ON_DESELECT` arrays in the
+selected and cached inactive applet heaps. PC VPCD POWER_OFF, POWER_RESET and
+disconnect now run reset cleanup directly without applet `deselect()`; normal
+applet switching still calls `deselect()`.
+
+`SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120
+PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed
+`TEST:SUMMARY pass=5 fail=0`. The added active-reset test checks both transient
+arrays were zeroed and a persistent `deselect()` counter remained unchanged.
+The sibling-switch case still checks that only the deselect array clears.
+`./tools/build-pc --profile max_crypto`, `./tools/build arm --profile
+max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The PC and
+ARM builds emitted existing dependency/packed-member warnings; no new source
+warning was attributed to this change.
+
+The authorized USB helper reported one attached node, but `pcsc_scan -r`
+listed only Virtual PCD 00 00/01. Physical validation is therefore pending.
+Regression log: `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log`
+(SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`).
+The initial regression attempts timed out during emulator startup/CAP LOAD at
+the fixture defaults; the bounded 300-second connect and 120-second APDU run
+passed.
+
+Source changes are not yet committed. Preserve unrelated pre-existing dirty
+files, including `AGENTS.md`, docs/review artifacts, SDK submodules,
+`choupi/src/heap.*`, `src/cap_load.cpp`, physical and symmetric-crypto probes,
+and the untracked AlgTest logs/device data. RV-11 remains open for physical
+validation even though its PC regression and builds passed. Next priority:
+RV-20261103-13 transient array restore logical lengths/storage, beginning with
+the restored transient RSA array `ArrayIndexOutOfBoundsException` recorded in
+TODO/QKB. Keep the hardware validation pending until an actual Pico reader is
+listed.
+
+---
+
 # Current session — transient Cipher key workspace lifecycle — 2026-11-04 09:51 CET
 
 RV-20261103-11 implementation is committed as `73afaf2` (`Clear Cipher key

@@ -1022,6 +1022,26 @@
 - **Limit:** PC VPCD only; physical same-package transient behavior and
   multi-logical-channel applet activation remain unverified.
 
+### Direct reset lifecycle follow-up — verified 2026-11-04
+
+- **Finding:** The card reset callback cleared only `CLEAR_ON_RESET` arrays;
+  PC VPCD had hidden this because its POWER_RESET path invoked applet
+  `deselect()` first, incidentally clearing `CLEAR_ON_DESELECT` arrays.
+- **Viable fix:** Reset clears both transient event classes in the selected
+  heap and every cached inactive applet heap. VPCD POWER_OFF, POWER_RESET and
+  disconnect now perform reset cleanup directly and do not invoke applet
+  `deselect()` as a reset callback. Keep ordinary applet-to-applet selection
+  on the deselect path.
+- **Validation:** `SAME_CAP_CONNECT_TIMEOUT_S=300
+  SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1
+  ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=5 fail=0`.
+  Its active-reset case confirmed both transient arrays clear while a
+  persistent deselect counter stays unchanged; the sibling-selection case
+  still confirmed that deselection clears only the deselect array. PC, ARM and
+  RISC-V `max_crypto` builds passed. Hardware scan showed only VPCD readers.
+- **Artifacts:** `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log`
+  SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`.
+
 ## Same-CAP sibling state survives emulator restart — verified 2026-11-02
 
 - **Test:** `tools/test-same-cap-restart` installs writer and reader applets

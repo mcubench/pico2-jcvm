@@ -21586,3 +21586,14 @@
 - Commit: `73afaf2`
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261104T084348Z.log` SHA-256 `e487a385b643a8d0bd6f346b9bb2a71600fced1b121c682721199adacb2bc73a`; `artifacts/logs/cipher-lifecycle-vpcd-restore-direct.log` SHA-256 `937c85f629c47615b08a44493b85e614c376cc7059238e706c5a8d0e00ba718f`.
 
+## 2026-11-04 Clear both transient classes during card reset 12 minutes
+
+- Step/experiment: `rv-20261103-12-reset-transient-lifecycle`
+- When: '2026-11-04 09:04 UTC' - '2026-11-04 09:16 UTC'
+- Change: Card reset cleanup now clears both `CLEAR_ON_RESET` and `CLEAR_ON_DESELECT` arrays in active and cached inactive applet heaps. VPCD POWER_OFF, POWER_RESET and disconnect invoke reset cleanup directly rather than calling applet `deselect()` first. Extended the same-CAP transient fixture with a persistent deselect counter and an active-reset check.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=5 fail=0`; it verified direct reset clears both arrays without a deselect callback and sibling applet switching still clears only `CLEAR_ON_DESELECT`. `git diff --check` passed. Authorized hardware refresh found no Pico PC/SC reader, so physical validation was not run.
+- Result: VPCD reported direct active reset with unchanged deselect counter, reset clears both arrays, sibling selection clears only the deselect array; 5/5 checks passed. ARM image endpoint `0x100e9218`, leaving 93,672 bytes. PC/ARM dependency warnings were present; no new warning attributed to changed source.
+- Decision: Keep RV-12 open for physical and inactive-context transient-key coverage; continue RV-13 restore lengths/storage next.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log` SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`; initial default-timeout attempts also logged as `artifacts/logs/same-cap-transient-vpcd-20261104T090735Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T090906Z.log`.
+

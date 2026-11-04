@@ -5,6 +5,7 @@ import javacard.framework.JCSystem;
 final class TransientState {
   static byte[] deselectBytes;
   static byte[] resetBytes;
+  static byte deselectCount;
 
   static void initialize() {
     if (deselectBytes == null) {

@@ -17,6 +17,11 @@ public final class TransientReaderApplet extends Applet {
   public void process(APDU apdu) {
     if (selectingApplet()) return;
     byte[] buffer = apdu.getBuffer();
+    if (buffer[1] == 0x22) {
+      buffer[0] = TransientState.deselectCount;
+      apdu.setOutgoingAndSend((short)0, (short)1);
+      return;
+    }
     if (buffer[1] != 0x20) ISOException.throwIt((short)0x6d00);
     buffer[0] = TransientState.deselectBytes[0];
     buffer[1] = TransientState.resetBytes[0];
