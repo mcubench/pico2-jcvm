@@ -9,6 +9,8 @@ namespace {
 
 constexpr std::array<uint8_t, 7> kAppletAid = {
     0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54, 0x31};
+constexpr std::array<uint8_t, 7> kSecondAppletAid = {
+    0xf0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
 
 struct FakeCard {
   unsigned int clear_count = 0;
@@ -19,7 +21,8 @@ struct FakeCard {
   unsigned int process_count = 0;
   unsigned int card_manager_process_count = 0;
   unsigned int card_manager_reset_count = 0;
-  uint8_t restore_result = 0;
+  choupi::vpcd::CardCallbacks::RestoreStatus forced_restore_status =
+      choupi::vpcd::CardCallbacks::RestoreStatus::Restored;
   uint16_t select_status = 0x9000;
   uint16_t process_status = 0x9000;
   std::vector<uint8_t> last_command;
@@ -29,14 +32,25 @@ void clear(void *opaque) {
   ++static_cast<FakeCard *>(opaque)->clear_count;
 }
 
-uint8_t restore(void *opaque, const uint8_t *aid, uint8_t aid_length) {
+choupi::vpcd::CardCallbacks::RestoreStatus restore(
+    void *opaque, const uint8_t *aid, uint8_t aid_length) {
   auto &card = *static_cast<FakeCard *>(opaque);
   ++card.restore_count;
-  if (aid_length != kAppletAid.size()) return 1;
-  for (size_t index = 0; index < aid_length; ++index) {
-    if (aid[index] != kAppletAid[index]) return 1;
+  if (card.forced_restore_status !=
+      choupi::vpcd::CardCallbacks::RestoreStatus::Restored) {
+    return card.forced_restore_status;
   }
-  return card.restore_result;
+  const auto matches = [aid, aid_length](const auto &expected) {
+    if (aid_length != expected.size()) return false;
+    for (size_t index = 0; index < aid_length; ++index) {
+      if (aid[index] != expected[index]) return false;
+    }
+    return true;
+  };
+  if (matches(kAppletAid) || matches(kSecondAppletAid)) {
+    return choupi::vpcd::CardCallbacks::RestoreStatus::Restored;
+  }
+  return choupi::vpcd::CardCallbacks::RestoreStatus::NotFound;
 }
 
 uint16_t select(void *opaque) {
@@ -93,10 +107,11 @@ bool expect(bool condition, const char *name) {
   return condition;
 }
 
-std::vector<uint8_t> applet_select() {
+std::vector<uint8_t> applet_select(
+    const std::array<uint8_t, 7> &aid = kAppletAid) {
   std::vector<uint8_t> command{0x00, 0xa4, 0x04, 0x00,
-                               static_cast<uint8_t>(kAppletAid.size())};
-  command.insert(command.end(), kAppletAid.begin(), kAppletAid.end());
+                               static_cast<uint8_t>(aid.size())};
+  command.insert(command.end(), aid.begin(), aid.end());
   command.push_back(0x40);
   return command;
 }
@@ -130,8 +145,7 @@ int main() {
   const choupi::vpcd::CardCallbacks callbacks{
       &card, clear, restore, select, deselect, process,
       process_card_manager, reset_card_manager};
-  choupi::vpcd::Session session(
-      std::vector<uint8_t>(kAppletAid.begin(), kAppletAid.end()), callbacks);
+  choupi::vpcd::Session session(callbacks);
   std::vector<uint8_t> response;
 
   auto message = control(0x04);
@@ -166,19 +180,39 @@ int main() {
             response == std::vector<uint8_t>({0xde, 0xad, 0x90, 0x00}),
         "selected applet receives APDU and returns response");
 
+  message = applet_select(kSecondAppletAid);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            session.applet_selected() && card.deselect_count == 1 &&
+            !card.last_deselect_same_applet &&
+            card.last_command == message,
+        "switching to another known AID deselects as a different applet");
+  message = applet_select(kSecondAppletAid);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            session.applet_selected() && card.deselect_count == 2 &&
+            card.last_deselect_same_applet,
+        "reselecting the same AID marks applet reselection");
+  message = applet_select(kAppletAid);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            session.applet_selected() && card.deselect_count == 3 &&
+            !card.last_deselect_same_applet,
+        "switching back to another known AID is not a reselection");
+
   message = unknown_applet_select();
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
             response == std::vector<uint8_t>({0x6a, 0x82}) &&
-            !session.applet_selected() && card.deselect_count == 1 &&
-            !card.last_deselect_same_applet && card.process_count == 2,
+            !session.applet_selected() && card.deselect_count == 4 &&
+            !card.last_deselect_same_applet && card.process_count == 5,
         "unknown AID SELECT deselects applet without dispatching to process");
 
   message = control(0x00);
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::NoResponse &&
             !session.powered() && !session.applet_selected() &&
-            card.deselect_count == 1,
+            card.deselect_count == 4,
         "power off deselects and clears selected state");
   result = session.handle_message(command.data(), command.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
@@ -197,7 +231,8 @@ int main() {
                                         0x00, 0x00, 0x00};
   result = session.handle_message(isd_select.data(), isd_select.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
-            !session.applet_selected() && card.deselect_count == 2 &&
+            !session.applet_selected() && card.deselect_count == 5 &&
+            !card.last_deselect_same_applet &&
             response.size() == 14 && response[12] == 0x90 &&
             response[13] == 0x00,
         "ISD SELECT deselects applet and returns FCI");
@@ -229,13 +264,22 @@ int main() {
   card.process_status = 0x9000;
 
   message = applet_select();
-  card.restore_result = 1;
+  card.forced_restore_status =
+      choupi::vpcd::CardCallbacks::RestoreStatus::Failed;
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
             !session.applet_selected() &&
             response == std::vector<uint8_t>({0x6f, 0x00}),
-        "failed restore returns error status");
-  card.restore_result = 0;
+        "corrupted known-app restore preserves restore failure status");
+  card.forced_restore_status =
+      choupi::vpcd::CardCallbacks::RestoreStatus::NotFound;
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            !session.applet_selected() &&
+            response == std::vector<uint8_t>({0x6a, 0x82}),
+        "missing applet status remains distinct from restore failure");
+  card.forced_restore_status =
+      choupi::vpcd::CardCallbacks::RestoreStatus::Restored;
   card.select_status = 0x6999;
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&

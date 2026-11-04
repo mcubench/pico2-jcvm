@@ -237,6 +237,7 @@ during the review.
 - [ ] **P2: Test compile drift plus wrong reselection/restore status.**
   Owner: PROFILE-01, GP-01. Evidence: Reproduced; [review R27](docs/review_20261103.md#r27--vpcd-session-tests-are-stale-and-mask-selection-regressions).
   Acceptance: restore the test's build, track the actual selected AID and retain meaningful restore failure status. Expand to two known applets, unknown AID, same-AID reselection, rejected `select()` and corrupted restore. Do not simply change assertions to the current wrong behavior. ,
+  Progress: Focused session test restored and expanded; `./tools/test-vpcd-session` passes 25/25. ARM and RISC-V wrappers build. `./tools/test-pc-vpcd-applet --passes 1` timed out before VPCD connected (startup log has no `VPCD:APPLET_INSTALLED` marker), so production callback/runtime acceptance remains open.
 
 ### RV-20261103-28
 

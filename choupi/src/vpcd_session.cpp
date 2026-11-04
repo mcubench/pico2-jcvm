@@ -40,13 +40,20 @@ void append_select_response(std::vector<uint8_t> &response, const uint8_t *aid,
 
 Session::Session(CardCallbacks callbacks) : callbacks_(callbacks) {}
 
-void Session::clear_or_deselect(const bool selecting_same_applet) {
+void Session::clear_or_deselect(const uint8_t *next_aid,
+                                const size_t next_aid_length) {
   if (selected_) {
+    const bool selecting_same_applet =
+        next_aid != nullptr && next_aid_length == selected_aid_length_ &&
+        std::equal(next_aid, next_aid + next_aid_length,
+                   selected_aid_.begin());
     if (callbacks_.deselect != nullptr) {
       (void)callbacks_.deselect(callbacks_.context,
                                 selecting_same_applet);
     }
     selected_ = false;
+    selected_aid_length_ = 0;
+    selected_aid_.fill(0);
   }
 }
 
@@ -92,7 +99,7 @@ SessionResult Session::handle_message(const uint8_t *message,
   if (message_length == 1) {
     switch (message[0]) {
     case kControlOff:
-      selected_ = false;
+      clear_or_deselect(nullptr, 0);
       card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
@@ -106,7 +113,7 @@ SessionResult Session::handle_message(const uint8_t *message,
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlReset:
-      selected_ = false;
+      clear_or_deselect(nullptr, 0);
       card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
@@ -137,7 +144,7 @@ SessionResult Session::handle_message(const uint8_t *message,
       message[2] == 0x04 && message[3] == 0x00 && message[4] == 0x00;
   if (select_default_isd ||
       select_by_aid(kIsdAid, sizeof(kIsdAid), message, message_length)) {
-    clear_or_deselect(false);
+    clear_or_deselect(nullptr, 0);
     card_manager_selected_ = true;
     append_select_response(response, kIsdAid, sizeof(kIsdAid));
     return SessionResult::Response;
@@ -145,11 +152,18 @@ SessionResult Session::handle_message(const uint8_t *message,
 
   if (is_select_by_aid(message, message_length)) {
     card_manager_selected_ = false;
-    clear_or_deselect(true);
+    clear_or_deselect(message + 5, message[4]);
     const uint8_t aid_length = message[4];
-    if (callbacks_.restore == nullptr || callbacks_.restore(
-            callbacks_.context, message + 5, aid_length) != 0) {
-      append_status(response, 0x6a82);
+    const CardCallbacks::RestoreStatus restore_status =
+        callbacks_.restore == nullptr
+            ? CardCallbacks::RestoreStatus::NotFound
+            : callbacks_.restore(callbacks_.context, message + 5,
+                                 aid_length);
+    if (restore_status != CardCallbacks::RestoreStatus::Restored) {
+      append_status(response,
+                    restore_status == CardCallbacks::RestoreStatus::NotFound
+                        ? 0x6a82
+                        : 0x6f00);
       return SessionResult::Response;
     }
     const uint16_t status = callbacks_.select == nullptr
@@ -160,6 +174,8 @@ SessionResult Session::handle_message(const uint8_t *message,
       return SessionResult::Response;
     }
     selected_ = true;
+    selected_aid_length_ = aid_length;
+    std::copy(message + 5, message + 5 + aid_length, selected_aid_.begin());
     response.resize(kResponseCapacity);
     uint16_t response_length = 0;
     const uint16_t process_status = callbacks_.process == nullptr
@@ -173,7 +189,7 @@ SessionResult Session::handle_message(const uint8_t *message,
     if (process_status == 0xffff || response_length < 2 ||
         response_length > response.size()) {
       append_status(response, 0x6999);
-      clear_or_deselect(false);
+      clear_or_deselect(nullptr, 0);
       return SessionResult::Response;
     }
     response.resize(response_length);
@@ -181,7 +197,7 @@ SessionResult Session::handle_message(const uint8_t *message,
         (static_cast<uint16_t>(response[response_length - 2]) << 8) |
         response[response_length - 1]);
     if (!select_status_keeps_applet_selected(select_status)) {
-      clear_or_deselect(false);
+      clear_or_deselect(nullptr, 0);
     }
     return SessionResult::Response;
   }
@@ -225,7 +241,7 @@ SessionResult Session::handle_message(const uint8_t *message,
 }
 
 void Session::disconnect() {
-  selected_ = false;
+  clear_or_deselect(nullptr, 0);
   card_manager_selected_ = false;
   if (callbacks_.clear != nullptr) {
     callbacks_.clear(callbacks_.context);

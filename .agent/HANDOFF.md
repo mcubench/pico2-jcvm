@@ -1,4 +1,31 @@
-# Current session — RV-26 CCID response recovery first pass — 2026-11-04 20:43 CET
+# Current session — RV-27 VPCD selection and restore correctness — 2026-11-04 19:02 CET
+
+RV-20261103-27 has a first implementation pass in the working tree. The stale
+session test now builds against `Session(CardCallbacks)`. `Session` tracks the
+selected applet AID and only identifies a same-applet reselection when the
+requested AID matches it. Restore results distinguish missing AIDs (`6A82`)
+from restoration failures (`6F00`). The PC restore callback checks installed
+AID presence separately from CAP/instance restoration failures. The session
+test covers two known AIDs, switching in both directions, same-AID reselection,
+unknown AID, ISD selection, rejected VM `select()`, missing AID and corrupted
+restore.
+
+Validation: `./tools/test-vpcd-session` passes `TEST:SUMMARY pass=25 fail=0`;
+`./tools/build arm` and `./tools/build riscv` pass. The PC VPCD applet test was
+attempted with elevated localhost access and failed by timeout before VPCD
+connected; the appended log ends during emulator startup before
+`VPCD:APPLET_INSTALLED`. This is not evidence against the changed restore path,
+which is entered only after SELECT, but leaves production runtime acceptance
+unverified. No physical token or USB/PCSC was used.
+
+The four implementation files remain uncommitted pending this step's metadata
+and scoped commit. Keep RV-27 open until a PC production runtime test exercises
+the restore callback. Preserve all unrelated existing changes. Continue offline
+until physical reader access returns.
+
+---
+
+# Prior session — RV-26 CCID response recovery first pass — 2026-11-04 20:43 CET
 
 RV-20261103-26 first pass is implemented. `send_response` no longer blocks for
 100 ms waiting for an extension and then discards the final response. It

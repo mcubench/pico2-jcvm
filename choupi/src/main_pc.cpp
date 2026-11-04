@@ -1180,7 +1180,12 @@ int connect_vpcd(const std::string &endpoint) {
 
 void vpcd_clear_applet(void *) { choupi_vm_clear_selected_applet(); }
 
-uint8_t vpcd_restore_applet(void *, const uint8_t *aid, uint8_t aid_length) {
+choupi::vpcd::CardCallbacks::RestoreStatus vpcd_restore_applet(
+    void *, const uint8_t *aid, uint8_t aid_length) {
+  using RestoreStatus = choupi::vpcd::CardCallbacks::RestoreStatus;
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) {
+    return RestoreStatus::NotFound;
+  }
   static bool recovery_skipped = false;
   const char *skip_recovery =
       std::getenv("CHOUPI_TEST_SKIP_INSTALL_RECOVERY_ONCE");
@@ -1189,16 +1194,30 @@ uint8_t vpcd_restore_applet(void *, const uint8_t *aid, uint8_t aid_length) {
     recovery_skipped = true;
     std::fprintf(stderr,
                  "VPCD:TEST_SKIPPED_INSTALL_RECOVERY_ONCE\n");
-    return 1;
+    return RestoreStatus::Failed;
   }
-  if (!vpcd_cap_load_session.recoverPendingInstalls()) return 1;
-  if (!vpcd_cap_load_session.restoreInstalledForAid(aid, aid_length)) return 1;
+  if (!vpcd_cap_load_session.recoverPendingInstalls()) {
+    return RestoreStatus::Failed;
+  }
+  uint8_t package_id = 0xff;
+  uint16_t install_offset = 0xffff;
+  if (choupi_vm_find_applet(aid, aid_length, &package_id, &install_offset) !=
+      0) {
+    return RestoreStatus::NotFound;
+  }
+  if (!vpcd_cap_load_session.restoreInstalledForAid(aid, aid_length)) {
+    return RestoreStatus::Failed;
+  }
   uint16_t class_index = 0xffff;
-  if (!vpcd_cap_load_session.appletClassIndex(class_index)) return 1;
+  if (!vpcd_cap_load_session.appletClassIndex(class_index)) {
+    return RestoreStatus::Failed;
+  }
   vpcd_package_id = vpcd_cap_load_session.packageId();
   vpcd_applet_class_index = class_index;
   return choupi_vm_restore_applet(vpcd_package_id, class_index, aid,
-                                  aid_length);
+                                  aid_length) == 0
+             ? RestoreStatus::Restored
+             : RestoreStatus::Failed;
 }
 
 uint16_t vpcd_select_applet(void *) { return choupi_vm_select_applet(); }

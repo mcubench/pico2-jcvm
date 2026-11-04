@@ -21775,3 +21775,14 @@
 - Decision: Keep RV-26 open until production USB callbacks demonstrate recovery through a subsequent slot-status command and APDU. RV-25 also remains open for production routing runtime validation.
 - Commit: `d68461f7691f26645f0ccb9dad2c93b3b7ddcbae`
 - Artifacts/logs: `tools/test-ccid-progress-flow`; current firmware and empty-card UF2 under `build/arm/`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-04 Track VPCD selected AID and restore outcomes 10 minutes
+
+- Step/experiment: `rv-20261103-27-vpcd-session-correctness-first-pass`
+- When: '2026-11-04 18:52 CET' - '2026-11-04 19:02 CET'
+- Change: Restored the VPCD session test constructor compatibility, track the selected AID so same-AID reselection is identified correctly, and distinguish missing applets (`6A82`) from failed restoration (`6F00`). The production PC restore callback checks installation presence and propagates recovery/restore failures. Expanded tests for two known AIDs, switching, same-AID reselection, unknown AID, rejected VM selection, and corrupted restore.
+- Validation: `./tools/test-vpcd-session` passed `TEST:SUMMARY pass=25 fail=0`; `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 1` was attempted with elevated host access, then timed out before VPCD connected. The appended log reaches early emulator startup but has no `VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED` marker. `git diff --check` passed for the four source/test files. Physical hardware was not used.
+- Result: Session state and restore errors now have explicit, tested behavior. Production VPCD restore callback runtime remains unvalidated because the emulator startup timed out; no claim of hardware validation.
+- Decision: Keep RV-27 open and diagnose the pre-connect integration timeout before closing acceptance. No firmware was flashed.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (appended; integration startup timeout); focused runner `tools/test-vpcd-session`.

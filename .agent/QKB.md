@@ -1,3 +1,19 @@
+## PC VPCD applet integration timeout before socket connect — observed 2026-11-04
+
+- **Finding:** An elevated `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-pc-vpcd-applet --passes 1` attempt timed out while waiting for
+  the emulator to connect. The appended emulator log reached early OS startup
+  and stopped before `VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED`. The restricted
+  attempt failed immediately with `Operation not permitted` when opening the
+  local listener.
+- **Status:** Cause is not yet established. The timeout occurred before APDU
+  SELECT, so it did not exercise the session restore callback. Retain the log
+  `artifacts/logs/host-vpcd-jcalgtest-20261014.log` and investigate startup or
+  integration-test setup before relying on this test as runtime evidence.
+- **Viable access path:** Run this local VPCD wrapper only with elevated host
+  access when the restricted attempt reports `Operation not permitted`; do not
+  rerun in restricted mode.
+
 ## Java Card class and interface membership crosses hierarchy links (2026-11-04)
 
 A class may inherit implemented interfaces from a superclass, and its
