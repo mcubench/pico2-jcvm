@@ -81,9 +81,10 @@ during the review.
 
 ### RV-20261103-05
 
-- [ ] **P1: Lifecycle publication can leave inconsistent stores.**
+- [x] **P1: Lifecycle publication can leave inconsistent stores.**
   Owner: PERSIST-03, GP-01. Evidence: Source; [review R05](docs/review_20261103.md#r05--delete-and-load-publication-lack-complete-cross-store-recovery).
   Acceptance: define and implement recovery for each publication point, including retry semantics and cleanup of incomplete LOADs. Fault-inject between stores and after each durable transition. Successful filesystem snapshots alone do not establish atomic package lifecycle.
+  Progress: added idempotent startup/retry reconciliation for CAP-store and persistent-filesystem publication boundaries. Disabled CAP packages (incomplete LOAD or package DELETE) are removed; enabled bitmap entries without a CAP have their package namespace cleared and bit disabled; instance registry entries with a missing applet-root record are removed. Recovery runs before PC VPCD registry validation and before JCVM restore/load/install/DELETE operations, failing closed on errors. The RP2350 production overlay suite seeds each interrupted durable state, repeats recovery, and passes LOAD, DELETE, missing-CAP package cleanup and missing-root instance recovery. ARM, RISC-V and PC builds pass; physical 2BED CHOUPI flash and finite monitor pass (`TEST:SUMMARY pass=1 fail=0`).
 
 ### RV-20261103-06
 

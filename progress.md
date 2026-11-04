@@ -21487,3 +21487,14 @@
 - Decision: Close RV-20261103-04. Next: RV-20261103-05, cross-store lifecycle publication and recovery.
 - Commit: `b2673b9` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T003256Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; production overlay suite output `TEST:SUMMARY fail=0`.
+
+## 2026-11-04 Recover interrupted CAP lifecycle publication 33 minutes
+
+- Step/experiment: `rv-20261103-05-cross-store-lifecycle-recovery`
+- When: '2026-11-04 01:34 CET' - '2026-11-04 02:07 CET'
+- Change: Added idempotent recovery across CAP-store and persistent-filesystem publication. Startup and retry paths now remove disabled staged CAPs (incomplete LOAD or package DELETE), clear and disable package namespaces whose bitmap bit survived without a CAP, and remove instance registry entries when the persistent applet root is missing. PC VPCD storage initialization reconciles state before rejecting package bitmap/CAP inconsistencies; applet restore fails closed if recovery fails. Added a production RP2350 overlay test for each interrupted stable state and repeated recovery.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including disabled staged LOAD cleanup, package DELETE completion after filesystem publication, enabled-without-CAP cleanup, and stale instance registry removal. `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Physical Pico 2 `2BED26ED20556535` passed CHOUPI flash verification and finite serial monitor with repeated `TEST:SUMMARY pass=1 fail=0`; flash reset used CDC BOOTSEL recovery after reset-interface discovery failed.
+- Result: Recovery handles the observed cross-store cut states idempotently and allows retry without retaining an unavailable package slot. ARM firmware ends at `0x100e8cd4`, leaving 95,020 bytes. Current max empty-card UF2 is 1,907,712 bytes, SHA-256 `a3fa5e7ff07c166b8220b72caef3871215d57710695be7e1c3f47eae0a7eeb8e`. PC build completed with existing pinned Rust cfg and packed-member warnings. Cross-store tests seed the durable state at each publication boundary; they do not simulate physical power loss during a live CAP-store sector write.
+- Decision: Close RV-20261103-05. Continue with RV-20261103-06, preflighting duplicate and full-registry INSTALL before applet execution.
+- Commit: `acad726`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T005831Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.

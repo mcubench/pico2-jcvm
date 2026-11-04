@@ -1,3 +1,38 @@
+# Cross-store CAP lifecycle publication recovery — 2026-11-04
+
+- **Failure model:** CAP package bytes/registry and persistent filesystem package
+  state publish separately. A reset can occur after CAP LOAD storage but before
+  enabling the package bit; after package DELETE commits filesystem cleanup and
+  disables the bit but before CAP slot deletion; after package bitmap enable
+  while the CAP slot is missing; or after instance DELETE erases its root but
+  before removing the CAP registry entry.
+- **Viable recovery:** `gp::recover_lifecycle` reconciles the eight mutable
+  package slots idempotently. Disabled + CAP means incomplete LOAD or DELETE,
+  so the CAP slot is removed. Enabled bit + no CAP clears the package namespace
+  transactionally and disables the stale bit. A registered instance with no
+  persisted applet-root tag is removed from the CAP instance registry. Recovery
+  runs before normal package validation and applet restore/LOAD/INSTALL/DELETE;
+  failed reconciliation returns an error instead of continuing against mixed
+  state. A second recovery pass is part of each overlay regression.
+- **Important API distinction:** `FlashMemory_Handler::isPackageExist()` masks
+  stale dynamic bitmap bits if the CAP slot is absent. Recovery must inspect the
+  raw array from `getPackagesArray()` to detect enabled-without-CAP. Filesystem
+  `fs_exists()` returns nonzero for present and zero for absent. Do not infer
+  raw package publication state from `isPackageExist()`.
+- **Evidence:** `./tools/test-rp2350-fs-overlay` uses production CAP-store,
+  RP2350 overlay, and persistent transaction code. It passes seeded cut states
+  for incomplete LOAD, package DELETE after filesystem publication, enabled
+  bitmap without CAP, and instance registry without applet root, with repeat
+  recovery. `./tools/test-persistent-transaction` passes. ARM/RISC-V wrappers
+  and PC emulator build pass. Pico 2 `2BED26ED20556535` passed final CHOUPI
+  flash verification and finite startup monitor (`TEST:SUMMARY pass=1 fail=0`);
+  log: `artifacts/logs/cycle-choupi-20261104T005831Z.log`.
+- **Limit:** Overlay tests seed the durable stores at cross-store publication
+  cut points; they do not interrupt a live on-device CAP-slot sector write.
+  Physical lifecycle APDU cut/retry scenarios remain useful follow-up coverage.
+
+---
+
 ## Transactional DELETE snapshots before bulk namespace erase — 2026-11-04
 
 - **Finding/fix:** `fs_erase_prefix()` and `fs_erase_package_state()` bypassed

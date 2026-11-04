@@ -1,3 +1,37 @@
+# Current session — cross-store CAP lifecycle recovery — 2026-11-04 02:07 CET
+
+Implemented and committed RV-20261103-05 as `acad726` (`Recover interrupted
+CAP lifecycle publication`). Recovery reconciles the CAP store with persistent
+filesystem state before package validation, JCVM restore, LOAD retry, INSTALL,
+and DELETE. It removes CAP slots left disabled by incomplete LOAD/package
+DELETE, clears and disables stale package bits without CAP slots, and removes
+instance registry entries whose persistent applet root is gone. PC emulator
+startup runs recovery before validating bitmap/registry consistency and fails
+closed on recovery errors. The exact tested ARM image is available at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (1,907,712
+bytes, SHA-256 `a3fa5e7ff07c166b8220b72caef3871215d57710695be7e1c3f47eae0a7eeb8e`);
+it bundles no applet and leaves 95,020 bytes in the firmware window.
+
+Validation passed: `./tools/test-rp2350-fs-overlay` (all five lifecycle
+publication/retry tests, `TEST:SUMMARY fail=0`),
+`./tools/test-persistent-transaction` (`TEST:SUMMARY fail=0`), PC emulator,
+ARM and RISC-V `max_crypto` builds, plus CHOUPI flash verification and finite
+serial on Pico 2 `2BED26ED20556535` (`TEST:SUMMARY pass=1 fail=0`). The board
+needed CDC BOOTSEL recovery after reset-interface discovery failed. Final
+cycle log: `artifacts/logs/cycle-choupi-20261104T005831Z.log`. Overlay tests
+seed durable state at each publication cut point and repeat recovery; they do
+not cut power during a live on-device CAP-slot sector write.
+
+Next: implement RV-20261103-06, checking duplicate AIDs and instance-registry
+capacity before invoking applet INSTALL. The dirty worktree still contains
+unrelated edits; preserve them, especially `AGENTS.md`, architecture docs,
+review artifacts, `choupi/src/heap.cpp`/`.hpp`, physical JCSystem probe files,
+and the unrelated `src/cap_load.cpp` PC filesystem wrapper, whitespace and
+CAP-load diagnostics. RV-05 source/artifact commit is `acad726`; this metadata
+follow-up records that SHA.
+
+---
+
 # Current session — transactional DELETE namespace erase — 2026-11-04 01:34 CET
 
 Implemented RV-20261103-04. `FlashMemory_Handler::erasePersistentPrefix()` and
