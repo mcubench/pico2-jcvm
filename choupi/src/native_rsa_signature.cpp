@@ -176,9 +176,10 @@ void append(JC_Instance &signature, const std::shared_ptr<JC_Array> &input,
     uint32_t capacity = std::max<uint16_t>(64, current->size());
     while (capacity < static_cast<uint32_t>(total)) capacity *= 2;
     capacity = std::min<uint32_t>(capacity, 32767);
-    const jref_t expandedRef = Context::getActiveContext().getHeap().addArray(
-        static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
-        ClearEvent::CLEAR_ON_RESET);
+    const jref_t expandedRef =
+        Context::getActiveContext().getHeap().addTransientArray(
+            static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
+            ClearEvent::CLEAR_ON_RESET);
     auto expanded = Context::getActiveContext().getHeap().getArray(expandedRef);
     for (jshort_t i = 0; i < count; ++i)
       expanded->setByteEntry(static_cast<uint16_t>(i),

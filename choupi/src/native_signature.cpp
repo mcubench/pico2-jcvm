@@ -332,8 +332,8 @@ void appendBytes(JC_Instance &signature, const unsigned char *bytes,
     while (capacity < required) capacity *= 2;
     capacity = std::min<uint32_t>(capacity, 32767);
     const jref_t expandedReference = Context::getActiveContext().getHeap()
-        .addArray(static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
-                  ClearEvent::CLEAR_ON_RESET);
+        .addTransientArray(static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
+                           ClearEvent::CLEAR_ON_RESET);
     auto expanded = Context::getActiveContext().getHeap().getArray(expandedReference);
     for (jshort_t index = 0; index < oldLength; ++index)
       expanded->setByteEntry(static_cast<uint16_t>(index),
@@ -668,13 +668,16 @@ jref_t createSignature(uint8_t algorithm, uint8_t digest, uint8_t cipher,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, jref_t());
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR,
-      heap.addArray(16, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+      heap.addTransientArray(16, JAVA_ARRAY_T_BYTE,
+                             ClearEvent::CLEAR_ON_RESET));
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER,
-      heap.addArray(64, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+      heap.addTransientArray(64, JAVA_ARRAY_T_BYTE,
+                             ClearEvent::CLEAR_ON_RESET));
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH,
-      heap.addArray(64, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+      heap.addTransientArray(64, JAVA_ARRAY_T_BYTE,
+                             ClearEvent::CLEAR_ON_RESET));
   instance->setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
   return reference;

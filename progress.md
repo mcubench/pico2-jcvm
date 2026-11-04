@@ -21608,3 +21608,14 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log` SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`; earlier rejected restart attempts are `artifacts/logs/same-cap-transient-vpcd-20261104T093323Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T093949Z.log`.
 
+## 2026-11-04 Make Signature workspaces lifecycle-cleared transients 9 minutes
+
+- Step/experiment: `rv-20261103-14-signature-transient-workspace`
+- When: '2026-11-04 11:21 CET' - '2026-11-04 11:30 CET'
+- Change: Signature IV, message, and recovery-hash buffers and RSA/ECDSA expanded message buffers now use explicit transient heap allocation. Deleted the ambiguous `Heap::addArray(..., ClearEvent)` overload to prevent enum-to-component-token conversion. Added compile-time and runtime heap checks and expanded ECDSA/RSA-SHA1 VPCD inputs to 80 bytes to exercise growth beyond the initial 64-byte workspace.
+- Validation: `./tools/test-jcarray` passed, including `TEST:PASS transient_workspace_initial_and_expanded`; `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` passed `TEST:SUMMARY pass=99 fail=0` (97 asymmetric vectors); `./tools/build-pc --profile max_crypto` passed after restoring the PC build profile. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed after the implementation changes earlier in this step. No physical reader was available; hardware validation was skipped.
+- Result: Both initial and expanded Signature workspaces are transient and clear on reset; RSA and ECDSA extended-message sign/verify vectors succeed. ARM image size/endpoint was not remeasured in this continuation; earlier build passed. No new algorithm support was added.
+- Decision: Close RV-20261103-14 implementation. Continue with RV-20261103-15 crypto intermediate-state lifecycle; retain physical validation as pending.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256 `438416fff71be921de3c1705125dedccd2b2b6e52d5b5f275d26dc18a59748bb`; log reports 99 phases and 97 vectors passed.
+

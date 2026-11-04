@@ -442,6 +442,20 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
   return ref;
 }
 
+jref_t Heap::addTransientArray(const uint16_t nb_entry,
+                               const jc_array_type type,
+                               const ClearEvent event) {
+  return this->addArray(JC_Array(*this, nb_entry, type, true, event));
+}
+
+jref_t Heap::addTransientArray(const uint16_t nb_entry,
+                               const jc_array_type type,
+                               const jc_cp_offset_t reference_type,
+                               const ClearEvent event) {
+  return this->addArray(
+      JC_Array(*this, nb_entry, type, reference_type, true, event));
+}
+
 /*
  * Creating add an array in the heap.
  *

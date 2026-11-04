@@ -38,7 +38,8 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         results.append((command, b"\x01\x90\x00",
                         f"EC prime-field private key selector={selector}"))
     for algorithm in (17, 37, 33, 34, 38):
-        message = b"ecdsa test"
+        # The 80-byte ECDSA case grows Signature's initial 64-byte workspace.
+        message = bytes(range(80)) if algorithm == 17 else b"ecdsa test"
         command = bytes((0x80, 0x17, algorithm, 0, len(message))) + message + b"\x00"
         results.append((command, b"\x01\x90\x00",
                         f"ECDSA algorithm={algorithm} sign/verify"))
@@ -96,7 +97,8 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         results.append((command, message + b"\x90\x00",
                         f"RSA cipher algorithm={algorithm} bytes={len(message)}"))
     n, d, e = rsa
-    message = b"JCVM RSA SHA1 PKCS1"
+    # This one-shot case grows the RSA Signature workspace beyond 64 bytes.
+    message = bytes(range(80))
     digest = hashlib.sha1(message).digest()
     digest_info = bytes.fromhex("3021300906052b0e03021a05000414") + digest
     encoded = b"\x00\x01" + b"\xff" * (64 - len(digest_info) - 3) + b"\x00" + digest_info

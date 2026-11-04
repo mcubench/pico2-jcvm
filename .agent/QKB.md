@@ -1,5 +1,27 @@
 # Restored transient array length and initialization — verified 2026-11-04
 
+# Signature workspace allocation overload — verified 2026-11-04
+
+- **Finding:** `Heap::addArray(length, type, ClearEvent::CLEAR_ON_RESET)` could
+  bind the event enum to the overload whose third parameter is a component
+  type token. Signature IV/message/recovery buffers and dynamically expanded
+  RSA/ECDSA message buffers were therefore ordinary arrays, not lifecycle-
+  cleared transient arrays.
+- **Viable fix:** Use the explicitly named `addTransientArray()` overloads for
+  primitive and reference transient arrays. Delete the ambiguous `addArray`
+  overload taking `ClearEvent`, so accidental enum-to-token conversions fail
+  at compile time. Preserve any pre-existing worktree edits when staging these
+  heap API changes.
+- **Validation:** `./tools/test-jcarray` passes, including a compile-time
+  rejection check and runtime checks for initial/expanded `CLEAR_ON_RESET`
+  workspaces. `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` passes
+  `TEST:SUMMARY pass=99 fail=0` with 97 asymmetric vectors; the ECDSA and
+  RSA-SHA1 vectors include 80-byte messages to force capacity expansion. PC,
+  ARM and RISC-V max-profile builds pass. No Pico was available for physical
+  validation.
+
+---
+
 - **Finding:** A restored transient array allocated its serialized tag prefix
   plus the requested element bytes, then `size()` divided the entire byte
   buffer by element width. A byte array of logical length four and a three-byte

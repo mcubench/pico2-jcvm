@@ -236,8 +236,10 @@ std::vector<unsigned char> readMessage(JC_Instance &signature,
   if (total > buffer->size()) {
     uint32_t capacity = std::max<uint16_t>(64, buffer->size());
     while (capacity < total) capacity = std::min<uint32_t>(32767, capacity * 2);
-    const jref_t expandedRef = Context::getActiveContext().getHeap().addArray(
-        static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET);
+    const jref_t expandedRef =
+        Context::getActiveContext().getHeap().addTransientArray(
+            static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
+            ClearEvent::CLEAR_ON_RESET);
     auto expanded = Context::getActiveContext().getHeap().getArray(expandedRef);
     for (uint16_t i = 0; i < static_cast<uint16_t>(oldLength); ++i)
       expanded->setByteEntry(i, buffer->getByteEntry(i));

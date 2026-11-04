@@ -6,6 +6,8 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace jcarray_test_fixture {
@@ -50,6 +52,18 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
 }
 
 namespace {
+template <typename T, typename = void>
+struct HasAmbiguousClearEventAddArray : std::false_type {};
+
+template <typename T>
+struct HasAmbiguousClearEventAddArray<
+    T, std::void_t<decltype(std::declval<T &>().addArray(
+           uint16_t{1}, jcvm::JAVA_ARRAY_T_BYTE,
+           jcvm::CLEAR_ON_RESET))>> : std::true_type {};
+
+static_assert(!HasAmbiguousClearEventAddArray<jcvm::Heap>::value,
+              "Heap::addArray must reject a ClearEvent component-token call");
+
 bool enumerate_context_roots(jcvm::Heap::ReferenceVisitor visitor,
                              void *visitor_context, void *context) {
   static_cast<const jcvm::Context *>(context)->visitRootReferences(
@@ -130,6 +144,25 @@ int main() {
     std::cerr << "transient array size or clear event mismatch\n";
     return 1;
   }
+
+  const auto initialWorkspaceReference =
+      heap.addTransientArray(64, jcvm::JAVA_ARRAY_T_BYTE,
+                             jcvm::CLEAR_ON_RESET);
+  const auto expandedWorkspaceReference =
+      heap.addTransientArray(128, jcvm::JAVA_ARRAY_T_BYTE,
+                             jcvm::CLEAR_ON_RESET);
+  const auto initialWorkspace = heap.getArray(initialWorkspaceReference);
+  const auto expandedWorkspace = heap.getArray(expandedWorkspaceReference);
+  if (!initialWorkspace || !expandedWorkspace ||
+      !initialWorkspace->isTransientArray() ||
+      !expandedWorkspace->isTransientArray() ||
+      initialWorkspace->getClearEvent() != jcvm::CLEAR_ON_RESET ||
+      expandedWorkspace->getClearEvent() != jcvm::CLEAR_ON_RESET ||
+      initialWorkspace->size() != 64 || expandedWorkspace->size() != 128) {
+    std::cerr << "signature workspace allocations are not reset transient\n";
+    return 1;
+  }
+  std::cout << "TEST:PASS transient_workspace_initial_and_expanded\n";
 
   jcvm::fs::Tag restored_tag{};
   restored_tag.len = 3;

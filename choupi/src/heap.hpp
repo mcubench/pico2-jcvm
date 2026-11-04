@@ -168,9 +168,19 @@ public:
 
   /// Adding new array in the transient heap.
   jref_t addArray(const uint16_t nb_entry, const jc_array_type type);
+  /// Reject passing a clear event where an array component token is expected.
+  jref_t addArray(const uint16_t nb_entry, const jc_array_type type,
+                  const ClearEvent event) = delete;
   /// Adding new reference array in the transient heap.
   jref_t addArray(const uint16_t nb_entry, const jc_array_type type,
                   const jc_cp_offset_t array_reference_type);
+  /// Allocate a transient primitive array with an explicit clear event.
+  jref_t addTransientArray(const uint16_t nb_entry, const jc_array_type type,
+                           const ClearEvent event);
+  /// Allocate a transient reference array with an explicit component and event.
+  jref_t addTransientArray(const uint16_t nb_entry, const jc_array_type type,
+                           const jc_cp_offset_t array_reference_type,
+                           const ClearEvent event);
   /// Adding an array in in the transient heap.
   jref_t addArray(JC_Array array);
   /// Clear transient arrays associated with a lifecycle event.

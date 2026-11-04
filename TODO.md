@@ -143,9 +143,10 @@ during the review.
 
 ### RV-20261103-14
 
-- [ ] **P2: Signature workspace is ordinary memory.**
+- [x] **P2: Signature workspace is ordinary memory.**
   Owner: API-03, PROFILE-01. Evidence: Reproduced; [review R14](docs/review_20261103.md#r14--signature-workspace-allocation-selects-the-wrong-overload).
   Acceptance: construct transient arrays explicitly and make the API type-safe so the enum cannot silently bind as a component token. Verify both initial and expanded buffers.
+  Progress: Signature IV, message, and recovery-hash workspaces plus RSA/ECDSA expansion buffers now use explicit transient-array allocation. A deleted overload rejects passing `ClearEvent` to the ambiguous legacy `addArray` API. The full asymmetric VPCD suite passes 99/99 phases (97 vectors), including ECDSA and RSA-SHA1 inputs longer than the initial 64-byte buffer; native heap tests verify initial and expanded allocations are transient and `CLEAR_ON_RESET`. PC, ARM and RISC-V max-profile builds pass. Physical validation remains pending.
 
 ### RV-20261103-15
 

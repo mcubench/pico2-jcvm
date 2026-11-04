@@ -1,3 +1,31 @@
+# Current session — Signature workspace transient lifetime — 2026-11-04 11:30 CET
+
+RV-20261103-14 implementation is complete in the current worktree. Initial
+Signature IV, message and recovery-hash buffers plus expanded RSA/ECDSA
+message buffers now use explicit `Heap::addTransientArray()` methods. The
+ambiguous `addArray(..., ClearEvent)` overload is deleted, preventing the
+unscoped enum from being interpreted as an array component token. Native
+heap tests include compile-time rejection of the old call shape and runtime
+checks that 64-byte and 128-byte workspaces are `CLEAR_ON_RESET` transients.
+VPCD ECDSA and RSA-SHA1 cases now send 80-byte inputs to exercise growth.
+
+Validation passed: `./tools/test-jcarray`; the complete asymmetric VPCD suite
+(`PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd`) with
+`TEST:SUMMARY pass=99 fail=0`, including 97 asymmetric vectors; PC, ARM and
+RISC-V `max_crypto` builds. The PC profile was restored to `max_crypto` after
+the suite. Latest suite log:
+`artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` (SHA-256
+`438416fff71be921de3c1705125dedccd2b2b6e52d5b5f275d26dc18a59748bb`). No
+physical reader was visible, so no hardware validation occurred.
+
+Continue with RV-20261103-15 crypto intermediate-state lifetime in `TODO.md`.
+Preserve unrelated dirty files. In particular, `choupi/src/heap.cpp` and
+`heap.hpp` already contained unrelated AID-release changes before this step;
+the RV-14 helper additions must be committed without including those unrelated
+removals. Physical verification remains open.
+
+---
+
 # Current session — restore transient array shape and zero data — 2026-11-04 12:52 CET
 
 RV-20261103-13 implementation is committed as `14b8375` (`Restore transient
