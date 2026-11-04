@@ -776,6 +776,13 @@ int main() {
     expect(!after_abort_body.empty() && after_abort_body != old_body &&
                after_abort_body != replacement_body,
            "persistent_array_identity_counter_survives_transaction_abort");
+    constexpr uint8_t identity_counter_tag[] = {
+        0x02, 0xfe, 'J', 'C', 'V', 'M', 'A', 'R', 'R', 'I', 'D'};
+    const auto identity_counter = persistent_transaction_test::read(
+        identity_counter_tag, sizeof(identity_counter_tag));
+    expect(identity_counter.size() == 5 && identity_counter[0] == 1 &&
+               identity_counter[4] != 0,
+           "persistent_array_identity_counter_uses_valid_static_tag");
   }
 
   {

@@ -56,7 +56,7 @@ constexpr uint8_t kPersistentObjectAlias = 0xFE;
 constexpr uint8_t kPersistentArrayAlias = 0xFD;
 constexpr uint8_t kPersistentArrayIdentityVersion = 1;
 constexpr uint8_t kPersistentArrayIdentityCounterTagBytes[] = {
-    0x04, 'J', 'C', 'V', 'M', 'A', 'R', 'R', 'I', 'D'};
+    0x02, 0xfe, 'J', 'C', 'V', 'M', 'A', 'R', 'R', 'I', 'D'};
 constexpr uint8_t kMaxPersistentAliasDepth = 32;
 constexpr size_t kMaxPersistentObjectDepth = TAG_MAX_LENGTH / 2 + 1;
 constexpr uint16_t kMaxCommitCapacity = 0x7fff;
