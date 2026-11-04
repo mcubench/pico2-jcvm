@@ -21572,7 +21572,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. ARM flash-boundary check passed. Build reports 147/150 declared capabilities enabled and 92,780 bytes remaining.
 - Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 1,912,320 bytes, SHA-256 `b964b6cf96fe9989d0740ff3fe9783d2a9c54ab9f92241282ba71ed6e7b71d57`. It matches `build/arm/pico2_choupi.uf2`. Hardware was not available for testing this rebuild; flashing firmware does not erase CAPs already stored on a token.
 - Decision: Provide this current image for external validation. Delete existing applet and package AIDs on the target card before testing if it must be empty.
-- Commit: `pending`
+- Commit: `1e4529a` (implementation; progress SHA follow-up follows)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Clear Cipher key workspaces with transient key lifetime 68 minutes

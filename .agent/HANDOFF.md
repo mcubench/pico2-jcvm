@@ -23,7 +23,8 @@ Firmware endpoint is `0x100E9764`, leaving 92,316 bytes. The combined image
 was recognized by picotool as RP2350 ARM Secure and verified to erase the full
 `0x10100000`–`0x101FFFFF` storage range.
 
-Commit: pending. Next priority is RV-20 defined arithmetic wrapping, shifts,
+Implementation commit: `1e4529a`; progress SHA follow-up remains. Next priority
+is RV-20 defined arithmetic wrapping, shifts,
 and word reconstruction. Preserve unrelated worktree changes.
 
 ---
