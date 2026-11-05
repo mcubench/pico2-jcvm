@@ -6688,6 +6688,36 @@ covered independently. After the signed branch-offset fix, the Descriptor-free
 VPCD SIO suite passed 34/34 and returned the same `6B47` result; log:
 `artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`.
 
+## Volatile applet Object[] foreign roots are now routed — 2026-11-05
+
+Supersedes the preceding status section. The physical and VPCD probes now
+allow ordinary foreign references in applet-owned volatile wildcard/Object
+arrays. `JC_Array` records each slot's owner; the root walker visits foreign
+edges in that owner's package GC, skips them during the source package's local
+compact-handle walk, and clears them before package deletion/owner-ID reuse.
+Equal-handle collisions, overwritten slots, package deletion, and reuse of a
+freed compact target slot are covered by `tools/test-rmi-registry`.
+
+The first physical attempt exposed a separate persistence interaction: assigning
+the volatile array to a persistent applet field tried to recursively serialize
+its compact foreign entries in the receiver heap. This expanded nested tags
+until `IOException` (exception 5), then produced `6F00` at `putfield_a_this`
+(`B5`). In `FlashMemory_Handler::setPersistentField_Reference`, a volatile
+array with foreign entries is now represented by a persistent null marker.
+The live in-memory field remains unchanged and roots the array for the current
+runtime; after restore it will be null instead of a stale cross-package handle.
+This prevents foreign handles from entering persistent storage. Static/instance
+foreign-object stores and persistent arrays remain fail-closed.
+
+Validation on 2026-11-05: native RMI root tests pass; Descriptor-free VPCD SIO
+passes 34/34 (`artifacts/logs/sio-cross-aid-vpcd-20261105T212223Z.log`); final
+ARM and RISC-V `max_crypto` builds pass; final ARM image flashed and passed
+`TEST:SUMMARY pass=1 fail=0` on D92 `D92E743D5F640C0F`; the full physical
+Descriptor-free fixture passes, including retention `6B439000`, post-GC read
+`6A2E9000`, DELETE/reinstall and cleanup (`artifacts/logs/sio-cross-aid-physical-20261105T212809Z.log`).
+The remaining persistence-specific cold-restore assertion for a field that
+held a foreign array is not yet a standalone test.
+
 
 ## SHA-256 reset appears slower than doFinal — 2026-11-05
 

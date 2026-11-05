@@ -159,6 +159,14 @@ public:
                              void *visitor_context);
   /// Drop references owned by a package before its package ID is reused.
   void clearGlobalReferences(jpackage_ID_t package_id) noexcept;
+  /// Whether an applet-owned array contains any foreign reference edges.
+  bool hasForeignReferenceEntries() const noexcept;
+  /// Route foreign entries for one package into that package's GC walk.
+  void visitForeignReferencesForPackage(
+      jpackage_ID_t package_id, void (*visitor)(jref_t, void *),
+      void *visitor_context);
+  /// Clear references before the target package ID is reused.
+  void clearForeignReferencesForPackage(jpackage_ID_t package_id) noexcept;
 
   /// Write a byte or a boolean element from an array.
   void setByteEntry(const uint16_t index, const jbyte_t value)

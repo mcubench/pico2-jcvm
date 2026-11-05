@@ -865,6 +865,8 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
   this->getHeap().visitRootReferences(visitor, visitor_context);
   Heap::visitGlobalArrayReferencesForPackage(
       this->applet_package_ID, visitor, visitor_context);
+  Heap::visitForeignArrayReferencesForPackage(
+      this->applet_package_ID, visitor, visitor_context);
   for (const auto &instance : this->applet_instances) {
     for (const auto &entry : instance.remote_objects) {
       if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {

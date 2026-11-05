@@ -28,6 +28,7 @@ public final class ServiceApplet extends Applet implements Probe {
   private static short descriptorShort;
   private static int descriptorInt;
   private Object retainedForeignInstance;
+  private Object[] retainedForeignArray;
 
   private ServiceApplet() {
     retainedForeignInstance = this;
@@ -401,6 +402,8 @@ public final class ServiceApplet extends Applet implements Probe {
     boolean staticStored = false;
     boolean instanceStored = false;
     boolean arrayStored = false;
+    boolean arrayRetained = false;
+    short failures = 0;
     try {
       retainedForeignStatic = foreign;
       staticStored = retainedForeignStatic == foreign;
@@ -414,18 +417,31 @@ public final class ServiceApplet extends Applet implements Probe {
       // The receiver is owned here; only the stored value is foreign.
     }
     try {
-      Object[] local = JCSystem.makeTransientObjectArray(
-          (short)1, JCSystem.CLEAR_ON_RESET);
-      local[0] = foreign;
-      arrayStored = local[0] == foreign;
+      Object[] local = new Object[1];
+      try {
+        local[0] = foreign;
+        arrayStored = local[0] != null;
+      } catch (SecurityException denied) {
+        failures |= 4;
+      }
+      try {
+        retainedForeignArray = local;
+        arrayRetained = retainedForeignArray == local;
+      } catch (SecurityException denied) {
+        failures |= 8;
+      }
     } catch (SecurityException denied) {
-      // Applet-owned arrays cannot route foreign owner roots through GC.
+      failures |= 4;
     }
-    short failures = 0;
     if (!staticStored) failures |= 1;
     if (!instanceStored) failures |= 2;
     if (!arrayStored) failures |= 4;
+    if (!arrayRetained) failures |= 8;
     return (short)(0x6B40 | failures);
+  }
+
+  public Object getRetainedForeignArray() {
+    return retainedForeignArray[0];
   }
 
   public byte[] echoArray(byte[] value) {

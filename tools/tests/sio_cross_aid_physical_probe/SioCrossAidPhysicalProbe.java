@@ -130,10 +130,18 @@ public final class SioCrossAidPhysicalProbe {
       response = channel.transmit(new CommandAPDU(hex("8020000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:foreignReferenceRetention response=" + actual);
-      if (!actual.equals("6B479000")) {
-        throw new AssertionError("expected volatile foreign Object[] retention " +
-                                 "to fail closed for static/instance/array " +
-                                 "storage (6B479000), got " + actual);
+      if (!actual.equals("6B439000")) {
+        throw new AssertionError("expected applet-owned volatile wildcard " +
+                                 "Object[] retention with static/instance " +
+                                 "stores denied (6B439000), got " + actual);
+      }
+      response = channel.transmit(new CommandAPDU(hex("802E000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:foreignArrayAfterGc response=" + actual);
+      if (!actual.equals("6A2E9000")) {
+        throw new AssertionError("foreign byte array was not retained across " +
+                                 "client root clearing and GC (6A2E9000), got " +
+                                 actual);
       }
 
       response = channel.transmit(new CommandAPDU(hex("8015000000")));

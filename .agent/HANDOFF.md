@@ -1,4 +1,34 @@
-# Active analysis — SHA-256 reset benchmark units — 2026-11-05 22:13 CET
+# Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:32 CET
+
+Implemented cross-package GC roots for foreign references held by applet-owned
+volatile wildcard/Object arrays. Per-slot owner provenance routes each edge to
+the target package collector; source local-GC skips foreign handles, preventing
+equal compact handles from retaining the wrong object. Overwrite, package
+deletion and compact-slot reuse are covered. A volatile array containing
+foreign entries may remain in a live persistent applet field, but persistence
+stores null so the unstable reference is not serialized; the standalone
+cold-restore behavior still needs an explicit assertion. Static/instance
+foreign-object stores and persistent arrays remain fail-closed.
+
+Validation: `./tools/test-rmi-registry` passes with owner-slot reuse;
+`./tools/build-pc --profile max_crypto` passes; Descriptor-free VPCD SIO passes
+34/34 (`artifacts/logs/sio-cross-aid-vpcd-20261105T212223Z.log`). Both
+`./tools/build arm --profile max_crypto` and `./tools/build riscv --profile
+max_crypto` pass. Final ARM image
+`build/arm/pico2_choupi.uf2` (SHA-256
+`59dc8f5335c7c6b24cee3a79012412181cd88b31f7904eb4de05f12febd6d4f9`) was
+flashed to Pico 2 `D92E743D5F640C0F`; the finite cycle passed
+`TEST:SUMMARY pass=1 fail=0`. Physical cross-AID SIO passed, including retained
+array result `6B439000`, post-GC result `6A2E9000`, DELETE/reinstall and cleanup
+(`artifacts/logs/sio-cross-aid-physical-20261105T212809Z.log`).
+
+Next: add a dedicated reset/restore assertion proving the persisted field reads
+null after the runtime-only foreign array is lost, then run the usual ARM/RISC-V
+build, VPCD and physical gates. No commit has been made yet. Preserve the
+unrelated dirty files and skip the pre-existing `releaseGlobalAIDObject` removal
+when staging heap files.
+
+## Previous handoff — SHA-256 reset benchmark units — 2026-11-05 22:13 CET
 
 User-supplied reset 6.20 ms vs doFinal 3.78 ms is consistent with a host
 client units bug. Local JCAlgTest 1.8.2 bytecode subtracts doFinal's

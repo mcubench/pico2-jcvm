@@ -92,9 +92,15 @@ private:
   struct SharedStorage {
     List<std::shared_ptr<JC_Array>> arrays;
     List<std::shared_ptr<JC_Instance>> instances;
+    // Arrays with at least one volatile reference edge into another package.
+    // The package context registry routes these edges into the target heap's
+    // root walk before it can reclaim the referenced handle.
+    std::vector<JC_Array *> foreign_reference_arrays;
     std::vector<RuntimeExceptionRoot> runtime_exception_roots;
     std::vector<StaticReferenceRoot> static_reference_roots;
   };
+  static std::vector<std::weak_ptr<SharedStorage>> &
+  foreignReferenceStorageRegistry() noexcept;
   std::shared_ptr<SharedStorage> shared_storage;
 
   struct GlobalAIDObject {
@@ -221,6 +227,16 @@ public:
   /// Resolve an already-loaded persistent object/array by its flash tag.
   bool getPersistentReference(const fs::Tag &tag,
                               jref_t &reference) const noexcept;
+  /// Update or remove a volatile array with cross-package reference edges.
+  bool registerForeignReferenceArray(JC_Array *array) noexcept;
+  void unregisterForeignReferenceArray(JC_Array *array) noexcept;
+  /// Route live foreign array entries into the referenced package's GC roots.
+  static void visitForeignArrayReferencesForPackage(
+      jpackage_ID_t package_id, ReferenceVisitor visitor,
+      void *visitor_context);
+  /// Clear foreign edges before a package owner ID can be reused.
+  static void clearForeignArrayReferencesForPackage(
+      jpackage_ID_t package_id) noexcept;
   /// Mark reachable handles from a supplied root set without freeing slots.
   ReachabilitySummary traceReachableFrom(
       const std::vector<jref_t> &roots);

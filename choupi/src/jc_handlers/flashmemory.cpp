@@ -1303,6 +1303,25 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
     return;
   }
 
+  // A volatile Object[] may hold live references owned by another package.
+  // Its compact handles are meaningful only in the current runtime and must
+  // not be recursively serialized into this package's persistent record.
+  // The in-memory field/array remain intact until reset; persisting null makes
+  // the reference disappear on restoration instead of resurrecting a stale
+  // cross-package handle.
+  if (value.isArray()) {
+    auto array = heap.getArray(value);
+    if (array->hasForeignReferenceEntries()) {
+      if (fs_exists(tag.value, tag.len)) {
+        const uint8_t uninitialized =
+            static_cast<uint8_t>(FieldType::FIELD_TYPE_UNINITIALIZED);
+        FlashMemory_Handler::setDataFromTag(tag, sizeof(uninitialized),
+                                            &uninitialized);
+      }
+      return;
+    }
+  }
+
   if (value.isGlobalInstance()) {
     uint8_t aid[16]{};
     uint8_t aid_length = 0;

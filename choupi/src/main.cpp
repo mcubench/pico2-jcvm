@@ -1079,6 +1079,7 @@ void choupi_vm_forget_deleted_applet_contexts(
   pending_apdu_response.queue(nullptr, 0);
   if (deleting_package != 0) {
     jcvm::Heap::clearGlobalArrayReferencesForPackage(package_id);
+    jcvm::Heap::clearForeignArrayReferencesForPackage(package_id);
   }
   selected_applet_reselection_pending = false;
   selected_applet_is_reselecting = false;

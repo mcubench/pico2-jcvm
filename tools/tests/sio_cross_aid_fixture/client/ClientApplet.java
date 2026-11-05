@@ -233,8 +233,16 @@ public final class ClientApplet extends Applet {
       Probe probe = (Probe) shareable;
       Object[] global = (Object[])JCSystem.makeGlobalArray(
           JCSystem.ARRAY_TYPE_OBJECT, (short)1);
-      global[0] = this;
+      global[0] = new byte[] { 0x5C };
       result = probe.retainForeignReference(global);
+      global[0] = null;
+    } else if (buffer[1] == 0x2E) {
+      byte[] retained = (byte[])
+          ((Probe) shareable).getRetainedForeignArray();
+      result = retained != null && retained.length == 1 &&
+                       retained[0] == 0x5C
+                   ? (short)0x6A2E
+                   : (short)0x6A2F;
     } else if (buffer[1] == 0x21) {
       Probe probe = (Probe) shareable;
       result = checkSensitiveResult(probe);

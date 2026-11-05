@@ -521,14 +521,23 @@ def main() -> int:
                 connection, bytes.fromhex("8020000000"),
                 "retain ordinary foreign object reference in applet state"
             )
-            if response != bytes.fromhex("6B479000"):
+            if response != bytes.fromhex("6B439000"):
                 raise RuntimeError(
                     f"foreign object retention result {response.hex().upper()}, "
-                    "expected all foreign applet-state retention attempts to "
-                    "fail closed with 6B479000"
+                    "expected applet-owned wildcard Object[] retention to "
+                    "succeed while static/instance stores fail (6B439000)"
                 )
-            print("TEST:PASS foreign references cannot be retained in applet "
-                  "state whose GC cannot route owner-package roots")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("802E000000"),
+                "read foreign byte array after source APDU and GC"
+            )
+            if response != bytes.fromhex("6A2E9000"):
+                raise RuntimeError(
+                    f"foreign array after GC {response.hex().upper()}, "
+                    "expected retained data and identity 6A2E9000"
+                )
+            print("TEST:PASS foreign array stored in service Object[] survives "
+                  "client local/global roots clearing and GC")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

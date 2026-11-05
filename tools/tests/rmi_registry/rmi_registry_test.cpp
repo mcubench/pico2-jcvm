@@ -11,13 +11,15 @@
 #include <cstdio>
 #include <vector>
 
-namespace jcvm {
-uint32_t FlashMemory_Handler::persistentWriteRollbackGeneration() noexcept {
-  return 0;
-}
-} // namespace jcvm
-
 namespace {
+void push_test_frame(jcvm::Stack &stack, const uint8_t nargs,
+                     const uint8_t max_locals,
+                     const uint8_t max_operand_stack) {
+  static const uint8_t method_code[] = {0};
+  stack.push_Frame(nargs, max_locals, max_operand_stack, method_code,
+                   method_code, method_code + sizeof(method_code));
+}
+
 struct VisitedReferences {
   std::array<uint16_t, 40> values{};
   size_t count = 0;
@@ -429,7 +431,7 @@ void verify_global_object_array_package_ownership() {
       0, other_context.getCurrentPackageID()));
 
   jcvm::Stack foreign_reference_stack;
-  foreign_reference_stack.push_Frame(0, 0, 2, nullptr);
+  push_test_frame(foreign_reference_stack, 0, 0, 2);
   foreign_reference_stack.push_Reference(local_array, owner_package);
   bool foreign_access_rejected = false;
   try {
@@ -485,54 +487,74 @@ void verify_global_object_array_package_ownership() {
   jcvm::Heap::releaseGlobalArray(global_array);
 }
 
-void verify_local_array_rejects_foreign_references_before_owner_reuse() {
-  constexpr jcvm::jpackage_ID_t owner_package = 20;
-  constexpr jcvm::jpackage_ID_t receiver_package = 21;
-  jcvm::Context owner_context(7, owner_package);
-  jcvm::Context receiver_context(8, receiver_package);
+void verify_local_array_routes_foreign_references_through_gc() {
+  constexpr jcvm::jpackage_ID_t target_package = 20;
+  constexpr jcvm::jpackage_ID_t source_package = 21;
+  jcvm::Context target(7, target_package);
+  jcvm::Context source(8, source_package);
 
-  const jcvm::jref_t foreign_collision =
-      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
-  const jcvm::jref_t foreign_noncollision =
-      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
-  const jcvm::jref_t receiver_collision =
-      receiver_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
-  const jcvm::jref_t receiver_array = receiver_context.getHeap().addArray(
+  const jcvm::jref_t target_collision = target.getHeap().addInstance(
+      target_package, static_cast<jcvm::jclass_index_t>(1));
+  const jcvm::jref_t target_noncollision = target.getHeap().addInstance(
+      target_package, static_cast<jcvm::jclass_index_t>(1));
+  const jcvm::jref_t source_collision = source.getHeap().addInstance(
+      source_package, static_cast<jcvm::jclass_index_t>(1));
+  assert(target_collision == source_collision);
+
+  const jcvm::jref_t source_array_ref = source.getHeap().addArray(
       2, jcvm::JAVA_ARRAY_T_REFERENCE,
       static_cast<jcvm::jc_cp_offset_t>(0xffff));
-  const auto local_array = receiver_context.getHeap().getArray(receiver_array);
-  assert(foreign_collision == receiver_collision);
-  assert(foreign_noncollision != receiver_collision);
+  const auto source_array = source.getHeap().getArray(source_array_ref);
+  source_array->setReferenceEntry(0, target_collision, source,
+                                  target_package);
+  source_array->setReferenceEntry(1, target_noncollision, source,
+                                  target_package);
+  assert(source_array->getReferenceEntryOwner(0) == target_package);
+  assert(source_array->getReferenceEntryOwner(1) == target_package);
+  source.getHeap().setStaticReferenceRoot(source_package, 0, source_array_ref);
 
-  for (uint16_t index = 0; index < 2; ++index) {
-    const auto foreign = index == 0 ? foreign_collision : foreign_noncollision;
-    bool rejected = false;
-    try {
-      local_array->setReferenceEntry(index, foreign, receiver_context,
-                                     owner_package);
-    } catch (jcvm::Exceptions error) {
-      rejected = error == jcvm::Exceptions::SecurityException;
-    }
-    assert(rejected);
-    assert(local_array->getReferenceEntry(index).isNullPointer());
-    assert(local_array->getReferenceEntryOwner(index) == 0xff);
-  }
+  std::vector<jcvm::jref_t> source_roots;
+  source.appendRootReferences(source_roots);
+  const auto source_gc = source.getHeap().collectUnreachableFrom(source_roots);
+  assert(source_gc.complete);
+  assert(source_gc.instances_reclaimed == 1);
+  assert(source_gc.arrays_reclaimed == 0);
 
-  const std::vector<jcvm::jref_t> no_roots;
-  const auto owner_gc =
-      owner_context.getHeap().collectUnreachableFrom(no_roots);
-  assert(owner_gc.complete);
-  assert(owner_gc.arrays_reclaimed == 2);
-  const auto reused_collision =
-      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
-  const auto reused_noncollision =
-      owner_context.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
-  assert(reused_collision == foreign_collision);
-  assert(reused_noncollision == foreign_noncollision);
+  std::vector<jcvm::jref_t> target_roots;
+  target.appendRootReferences(target_roots);
+  const auto target_gc = target.getHeap().collectUnreachableFrom(target_roots);
+  assert(target_gc.complete);
+  assert(target_gc.instances_reclaimed == 0);
+  assert(target.getHeap().getInstance(target_collision));
+  assert(target.getHeap().getInstance(target_noncollision));
 
-  std::puts("RMI_REGISTRY:PASS local_foreign_array_store_rejected=2 "
-            "colliding_handle=1 noncolliding_handle=1 owner_reclaimed=2 "
-            "owner_slots_reused_without_alias=1");
+  source_array->setReferenceEntry(0, jcvm::jref_t{}, source);
+  target_roots.clear();
+  target.appendRootReferences(target_roots);
+  const auto one_removed_gc =
+      target.getHeap().collectUnreachableFrom(target_roots);
+  assert(one_removed_gc.complete);
+  assert(one_removed_gc.instances_reclaimed == 1);
+  assert(target.getHeap().getInstance(target_noncollision));
+
+  jcvm::Heap::clearForeignArrayReferencesForPackage(target_package);
+  assert(source_array->getReferenceEntry(1).isNullPointer());
+  assert(source_array->getReferenceEntryOwner(1) == 0xff);
+  target_roots.clear();
+  target.appendRootReferences(target_roots);
+  const auto deleted_owner_gc =
+      target.getHeap().collectUnreachableFrom(target_roots);
+  assert(deleted_owner_gc.complete);
+  assert(deleted_owner_gc.instances_reclaimed == 1);
+  const jcvm::jref_t reused_target_slot = target.getHeap().addInstance(
+      target_package, static_cast<jcvm::jclass_index_t>(1));
+  assert(reused_target_slot == target_collision ||
+         reused_target_slot == target_noncollision);
+  assert(source_array->getReferenceEntry(1).isNullPointer());
+
+  std::puts("RMI_REGISTRY:PASS local_foreign_array_roots_routed=2 "
+            "equal_handle_alias_not_marked=1 overwritten_root_released=1 "
+            "package_delete_root_cleared=1 owner_slot_reuse_safe=1");
 }
 
 void verify_shareable_proxy_registry() {
@@ -600,7 +622,7 @@ void verify_shareable_cross_context_arguments() {
     global_instance.setOffset(1);
     global_instance.setAsGlobalInstance();
     jcvm::Stack stack;
-    stack.push_Frame(0, 0, 8, nullptr);
+    push_test_frame(stack, 0, 0, 8);
     stack.push_Reference(receiver);
     stack.push_Byte(-2);
     stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
@@ -626,7 +648,7 @@ void verify_shareable_cross_context_arguments() {
     assert(locals[3].value == global_instance.compact());
 
     jcvm::Stack shuffled_stack;
-    shuffled_stack.push_Frame(0, 0, 8, nullptr);
+    push_test_frame(shuffled_stack, 0, 0, 8);
     shuffled_stack.push_Reference(receiver);
     shuffled_stack.push_Short(0x2468);
     shuffled_stack.dup(1, 0);
@@ -645,7 +667,7 @@ void verify_shareable_cross_context_arguments() {
     assert(shuffled_stack.pop_Short() == 0x1357);
 
     jcvm::Stack private_reference_stack;
-    private_reference_stack.push_Frame(0, 0, 2, nullptr);
+    push_test_frame(private_reference_stack, 0, 0, 2);
     private_reference_stack.push_Reference(receiver);
     private_reference_stack.push_Reference(make_reference(23));
     assert(!jcvm::buildShareableTaggedInitialLocals(
@@ -656,7 +678,7 @@ void verify_shareable_cross_context_arguments() {
     assert(locals[1].reference_owner == 22);
 
     jcvm::Stack reference_provenance_stack;
-    reference_provenance_stack.push_Frame(0, 2, 8, nullptr);
+    push_test_frame(reference_provenance_stack, 0, 2, 8);
     const auto foreign_reference = make_reference(24);
     reference_provenance_stack.writeLocal_Reference(0, foreign_reference, 17);
     const auto local_reference =
@@ -742,7 +764,7 @@ void verify_shareable_cross_context_arguments() {
 
 #ifdef JCVM_INT_SUPPORTED
     jcvm::Stack malformed_int_stack;
-    malformed_int_stack.push_Frame(0, 0, 8, nullptr);
+    push_test_frame(malformed_int_stack, 0, 0, 8);
     malformed_int_stack.push_Reference(receiver);
     malformed_int_stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
     malformed_int_stack.push_Int(static_cast<jcvm::jint_t>(0x76543210));
@@ -764,7 +786,7 @@ void verify_shareable_cross_context_arguments() {
 
   {
     jcvm::Stack stack;
-    stack.push_Frame(0, 0, 3, nullptr);
+    push_test_frame(stack, 0, 0, 3);
     stack.push_Reference(receiver);
     stack.push_Byte(-2);
     stack.push_Short(0x7bcd);
@@ -788,7 +810,7 @@ void verify_shareable_cross_context_arguments() {
 #ifdef JCVM_INT_SUPPORTED
   {
     jcvm::Stack stack;
-    stack.push_Frame(0, 0, 3, nullptr);
+    push_test_frame(stack, 0, 0, 3);
     stack.push_Reference(receiver);
     stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
     constexpr uint8_t signature[] = {0x05, 0x04}; // (int) short
@@ -803,7 +825,7 @@ void verify_shareable_cross_context_arguments() {
 
   {
     jcvm::Stack stack;
-    stack.push_Frame(0, 0, 2, nullptr);
+    push_test_frame(stack, 0, 0, 2);
     stack.push_Reference(receiver);
     stack.push_Reference(jcvm::jref_t{});
     constexpr uint8_t signature[] = {
@@ -838,7 +860,7 @@ void verify_shareable_cross_context_arguments() {
     global_array.setAsGlobalArray();
 
     jcvm::Stack stack;
-    stack.push_Frame(0, 0, 3, nullptr);
+    push_test_frame(stack, 0, 0, 3);
     stack.push_Reference(receiver);
     stack.push_Reference(global_instance);
     stack.push_Reference(global_array);
@@ -879,7 +901,7 @@ void verify_shareable_cross_context_arguments() {
 
   {
     jcvm::Stack stack;
-    stack.push_Frame(0, 0, 1, nullptr);
+    push_test_frame(stack, 0, 0, 1);
     stack.push_Reference(receiver);
     constexpr uint8_t signature[] = {0x03, 0x04}; // (byte) short
     assert(!jcvm::buildShareableInitialLocals(
@@ -890,7 +912,7 @@ void verify_shareable_cross_context_arguments() {
 
 void verify_typed_local_access() {
   jcvm::Stack stack;
-  stack.push_Frame(0, 6, 1, nullptr);
+  push_test_frame(stack, 0, 6, 1);
   stack.writeLocal_Short(0, -9);
   assert(stack.readLocal_Short(0) == -9);
 
@@ -950,7 +972,7 @@ void verify_typed_operand_pops() {
   bool rejected = false;
 
   jcvm::Stack primitive_stack;
-  primitive_stack.push_Frame(0, 0, 2, nullptr);
+  push_test_frame(primitive_stack, 0, 0, 2);
   primitive_stack.push_Reference(reference);
   try {
     (void)primitive_stack.pop_Short();
@@ -961,7 +983,7 @@ void verify_typed_operand_pops() {
   assert(primitive_stack.pop_Reference() == reference);
 
   jcvm::Stack reference_stack;
-  reference_stack.push_Frame(0, 0, 2, nullptr);
+  push_test_frame(reference_stack, 0, 0, 2);
   reference_stack.push_Short(0x2468);
   rejected = false;
   try {
@@ -973,7 +995,7 @@ void verify_typed_operand_pops() {
   assert(reference_stack.pop_Short() == 0x2468);
 
   jcvm::Stack return_address_stack;
-  return_address_stack.push_Frame(0, 0, 2, nullptr);
+  push_test_frame(return_address_stack, 0, 0, 2);
   return_address_stack.push_Short(0x1357);
   rejected = false;
   try {
@@ -986,7 +1008,7 @@ void verify_typed_operand_pops() {
 
 #ifdef JCVM_INT_SUPPORTED
   jcvm::Stack int_stack;
-  int_stack.push_Frame(0, 0, 4, nullptr);
+  push_test_frame(int_stack, 0, 0, 4);
   constexpr jcvm::jint_t expected = 0x12345678;
   int_stack.push_Int(expected);
   assert(int_stack.pop_Int() == expected);
@@ -1005,7 +1027,7 @@ void verify_typed_operand_pops() {
 
 int main() {
   jcvm::Stack argument_stack;
-  argument_stack.push_Frame(0, 0, 3, nullptr);
+  push_test_frame(argument_stack, 0, 0, 3);
   const auto proxy_receiver = make_reference(20);
   const auto target_receiver = make_reference(21);
   argument_stack.push_Reference(proxy_receiver);
@@ -1030,7 +1052,7 @@ int main() {
   verify_owner_id_space_exhaustion_and_reclamation();
   verify_heap_owner_facades_share_package_roots();
   verify_global_object_array_package_ownership();
-  verify_local_array_rejects_foreign_references_before_owner_reuse();
+  verify_local_array_routes_foreign_references_through_gc();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();

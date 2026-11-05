@@ -528,6 +528,45 @@ void JC_Array::clearGlobalReferences(const jpackage_ID_t package_id) noexcept {
   }
 }
 
+bool JC_Array::hasForeignReferenceEntries() const noexcept {
+  for (const jpackage_ID_t owner : this->reference_value_owners) {
+    if (owner != kNoGlobalReferenceOwner) return true;
+  }
+  return false;
+}
+
+void JC_Array::visitForeignReferencesForPackage(
+    const jpackage_ID_t package_id,
+    void (*visitor)(jref_t, void *), void *visitor_context) {
+  if (this->getOwner().isGlobalHeap() ||
+      this->type != JAVA_ARRAY_T_REFERENCE || visitor == nullptr ||
+      this->isPersistent()) {
+    return;
+  }
+  for (uint16_t index = 0; index < this->reference_value_owners.size();
+       ++index) {
+    if (this->reference_value_owners[index] != package_id) continue;
+    const jref_t reference = this->getReferenceEntry(index);
+    if (!reference.isNullPointer()) visitor(reference, visitor_context);
+  }
+}
+
+void JC_Array::clearForeignReferencesForPackage(
+    const jpackage_ID_t package_id) noexcept {
+  if (this->getOwner().isGlobalHeap() ||
+      this->type != JAVA_ARRAY_T_REFERENCE || this->isPersistent()) {
+    return;
+  }
+  for (uint16_t index = 0; index < this->reference_value_owners.size();
+       ++index) {
+    if (this->reference_value_owners[index] != package_id) continue;
+    const uint16_t offset = static_cast<uint16_t>(index * sizeof(jref_t));
+    this->array[offset] = 0;
+    this->array[static_cast<uint16_t>(offset + 1)] = 0;
+    this->reference_value_owners[index] = kNoGlobalReferenceOwner;
+  }
+}
+
 /**
  * Write a byte or a boolean element from an array.
  *
@@ -730,22 +769,39 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
   const bool foreign_reference =
       value_owner != 0xff && value_owner != 0xfe &&
       value_owner != context.getCurrentPackageID();
+  bool object_component_array = false;
+#ifdef JCVM_FIREWALL_CHECKS
+  if (foreign_reference && !this->getOwner().isGlobalHeap() &&
+      !this->isPersistent() &&
+      this->type == jc_array_type::JAVA_ARRAY_T_REFERENCE &&
+      this->reference_type != 0xFFFF) {
+    auto current_package = context.getCurrentPackage();
+    ConstantPool_Handler cp_handler(current_package);
+    const auto component = cp_handler.classref2class(
+        cp_handler.getClassRef(this->reference_type));
+    object_component_array = component.second != nullptr &&
+                             component.second->isObjectClass();
+  }
+#endif
   if (foreign_reference && this->isPersistent()) {
     // Persistent foreign references need a stable cross-package object
     // identity in the flash format. Keep failing closed until that format is
     // implemented.
     throw Exceptions::SecurityException;
   }
-  if (foreign_reference && !this->getOwner().isGlobalHeap()) {
-    // An applet heap's GC cannot follow a compact child handle into another
-    // package heap. Only runtime-global arrays retain foreign entries because
-    // Context routes those roots to the recorded owner package.
+  if (foreign_reference &&
+      !this->getOwner().isGlobalHeap() &&
+      (this->isPersistent() ||
+       this->type != jc_array_type::JAVA_ARRAY_T_REFERENCE ||
+       (this->reference_type != 0xFFFF && !object_component_array) ||
+       this->getOwner().getOwner() != context.getAppletID())) {
+    // Only volatile Object[] arrays owned by the active applet may retain
+    // foreign entries. Context routes their roots into the referenced package
+    // heap before it is collected.
     throw Exceptions::SecurityException;
   }
-  if (foreign_reference &&
-      (this->reference_type != 0xFFFF ||
-       (!this->getOwner().isGlobalHeap() &&
-        this->getOwner().getOwner() != context.getAppletID()))) {
+  if (foreign_reference && this->getOwner().isGlobalHeap() &&
+      this->reference_type != 0xFFFF) {
     throw Exceptions::SecurityException;
   }
 
@@ -758,7 +814,8 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 
   // Native-created Object[] arrays use 0xFFFF as a wildcard component type;
   // unlike CAP-backed arrays, they have no component class in a CAP pool.
-  if (this->reference_type == 0xFFFF || value.isNullPointer()) {
+  if (this->reference_type == 0xFFFF || value.isNullPointer() ||
+      (foreign_reference && object_component_array)) {
     // Wildcard arrays accept any reference; null is valid for all arrays.
     ;
   } else if (value.isInstance()) {
@@ -841,6 +898,11 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
     }
   }
 
+  if (foreign_reference && !this->getOwner().isGlobalHeap() &&
+      !this->getOwner().registerForeignReferenceArray(this)) {
+    throw Exceptions::SecurityException;
+  }
+
   if (this->isPersistent()) {
     auto tag = this->computeTag();
 
@@ -870,6 +932,10 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
         value.isNullPointer() || !foreign_reference
             ? kNoGlobalReferenceOwner
             : value_owner;
+    if (!this->getOwner().isGlobalHeap() &&
+        !this->hasForeignReferenceEntries()) {
+      this->getOwner().unregisterForeignReferenceArray(this);
+    }
   }
 }
 

@@ -82,6 +82,12 @@ Heap::Heap(const japplet_ID_t owner, const Heap &shared_heap)
     : owner(owner), global_heap(false),
       shared_storage(shared_heap.shared_storage) {}
 
+std::vector<std::weak_ptr<Heap::SharedStorage>> &
+Heap::foreignReferenceStorageRegistry() noexcept {
+  static std::vector<std::weak_ptr<SharedStorage>> registry;
+  return registry;
+}
+
 /*
  * Getting the applet ID owner
  *
@@ -221,6 +227,105 @@ void Heap::clearGlobalArrayReferencesForPackage(
     const jpackage_ID_t package_id) noexcept {
   for (const auto &array : globalArrayHeap().shared_storage->arrays) {
     if (array) array->clearGlobalReferences(package_id);
+  }
+}
+
+bool Heap::registerForeignReferenceArray(JC_Array *array) noexcept {
+  if (array == nullptr || this->global_heap) return false;
+  auto &arrays = this->shared_storage->foreign_reference_arrays;
+  if (std::find(arrays.begin(), arrays.end(), array) != arrays.end()) {
+    return true;
+  }
+
+  auto &registry = foreignReferenceStorageRegistry();
+  bool storage_registered = false;
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    storage_registered = storage_registered ||
+                         storage.get() == this->shared_storage.get();
+    ++it;
+  }
+
+  bool array_added = false;
+  try {
+    arrays.push_back(array);
+    array_added = true;
+    if (!storage_registered) registry.push_back(this->shared_storage);
+  } catch (...) {
+    if (array_added) arrays.pop_back();
+    return false;
+  }
+  return true;
+}
+
+void Heap::unregisterForeignReferenceArray(JC_Array *array) noexcept {
+  if (array == nullptr || this->global_heap) return;
+  auto &arrays = this->shared_storage->foreign_reference_arrays;
+  arrays.erase(std::remove(arrays.begin(), arrays.end(), array), arrays.end());
+}
+
+void Heap::visitForeignArrayReferencesForPackage(
+    const jpackage_ID_t package_id, const ReferenceVisitor visitor,
+    void *visitor_context) {
+  if (visitor == nullptr) return;
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    auto &arrays = storage->foreign_reference_arrays;
+    for (auto array_it = arrays.begin(); array_it != arrays.end();) {
+      JC_Array *array = *array_it;
+      if (array == nullptr || !array->hasForeignReferenceEntries()) {
+        array_it = arrays.erase(array_it);
+        continue;
+      }
+      array->visitForeignReferencesForPackage(package_id, visitor,
+                                              visitor_context);
+      ++array_it;
+    }
+    if (arrays.empty()) {
+      it = registry.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
+void Heap::clearForeignArrayReferencesForPackage(
+    const jpackage_ID_t package_id) noexcept {
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    auto &arrays = storage->foreign_reference_arrays;
+    for (auto array_it = arrays.begin(); array_it != arrays.end();) {
+      JC_Array *array = *array_it;
+      if (array == nullptr) {
+        array_it = arrays.erase(array_it);
+        continue;
+      }
+      array->clearForeignReferencesForPackage(package_id);
+      if (!array->hasForeignReferenceEntries()) {
+        array_it = arrays.erase(array_it);
+      } else {
+        ++array_it;
+      }
+    }
+    if (arrays.empty()) {
+      it = registry.erase(it);
+    } else {
+      ++it;
+    }
   }
 }
 
@@ -497,6 +602,9 @@ void Heap::clearTransientArrays(const ClearEvent event) {
     if (array && array->isTransientArray() &&
         array->getClearEvent() == event) {
       array->clearTransientData();
+      if (!array->hasForeignReferenceEntries()) {
+        this->unregisterForeignReferenceArray(array.get());
+      }
     }
   }
   if (!this->global_heap && event == ClearEvent::CLEAR_ON_RESET) {
@@ -812,7 +920,8 @@ void Heap::visitChildReferences(JC_Array &array,
 
   for (uint16_t index = 0; index < length; ++index) {
     const jref_t child = array.getReferenceEntry(index);
-    if (!child.isNullPointer()) {
+    if (!child.isNullPointer() &&
+        array.getReferenceEntryOwner(index) == 0xff) {
       visitor(child, visitor_context);
     }
   }
@@ -1240,6 +1349,7 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
 
   for (auto &array : this->shared_storage->arrays) {
     if (array && array->heap_mark == 0) {
+      this->unregisterForeignReferenceArray(array.get());
       array.reset();
       ++summary.arrays_reclaimed;
     }
@@ -1269,6 +1379,7 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
 
   for (auto &array : this->shared_storage->arrays) {
     if (array && array->heap_mark == 0) {
+      this->unregisterForeignReferenceArray(array.get());
       array.reset();
       ++summary.arrays_reclaimed;
     }
