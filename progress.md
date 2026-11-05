@@ -22254,3 +22254,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: build outputs under `build/arm/` and `build/riscv/`; no additional logs.
 
 - Commit resolved for `vpcd-orphan-cleanup-target-builds-20261105`: `d4c34558` (Record target builds for VPCD recovery).
+
+
+## 2026-11-05 Prioritize normal startup and agent diagnostic builds 1.8 minutes
+
+- Step/experiment: `host-02-startup-diagnostics-backlog-20261105`
+- When: '2026-11-05T14:18:29+01:00' - '2026-11-05T14:20:18+01:00'
+- Change: Added HOST-02 as the first P1 priority: remove the normal 30-second CDC/DTR loop and 500 ms sleep; specify an explicit bounded diagnostic build setting with default zero and no cached-option leakage. Added agent build/cycle/capture instructions, normal versus diagnostic acceptance gates, and QKB/handoff context. Proposed option is clearly labeled unimplemented.
+- Validation: Inspected startup and existing wrapper behavior; verified unique HOST-02 and first-priority placement, documentation links, bash syntax of all proposed examples, and whitespace checks. Confirmed tools/build does not yet consume the proposed input. No firmware builds, flash, USB/PCSC operations, or hardware tests: documentation/backlog-only change.
+- Result: A concrete high-priority implementation task and diagnostic workflow are ready for agents. The user's approximate 20–30-second Windows observation remains unmeasured; no firmware fix, throughput, or startup timing result is claimed.
+- Decision: Implement HOST-02 next; keep it open until both architectures, diagnostic-to-normal resets, and Windows no-console reconnect/APDU gates pass.
+- Commit: Resolve with `git log -1 --format=%H -- docs/usb-startup-diagnostics.md` after commit creation (self-embedded commit hashes are not possible).
+- Artifacts/logs: `TODO.md`; `docs/usb-startup-diagnostics.md`; none generated.

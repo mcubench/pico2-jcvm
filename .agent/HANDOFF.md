@@ -1,3 +1,16 @@
+# High-priority startup TODO — HOST-02 — 2026-11-05
+
+The user requested a high-priority task to remove the normal-build 30-second
+serial-console startup wait and document explicit diagnostic builds for agents.
+HOST-02 is now first in TODO priorities. Its workflow is specified in
+`docs/usb-startup-diagnostics.md`; the proposed PICO2_DEBUG_SERIAL_WAIT_MS
+option is **not implemented** and must not be relied on yet. Acceptance includes
+normal/diagnostic/default-reset builds, both target architectures, and Windows
+reconnect measurements with no serial monitor open. Existing source work is
+untouched. This is backlog/documentation work, not a firmware fix.
+
+---
+
 # README refreshed — 2026-11-05
 
 Applied the user-approved concise README with five parts: educational warning,

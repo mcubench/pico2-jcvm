@@ -6562,3 +6562,22 @@ suite then passed `TEST:SUMMARY pass=34 fail=0` at
 was used. Follow-up `./tools/build arm` and `./tools/build riscv` both exited
 0 after the OS prefix authorization change; the ARM firmware window check
 passed with 182,644 bytes remaining. No hardware was flashed.
+
+
+## 2026-11-05 Normal startup waits for diagnostic CDC/DTR — fix pending (HOST-02)
+
+The user reports an approximately 20–30-second Windows reader-list delay.
+Source review found the ARM startup loop waits up to 120 times 250 ms for
+`stdio_usb_connected()`, followed by a 500 ms sleep before filesystem/runtime
+initialization. With the current SDK defaults the condition checks CDC DTR.
+The loop services USB intermittently but does not call `choupi_ccid_task()`;
+complete CCID messages remain deferred until the normal main loop. PC/SC use
+does not require opening the diagnostic COM port. This is a source-confirmed
+startup dependency and a strong cause to test, not a timed Windows diagnosis.
+
+Planned solution: HOST-02 removes the normal wait and exposes a bounded,
+explicit diagnostic build setting with default zero for agentic development.
+See `docs/usb-startup-diagnostics.md`. No implementation or viable hardware
+fix is claimed yet. Important diagnostic trap: opening a serial monitor can
+assert DTR and bypass the wait, masking the no-console problem. Validate
+normal reconnect readiness separately with all serial clients closed.

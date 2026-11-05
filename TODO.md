@@ -7,12 +7,15 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
+1. Complete **HOST-02 (P1)**: remove the normal-build serial-console startup
+   wait and add explicit diagnostic builds for agentic development. See the
+   [planned diagnostic workflow](docs/usb-startup-diagnostics.md).
+2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
-2. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
+3. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
-3. Close the current-image coverage and integration gates in **API-03**,
+4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
 Physical availability is volatile. At the latest elevated host-access refresh
@@ -1006,6 +1009,41 @@ source-based follow-ups, without a new physical reproduction in this review.
   Follow AGENTS host-access rules from the first USB/PCSC operation, use exact
   current reader names, and fail over only to another identified available board.
   Evidence: QKB USB/PCSC records. Old available/empty-card states are not current.
+
+### HOST-02
+
+- [ ] **P1 / high priority: remove the serial-console wait from normal firmware;
+  make startup capture an explicit diagnostic build option.**
+  Status: source-confirmed startup defect; implementation not started. The
+  current ARM startup waits for CDC/DTR for up to `120 * 250 ms = 30 s`, then
+  sleeps another 500 ms before storage/runtime initialization. During that
+  loop USB is serviced intermittently, but normal CCID command handling has
+  not started. The user reports a roughly 20–30-second Windows reader delay;
+  the exact causal timing has not been measured.
+  Remaining: remove both waits from normal startup; retain optional CDC
+  diagnostics; add validated `PICO2_DEBUG_SERIAL_WAIT_MS` build-wrapper input
+  with default `0` and explicit bounded opt-in (e.g. `30000`) for agents
+  capturing early startup. Always propagate the selected value, including
+  zero, into build configuration so a diagnostic build cannot contaminate
+  the next normal build. Keep USB enumeration serviced during any explicit
+  diagnostic wait and avoid dispatching applets before runtime is ready.
+  Record the setting in build provenance and identify diagnostic images.
+  Acceptance: build ARM/RISC-V in normal and diagnostic modes, then switch
+  back to normal in the same build directories and verify the setting resets.
+  Diagnostic mode exits on DTR or its deadline; normal mode reaches runtime
+  without DTR or intentional console sleeps. Flash the identified ARM image
+  only after both architecture builds pass; require finite serial PASS/no
+  FAULT and successful PC/SC/APDU checks. Separately measure at least three
+  Windows cold reconnects with **no serial terminal or monitor open**, plus
+  a diagnostic capture run; record image hashes, reader-list method, timing,
+  and remaining host overhead. A monitor-assisted cycle alone cannot close
+  the no-console startup gate. Firmware should impose no 30-second delay;
+  do not claim an exact Windows readiness bound before measurement.
+  Agent instructions: [normal and diagnostic build workflow](docs/usb-startup-diagnostics.md).
+  Related: HOST-01 (reader disappearance), AC-01 (Windows acceptance).
+  Evidence: `src/choupi_pico2.cpp` startup and `src/ccid_device.cpp` deferred
+  message processing; `.agent/QKB.md` startup-wait finding. No fix or Windows
+  trace is claimed by this task record.
 
 ### AC-01
 
