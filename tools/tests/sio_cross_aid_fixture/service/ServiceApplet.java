@@ -444,6 +444,10 @@ public final class ServiceApplet extends Applet implements Probe {
     return retainedForeignArray[0];
   }
 
+  public boolean retainedForeignArrayIsNull() {
+    return retainedForeignArray == null;
+  }
+
   public byte[] echoArray(byte[] value) {
     return value;
   }

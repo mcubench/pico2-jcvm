@@ -612,6 +612,18 @@ def main() -> int:
                     "expected 45679000"
                 )
             print("TEST:PASS fresh cross-AID lookup works after emulator restart")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("802F000000"),
+                "ensure foreign array field restores as null after process restart"
+            )
+            if response != bytes.fromhex("6A6E9000"):
+                raise RuntimeError(
+                    "volatile foreign array field after process restart "
+                    f"returned {response.hex().upper()}, expected "
+                    "null marker 6A6E9000"
+                )
+            print("TEST:PASS volatile foreign array field restores as null "
+                  "after emulator process restart")
             response = vpcd.exchange(connection, bytes.fromhex("8018000000"),
                                      "reject stale proxy virtual call after restart")
             if response != bytes.fromhex("6A0B9000"):

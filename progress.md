@@ -22388,3 +22388,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Cross-package GC routing for volatile applet arrays is now covered on emulator and Pico 2. Add explicit reset/restore field-null coverage next; keep static/instance foreign-object stores and persistent arrays fail-closed.
 - Commit: pending.
 - Artifacts/logs: VPCD `artifacts/logs/sio-cross-aid-vpcd-20261105T212223Z.log`, SHA-256 `f101a5e8f5f959d8348e542471a9d441234683d44d19a95414c1663193a8367e`; physical `artifacts/logs/sio-cross-aid-physical-20261105T212809Z.log`, SHA-256 `add237698fd39b764238e486408e3cdda6c5c11123237ce0be460dfdda650a5e`; cycle `artifacts/logs/cycle-choupi-20261105T212542Z.log`, SHA-256 `783133f73ab97e323f25ce10c2520f86cecde66dee564e00a94266af4a6e9a68`.
+
+## 2026-11-05 Verify foreign-array cold restore 16 minutes
+
+- Step/experiment: `cross-package-volatile-array-cold-restore-20261105`
+- When: '2026-11-05 21:35 UTC (approx.)' - '2026-11-05 21:51 UTC'
+- Change: Added a test-only Shareable API assertion for the persistent field that held a foreign-reference array. The VPCD test now checks it after a true emulator process restart over the same persistent image; the physical probe remains scoped to its existing warm-reset behavior.
+- Validation: `./tools/build-sio-cross-aid-fixture` passes. `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passes `TEST:SUMMARY pass=34 fail=0`, including field-null result `6A6E9000` after emulator process restart. `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passes and reports cleanup `PASS`. ARM/RISC-V firmware rebuilds were intentionally skipped because only test fixture/CAP sources changed after the previously validated image; no firmware source changed.
+- Result: Cold process restoration uses the persistent null marker. A physical PC/SC warm reset leaves the live runtime heap intact; an earlier mistaken assertion expected cold restoration there and returned `6A6F`, then cleanup passed. The corrected physical probe passes the existing reset checks. A physical cold power cycle remains unmeasured.
+- Decision: Keep reset and process-restart expectations distinct. Continue with the next highest open project TODO; preserve static/instance foreign-object and persistent-array fail-closed policy.
+- Commit: pending.
+- Artifacts/logs: VPCD `artifacts/logs/sio-cross-aid-vpcd-20261105T214508Z.log`, SHA-256 `4683c4ae56e77e4eb6fd9b520e8c756cc11ec77edced1ec734de5ad22c3d4b2f`; physical `artifacts/logs/sio-cross-aid-physical-20261105T214741Z.log`, SHA-256 `e75fd33f4f3022b8e8781a748c2b87f7f732113e076f6e8c32b9142ba76e2107`.

@@ -243,6 +243,9 @@ public final class ClientApplet extends Applet {
                        retained[0] == 0x5C
                    ? (short)0x6A2E
                    : (short)0x6A2F;
+    } else if (buffer[1] == 0x2F) {
+      result = ((Probe) shareable).retainedForeignArrayIsNull()
+          ? (short)0x6A6E : (short)0x6A6F;
     } else if (buffer[1] == 0x21) {
       Probe probe = (Probe) shareable;
       result = checkSensitiveResult(probe);

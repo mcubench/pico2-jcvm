@@ -6718,6 +6718,22 @@ Descriptor-free fixture passes, including retention `6B439000`, post-GC read
 The remaining persistence-specific cold-restore assertion for a field that
 held a foreign array is not yet a standalone test.
 
+## Foreign array persistence: distinguish card reset from process restore — 2026-11-05
+
+Follow-up to the preceding entry. The Descriptor-free VPCD suite now checks
+the foreign-array field after restarting the emulator process with the same
+persistent image; the field restores null (`6A6E9000`) and the complete suite
+passes 34/34 (`artifacts/logs/sio-cross-aid-vpcd-20261105T214508Z.log`). The
+test was first placed after a PC/SC POWER_RESET and returned `6A6F` on physical
+D92. This is expected: the physical warm card reset clears the relevant
+transient state but does not reconstruct the live persistent object heap, so
+the current field reference remains. Do not treat `SCardDisconnect(true)` /
+reconnect as a cold-restore test. The corrected physical suite still passes
+retention (`6B439000`), post-GC read (`6A2E9000`), reset stale-proxy handling,
+DELETE/reinstall and cleanup (`artifacts/logs/sio-cross-aid-physical-20261105T214741Z.log`).
+Physical cold power-cycle/firmware reinitialization of this field remains
+unverified.
+
 
 ## SHA-256 reset appears slower than doFinal — 2026-11-05
 

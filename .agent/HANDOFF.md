@@ -1,4 +1,4 @@
-# Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:32 CET
+# Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:50 CET
 
 Implemented cross-package GC roots for foreign references held by applet-owned
 volatile wildcard/Object arrays. Per-slot owner provenance routes each edge to
@@ -6,13 +6,15 @@ the target package collector; source local-GC skips foreign handles, preventing
 equal compact handles from retaining the wrong object. Overwrite, package
 deletion and compact-slot reuse are covered. A volatile array containing
 foreign entries may remain in a live persistent applet field, but persistence
-stores null so the unstable reference is not serialized; the standalone
-cold-restore behavior still needs an explicit assertion. Static/instance
-foreign-object stores and persistent arrays remain fail-closed.
+stores null so the unstable reference is not serialized. The VPCD regression
+now verifies the field restores as null after emulator process restart. A
+PC/SC card reset does not reload the runtime's persistent fields on physical
+hardware; that warm-reset path must not be used as a cold-restore assertion.
+Static/instance foreign-object stores and persistent arrays remain fail-closed.
 
 Validation: `./tools/test-rmi-registry` passes with owner-slot reuse;
 `./tools/build-pc --profile max_crypto` passes; Descriptor-free VPCD SIO passes
-34/34 (`artifacts/logs/sio-cross-aid-vpcd-20261105T212223Z.log`). Both
+34/34 including cold-restore null (`artifacts/logs/sio-cross-aid-vpcd-20261105T214508Z.log`). Both
 `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile
 max_crypto` pass. Final ARM image
 `build/arm/pico2_choupi.uf2` (SHA-256
@@ -20,13 +22,14 @@ max_crypto` pass. Final ARM image
 flashed to Pico 2 `D92E743D5F640C0F`; the finite cycle passed
 `TEST:SUMMARY pass=1 fail=0`. Physical cross-AID SIO passed, including retained
 array result `6B439000`, post-GC result `6A2E9000`, DELETE/reinstall and cleanup
-(`artifacts/logs/sio-cross-aid-physical-20261105T212809Z.log`).
+(`artifacts/logs/sio-cross-aid-physical-20261105T214741Z.log`).
 
-Next: add a dedicated reset/restore assertion proving the persisted field reads
-null after the runtime-only foreign array is lost, then run the usual ARM/RISC-V
-build, VPCD and physical gates. No commit has been made yet. Preserve the
-unrelated dirty files and skip the pre-existing `releaseGlobalAIDObject` removal
-when staging heap files.
+Next: continue with the highest remaining project TODO after RV-20261103-08;
+read `.agent/QKB.md` for existing failure resolutions before touching related
+code. Preserve unrelated dirty files and skip the pre-existing
+`releaseGlobalAIDObject` removal when staging heap files. The implementation
+commit is `ec00a265`; the cold-restore regression is a separate uncommitted test
+step.
 
 ## Previous handoff — SHA-256 reset benchmark units — 2026-11-05 22:13 CET
 
