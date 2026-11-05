@@ -1,4 +1,29 @@
-# Active handoff — VPCD session restore integration validated — 2026-11-06 00:15 CET
+# Active handoff — RV-28 ConstantPool structural validation — 2026-11-06 00:25 CET
+
+## Latest continuation — reject undefined CAP ConstantPool tags — 2026-11-06 00:25 CET
+
+RV-20261103-28 remains open. The CAP component parser now rejects ConstantPool
+entry tags outside the six defined CAP 2.1/2.2 reference kinds, as well as
+retaining its existing component count/length checks. The shared helper test
+passes 7/7 under ASan/UBSan. `./tools/test-cap-parser` passes 4,208 checks
+across 48 CAP files and 100,000 fuzz inputs; the deployed 3.0.5 scan passes
+978 methods and 8,720 branch targets with three known descriptor clamps and
+no invalid/misaligned targets. Native-opcode policy test passes 5/5. ARM and
+RISC-V max_crypto wrapper builds pass.
+
+LeakSanitizer itself fails to initialize in this VM because it runs under
+ptrace restrictions. `tools/test-cap-constant-pool-validation` sets
+`ASAN_OPTIONS=detect_leaks=0` by default while leaving ASan and UBSan enabled.
+No hardware flash or malformed-CAP execution on an interpreter was done for
+this parser-only slice.
+
+Next: implement/verify semantic ConstantPool linkage checks (internal class
+offsets, imports, exports, fields and methods) without rejecting the valid
+deployed CAP corpus; then add malformed bytecode interpreter execution under
+sanitizers. Keep physical failure/recovery acceptance open. Preserve unrelated
+dirty worktree changes. Implementation/docs/progress commit pending.
+
+## Previous continuation — VPCD session restore integration validated — 2026-11-06 00:15 CET
 
 ## Latest continuation — close RV-27 with current VPCD runtime evidence — 2026-11-06 00:15 CET
 

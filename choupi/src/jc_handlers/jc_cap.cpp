@@ -26,6 +26,7 @@
 */
 
 #include "jc_cap.hpp"
+#include "../../../src/cap_constant_pool_validation.hpp"
 #include "../exceptions.hpp"
 #include <array>
 #include <cstddef>
@@ -542,10 +543,7 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
     return offset == size;
   }
   case 5: { // Constant Pool
-    if (size < sizeof(uint16_t)) return false;
-    const size_t entries = read_be16(payload);
-    return entries == (size - sizeof(uint16_t)) / 4 &&
-           (size - sizeof(uint16_t)) % 4 == 0;
+    return jcvm::cap_constant_pool_validation::valid_payload(payload, size);
   }
   case 6: // Class
     if (cap_major == 2 && cap_minor == 1)

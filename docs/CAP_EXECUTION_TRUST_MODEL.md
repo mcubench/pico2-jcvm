@@ -29,6 +29,12 @@ constant-pool linkage or enforce heap field kinds/access. Malformed-CAP
 runtime/sanitizer coverage is still required before claiming safe execution of
 malformed or hostile CAP programs.
 
+The loader rejects ConstantPool entries whose tags are outside the six defined
+CAP 2.1/2.2 reference kinds, in addition to checking the component entry count
+and size. This is structural screening only: it does not prove that each
+class, import, field, or method reference resolves to a compatible target.
+Nested semantic linkage validation remains open.
+
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's
 default CAP load omits Descriptor and Debug. The Method component alone does

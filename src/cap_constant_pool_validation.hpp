@@ -1,0 +1,29 @@
+#ifndef JCVM_CAP_CONSTANT_POOL_VALIDATION_HPP
+#define JCVM_CAP_CONSTANT_POOL_VALIDATION_HPP
+
+#include <cstddef>
+#include <cstdint>
+
+namespace jcvm::cap_constant_pool_validation {
+
+// CAP ConstantPool entries have a one-byte tag and a three-byte payload.
+// The component validator calls this before creating the packed runtime view,
+// so malformed tags cannot reach the interpreter's tag-specific unions.
+inline bool valid_payload(const uint8_t *payload,
+                          const std::size_t size) noexcept {
+  if (payload == nullptr || size < 2) return false;
+
+  const std::size_t count =
+      (static_cast<std::size_t>(payload[0]) << 8) | payload[1];
+  if (count != (size - 2) / 4 || (size - 2) % 4 != 0) return false;
+
+  for (std::size_t index = 0; index < count; ++index) {
+    const uint8_t tag = payload[2 + index * 4];
+    if (tag < 1 || tag > 6) return false;
+  }
+  return true;
+}
+
+} // namespace jcvm::cap_constant_pool_validation
+
+#endif // JCVM_CAP_CONSTANT_POOL_VALIDATION_HPP

@@ -22473,3 +22473,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv27-pc-vpcd-20261106.log`, SHA-256 `c35ad52fd4b3d85e7de8c143abbb32952713b7afcc8e547693ecb07117435d72`.
 
 - Commit resolved for `rv27-vpcd-production-callback-20261106`: `2ada2e15` (Validate VPCD applet restore integration).
+
+## 2026-11-06 Reject undefined CAP ConstantPool tags 10 minutes
+
+- Step/experiment: `rv28-constant-pool-tag-validation-20261106`
+- When: '2026-11-06 00:15 CET' - '2026-11-06 00:25 CET'
+- Change: Added ConstantPool payload validation that rejects tags outside the six defined CAP 2.1/2.2 reference kinds. Added standalone sanitizer-backed tests and documented that semantic nested-linkage validation remains open. Updated RV-28, QKB, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 7/7 under ASan/UBSan; LeakSanitizer was disabled by default because this VM's ptrace restriction prevents its startup. `./tools/test-cap-parser` passed 4,208 checks over 48 corpus CAPs and 100,000 fuzz inputs. `./tools/test-cap-method-body-deploy-caps` passed across 11 deployed 3.0.5 API CAPs (978 methods, 8,720 branch targets, 3 descriptor clamps, zero invalid/misaligned targets). `./tools/test-cap-native-opcode-policy` passed 5/5. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `git diff --check` passed with `core.whitespace=cr-at-eol` for the existing CRLF CAP parser source. No hardware flash or physical malformed-CAP execution was performed.
+- Result: Undefined constant-pool tags now fail during CAP component parsing rather than reaching later union dispatch. Valid deployed CAP corpus remained accepted. This does not validate nested reference targets.
+- Decision: Keep RV-28 open; next validate imported/internal class, field and method linkage targets, then add malformed interpreter runtime coverage.
+- Commit: pending.
+- Artifacts/logs: no retained log; deterministic test output summarized above.

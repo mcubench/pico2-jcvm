@@ -6871,3 +6871,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   physical `artifacts/logs/cipher-lifecycle-pcsc-20261105T230800Z.log`,
   SHA-256
   `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.
+# ConstantPool parser must reject unknown reference tags — 2026-11-06
+
+- **Finding:** The CAP ConstantPool parser checked the count and fixed-width
+  record length but accepted undefined entry tags. Runtime consumers interpret
+  the shared three-byte union according to that tag, so malformed linkage
+  records should be rejected before a runtime view is created.
+- **Viable fix:** Validate each ConstantPool tag as one of the six defined
+  CAP 2.1/2.2 reference kinds during component payload validation. Keep this
+  distinct from semantic nested-linkage validation, which must also validate
+  class/import/field/method targets and remains open.
+- **Validation:** ASan/UBSan helper suite passes 7/7. `./tools/test-cap-parser`
+  passes 4,208 parser checks over 48 CAP files and 100,000 fuzz inputs. The
+  deployed 3.0.5 method/body scan remains valid for 978 methods and 8,720
+  branch targets. ARM and RISC-V max_crypto builds pass.
+- **Environment note:** LeakSanitizer exits with “does not work under ptrace”
+  in this VM. The focused wrapper disables leak detection by default while
+  retaining AddressSanitizer and UBSan; callers can override `ASAN_OPTIONS`.
