@@ -6559,4 +6559,6 @@ limitation: execution bounds cannot be reconstructed without the optional
 Descriptor component. With `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`, the complete
 suite then passed `TEST:SUMMARY pass=34 fail=0` at
 `artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`. No physical hardware
-was used.
+was used. Follow-up `./tools/build arm` and `./tools/build riscv` both exited
+0 after the OS prefix authorization change; the ARM firmware window check
+passed with 182,644 bytes remaining. No hardware was flashed.

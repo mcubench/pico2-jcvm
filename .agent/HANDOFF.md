@@ -6360,7 +6360,9 @@ documented fail-closed limitation. With
 `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`, the full suite passed 34/34:
 `artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`. No emulator process
 remained after the run. No physical hardware used. Startup duration was not
-measured. Temporary diagnostic prints were removed.
+measured. Temporary diagnostic prints were removed. Cross-target gate is also
+now complete: `./tools/build arm` and `./tools/build riscv` both exited 0 with
+the current profile; no board was flashed.
 
 Next: continue with the next high-priority runtime item in `TODO.md`. Preserve
 unrelated existing source, documentation, review artifact, and submodule

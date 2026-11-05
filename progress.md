@@ -22241,3 +22241,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`; max image manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`.
 
 - Commit resolved for `vpcd-orphan-cleanup-regression-20261105`: `1f85963d` (Record VPCD regression validation).
+
+## 2026-11-05 Complete target build gates for VPCD recovery fix 11 minutes
+
+- Step/experiment: `vpcd-orphan-cleanup-target-builds-20261105`
+- When: '2026-11-05 14:04 CET' - '2026-11-05 14:15 CET'
+- Change: Completed ARM and RISC-V build validation for the trusted static-prefix recovery change; updated QKB and handoff. No source changes in this validation step.
+- Validation: `./tools/build arm` exited 0 and reported `BUILD:PASS target=choupi image=build/arm/pico2_choupi.uf2` plus `FLASH_LAYOUT:PASS firmware_end=0x100d368c limit=0x10100000 remaining=182644 bytes`. `./tools/build riscv` exited 0 and reported `BUILD:PASS arch=riscv image=build/riscv/pico2_jcvm_smoke.uf2`. A first ARM tool session lost its observation handle before final status; a subsequent incremental ARM wrapper run completed with captured exit 0. No flash or hardware access was performed.
+- Result: The shared OS syscall change compiles in both target configurations. These checks do not establish physical behavior; the VPCD suite remains the runtime validation.
+- Decision: Continue to the next open CTX-01 firewall/lifecycle item; preserve all unrelated dirty work.
+- Commit: pending.
+- Artifacts/logs: build outputs under `build/arm/` and `build/riscv/`; no additional logs.
