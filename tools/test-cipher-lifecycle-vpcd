@@ -49,12 +49,12 @@ add_apdu 8004000000 019000 # Refresh the Cipher copy before reader reset.
 add_apdu 800B000000 019000
 args+=(--reset-after-custom-apdu 19)
 add_apdu 8002000000 019000 # Refill AES source after reset.
-add_apdu 8005000000 429000
+add_apdu 8005000000 449000 # Reset cleared Cipher initialization state.
 add_apdu 800D000000 019000 # Refill RSA source after reset.
-add_apdu 800C000000 429000
+add_apdu 800C000000 449000 # Reset cleared Cipher initialization state.
 args+=(
-  --resume-apdu 8005000000 --expect-resume-apdu-response 429000
-  --resume-apdu 800C000000 --expect-resume-apdu-response 429000
+  --resume-apdu 8005000000 --expect-resume-apdu-response 449000
+  --resume-apdu 800C000000 --expect-resume-apdu-response 449000
 )
 
 printf 'VPCD:LOG %s\n' "${log}"

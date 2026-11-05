@@ -371,6 +371,26 @@ future cross-context exception marshalling.
   SHA-256 `937c85f629c47615b08a44493b85e614c376cc7059238e706c5a8d0e00ba718f`.
 - **Commit:** `c619063` (`Clear Cipher key copies with transient lifetime`).
 
+## Cipher lifecycle reset status ordering — confirmed 2026-11-05
+
+- **Observation:** After deselect, an old AES/RSA Cipher remains initialized
+  but its transient key workspace has been cleared, so `doFinal()` returns
+  `CryptoException.UNINITIALIZED_KEY` (`42`). Reader reset clears the Cipher's
+  native session fields as well as transient arrays. A post-reset call therefore
+  returns `CryptoException.INVALID_INIT` (`44`) before checking the workspace
+  marker. A fresh emulator process restoring the applet also returns `44`.
+- **Viable test expectation:** Distinguish lifecycle events: expect `42` after
+  deselect; expect `44` after reader reset and fresh process restore. Do not
+  interpret reset `44` as evidence that the sensitive key copy survived; native
+  reset state prevents use of the Cipher before the key workspace is consulted.
+- **Validation:** Corrected VPCD suite passes `TEST:SUMMARY pass=29 fail=0`.
+  Physical D92 test previously observed AES reset response `449000`; the
+  corrected complete physical rerun could not enumerate a hardware reader
+  (GPPro listed only VPCD 00/01 after the helper granted access to three USB
+  nodes). RSA reset on hardware remains unverified.
+- **Artifacts:** `artifacts/logs/cipher-lifecycle-vpcd-20261105T220558Z.log`;
+  preceding hardware observation `artifacts/logs/cipher-lifecycle-pcsc-20261105T215615Z.log`.
+
 ---
 
 # Non-renewable applet execution deadline — 2026-11-04

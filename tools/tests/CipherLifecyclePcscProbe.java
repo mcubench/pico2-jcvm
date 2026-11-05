@@ -98,9 +98,9 @@ public final class CipherLifecyclePcscProbe {
       card = target.connect("*");
       channel = selectApplet(card.getBasicChannel());
       expectCommand(channel, 2, "restore AES transient key after reset", "019000");
-      expectCommand(channel, 5, "Cipher rejects key cleared on reader reset", "429000");
+      expectCommand(channel, 5, "Cipher is uninitialized after reader reset", "449000");
       expectCommand(channel, 13, "restore RSA transient key after reset", "019000");
-      expectCommand(channel, 12, "RSA Cipher copy cleared on reset", "429000");
+      expectCommand(channel, 12, "RSA Cipher is uninitialized after reset", "449000");
       System.out.println("TEST:SUMMARY pass=31 fail=0");
     } finally {
       card.disconnect(false);

@@ -22401,3 +22401,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: VPCD `artifacts/logs/sio-cross-aid-vpcd-20261105T214508Z.log`, SHA-256 `4683c4ae56e77e4eb6fd9b520e8c756cc11ec77edced1ec734de5ad22c3d4b2f`; physical `artifacts/logs/sio-cross-aid-physical-20261105T214741Z.log`, SHA-256 `e75fd33f4f3022b8e8781a748c2b87f7f732113e076f6e8c32b9142ba76e2107`.
 
 - Commit resolved for `cross-package-volatile-array-cold-restore-20261105`: `2f50699b` (Test foreign array field cold restore).
+
+## 2026-11-05 Correct Cipher reset lifecycle expectations 10 minutes
+
+- Step/experiment: `cipher-lifecycle-reset-status-20261105`
+- When: '2026-11-05 22:00 UTC' - '2026-11-05 22:10 UTC'
+- Change: Corrected the VPCD and physical PC/SC lifecycle fixtures to distinguish deselect from reader reset and fresh process restore. Deselect retains Cipher initialization but clears the transient workspace (`42`, `UNINITIALIZED_KEY`); reset/restore clears native initialization state first (`44`, `INVALID_INIT`). Updated RV-20261103-11, QKB and handoff with the clarified behavior and remaining physical acceptance.
+- Validation: `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 240s ./tools/test-cipher-lifecycle-vpcd` passed `TEST:SUMMARY pass=29 fail=0`, including AES/RSA deselect, reader reset, and fresh restore. `git diff --check` passed for all changed files. The corrected physical command was attempted through the elevated path, but GPPro listed only Virtual PCD 00/01; the authorized helper had access-granted three USB nodes. No physical APDU was sent in this run, and no firmware source changed or flash/build for ARM/RISC-V was needed.
+- Result: VPCD confirms reset and fresh-restore `449000` responses for AES and RSA; deselect remains `429000`. Earlier physical D92 log observed AES reset `449000`, then aborted on the stale `429000` expectation and cleaned up the disposable probe. Corrected complete hardware suite remains unverified because no Pico PC/SC reader was enumerated. Physical output `TEST:SUMMARY` was not produced.
+- Decision: Keep separate expected status words for deselect versus reset. Retry the complete physical PC/SC test when an identified Pico reader appears; retain RV-20261103-11 as open until hardware AES/RSA reset lifecycle passes.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261105T220558Z.log` (SHA-256 `05a5bdfcc44de690e4edf1bdd77976b308456172e0d197da0b4b8fbc3be445e9`); prior physical observation `artifacts/logs/cipher-lifecycle-pcsc-20261105T215615Z.log` (SHA-256 `2b33e59ed9dbeaf3b2cb84fd8edd1fb08cc30ece1e1ed97d3dcf666badddf3a8`).

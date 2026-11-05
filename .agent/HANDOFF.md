@@ -1,5 +1,26 @@
 # Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
 
+## Latest continuation — Cipher lifecycle reset expectations — 2026-11-05 23:09 CET
+
+Reconciled the RV-20261103-11 reset-status mismatch. Deselect preserves the
+Cipher initialized flag and clears the key workspace, so retained AES and RSA
+Ciphers return `42` (`UNINITIALIZED_KEY`). Reader reset clears native session
+fields first, so they return `44` (`INVALID_INIT`); fresh emulator-process
+restore also returns `44`. Updated both PCSC and VPCD test expectations. VPCD
+passes 29/29, including deselect (`42`), reset (`44`) and fresh restore (`44`).
+An earlier physical D92 run observed AES reset `44`, then aborted on the stale
+`42` expectation and cleaned the probe package. The corrected full physical
+rerun is still pending: the latest helper granted access to three USB nodes,
+but GPPro enumerated only the two VPCD readers. No firmware source changed and
+no flash was performed.
+
+Next: when a physical Pico reader is again listed by PC/SC, rerun
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-lifecycle-pcsc '<exact reader>'`
+with elevated host access. The test must complete AES and RSA deselect and
+reader-reset paths, then report `TEST:SUMMARY pass=31 fail=0` and cleanup pass.
+Preserve unrelated dirty files. Validation log:
+`artifacts/logs/cipher-lifecycle-vpcd-20261105T220558Z.log`.
+
 Implemented cross-package GC roots for foreign references held by applet-owned
 volatile wildcard/Object arrays. Per-slot owner provenance routes each edge to
 the target package collector; source local-GC skips foreign handles, preventing
