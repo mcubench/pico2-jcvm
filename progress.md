@@ -22031,3 +22031,14 @@
 - Decision: Use the wrapper for future cross-AID VPCD regression runs; continue tracking Descriptor-omitted CAP execution as a separate firmware compatibility issue.
 - Commit: `804e7f9`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`.
+
+## 2026-11-05 Repeat cross-AID VPCD regression after BOOTSEL report 15 minutes
+
+- Step/experiment: `ctx-20261105-cross-aid-vpcd-repeat-and-device-refresh`
+- When: '2026-11-05 03:25 CET' - '2026-11-05 03:40 CET'
+- Change: Rechecked physical USB visibility after the user reported all three Pico 2 devices in BOOTSEL, then reran the current cross-AID regression through its host-access-gated VPCD wrapper.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` succeeded but listed only USB root hubs and the VirtualBox Tablet; no RP2350 device was available to flash. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed with `TEST:SUMMARY pass=34 fail=0`. No firmware source changed, so ARM/RISC-V builds and physical testing were not run.
+- Result: Descriptor-present three-package SIO behavior remains green under the wrapper. Physical BOOTSEL boards remain unattached to this VM; the Descriptor-omitted dynamic-package bounds issue remains open and fail-closed.
+- Decision: Continue offline while guest USB enumeration is unavailable; retain this emulator regression as the baseline for the next CTX-01/03 change.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T023146Z.log` (SHA-256 `e626973dcfdf5e499d4918e430dc2ceeb51ebe0d27d5100f901e38319c0f2f1d`).

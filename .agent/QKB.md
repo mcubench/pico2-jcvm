@@ -6345,8 +6345,12 @@ original terminology/status; check current summary and later fixes before reuse.
   guest `./tools/env lsusb` still listed only root hubs and the VirtualBox USB
   Tablet. `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero CCID devices;
   this helper expects runtime-mode VID:PID `2e8a:0009`, so its zero result is
-  expected in BOOTSEL. No RP2350 BOOTSEL device was visible to this guest, and
-  no flash/hardware validation occurred.
+  expected in BOOTSEL. After the user again reported all three boards in
+  BOOTSEL on 2026-11-05, the elevated host-access USB refresh still found no
+  RP2350 device in this guest; no flash/hardware validation occurred. A fresh
+  Descriptor-present VPCD run nevertheless passed 34/34 at
+  `artifacts/logs/sio-cross-aid-vpcd-20261105T023146Z.log` (SHA-256
+  `e626973dcfdf5e499d4918e430dc2ceeb51ebe0d27d5100f901e38319c0f2f1d`).
 - **Artifacts:** Passing run log
   `artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log`, SHA-256
   `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`.

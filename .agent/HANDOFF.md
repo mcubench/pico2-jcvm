@@ -1,4 +1,16 @@
-# Current continuation — cross-AID VPCD and BOOTSEL visibility — 2026-11-05 03:20 CET
+# Current continuation — cross-AID VPCD and BOOTSEL visibility — 2026-11-05 03:40 CET
+
+After the user again reported all three tokens in BOOTSEL, the required
+elevated host-access refresh (`PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb`)
+still listed only the USB root hubs and VirtualBox Tablet. No RP2350 was
+attached to this guest, so no flash or physical validation was possible.
+
+Repeated the full Descriptor-present cross-AID VPCD regression through the
+approved wrapper after that refresh. It again passed `TEST:SUMMARY pass=34
+fail=0`; log `artifacts/logs/sio-cross-aid-vpcd-20261105T023146Z.log` (SHA-256
+`e626973dcfdf5e499d4918e430dc2ceeb51ebe0d27d5100f901e38319c0f2f1d`). This
+is emulator validation only. Continue with offline implementation priorities;
+keep the Descriptor-omitted bounds issue fail-closed and open.
 
 The full cross-AID SIO VPCD regression passed `TEST:SUMMARY pass=34 fail=0`
 when run with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`,
