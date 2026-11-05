@@ -1,5 +1,28 @@
 # Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
 
+## Latest continuation — VPCD reset must skip applet deselect — 2026-11-05 23:20 CET
+
+The RV-20261103-12 transient test exposed a regression in VPCD: tracking the
+selected AID had routed POWER_OFF, POWER_RESET and disconnect through
+`clear_or_deselect()`, invoking applet `deselect()` before reset cleanup. The
+session now clears selection bookkeeping without applet code, then invokes the
+VM clear callback and card-manager reset callback. Applet SELECT transitions
+still call `deselect()` as before. Standalone session tests pass 29/29; the
+same-CAP VPCD lifecycle passes 6/6, including direct active reset with no
+deselect count change and reset clearing a cached inactive writer applet's
+transient arrays. Host VM max_crypto build passes. No firmware source changed
+and no flash was done.
+
+Physical status: elevated USB enumeration sees three `2e8a:0009` devices with
+CDC and CCID descriptors, but PC/SC exposes only Virtual PCD 00/01. RV-12's
+physical reset check remains pending. RV-11's corrected physical AES/RSA
+lifecycle run is also pending for the same reader-enumeration issue.
+
+Next: continue with RV-20261103-13, restored transient-array logical lengths,
+using the same-CAP and native heap coverage. Revisit physical checks when a
+Pico reader appears in PC/SC. Preserve all unrelated dirty files. VPCD log:
+`artifacts/logs/same-cap-transient-vpcd-20261105T221737Z.log`.
+
 ## Latest continuation — Cipher lifecycle reset expectations — 2026-11-05 23:09 CET
 
 Reconciled the RV-20261103-11 reset-status mismatch. Deselect preserves the

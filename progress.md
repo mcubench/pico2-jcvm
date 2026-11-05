@@ -22412,3 +22412,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep separate expected status words for deselect versus reset. Retry the complete physical PC/SC test when an identified Pico reader appears; retain RV-20261103-11 as open until hardware AES/RSA reset lifecycle passes.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261105T220558Z.log` (SHA-256 `05a5bdfcc44de690e4edf1bdd77976b308456172e0d197da0b4b8fbc3be445e9`); prior physical observation `artifacts/logs/cipher-lifecycle-pcsc-20261105T215615Z.log` (SHA-256 `2b33e59ed9dbeaf3b2cb84fd8edd1fb08cc30ece1e1ed97d3dcf666badddf3a8`).
+
+## 2026-11-05 Prevent VPCD reset from invoking applet deselect 10 minutes
+
+- Step/experiment: `vpcd-reset-no-deselect-20261105`
+- When: '2026-11-05 22:10 UTC' - '2026-11-05 22:20 UTC'
+- Change: Fixed selected-session VPCD handling so POWER_OFF, POWER_RESET and disconnect clear selection bookkeeping, then invoke runtime/card-manager reset callbacks without calling the applet `deselect()` method. Added standalone unit coverage for active power-off/reset/disconnect and verified disconnect clears VM state. SELECT-driven applet switches still invoke `deselect()`.
+- Validation: Initial same-CAP integration exposed the regression (`reset invoked deselect callback: 019000`). After rebuilding the host emulator with `./tools/build-pc --profile max_crypto`, `./tools/test-vpcd-session` passes `TEST:SUMMARY pass=29 fail=0`; elevated `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 240s ./tools/test-same-cap-transients` passes `TEST:SUMMARY pass=6 fail=0`. `git diff --check` passed. ARM/RISC-V builds and physical flash were not required because the change is in PC-only VPCD session code; physical reset validation remains pending since PC/SC currently exposes only VPCD readers.
+- Result: The callback counter remains unchanged through active-app reset; reset clears both transient classes including the cached inactive writer context. Actual hardware reset was not exercised in this step.
+- Decision: Keep RV-20261103-12 open for physical acceptance; proceed offline to RV-20261103-13 while awaiting a hardware PC/SC reader.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261105T221737Z.log` (SHA-256 `b05eec26293e70ae671bf941a61df265fcc6e237d3e18ad899a23fc6bdb19c00`).

@@ -44,6 +44,7 @@ public:
 
 private:
   void clear_or_deselect(const uint8_t *next_aid, size_t next_aid_length);
+  void forget_selection() noexcept;
   bool select_by_aid(const uint8_t *aid, size_t aid_length,
                      const uint8_t *command, size_t command_length) const;
 

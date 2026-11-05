@@ -152,7 +152,7 @@ during the review.
 - [ ] **P1: Reset preserves deselect-cleared sensitive data.**
   Owner: CTX-03, PERSIST-02. Evidence: Reproduced; [review R12](docs/review_20261103.md#r12--reset-does-not-clear-clear_on_deselect-arrays).
   Acceptance: reset must clear both classes across active and inactive contexts without invoking applet `deselect()` as a reset callback. Test reset directly from the active applet, inactive package contexts and transient-key flags.
-  Progress: the reset callback now clears both event classes in selected and inactive applet heaps. VPCD POWER_OFF, POWER_RESET and disconnect use the reset callback without invoking applet `deselect()`. The same-CAP transient regression passes 5/5, including direct active-app reset with both arrays cleared and a persistent deselect-callback counter unchanged. Physical validation remains pending; the last reader scan exposed only VPCD readers.
+  Progress: the runtime reset callback clears both event classes in selected and inactive applet heaps. Fixed a VPCD regression where selected-applet tracking had reintroduced `deselect()` calls on POWER_OFF, POWER_RESET and disconnect; those boundaries now drop selection and invoke reset cleanup directly. Standalone VPCD session tests pass 29/29 and the same-CAP transient regression passes 6/6, including active reset, inactive writer-context clearing, and an unchanged persistent deselect counter. Physical validation remains pending: three USB CCID devices enumerate, but only the two VPCD readers currently appear in PC/SC.
 
 ### RV-20261103-13
 

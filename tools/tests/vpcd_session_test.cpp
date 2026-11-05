@@ -208,22 +208,35 @@ int main() {
             !card.last_deselect_same_applet && card.process_count == 5,
         "unknown AID SELECT deselects applet without dispatching to process");
 
+  message = applet_select();
+  (void)session.handle_message(message.data(), message.size(), response);
+  check(session.applet_selected(), "known applet is active before power off");
+  const unsigned int deselects_before_power_off = card.deselect_count;
   message = control(0x00);
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::NoResponse &&
             !session.powered() && !session.applet_selected() &&
-            card.deselect_count == 4,
-        "power off deselects and clears selected state");
+            card.deselect_count == deselects_before_power_off &&
+            card.clear_count >= 1,
+        "power off clears selected state without applet deselect");
   result = session.handle_message(command.data(), command.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
             response == std::vector<uint8_t>({0x69, 0x85}),
         "APDU while off receives conditions-not-satisfied");
 
+  message = control(0x01);
+  (void)session.handle_message(message.data(), message.size(), response);
+  message = applet_select();
+  (void)session.handle_message(message.data(), message.size(), response);
+  check(session.applet_selected(), "known applet is active before reader reset");
+  const unsigned int deselects_before_reset = card.deselect_count;
   message = control(0x02);
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::NoResponse &&
-            session.powered() && card.clear_count >= 1,
-        "reset powers on and clears prior VM state");
+            session.powered() && !session.applet_selected() &&
+            card.deselect_count == deselects_before_reset &&
+            card.clear_count >= 2,
+        "reset clears VM state without invoking applet deselect");
   message = applet_select();
   (void)session.handle_message(message.data(), message.size(), response);
   const std::vector<uint8_t> isd_select{0x00, 0xa4, 0x04, 0x00, 0x08,
@@ -309,9 +322,15 @@ int main() {
   result = session.handle_message(nullptr, 0, response);
   check(result == choupi::vpcd::SessionResult::ProtocolError,
         "empty message is rejected");
+  const unsigned int deselects_before_disconnect = card.deselect_count;
+  const unsigned int clears_before_disconnect = card.clear_count;
   session.disconnect();
   check(!session.powered() && !session.applet_selected(),
         "disconnect clears card session state");
+  check(card.deselect_count == deselects_before_disconnect,
+        "disconnect clears selected state without applet deselect");
+  check(card.clear_count == clears_before_disconnect + 1,
+        "disconnect clears VM transient state");
   check(card.card_manager_reset_count != 0,
         "disconnect resets card-manager security state");
 

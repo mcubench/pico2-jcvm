@@ -6769,3 +6769,26 @@ N times the matching per-operation comparator from each N-operation batch.
 No patch or new hardware measurement was made. Confirm the actual client
 binary and full doFinal block before treating corrected figures as precise.
 See `docs/sha256-reset-timing-analysis-20261105.md`.
+
+## VPCD reset reintroduced applet deselect callback — 2026-11-05
+
+- **Finding:** Commit `233f522f` changed reset and disconnect paths back to
+  `clear_or_deselect()`. If an applet was selected, VPCD POWER_OFF, POWER_RESET
+  and disconnect invoked its Java Card `deselect()` callback before calling the
+  reset cleanup callback. The existing fixture's persistent callback counter
+  reproduced this as `019000` instead of `009000` after direct reset.
+- **Viable fix:** Use a dedicated selection-state clear operation for power
+  off/reset/disconnect; call the VM reset callback and reset the card-manager
+  state without invoking applet code. Keep `clear_or_deselect()` for actual
+  SELECT transitions, where applet `deselect()` is required.
+- **Validation:** `./tools/test-vpcd-session` passes 29/29, including active
+  power-off, reset and disconnect with no deselect callback and disconnect
+  transient cleanup. After rebuilding with `./tools/build-pc --profile
+  max_crypto`, `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s
+  240s ./tools/test-same-cap-transients` passes `TEST:SUMMARY pass=6 fail=0`,
+  covering active reset, sibling applet selection, inactive cached writer
+  context, both transient classes and unchanged deselect count.
+- **Hardware:** Not run. Elevated USB descriptor inspection finds three Pico
+  CCID devices, but PC/SC currently lists only the two VPCD readers.
+- **Artifact:** `artifacts/logs/same-cap-transient-vpcd-20261105T221737Z.log`
+  SHA-256 `b05eec26293e70ae671bf941a61df265fcc6e237d3e18ad899a23fc6bdb19c00`.

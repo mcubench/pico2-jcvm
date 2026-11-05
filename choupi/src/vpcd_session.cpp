@@ -51,10 +51,14 @@ void Session::clear_or_deselect(const uint8_t *next_aid,
       (void)callbacks_.deselect(callbacks_.context,
                                 selecting_same_applet);
     }
-    selected_ = false;
-    selected_aid_length_ = 0;
-    selected_aid_.fill(0);
+    forget_selection();
   }
+}
+
+void Session::forget_selection() noexcept {
+  selected_ = false;
+  selected_aid_length_ = 0;
+  selected_aid_.fill(0);
 }
 
 bool Session::select_by_aid(const uint8_t *aid, const size_t aid_length,
@@ -99,7 +103,9 @@ SessionResult Session::handle_message(const uint8_t *message,
   if (message_length == 1) {
     switch (message[0]) {
     case kControlOff:
-      clear_or_deselect(nullptr, 0);
+      // Power loss is a card reset boundary. Drop selection without running
+      // applet bytecode; the clear callback wipes transient runtime state.
+      forget_selection();
       card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
@@ -113,7 +119,9 @@ SessionResult Session::handle_message(const uint8_t *message,
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlReset:
-      clear_or_deselect(nullptr, 0);
+      // Reader reset clears transient state but does not invoke applet
+      // deselect(), which is an applet lifecycle callback for SELECT changes.
+      forget_selection();
       card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
@@ -241,7 +249,7 @@ SessionResult Session::handle_message(const uint8_t *message,
 }
 
 void Session::disconnect() {
-  clear_or_deselect(nullptr, 0);
+  forget_selection();
   card_manager_selected_ = false;
   if (callbacks_.clear != nullptr) {
     callbacks_.clear(callbacks_.context);
