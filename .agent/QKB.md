@@ -6925,3 +6925,22 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limit:** Static/instance field and method token validity, internal CP
   offsets, and hostile interpreter runtime coverage remain open. No physical
   firmware flash was performed.
+
+## Validate external static member tokens against Export counts — 2026-11-06
+
+- **Finding:** Export.class_count bounds the class token but not the field or
+  method byte stored in a StaticFieldref or StaticMethodref. Runtime lookup
+  bounds these arrays, but malformed references can be rejected during
+  install instead.
+- **Viable fix:** Check a static field token against the exported class's
+  `static_field_count`. For static method references, check ordinary static
+  invocation and constructor JC305 remappings; the applicable token must fit
+  `static_method_count`.
+- **Validation:** ASan/UBSan helper suite passes 18/18; upstream JCAlgTest VPCD
+  install/APDU suite passes 15/15. PC, ARM, and RISC-V max_crypto builds pass.
+  Initial ARM compile exposed `-Werror=dangling-reference` when retaining the
+  exported class record through a temporary `Export_Handler`; named local
+  Package and handler objects fixed the lifetime. VPCD log SHA-256:
+  `f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.
+- **Limit:** Instance field and virtual/super-method token checks, internal
+  targets, and malformed interpreter execution remain open.

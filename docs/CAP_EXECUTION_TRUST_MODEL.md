@@ -39,8 +39,11 @@ declared import resolves to an installed package, and checks that external
 class tokens resolve within the imported package's Export table after JC305
 compatibility mapping. For ambiguous `CONSTANT_Classref` entries it accepts a
 valid class or interface token mapping; execution still validates the concrete
-reference type. Static/instance field and method member tokens, internal
-class/member targets, and malformed-interpreter runtime behavior remain open.
+reference type. Static field tokens are checked against each Export record's
+static-field count. Static method references accept the imported static-method
+or constructor mapping only when it fits the exported static-method count.
+Instance-field and virtual/super-method member tokens, internal class/member
+targets, and malformed-interpreter runtime behavior remain open.
 
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's

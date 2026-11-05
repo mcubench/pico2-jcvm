@@ -49,6 +49,11 @@ inline bool valid_export_class_token(const std::size_t token,
   return token < export_count;
 }
 
+inline bool valid_export_member_token(const std::size_t token,
+                                      const std::size_t member_count) noexcept {
+  return token < member_count;
+}
+
 template <typename ResolveExportToken>
 bool validate_external_class_tokens(const uint8_t *entries,
                                     const std::size_t count,
@@ -58,7 +63,7 @@ bool validate_external_class_tokens(const uint8_t *entries,
     const uint8_t *entry = entries + index * 4;
     if (entry[0] < 1 || entry[0] > 6) return false;
     if ((entry[1] & 0x80u) != 0 &&
-        !resolve(entry[0], entry[1] & 0x7fu, entry[2])) {
+        !resolve(entry[0], entry[1] & 0x7fu, entry[2], entry[3])) {
       return false;
     }
   }

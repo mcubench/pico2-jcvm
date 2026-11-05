@@ -1,6 +1,30 @@
-# Active handoff — RV-28 external class-token validation — 2026-11-06 00:42 CET
+# Active handoff — RV-28 static member-token validation — 2026-11-06 00:50 CET
 
-## Latest continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
+## Latest continuation — bound external static field and method tokens — 2026-11-06 00:50 CET
+
+Install preflight validates external StaticFieldref tokens against the
+imported Export record's static-field count. External StaticMethodref tokens
+must fit the exported static-method count after either the JC305 ordinary
+static-call mapping or constructor mapping. Instance field and virtual/super
+method tokens remain open, along with internal targets and malformed
+interpreter runtime coverage.
+
+Validation: helper sanitizer suite 18/18; PC emulator max_crypto build;
+unchanged JCAlgTest VPCD install/APDU suite 15/15; ARM/RISC-V max_crypto builds.
+The initial ARM attempt caught a dangling-reference warning from retaining an
+Export record via a temporary handler; named local Package and Export_Handler
+objects fixed it. VPCD log:
+`artifacts/logs/rv28-static-member-token-vpcd-20261106.log`, SHA-256
+`f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.
+No physical flash was performed.
+
+Next: validate external instance-field and virtual/super-method tokens using
+class metadata; then internal CP targets and malformed interpreter execution.
+Preserve unrelated dirty worktree changes. This slice's commit is pending.
+
+## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
+
+## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 
 Install preflight now validates external ConstantPool class tokens against the
 target package's Export table. It resolves Import package tokens, applies

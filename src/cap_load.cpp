@@ -562,7 +562,7 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
               entries, entry_count,
               [&imports, use_compatibility_tokens](
                   uint8_t reference_kind, uint8_t package_token,
-                  uint8_t source_class_token) {
+                  uint8_t source_class_token, uint8_t member_token) {
                 const auto *imported_package =
                     imports.getPackageAID(package_token);
                 const uint8_t imported_id =
@@ -594,7 +594,41 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
                       valid_export_class_token(interface_token,
                                                exports->class_count);
                 }
-                return valid_class_token;
+                if (!valid_class_token) return false;
+
+                if (reference_kind != JC_CP_TAG_CONSTANT_STATICFIELDREF &&
+                    reference_kind != JC_CP_TAG_CONSTANT_STATICMETHODREF) {
+                  return true;
+                }
+                const jcvm::Package imported_runtime_package(imported_id);
+                const jcvm::Export_Handler imported_exports(
+                    imported_runtime_package);
+                const jcvm::jc_cap_class_export_info &exported_class =
+                    imported_exports.getExportedClass(class_token);
+                if (reference_kind == JC_CP_TAG_CONSTANT_STATICFIELDREF) {
+                  return jcvm::cap_constant_pool_validation::
+                      valid_export_member_token(
+                          member_token, exported_class.static_field_count);
+                }
+                if (!use_compatibility_tokens) {
+                  return jcvm::cap_constant_pool_validation::
+                      valid_export_member_token(
+                          member_token, exported_class.static_method_count);
+                }
+                const uint8_t static_method_token =
+                    jcvm::remap_imported_static_method_token(
+                        *imported_package, source_class_token, member_token);
+                const uint8_t constructor_method_token =
+                    jcvm::remap_imported_constructor_method_token(
+                        *imported_package, source_class_token, member_token);
+                return jcvm::cap_constant_pool_validation::
+                           valid_export_member_token(
+                               static_method_token,
+                               exported_class.static_method_count) ||
+                       jcvm::cap_constant_pool_validation::
+                           valid_export_member_token(
+                               constructor_method_token,
+                               exported_class.static_method_count);
               });
       if (!exports_valid) return CapImportValidation::internal_error;
     }

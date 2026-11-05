@@ -22508,3 +22508,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RV-28 with exported field/method member-token validation and internal class/member references; then test malformed interpreter execution under sanitizers.
 - Commit: `0fb196af`
 - Artifacts/logs: `artifacts/logs/rv28-export-token-vpcd-20261106.log`, SHA-256 `5401b45d0df8495fc31c5dca2127cc9dc51a4517bc3e4ee1cdf2bb78a36e622c`.
+
+## 2026-11-06 Validate external static member tokens 8 minutes
+
+- Step/experiment: `rv28-static-member-token-validation-20261106`
+- When: '2026-11-06 00:42 CET' - '2026-11-06 00:50 CET'
+- Change: Install preflight now bounds external StaticFieldref tokens against Export.static_field_count and checks StaticMethodref tokens after JC305 static-method or constructor mapping against Export.static_method_count. Added helper tests and updated RV-28 docs/QKB/handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 18/18 under ASan/UBSan; `./tools/build-pc --profile max_crypto`, ARM and RISC-V max_crypto wrappers passed; the unchanged JCAlgTest VPCD suite passed 15/15. The first ARM attempt failed on `-Werror=dangling-reference`; retaining named Package and Export_Handler locals fixed it. No physical hardware flash or negative real-CAP install test was performed.
+- Result: Upstream JCAlgTest static imports continue to install and execute. Out-of-range static members fail preflight.
+- Decision: Continue RV-28 with external instance-field and virtual/super-method tokens, then internal CP targets and malformed interpreter execution.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-static-member-token-vpcd-20261106.log`, SHA-256 `f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.
