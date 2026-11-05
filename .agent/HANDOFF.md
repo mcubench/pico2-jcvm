@@ -22,10 +22,10 @@ outer limit during slow deletion cleanup (exit 124; no APDU failure observed).
 elevated `./tools/env lsusb` showed only USB root hubs and VirtualBox tablet;
 there were no Pico devices in this guest. No flash or hardware test occurred.
 
-Root `progress.md` has the required 81-minute record; `.agent/QKB.md` documents
-the reusable cause and fix; `TODO.md` records this resolved bug and current
-physical-device visibility. The progress entry still needs the final commit
-SHA added by a small follow-up record/commit.
+Root `progress.md` has the required 81-minute record with implementation commit
+`da4c39f`; the progress SHA update is commit `f869ce9`. `.agent/QKB.md`
+documents the reusable cause and fix; `TODO.md` records this resolved bug and
+current physical-device visibility.
 
 Current implementation files in this step are `choupi/src/jc_handlers/jc_method.cpp`
 and `tools/tests/pc_vpcd_multipackage_test.py`. Build outputs and logs are
