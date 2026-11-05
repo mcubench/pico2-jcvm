@@ -22118,3 +22118,15 @@
 - Artifacts/logs: `.agent/HANDOFF.md`; `artifacts/logs/cycle-choupi-20261105T081020Z.log`.
 
 - Commit resolved for `docs-20261105-physical-device-inventory`: `b85d6db` (Refresh Pico availability in TODO).
+
+
+## 2026-11-05 Add CAP reinstall review action items 2 minutes
+
+- Step/experiment: `docs-20261105-cap-reinstall-tasks`
+- When: '2026-11-05 09:25 CET' - '2026-11-05 09:26 CET'
+- Change: Added three open CAP-REINSTALL tasks under GP-01, with owners, review links and acceptance criteria; updated handoff.
+- Validation: Checked all three unique IDs, their review link and `git diff --check`; documentation only, so builds and hardware tests intentionally skipped.
+- Result: Unreproduced cleanup risks and missing changed-version coverage are tracked explicitly; no runtime behavior or measurements changed.
+- Decision: Reproduce and validate through these tasks before claiming the identified risks resolved.
+- Commit: See Git commit containing step `docs-20261105-cap-reinstall-tasks`.
+- Artifacts/logs: `TODO.md`, `docs/cap-reinstall-review-20261105.md`; no new test logs.

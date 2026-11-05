@@ -6180,3 +6180,8 @@ source hashes/logs when adding later evidence.
 ## Same-AID CAP lifecycle review — 2026-11-05 09:05 CET
 
 User requested analysis only. Findings are in `docs/cap-reinstall-review-20261105.md`; no firmware/CAP edits. Instance DELETE retains package code, duplicate package LOAD returns 6A80, and normal full-package replacement erases and verifies new code. Two un-reproduced cleanup risks remain: package DELETE skips cross-package SIO proxy invalidation; a post-persistent-commit DELETE storage failure skips runtime invalidation while later lifecycle recovery may finish durable cleanup. Existing same-CAP tests reload identical bytes. Next: reproduce package-cascade stale proxy and late-DELETE-failure cases, then add changed-version behavior coverage. Preserve all pre-existing dirty files. GP DELETE unit tests passed 26/26. Overlay suite exited 0 with summary fail=0 but emits an injected migration FAULT; do not claim fault-free hardware validation. No USB or hardware operations occurred.
+
+
+## CAP reinstall review backlog — 2026-11-05 09:26 CET
+
+Added open tasks CAP-REINSTALL-01/02/03 under GP-01 in root TODO.md at user request: package-cascade SIO proxy invalidation, runtime cleanup after late DELETE failure, and changed-version replacement with restart/hardware acceptance. The first two remain source-review risks requiring reproduction; no runtime fix or validation is claimed. Documentation only; preserve existing worktree changes.

@@ -943,6 +943,39 @@ source-based follow-ups, without a new physical reproduction in this review.
 
 ### GP-01
 
+- [ ] **CAP-REINSTALL-01: Reproduce and close stale SIO routes after package DELETE.**
+  Owners: GP-01, CTX-01/03. Source-review risk; not yet reproduced.
+  Package deletion drops server contexts but skips the client proxy invalidation
+  used by instance deletion. Retain a client proxy, delete the server package
+  with related objects, and reinstall with the same AIDs in the same process.
+  Acceptance: old proxies fail closed even when owner/compact handles are
+  reused; fresh lookup reaches the new service; unrelated clients still work.
+  Correct invalidation if confirmed and cover package cascade separately from
+  instance DELETE. Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md).
+
+- [ ] **CAP-REINSTALL-02: Reconcile runtime contexts after a late DELETE failure.**
+  Owners: GP-01, PERSIST-02, CTX-03. Source-review risk; not yet reproduced.
+  Inject CAP erase or instance-metadata removal failure after persistent DELETE
+  commits (`6581`), then recover and reinstall under the same AIDs/slot without
+  reset. Acceptance: recovery cannot reuse stale applet roots, heap state or
+  proxy routes; correct runtime invalidation if confirmed. Exercise both package
+  and instance deletion, and verify behavior again after restart.
+  Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md).
+
+- [ ] **CAP-REINSTALL-03: Verify changed-version CAP replacement end to end.**
+  Owners: GP-01, CTX-03, AC-02. Current same-CAP tests reload identical bytes.
+  Use two distinguishable CAP versions with the same package/applet/instance
+  AIDs, following AGENTS.md fixture and native API restrictions. Verify that
+  instance-only DELETE retains the package and duplicate LOAD fails (`6A80`),
+  then perform full package DELETE/LOAD/INSTALL and check every status.
+  Acceptance: only the new version's behavior appears in the same process and
+  after restart, including shorter/longer code and changed static layout; old
+  static/instance state is absent after package replacement. Archive CAP hashes,
+  APDU outcomes and behavior evidence; validate on physical Pico hardware after
+  emulator coverage. Document package versus instance deletion in upgrade
+  instructions so a rejected LOAD cannot be mistaken for a successful upgrade.
+  Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md).
+
 - [ ] **Finish remaining GET DATA and cold-power registry validation.**
   Status: selected GP GET STATUS/module listing and CPLC/recognition responses
   are implemented; the old exact-64-byte CCID stall is fixed by terminating ZLP.
