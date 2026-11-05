@@ -22252,3 +22252,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue to the next open CTX-01 firewall/lifecycle item; preserve all unrelated dirty work.
 - Commit: pending.
 - Artifacts/logs: build outputs under `build/arm/` and `build/riscv/`; no additional logs.
+
+- Commit resolved for `vpcd-orphan-cleanup-target-builds-20261105`: `d4c34558` (Record target builds for VPCD recovery).
