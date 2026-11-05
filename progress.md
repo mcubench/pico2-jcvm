@@ -17157,7 +17157,7 @@
   installation and remote-interface target cross-reference validation remain
   open.
 - Decision: Continue with the next actionable correctness gap.
-- Commit: pending.
+- Commit: `9f71e640`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
 
 ## 2026-10-30 Validate CAP 2.2 internal remote-interface references 7 minutes
@@ -22482,5 +22482,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-cap-constant-pool-validation` passed 7/7 under ASan/UBSan; LeakSanitizer was disabled by default because this VM's ptrace restriction prevents its startup. `./tools/test-cap-parser` passed 4,208 checks over 48 corpus CAPs and 100,000 fuzz inputs. `./tools/test-cap-method-body-deploy-caps` passed across 11 deployed 3.0.5 API CAPs (978 methods, 8,720 branch targets, 3 descriptor clamps, zero invalid/misaligned targets). `./tools/test-cap-native-opcode-policy` passed 5/5. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `git diff --check` passed with `core.whitespace=cr-at-eol` for the existing CRLF CAP parser source. No hardware flash or physical malformed-CAP execution was performed.
 - Result: Undefined constant-pool tags now fail during CAP component parsing rather than reaching later union dispatch. Valid deployed CAP corpus remained accepted. This does not validate nested reference targets.
 - Decision: Keep RV-28 open; next validate imported/internal class, field and method linkage targets, then add malformed interpreter runtime coverage.
-- Commit: pending.
+- Commit: `9f71e640`
 - Artifacts/logs: no retained log; deterministic test output summarized above.
+
+- Commit resolved for `rv28-constant-pool-tag-validation-20261106`: `9f71e640` (Reject undefined CAP constant pool tags).

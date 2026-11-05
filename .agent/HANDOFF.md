@@ -17,11 +17,14 @@ ptrace restrictions. `tools/test-cap-constant-pool-validation` sets
 No hardware flash or malformed-CAP execution on an interpreter was done for
 this parser-only slice.
 
+Implementation/docs/progress commit: `9f71e640` (Reject undefined CAP constant
+pool tags).
+
 Next: implement/verify semantic ConstantPool linkage checks (internal class
 offsets, imports, exports, fields and methods) without rejecting the valid
 deployed CAP corpus; then add malformed bytecode interpreter execution under
 sanitizers. Keep physical failure/recovery acceptance open. Preserve unrelated
-dirty worktree changes. Implementation/docs/progress commit pending.
+dirty worktree changes.
 
 ## Previous continuation — VPCD session restore integration validated — 2026-11-06 00:15 CET
 
