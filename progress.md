@@ -22102,3 +22102,6 @@
 - Decision: Retain chip-ID-targeted flash and CDC fallback as the working multi-device procedure. Continue physical applet testing only with a valid, verifiable metadata path; keep Descriptor-free execution bounds fail-closed.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261105T081020Z.log`, SHA-256 `aede2b7c1a48993a6d73ef8a6dc8ce1d8f7a7330807c6c105618fedc8466f782`; flashed `build/arm/pico2_choupi.uf2`, SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
+
+- Commit resolved for `hard-20261105-descriptor-field-kinds-physical-cycle`: `fba83b5` (Record identified Pico flash validation).
+- Continuity record: `.agent/HANDOFF.md` now records the physical validation commit.

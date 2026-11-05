@@ -42,7 +42,7 @@ Physical cycle log: `artifacts/logs/cycle-choupi-20261105T081020Z.log` (SHA-256
 `aede2b7c1a48993a6d73ef8a6dc8ce1d8f7a7330807c6c105618fedc8466f782`); flashed
 image SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 
-Commits: `4322d1a` (field checks), `fcde3cf` (progress SHA bookkeeping).
+Commits: `4322d1a` (field checks), `fcde3cf` (field progress SHA), and `fba83b5` (physical flash validation).
 Next: inspect Descriptor parser/type metadata edge cases and add hostile-CAP
 coverage. Keep the Descriptor-omitted dynamic method-boundary failure fail-
 closed and open. Preserve unrelated worktree modifications (including
