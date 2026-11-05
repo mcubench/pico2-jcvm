@@ -6398,3 +6398,13 @@ changes. In particular, `src/cap_load.cpp` still contains pre-existing
 uncommitted lifecycle/install refactoring; do not stage it wholesale.
 
 ---
+
+
+## README download links — 2026-11-05
+
+README now links to the latest upstream JCAlgTest CAP/client release and the
+latest GPPro gp.jar binary. The user explicitly requested no pinned CAP
+release numbers; the install command uses a downloaded JC305 CAP placeholder.
+Local links, shell snippet syntax, and whitespace checks passed; no firmware
+or hardware work was performed. Resolve this documentation commit with
+`git log -1 --format=%H -- README.md`.

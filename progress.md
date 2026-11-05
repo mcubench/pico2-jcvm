@@ -22278,3 +22278,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` for Windows testing; it has no preinstalled CAP/applet and clears stored card data when flashed. Keep HOST-02 open for external Windows timings (at least three reconnects with serial clients closed) and diagnostic-mode hardware coverage.
 - Commit: `1d3b5f95` (`Remove serial wait from normal JCVM startup`).
 - Artifacts/logs: `artifacts/firmware/README-crypto-arm-empty-card-current.md`; ignored max_crypto UF2; `build/arm/pico2_choupi_debug_serial_wait_30000ms.uf2` and provenance sidecar; physical logs listed above.
+
+
+## 2026-11-05 Add version-independent tool downloads to README 1.7 minutes
+
+- Step/experiment: `readme-download-links-20261105`
+- When: '2026-11-05T15:32:37+01:00' - '2026-11-05T15:34:18+01:00'
+- Change: Added official latest-release links for JCAlgTest CAP files and the matching PC client, plus the direct latest GlobalPlatformPro gp.jar binary link. Replaced the version-pinned install example with a downloaded-CAP placeholder as requested; retained the JC305 platform selection and matching-distribution guidance.
+- Validation: Inspected official JCAlgTest release/repository and GPPro release/asset pages. Checked README local links, presence of all three version-independent download links, absence of pinned JCAlgTest CAP release references, bash syntax of shell examples, and diff whitespace. Firmware builds and USB/PCSC/hardware testing intentionally skipped for documentation-only edits; release binaries were not downloaded or executed.
+- Result: Users can find upstream tools from the README without a hardcoded CAP release. External latest links follow upstream releases; compatibility remains limited to the supported API/bytecode subset. No runtime or performance metrics measured.
+- Decision: Commit documentation and preserve all unrelated worktree changes.
+- Commit: Resolve with `git log -1 --format=%H -- README.md` after commit creation.
+- Artifacts/logs: `README.md`; official `https://github.com/crocs-muni/JCAlgTest/releases/latest` and `https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar`; no binaries generated.

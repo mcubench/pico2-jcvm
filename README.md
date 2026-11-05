@@ -22,7 +22,11 @@ The implementation is based on [CHOUPI, an open-source Java Card Virtual Machine
 
 ## 3. Try it
 
-You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, GlobalPlatformPro (`gp.jar`), and matching JCAlgTest 1.8.2 client and JC305 CAP files.
+You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these downloads:
+
+- [JCAlgTest CAP files — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): choose the Java Card Classic 3.0.5 (`jc305`) CAP from the prebuilt distribution ZIP.
+- [JCAlgTest PC client — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): extract `AlgTestJClient.jar` from the same distribution to match the applet.
+- [GlobalPlatformPro `gp.jar` binary](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar).
 
 1. Obtain an ARM JCVM **`.uf2`** image, or build one below.
 2. Hold **BOOTSEL** while connecting the Pico 2. Copy the image onto the **RPI-RP2** drive; the board reboots as a USB smart-card reader. An **empty-card image erases installed applets and persistent data**.
@@ -30,7 +34,7 @@ You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, GlobalPla
 
    ```sh
    java -jar gp.jar --reader "<Pico reader name>" \
-     --install AlgTest_v1.8.2_jc305.cap
+     --install "<downloaded JC305 CAP file>"
    ```
 
 4. Run the matching client and select the Pico reader when prompted:
