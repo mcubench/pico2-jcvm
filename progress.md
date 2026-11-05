@@ -21762,7 +21762,7 @@
 - Validation: `./tools/test-vpcd-session` passed `TEST:SUMMARY pass=25 fail=0`; `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 1` was attempted with elevated host access, then timed out before VPCD connected. The appended log reaches early emulator startup but has no `VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED` marker. `git diff --check` passed for the four source/test files. Physical hardware was not used.
 - Result: Session state and restore errors now have explicit, tested behavior. Production VPCD restore callback runtime remains unvalidated because the emulator startup timed out; no claim of hardware validation.
 - Decision: Keep RV-27 open and diagnose the pre-connect integration timeout before closing acceptance. No firmware was flashed.
-- Commit: `pending`
+- Commit: `2ae7a1a`
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (appended; integration startup timeout); focused runner `tools/test-vpcd-session`.
 
 ## 2026-11-04 Reject native bytecodes from uploaded CAPs 13 minutes
