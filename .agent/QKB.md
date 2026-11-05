@@ -6888,3 +6888,22 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Environment note:** LeakSanitizer exits with “does not work under ptrace”
   in this VM. The focused wrapper disables leak detection by default while
   retaining AddressSanitizer and UBSan; callers can override `ASAN_OPTIONS`.
+
+## Reject ConstantPool references to undeclared import slots — 2026-11-06
+
+- **Finding:** Import preflight resolved every entry that the CAP declared,
+  but it did not compare external ConstantPool package tokens with that table.
+  Runtime lookup had bounds checks, but malformed linkage could be deferred
+  until an applet used the reference.
+- **Viable fix:** During install preflight, inspect the first payload byte for
+  each of the six reference kinds; if its external-reference bit is set, its
+  low seven bits must be less than `Import.count`. Then keep resolving each
+  declared package and validating remote-interface references as before.
+- **Validation:** Helper ASan/UBSan tests pass 11/11, including all six external
+  kinds, valid and out-of-range import tokens, and internal references. The
+  PC emulator max_crypto build passes. The unchanged upstream JCAlgTest VPCD
+  run passes 15/15; log SHA-256
+  `23249161c70c958e3dfd53aded4c340cf73e13f100d4abaaa1ea087fececbb09`.
+  ARM/RISC-V max_crypto builds pass. No physical flash was done.
+- **Limit:** This does not validate export class/member indices or internal
+  class/member targets; those remain separate RV-28 work.

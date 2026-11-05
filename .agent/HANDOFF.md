@@ -1,6 +1,31 @@
-# Active handoff — RV-28 ConstantPool structural validation — 2026-11-06 00:25 CET
+# Active handoff — RV-28 ConstantPool linkage validation — 2026-11-06 00:31 CET
 
-## Latest continuation — reject undefined CAP ConstantPool tags — 2026-11-06 00:25 CET
+## Latest continuation — validate external ConstantPool import tokens — 2026-11-06 00:31 CET
+
+RV-20261103-28 has a second validation slice. `validate_cap_imports` now
+checks all six ConstantPool entry kinds: when the reference discriminator marks
+an external link, its low-seven-bit package token must be below the CAP's
+Import count. The existing pass still resolves each imported AID/package and
+checks remote-interface references. This is not full semantic linkage
+validation; exported class/member indices and internal class/member offsets
+remain open.
+
+Tests: `./tools/test-cap-constant-pool-validation` passes 11/11 under
+ASan/UBSan; parser corpus passes 4,208 checks over 48 files and 100,000 fuzz
+inputs; `./tools/build-pc --profile max_crypto`, ARM max_crypto and RISC-V
+max_crypto wrappers pass. The unchanged upstream JCAlgTest VPCD run passes
+15/15 (install, restore, selection, JCSystem, SHA-256/AES/RSA/random/CRC).
+Log: `artifacts/logs/rv28-import-token-vpcd-20261106.log`, SHA-256
+`23249161c70c958e3dfd53aded4c340cf73e13f100d4abaaa1ea087fececbb09`.
+No physical card was flashed.
+
+Next: validate external class/export/member token targets and internal class
+and member references against structural metadata, preserving all deployed CAP
+fixtures. Then add malformed interpreter execution coverage. Keep controlled
+physical failure/recovery acceptance open. Preserve unrelated worktree changes.
+This slice's commit is pending.
+
+## Previous continuation — reject undefined CAP ConstantPool tags — 2026-11-06 00:25 CET
 
 RV-20261103-28 remains open. The CAP component parser now rejects ConstantPool
 entry tags outside the six defined CAP 2.1/2.2 reference kinds, as well as

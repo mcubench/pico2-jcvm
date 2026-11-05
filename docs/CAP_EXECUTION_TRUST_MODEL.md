@@ -33,7 +33,10 @@ The loader rejects ConstantPool entries whose tags are outside the six defined
 CAP 2.1/2.2 reference kinds, in addition to checking the component entry count
 and size. This is structural screening only: it does not prove that each
 class, import, field, or method reference resolves to a compatible target.
-Nested semantic linkage validation remains open.
+Install preflight also rejects external ConstantPool package tokens that do
+not identify an entry in the source CAP's Import component. It confirms every
+declared import resolves to an installed package. Export class/member token
+compatibility and internal class/member target validation remain open.
 
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's

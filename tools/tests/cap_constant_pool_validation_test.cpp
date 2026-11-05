@@ -46,6 +46,24 @@ int main() {
   check(!jcvm::cap_constant_pool_validation::valid_payload(nullptr, 2),
         "null payload rejected");
 
+  const uint8_t external_records[] = {
+      1, 0x81, 0, 0, 2, 0x81, 0, 0, 3, 0x81, 0, 0,
+      4, 0x81, 0, 0, 5, 0x81, 0, 0, 6, 0x81, 0, 0};
+  check(jcvm::cap_constant_pool_validation::valid_import_tokens(
+            external_records, 6, 2),
+        "all six external reference kinds accept declared import token");
+  check(!jcvm::cap_constant_pool_validation::valid_import_tokens(
+            external_records, 6, 1),
+        "out-of-range external import token rejected");
+
+  const uint8_t internal_record[] = {1, 0x7f, 0, 0};
+  check(jcvm::cap_constant_pool_validation::valid_import_tokens(
+            internal_record, 1, 0),
+        "internal reference does not require an import entry");
+  check(!jcvm::cap_constant_pool_validation::valid_import_tokens(nullptr, 1,
+                                                                 0),
+        "missing entry storage rejected");
+
   std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed, failed);
   return failed == 0 ? 0 : 1;
 }

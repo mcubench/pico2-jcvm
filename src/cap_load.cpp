@@ -6,6 +6,7 @@
 #include "vm_lifecycle.h"
 #include "vm_filesystem.h"
 #include "vm_cap_initialization.h"
+#include "cap_constant_pool_validation.hpp"
 
 #ifdef PC_VERSION
 #include <cstdio>
@@ -522,10 +523,19 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
     const jcvm::Package package(package_id);
     const jcvm::JC_Cap cap = package.getCap();
     const jcvm::jc_cap_import_component *component = cap.getImport();
+    const std::size_t import_count =
+        component == nullptr ? 0 : component->count;
+    const jcvm::jc_cap_constant_pool_component *constant_pool =
+        cap.getConstantPool();
+    if (constant_pool != nullptr &&
+        !jcvm::cap_constant_pool_validation::valid_import_tokens(
+            reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
+            HTONS(constant_pool->count), import_count)) {
+      return CapImportValidation::internal_error;
+    }
     if (component == nullptr) {
       return CapImportValidation::valid;
     }
-
     jcvm::Import_Handler imports(package);
     for (uint16_t index = 0; index < component->count; ++index) {
       const auto *imported_package =
