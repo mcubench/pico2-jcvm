@@ -6301,3 +6301,33 @@ original terminology/status; check current summary and later fixes before reuse.
   per owner ID; the existing value `1` retains per-APDU diagnostics. No
   physical card was accessible in the VM: current USB inventory showed only
   root hubs and the VirtualBox tablet.
+
+## Cross-AID fixture install depends on Descriptor being present — 2026-11-05
+
+- **Observation:** The full three-package cross-AID VPCD regression passed
+  `TEST:SUMMARY pass=34 fail=0` with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`.
+  This includes contract/service/client LOAD and INSTALL, cross-AID primitive,
+  array and native API calls, exception/firewall cases, restart/reset stale
+  proxy rejection, service DELETE, and same-AID reinstall.
+- **Reproduction:** With the same script's default Descriptor omission, the
+  contract package LOAD succeeds, but service applet INSTALL fails with
+  `6A80`. Standard GPPro `CAPFile.getCode()` omits Descriptor, so this fixture
+  variant is relevant to deployment. This does not yet isolate whether the
+  failure is the service applet's install method, a method-boundary lookup, or
+  another Descriptor-dependent metadata path. Keep this as an open runtime
+  compatibility issue; do not treat the Descriptor-present pass as closing it.
+- **Harness timing:** The test's default 30-second APDU timeout is too short
+  for the local VM. Use `SIO_CROSS_AID_CONNECT_TIMEOUT_S=90` and
+  `SIO_CROSS_AID_APDU_TIMEOUT_S=120`; earlier 30-second attempts expired during
+  service LOAD and produced misleading connection/LOAD timeout reports.
+- **Device availability:** User reported all three boards in BOOTSEL. Elevated
+  guest `./tools/env lsusb` still listed only root hubs and the VirtualBox USB
+  Tablet. `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero CCID devices;
+  this helper expects runtime-mode VID:PID `2e8a:0009`, so its zero result is
+  expected in BOOTSEL. No RP2350 BOOTSEL device was visible to this guest, and
+  no flash/hardware validation occurred.
+- **Artifacts:** Passing run log
+  `artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log`, SHA-256
+  `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`.
+  Descriptor-omitted failure was reported in the command output; emulator log
+  `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.

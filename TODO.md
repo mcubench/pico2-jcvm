@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated and compacted: 2026-11-02. This is the active backlog for `plan.md`.
+Updated: 2026-11-05. This is the active backlog for `plan.md`.
 Implementation and validation are separate: an implemented task stays open when
 its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 `AGENTS.md` for native API boundaries, build gates, hardware access and commits.
@@ -765,6 +765,13 @@ source-based follow-ups, without a new physical reproduction in this review.
   a fresh lookup. This caught and fixed proxy-route invalidation that previously
   only ran in the deleted server's own cached Context. PC, ARM and RISC-V builds
   pass; VPCD summary is 25/25. Physical same-AID reinstall remains unverified.
+  Latest full three-package cross-AID regression passes 34/34 when Descriptor
+  components are included. The same fixture with Descriptor omitted (matching
+  standard GPPro `getCode()` behavior) LOADs the contract but fails service
+  applet INSTALL with `6A80`; investigate the install-time bytecode/metadata
+  path and preserve both Descriptor-present and Descriptor-absent acceptance
+  cases. The current default VPCD script has a 30-second APDU deadline that is
+  too short for this VM; use 90 seconds to connect and 120 seconds per APDU.
   A new test-only SIO method passes a caller-owned byte array into native
   `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner
   before resolving the compact handle in the service heap; the applet catches

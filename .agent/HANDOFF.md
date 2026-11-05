@@ -1,3 +1,39 @@
+# Current continuation — cross-AID VPCD and BOOTSEL visibility — 2026-11-05 02:47 CET
+
+The full cross-AID SIO VPCD regression passed `TEST:SUMMARY pass=34 fail=0`
+when run with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`,
+`SIO_CROSS_AID_CONNECT_TIMEOUT_S=90`, and
+`SIO_CROSS_AID_APDU_TIMEOUT_S=120`. It covers three-package LOAD/INSTALL,
+SIO calls and native API behavior, type/firewall and reference ownership,
+exceptions, restart/reset, stale proxy rejection, DELETE and same-AID
+reinstall. Passing log:
+`artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log` (SHA-256
+`b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`).
+
+The Descriptor-omitted variant failed during service applet INSTALL with
+`6A80`, after contract LOAD succeeded. Since standard GPPro `getCode()` omits
+Descriptor, investigate the install-time method/metadata path; the passing
+Descriptor-present run does not close that compatibility gap. The script's
+default 30-second APDU timeout is too short for this VM; retain the 90-second
+connect and 120-second APDU values for full regressions.
+
+The user reported three boards in BOOTSEL, but elevated guest `lsusb` again
+listed only USB root hubs and the VirtualBox Tablet. The authorized PC/SC
+helper found zero CCID readers (expected in BOOTSEL); no BOOTSEL Pico enumerated
+in the VM, so no physical flash or runtime test occurred. Before physical work,
+refresh USB enumeration through the approved host-access path and use another
+board if any one disappears.
+
+This step updated `TODO.md` and `.agent/QKB.md`; no source code changed, so
+builds were not rerun. The VPCD pass is a local-emulator result only. The active
+source worktree still contains unrelated changes; preserve them and stage only
+the documentation/progress files for this validation record. Continue by
+isolating the Descriptor-omitted service INSTALL failure; if hardware becomes
+guest-visible, perform separately requested physical tests only after current
+ARM and RISC-V builds pass.
+
+---
+
 # Current session — fix uploaded CAP Descriptor lookup and multipackage INSTALL — 2026-11-05 01:21 CET
 
 Fixed a runtime bug in `choupi/src/jc_handlers/jc_method.cpp`: per-method

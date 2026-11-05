@@ -21987,3 +21987,14 @@
 - Decision: Keep physical acceptance open; retry guest enumeration and test the current empty-card image when available. Continue other TODO work offline in the meantime.
 - Commit: `1de59dc`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261105T005410Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261105T005410Z.log`, `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261105T005410Z.log`, and `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261105T005410Z.log` (ignored).
+
+## 2026-11-05 Cross-AID Descriptor-mode regression and device check 17 minutes
+
+- Step/experiment: `ctx-20261105-cross-aid-descriptor-modes`
+- When: '2026-11-05 02:30 CET' - '2026-11-05 02:47 CET'
+- Change: Recorded a full cross-AID SIO regression pass with Descriptor included and a reproducible service INSTALL failure when Descriptor is omitted, which matches standard GPPro CAP LOAD behavior. Updated the active backlog and QKB with the remaining compatibility investigation and valid VPCD timeout settings.
+- Validation: `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py` passed `TEST:SUMMARY pass=34 fail=0`. The same regression with Descriptor omitted loaded the contract, then service applet INSTALL returned `6A80`. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` showed only USB root hubs and the VirtualBox Tablet; `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero CCID devices. No BOOTSEL Pico was visible, no flash occurred, and no build was run because source code did not change.
+- Result: SIO integration passes when all three CAPs carry Descriptor metadata; standard-GPPro-style Descriptor omission still has an install-time failure to investigate. The 30-second default APDU timeout is too short; 90-second connect and 120-second APDU deadlines allowed the full run. Hardware validation remains unavailable in this VM.
+- Decision: Keep CTX-01 open. Next isolate why service INSTALL fails without Descriptor, retain both fixture variants, and resume physical testing once a BOOTSEL board enumerates inside the guest.
+- Commit: `pending`
+- Artifacts/logs: passing emulator log `artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log`, SHA-256 `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`; failed Descriptor-omitted emulator log `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log` (failure SW captured in command output).
