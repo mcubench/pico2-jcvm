@@ -32,9 +32,166 @@
 #include "../../../src/cap_method_bounds.hpp"
 #include "../../../src/cap_method_body_bounds.hpp"
 #include "../../../src/cap_execution_policy.hpp"
+#include <cstddef>
 #include <cstdio>
 
 namespace jcvm {
+
+namespace {
+
+uint16_t method_offset_be16(const uint8_t *bytes) noexcept {
+  return static_cast<uint16_t>((static_cast<uint16_t>(bytes[0]) << 8) |
+                               bytes[1]);
+}
+
+template <typename VisitOffset>
+bool visit_cap_method_offsets(const JC_Cap &cap, VisitOffset &&visit) {
+  const auto *method_component = cap.getMethod();
+  if (method_component == nullptr) return false;
+
+  // Every applet install entry is a callable method start.
+  if (const auto *applet = cap.getApplet(); applet != nullptr) {
+    const std::size_t component_size = NTOHS(applet->size);
+    if (component_size < 1) return false;
+    const uint8_t *cursor = reinterpret_cast<const uint8_t *>(applet->applets);
+    std::size_t remaining = component_size - 1;
+    for (uint8_t index = 0; index < applet->count; ++index) {
+      if (remaining < 1) return false;
+      const std::size_t aid_length = cursor[0];
+      const std::size_t record_size = 1 + aid_length + 2;
+      if (aid_length < 5 || aid_length > 16 || record_size > remaining ||
+          !visit(method_offset_be16(cursor + 1 + aid_length))) {
+        return false;
+      }
+      cursor += record_size;
+      remaining -= record_size;
+    }
+    if (remaining != 0) return false;
+  }
+
+  // Class public/package virtual tables contain their concrete method starts.
+  if (const auto *class_component = cap.getClass();
+      class_component != nullptr) {
+    const auto class_bytes = class_component->claz();
+    const uint8_t *data = class_bytes.data();
+    const std::size_t size = class_bytes.size();
+    std::size_t offset = 0;
+    const auto *header = cap.getHeader();
+    if (header == nullptr) return false;
+    if (header->minor_version >= 2) {
+      if (!class_component->hasValidSignaturePool()) return false;
+      offset = class_component->classInfoStartOffset();
+    }
+    if (offset > size) return false;
+
+    // Class 2.1 and 2.2 place interface_info records before class_info records.
+    while (offset < size && (data[offset] & 0x80u) != 0) {
+      const uint8_t flags = data[offset] >> 4;
+      const std::size_t superinterfaces = data[offset] & 0x0fu;
+      const std::size_t name_length_offset =
+          offset + 1 + superinterfaces * sizeof(jc_cap_class_ref);
+      std::size_t record_size = 1 + superinterfaces * sizeof(jc_cap_class_ref);
+      if ((flags & 0x02u) != 0) {
+        if (name_length_offset >= size ||
+            data[name_length_offset] > size - name_length_offset - 1) {
+          return false;
+        }
+        record_size += 1 + data[name_length_offset];
+      }
+      if (record_size > size - offset) return false;
+      offset += record_size;
+    }
+
+    while (offset < size) {
+      constexpr std::size_t class_prefix_size = 10;
+      if (size - offset < class_prefix_size ||
+          (data[offset] & 0x80u) != 0) {
+        return false;
+      }
+      const uint8_t interface_count = data[offset] & 0x0fu;
+      const std::size_t public_count = data[offset + 7];
+      const std::size_t package_count = data[offset + 9];
+      const std::size_t table_count = public_count + package_count;
+      const std::size_t table_bytes = table_count * sizeof(uint16_t);
+      if (table_bytes > size - offset - class_prefix_size) return false;
+      for (std::size_t index = 0; index < table_count; ++index) {
+        if (!visit(method_offset_be16(
+                data + offset + class_prefix_size + index * 2))) {
+          return false;
+        }
+      }
+
+      std::size_t record_size = class_prefix_size + table_bytes;
+      std::size_t cursor = offset + record_size;
+      for (uint8_t index = 0; index < interface_count; ++index) {
+        if (size - cursor < 3) return false;
+        const std::size_t method_map_count = data[cursor + 2];
+        const std::size_t interface_record_size = 3 + method_map_count;
+        if (interface_record_size > size - cursor) return false;
+        cursor += interface_record_size;
+        record_size += interface_record_size;
+      }
+      const uint8_t flags = data[offset] >> 4;
+      if ((flags & 0x02u) != 0) {
+        // The CAP validator has already validated the variable remote class
+        // record. getSize() accounts for its remote method signatures/names.
+        const auto *class_info =
+            reinterpret_cast<const jc_cap_class_info *>(data + offset);
+        const std::size_t full_size = class_info->getSize();
+        if (full_size < record_size || full_size > size - offset) return false;
+        record_size = full_size;
+      }
+      if (record_size == 0 || record_size > size - offset) return false;
+      offset += record_size;
+    }
+  }
+
+  // Static method calls use internal CONSTANT_StaticMethodref offsets.
+  if (const auto *constant_pool = cap.getConstantPool();
+      constant_pool != nullptr) {
+    const auto entries = constant_pool->constantpool();
+    for (std::size_t index = 0; index < entries.size(); ++index) {
+      const auto &entry = entries.data()[index];
+      if (entry.tag != JC_CP_TAG_CONSTANT_STATICMETHODREF) continue;
+      const auto &reference = entry.info.static_method_ref_info.static_method_ref;
+      if (IS_CP_INTERNAL_REF(reference) &&
+          !visit(NTOHS(reference.internal_ref.offset))) {
+        return false;
+      }
+    }
+  }
+
+  // Exported static methods are callable entry points even when no local
+  // ConstantPool entry references them.
+  if (const auto *export_component = cap.getExport();
+      export_component != nullptr) {
+    const std::size_t component_size = NTOHS(export_component->size);
+    if (component_size < 1) return false;
+    const uint8_t *cursor = export_component->class_exports;
+    std::size_t remaining = component_size - 1;
+    for (uint8_t index = 0; index < export_component->class_count; ++index) {
+      if (remaining < 4) return false;
+      const std::size_t fields = cursor[2];
+      const std::size_t static_methods = cursor[3];
+      const std::size_t field_bytes = fields * sizeof(uint16_t);
+      const std::size_t method_bytes = static_methods * sizeof(uint16_t);
+      const std::size_t record_size = 4 + field_bytes + method_bytes;
+      if (record_size > remaining) return false;
+      for (std::size_t method = 0; method < static_methods; ++method) {
+        if (!visit(method_offset_be16(cursor + 4 + field_bytes + method * 2))) {
+          return false;
+        }
+      }
+      cursor += record_size;
+      remaining -= record_size;
+    }
+    if (remaining != 0) return false;
+  }
+
+  return true;
+}
+
+} // namespace
 
 /**
  * Get method from offset.
@@ -199,6 +356,16 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
         &descriptor->class_count, descriptor_size, methods.data(),
         methods.size(), handler_table_bytes,
         static_cast<uint16_t>(component_method_offset), body);
+  }
+  if (!have_body_bounds && descriptor == nullptr &&
+      cap_execution_policy::is_dynamic_package(this->package.getPackageID())) {
+    have_body_bounds = cap_method_body_bounds::find_from_offsets(
+        methods.data(), methods.size(), handler_table_bytes,
+        static_cast<uint16_t>(component_method_offset),
+        [&](const auto &visit) {
+          return visit_cap_method_offsets(this->package.getCap(), visit);
+        },
+        body);
   }
   if (!have_body_bounds && cap_execution_policy::is_dynamic_package(
                                this->package.getPackageID())) {

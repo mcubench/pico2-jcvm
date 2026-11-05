@@ -1,4 +1,35 @@
-# Active handoff — HOST-02 acceptance and available boards — 2026-11-05 15:42 CET
+# Active handoff — signed branch offsets and physical SIO validation — 2026-11-05 20:49 CET
+
+Fixed the physical cross-AID `JCSystem.getAppletShareableInterfaceObject`
+failure. Short and wide branch handlers subtracted `sizeof(branch)` (an
+unsigned `size_t`) from signed CAP displacements; a backward `goto` such as
+`-64` became positive `4294967229` on 32-bit ARM. The bounds check correctly
+rejected that wrapped target, so the applet returned null (`6A04`). A shared
+signed offset helper now adjusts the displacement before branch dispatch.
+
+The clean ARM max_crypto image passed `./tools/cycle choupi` on Pico 2
+`D92E743D5F640C0F`. The complete descriptor-free physical fixture passed on
+that board: SIO `45679000`, the firewall/exception checks, reset stale-proxy,
+service DELETE and reinstall, and cleanup. The foreign reference into an
+applet-owned array returned `6B479000`, matching the current CTX-08 fail-closed
+policy and VPCD test; this probe's stale `6B43` expectation was corrected.
+Descriptor-free Method bounds are reconstructed from CAP structural entry
+tables, with invalid/unknown offsets still rejected. Tests: branch PC bounds
+19/19, method body bounds 11/11, all 11 deploy 3.0.5 CAP scans (978 concrete
+methods, no out-of-range or misaligned branch targets), ARM/RISC-V max_crypto
+builds, and the full physical SIO fixture. Logs:
+`artifacts/logs/cycle-choupi-20261105T194437Z.log` and
+`artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`.
+
+Continue from `TODO.md` priority 2 (remaining CTX-01/03 context isolation,
+proxy/firewall lifecycle semantics); do not revisit the resolved signed
+offset or Descriptor-free boundary work without new evidence. The D92 card was
+left cleaned of fixture packages. Other physical reader visibility varied
+after reset; refresh PC/SC names before any further physical work.
+
+---
+
+# Prior handoff — HOST-02 acceptance and available boards — 2026-11-05 15:42 CET
 
 HOST-02 implementation and max_crypto Windows test image are complete locally.
 Normal ARM startup removes the CDC/DTR wait and 500 ms sleep; bounded

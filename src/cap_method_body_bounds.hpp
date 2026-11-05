@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <utility>
 
 namespace jcvm::cap_method_body_bounds {
 
@@ -102,6 +104,59 @@ inline bool find(const uint8_t *descriptor_payload,
     candidate.end = next_method_index;
   }
   range = candidate;
+  return true;
+}
+
+// Standard GPPro LOAD omits Descriptor. In that case callers can enumerate
+// all method-entry offsets reachable from the package's structural tables.
+// Bound a body by the next such entry, rejecting unknown or out-of-component
+// offsets instead of treating the whole Method component as executable.
+template <typename EnumerateOffsets>
+inline bool find_from_offsets(const uint8_t *methods,
+                              const std::size_t methods_size,
+                              const std::size_t handler_table_bytes,
+                              const uint16_t method_component_offset,
+                              EnumerateOffsets &&enumerate_offsets,
+                              Range &range) {
+  if (methods == nullptr || methods_size == 0 ||
+      method_component_offset <= handler_table_bytes) {
+    return false;
+  }
+
+  const std::size_t method_index =
+      static_cast<std::size_t>(method_component_offset) -
+      handler_table_bytes - 1;
+  if (method_index >= methods_size) return false;
+  const std::size_t header_size =
+      (methods[method_index] & 0x80u) != 0 ? 5u : 2u;
+  if (header_size > methods_size - method_index) return false;
+  const std::size_t body_begin = method_index + header_size;
+  std::size_t next_method_index = methods_size;
+  bool found_current = false;
+
+  const auto visit = [&](const uint16_t offset) {
+    if (offset == std::numeric_limits<uint16_t>::max()) return true;
+    if (offset <= handler_table_bytes) return false;
+    const std::size_t index = static_cast<std::size_t>(offset) -
+                              handler_table_bytes - 1;
+    if (index >= methods_size ||
+        ((methods[index] & 0x80u) != 0 ? 5u : 2u) >
+            methods_size - index) {
+      return false;
+    }
+    if (index == method_index) {
+      found_current = true;
+    } else if (index > method_index && index < next_method_index) {
+      next_method_index = index;
+    }
+    return true;
+  };
+
+  if (!std::forward<EnumerateOffsets>(enumerate_offsets)(visit) ||
+      !found_current || next_method_index <= body_begin) {
+    return false;
+  }
+  range = {body_begin, next_method_index};
   return true;
 }
 

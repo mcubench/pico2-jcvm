@@ -40,6 +40,11 @@ public final class SioCrossAidPhysicalProbe {
         .findFirst().orElseThrow(() -> new IllegalStateException("reader not found: " + args[0]));
     System.out.println("SIO_PHYSICAL:READER " + target.getName());
     Card card = target.connect("*");
+    // GPPro's LOAD/INSTALL session may leave SCP03 active until card reset.
+    // This probe sends plain applet APDUs, so reset between management and
+    // test traffic to avoid correctly receiving 6982 from route authorization.
+    card.disconnect(true);
+    card = target.connect("*");
     try {
       System.out.println("SIO_PHYSICAL:ATR " + hex(card.getATR().getBytes()));
       CardChannel channel = card.getBasicChannel();
@@ -125,10 +130,10 @@ public final class SioCrossAidPhysicalProbe {
       response = channel.transmit(new CommandAPDU(hex("8020000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:foreignReferenceRetention response=" + actual);
-      if (!actual.equals("6B439000")) {
+      if (!actual.equals("6B479000")) {
         throw new AssertionError("expected volatile foreign Object[] retention " +
-                                 "with static/instance fields still denied " +
-                                 "(6B439000), got " + actual);
+                                 "to fail closed for static/instance/array " +
+                                 "storage (6B479000), got " + actual);
       }
 
       response = channel.transmit(new CommandAPDU(hex("8015000000")));

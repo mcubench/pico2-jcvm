@@ -80,6 +80,37 @@ int main() {
             sizeof(normal_methods), 8, 8, range),
         "method offset inside exception-handler table is rejected");
 
+  const uint8_t descriptor_free_methods[] = {
+      0x00, 0x00, 0x11, 0x22, 0x33, 0x00, 0x00, 0x44};
+  const auto two_method_offsets = [](const auto &visit) {
+    return visit(9) && visit(14);
+  };
+  check(jcvm::cap_method_body_bounds::find_from_offsets(
+            descriptor_free_methods, sizeof(descriptor_free_methods), 8, 9,
+            two_method_offsets, range) &&
+            range.begin == 2 && range.end == 5,
+        "descriptor-free method stops at next structural method entry");
+  check(jcvm::cap_method_body_bounds::find_from_offsets(
+            descriptor_free_methods, sizeof(descriptor_free_methods), 8, 14,
+            two_method_offsets, range) &&
+            range.begin == 7 && range.end == 8,
+        "last descriptor-free method stops at Method component end");
+
+  const auto missing_current = [](const auto &visit) {
+    return visit(14);
+  };
+  check(!jcvm::cap_method_body_bounds::find_from_offsets(
+            descriptor_free_methods, sizeof(descriptor_free_methods), 8, 9,
+            missing_current, range),
+        "descriptor-free unlisted current method is rejected");
+  const auto bad_offset = [](const auto &visit) {
+    return visit(9) && visit(16);
+  };
+  check(!jcvm::cap_method_body_bounds::find_from_offsets(
+            descriptor_free_methods, sizeof(descriptor_free_methods), 8, 9,
+            bad_offset, range),
+        "descriptor-free out-of-component method entry is rejected");
+
   std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : 0,
               passed ? 0 : 1);
   return passed ? 0 : 1;

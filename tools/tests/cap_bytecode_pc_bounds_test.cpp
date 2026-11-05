@@ -1,4 +1,5 @@
 #include "../../choupi/src/jcvm_types/pc_t.hpp"
+#include "../../choupi/src/jc_bytecodes/branch_offset.hpp"
 
 #include <cstdio>
 #include <cstdint>
@@ -77,6 +78,17 @@ int main() {
   branch.setBranchFromOffset(code, 2, false);
   check(branch.getValue() == code + 2,
         "trusted branch skips dynamic instruction-alignment policy");
+
+  check(jcvm::branch_offset::after_operand(-64, 2) == -67 &&
+            jcvm::branch_offset::after_operand(64, 2) == 61,
+        "signed branch displacement remains signed after operand adjustment");
+  const uint8_t long_code[2400] = {};
+  jcvm::pc_t backward_branch(long_code + 2201, long_code,
+                             long_code + sizeof(long_code));
+  backward_branch.updateBranchFromOffset(
+      jcvm::branch_offset::after_operand(-64, 2), false);
+  check(backward_branch.getValue() == long_code + 2134,
+        "backward branch with operand adjustment stays in method bounds");
 
   std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : 0,
               passed ? 0 : 1);

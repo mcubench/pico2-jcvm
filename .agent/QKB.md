@@ -6639,3 +6639,34 @@ not as evidence of HOST-02 firmware failure.
 See `docs/usb-startup-diagnostics.md`. Important diagnostic trap: opening a serial monitor can
 assert DTR and bypass the wait, masking the no-console problem. Validate
 normal reconnect readiness separately with all serial clients closed.
+
+## Signed CAP branch offsets wrapped by `sizeof` — fixed 2026-11-05
+
+- **Symptom:** Descriptor-free physical cross-AID SIO fixture installation
+  succeeded, but `JCSystem.getAppletShareableInterfaceObject` returned null
+  (`6A04`). The interpreter reached the service callback, whose normal backward
+  `goto` raised `SecurityException`.
+- **Cause:** Branch handlers computed `branch - sizeof(branch) - 1`. On the
+  32-bit RP2350 ABI, `sizeof` is unsigned `size_t`, so a negative signed CAP
+  displacement was converted to unsigned before subtraction. For example,
+  `-64 - 2 - 1` became `4294967229`; the checked PC correctly rejected the
+  invalid forward target. A 32-bit debug cast displayed the wrapped value as
+  `-67`, which initially obscured the cause.
+- **Viable fix:** Route all short and wide branch handlers through
+  `branch_offset::after_operand`, converting the encoded signed displacement
+  to `int64_t` before subtracting the operand and opcode widths. Do not weaken
+  PC bounds/alignment checks.
+- **Validation:** Unit PC bounds passed 19/19, including signed backward
+  displacement `-67`; Descriptor-free method body bounds passed 11/11; all 11
+  deploy CAP scans covered 978 methods with zero out-of-range or misaligned
+  branch targets. ARM and RISC-V max_crypto wrappers passed. Clean ARM firmware
+  flashed and finite-cycle passed on Pico 2 `D92E743D5F640C0F`; the complete
+  physical cross-AID suite then passed, including SIO `45679000`, reset,
+  stale proxy, DELETE/reinstall, and fixture cleanup. Physical foreign-array
+  retention returned `6B479000`, which matches the current CTX-08 fail-closed
+  rule; the physical probe had an obsolete `6B43` assertion and now matches
+  VPCD/current TODO expectations. Logs:
+  `artifacts/logs/cycle-choupi-20261105T194437Z.log`, SHA-256
+  `af49ea2c19e1375e12ace40bc07b542c90629cb331ae7a2cb041c1e19ec75c34`; and
+  `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`, SHA-256
+  `8684d5c1834b6506354390280db449f5570fa8d57eae3d7fa8f369c2c257560a`.
