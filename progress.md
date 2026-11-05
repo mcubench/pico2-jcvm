@@ -22517,5 +22517,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-cap-constant-pool-validation` passed 18/18 under ASan/UBSan; `./tools/build-pc --profile max_crypto`, ARM and RISC-V max_crypto wrappers passed; the unchanged JCAlgTest VPCD suite passed 15/15. The first ARM attempt failed on `-Werror=dangling-reference`; retaining named Package and Export_Handler locals fixed it. No physical hardware flash or negative real-CAP install test was performed.
 - Result: Upstream JCAlgTest static imports continue to install and execute. Out-of-range static members fail preflight.
 - Decision: Continue RV-28 with external instance-field and virtual/super-method tokens, then internal CP targets and malformed interpreter execution.
-- Commit: pending.
+- Commit: `6953d83d`
 - Artifacts/logs: `artifacts/logs/rv28-static-member-token-vpcd-20261106.log`, SHA-256 `f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.

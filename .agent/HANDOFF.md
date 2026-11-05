@@ -20,7 +20,8 @@ No physical flash was performed.
 
 Next: validate external instance-field and virtual/super-method tokens using
 class metadata; then internal CP targets and malformed interpreter execution.
-Preserve unrelated dirty worktree changes. This slice's commit is pending.
+Preserve unrelated dirty worktree changes. This slice's commit is `6953d83d`
+(Validate external CAP static member tokens).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 
