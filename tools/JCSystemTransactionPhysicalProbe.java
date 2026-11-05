@@ -178,7 +178,13 @@ public final class JCSystemTransactionPhysicalProbe {
             "persistent field update did not reduce the active commit budget");
       }
       System.out.println("TEST:PASS physical_commit_capacity_consumption");
-      System.out.println("TEST:SUMMARY pass=10 fail=0");
+      expectByte(channel, 38, 0x01,
+          "global array reference is rejected from instance fields");
+      expectByte(channel, 39, 0x01,
+          "global array reference is rejected from static fields");
+      expectByte(channel, 40, 0x01,
+          "global array reference is rejected from array components");
+      System.out.println("TEST:SUMMARY pass=13 fail=0");
     } finally {
       card.disconnect(false);
     }

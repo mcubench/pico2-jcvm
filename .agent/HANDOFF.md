@@ -1,3 +1,48 @@
+# Current continuation — Descriptor-aware physical JCSystem validation — 2026-11-05 09:52 CET
+
+Implemented a test-only GPPro loader at `tools/load-cap-with-descriptor` and
+`tools/LoadCapWithDescriptor.java`. It uses the pinned GPPro `GPSession` and
+secure-channel handling while loading `CAPFile.getCode(true)`, which retains
+optional Descriptor data. Updated `tools/test-jcsystem-transaction-physical`
+to call this helper; upstream CAP contents and firmware Java Card boundary are
+unchanged. `javac` compilation passed.
+
+Both `./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto` passed. The ARM image was flashed to
+Pico 2 `D92E743D5F640C0F`; the cycle passed flash verification and its finite
+serial monitor (`TEST:SUMMARY pass=1 fail=0`, no `FAULT`). Image SHA-256:
+`e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
+Cycle log: `artifacts/logs/cycle-choupi-20261105T083813Z.log`, SHA-256
+`4cae53d3d986215facdd36e5150bf41ac084053733518c475ec771a8b950663e`.
+
+With the Descriptor-aware loader, a clean package install and complete physical
+JCSystem probe passed `TEST:SUMMARY pass=13 fail=0`: transaction abort/commit,
+persistent state, 32,767-byte array length, `BUFFER_FULL`, CCID power-cycle
+persistence, commit capacity, and new global-reference validation. APDU output
+was returned directly by the command tool and was not saved as a durable log.
+Initial case 83/84 `6F00` results disappeared after deleting the applet and
+package and reinstalling cleanly; this recovers the test but does not establish
+the precise cause. The physical script was updated afterward, but its next
+automated rerun failed at GPPro reader discovery because the Pico reader had
+disappeared from PC/SC.
+
+Latest host observations: `lsusb -d 2e8a:` still listed three runtime CHOUPI
+devices; `pcsc_scan -r` showed only the two virtual readers. The authorized
+reader-access helper granted all three USB nodes, but GPPro could not select a
+physical reader. Do not assume BOOTSEL from the user's earlier report; the
+enumerated devices were runtime `2e8a:0009`. Resume with `pcsc_scan -r`; if one
+Pico returns, continue on it, otherwise keep working offline and do not wait
+on a single board.
+
+Current test package was deleted by applet AID and package AID, and GPPro
+confirmed the card empty before the temporary reader-discovery loss. A new
+empty-card listing after reconnect is still needed. The original GPPro-based
+physical test script is now Descriptor-aware, but the new integrated rerun is
+unverified. Preserve unrelated dirty files, including heap and symm-crypto
+changes. No commit has yet been created for this step.
+
+---
+
 # Current continuation — Descriptor-backed field-kind checks — 2026-11-05 09:02 CET
 
 Implemented Descriptor-backed first-store type checks for dynamic CAPs when the

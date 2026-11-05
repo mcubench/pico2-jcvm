@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -ge 2 && $# -le 3 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/load-cap-with-descriptor 'exact reader name' CAP-file [install-parameters-hex]"
+require_command javac
+require_command java
+
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+build_dir="${repo_root}/build/load-cap-with-descriptor"
+mkdir -p "${build_dir}"
+"${repo_root}/tools/env" javac -cp "${gp_jar}" -d "${build_dir}" \
+  "${repo_root}/tools/LoadCapWithDescriptor.java"
+"${repo_root}/tools/env" java -cp "${build_dir}:${gp_jar}" \
+  LoadCapWithDescriptor "$@"

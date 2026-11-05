@@ -6469,3 +6469,30 @@ original terminology/status; check current summary and later fixes before reuse.
   `.agent/HANDOFF.md`.
 - **Use:** Continue selecting one board explicitly by chip ID when several
   physical devices are attached. Do not rely on USB enumeration order.
+
+## Physical JCSystem test CAPs must preserve Descriptor — 2026-11-05
+
+- **Finding:** The physical JCSystem script used GPPro `--install`. Its pinned
+  `CAPFile.getCode()` omits optional `Descriptor.cap`; firmware rejects this
+  Descriptor-dependent test CAP at INSTALL with `6A80`.
+- **Viable test-only solution:** `tools/load-cap-with-descriptor` uses the
+  pinned GPPro `GPSession` and secure-channel implementation, but builds LOAD
+  data with `CAPFile.getCode(true)`. This preserves component ordering and
+  leaves the CAP file unchanged. The physical harness now calls this loader.
+- **Physical validation:** On Pico 2 `D92E743D5F640C0F`, the freshly built ARM
+  `max_crypto` image passed its finite serial monitor. A clean Descriptor-aware
+  install passed the complete JCSystem probe: `TEST:SUMMARY pass=13 fail=0`.
+  Checks included 32,767-byte array length, `BUFFER_FULL` rollback, persistent
+  state after CCID power cycle, and commit capacity. This run's APDU transcript
+  is in the session tool output, not a durable log. Cycle log:
+  `artifacts/logs/cycle-choupi-20261105T083813Z.log`, SHA-256
+  `4cae53d3d986215facdd36e5150bf41ac084053733518c475ec771a8b950663e`.
+- **Unresolved observation:** Before deleting and reloading the probe package,
+  cases 83 and 84 returned `6F00`; after clean applet/package DELETE and
+  reinstallation they passed. This establishes recovery by clean reinstall,
+  not a definitive root cause. Do not attribute the first status solely to an
+  array-length implementation defect.
+- **Host limitation:** After the pass, all three Pico devices remained visible
+  in `lsusb`, but `pcsc_scan -r` showed only the two virtual readers and GPPro
+  could not select a Pico. The authorized reader helper granted access to all
+  three USB nodes. Continue with another board when it reappears in PC/SC.

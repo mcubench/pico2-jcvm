@@ -3,9 +3,14 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_host_usb_access
-[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-physical 'exact reader name'"
+[[ $# -ge 1 && $# -le 2 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-physical 'exact reader name' [--cycle-board]"
 require_command timeout
 reader_name="$1"
+cycle_board=0
+if [[ $# -eq 2 ]]; then
+  [[ "$2" == "--cycle-board" ]] || die "unknown option: $2"
+  cycle_board=1
+fi
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 cap="${repo_root}/build/jcsystem-transaction-probe/output/JCTransactionProbe.cap"
 java_build="${repo_root}/build/jcsystem-transaction-probe/physical-client"
@@ -24,6 +29,7 @@ log="${repo_root}/artifacts/logs/jcsystem-transaction-physical-${timestamp}.log"
 list_log="${repo_root}/build/jcsystem-transaction-probe/physical-gp-list-${timestamp}.log"
 install_log="${repo_root}/build/jcsystem-transaction-probe/physical-install-${timestamp}.log"
 installed_list_log="${repo_root}/build/jcsystem-transaction-probe/physical-installed-list-${timestamp}.log"
+postcycle_list_log="${repo_root}/build/jcsystem-transaction-probe/physical-postcycle-list-${timestamp}.log"
 delete_applet_log="${repo_root}/build/jcsystem-transaction-probe/physical-delete-applet-${timestamp}.log"
 delete_package_log="${repo_root}/build/jcsystem-transaction-probe/physical-delete-package-${timestamp}.log"
 gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
@@ -80,12 +86,35 @@ if grep -Fq "APP: ${applet_aid} " "${list_log}" || \
 fi
 
 installed=1
-timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
+timeout --signal=TERM --kill-after=5s 90s \
+  "${repo_root}/tools/load-cap-with-descriptor" "${reader_name}" "${cap}" \
   >"${install_log}" 2>&1 || die "transaction-probe install failed; see ${install_log}"
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
   >"${installed_list_log}" 2>&1 || die "GPPro list after install failed; see ${installed_list_log}"
 grep -Fq "APP: ${applet_aid} " "${installed_list_log}" || \
   die "GPPro did not report transaction-probe applet installed; see ${installed_list_log}"
+if (( cycle_board )); then
+  [[ "${reader_name}" =~ \(([[:xdigit:]]{16})\) ]] || \
+    die "reader name must contain a 16-digit Pico chip ID for --cycle-board"
+  chipid="${BASH_REMATCH[1]}"
+  timeout --signal=TERM --kill-after=5s 90s \
+    "${repo_root}/tools/env" java -cp "${java_build}" \
+    JCSystemTransactionPhysicalProbe --reader "${reader_name}" \
+    --prepare-persistence
+  PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/cycle" choupi \
+    --profile symm_crypto --chipid "${chipid}"
+  PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+  timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+    >"${postcycle_list_log}" 2>&1 || die "GPPro list after board cycle failed; see ${postcycle_list_log}"
+  grep -Fq "APP: ${applet_aid} " "${postcycle_list_log}" || \
+    die "transaction-probe applet did not survive the firmware cycle; see ${postcycle_list_log}"
+  grep -Fq "PKG: ${package_aid} " "${postcycle_list_log}" || \
+    die "transaction-probe package did not survive the firmware cycle; see ${postcycle_list_log}"
+  timeout --signal=TERM --kill-after=5s 90s \
+    "${repo_root}/tools/env" java -cp "${java_build}" \
+    JCSystemTransactionPhysicalProbe --reader "${reader_name}" \
+    --verify-persistence
+fi
 printf 'JC_SYSTEM_PHYSICAL:INSTALL package=%s applet=%s result=PASS\n' \
   "${package_aid}" "${applet_aid}"
 timeout --signal=TERM --kill-after=5s 90s \
