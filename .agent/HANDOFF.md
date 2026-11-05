@@ -9,7 +9,7 @@ diagnostic 30000 ms, then normal again passed; both CMake caches end at zero.
 Physical normal firmware passed `tools/cycle choupi` on Pico 2
 `D92E743D5F640C0F` (`TEST:SUMMARY pass=1 fail=0`); targeted GPPro SELECT,
 CPLC and Card Data returned `9000`. Windows reconnect timings and physical
-DTR/deadline diagnostic behavior remain untested.
+DTR/deadline diagnostic behavior remain untested. Implementation commit: `1d3b5f95`.
 
 Current Windows empty-card image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,025,856
@@ -21,8 +21,8 @@ Flash recovery note: two initial runtime-mode cycles failed because picotool
 could not find the reset interface and CDC 1200-baud reset did not re-enumerate
 in time. A third attempt hit a sysfs disappearance race during re-enumeration.
 After the devices appeared in BOOTSEL, an identified D92 board flashed and
-passed. Keep this distinct from the HOST-02 boot delay. Preserve unrelated dirty
-files; only stage HOST-02, its progress record, and image manifest.
+passed. Keep this distinct from the HOST-02 boot delay. Unrelated pre-existing
+worktree changes were left unstaged.
 
 ---
 
