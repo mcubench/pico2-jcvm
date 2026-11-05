@@ -22363,3 +22363,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Proceed to the next open CTX-01/03 lifecycle/firewall item; preserve owner-root fail-closed behavior until cross-heap GC routing is implemented.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`; no hash measured.
+
+- Commit resolved for `sio-vpcd-post-branch-fix-20261105`: `7a2776a7` (Record SIO VPCD parity after branch fix).
