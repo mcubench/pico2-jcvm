@@ -22007,5 +22007,5 @@
 - Validation: Read the failing VPCD emulator log and `Method_Handler::callMethod`, `cap_method_body_bounds::find`, and `cap_execution_policy::is_dynamic_package` source paths. Failure data is stage 5, SW `6A80`, VM status `6F00`, exception 29 (`SecurityException`), opcode `00`, PC `00000000`. No code changed; no build or additional test was run.
 - Result: Missing Descriptor bounds cause the dynamic-package guard to reject the applet's first INSTALL-time method call. An unbounded Method-component fallback would allow execution to cross method bodies and is not safe.
 - Decision: Keep the Descriptor-absent issue open until a verifiable method-bounds source or safe package policy is designed; preserve Descriptor-present and Descriptor-absent regressions.
-- Commit: `pending`
+- Commit: `09ffaf7`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
