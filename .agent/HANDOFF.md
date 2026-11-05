@@ -17,7 +17,9 @@ Descriptor-free Method bounds are reconstructed from CAP structural entry
 tables, with invalid/unknown offsets still rejected. Tests: branch PC bounds
 19/19, method body bounds 11/11, all 11 deploy 3.0.5 CAP scans (978 concrete
 methods, no out-of-range or misaligned branch targets), ARM/RISC-V max_crypto
-builds, and the full physical SIO fixture. Logs:
+builds, the full physical SIO fixture, and Descriptor-free VPCD SIO 34/34.
+Post-fix VPCD log: `artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`.
+Other logs:
 `artifacts/logs/cycle-choupi-20261105T194437Z.log` and
 `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`.
 

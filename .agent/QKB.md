@@ -6684,4 +6684,6 @@ arrays; the physical regression on D92 `D92E743D5F640C0F` confirmed
 `6B479000`. Keep the physical and VPCD expectations at `6B47` until cross-heap
 root routing, owner slot reuse, and package DELETE are implemented and tested.
 Runtime-global arrays have their separate owner-root mechanism and remain
-covered independently.
+covered independently. After the signed branch-offset fix, the Descriptor-free
+VPCD SIO suite passed 34/34 and returned the same `6B47` result; log:
+`artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`.

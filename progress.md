@@ -22352,3 +22352,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: Existing D92 result `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`; no new log.
 
 - Commit resolved for `sio-foreign-array-fail-closed-status-20261105`: `169473ea` (Clarify cross-heap array root policy).
+
+## 2026-11-05 Revalidate cross-AID VPCD after branch fix 2 minutes
+
+- Step/experiment: `sio-vpcd-post-branch-fix-20261105`
+- When: '2026-11-05 20:56 CET' - '2026-11-05 21:00 CET'
+- Change: Ran the complete Descriptor-free cross-AID SIO VPCD integration after the signed branch-offset fix; updated active handoff and QKB with parity results.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`, including SIO `4567`, the fail-closed foreign-array result, reset/stale-proxy, exception propagation and DELETE/reinstall. Physical D92 full suite had passed immediately before this run.
+- Result: Emulator and physical firmware agree on the repaired SIO call path and current `6B47` policy.
+- Decision: Proceed to the next open CTX-01/03 lifecycle/firewall item; preserve owner-root fail-closed behavior until cross-heap GC routing is implemented.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`; no hash measured.
