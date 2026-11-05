@@ -22458,3 +22458,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark RV-20261103-26 complete. Continue to RV-20261103-27 and preserve remaining physical RV-11/12 checks.
 - Commit: pending.
 - Artifacts/logs: Cycle `artifacts/logs/cycle-choupi-20261105T230607Z.log`, SHA-256 `e5d99d4d95b98eb326c05c6338000f577a8cfbba973ce86b22002d2ecc5ff98f`; physical `artifacts/logs/cipher-lifecycle-pcsc-20261105T230800Z.log`, SHA-256 `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.
+
+- Commit resolved for `ccid-extension-error-recovery-20261106`: `8a90e71c` (Preserve pending CCID response on extension error).

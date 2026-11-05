@@ -26,7 +26,7 @@ granted three nodes; D92 is the PC/SC-visible reader. Preserve unrelated dirty
 files. RV-26 source/test files:
 `src/ccid_progress_flow.hpp`, `src/ccid_device.cpp`,
 `tools/tests/ccid_progress_flow_test.cpp`; TODO/progress/QKB/handoff updated,
-commit pending.
+commit `8a90e71c` (Preserve pending CCID response on extension error).
 
 # Prior continuation — CCID APDU routing and physical dispatch — 2026-11-05 23:52 CET
 
