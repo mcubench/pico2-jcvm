@@ -38,8 +38,9 @@ Current test package was deleted by applet AID and package AID, and GPPro
 confirmed the card empty before the temporary reader-discovery loss. A new
 empty-card listing after reconnect is still needed. The original GPPro-based
 physical test script is now Descriptor-aware, but the new integrated rerun is
-unverified. Preserve unrelated dirty files, including heap and symm-crypto
-changes. No commit has yet been created for this step.
+unverified. Implementation commit: `0b4173a`; the detailed progress record is
+being committed separately. Preserve unrelated dirty files, including heap
+and symm-crypto changes.
 
 ---
 

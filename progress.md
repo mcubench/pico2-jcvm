@@ -22130,3 +22130,14 @@
 - Decision: Reproduce and validate through these tasks before claiming the identified risks resolved.
 - Commit: See Git commit containing step `docs-20261105-cap-reinstall-tasks`.
 - Artifacts/logs: `TODO.md`, `docs/cap-reinstall-review-20261105.md`; no new test logs.
+
+## 2026-11-05 Descriptor-aware physical JCSystem validation 33
+
+- Step/experiment: `jcsystem-physical-descriptor-load`
+- When: '2026-11-05 09:19 CET' - '2026-11-05 09:52 CET'
+- Change: Added a test-only GPPro loader using `CAPFile.getCode(true)` so physical JCSystem probes retain the optional Descriptor component; wired it into the physical test harness. Extended the physical client with three global-reference ownership assertions. Upstream CAPs and firmware Java Card boundaries were unchanged.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `javac` compilation through `tools/load-cap-with-descriptor` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid D92E743D5F640C0F` passed flash verification and finite serial monitoring (`TEST:SUMMARY pass=1 fail=0`, no `FAULT`). Descriptor-aware GPPro install passed. `JCSystemTransactionPhysicalProbe --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passed `TEST:SUMMARY pass=13 fail=0`, including transaction abort/commit, 32,767-byte persistent array, `BUFFER_FULL`, CCID power-cycle persistence, and commit capacity. `git diff --cached --check` passed before commit. The integrated script rerun and PC VPCD case-84 test were attempted but did not pass: PC/SC lost the Pico reader before the rerun; VPCD timed out before connecting.
+- Result: Current ARM `max_crypto` firmware and the physical JCSystem probe passed on Pico 2 `D92E743D5F640C0F`. Standard GPPro LOAD omitted Descriptor and returned `6A80`; the test-only loader fixed install without changing CAP bytes. Initial cases 83/84 returned `6F00` before clean package deletion/reload; both passed after clean reinstall, so the precise initial cause remains unconfirmed. After validation, `lsusb` still showed three Pico USB nodes while `pcsc_scan -r` showed only virtual readers. Package and applet were deleted, and GPPro confirmed the card empty before reader loss. APDU transcript was not saved to a durable file. Cycle log: `artifacts/logs/cycle-choupi-20261105T083813Z.log`, SHA-256 `4cae53d3d986215facdd36e5150bf41ac084053733518c475ec771a8b950663e`; flashed UF2 SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
+- Decision: Keep the Descriptor-aware loader for this test only; don't alter upstream CAPs or production GPPro behavior. Resume physical checks when any Pico reader reappears; if it remains unavailable, continue offline.
+- Commit: `0b4173a`
+- Artifacts/logs: cycle log above; no durable APDU transcript; failed automated rerun `artifacts/logs/jcsystem-transaction-physical-20261105T085028Z.log`
