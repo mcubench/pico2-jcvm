@@ -39,9 +39,9 @@ Windows clean-card instructions are in
 
 Root `progress.md` has the 81-minute code-fix record (commit `da4c39f`), the
 9-minute image-packaging record (commit `d7e3550`), and the current full-suite
-record (SHA to be filled after its scoped commit). SHA bookkeeping is commit
-`f869ce9`; `.agent/QKB.md` documents the reusable cause and fix; `TODO.md`
-records the resolved bug and current physical-device visibility.
+record (commit `1de59dc`). SHA bookkeeping is commit `f869ce9`;
+`.agent/QKB.md` documents the reusable cause and fix; `TODO.md` records the
+resolved bug and current physical-device visibility.
 
 Current implementation/test files in this follow-up are `choupi/src/main.cpp`
 and `tools/tests/pc_vpcd_multipackage_test.py`; the Descriptor offset fix is
