@@ -1,3 +1,14 @@
+# README refreshed — 2026-11-05
+
+Applied the user-approved concise README with five parts: educational warning,
+functional token/PCSC/Java Card/GlobalPlatform overview and CHOUPI attribution,
+usage, compilation, and architecture links. Local links, shell snippet syntax,
+section numbering, and diff whitespace checks passed. No firmware or hardware
+work was needed; existing source/submodule changes remain unrelated. Resolve
+the documentation commit with `git log -1 --format=%H -- README.md`.
+
+---
+
 # Cleaned history published — 2026-11-05
 
 GitHub accepted cleanup commit `f6ec7b18a35fb43f9041b322bffb9bfb3e54b0cf`;

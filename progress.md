@@ -22204,3 +22204,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: ignored UF2s under `artifacts/firmware/`; tracked manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`.
 
 - Commit resolved for `release-20261105-arm-crypto-empty-card-images`: `8960602b` (Prepare ARM crypto empty-card release images).
+
+
+## 2026-11-05 Rewrite concise educational README 1.1 minutes
+
+- Step/experiment: `readme-educational-overview-20261105`
+- When: '2026-11-05T11:52:20+01:00' - '2026-11-05T11:53:26+01:00'
+- Change: Replaced README with the agreed five-part introduction: educational/non-production warning, functional PC/SC token and CHOUPI overview, UF2/GPPro/JCAlgTest usage, wrapper-based compilation, and architecture/documentation links. Explicitly qualified applet/API compatibility and empty-card image data loss.
+- Validation: All ten local Markdown link targets and the previously verified CHOUPI link inspected; five numbered sections and warning checked; all shell snippets passed bash syntax validation; wrapper paths verified; `git diff --check -- README.md` passed. Firmware builds, USB/PCSC operations, and physical tests intentionally skipped for this documentation-only change.
+- Result: Concise README now explains what users can do with the token and how to start. No functional, performance, or hardware metrics measured. Unrelated source and submodule changes preserved.
+- Decision: Commit and push the approved README with this record and the continuity note.
+- Commit: Resolve this step with `git log -1 --format=%H -- README.md` after commit creation (a commit cannot embed its own hash).
+- Artifacts/logs: `README.md`; none generated.
