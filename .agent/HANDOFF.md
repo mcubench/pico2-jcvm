@@ -47,7 +47,7 @@ were not flashed to hardware and have not been uploaded to GitHub. Flashing
 clears the card's persistent storage. See
 `artifacts/firmware/README-crypto-arm-empty-card-current.md` for release notes
 and rebuild commands. UF2s remain ignored by `.gitignore`; the README is
-tracked. Commit: pending.
+tracked. Release-preparation commit: `8960602b`.
 
 The attempted PC-only VPCD storage trace from the previous continuation was
 reverted before these builds. It did not enter either firmware image. The

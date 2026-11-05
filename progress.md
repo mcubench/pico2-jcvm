@@ -22202,3 +22202,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: These two files are prepared for manual release upload and external Windows testing. Use the tracked manifest for hashes and boot instructions; install an unchanged upstream CAP separately.
 - Commit: pending
 - Artifacts/logs: ignored UF2s under `artifacts/firmware/`; tracked manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`.
+
+- Commit resolved for `release-20261105-arm-crypto-empty-card-images`: `8960602b` (Prepare ARM crypto empty-card release images).
