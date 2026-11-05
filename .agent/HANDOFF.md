@@ -23,7 +23,7 @@ Next: validate external class/export/member token targets and internal class
 and member references against structural metadata, preserving all deployed CAP
 fixtures. Then add malformed interpreter execution coverage. Keep controlled
 physical failure/recovery acceptance open. Preserve unrelated worktree changes.
-This slice's commit is pending.
+This slice's commit is `a76989ec` (Validate external CAP import tokens).
 
 ## Previous continuation — reject undefined CAP ConstantPool tags — 2026-11-06 00:25 CET
 

@@ -22495,5 +22495,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-cap-constant-pool-validation` passed 11/11 under ASan/UBSan. `./tools/test-cap-parser` passed 4,208 checks over 48 CAP files and 100,000 fuzz inputs. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The bounded VPCD JCAlgTest run passed 15/15, including install/restore/SELECT, JCSystem and SHA-256/AES/RSA/random/CRC probes. No physical board was flashed.
 - Result: Out-of-range external import slots fail before applet installation; the upstream JCAlgTest 1.8.2 CAP continues to install and run in VPCD. This does not validate export member tokens or internal class/member targets.
 - Decision: Keep RV-28 open; validate class/export/member target compatibility and then add malformed runtime-execution tests.
-- Commit: pending.
+- Commit: `a76989ec`
 - Artifacts/logs: `artifacts/logs/rv28-import-token-vpcd-20261106.log`, SHA-256 `23249161c70c958e3dfd53aded4c340cf73e13f100d4abaaa1ea087fececbb09`.
