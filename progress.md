@@ -22337,3 +22337,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the fail-closed branch bounds and Descriptor-free body bounds. Continue with remaining CTX-01/03 context isolation and lifecycle semantics in `TODO.md`; the signed-offset root cause is resolved.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261105T194437Z.log` (SHA-256 `af49ea2c19e1375e12ace40bc07b542c90629cb331ae7a2cb041c1e19ec75c34`); `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log` (SHA-256 `8684d5c1834b6506354390280db449f5570fa8d57eae3d7fa8f369c2c257560a`).
+
+- Commit resolved for `sio-negative-branch-offset-physical-20261105`: `8bdeffbc` (Fix signed Java Card branch offsets).
