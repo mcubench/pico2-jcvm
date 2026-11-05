@@ -14,6 +14,10 @@ public final class CipherLifecyclePcscProbe {
   private static final byte[] CARD_MANAGER_AID = {
       (byte)0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x00
   };
+  private static final String CARD_RECOGNITION_DATA =
+      "6618731606072A864886FC6B01640B06092A864886FC6B0403109000";
+  private static final String ISD_FCI =
+      "6F0A8408A0000001510000009000";
 
   private static String hex(byte[] bytes) {
     StringBuilder text = new StringBuilder(bytes.length * 2);
@@ -65,6 +69,18 @@ public final class CipherLifecyclePcscProbe {
     Card card = target.connect("*");
     try {
       CardChannel channel = selectApplet(card.getBasicChannel());
+      transmit(channel, "default ISD SELECT while applet selected",
+          new CommandAPDU(0x00, 0xA4, 0x04, 0x00, new byte[0], 256), ISD_FCI);
+      transmit(channel, "explicit ISD SELECT while applet selected",
+          new CommandAPDU(0x00, 0xA4, 0x04, 0x00, CARD_MANAGER_AID, 256),
+          ISD_FCI);
+      channel = selectApplet(channel);
+      transmit(channel, "card-manager GET DATA while applet selected",
+          new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256),
+          CARD_RECOGNITION_DATA);
+      transmit(channel, "unauthenticated protected GP command while applet selected",
+          new CommandAPDU(0x84, 0xF2, 0x40, 0x02,
+              new byte[] {0x4f, 0x00}, 256), "6982");
       expectCommand(channel, 10, "build transient key into Key local", "019000");
       expectCommand(channel, 9, "build transient key without retaining it", "019000");
       expectCommand(channel, 1, "build transient AES key", "019000");
@@ -101,7 +117,7 @@ public final class CipherLifecyclePcscProbe {
       expectCommand(channel, 5, "Cipher is uninitialized after reader reset", "449000");
       expectCommand(channel, 13, "restore RSA transient key after reset", "019000");
       expectCommand(channel, 12, "RSA Cipher is uninitialized after reset", "449000");
-      System.out.println("TEST:SUMMARY pass=31 fail=0");
+      System.out.println("TEST:SUMMARY pass=36 fail=0");
     } finally {
       card.disconnect(false);
     }

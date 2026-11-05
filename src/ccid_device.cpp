@@ -532,7 +532,8 @@ void process_message(uint8_t rhport) {
     pico2_jcvm::CcidApduRoute route =
         pico2_jcvm::route_ccid_xfr_block(
             rx_buffer[5], apdu, apdu_length, slot_state == 0,
-            choupi_vm_is_applet_selected() != 0);
+            choupi_vm_is_applet_selected() != 0,
+            pending_card_manager_response.has_pending());
     if (route == pico2_jcvm::CcidApduRoute::InvalidSlot) {
       send_response(rhport, 0x80, nullptr, 0, 0x40, 0x05);
       break;

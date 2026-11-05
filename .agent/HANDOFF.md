@@ -1,4 +1,42 @@
-# Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
+# Active handoff — CCID routing validated on Pico 2 — 2026-11-05 23:52 CET
+
+## Latest continuation — CCID APDU routing and physical dispatch — 2026-11-05 23:52 CET
+
+RV-20261103-25 is implemented and its main physical acceptance passed. The
+shared production CCID route now sends CLA 00 GET RESPONSE to the card manager
+only while a segmented manager response is pending; otherwise it can reach
+the selected applet. CLA 84 GET RESPONSE stays on the secure manager path.
+The route unit suite passes 15/15; ARM and RISC-V `max_crypto` builds pass.
+
+Pico 2 `D92E743D5F640C0F` ran the physical lifecycle probe on the current
+ARM firmware. It passed default and explicit ISD SELECT while an applet was
+selected, manager GET DATA while selected, unauthenticated protected GP GET
+STATUS returning `6982`, then applet APDUs; complete suite `36/36`, cleanup
+removed package `A000000151000203`. Log:
+`artifacts/logs/cipher-lifecycle-pcsc-20261105T225050Z.log`, SHA-256
+`9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.
+GPPro `--list` returned `ISD: A000000151000000 (OP_READY)`. The physical
+router check does not inject nonzero slots or APDUs after power-off; those
+states pass the shared router tests. Elevated USB sees three Pico boards, but
+only D92 is currently registered by PC/SC.
+
+Use the pinned GPPro build at
+`.local-toolchain/globalplatformpro/tool/target/gp.jar` with
+`--reader=<exact reader name>`. Passing a separate `--reader` argument to the
+older deploy JAR stalled before APDU dispatch; do not treat that as a card
+failure. Prior finite serial monitor showing stage 2 had no CCID traffic yet;
+later telemetry showed stage 7 and repeated GetSlotStatus polling, and the
+physical GPPro operations succeeded.
+
+Next: continue with RV-20261103-26 (lost final CCID response recovery).
+RV-11/12 physical lifecycle follow-ups remain open. Preserve unrelated dirty
+worktree changes. Active implementation/test files for RV-25 are
+`src/ccid_apdu_route.hpp`, `src/ccid_device.cpp`,
+`tools/tests/ccid_apdu_route_test.cpp`, and
+`tools/tests/CipherLifecyclePcscProbe.java`; root TODO/progress and QKB are
+updated, and the step commit is pending.
+
+# Prior handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
 
 ## Latest continuation — verify restored RSA transient key capacity — 2026-11-05 23:27 CET
 

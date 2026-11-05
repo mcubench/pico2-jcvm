@@ -58,7 +58,6 @@ inline bool ccid_is_gp_manager_command(const uint8_t *apdu,
   const uint8_t cla = apdu[0];
   const uint8_t ins = apdu[1];
   if (cla == 0x00 && ins == 0xcb) return true; // ISO GET DATA
-  if (ins == 0xc0 && (cla == 0x00 || cla == 0x84)) return true;
   if (cla != 0x80 && cla != 0x84) return false;
   switch (ins) {
   case 0x50: // INITIALIZE UPDATE
@@ -85,7 +84,9 @@ inline bool ccid_is_protected_gp_command(const uint8_t *apdu,
 inline CcidApduRoute route_ccid_apdu(const uint8_t *apdu,
                                      const size_t apdu_length,
                                      const bool powered,
-                                     const bool applet_selected) noexcept {
+                                     const bool applet_selected,
+                                     const bool card_manager_response_pending =
+                                         false) noexcept {
   if (apdu == nullptr || apdu_length < 2) return CcidApduRoute::Invalid;
   if (!powered) return CcidApduRoute::PoweredOff;
   if (ccid_is_default_isd_select(apdu, apdu_length) ||
@@ -94,6 +95,12 @@ inline CcidApduRoute route_ccid_apdu(const uint8_t *apdu,
   }
   if (ccid_is_select_by_aid(apdu, apdu_length)) {
     return CcidApduRoute::SelectApplet;
+  }
+  if (apdu[1] == 0xc0 && (apdu[0] == 0x00 || apdu[0] == 0x84)) {
+    if (apdu[0] == 0x84 || card_manager_response_pending)
+      return CcidApduRoute::PublicCardManager;
+    return applet_selected ? CcidApduRoute::Applet
+                           : CcidApduRoute::NoApplet;
   }
   if (ccid_is_gp_manager_command(apdu, apdu_length)) {
     return ccid_is_protected_gp_command(apdu, apdu_length)
@@ -105,9 +112,11 @@ inline CcidApduRoute route_ccid_apdu(const uint8_t *apdu,
 
 inline CcidApduRoute route_ccid_xfr_block(
     const uint8_t slot, const uint8_t *apdu, const size_t apdu_length,
-    const bool powered, const bool applet_selected) noexcept {
+    const bool powered, const bool applet_selected,
+    const bool card_manager_response_pending = false) noexcept {
   if (slot != 0) return CcidApduRoute::InvalidSlot;
-  return route_ccid_apdu(apdu, apdu_length, powered, applet_selected);
+  return route_ccid_apdu(apdu, apdu_length, powered, applet_selected,
+                         card_manager_response_pending);
 }
 
 inline CcidApduRoute authorize_ccid_apdu_route(

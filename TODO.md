@@ -240,10 +240,10 @@ during the review.
 
 ### RV-20261103-25
 
-- [ ] **P2: CCID double dispatch and explicit-ISD selection mismatch.**
+- [x] **P2: CCID double dispatch and explicit-ISD selection mismatch.**
   Owner: GP-01, HOST-01. Evidence: Source; [review R25](docs/review_20261103.md#r25--physical-card-management-and-applet-routing-have-different-contracts).
   Acceptance: define one card-session dispatch contract with exactly one route per command, explicit ISD identity and activation/slot checks. Test GP commands while an applet is selected, failed authentication, explicit/default ISD selection and APDUs while powered off. Cover the production CCID path, not just helper encoders.
-  Progress: Added a shared route decision used by production CCID dispatch. It resolves default/explicit ISD selection, applet SELECT, public/protected card-manager APDUs, selected/no-applet routing, SCP authentication failure, slot 0 validation and powered-off rejection. Protected GP commands now return through their card-manager response path without falling through to applet dispatch. The shared route test passes 12/12; ARM and RISC-V builds pass. Physical CCID runtime acceptance remains open.
+  Progress: The production CCID dispatcher consumes one shared route decision for each XfrBlock. GET RESPONSE is manager-routed only for CLA 84 or when the card manager has a segmented response pending; otherwise CLA 00 GET RESPONSE goes to the selected applet. The router rejects nonzero slots and powered-off transfers, recognizes default and explicit ISD AIDs, and routes unauthenticated protected GP commands to 6982 without applet fallback. `tools/test-ccid-apdu-route` passes 15/15. ARM and RISC-V max_crypto builds pass. On Pico 2 D92E743D5F640C0F, the production PC/SC test passed default and explicit ISD selection while an applet was selected, public manager GET DATA while selected, unauthenticated protected GP rejection (`6982`), and subsequent applet dispatch; the full lifecycle suite passed 36/36 and removed its temporary package. Physical slot/off-state injection is unavailable through PC/SC; those router outcomes are covered by the route test. The pinned GPPro build must use `--reader=<exact name>`; an older deploy JAR with a separate `--reader` argument stalled before APDU dispatch.
 
 ### RV-20261103-26
 

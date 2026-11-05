@@ -33,6 +33,10 @@ int main() {
       0x80, 0xca, 0x00, 0x66, 0x00};
   constexpr std::array<uint8_t, 5> applet_apdu = {
       0x80, 0x10, 0x00, 0x00, 0x00};
+  constexpr std::array<uint8_t, 5> applet_get_response = {
+      0x00, 0xc0, 0x00, 0x00, 0x00};
+  constexpr std::array<uint8_t, 5> secure_get_response = {
+      0x84, 0xc0, 0x00, 0x00, 0x00};
 
   check(route_ccid_apdu(select_default_isd.data(), select_default_isd.size(),
                         true, true) == CcidApduRoute::SelectIsd,
@@ -70,8 +74,17 @@ int main() {
   check(route_ccid_apdu(applet_apdu.data(), applet_apdu.size(), true, false) ==
             CcidApduRoute::NoApplet,
         "ordinary APDU has no applet route when none is selected");
+  check(route_ccid_apdu(applet_get_response.data(), applet_get_response.size(),
+                        true, true) == CcidApduRoute::Applet,
+        "applet GET RESPONSE stays with selected applet without manager data");
+  check(route_ccid_apdu(applet_get_response.data(), applet_get_response.size(),
+                        true, true, true) == CcidApduRoute::PublicCardManager,
+        "GET RESPONSE routes to manager while its segmented response is pending");
+  check(route_ccid_apdu(secure_get_response.data(), secure_get_response.size(),
+                        true, true) == CcidApduRoute::PublicCardManager,
+        "secure-channel GET RESPONSE stays on manager path");
   check(route_ccid_apdu(nullptr, 5, true, false) == CcidApduRoute::Invalid,
         "null APDU input is invalid");
-  std::puts("TEST:SUMMARY pass=12 fail=0");
+  std::puts("TEST:SUMMARY pass=15 fail=0");
   return 0;
 }

@@ -6808,3 +6808,32 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Artifact:** `artifacts/logs/cipher-lifecycle-vpcd-20261105T222334Z.log`
   SHA-256 `0a06c8bd3522341f384d5ca495a3bd5db302bd04a27ea20386bb94d663be3748`.
   Hardware validation was not performed.
+
+## CLA 00 GET RESPONSE must follow pending response ownership — 2026-11-05
+
+- **Finding:** Classifying every `00 C0` GET RESPONSE as card-manager traffic
+  can steal an applet's GET RESPONSE when no segmented card-manager response
+  is pending. Manager response state is per CCID session, so the route decision
+  must receive `pending_card_manager_response.has_pending()`; CLA 84 stays on
+  the secure card-manager path.
+- **Viable fix:** Use the shared `route_ccid_xfr_block` decision in production
+  and route CLA 00 GET RESPONSE to the selected applet when manager response
+  state is empty. Keep manager GET RESPONSE routed to its response queue while
+  that queue has data. Do not dispatch the same command to an applet after a
+  card-manager/authentication route was chosen.
+- **Validation:** `./tools/test-ccid-apdu-route` passes 15/15. ARM and RISC-V
+  max_crypto builds pass. On D92 `D92E743D5F640C0F`, the physical PC/SC
+  lifecycle regression passed default and explicit ISD SELECT while an applet
+  was selected, manager GET DATA (`9000`) and unauthenticated protected GET
+  STATUS (`6982`) while selected, then applet APDUs; full result is 36/36 and
+  test package cleanup passed. Slot-1 and powered-off dispatch are covered by
+  the shared router tests; raw invalid-slot/off-state injection was not
+  available through PC/SC.
+- **GPPro invocation:** Use the repository-pinned
+  `.local-toolchain/globalplatformpro/tool/target/gp.jar` and one argument of
+  the form `--reader=<exact PC/SC reader name>`. The older deploy `gp.jar` with
+  a separate `--reader` argument timed out before transmitting an APDU; this
+  was a host command mismatch, not a firmware result.
+- **Artifact:** `artifacts/logs/cipher-lifecycle-pcsc-20261105T225050Z.log`,
+  SHA-256
+  `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.

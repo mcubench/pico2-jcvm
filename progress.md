@@ -22434,3 +22434,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark RV-20261103-13 complete based on the specified native and interpreter restore/capacity acceptance. Continue to RV-20261103-25; retain RV-11/12 physical work as open follow-up.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261105T222334Z.log` (SHA-256 `0a06c8bd3522341f384d5ca495a3bd5db302bd04a27ea20386bb94d663be3748`).
+
+## 2026-11-05 Route CCID GET RESPONSE and verify physical dispatch 11 minutes
+
+- Step/experiment: `ccid-single-route-physical-20261105`
+- When: '2026-11-05 23:41 CET' - '2026-11-05 23:52 CET'
+- Change: Made CLA 00 GET RESPONSE follow the selected applet unless a card-manager response is pending; CLA 84 remains on the secure card-manager path. Passed the manager-response-pending state into the shared route used by production CCID. Extended route tests and the physical lifecycle probe with default/explicit ISD selection, manager GET DATA while an applet is selected, and unauthenticated protected GP rejection. Updated RV-20261103-25, QKB and handoff.
+- Validation: `./tools/test-ccid-apdu-route` passed 15/15; physical probe compiled; scoped `git diff --check` passed. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. With the already-flashed ARM build, `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-lifecycle-pcsc 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passed `TEST:SUMMARY pass=36 fail=0`; cleanup removed package `A000000151000203`. GPPro `--list` returned `ISD ... (OP_READY)` on D92. Physical slot-1 and powered-off APDU injection was not available through PC/SC; those route states are covered by the shared router test.
+- Result: The production CCID path dispatched public manager GET DATA while the test applet remained selected; default and explicit ISD selections returned the expected FCI; an unauthenticated protected GP APDU returned `6982`, followed by successful applet calls. All three USB devices were enumerated, while D92 was the physical PC/SC reader used.
+- Decision: Mark RV-20261103-25 complete. Continue with the next open HOST-01 item, RV-20261103-26; retain RV-11/12 physical follow-up separately.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cipher-lifecycle-pcsc-20261105T225050Z.log`, SHA-256 `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`; prior end-to-end run `artifacts/logs/cipher-lifecycle-pcsc-20261105T224903Z.log`, SHA-256 `7559316b43b97f0695e0284bd79805ef29d8042d4d3484f6f0d383049fa3c978`.
