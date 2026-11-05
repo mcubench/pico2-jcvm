@@ -6408,3 +6408,11 @@ release numbers; the install command uses a downloaded JC305 CAP placeholder.
 Local links, shell snippet syntax, and whitespace checks passed; no firmware
 or hardware work was performed. Resolve this documentation commit with
 `git log -1 --format=%H -- README.md`.
+
+
+## README firmware release link — 2026-11-05
+
+README now names pico2-jcvm-max_crypto-arm__latest.uf2 and links to the
+user-supplied project releases page. Existing BOOTSEL, data-loss, and build
+guidance remains. This is a documentation-only change for publication to main;
+no image or hardware validation is implied.

@@ -22290,3 +22290,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit documentation and preserve all unrelated worktree changes.
 - Commit: Resolve with `git log -1 --format=%H -- README.md` after commit creation.
 - Artifacts/logs: `README.md`; official `https://github.com/crocs-muni/JCAlgTest/releases/latest` and `https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar`; no binaries generated.
+
+
+## 2026-11-05 Link released ARM firmware in README 0.5 minutes
+
+- Step/experiment: `readme-firmware-release-link-20261105`
+- When: '2026-11-05T15:39:43+01:00' - '2026-11-05T15:40:13+01:00'
+- Change: Replaced the generic firmware acquisition step with a link to the user-supplied releases page, naming pico2-jcvm-max_crypto-arm__latest.uf2 exactly; retained the build alternative and flashing/data-loss guidance.
+- Validation: Exact asset label and releases URL checked; local README link targets and diff whitespace checked. The web tool could not retrieve the releases page (cache miss), so binary availability/content was not independently verified. No firmware builds, downloads, USB/PCSC operations, or hardware testing for this documentation-only change.
+- Result: README points users to the requested firmware release asset. Runtime/performance metrics were not measured; unrelated work remains untouched.
+- Decision: Commit and push the README update to main as explicitly requested.
+- Commit: Resolve with `git log -1 --format=%H -- README.md` after commit creation.
+- Artifacts/logs: `README.md`; `https://github.com/mcubench/pico2-jcvm/releases`; no generated binaries.
