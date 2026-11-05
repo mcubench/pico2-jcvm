@@ -22239,3 +22239,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the VPCD cleanup fix. Use the Descriptor-present suite for positive cross-AID validation; treat Descriptor-free `6A80` as the known metadata boundary. No firmware rebuild was needed for this PC-only change.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`; max image manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`.
+
+- Commit resolved for `vpcd-orphan-cleanup-regression-20261105`: `1f85963d` (Record VPCD regression validation).
