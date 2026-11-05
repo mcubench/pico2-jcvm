@@ -6534,3 +6534,24 @@ upstream v2.47.0 as a Python script into the ignored backup folder. Restricted
 network DNS failed; the explicitly escalated download succeeded. Git metadata
 mutations also used targeted host permissions. No system installation or
 machine configuration change was needed.
+
+
+## PC VPCD startup stalls while clearing orphan static state — 2026-11-05
+
+`clear_orphaned_dynamic_persistent_state()` called the PC-only static cleanup
+for each empty dynamic package slot. That cleanup tried 256 static-field
+prefix erases per package. Every erase rescanned the complete persistent tag
+set, keeping all emulator cores busy and delaying VPCD startup beyond the
+connect timeout.
+
+Viable fix: use the existing `erasePersistentPackageState(package_id)` bulk
+operation for PC too. The PC `fs_erase_package_state` implementation erases the
+`[0x02, package_id]` static namespace in one prefix operation. The host OS
+allows this two-byte namespace prefix only to the trusted Installer and
+RuntimeEnvironment contexts. Do not restore the per-field loop.
+
+Validation on 2026-11-05: `./tools/build-pc --profile symm_crypto` passed.
+The bounded cross-AID VPCD run now reaches `VPCD:CONNECTED` and starts CAP
+LOAD; it subsequently fails installing the second fixture with `6A80` / VM
+exception 29. This later failure is still open and is separate from the
+resolved VPCD startup stall. No physical hardware was used.

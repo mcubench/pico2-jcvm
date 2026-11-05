@@ -27,11 +27,17 @@ extern "C" uint8_t fs_sync(void) {
   }
   return 0;
 }
+extern "C" uint8_t choupi_fs_erase_prefix(const uint8_t *prefix,
+                                           uint8_t prefix_length);
 extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
                                     uint8_t prefix_length) {
   return fs_erase(prefix, prefix_length);
 }
-extern "C" uint8_t fs_erase_package_state(uint8_t) { return 0; }
+extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
+  const uint8_t static_package_prefix[] = {0x02, package_id};
+  return choupi_fs_erase_prefix(static_package_prefix,
+                                sizeof(static_package_prefix));
+}
 #endif
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_import.hpp"
@@ -398,12 +404,7 @@ bool clear_applet_persistent_state(uint8_t applet_owner,
 
 bool clear_package_static_state(uint8_t package_id) noexcept {
 #ifdef PC_VERSION
-  for (uint16_t field = 0; field <= 0xff; ++field) {
-    const auto tag = jcvm::FlashMemory_Handler::getStaticFieldTag(
-        package_id, static_cast<uint8_t>(field));
-    if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(tag)) return false;
-  }
-  return true;
+  return jcvm::FlashMemory_Handler::erasePersistentPackageState(package_id);
 #else
   return jcvm::FlashMemory_Handler::erasePersistentPackageState(package_id);
 #endif

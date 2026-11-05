@@ -22216,3 +22216,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit and push the approved README with this record and the continuity note.
 - Commit: Resolve this step with `git log -1 --format=%H -- README.md` after commit creation (a commit cannot embed its own hash).
 - Artifacts/logs: `README.md`; none generated.
+# 2026-11-05 Bulk-clear orphan static state in PC VPCD 26 minutes
+
+- Step/experiment: `vpcd-orphan-static-cleanup-20261105`
+- When: '2026-11-05 13:29 CET' - '2026-11-05 13:55 CET'
+- Change: Replaced the PC orphan cleanup's 256-per-field static erase loop with a package-scoped prefix erase. Implemented the PC package-state erase through the existing trusted host prefix-erase syscall; allowed the two-byte static namespace prefix only for Installer and RuntimeEnvironment contexts. Added the root cause and viable fix to QKB and updated the handoff. Temporary stage tracing was removed.
+- Validation: `./tools/build-pc --profile symm_crypto` passed after the code change. The bounded `PICO2_HOST_USB_ACCESS=1 ... ./tools/test-sio-cross-aid-vpcd` reached `VPCD:CONNECTED`, loaded the first Shareable fixture, and began loading the second, then failed at INSTALL with `6A80` and VM exception 29. A final bounded run without trace output reproduced the same later INSTALL failure. `pgrep -a choupi` showed no leftover emulator. No physical hardware was used.
+- Result: The prior pre-connect wait was caused by repeated full-tag scans for each possible static field in each empty package slot. Package cleanup now uses a single namespace erase per empty slot, and VPCD starts. Startup duration was not measured. The later fixture-install failure remains unresolved and is tracked separately.
+- Decision: Keep the bulk erase fix. Next investigate the second fixture's VM exception 29/`6A80`; do not conflate it with the resolved startup stall. Preserve all unrelated worktree changes.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T125342Z.log`; no hardware logs.

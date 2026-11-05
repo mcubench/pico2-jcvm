@@ -6344,3 +6344,27 @@ User requested analysis only. Findings are in `docs/cap-reinstall-review-2026110
 ## CAP reinstall review backlog — 2026-11-05 09:26 CET
 
 Added open tasks CAP-REINSTALL-01/02/03 under GP-01 in root TODO.md at user request: package-cascade SIO proxy invalidation, runtime cleanup after late DELETE failure, and changed-version replacement with restart/hardware acceptance. The first two remain source-review risks requiring reproduction; no runtime fix or validation is claimed. Documentation only; preserve existing worktree changes.
+# VPCD startup cleanup fixed; later cross-AID install still failing — 2026-11-05
+
+The VPCD pre-connect stall was caused by PC orphan recovery erasing 256
+potential static-field prefixes for every empty dynamic package slot. Each
+prefix erase rescanned the host tag store. Replaced that with one package
+static namespace erase per slot and restricted the two-byte prefix operation
+to trusted Installer/RuntimeEnvironment contexts. The cause and fix are in
+`.agent/QKB.md`.
+
+Validation: `./tools/build-pc --profile symm_crypto` passes. The bounded
+cross-AID harness reaches `VPCD:CONNECTED` and loads the first Shareable
+fixture, but fails during INSTALL of the second fixture with `6A80`, VM
+exception 29. Latest log:
+`artifacts/logs/sio-cross-aid-vpcd-20261105T125342Z.log`. No emulator process
+remained after the run. No physical hardware used. The startup duration was
+not measured. Temporary diagnostic prints were removed.
+
+Next: investigate the second fixture's INSTALL exception as a distinct issue.
+Do not remove or modify unrelated existing source, documentation, review
+artifact, or submodule changes. In particular, `src/cap_load.cpp` still
+contains pre-existing uncommitted lifecycle/install refactoring; stage only
+the package erase changes for this step.
+
+---
