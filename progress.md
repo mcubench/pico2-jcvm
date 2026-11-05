@@ -22445,3 +22445,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark RV-20261103-25 complete. Continue with the next open HOST-01 item, RV-20261103-26; retain RV-11/12 physical follow-up separately.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-pcsc-20261105T225050Z.log`, SHA-256 `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`; prior end-to-end run `artifacts/logs/cipher-lifecycle-pcsc-20261105T224903Z.log`, SHA-256 `7559316b43b97f0695e0284bd79805ef29d8042d4d3484f6f0d383049fa3c978`.
+
+- Commit resolved for `ccid-single-route-physical-20261105`: `10a3ab66` (Fix CCID GET RESPONSE routing and validate on Pico 2).

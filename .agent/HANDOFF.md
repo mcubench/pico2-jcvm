@@ -30,11 +30,12 @@ physical GPPro operations succeeded.
 
 Next: continue with RV-20261103-26 (lost final CCID response recovery).
 RV-11/12 physical lifecycle follow-ups remain open. Preserve unrelated dirty
-worktree changes. Active implementation/test files for RV-25 are
+worktree changes. RV-25 commit: `10a3ab66` (Fix CCID GET RESPONSE routing and
+validate on Pico 2). Active implementation/test files for RV-25 are
 `src/ccid_apdu_route.hpp`, `src/ccid_device.cpp`,
 `tools/tests/ccid_apdu_route_test.cpp`, and
 `tools/tests/CipherLifecyclePcscProbe.java`; root TODO/progress and QKB are
-updated, and the step commit is pending.
+updated.
 
 # Prior handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
 
