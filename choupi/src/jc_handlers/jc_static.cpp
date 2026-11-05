@@ -35,6 +35,37 @@
 namespace jcvm {
 namespace {
 
+void validateStaticSlot(const Package &package, const uint16_t index,
+                        const size_t width, const bool reference) {
+  const auto *component = package.getCap().getStaticField();
+  if (component == nullptr) throw Exceptions::SecurityException;
+
+  const size_t image_size = NTOHS(component->image_size);
+  const size_t reference_bytes =
+      static_cast<size_t>(NTOHS(component->reference_count)) * 2;
+  const size_t offset = index;
+  if (reference) {
+    if (width != 2 || offset % 2 != 0 || offset >= reference_bytes ||
+        width > reference_bytes - offset) {
+      throw Exceptions::SecurityException;
+    }
+  } else if (offset < reference_bytes || offset > image_size ||
+             width > image_size - offset) {
+    throw Exceptions::SecurityException;
+  }
+}
+
+void validateStaticPrimitiveType(const fs::Tag &tag,
+                                 const FieldType expected) {
+  if (fs_exists(tag.value, tag.len) == 0) return;
+  const FieldType actual = FlashMemory_Handler::getPersistentField_Type(tag);
+  const bool compatible =
+      actual == expected ||
+      (expected == FieldType::FIELD_TYPE_BYTE &&
+       actual == FieldType::FIELD_TYPE_BOOLEAN);
+  if (!compatible) throw Exceptions::SecurityException;
+}
+
 uint16_t readStaticU16(const uint8_t *data) noexcept {
   return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 8) |
                                data[1]);
@@ -98,6 +129,7 @@ void getInitialPrimitiveBytes(const Package &package, const size_t index,
  * @return the static byte value.
  */
 jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
+  validateStaticSlot(this->package, index, 1, false);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
@@ -105,6 +137,7 @@ jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
     getInitialPrimitiveBytes(this->package, index, value, sizeof(value));
     return static_cast<jbyte_t>(value[0]);
   }
+  validateStaticPrimitiveType(tag, FieldType::FIELD_TYPE_BYTE);
   return FlashMemory_Handler::getPersistentField_Byte(tag);
 }
 
@@ -115,6 +148,7 @@ jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
  * @return the static short value.
  */
 jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
+  validateStaticSlot(this->package, index, sizeof(jshort_t), false);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
@@ -123,6 +157,7 @@ jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
     const uint16_t value = readStaticU16(bytes);
     return static_cast<jshort_t>(value);
   }
+  validateStaticPrimitiveType(tag, FieldType::FIELD_TYPE_SHORT);
   return FlashMemory_Handler::getPersistentField_Short(tag);
 }
 
@@ -134,6 +169,7 @@ jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
  * @return the static integer value.
  */
 jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
+  validateStaticSlot(this->package, index, sizeof(jint_t), false);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
@@ -144,6 +180,7 @@ jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
                            (static_cast<uint32_t>(bytes[2]) << 8) | bytes[3];
     return static_cast<jint_t>(value);
   }
+  validateStaticPrimitiveType(tag, FieldType::FIELD_TYPE_INT);
   return FlashMemory_Handler::getPersistentField_Int(tag);
 }
 #endif /* JCVM_INT_SUPPORTED */
@@ -156,6 +193,7 @@ jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
  */
 jref_t Static_Handler::getPersistentRef(const uint16_t index,
                                         Heap &heap) const {
+  validateStaticSlot(this->package, index, 2, true);
   jref_t reference;
   const jpackage_ID_t package_id = this->package.getPackageID();
   if (heap.getStaticReferenceRoot(package_id, index, reference)) {
@@ -179,6 +217,7 @@ jref_t Static_Handler::getPersistentRef(const uint16_t index,
  */
 void Static_Handler::setPersistentRef(const uint16_t index,
                                       const jref_t value, Heap &heap) {
+  validateStaticSlot(this->package, index, 2, true);
   if (value.isGlobalArray()) {
     throw Exceptions::SecurityException;
   }
@@ -198,9 +237,11 @@ void Static_Handler::setPersistentRef(const uint16_t index,
  */
 void Static_Handler::setPersistentByte(const uint16_t index,
                                        const jbyte_t value) {
+  validateStaticSlot(this->package, index, 1, false);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
 
+  validateStaticPrimitiveType(tag, FieldType::FIELD_TYPE_BYTE);
   FlashMemory_Handler::setPersistentField_Byte(tag, value);
 }
 
@@ -212,9 +253,11 @@ void Static_Handler::setPersistentByte(const uint16_t index,
  */
 void Static_Handler::setPersistentShort(const uint16_t index,
                                         const jshort_t value) {
+  validateStaticSlot(this->package, index, sizeof(jshort_t), false);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
 
+  validateStaticPrimitiveType(tag, FieldType::FIELD_TYPE_SHORT);
   FlashMemory_Handler::setPersistentField_Short(tag, value);
 }
 
@@ -227,6 +270,7 @@ void Static_Handler::setPersistentShort(const uint16_t index,
  */
 void Static_Handler::setPersistentInt(const uint16_t index,
                                       const jint_t value) {
+  validateStaticSlot(this->package, index, sizeof(jint_t), false);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
 
@@ -236,6 +280,7 @@ void Static_Handler::setPersistentInt(const uint16_t index,
   data[2] = HIGH_BYTE_SHORT(INT_2_LSSHORTS(value));
   data[3] = LOW_BYTE_SHORT(INT_2_LSSHORTS(value));
 
+  validateStaticPrimitiveType(tag, FieldType::FIELD_TYPE_INT);
   FlashMemory_Handler::setPersistentField_Int(tag, value);
 }
 #endif /* JCVM_INT_SUPPORTED */

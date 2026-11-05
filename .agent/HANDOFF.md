@@ -1,4 +1,4 @@
-# Current continuation — runtime instance field checks and BOOTSEL visibility — 2026-11-05 04:39 CET
+# Current continuation — static field slot validation and BOOTSEL visibility — 2026-11-05 05:20 CET
 
 Implemented runtime field-kind consistency checks in `JC_Instance`: byte,
 short, int, and reference getters reject a value tagged as another kind;
@@ -7,12 +7,22 @@ start explicitly uninitialized; and the trailing int word has an internal
 marker that is validated on read, write, persistence serialization, and GC
 cache traversal. Java-default reads from uninitialized fields still produce
 zero/null. These checks do not yet validate a first store against the CAP's
-declared field kind, and static fields remain outside this change.
+declared field kind.
+
+Extended `Static_Handler` to validate primitive access width against the CAP
+StaticField `image_size`, keep references aligned and inside the leading
+`reference_count * 2` region, and reject later primitive accesses that conflict
+with their persisted type tag. These checks establish static layout
+consistency; they do not infer byte/short/int declaration for an absent
+primitive tag. Descriptor has field type metadata, but it is optional and
+standard GPPro LOAD omits it. Do not claim first-store declared-kind checks on
+Descriptor-free CAPs. The Descriptor-free INSTALL `6A80` remains the known
+fail-closed method-boundary issue, not a static-slot failure.
 
 Validation passed: `./tools/test-persistent-transaction` (`TEST:SUMMARY
 fail=0`), including a persistent int restore and low-word type check, ARM and
 RISC-V max_crypto builds, PC max_crypto build,
-`tools/test-sio-cross-aid-vpcd` (`TEST:SUMMARY pass=34 fail=0`), and the full
+`tools/test-sio-cross-aid-vpcd` with Descriptor included (`TEST:SUMMARY pass=34 fail=0`), and the full
 `tools/test-vpcd-multipackage --timeout 180` suite (`TEST:SUMMARY pass=47
 fail=0`). ARM image ends at `0x100eb154`, leaving 85,676 bytes in the firmware
 window. Latest VPCD logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log`
@@ -22,13 +32,22 @@ window. Latest VPCD logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.lo
 restart log `artifacts/logs/host-vpcd-multipackage-restart-20261105T030724Z.log`
 (SHA-256 `be6875ba56c24b620e5c7d80c73dd014f280643d75d7e18cac1abbba9150dcbc`).
 
-After these builds and before physical testing, elevated `./tools/env lsusb`
-again saw only the USB root hubs and VirtualBox Tablet; no BOOTSEL Pico was
-attached to this guest. No flash or physical test occurred. Next: inspect CAP
-field metadata and static-field dispatch to validate first writes against
-declared kinds, then add hostile-CAP regressions. Preserve unrelated worktree
-changes; `choupi/src/heap.cpp` contains both this step's int-low GC case and a
-pre-existing unrelated deletion, so stage only the intended hunk.
+The static-field validation build used ARM end `0x100eb2d4` (85,292 bytes
+remaining in the 1 MiB firmware window); RISC-V core and PC max_crypto builds
+also passed. The fresh-PC cross-AID log is
+`artifacts/logs/sio-cross-aid-vpcd-20261105T041209Z.log` (SHA-256
+`bb7a401db76bf61b65aae5ac662f95edefa9e5f359bf0418b6d08006910f7ce1`). An
+attempted multipackage run stopped during Descriptor-free INSTALL and is not
+counted as a pass.
+
+After these builds and before physical testing, elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` again saw only USB root hubs and
+VirtualBox Tablet; no BOOTSEL Pico was attached to this guest. No flash or
+physical test occurred. Next: implement Descriptor-backed declared field-kind
+checks for instance/static slots, with a valid CAP fixture and malformed
+Descriptor cases. Preserve unrelated worktree changes; `choupi/src/heap.cpp`
+contains both this step's int-low GC case and a pre-existing unrelated
+deletion, so stage only the intended hunk.
 
 After the user again reported all three tokens in BOOTSEL, the required
 elevated host-access refresh (`PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb`)

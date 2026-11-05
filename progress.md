@@ -22053,3 +22053,14 @@
 - Decision: Continue HARD-01 by mapping CAP-declared field kinds to field tokens and applying the same checks to static accessors, then add hostile-CAP regressions. Do not claim physical acceptance or mark HARD-01 complete.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log` (SHA-256 `b45cfa3e00081346f5761a3ce0baa1fb0eeb83f1be95a1e8aff3b44521bef1a4`); `artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256 `fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`); restart log `artifacts/logs/host-vpcd-multipackage-restart-20261105T030724Z.log` (SHA-256 `be6875ba56c24b620e5c7d80c73dd014f280643d75d7e18cac1abbba9150dcbc`).
+
+## 2026-11-05 Static field slot consistency checks 41 minutes
+
+- Step/experiment: `hard-20261105-static-field-layout-consistency`
+- When: '2026-11-05 04:39 CET' - '2026-11-05 05:20 CET'
+- Change: Added static-slot checks using the CAP StaticField image layout. Primitive access widths must fit after the leading reference region; reference access must be aligned and contained in that region. Existing static primitive records must retain their byte/short/int kind on later access. Documented that this cannot verify the first store against a declared primitive kind when the record is absent; Descriptor contains field type records but is optional and omitted by standard GPPro LOAD. Updated TODO, QKB and handoff.
+- Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. Fresh-PC `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_REUSE_FIXTURE=1 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. The Descriptor-free cross-AID fixture returned its previously known fail-closed INSTALL `6A80`; the multipackage run stopped during that same Descriptor-free INSTALL and is not counted as a pass. USB refresh after the user reported BOOTSEL devices showed only root hubs and VirtualBox Tablet. No physical device test was possible.
+- Result: Static image/reference bounds and persisted primitive kind consistency coexist with valid Descriptor-present CAP load/install, SIO, restart/reset, DELETE and reinstall. ARM firmware ends at `0x100eb2d4`, leaving 85,292 bytes in its 1 MiB firmware window. PC build retains pre-existing Rust and packed-member warnings. Declared-kind first-store validation and hardware runtime remain unverified.
+- Decision: Keep these layout checks. Next, implement and test Descriptor-backed field-kind lookup, while keeping Descriptor-free dynamic execution fail-closed until a verifiable metadata/trust source exists.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T041209Z.log`, SHA-256 `bb7a401db76bf61b65aae5ac662f95edefa9e5f359bf0418b6d08006910f7ce1`; no hardware log.

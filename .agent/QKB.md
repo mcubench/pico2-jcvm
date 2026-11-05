@@ -6392,3 +6392,33 @@ original terminology/status; check current summary and later fixes before reuse.
   multipackage APDU log
   `artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256
   `fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`).
+
+## Static field slot layout and declared-kind metadata — 2026-11-05
+
+- **Finding:** CAP StaticField records provide `image_size` and
+  `reference_count`. Static references occupy the first `reference_count * 2`
+  bytes of the static image; primitive accesses use offsets after that region.
+  Persisted static primitive records carry a runtime `FieldType`, so later
+  accesses can reject a conflicting byte/short/int type. StaticField alone
+  does not declare whether a primitive slot is byte, short, or int.
+- **Change:** `Static_Handler` validates primitive access width and bounds
+  against the static image, confines reference reads/writes to aligned slots
+  in the leading reference region, and checks the stored primitive type before
+  subsequent reads/writes. An absent primitive tag remains ambiguous on the
+  first access, so no first-store declaration claim is made.
+- **Validation:** ARM, RISC-V, and PC max_crypto wrapper builds passed. The
+  Descriptor-present cross-AID VPCD regression passed `TEST:SUMMARY pass=34
+  fail=0`; log `artifacts/logs/sio-cross-aid-vpcd-20261105T041209Z.log`,
+  SHA-256 `bb7a401db76bf61b65aae5ac662f95edefa9e5f359bf0418b6d08006910f7ce1`.
+  The Descriptor-free variant returns INSTALL `6A80`, matching the previously
+  reproduced fail-closed method-boundary condition; it does not test these
+  static checks and is not a new regression. The attempted multipackage run
+  was stopped during Descriptor-free INSTALL and is not counted as a pass.
+- **Device availability:** after the user reported all tokens in BOOTSEL,
+  elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` saw only root hubs and
+  the VirtualBox Tablet. No RP2350 was attached to this VM; no hardware access
+  occurred.
+- **Decision:** Keep the static layout checks. Descriptor is optional and
+  standard GPPro LOAD omits it, so the VM cannot verify first primitive stores
+  against field declarations for such packages. Continue fail-closed method
+  bounds, and do not claim declared-kind enforcement for Descriptor-free CAPs.
