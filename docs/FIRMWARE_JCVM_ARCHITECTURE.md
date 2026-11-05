@@ -1,7 +1,7 @@
 # Firmware OS and Java Card VM — Architecture and Layering Review
 
-Updated **2026-11-04** from baseline `1861af8`, subsequent diagnostic
-`26325a7`, and the current checkout.
+Updated **2026-11-04** from baseline `fb48427`, subsequent diagnostic
+`590d70b`, and the current checkout.
 This replaces the 2026-10-24 architectural snapshot. It distinguishes source
 implementation, recorded validation, and remaining refactoring work. Existing
 uncommitted changes are not assumed to be finished or deployed. This update

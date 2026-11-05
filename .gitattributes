@@ -1,0 +1,3 @@
+
+# Preserve the upstream reference CSV bytes, including CRLF and data whitespace.
+/reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv -text -whitespace

@@ -295,7 +295,7 @@ future cross-context exception marshalling.
   needed to preserve the original Java Card array shape.
 - **Artifacts:** `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log`
   SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`.
-- **Commit:** `14b8375` (`Restore transient array lengths and zero values`).
+- **Commit:** `2ff86a1` (`Restore transient array lengths and zero values`).
 
 ---
 
@@ -328,7 +328,7 @@ future cross-context exception marshalling.
   SHA-256 `e487a385b643a8d0bd6f346b9bb2a71600fced1b121c682721199adacb2bc73a`;
   fresh-restore direct check `artifacts/logs/cipher-lifecycle-vpcd-restore-direct.log`
   SHA-256 `937c85f629c47615b08a44493b85e614c376cc7059238e706c5a8d0e00ba718f`.
-- **Commit:** `73afaf2` (`Clear Cipher key copies with transient lifetime`).
+- **Commit:** `c619063` (`Clear Cipher key copies with transient lifetime`).
 
 ---
 
@@ -363,7 +363,7 @@ future cross-context exception marshalling.
   SHA-256 `08b7397d42936035d7042e834495fa5d3ecc33e05e55b7875c83a02995ba9f2f`;
   cycle log `artifacts/logs/cycle-choupi-20261104T040104Z.log` SHA-256
   `52689d2718db2a4d79917c1f9dfee35ea2ea9a3b0d02407b5218ce8caaf2ce1c`.
-- **Commit:** `07de73e` (`Enforce immutable applet execution deadlines`).
+- **Commit:** `4251243` (`Enforce immutable applet execution deadlines`).
 
 ---
 
@@ -385,7 +385,7 @@ future cross-context exception marshalling.
   (owners 57 and 58); the client's assertion correctly throws
   `SecurityException`. The cross-AID VPCD suite passes 32/32. PC/ARM/RISC-V
   builds and physical Pico 2 `2BED26ED20556535` cycle pass.
-- **Commit:** `562870f` (`Preserve SensitiveResult object ownership`).
+- **Commit:** `7057014` (`Preserve SensitiveResult object ownership`).
 - **Artifacts:** VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261104T033440Z.log`
   SHA-256 `dc83725821ea28cad699e0ed59a52641f06f3c4821edef227e12b2a7f365b930`;
   physical cycle `artifacts/logs/cycle-choupi-20261104T034116Z.log` SHA-256
@@ -583,7 +583,7 @@ future cross-context exception marshalling.
   Cleanup deleted A/B/C and the temporary package and verified removal. Logs:
   `artifacts/logs/physical-get-status-multipage-20261104T020406Z.log` and
   `artifacts/logs/cycle-choupi-20261104T020103Z.log`.
-- **Commits:** source/test `b00ddcf`; progress and handoff metadata pending.
+- **Commits:** source/test `7f572a4`; progress and handoff metadata pending.
 
 ## Persistent array identity counter tag violates filesystem tag ABI — 2026-11-04
 
@@ -603,7 +603,7 @@ future cross-context exception marshalling.
   PC VPCD multipackage run progressed beyond first CAP static initialization,
   but was interrupted during its 21-instance pagination setup, so INSTALL
   preflight acceptance is still pending.
-- **Commit:** `53f706e`.
+- **Commit:** `7cd2490`.
 
 ## CCID receive reset/BOOTSEL and failover — 2026-11-03
 
@@ -1342,7 +1342,7 @@ future cross-context exception marshalling.
   RISC-V `max_crypto` builds passed. Hardware scan showed only VPCD readers.
 - **Artifacts:** `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log`
   SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`.
-- **Commit:** `4e67103` (`Clear deselect transients during card reset`).
+- **Commit:** `70248fa` (`Clear deselect transients during card reset`).
 
 ## Same-CAP sibling state survives emulator restart — verified 2026-11-02
 
@@ -3565,12 +3565,12 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   association/design.
 - **Follow-up:** The RSA-PSS helper's generated salt, hash input, MGF1
   scratch/masks, and decoded data block are also guarded and wiped. PC, ARM,
-  RISC-V, and VPCD 99/99 validations pass (implementation commit `4ecd522`).
+  RISC-V, and VPCD 99/99 validations pass (implementation commit `14a2406`).
 - **Follow-up:** RSA Signature entry points now wipe copied message/hash/signature
   inputs and outputs, RSA verification scratch, and ISO9796 recovered-message
-  intermediates (commit `df2d2d9`). All target builds and VPCD 99/99 pass.
+  intermediates (commit `41d45b7`). All target builds and VPCD 99/99 pass.
 - **Follow-up:** The remaining RSA CRT factor copies and OAEP MGF1 digest
-  scratch are guarded (commit `bedf23a`). Audit of the pinned SDK confirms
+  scratch are guarded (commit `01a1ef1`). Audit of the pinned SDK confirms
   `mbedtls_mpi_free()` wipes allocated limbs through
   `mbedtls_mpi_zeroize_and_free()`.
 
@@ -3710,7 +3710,7 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   (one selected call; 900 excluded). PC, ARM, and RISC-V asymm_crypto builds
   passed. Identified physical D92 flash verification and finite startup monitor
   passed, but the constructor itself has not yet been tested physically.
-  Commit: `a6bdb2f`.
+  Commit: `cb9dc2b`.
 
 
 ## Full JC305 Security sweep loses PC/SC after RSA public 4096 KeyBuilder (2026-10-28)
@@ -3957,7 +3957,7 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
 - **Validation:** Unchanged upstream API 3.0.5 Crypto CAP on current PC JCVM/VPCD
   passed the selected row (`OK`; 465 other rows filtered). CAP upload and
   cleanup passed. PC, ARM, and RISC-V `asymm_crypto` builds passed. No physical
-  device was available. Source commit: `be0ea69`.
+  device was available. Source commit: `b29041a`.
 - **Other diagnostic:** RSA/SHA-512 PSS on the same API CAP returned
   `CryptoException.ILLEGAL_VALUE` in VPCD. Native PSS initialization checks
   whether the key can fit the SHA-512 digest and default digest-length salt;
@@ -3983,7 +3983,7 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
 - **Validation:** Unchanged API 3.0.5 Crypto CAP on current PC JCVM/VPCD passed
   the selected row (`OK`; 465 other rows filtered); upload and cleanup passed.
   PC, ARM, and RISC-V `asymm_crypto` wrapper builds passed. No physical device
-  was available. Source commit: `2ae55a4`.
+  was available. Source commit: `231332a`.
 - **Reference:** [Oracle Java Card `SignatureMessageRecovery`](https://docs.oracle.com/en/java/javacard/3.2/jcapi/api_classic/javacard/security/SignatureMessageRecovery.html).
 - **Artifacts:**
   `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-init-parameters-fixed.csv`.
@@ -6518,3 +6518,19 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Use:** When running emulator tests under `timeout`, do not detach the
   emulator into a new session unless the harness traps termination and kills
   that process group explicitly. Recheck `ps -C choupi` after timeouts.
+
+
+## 2026-11-05 GitHub oversized historical log — viable solution
+
+A normal push failed GH001 because historical log data was 260,631,857 bytes,
+even though a later commit reduced the current file. Ignoring/deleting the
+current file does not remove historical blobs. With explicit user authorization,
+filter history in isolation, preserve a complete bundle and dirty work, verify
+trees and sizes, then switch the existing repository and update document hash
+references. See `.agent/history/2026-11-05-history-cleanup.md`.
+
+`git filter-repo` and pip were unavailable. Viable solution: download pinned
+upstream v2.47.0 as a Python script into the ignored backup folder. Restricted
+network DNS failed; the explicitly escalated download succeeded. Git metadata
+mutations also used targeted host permissions. No system installation or
+machine configuration change was needed.

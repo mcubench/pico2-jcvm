@@ -305,7 +305,7 @@
 - Validation: `./tools/env ./tools/monitor --seconds 8` returned 0 from the connected Pico 2 and emitted 8 `TEST:PASS random_stream_varies` plus `TEST:SUMMARY pass=1 fail=0` pairs, with no `FAULT` or failure record. CapDump returned 0 and reported format 2.1, package AID `4A43416C6754657374`, applet AID `4A43416C675465737431`, imports `A0000000620001` v1.0 and `A0000000620102`, `A0000000620101`, `A0000000620201` v1.6. CAP size is 131,538 bytes; SHA-256 is `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. ROM-mask import compatibility remains unverified because `capmap-free` and Maven Central resolution are unavailable.
 - Result: The connected board remains responsive and runs the passing standalone smoke image. The supplied applet CAP is compatible with CHOUPI's stated CAP 2.1 parser format, but the import versions still need checking against generated exports.
 - Decision: Continue toward the CHOUPI Cortex-M33 build; source for the pinned CAP parser or a compatible replacement remains the current prerequisite.
-- Commit: `c922222`
+- Commit: `a9c87c3`
 - Artifacts/logs: `artifacts/logs/capdump-v182-20261010.txt` (SHA-256 `66f3d639dd3ea3beae3d4592132bac5f130666d47dc3fce5e0955c9a7355c35c`); bounded monitor output was observed in the command session and was not archived separately
 
 ## 2026-10-10 — Align Java Card exports with JCAlgTest imports
@@ -325,7 +325,7 @@
 - Validation: `./tools/env ./tools/build arm` returned 0 and picotool validated the `rp2350-arm-s` UF2. `./tools/env ./tools/build riscv` returned 0 and picotool validated the `rp2350-riscv` UF2. No flash operation was needed; the Pico 2 remains on the ARM smoke firmware that passed the bounded serial monitor.
 - Result: Both compilation/upload image families still build correctly through the repository wrappers, and the current board state is recorded accurately.
 - Decision: Continue toward a CHOUPI image after resolving the CAP parser and Maven dependency blockers; do not replace the passing smoke firmware before an integrated image passes both build gates.
-- Commit: `12dc94b`
+- Commit: `59221d6`
 - Artifacts/logs: Existing validated UF2s under ignored `build/arm/` and `build/riscv/`; board smoke log remains `artifacts/logs/cycle-arm-20261010T053019Z.log`
 
 ## 2026-10-10 — Flash ARM smoke image to connected Pico 2
@@ -335,7 +335,7 @@
 - Validation: `./tools/env ./tools/cycle arm` returned 0. ARM and RISC-V builds passed, picotool recognized `rp2350-arm-s`, and the wrapper flashed then captured 8 seconds from `/dev/ttyACM0`. Serial output contained eight `TEST:PASS random_stream_varies` and `TEST:SUMMARY pass=1 fail=0` pairs, with no `TEST:FAIL` or `FAULT`.
 - Result: The physical board booted the ARM image and passed its bounded random-stream variation smoke check. This does not validate entropy quality, CHOUPI, or JCAlgTest.
 - Decision: Keep the board on the passing smoke firmware while CHOUPI ROM-mask generation/build remains blocked on the missing `capmap-free` source and Maven dependency resolution.
-- Commit: `4ebfe1b`
+- Commit: `1357564`
 - Artifacts/logs: `artifacts/logs/cycle-arm-20261010T060906Z.log` (SHA-256 `7bccbc03281e0f93c2e4068856903570b648bb44f51f452576162222072b7dd9`)
 
 ## 2026-10-10 — Assess CHOUPI and JCAlgTest deployment prerequisites
@@ -345,7 +345,7 @@
 - Validation: `./tools/env ./tools/doctor` returned 1 because `rommask/capmap-free/pom.xml` is missing. Fetching the exact `capmap-free` submodule commit `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4` failed because Bitbucket requested credentials. `./tools/env cmake -S choupi -B build/choupi-pc -DCHOUPI_TARGET_PC=ON -DCHOUPI_OS_DEBUG=ON -DCHOUPI_JCVM_DEBUG=OFF` failed at configuration because Boost headers and `program_options` are absent. Source inspection confirmed CHOUPI's existing targets are host and STM32; the OS has host and STM32 architectures only. The Pico build wrapper still builds only `pico2_trng` smoke firmware. No CHOUPI image was built, no CAP installation path exists, and no board flash was attempted.
 - Result: The requested CHOUPI/CAP deployment is not currently buildable or installable. The board remains on the previously validated standalone ARM smoke firmware.
 - Decision: Restore/replace the inaccessible CAP parser, establish a Pico 2 CHOUPI port, and implement APDU/CCID lifecycle and CAP loading before uploading the CAP. The PC build also needs Boost or a dependency-free CLI.
-- Commit: `a5de012`
+- Commit: `f2893ed`
 - Artifacts/logs: no new archived logs; diagnostics are available in the command session
 
 ## 2026-10-10 — Restore pinned capmap-free from GitHub mirror
@@ -355,7 +355,7 @@
 - Validation: The mirror checkout is exactly the ROM-mask gitlink commit `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4` with a clean submodule worktree. `./tools/env ./tools/doctor` returned 0 and reports all required host, SDK, CHOUPI, API, ROM-mask, CAP-parser, and Java Card kit paths present. `./tools/env mvn -f choupi/javacard-sdk/rommask/capmap-free/pom.xml install -DskipTests` failed because Maven Central DNS resolution is unavailable and `maven-assembly-plugin` metadata cannot be fetched.
 - Result: The missing parser source is restored at the exact pinned revision. Its Java artifacts are not yet installed in the repository-local Maven cache, so ROM-mask generation remains unvalidated.
 - Decision: Continue resolving Maven build dependencies, then generate and inspect the ROM mask with the selected JCAlgTest v1.8.2 CAP and current API JCA exports.
-- Commit: `3cc059a`
+- Commit: `c4a163a`
 - Artifacts/logs: source at `choupi/javacard-sdk/rommask/capmap-free` (nested submodule commit `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`); no build log archived
 
 ## 2026-10-10 — Generate source-derived JCAlgTest ROM mask
@@ -365,7 +365,7 @@
 - Validation: `./tools/env mvn -f choupi/javacard-sdk/rommask/capmap-free/pom.xml install -DskipTests` passed. `./tools/env mvn -f choupi/javacard-sdk/rommask/pom.xml package assembly:single -DskipTests` passed with existing unchecked-conversion warnings; Maven tests were skipped. The Ant JCAlgTest source build passed, and the Java Card converter reported zero errors and zero warnings for JCA conversion. ROM-mask generation then parsed all 21 JCA packages, resolved imports, and returned 0, writing 56,776 bytes of content into a 524,300-byte padded image. Generated native header size is 22,135 bytes and reports 34 native methods. The JCA imports match all four selected CAP imports. `git diff --check` passed; no firmware build or board flash was attempted.
 - Result: A ROM-mask image containing the API and source-derived JCAlgTest applet is generated. The source-rebuilt CAP is 131,545 bytes with SHA-256 `daccd8838322995f02a5200d9ebd61a4bf237d293031875424813acd7a7df68b`, which differs from the supplied CAP (131,538 bytes; SHA-256 `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`). Thus this validates source-based pre-masking, not loading the exact supplied CAP.
 - Decision: Continue the RP2350 CHOUPI integration and card-install path; the generated ROM mask is not itself board firmware, and the supplied CAP has not been installed on the board.
-- Commit: `af1091315fd7fd17baeae773ecf7553fd785ae37` (nested ROM-mask repository); progress record in `bff0a5d`
+- Commit: `af1091315fd7fd17baeae773ecf7553fd785ae37` (nested ROM-mask repository); progress record in `8a41b6c`
 - Artifacts/logs: `build/choupi-rommask/flash-algtest.bin` (SHA-256 `93a6678b3288e4ee92de2fc8df4e40b9f0bef2b297f1ceae3b761ce3a71e35e6`); `build/choupi-rommask/jni-algtest.hpp` (SHA-256 `935e124965e192b871a0782276845c02736220e496f428d46cfddbd0170e35a1`); `build/choupi-algtest/classes/algtest/javacard/algtest.jca` (SHA-256 `a7915e412d1fb80d389bfa722b5cb70df859db1243230b0a2a9751938868bdd8`)
 
 ## 2026-10-10 — Repair ROM-mask project build wrapper
@@ -375,7 +375,7 @@
 - Validation: `./tools/env make -C choupi/javacard-sdk/rommask` returned 0. It installed all four capmap modules and packaged `rommask-1.0-jar-with-dependencies.jar`. Maven reports no ROM-mask tests to run; dependency unchecked-conversion warnings remain.
 - Result: The documented ROM-mask project build works with the installed Maven version and local cache.
 - Decision: Use this `make` path in later ROM-mask integration builds; device upload remains blocked on the separate RP2350 CHOUPI and card-manager work.
-- Commit: `f2a3f0e8eb945e3fa027f359be78844cf1306f42` (nested ROM-mask repository); progress record in `b4485e9`
+- Commit: `f2a3f0e8eb945e3fa027f359be78844cf1306f42` (nested ROM-mask repository); progress record in `0e2f679`
 - Artifacts/logs: rebuilt nested artifact `choupi/javacard-sdk/rommask/target/rommask-1.0-jar-with-dependencies.jar`; no separate log archived
 
 ## 2026-10-10 — Persist capmap-free GitHub mirror URL
@@ -395,7 +395,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both returned 0 and picotool validated `rp2350-arm-s` and `rp2350-riscv` UF2s. `./tools/env ./tools/monitor --seconds 8` returned 0 and emitted eight `TEST:PASS random_stream_varies` plus `TEST:SUMMARY pass=1 fail=0` pairs, with no failure or fault records.
 - Result: Both baseline architectures still build, and the board remains responsive on the previously flashed ARM smoke image. These checks do not build or run CHOUPI and do not install the supplied CAP.
 - Decision: Preserve the smoke firmware until an integrated CHOUPI target and both build gates are ready; continue RP2350 runtime and transport implementation.
-- Commit: `2a7a2017bd818d0f54e9d8d84cbfada430d4a825`
+- Commit: `f032e3e8bacf5ad89faa9445c99c74454ea1504f`
 - Artifacts/logs: `artifacts/logs/monitor-after-capmap-20261010.log` (SHA-256 `9f4162fb209ebfb97a74d03517a55fe9d6e279b0354999ba7d7bbe7d6a76b5dd`)
 
 ## 2026-10-10 — Cross-compile CHOUPI VM core for RP2350
@@ -405,7 +405,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` returned 0; both wrappers validated their RP2350 UF2 family. The core compiled all 34 C++ translation units for each target. A small set of upstream warning classes is suppressed for this compatibility build (`ignored-qualifiers`, `address-of-packed-member`, `unused-parameter`, `array-bounds`); warnings are therefore not claimed clean. `git diff --check` passed. No CHOUPI image was linked or flashed, and no CAP was installed.
 - Result: CHOUPI VM C++ sources are cross-compilable by the installed RP2350 ARM and RISC-V toolchains. The produced UF2 remains the smoke application; the Rust OS, filesystem shim, startup, and APDU/card-manager path remain unintegrated.
 - Decision: Link an ARM-only minimal CHOUPI firmware path next, then implement a CDC CAP loader or CCID card manager for the exact supplied v1.8.2 CAP.
-- Commit: `601d099`
+- Commit: `f350af5`
 - Artifacts/logs: `artifacts/logs/choupi-core-arm-build.log` (SHA-256 `325a749aa6d71fb0217f94d3cfa60caa3d49ef4250f40db5f9f64834325323ba`); `artifacts/logs/choupi-core-riscv-build.log` (SHA-256 `646933b36ea464ea5df3f7d73cbeb48f74ca8b35c9b93210ddd085403aec59ae`)
 
 ## 2026-10-10 — Link CHOUPI Pico 2 bring-up target
@@ -415,7 +415,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` built both RP2350 architectures and picotool validated both UF2 families. It flashed the ARM CHOUPI image and captured 8 seconds from the connected board. The VM entered startup but returned `6F00`; the wrapper correctly returned failure because the log contains `TEST:FAIL choupi_runtime`. The trace reports `PUTFIELD_A` with object reference `0x0000`, value `0x0007`, followed by `NullPointerException` at PC `0x1004459F`. A preceding USB-only attempt failed before flash with `Failed to initialise libUSB`; the escalated hardware cycle succeeded in flashing and capture. `./tools/env ./tools/doctor` passed.
 - Result: The RP2350 firmware target path is now present, links, flashes, and starts the CHOUPI interpreter. Runtime startup is not yet passing. The latest UF2 is 0x9C7E4 bytes of flash image end offset (picotool end address `0x1009C7E4`), SHA-256 `19436167e42047114c3a7628b406643ba87bbf45af3936d07e9fe8f09188c008`.
 - Decision: Diagnose the invalid null receiver before claiming CHOUPI runtime readiness. No GlobalPlatformPro executable, PC/SC scanner, or TinyUSB CCID class is available on the host/SDK; the connected image exposes CDC only. The exact supplied CAP remains uninstalled. Its SHA-256 is `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`; the currently embedded source-rebuilt ROM package image differs from that CAP.
-- Commit: `9694ac7`
+- Commit: `ab8e621`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T084216Z.log` (SHA-256 `26979714b539ccd026752e6ccfbb63d5d55ad5d2222d47aee94af765fa6670b7`); `build/arm/pico2_choupi.uf2`; supplied CAP `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`
 
 ## 2026-10-10 — Diagnose CHOUPI startup persistence capacity
@@ -425,7 +425,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed, including UF2 family checks. `./tools/cycle choupi` failed its hardware gate. Earlier bounded captures identified `IOException` at `putstatic_a` because the original table filled at 24 entries; larger fixed tables filled at 48 and 128 entries, then 512. A dynamic allocation prototype emitted `*** PANIC *** Out of memory`. The packed arena build was flashed, but its 18-second cycle and a separate 60-second serial capture contained no CHOUPI runtime output. A later read-only USB/BOOTSEL recovery attempt left the RP2350 unresponsive to picotool; host enumeration then disappeared. The map places `__bss_end__` at `0x2003945c` (BSS begins at `0x200027d0`). `git -c core.whitespace=cr-at-eol diff --check` passed.
 - Result: The original overlay file-count limit is confirmed as a cause of the 6F00 failure. The packed arena removes the observed small-table ceiling, but hardware startup is not validated and board/host USB recovery is unresolved. No `TEST:PASS` was observed; this is a failed hardware validation. The supplied JCAlgTest CAP remains uninstalled.
 - Decision: Recover the board's USB/BOOTSEL connection, then capture the sparse VM heartbeat and diagnose any remaining startup or arena limit before implementing CAP installation transport.
-- Commit: `0d1e516`
+- Commit: `f03fbba`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T094700Z.log` (SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`); `build/arm/pico2_choupi.uf2` (SHA-256 `8990a465f60f89b9baa724d1c05856605e77d7224e090f6f16b4a711f172c8b8`); ROM mask `build/choupi-rommask/flash-algtest.bin` remains source-derived, not the exact supplied CAP.
 
 ## 2026-10-10 — Expand startup overlay and skip absent null references
@@ -435,7 +435,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed with their RP2350 UF2 checks. `./tools/cycle choupi` flashed the Pico 2 and captured the 18-second serial window, then returned failure because startup still hit the overlay limit.
 - Result: The same startup workload reached 4,096 records and 20,754/131,072 bytes, then failed writing a 6-byte record at tag length 27 (`0214020101000000…`). Skipping absent null references did not change the dominant record growth. Runtime returned exception 5 at opcode `0x7F`, status `6F00`; no `TEST:PASS` was observed.
 - Decision: Trace nested object/array persistence at deep tags to find why startup expands thousands of records before increasing capacity further. The supplied CAP remains uninstalled.
-- Commit: `f9add8b`
+- Commit: `17dc5a5`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T095555Z.log` (SHA-256 `5f0fe823120a2db9cfc7fd09598c2a17106942f82df07883a8c6688615fbd9e4`)
 
 ## 2026-10-10 — Compress nested CHOUPI persistence keys
@@ -445,7 +445,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Hardware cycles flashed CHOUPI. The first parent-compressed capture progressed beyond prior arena and tag limits but ended in `SecurityException id=29` at a nested persistent tag length of 61 (`artifacts/logs/cycle-choupi-20261010T101555Z.log`). Expanding tag paths to 128 built, but the next cycle emitted `*** PANIC *** Out of memory` shortly after BOOT (`artifacts/logs/cycle-choupi-20261010T101744Z.log`). The follow-up compact per-instance tag cache built for both architectures; two later cycle attempts emitted no serial data after `MONITOR:START` and failed the runtime gate (`101940Z` and `102236Z`). No `TEST:PASS` was observed.
 - Result: Parent-key compression avoids the prior full arena and 64-byte tag guard, but CHOUPI startup still fails. After the silent captures picotool reported the RP2350 only as a USB serial device and could not read BOOTSEL metadata; a physical BOOTSEL reconnect is requested. Latest compact UF2 SHA-256 is `2a16a875055301c323888b7c20d5b0230fcd612ffd48e2f74fd05db0aeea04fe`.
 - Decision: Re-establish stable BOOTSEL/serial access, capture the compact-cache image’s actual startup result, then measure and reduce the overlay arena if RAM remains the limiting factor. Continue only after both build gates pass before each flash. The exact JCAlgTest v1.8.2 CAP remains uninstalled.
-- Commit: root `f2da673`; nested OS `f994d5e`
+- Commit: root `9aadc1f`; nested OS `f994d5e`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T101555Z.log` (SHA-256 `bd2241808eb99b562619366e36fdbef5030649495c7276922a8b985a44ed9f62`); `artifacts/logs/cycle-choupi-20261010T101744Z.log` (SHA-256 `b2f9490d81aacadc9c7458bd39197b3724d1f775550231efce5a6c85d6c230d7`); `artifacts/logs/cycle-choupi-20261010T101940Z.log` and `102236Z.log` (both SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`); `build/arm/pico2_choupi.uf2`
 
 ## 2026-10-10 — Archive parent-compression board captures
@@ -455,7 +455,7 @@
 - Validation: Recomputed SHA-256 for all four logs and confirmed the expected records: 61-byte path `SecurityException`; 128-byte buffer `Out of memory`; then two silent 18-second monitor captures. Both architecture build gates passed for the compact-tag image before its cycle.
 - Result: The failed and silent hardware outcomes are preserved for follow-up. No successful CHOUPI startup or exact-CAP installation is claimed.
 - Decision: Resume hardware diagnosis when the Pico 2 is back in BOOTSEL; next capture must distinguish USB enumeration from firmware startup and runtime output.
-- Commit: root `87c1bbe`
+- Commit: root `60cf79d`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T101555Z.log` (`bd2241808eb99b562619366e36fdbef5030649495c7276922a8b985a44ed9f62`); `artifacts/logs/cycle-choupi-20261010T101744Z.log` (`b2f9490d81aacadc9c7458bd39197b3724d1f775550231efce5a6c85d6c230d7`); `artifacts/logs/cycle-choupi-20261010T101940Z.log` and `102236Z.log` (`9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`)
 
 ## 2026-10-10 — Guard compressed overlay tag comparisons
@@ -465,7 +465,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed, including UF2 family checks. Hardware validation was skipped because `picotool info -a` reports no accessible BOOTSEL device and the last monitor capture had no CHOUPI serial output.
 - Result: The overlay tag comparison cannot read a dangling pair from an odd-length hash collision candidate. Runtime behavior remains unverified.
 - Decision: Keep both architecture build gates; resume the hardware cycle after physical BOOTSEL reconnect.
-- Commit: root `9b73e3a`
+- Commit: root `c35481e`
 - Artifacts/logs: none; current UF2 `build/arm/pico2_choupi.uf2`
 
 ## 2026-10-10 — Add aliases for recursive persistent object references
@@ -475,7 +475,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed with UF2 family checks. The first hardware cycle emitted `*** PANIC *** Out of memory` after adding a full tag per recursion frame. After reducing tracker storage, a second cycle could not capture serial output; `./tools/env picotool info -a` and `lsusb` both reported libusb initialization failure, so runtime validation is incomplete. `git -c core.whitespace=cr-at-eol diff --check` passed.
 - Result: Compile-time compatibility is confirmed. No passing CHOUPI runtime result is established. The latest built image SHA-256 is `a0682558fd222e51b7e93b434a46dea99a0887853ef05c73ee6378793e80fef8`.
 - Decision: Reconnect the Pico 2 in BOOTSEL, verify enumeration, then rerun the hardware cycle and inspect alias behavior. The exact v1.8.2 CAP remains uninstalled; the firmware still exposes CDC without an APDU/CAP loader.
-- Commit: root `654219f`
+- Commit: root `9d16942`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T110210Z.log` (SHA-256 `e6d1bd36833d7925933168533ad3ca86d17504970da2656b148030d81c514dd8`, OOM); `artifacts/logs/cycle-choupi-20261010T110427Z.log` (SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, no output)
 
 ## 2026-10-10 — Mark serialized instances persistent in memory
@@ -485,7 +485,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed with UF2 family checks. Hardware validation was skipped because the previous cycle left the Pico unenumerated; `picotool info -a` and `lsusb` report libusb initialization failure.
 - Result: Both target builds include the updated object mode. No runtime result was captured. UF2 SHA-256: `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
 - Decision: Reconnect the Pico in BOOTSEL and rerun the CHOUPI cycle before accepting the alias implementation. The exact JCAlgTest v1.8.2 CAP remains uninstalled.
-- Commit: root `06fdf87`
+- Commit: root `2af7231`
 - Artifacts/logs: current image `build/arm/pico2_choupi.uf2`; no new hardware log
 
 ## 2026-10-10 — Check JCAlgTest CAP package dependencies
@@ -495,7 +495,7 @@
 - Validation: Recomputed the CAP SHA-256 and compared each import AID/version against generated JCA package metadata. CAP imports are `java/lang` AID `A0000000620001` v1.0, `javacard/framework` AID `A0000000620101` v1.6, `javacard/security` AID `A0000000620102` v1.6, and `javacardx/crypto` AID `A0000000620201` v1.6; generated package JCA metadata has matching AIDs and versions. Hardware check `./tools/env picotool info -a` failed with `ERROR: Failed to initialise libUSB`; no flash or installation was attempted. Host inspection found no GlobalPlatformPro, GPShell, PC/SC service, or smart-card reader tooling, and CHOUPI firmware still exposes CDC without APDU/CCID or a CAP loader.
 - Result: Dependency metadata is version-compatible at the JCA package-description level, but this does not establish that CHOUPI resolves all imported methods at runtime or can install the CAP. Exact CAP SHA-256: `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. The board remains unavailable and CAP remains uninstalled.
 - Decision: Restore USB BOOTSEL enumeration, validate CHOUPI startup, then add or select an APDU/CAP installation path before claiming installation.
-- Commit: root `b1d6852`
+- Commit: root `fd74466`
 - Artifacts/logs: `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`; generated package metadata under `build/choupi-algtest/rommask-input/`; no new hardware log
 
 ## 2026-10-10 — Flash current CHOUPI image on Pico 2
@@ -505,7 +505,7 @@
 - Validation: The cycle rebuilt and passed the ARM and RISC-V image gates. Its 18-second CDC monitor capture failed the runtime-output gate. The log contains the reboot request and monitor start but no flash progress/completion message, CHOUPI output, `TEST:PASS`, or `TEST:SUMMARY`. A follow-up read-only query saw an RP2350 USB serial interface, but did not establish BOOTSEL mode or which image was executing. Candidate UF2 SHA-256: `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
 - Result: The load command returned zero, but the capture SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c` matches earlier silent captures and does not prove the image was written or that CHOUPI started. Exact JCAlgTest v1.8.2 CAP remains uninstalled because no working APDU/CCID transport or CAP loader exists.
 - Decision: Diagnose why the post-flash CDC capture is silent before claiming a working CHOUPI runtime; then add an installation transport/loader and install the exact CAP.
-- Commit: root `8c9b584`
+- Commit: root `1315e84`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T111732Z.log`; `build/arm/pico2_choupi.uf2`
 
 ## 2026-10-10 — Reduce static CHOUPI persistence arena
@@ -515,7 +515,7 @@
 - Validation: `./tools/cycle choupi` rebuilt and passed ARM and RISC-V gates; the load command returned zero and the cycle captured 18 seconds. The capture had no output. A separate 8-second capture with pyserial DTR asserted was also silent. The ARM ELF `.bss` fell from 462,236 to 232,860 bytes; `.data` remains 9,920 bytes. The device later appeared as RP2350 CDC, but its running image was not verified.
 - Result: This cycle does not establish whether the reduced image booted; no `BOOT` marker or runtime status was captured. The monitor log SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, identical to previous silent captures. Increasing available heap by about 224 KiB did not restore serial output.
 - Decision: Keep this as a diagnostic baseline only; isolate the CDC capture path with the small TRNG firmware, then trace CHOUPI startup before further persistence changes.
-- Commit: root `5f3a72b`
+- Commit: root `5413c07`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T112137Z.log`; current ARM image `build/arm/pico2_choupi.uf2` (SHA-256 `0a265f608a5c5ea44f90bcb46ced51a308b8d909967ffd8071dd89ef6f6d675d`)
 
 ## 2026-10-10 — Isolate Pico USB capture with TRNG image
@@ -525,7 +525,7 @@
 - Validation: The cycle rebuilt both architectures successfully and its ARM flash command returned without error, but the 8-second serial capture contained no `BOOT` or `TEST` lines and the cycle failed. The log notes a blank USB serial number while waiting for reboot. Read-only `picotool info -a` afterward still found only the RP2350 CDC interface, not BOOTSEL; explicit `picotool reboot -f -u` reported that it requested BOOTSEL, but a follow-up query still found CDC.
 - Result: The known-good TRNG capture path also failed, so the silence cannot currently be attributed to the CHOUPI VM. The host can enumerate the USB descriptors, but device status requests intermittently return `Resource temporarily unavailable`; the image currently executing on the Pico is not verified.
 - Decision: Reconnect the Pico physically while holding BOOTSEL, confirm `boot type: bootsel`, then reflash and capture. Do not attempt another software-only flash until bootloader mode is verified.
-- Commit: root `d7c3dd0`
+- Commit: root `8e02378`
 - Artifacts/logs: `artifacts/logs/cycle-arm-20261010T112446Z.log` (SHA-256 `62457db617d9013e2c91a67bf6cfb2a74b8600d7c50b952b091d8dd9fc4e7e13`)
 
 ## 2026-10-10 — Prepare GlobalPlatformPro installation client
@@ -535,7 +535,7 @@
 - Validation: `./tools/env mvn -f .local-toolchain/globalplatformpro/pom.xml -DskipTests package` completed with `BUILD SUCCESS`; Maven skipped test execution. `java -jar .../gp.jar --help` lists `--install`, and `--version` reports GlobalPlatformPro 26.06.04 on Java 21.0.12.1. JAR SHA-256: `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c`.
 - Result: A ready CLI exists at `.local-toolchain/globalplatformpro/tool/target/gp.jar`. The host has no PC/SC socket or reader, and the Pico exposes CDC, so GPPro cannot yet send APDUs to this device. Exact CAP remains uninstalled.
 - Decision: Keep the CLI ready; continue with CHOUPI startup and establish an APDU transport/reader before installation.
-- Commit: root `d9ac44d`
+- Commit: root `e22f37e`
 - Artifacts/logs: `.local-toolchain/globalplatformpro/tool/target/gp.jar` (ignored toolchain artifact; SHA-256 above)
 
 ## 2026-10-10 — Clarify Pico flash evidence
@@ -545,7 +545,7 @@
 - Validation: Reviewed the three latest silent cycle logs; each lacks the flash progress/completion output present in older confirmed loads. `git diff --check` passed.
 - Result: Hardware notes now state that the running image is uncertain until BOOTSEL is confirmed and a load is evidenced.
 - Decision: Physically re-enter BOOTSEL and rerun the requested image cycle before reporting flash success.
-- Commit: root `4eae0e1`
+- Commit: root `baf36ec`
 - Artifacts/logs: corrected evidence references `artifacts/logs/cycle-choupi-20261010T111732Z.log`, `112137Z.log`, and `cycle-arm-20261010T112446Z.log`
 
 ## 2026-10-10 — Archive current Pico cycle captures
@@ -555,7 +555,7 @@
 - Validation: Recomputed each SHA-256. The two silent CHOUPI logs are byte-identical at `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`; the silent TRNG log is `62457db617d9013e2c91a67bf6cfb2a74b8600d7c50b952b091d8dd9fc4e7e13`.
 - Result: All current failed captures are preserved without adding unrelated pre-existing logs.
 - Decision: Resume hardware validation after a physical BOOTSEL reconnect and verify flash completion before interpreting serial output.
-- Commit: root `99978ab`
+- Commit: root `6d7c340`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T111732Z.log`, `artifacts/logs/cycle-choupi-20261010T112137Z.log`, `artifacts/logs/cycle-arm-20261010T112446Z.log`
 
 ## 2026-10-10 — Localize CHOUPI startup allocation panic
@@ -565,7 +565,7 @@
 - Validation: `./tools/cycle choupi` passed ARM and RISC-V build gates. Its flash attempt could not re-enter BOOTSEL and so did not write the marker image; the 18-second capture repeated an earlier panic log. `./tools/env picotool reboot -f -u` returned a BOOTSEL request but `picotool info -a` found no BOOTSEL device. `git diff --check` has pre-existing CRLF whitespace reports in `choupi/src/jc_types/jc_array.cpp` and `choupi/src/jni.cpp`; no diagnostics were reported for this step's source or markdown changes.
 - Result: The first verified BOOTSEL cycle wrote the CHOUPI image (visible 100% flash progress) and captured `BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi` followed by `*** PANIC ***` / `Out of memory`. Pico SDK source maps that text to `pico_malloc`'s allocation guard. The stage-marker image was built (UF2 SHA-256 `b49438a577524d767b9c859fa2a0de49475c2bce461f29bc97b5c11b04322c65`) but remains unflashed; allocation phase and requested size are not yet known.
 - Decision: Reconnect while holding BOOTSEL, verify `boot type: bootsel`, then flash the marker image and identify the failing phase. CAP remains uninstalled.
-- Commit: `ffa3ddf`
+- Commit: `dc76f43`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T115001Z.log` (SHA-256 `e01b623fc94299571e1f72fde115acf6b0a7e3bbbe853f6ae9bc9954775c2903`); `artifacts/logs/cycle-choupi-20261010T115247Z.log` (identical to prior silent capture, SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`)
 
 ## 2026-10-10 — Add Pico heap high-water diagnostics
@@ -575,7 +575,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed after correcting the SDK interface-target compile-definition scope. `./tools/env ninja -C build/arm -t commands` confirmed the allocator compile command carries `PICO_DEBUG_MALLOC=1` and the threshold. No hardware flash was attempted because the Pico had left BOOTSEL; the stage-marker image is also awaiting the user-requested physical BOOTSEL reconnect. UF2 SHA-256: `19532c092fa19bcc7dd1e43e8d5aa84450755e112a02225ec12b697836f3cc9b`.
 - Result: A diagnostic image is ready, but the failing allocation and startup phase remain unmeasured until this image is flashed and captured.
 - Decision: Verify the board in BOOTSEL after the pending physical reconnect, then flash and inspect finite serial output.
-- Commit: `fea69ed`
+- Commit: `8094433`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `19532c092fa19bcc7dd1e43e8d5aa84450755e112a02225ec12b697836f3cc9b`; build logs not archived
 
 ## 2026-10-10 — Capture CHOUPI heap exhaustion on Pico 2
@@ -585,7 +585,7 @@
 - Validation: `./tools/cycle choupi` passed ARM and RISC-V build gates, showed 100% ARM UF2 flash progress, and recorded an 18-second board capture. `fs_init()` reported done; `runtime()` started; the cycle correctly failed its runtime acceptance gate on Pico SDK `*** PANIC *** / Out of memory`.
 - Result: One 36,870-byte allocation succeeded at `0x20068FB0..0x20071FB6`; the next 36,870-byte allocation failed. Exact allocating call site remains unknown. Log SHA-256: `9846ef5043fbd4b74f828a4a4da3260b538933db5455d9bf8027c56c7e51a9fb`.
 - Decision: Free more static SRAM, then repeat both build gates and the real board cycle. Runtime and CAP installation are not passing yet.
-- Commit: `43059dc`
+- Commit: `8db3674`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T133620Z.log`
 
 ## 2026-10-10 — Test 64 KiB CHOUPI overlay arena on Pico 2
@@ -595,7 +595,7 @@
 - Validation: `./tools/cycle choupi` passed ARM and RISC-V build gates, flashed the RP2350 ARM UF2 with visible 100% progress, and captured 18 seconds of serial output. The runtime acceptance gate failed on `*** PANIC *** / Out of memory`.
 - Result: After `runtime:start`, a 16,390-byte allocation succeeded at `0x2006EFE0..0x20072FE6`, but a subsequent 36,870-byte allocation failed. The reduced arena alone did not let the VM start. Log SHA-256: `4ea1a3f80e2bb24e5665d4e3e3e178e76fa6cc858a3e20fd5d3d31acee11761c`; UF2 SHA-256: `a590f7b12e9a9ebc66ffa202921e9878cc12b8457d667ed65f29aba97046c9f5`.
 - Decision: Free further static SRAM while retaining a smaller overlay, rebuild both architectures, and repeat the real board cycle. The Pico must be physically returned to BOOTSEL. CAP remains uninstalled.
-- Commit: `f9efb4a`
+- Commit: `caddb65`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T212007Z.log`
 
 ## 2026-10-10 — Reduce CHOUPI overlay SRAM footprint
@@ -605,7 +605,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. The built ARM CHOUPI UF2 SHA-256 is `46f2b453d33ada46fa1cda9e681f18648f53e00ac966b76bc9aa1faf49bda137`. No runtime test has been recorded yet: USB shows the Pico in serial application mode, and `picotool reboot -f -u` did not re-enumerate it in BOOTSEL.
 - Result: Both variants compile; static SRAM usage is reduced by about 96 KiB relative to the previous 64 KiB arena/index configuration. The VM runtime behavior and capacity impact have not been measured.
 - Decision: Flash and inspect a finite serial capture after the Pico is confirmed in BOOTSEL. Do not treat this candidate as a runtime pass.
-- Commit: `21d7b94`
+- Commit: `247d957`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `46f2b453d33ada46fa1cda9e681f18648f53e00ac966b76bc9aa1faf49bda137`
 
 ## 2026-10-10 — Diagnose silent CHOUPI upload attempt
@@ -615,7 +615,7 @@
 - Validation: `./tools/cycle choupi` rebuilt ARM and RISC-V successfully, attempted `picotool load -f -x`, and failed the runtime output gate because no serial bytes arrived. `picotool reboot -f -a` also completed, but the 20-second pre-attached serial capture was silent. `picotool info -a` continues to identify the device as running USB serial firmware, not BOOTSEL.
 - Result: The candidate was not confirmed running; neither capture included BOOT or TEST output. No runtime or flash success is claimed. The cycle log is byte-identical to a previous silent capture (SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`); the pre-attached reset capture SHA-256 is `15125998cb93fe0190829ac3a6ffec0bfe84b365bc903605d437a42f39c98c65`.
 - Decision: Have the board physically enter BOOTSEL, confirm it with `picotool info -a`, then retry the cycle and check for visible flash progress and startup output.
-- Commit: `afc793333d8b13aaf790a0d7f80891684a5a2830`
+- Commit: `5dc0e095d59e3b1e246bbfc9c07bd32e12f15bbe`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T212553Z.log`; `artifacts/logs/serial-reset-capture-20261010.log`
 
 ## 2026-10-10 — Verify software BOOTSEL recovery path
@@ -625,7 +625,7 @@
 - Validation: The command returned success and reported that the device was asked to reboot into BOOTSEL; the following `picotool info -a` still found only USB serial mode and exited 249.
 - Result: Software recovery does not leave this board accessible in BOOTSEL. No firmware write occurred during this experiment.
 - Decision: Physically hold BOOTSEL while reconnecting, then confirm `boot type: bootsel` before flashing.
-- Commit: `d474832fe8217b714344a3a238a08d0c93a28771`
+- Commit: `e6a54f1fb12d032ef7e78da1c2a289bdbc3bdc76`
 - Artifacts/logs: none
 
 ## 2026-10-10 — Boot CHOUPI after overlay SRAM reduction
@@ -635,7 +635,7 @@
 - Validation: `./tools/cycle choupi` passed ARM and RISC-V build gates, visibly flashed 100%, and captured the 18-second serial stream. The cycle failed the runtime acceptance gate on an uncaught VM exception.
 - Result: `fs_init()` completed and the former heap exhaustion is gone. A 36,870-byte allocation succeeded at `0x2006C000..0x20075006`, then CHOUPI reported `VM_EXCEPTION id=5 opcode=0x87 pc=0x10043C01` (IOException from `putfield_a`). The image-relative PC maps into ROM-mask record tag `0114`, at data offset `0x1B1`. Log SHA-256: `d2b068c660382e1b828004aea92132bd3f8f0cdccac0086a17369fd3c63d5d2f`.
 - Decision: Keep the SRAM reduction; instrument filesystem write rejection causes and retry the hardware cycle to identify why persistence throws IOException.
-- Commit: `3fb12c5`
+- Commit: `fa3b06e`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T213245Z.log`
 
 ## 2026-10-10 — Add filesystem write rejection diagnostics
@@ -645,7 +645,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` passed both build gates but could not transition the running CHOUPI image to BOOTSEL; it recorded no flash progress or serial output and failed the runtime gate. Diagnostic UF2 SHA-256: `1de6bce7ed146f0a4a709f3180650305c6d62eb2a902d0eb95d774dd49b88e13`.
 - Result: The diagnostic image has not been flashed. The current app remains running and software force-reboot did not expose BOOTSEL.
 - Decision: Re-enter BOOTSEL with the physical button, verify, then repeat `./tools/cycle choupi` to capture the write rejection.
-- Commit: `06ad89f`
+- Commit: `f6e6247`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T213559Z.log` (silent; SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`)
 
 ## 2026-10-10 — Trace persistent reference field failure phase
@@ -655,7 +655,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. The Pico is running the previous image in USB serial mode, and `picotool info -a` confirms it is not in BOOTSEL; the new image has not been flashed.
 - Result: Candidate ARM CHOUPI UF2 SHA-256 is `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`. Persistence failure phase is not yet measured.
 - Decision: Physically enter BOOTSEL, flash this candidate, and capture whether the failure occurs at load or store and any filesystem rejection reason.
-- Commit: `6e1e2e6`.
+- Commit: `4cb38ff`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`
 
 ## 2026-10-10 — Attempt software-only BOOTSEL recovery
@@ -665,7 +665,7 @@
 - Validation: Each tool path reported a BOOTSEL request or returned from the transfer, but `picotool info -a` still reported only CDC serial mode (exit 249). The USB device remained at bus 1, device 116. Keeping `/dev/ttyACM0` open during reset yielded zero bytes and did not change the device mode. `lsusb -t` shows CDC interfaces 0/1 and reset interface 2.
 - Result: No software-only path reached BOOTSEL; the diagnostic image remains unflashed. The running VM emitted no further serial output after its IOException trace, consistent with firmware no longer servicing the reset path (inference from host observations).
 - Decision: Keep the latest diagnostic candidate ready. Do not claim a reset or flash. Continue software-only source analysis; hardware flash remains unavailable until the device responds to a supported reset.
-- Commit: `2ba182e`
+- Commit: `7b4dbe6`
 - Artifacts/logs: none; command results recorded above
 ## 2026-10-11 — Correct applet header file mode
 
@@ -674,7 +674,7 @@
 - Validation: Rechecked the file mode and ran `git diff --check`. The ARM and RISC-V builds from the immediately preceding code commit passed; source contents are unchanged.
 - Result: The applet metadata header is tracked as a regular source file.
 - Decision: Continue implementation from the committed parser primitive.
-- Commit: `4cec0a400d364398bab6d9028c311f9f982e59b7`
+- Commit: `02c9ad85ddad6f310bb806ea84f8357072c569ee`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Retry software BOOTSEL recovery
@@ -684,7 +684,7 @@
 - Validation: `picotool reboot -F -u` returned 0 but left the RP2350 in CDC mode. `usbreset 001/116` reported `No such device`; the Pico then disappeared from `lsusb`. The root port reports `not attached`; `/dev/ttyACM0` is absent. Toggling the per-port sysfs `disable` control was denied by host permissions. No flash was attempted.
 - Result: No software path brought the board into BOOTSEL. Device is currently absent from the host USB bus; no hardware runtime output was captured.
 - Decision: Continue software analysis with the existing built diagnostic firmware. Upload and hardware verification remain pending until the RP2350 reappears.
-- Commit: `256edf8e6ca33ed9584877d7ca8bdd842c01cbe4`
+- Commit: `1c2553f4b4da90cb4ea99f11129bc8a7e8262570`
 - Artifacts/logs: none; UF2 awaiting upload at `build/arm/pico2_choupi.uf2` (SHA-256 `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`)
 
 ## 2026-10-11 — Treat missing persistent instance fields as defaults
@@ -694,7 +694,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_types/jc_instance.cpp` passed. Hardware execution was not attempted because xHCI port 3 reports `not attached` and no Pico device is enumerated.
 - Result: Both target variants compile. The missing-record path is addressed in source; runtime behavior and whether this resolves the observed `putfield_a` IOException remain unverified.
 - Decision: Keep the candidate ready and flash it with `./tools/cycle choupi` when USB/BOOTSEL enumeration returns. JCAlgTest v1.8.2 remains uninstalled.
-- Commit: `73f4890ebf8758f25b4fe066f30f3a0edcfb3479`
+- Commit: `d1fd704d2aa598c8086ed6d41b8b59765e1766ce`
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `2860767cb505cddcc6c6ec372eeceb4b7d5bd5d0e77026c909ae816294e3de03`; last board trace remains `artifacts/logs/cycle-choupi-20261010T213245Z.log`
 
 ## 2026-10-11 — Flash persistent-field default fix on Pico 2
@@ -704,7 +704,7 @@
 - Validation: Both ARM and RISC-V builds passed. The RP2350 entered BOOTSEL, the ARM UF2 visibly reached 100% flash progress, and the cycle captured 18 seconds. It failed the runtime gate: the trace passed `putfield_a` stores for package 20/class 57 fields 0 and 1, allocated 36,870 bytes at `0x2006C000..0x20075006`, then began loading package 20/class 121 field 0. No exception or `TEST:SUMMARY` followed. A separate 8-second monitor returned 0 with no serial bytes. `picotool reboot -F -u` did not reach BOOTSEL; the subsequent USB reset left the host with no Pico device.
 - Result: The original immediate IOException is no longer observed, but startup now stalls during persistent field loading for class 121. The default-field fix is not sufficient to pass runtime.
 - Decision: Add bounded field-load phase markers, build both architectures, and retain the trace candidate for the next BOOTSEL window. JCAlgTest v1.8.2 remains uninstalled.
-- Commit: `d376210073bdcee34e63f352f6a08343a39197a9`
+- Commit: `a181b5cdb91dcd1c3dc4a4030677b2786d946be1`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T053229Z.log`, SHA-256 `909b217b6fa27f343c27dcf7bb3ec4f5c2f2909ca36bf25c2a335ddfeedd2134`; prior flashed UF2 SHA-256 `2860767cb505cddcc6c6ec372eeceb4b7d5bd5d0e77026c909ae816294e3de03`
 
 ## 2026-10-11 — Trace persistent field reconstruction phases
@@ -714,7 +714,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. Whitespace validation with `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_types/jc_instance.cpp` passed. No hardware flash was attempted because the host no longer enumerates the Pico after the USB reset.
 - Result: The trace candidate is ready to distinguish a filesystem syscall stall from type/value reconstruction; it is not hardware validated.
 - Decision: Preserve the candidate for the next BOOTSEL window. Continue toward a runtime pass before attempting the still-missing exact JCAlgTest CAP installation.
-- Commit: `0f417104cb79f12f6c3f4c6ea157296373d3872f`
+- Commit: `78d8f38e67eeaa14d0f07b43decbda7537006c0f`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `a2deabc677b6672431386a1b0aef3eb05cc6debf906b1f0bc478d19f2b86f543`; no board log for this unflashed build
 
 ## 2026-10-11 — Trace persistent class field sizing
@@ -724,7 +724,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. No flash was attempted because the RP2350 currently enumerates only as the USB serial application and does not enter BOOTSEL on the software request.
 - Result: The prior field-load trace measured 8,912 fields for package 20/class 121; this candidate should expose the hierarchy calculation that produced that count. Hardware output is pending.
 - Decision: Flash only after BOOTSEL returns, then check whether superclass traversal cycles or accumulates implausible class sizes.
-- Commit: `df98bc5d5e54206035d92239b07cb344107f2223`
+- Commit: `92f90a45d025f34606955a58fe0c0f5881d0daef`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `5fa53345dbcabadbcaec146dc6aa07bc5e195f61fe320f49d6308e4fa8bedde4`; previous trace `artifacts/logs/cycle-choupi-20261011T053802Z.log`
 
 ## 2026-10-11 — Retry BOOTSEL and audit class token conversions
@@ -734,7 +734,7 @@
 - Validation: Direct USB `picotool reboot -F -u` returned “The device was asked to reboot into BOOTSEL mode”; follow-up `picotool info -a` still found only the CDC app at bus 1/address 120. Source inspection confirmed `getClassInformation()` returns the CAP byte offset and `getClassFromClassIndex()` dereferences that offset; `getClassRefFromClassIndex()` instead iterates by ordinal. No build or flash was needed for this inspection.
 - Result: The firmware remains unflashed; the board is not in BOOTSEL. The index conversion mismatch warrants follow-up but is not yet tied to the 8,912-field count.
 - Decision: Continue tracing the class-token semantics and attempt the already-built superclass trace when BOOTSEL is available. Avoid further bus resets.
-- Commit: `6ae21f4` (record commit; metadata follow-up is `ff59debdba66dd7fdbfa7579546bca355681f8bc`)
+- Commit: `0129ac9` (record commit; metadata follow-up is `b0ce673123c35ff4f6c602fd4201b81d9e2550a3`)
 - Artifacts/logs: no new log; pending ARM UF2 SHA-256 `5fa53345dbcabadbcaec146dc6aa07bc5e195f61fe320f49d6308e4fa8bedde4`
 
 ## 2026-10-11 — Preserve CAP class byte offsets in instance references
@@ -744,7 +744,7 @@
 - Validation: `./tools/env ./tools/build arm` passed and emitted the CHOUPI ARM UF2; `./tools/env ./tools/build riscv` passed its wrapper build. `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_handlers/jc_cp.cpp` passed. No hardware flash was attempted because `picotool info -a` still reports CDC and no BOOTSEL device.
 - Result: Class references reconstructed from persistent instance class offsets now round-trip through `resolveClassref()` consistently. Hardware behavior is not yet verified.
 - Decision: Keep both source fixes in the next board image and flash after BOOTSEL becomes accessible; collect the pending superclass trace to address the 8,912-field allocation.
-- Commit: `0a90a18` (record commit; metadata follow-up `668c1a8`)
+- Commit: `b9e4205` (record commit; metadata follow-up `5a995df`)
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
 
 ## 2026-10-11 — Retry force-loaded CHOUPI cycle after class offset fix
@@ -754,7 +754,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V build gates. `picotool load -f -x` requested a BOOTSEL reboot but emitted no flash progress or application-reboot confirmation; the cycle's 18-second serial capture was empty and failed the CHOUPI runtime output gate. Subsequent `picotool info -a` reported no BOOTSEL device and only the CDC app at bus 1/address 120. Force-mode info likewise yielded no installed-image metadata.
 - Result: The candidate image is not confirmed flashed. The empty log is byte-identical to the prior silent capture, SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`.
 - Decision: Keep the corrected image ready and continue offline analysis; avoid further host bus resets.
-- Commit: `2d7fead` (record commit; metadata follow-up `b27cc89`)
+- Commit: `42d3e51` (record commit; metadata follow-up `349d905`)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T054755Z.log`; candidate UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
 
 ## 2026-10-11 — Retry BOOTSEL after application reboot
@@ -764,7 +764,7 @@
 - Validation: `picotool reboot -f -a` returned success; `./tools/env ./tools/monitor --seconds 8` returned zero with no serial output. `picotool reboot -f -u` also returned success, but `picotool info -a` exited 249 and found only the CDC app at bus 1/address 120. No flash was attempted.
 - Result: Resetting the application does not restore software entry to BOOTSEL; the installed image remains unverified and the runtime emits no output.
 - Decision: Preserve the built UF2 and continue offline analysis. The failed BOOTSEL transition now persists across both direct and cycle force requests and an application reboot.
-- Commit: `6a584c4` (this record; metadata follow-up follows)
+- Commit: `eae5c82` (this record; metadata follow-up follows)
 - Artifacts/logs: no monitor file was produced; latest cycle log remains `artifacts/logs/cycle-choupi-20261011T054755Z.log`
 
 ## 2026-10-11 — Retry CHOUPI reflash with board left connected
@@ -774,7 +774,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V build gates. `picotool load -f -x` waited for BOOTSEL and emitted no flash progress; the 18-second capture was silent and failed the runtime gate. Follow-up `picotool info -a` exited 249 and still found only the CDC app at bus 1/address 120.
 - Result: Reflash is not confirmed. The new log's SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, identical to the previous silent cycle capture.
 - Decision: Keep the current ARM candidate ready. The host's force-load route still cannot transition the running image into BOOTSEL; no JCAlgTest CAP installation occurred.
-- Commit: `9982fae` (this record; metadata follow-up follows)
+- Commit: `da89620` (this record; metadata follow-up follows)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T060944Z.log`; ARM UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
 
 ## 2026-10-11 — Flash class trace and localize persistent field corruption
@@ -784,7 +784,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, visibly flashed the ARM image to 100%, rebooted it, and captured 18 seconds of serial output. Runtime gate failed with no `TEST:SUMMARY`.
 - Result: For package 20/class 121, three hierarchy calculations each report depth 1 and 15 declared fields, while `JC_Instance::getFields()` reports vector length 8,912. The trace completes existence checks for indexes 0–63 before capture ends. Log SHA-256: `09be7d9368d2d988d4d953f45daa37f5832b9991d152de1b1de424ceb7266d40`.
 - Decision: Investigate object ownership between persistent instance construction and heap insertion; this discrepancy indicates the superclass calculation is not producing 8,912.
-- Commit: `c383486` (this record; metadata follow-up follows)
+- Commit: `ad24309` (this record; metadata follow-up follows)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T061811Z.log`; flashed ARM UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
 
 ## 2026-10-11 — Transfer persistent instances into the heap safely
@@ -794,7 +794,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. No hardware cycle was run for this change because `picotool info -a` reports the Pico in CDC mode, not BOOTSEL.
 - Result: The ownership bug matches the hardware trace where class sizing returned 15 but the persistent instance vector later reported 8,912. The fix is compile-validated but not yet hardware-verified.
 - Decision: Flash this candidate during the next BOOTSEL window and confirm the field vector remains 15 entries and the runtime reaches `TEST:SUMMARY`.
-- Commit: `45ace5d` (code and record; metadata follow-up `bfb8802`)
+- Commit: `24bad0e` (code and record; metadata follow-up `ef4bf29`)
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `92ddc5aa9497f3020a302a253003f6074ebfcdb656eff9b7196beb406e7cfb98`; diagnosis log `artifacts/logs/cycle-choupi-20261011T061811Z.log`
 
 ## 2026-10-11 — Trace persistent reference-field update after load
@@ -804,7 +804,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed. `picotool reboot -F -u` reported that it requested BOOTSEL, but `picotool info -a` found only CDC. `picotool load -f -x build/arm/pico2_choupi.uf2` returned without flash progress or application-reboot confirmation; `./tools/env ./tools/monitor --seconds 8` returned silently. Hardware validation is pending.
 - Result: The previous flashed image completed loading all 15 fields but emitted no later runtime marker. This diagnostic candidate is not confirmed flashed.
 - Decision: Reuse this candidate at the next BOOTSEL window; inspect whether it stops before field access, while looking up an array, or while writing persistent storage.
-- Commit: `360085f` (metadata follow-up)
+- Commit: `2d2f591` (metadata follow-up)
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`; prior hardware trace `artifacts/logs/cycle-choupi-20261011T070346Z.log`
 
 ## 2026-10-11 — Retry CHOUPI cycle with Pico attached over CDC
@@ -814,7 +814,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V build gates, then picotool waited for a BOOTSEL device without reporting flash progress. The 18-second serial capture was silent and the cycle exited 1 with `CHOUPI runtime output did not pass`. `./tools/env ./tools/doctor` passed host and source checks. `picotool info -a` consistently identifies a CDC serial RP2350 at bus 1/address 124 and no BOOTSEL device.
 - Result: The board is connected, but the current firmware does not complete picotool's software BOOTSEL transition; the diagnostic UF2 remains unflashed.
 - Decision: Keep the candidate ready. A hardware BOOTSEL entry is needed to install it; do not treat USB enumeration as proof of bootloader mode.
-- Commit: `28427a5` (metadata follow-up)
+- Commit: `d496255` (metadata follow-up)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T071557Z.log`, SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`; candidate UF2 SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`
 
 ## 2026-10-11 — Flash reference-field continuation trace
@@ -824,7 +824,7 @@
 - Validation: ARM and RISC-V builds passed. Picotool visibly flashed the ARM UF2 to 100% and rebooted the application. The 18-second serial capture showed all 15 persistent fields loaded, the field reference resolved to array type 17, and `setPersistentField_Reference()` returned. The cycle still exited 1 without `TEST:SUMMARY`.
 - Result: The suspected stall is after the class-121 field load and persistent write; `PUTFIELD_A phase=stored index=0` is the last runtime marker.
 - Decision: Instrument the interpreter instruction loop to locate the next bytecode that fails to complete.
-- Commit: `6baf0f9` (metadata follow-up)
+- Commit: `6ba8d7b` (metadata follow-up)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T074012Z.log`, SHA-256 `997029462d5e282bd5726b40c2985070f093fa3ca07dd2aad40fb19bd08937eb`; flashed UF2 SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`
 
 ## 2026-10-11 — Add bounded BOOTSEL and flash confirmation retries
@@ -834,7 +834,7 @@
 - Validation: `bash -n tools/flash` and `bash -n tools/cycle` passed. `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds; the new wrapper rejected the force-load's request-only result, polled BOOTSEL, retried, and failed closed when the device remained CDC. The cycle exited 1 rather than reporting an unverified flash. Inspection of the ARM map found both the CDC line-coding and vendor-reset callbacks linked. No watchdog firmware change has been built or flashed yet.
 - Result: The wrapper no longer treats picotool's successful reset request as proof of a flash. Current app USB reset callbacks are present but the stalled runtime does not enter BOOTSEL under software requests.
 - Decision: Keep the host retry bounded. Add a hardware watchdog recovery path so a stalled VM can boot into BOOTSEL after the next successful flash.
-- Commit: `dfd27a5` (metadata follow-up)
+- Commit: `e586643` (metadata follow-up)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T074828Z.log`, SHA-256 `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`; current ARM image SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`
 
 ## 2026-10-11 — Add watchdog-to-BOOTSEL recovery
@@ -844,7 +844,7 @@
 - Validation: An initial build failed because the shared VM target lacks Pico SDK hardware include paths; replaced the direct SDK call with a board-provided watchdog callback. `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` then passed. The full cycle also passed both build gates, but the already-installed pre-watchdog image remained CDC despite force-load, delayed polling, repeated picotool requests, and the CDC reset fallback. The candidate is not flashed or hardware-verified.
 - Result: Watchdog code compiles for both configured builds. Hardware watchdog recovery remains unproven until this candidate is installed once.
 - Decision: Use the watchdog candidate on the next successful BOOTSEL window; the current installed image has no watchdog recovery and stays unresponsive to software reset requests.
-- Commit: `810f529` (metadata follow-up)
+- Commit: `968e6df` (metadata follow-up)
 - Artifacts/logs: candidate ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`; failed gated cycle `artifacts/logs/cycle-choupi-20261011T075539Z.log`, SHA-256 `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`
 
 ## 2026-10-11 — Try rapid app reset followed by BOOTSEL
@@ -854,7 +854,7 @@
 - Validation: Both `picotool reboot -F -a` and `picotool reboot -F -u` returned success text, but the following `picotool info -a` still found only USB serial at bus 1/address 126 and no BOOTSEL device. No flash was attempted.
 - Result: Chaining software reset requests does not recover the currently stalled image.
 - Decision: The watchdog candidate remains the recovery route for subsequent hangs; one initial BOOTSEL entry is still needed to install it.
-- Commit: `e86c53d` (metadata follow-up)
+- Commit: `3f9927f` (metadata follow-up)
 - Artifacts/logs: no new cycle log; candidate UF2 remains `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
 
 ## 2026-10-11 — Wait for Pico USB re-enumeration before flashing
@@ -864,7 +864,7 @@
 - Validation: `bash -n tools/flash` and scoped `git diff --check -- tools/flash .agent/HANDOFF.md progress.md` passed. A 60-second initial USB observation found no RP-series device. Then `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds and exercised the hot-plug wait for its full 120 seconds, but no device appeared; the cycle exited 1 before picotool or serial monitoring. Hardware flashing was not attempted because the board is not enumerated.
 - Result: The hot-plug wait runs as intended and reports a reconnect-specific failure at timeout. Current watchdog UF2 remains unflashed; no hardware validation was possible in this step.
 - Decision: Keep the wait bounded and fail with a reconnect-specific message if USB does not return; rerun the gated CHOUPI cycle once the RP-series device enumerates.
-- Commit: `5f6842b` (metadata follow-up records this SHA)
+- Commit: `5a73e60` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T082732Z.log`, SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`; watchdog UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
 
 ## 2026-10-11 — Retry flash after BOOTSEL was reported visible
@@ -874,7 +874,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, then its 120-second RP USB wait expired with status 1. `lsusb` showed only the two root hubs and VirtualBox USB Tablet; no RP-series VID was present in sysfs, no RPI-RP2 volume was mounted, and both `picotool info -a` and `picotool reboot -F -u` reported no accessible RP-series device. No flash or serial capture occurred.
 - Result: The BOOTSEL device is not enumerated to the shell running the flasher, so picotool cannot access it despite the user's report that it is visible in the VM. Watchdog candidate remains unflashed.
 - Decision: Retry immediately once the RP-series device is visible in this process's USB enumeration; keep the dual-build gate before flashing.
-- Commit: `21812de` (metadata follow-up records this SHA)
+- Commit: `1775df7` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T084337Z.log`, SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`; candidate UF2 SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
 
 ## 2026-10-11 — Recover watchdog BOOTSEL and pass CHOUPI runtime
@@ -884,7 +884,7 @@
 - Validation: The first watchdog cycle passed both architecture builds and flashed the image at 100%; the VM stalled and watchdog recovery was confirmed by `picotool info -a` reporting `boot type: bootsel`. After the trace and array-storage change, `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, flashed the updated image to 100%, and captured `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no `FAULT` or timeout.
 - Result: Watchdog recovery is hardware-verified. The memory fix allowed bytecode `0xAD` reads to continue past the prior second 36,870-byte allocation failure, and the full CHOUPI runtime test now passes on Pico 2. Current firmware is running the passing test loop.
 - Decision: Preserve the watchdog and bounded instruction trace while continuing to build an installation path for the supplied JCAlgTest v1.8.2 CAP. The current CDC firmware still lacks APDU/CCID and CAP installation support.
-- Commit: `13c8b4e` (metadata follow-up records this SHA)
+- Commit: `ac9b1b6` (metadata follow-up records this SHA)
 - Artifacts/logs: watchdog recovery run `artifacts/logs/cycle-choupi-20261011T085422Z.log` (SHA-256 `13126143227f832e1abd2b7160a63d5c91745cbb3727cdb0c0c1dafcba8a4d1f`); passing cycle `artifacts/logs/cycle-choupi-20261011T090019Z.log` (SHA-256 `a093b8d548205e6a11dba34954509d6667fc9947cf14c18116f6f92a217f8cf7`); flashed UF2 SHA-256 `48f170eb971f3e9f33505eeb0d40934eced68ad8b46c6f80a31248ad8741e3cb`
 
 ## 2026-10-11 — Verify supplied JCAlgTest CAP components on Pico 2
@@ -894,7 +894,7 @@
 - Validation: The supplied archive SHA-256 is `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`; the rebuilt archive SHA-256 is `daccd8838322995f02a5200d9ebd61a4bf237d293031875424813acd7a7df68b` because its outer ZIP metadata differs. Component comparison found 10/10 identical payloads. UF2 inspection confirmed the current `build/choupi-rommask/flash-algtest.bin` bytes are embedded in `build/arm/pico2_choupi.uf2`. A five-second live CDC capture from `/dev/serial/by-id/usb-Raspberry_Pi_Pico_D92E743D5F640C0F-if00` returned status 0 and contained five `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` pairs, with no `FAULT` or timeout. No new dual-architecture build was needed for this inspection-only step; no GlobalPlatform APDU install was performed.
 - Result: The package components supplied in `AlgTest_v1.8.2_jc305.cap` are the same bytes used to build the applet package embedded in the running CHOUPI ROM mask. The different archive-level hash alone does not indicate different CAP components. Firmware still exposes CDC debug only, so runtime GP install/select is not available.
 - Decision: Treat the static ROM-mask package as the completed alternative installation path for this board image. Keep APDU/CCID and GP installation as a separate future capability if runtime package management is needed.
-- Commit: `d747a27` (metadata follow-up records this SHA)
+- Commit: `64430af` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cap-component-compare-20261011.txt` (SHA-256 `f2106b97ad08d4505ce427fed9cf8daafd02453b1a22f66987022d92de2ec370`); `artifacts/logs/monitor-choupi-20261011T091500Z.log` (SHA-256 `02a4976d2be4c2e6f8df39c71db1451f94490a7a837434cb922342777d042ffb`); current ROM mask `build/choupi-rommask/flash-algtest.bin` SHA-256 `967a883ebf87955c74af84265218685414f82eaf584cab7e60651d719d11eda3`; current UF2 SHA-256 `48f170eb971f3e9f33505eeb0d40934eced68ad8b46c6f80a31248ad8741e3cb`
 
 ## 2026-10-11 — Add and verify USB CCID transport
@@ -904,7 +904,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed before flash. `./tools/env ./tools/cycle choupi` flashed the ARM UF2 to 100%; the finite serial capture emitted `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `FAULT` or timeout. Elevated `lsusb -v -d 2e8a:0009` showed CDC interfaces 0-1 and CCID interface 2 with bulk endpoints 0x03/0x83. A direct libusb hardware exchange passed IccPowerOn (ATR `3b800181`), XfrBlock (response `6d00`), and IccPowerOff. The host has `libpcsclite1` but no `pcscd`/`pcsc_scan`; GlobalPlatformPro JAR artifacts are present.
 - Result: The board now exposes a working, USB-visible CCID transport alongside CDC diagnostics. The transport is hardware-verified, but it does not yet provide Java Card or GlobalPlatform behavior, and no CAP install was attempted through CCID.
 - Decision: Next implement an APDU dispatch route from CCID XfrBlock into CHOUPI and identify the VM's supported applet command lifecycle; then use an available PC/SC daemon or the direct USB probe for GPPro validation.
-- Commit: `48af2f1`
+- Commit: `cc81fbf`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T093403Z.log` (SHA-256 `23c41afe5f954df2edf1b01eb26a5b90482a1288437d4f9dc30a1ffeb72702c9`); `artifacts/logs/ccid-probe-20261011.txt`; ARM UF2 SHA-256 `4f675fadf4913cf33d430494236c8853a6978a177873f9c5abe09b4a074eb995`
 
 ## 2026-10-11 — Audit APDU and applet lifecycle entry points
@@ -914,7 +914,7 @@
 - Validation: Source inspection confirms firmware invokes one fixed static method at boot; non-static interpreter entry, `Applet.register()`, and `APDU.getBuffer()` are explicit TODOs, and no selected-applet registry exists. `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --list` exits with `SCARD_E_NO_SERVICE (0x8010001d)` because `pcscd` is absent. Inspection-only step; no build or flash was needed.
 - Result: The existing static AlgTest ROM-mask runner cannot receive host APDUs, and GlobalPlatformPro cannot yet access a PC/SC resource manager. A CCID USB interface alone is insufficient for either GP package management or applet execution.
 - Decision: Start WP3 by adding an APDU buffer and explicit applet selection/dispatch path, then provide a user-space PC/SC service/driver route before validating GPPro.
-- Commit: nested API `f6776a8`; root regression/docs `3b16eae`.
+- Commit: nested API `f6776a8`; root regression/docs `ba43012`.
 - Artifacts/logs: `artifacts/logs/apdu-lifecycle-audit-20261011.txt`
 
 ## 2026-10-11 — Check for a user-local PC/SC service
@@ -924,7 +924,7 @@
 - Validation: The daemon exited immediately with `cannot create /run/pcscd: Permission denied`. No daemon remains running, no system package was installed, and the Pico was not flashed during this experiment.
 - Result: Direct libusb CCID probing works, but this account cannot start the system PC/SC daemon because its runtime socket directory is root-owned/absent. The repository rule forbids using sudo in an autonomous cycle.
 - Decision: Keep the hardware transport verified via libusb; resume PC/SC/GPPro after the host exposes its normal PC/SC service or an unprivileged socket path is available. Continue firmware work on applet lifecycle and APDU dispatch.
-- Commit: `19f4503`.
+- Commit: `b4059d0`.
 - Artifacts/logs: `artifacts/logs/pcsc-user-local-20261011.txt`; downloaded/extracted packages remain only under `/tmp/pico2-pcsc-root`.
 
 ## 2026-10-11 — Diagnose empty PC/SC scan after driver match
@@ -934,7 +934,7 @@
 - Validation: pcscd socket and service were active, but `pcsc_scan -r` reported no reader. VM `lsusb` listed only root hubs and the VirtualBox USB Tablet; sysfs had no VID `2e8a`, and `picotool info -a` found no RP-series device. Inspection only; no build or flash was performed.
 - Result: The reader was absent from the VM USB bus at the time of the scan, so libccid and pcscd had no device to enumerate.
 - Decision: Reattach the Pico through VirtualBox; verify `lsusb -d 2e8a:0009`, then rerun `pcsc_scan -r`.
-- Commit: `73efd4c`.
+- Commit: `2780762`.
 - Artifacts/logs: `artifacts/logs/pcsc-usb-absent-20261011.txt`
 
 ## 2026-10-11 — Correct CCID APDU exchange declaration
@@ -944,7 +944,7 @@
 - Validation: ARM and RISC-V wrapper builds passed. `./tools/env ./tools/cycle choupi` passed both build gates, entered BOOTSEL with the existing CDC 1200-baud fallback after picotool could not find a reset interface, flashed the ARM UF2 to 100%, and captured `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no `FAULT`. `lsusb -v -d 2e8a:0009` on the re-enumerated board reports `dwFeatures 00020042`, `Short APDU level exchange`, and `dwMaxCCIDMsgLen 271`. PC/SC APDU transmission was not verified: after flashing, the USB node changed from `001/016` to `001/018`, and pcscd had no reader because the prior per-node ACL did not carry over; a later scan also found its socket inactive.
 - Result: The board is running the updated firmware and the CCID descriptor now matches the raw APDU-level XfrBlock implementation. The GPPro/PCSC transaction path remains unverified until pcscd can access the current USB device node. The firmware still returns `6D00` for XfrBlock and does not implement applet dispatch or GP installation.
 - Decision: Restore pcscd access for the current/re-enumerated USB node, confirm `pcsc_scan -r` sees the reader, then send a harmless raw APDU through GPPro and confirm the returned `6D00` before implementing APDU dispatch.
-- Commit: `4506ff7`
+- Commit: `fb8e5e5`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T101036Z.log` (SHA-256 `b2493c96ac884b487e7685014a1e9864d643b69198ee2b5a4e0f84f752d1092b`); flashed ARM UF2 SHA-256 `d6116030ec2fcd82cccbc8be61f123b19ee18616ed8596725cfc98e3e817e12e`
 
 ## 2026-10-11 — Verify APDU exchange through PC/SC
@@ -954,7 +954,7 @@
 - Validation: `pcsc_scan -r` listed `Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F)`. GlobalPlatformPro connected using T=1 and ATR `3B800181`, began a transaction, transmitted `00A4040000`, and received `6D00` twice in 47 ms and 17 ms. The command exited 1 because GlobalPlatformPro then reported `Could not SELECT default selected: 0x6D00`; this is the firmware's known placeholder response, not a transport error. No rebuild or flash was needed.
 - Result: CCID enumeration, card activation, PC/SC transaction, and complete APDU request/response transport are verified end to end on hardware. Java Card applet dispatch and valid SELECT behavior remain absent.
 - Decision: Trace the CHOUPI runtime entry and implement the narrowest APDU-to-applet dispatch path needed to select and invoke the statically embedded JCAlgTest applet; keep GlobalPlatform CAP loading separate until lifecycle support exists.
-- Commit: `eb6548f`
+- Commit: `099c947`
 - Artifacts/logs: `artifacts/logs/pcsc-apdu-probe-20261011.txt` (SHA-256 `615ae514e783cbc2f99e9ed6b22b84e66eeee1d9341824e60ca0fa7b68e618ec`)
 
 ## 2026-10-11 — Probe GlobalPlatformPro card listing
@@ -964,7 +964,7 @@
 - Validation: GlobalPlatformPro connected to the Pico over T=1 with ATR `3B800181`, began/ended a PC/SC transaction, sent SELECT-by-empty-AID `00A4040000`, and received `6D00` in 15 ms. It exited 1 with `Could not SELECT default selected: 0x6D00 (Invalid INStruction)`. The transport path is working; GP SELECT/card-manager behavior is not implemented. No build or flash was needed.
 - Result: AC1 is not met. The existing CCID returns its deliberate unsupported-instruction placeholder, so `gp --list` cannot select an ISD or list registry contents.
 - Decision: Implement card-manager SELECT/status behavior and Java Card applet lifecycle before retrying `gp --list`; do not claim the card is GlobalPlatform-compatible from CCID/PCSC transport alone.
-- Commit: `e37ad51`
+- Commit: `3f10b4e`
 - Artifacts/logs: `artifacts/logs/gp-list-probe-20261011.txt` (SHA-256 `fb8f6f2fe5db66583677148c20699d483a4381f686724f669b7afb3b1537e086`)
 
 ## 2026-10-11 — Record CAP lookup commit metadata
@@ -972,9 +972,9 @@
 - Step/experiment: `wp5-cap-applet-aid-index-commit-metadata`
 - Change: Recorded the implementation and source-file-mode commits for the bounded applet AID lookup step.
 - Validation: `git ls-files -s choupi/src/jc_cap/jc_cap_applet.hpp` reports regular-file mode `100644`; both architecture builds passed for the implementation.
-- Result: The implementation is committed as `52c7c7d`; the regular-file mode correction is committed as `6f54e5e`.
+- Result: The implementation is committed as `ee5f235`; the regular-file mode correction is committed as `b94e31e`.
 - Decision: Continue with firmware lifecycle integration.
-- Commit: `72a1ead` (this record's commit ID is recorded in the following
+- Commit: `9524368` (this record's commit ID is recorded in the following
   metadata commit)
 - Artifacts/logs: none
 
@@ -985,7 +985,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. `git diff --check` passed. Hardware/APDU validation was skipped because the current VM session reports no usable libusb context and no PC/SC service; no flash was attempted.
 - Result: The VM has a safe CAP metadata primitive for locating applet entries by AID and reading the matching install method offset. No applet is selected or executed yet.
 - Decision: Next wire the lookup into a persistent applet registry/lifecycle path; do not treat this parser primitive as SELECT or install support.
-- Commit: `43a0721`
+- Commit: `79925be`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record CAP lookup commit metadata
@@ -993,9 +993,9 @@
 - Step/experiment: `wp5-cap-applet-aid-index-commit-metadata`
 - Change: Recorded the implementation and source-file-mode commits for the bounded applet AID lookup step.
 - Validation: `git ls-files -s choupi/src/jc_cap/jc_cap_applet.hpp` reports regular-file mode `100644`; both architecture builds passed for the implementation.
-- Result: The implementation is committed as `52c7c7d`; the regular-file mode correction is committed as `6f54e5e`.
+- Result: The implementation is committed as `ee5f235`; the regular-file mode correction is committed as `b94e31e`.
 - Decision: Continue with firmware lifecycle integration.
-- Commit: `8b9095d`; this commit records the validated step
+- Commit: `a561bab`; this commit records the validated step
 - Artifacts/logs: none
 
 ## 2026-10-11 — Confirm v1.8.2 Applet component record layout
@@ -1015,7 +1015,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed; both generated their expected RP2350 UF2s. The supplied CAP layout was independently checked in the preceding step. `git diff --check` passed. Flashing was skipped because `picotool info -a` cannot initialize libusb (`-99`) in this VM session.
 - Result: Static ROM-mask applets can now be resolved through one registry API using their AID. No install method is invoked, no applet instance is retained, and no APDU is dispatched yet.
 - Decision: Next add interpreter entry/lifetime support for applet install and virtual process calls, with APDU data retained in context; then connect this registry query to a SELECT path.
-- Commit: `fc77c01`
+- Commit: `8a2051d`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record package AID registry commit
@@ -1023,9 +1023,9 @@
 - Step/experiment: `wp5-applet-registry-aid-lookup-commit-metadata`
 - Change: Recorded the package-level AID lookup commit and its build result.
 - Validation: ARM/RISC-V wrapper builds passed before the change was committed.
-- Result: Implementation and required progress/handoff are committed as `fe7e12f`.
+- Result: Implementation and required progress/handoff are committed as `4db9a1e`.
 - Decision: Continue toward interpreter-backed applet install and APDU processing.
-- Commit: `15c0a88`
+- Commit: `d115da7`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Reflash CHOUPI after Pico 2 replug
@@ -1035,7 +1035,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds. The sandboxed attempt could not initialize libusb; with user-authorized device access, picotool saw the CDC device, but force-load could not locate its reset interface. The wrapper's CDC 1200-baud fallback entered BOOTSEL after 2 seconds, and normal UF2 load reached 100%. The bounded capture completed with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` was present. Post-flash picotool saw the re-enumerated RP2350 CDC device at bus 1/address 21.
 - Result: The board is running the updated CHOUPI image. The flashing recovery sequence worked end-to-end through its CDC fallback. PC/SC currently reports no reader; no APDU or GPPro probe was made after this flash.
 - Decision: Restore the PC/SC daemon/reader for the re-enumerated node, then continue with interpreter-backed applet lifecycle and APDU dispatch. The static registry lookup is not yet used for SELECT or install.
-- Commit: `eea0f62`
+- Commit: `d6bf362`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111329Z.log` (SHA-256 `354482ef6091f85a04b5192fea4a17574600f2523042b465a6410f72768b8009`); flashed ARM UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`
 
 ## 2026-10-11 — Short-circuit known Pico reset failures
@@ -1045,7 +1045,7 @@
 - Validation: `bash -n tools/flash` and `git diff --check -- tools/flash` passed. Both architecture wrapper builds passed. The escalated hardware cycle reached the missing-reset-interface branch, used CDC fallback, entered BOOTSEL in 2 seconds, flashed to 100%, and passed repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. A sandboxed direct flash attempt produced the expected fast failure on `Failed to initialise libUSB`, without retries. No `TEST:FAIL` or `FAULT` appeared.
 - Result: The real-board recovery path avoids 65 seconds of known-useless polling for this CCID composite, and the no-libusb context now fails immediately. The updated CHOUPI image remains on the board.
 - Decision: Keep the wrapper's generic delayed BOOTSEL polling for other failure classes; restore PC/SC service/access before the next APDU probe.
-- Commit: `342566a`
+- Commit: `942b9d9`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111923Z.log` (SHA-256 `0eadba75a08908f07b30507e136d9546cdc5b1e5ad705de91898ed70857bc584`); UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`
 
 ## 2026-10-11 — Restart PC/SC after flash re-enumeration
@@ -1055,7 +1055,7 @@
 - Validation: `systemctl is-active pcscd.service` reports `active`; `lsusb -d 2e8a:0009` sees the Pico 2 CHOUPI CCID at bus 001/device 023; `timeout 8s pcsc_scan -r` reports `No reader found`. The current device node is `/dev/bus/usb/001/023`; the prior node ACL did not follow re-enumeration. No source/build/flash change in this step.
 - Result: USB device is present and firmware runtime passes, but pcscd cannot enumerate it under the current USB-node permissions. No GPPro/APDU probe was run.
 - Decision: Grant user `pcscd` read/write access to `/dev/bus/usb/001/023`, restart `pcscd.service`, and rerun `pcsc_scan -r`; then continue with GPPro/APDU validation.
-- Commit: `3f8a4c2`
+- Commit: `f4e81fb`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Stage narrow passwordless PC/SC recovery helper
@@ -1065,7 +1065,7 @@
 - Validation: `bash -n tools/pico2-pcsc-reader-root tools/install-pcsc-sudoers` passed. `visudo -cf` accepted the generated exact command rule. No sudo command was run and no file outside the repository was modified. Hardware/PCSC recheck is pending user execution of the installer.
 - Result: The repo now contains a narrow setup that can remove the repeated sudo prompt for this recovery action. The system sudoers file and root helper remain uninstalled until the user runs the command below.
 - Decision: User runs `sudo ./tools/install-pcsc-sudoers` once, then `sudo -n /usr/local/sbin/pico2-pcsc-reader`; recheck with `pcsc_scan -r` and continue APDU/GPPro validation.
-- Commit: `97c7eeb`
+- Commit: `ae41e6d`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Correct visudo preflight path
@@ -1075,7 +1075,7 @@
 - Validation: `bash -n` passed for both helper scripts; `/usr/sbin/visudo` is executable and parsed the generated no-argument command rule successfully. The user's first installer attempt exited at preflight before copying the helper or changing sudoers.
 - Result: The installer can proceed past the missing-command check on this host. Full installation and PC/SC recheck await the user's rerun.
 - Decision: Rerun `sudo ./tools/install-pcsc-sudoers`, then run the installed helper and check `pcsc_scan -r`.
-- Commit: `5421889`
+- Commit: `6860817`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Repeat GPPro probe after PC/SC recovery
@@ -1085,7 +1085,7 @@
 - Validation: The elevated host-side read-only probe connected to `Pico 2 CHOUPI CCID`, negotiated T=1 with ATR `3B800181`, and sent `00A4040000`. The card returned `6D00`; GPPro exited with `Could not SELECT default selected: 0x6D00 (Invalid INStruction)`. `pcsc_scan -r` had already confirmed the reader. No CAP install or write APDU was sent.
 - Result: USB, CCID, PC/SC and APDU transport work. The remaining immediate failure is firmware's placeholder APDU response; the default-selected ISD path and GlobalPlatform commands are not implemented.
 - Decision: Implement explicit default-ISD SELECT handling, rebuild both architectures, flash CHOUPI, and use GPPro's next trace to drive the command handler.
-- Commit: `48a6656`
+- Commit: `b5a69a9`
 - Artifacts/logs: `artifacts/logs/gp-list-probe-20261011-reader-ready.txt` (SHA-256 `14a11819fc90b44f3c4e3a9a9b3800e6904c9ca3472518718230a94dc2b54f21`)
 
 ## 2026-10-11 — Return default ISD FCI for SELECT
@@ -1095,7 +1095,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, flashed the ARM image, and captured repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. GPPro parsed the corrected FCI and identified the ISD. It then sent SCP03 `INITIALIZE UPDATE` (`8050000008` plus an 8-byte host challenge), which still receives `6D00`; `gp --list` therefore remains unsuccessful. An earlier FCI iteration exposed an outer TLV length error (`6F0C`); it was corrected to `6F0A` before the passing cycle and final probe.
 - Result: Default ISD selection now proceeds through FCI discovery over real PC/SC/CCID. The next blocker is secure-channel initialization and then GET STATUS/card-manager responses.
 - Decision: Implement and validate SCP03 `INITIALIZE UPDATE`/`EXTERNAL AUTHENTICATE` on the default test keys, then continue GPPro listing and CAP loading.
-- Commit: `9e9e3ae`
+- Commit: `42130c9`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T114816Z.log` (SHA-256 `b9afd73bf1c011b45c69944f3c0189d3f449cec2169823d1b8cd08555f9ad02d`); `artifacts/logs/gp-list-probe-20261011-isd-fci-fixed.txt` (SHA-256 `da56ac7750d48a44cd75f5ce6949c7596bc26e98d4d38b6cccd9153fdc865cd7`); malformed-FCI trace `artifacts/logs/gp-list-probe-20261011-isd-fci.txt`
 
 ## 2026-10-11 — Probe unwrapped GP status and data commands
@@ -1105,7 +1105,7 @@
 - Validation: All three commands reached the real board over PC/SC/T=1 and returned `6D00`; GPPro's automatic discovery then selected the default ISD and received the valid FCI with `9000`. No write APDU or CAP operation was sent.
 - Result: The CCID path correctly carries short APDUs, but GET STATUS, GET DATA, and secure-channel commands are all still unsupported. GPPro's normal `--list` cannot proceed until SCP03 works because that mode authenticates first.
 - Decision: Implement SCP03 first, then add tag-form GET STATUS and read-only GET DATA responses before attempting any LOAD or INSTALL command.
-- Commit: `ab833a3`
+- Commit: `44e0021`
 - Artifacts/logs: `artifacts/logs/gp-raw-readonly-probes-20261011.txt` (SHA-256 `8795b672b2dd211d2ccc18ac4f5e05579671b6f22f49adaa2d7752fbefb4df5b`)
 
 ## 2026-10-11 — Authenticate SCP03 and report ISD status
@@ -1115,7 +1115,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` flashed the real Pico 2 and passed its bounded serial checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL` or `FAULT`). GlobalPlatformPro 26.06.04 `--debug --list` completed the SCP03 exchange: it accepted the card cryptogram, EXTERNAL AUTHENTICATE returned `9000`, and GET STATUS returned the ISD entry with lifecycle `OP_READY`. The subsequent registry probes returned `6A88` for absent applets/domains; `gp --list` exited 0.
 - Result: Default SCP03 authentication with test key `404142434445464748494A4B4C4D4E4F` and ISD discovery now work against the physical board. The v1.8.2 CAP is not installed yet; GP LOAD/INSTALL APDUs remain unsupported.
 - Decision: Continue with a GPPro install attempt to identify the first unsupported CAP-management command, then implement the smallest required sequence.
-- Commit: `ad08669`
+- Commit: `cdb5ec4`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T120932Z.log` (SHA-256 `b81dff57dafdea77f6b55412eb4c72b297f2a458a7002bcab28ce8d28fc81839`); `artifacts/logs/gp-list-probe-20261011-scp03-external-auth.txt` (SHA-256 `daf3e55a9f829a1fbe581e944e960ecb2c58607e2d7b6c493b08d2a6141b9eef`)
 
 ## 2026-10-11 — Probe JCAlgTest v1.8.2 GP installation
@@ -1125,7 +1125,7 @@
 - Validation: SCP03 authentication and GPPro's read-only registry probes succeeded. The first load command was `84 E6 02 00 1E ...` (INSTALL [for load]); firmware returned `6D00`, and GPPro exited 1. No LOAD block or successful install command followed, so the CAP was not written or installed.
 - Result: Card discovery and secure messaging are functional. GP LOAD/INSTALL command dispatch is the next blocker.
 - Decision: Implement bounded parsing/state for INSTALL [for load], then capture GPPro's LOAD block framing and decide how the board can persist the supplied CAP before accepting further install commands.
-- Commit: `726d8e8`
+- Commit: `92149f7`
 - Artifacts/logs: `artifacts/logs/gp-install-probe-20261011.txt` (SHA-256 `a12680db8ddcf252b83f7e584f95183f48b12f1ef59d814f132fa9efcbb82d0f`)
 
 ## 2026-10-11 — Transfer and select JCAlgTest v1.8.2
@@ -1135,7 +1135,7 @@
 - Validation: ARM and RISC-V wrapper builds passed. `./tools/cycle choupi` flashed the Pico 2 and emitted `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL` or `FAULT`. GlobalPlatformPro 26.06.04 `--install` loaded the exact supplied CAP (hash `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`): all LOAD blocks and final INSTALL returned `9000`. A subsequent `--apdu 00A404000A4A43416C675465737431` returned FCI `6F0C840A4A43416C675465737431 9000`; GPPro `--list` had already confirmed the instance as `INITIALIZED` under the JCAlgTest package.
 - Result: Runtime GlobalPlatform CAP transfer, registration, and AID selection work on hardware. The Pico port's overlay is RAM-only and resets on reboot, so this install is not persistent yet; applet APDU processing is also not implemented.
 - Decision: Add a dedicated, bounded nonvolatile CAP slot or another persistence backend, preserving the existing ROM image and validating that the dynamic package survives reboot before calling installation complete. Then wire selected-applet APDUs into the CHOUPI lifecycle.
-- Commit: `1107aaa`
+- Commit: `8c8c1fc`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T122830Z.log` (SHA-256 `d14597b132051f6d730b1ab952d397a39cae3f53c86bb6e899c8d41258d2ca81`); `artifacts/logs/gp-install-cap-select-enabled-20261011.txt` (SHA-256 `624fc4f958fee15d14a1b418da77e9959dc0421ccab90d0bbcd6b9ed5928e97e`); `artifacts/logs/gp-list-after-cap-select-enabled-20261011.txt` (SHA-256 `aba4339bfb43aac4c105fb8bb57974bc03fed9fd18f000ea6ac9262274eee80d`); `artifacts/logs/gp-select-algtest-probe-20261011-enabled.txt` (SHA-256 `c5d723732fac9ec030bea764f4446edc7680894535f7fff0668b1c6271d2b97b`)
 
 ## 2026-10-11 — Persist JCAlgTest CAP across firmware reboot
@@ -1145,7 +1145,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` flashed the real Pico 2 and passed with `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`, `FAULT`, or timeout. GlobalPlatformPro installed the supplied v1.8.2 CAP successfully (final INSTALL `9000`). After two firmware reboots, `gp --debug --list` showed `4A43416C675465737431 (INITIALIZED)` under package `4A43416C6754657374`; SELECT-by-AID returned `6F0C840A4A43416C675465737431 9000`.
 - Result: The exact 26,743-byte CAP payload and applet instance metadata survive a firmware update/reboot and are restored into the CCID registry. An initial reboot trial exposed a filesystem lookup collision that caused `VM_EXCEPTION id=7`; separating persistent CAP storage from the embedded runtime lookup fixed it, and the subsequent hardware cycle passed. Applet install-method execution and applet APDU processing remain unimplemented.
 - Decision: Persistence and AID selection are now verified. Next implement actual applet installation/lifecycle execution and APDU dispatch through the CHOUPI VM before describing JCAlgTest as executable.
-- Commit: `a42a2a9a05ab65ad92edcb0729735d8cdac62bce`
+- Commit: `16efb1e906b42306b970f12b052010d898443637`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T123949Z.log` (SHA-256 `2d1b24d01b181a568091a8dde4d73b36fe2242533fb2ccdbcd42b20665b2274e`); `artifacts/logs/gp-install-persistent-cap-20261011.txt` (SHA-256 `b1f53baf3f6dff3a76254887f5d1715c5c7f292767cd98a97cdbdd1946304b88`); `artifacts/logs/gp-list-persistent-cap-20261011.txt` (SHA-256 `8d0488571acaa39bc0acf779adc130e180d56787b13ab8d171ac84210a47ac92`); `artifacts/logs/gp-select-persistent-cap-20261011.txt` (SHA-256 `6e022dca655b14d3d649feef486b6326405414c5954e74f7f7d2a2999df2bb21`)
 
 ## 2026-10-11 — Resolve persisted CAP through the CHOUPI VM
@@ -1155,7 +1155,7 @@
 - Validation: ARM and RISC-V wrapper builds passed. `./tools/cycle choupi` flashed the Pico 2 and passed `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`, `FAULT`, or timeout. GPPro's real SELECT-by-AID returned `6F0C840A4A43416C675465737431 9000` in 55 ms, which now requires CHOUPI's CAP parser to find the stored AID and install offset. An earlier resolver ordering timed out at 16.7 seconds and triggered watchdog recovery; moving the dynamic lookup ahead of ROM enumeration fixed the APDU path.
 - Result: The persistent CAP is now connected to CHOUPI's package parser and AID resolver, while static package 20 remains unchanged. The install method is not invoked yet, and APDUs are still not dispatched to applet code.
 - Decision: Next implement a bounded VM entry path for the CAP install method and then route applet APDUs through a persistent selected-applet context.
-- Commit: `69616aea484ebf27307ec6fb758a71e99f1b682d`
+- Commit: `d3748fd9702d3ed835609c7df3391f5a402b1803`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T134038Z.log` (SHA-256 `eb7da84d5f0a1250269fab46c1f0c3b8ac2df3c15b0659b5fc518a511da32a03`); `artifacts/logs/gp-select-vm-cap-resolver-20261011.txt` (SHA-256 `ee917c37eb53abfa4564c9ecb820c448d271e49bae12fcb7f34f657ef650af0f`)
 
 
@@ -1166,7 +1166,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. The real-board `./tools/cycle choupi` passed after USB access was restored: the ARM image flashed to 100%, repeated `TEST:PASS choupi_runtime`, and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL`, `FAULT`, or timeout occurred. GlobalPlatformPro read-only SELECT-by-AID returned the persisted JCAlgTest FCI and `9000` in 9 ms; default ISD selection also returned `9000`.
 - Result: The VM now has the entry primitive needed to call the CAP's install method at its parser-provided offset. This step did not invoke that method or alter applet lifecycle state; `JCSystem.getAvailableMemory` still throws `NotYetImplemented`, and `Applet.register()` remains a no-op.
 - Decision: Preserve and parse GP INSTALL parameters, then connect the method entry to install and implement the first native behavior needed by the supplied applet.
-- Commit: `3e49fc9c9cec1c38aeed431b2ba281ccb3556934`
+- Commit: `37561b8840783a1b6c5cb980a6525086ca831793`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T134532Z.log` (SHA-256 `ecd917b5a265987b417bcfccf33365104e95e255fefed8d93d8aaeda03415884`); `artifacts/logs/gp-select-install-entry-20261011.txt` (SHA-256 `c8120829b3c7941b2bd2e48adb7db34ff8f7ff57b7fe0c9617eabed9046d74ab`)
 
 ## 2026-10-11 — Bound and trace stalled CAP INSTALL execution
@@ -1176,7 +1176,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` flashed the real Pico 2 to 100% and passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` in `artifacts/logs/cycle-choupi-20261011T145623Z.log`. GlobalPlatformPro reloaded the exact v1.8.2 CAP (hash `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`), but INSTALL did not return; the subsequent transmit failed with `SCARD_F_COMM_ERROR`. CDC capture stopped producing output during the APDU. USB still enumerated as `2e8a:0009`, while pcscd had no usable reader. A later cycle retry could not reset this stalled device through picotool or CDC 1200-baud fallback.
 - Result: The watchdog and cycle work for normal runtime startup, but they have not contained or diagnosed the blocked INSTALL callback. The trace path is built and flashed; it still needs a successful watchdog-reset capture or other device reattachment to identify the last opcode.
 - Decision: Once the USB device is reattached or reset, collect the saved watchdog breadcrumb and continue isolating the blocking VM/native operation. Do not mark JCAlgTest installed: GP INSTALL has not returned `9000`.
-- Commit: `d86489e`
+- Commit: `5fb9a38`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T145623Z.log` (SHA-256 `3d100ceb51d258af55cef828aca9c0cdeeec31ff20a3bd6ae209f5dd7bc910ab`); `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt` (SHA-256 `1dce95fd4a3a37238e9343ab6056a32e08436a8c2d261c64956afa2144b02198`); `artifacts/logs/gp-install-watchdog-scratch-20261011.txt` (SHA-256 `2db80438b43563cd14175a572822f6a631fcda0d0a8fb689a33bc7c572fcf838`)
 
 ## 2026-10-11 — Invoke the JCAlgTest CAP INSTALL method
@@ -1186,7 +1186,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed, and the real-board cycle at `artifacts/logs/cycle-choupi-20261011T145623Z.log` passed `TEST:SUMMARY pass=1 fail=0`. GPPro loaded the supplied 26,743-byte v1.8.2 CAP successfully, but its authenticated INSTALL APDU did not return; attempts ended in `SCARD_E_READER_UNAVAILABLE` or `SCARD_F_COMM_ERROR`. No successful applet instance registration has been verified.
 - Result: CAP parsing, method-offset resolution, and the request path are connected. The runtime stalls during INSTALL before returning `9000`; applet installation is incomplete.
 - Decision: Resume after USB/PCSC recovery, capture callback/VM progress, and fix the operation that stalls before retrying INSTALL. Do not claim the JCAlgTest applet is installed.
-- Commit: `7315ae1`
+- Commit: `6fffd50`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T145623Z.log` (SHA-256 `3d100ceb51d258af55cef828aca9c0cdeeec31ff20a3bd6ae209f5dd7bc910ab`); `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt` (SHA-256 `1dce95fd4a3a37238e9343ab6056a32e08436a8c2d261c64956afa2144b02198`)
 
 ## 2026-10-11 — Keep USB serial output out of INSTALL callbacks
@@ -1196,7 +1196,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` was attempted after both builds, but the active USB device did not enter BOOTSEL: picotool reported no reset interface and the CDC 1200-baud fallback timed out. Therefore the edited image was not flashed and this runtime hypothesis remains unverified on hardware.
 - Result: The candidate deadlock source is removed from the next build. The currently attached Pico still runs the prior image and its CCID/CDC paths remain unresponsive after the failed INSTALL.
 - Decision: Reattach/reset the Pico USB device, flash this image, then retry JCAlgTest v1.8.2 INSTALL with bounded PC/SC/CDC logs. If it still stalls, use the structured INSTALL diagnostic response and watchdog scratch trace to isolate the VM/native operation.
-- Commit: `005271c`
+- Commit: `6008371`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T151333Z.log` (SHA-256 `eb2a3afb5acc37989db615a51dafa3ca610836c50ed8fe049611c52953e72d2b`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `418c69e4e4c11f82e0866cf98479e9c1e61244e298044a7c1110ee9950900504`)
 
 ## 2026-10-11 — Flash and retry callback-safe JCAlgTest INSTALL
@@ -1206,7 +1206,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed; `./tools/cycle choupi` entered BOOTSEL through its CDC 1200-baud fallback, flashed to 100%, and passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. GlobalPlatformPro authenticated, all CAP LOAD blocks returned `9000`, then the final authenticated `84E60C00` INSTALL did not return within 60 seconds (timeout status 124). The board continued enumerating as `2e8a:0009`, but the reader disappeared and serial capture returned no diagnostics. The PC/SC recovery helper, picotool reboot, CDC reset, and USB bus reset did not restore it.
 - Result: The no-serial-write change is now validated on hardware and does not resolve the INSTALL stall. No successful applet installation or registry confirmation occurred.
 - Decision: Continue after a board USB detach/reattach or power reset; add targeted persistent CCID/VM stage breadcrumbs to distinguish a blocked bytecode/native call from an in-callback storage or USB deadlock. Keep the applet status unconfirmed until INSTALL returns `9000` and GET STATUS/SELECT verify it.
-- Commit: `005271c` (firmware under test); hardware-validation record: `53adb84`
+- Commit: `6008371` (firmware under test); hardware-validation record: `494d8be`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T152212Z.log` (SHA-256 `4ab97132130d7c775e40dcd5c1a54a79b93542aa215d7d6a88caf7cd22ee4db5`); `artifacts/logs/gp-install-callback-safe-20261011.txt` (SHA-256 `c3c4dbf12611b67c7f8bcfa4a531dececac7d35babe810d01ca188ccf8e13746`); candidate/flashed UF2 SHA-256 `418c69e4e4c11f82e0866cf98479e9c1e61244e298044a7c1110ee9950900504`
 
 ## 2026-10-11 — Defer CCID APDU processing out of TinyUSB IRQ
@@ -1216,7 +1216,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. The real-board `./tools/cycle choupi` was attempted after both builds; it could not reset the stalled board. Picotool saw no BOOTSEL/reset interface, the initial BOOTSEL wait timed out after 45 seconds, three reboot requests failed, and CDC 1200-baud reset did not re-enumerate BOOTSEL. No hardware result for this change is available; the candidate was not flashed.
 - Result: Long VM/install work no longer runs in the TinyUSB USB worker IRQ in the candidate firmware. This is a concrete concurrency fix based on the Pico SDK call path, but hardware impact remains unverified.
 - Decision: Restore USB passthrough or power-cycle the board, flash this image, confirm the runtime self-test, then retry JCAlgTest v1.8.2 INSTALL. Keep the install status unconfirmed unless GPPro receives `9000` and GET STATUS/SELECT confirm it.
-- Commit: `972a7ac` (checksum/documentation; this closeout records its SHA)
+- Commit: `b7499db` (checksum/documentation; this closeout records its SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T153015Z.log` (SHA-256 `6c0412947bb6d39e26210f5ff214ca26bae5709bd3b9e7190978d244e56dde1f`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `f34f79fce442792fb099e00977521c73e3d03f7892d7f9483cb34e4038016fab`)
 
 ## 2026-10-11 — Serialize CCID endpoint operations with TinyUSB polling
@@ -1226,7 +1226,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` built ARM and RISC-V successfully and flashed the image to 100%, but exited 1 because its finite monitor found no USB serial node after re-enumeration. After the user reinserted BOOTSEL, `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` detected BOOTSEL and completed with `FLASH:PASS`; a subsequent `./tools/env ./tools/monitor --seconds 18` also exited 1 because the Pico was no longer enumerated in the VM. `pcsc_scan -r` did not discover a reader before the reflash. No install APDU was attempted in this step.
 - Result: The dual-build and flash gates pass; runtime self-test and CCID endpoint completion are unverified because USB passthrough dropped after the BOOTSEL-to-application reboot. JCAlgTest installation remains unconfirmed.
 - Decision: Resume finite CDC capture and PC/SC/CCID validation when the Pico is visible in the VM, then retry GPPro INSTALL. Require INSTALL `9000` plus GET STATUS/SELECT confirmation before reporting success.
-- Commit: `a62514564543790ad4d0a5719c81b7d5638c1e1e`
+- Commit: `efaeb881e9ebdd46a79393edea35c3dd1b9c6541`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T161525Z.log` (SHA-256 `caaa3246aa39d510563430e4c1a8c7fee6550dffa76205a2a338899fc8885ad4`); flashed `build/arm/pico2_choupi.uf2` (SHA-256 `5f33bf01f01f462eaf731623696aa8b2e36a475b036760ef47fd48e15a43674f`)
 
 ## 2026-10-11 — Reflash after BOOTSEL reattachment
@@ -1236,7 +1236,7 @@
 - Validation: `./tools/env ./tools/monitor --seconds 18` exited 1 with `ERROR: no USB serial device found` after the firmware reboot. Elevated `lsusb` then listed only the VM root hubs and VirtualBox tablet; no RP2350 USB device or serial node was available. `VBoxManage` is not installed in the guest, so application-mode USB passthrough cannot be attached from here.
 - Result: The application image is flashed, but runtime output, CCID, PC/SC, and JCAlgTest INSTALL remain unverified. No GP INSTALL command was sent.
 - Decision: Attach the re-enumerated application device (`2e8a:0009`) in the VirtualBox USB menu while leaving the Pico running CHOUPI, then resume the serial and PC/SC checks.
-- Commit: `a62514564543790ad4d0a5719c81b7d5638c1e1e` (implementation; retry evidence appended in follow-up record commit)
+- Commit: `efaeb881e9ebdd46a79393edea35c3dd1b9c6541` (implementation; retry evidence appended in follow-up record commit)
 - Artifacts/logs: flashed `build/arm/pico2_choupi.uf2` (SHA-256 `5f33bf01f01f462eaf731623696aa8b2e36a475b036760ef47fd48e15a43674f`); no persistent serial artifact because the application USB device was not captured by the VM.
 
 ## 2026-10-11 — Poll USB during early CHOUPI startup
@@ -1246,7 +1246,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. The current `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` is waiting for RP-series USB re-enumeration because the prior image is not servicing USB during startup. Hardware flash and serial validation of this correction are pending BOOTSEL reattachment; not run yet.
 - Result: The enumeration deadlock is addressed in the candidate image; no runtime or CCID result is claimed. The JCAlgTest CAP is not confirmed installed.
 - Decision: Flash this candidate when BOOTSEL is visible, then run the finite monitor, refresh PC/SC permissions, verify the reader and CCID response completion, and repeat the JCAlgTest v1.8.2 INSTALL.
-- Commit: `ca9bba37aeb458c848bcfd85b4e301a3351801e`
+- Commit: `ffab9f3a7ce770f17eae04cc11061befa0bbf60`
 - Artifacts/logs: candidate `build/arm/pico2_choupi.uf2` (SHA-256 `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`); build output not archived.
 
 ## 2026-10-11 — Validate USB startup and retry JCAlgTest installation
@@ -1256,7 +1256,7 @@
 - Validation: ARM and RISC-V wrapper builds had passed for this image. `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` wrote 100% and returned `FLASH:PASS`. `./tools/env ./tools/monitor --seconds 18` captured repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` with no `TEST:FAIL` or `FAULT`. The authorized PC/SC helper reported `PCSC:ACCESS_GRANTED`; `pcsc_scan -r` found `Pico 2 CHOUPI CCID`. GlobalPlatformPro `--list` connected over T=1 and returned the ISD in `OP_READY`, with no applet instance. GPPro authenticated using SCP03 and all CAP LOAD blocks returned `9000`; final authenticated INSTALL `84E60C00` did not return. After about 17 seconds, GPPro reported `SCARD_E_READER_UNAVAILABLE` and the Pico disappeared from guest USB. A subsequent `lsusb` showed no Pico and `pcsc_scan -r` showed no reader.
 - Result: CHOUPI startup, serial, and PC/SC reader discovery now work on the real board. The CAP load is accepted, but the install method still wedges the device before INSTALL `9000`; JCAlgTest v1.8.2 is not installed or confirmed.
 - Decision: Recover BOOTSEL/application USB passthrough and inspect the persisted install watchdog breadcrumb or instrument the operation that stalls before retrying INSTALL. Do not report the applet installed without a successful INSTALL and GET STATUS/SELECT confirmation.
-- Commit: `57efd97` (implementation and evidence; this closeout records its SHA)
+- Commit: `aed7676` (implementation and evidence; this closeout records its SHA)
 - Artifacts/logs: `artifacts/logs/gp-install-retry-20261011.txt` (SHA-256 `6287cb1c09e0855913307e521eddaa48a3cbe60baa2133c3033ef9ac28125f0b`); flashed UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`)
 
 ## 2026-10-11 — Pinpoint the first blocking INSTALL operation
@@ -1266,7 +1266,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed. The repository flash wrapper entered BOOTSEL through its CDC 1200-baud recovery and flashed the ARM image to 100% (`FLASH:PASS`). `./tools/env ./tools/monitor --seconds 8` passed repeatedly with `TEST:SUMMARY pass=1 fail=0`. The authorized PC/SC helper restored access; GPPro authenticated and loaded every v1.8.2 CAP block (`9000`), but final INSTALL `84E60C00` caused `SCARD_E_READER_UNAVAILABLE` after about 17 seconds. CDC recovery reported `pc=101C4EFA opcode=8F count=1 stage=2`; stage 2 means constant-pool resolution completed and the stall occurred inside `Heap::addInstance` before returning to `bc_new`.
 - Result: The watchdog recovery and serial reconnect can now retain a specific VM substage across the reset. The first blocking bytecode is `new`; the object allocation path is the failing operation. No INSTALL status `9000` or applet registry confirmation was received.
 - Decision: Instrument `Heap::addInstance`, the `JC_Instance` constructor, and the superclass field-size walk to identify the exact blocking suboperation before another bounded install retry.
-- Commit: `cb6f063` (overlay regression and evidence; this closeout records its SHA)
+- Commit: `319c814` (overlay regression and evidence; this closeout records its SHA)
 - Artifacts/logs: `artifacts/logs/gp-install-substage-20261011.txt` (SHA-256 `80e4a7b35042ecaa970834a9df197f32b568435398c8eb6b23f9312a6fc1ca53`); `artifacts/logs/cdc-install-stage2-recovery-20261011.txt` (SHA-256 `739eb43c42d4925539a55abdf620a5cbcd8c5798e6d3cca0bd0aeafb1fe859e6`); flashed UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `f38acbf07f0720ade74385d25f3f694e48596bd761e3aa150f2b925063c11cf3`)
 
 ## 2026-10-11 — Trace the blocked superclass lookup
@@ -1276,7 +1276,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed. The repository flash wrapper entered BOOTSEL through CDC 1200-baud recovery and flashed the ARM UF2 to 100% (`FLASH:PASS`). After delayed USB serial re-enumeration, the 8-second monitor repeatedly reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The authorized helper and `pcsc_scan -r` found the reader. GPPro authenticated and all CAP LOAD blocks returned `9000`; final `84E60C00` INSTALL again caused `SCARD_E_READER_UNAVAILABLE` after about 17 seconds. The subsequent recovery monitor showed the runtime self-test but did not report a watchdog marker. The previous instrumented image's persistent result was `pc=101C4EFA opcode=8F count=1 stage=6`, immediately before superclass `classref2class` resolution.
 - Result: Heap allocation is narrowed to superclass lookup, but the finer import/class-table stage was not recovered from this install attempt. The applet is not installed; no INSTALL `9000`, GET STATUS entry, or SELECT confirmation occurred.
 - Decision: Preserve this diagnostic build on the Pico. Retry once with a serial capture ready before INSTALL and keep the host monitor attached across the expected USB reset; inspect resolver stage/context, then fix the failing lookup.
-- Commit: `8d6267c`
+- Commit: `b87a062`
 - Artifacts/logs: `artifacts/logs/gp-install-superclass-resolution-20261011.txt` (SHA-256 `d5e669e6042dc5625fea56e1a4b32a7f17a568c52a8a6e444027140530f3d19c`); `artifacts/logs/cdc-superclass-stage-recovery-20261011.txt` (SHA-256 `2e06bd348650e34e5ee701977428ce6760aad05200c33f4a7403cbf705b06eab`); prior stage 6 capture `artifacts/logs/cdc-instance-stage-recovery-20261011.txt` (SHA-256 `c8a9e99819358f55af70ed3b050d66bc67709f5efa3b43dd170dead87e6b96e4`); flashed UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `353781d080f00aa25da77990dc4eb6868b69dfcb2e00ea8fbe83a82c44d07af9`)
 
 ## 2026-10-11 — Normalize imported class offsets before Class lookup
@@ -1306,7 +1306,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. The real-board ARM image flashed with `FLASH:PASS`; the finite serial monitor reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC discovery succeeded. GPPro loaded all 131,538 CAP bytes, with every LOAD block returning `9000`. First install execution reached `IndexOutOfBoundsException` at `invokespecial` PC `0x101C4E1B`; mapping the external constructor class advanced execution to `NotYetImplemented` at `impdep1` PC `0x10047BF8`. GP INSTALL returned `6A80`; applet installation is not confirmed. The 8-second monitor command initially hit USB re-enumeration delay, then a repeated finite capture passed.
 - Result: Imported class ABI mismatch is corrected far enough for the CAP's install method and constructor/native calls to execute. Remaining failure is inside a native call; the consumed native index has not yet been captured.
 - Decision: Capture the `impdep1` native method index, implement the exact required operation, and retry installation.
-- Commit: `a71356d`
+- Commit: `5147f82`
 - Artifacts/logs: `artifacts/logs/gp-install-jc305-token-remap-20261011.txt` (SHA-256 `6e4420cb27c2daf62c8f22cd08568ad71606fc3698ef62c0f132f63970eb6dcd`); `artifacts/logs/gp-install-jc305-method-token-remap-20261011.txt` (SHA-256 `195b05ec5d805c9f7bd34591311b4e13d5a892123e3a02e791261a1c4705802e`); flashed UF2 SHA-256 `877d322f5ebc4f03f8f3cee7112b11a202c82400cb4ba359ffc55796bb592022`.
 
 ## 2026-10-11 — Add acceptance-criteria TODO tracker
@@ -1324,7 +1324,7 @@
   simulator comparison, and final acceptance work are now visible in one root
   checklist.
 - Decision: Continue with offline diagnosis of the JC305 install-method path.
-- Commit: `a21f7af8af70284240c49a1f030d4662620ef682`
+- Commit: `30f49c6dff134ef0bac38bfad37fc623dbb0f8ab`
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`
 
 ## 2026-10-11 — Resolve JC305 method references and seed INSTALL arguments
@@ -1347,7 +1347,7 @@
   unverified.
 - Decision: Continue offline verification of JC305 tokens against API exports;
   perform the install runtime check when the Pico is available again.
-- Commit: `ef90fea8677801c93c49db5c973afcb7eb360e13`
+- Commit: `5be503224907bd657d8f79c1aff183a101592a38`
 - Artifacts/logs: `artifacts/logs/gp-install-jc305-native-index-20261011.txt`
 
 ## 2026-10-11 — Require Applet.register during installation
@@ -1366,7 +1366,7 @@
   not yet runtime-verified.
 - Decision: Continue implementing the registered applet instance and lifecycle
   bridge, then verify it on the board when physical testing resumes.
-- Commit: `36473c12e145b1b5f5e53c8fe53286f784c9f204`
+- Commit: `57f7278e97bc85025e285faa84e8e6abf0638782`
 - Artifacts/logs: none (offline wrapper builds only)
 
 ## 2026-10-11 — Bring up the PC build and retry the hardware cycle
@@ -1392,7 +1392,7 @@
 - Decision: Continue implementation from the plan. Retry PC build when Cargo
   dependencies are available and retry board flashing when this environment can
   access the VM's USB device.
-- Commit: `6731e03` (`Document PC emulator checkpoint durability`)
+- Commit: `323ab79` (`Document PC emulator checkpoint durability`)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T191905Z.log` (SHA-256
   `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM
   UF2 `build/arm/pico2_choupi.uf2` (SHA-256
@@ -1417,7 +1417,7 @@
   been exercised.
 - Decision: Next add a persistent instance index and cleanup/reload semantics,
   then connect the object to SELECT and APDU lifecycle dispatch.
-- Commit: `d53c10f` (`Verify native progress path on Pico 2`)
+- Commit: `4f836bd` (`Verify native progress path on Pico 2`)
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256
   `003a2a2d6fc7c936740dab4199c99bb01987c3c1d7ece7322006c2badb720cc6`); no
   serial log because flashing was blocked before device access.
@@ -1445,7 +1445,7 @@
   current wait.
 - Decision: Keep the physical board in service. Extend serial-enumeration
   tolerance, then resume applet reconstruction and GP INSTALL/SELECT/APDU tests.
-- Commit: `78a0c37`
+- Commit: `68210af`
 - Artifacts/logs: `artifacts/logs/monitor-choupi-class-index-20261011.txt`
   (SHA-256 `999f4652dea75934aa24ee1fa587049b982e30a2c63a8bc26701ca63d3b0a8ab`);
   failed full-cycle captures `artifacts/logs/cycle-choupi-20261011T194021Z.log`
@@ -1478,7 +1478,7 @@
 - Decision: Keep the device in runtime mode, restore PC/SC access without
   violating the no-sudo cycle constraint, then resume GPPro applet lifecycle
   verification.
-- Commit: `dde096e`
+- Commit: `d4ab46c`
 - Artifacts/logs: passing cycle
   `artifacts/logs/cycle-choupi-20261011T194451Z.log` (SHA-256
   `8e2efc766e495bffebfcc15722c8e5bfeaaab727ecdb91033df346d3c13c53b5`);
@@ -1509,7 +1509,7 @@
 - Decision: Wire this helper into a per-applet CCID context and SELECT path;
   restore PC/SC reader access through the user-authorized setup path when
   allowed by the active repository safety constraints.
-- Commit: `845e86f`
+- Commit: `3a0b793`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195102Z.log` (SHA-256
   `420c05f8ea0ae1ae7689f31aa57a8e87ec4d611ca59a9cf5a00e20592d956595`); ARM
   UF2 SHA-256 `48c6a1a4871365ba6964e9b141c43eefda53abf61e2aa97507adfe66da17b9ac`.
@@ -1536,7 +1536,7 @@
 - Decision: Retain the restored context across APDUs and implement Java Card
   lifecycle/APDU dispatch; retry GPPro install and SELECT once PC/SC can see
   the reader.
-- Commit: `6370685`
+- Commit: `5080665`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195521Z.log` (SHA-256
   `06de173c6f70be838090a032ccf11ad92c43e2a89e1225d631087b161c1b79a0`); ARM
   UF2 SHA-256 `2211ce2bcab208aa8abfaa884ec71853f685a14934c508d2721a4d07691a7f53`.
@@ -1561,7 +1561,7 @@
 - Decision: Add a per-APDU interpreter entry that consumes the retained
   receiver/context, then validate it with the GPPro path when the reader is
   available.
-- Commit: `d1fc0a7`
+- Commit: `40b74a2`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195927Z.log` (SHA-256
   `dee9effae6d9a883e0837a526c74e693ef27c849814bb41ba69e85ea9f75b76e`); ARM
   UF2 SHA-256 `a5f9b3a301d1919a4f5ba15ffc2df54183d3a0f46dee092fdcc9bd0c286d5896`.
@@ -1586,7 +1586,7 @@
   APDU object/buffer initialization, and lifecycle dispatch remain incomplete.
 - Decision: Resolve the applet's exported lifecycle methods from its CAP and
   wire SELECT/process dispatch with the APDU state needed by those methods.
-- Commit: `24febcf`
+- Commit: `2c69fad`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T033945Z.log` (SHA-256
   `c6a964c2ddeef80cf2e7d790633feff3aafd1cf623bdbcf68cf5f9509c090ec7`); ARM
   UF2 SHA-256
@@ -1610,7 +1610,7 @@
 - Decision: Inspect the JCAlgTest 1.8.2 constructor/install call sequence and
   continue implementing only the native/API behavior that blocks real install
   and APDU lifecycle execution.
-- Commit: `0223ba7`
+- Commit: `e57745d`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T034427Z.log` (SHA-256
   `4a3ba30db076432c0a0da7cb19f23b6726b248f57682defbc4fd278bf720bfa9`); ARM
   UF2 SHA-256
@@ -1639,7 +1639,7 @@
 - Decision: Restore PC/SC reader availability and retry INSTALL. If the same
   exception remains, instrument external class/method resolution around this
   exact Applet register reference and inspect the returned method-table slot.
-- Commit: `2c2728e`
+- Commit: `1e2e589`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T040413Z.log` (SHA-256
   `db0c06428e3c0061346ed543fea5e3c46c7aac03808432cc00170b152d067233`); ARM
   UF2 SHA-256
@@ -1666,7 +1666,7 @@
 - Decision: Restore PC/SC reader access and retry the exact JCAlgTest v1.8.2
   INSTALL. Use the returned stage/context to correct the Applet register
   dispatch path.
-- Commit: `81ca2a5`
+- Commit: `8837e16`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T041446Z.log` (SHA-256
   `e198912f9c31a8bead2e7b12c60797881a7e1ba63b9aea4918092b1952d367fd`); ARM
   UF2 SHA-256
@@ -1692,7 +1692,7 @@
   because the PC/SC service is unavailable; no applet installation is claimed.
 - Decision: Restore the system PC/SC service/reader, then retry the exact
   JCAlgTest v1.8.2 INSTALL and decode response bytes 24-28 (stage/context).
-- Commit: `1f41a70`
+- Commit: `018cb49`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T055405Z.log` (SHA-256
   `c497422821ef84fca6313e87e6719653b944fa0b0dd7e9d63adc24b9785265bb`); ARM
   UF2 SHA-256 `7e82e6de6ac4211cdc431cf4f301220042a033e8ba980554e02963a8121be352`.
@@ -1714,7 +1714,7 @@
   runtime check. Applet installation after the correction is not yet verified.
 - Decision: Reapply the existing reader ACL helper after USB re-enumeration,
   confirm `pcsc_scan -r` lists the reader, then retry the exact GPPro INSTALL.
-- Commit: `f8643e2`
+- Commit: `2c3a325`
 - Artifacts/logs: `artifacts/logs/gp-install-stage30-20261012.txt` (SHA-256
   `a3fc895e031e90c70203933ef48467a5d6d82112651bc3a0fc9763f61c43c197`);
   `artifacts/logs/gp-install-method-table-endian-20261012.txt` (SHA-256
@@ -1745,7 +1745,7 @@
 - Decision: Continue implementing the SELECT/process bridge and Java Card APDU
   object/buffer behavior; retest this method-resolution path immediately after
   PC/SC reader access is restored.
-- Commit: `fa54b76` (the progress reference is committed in the follow-up record)
+- Commit: `aa7eed0` (the progress reference is committed in the follow-up record)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T072742Z.log` (SHA-256
   `f8bdd6a2cb5d6326e1bdfe0343ea89157b122b07647e68d690b102295e28f088`); ARM
   UF2 SHA-256 `7a34c0f0941dbc0818c9fa7984a1b6c63d58ee50cb89c73d4c7984b50a4ed04e`.
@@ -1771,7 +1771,7 @@
 - Decision: Add the lifecycle method resolver/bridge and consume the captured
   `select()` result, then validate it with the v1.8.2 applet once the reader is
   restored.
-- Commit: `0061646` (the progress reference is committed in the follow-up record)
+- Commit: `00a8efd` (the progress reference is committed in the follow-up record)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T073435Z.log` (SHA-256
   `22437f072e2f01ca1480d9d05ac84fa695f2e732af29dff12731ded061a93acc`); ARM
   UF2 SHA-256 `7c180dd9eba1af4e40172c2a9df655b99de7a45f621e424986a3c9a75324bc57`.
@@ -1796,7 +1796,7 @@
   `process(APDU)` and APDU buffer/response handling remain incomplete.
 - Decision: Add APDU buffer delivery and process-method dispatch next; retry
   hardware installation and lifecycle verification after reader access returns.
-- Commit: `256986e` (the progress reference is committed in the follow-up record)
+- Commit: `7b6806c` (the progress reference is committed in the follow-up record)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T073952Z.log` (SHA-256
   `58fc542a20f41bb715ede6e522ef7acdddd44b1c7751c7909c612bac14090983`); ARM
   UF2 SHA-256 `6c599c684698e868d80664585d38eaf0a26252acf2579907516d6d8b1ffbc07b`.
@@ -1818,7 +1818,7 @@
 - Decision: Resume exact v1.8.2 GP INSTALL once the installed ACL helper has
   been run for the current USB node; continue ARM/RISC-V validated work while
   crates.io is unavailable.
-- Commit: `fbcb35f` (this record is completed by the follow-up metadata commit)
+- Commit: `49a2f14` (this record is completed by the follow-up metadata commit)
 - Artifacts/logs: `/tmp/pico2-build-pc.log` (not archived in the repository);
   prior firmware runtime log `artifacts/logs/cycle-choupi-20261012T061610Z.log`.
 
@@ -1837,9 +1837,9 @@
 - Step/experiment: `code-review-20261013-reference`
 - Change: Recorded the immutable review commit reference.
 - Validation: Review report and host-only build log were committed successfully.
-- Result: Review commit is `d8afcd4`; implementation files retain their existing worktree state.
+- Result: Review commit is `2d8f46a`; implementation files retain their existing worktree state.
 - Decision: Review complete; implementation goal remains paused.
-- Commit: `d8afcd4`
+- Commit: `2d8f46a`
 - Artifacts/logs: `artifacts/reviews/code-review-20261013.md`, `artifacts/logs/review-arm-build-20261013.log`
 
 ## 2026-10-14 — Prepare implementation fix checklist
@@ -1857,9 +1857,9 @@
 - Step/experiment: `review-fix-checklist-reference`
 - Change: Recorded the fix-checklist documentation commit.
 - Validation: Commit contains only FIXES.md and its progress record.
-- Result: Checklist commit is `df4edca`; proposed fixes remain unimplemented.
+- Result: Checklist commit is `4d84caa`; proposed fixes remain unimplemented.
 - Decision: Hand off implementation to the other agent as requested.
-- Commit: `df4edca`
+- Commit: `4d84caa`
 - Artifacts/logs: `FIXES.md`
 
 ## 2026-10-14 — Implement reviewed APDU and lifecycle fixes
@@ -1869,7 +1869,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed after the changes. `./tools/cycle choupi` rebuilt both targets, detected the RP2350 in sysfs, then stopped before flashing because `picotool` reported `Failed to initialise libUSB`; no firmware write or serial capture occurred. `./tools/doctor` reports its host environment variables/tools missing because it uses the ambient PATH, while repository build wrappers pass. `git -c core.whitespace=cr-at-eol diff --check` passed before the final include-only cleanup; both builds are repeated after it.
 - Result: ARM CHOUPI firmware links with the regenerated native API. No physical runtime behavior was validated. USB access from this execution context remains blocked despite sysfs showing device `2e8a:0009`.
 - Decision: Source fixes are complete; retry the bounded CHOUPI flash/runtime capture when libUSB access works, then exercise SELECT and repeated APDU commands on an installed applet.
-- Commit: `55c26ce` (implementation; this reference is recorded in the follow-up entry)
+- Commit: `53c62cd` (implementation; this reference is recorded in the follow-up entry)
 - Artifacts/logs: `artifacts/logs/fixes-build-arm-20261014.log`, `artifacts/logs/fixes-build-riscv-20261014.log`, `artifacts/logs/fixes-cycle-choupi-20261014.log`; ROM image SHA-256 `7683c4a90d57702cf313e1048a5f0e7478f18f2a69ae99a4d078205aed57d9d9`, JNI header SHA-256 `dca8995ec8a8fadf16ce46e99cc869bf6e0748ad5dc90f7c841dd38701825586`, ARM CHOUPI UF2 SHA-256 `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.
 
 
@@ -1878,9 +1878,9 @@
 - Step/experiment: `implement-review-fixes-20261014-reference`
 - Change: Recorded the implementation commit SHA after committing the fixes and validation artifacts.
 - Validation: Confirmed the root implementation commit and nested Java Card API commit are present; unrelated pre-existing worktree changes remain unstaged.
-- Result: Root implementation commit is `55c26ce`; nested Java API buffer commit is `534c1b1`.
+- Result: Root implementation commit is `53c62cd`; nested Java API buffer commit is `534c1b1`.
 - Decision: Resume with physical CHOUPI flashing and applet APDU validation when USB/libUSB access is available.
-- Commit: `55c26ce`
+- Commit: `53c62cd`
 - Artifacts/logs: `FIXES.md`, `artifacts/logs/fixes-build-arm-20261014.log`, `artifacts/logs/fixes-build-riscv-20261014.log`, `artifacts/logs/fixes-cycle-choupi-20261014.log`
 
 ## 2026-10-14 — Flash CHOUPI and verify runtime on Pico 2
@@ -1890,15 +1890,15 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` passed both build gates, confirmed BOOTSEL, wrote the image to 100%, rebooted the card, and captured 18 seconds of serial output. Runtime reported repeated `CHOUPI:STATUS sw=9000`, `TEST:PASS choupi_runtime`, and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. `pcsc_scan -r` could not establish a PC/SC context because the service is unavailable in this execution context.
 - Result: The fixed ARM firmware is physically flashed and the board's built-in CHOUPI runtime test passes. Applet install and SELECT/APDU behavior remain unverified.
 - Decision: Proceed with the exact JCAlgTest v1.8.2 installation when PC/SC access is available; do not infer applet installation from the firmware self-test.
-- Commit: `eff90e5` (the following reference entry records this SHA)
+- Commit: `7ed265c` (the following reference entry records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T070921Z.log` (SHA-256 `af02d162b8d631ac0a82da12f5e8e8cbbaa1a9a859d9bd3bdd727b7866ddb100`); UF2 SHA-256 `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.
 
 ## 2026-10-14 — CHOUPI hardware-validation commit reference
 
 - Step/experiment: `physical-cycle-choupi-20261014-reference`
 - Change: Recorded the immutable commit for the successful hardware cycle and its handoff update.
-- Validation: Confirmed commit `eff90e5` contains only the cycle log, progress record, and session handoff.
-- Result: Successful Pico 2 CHOUPI runtime validation is committed as `eff90e5`.
+- Validation: Confirmed commit `7ed265c` contains only the cycle log, progress record, and session handoff.
+- Result: Successful Pico 2 CHOUPI runtime validation is committed as `7ed265c`.
 - Decision: Continue with JCAlgTest applet installation after PC/SC service access is restored.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T070921Z.log`.
@@ -1910,15 +1910,15 @@
 - Validation: Ran `timeout --signal=TERM --kill-after=2s 20s ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --debug --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`. GlobalPlatformPro reported CAP SHA-256 `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c` and exited with `SCARD_E_NO_SERVICE` (`SCardEstablishContext` response `0x8010001d`).
 - Result: No INSTALL APDU reached the card; applet behavior remains unverified. This is a host PC/SC service failure, not an applet status-word result.
 - Decision: Restore `pcscd.service` and rerun the Pico reader ACL helper for the current USB node before retrying the exact CAP install.
-- Commit: `30f57f8` (the following reference entry records this SHA)
+- Commit: `5b5d0bc` (the following reference entry records this SHA)
 - Artifacts/logs: none; bounded command output is preserved in the session transcript.
 
 ## 2026-10-14 — PC/SC blocker commit reference
 
 - Step/experiment: `gp-install-transport-recheck-20261014-reference`
 - Change: Recorded the immutable commit containing the applet-install transport result and handoff update.
-- Validation: Confirmed commit `30f57f8` contains only progress and handoff records.
-- Result: The PC/SC service blocker is recorded as `30f57f8`.
+- Validation: Confirmed commit `5b5d0bc` contains only progress and handoff records.
+- Result: The PC/SC service blocker is recorded as `5b5d0bc`.
 - Decision: Continue with independent host-side build work while PC/SC is restored.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
@@ -1930,15 +1930,15 @@
 - Validation: `./tools/env cmake --build build/choupi-pc --target choupi -j2` completed the Java Card API compile and CAP conversions (zero converter errors) and built the capmap-free Maven modules, but Cargo retried crates.io because `index.crates.io` did not resolve. The explicit offline retry `CARGO_NET_OFFLINE=true MAVEN_ARGS=-o ./tools/env cmake --build build/choupi-pc --target choupi -j2` failed because `ipc-channel` is absent from the local Cargo registry. Both host build attempts exited nonzero before C++ linking.
 - Result: Java source/CAP generation is available; host VM linking cannot proceed without the uncached Rust crate. The same offline build also reported an existing GNU make jobserver FIFO at `/tmp/GMfifo5`; no files outside the repository were changed.
 - Decision: Keep hardware firmware builds and applet transport validation separate from the host VM build; retry host linking when the crate is available locally or Cargo network resolution is restored.
-- Commit: `dea8f52` (the following reference entry records this SHA)
+- Commit: `2bf6488` (the following reference entry records this SHA)
 - Artifacts/logs: none; command output is preserved in the session transcript. Existing generated outputs are under `build/choupi-pc/`.
 
 ## 2026-10-14 — Offline host-build diagnostic commit reference
 
 - Step/experiment: `host-vm-offline-dependency-check-20261014-reference`
 - Change: Recorded the commit containing updated host-build and PC/SC status.
-- Validation: Confirmed commit `dea8f52` includes only the dependency diagnostic, tracker, and handoff records.
-- Result: Offline host-build dependency evidence is committed as `dea8f52`.
+- Validation: Confirmed commit `2bf6488` includes only the dependency diagnostic, tracker, and handoff records.
+- Result: Offline host-build dependency evidence is committed as `2bf6488`.
 - Decision: Resume host VM linking after `ipc-channel` becomes available; resume applet installation after PC/SC is active.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
@@ -1957,7 +1957,7 @@
 
 - Step/experiment: `short-apdu-receive-metadata-20261014-reference`
 - Change: Recorded the root commit that contains the short-APDU API validation, tracker/handoff updates, and bounded cycle log.
-- Validation: Confirmed root commit `49f54ba76d5f6a907b015dce616833e33b2fc7a8` contains only `progress.md`, `TODO.md`, `.agent/HANDOFF.md`, and the cycle log; Java Card API source is separately committed as `5ef3f90356c437ab658fb79ced1abde59ba3df9a`.
+- Validation: Confirmed root commit `97cc6cf30d9bb1ee4003c5302b569750b44e738b` contains only `progress.md`, `TODO.md`, `.agent/HANDOFF.md`, and the cycle log; Java Card API source is separately committed as `5ef3f90356c437ab658fb79ced1abde59ba3df9a`.
 - Result: Source and hardware evidence for this logical step are both committed.
 - Decision: Continue with remaining APDU behavior and retry PC/SC installation when reader enumeration is available to GPPro.
 - Commit: `recorded in the following reference commit`
@@ -1977,7 +1977,7 @@
 
 - Step/experiment: `apdu-transport-parameters-20261014-reference`
 - Change: Recorded the root documentation/evidence commit for the APDU transport metadata change.
-- Validation: Confirmed root commit `880153f79d9cb2cc2081b90a19defff18ae093f5` contains `progress.md`, `TODO.md`, `.agent/HANDOFF.md`, and the physical cycle log. The Java Card API source is committed separately as `6713938e9d7941aff9edb33a2ceecad72d355835`.
+- Validation: Confirmed root commit `3bcca0a6edbe65116a7153e407a4760ad17f6f09` contains `progress.md`, `TODO.md`, `.agent/HANDOFF.md`, and the physical cycle log. The Java Card API source is committed separately as `6713938e9d7941aff9edb33a2ceecad72d355835`.
 - Result: APDU source and physical validation evidence are committed.
 - Decision: Proceed to the bounded monitor timeout hardening discovered during this cycle.
 - Commit: `recorded in the following reference commit`
@@ -1997,7 +1997,7 @@
 
 - Step/experiment: `serial-monitor-timeout-watchdog-20261014-reference`
 - Change: Recorded the root implementation/evidence commit for bounded serial-monitor shutdown.
-- Validation: Confirmed root commit `dc73b1a5bd8575e1a9ebf718ab34d1012e84f0ad` contains `tools/monitor`, the 2-second capture log, `progress.md`, `TODO.md`, and `.agent/HANDOFF.md`.
+- Validation: Confirmed root commit `4f3e4f6b96d17267a556a2bc5bf52450b60152b5` contains `tools/monitor`, the 2-second capture log, `progress.md`, `TODO.md`, and `.agent/HANDOFF.md`.
 - Result: Monitor timeout hardening and its physical serial evidence are committed.
 - Decision: Continue implementing the remaining JCAlgTest v1.8.2 API surface while retaining bounded board capture and flash recovery.
 - Commit: `recorded in the following reference commit`
@@ -2017,7 +2017,7 @@
 
 - Step/experiment: `apdu-java-buffer-identity-20261014-reference`
 - Change: Recorded the root documentation/evidence commit for the Java-visible APDU buffer identity change.
-- Validation: Confirmed root commit `281aa75` contains the TODO and handoff updates, this validation record, and the bounded cycle log. Nested API source is committed separately as `0278fc9730e8915469ff35933c12549c39807831`.
+- Validation: Confirmed root commit `8b7e156` contains the TODO and handoff updates, this validation record, and the bounded cycle log. Nested API source is committed separately as `0278fc9730e8915469ff35933c12549c39807831`.
 - Result: Source and root build/USB evidence are tied to immutable commits.
 - Decision: Continue implementation with APDU output state and then the unresolved Java Card API/native surface.
 - Commit: `recorded in the following reference commit`
@@ -2037,7 +2037,7 @@
 
 - Step/experiment: `arraylogic-primitive-types-20261014-reference`
 - Change: Recorded the root source/test/evidence commit for generic byte/short/int array operations.
-- Validation: Confirmed root commit `b64ff65` includes `choupi/src/jni.cpp`, the expanded ASan test, both logs, and tracker updates.
+- Validation: Confirmed root commit `5b9b6ea` includes `choupi/src/jni.cpp`, the expanded ASan test, both logs, and tracker updates.
 - Result: Implementation and evidence are committed together.
 - Decision: Continue with the remaining JCAlgTest runtime and API gaps.
 - Commit: `recorded in the following reference commit`
@@ -2050,14 +2050,14 @@
 - Validation: `CARGO_NET_OFFLINE=true MAVEN_ARGS=-o ./tools/env cmake --build build/choupi-pc --target choupi -j2` passed and linked the complete host VM. `build/choupi-pc/choupi --help` exited 0. `./tools/build arm` and `./tools/build riscv` both passed. `./tools/cycle choupi` passed both build gates but could not access USB (`libusb: -99`); no flash write or serial capture occurred.
 - Result: The host VM can now be built and launched with the repository's current stable Rust toolchain. The build still emits legacy Rust/Maven warnings and two packed CAP metadata warnings. The PC target reports an empty dynamic CAP store; applet installation remains an RP2350-only path.
 - Decision: Use the host VM as a build/runtime fixture for further API and APDU work. Retry physical installation after this VM can access the board and PC/SC reader.
-- Commit: `54c41b8` (root tracker/evidence commit; nested Rust source commit `dd074eb`)
+- Commit: `01d660f` (root tracker/evidence commit; nested Rust source commit `dd074eb`)
 - Artifacts/logs: `artifacts/logs/host-build-after-capstore-bridge-20261014.log` SHA-256 `8631f51c835eea768b45b24c25744ce0c78784946e569bc0dc243ac05e759754`; ARM `artifacts/logs/arm-after-host-modernize-20261014.log` SHA-256 `deda16985d8ee0d23130e58ca46f100cbce0206bffa4328d9e5130072f6ec22e`; RISC-V `artifacts/logs/riscv-after-host-modernize-20261014.log` SHA-256 `3d71f0ea9ef4d6a17afdf2417f315f26ff5d802750163a165a583f3f63a8eb4f`; cycle `artifacts/logs/cycle-host-bridge-20261014.log` SHA-256 `72fea9335f221c1c430c1936e74fc597634f2e7f733e434ee9c38a808dae4416`; CLI smoke `artifacts/logs/host-vm-help-20261014.log`.
 
 ## 2026-10-14 — Host VM build commit reference
 
 - Step/experiment: `host-vm-stable-rust-and-cap-store-20261014-reference`
 - Change: Recorded the immutable root commit for the host build restoration; stable Rust changes are in nested commit `dd074eb`.
-- Validation: Confirmed root commit `54c41b8` contains the PC CAP-store bridge, host/architecture build logs, CLI smoke log, `TODO.md`, `progress.md`, and `.agent/HANDOFF.md`.
+- Validation: Confirmed root commit `01d660f` contains the PC CAP-store bridge, host/architecture build logs, CLI smoke log, `TODO.md`, `progress.md`, and `.agent/HANDOFF.md`.
 - Result: Host build implementation and evidence are committed. The board cycle did not flash because this VM could not initialize USB.
 - Decision: Continue with APDU state and JCAlgTest v1.8.2 API coverage; retain the host executable for fixture work.
 - Commit: `recorded in the following reference commit`
@@ -2070,14 +2070,14 @@
 - Validation: `./tools/test-short-apdu` passed nine cases. The full PC VM build passed after regenerating Java API CAPs and the ROM mask. `./tools/build arm` and `./tools/build riscv` both passed. A bounded `./tools/cycle choupi` passed both build gates but the flash wrapper could not access USB (`libusb: -99`) and timed out; no firmware write or serial capture occurred.
 - Result: Short APDU Lc/Le parsing is covered by a host unit test and the Le value reaches Java. Response-length enforcement, stateful `sendBytes*`, extended APDUs, and `61xx` chaining remain incomplete; no installed-applet APDU test has run.
 - Decision: Continue with APDU outgoing state and response handling, then verify case-2/case-4 behavior through the PC fixture and physical board when USB and PC/SC are available.
-- Commit: `d2dddd8` (root parser/native bridge; nested API source commit `86345d2`)
+- Commit: `43c9bf3` (root parser/native bridge; nested API source commit `86345d2`)
 - Artifacts/logs: `artifacts/logs/short-apdu-tests-20261014.log` SHA-256 `f8f3316b2b0db669eff0d4fb26295d90bec2cff240187ee0f03e121d8c3dfc8d`; PC build `artifacts/logs/host-apdu-le-build-20261014.log` SHA-256 `e41fb21e782fb2eacf3e7d0f54678d57ee88c4ff8d251c15f3b7a5538c4dcde0`; ARM `artifacts/logs/arm-apdu-le-build-20261014.log` SHA-256 `909e69655d3be456748ae12546204097995417a657edc2ccea436d082214612f`; RISC-V `artifacts/logs/riscv-apdu-le-build-20261014.log` SHA-256 `b56cbbb6bc31d8e7857259a6f8acb43d062c95f1df89980dc9dcbf9aa509319c`; cycle `artifacts/logs/cycle-apdu-le-20261014.log` SHA-256 `55e3bfbc574ad53d926c98b529359156e89b146cde8bc9d867f0aee1452cf448`.
 
 ## 2026-10-14 — Short APDU parser commit reference
 
 - Step/experiment: `short-apdu-cases-and-le-20261014-reference`
 - Change: Recorded the immutable root commit for short APDU parsing and Le propagation; nested Java Card API commit is `86345d2`.
-- Validation: Confirmed root commit `d2dddd8` includes the parser, context/native bridge, focused test, trackers, and build/cycle evidence.
+- Validation: Confirmed root commit `43c9bf3` includes the parser, context/native bridge, focused test, trackers, and build/cycle evidence.
 - Result: Source and validation are committed. Physical flash remains blocked by USB passthrough visibility.
 - Decision: Continue with response state and chaining semantics.
 - Commit: `recorded in the following reference commit`
@@ -2090,14 +2090,14 @@
 - Validation: `./tools/test-short-apdu` passed all 13 parser and response-chunk cases, including multi-chunk 600-byte data (`6100`, then `6158`, then `9000`). PC VM, ARM, and RISC-V builds passed. The bounded `./tools/cycle choupi` rebuilt both architectures but USB remained unavailable (`libusb: -99`); timeout occurred before flash or serial capture.
 - Result: The core response splitting and continuation counter are unit-tested. Integration with applet APDU processing remains unverified; stateful `setOutgoingLength()`/`sendBytes*` are still missing.
 - Decision: Continue with APDU send state and a host applet exchange fixture. Retry physical validation when USB passthrough is visible.
-- Commit: `aba9440`
+- Commit: `a15b894`
 - Artifacts/logs: `artifacts/logs/short-apdu-chaining-20261014.log` SHA-256 `70c97607c39483d0edc941e44e4243c6ad24e57234eab5eefa21a6dd4cfa6d54`; PC build `artifacts/logs/host-apdu-chaining-20261014.log` SHA-256 `8b357f11a29f291f7ef03ec731cfa0b9975fe8aa1cb30413dfe208cbcecbb8c5`; ARM `artifacts/logs/arm-apdu-chaining-20261014.log` SHA-256 `5087f9b6529acca7dac2b4557e144b14de5a8836a4360a6e0bb65b1eaa816396`; RISC-V `artifacts/logs/riscv-apdu-chaining-20261014.log` SHA-256 `27d2453b9f281b7d4c8489bfd37cd71bab31c12d7c036f23ed6ec4c65f7e4a7d`; cycle `artifacts/logs/cycle-apdu-chaining-20261014.log` SHA-256 `2d2d62c15b5ade56f614436b61f786eb06441235b1e1089c54c48b776cd52b32`.
 
 ## 2026-10-14 — APDU response-chain commit reference
 
 - Step/experiment: `short-apdu-response-chaining-20261014-reference`
 - Change: Recorded the immutable root commit for bounded `61xx` and GET RESPONSE handling.
-- Validation: Confirmed root commit `aba9440` includes the response buffer, `GET RESPONSE` processing, unit coverage, trackers, and build/cycle logs.
+- Validation: Confirmed root commit `a15b894` includes the response buffer, `GET RESPONSE` processing, unit coverage, trackers, and build/cycle logs.
 - Result: Implementation and validation record are committed; physical execution remains unverified because USB was unavailable.
 - Decision: Continue with Java APDU outgoing state and host applet exchange fixtures.
 - Commit: `recorded in the following reference commit`
@@ -2110,24 +2110,24 @@
 - Validation: `./tools/test-short-apdu` passes parser, multi-chunk response, and Context-state cases (including illegal transitions, output accumulation, missing Le, and the 252-byte no-chaining bound). PC VM, ARM, and RISC-V builds passed. Elevated `./tools/cycle choupi` recovered BOOTSEL via CDC after picotool lacked a reset interface, flashed the ARM image, and captured repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. The firmware runtime smoke check does not execute an installed applet. `pcsc_scan -r` reported `SCardEstablishContext: Service not available`, so no applet APDU was sent.
 - Result: The APDU output state machine and response chunk storage compile and pass unit-level tests; real-board firmware boots successfully. Applet-level case-2/case-4 commands, response chaining, and Java exception mapping remain unverified. Extended APDUs remain unsupported.
 - Decision: Next build a host applet exchange fixture or regain PC/SC, then exercise GET RESPONSE and continue the remaining JCAlgTest API gaps.
-- Commit: `c4fa546` (root native/context/tests; nested Java Card API commit `5aef71e`)
+- Commit: `9e71a4e` (root native/context/tests; nested Java Card API commit `5aef71e`)
 - Artifacts/logs: unit tests `artifacts/logs/short-apdu-state-20261014.log` SHA-256 `a721816d1700d2e6c48c41cf50cc776e2417c32453bf469261a6a2d922336286`; PC build `artifacts/logs/host-apdu-state-20261014.log` SHA-256 `49b2cc55cada2d22f71ec79c20fa3947aa094f888fe01a7b8e75db8e682bfddf`; ARM `artifacts/logs/arm-apdu-state-20261014.log` SHA-256 `421ed022d97c52db4a5320d10f4fd3893d4819765c8f4fa078a80f8ed4ec7e96`; RISC-V `artifacts/logs/riscv-apdu-state-20261014.log` SHA-256 `95c7b2401f65fc5a28161892dd176d232b5bdd96db638842c86142dcdbcbe466`; physical cycle `artifacts/logs/cycle-apdu-state-20261014.log` SHA-256 `383330020642e57906a34b28115163f04a1a3c40de31ecaeb5fa209611a3088d`; UF2 SHA-256 `033ed8c9e1868434a0c801c47a0b6d1e03f652b62656f243521d8626118d97e1`.
 
 ## 2026-10-14 — APDU output-state commit reference
 
 - Step/experiment: `apdu-output-state-20261014-reference`
 - Change: Recorded the immutable root commit for APDU outgoing state and the nested API source commit.
-- Validation: Confirmed root commit `c4fa546` contains Context/native state handling, host state tests, tracker updates, and PC/ARM/RISC-V/physical logs; nested API commit is `5aef71e`.
+- Validation: Confirmed root commit `9e71a4e` contains Context/native state handling, host state tests, tracker updates, and PC/ARM/RISC-V/physical logs; nested API commit is `5aef71e`.
 - Result: The implementation and real-board runtime smoke evidence are committed. Applet APDU behavior remains unverified.
 - Decision: Continue with a host applet exchange fixture or available PC/SC path, then address more JCAlgTest API gaps.
-- Commit: `c4fa546` (root Context/native/tests; nested API commit `5aef71e`)
+- Commit: `9e71a4e` (root Context/native/tests; nested API commit `5aef71e`)
 - Artifacts/logs: `artifacts/logs/cycle-apdu-state-20261014.log`.
 
 ## 2026-10-14 — APDU output-state validation commit reference
 
 - Step/experiment: `apdu-output-state-20261014-validation-reference`
 - Change: Recorded the APDU output-state source and validation commit identifiers.
-- Validation: Confirmed root commit `c4fa546` contains the native/context state implementation, unit tests, project trackers, and physical cycle logs; nested Java Card API implementation is commit `5aef71e`.
+- Validation: Confirmed root commit `9e71a4e` contains the native/context state implementation, unit tests, project trackers, and physical cycle logs; nested Java Card API implementation is commit `5aef71e`.
 - Result: APDU state code compiles and firmware runtime passes on hardware; applet command behavior still requires end-to-end verification.
 - Decision: Continue with host fixture/reader access and remaining runtime API work.
 - Commit: `recorded in the following reference commit`
@@ -2140,14 +2140,14 @@
 - Validation: `./tools/doctor` exits 0 and reports all required local tools, the SDK import file, and CHOUPI sources present. It now reports `cmake`, Cargo, Rust, Maven, and picotool from `.local-toolchain` instead of incorrectly marking them missing.
 - Result: The diagnostic agrees with the repository wrappers that were already building both architectures and the PC VM.
 - Decision: Use the doctor output to distinguish missing local prerequisites from USB/PCSC availability.
-- Commit: `300ee1b`
+- Commit: `16b4925`
 - Artifacts/logs: `artifacts/logs/doctor-wrapper-env-20261014.log` SHA-256 `daa8356548514a6469b72ab53611b48dac1ff510877b338ad534ce951d5ba91b`.
 
 ## 2026-10-14 — Doctor toolchain commit reference
 
 - Step/experiment: `doctor-wrapper-toolchain-20261014-reference`
 - Change: Recorded the immutable commit for the `tools/doctor` wrapper-environment fix.
-- Validation: Confirmed root commit `300ee1b` contains `tools/doctor`, its successful diagnostic log, and the progress/handoff records.
+- Validation: Confirmed root commit `16b4925` contains `tools/doctor`, its successful diagnostic log, and the progress/handoff records.
 - Result: The doctor now reports the same local toolchain that repository build wrappers use.
 - Decision: Continue toward the golden applet APDU fixture and remaining JCAlgTest support.
 - Commit: `recorded in the following reference commit`
@@ -2167,10 +2167,10 @@
 
 - Step/experiment: `util-array-compare-order-20261014-reference`
 - Change: Recorded the immutable root evidence commit for the Java Card `Util.arrayCompare()` ordering correction; the nested API source commit is `6dceb7e`.
-- Validation: Confirmed root commit `b03142b` contains the updated trackers and ARM, RISC-V, and successful PC/SC list logs.
+- Validation: Confirmed root commit `c1304f4` contains the updated trackers and ARM, RISC-V, and successful PC/SC list logs.
 - Result: Root validation records and the source-level commit are linked for continuation.
 - Decision: Flash the newly built ARM image and continue with JCAlgTest install validation.
-- Commit: `b03142b`
+- Commit: `c1304f4`
 - Artifacts/logs: `artifacts/logs/gp-list-current-20261014.log`.
 
 ## 2026-10-14 — Bound ARM build CPU use and check PC/SC APDU access
@@ -2187,10 +2187,10 @@
 
 - Step/experiment: `arm-build-cpu-bound-smartcardio-probe-20261014-reference`
 - Change: Recorded the immutable root commit for the two-job default ARM build limit and its validation records.
-- Validation: Confirmed commit `678bd02` contains the `tools/build` limit, TODO/handoff updates, progress entry, ARM build log, and bounded Java Smart Card I/O probe log.
+- Validation: Confirmed commit `046ba1a` contains the `tools/build` limit, TODO/handoff updates, progress entry, ARM build log, and bounded Java Smart Card I/O probe log.
 - Result: The ARM-only build resource fix is committed; RISC-V was not built or tested in this step.
 - Decision: Continue with the remaining JCAlgTest applet `process()` and AC3/AC4 validation work.
-- Commit: `678bd02`
+- Commit: `046ba1a`
 - Artifacts/logs: `artifacts/logs/arm-build-limited-jobs-20261014.log`; `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log`.
 
 ## 2026-10-14 — Produce JCAlgTest v1.8.2 jCardSim reference
@@ -2217,20 +2217,20 @@
 
 - Step/experiment: `jcalgtest-v182-jcardsim-reference-20261014-reference`
 - Change: Recorded the immutable root commit for the official v1.8.2 client/JCardSim reference run and CSV archive.
-- Validation: Confirmed commit `c33d1b6` contains the 4,595-line simulator CSV, focused extended-mode log, client help log, and updated tracker/handoff.
+- Validation: Confirmed commit `8e5c9f5` contains the 4,595-line simulator CSV, focused extended-mode log, client help log, and updated tracker/handoff.
 - Result: Simulator comparison input is version-matched to the supplied v1.8.2 JC305 CAP; physical CHOUPI comparison remains pending.
 - Decision: Continue with process APDU validation and AC3/AC4.
-- Commit: `c33d1b6`
+- Commit: `8e5c9f5`
 - Artifacts/logs: `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv`.
 
 ## 2026-10-14 — Bounded APDU probe commit reference
 
 - Step/experiment: `jc-algtest-apdu-probe-20261014-reference`
 - Change: Recorded the immutable root commit for the PC/SC APDU probe and its no-reader environment result.
-- Validation: Confirmed commit `432eee3` contains the Java probe, executable wrapper, scoped TODO/handoff updates, and compile/runtime log.
+- Validation: Confirmed commit `e709aa0` contains the Java probe, executable wrapper, scoped TODO/handoff updates, and compile/runtime log.
 - Result: The probe is ready to validate GETVERSION and JCSystem info once PC/SC exposes the Pico; current no-reader result does not represent an applet failure.
 - Decision: Resume hardware APDU work when this execution environment can access the PC/SC reader.
-- Commit: `432eee3`
+- Commit: `e709aa0`
 - Artifacts/logs: `artifacts/logs/jc-algtest-apdu-probe-current-20261014.log` (SHA-256 `32f712cdd1346069e332db1ddaf71863947558414b34496b8e5e537f0716ffea`).
 
 ## 2026-10-14 — Implement transient Object[] factory
@@ -2247,10 +2247,10 @@
 
 - Step/experiment: `jc-system-transient-object-array-20261014-reference`
 - Change: Recorded the immutable implementation commit for the `JCSystem.makeTransientObjectArray()` support and its focused validation.
-- Validation: Confirmed commit `9942d57` contains the native factory, Object[] wildcard handling, the focused test, and the TODO/handoff updates. The ARM build and `./tools/test-jcarray` passed before commit.
-- Result: The transient Object[] implementation is committed as `9942d57`; physical applet behavior remains unverified.
+- Validation: Confirmed commit `b9fa0ea` contains the native factory, Object[] wildcard handling, the focused test, and the TODO/handoff updates. The ARM build and `./tools/test-jcarray` passed before commit.
+- Result: The transient Object[] implementation is committed as `b9fa0ea`; physical applet behavior remains unverified.
 - Decision: Continue with the remaining JCAlgTest native API surface and retry PC/SC integration when this execution environment can reach the host service.
-- Commit: `cc13ec4`
+- Commit: `f04e45e`
 - Artifacts/logs: `/tmp/pico2-jcarray-object-array.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-14 — Retry PC/SC access after VM helper run
@@ -2267,10 +2267,10 @@
 
 - Step/experiment: `pcsc-access-retry-20261014-reference`
 - Change: Recorded the immutable commit for the PC/SC visibility retry and updated execution-environment handoff.
-- Validation: Confirmed commit `99b0eaf` contains the bounded probe result, TODO update, and handoff evidence. The elevated probe returned `SCARD_E_NO_READERS_AVAILABLE`; no APDU was sent.
+- Validation: Confirmed commit `84df147` contains the bounded probe result, TODO update, and handoff evidence. The elevated probe returned `SCARD_E_NO_READERS_AVAILABLE`; no APDU was sent.
 - Result: The reader access limitation is recorded without treating a successful VM helper run as proof of agent-container access.
 - Decision: Continue with implementation that can be built and tested locally.
-- Commit: `99b0eaf`
+- Commit: `84df147`
 - Artifacts/logs: no repository log; exact output is summarized in `progress.md` above.
 
 ## 2026-10-14 — Define previous-context AID fallback
@@ -2287,20 +2287,20 @@
 
 - Step/experiment: `jc-system-previous-context-aid-fallback-20261014-reference`
 - Change: Recorded the implementation commit for the no-shareable-context AID fallback.
-- Validation: Confirmed commit `ca0520a` contains the native behavior, focused assertion, ARM build evidence, and TODO/handoff updates.
-- Result: The fallback is committed as `ca0520a`; Java lifecycle behavior on an installed applet remains unverified.
+- Validation: Confirmed commit `9791cc9` contains the native behavior, focused assertion, ARM build evidence, and TODO/handoff updates.
+- Result: The fallback is committed as `9791cc9`; Java lifecycle behavior on an installed applet remains unverified.
 - Decision: Continue with the remaining platform API and lifecycle work.
-- Commit: `ca0520a`
+- Commit: `9791cc9`
 - Artifacts/logs: `/tmp/pico2-previous-context-aid.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-14 — Previous-context AID commit hash reference
 
 - Step/experiment: `jc-system-previous-context-aid-fallback-20261014-hash-reference`
 - Change: Recorded the immutable reference for the `getPreviousContextAID()` fallback implementation.
-- Validation: Confirmed commit `ca0520a` contains the native null result, focused test, ARM build record, and TODO/handoff update.
-- Result: The API fallback and its evidence are linked to commit `ca0520a`.
+- Validation: Confirmed commit `9791cc9` contains the native null result, focused test, ARM build record, and TODO/handoff update.
+- Result: The API fallback and its evidence are linked to commit `9791cc9`.
 - Decision: Continue the remaining API and applet lifecycle work.
-- Commit: `ca0520a`
+- Commit: `9791cc9`
 - Artifacts/logs: `/tmp/pico2-previous-context-aid.log`.
 
 ## 2026-10-14 — Enforce Le for no-chaining APDU responses
@@ -2317,10 +2317,10 @@
 
 - Step/experiment: `apdu-no-chaining-le-bound-20261014-reference`
 - Change: Recorded the implementation commit for no-chaining response limits.
-- Validation: Confirmed commit `7448bec` contains the Le/frame bounds, focused APDU tests, and project tracker updates. `./tools/test-short-apdu` and `./tools/build arm` passed.
-- Result: No-chaining response validation is committed as `7448bec`; physical applet behavior remains unverified.
+- Validation: Confirmed commit `cb642f4` contains the Le/frame bounds, focused APDU tests, and project tracker updates. `./tools/test-short-apdu` and `./tools/build arm` passed.
+- Result: No-chaining response validation is committed as `cb642f4`; physical applet behavior remains unverified.
 - Decision: Continue with remaining APDU and JCAlgTest runtime work.
-- Commit: `7448bec`
+- Commit: `cb642f4`
 - Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-14 — Flash latest CHOUPI firmware from BOOTSEL
@@ -2337,10 +2337,10 @@
 
 - Step/experiment: `bootsel-choupi-runtime-20261014-reference`
 - Change: Recorded the immutable commit for the latest physical ARM flash and runtime capture.
-- Validation: Confirmed `3dbab14` contains the BOOTSEL flash record, handoff and TODO updates, and the 18-second serial artifact.
-- Result: Hardware validation is committed as `3dbab14`; applet-level APDU validation remains blocked by unavailable PC/SC in this execution context.
+- Validation: Confirmed `a374a12` contains the BOOTSEL flash record, handoff and TODO updates, and the 18-second serial artifact.
+- Result: Hardware validation is committed as `a374a12`; applet-level APDU validation remains blocked by unavailable PC/SC in this execution context.
 - Decision: Continue with v1.8.2 applet APDU checks when the reader service is available.
-- Commit: `3dbab14`
+- Commit: `a374a12`
 - Artifacts/logs: `artifacts/logs/bootsel-choupi-runtime-20261014.log`.
 
 ## 2026-10-14 — Validate JCSystem memory query arguments
@@ -2357,10 +2357,10 @@
 
 - Step/experiment: `jc-system-available-memory-validation-20261014-reference`
 - Change: Recorded the immutable commit for the native memory-query validation correction and its ARM-only evidence.
-- Validation: Confirmed `fe2f25b` contains the native fix, focused cases, build/test logs, and tracker/handoff updates.
-- Result: The validation correction is committed as `fe2f25b`; Java throwable dispatch and physical applet behavior remain unverified.
+- Validation: Confirmed `6445a18` contains the native fix, focused cases, build/test logs, and tracker/handoff updates.
+- Result: The validation correction is committed as `6445a18`; Java throwable dispatch and physical applet behavior remain unverified.
 - Decision: Continue with Java exception mapping and other JCAlgTest-used runtime gaps.
-- Commit: `fe2f25b`
+- Commit: `6445a18`
 - Artifacts/logs: `artifacts/logs/host-jcarray-available-memory-20261014.log`; `artifacts/logs/arm-available-memory-validation-20261014.log`.
 
 ## 2026-10-14 — Validate JCSystem memory arguments in Java
@@ -2377,10 +2377,10 @@
 
 - Step/experiment: `apdu-no-chaining-le-bound-20261014-hash-reference`
 - Change: Recorded the immutable commit containing the Le and T=1 no-chaining response bounds.
-- Validation: Confirmed commit `7448bec` contains the `Context` bound, expanded APDU context tests, and TODO/handoff updates; the test wrapper and ARM build passed.
-- Result: The APDU no-chaining fix is linked to commit `7448bec`; board-level APDU behavior remains pending.
+- Validation: Confirmed commit `cb642f4` contains the `Context` bound, expanded APDU context tests, and TODO/handoff updates; the test wrapper and ARM build passed.
+- Result: The APDU no-chaining fix is linked to commit `cb642f4`; board-level APDU behavior remains pending.
 - Decision: Continue implementing and validating the remaining applet transport behavior.
-- Commit: `7448bec`
+- Commit: `cb642f4`
 - Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-14 — Reflash CHOUPI and verify runtime on Pico 2
@@ -2397,10 +2397,10 @@
 
 - Step/experiment: `arm-api-and-bootsel-cycle-evidence-reference-20261014`
 - Change: Recorded the root documentation and validation artifacts for the preceding Java wrapper and Pico 2 runtime validation steps.
-- Validation: Confirmed commit `b8c3805` contains the updated handoff/TODO, append-only records, ARM Java API build log, and successful CHOUPI cycle log.
-- Result: Root evidence is committed as `b8c3805`; the physical ARM runtime check passes, while applet APDU validation remains pending because PC/SC reports no reader.
+- Validation: Confirmed commit `65b89f8` contains the updated handoff/TODO, append-only records, ARM Java API build log, and successful CHOUPI cycle log.
+- Result: Root evidence is committed as `65b89f8`; the physical ARM runtime check passes, while applet APDU validation remains pending because PC/SC reports no reader.
 - Decision: Continue with applet-level APDUs when a PC/SC reader is visible.
-- Commit: `b8c3805`
+- Commit: `65b89f8`
 - Artifacts/logs: `artifacts/logs/arm-jcsystem-java-validation-20261014.log`; `artifacts/logs/cycle-choupi-20261014T135618Z.log`.
 ## 2026-10-14 — Add development task timer
 
@@ -2417,9 +2417,9 @@
 - Step/experiment: `development-task-time-sample-20261014-reference`
 - Change: Recorded the immutable commit for the task timer, usage documentation, and initial measurement sample.
 - Validation: `tools/task-time` syntax validation passed twice; the ARM build and short APDU host test completed successfully. `git diff --cached --check` passed before commit.
-- Result: The timer step is committed as `eb36cbd`; its report contains 9.112 seconds of successful recorded work. Upload remains unmeasured.
+- Result: The timer step is committed as `152e548`; its report contains 9.112 seconds of successful recorded work. Upload remains unmeasured.
 - Decision: Continue timing compile, analysis, upload, and test intervals across future implementation steps; hardware access remains unavailable from this VM device-node view.
-- Commit: `eb36cbd`
+- Commit: `152e548`
 - Artifacts/logs: `artifacts/metrics/development-time.csv` (SHA-256 `84a5be49f87005eaab8d03321c10bd9bd491bf910405d8e9aabff2b60fa9c243`).
 
 ## 2026-10-14 — Document development performance tips
@@ -2436,10 +2436,10 @@
 
 - Step/experiment: `development-performance-tips-20261014-reference`
 - Change: Recorded the immutable commit containing the performance recommendations and their progress entry.
-- Validation: Confirmed commit `6154378` contains only `perf_tips.md`, this progress reference, and the corresponding handoff update; staged whitespace check passed.
-- Result: Performance guidance is committed as `6154378`.
+- Validation: Confirmed commit `95ff2f6` contains only `perf_tips.md`, this progress reference, and the corresponding handoff update; staged whitespace check passed.
+- Result: Performance guidance is committed as `95ff2f6`.
 - Decision: Continue the remaining JCAlgTest runtime and integration work; measure any future optimization before claiming a speedup.
-- Commit: `6154378`
+- Commit: `95ff2f6`
 - Artifacts/logs: `perf_tips.md`; source measurements in `artifacts/metrics/development-time.csv`.
 
 ## 2026-10-14 — Add rollback support for RP2350 persistent install writes
@@ -2456,8 +2456,8 @@
 
 - Step/experiment: `install-failure-status-map-20261014-reference`
 - Change: Recorded the immutable commit for GP INSTALL failure-stage status mapping and its focused host test.
-- Validation: Confirmed commit `7c71176` contains the status mapping, all ten host mapping cases, and the progress record. The focused test and ARM build passed before commit; staged whitespace validation passed.
-- Result: The status mapping step is committed as `7c71176`. Hardware INSTALL response behavior remains unverified.
+- Validation: Confirmed commit `13c3e2b` contains the status mapping, all ten host mapping cases, and the progress record. The focused test and ARM build passed before commit; staged whitespace validation passed.
+- Result: The status mapping step is committed as `13c3e2b`. Hardware INSTALL response behavior remains unverified.
 - Decision: Continue with host-side applet execution coverage while retaining hardware acceptance as open.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`.
@@ -2466,8 +2466,8 @@
 
 - Step/experiment: `persistent-install-rollback-rp2350-20261014-reference`
 - Change: Recorded the immutable implementation commit for synchronous failed-install rollback and RP2350 overlay erase support.
-- Validation: Confirmed commit `4e2d1a9` includes the transaction test, ARM filesystem implementation, GP INSTALL wrapper, and progress record. The focused test and ARM build passed before commit; staged whitespace validation passed.
-- Result: The implementation step is committed as `4e2d1a9`. Hardware failure-path behavior remains untested.
+- Validation: Confirmed commit `bd1750c` includes the transaction test, ARM filesystem implementation, GP INSTALL wrapper, and progress record. The focused test and ARM build passed before commit; staged whitespace validation passed.
+- Result: The implementation step is committed as `bd1750c`. Hardware failure-path behavior remains untested.
 - Decision: Continue with the remaining JCAlgTest gaps, retaining the power-loss atomicity and useful status-word work as open.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`.
@@ -2496,8 +2496,8 @@
 
 - Step/experiment: `development-performance-tips-sample-expansion-20261014-reference`
 - Change: Recorded the immutable commit containing updated `perf_tips.md`, measurements, and handoff notes.
-- Validation: Confirmed commit `171d404` contains the expanded timing table and suggestions; documentation whitespace validation passed.
-- Result: The performance guidance update is committed as `171d404`.
+- Validation: Confirmed commit `0a58086` contains the expanded timing table and suggestions; documentation whitespace validation passed.
+- Result: The performance guidance update is committed as `0a58086`.
 - Decision: Add future timer samples after comparable clean and incremental runs; upload remains unmeasured.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
@@ -2516,8 +2516,8 @@
 
 - Step/experiment: `rp2350-fs-overlay-erase-regression-20261014-reference`
 - Change: Recorded the immutable commit for the RP2350 overlay erase test and collision-offset fix.
-- Validation: Confirmed commit `c8fc232` contains the filesystem fix, standalone host regression, and progress record. The 13-case host test and ARM build passed before commit; staged whitespace validation passed.
-- Result: The overlay erase regression step is committed as `c8fc232`; hardware validation remains outstanding.
+- Validation: Confirmed commit `b63abcb` contains the filesystem fix, standalone host regression, and progress record. The 13-case host test and ARM build passed before commit; staged whitespace validation passed.
+- Result: The overlay erase regression step is committed as `b63abcb`; hardware validation remains outstanding.
 - Decision: Continue with updated performance measurements and the remaining host-side JCAlgTest integration gaps.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `tools/test-rp2350-fs-overlay`; `build/arm/pico2_choupi.uf2`; `artifacts/metrics/development-time.csv`.
@@ -2536,8 +2536,8 @@
 
 - Step/experiment: `development-performance-tips-fs-test-20261014-reference`
 - Change: Recorded the immutable commit containing updated performance tips and accumulated task-time rows.
-- Validation: Confirmed commit `d27321d` includes the expanded timing summary, append-only CSV rows, and progress record; staged whitespace validation passed.
-- Result: The updated performance summary is committed as `d27321d`.
+- Validation: Confirmed commit `605f2c5` includes the expanded timing summary, append-only CSV rows, and progress record; staged whitespace validation passed.
+- Result: The updated performance summary is committed as `605f2c5`.
 - Decision: Continue with host-side applet lifecycle/client coverage; no PC/SC reader is currently visible.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
@@ -2556,10 +2556,10 @@
 
 - Step/experiment: development-performance-next-measurements-20261014-reference
 - Change: Recorded the immutable commit containing the updated performance suggestions and associated handoff/progress notes.
-- Validation: Confirmed commit `49f848d` contains `perf_tips.md`, `progress.md`, and `.agent/HANDOFF.md`; `git diff --check` passed for the follow-up reference.
-- Result: The requested performance guidance is committed as `49f848d`.
+- Validation: Confirmed commit `1416c84` contains `perf_tips.md`, `progress.md`, and `.agent/HANDOFF.md`; `git diff --check` passed for the follow-up reference.
+- Result: The requested performance guidance is committed as `1416c84`.
 - Decision: Collect comparable build and hardware timing samples before changing the two-job default or build dependencies.
-- Commit: `49f848d`
+- Commit: `1416c84`
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
 
 ## 2026-10-14 — Implement applet identity for JCSystem.getAID
@@ -2576,10 +2576,10 @@
 
 - Step/experiment: jcsystem-get-aid-context-20261014-reference
 - Change: Recorded the implementation commit for `JCSystem.getAID()` instance identity and native object construction.
-- Validation: Confirmed commit `cd58def` contains the context, install/restore plumbing, JNI implementation, focused test, TODO update, and original progress entry.
-- Result: The implementation is committed as `cd58def`; direct Java-level execution remains open.
+- Validation: Confirmed commit `4294304` contains the context, install/restore plumbing, JNI implementation, focused test, TODO update, and original progress entry.
+- Result: The implementation is committed as `4294304`; direct Java-level execution remains open.
 - Decision: Continue with the remaining JCAlgTest API surface and host APDU fixtures.
-- Commit: `cd58def`
+- Commit: `4294304`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `tools/test-jcarray`.
 
 ## 2026-10-14 — Avoid repeated PC API and ROM-mask regeneration
@@ -2596,10 +2596,10 @@
 
 - Step/experiment: pc-build-incremental-generation-20261014-reference
 - Change: Recorded the CMake generation-stamp commit and the associated current handoff reference.
-- Validation: Confirmed commit `0da5b1d` contains the CMake stamp targets, performance measurements, TODO update, and original progress record.
-- Result: The incremental PC build change is committed as `0da5b1d`.
+- Validation: Confirmed commit `e7baa55` contains the CMake stamp targets, performance measurements, TODO update, and original progress record.
+- Result: The incremental PC build change is committed as `e7baa55`.
 - Decision: Resume the remaining APDU transport and applet lifecycle work.
-- Commit: `0da5b1d`
+- Commit: `e7baa55`
 - Artifacts/logs: `build/choupi-pc/generation.sha256`; `build/choupi-pc/flash`; `build/choupi-pc/jni.hpp`.
 
 ## 2026-10-14 — Add VM responsiveness and measurement suggestions
@@ -2616,10 +2616,10 @@
 
 - Step/experiment: `performance-guidance-vm-responsiveness-20261014-reference`
 - Change: Recorded the immutable commit containing the expanded performance suggestions and handoff update.
-- Validation: Confirmed commit `cd88f95` contains `perf_tips.md`, `.agent/HANDOFF.md`, and the original progress entry; whitespace validation passed.
-- Result: Performance guidance is committed as `cd88f95`.
+- Validation: Confirmed commit `04756f1` contains `perf_tips.md`, `.agent/HANDOFF.md`, and the original progress entry; whitespace validation passed.
+- Result: Performance guidance is committed as `04756f1`.
 - Decision: Continue with host applet lifecycle/APDU coverage; measure CPU use if VM saturation recurs.
-- Commit: `cd88f95`
+- Commit: `04756f1`
 - Artifacts/logs: `perf_tips.md`; no new timing data collected.
 
 ## 2026-10-14 — Implement Java Card CLA helpers
@@ -2646,20 +2646,20 @@
 
 - Step/experiment: `vpcd-frame-codec-20261014-reference`
 - Change: Recorded the immutable commit for the PC vpcd frame codec and focused test.
-- Validation: Confirmed commit `f832200` contains the codec, test wrapper, and project tracking update; `git diff --check` passed.
-- Result: The vpcd frame codec is committed as `f832200`.
+- Validation: Confirmed commit `603f73b` contains the codec, test wrapper, and project tracking update; `git diff --check` passed.
+- Result: The vpcd frame codec is committed as `603f73b`.
 - Decision: Continue with host connection/control handling and applet lifecycle dispatch.
-- Commit: `f832200`
+- Commit: `603f73b`
 - Artifacts/logs: `tools/test-vpcd-protocol`; `build/choupi-pc/choupi`; `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-14 — Record APDU helper implementation commit
 
 - Step/experiment: `javacard-apdu-cla-helpers-20261014-reference`
 - Change: Recorded the root commit for the APDU CLA API, test harness, regeneration fix, and handoff updates.
-- Validation: Confirmed commit `c2935e7` contains the root implementation/test/docs files; nested Java API source commit is `4d996f4`. `git diff --check` and the CRLF-aware nested API check passed.
-- Result: APDU CLA helper implementation is recorded in root commit `c2935e7`.
+- Validation: Confirmed commit `79239af` contains the root implementation/test/docs files; nested Java API source commit is `4d996f4`. `git diff --check` and the CRLF-aware nested API check passed.
+- Result: APDU CLA helper implementation is recorded in root commit `79239af`.
 - Decision: Resume the remaining host vpcd transport and applet lifecycle validation.
-- Commit: `c2935e7`
+- Commit: `79239af`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.
 
 ## 2026-10-14 — Integrate PC vpcd session and APDU routing
@@ -2676,8 +2676,8 @@
 
 - Step/experiment: `pc-vpcd-session-apdu-routing-20261014-reference`
 - Change: Recorded the immutable implementation commit for the PC vpcd session, lifecycle routing, focused test, and project tracking updates.
-- Validation: Confirmed commit `ef1102d` contains the session implementation, integration, tests, TODO, and handoff changes; `git diff --check` passed.
-- Result: The vpcd session integration is committed as `ef1102d`.
+- Validation: Confirmed commit `b694037` contains the session implementation, integration, tests, TODO, and handoff changes; `git diff --check` passed.
+- Result: The vpcd session integration is committed as `b694037`.
 - Decision: Continue toward real applet execution evidence; fake callback tests do not satisfy JCAlgTest acceptance criteria.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `tools/test-vpcd-protocol`, `tools/test-vpcd-session`, ARM UF2 and PC executable hashes in the preceding progress entry.
@@ -2696,8 +2696,8 @@
 
 - Step/experiment: `performance-profiling-guidance-20261014-reference`
 - Change: Recorded the immutable commit for the performance profiling recommendations.
-- Validation: Confirmed commit `774b698` contains `perf_tips.md` and the original progress record; `git diff --check` passed.
-- Result: The profiling workflow is committed as `774b698`.
+- Validation: Confirmed commit `44ed22e` contains `perf_tips.md` and the original progress record; `git diff --check` passed.
+- Result: The profiling workflow is committed as `44ed22e`.
 - Decision: Use the listed CPU, wall-time, and resource measurements on the next reproducible slowdown.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; no new timing data collected.
@@ -2716,8 +2716,8 @@
 
 - Step/experiment: `performance-tips-latest-host-sample-20261014-reference`
 - Change: Recorded the immutable documentation commit for the latest performance measurements and recommendations.
-- Validation: `git diff --check -- progress.md` passed; commit `b5b6307` contains the documentation update.
-- Result: The performance guidance update is committed as `b5b6307`.
+- Validation: `git diff --check -- progress.md` passed; commit `c7563e1` contains the documentation update.
+- Result: The performance guidance update is committed as `c7563e1`.
 - Decision: Add phase timing to the next PC smoke run before attempting targeted performance changes.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-install-rommask-20261014.log`; `artifacts/metrics/development-time.csv`.
@@ -2736,8 +2736,8 @@
 
 - Step/experiment: `cap-package-method-lookup-20261014-reference`
 - Change: Recorded the immutable implementation commit for the package-method token, table-pointer, and VM-entry exception fixes.
-- Validation: `git -c core.whitespace=cr-at-eol diff --check -- progress.md` passed; commit `daf56ab` contains the implementation and step record.
-- Result: The resolver correction is committed as `daf56ab`.
+- Validation: `git -c core.whitespace=cr-at-eol diff --check -- progress.md` passed; commit `485bc72` contains the implementation and step record.
+- Result: The resolver correction is committed as `485bc72`.
 - Decision: Continue with the still-failing applet field access at CP entry 174.
 - Commit: recorded in the current commit.
 - Artifacts/logs: VPCD integration log `artifacts/logs/host-vpcd-jcalgtest-20261014.log`; ARM and PC build outputs.
@@ -2756,8 +2756,8 @@
 
 - Step/experiment: `performance-tips-vpcd-applet-debug-20261014-reference`
 - Change: Recorded the commit reference for the VPCD applet-debug performance suggestions.
-- Validation: `git diff --check -- perf_tips.md progress.md` passed; commit `447c88f` contains the recommendations and their progress record.
-- Result: The targeted performance guidance is committed as `447c88f`.
+- Validation: `git diff --check -- perf_tips.md progress.md` passed; commit `8189fb2` contains the recommendations and their progress record.
+- Result: The targeted performance guidance is committed as `8189fb2`.
 - Decision: Use per-phase timing and bounded process cleanup on the next VPCD integration attempt.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
@@ -2776,8 +2776,8 @@
 
 - Step/experiment: `vpcd-test-process-group-cleanup-20261014-reference`
 - Change: Recorded the immutable commit for the finite VPCD process-group cleanup and its tracker updates.
-- Validation: `git diff --check -- progress.md` passed; commit `da33f39` contains the test harness, wrapper, TODO, handoff, and implementation record.
-- Result: Bounded emulator teardown is committed as `da33f39`.
+- Validation: `git diff --check -- progress.md` passed; commit `bfb6c5c` contains the test harness, wrapper, TODO, handoff, and implementation record.
+- Result: Bounded emulator teardown is committed as `bfb6c5c`.
 - Decision: Continue with field-token mapping and the still-failing JCSystem info APDU.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
@@ -2796,8 +2796,8 @@
 
 - Step/experiment: `vpcd-performance-timing-guidance-20261014-reference`
 - Change: Recorded the commit reference for the VPCD timing guidance.
-- Validation: `git diff --check -- progress.md` passed; commit `d249261` contains the suggestions and implementation record.
-- Result: The performance note is committed as `d249261`.
+- Validation: `git diff --check -- progress.md` passed; commit `c714fdb` contains the suggestions and implementation record.
+- Result: The performance note is committed as `c714fdb`.
 - Decision: Use bounded phase and CPU-time measurements on the next VPCD run.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
@@ -2818,8 +2818,8 @@
 
 - Step/experiment: `jcalgtest-handler-offset-timing-reference-20261014`
 - Change: Recorded the commit reference for the latest VPCD diagnostic timing note.
-- Validation: `git diff --check -- progress.md` passed; commit `6444d59` contains the timing note, handoff update, and implementation record.
-- Result: The measured failure and follow-up guidance are committed as `6444d59`.
+- Validation: `git diff --check -- progress.md` passed; commit `c8d1c72` contains the timing note, handoff update, and implementation record.
+- Result: The measured failure and follow-up guidance are committed as `c8d1c72`.
 - Decision: Collect exact wrapper and VPCD phase timings on the next run.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-handler-base-fix.log`.
@@ -2838,8 +2838,8 @@
 
 - Step/experiment: `rank-performance-experiments-reference-20261014`
 - Change: Recorded the immutable commit for the ranked performance suggestions.
-- Validation: `git diff --check -- progress.md` passed; commit `5b9ed64` contains the documentation update, handoff, and implementation record.
-- Result: The new guidance is committed as `5b9ed64`.
+- Validation: `git diff --check -- progress.md` passed; commit `f6e8083` contains the documentation update, handoff, and implementation record.
+- Result: The new guidance is committed as `f6e8083`.
 - Decision: Add VPCD phase timings and collect comparable build samples before making performance changes.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
@@ -2849,7 +2849,7 @@
 - Change: Recorded the immutable performance-guidance commit in the progress
   log and session handoff.
 - Validation: `git diff --check -- progress.md .agent/HANDOFF.md` passed;
-  documentation commit `be0a0e9` contains the timing summary and suggestions.
+  documentation commit `d913914` contains the timing summary and suggestions.
 - Result: `perf_tips.md` now reflects the current timer report and clearly marks
   sample limitations and upload as unmeasured.
 - Decision: Collect more comparable timing data during later build and hardware
@@ -2881,10 +2881,10 @@
 
 - Step/experiment: `vpcd-performance-suggestions-reference-20261015`
 - Change: Recorded the immutable commit for the performance guidance refresh.
-- Validation: `git diff --check -- progress.md` passed; commit `203d233`
+- Validation: `git diff --check -- progress.md` passed; commit `a035baa`
   contains `perf_tips.md`, this step's progress record, and `.agent/HANDOFF.md`.
 - Result: Current VPCD bottleneck suggestions and measurement caveats are
-  committed as `203d233`.
+  committed as `a035baa`.
 - Decision: Address the `GETFIELD_S_THIS` correctness failure before collecting
   runtime performance samples.
 - Commit: recorded in the current commit.
@@ -2936,10 +2936,10 @@
 ## 2026-10-15 — Record performance follow-up commit
 
 - Step/experiment: `development-performance-followup-reference-20261015`
-- Change: Recorded commit `7fc1775` for the performance guidance, timing
+- Change: Recorded commit `d63d1c6` for the performance guidance, timing
   sample, TODO update, and handoff checkpoint.
 - Validation: `git diff --check -- progress.md .agent/HANDOFF.md` passed.
-- Result: The performance follow-up is committed as `7fc1775`.
+- Result: The performance follow-up is committed as `d63d1c6`.
 - Decision: Continue with the applet operand-stack failure documented above.
 - Commit: this reference commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
@@ -2957,9 +2957,9 @@
 ## 2026-10-15 — Record performance guidance commit
 
 - Step/experiment: `refresh-performance-guidance-reference-20261015`
-- Change: Recorded commit `8e5efa7` for the updated performance suggestions and current timer summary.
+- Change: Recorded commit `a2c22bb` for the updated performance suggestions and current timer summary.
 - Validation: `git diff --check -- progress.md` passed.
-- Result: The refreshed performance guidance is committed as `8e5efa7`.
+- Result: The refreshed performance guidance is committed as `a2c22bb`.
 - Decision: Continue using comparable, phase-specific measurements before proposing further speedups.
 - Commit: recorded in this reference commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
@@ -2987,7 +2987,7 @@
 ## 2026-10-15 — Record performance suggestions commit
 
 - Step/experiment: `task-time-performance-suggestions-reference-20261015`
-- Change: Recorded commit `536445f` for the current performance suggestions,
+- Change: Recorded commit `b4bafa2` for the current performance suggestions,
   task-time summary, and handoff update.
 - Validation: `git diff --check -- progress.md` passed.
 - Result: The documentation step is committed; no code or hardware behavior
@@ -3012,14 +3012,14 @@
   `6F00` at `INVOKEVIRTUAL` after ATR and SELECT.
 - Decision: Use phase timing and CPU/resource samples before proposing runtime
   or build changes; continue the current operand-stack diagnosis.
-- Commit: `6057c7d`.
+- Commit: `fb4170a`.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`;
   `artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log`.
 
 ## 2026-10-15 — Record performance guidance commit
 
 - Step/experiment: `performance-suggestions-refresh-reference-20261015`
-- Change: Recorded commit `6057c7d` for the current performance suggestions,
+- Change: Recorded commit `fb4170a` for the current performance suggestions,
   task-time summary, and continuity updates.
 - Validation: `git diff --check -- progress.md` passed.
 - Result: The performance guidance update is committed; no build, test, or
@@ -3061,7 +3061,7 @@
 ## 2026-10-15 — Record virtual-token fix commit
 
 - Step/experiment: `jca-rommask-internal-virtual-method-table-tokens-reference-20261015`
-- Change: Recorded root commit `1104520` for the JCAlgTest VPCD milestone,
+- Change: Recorded root commit `05d3350` for the JCAlgTest VPCD milestone,
   TODO/handoff refresh, and progress entry. The ROM-mask implementation itself
   is committed in its nested repository as `fa470e5`.
 - Validation: `git diff --check` passed before commit; root commit contains only
@@ -3100,7 +3100,7 @@
   assertions enabled, preventing per-syscall `println!` output in the release
   emulator. Refreshed `perf_tips.md` and `.agent/HANDOFF.md` with the current
   timing and repeatability results. The previous performance-doc commit is
-  `97139d2`.
+  `2be612f`.
 - Validation: `./tools/build-pc` passed; the PC `choupi` target built with the
   existing packed-member warnings; `./tools/build arm` passed. The bounded
   release VPCD test passed twice: `TEST:SUMMARY pass=10 fail=0` in 47.575 s.
@@ -3125,8 +3125,8 @@
 
 - Step/experiment: `host-release-syscall-log-gate-reference-20261015`
 - Change: Record the nested CHOUPI OS commit `ac1df19` and root documentation
-  commit `3044579`; also record the preceding performance guidance commit
-  `97139d2`.
+  commit `cc62604`; also record the preceding performance guidance commit
+  `2be612f`.
 - Validation: Confirmed the nested commit contains only the two release
   diagnostic gates and the root commit contains only `perf_tips.md`,
   `.agent/HANDOFF.md`, and this step's progress record.
@@ -3185,10 +3185,10 @@
 ## 2026-10-15 — Record VPCD ATR probe fix commit
 
 - Step/experiment: `vpcd-atr-presence-probe-reference-20261015`
-- Change: Recorded implementation commit `ceb5101`, containing the unpowered
+- Change: Recorded implementation commit `0e27fdb`, containing the unpowered
   ATR response, focused session expectation, handoff update, and validation
   record.
-- Validation: Confirmed commit `ceb5101` contains only
+- Validation: Confirmed commit `0e27fdb` contains only
   `choupi/src/vpcd_session.cpp`, `tools/tests/vpcd_session_test.cpp`,
   `.agent/HANDOFF.md`, and its progress record.
 - Result: The implementation fix and its validation are isolated from unrelated
@@ -3201,7 +3201,7 @@
 ## 2026-10-15 — Record VPCD phase timing commit
 
 - Step/experiment: `vpcd-phase-timing-reference-20261015`
-- Change: Recorded root commit `6d633f3`, which contains the phase-timing
+- Change: Recorded root commit `6903906`, which contains the phase-timing
   harness, refreshed performance suggestions, TODO checkpoint, and handoff.
 - Validation: Confirmed the implementation commit contains only
   `tools/tests/pc_vpcd_applet_test.py`, `perf_tips.md`, `TODO.md`,
@@ -3244,7 +3244,7 @@
 - Validation: Replayed signature algorithms 1–24 against the rebuilt PC emulator through the bounded internal VPCD harness, sending `B0 E2 00 00 00` before each `B0 75 12 00 01 <algorithm> 00` APDU. The full run passed with `TEST:SUMMARY pass=5 fail=0`. A 12-second watchdog attempt ended during the normal JCSystem info preamble, so the successful rerun used a 25-second APDU deadline and 180-second overall cap. Separately confirmed a 20-second-bounded local socket attempt is denied by the default sandbox (`EPERM`); the replay succeeded with host socket permission. The official Java PC/SC run had previously reached its 300-second timeout at algorithm 24.
 - Result: All 24 ordered signature APDUs returned `9000`; HMAC-SHA1 took 3.026 s, and the full replay took 97.284 s. This does not reproduce the PC/SC-only stall. No hardware was used.
 - Decision: Restart the PC/SC VPCD service and capture an official-client rerun with per-APDU deadlines and emulator logs before changing VM runtime code.
-- Commit: `37b0a90`.
+- Commit: `256d901`.
 - Artifacts/logs: `/tmp/algtest-v182-signature-sequence.log` (SHA-256 `d3fecd2f656c27a2cd3d6b38b176dd526ef81ca47774e0cd94a0447df27f5f64`); official partial output `artifacts/results/jcalgtest-vpcd/ALGTEST_log_1792050525367.log`.
 
 ## 2026-10-15 — PC/SC service restart permission boundary
@@ -3254,7 +3254,7 @@
 - Validation: Attempted `systemctl start pcscd.service` without sudo using the host-access command path. It timed out connecting to the system bus. A subsequent process/socket check showed no pcscd process and no VPCD TCP listeners; the existing `/run/pcscd/pcscd.comm` is a stale socket. No test or hardware operation was run.
 - Result: The local VPCD harness works with host-socket permission, but this execution environment cannot control the system pcscd service through system D-Bus. No test processes remain running.
 - Decision: User must run `sudo systemctl restart pcscd.service` and confirm `pcsc_scan -r` lists the virtual readers before the official Java client can be replayed here.
-- Commit: `09977e5`.
+- Commit: `02ad096`.
 - Artifacts/logs: systemctl reported `Failed to start pcscd.service: Connection timed out`; follow-up system bus query reported `Operation not permitted`.
 
 ## 2026-10-15 — Run JCAlgTest through the virtual PC/SC reader
@@ -3278,7 +3278,7 @@
   remaining blocker is the applet's metadata `NullPointerException`, not
   physical-token access. Investigate the version-field initialization before
   attempting a longer suite run.
-- Commit: `e75f5ad`.
+- Commit: `6504c9b`.
 - Artifacts/logs:
   `artifacts/results/jcalgtest-vpcd-pcsc-probe-20261015/ALGTEST_log_1792052906094.log`
   (SHA-256 `f7854659886cbbd341f6e03bfe4798bccce947ab07202572a90aa9d8709e6ee2`)
@@ -3291,7 +3291,7 @@
 - Validation: `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed; `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log` passed with `TEST:SUMMARY pass=5 fail=0`; `./tools/build arm` passed. No RISC-V build or physical flash was performed.
 - Result: ATR `3B800181`; GETVERSION returned exact `1.8.2_jc305`; JCSystem info returned `0305000000000000000000002000FE01000000000000000000000000009000`; supported-algorithm response ended in `9000`. VPCD pass took 27.851 s. The JCSystem failure was caused by dividing a serialized short-array element count by two.
 - Decision: Continue JCAlgTest coverage through the local emulator. Physical-token validation remains a separate hardware step; this change was validated on VPCD only.
-- Commit: `33af96f`.
+- Commit: `e1139cb`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log`; ARM image `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-15 — Repeat JCAlgTest emulator smoke test
@@ -3301,7 +3301,7 @@
 - Validation: `./tools/test-pc-vpcd-applet --passes 2 --apdu-timeout 20 --log artifacts/logs/jcalgtest-jcsystem-repeat-20261015.log` passed with `TEST:SUMMARY pass=10 fail=0`.
 - Result: Both clean passes returned ATR `3B800181`, exact version `1.8.2_jc305`, JCSystem info ending `9000`, and the supported-algorithm response ending `9000`. Pass times were 27.789 s and 29.546 s. PC/SC was unavailable during this check; direct VPCD was used. No token was used.
 - Decision: Treat the VPCD smoke result as repeatable and continue with bounded cipher algorithm coverage. Hardware validation is still not established.
-- Commit: `33af96f` (implementation under repeated validation).
+- Commit: `e1139cb` (implementation under repeated validation).
 - Artifacts/logs: `artifacts/logs/jcalgtest-jcsystem-repeat-20261015.log` (SHA-256 `def236f08168911e5873b54084c11a108307dd9e55e6252697156e2d4afb0866`).
 
 ## 2026-10-15 — Probe AES-CBC-NOPAD through JCAlgTest
@@ -3311,7 +3311,7 @@
 - Validation: `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` passed with `TEST:SUMMARY pass=6 fail=0`.
 - Result: AES-CBC-NOPAD returned data prefix `1100` and status `9000`, confirming the client-visible supported result. Total emulator pass time was 30.396 s. No PC/SC or physical token was used.
 - Decision: Retain this as the first direct cryptographic capability probe; next add a bounded sweep across JCAlgTest algorithm families while keeping each APDU time-limited.
-- Commit: `16fe4b7`.
+- Commit: `9e73e39`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` (SHA-256 `4061b2ef91a2e35f19211a77d1c7d3c7f8641a35391926c54da06cc97d70d438`).
 
 ## 2026-10-15 — Probe JCAlgTest algorithm families over VPCD
@@ -3321,7 +3321,7 @@
 - Validation: `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-family-probes-20261015.log` passed with `TEST:SUMMARY pass=9 fail=0`.
 - Result: Cipher AES-CBC-NOPAD reported supported (`1100`); RSA-SHA1 Signature, pseudo-random RandomData, and CRC16 Checksum each reported `03` (`NO_SUCH_ALGORITHM`) while returning status `9000`. Full emulator pass took 42.627 s. No PC/SC or physical token was used.
 - Decision: Keep the broader harness as a smoke test and treat the three `03` results as known unsupported algorithms, not transport/runtime faults. Next choose one unsupported family and implement the smallest missing Java Card API path.
-- Commit: `3bf05dd`.
+- Commit: `2198b3a`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-family-probes-20261015.log` (SHA-256 `245aa44a2cec1482a8ddd2b740a6f26c100fd76c55b5eb190ad9438bbb675c9b`).
 
 ## 2026-10-15 — Rename leftover smoke target to JCVM
@@ -3331,7 +3331,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed, producing `build/arm/pico2_jcvm_smoke.uf2` and `build/riscv/pico2_jcvm_smoke.uf2`; picotool recognized the RP2350 ARM Secure and RISC-V images. No smoke image was flashed after the rename.
 - Result: Build outputs now use project names instead of the Pico SDK TRNG template name. The separate CHOUPI hardware cycle performed during this turn is recorded below.
 - Decision: Use the renamed smoke artifacts for subsequent build checks; continue validating JCAlgTest applet behavior separately.
-- Commit: `ccb7605`.
+- Commit: `453cdb5`.
 - Artifacts/logs: ARM UF2 SHA-256 `ac8c3c596188862120b6484c0ef60b3dfc632f2c3d7b392efdffa45d22d4007b`; RISC-V UF2 SHA-256 `dbd9ff748a05b72c6554a1af964215c2720f0c6cf738b9282d07bbe610415b87`.
 
 ## 2026-10-15 — Flash CHOUPI to real Pico 2
@@ -3341,7 +3341,7 @@
 - Validation: ARM and RISC-V builds passed before flashing. Picotool reported 100% loaded and rebooted the board. The 18-second finite serial capture failed the cycle health check: repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, and `TEST:SUMMARY pass=0 fail=1`; CCID remained at `stage=2 endpoint=00 rx_events=0 tasks=0`. `pcsc_scan -r` showed only the two Virtual PCD readers, not the physical Pico reader. No applet APDUs could be sent to the board.
 - Result: Physical firmware download and CDC serial capture work. Full applet/JCSystem behavior is not yet verified on hardware; the boot entry currently returns `6F00`, and the physical CCID reader is unavailable through PC/SC in the current session.
 - Decision: Inspect why the generated startup entry returns `6F00`, then restore physical PC/SC access and install JCAlgTest 1.8.2 before judging applet or JCSystem behavior. Treat `NO_SUCH_ALGORITHM` responses as expected, per user scope.
-- Commit: `ccb7605` (rename checkpoint; this hardware result is documentation only).
+- Commit: `453cdb5` (rename checkpoint; this hardware result is documentation only).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T094100Z.log` (SHA-256 `cac6eedfa0a1147323ed0e224444d99cfc8234fcc6e1bf8b8be8207a526f1422`); flashed UF2 SHA-256 `d0dcb43abdae352027064def9495140cc1785557121f289537aed1c1d35a8e9e`.
 
 ## 2026-10-15 — Diagnose physical applet restore read
@@ -3361,7 +3361,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. No test was added or run. Hardware validation was skipped because picotool cannot initialize libusb in this execution context.
 - Result: The diagnostic reports the primary read status without issuing another filesystem syscall; runtime restore behavior is unchanged.
 - Decision: Keep this safe trace and use it on the board once USB passthrough is accessible to the session.
-- Commit: `c290cd1`.
+- Commit: `7cea4e6`.
 - Artifacts/logs: ARM UF2 SHA-256 `5c8cab86d6eff1bed98decefaf0dc89005f611a15203857f293b95f144f2b8a8`; the prior blocked flash attempt is recorded in `artifacts/logs/cycle-choupi-20261015T101749Z.log`.
 
 ## 2026-10-15 — Compare applet restore through VPCD
@@ -3371,7 +3371,7 @@
 - Validation: The sandbox first denied local socket use (`EPERM`); rerunning the same bounded test with approved host-socket access passed with `TEST:SUMMARY pass=9 fail=0`.
 - Result: VPCD installation wrote root tag `03003F94FF` with a four-byte object header. SELECT returned `9000`; GETVERSION returned `1.8.2_jc305`; JCSystem info returned `0305000000000000000000002000FE01000000000000000000000000009000`. Unsupported RSA-SHA1 and CRC16 probes returned `NO_SUCH_ALGORITHM` with `9000`, as expected. Total emulator pass time was 58.436 s.
 - Decision: The host emulator's install, persisted applet restore, APDU handling, and JCSystem info path pass. Physical restore remains unverified; compare the new root-read status on hardware once USB access is restored.
-- Commit: `c290cd1` (diagnostic implementation under comparison; this step changes no source).
+- Commit: `7cea4e6` (diagnostic implementation under comparison; this step changes no source).
 - Artifacts/logs: `artifacts/logs/jcalgtest-restore-after-safe-diagnostic-20261015.log` (SHA-256 `6f7c41916df69e2a4d443588f5ce914d18a3ac1acb01c5dd5a4e82a40506d629`).
 
 ## 2026-10-15 — Reflash physical Pico 2 for restore tracing
@@ -3381,7 +3381,7 @@
 - Validation: `./tools/cycle choupi` rebuilt ARM and RISC-V; picotool loaded the image to 100% and rebooted the board. The finite 18-second serial health check failed: repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`; CCID debug remained at stage 2/endpoint 0 with no APDU traffic. USB enumerated `2e8a:0009`, but `pcsc_scan -r` listed only the two virtual readers. The bounded probe reported physical `Pico 2 CHOUPI CCID` not found by PC/SC; no APDU was sent.
 - Result: The board accepted the diagnostic firmware. The physical root-read diagnostic has not run because PC/SC is unavailable to this execution context. Device node `/dev/bus/usb/001/023` grants ACL to `claude`, but not to service account `pcscd`; restarting the system service requires the already-installed privileged helper.
 - Decision: Continue physical SELECT verification once PC/SC access is restored. The repository's `AGENTS.md` forbids invoking sudo from this autonomous cycle; ask the user to run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then confirm `pcsc_scan -r` lists the physical reader before probing.
-- Commit: `c290cd1` (diagnostic implementation under physical validation; no source change in this step).
+- Commit: `7cea4e6` (diagnostic implementation under physical validation; no source change in this step).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T112920Z.log` (SHA-256 `369ae5865b5645067ab74e22811b18510c1cd290945ac1b510579bd8cbcb48de`); flashed ARM UF2 SHA-256 `5c8cab86d6eff1bed98decefaf0dc89005f611a15203857f293b95f144f2b8a8`.
 ## 2026-10-15 — Confirm physical restore failure is volatile filesystem state
 
@@ -3417,9 +3417,9 @@
 - Step/experiment: `alg-sha256-rp2350-20261015-commit-record`
 - Change: Recorded the completed implementation commit in the session handoff; the SHA-256 implementation and validation record are in the preceding step.
 - Validation: Documentation-only continuity update; no code validation rerun.
-- Result: Implementation commit is `80855c3`; Java Card API subrepository commit is `79fd1f7`.
+- Result: Implementation commit is `80508b6`; Java Card API subrepository commit is `79fd1f7`.
 - Decision: Continue by fixing the JCAlgTest `doFinal` applet-path SecurityException, then validate a known-answer digest and flash when the device is exposed in BOOTSEL.
-- Commit: `80855c3` (implementation commit)
+- Commit: `80508b6` (implementation commit)
 - Artifacts/logs: See the preceding SHA-256 record.
 
 ## 2026-10-15 — Repair SHA-256 MessageDigest.doFinal initialization
@@ -3429,7 +3429,7 @@
 - Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed after the source fix. The bounded VPCD run passed `TEST:SUMMARY pass=9 fail=0`; the SHA-256 `doFinal` APDU returned `AA 9000`. The bounded hardware monitor `./tools/monitor --seconds 8` waited for USB discovery then failed with `ERROR: no USB serial device found`; physical APDU and serial validation were therefore not possible in this VM session.
 - Result: The first-call SHA-256 `doFinal()` regression is fixed and covered in VPCD. Real-board behavior remains unverified. The VPCD run did not compare digest bytes against a known-answer vector; this step establishes successful execution only.
 - Decision: Keep the fix. Complete the requested physical check after the Pico's post-boot USB interfaces are attached to this VM; inspect both the SHA APDU result and finite serial output.
-- Commit: Java Card API `31d6ab4`; root regression test `1bb209c`.
+- Commit: Java Card API `31d6ab4`; root regression test `8e2861e`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha256-dofinal-final-vpcd-20261015.log` (SHA-256 `8a2670a7a510d5240afaaefb0317cc8b2e6ebdacc093568ca9ece205349076a0`); no physical serial log was captured.
 
 
@@ -3440,7 +3440,7 @@
 - Validation: `./tools/build arm` passed and produced `build/arm/pico2_choupi.uf2` (SHA-256 `241eaa1592459b8fc1f7d38e0576437c9797202606c7a720ce3e43f964d8ad06`); `./tools/build riscv` passed. `INFO_UF2.TXT` identified RP2350 BOOTSEL. `lsusb` reported libusb `-99`; picotool exited 250 with `ERROR: Failed to initialise libUSB`. The volume was mounted `ro`; the UF2 copy failed with `Read-only file system`. A bounded `timeout 5s pcsc_scan -r` timed out with PC/SC service unavailable.
 - Result: The board was visible as a mounted RP2350 mass-storage volume, but not writable through this VM; `/dev/sdb` and `/dev/sdb1` were absent despite `lsblk` showing the device. No firmware transfer occurred and no physical SHA APDU or serial validation was performed.
 - Decision: Stop hardware retries until VirtualBox USB passthrough exposes the BOOTSEL block device read/write. Then flash the ARM UF2 and inspect a finite serial log plus the SHA-256 `doFinal` APDU.
-- Commit: `31d6ab4` (API fix) and `1bb209c` (hardware-test regression APDU under test; no source changes in this retry).
+- Commit: `31d6ab4` (API fix) and `8e2861e` (hardware-test regression APDU under test; no source changes in this retry).
 - Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-retry-20261015.log` (SHA-256 `e9a7531e1dea9de35eab44b6e34a0f160aa8eb371c413bb5ddb870ef2da40608`).
 
 
@@ -3451,7 +3451,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Elevated `lsusb -d 2e8a:000f` and picotool confirmed RP2350 BOOTSEL; flash wrapper reported `Loading into Flash: 100%`, device reboot, and `FLASH:PASS`. After reboot, elevated `lsusb -d 2e8a:0009` found Pico 2 CHOUPI CCID. `./tools/monitor --seconds 18` completed but emitted repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, `TEST:SUMMARY pass=0 fail=1`; CCID stayed at stage 2/endpoint 00. Bounded PC/SC scan listed only Virtual PCD readers.
 - Result: Firmware was flashed and the board re-enumerated in application mode. Boot smoke is failing, and the physical SHA-256 APDU could not be sent because pcscd does not list the physical reader after USB re-enumeration.
 - Decision: Have the user run `sudo -n /usr/local/sbin/pico2-pcsc-reader` to refresh pcscd access for current device 001:033. Once the physical reader appears, reinstall JCAlgTest 1.8.2 if needed and probe SHA-256 `doFinal`; separately investigate the boot-time applet restore `6F00`.
-- Commit: `31d6ab4` (API fix) and `1bb209c` (regression APDU under hardware validation; no source changes in this flash step).
+- Commit: `31d6ab4` (API fix) and `8e2861e` (regression APDU under hardware validation; no source changes in this flash step).
 - Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-serial-20261015.log` (SHA-256 `069f486067d58198cd15a90ced6fc11eb4c6f5a11e62f75c488d5dfeee705255`); flashed UF2 SHA-256 `241eaa1592459b8fc1f7d38e0576437c9797202606c7a720ce3e43f964d8ad06`.
 
 
@@ -3462,7 +3462,7 @@
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `PCSC:ACCESS_GRANTED node=/dev/bus/usb/001/033 service=pcscd.service`; plain `pcsc_scan -r` listed `Pico 2 CHOUPI CCID`. GlobalPlatformPro reloaded the CAP and LOAD/INSTALL returned `9000`. `./tools/probe-jc-algtest` passed physical SELECT (`9000`), GETVERSION `1.8.2_jc305`, JCSystem info (`9000`), SHA-256 prepare (`AA 9000`), SHA-256 `doFinal` (`AA 9000`), and expected unsupported RSA-SHA1 (`12 03`, `9000`). A finite post-APDU serial capture completed.
 - Result: SHA-256 `doFinal` executes successfully on the real RP2350 with JCAlgTest 1.8.2; JCSystem APDU also passes in the same live card session. No digest known-answer comparison was performed. The boot-time serial check still fails repeatedly with `CHOUPI:STATUS sw=6F00` / `TEST:FAIL choupi_runtime`, despite the external APDU probe passing after CAP reinstall.
 - Decision: Physical live-session `doFinal` verification passes. Continue separately with persistent applet restoration and startup health-check failure; add digest-output checking if correctness beyond call completion is needed.
-- Commit: `33ad415` (physical APDU probe; implementation remains in API commit `31d6ab4`).
+- Commit: `fbb0b72` (physical APDU probe; implementation remains in API commit `31d6ab4`).
 - Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-apdu-20261015.log` (SHA-256 `de5fbf9ff643efe139f0378c077fa28a69a1b3f1057868d82c9dd1844351f41e`); `artifacts/logs/physical-sha256-dofinal-post-apdu-serial-20261015.log` (SHA-256 `88ad5f1a1f077c5ae499682728dafabe45f36aabdd170cf3145aaa4137d024ee`).
 
 ## 2026-10-15 — Persist the RP2350 Java Card filesystem
@@ -3472,7 +3472,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm` and `./tools/build riscv` passed. ARM image end is `0x100b46fc`, below the filesystem slot at `0x10100000`. Physical validation was not run: `pcsc_scan -r` reported `SCardEstablishContext: Service not available` and flooded repeated release errors; `lsusb -d 2e8a:0009` reported libusb `-99`, and systemctl could not connect to the system bus.
 - Result: Host tests establish crash-recoverable snapshots and corruption fallback. No flash latency, erase wear, or physical restart behavior has been measured; each dirty APDU currently writes a fixed 128 KiB payload.
 - Decision: Keep the implementation for hardware validation. Once USB/PCSC access is restored, flash the ARM image and verify applet restore, JCSystem, SHA-256 `doFinal`, and bounded serial output across a power cycle.
-- Commit: `56e625d`.
+- Commit: `3354445`.
 - Artifacts/logs: host test output in this session; no physical log.
 
 ## 2026-10-15 — Compact RP2350 filesystem snapshots and flash the board
@@ -3482,7 +3482,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed all 19 checks. `./tools/build arm` and `./tools/build riscv` passed. `./tools/flash build/arm/pico2_choupi.uf2` passed through the repository wrapper after elevated host USB access was required; picotool reported 100% and reboot. `./tools/monitor --seconds 8` completed but repeatedly reported `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, and `TEST:SUMMARY pass=0 fail=1`. A bounded `pcsc_scan -r` listed only the two Virtual PCD readers, so JCAlgTest could not be sent to the physical board.
 - Result: The compact snapshot format passes host restart, generation selection, corruption fallback, and tombstone tests and is flashed. Physical boot health and snapshot restore remain unverified because the boot smoke test fails; static JCAlgTest measurements and SHA-256 results were not measured. UF2 SHA-256: `5955047a9d5016c93a8a6bc5d1054b822bdee90167e64ae40552e76c0c40188d`.
 - Decision: Refresh PC/SC access for the newly enumerated CCID device, reinstall JCAlgTest 1.8.2 if needed, then run `OP_ALG_PERFORMANCE_STATIC`; inspect SHA-256 timing/results and fix any firmware failures. Investigate the boot-time `6F00` separately.
-- Commit: `2ba182e`
+- Commit: `7b4dbe6`
 - Artifacts/logs: Host test output and flash/monitor output were captured in this session but not archived.
 
 ## 2026-10-15 — Archive compact-snapshot boot log
@@ -3492,7 +3492,7 @@
 - Validation: `./tools/monitor --seconds 8` completed with status 0 and captured eight repetitions of `CHOUPI:STATUS sw=6F00` / `TEST:FAIL choupi_runtime`; the monitor status only indicates the capture ended on schedule, not a passing runtime.
 - Result: Boot smoke remains failing after the compact snapshot firmware was flashed. Physical APDU validation is still blocked because the current PC/SC list has no Pico reader.
 - Decision: Use this log to diagnose the boot-time SELECT failure. Continue the requested JCAlgTest run after PC/SC access is restored.
-- Commit: `9dbf0b5`
+- Commit: `e72d30f`
 - Artifacts/logs: `artifacts/logs/compact-fs-flash-boot-20261015.log` (SHA-256 `6c1a434a856af3f142c22452f8df5791275f6b5bb4f2aeab52a71129796c6a59`).
 
 ## 2026-10-15 — Check JCAlgTest static performance prerequisites
@@ -3502,7 +3502,7 @@
 - Validation: JCAlgTest `AlgPerformanceTest.perftest_class_MessageDigest` repeatedly invokes `doFinal()` on 256-byte buffers and returns only a success marker; the Java client measures elapsed time externally, so this run alone cannot establish digest correctness. Elevated `./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 20 --apdu-timeout 10` failed with `TEST:FAIL timed out` before any APDU. `pcsc_scan -r` listed only two Virtual PCD readers; `pcscd -H` was denied (`Operation not permitted`), and direct `systemctl restart pcscd.service` timed out.
 - Result: The requested `OP_ALG_PERFORMANCE_STATIC` run did not execute and produced no SHA-256 measurement. No new SHA-256 code defect was established; the physical JCAlgTest applet is currently inaccessible through PC/SC.
 - Decision: Refresh the new physical USB node with the installed `/usr/local/sbin/pico2-pcsc-reader` helper, reinstall JCAlgTest 1.8.2 if needed, run the requested static benchmark, then check digest bytes separately with a known-answer probe.
-- Commit: `d212af2`
+- Commit: `31746c8`
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha256-vpcd-pending-physical-retry-20261015.log` (SHA-256 `6b04936b84bc17e27894a9aa19cd0ac72963312f473dd193533b2527d7c8ca7e`).
 
 ## 2026-10-16 — Fix repeated SHA-256 static performance calls
@@ -3512,7 +3512,7 @@
 - Validation: `./tools/build-pc` passed (`ROMMASK:PASS`); `./tools/build arm` passed (`BUILD:PASS target=choupi`); `./tools/build riscv` passed (`BUILD:PASS arch=riscv`). `timeout --signal=TERM 180s ./tools/env python3 tools/tests/pc_vpcd_applet_test.py --passes 1 --apdu-timeout 180 --connect-timeout 60 ...` passed all 11 checks. The static SHA-256 APDU returned `AA 9000` in 17.389 s; 50 × 256 = 12,800 input bytes, or about 736 bytes/s by whole-APDU host wall time. The official Java client selected `Virtual PCD 00 00`, but PC/SC reported `NO CARD`; CHOUPI logged `Connection refused` for `127.0.0.1:35963`, and `vsmartcard-vpcd` is absent. The static run therefore used the same JCAlgTest settings through the direct VPCD regression instead of the official PC/SC client. No physical flash or hardware benchmark was run.
 - Result: Repeated static SHA-256 operations now complete without `F105` or `6F00`. The 17.389 s value is PC-emulator wall time, not an RP2350 measurement. JCAlgTest checks its success marker only; digest bytes were not known-answer checked.
 - Decision: Keep the transient native state implementation. Enable a VPCD socket listener before rerunning the official Java client, then verify a digest known-answer and measure on the physical Pico when its reader is available.
-- Commit: `fa8c05b` (root implementation and test); `c6c4da6` (Java Card API bridge).
+- Commit: `7f5c620` (root implementation and test); `c6c4da6` (Java Card API bridge).
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-emulator-20261016.log`, `artifacts/logs/build-pc-sha-bridge-class-20261016.log`, `artifacts/logs/build-arm-sha-bridge-20261016.log`, `artifacts/logs/build-riscv-sha-bridge-20261016.log`, and `artifacts/logs/jcalgtest-official-vpcd-client-20261016.log`.
 
 ## 2026-10-16 — Record static benchmark reader selection and current access
@@ -3522,7 +3522,7 @@
 - Validation: `./tools/build arm` passed (`BUILD:PASS target=choupi`). A bounded `timeout --signal=TERM --kill-after=1s 3s pcsc_scan -r` ended with status 124 and `SCardEstablishContext: Service not available`; `lsusb -d 2e8a:0009` could not initialize libusb (`-99`). No fresh official-client or hardware test could run. The prior official static attempt logged setup and five SHA-256 measurement responses (`AA 9000`) before `SCARD_W_REMOVED_CARD`; its 50-call APDU did not complete. The focused PC VPCD test had already passed all 11 checks, including the complete 50-call static APDU (`AA 9000`, 17.389 s host wall time).
 - Result: The implementation passes its focused complete static SHA-256 APDU, while the official-client end-to-end run and real-board measurement remain incomplete. The whole-APDU host timing is not a hardware throughput result; digest bytes have not been checked against a known answer.
 - Decision: Once PC/SC and USB access are restored, select the real Pico by its displayed reader name/index and rerun `ALG_PERFORMANCE_STATIC`; add a digest known-answer probe separately.
-- Commit: `836be14`.
+- Commit: `4ae242e`.
 - Artifacts/logs: `artifacts/logs/build-arm-jcalgtest-static-reader-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`.
 
 ## 2026-10-16 — Exercise JCAlgTest install parameters through the PC VM
@@ -3532,7 +3532,7 @@
 - Validation: `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` passed; the runner help lists the new option. `./tools/build-pc` passed (49 existing Rust warnings and two packed-member C++ warnings); `./tools/build arm` passed with `BUILD:PASS target=choupi`. With localhost socket access enabled, the C900 integration run logged `VPCD:INSTALL_VM_ARGS status=PASS offset=0 length=2` and passed all 11 checks. GETVERSION returned `1.8.2_jc305`; JCSystem and SHA-256 checks returned `9000`; the 50-call static SHA-256 APDU returned `AA 9000` in 15.676 s.
 - Result: The Java install-entry frame directly matches offset 0, `bLength` 2, and bytes `C9 00`; applet installation and subsequent process APDUs succeed. The static SHA timing is PC emulator wall time, not hardware throughput. No physical reader was available; no flash was attempted.
 - Decision: Keep this VM-entry assertion in the PC regression. Continue lifecycle golden coverage, GP card-manager behavior, and remaining AC checks.
-- Commit: `822b67e`.
+- Commit: `692e5bf`.
 - Artifacts/logs: `artifacts/logs/build-pc-install-args-assert-20261016.log`, `artifacts/logs/build-arm-install-args-assert-20261016.log`, `artifacts/logs/vpcd-install-params-vmcheck-test-20261016.log`, and `artifacts/logs/vpcd-install-params-vmcheck-20261016.log`.
 
 ## 2026-10-16 — Select JCAlgTest target by PC/SC reader name
@@ -3542,7 +3542,7 @@
 - Validation: `bash -n tools/run-jcalgtest`, wrapper help, and Java compilation passed. An unknown exact reader name failed closed with exit 4 and listed the Java-visible readers (none). The official `ALG_SUPPORT_EXTENDED` client completed in simulator mode with exit 0, generated a 4,595-line CSV, and logged the expected jCardSim `NotImplementedException`/algorithm failures. Named PC/SC selection was not exercised because Java SmartcardIO currently sees no readers; no token, APDU, or firmware was accessed.
 - Result: Both official-client target modes are now directly selectable from the launcher. Simulator execution is confirmed; the real/virtual PC/SC path remains pending host reader visibility. This run validates selection and launch only, not full algorithm correctness.
 - Decision: Use `tools/run-jcalgtest --reader-name '<exact pcsc_scan reader name>' -op ALG_PERFORMANCE_STATIC -fresh -outpath <directory>` for a real/virtual card, or `tools/run-jcalgtest --simulator ...` for bundled jCardSim. Retry once Java SmartcardIO sees the target reader.
-- Commit: `9ff15ec17ab3e552d1bfda66da4bf75922bd3638`.
+- Commit: `52358b631c29839ef05436beb0726df776d5ef6d`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-reader-selector-simulator-20261016.log` (SHA-256 `c68e2bc083e95af186c7032c958969ab6ba9e034af6d439fdbbb279b51aafd25`); `artifacts/results/jcalgtest-reader-selector-simulator-20261016/`.
 
 ## 2026-10-16 — Run JCAlgTest static mode through the selector
@@ -3552,7 +3552,7 @@
 - Validation: `timeout 240s tools/run-jcalgtest --simulator -op ALG_PERFORMANCE_STATIC -fresh -outpath artifacts/results/jcalgtest-reader-selector-static-simulator-20261016` reached and completed SHA-256’s 250 × 256-byte sample section, then exited 124 during the later RSA sweep. Simulator SHA-256 reported 0.05 ms/op average, -0.02 ms/op minimum, with raw sample deltas 14.20, 0.20, -0.80, 0.20, -0.80 ms. The earlier official PC/SC VPCD run received `AA 9000` in SHA-256 baseline samples but lost its card before measured samples. No reader was visible to Java SmartcardIO in this session, so no hardware benchmark was run.
 - Result: SHA-256 calls execute and report success. Simulator timing includes sub-resolution/negative deltas and is not a sensible throughput estimate. The focused CHOUPI host VPCD 50-call APDU previously returned `AA 9000` in 15.676 s, also host-emulator timing, not Pico throughput. No firmware defect is established by these timings; digest bytes still need a known-answer test.
 - Decision: Do not change SHA based on simulator timing noise. Retry static mode against the exact physical Pico reader after Java SmartcardIO sees it; do not classify expected unsupported algorithms as bugs.
-- Commit: `8dd50ebdb0c08d7e30a553f1e0e8866ea6cf607e`.
+- Commit: `28701e86d203cdabd19560d4db39520a9a2a9698`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-reader-selector-static-simulator-20261016.log` (SHA-256 `9e20a5e357b29b258d1d192ddb3f6cecb25bf9a60ca235f203ef09692eca31a0`); `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/`.
 
 ## 2026-10-16 — Verify GlobalPlatform GET STATUS applet entry encoding
@@ -3562,7 +3562,7 @@
 - Validation: `./tools/test-gp-registry` passed 7 checks (`TEST:SUMMARY pass=7 fail=0`). `./tools/build arm` passed both `BUILD:PASS arch=arm` and `BUILD:PASS target=choupi`; no warnings were emitted in the captured build output. No RISC-V build or hardware APDU/flash was run. Hardware validation was skipped because Java SmartcardIO has no visible reader here and the required dual-architecture flash gate cannot be satisfied while following the ARM-only scope.
 - Result: The installed applet registry response helper emits the exact nested TLV bytes and rejects short output capacity and invalid instance AID length. This validates the encoding helper, not the embedded PC/SC transaction; GET STATUS lifecycle accuracy, DELETE, and GET DATA remain incomplete.
 - Decision: Keep the response wire representation unchanged. Continue card-manager lifecycle behavior and host-accessible APDU coverage; do not flash this build until the repository gate is met.
-- Commit: `7335e217e092fda324d44657c60817eabecadbbd`.
+- Commit: `046bcb25443c0b6c46ff47c01bd08b9e7efebc0f`.
 - Artifacts/logs: `artifacts/logs/gp-registry-tlv-test-20261016.log` (SHA-256 `d1b2057bb43770a76617c72a943d1eac449a3ec8ee020e6e58c4572e7184d0a4`); `artifacts/logs/build-arm-gp-registry-tlv-20261016.log` (SHA-256 `ef6de0d8ed9bca880d446b9353e396063980920f08e1cef65100b8ec9e714b4d`).
 
 ## 2026-10-16 — Report package AID with GP GET STATUS tag C4
@@ -3572,7 +3572,7 @@
 - Validation: `./tools/test-gp-registry` passed all 7 checks. `./tools/build arm` passed both ARM smoke and CHOUPI firmware images. No RISC-V build, flash, or hardware APDU was performed.
 - Result: GET STATUS no longer labels the JCAlgTest package AID as an associated Security Domain. The official GlobalPlatform Card Specification 2.2.1 registry data table defines `C4` as the application's Executable Load File AID and `CC` as the associated Security Domain AID. End-to-end GPPro/physical verification is still unavailable; GET STATUS search/session semantics and DELETE/GET DATA remain incomplete.
 - Decision: Keep C4 and continue with GET STATUS query/continuation behavior before implementing more card data.
-- Commit: `afb6c5ed5833110ca7d6e1145b96d8cbdc6083c5`.
+- Commit: `8dbc2ad7eb4c17e8eb0a9fdda1abd478282bb151`.
 - Artifacts/logs: `artifacts/logs/gp-registry-load-file-aid-test-20261016.log` (SHA-256 `554c2ec5e9d8b1ce795036b9a84a69a1178b3ad7fa8795dd920d0b59c4807a41`); `artifacts/logs/build-arm-gp-registry-load-file-aid-20261016.log` (SHA-256 `3f4a64b2a7335709e930163ad83167889a2425e8c41afc97b1887d2bb2ed63db`).
 
 ## 2026-10-16 — Implement GET STATUS categories and AID search
@@ -3582,7 +3582,7 @@
 - Validation: `./tools/test-gp-registry` passed 21 checks (`TEST:SUMMARY pass=21 fail=0`). `./tools/build arm` passed both `BUILD:PASS arch=arm` and `BUILD:PASS target=choupi` without warnings. No RISC-V build, physical APDU, or flash was performed; RISC-V is out of scope and the dual-build flash gate therefore remains unmet.
 - Result: GET STATUS encoders and search parser pass focused host checks; the ARM images compile. Dispatcher behavior has not yet been exercised end to end through GPPro or on hardware. No hardware metric was measured.
 - Decision: Keep this implementation and add host-level APDU coverage before treating card-manager query behavior as verified. Continue with truthful GET DATA behavior and transaction-safe DELETE.
-- Commit: `7b55114`.
+- Commit: `3bfa8bc`.
 - Artifacts/logs: `artifacts/logs/gp-status-search-test-20261016.log` (SHA-256 `eeb0993016685ca0564b2bbfeb9ddf1587f47c71a4595aa1e608126870a341ab`); `artifacts/logs/build-arm-gp-status-search-20261016.log` (SHA-256 `9334763cc20ce770d8a29a75435dfca4da870bb3c3153068afec2617b55b08e7`).
 
 ## 2026-10-16 — Remove stale hardcoded package AID
@@ -3592,7 +3592,7 @@
 - Validation: The preceding `./tools/build arm` passed both ARM images after this source change; `git diff --cached --check` passed for the scoped cleanup. No hardware check was performed.
 - Result: No remaining GET STATUS package-AID constant can disagree with the currently loaded CAP metadata.
 - Decision: Keep metadata-driven package reporting; continue with APDU-level coverage.
-- Commit: `7970700`.
+- Commit: `5535615`.
 - Artifacts/logs: Same ARM build log as the preceding step: `artifacts/logs/build-arm-gp-status-search-20261016.log` (SHA-256 `9334763cc20ce770d8a29a75435dfca4da870bb3c3153068afec2617b55b08e7`).
 
 ## 2026-10-16 — Honor ISD GET STATUS search semantics
@@ -3602,7 +3602,7 @@
 - Validation: `./tools/test-gp-registry` passed 26 checks (`TEST:SUMMARY pass=26 fail=0`). `./tools/build arm` passed both ARM images with no warnings. No RISC-V build, physical APDU, or flash was performed.
 - Result: ISD GET STATUS no longer rejects malformed or nonmatching AID qualifiers; the P1=80 behavior is now distinct from application/package search. No end-to-end card-manager measurement was made.
 - Decision: Continue with host-level dispatcher coverage, then truthful GET DATA and GP DELETE behavior.
-- Commit: `9c81875`.
+- Commit: `e0cb785`.
 - Artifacts/logs: `artifacts/logs/gp-status-isd-test-20261016.log` (SHA-256 `a50088a03fd5229f7db8c495c1bb43f5f1809e36a1814e2a2f38336737e47e2b`); `artifacts/logs/build-arm-gp-status-isd-20261016.log` (SHA-256 `2f5b1775618ac41348bd3b76240afb0f4dd8b192db8a468983bdaebccca3b6dc`).
 
 ## 2026-10-16 — Test GET STATUS response categories
@@ -3612,7 +3612,7 @@
 - Validation: `./tools/test-gp-registry` passed 39 checks (`TEST:SUMMARY pass=39 fail=0`). `./tools/build arm` passed both ARM smoke and CHOUPI firmware images without warnings. No RISC-V build, physical APDU, or flash was performed.
 - Result: All four first/all response categories now have focused helper-level tests, but there is still no end-to-end CCID dispatcher or GPPro APDU run. No hardware result was measured.
 - Decision: Continue with explicit session/continuation tests, then evaluate truthful GET DATA behavior and GP DELETE.
-- Commit: `5efa359`.
+- Commit: `d41ad63`.
 - Artifacts/logs: `artifacts/logs/gp-status-query-test-20261016.log` (SHA-256 `845e03907fe4d605567c3ff8154a2555663715f5f4a5f4bf2444fd77d394ca40`); `artifacts/logs/build-arm-gp-status-query-20261016.log` (SHA-256 `70a48020d952ff42ecdb1a06b4baf920f07761391947c0f6814183ecd66afa6c`).
 
 ## 2026-10-16 — Validate GET STATUS next-occurrence requests
@@ -3622,7 +3622,7 @@
 - Validation: `./tools/test-gp-registry` passed 44 checks (`TEST:SUMMARY pass=44 fail=0`); `./tools/build arm` passed both ARM images. `git diff --cached --check` passed before commit. No physical APDU, flash, or RISC-V build was run; RISC-V remains out of scope and the dual-architecture flash gate is unmet.
 - Result: GET NEXT returns the policy status from a portable validator and no longer incorrectly requires the next P1 to match the previous first/all P1. The single-package registry still has no additional record to return. Hardware behavior remains unverified.
 - Decision: Keep this session validation and continue host APDU coverage, then truthful GET DATA and transactional GP DELETE.
-- Commit: `b9810e7`.
+- Commit: `23ebf12`.
 - Artifacts/logs: `artifacts/logs/gp-status-session-test-20261016.log` (SHA-256 `32b6f462fe2bb2326002c121bee12e23861c3f7d504ab118c06efa91cd5e72ab`); `artifacts/logs/build-arm-gp-status-session-20261016.log` (SHA-256 `827b202dade3226dd02f80824a128a57638cdbc2f36fcce39a38f53d9f8bfc41`).
 
 ## 2026-10-16 — Evaluate static SHA-256 benchmark target availability
@@ -3632,7 +3632,7 @@
 - Validation: `JCALGTEST_TIMEOUT_SECONDS=15 tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]' -op ALG_PERFORMANCE_STATIC -fresh -outpath /tmp/jcalgtest-static-physical` exited 4 with `PC/SC reader not found`; Java SmartcardIO listed no readers. A bounded `pcsc_scan -r` also showed `SCardEstablishContext: Service not available` and began an invalid-handle flood; output was redirected and removed. No APDU or hardware access occurred. Archived simulator run completed SHA-256's 250 × 256-byte sample section; raw sample times were 14.20, 0.20, -0.80, 0.20, and -0.80 ms, yielding 0.05 ms/op average and -0.02 ms/op minimum. The prior CHOUPI PC-emulator 50-call SHA-256 APDU returned `AA 9000` in 17.389 s, which is not device performance.
 - Result: The simulator timer is below its useful resolution and the host-emulator latency cannot establish Pico throughput. JCAlgTest reports only `AA 9000`, not digest bytes, so these results do not validate SHA-256 correctness or justify a firmware change. Physical timing remains unavailable until Java sees the Pico reader.
 - Decision: Keep the current SHA-256 implementation unchanged pending a real-board benchmark and independent known-answer digest check. Use `tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]' -op ALG_PERFORMANCE_STATIC -fresh -outpath <directory>` for the physical target, or `tools/run-jcalgtest --simulator ...` for jCardSim. Do not retry PC/SC while the service is unavailable.
-- Commit: `c13569c` (evidence, QKB, and handoff record).
+- Commit: `5f76beb` (evidence, QKB, and handoff record).
 - Artifacts/logs: Existing simulator log `artifacts/logs/jcalgtest-reader-selector-static-simulator-20261016.log` (SHA-256 `9e20a5e357b29b258d1d192ddb3f6cecb25bf9a60ca235f203ef09692eca31a0`); earlier CHOUPI host-emulator log `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`; physical-selector failure was temporary and removed after capture.
 
 ## 2026-10-16 — Revalidate JCAlgTest applet execution through host VPCD
@@ -3662,7 +3662,7 @@
 - Validation: `./tools/build arm` passed `pico2_jcvm_smoke.uf2` and `pico2_choupi.uf2` with no warnings (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`). The CHOUPI image ends at `0x100b5818`, below the persistent-store region. No RISC-V build, flash, or hardware serial check was run; the user's ARM-only instruction excludes RISC-V and the repository dual-build flash gate is therefore unmet.
 - Result: The next authorized ARM startup run will distinguish interpreter exceptions from generic `6F00` and retain the fault location/history. Firmware behavior is otherwise unchanged; the boot failure is not fixed or verified.
 - Decision: Use the new diagnostic in a bounded serial capture after the build-gated hardware path is available; fix the reported runtime failure before claiming physical integration.
-- Commit: `437365d`.
+- Commit: `6ef55f2`.
 - Artifacts/logs: `artifacts/logs/build-arm-runtime-diagnostic-20261016.log` (SHA-256 `56f72483fc1a6cbfa919cd46089e40d67f290762c2002c938385de3613057cbb`); previous failing serial evidence `artifacts/logs/arm-resume-boot-20261016.log`.
 
 ## 2026-10-16 — Select named reader for JCAlgTest static performance
@@ -3697,7 +3697,7 @@
 
 ## GP DELETE parser commit metadata
 
-- The strict request parser and 11-check test step recorded above was committed as `36ebf1e`.
+- The strict request parser and 11-check test step recorded above was committed as `25c5e15`.
 
 ## 2026-10-16 — Integrate authenticated GP DELETE lifecycle handling
 
@@ -3711,7 +3711,7 @@
 
 ## GP DELETE lifecycle commit metadata
 
-- The authenticated dispatcher, persistent state updates, strict parser integration, and ARM/PC/VPCD evidence recorded above are committed as `4f66267`.
+- The authenticated dispatcher, persistent state updates, strict parser integration, and ARM/PC/VPCD evidence recorded above are committed as `ccfcb0b`.
 ## 2026-10-16 — Repeat ARM and applet host validation
 
 - Step/experiment: `arm-vpcd-regression-repeat`
@@ -3724,7 +3724,7 @@
 
 ## Current ARM validation commit metadata
 
-- The ARM rebuild and two-pass host applet regression record above was committed as `b33c1eb`.
+- The ARM rebuild and two-pass host applet regression record above was committed as `ec73fc1`.
 
 ## 2026-10-16 — Implement JCSystem transaction lifecycle
 
@@ -3738,7 +3738,7 @@
 
 ## JCSystem transaction implementation commit metadata
 
-- The root implementation, 24-check rollback test, ARM build, two-pass host applet regression, and progress/handoff records above were committed as `e39dfdd`. The Java Card API source changes are separately committed in its nested repository as `b757a0a`.
+- The root implementation, 24-check rollback test, ARM build, two-pass host applet regression, and progress/handoff records above were committed as `1a745eb`. The Java Card API source changes are separately committed in its nested repository as `b757a0a`.
 
 ## 2026-10-16 — Add host filesystem interrupted-write recovery coverage
 
@@ -3752,7 +3752,7 @@
 
 ## Filesystem interrupted-write validation commit metadata
 
-- The progress, TODO, handoff, and validation artifacts for the single-record interrupted-write recovery step were committed as `9ca80ef`; its OS implementation and focused regression are in nested commit `9a2a25f`.
+- The progress, TODO, handoff, and validation artifacts for the single-record interrupted-write recovery step were committed as `86776f9`; its OS implementation and focused regression are in nested commit `9a2a25f`.
 
 ## 2026-10-16 — Defer RP2350 snapshot writes until transaction commit
 
@@ -3761,7 +3761,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed all checks, including 1,000 deterministic pseudo-random mutation cut-points across a two-record commit (`TEST:SUMMARY fail=0`). `./tools/test-persistent-transaction` passed 30 checks for begin/commit/abort, commit flush, abort flush, and failed-flush rollback. `./tools/build arm` passed both ARM images. A fresh PC VPCD JCAlgTest 1.8.2 applet pass completed in 63.380 s with `TEST:SUMMARY pass=11 fail=0`, including SELECT, GETVERSION, JCSystem, SHA-256, and support APDUs. No RISC-V build or flash was run.
 - Result: Power-cut simulation restored the previous complete two-record snapshot at every tested byte cut; uncommitted writes remained staged and were discarded by simulated reset. This validates the RP2350 snapshot model in the host harness only, not actual flash behavior under power loss.
 - Decision: The active RP2350 applet transaction no longer persists at APDU boundaries before Java commit. Keep real hardware power-cut validation open. The separate Rust OS filesystem still lacks its planned multi-record meta-block; Java transaction capacity and APDU exception-reason tests also remain.
-- Commit: `e8d52b9`.
+- Commit: `a5340b3`.
 - Artifacts/logs: `artifacts/logs/rp2350-fs-overlay-transaction-cuts-20261016.log` (SHA-256 `62bae75c04a8ee8e52277f9a58db0b82ee60507627602340a03c2a0ddfb87353`); `artifacts/logs/persistent-transaction-flush-20261016.log` (SHA-256 `3f039b291755f205efca6be8e6189436fd075e66c1984cba0cd69989364f757b`); `artifacts/logs/build-arm-transaction-flush-20261016.log` (SHA-256 `3b8feb50dbaa4965e03a8758d84b3940e00315a46e0167c26e984516fc72b4da`); `artifacts/logs/host-vpcd-transaction-flush-20261016.log` (SHA-256 `1dcc8fb566b556a0a697c96c997f0642322afe3705e7705e6e05fe80f78f5b4a`, console summary).
 
 
@@ -3772,7 +3772,7 @@
 - Validation: `./tools/build-pc` passed; `./tools/build arm` and `./tools/build riscv` both passed. `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 90` passed 11/11; the 50-call, 256-byte SHA-256 static APDU returned `AA9000` in 15.578 s (about 312 ms per call in the PC emulator). No `PC_FS:WRITE` traces were emitted in the release test log.
 - Result: Release emulator trace noise is removed while debug builds retain it. The host's 312 ms/call includes interpreter and VPCD overhead and is not Pico SHA throughput or a digest known-answer result. The archived official jCardSim static run reports SHA-256 `doFinal` at 0.05 ms/op with a negative minimum (-0.02 ms/op), showing its millisecond-scale timing is too coarse for this operation. A previous official client run through the VPCD PC/SC reader lost the card during SHA-256 measurement (`SCARD_W_REMOVED_CARD`); the current PC/SC service is unavailable (`SCARD_E_NO_SERVICE`), Java SmartcardIO sees no reader, USB/libusb access is unavailable in this VM, and no physical test ran.
 - Decision: Keep official static performance measurements against a named CHOUPI reader open until PC/SC access is restored. Use the bounded VPCD APDU timing only as an emulator execution check; do not treat simulator sub-millisecond SHA numbers as performance results.
-- Commit: `5356a01`.
+- Commit: `ec25292`.
 - Artifacts/logs: `artifacts/logs/build-pc-jcalgtest-static-log-gate-20261016.log` (SHA-256 `bc7ac86694d011a971c79db6cbec97e7068901a8a9ac2e4ec7983f754c5acc91`); `artifacts/logs/build-arm-jcalgtest-static-log-gate-20261016.log` (SHA-256 `d1aeb972e951ddd93467ef5858c91b5344acf5747af00f71e5307f531c3263a3`); `artifacts/logs/build-riscv-jcalgtest-static-log-gate-20261016.log` (SHA-256 `5968948a154362fe184573f859255c90358cf974a63f4ba5d8b01bb9c5e33927`); VPCD log `artifacts/logs/jcalgtest-static-sha-vpcd-log-gate-20261016.log` (SHA-256 `33295e613ada7b1de5b026145bf60fd122d9c20b011f3b52f52a5bba5c61ba9b`) and console `artifacts/logs/jcalgtest-static-sha-vpcd-log-gate-20261016-console.log` (SHA-256 `1ca50e621071f63658eb3b4a66656bb16a8ed242853319ee5455d8337fb2f8c0`). Simulator CSV: `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/CHOUPI_JCARDSIM____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792139077271__3B_FA_18_00_00_81_31_FE_45_4A_43_4F_50_33_31_56_32_33_32_98_(provided_by_Licel_jCardSim).csv` (SHA-256 `08dc50e8db26d30298f53743fbe883441174097b1a943eef562af5216fac7d86`).
 
 ## 2026-10-16 — Verify Java JCSystem transaction exceptions over VPCD
@@ -3787,7 +3787,7 @@
 
 ## JCSystem transaction APDU implementation commit metadata
 
-- The transaction applet fixture, handler fix, 10-assertion VPCD probe, ARM/RISC-V/PC builds, and progress/TODO/handoff records above were committed as `cb6d21d`.
+- The transaction applet fixture, handler fix, 10-assertion VPCD probe, ARM/RISC-V/PC builds, and progress/TODO/handoff records above were committed as `258e600`.
 
 ## 2026-10-16 — Recheck physical reader availability for static SHA validation
 
@@ -3811,7 +3811,7 @@
 
 ## Bounded physical-access artifact commit metadata
 
-- The compacted diagnostic artifact and append-only correction record above were committed as `4337e94`.
+- The compacted diagnostic artifact and append-only correction record above were committed as `3ad38a5`.
 
 ## 2026-10-16 — Verify SHA-256 doFinal bytes and static operation
 
@@ -3825,7 +3825,7 @@
 
 ## SHA-256 doFinal validation commit metadata
 
-- The known-answer probe, Java API `doFinal()` correction record, 50-call static VPCD regression, ARM/RISC-V/PC builds, and updated documentation above were committed as root `621e03c`; the API implementation is nested commit `be4fade`.
+- The known-answer probe, Java API `doFinal()` correction record, 50-call static VPCD regression, ARM/RISC-V/PC builds, and updated documentation above were committed as root `9caccf6`; the API implementation is nested commit `be4fade`.
 
 ## 2026-10-16 — Validate method-local SHA-256 streaming use
 
@@ -3834,12 +3834,12 @@
 - Validation: `./tools/build-pc` passed. `./tools/test-jcsystem-transaction-applet --timeout 90 --log artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log` passed 12/12; both SHA-256 paths returned `BA7816BF01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD`. `./tools/run-jcalgtest --reader-name 'Virtual PCD 00 00' -op ALG_PERFORMANCE_STATIC -fresh -outpath artifacts/results/jcalgtest-static-vpcd-readername-20261016` exited 4 because Java SmartcardIO found no reader. `pcsc_scan -r` reported `SCardEstablishContext: Service not available`. ARM/RISC-V builds and hardware flashing were intentionally skipped: this step retained no firmware/API source changes, and no PC/SC or physical reader was available.
 - Result: SHA-256 known-answer and method-local streaming calls pass in host VPCD. The named-reader official client run and physical performance measurement remain unavailable. The prior 256-byte/50-call static VPCD result (`AA9000`, 16.853 s) is emulator wall time, not Pico throughput.
 - Decision: Keep the passing method-local probe. Resolve the retainable `MessageDigest` implementation separately before claiming applet-field lifetime support; retry official `ALG_PERFORMANCE_STATIC` with `--reader-name` when Java can enumerate the target reader.
-- Commit: recorded as root `12e1d71`; the SHA reference is added in the following commit-metadata entry.
+- Commit: recorded as root `11bacbb`; the SHA reference is added in the following commit-metadata entry.
 - Artifacts/logs: `artifacts/logs/build-pc-sha256-stream-probe-clean-20261016.log`; `artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log`; `artifacts/logs/jcsystem-sha256-stream-method-local-console-20261016.log`; `artifacts/logs/jcalgtest-static-vpcd-readername-20261016.log`.
 
 ## SHA-256 streaming probe commit metadata
 
-- The method-local streaming probe, corrected status, continuity update, and validation record above were committed as root `12e1d71`. No Java Card API implementation change was retained in this step.
+- The method-local streaming probe, corrected status, continuity update, and validation record above were committed as root `11bacbb`. No Java Card API implementation change was retained in this step.
 
 ## 2026-10-16 — Recheck physical Pico availability
 
@@ -3853,7 +3853,7 @@
 
 ## Physical Pico availability recheck commit metadata
 
-- The physical-access diagnostic and continuity note above were committed as `79c1568`.
+- The physical-access diagnostic and continuity note above were committed as `e9287b3`.
 
 ## 2026-10-16 — Flash CHOUPI and check RP2350 runtime
 
@@ -3867,7 +3867,7 @@
 
 ## Physical CHOUPI cycle commit metadata
 
-- The physical cycle logs, failure record, and continuity update above were committed as `1585413`.
+- The physical cycle logs, failure record, and continuity update above were committed as `f048639`.
 
 ## 2026-10-16 — Fix Java Card array logical size and recover RP2350 startup
 
@@ -3891,7 +3891,7 @@
 - Decision: Keep the fix. Restore USB passthrough and PC/SC reader registration,
   then run official JCAlgTest v1.8.2 `ALG_PERFORMANCE_STATIC` against the exact
   Pico reader name.
-- Commit: `7817bd1` (implementation and logs).
+- Commit: `09dc1fb` (implementation and logs).
 - Artifacts/logs: `artifacts/logs/build-arm-jc-array-logical-size-20261016.log`,
   `artifacts/logs/build-arm-jc-array-startup-trace-cleanup-20261016.log`,
   `artifacts/logs/build-pc-jc-array-logical-size-20261016.log`,
@@ -3942,7 +3942,7 @@
 - Decision: Keep the host startup timeout open. Trace the initial
   `Starter.run()` / `PlateformeGlobale.getInstance()` path with bounded
   instruction progress, then rerun the JCSystem and broad applet regressions.
-- Commit: `e5e9efd` (build and failure logs).
+- Commit: `28aa6c1` (build and failure logs).
 - Artifacts/logs:
   `artifacts/logs/build-pc-after-jcsystem-diagnostics-cleanup-20261016.log`;
   `artifacts/logs/jcsystem-continuation-regression-fresh-20261016.log`.
@@ -3966,7 +3966,7 @@
 - Decision: Keep this host-only reliability guard. Continue diagnosing the
   direct JCRE runtime timeout and reattempt host applet regression after that
   path progresses; physical PC/SC requires the authorized helper.
-- Commit: nested CHOUPI OS `f419dde`; root logs `d4ab895`.
+- Commit: nested CHOUPI OS `f419dde`; root logs `87efd86`.
 - Artifacts/logs: `artifacts/logs/build-pc-ptrace-failfast-20261016.log`;
   `artifacts/logs/host-jcre-ptrace-after-fix-20261016.15050` through `.15053`.
 ## 2026-10-16 — Diagnose physical applet restore failure
@@ -3990,7 +3990,7 @@
   the supported card-manager flow, then rerun SELECT, GETVERSION, JCSystem,
   SHA-256, and official v1.8.2 `ALG_PERFORMANCE_STATIC`. No sudo, build, or
   flash was used because the card-manager path is not exposed through PC/SC.
-- Commit: `74fcf20` (physical capture); documentation update follows.
+- Commit: `d2678ad` (physical capture); documentation update follows.
 - Artifacts/logs: `artifacts/logs/physical-ccid-restore-diagnostic-20261016.log`.
 
 ## 2026-10-16 — Replugged Pico applet probe
@@ -4012,7 +4012,7 @@
 - Decision: Trace the exception during delayed initialization and preserve
   unsupported-algorithm behavior; rerun hardware JCSystem, SHA known-answer,
   and static performance only after GETVERSION succeeds.
-- Commit: `76f4a71`.
+- Commit: `a317880`.
 - Artifacts/logs: `artifacts/logs/monitor-arm-current-apdu-f503-20261016.log`.
 
 ## 2026-10-16 — Trace JC305 security static calls
@@ -4064,7 +4064,7 @@
 - Decision: Keep the fix and the bounded static-call trace; when the board
   becomes visible again, rebuild both if source changed, flash ARM, and check
   GETVERSION then JCSystem before SHA/performance tests.
-- Commit: `2ff11eb` (progress and evidence; the diagnostic source instrumentation
+- Commit: `433bee2` (progress and evidence; the diagnostic source instrumentation
   remains uncommitted alongside pre-existing source changes).
 - Artifacts/logs: `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`,
   `artifacts/logs/build-riscv-jc305-remap-fix-20261016.log` and the export
@@ -4087,7 +4087,7 @@
 - Decision: Resume physical testing only after USB visibility returns. Then
   build ARM, flash, and require GETVERSION and JCSystem success before SHA-256
   and static-performance validation. Continue host-side work independently.
-- Commit: `cd62665`.
+- Commit: `5753f15`.
 - Artifacts/logs: `artifacts/logs/physical-jcalgtest-readonly-probe-20261016.log`,
   `artifacts/logs/monitor-arm-exception-trace-apdu-20261016.log`,
   `artifacts/logs/jc305-security-remap-export-compare-20261016.log`,
@@ -4115,7 +4115,7 @@
   without busy waiting; retry hardware only after guest USB enumeration works.
   Then run SELECT/GETVERSION/JCSystem, SHA-256, and named-reader static
   performance validation in that order.
-- Commit: `cb6f8aa`.
+- Commit: `d438cb8`.
 - Artifacts/logs: `artifacts/logs/build-arm-fs-exists-status-fix-20261016.log`
   (SHA-256 `6926164d04d39df5cb0416d2dbdca20ce2fe2ae939def951572b226db75efcf4`),
   `artifacts/logs/build-pc-fs-exists-status-fix-20261016.log` (SHA-256
@@ -4127,7 +4127,7 @@
 ## Validation commit metadata
 
 - Step: `physical-replug-host-vpcd-startup`
-- Commit: `cb6f8aa` (`Fix persistent field existence check`).
+- Commit: `d438cb8` (`Fix persistent field existence check`).
 
 ## 2026-10-16 — Restore persistent JCAlgTest applet correctly
 
@@ -4150,7 +4150,7 @@
   physical testing only after guest USB enumeration and PC/SC work. The official
   Java client still needs a working PC/SC reader; current static validation
   used its exact applet configuration through the bounded VPCD harness.
-- Commit: `d6794e9` (validation record and logs), `925a92f` (source fix).
+- Commit: `239c61a` (validation record and logs), `d8abd6b` (source fix).
 - Artifacts/logs: `artifacts/logs/build-arm-fs-exists-corrected-20261016.log`,
   `artifacts/logs/build-pc-fs-exists-corrected-20261016.log`,
   `artifacts/logs/jcsystem-transaction-security-class-map-fix-20261016.log`,
@@ -4172,7 +4172,7 @@
   reason `03` remains an expected unsupported result.
 - Decision: Continue with official-client/report coverage and remaining
   GlobalPlatform/API work; retry hardware when USB access is restored.
-- Commit: `fe72ee0`.
+- Commit: `b7f69e6`.
 - Artifacts/logs:
   `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`,
   `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
@@ -4197,7 +4197,7 @@
   complies with the repository compiler-wrapper rule.
 - Decision: Continue with the remaining API/GP integration items and retry the
   official client once PC/SC is usable. Physical validation remains open.
-- Commit: `a322223`.
+- Commit: `6346368`.
 - Artifacts/logs: `artifacts/logs/test-apdu-util-continuation-20261016.log`,
   `artifacts/logs/test-short-apdu-fixed-20261016.log`,
   `artifacts/logs/test-vpcd-protocol-continuation-20261016.log`,
@@ -4218,7 +4218,7 @@
 - Validation: `./tools/build arm` passed. Initial direct CCID probe before flashing got SELECT `9000` but GETVERSION `F503`; serial reported `VPCD:APPLET_PROCESS status=F503` at opcode `0x93`. `./tools/flash build/arm/pico2_choupi.uf2` passed after its bounded CDC-to-BOOTSEL fallback. Post-flash direct CCID probes passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 support, prepare/doFinal, and static SHA. Finite serial capture reported `TEST:PASS choupi_runtime` with no `FAULT`. `pcscd.service` was inactive and `pcsc_scan -r` listed only Virtual PCD readers, so the official Java client was not run.
 - Result: Physical JCAlgTest static SHA configuration (256 input bytes, 50 `doFinal` calls) returned `AA9000` in 0.718038 s. Direct doFinal returned `AA9000`; GETVERSION returned `312E382E325F6A63333035 9000`; JCSystem info returned `9000`. Serial repeatedly reports `WATCHDOG_RECOVERY cause=other` with a retained marker; this diagnostic state remains unexplained and needs inspection.
 - Decision: The freshly flashed ARM image passes the physical applet and SHA static APDU path. Keep official PC/SC client execution outstanding until the service exposes the Pico reader; do not treat raw CCID as the official client run.
-- Commit: `06e1438`
+- Commit: `d14fe95`
 - Artifacts/logs: `artifacts/logs/jcalgtest-physical-resume-20261016.log` (SHA-256 `d40efe0e3f4baaf829b30376958bdab5606c1f61ef8b280a3dc389bd9cd8da13`); pre-flash failure trace `artifacts/logs/monitor-arm-current-apdu-f503-20261016.log`; `artifacts/logs/monitor-arm-physical-jcalgtest-20261017.log` (SHA-256 `aef7ff988e34e5631d94743425df311f82d773df7d5c37c3dd6f196ed22fd8ff`); UF2 SHA-256 `11254d99c6439f5313086c6164de9fc7f1dbe81a9fb56654ae29f6c2ca96f747`
 
 ## 2026-10-17 — Consume watchdog recovery markers once
@@ -4228,7 +4228,7 @@
 - Validation: `./tools/build arm` passed. `./tools/flash build/arm/pico2_choupi.uf2` passed through the bounded CDC-to-BOOTSEL fallback. `./tools/monitor --seconds 8` recorded exactly one `WATCHDOG_RECOVERY cause=other`, eight `TEST:PASS choupi_runtime` reports, and no `TEST:FAIL` or `FAULT`. Direct physical CCID checks passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 support, and JCAlgTest static SHA after the flash.
 - Result: The one-time diagnostic behavior is confirmed on the Pico. Physical static SHA returned `AA9000` in 0.725005 s. The marker reported `cause=other`; this did not indicate a watchdog-caused reset. The official Java client remains unrun because `pcscd.service` is inactive and the physical reader is not exposed through PC/SC.
 - Decision: Keep the marker-consumption fix. Continue with the remaining JCSystem capacity accounting and rerun the official named-reader client when PC/SC access is restored. No RISC-V build/test.
-- Commit: `0f5091a`
+- Commit: `aeb974b`
 - Artifacts/logs: `artifacts/logs/build-arm-watchdog-marker-20261017.log` (SHA-256 `e9f46e2033d4fea9fbb37b7ac4bb651dac5d9426e18cca8bb8b643fa13d0bc03`); `artifacts/logs/flash-arm-watchdog-marker-20261017.log` (SHA-256 `805ffb3c7c8aaecd78677c938284a57381fe6dbe2b1c08041e810c4f58d36fb1`); `artifacts/logs/monitor-arm-watchdog-marker-20261017.log` (SHA-256 `bca3af91d35e403fba9552edb1d9085cec066c9466457cc83dd3ac3fee157d47`); `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log` (SHA-256 `16532eb6e72dbe3c705c8908aa02a919c22196d7c6c2f07c57233dc94a6b239c`)
 
 ## 2026-10-17 — Trace JCSystem memory accounting boundary
@@ -4238,7 +4238,7 @@
 - Validation: The first `./tools/build arm` failed at the final link with `undefined reference to jcvm_current_heap_free_bytes` from `jni.cpp`. After reverting the attempted changes, `./tools/build arm` passed. No flash or hardware test was performed for this experiment.
 - Result: Root `CMakeLists.txt` confirms that platform startup and Rust OS integration are future work for this target. The Rust allocator cannot provide the active Pico VM's available-memory figure. `getAvailableMemory` and commit-capacity queries remain zero until accounting is exposed by the allocator/filesystem actually linked into the Pico image.
 - Decision: Keep the conservative zero return; next inspect Pico's linked allocator and persistent-store accounting separately. No RISC-V build/test.
-- Commit: `52d12fa`
+- Commit: `707abd3`
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-20261017.log` (expected link failure, SHA-256 `041726320551474891e78d708df5f0739ce6c82f1cafeea4cca53ddc9b06cf4d`); `artifacts/logs/build-arm-jcsystem-memory-reverted-20261017.log` (pass, SHA-256 `4b880a88cc4a4fcfac6885e30fbb63c3abc221460a743a28bb889b7597073cd2`)
 
 ## 2026-10-17 — Reject invalid transient-memory estimate
@@ -4248,7 +4248,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed without compiler warnings. The diagnostic ARM image flashed successfully; its serial capture showed eight `TEST:PASS choupi_runtime` samples and no `TEST:FAIL` or `FAULT`. Raw JCSystem probes on the physical Pico returned extended transient values around `0x0220F0E2` (about 35 MB); a temporary direct `sbrk(0)` probe yielded the same out-of-SRAM range. The restored zero-reporting image also flashed, but its final JCSystem/SHA APDU check was blocked: `lsusb` showed `2e8a:0009`, the device node was `root:plugdev 0660`, this process lacks `plugdev`, and `pcsc_scan -r` listed only Virtual PCD readers. The 5-second picotool check confirmed the board was not in BOOTSEL. SHA-256 static workload was not rerun on the final image; the previous physical pass remains 0.725005 s (`artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log`).
 - Result: The attempted Newlib estimates are invalid for this VM runtime and were reverted. Returning zero remains safer until the active allocator exposes trustworthy free-byte accounting. The restored image is flashed, but final physical APDU validation remains outstanding because the current process cannot open the re-enumerated USB node.
 - Decision: Keep `JCSystem.getAvailableMemory` conservative at zero; after the user refreshes the configured PC/SC ACL with `sudo -n /usr/local/sbin/pico2-pcsc-reader`, rerun finite serial capture, JCSystem info, and the bounded JCAlgTest SHA-256 static workload. Do not invoke sudo from the autonomous cycle.
-- Commit: `27456b6` (metadata confirmed in follow-up commit)
+- Commit: `bc7bbbb` (metadata confirmed in follow-up commit)
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-zero-20261017.log`; `artifacts/logs/build-riscv-jcsystem-memory-zero-20261017.log`; `artifacts/logs/flash-arm-jcsystem-memory-zero-20261017.log`; `artifacts/logs/jcalgtest-physical-jcsystem-memory-zero-20261017.log`; `artifacts/logs/jcalgtest-physical-break-probe-20261017.log`; `artifacts/logs/physical-access-blocked-20261017.log`; earlier SHA pass `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log`.
 
 ## 2026-10-17 — Add issue knowledge base and update physical-access findings
@@ -4258,7 +4258,7 @@
 - Validation: Inspected the knowledge-base and handoff text. The authorized helper returned `PCSC:ACCESS_GRANTED node=/dev/bus/usb/001/057 service=pcscd.service`; escalated `lsusb` saw `2e8a:0009`; `systemctl is-active pcscd.service` reported `active`. `./tools/probe-jc-algtest` and the exact Java SmartcardIO name resolver both found no readers and sent no APDUs. The USB ACL includes `pcscd` and `claude`. PC/SC journal query returned no entries. No build, flash, or firmware test was run.
 - Result: Guest USB enumeration and device-node permissions work, but active pcscd does not expose a reader to Java SmartcardIO. The static hardware test cannot safely start until reader discovery succeeds. The prior runaway `pcsc_scan` result makes it unsuitable for further diagnosis.
 - Decision: Keep the issue open in `.agent/QKB.md`; diagnose bounded PC/SC reader publication, then rerun the APDU probe and official named-reader static test.
-- Commit: `c1cf45c` (confirmed in follow-up metadata commit)
+- Commit: `c806f56` (confirmed in follow-up metadata commit)
 - Artifacts/logs: none created; checks were bounded and their output is summarized above.
 
 ## 2026-10-17 — Trace PC/SC reader discovery after USB ACL recovery
@@ -4268,7 +4268,7 @@
 - Validation: Read-only `lsusb -v -d 2e8a:0009` confirmed interface 2 is class `Chip/SmartCard`, with CCID bulk endpoints `03` and `83`. Parsed `/etc/libccid_Info.plist`; VID/PID `0x2E8A`/`0x0009` maps to `Pico 2 CHOUPI CCID`. `systemctl status` showed pcscd had exited successfully via auto-exit after about one minute while `pcscd.socket` remained listening. Java reader enumeration had returned an empty list while querying. No service restart, scanner, build, flash, or APDU was run during this diagnostic step.
 - Result: The USB descriptor and installed driver mapping are present. The remaining issue is why pcscd fails to publish the reader to active clients; idle auto-exit is expected socket-activation behavior and is not itself evidence of a failure.
 - Decision: Keep reader discovery open. Continue with bounded diagnostics; consider VM USB detach/reattach because it previously restored guest visibility. Run applet tests only after SmartcardIO lists the physical reader.
-- Commit: `3b7cad9` (confirmed in follow-up metadata commit)
+- Commit: `a84e569` (confirmed in follow-up metadata commit)
 - Artifacts/logs: none; descriptor, driver mapping, daemon state, and reader enumeration were inspected directly.
 
 ## 2026-10-17 — Reproduce SHA static workload across physical APDUs
@@ -4278,7 +4278,7 @@
 - Validation: In the host-access execution context, the official `./tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00' -op ALG_PERFORMANCE_STATIC -fresh` selected reader index 3, passed SELECT/GETVERSION/JCSystem, and produced five baseline calls averaging `529.0`. Its first 256-byte/50-call SHA-256 measurement returned `AA9000` in `761 ms`; the next identical measurement failed with `SCARD_E_READER_UNAVAILABLE` (client exit 1). After a full CDC-to-BOOTSEL/application reboot without flashing, the enhanced probe passed all ten single-call APDUs, one 50-call APDU, and one following SHA APDU (`AA9000` each). On a later reboot the PC/SC list intermittently showed only VPCD; direct CCID endpoint 0x03 timed out (`libusb -7`) before APDU. An eight-second serial capture stayed healthy with `TEST:PASS choupi_runtime`, no `TEST:FAIL`/`FAULT`, and only `GetSlotStatus` traffic. `./tools/doctor` passed host prerequisites. No firmware build or flash was performed.
 - Result: A lone 50-call APDU followed by a single SHA call is healthy on the Pico. The failure in the official run occurs only after its preceding baseline and additional measured operation sequence, so the exact firmware state transition remains unresolved. A full MCU reset restores isolated SHA support. The later reader loss is intermittent and distinct from the sandbox's default lack of host USB/PCSC visibility; hardware commands must use the host-access context. Unsupported algorithms reported `NO_SUCH_ALGORITHM` as expected.
 - Decision: Keep SHA and reader-recovery issues open in `.agent/QKB.md`. Next compare the official client's exact baseline/repeat sequence with the focused probe once physical PC/SC discovery returns; avoid `pcsc_scan` due the prior runaway process. No RISC-V build/test and no flash.
-- Commit: `11f8379` (confirmed in follow-up metadata commit)
+- Commit: `621e3e0` (confirmed in follow-up metadata commit)
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-physical-hostctx-20261017.log` (SHA-256 `f423bcbca20ebaf211c02fc393171938afaef65b632f00ccff44d9e1cf738b90`); `artifacts/results/jcalgtest-static-physical-hostctx-20261017/ALGTEST_log_1792220519358.log` (SHA-256 `1994479186a06c2cc3b247f15c3f2eb82af9bc9bfe4ff3d3f7c547013a5ab3f0`); matching CSV (SHA-256 `b418d8f6bfe111c59dc7bad4e36563ab6b7de0c55aa6bcc29e7d9de75e0882bf`); `artifacts/logs/monitor-jcalgtest-static-hostctx-20261017.log` (SHA-256 `7fd345669b97c9ac62745f8d60e4ed5a8d4d8637eade79431cc2cd5bd2f69357`); `artifacts/logs/jcalgtest-sha-50call-followup-physical-20261017.log` (SHA-256 `afd4b7dab4483670cc5e44d39ac431047b6f15487e733c835f5296b71a2b183d`); `artifacts/logs/jcalgtest-sha-repeated-50-apdus-physical-20261017.log`; `artifacts/logs/jcalgtest-sha-rawccid-repeat-physical-20261017.log`; `artifacts/logs/monitor-jcalgtest-ccid-timeout-20261017.log`.
 
 ## 2026-10-17 — Reproduce static SHA state overflow on Pico
@@ -4288,7 +4288,7 @@
 - Validation: `timeout --signal=TERM --kill-after=5s 60s ./tools/probe-jc-algtest` compiled the probe and ran against the named physical Pico. All five baseline APDUs returned `AA9000`; the first measured APDU returned `F105`, so the probe correctly exited nonzero. Concurrent `./tools/monitor --seconds 20` captured the applet exception and continuing healthy runtime/CCID status. An earlier replay passed measurement one then failed the next transmit with `SCARD_E_READER_UNAVAILABLE`. No firmware build or flash was performed; only the Java probe changed.
 - Result: The reproduced `F105` is `CryptoException.ILLEGAL_USE` from SHA state append overflow: retained state plus the 256-byte input exceeds the 2,046-byte native input buffer. This confirms stale/over-limit digest state as a direct failure mechanism. Which cleanup/reset path leaves it stale, and whether it explains the separate PC/SC reader error, remain unresolved.
 - Decision: Keep `ALG_PERFORMANCE_STATIC` open. Trace digest state cleanup on success and failure before treating the issue as fixed; apply the same multi-APDU/state-lifecycle checks to future stateful algorithms.
-- Commit: `274aaea3af60a7e7ae979c2c4d899f91e032e9aa`
+- Commit: `8f750ea9573d130a6afd4f1fb90565eaa58442e7`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-state-repro-20261017.log` (SHA-256 `dd713bfab8772a15d04661b9ebd244c8972cd3a2085d0b4f7d11ff08a0043ede`); `artifacts/logs/monitor-alg-static-state-repro-20261017.log` (SHA-256 `0c11622d7844e92db567de647d8b686321c2af87af92baa83e2041d8dedc6fa1`)
 
 ## 2026-10-17 — Check digest reprepare recovery
@@ -4298,7 +4298,7 @@
 - Validation: The physical probe again returned `F105` after five successful zero-repeat baselines. Reprepare returned `AA9000`; the next 50-call APDU still returned `F105`. Concurrent bounded serial output confirmed allocation of a new 2,048-byte transient array, reference store, second `F105`, and continued `TEST:PASS choupi_runtime`/CCID processing. The probe exited nonzero as expected. No firmware build or flash was performed.
 - Result: The current error is repeatable after a fresh digest prepare, so retaining only the old digest instance does not explain it. The VM's digest-array field access/transient array contents remain suspects; native length was not directly instrumented, so the exact internal state is not yet proven.
 - Decision: Continue tracing object/array field identity and the SHA bridge's observed length before changing behavior. Keep the static SHA issue open; the independent single-call SHA tests passed previously.
-- Commit: `aebbcff5b81573e417a9bf5384c68714e9cc831c`
+- Commit: `153aa572bf58f80a2aafcaba33ea2c900afeb18b`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-reset-diagnostic-20261017.log` (SHA-256 `462ac435d379a4615aa7b9ab719c9f9cdddc9aa78484977b750db0a205bd54dd`); `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log` (SHA-256 `418169398bd3ccff8a300edb3d92021cb1614992d864142e2c33def19208d72d`)
 
 ## 2026-10-17 — Fix repeated static SHA heap exhaustion
@@ -4308,7 +4308,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed; the ARM firmware flashed and finite serial capture showed repeated `TEST:PASS choupi_runtime` with no `FAULT`. The focused physical JCAlgTest probe passed five baselines, two consecutive 50-call static SHA APDUs, ten single-call SHA APDUs, another static SHA APDU, and one following single-call SHA (all `AA9000`). Official JCAlgTest v1.8.2 `ALG_PERFORMANCE_STATIC` exited 0.
 - Result: SHA-256 `doFinal()` averaged 2.01 ms/op over 250 invocations; update averaged 2.50 ms/op and reset 3.13 ms/op. Native trace before the fix recorded `current=0` on all 76 input appends and then `malloc 2060 failed to allocate memory` during the second static APDU, confirming heap exhaustion rather than stale digest length. Official run had 34 expected `NO_SUCH_ALGORITHM` rows and 1,866 separate `CANT_BE_MEASURED` rows, many returning `6F00`.
 - Decision: Treat the repeated-state SHA failure as fixed on the tested physical board. Preserve the reference-identity/multi-APDU checks for future algorithms; investigate non-SHA `6F00` operations separately without implementing expected unsupported algorithms.
-- Commit: `4debbf4e441c5687fb7b94c4e34b56b089cb70f6`
+- Commit: `cbe76c2d212284e131c37d21353ffd124e9a6df1`
 - Artifacts/logs: ARM build SHA-256 `6cc788ae0fc6ddff05a1d7ec37d99c7a8b95bea608c8933aed85388a883816a4`; RISC-V build `881208e73a2928a758eaea3326cdbbbb35e542c634fa9fff05f811ef6fe134b0`; flash `351869e7b877f1161b50e716cc7d9651f8eaba632082071a92940814c046bb90`; diagnostic serial trace `901c029c8f7430f5ab50a8b695c13b4157009746dd87b9c1f1cbbf600f92c2f7`; focused physical probe `9fb9185ceb587a261cf3755e053dd1a81ce59df51f18c3f115f6b0cf881a21f8`; official client `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`; post-fix serial `4584bb17cc0217f5639b9350b3b7bbb8fe584da437410a30bc0d81ff4949a4ba`. Full paths are listed in `.agent/QKB.md`.
 
 ## 2026-10-17 — Classify unsupported-algorithm static `6F00`
@@ -4318,7 +4318,7 @@
 - Validation: Read-only inspection of the captured official physical client and raw result logs confirmed the APDU order, specifications, statuses, and method labels. No build, flash, hardware command, or code test was run; this was log triage only.
 - Result: The first residual `6F00` follows an explicitly unsupported algorithm and is not evidence of failure in a supported operation. This does not classify all 1,866 `CANT_BE_MEASURED` rows; their prepare statuses need individual inspection.
 - Decision: Do not implement TRNG to eliminate this row. For remaining triage, investigate only a measurement whose prepare APDU returned `AA9000`.
-- Commit: `ea7cc5ca38153758d01f91ba90dc216d386b1ebf`
+- Commit: `02a0351123e105e8deb7d6cfaec0e79157debf72`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log` (SHA-256 `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`); `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`.
 
 ## 2026-10-17 — Correct first static `6F00` classification
@@ -4328,7 +4328,7 @@
 - Validation: Re-parsed the raw official-client result in chronological APDU order and inspected the SDK `RandomData.setSeed()` implementation. The current container cannot access USB (`lsusb` and picotool report libusb initialization errors); the authorized helper is blocked by `no new privileges`. No new hardware test or build was run.
 - Result: The first non-SHA `6F00` is a supported-path failure. The cause of repeated `setSeed()` failure is not yet established. Prior note attributing the earliest failure to unsupported TRNG is superseded.
 - Decision: Reproduce only the secure-random prepare, zero-repeat baseline, and 50-repeat `setSeed` APDU in host-access context with bounded serial capture before changing code. Preserve later unsupported-algorithm interpretation until isolated evidence exists.
-- Commit: `0b56df098fd7a8f65d2bdd67f0dad19a4873267f`
+- Commit: `44ef2a2c468583b469deda6cffaa97e9928befe6`
 - Artifacts/logs: `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`; client transcript `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log` (SHA-256 `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`).
 
 ## 2026-10-17 — Fix RandomData virtual token mismatch
@@ -4338,7 +4338,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed clean ARM image with `./tools/flash build/arm/pico2_choupi.uf2`. Focused physical setSeed repeat-50 probe returned `AA9000`; clean finite serial output showed `TEST:PASS choupi_runtime` and no `FAULT`. Official `ALG_PERFORMANCE_STATIC` against the named physical reader exited 0; secure-random setSeed passed 250 invocations at `0.36 ms/op` average. Official totals were 40 expected `NO_SUCH_ALGORITHM` and 1,855 `CANT_BE_MEASURED`; the first later `6F00` was DES Cipher prepare (`B031`), not yet classified.
 - Result: Confirmed/fixed a cross-version virtual token-order defect in a supported void method. Subsequent TRNG prepare now independently reports `03 9000` (`NO_SUCH_ALGORITHM`). A separate DES Cipher prepare failure remains for targeted investigation.
 - Decision: Keep unsupported algorithms as expected. Next isolate the supported-looking DES Cipher prepare APDU and inspect its exception/method map before changing cipher behavior.
-- Commit: `daed80981836259686bb31ef27f056b27946e2af`
+- Commit: `bcc593e8aaf9fde04303bb7d510af79f0a9b84bf`
 - Artifacts/logs: ARM build SHA-256 `dc10263786a33058c187db7d9105a4f84f8585d4960af4d6d5b9c3d28376a8f1`; RISC-V build `1a49f6dfe1fda8cf7517d15d7eea430122e89e1fe03731b0c35a0f35ede88be2`; flash `351869e7b877f1161b50e716cc7d9651f8eaba632082071a92940814c046bb90`; focused probe `artifacts/logs/jcalgtest-secure-random-setseed-clean-50-20261017.log` (SHA-256 `2d73aab519f2050881bcb7d80ce82fbea3cf0937cdccf121654d27c17a090b69`); full official run `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log` (SHA-256 `266df057ddd8df658cd339ea1b61ae5916a6b2396ad9ba8cb592a71b5d9fda20`); finite serial `artifacts/logs/monitor-arm-randomdata-clean-20261017.log`; raw result and CSV under `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/`.
 
 ## 2026-10-17 — Isolate DES static prepare failure
@@ -4348,7 +4348,7 @@
 - Validation: `PICO2_APDU_TIMEOUT_SECONDS=5 ./tools/probe-jc-algtest --des-cipher-prepare` compiled the probe, then exited 1 before transmission because Java SmartcardIO could not find the Pico reader. The permitted ACL helper could not run because this container sets no-new-privileges. Physical validation was skipped.
 - Result: The DES prepare failure is narrowed to key build/set, Cipher factory/init, or random input fill; its root cause remains unknown because the available serial capture ends before the DES APDU.
 - Decision: Replay this single APDU with bounded serial capture in host-access context; classify the exception before changing behavior.
-- Commit: `6b04f1d21512bb80dab6716bedf574f6395a668a`
+- Commit: `da527da0b0f5860d88fdffcff222a25a0856c717`
 - Artifacts/logs: Existing official APDU `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log`; existing finite serial capture `artifacts/logs/monitor-jcalgtest-static-randomdata-token-map-20261017.log`; no new hardware log.
 
 ## 2026-10-17 — Fix JC305 Cipher dispatch in physical static test
@@ -4358,7 +4358,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed ARM firmware to the Pico 2; bounded serial boot capture reported `TEST:PASS choupi_runtime` with no `TEST:FAIL` or `FAULT`. `./tools/probe-jc-algtest --des-cipher-prepare` returned `AA9000`. Official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed with exit 0; the previously failing DES CBC no-padding doFinal/init rows returned `AA9000`. The full client reported 68 `NO_SUCH_ALGORITHM` and 1,824 `CANT_BE_MEASURED`; first later `6F00` was a separate 3-key DES CBC ISO9797 M1 prepare. No attempt was made to implement unsupported algorithms.
 - Result: Confirmed that a JC305/embedded virtual token-order mismatch dispatched void `Cipher.init()` to a byte-returning method and corrupted the caller stack. The exact first DES prepare now passes on hardware; later 3-key DES failure remains open.
 - Decision: Preserve import/export method-order comparisons as a compatibility check. Triage the first remaining failure at its prepare APDU before changing algorithm support.
-- Commit: `aca9c3e` (metadata recorded in a follow-up commit)
+- Commit: `24d1e39` (metadata recorded in a follow-up commit)
 - Artifacts/logs: `artifacts/logs/jcalgtest-des-cipher-token-map-fix-20261017.log` (SHA-256 `6e0997e4d9de771fdb7d69d664986bbdfdd48512a98fe914beccfe773e6ee3f9`); `artifacts/logs/jcalgtest-static-des-cipher-token-map-fix-20261017.log` (SHA-256 `0bd56cada46732f5eb399b3a9c59808ddf7466de67fde87ed11fe6aee4795980`); raw result `artifacts/results/jcalgtest-static-des-cipher-token-map-fix-20261017/ALGTEST_log_1792236553761.log`; CSV and bounded serial capture are in the same result/log directories. Build and flash logs are under `artifacts/logs/`.
 
 ## 2026-10-17 — Remove temporary DES dispatch diagnostics
@@ -4368,7 +4368,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed the final ARM image to the physical Pico. Bounded boot and APDU captures reported `TEST:PASS choupi_runtime`, no `TEST:FAIL` or `FAULT`; `./tools/probe-jc-algtest --des-cipher-prepare` returned `AA9000` after cleanup.
 - Result: The fix passes on the final firmware without per-dispatch diagnostic output. The official full static suite was run successfully on the preceding diagnostic image with the same functional mappings; the remaining first 3-key DES ISO9797 M1 `6F00` remains open.
 - Decision: Keep the production virtual/interface dispatch path free of this investigation's high-volume trace output; next isolate the later prepare failure only if continuing suite triage.
-- Commit: `2743bfb` (metadata recorded in a follow-up commit)
+- Commit: `e42b13a` (metadata recorded in a follow-up commit)
 - Artifacts/logs: `artifacts/logs/build-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/build-riscv-des-cipher-cleanup-20261017.log`; `artifacts/logs/flash-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-boot-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-apdu-20261017.log`; `artifacts/logs/jcalgtest-des-cipher-cleanup-20261017.log`.
 
 ## 2026-10-17 — Correct JSR saved-PC storage
@@ -4392,7 +4392,7 @@
 - Decision: Instrument VM frame depth and heap object counts around the exact
   repeated AES APDU before another full static run. Keep unsupported
   `NO_SUCH_ALGORITHM` results classified as expected.
-- Commit: `f689286`
+- Commit: `5ce6dec`
 - Artifacts/logs: `artifacts/logs/build-arm-jsr-pc-slot-reuse-final-20261017.log`;
   `artifacts/logs/build-riscv-jsr-pc-slot-reuse-final-20261017.log`;
   `artifacts/logs/flash-arm-jsr-pc-slot-reuse-final-20261017.log`;
@@ -4427,7 +4427,7 @@
 - Decision: Do not clear offset-indexed heap entries or pool objects without
   tracing all live roots. Next implement a GC/root-lifetime design that keeps
   `jref_t` references valid, then rerun static JCAlgTest on hardware.
-- Commit: `c59114e`
+- Commit: `e10bb14`
 - Artifacts/logs: official transcript, per-APDU serial capture, post-failure
   watchdog/boot capture, reader probe, both architecture builds, flash and
   clean boot logs are committed under `artifacts/logs/*jsr-memory-counters*`
@@ -4446,7 +4446,7 @@
 - Result: Evidence now has stable content identifiers in the QKB.
 - Decision: Use the archived client and serial logs as the baseline when
   designing and validating heap reclamation.
-- Commit: `c59114e`
+- Commit: `e10bb14`
 - Artifacts/logs: Hashes recorded in the `Physical ALG_PERFORMANCE_STATIC
   heap retention` section of `.agent/QKB.md`.
 
@@ -4462,7 +4462,7 @@
   still-unverified supported-algorithms acceptance mode.
 - Decision: Next implement measured JCSystem memory accounting for the Pico's
   linked allocator and persistent store; ARM M33 only.
-- Commit: `d872f1d`
+- Commit: `42fdd95`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-memory-counters-20261017.log`;
   `artifacts/logs/monitor-arm-jsr-memory-counters-static-20261017.log`.
 
@@ -4494,7 +4494,7 @@
   add focused golden tests for JCSystem memory and applet lifecycle behavior,
   then continue the remaining acceptance criteria. The static-suite heap
   retention issue remains open as documented in `.agent/QKB.md`.
-- Commit: `a9a2091`
+- Commit: `127d921`
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-accounting-continue-20261017.log`,
   `artifacts/logs/build-riscv-jcsystem-memory-accounting-continue-20261017.log`,
   `artifacts/logs/flash-arm-jcsystem-memory-accounting-continue-20261017.log`,
@@ -4519,7 +4519,7 @@
 - Decision: Keep host-access invocation as the default and treat these checks
   as protection from accidental restricted invocations. Continue focused
   JCSystem/lifecycle golden coverage next.
-- Commit: `68c3aa3`
+- Commit: `aabb592`
 - Artifacts/logs: none; timings captured from bounded command results.
 ## 2026-10-17 — Add JCSystem memory overload golden coverage
 
@@ -4539,7 +4539,7 @@
 - Decision: Both overloads are now covered by a golden applet call path and a
   physical-value probe. Continue lifecycle callbacks and remaining JCSystem
   acceptance.
-- Commit: `7734d9c`
+- Commit: `f2bc9d6`
 - Artifacts/logs: `artifacts/logs/jcsystem-memory-overloads-vpcd-20261017.log`.
 
 ## 2026-10-17 — Return documented exception for unsupported OneShot digests
@@ -4602,7 +4602,7 @@
 - Decision: Keep USB calls in host-access context. Do not retry the long sweep
   without new diagnostics or a code-level hypothesis; continue with CCID/PCSC
   state investigation and declared-support/reference comparison. ARM M33 only.
-- Commit: `c6bec06`.
+- Commit: `3a8ff82`.
 - Artifacts/logs:
   `artifacts/logs/jcalgtest-supported-arm-disconnect-repro-20261017.log`,
   `artifacts/logs/monitor-arm-supported-disconnect-repro-20261017.log`,
@@ -4617,7 +4617,7 @@
 - Validation: `bash -n` passed for all shell wrappers; Python compilation passed. All eight USB/PCSC entry points rejected in the current restricted context in 0–1 seconds with the guard diagnostic. A simulated unreadable proc-status file also rejected before USB access. No libusb or PC/SC operation ran.
 - Result: The recurring restricted-context delay is prevented for wrapper-based commands; direct commands are covered by explicit operating instructions. No 32-second probe was repeated or measured during this validation.
 - Decision: Use host-access execution from the first hardware command. Continue the supported-sweep failure investigation offline until that context is selected.
-- Commit: `13808f4`
+- Commit: `a48cf61`
 - Artifacts/logs: No new logs; validation output was inspected directly.
 
 ## 2026-10-17 — Implement OwnerPINx behavior and fix inherited dispatch
@@ -4627,7 +4627,7 @@
 - Validation: Full VPCD regression passed `TEST:SUMMARY pass=16 fail=0 elapsed_s=59.295`. After diagnostic cleanup, focused case 13 passed with response `030302000100000202000201030103009000` and `TEST:SUMMARY pass=3 fail=0`. PC and ARM builds passed. The PC build emitted 49 existing Rust javacard-os warnings and two packed-member alignment warnings; ARM build had no warnings. No hardware was accessed.
 - Result: OwnerPINx try-limit, blocked-PIN, predecrement, successful validation, reset, superclass dispatch, and inherited-field behavior pass through the applet. This does not resolve static benchmark heap retention.
 - Decision: Continue from the separate unresolved static benchmark and PC/SC reader-path findings. Keep physical access out of this step.
-- Commit: root `63a13eb`; nested API `0199d51`; nested rommask `051b389` and `f3c309a`. This SHA was filled in by the follow-up progress-record commit.
+- Commit: root `e88aff6`; nested API `0199d51`; nested rommask `051b389` and `f3c309a`. This SHA was filled in by the follow-up progress-record commit.
 - Artifacts/logs: `artifacts/logs/jcsystem-ownerpinx-full-vpcd-20261017.log`, `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`, `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
 
 ## 2026-10-17 — Clarify OwnerPINx support validation limits
@@ -4637,7 +4637,7 @@
 - Validation: Confirmed the focused OwnerPINx case 13 still passes from the preceding cleanup run. Official JCAlgTest VPCD reached SELECT, then GETVERSION timed out after 20 seconds and again after 90 seconds; a debug run timed out after 30 seconds and traced the VM in JavaCardAES S-box generation. No OwnerPINX support APDU was reached. Rebuilt PC VM with `CHOUPI_JCVM_DEBUG=OFF`; build passed. No hardware was accessed.
 - Result: The applet's behavior is covered by the focused VPCD case, while official capability-row comparison remains unverified after implementation. The expensive delayed applet setup is a separate desktop VPCD limitation.
 - Decision: Do not claim the physical support comparison complete. Continue the separate static benchmark/reader-path investigation; keep the board untouched.
-- Commit: `1ed8d0f` (this SHA was filled by the follow-up progress-record commit).
+- Commit: `4e76e53` (this SHA was filled by the follow-up progress-record commit).
 - Artifacts/logs: `artifacts/logs/pc-vpcd-ownerpinx-support-20261017.log`, `artifacts/logs/pc-vpcd-ownerpinx-support-retry-20261017.log`, `artifacts/logs/pc-vpcd-ownerpinx-debug-20261017.log`, `artifacts/logs/build-pc-ownerpinx-support-debug-20261017.log`, `artifacts/logs/build-pc-ownerpinx-support-release-20261017.log`.
 
 ## 2026-10-17 — Diagnose supported-sweep heap exhaustion
@@ -4647,7 +4647,7 @@
 - Validation: Rechecked the physical-run log at line 62,594. The lazy-static experiment regenerated the PC ROM mask and ARM build with no converter errors; its 50-throw VPCD probe returned a distinct instance at throw 12 (`02010C00`) and failed the intended identity assertion. All pre-existing VPCD transaction, SHA-256, JCSystem, and unsupported-digest cases before that new assertion passed. No source change from this experiment remains.
 - Result: The sweep's allocation failure is explained by cumulative retained instances, likely including repeated `CryptoException` allocations. Exact allocation-to-exception counts were not measured. Persistent Java statics are not a valid cache for JCRE-owned exception objects.
 - Decision: Implement a VM-managed per-context runtime exception root or correct object reclamation, then pass a repeated-throw test before another physical supported sweep. Continue treating unsupported algorithms as expected.
-- Commit: `413828b`.
+- Commit: `e3d251d`.
 - Artifacts/logs: `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log`, `artifacts/logs/build-pc-exception-reuse-v2-20261017.log`, `artifacts/logs/build-arm-exception-reuse-v2-20261017.log`, and `artifacts/logs/jcsystem-exception-reuse-vpcd-v2-20261017.log`.
 
 ## 2026-10-17 — Require an explicit host-access latch for USB commands
@@ -4657,7 +4657,7 @@
 - Validation: Shell syntax checks and Python compilation passed. With the marker absent, shell and Python guards rejected in 72 ms and 96 ms. With the marker set but current `NoNewPrivs: 1`, the shell wrapper rejected in 90 ms. No libusb, PC/SC, or physical-device command was run.
 - Result: A forgotten escalation request can no longer flow from a repository wrapper into a delayed USB call, even if `NoNewPrivs` alone is misleading. Direct system commands still rely on the explicit tool-level escalation rule.
 - Decision: Use the marker only on individual host-access tool calls; if escalation is unavailable, continue offline.
-- Commit: `102764f` (implementation/instructions); progress record committed separately.
+- Commit: `01bd420` (implementation/instructions); progress record committed separately.
 - Artifacts/logs: No new logs; validation output was inspected directly.
 
 ## 2026-10-17 — Record safe heap-reclamation constraints
@@ -4667,7 +4667,7 @@
 - Validation: Source inspection of `Heap`, `Stack`, `Context`, `JC_Instance`, `JC_Array`, and static-field handlers. No source code changed; no build, runtime test, or hardware action was run.
 - Result: A per-APDU heap clear or list compaction is unsafe. The static SHA cache fix resolves its measured heap growth but does not implement general collection.
 - Decision: Next add canonical VM roots for static references and explicit root enumeration; defer sweep/reuse until typed object-graph tracing covers all persistent roots.
-- Commit: `76f4a71`.
+- Commit: `a317880`.
 - Artifacts/logs: none.
 
 ## 2026-10-17 — Identify repeated static-reference reconstruction
@@ -4677,17 +4677,17 @@
 - Validation: Read-only source inspection of static get/put bytecodes, `Static_Handler`, and persistent-reference deserialization. No source code changed; no build, runtime test, or hardware action was run.
 - Result: A static root cache is necessary both for Java reference identity and future safe heap collection. The cache must be keyed by resolved package/static field and invalidated with lifecycle deletion/context teardown.
 - Decision: Next trace install/delete/context lifecycle ownership, then implement canonical static reference roots with focused identity coverage before starting a collector.
-- Commit: `c6bec06`.
+- Commit: `3a8ff82`.
 - Artifacts/logs: none.
 
 ## 2026-10-17 — Finalize heap review commit records
 
 - Step/experiment: `heap-review-progress-finalization`
-- Change: Replaced pending commit markers with `76f4a71` and `c6bec06` for the two completed architecture/source-review steps.
+- Change: Replaced pending commit markers with `a317880` and `3a8ff82` for the two completed architecture/source-review steps.
 - Validation: `git diff --check` passed for `.agent/QKB.md`, `.agent/HANDOFF.md`, and `progress.md`; both commits contain only the review notes and progress records.
 - Result: The review trail now points to its committed documentation changes.
 - Decision: Continue next with package/app deletion and context lifecycle tracing before implementing static-reference caching.
-- Commit: `af36522` (this SHA was filled in by the follow-up progress-record commit).
+- Commit: `5b629f8` (this SHA was filled in by the follow-up progress-record commit).
 - Artifacts/logs: none.
 ## 2026-10-17 — Canonicalize restored static reference roots
 
@@ -4696,7 +4696,7 @@
 - Validation: `./tools/build-pc` passed; `./tools/build-jcsystem-transaction-probe` passed; focused VPCD case 14 passed with `019000` (`TEST:SUMMARY pass=3 fail=0 elapsed_s=6.819`); full VPCD regression passed (`TEST:SUMMARY pass=17 fail=0 elapsed_s=109.117`); `./tools/build arm` passed. No hardware or RISC-V validation was run.
 - Result: Repeated static reference reads return one canonical heap handle and no longer allocate duplicate restored wrappers. This is not heap reclamation.
 - Decision: Commit the static-reference cache and regression independently. Any future transactional static-field rollback must reconcile this cache on abort.
-- Commit: `425602b`
+- Commit: `09ffbea`
 - Artifacts/logs: `artifacts/logs/build-pc-static-reference-cache-20261017.log`, `artifacts/logs/build-jcsystem-static-reference-cache-20261017.log`, `artifacts/logs/jcsystem-static-reference-cache-full-vpcd-20261017.log`, `artifacts/logs/build-arm-static-reference-cache-20261017.log`.
 
 ## 2026-10-17 — Inventory roots for safe heap reclamation
@@ -4706,7 +4706,7 @@
 - Validation: Read-only source inspection of `Context`, `Heap`, `Stack`, `Frame`, `JC_Instance`, `JC_Array`, `FlashMemory_Handler`, and APDU dispatch. No source code changed; no build, runtime test, or hardware check was run.
 - Result: Static roots are cached but not enumerable. Context refs and lazy typed graph edges also need visitor support. Heap slots cannot be erased or compacted; run a complete mark-only traversal before enabling tombstone reuse.
 - Decision: Add explicit root/edge visitors and validate marking across APDU boundaries before implementing reclamation.
-- Commit: `6d130ae`
+- Commit: `a7bf7d3`
 - Artifacts/logs: none.
 
 ## 2026-10-18 — Validate ARM smoke image on physical Pico 2
@@ -4724,7 +4724,7 @@
   image; this cycle did not exercise CHOUPI, the applet, or JCSystem.
 - Decision: Resume applet-level physical testing only after reflashing CHOUPI.
   Continue the separate `makeGlobalArray()` design work.
-- Commit: `4f32fd2`
+- Commit: `47b1569`
 - Artifacts/logs: `artifacts/logs/cycle-arm-20261018T074707Z.log` (SHA-256
   `eb58edba0a3c95145b4112453485896f959c2b4d2292e033340691b73ed222d3`).
 
@@ -4743,7 +4743,7 @@
   client archive and local toolchain are already prepared.
 - Decision: Use this as the short physical-device procedure; the current board
   still runs the ARM smoke image and must be reflashed with CHOUPI first.
-- Commit: `2a71b5a`
+- Commit: `937492f`
 - Artifacts/logs: none.
 
 ## 2026-10-18 — Expose VM roots and typed heap edges
@@ -4753,7 +4753,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Initial ARM build caught a new `-Werror=range-loop-construct`; changed the loop variable to a const reference and rebuilt successfully. Full VPCD transaction/JCSystem regression passed `TEST:SUMMARY pass=17 fail=0 elapsed_s=110.271`. No board flash or hardware check was run. PC build emitted pre-existing Rust and packed-member warnings; final ARM build had no warnings.
 - Result: Context/heap roots and typed object/array edges can now be enumerated. Persistent edge reads may allocate heap wrappers, so the next mark walk must use a dynamically growing work queue. Stack words/native locals are still outside this visitor API.
 - Decision: Add mark-only reachability traversal at a post-APDU quiescent point; defer all slot reclamation and reuse until completeness is demonstrated.
-- Commit: `cb17037`
+- Commit: `675ba20`
 - Artifacts/logs: `artifacts/logs/build-pc-heap-root-visitors-20261018.log`, `artifacts/logs/build-arm-heap-root-visitors-20261018.log`, `artifacts/logs/build-riscv-heap-root-visitors-20261018.log`, `artifacts/logs/jcsystem-heap-root-visitors-vpcd-20261018.log`.
 
 ## 2026-10-18 — Add mark-only typed heap traversal
@@ -4773,7 +4773,7 @@
   complete root set; these counts are not safe for reclamation.
 - Decision: Expose remaining VM roots and establish a quiescent post-APDU
   invocation before considering any slot reclamation or reuse.
-- Commit: `a7f1f58`.
+- Commit: `840decc`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-mark-only-20261018.log`,
   `artifacts/logs/build-arm-heap-mark-only-20261018.log`,
   `artifacts/logs/build-riscv-heap-mark-only-20261018.log`, and
@@ -4795,7 +4795,7 @@
   stack/native roots remain unresolved.
 - Decision: Inspect the root-return cache's typing/lifetime and establish a
   safe post-APDU diagnostic mark point before considering reclamation.
-- Commit: `352d709`.
+- Commit: `354e36a`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-runtime-roots-20261018.log`,
   `artifacts/logs/build-arm-heap-runtime-roots-20261018.log`,
   `artifacts/logs/build-riscv-heap-runtime-roots-20261018.log`, and
@@ -4816,7 +4816,7 @@
   unenumerated.
 - Decision: Verify the APDU call boundary and establish a quiescent point
   before invoking the tracer; do not reclaim slots yet.
-- Commit: `0f2f64b`.
+- Commit: `13e3a6c`.
 - Artifacts/logs: `artifacts/logs/build-pc-typed-root-return-20261018.log`,
   `artifacts/logs/build-arm-typed-root-return-20261018.log`,
   `artifacts/logs/build-riscv-typed-root-return-20261018.log`, and
@@ -4838,7 +4838,7 @@
   unreachable slots are not yet safe to reclaim.
 - Decision: Audit persistent/runtime root paths and add a focused completeness
   test before designing tombstones or reuse.
-- Commit: `88077d8`.
+- Commit: `d2a7241`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-trace-diagnostic-20261018.log`,
   `artifacts/logs/build-arm-heap-trace-diagnostic-20261018.log`,
   `artifacts/logs/build-riscv-heap-trace-diagnostic-20261018.log`, and
@@ -4858,7 +4858,7 @@
   does not cover every persistent reference-array or alias shape.
 - Decision: Add focused identity/root tests for persistent arrays and aliases
   before considering tombstones or reuse. Keep repeat tracing opt-in.
-- Commit: `926c14a`.
+- Commit: `18ce922`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-trace-repeat-20261018.log`,
   `artifacts/logs/build-arm-heap-trace-repeat-20261018.log`,
   `artifacts/logs/build-riscv-heap-trace-repeat-20261018.log`, and
@@ -4880,7 +4880,7 @@
   graph only; cyclic arrays and other persistent layouts remain unverified.
 - Decision: Keep reclamation disabled. Expand alias/root coverage before any
   tombstone or stable-slot reuse design.
-- Commit: `f42982d`.
+- Commit: `a0b7319`.
 - Artifacts/logs: `artifacts/logs/build-pc-persistent-array-identity-final-20261018.log`,
   `artifacts/logs/build-arm-persistent-array-identity-final-20261018.log`,
   `artifacts/logs/build-riscv-persistent-array-identity-final-20261018.log`,
@@ -4906,7 +4906,7 @@
   untriaged and recorded in QKB.
 - Decision: Keep reclamation disabled. Isolate the cast failure and continue
   broader root/alias coverage before designing tombstones.
-- Commit: `b6db227`.
+- Commit: `5d3c4a8`.
 - Artifacts/logs: `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-v2-20261018.log`,
   `artifacts/logs/jcsystem-persistent-object-array-alias-full-vpcd-20261018.log`.
@@ -4928,7 +4928,7 @@
   mutated it; the probe now checks array length. Negative mismatched-type casts
   remain untested.
 - Decision: Keep the explicit atype mapping and add a negative cast case next.
-- Commit: `678655a`.
+- Commit: `0a1d40b`.
 - Artifacts/logs: `artifacts/logs/build-pc-checkcast-array-type-map-20261018.log`,
   `artifacts/logs/build-arm-checkcast-array-type-map-20261018.log`,
   `artifacts/logs/build-riscv-checkcast-array-type-map-20261018.log`,
@@ -4956,7 +4956,7 @@
   still bypass Java exception-table dispatch.
 - Decision: Audit other VM-generated exception paths and continue graph/root
   coverage; keep reclamation disabled.
-- Commit: `f91a9b5`.
+- Commit: `d16818a`.
 - Artifacts/logs: `artifacts/logs/build-pc-catchable-classcast-20261018.log`,
   `artifacts/logs/build-arm-catchable-classcast-20261018.log`,
   `artifacts/logs/build-riscv-catchable-classcast-20261018.log`,
@@ -4987,7 +4987,7 @@
 - Decision: Continue auditing other VM exception sources and root paths. Keep
   heap reclamation disabled; `NO_SUCH_ALGORITHM` remains expected for absent
   algorithms.
-- Commit: `022c080`.
+- Commit: `56c9098`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-vm-runtime-exception-dispatch-20261018.log`,
   `artifacts/logs/jcsystem-runtime-exception-dispatch-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-runtime-exception-dispatch-mappings-vpcd-20261018.log`,
@@ -5010,7 +5010,7 @@
   its cause is unresolved and recorded in QKB.
 - Decision: Keep the ArrayStoreException mapping. Continue the remaining VM
   exception audit and separately investigate `new java.lang.Object()`.
-- Commit: `3cc4c61`.
+- Commit: `fd9b941`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-arraystore-dispatch-final-20261018.log`,
   `artifacts/logs/jcsystem-arraystore-this-probe-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-arraystore-dispatch-full-vpcd-20261018.log`.
@@ -5032,7 +5032,7 @@
 - Decision: Continue auditing VM-raised Java Card framework exceptions.
   Exception values that lack a known reason mapping remain unmodified. Keep
   heap reclamation disabled.
-- Commit: `26583e2`.
+- Commit: `ca882f4`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-jcsystem-systemexception-20261018.log`,
   `artifacts/logs/jcsystem-systemexception-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-systemexception-full-vpcd-20261018.log`.
@@ -5055,7 +5055,7 @@
   path; case 23 now uses the applet instance and still passes.
 - Decision: Continue auditing VM exception and allocation paths. Keep heap
   reclamation disabled.
-- Commit: `f2b33f8`.
+- Commit: `9f7d83d`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-java-lang-object-construction-20261018.log`,
   `artifacts/logs/jcsystem-java-lang-object-construction-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-java-lang-object-construction-full-vpcd-20261018.log`.
@@ -5077,7 +5077,7 @@
   returns from `process()` and checks the stored reason on the next APDU.
 - Decision: Continue checking the remaining `JCSystem` transient-array
   operations and clear events. Heap reclamation stays disabled.
-- Commit: `f42a2bc`.
+- Commit: `656ea54`.
 - Artifacts/logs: `artifacts/logs/apdu-exception-dispatch-focused-vpcd-20261018.log`,
   `artifacts/logs/apdu-exception-dispatch-full-vpcd-20261018.log`.
 
@@ -5099,7 +5099,7 @@
 - Decision: Inspect the reset/deselect lifecycle before wiring the currently
   unused heap clear helper. Continue auditing JCSystem methods; keep heap
   reclamation disabled.
-- Commit: `80b09fd`.
+- Commit: `bccb133`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-arrays-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-transient-arrays-full-vpcd-20261018.log`.
 
@@ -5119,7 +5119,7 @@
 - Decision: Continue auditing remaining JCSystem method stubs and lifecycle
   behavior. Cross-applet context caching remains unverified; heap reclamation
   stays disabled.
-- Commit: `370a1bd`.
+- Commit: `b328a95`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-lifecycle-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-transient-lifecycle-full-vpcd-20261018.log`.
 
@@ -5140,7 +5140,7 @@
   request now returns the specified catchable exception with reason 6.
 - Decision: Continue auditing the remaining JCSystem stubs, beginning with
   `makeGlobalArray()` and `isAppletActive()`. Keep heap reclamation disabled.
-- Commit: `288f61b`.
+- Commit: `d0f9cb9`.
 - Artifacts/logs: `artifacts/logs/jcsystem-object-deletion-unsupported-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-object-deletion-unsupported-full-vpcd-20261018.log`.
 
@@ -5160,7 +5160,7 @@
   Multiple logical channels and cross-applet activity are not modeled.
 - Decision: Review `makeGlobalArray()` lifecycle semantics before implementing
   that remaining JCSystem stub. Heap reclamation stays disabled.
-- Commit: `3c7da1d`.
+- Commit: `ed89b04`.
 - Artifacts/logs: `artifacts/logs/jcsystem-isappletactive-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-isappletactive-full-vpcd-20261018.log`.
 
@@ -5178,7 +5178,7 @@
 - Decision: Design a JCRE-owned global array store and global-reference type,
   including reset clearing and store rejection, before implementing this API.
   Keep heap reclamation disabled.
-- Commit: `b7d8136`.
+- Commit: `1947713`.
 - Artifacts/logs: none.
 
 ## 2026-10-18 — Implement JCSystem.makeGlobalArray
@@ -5204,7 +5204,7 @@
   context and lacks shareable-object ownership.
 - Decision: Continue the JCSystem/runtime API audit. Keep heap reclamation off
   and treat unsupported algorithm results as expected.
-- Commit: `1c652bd`.
+- Commit: `5e90ba9`.
 - Artifacts/logs: `artifacts/logs/jcsystem-global-array-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-global-array-full-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-global-array-object-vpcd-20261018.log`.
@@ -5226,7 +5226,7 @@
   static method-token translation allows JC305 applets to reach these handlers.
 - Decision: Continue auditing `getAppletShareableInterfaceObject()` and other
   remaining JCSystem behavior against the current single-context model.
-- Commit: `d220fdb`.
+- Commit: `6781474`.
 - Artifacts/logs: `artifacts/logs/sensitive-arrays-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-sensitive-arrays-full-vpcd-20261018.log`,
   `artifacts/logs/sensitive-arrays-case42-vpcd-20261018.log`.
@@ -5247,7 +5247,7 @@
   the runtime has no multi-applet registry or context-switch bridge.
 - Decision: Continue JCSystem and applet runtime audit; preserve expected
   unsupported algorithms.
-- Commit: `b34ed04`.
+- Commit: `7f51385`.
 - Artifacts/logs: `artifacts/logs/jcsystem-shareable-default-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-shareable-full-vpcd-20261018.log`.
 
@@ -5265,7 +5265,7 @@
   maturity and remaining work. Historical plan content is explicitly labeled.
 - Decision: Keep this summary current when capability or validation status
   materially changes; retain `HANDOFF.md` for chronological session details.
-- Commit: `b3e845a`.
+- Commit: `9a8988f`.
 - Artifacts/logs: `STATUS.md`.
 
 ## 2026-10-18 — Exclude global arrays from applet heap tracing
@@ -5284,7 +5284,7 @@
 - Result: Global-array offsets no longer falsely mark applet-local arrays in
   the diagnostic tracer. No heap slots are reclaimed or reused.
 - Decision: Continue root completeness audit before implementing a sweep.
-- Commit: `c9aeb9d`.
+- Commit: `ba2fac6`.
 - Artifacts/logs: `artifacts/logs/heap-global-tracer-focused-vpcd-20261018.log`
   (SHA-256 `3ebc56b04665c3e0cf87b9e51a0456d6a8c9c7c2125dc05bdce12feb254c01e2`).
 
@@ -5305,7 +5305,7 @@
 - Decision: Complete the remaining native-root audit before implementing a
   stable-slot sweep; persistent objects will remain pinned until deletion is
   supported.
-- Commit: `510fd14`.
+- Commit: `32583ed`.
 - Artifacts/logs: `artifacts/logs/heap-persistent-roots-focused-vpcd-20261018.log`
   (SHA-256 `f2e776ef989199e8781811bad8d3a7acb1014e3566dddc1056e9b74c2e651a00`).
 
@@ -5337,7 +5337,7 @@
   Next diagnose the cipher factory `6F00` path and rerun the full static suite;
   later audit native-held roots and implement persistent deletion before
   claiming general garbage collection.
-- Commit: `b7b069a`.
+- Commit: `bfdcf1b`.
 - Artifacts/logs: VPCD log
   `artifacts/logs/heap-collector-full-focused-vpcd-20261018.log`
   (SHA-256 `bdd4601530b538a6aa8e9d57bfbaca8b8a02a0d5ea801b994adc55e54895bc09`);
@@ -5366,7 +5366,7 @@
   The full physical static matrix remains to be rerun.
 - Decision: Rerun `ALG_PERFORMANCE_STATIC` on the corrected image, classify
   later failures independently, and preserve expected `NO_SUCH_ALGORITHM`.
-- Commit: `278322e`.
+- Commit: `dfd55b2`.
 - Artifacts/logs: `artifacts/logs/probe-des-interface-token-fix-20261018.log`
   (SHA-256 `f6e784fdb1038d011924351d670d5a7510bbb8704e3fb9881d604aebad7ad1fa`);
   serial capture `artifacts/logs/monitor-des-interface-token-fix-20261018.log`
@@ -5393,7 +5393,7 @@
   ACM node blocks during re-enumeration.
 - Decision: Keep per-attempt timeouts; continue using host-access authorization
   for hardware and a short timeout for PC/SC scans.
-- Commit: `d386520`.
+- Commit: `f1dfc64`.
 - Artifacts/logs: `artifacts/logs/monitor-gc-disabled-diagnostic-20261018.log`
   (finite capture); collector-enabled cycle
   `artifacts/logs/cycle-choupi-20261018T125316Z.log`.
@@ -5448,7 +5448,7 @@
   M1 prepare response `03 9000` and a normal follow-up SELECT, then test a
   bounded static subset and the full matrix. Do not implement the DES padding
   algorithm; preserve `NO_SUCH_ALGORITHM` semantics.
-- Commit: `f10a7d6`; metadata commit: `2931ce4`
+- Commit: `16569c2`; metadata commit: `b90b326`
 - Artifacts/logs: build records
   `artifacts/logs/build-arm-catch-alias-final-20261018.log`,
   `artifacts/logs/build-riscv-catch-alias-final-20261018.log`,
@@ -5480,7 +5480,7 @@
   itself passes in isolation. This is not evidence for implementing M1.
 - Decision: Diagnose the long-run PC/SC availability drop and rerun the full
   static suite. Then resume the JCSystem/context API audit.
-- Commit: `5ff5a32`.
+- Commit: `8bf8c39`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261018T171028Z.log`;
   `artifacts/logs/physical-m1-exception-alias-20261018.log` SHA-256
   `88966d8b0f6844b9b0b4dc323383af73ad6dbbc86af5f02e4cc9be869cdc557e`;
@@ -5510,7 +5510,7 @@
 - Decision: Bound `traceAndMark()` worklist allocation by total stable handle
   count, then rerun a serial-captured physical static suite. Keep
   `NO_SUCH_ALGORITHM` rows expected.
-- Commit: `90238e3`.
+- Commit: `821f006`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261018T173718Z.log`;
   `artifacts/logs/physical-heap-unwind-stress-20261018.log` SHA-256
   `89f3f5cdc99bfb5dec9e63312785d1b689af7d68ca45e799a9c2519834abbf5d`;
@@ -5545,7 +5545,7 @@
 - Decision: Diagnose host passthrough/reader instability at the exact failed
   APDU, then rerun the full physical static matrix. Resume the JCSystem/context
   API audit after PC/SC remains stable through the long test.
-- Commit: `677d4e3`.
+- Commit: `5e1e8fe`.
 - Artifacts/logs: ARM/RISC-V/PC builds and physical cycle under
   `artifacts/logs/*gc-stream-roots-final-20261018.log`; static client and serial
   logs `artifacts/logs/jcalgtest-static-gc-stream-roots-20261018.log` and
@@ -5568,7 +5568,7 @@
 - Decision: Request operator restart of `pcscd.service`, because repository
   `AGENTS.md` permits autonomous sudo only for the Pico ACL helper; then
   refresh ACL and check the reader before another physical run.
-- Commit: `7b1d519`.
+- Commit: `a2858e4`.
 - Artifacts/logs: `artifacts/logs/pcsc-host-state-gc-stream-roots-20261018.log`.
 
 ## 2026-10-18 — Isolate PC/SC failure after applet selection
@@ -5590,7 +5590,7 @@
   physical static run remains incomplete.
 - Decision: Continue investigating PC/SC host transport without unbounded
   `pcsc_scan`; keep software/runtime work moving independently.
-- Commit: `69c180d`.
+- Commit: `3db0438`.
 - Artifacts/logs: `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log`
   and `artifacts/logs/monitor-pcsc-after-restart-20261018.log`.
 
@@ -5609,7 +5609,7 @@
   interface while keeping the virtual reader endpoint available.
 - Decision: Do not run the direct bridge concurrently with the PC/SC physical
   reader driver. Continue host configuration recovery before physical JCAlgTest.
-- Commit: `84713c0`.
+- Commit: `d230ef7`.
 - Artifacts/logs: No persistent bridge log; command output is recorded in this
   session. Existing serial evidence remains in
   `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log`.
@@ -5630,7 +5630,7 @@
   reselect. Physical consecutive-APDU validation remains blocked by PC/SC.
 - Decision: Keep broadening the lifecycle regression on VPCD; do not repeat
   physical APDUs until PC/SC transmits beyond SELECT.
-- Commit: `654f922`
+- Commit: `6a148d2`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-callback-vpcd-20261018.log`,
   `artifacts/logs/cycle-choupi-20261018T194931Z.log`
 ## 2026-10-18 — Verify rejected applet selection cleanup
@@ -5648,7 +5648,7 @@
   callback and permits a subsequent successful selection.
 - Decision: Continue the applet lifecycle audit with deselect, reset, and
   persistence boundaries; physical transport remains stalled after SELECT.
-- Commit: `c949b1d`
+- Commit: `33b3ada`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-vpcd-20261018.log`
 ## 2026-10-18 — Verify applet lifecycle callbacks across card reset
 
@@ -5665,7 +5665,7 @@
 - Decision: Continue checking lifecycle edge cases and persistent state on
   VPCD; no physical APDU was attempted because PC/SC remains stalled after
   SELECT.
-- Commit: `ee50fa0`
+- Commit: `f1f9cd2`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-callbacks-vpcd-20261018.log`
 
 ## 2026-10-19 — Verify JCVMArray temporary cleanup when element copies throw
@@ -5684,7 +5684,7 @@
   exceptions, not only on allocation failure.
 - Decision: Keep the exception-safety regression and continue the memory/API
   audit.
-- Commit: `6285edf`
+- Commit: `1c96002`
 - Artifacts/logs: none.
 
 ## 2026-10-19 — Verify persistent applet state across emulator restart
@@ -5705,7 +5705,7 @@
   survived a full PC emulator process restart.
 - Decision: Continue GP DELETE/GET DATA and transaction failure/power-loss
   validation on VPCD. The physical reader still stalls after SELECT.
-- Commit: `fc05835`
+- Commit: `996fffd`
 - Artifacts/logs: `artifacts/logs/jcsystem-restore-save-vpcd-20261019.log`,
   `artifacts/logs/jcsystem-restore-second-process-vpcd-20261019.log`,
   `artifacts/logs/cycle-choupi-20261019T035222Z.log`
@@ -5717,7 +5717,7 @@
 - Validation: `./tools/test-persistent-transaction` passed all 29 checks; `./tools/test-rp2350-fs-overlay` passed all 27 checks, including 1,000 randomized multi-record power-cut cases. Existing upstream compiler warnings and host `mallinfo()` deprecation warning remain.
 - Result: Injected record-write and snapshot-commit failures roll back cleanly in the transaction test; randomized filesystem recovery returns an atomic old or new multi-record state. No physical hardware was accessed.
 - Decision: Continue with authenticated card-manager DELETE integration and post-delete restore/GET STATUS; do not repeat already-covered storage-layer tests without a new scenario.
-- Commit: `2a793fe`; this commit records the validated step
+- Commit: `ba2ad31`; this commit records the validated step
 - Artifacts/logs: tool output from this session; no separate log captured.
 ## 2026-10-19 — Implement GlobalPlatform Card Data GET DATA
 
@@ -5726,7 +5726,7 @@
 - Validation: `./tools/test-gp-get-data` passed 11/11 exact-encoding, response-status, and unavailable-tag checks; `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed both build gates, flashed ARM, and captured repeated `TEST:PASS choupi_runtime` in 18 seconds with no `FAULT`. No card-manager APDU was sent.
 - Result: The firmware now returns the bounded `0066` data object before and after secure-channel authentication and retains `6A88` for CPLC/unknown tags. Firmware boot/runtime is hardware-verified; GET DATA APDU transport is unverified.
 - Decision: Continue with authenticated DELETE lifecycle regression; verify GET DATA through a live APDU path when available.
-- Commit: `2ccb6e0`; recorded in follow-up metadata commit
+- Commit: `6d2b7ee`; recorded in follow-up metadata commit
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261019T061401Z.log`; test output from this session.
 ## 2026-10-19 — Verify GlobalPlatform GET DATA on physical Pico
 
@@ -5735,7 +5735,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/probe-gp-get-data` passed on the Pico. `80CA006600` returned `6618731606072A864886FC6B01640B06092A864886FC6B0403109000`; `80CA9F7F00` returned `6A88`. Reader ATR was `3B800181`.
 - Result: The open-channel GET DATA path works over physical CCID/PCSC. The authenticated channel route was not exercised.
 - Decision: Continue with authenticated GP DELETE lifecycle coverage and test authenticated GET DATA separately.
-- Commit: `0ca6a57`; recorded in follow-up metadata commit
+- Commit: `c6a732b`; recorded in follow-up metadata commit
 - Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`
 
 ## 2026-10-19 — Verify SCP03-authenticated GET DATA on physical Pico
@@ -5745,7 +5745,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/probe-gp-get-data` passed on the named Pico reader. INITIALIZE UPDATE and EXTERNAL AUTHENTICATE both returned `9000`; protected `84CA006608CB721BF61EAE254100` returned the expected Card Recognition Data and `9000`. `git diff --check` passed; firmware builds were not repeated because only probe/docs changed.
 - Result: Open-channel and SCP03-authenticated GET DATA both work physically. The probe did not select an applet or modify persistent card content.
 - Decision: Proceed to authenticated GP DELETE lifecycle coverage, including GET STATUS and restore.
-- Commit: `43a0721`
+- Commit: `79925be`
 - Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`
 
 ## 2026-10-19 — Cover GET STATUS after GP deletion states
@@ -5755,7 +5755,7 @@
 - Validation: `./tools/test-gp-registry` passed 47 checks; targeted `git diff --check` passed. The test exercises GET STATUS encoding only, not persistent deletion.
 - Result: The registry builder emits no applet after instance deletion while preserving the package entry; a package-deleted view emits no load-file entry.
 - Decision: Keep actual authenticated DELETE dispatch, `CapLoadSession::deleteObject()`, and restart restoration as open work; next add a testable persistence/CAP-store boundary.
-- Commit: `8b9095d`; validated step, recorded in metadata commit `4fb7515`
+- Commit: `a561bab`; validated step, recorded in metadata commit `6ec5b9e`
 - Artifacts/logs: test output from this session; no separate log captured.
 
 ## 2026-10-19 — Exercise GP DELETE transaction sequencing offline
@@ -5765,7 +5765,7 @@
 - Validation: `./tools/test-gp-delete` passed 21/21 checks. `./tools/build arm` passed, including the CHOUPI ARM image; `./tools/build riscv` passed. `git diff --check` passed. No hardware cycle was run because the Pico is in BOOTSEL.
 - Result: The same transaction ordering production uses is now host-testable. Tests cover begin, applet/package clearing, tombstone write, snapshot sync/commit, rollback, and marker exceptions. They do not exercise actual flash records, CAP-slot deletion, authenticated CCID dispatch, or restart restoration.
 - Decision: Continue toward a storage-backed `CapLoadSession` test boundary and retain the physical DELETE/restart lifecycle as open.
-- Commit: `2536480`; recorded in follow-up metadata commit
+- Commit: `1f966fa`; recorded in follow-up metadata commit
 - Artifacts/logs: test and build output from this session; no separate build logs captured.
 
 ## 2026-10-19 — Test GP DELETE target resolution offline
@@ -5775,7 +5775,7 @@
 - Validation: `./tools/test-gp-delete` passed 26/26 checks. `./tools/build arm` and `./tools/build riscv` passed. `git diff --check` passed. No hardware cycle was run because the Pico is in BOOTSEL.
 - Result: The production resolver returns `6A88` for unknown/unloaded targets, `6985` for package deletion with an installed instance and no related-object flag, and selects valid instance/package targets without mutating storage.
 - Decision: Next exercise persistent lifecycle markers, GET STATUS, CAP deletion, and restore through a storage-backed host session; authenticated CCID DELETE remains unverified.
-- Commit: `108ac39`; recorded in follow-up metadata commit
+- Commit: `c07d9f6`; recorded in follow-up metadata commit
 - Artifacts/logs: test and build output from this session; no separate logs captured.
 
 ## 2026-10-19 — Verify GP DELETE and persistence on the Pico
@@ -5785,7 +5785,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed ARM/RISC-V build gates, reflashed ARM, and captured runtime passes. GPPro authenticated applet DELETE left the package loaded; authenticated related-object package DELETE removed both; reinstall of the supplied CAP succeeded. After a second CHOUPI firmware restart, GPPro listed the package as `LOADED` and applet as `SELECTABLE`; `tools/test-pico-powerup` passed, including SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem `9000`. The full post-restart `tools/probe-jc-algtest` also passed SHA-256 repeated and static calls. `bash -n tools/test-pico-powerup` passed.
 - Result: Authenticated instance/package deletion, CAP reinstall, and persistence through firmware restart/reflash are verified on the real Pico. One prior `INSTALL` watchdog marker was reported once during boot; runtime self-checks passed and no `FAULT` occurred.
 - Decision: The environment cannot perform true USB power removal; `picotool reboot` failed because the composite device has no accessible reset interface. Keep physical power-off/on validation open and run `tools/test-pico-powerup` after such a cycle when available.
-- Commit: `eb700d2`; QKB addendum `aa99182`
+- Commit: `1a7e20a`; QKB addendum `bcc7d61`
 - Artifacts/logs: `artifacts/logs/gp-delete-physical-20261019.log`, `artifacts/logs/cycle-choupi-20261019T065052Z.log`, `artifacts/logs/pico-powerup-persistence-20261019T065455Z.log`
 
 ## 2026-10-19 — Retry Pico power-up PC/SC checks
@@ -5795,7 +5795,7 @@
 - Validation: `bash -n tools/test-pico-powerup` and targeted `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` exited 1 after all three GPPro attempts listed only Virtual PCD readers. `PICO2_HOST_USB_ACCESS=1 lsusb -d 2e8a:0009` found the Pico; bounded `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only the two virtual readers. No ARM build or flash was needed because firmware sources were unchanged.
 - Result: The failure is now bounded and logged per attempt. USB enumeration and ACL access do not currently restore Pico PC/SC enumeration, so applet persistence was not tested in this run.
 - Decision: Keep physical persistence and consecutive APDUs open. Continue offline implementation; retry after the PC/SC reader is available.
-- Commit: `73eaca3`; progress record follows in metadata commit.
+- Commit: `5df5b91`; progress record follows in metadata commit.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T084640Z.log`, `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`
 
 ## 2026-10-19 — Implement APDU current object access
@@ -5805,7 +5805,7 @@
 - Validation: `./tools/build arm` passed for ARM M33; API converter reported zero errors (existing optional export/int-support warnings and compiler packed-member warnings remain). `./tools/build-jcsystem-transaction-probe` passed. `./tools/test-jcsystem-transaction-applet --case 59 --case 60 --timeout 120 --log artifacts/logs/jcsystem-current-apdu-vpcd-20261019.log` passed (`TEST:SUMMARY pass=4 fail=0 elapsed_s=11.280`). No RISC-V build or physical flash was attempted. The physical reader was not available through PC/SC.
 - Result: During `process()`, `getCurrentAPDU()` returned the same reference as the callback argument; during `select()`, it produced the expected `SecurityException`.
 - Decision: Continue the Java Card APDU API/profile audit and add further focused golden coverage; retain physical validation as open until PC/SC enumerates the Pico.
-- Commit: `2780db1`; Java API hunk committed in nested API repository as `43f9877`.
+- Commit: `89e9d06`; Java API hunk committed in nested API repository as `43f9877`.
 - Artifacts/logs: `artifacts/logs/jcsystem-current-apdu-vpcd-20261019.log`
 
 ## 2026-10-19 — Gate APDU current buffer access
@@ -5827,7 +5827,7 @@
   to missing Pico PC/SC registry visibility.
 - Decision: Keep physical power-up validation open and continue the APDU API
   audit offline until the Pico reader enumerates through PC/SC.
-- Commit: root `433d5c2`; nested API repository `2ec9efa`.
+- Commit: root `663183c`; nested API repository `2ec9efa`.
 - Artifacts/logs: `artifacts/logs/jcsystem-current-apdu-buffer-vpcd-20261019.log`,
   `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`
 
@@ -5849,7 +5849,7 @@
   is not implemented.
 - Decision: Continue auditing APDU and JCSystem runtime semantics; revisit T=1
   WTX if the target profile requires long-running applet timeout extension.
-- Commit: root `122e01e`; nested API repository `edfa4cf`.
+- Commit: root `97749db`; nested API repository `edfa4cf`.
 - Artifacts/logs: `artifacts/logs/jcsystem-apdu-wait-extension-vpcd-20261019.log`
 
 ## 2026-10-19 — Implement JCSystem.lookupAID for the active applet
@@ -5859,7 +5859,7 @@
 - Validation: `./tools/build arm` passed. `./tools/build-jcsystem-transaction-probe` passed. `./tools/build-pc` passed and refreshed the emulator. VPCD cases 65–66 passed (`TEST:SUMMARY pass=4 fail=0 elapsed_s=24.373`); the current AID matched, an unknown AID returned null, and all null/range checks passed. The default restricted VPCD invocation returned `Operation not permitted`; the same local VPCD command in the host execution context passed. No RISC-V build or hardware flash was run. The requested `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` received USB ACL access but all three GPPro attempts listed only Virtual PCD readers; persistence was inconclusive. `git diff --check` passed with `core.whitespace=cr-at-eol` for the existing CRLF sources.
 - Result: The call path works for the single active applet context. Lookup among multiple installed applets is still limited by the VM's single-context registry model. The initial failed VPCD retry was against a stale host emulator; rebuilding PC/VPCD is required for trustworthy validation.
 - Decision: Keep the one-context limitation explicit; continue the Java Card API/profile audit and retry physical persistence only after the Pico reader enumerates in PC/SC.
-- Commit: API `aa4c7e0`; root `5f995a0`; progress/docs/QKB recorded in follow-up metadata commit.
+- Commit: API `aa4c7e0`; root `0881c55`; progress/docs/QKB recorded in follow-up metadata commit.
 - Artifacts/logs: `artifacts/logs/jcsystem-lookup-aid-fixed-vpcd-20261019.log` (SHA-256 `00c28d3a4f316c9c69f9d202f149fa41dc70e09b544034c5f56c8156dd7a72ba`); diagnostic successful run `artifacts/logs/jcsystem-lookup-aid-diagnostic-vpcd-20261019.log` (SHA-256 `e43cc19da4c91ea176fd9ab14f10695feb61dd2034c6cec407484d43e7a40a39`); physical reader discovery retry `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log` (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`).
 
 ## 2026-10-19 — Retry Pico power-up persistence check
@@ -5869,7 +5869,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` exited 1 after three registry attempts. USB access was granted for `/dev/bus/usb/001/004`, but GPPro listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`; a subsequent escalated `pcsc_scan -r` also listed only those virtual readers. No package/APDU persistence assertion ran. No build or flash was attempted.
 - Result: Physical persistence remains unverified because PC/SC does not currently expose the Pico reader to the client.
 - Decision: Keep hardware power-up validation open; retry after Pico registration appears in `pcsc_scan -r`.
-- Commit: `8eda0c2`.
+- Commit: `05d87b4`.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log` (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`)
 
 
@@ -5880,7 +5880,7 @@
 - Validation: `./tools/build arm` passed. The focused VPCD lifecycle cases passed, then the full `tools/tests/jcsystem_transaction_applet_test.py --timeout 240` suite passed (`TEST:SUMMARY pass=69 fail=0 elapsed_s=442.556`). It verified the flag is true only for same-AID reselection and false after rejected selection and reset. No RISC-V build, physical flash, or hardware runtime test was performed.
 - Result: Same-AID reselection semantics and the surrounding callback ordering pass the complete current VPCD JCSystem/APDU regression.
 - Decision: Continue the Java Card runtime API/profile audit; physical power-cycle persistence remains open because the latest GPPro/PCSC registry only exposed Virtual PCD readers.
-- Commit: API `814d409`; root `c098a86`.
+- Commit: API `814d409`; root `dd97e9c`.
 - Artifacts/logs: `artifacts/logs/applet-reselecting-vpcd-20261019.log` (SHA-256 `02a733eb484772581e4e65390f0abdc4e3ad8754bcf91230da6a62f57db08950`); `artifacts/logs/jcsystem-full-reselect-vpcd-20261019.log` (SHA-256 `bb139accf35ce574e0b49ac0facee2483c7c35bf6e8437f554fc74d673a34ad4`).
 
 ## 2026-10-19 — Implement Applet.register installation semantics
@@ -5906,7 +5906,7 @@
   physically USB-enumerated Pico.
 - Decision: Continue the lifecycle audit from `Applet.selectingApplet()` and
   its ordering relative to applet SELECT/PROCESS callbacks.
-- Commit: API `5cd9aec`; root source/tests `3b9e6de`.
+- Commit: API `5cd9aec`; root source/tests `b30f07d`.
 - Artifacts/logs: ARM build `artifacts/logs/build-arm-applet-register-final-20261019.log`
   (SHA-256 `e68ffebbbed5a0d78478656e18834f004007ec0d0a41dbc57c757fa575efb12a`);
   matching install `artifacts/logs/applet-register-validation-vpcd-20261019-retry2.log`
@@ -5936,7 +5936,7 @@
   it previously appeared as 1,552 bytes and failed at method offset 4,089.
 - Decision: Continue the Java Card API/runtime audit; keep physical power-up
   persistence open because PC/SC currently exposes only Virtual PCD readers.
-- Commit: root `694b408`; API `bf323aa`.
+- Commit: root `0610adf`; API `bf323aa`.
 - Artifacts/logs: `artifacts/logs/applet-lifecycle-full-vpcd-final-20261019.log`,
   `artifacts/logs/test-vpcd-session-selecting-applet-20261019.log`,
   `artifacts/logs/build-arm-method-component-endian-fix-20261019.log`, and
@@ -5981,7 +5981,7 @@
   PC/SC, so no on-device result is available.
 - Decision: Continue the Java Card runtime/API audit in TODO.md; retry physical
   persistence when PC/SC lists the Pico reader.
-- Commit: `d9ea607`.
+- Commit: `a0af589`.
 - Artifacts/logs: `artifacts/logs/test-vpcd-session-unknown-aid-select-20261019.log`,
   `artifacts/logs/unknown-aid-select-vpcd-20261019.log`,
   `artifacts/logs/build-pc-unknown-aid-select-20261019.log`, and
@@ -6006,7 +6006,7 @@
   process restart and decode from the saved filesystem image.
 - Decision: Keep physical AC5 open until the Pico is visible through PC/SC and
   a true power-off/on persistence check can run.
-- Commit: `1d30dd9`.
+- Commit: `b07dbee`.
 - Artifacts/logs: build log SHA-256
   `bc8d84e356f0509f9434fcebae5e6a5cd781296b12a567783b85c0051da249df`;
   commit-phase output `artifacts/logs/vpcd-persistence-commit-20261019T120347Z.log`;
@@ -6032,7 +6032,7 @@
   across a real power-off/on.
 - Decision: Keep physical AC5 open; continue the AC4 and Java Card runtime
   audit while the Pico is absent from PC/SC.
-- Commit: `636fbfc`.
+- Commit: `dfd20ba`.
 - Artifacts/logs: build log SHA-256
   `4b945b5f65a409f02c30458f0023a2c8a75c9642333b57d1eb487b4e8d8c04c9`;
   restore transcript SHA-256
@@ -6060,7 +6060,7 @@
   implementation, so AC4 remains open pending a fresh physical run.
 - Decision: Continue runtime implementation and VPCD checks; retry hardware
   support and power-cycle tests when PC/SC exposes the Pico CCID reader.
-- Commit: `4863b56`.
+- Commit: `784a2ab`.
 - Artifacts/logs: comparator output SHA-256
   `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`
   (`artifacts/logs/jcalgtest-support-compare-20261019.log`); latest power-up
@@ -6085,7 +6085,7 @@
   and prefix comparisons remain true in the applet VM.
 - Decision: Continue the JCSystem and runtime API audit; physical validation
   waits for PC/SC to expose the Pico reader.
-- Commit: API `f3e41e0`; applet regression and TODO `c9fc0eb`.
+- Commit: API `f3e41e0`; applet regression and TODO `4169df3`.
 - Artifacts/logs: `artifacts/logs/aid-null-comparison-20261019.log`, SHA-256
   `eb6bc6f6ac662f62b69e36b1ab2b8708e29792003df006ad74b441c50e266541`.
 
@@ -6122,7 +6122,7 @@
   metadata reader is compile-checked but not directly exercised.
 - Decision: Keep the AID distinction in GlobalPlatform metadata and retry
   hardware power-cycle validation when Pico PC/SC is available.
-- Commit: `b3da80e`
+- Commit: `ef2185b`
 - Artifacts/logs: temporary distinct-AID logs
   `artifacts/logs/vpcd-persistence-commit-20261019T181446Z.log`,
   SHA-256 `d8fc996e3cbd758be9e62dc7b7b1af006bc7b27ae81ea0d65ca66f5077d35d95`;
@@ -6147,7 +6147,7 @@
   selection failures still clear selection.
 - Decision: Keep the explicit status rule in both transports; continue the
   card-manager behavior audit.
-- Commit: `86ffde9`
+- Commit: `81b0880`
 - Artifacts/logs: Test summary `TEST:SUMMARY pass=18 fail=0`; no archived log.
 
 ## 2026-10-19 — Record CAP install cross-store recovery risk
@@ -6167,7 +6167,7 @@
   card failure.
 - Decision: Add failure injection for the final sync and CAP metadata write
   before implementing a durable intent/reconciliation design.
-- Commit: `cc292ef`
+- Commit: `e0ce525`
 - Artifacts/logs: No artifact log; source references are recorded in
   `.agent/QKB.md`.
 
@@ -6188,7 +6188,7 @@
   applet processing and power-cycle persistence remain unverified.
 - Decision: Keep the restore guard. Diagnose post-SELECT PC/SC/CCID loss
   separately; continue offline applet/runtime work.
-- Commit: `169c131`
+- Commit: `d5dbc89`
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261019T182907Z.log`
   (SHA-256 `f5eac0e3cbecfff2ab93bdaaecb770190cd10b06fc6e20e8e7f57ca8c895b49d`),
   `artifacts/logs/vpcd-persistence-restore-20261019T182907Z.log` (SHA-256
@@ -6215,7 +6215,7 @@
   `tasks=0`, `xfr=0`. No physical applet APDU reached firmware.
 - Decision: Keep the lifecycle state fix. Continue JCSystem/runtime work on
   VPCD; diagnose PC/SC transport before relying on physical APDU tests.
-- Commit: `da6a6e6`
+- Commit: `19dfc0f`
 - Artifacts/logs: `artifacts/logs/jcsystem-is-applet-active-lifecycle-20261019.log`
   (SHA-256 `2785080c8ae40cbc52f38cd02b278ff398bb9b9de36837ff2ba73d6b102138b1`),
   `artifacts/logs/cycle-arm-20261019T184719Z.log` (SHA-256
@@ -6240,7 +6240,7 @@
   validation-only step, so builds and flash were not repeated.
 - Decision: Keep the active-state timing and retain callback assertions in the
   focused lifecycle test.
-- Commit: `e1ebcfe`
+- Commit: `9245795`
 - Artifacts/logs: `artifacts/logs/jcsystem-is-applet-active-callbacks-20261019.log`
   (SHA-256 `ae2eedbd46cbe0e25c2995dc958109caa36d69d47404ffaeb45b182002567705`).
 
@@ -6263,7 +6263,7 @@
   firmware. No source-code tests were run in this hardware-only step.
 - Decision: Do not repeat the same probe until the host PC/SC/CCID transmit path
   is diagnosed. Continue implementation and VPCD verification offline.
-- Commit: `0c31204d8468adea9ffc669d9c38aa09518b13f5`
+- Commit: `fca04a4df62f84a3dd8a3cdbece73b73a22219d7`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T191503Z.log`
   (SHA-256 `14ecbe9209f62be8fd7b3f3327ef553e54d2d1fb52202bf808ad57086cfb5ed4`),
   `artifacts/logs/monitor-apdu-probe-after-timeout-20261019.log` (SHA-256
@@ -6289,7 +6289,7 @@
   blocked before the first SELECT XfrBlock by the PC/SC/CCID transport issue.
 - Decision: Keep the corrected callback semantics; use VPCD for applet behavior
   until consecutive physical APDUs reach the firmware.
-- Commit: `f6b5439209eabf47824cd8bbc6a50933dd6c178c`
+- Commit: `4b8fd3471ed55c1f0a4367c6e25e2949a723d3de`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261019T192429Z.log` (SHA-256
   `8518fcfe2c8ae4369e41a4fdd2bd931505ff866031cd321555ff100ab99a1e4a`), plus
   `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261016.log` emitted by the
@@ -6312,7 +6312,7 @@
   before install, after install, and after emulator process restore.
 - Decision: Keep the registration guard and include null-before-register in
   JCSystem lifecycle regressions.
-- Commit: `15dc3fcc5c5ead672e52d1ed5634ec78459e457d`
+- Commit: `f4d3f1502071fa448bce900db7cb13a322243b34`
 - Artifacts/logs: `artifacts/logs/jcsystem-get-aid-registration-vpcd-20261019.log`,
   `artifacts/logs/jcsystem-get-aid-registration-restore-vpcd-20261019.log`, and
   `artifacts/logs/cycle-choupi-20261019T193502Z.log`.
@@ -6330,7 +6330,7 @@
   install/select behavior or claim Java-level `getAID()` coverage is absent.
 - Decision: Keep the status files synchronized with committed behavior and
   evidence.
-- Commit: `14a8edccfb7518458f9074017ed9b9db14b5828d`
+- Commit: `15645bc1d94bf1f7d42f9f001943e11c94f098fa`
 - Artifacts/logs: `STATUS.md`, `TODO.md`.
 
 
@@ -6350,7 +6350,7 @@
   the backing-array constructor. Deterministic exhaustion injection was not run.
 - Decision: Keep the exception translation; add allocation-failure injection
   before claiming the low-memory path fully verified.
-- Commit: `da50522af16913d8b7dc1351c805b7ed15b1d66e`
+- Commit: `dc8a26d6d0bb54a9e588271a80d2213c30cb285d`
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-allocation-errors-vpcd-20261019.log`.
 
 
@@ -6367,7 +6367,7 @@
   fails. The full VM's transient-factory reason-2 mapping remains inspection-only.
 - Decision: Keep the regression and continue the API/runtime audit; add full-VM
   low-memory injection if a safe allocator seam is introduced.
-- Commit: `61cdcdedf3068dd8126b8b2da54c2b958ce8121a`
+- Commit: `6c9161d21118cae80c0d747d6b847b6dcce063c6`
 - Artifacts/logs: none.
 
 
@@ -6388,7 +6388,7 @@
   Its exact initializer failure was not injected.
 - Decision: Keep the change; add a constructor-level fault injection seam only if
   needed for broader restore low-memory coverage.
-- Commit: `a64a9d72b7387c4a15797930dd638b418762daab`
+- Commit: `a917d4941926cf173bf7e46f4066f14eb172fcc7`
 - Artifacts/logs: none.
 
 
@@ -6409,7 +6409,7 @@
   constructor propagate deterministic allocation failures. Full VM restore/APDU
   handling remains unverified under forced exhaustion.
 - Decision: Keep the targeted regression; continue the broader runtime/API audit.
-- Commit: `292802da16f02c12915b87381eb0a18d52bb8301`
+- Commit: `3b53b2eb72fbe1039c104637922f91ed291612f9`
 - Artifacts/logs: none.
 
 
@@ -6429,7 +6429,7 @@
   in the runtime heap, including on read failures.
 - Decision: Keep the ownership change and allocation-count regression; continue
   the runtime memory audit.
-- Commit: `01f7eba75fc1afc53dbabcecb68cf4cdf5e307ed`
+- Commit: `eae4a30d80850e4365c07940d948f64baf5b391f`
 - Artifacts/logs: none.
 
 
@@ -6449,7 +6449,7 @@
   and object graph reconstruction in the host VPCD emulator.
 - Decision: Keep the change; physical persistence still requires a real board
   power cycle and functioning PC/SC applet APDUs.
-- Commit: `71c6811c33e15f3672d31b2fb37c2efcea123785`
+- Commit: `91f7591a54c96b86b67eb4cc5a65b3bfa51a6b20`
 - Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203104Z.log
   and artifacts/logs/vpcd-persistence-restore-20261019T203104Z.log.
 
@@ -6468,8 +6468,8 @@
 - Result: Failure while resolving fields or allocating the fields array cannot
   leak the persistent tag overflow buffer.
 - Decision: Keep the RAII staging; continue the runtime memory/API audit.
-- Commit: source `1ac2955fbb901c13158f94481d0bfd1497c9ad92`;
-  validation/docs `b2947afa6cdb494dcdc17b758df567ae9d0d5f00`.
+- Commit: source `475e4e8a5b6e2b6bc2fff098bc3fea18a13e0b9b`;
+  validation/docs `e66273b82554018f66ca9e9325fbb7359f6ec8fa`.
 - Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203708Z.log
   and artifacts/logs/vpcd-persistence-restore-20261019T203708Z.log.
 
@@ -6486,7 +6486,7 @@
 - Result: A failed mutable array copy no longer leaves a nonzero length with a
   null backing pointer; assignment failure preserves the destination's values.
 - Decision: Keep the staged ownership and continue the memory/API audit.
-- Commit: `79c2a79c0fd42e21f154bf5e973bca9e7f497d83`
+- Commit: `1304f610954c3d9fff6911410495bf4ea96c2a03`
 - Artifacts/logs: none.
 
 
@@ -6506,7 +6506,7 @@
 - Result: Copy-constructor failure propagation is now deterministically covered
   alongside the existing construction, assignment, and persistent-array cases.
 - Decision: Keep the focused test and continue the runtime memory/API audit.
-- Commit: `b8545a9`
+- Commit: `05357bb`
 - Artifacts/logs: none.
 
 
@@ -6524,7 +6524,7 @@
 - Result: Root-vector growth now happens before the heap object allocation.
   Direct failure injection at the reserve boundary remains outstanding.
 - Decision: Keep the ordering fix; continue the heap allocation audit.
-- Commit: `f311958`
+- Commit: `e074b68`
 - Artifacts/logs: `artifacts/logs/runtime-exception-root-reserve-vpcd-20261020.log`
   (inconclusive VPCD emulator log).
 
@@ -6548,7 +6548,7 @@
   capacity to retain their GC root.
 - Decision: Keep the ordering fix and continue auditing heap root-vector
   mutation paths.
-- Commit: `9154aa8`
+- Commit: `55d4a36`
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log`,
   `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.
 
@@ -6567,7 +6567,7 @@
   deterministic and covered directly.
 - Decision: Keep the regression and continue auditing heap root-vector mutation
   paths.
-- Commit: `45581f9`
+- Commit: `12954ca`
 - Artifacts/logs: none.
 
 
@@ -6587,7 +6587,7 @@
   injection.
 - Decision: Keep the lightweight harness focused; use a dependency-complete heap
   integration target if direct runtime-root failure injection becomes necessary.
-- Commit: `7a96432`
+- Commit: `86594d1`
 - Artifacts/logs: none.
 
 
@@ -6609,7 +6609,7 @@
   not reach the CCID handler, so power-up persistence is not established.
 - Decision: Keep the transport issue open; retry physical applet testing after
   Pico USB/PCSC visibility has been restored, checking counters after one APDU.
-- Commit: `3b73df7`
+- Commit: `780e831`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041200Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`.
 
@@ -6634,7 +6634,7 @@
   remain unverified.
 - Decision: Pause further APDU retries until the host PC/SC transmit or reader
   disconnect path is diagnosed; firmware remains responsive.
-- Commit: `f06546a`
+- Commit: `893a033`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041650Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`.
 
@@ -6684,7 +6684,7 @@
   remains unknown. Both architecture builds and runtime checks pass.
 - Decision: Keep instrumentation and inspect per-object child traversal and
   persistent-storage reads before changing GC semantics.
-- Commit: `71c164b`
+- Commit: `adedd37`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
   `061623Z.log`, `061949Z.log`, and `062341Z.log`; APDU serial traces were
   inspected live and not archived.
@@ -6697,11 +6697,11 @@
   progress log and current handoff.
 - Validation: Documentation consistency inspection; no firmware rebuild or
   hardware command was needed for this metadata-only update.
-- Result: Commit `71c164b` contains the GC traversal optimization attempt and
+- Result: Commit `adedd37` contains the GC traversal optimization attempt and
   the diagnostic findings; physical APDU delivery remains blocked.
 - Decision: Continue with per-object traversal instrumentation and fix the
   observed second-pass stall.
-- Commit: `56dca05`
+- Commit: `b3353be`
 - Artifacts/logs: none.
 
 
@@ -6723,7 +6723,7 @@
   tests. Full static performance testing remains pending.
 - Decision: Run official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` with serial
   capture to verify repeated collection under the benchmark workload.
-- Commit: `0f60673`
+- Commit: `69c5d9e`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T063106Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T063339Z.log`.
 
@@ -6734,7 +6734,7 @@
 - Validation: `./tools/test-vpcd-persistence` passed 3/3; `./tools/build arm` and `./tools/build riscv` passed; physical `./tools/cycle choupi` passed before and after diagnostics were disabled; official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed on the Pico; final named-reader SELECT/GETVERSION/JCSystem probe passed.
 - Result: Full static suite ended at 2,262 transfers with no panic, invalid refs, or edge failures. GC stabilized at 83 array slots / 28 instance slots (33 / 25 reachable); one collection reclaimed 50 arrays. Expected client totals: 1,772 `NO_SUCH_ALGORITHM`, 95 `CANT_BE_MEASURED`. SHA-256 256-byte measurements: `doFinal` 3.10 ms/op, `update` 3.34 ms/op, `reset` 6.11 ms/op. Final serial had `TEST:PASS choupi_runtime`; one `WATCHDOG_RECOVERY cause=other` diagnostic is the known retained scratch marker on ordinary reboot.
 - Decision: Use reachability-based reclamation for this workload; continue auditing static-root and alias coverage for other applets.
-- Commit: `dbbbb13`
+- Commit: `8234755`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-gc-root-fix-20261020.log`; `artifacts/logs/monitor-static-gc-root-fix-20261020.log`; `artifacts/logs/cycle-choupi-20261020T082304Z.log`; `artifacts/logs/cycle-choupi-20261020T085457Z.log`; `artifacts/results/physical-perf-static-gc-root-fix-20261020/`.
 
 ## 2026-10-20 — Verify BOOTSEL reinsertion detection
@@ -6744,7 +6744,7 @@
 - Validation: Escalated read-only `lsusb`, `udevadm info`, `lsblk`, `findmnt`, `picotool info -a`, and BOOTSEL volume metadata queries.
 - Result: Device enumerated as `2e8a:000f`, picotool reported `boot type: bootsel`, and Linux exposed `/dev/sdb` with serial `D92E743D5F640C0F` and auto-mounted the `RP2350` volume. No additional unplug/replug cycle or latency measurement was performed.
 - Decision: Reinsertion is recognized by this VM for the observed event; capture udev remove/add timing during a future directly monitored cycle if timing/repeatability is needed.
-- Commit: `56dca05`
+- Commit: `b3353be`
 - Artifacts/logs: Read-only outputs from the current session; no log file created.
 
 ## 2026-10-20 — Consolidate current implementation backlog
@@ -6763,7 +6763,7 @@
   is recorded as passing.
 - Decision: Use `todo.md` as the single prioritized backlog; preserve old
   uppercase TODO details as historical context.
-- Commit: `ec25917`
+- Commit: `cb3bce8`
 - Artifacts/logs: none.
 
 ## 2026-10-20 — Consolidate backlog into existing TODO tracker
@@ -6782,7 +6782,7 @@
   gaps.
 - Decision: Continue maintaining the current prioritized section at the top
   of `TODO.md`; retain older evidence below it for history.
-- Commit: `74ec9c8`
+- Commit: `9e73fad`
 - Artifacts/logs: none.
 
 ## 2026-10-20 — Refresh physical JCAlgTest supported-algorithm results
@@ -6807,7 +6807,7 @@
 - Decision: AC4's post-OwnerPINX physical comparison is complete. Next address
   AC5 with an actual power-off/on persistence readback; do not infer that from a
   firmware reboot.
-- Commit: `daf7ff3`
+- Commit: `9d0b1c6`
 - Artifacts/logs: `artifacts/logs/jcalgtest-alg-support-ownerpinx-20261020.log`
   (SHA-256 `db06f0c398b7e7f091b663232c07d9a27af7d65cd124ba5a2d60d2b4cbae18c5`);
   `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log` (SHA-256
@@ -6831,7 +6831,7 @@
   alternate-AID install attempt.
 - Decision: After a real power removal and reinsert, rerun the bounded power-up
   probe and repeat `ALG_SUPPORT_EXTENDED` to complete AC5 reproducibility.
-- Commit: `8fe8ff0`
+- Commit: `802132d`
 - Artifacts/logs: `artifacts/logs/gppro-install-jcsystem-persistence-probe-20261020.log`
   (SHA-256 `ca2fed0d6e487d1e007ecc671a2b95893bc6d30aec1b87220cabe0a134e8e678`);
   `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log` (SHA-256
@@ -6858,7 +6858,7 @@
 - Decision: AC5 persistence and reproducibility are verified on the physical
   Pico. Continue with AC1/AC2 clean-install evidence and the three-run
   clean-flash integration sequence. Unsupported algorithms remain expected.
-- Commit: `457922b` (recorded in the metadata follow-up commit)
+- Commit: `da34c75` (recorded in the metadata follow-up commit)
 - Artifacts/logs: probe `artifacts/logs/pico-powerup-persistence-20261020T132635Z.log`
   (SHA-256 `96eb1ae56c155d4d1245586bc34bec3b437fb8f59b33e9e7337f06770086c4c0`);
   client `artifacts/logs/jcalgtest-alg-support-after-powercycle-20261020.log`
@@ -6880,7 +6880,7 @@
   restore and clean-install integration work as open items.
 - Decision: Continue with AC1/AC2 clean-install evidence and the three-run
   clean-flash integration sequence.
-- Commit: `7b4ec20` (recorded in the metadata follow-up commit)
+- Commit: `92d22a1` (recorded in the metadata follow-up commit)
 - Artifacts/logs: none; evidence is in the preceding AC5 progress entry.
 
 ## 2026-10-20 — Clean GlobalPlatformPro install on physical Pico
@@ -6904,7 +6904,7 @@
   returned `6985`; deleting the instance first is the validated sequence.
 - Decision: AC2 is complete. AC1 still needs Windows reader/GPPro validation;
   next run the plan's three-pass clean-flash sequence when applicable.
-- Commit: `22167b6` (recorded in the metadata follow-up commit)
+- Commit: `a81c746` (recorded in the metadata follow-up commit)
 - Artifacts/logs: `artifacts/logs/gppro-clean-install-list-before-20261020.log`
   (SHA-256 `87712d58f8af691fe31ef20b19f58627bf66b16e3459abc6bc1635baccdbc3be`),
   `artifacts/logs/gppro-clean-install-delete-20261020.log`
@@ -6943,7 +6943,7 @@
 - Decision: Run one remains in progress, not counted complete, until a true
   power removal is followed by a passing power-up probe and repeated support
   comparison. The user was asked to unplug/reconnect for about five seconds.
-- Commit: `2eb1782` (recorded in the metadata follow-up commit)
+- Commit: `57186cb` (recorded in the metadata follow-up commit)
 - Artifacts/logs: build logs `artifacts/logs/build-arm-three-pass-integration-20261020.log`
   and `artifacts/logs/build-riscv-three-pass-integration-20261020.log`;
   cycle `artifacts/logs/cycle-choupi-20261020T140230Z.log`;
@@ -6974,7 +6974,7 @@
 - Decision: Generalize CAP package acceptance and its storage/registry/cleanup
   lifecycle, then restart with the README's Core stage. Do not proceed to later
   API areas until Core loads successfully.
-- Commit: `970002e`
+- Commit: `0f58558`
 - Artifacts/logs: serial `artifacts/logs/api-coverage-arm-monitor-20261020.log`
   (SHA-256 `4f295cb3911ceed398a612a8a48c4880fdd9a37daf145d74c9b6a9ba27de86ac`);
   GPPro preflight `artifacts/logs/api-coverage-gppro-info-20261020.log` (SHA-256
@@ -6993,7 +6993,7 @@
 - Validation: `./tools/build arm` passed (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`). The resulting firmware image ends at `0x100bb400`, below the slot region. RISC-V build and hardware flash were intentionally skipped under the ARM-only development scope and repository hardware build gate.
 - Result: The storage layer now supports up to eight independent CAP images with fixed package IDs 56–63. Loader and VM callers are not migrated yet; arbitrary package AIDs are not end-to-end supported by this step.
 - Decision: Continue by allocating non-conflicting dynamic package IDs and routing CAP parsing, loading, VM lookup, and deletion through the package-indexed APIs.
-- Commit: `9c7b9ae`
+- Commit: `89f8702`
 - Artifacts/logs: build output from `./tools/build arm`; no hardware log
 
 ## 2026-10-20 — Accept arbitrary package AIDs and route package lifecycle
@@ -7022,7 +7022,7 @@
 - Decision: Keep deploy-folder API coverage open until its Core CAPs complete
   upload, test, and cleanup; next test multiple package AIDs and lifecycle
   operations in an emulator or on the card.
-- Commit: `e20944e`
+- Commit: `6705f72`
 - Artifacts/logs: Build output only. VPCD attempt used
   `artifacts/logs/host-vpcd-jcalgtest-20261014.log` and timed out before socket
   connection.
@@ -7058,7 +7058,7 @@
   Javacardx/JavacardxInt INSTALL refusal `6A80`, Service (124 calls, 77 OK),
   and Biometry LOAD refusal `6D00`. The first Crypto runner CSV was a
   partial-install false positive; use the direct Crypto client CSV as evidence.
-- Commit: `875bf99` (this ID is recorded in the metadata follow-up commit)
+- Commit: `99d4597` (this ID is recorded in the metadata follow-up commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-core-client-20261021.csv`,
   `pico2-core-with-ext-client-20261021.csv`,
   `pico2-security-20261021.csv`, `pico2-crypto-client-20261021.csv`,
@@ -7087,7 +7087,7 @@
   result; some Ext scenario calls report APPLET_NOT_INSTALLED.
 - Decision: Continue with the OwnerPIN constructor failure, then rerun the
   complete deploy stages and investigate persistent package DELETE `6581`.
-- Commit: `9dae416` (evidence and progress); SDK submodule source commit
+- Commit: `0baa1a6` (evidence and progress); SDK submodule source commit
   `9d70825`.
 - Artifacts/logs: `artifacts/results/deploy/pico2-overlap-retest-20261021.csv`,
   `artifacts/results/deploy/pico2-overlap-retest-client-20261021.log`; bounded
@@ -7113,7 +7113,7 @@
   Shareable limitation is documented in `.agent/QKB.md`.
 - Decision: Rerun Core through the deploy runner with Multi and Ext CAPs, then
   continue investigating persistent applet deletion and later API areas.
-- Commit: `a577c25`.
+- Commit: `9def000`.
 - Artifacts/logs: `artifacts/results/deploy/pico2-ownerpin-map-retest-20261021.csv`
   and `pico2-ownerpin-map-client-20261021.log`.
 
@@ -7141,7 +7141,7 @@
 - Decision: Keep the superclass-boundary remap. Restore USB access, flash the
   clean build, reinstall Multi and Ext, then continue Core and later deploy
   areas. Diagnose populated-package deletion before relying on runner cleanup.
-- Commit: `6c8b3ff`
+- Commit: `62edfb5`
 - Artifacts/logs: Core CSVs
   `artifacts/results/deploy/pico2-selectfix_APISUPPORT_3b800181.csv` and
   `artifacts/results/deploy/pico2-dispatch-fix_APISUPPORT_3b800181.csv`;
@@ -7167,7 +7167,7 @@
 - Decision: Reflash the clean ARM build when the board returns, delete a
   populated deploy CAP, confirm GET STATUS and reinstall, then continue the
   remaining deploy README stages.
-- Commit: `2c3459e` (implementation); progress record commit follows.
+- Commit: `758cd8e` (implementation); progress record commit follows.
 - Artifacts/logs: Build output `build/arm/pico2_choupi.uf2`; host test output
   was not archived separately.
 
@@ -7195,8 +7195,8 @@
 - Decision: Regenerate the VPCD fixture set before relying on the JCAlgTest
   timeout, restore Pico USB visibility, then upload the deploy Multi and Ext
   CAPs and test both Multi applets before proceeding through the README areas.
-- Commit: `c52e9b9` (implementation); nested OS path encoder commit `7e9d068`.
-  `f964152` additionally captured pre-existing `JC_Instance` diagnostic edits
+- Commit: `ea8bf4c` (implementation); nested OS path encoder commit `7e9d068`.
+  `e236dd9` additionally captured pre-existing `JC_Instance` diagnostic edits
   while repairing a file-mode mistake; those edits were preserved in that
   commit.
 - Artifacts/logs: `artifacts/logs/high-index-tag-jcalgtest-vpcd-20261021.log`,
@@ -7224,7 +7224,7 @@
   in the VM, build/flash ARM under the repository gate, run the deploy Core
   stage (which loads Multi and creates both `...41` and `...42` applets), then
   proceed through Security and Crypto.
-- Commit: `bfe6755` records the prior validation checkpoint.
+- Commit: `0710e98` records the prior validation checkpoint.
 - Artifacts/logs: `artifacts/logs/jcalgtest-exact-cap-vpcd-20261021.log`;
   generated fixtures `build/algtest-v182-current-{empty-flash,load-code}.bin`.
 
@@ -7232,14 +7232,14 @@
 
 - Step/experiment: `progress-commit-reference-correction`
 - Change: Clarified the commit reference in the preceding progress entry; it is
-  contained in commit `26adbb5`, not `bfe6755`.
-- Validation: Inspected `git show --stat 26adbb5`; the commit contains the
+  contained in commit `4e9ccbd`, not `0710e98`.
+- Validation: Inspected `git show --stat 4e9ccbd`; the commit contains the
   preceding progress, handoff, and QKB updates.
 - Result: The prior entry now has an auditable commit reference without
   rewriting the append-only progress log.
 - Decision: Continue with the same pending physical Multi/Ext test when Pico
   USB appears in the VM.
-- Commit: `26adbb5` (commit that this correction identifies).
+- Commit: `4e9ccbd` (commit that this correction identifies).
 - Artifacts/logs: none.
 
 ## 2026-10-21 — Recheck physical access and multi-package test coverage
@@ -7270,12 +7270,12 @@
 - Step/experiment: `physical-multi-applet-retest-access-check-commit-reference`
 - Change: Added the committed checkpoint identifier to the preceding progress
   record without changing its validation results.
-- Validation: Inspected commit `dfacb94`; it contains the handoff, QKB, and
+- Validation: Inspected commit `0ab868a`; it contains the handoff, QKB, and
   progress checkpoint updates.
 - Result: The physical-access checkpoint is now traceable to its commit.
 - Decision: Resume physical Multi and deploy CAP testing when USB enumeration
   returns.
-- Commit: `dfacb94` (checkpoint); this correction is committed separately.
+- Commit: `0ab868a` (checkpoint); this correction is committed separately.
 - Artifacts/logs: none.
 
 ## 2026-10-21 — Fix imported class checks and smoke-test deploy CAPs
@@ -7312,7 +7312,7 @@
 - Decision: On USB enumeration, flash this ARM build and run the official Core
   scenarios, confirm both Multi AIDs, install a second distinct package while
   the first remains, then continue Security/Crypto and remaining README stages.
-- Commit: `bcef65f`.
+- Commit: `a7a65af`.
 - Artifacts/logs: `artifacts/logs/userexception-supercatch-vpcd-20261021-fix1.log`,
   `artifacts/logs/deploy-core-userexception-vpcd-20261021.log`,
   `artifacts/logs/deploy-core-userexception-vpcd-release-20261021.log`,
@@ -7326,12 +7326,12 @@
 - Change: Resolved the pending commit marker in the preceding progress record;
   the implementation, focused regression, TODO, QKB, and handoff were committed
   together.
-- Validation: Inspected commit `58e92e6` and confirmed it contains the seven
+- Validation: Inspected commit `2041330` and confirmed it contains the seven
   files for the imported class-check fix and deploy CAP smoke tests.
 - Result: The implementation step now has an auditable Git reference.
 - Decision: Continue with physical Core/Multi testing when USB enumeration
   returns; the hardware remains unavailable in this VM.
-- Commit: `58e92e6` (implementation commit referenced by this correction).
+- Commit: `2041330` (implementation commit referenced by this correction).
 - Artifacts/logs: none.
 
 ## 2026-10-21 — Exercise both deploy Multi CAP applets in VPCD
@@ -7352,7 +7352,7 @@
 - Decision: On physical access, run the deploy Core scenarios, verify both AIDs
   coexist and are independently selectable, then load another distinct
   package without deleting Multi and check GET STATUS, DELETE, and reinstall.
-- Commit: `3d583bc`.
+- Commit: `c0dcb33`.
 - Artifacts/logs: `artifacts/logs/deploy-multi-a-select-vpcd-20261021.log` and
   `artifacts/logs/deploy-multi-b-select-vpcd-20261021.log`.
 
@@ -7361,11 +7361,11 @@
 - Step/experiment: `deploy-multi-applet-independent-vpcd-commit-reference`
 - Change: Resolved the pending commit marker for the preceding Multi applet
   smoke-test record.
-- Validation: Inspected commit `8dcd7a1`; it contains the TODO/handoff updates
+- Validation: Inspected commit `6dd1bf0`; it contains the TODO/handoff updates
   and the append-only test record.
 - Result: The independent Multi A/B emulator check is traceable to its commit.
 - Decision: Physical coexistence and second-package validation remain open.
-- Commit: `8dcd7a1` (Multi smoke-test commit referenced by this correction).
+- Commit: `6dd1bf0` (Multi smoke-test commit referenced by this correction).
 - Artifacts/logs: none.
 
 ## 2026-10-21 — Handoff unresolved deploy Shareable dispatch
@@ -7396,12 +7396,12 @@
 - Step/experiment: `deploy-core-shareable-dispatch-handoff-commit-reference`
 - Change: Recorded the handoff documentation commit identifier without
   changing the implementation or its validation state.
-- Validation: Confirmed commit `93bdacb8592693c450e4c1d6e4879e3cb22968e0`
+- Validation: Confirmed commit `e724ce86d4d127228be94d49d06444679702280d`
   contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
 - Result: The incomplete Shareable implementation remains uncommitted while
   the handoff notes are traceable.
 - Decision: Resume from the unresolved Shareable APDU diagnosis recorded above.
-- Commit: `25a97f4` (validation record commit `25a97f4`).
+- Commit: `deb1ff9` (validation record commit `deb1ff9`).
 - Artifacts/logs: none.
 
 ## 2026-10-21 — Reassess functionality review against current source
@@ -7573,7 +7573,7 @@
 - Validation: Reviewed `.agent/SESSION_CONTINUITY.md`, current handoff, relevant diffs, and existing progress records. ARM build had passed before PC-only trace instrumentation; `./tools/build-pc`, Python syntax check, and shell syntax check passed. No new tests or hardware commands were run for this documentation-only step.
 - Result: The physical Core runner previously completed 291 calls (267 OK, 19 allowed unsupported, 3 status errors, 2 runtime exceptions); VPCD reproduces Shareable probe response `049000`. Latest working tree includes temporary PC-only traces and extensive unrelated dirty files.
 - Decision: Stop here as requested. Next session should resolve package 17 PC 367 / thrown package 15 class 72, remove temporary traces, and respect the ARM-only constraint and flash build gate.
-- Commit: `0e8f47f` (handoff and progress record only).
+- Commit: `736deee` (handoff and progress record only).
 - Artifacts/logs: listed in `.agent/HANDOFF.md`; none created by this documentation step.
 
 ## 2026-10-21 — Handoff completed for Shareable dispatch fix
@@ -10028,9 +10028,9 @@
 - Decision: Keep any remaining generated or optional nested submodule content
   out of source commits; review current `git status` before future staging.
 - Commit: Dependency source commits `83323a4`, `2fedf58`, `af6817f`; root
-  dependency registration `47c8d35`; runtime `6ee8ab9`; tests `d3f1ac3`; tools
-  `fc14b73`; data `507ab39`; documentation `9c2d41d`.
-- Artifacts/logs: Existing tracked logs and metrics are in `507ab39`; ignored
+  dependency registration `8d0a145`; runtime `29ae3d6`; tests `4c56cf0`; tools
+  `6cfda5c`; data `bce38b9`; documentation `4c3c7ab`.
+- Artifacts/logs: Existing tracked logs and metrics are in `bce38b9`; ignored
   generated artifacts were left untouched.
 
 ## 2026-10-22 — Scope JC305 interface remaps and validate AES/SHA static calls
@@ -10222,7 +10222,7 @@
   decoding pass on VPCD, the SDK JCRMI client, and physical ARM hardware.
 - Decision: Keep broader custom/framework hierarchy and malformed metadata
   coverage open; continue with remaining Priority 3 RMI profile gaps.
-- Commit: `5d3aabc`
+- Commit: `3a94051`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T085319Z.log` (SHA-256
   `b9e137138b2521d639eb009db2a97e76e29b2ea8a915cdf22ca24c1549f60a5b`),
@@ -10257,7 +10257,7 @@
   propagation on VPCD and physical hardware.
 - Decision: Keep remaining security-package exception types/subclasses and
   malformed hierarchy coverage open; move to the next RMI profile gap.
-- Commit: `5d3aabc`
+- Commit: `3a94051`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T090126Z.log` (SHA-256
   `d35b03c76aa43980ffa8e0b3272457a4f753d51c7d62dc64bc4ba8f32ef57b85`),
@@ -10288,7 +10288,7 @@
   subclass marker and inherited 16-bit reason on VPCD, SDK client, and hardware.
 - Decision: Keep longer inheritance chains and other API families open; this
   covers one applet-defined subclass of a Java Card security exception.
-- Commit: `5d3aabc`
+- Commit: `3a94051`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T090847Z.log` (SHA-256
   `63468996fb3d35b42b6c73da3f2c3513f2215f0798bc55a058484fd4a75caf25`),
@@ -10317,7 +10317,7 @@
   reason through two applet-defined classes before the exported API parent.
 - Decision: Longer chains, malformed hierarchy data, and other API exception
   families remain open.
-- Commit: `f755e9b`
+- Commit: `f52d0b6`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T094919Z.log` (SHA-256
   `185618b77deb954cbcfca091dbc45db7ccf69c20b8021e7183fb2b3c56c0e06e`),
@@ -10347,7 +10347,7 @@
   breaking later RMI calls on VPCD or physical hardware.
 - Decision: Keep malformed signature and other primitive-array boundary cases
   open.
-- Commit: `14e2f7f`
+- Commit: `afac4cf`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T102107Z.log` (SHA-256
   `b6b4e38ef19c2a56215fd9ecb39fee62ed76d696e414aaf6a7e48b18d0984ba8`),
@@ -10365,7 +10365,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --min-devices 3 --max-devices 3 --out-dir artifacts/results/deploy/parallel-20261023-three-token-clean-1234` completed every worker (worker 3's area-level install failures made the coordinator return 1). Security was repeated on all three; Service was repeated on all three and then solo on D92. Final elevated dry run found all three readers.
 - Result: Security counts matched exactly on all three: 901 calls, 77 OK, 820 unsupported, 2 skipped, 2 `WRONG_RESULT`. Crypto 22/466 OK, JSec 84/84, and Service 124/124 passed on token 2; Core 272 OK / 15 unsupported / 4 Ext methods unavailable. Core optional Ext and Javacardx, JavacardxExt, JavacardxInt, Biometry INSTALLs returned `6A88` on tested tokens; all partial LOADs rolled back. Service on D92 reproduced 12 `SW=6400` Dispatcher errors in concurrent (113/124 then 112/124 on repeat) and solo (112/124) runs. No token disconnected; upload and cleanup passed. Exact firmware identity across tokens was not checked. A subset Security invocation exposed that empty worker buckets run all areas; see QKB and HANDOFF.
 - Decision: Treat D92 Service `SW=6400` as reproducible device-specific behavior pending firmware identity comparison and Dispatcher investigation. Fix the parallel runner's empty-area semantics before future subset runs.
-- Commit: `9d8d8fc`.
+- Commit: `662cc72`.
 - Artifacts/logs: `artifacts/results/deploy/parallel-20261023-three-token-clean-1234/` (including `SUMMARY.md`), `artifacts/results/deploy/parallel-20261023-security-three-token-1240/`, `artifacts/results/deploy/parallel-20261023-service-three-token-1255/`, and `artifacts/results/deploy/service-token3-solo-20261023.csv`.
 
 ## 2026-10-23 — Reflash all tokens and run the full JC305 CAP suite
@@ -10375,7 +10375,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial <serial>` returned `CYCLE:PASS` for all three devices, with verified 100% image loads and 18-second passing monitors. Exact-reader full suites completed with exit 0 on all three. Final elevated dry run found 3 PC/SC readers.
 - Result: Each token completed 1,866 calls. Tokens 1/2 each: 579 OK, 1,281 expected unsupported, 4 `APPLET_NOT_INSTALLED` (optional Ext methods), 2 `WRONG_RESULT`. Token 3: 568 OK, 1,281 expected unsupported, 4 Ext-dependent unavailable, 2 wrong, and 11 Service `SW_ERROR` (`SW=6400`). The 11 Dispatcher failures remain only on D92 after all three boards were flashed with the same UF2 SHA-256 `0945dd18ce32477b82c8f224a5f1c51f45cfe3b62a6a413809de629d354b938a`. All successful CAP installs cleaned up and every partial LOAD rolled back. Optional installs returned the same `6A88` on all boards. Each boot monitor emitted one retained `WATCHDOG_RECOVERY cause=other` marker alongside repeated passing runtime summaries; this marker is already documented as non-failure by itself.
 - Decision: Firmware image mismatch is ruled out as the cause of D92's Service difference. Investigate persistent runtime/card state and Dispatcher behavior; do not reopen expected unsupported algorithms.
-- Commit: `6763690`.
+- Commit: `7fbf232`.
 - Artifacts/logs: `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/SUMMARY.md`, per-token CSV/log files in that directory, and flash/monitor logs `artifacts/logs/cycle-choupi-20261023T110123Z.log`, `artifacts/logs/cycle-choupi-20261023T110257Z.log`, `artifacts/logs/cycle-choupi-20261023T110419Z.log`.
 
 ## 2026-10-23 — Record selectable Java Card capability work package
@@ -10385,7 +10385,7 @@
 - Validation: Inspected the current 15-entry JCAlgTest support declaration, comparator, API sources, ROM-mask build flow, Pico CMake target, and native implementation locations. No build was run for this documentation-only step.
 - Result: The work package and key integration points are recorded. Existing dirty API submodule state must be preserved.
 - Decision: Start with strict config parsing/generation and build-flow integration, then move algorithm providers and native modules behind the config.
-- Commit: `ddc7560` (TODO placement correction).
+- Commit: `0d373e8` (TODO placement correction).
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; none.
 
 ## 2026-10-23 — Add Java Card capability configuration generator
@@ -10408,7 +10408,7 @@
 - Decision: Keep the checked-in 15-row support declaration as a parity
   reference while making the build pass the generated CSV explicitly; wire
   configuration outputs into both build flows next.
-- Commit: `bcef65f`.
+- Commit: `a7a65af`.
 - Artifacts/logs: `tools/test-javacard-support.py`; generated scratch output
   under `/tmp/jc-support-current`.
 
@@ -10433,7 +10433,7 @@
   warning-free.
 - Decision: Proceed to route Java API factories through selectable providers,
   then condition native source/module inclusion and test all three profiles.
-- Commit: `3d583bc`.
+- Commit: `c0dcb33`.
 - Artifacts/logs: `build/choupi-pc/generation.sha256`,
   `build/choupi-pc/support-config.sha256`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
@@ -10457,7 +10457,7 @@
   Java algorithm/PIN providers and native implementations remain to extract.
 - Decision: Continue through key and cipher provider extraction, then digest,
   PIN variants, and native modules; test reduced ROM masks and CSV sweeps.
-- Commit: `d6a9157` (API submodule `4541b95`).
+- Commit: `f0f59f1` (API submodule `4541b95`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
@@ -10480,7 +10480,7 @@
   SHA-256, PIN, and native module extraction remain open.
 - Decision: Next route Cipher factory selection through providers and keep
   AES core support needed by SCP03 separate from Java Card AES capability.
-- Commit: `591751c` (API submodule `420c82a`; includes prior provider commit
+- Commit: `c103c0b` (API submodule `420c82a`; includes prior provider commit
   `4541b95`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
@@ -10506,7 +10506,7 @@
   source path. Native AES/DES code is still combined in `jni.cpp`.
 - Decision: Continue with SHA-256 and OwnerPIN providers, then extract native
   crypto modules and verify reduced-profile ROM and image sizes.
-- Commit: `282b163` (API submodule `f327c66`).
+- Commit: `646f35f` (API submodule `f327c66`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
@@ -10528,7 +10528,7 @@
   still in `jni.cpp` and remain to be split.
 - Decision: Next extract optional OwnerPIN variants, then split all selectable
   native algorithms and libraries while retaining SCP03 AES.
-- Commit: `cde592d` (API submodule `f6dab0e`).
+- Commit: `88c40ef` (API submodule `f6dab0e`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
@@ -10552,7 +10552,7 @@
   algorithms and the three alternate build profiles remain.
 - Decision: Continue extracting selectable native functions and conditionally
   compiling their modules/libraries, while preserving SCP03 AES.
-- Commit: `d1e1529` (API submodule `727767c`).
+- Commit: `a987627` (API submodule `727767c`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
@@ -10626,7 +10626,7 @@
   the two tokens and need investigation; this unrestricted run differs from
   earlier runs that excluded RSA-2048. Retry the third token when visible and
   compare after identifying the Security/Crypto failing call paths.
-- Commit: `ea095bc`.
+- Commit: `c13772a`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261023T141401Z.log`,
   `artifacts/logs/cycle-choupi-20261023T141535Z.log`,
   `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv`,
@@ -10640,7 +10640,7 @@
 - Result: Fresh supplied JCAlgTest CAP SELECT returned `9000` on both profiles. GETVERSION returned `F103` current and `6F00` minimal. No valid support CSV was produced; no AES/SHA support difference can be claimed. The candidate class/static-field fixes did not resolve initialization.
 - Image measurement: Restored current UF2 is 1,653,248 bytes (SHA-256 `5ddd7cba3543e410e1419d43bc2cc53ac1b8b273e9b4f725a46cdbe8f2d74422`). Minimal UF2 hash/size were not preserved before restoring current.
 - Decision: Preserve the comparison as blocked on JCAlgTest eager initialization; next isolate the constructor/provider causing current `NO_SUCH_ALGORITHM` and minimal `6F00`, then rerun full support reports and compare against generated profile CSVs.
-- Commit: `fae35b1`; existing unrelated worktree changes preserved.
+- Commit: `4460bf7`; existing unrelated worktree changes preserved.
 - Artifacts/logs: `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md`, `artifacts/logs/jcalgtest-current-version-probe-20261023.log`, `artifacts/logs/cycle-choupi-20261023T153233Z.log`, `artifacts/logs/cycle-choupi-20261023T153724Z.log`, `artifacts/logs/cycle-choupi-20261023T154235Z.log`.
 
 ## 2026-10-23 — Firmware and JCVM architecture guide
@@ -10650,7 +10650,7 @@
 - Validation: Inspected active CMake targets and corresponding boot, transport, interpreter, native crypto, heap, and flash source; checked four required sections and 1,653-word length. Documentation-only step; firmware builds and hardware validation were intentionally skipped.
 - Result: Guide SHA-256 `494f8fba55f4417f69f63432985f3311a3bd316ec17ce43b6b1c3a563103e23e`; no runtime metric was measured.
 - Decision: Use the guide as an onboarding map, and recheck generated bindings and selected capability profile before modifying implementation.
-- Commit: `d683cb8` (guide and initial progress record; SHA recorded by this follow-up commit).
+- Commit: `cef4e37` (guide and initial progress record; SHA recorded by this follow-up commit).
 - Artifacts/logs: `FIRMWARE_JCVM_ARCHITECTURE.md`; no test logs.
 
 
@@ -10661,7 +10661,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed with the 0/15 minimal profile and again with the restored 15/15 current profile. Minimal ARM was flashed to Pico 2 `D92E743D5F640C0F`; exact package-AID SELECT returned `9000` and GETVERSION changed from `6F00` to `F103`. The surfaced `F103` is the applet’s translation of `CryptoException.NO_SUCH_ALGORITHM` (reason 3), not an uncaught VM exception. All-enabled ARM image was then flashed to D92; finite eight-second monitor passed (`TEST:SUMMARY pass=1 fail=0`). A final SmartcardIO probe of the all-enabled image was blocked because D92 remained USB-visible but PC/SC temporarily enumerated only the other two readers.
 - Result: The minimal-profile `6F00` is fixed. JCAlgTest still does not complete initialization under minimal capabilities because its `AlgStorageTest` constructor unconditionally requests AES/DES engines and keys; thus no complete support CSV was produced and AES/SHA report comparison remains outstanding.
 - Decision: Keep all-enabled support config restored. Next decide how to make the unchanged JCAlgTest fixture tolerate deliberately absent algorithms, then run its complete support query in both profiles.
-- Commit: `d229f2f`
+- Commit: `3e36ceb`
 - Artifacts/logs: minimal probe output was captured in the session transcript; all-enabled finite monitor `artifacts/logs/minimal-exception-translation-monitor-20261023.log` (ignored by Git), SHA-256 `5a8a5b5abcccd8acc28aa4c677966c26c4be208675d252a54292cb69b2c02c2b`; all-enabled UF2 SHA-256 `6641567323dcaf0d8cf1ba0e6c3108f1e9235fd144cb466a8ba9b6e00d0a2efc`.
 
 ## 2026-10-23 — Archive malformed CAP code review
@@ -10671,7 +10671,7 @@
 - Validation: Rechecked the cited source paths, confirmed the file is 826 words, and checked its whitespace. Documentation-only step; build, VPCD, fuzzing, and hardware validation were intentionally skipped.
 - Result: Five prioritized findings and a remediation/test plan recorded; no runtime metric measured. Review SHA-256 `4ecc4b96a719691671f2f2ac1256a3a67460b184f0060b3d48f11c80b90d01b0`.
 - Decision: Keep the findings as source-review hypotheses until malformed fixtures reproduce or refute each path; begin fixes at LOAD-time structural validation.
-- Commit: `0daf5bf` (review and initial progress record; SHA recorded by this follow-up commit).
+- Commit: `4cba6eb` (review and initial progress record; SHA recorded by this follow-up commit).
 - Artifacts/logs: `todo/review_20261023.md`; no test logs.
 ## 2026-10-24 — Physical JCAlgTest base/current capability comparison
 
@@ -10706,7 +10706,7 @@
   yes/no rows while omitting five optional crypto capabilities. Retain the
   `6A80` response for duplicate or malformed LOAD data. The prior seven-flag
   base trial is superseded.
-- Commit: `744bceb` (implementation and comparison); this follow-up records the
+- Commit: `2d7fb82` (implementation and comparison); this follow-up records the
   final progress-record SHA.
 - Artifacts/logs: `artifacts/results/jcalgtest-profile-comparison-20261024.md`,
   `artifacts/results/jcalgtest-profile-base10-20261024/`,
@@ -10765,7 +10765,7 @@
   committed; the original upstream JCAlgTest CAP remains unchanged.
 - Decision: Continue the still-open `/deploy` acceptance matrix on a fresh
   physical card or VPCD; D92 has only 23 persistent bytes free.
-- Commit: `36c8abf` (preceding step); this record is committed separately.
+- Commit: `ecab04d` (preceding step); this record is committed separately.
 - Artifacts/logs: `artifacts/results/capability-profiles-acceptance-20261024/`.
 # 2026-10-24 — Add symmetric cryptography profile
 
@@ -10794,7 +10794,7 @@
   `/deploy` Crypto area pass on a real card. Do not alter the upstream
   `AlgTest_v1.8.2_jc305.cap` (SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`).
-- Commit: `2adca1c` (root implementation); `d0e7fc6` (Java Card API submodule).
+- Commit: `5d05e30` (root implementation); `d0e7fc6` (Java Card API submodule).
 - Artifacts/logs: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`;
   reference CSV SHA-256 `8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943`.
 
@@ -10803,14 +10803,14 @@
 - Step/experiment: `symm-crypto-profile-commit-reference-20261024`
 - Change: Recorded the implementation commit and normalized the supplied
   reference CSV file mode to non-executable without changing its contents.
-- Validation: Confirmed the root commit is `2adca1c`, its API submodule pointer
+- Validation: Confirmed the root commit is `5d05e30`, its API submodule pointer
   is `d0e7fc6`, and the CSV SHA-256 remains
   `8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943`.
 - Result: The implementation is committed; physical algorithm acceptance is
   still pending because no card reader was visible.
 - Decision: Continue with real-card KATs and `/deploy` Crypto when a Pico reader
   becomes visible; do not report emulator results as hardware validation.
-- Commit: `2adca1c` (implementation commit recorded here).
+- Commit: `5d05e30` (implementation commit recorded here).
 - Artifacts/logs: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`.
 ## 2026-10-24 — Add symmetric crypto known-answer harness
 
@@ -10830,7 +10830,7 @@
 - Decision: Retain the implementation. On a visible card, first rebuild ARM
   and RISC-V, then flash the ARM image and run these vectors plus the upstream
   `/deploy` Crypto area. Keep JCAlgTest upstream CAP unchanged.
-- Commit: `26c2285`.
+- Commit: `6bfa3e2`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`;
   run with `./tools/test-symm-crypto-vpcd`.
 
@@ -10859,7 +10859,7 @@
   D92 has only 23 persistent bytes and was not used for CAP installs. 2BED
   and 8E had 42,437 and 52,042 bytes available before the probe tests. Reattach
   8E for any additional board-specific runtime validation.
-- Commit: `cee1cbb` (`Fix ISO9797-M1 symmetric cipher semantics`).
+- Commit: `d2c4603` (`Fix ISO9797-M1 symmetric cipher semantics`).
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`,
   `artifacts/logs/symm-crypto-kat-pcsc-20261024T120000Z.log`,
   `artifacts/logs/symm-crypto-deploy-crypto-8E-20261024.log`,
@@ -10887,7 +10887,7 @@
 - Decision: Continue with key object providers, RSA cipher/signature methods,
   ECDSA, EC key agreement and generation, then compare the complete report
   against the requested JCOP CSV before physical testing.
-- Commit: `85c7a16` (`Add asymmetric profile digest prerequisites`).
+- Commit: `a09b117` (`Add asymmetric profile digest prerequisites`).
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   target CSV SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`.
 
@@ -10986,7 +10986,7 @@
   malfunctioning board when multiple boards are available.
 - Decision: Apply the fallback rule to multi-board runs and retain failed-board
   evidence alongside successful-board results.
-- Commit: `9020b92`
+- Commit: `d7c0aa4`
 - Artifacts/logs: `SKILL.md`, `.agent/SESSION_CONTINUITY.md`,
   `.agent/HANDOFF.md`; no logs
 
@@ -11016,7 +11016,7 @@
 - Decision: Use this receiver ABI for direct native Java Card API methods.
   Replace the existing Java crypto providers with native API dispatch before
   treating their cryptographic behavior as compliant.
-- Commit: `a7c9fb6`; ROM-mask submodule commit `7704b0b`
+- Commit: `b689649`; ROM-mask submodule commit `7704b0b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T163247Z.log`;
   ARM UF2 SHA-256 `215de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
   PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
@@ -11034,7 +11034,7 @@
   possible after the PC/SC reader list disappeared. Cause is unknown.
 - Decision: Continue offline until an exact PC/SC reader becomes available;
   use another identified board if it appears.
-- Commit: `9748fcc`
+- Commit: `0b3c39d`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T163247Z.log`; no
   deploy CSV was created because no worker started.
 
@@ -11088,7 +11088,7 @@
 - Decision: Use the generated indexes for the next native object/field API
   step. Keep crypto behavior in direct native C++ dispatch; do not add Java
   provider logic or modify upstream CAP files.
-- Commit: root `8d0802d`; ROMmask submodule `be3a712`.
+- Commit: root `9597128`; ROMmask submodule `be3a712`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T165018Z.log`; ARM UF2
   SHA-256 `15de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
   PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
@@ -11120,7 +11120,7 @@
   classification; no broader profile match is claimed.
 - Decision: Reuse native exception dispatch for direct RSA key and cipher API
   methods. Continue migrating algorithm behavior out of Java provider bodies.
-- Commit: `90d765b`.
+- Commit: `2d53ea3`.
 - Artifacts/logs: pre-fix CSV SHA-256
   `9ab4245f2410634e6a2559552762c2889e3c8f4218c9fc35b8715949da74abae`; fixed
   range-check CSV SHA-256
@@ -11143,7 +11143,7 @@
 - Result: The persistent workflow now explicitly says not to block progress on
   the first malfunctioning device, including during parallel device runs.
 - Decision: Apply this rule to subsequent physical validation work.
-- Commit: `a612646`.
+- Commit: `0796b09`.
 - Artifacts/logs: none.
 ## 2026-10-24 — Move RSA key component operations to native C++
 
@@ -11168,7 +11168,7 @@
 - Decision: Continue migrating the remaining RSA cipher provider behavior to
   native dispatch, then validate unchanged `/deploy` CAPs on available Pico 2
   devices using failover across identified boards.
-- Commit: `85930f4`
+- Commit: `dd306b2`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`,
   `artifacts/logs/build-pc-rsa-validation.log`; no physical hardware log
 
@@ -11179,7 +11179,7 @@
 - Validation: `./tools/env python3 tools/test-javacard-support.py` passed 8/8. `./tools/build arm --profile symm_crypto`, `./tools/build riscv --profile symm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Elevated VPCD test `tools/tests/test_asymm_crypto_vpcd.py` passed 20/20; the restricted attempt failed before execution because localhost socket creation was denied. Archive integrity and every SHA256 manifest entry passed; `git diff --check` passed.
 - Result: Profile image SHA-256 values differ: symmetric `e302de5a9e3e107ae50790293972e64b03c718194e43b1a16850e6e9177e69e3`; asymmetric `f79117a20d8d78eea49a6e086a2083324b5e2e07b54dde83edf0cdd71b779290`. Bundle SHA-256 `faac7e7a83389970d6cbe75942ee9e16c8f7574249c9692b474b44d4198bc5f3`. No physical flash or Windows PC/SC/client run was performed in this step.
 - Decision: The external Windows test setup is ready at `build/external-test/pico2-jcvm-windows-test.zip`; keep Windows result comparison and full asymmetric algorithm implementation open in `TODO.md`.
-- Commit: `01fb41ac526f8537558753a834ad9d17faea4684`.
+- Commit: `d1a85369dd130f691d7971629caaafeeeb22e7cb`.
 - Artifacts/logs: `docs/windows-asymm-symm-test.md`, `build/external-test/pico2-jcvm-windows-test.zip`, `/tmp/build-arm-symm-final.log`, `/tmp/build-arm-asymm.log`, `/tmp/build-riscv-asymm.log`.
 
 ## 2026-10-24 — Prepare symmetric-only Windows test package
@@ -11189,7 +11189,7 @@
 - Validation: Confirmed the build profile is `symm_crypto`; support generation reports 91 configured capabilities with 46 enabled. `unzip -t` passed and every member hash in `SHA256SUMS.txt` verified. `git diff --check` passed.
 - Result: UF2 size is 1,671,168 bytes with SHA-256 `e302de5a9e3e107ae50790293972e64b03c718194e43b1a16850e6e9177e69e3`. Package SHA-256 is `3d25700c4cc56b5417af2e06b3aa84219a504eb31c5e2305eba1e0e24e097acc`. No Windows PC/SC or physical card test was performed.
 - Decision: Give the package and `docs/symm-crypto-windows-test.md` to the user for Windows flashing and PC/SC validation; resume asymmetric development only when requested.
-- Commit: `31220622add7c273ccd27beda7afbdb72d1dc577`.
+- Commit: `84c439d22ffc8117af818acdeae7dd239c8fde51`.
 - Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`, `build/external-test/symm-only-package/SHA256SUMS.txt`, `docs/symm-crypto-windows-test.md`.
 
 ## 2026-10-24 — Recover stale package storage and install upstream JCAlgTest
@@ -11216,7 +11216,7 @@
   has the unchanged upstream CAP installed through GPPro.
 - Decision: Keep the upstream CAP unchanged. Run the official JCAlgTest client
   against the installed applet when continuing its functional validation.
-- Commit: `f771800` (storage fix), `986b277` (reader/flash workflow).
+- Commit: `76b2d54` (storage fix), `4652c66` (reader/flash workflow).
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`, 1,665,024 bytes, SHA-256
   `43af89578ec5612643b75a8460c4743ef520bf6938d4659dccb443ef5ed166a8`;
   upstream CAP SHA-256
@@ -11238,7 +11238,7 @@
 - Decision: Use the exact observed PC/SC name in Linux commands; use the USB
   product label shown by Windows on that external host. No host driver files
   outside the repository were changed.
-- Commit: `986b277`.
+- Commit: `4652c66`.
 - Artifacts/logs: `artifacts/logs/monitor-empty-firmware-physical-20261024.log`.
 
 ## 2026-10-24 — Verify empty-card state and explicit JCAlgTest install
@@ -11260,7 +11260,7 @@
 - Decision: Before the next physical install, remove applet AID
   `4A43416C675465737431`, then package AID `4A43416C6754657374`, and verify
   `gp --list` lists only the ISD. Keep the upstream CAP unchanged.
-- Commit: `7cd29e9`.
+- Commit: `c7f6020`.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`;
   ARM UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
 
@@ -11279,7 +11279,7 @@
   present; it removes that known package and proves the clean precondition.
 - Decision: Use the refreshed symmetric-only archive for external testing.
   Physical cleanup remains pending until a Pico reader is visible here.
-- Commit: `1c62a35`.
+- Commit: `4f2b313`.
 - Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`;
   UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`;
   archive SHA-256 `f120aab7444689220d2c1e4359ef680b0f9921f86d213eccd1fad692f615802d`.
@@ -11305,7 +11305,7 @@
 - Decision: Keep D92 available as a known-good physical reader; repair the
   expected-support CSV mapping before claiming full symmetric-profile
   acceptance. Continue on any other identified visible Pico if a board drops.
-- Commit: `690ce6a`.
+- Commit: `8e8e516`.
 - Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`; UF2 size 1,675,264 bytes,
   SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
@@ -11327,7 +11327,7 @@
   selected support profile. Unsupported results remain expected.
 - Decision: Resume broader profile and `/deploy` acceptance; retain upstream
   JCAlgTest CAP unchanged. `asymm_crypto` remains paused by user request.
-- Commit: `7eca12e`.
+- Commit: `95bc4a6`.
 - Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   no new firmware image was built because this step changes host-side
   comparison metadata only.
@@ -11354,7 +11354,7 @@
   state.
 - Decision: Continue physical CAP testing on D92 or another board with
   confirmed runtime enumeration. Preserve the empty D92 card state.
-- Commit: `f01e4f2`.
+- Commit: `f05fb23`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T220417Z.log`;
   `artifacts/logs/cycle-choupi-20261024T220800Z.log`;
   `artifacts/logs/cycle-choupi-20261024T221145Z.log`.
@@ -11383,7 +11383,7 @@
 - Decision: Core JCSystem methods are behaving on the symmetric profile; next
   investigate OwnerPINx or continue the remaining `/deploy` API areas. Keep the
   physical card empty and continue failover if D92 disappears.
-- Commit: `575a4db`.
+- Commit: `9976a2a`.
 - Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/core.csv`,
   `security.csv`, and `crypto.csv`; no new build/flash was required for this
   API-only validation step.
@@ -11407,7 +11407,7 @@
 - Decision: Keep crypto `no` results classified as expected. Continue first
   with JCVM core/OwnerPINx or required applet/JCSystem behavior; optional
   Service work remains lower priority.
-- Commit: `45e5e9f`.
+- Commit: `cee4583`.
 - Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/javacardxsec.csv`,
   `javacardxext.csv`, `javacardxint.csv`, and `service-biometry.csv`.
 
@@ -11430,7 +11430,7 @@
 - Decision: The current firmware does not preload JCAlgTest; the tested card
   registry is empty after reflash. Install the upstream CAP explicitly only
   when beginning an applet test.
-- Commit: `432f6fd`.
+- Commit: `2a6246a`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T224042Z.log`.
 
 ## 2026-10-25 — Reflash BOOTSEL-returned Pico and reproduce OwnerPINx Core findings
@@ -11458,7 +11458,7 @@
 - Decision: Preserve this empty card. Next trace OwnerPINx interface dispatch
   without adding Java algorithm/provider implementations or editing upstream
   CAP files.
-- Commit: `f870980`; final registry recheck recorded in `ca06824`.
+- Commit: `ebc5339`; final registry recheck recorded in `5b17092`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T225805Z.log`;
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`;
   image `build/arm/pico2_choupi.uf2` SHA-256
@@ -11485,7 +11485,7 @@
 - Decision: Keep the fix in the VM bytecode layer; no Java provider or CAP was
   changed. Continue with the next prioritized native VM task while preserving
   the empty physical card registry.
-- Commit: `fa15bfa`.
+- Commit: `8c5fbfc`.
 - Artifacts/logs: `artifacts/logs/jcsystem-ownerpinx-profile-fixed-full-vpcd-20261025.log`,
   `artifacts/logs/cycle-choupi-20261024T232303Z.log`, and
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`; ARM
@@ -11513,7 +11513,7 @@
   with `6A88` and rolls back.
 - Decision: Keep the physical registry empty. Continue the non-profile-specific
   Java Card runtime and card-manager backlog; do not run JCAlgTest on minimal.
-- Commit: source fix `fa15bfa`; matrix validation record `8690a84`.
+- Commit: source fix `8c5fbfc`; matrix validation record `a7af795`.
 - Artifacts/logs: `artifacts/results/deploy/current-D92-core-ownerpinx-fixed-20261025.csv`,
   `current-D92-security-20261025.csv`, `current-D92-crypto-20261025.csv`,
   `minimal-D92-crypto-20261025.csv`,
@@ -11540,7 +11540,7 @@
 - Decision: Leave D92 empty and provide this UF2 for external loading. A
   transient watchdog recovery marker appeared once during the monitor, while
   all repeated runtime checks passed; track separately if it recurs.
-- Commit: `4da6c6d`.
+- Commit: `4568d10`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`;
   `artifacts/logs/cycle-choupi-20261025T001428Z.log`.
 
@@ -11560,7 +11560,7 @@
   wrapper entry point. Default compiler parallelism remains two jobs per build.
 - Decision: Keep using repository wrappers; no other build paths need changes
   unless a future reproduction bypasses `tools/build`.
-- Commit: `47ef2f2`.
+- Commit: `b33b65d`.
 - Artifacts/logs: `build/.tools-build.lock`; no separate build log archived.
 
 ## 2026-10-25 — Flash empty symmetric image and explicitly install JCAlgTest
@@ -11589,7 +11589,7 @@
 - Decision: Preserve this separation in external setup instructions: flash
   firmware first, verify only ISD, and install the unchanged CAP explicitly.
   Delete the applet before its package if an empty physical card is needed.
-- Commit: `fc0feaf`.
+- Commit: `114b51d`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T002953Z.log`,
   `artifacts/logs/gppro-explicit-jcalgtest-D92-20261025.log`,
   `build/arm/pico2_choupi.uf2`; CAP SHA-256
@@ -11612,7 +11612,7 @@
 - Decision: Continue with the highest remaining native JCVM backlog item; do
   not resume the paused asymmetric profile or Windows workflow without user
   direction.
-- Commit: `2c6e600`.
+- Commit: `7620ed4`.
 - Artifacts/logs: CSV
   `artifacts/results/jcalgtest-symm-crypto-D92-20261025/CHOUPI_symm_crypto_D92_ALGSUPPORT__3b_80_01_81.csv`
   SHA-256 `31a530948b195a5ce1a6f57d391b826a10ff8b51b92b0495c199b3cfefacfd1e`;
@@ -11643,7 +11643,7 @@
   SHA-256:
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
 - Decision: Keep firmware and persistent applet storage as separate setup steps. Users wanting a fresh card must remove existing applets/packages via GPPro; a UF2 reflash alone cannot empty card storage. Physical Windows validation is still outstanding.
-- Commit: `8991b87`
+- Commit: `dbac727`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T013632Z.log`; `artifacts/logs/gppro-empty-install-D92-20261025.log`; `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-25 — Physical symmetric-profile static benchmark
@@ -11653,7 +11653,7 @@
 - Validation: The official client was allowed 3,600 seconds and exited 124 at that configured limit while running the DES MAC matrix. The partial CSV has 3,127 rows / 675 methods: 540 `NO_SUCH_ALGORITHM`, 67 `CANT_BE_MEASURED`, and 68 measured outcomes. No unexpected SW, `6F00`, Java exception, `TEST:FAIL`, or `FAULT` was found. A follow-up physical SELECT, GETVERSION, and JCSystem info probe returned `9000` for all three APDUs.
 - Result: SHA-256 measured 3.48 ms/op (`doFinal`), 4.08 (`update`), and 5.67 (`reset`) at 256 bytes / 250 iterations. Secure random measured 1.74 ms/op (`generateData`) and 2.79 (`setSeed`). Completed DES cipher-init samples were 39.0 / 47.8 / 56.0 ms/op for DES / 2-key 3DES / 3-key 3DES. AES cipher-init samples were 59.4–60.9 / 68.2–68.8 / 76.7–77.5 ms/op for 128 / 192 / 256-bit keys. These are partial-suite results; the client has no algorithm-family filter and the full RSA/method matrix did not finish within one hour. JCSystem reports `getMaxCommitCapacity() = 0B`, matching the open capacity-accounting item. No fix was indicated by the measured SHA or cipher results.
 - Decision: Treat unsupported algorithms as expected and retain the existing commit-capacity question for a separate native JCSystem task. Do not label this full static matrix complete.
-- Commit: `cad11dc`
+- Commit: `c18c272`
 - Artifacts/logs: log
   `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`
   (SHA-256 `bb565b3ffdb7f3c91a6ed86d8654a0668f524a4b3e9a6f2cb790f50752761d52`);
@@ -11684,7 +11684,7 @@
   repeated GetSlotStatus requests and a prior GET STATUS command; see QKB.
 - Decision: Preserve card storage and do not issue more package writes until
   PC/SC APDU access is restored. Continue native JCSystem work offline.
-- Commit: `3f705ce`
+- Commit: `ca03d3a`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T025305Z.log`,
   `artifacts/logs/cycle-choupi-20261025T025904Z.log`; one-off CAP SHA-256
   `d12675f53b2ec96657cd51d0ea8392735a6aeb3a32383caf1911e50562d2addc`.
@@ -11712,7 +11712,7 @@
 - Decision: Keep the implementation; resume physical validation when a Pico is
   actually passed through to this VM. Preserve current card storage and do not
   issue package writes until PC/SC is responsive and registry state is known.
-- Commit: `78115dc`
+- Commit: `0ac1e16`
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-capacity-final-vpcd-20261025.log`
   (SHA-256 `6cd03edd0d7b7e6a823c16c5f7671637b7f0ed2deb2f3208d5da16cad649f138`),
   `artifacts/logs/cycle-choupi-20261025T034755Z.log` (BOOTSEL unavailable),
@@ -11731,7 +11731,7 @@
   and next physical action are now the first handoff content.
 - Decision: Continue physical validation only after the VM exposes a Pico USB
   device; otherwise proceed with offline JCVM work.
-- Commit: `aa941f8`
+- Commit: `8011a92`
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Correct project status after unavailable USB passthrough
@@ -11748,7 +11748,7 @@
   running or the current physical registry is empty.
 - Decision: Resume hardware checks only after the VM enumerates a Pico; continue
   with offline project work in the meantime.
-- Commit: `aed01fa`
+- Commit: `49e427a`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T034755Z.log`;
   `build/arm/pico2_choupi.uf2` SHA-256
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
@@ -11776,7 +11776,7 @@
 - Decision: Keep the card-manager multi-package acceptance item open until a
   PC/SC VPCD reader is available or a raw authenticated GP command harness is
   added.
-- Commit: `5a7f079`
+- Commit: `e3a45e3`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-registry-20261025.log`
   SHA-256 `dd28419d8c0846d79bd4fc12fce3df5f35b45c4d80fc2d0d4fe0a3dc5913ded3`.
 
@@ -11799,7 +11799,7 @@
 - Decision: Keep PC/SC and hardware acceptance open. When USB passthrough is
   available to the VM, re-enumerate boards and separately validate GPPro and
   physical install/SELECT behavior.
-- Commit: `e05fec0` (metadata commit records this SHA).
+- Commit: `3a1e68d` (metadata commit records this SHA).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025.log`
   SHA-256 `9fbf1ba9ea90b4a36a781c75614fcc84badb9b4625aa177897c14a2e597db9d9`.
 
@@ -11821,7 +11821,7 @@
   are removed.
 - Decision: Keep PC/SC GPPro multi-package validation and physical hardware
   validation open; retry once the boards enumerate in the VM.
-- Commit: `c6a5f60` (OS submodule commit `5c07f44`).
+- Commit: `9ad757c` (OS submodule commit `5c07f44`).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T050904Z.log`
   SHA-256 `8123442ca2a86d4d1cdc24d77a73d8b0312c3207c3404c58a4836d81ef0ef829`.
 
@@ -11843,7 +11843,7 @@
   on a physical card was not tested. 8E remained BOOTSEL.
 - Decision: Continue offline with multi-package registry discovery and restart
   reconstruction; keep GET DATA and full continuation open.
-- Commit: `fc2996c` (also includes the empty `symm_crypto` image validation
+- Commit: `5811948` (also includes the empty `symm_crypto` image validation
   record below).
 - Artifacts/logs: cycle logs
   `artifacts/logs/cycle-choupi-20261025T054429Z.log` and
@@ -11871,7 +11871,7 @@
   has no installed CAP packages or applets beyond its ISD.
 - Decision: Use the named UF2 for Windows testing and explicitly install the
   upstream JCAlgTest CAP afterward. Diagnose 8E only if it is needed again.
-- Commit: `fc2996c`.
+- Commit: `5811948`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2`;
   successful cycle `artifacts/logs/cycle-choupi-20261025T061403Z.log`;
   failed-runtime 8E cycle `artifacts/logs/cycle-choupi-20261025T061139Z.log`;
@@ -11893,7 +11893,7 @@
   hardware.
 - Decision: Keep multi-package restart reconstruction and physical validation
   open; continue with the next unblocked VM backlog item.
-- Commit: `3a8d823`.
+- Commit: `0fc7c7d`.
 - Artifacts/logs:
   `artifacts/logs/host-vpcd-multipackage-apdu-20261025T063857Z.log`, SHA-256
   `ef41bfa1d1f859dccec8fd8266dc639e4769d456aed147ad242e6ea82ad351d2`.
@@ -11919,7 +11919,7 @@
 - Decision: Keep automatic package/class discovery and physical power-cycle
   validation open. Continue with automatic registry recovery from saved host
   storage and remaining card-manager behavior.
-- Commit: `9dc0fe9`.
+- Commit: `c923c65`.
 - Artifacts/logs: initial process
   `artifacts/logs/host-vpcd-multipackage-apdu-20261025T064820Z.log` (SHA-256
   `9ff04323f8b1ff59e6aedf4360b12ccb4ec61dbd8f2fb3786e90d073539c8578`); resumed
@@ -11945,7 +11945,7 @@
   authenticated GET STATUS, selected every applet, and completed DELETE cleanup.
 - Decision: Automatic host VPCD registry discovery is complete. Physical
   multi-package power-cycle persistence and PC/SC-host GPPro remain unverified.
-- Commit: `3b45bd5` (implementation); documentation follow-up `796eb87`.
+- Commit: `c8e2bda` (implementation); documentation follow-up `9c474ba`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T070620Z.log`
   (SHA-256 `b26462a58b660dca73ea5619d4ba8724500427a910e03d1245307c980d2f33c2`);
   `artifacts/logs/host-vpcd-multipackage-restart-20261025T070620Z.log`
@@ -11969,7 +11969,7 @@
   restores two packages and three instances.
 - Decision: Keep fail-closed sidecar validation; continue to the next open
   card-manager/JCVM requirement. Physical power-cycle persistence remains open.
-- Commit: `1072e25` (test implementation); documentation follow-up `5308aae`.
+- Commit: `5d292f0` (test implementation); documentation follow-up `7c25b4d`.
 - Artifacts/logs: run log `artifacts/logs/host-vpcd-multipackage-apdu-20261025T071147Z.log`
   (SHA-256 `5cf2768c7b9655b2f9d11b3452bd1254997bc91f12880ec00ae86267dca0cce0`),
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261025T071147Z.log`
@@ -11996,7 +11996,7 @@
   refused, and never opens VPCD. Valid process resume is unchanged.
 - Decision: Keep registry validation fail-closed and continue with remaining
   card-manager and JCVM gaps; physical power-cycle persistence is still open.
-- Commit: `1b02284` (implementation); documentation follow-up `abe8acc`.
+- Commit: `5fe8d49` (implementation); documentation follow-up `cfe4ef5`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T072710Z.log`
   (SHA-256 `cc3a33fa97298ba1fb0bc51c2024e7fb7f139fb379bb8e1c3ad80a7f903dec1b`),
   restart `artifacts/logs/host-vpcd-multipackage-restart-20261025T072710Z.log`
@@ -12026,7 +12026,7 @@
 - Decision: Use 2BED for the next physical CAP install/select/delete test.
   Windows acceptance and true physical applet persistence across power-off/on
   remain open.
-- Commit: `0e5cfad` (physical validation record).
+- Commit: `8b03843` (physical validation record).
 - Artifacts/logs: cycle log `artifacts/logs/cycle-choupi-20261025T073359Z.log`
   (SHA-256 `c3996c0e39ec67f69e61237dd58427e0aaf20212f08e1e4b68a21f29c480c166`);
   GPPro 2BED listing `artifacts/logs/gppro-current-profile-2BED-20261025.log`
@@ -12056,7 +12056,7 @@
   empty.
 - Decision: Use the exact 2BED reader for further `/deploy` checks; preserve
   the upstream CAPs and keep `asymm_crypto` paused.
-- Commit: `9c652bfb317f4145bb89abf634eaba99f8e66d20`.
+- Commit: `d8658161e5225115bc0c36a396354c4a4de77041`.
 - Artifacts/logs: CSV `artifacts/results/deploy/current-2BED-20261025/core.csv`
   (SHA-256 `edfb7f6827b1051c837e468cd3db45db67f1fb88d00e7d9aca6d9a9f8c8afc9e`);
   final GPPro listing `artifacts/logs/gppro-current-profile-2BED-after-core-20261025.log`
@@ -12092,7 +12092,7 @@
 - Decision: Continue useful remaining API areas and investigate only failures
   that reproduce with supported setup. Windows enumeration and true physical
   power-cycle persistence remain open; `asymm_crypto` stays paused.
-- Commit: `7c7fd11917e22246cdd026c9e82509ab9a555c25`.
+- Commit: `12532a3750b188051a30011ceeddd5e281408b6b`.
 - Artifacts/logs: Security CSV SHA-256
   `96c3ee05fdda77179075fa809f4be65cdc4bf8825fa6dd3cd829d8c5fd3eece4`; Crypto
   CSV SHA-256 `447d8bdc81fb57c0d8b713d32973451befc391e1155dd28e12d2968465c3aafc`;
@@ -12119,7 +12119,7 @@
 - Decision: Continue with remaining JCVM acceptance gaps; do not implement
   optional APIs whose packages are absent from the runtime profile. `asymm_crypto`
   remains paused.
-- Commit: `2450cc5e66f09fd75e3e09cf754423637b9c9a2e`.
+- Commit: `7233033c9c6b0571e73ecb4ef7a97d6ea5d4acc8`.
 - Artifacts/logs: JavacardxSec CSV SHA-256
   `01dde4a24b966199ebd9e6a8b067684b6dc8bb7e7c4dccc308e645d4e39c406a`; Service
   CSV SHA-256 `cb337f40cedbda61a0bd88c38f0cad509e68184731852dab8b4c261157fada97`;
@@ -12156,7 +12156,7 @@
 - Decision: AC3 and the current-profile portion of AC4 are verified on 2BED.
   Windows acceptance and three complete clean-flash/power-cycle repetitions
   remain open.
-- Commit: `da0c43ed18962b53d7b4a282629933bb72a6520b`.
+- Commit: `6a9cb16c23c4fb205df06843b5eec69d1241259b`.
 - Artifacts/logs: client CSV SHA-256
   `9cdf7e31124f7cc9f73e4a244cbb9bc184d9027052b7b75362ab1cc08b99e78`; raw
   client log SHA-256 `cd4a6882fb9b6b28a948d2d4b0486575a410ceea43220437d79564ecb38d2512`;
@@ -12183,7 +12183,7 @@
   cross-applet contexts are not implemented yet.
 - Decision: Keep the general SensitiveResult TODO open until multi-applet SIO
   dispatch can be exercised; continue with the next concrete runtime gap.
-- Commit: `85ab7d2b070b55f804288fb150d24babaea1726f`.
+- Commit: `308504639796f985b539fafae38ce4a68f5221b3`.
 - Artifacts/logs: test executable `build/tests/rmi-registry/rmi_registry_test`;
   no separate log.
 
@@ -12201,7 +12201,7 @@
   installs on a physical card.
 - Decision: Keep the explicit install workflow as a regression; continue with
   the remaining TODO, including the unverified Windows acceptance path.
-- Commit: `236586d`
+- Commit: `5e1b364`
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261025T083218Z/`;
   script SHA-256 `adbbbe784fef53f4111e5135ac6a00a966a68fb60a2b2e5f42149990243f449b`;
   before-list SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`;
@@ -12302,7 +12302,7 @@
   bytes; Windows PC/SC and client execution remain unverified.
 - Decision: Deliver the symmetric-only package and retain Windows execution as
   an external acceptance item. Keep `asymm_crypto` paused.
-- Commit: `0772135`
+- Commit: `13ffae9`
 - Artifacts/logs: archive
   `build/external-test/symm-crypto-windows-test.zip`, SHA-256
   `24adae30b893acffd1faccd7455b071ca88dbcf6c0cbfb01019a95ea3675818a`;
@@ -12329,7 +12329,7 @@
   card state is empty again after cleanup.
 - Decision: Keep the package ready for Windows validation and continue the
   remaining implementation backlog. Windows PC/SC behavior remains unverified.
-- Commit: `caedc2f`
+- Commit: `e8792c9`
 - Artifacts/logs: CSV SHA-256
   `19bcb6a8be3ee67c1d1656b54760654a8875396914c553137670889cb3850b0f`; client
   log SHA-256
@@ -12362,7 +12362,7 @@
 - Decision: Keep the capacity implementation; next add a bounded exhaustion
   case or test power-cycle recovery without treating the timed-out large-array
   attempt as a pass.
-- Commit: `68e3bea`
+- Commit: `cb33993`
 - Artifacts/logs: physical log
   `artifacts/logs/jcsystem-transaction-physical-20261025T093140Z.log`, SHA-256
   `98f0834d5d960df830dc755212c177a2812761cc366d91a7476a1744d9939fb3`;
@@ -12401,7 +12401,7 @@
 - Decision: Mark Java-level catchability verified. Keep persistent applet data
   recovery across power cycle open. QKB records the observed full-reboot
   recovery and the safe test-runner procedure.
-- Commit: `395c421`
+- Commit: `94e5f07`
 - Artifacts/logs: physical log
   `artifacts/logs/jcsystem-transaction-physical-20261025T095547Z.log`, SHA-256
   `3a3c4a7365de3b4f961efd99a0568bcab29e203e9bf4f2dc4ffb4b1157cb92ca`;
@@ -12436,7 +12436,7 @@
 - Decision: Keep the PWM heartbeat and timer-bounded activity pulse. No further
   LED firmware change is needed unless physical visual feedback reports a
   board-specific brightness or polarity issue.
-- Commit: `202b072`
+- Commit: `73df2ca`
 - Artifacts/logs: image `build/arm/pico2_choupi.uf2`, 1,668,608 bytes, SHA-256
   `42d0aa887aecf9e1a9f164ebdac8161edff8c773e172a99a7ac2741ceadda219`; cycle
   log `artifacts/logs/cycle-choupi-20261025T104118Z.log`, SHA-256
@@ -12482,9 +12482,9 @@
 - Step/experiment: `jcsystem-static-array-alias-restore-diagnostic-20261025`
 - Change: Recorded the implementation/documentation commit SHA in the
   preceding progress entry, as required by the session log format.
-- Validation: Confirmed commit `f785ba6` contains only the JCSystem restore
+- Validation: Confirmed commit `7ca439f` contains only the JCSystem restore
   diagnostics, `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
-- Result: The prior investigation step is traceable to commit `f785ba6`.
+- Result: The prior investigation step is traceable to commit `7ca439f`.
 - Decision: Continue from the dangling static-array alias lifecycle diagnosis.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12496,15 +12496,15 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm` and `./tools/build riscv` passed. On 2BED `2BED26ED20556535`, the physical JCSystem probe passed 9/9: scalar transaction commit, array length `7FFF` before and after firmware cycle, array length after CCID reset, catchable `BUFFER_FULL`, and commit capacity. The final clean source ARM image was flashed and verified on 2BED and D92 `D92E743D5F640C0F`; the user reported all three attached Pico LEDs lit, while the third previously observed BOOTSEL chip ID could not be re-enumerated for wrapper verification. True power-off/on was not performed.
 - Result: The stale legacy parent-encoded tombstone no longer hides a newer live persistent array body. The physical transaction/soft-reset sequence succeeds; true power removal remains unverified.
 - Decision: Keep deterministic tag encoding and newest-live lookup. Preserve upstream CAP artifacts and unrelated crypto/profile work.
-- Commit: `8050f5b`
+- Commit: `b88c939`
 - Artifacts/logs: physical probe `artifacts/logs/jcsystem-transaction-physical-20261025T124715Z.log` (SHA-256 `9eef9644130c13ae7b76743a3e92c1231842f2ca2a5628fa92658ee2c43256d0`); cycle `artifacts/logs/cycle-choupi-20261025T125039Z.log` (SHA-256 `cb7db383ad49c5b60a107f2ce9a8386afd9d1f5f0a11bb6a81f0513714012428`); final ARM image `build/arm/pico2_choupi.uf2`, 1,668,608 bytes (SHA-256 `8fcdba1de93cf37a3e24bc7645ea99342a498538720da09d62a37091b89bd556`).
 
 ## 2026-10-25 — Record JCSystem overlay fix commit ID
 
 - Step/experiment: `jcsystem-overlay-live-record-selection-20261025`
-- Change: Recorded implementation commit `8050f5b` in the preceding progress entry.
+- Change: Recorded implementation commit `b88c939` in the preceding progress entry.
 - Validation: Confirmed the commit contains only the overlay fix, its regression coverage, TODO/QKB/handoff updates, and the progress record.
-- Result: The physical JCSystem array-lookup fix is committed as `8050f5b`.
+- Result: The physical JCSystem array-lookup fix is committed as `b88c939`.
 - Decision: Continue with true power-off/on persistence validation when scheduled; keep asymmetric crypto changes untouched.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12516,13 +12516,13 @@
 - Validation: Audited the per-profile CSV stage summaries in `artifacts/results/capability-profiles-acceptance-20261024/`, the post-OwnerPINx-fix Core/Security/Crypto CSVs under `artifacts/results/deploy/`, and the successful minimal Crypto rerun. Current/no-AES/minimal builds and relevant physical runs are already recorded in the preceding progress entries; this audit ran no new card tests.
 - Result: All three selected profiles have physical Core, Security, and Crypto outcomes recorded. Minimal JCAlgTest remains intentionally skipped; no-AES upstream JCAlgTest startup `F103` remains an applet limitation. Minimal Crypto's earlier storage-related INSTALL `6F00` was superseded by a successful 466-call rerun with cleanup.
 - Decision: Continue to the next open TODO priority; keep true power-off/on persistence and the three-consecutive-run acceptance open.
-- Commit: `5f472c4`
+- Commit: `22c9ccf`
 - Artifacts/logs: `artifacts/results/capability-profiles-acceptance-20261024/{current,no_aes,minimal}/`; `artifacts/results/deploy/current-2BED-20261025/`; `artifacts/results/deploy/no-aes-D92-core-ownerpinx-fixed-20261025.csv`; `artifacts/results/deploy/minimal-D92-crypto-20261025.csv`.
 
 ## 2026-10-25 — Record deploy matrix audit commit
 
 - Step/experiment: `selectable-profile-deploy-matrix-audit-20261025`
-- Change: Recorded the artifact-audit commit `5f472c4` in the preceding progress entry.
+- Change: Recorded the artifact-audit commit `22c9ccf` in the preceding progress entry.
 - Validation: Confirmed the commit contains only TODO, handoff, and progress updates for the verified three-profile Core/Security/Crypto matrix.
 - Result: The stale matrix checkbox is closed with evidence references; physical power-off/on acceptance remains open.
 - Decision: Continue with the next implementation priority in TODO.
@@ -12542,9 +12542,9 @@
 ## 2026-10-25 — Record LED and PC/SC follow-up commit ID
 
 - Step/experiment: `pico-three-board-led-pcsc-followup-20261025`
-- Change: Recorded documentation commit `adac765` in the preceding progress entry.
-- Validation: Confirmed `adac765` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md` for the observed board/reader state.
-- Result: The LED observation and current one-reader PC/SC result are traceable to commit `adac765`.
+- Change: Recorded documentation commit `e59b7a8` in the preceding progress entry.
+- Validation: Confirmed `e59b7a8` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md` for the observed board/reader state.
+- Result: The LED observation and current one-reader PC/SC result are traceable to commit `e59b7a8`.
 - Decision: Continue with the next open implementation priority; physical testing can resume on any Pico reader that becomes visible.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12562,9 +12562,9 @@
 ## 2026-10-25 — Record single-reader transport finding commit ID
 
 - Step/experiment: `pico-single-reader-service-transport-20261025`
-- Change: Recorded documentation commit `00f7a23` in the preceding progress entry.
-- Validation: Confirmed `00f7a23` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
-- Result: The D92 transport failure and its no-calls outcome are traceable to commit `00f7a23`.
+- Change: Recorded documentation commit `10d76cc` in the preceding progress entry.
+- Validation: Confirmed `10d76cc` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
+- Result: The D92 transport failure and its no-calls outcome are traceable to commit `10d76cc`.
 - Decision: Continue source work and retry physical APDUs only when a Pico is responsive through PC/SC.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12582,9 +12582,9 @@
 ## 2026-10-25 — Record USB interface finding commit ID
 
 - Step/experiment: `pico-usb-pcsc-interface-enumeration-20261025`
-- Change: Recorded documentation commit `a212144` in the preceding progress entry.
-- Validation: Confirmed `a212144` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
-- Result: The D92/2BED USB-versus-PC/SC discrepancy is traceable to commit `a212144`.
+- Change: Recorded documentation commit `41d2301` in the preceding progress entry.
+- Validation: Confirmed `41d2301` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
+- Result: The D92/2BED USB-versus-PC/SC discrepancy is traceable to commit `41d2301`.
 - Decision: Continue project work; retry 2BED PC/SC only after its CCID interface is registered.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12596,27 +12596,27 @@
 - Validation: `python3 -m py_compile tools/run-deploy-parallel` passed; `./tools/run-deploy-parallel --help` showed both options and their defaults. Confirmed `api_card_runner.py` accepts `--retries` and `--gp-timeout`. No physical run was made because the only PC/SC-visible Pico had previously stalled during GPPro INSTALL.
 - Result: Retry count and per-operation timeout are configurable, while the coordinator's default avoids the previously observed four-attempt/approximately 201-second retry sequence.
 - Decision: Use this safer default when physical `/deploy` testing resumes; continue diagnosing the root PC/SC/APDU issue independently.
-- Commit: `561ba3e`
+- Commit: `9290cdf`
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Record GPPro retry-control commit
 
 - Step/experiment: `parallel-deploy-gppro-retry-control-20261025`
 - Change: Recorded the implementation commit for the coordinator retry controls.
-- Validation: Confirmed `561ba3e` contains only the coordinator, TODO, QKB, handoff, and progress changes for this step.
-- Result: The default single-attempt behavior and its rationale are traceable to commit `561ba3e`.
+- Validation: Confirmed `9290cdf` contains only the coordinator, TODO, QKB, handoff, and progress changes for this step.
+- Result: The default single-attempt behavior and its rationale are traceable to commit `9290cdf`.
 - Decision: Continue with the open persistence and runtime priorities; do not treat retry control as a PC/SC transport repair.
-- Commit: `6dcd85f`
+- Commit: `9f10a2f`
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Record retry-delay correction commit
 
 - Step/experiment: `parallel-deploy-gppro-final-pause-20261025`
 - Change: Recorded the retry-delay correction commit SHA.
-- Validation: Confirmed `6dcd85f` contains the runner controls and associated TODO, QKB, handoff, and progress updates.
-- Result: The coordinator's zero-pause default and manual failover limitation are traceable to commit `6dcd85f`.
+- Validation: Confirmed `9f10a2f` contains the runner controls and associated TODO, QKB, handoff, and progress updates.
+- Result: The coordinator's zero-pause default and manual failover limitation are traceable to commit `9f10a2f`.
 - Decision: Continue offline project work while PC/SC transport is unhealthy.
-- Commit: `ec4de15bee501947355b34c8a5fec1758be0d5f5`; preceding investigation commits are `f43354ce3a90ffa84cb4499b4144d9f223e5f337`, `bb520e01b7957dfd10fe09132b0b933d0f7cf4ea`, and `27844bd`.
+- Commit: `7c3052083dd9b97546ef9927c1a278585e831489`; preceding investigation commits are `9e4c1976be459ceae64fd3ac939da51bd40c5f00`, `241476e2ea2d916ad3097cb77972a23000c00ece`, and `f8453e0`.
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Remove final retry delay and clarify deploy failover
@@ -12626,7 +12626,7 @@
 - Validation: `python3 -m py_compile tools/run-deploy-parallel` passed; CLI help lists all three GPPro controls; invalid `--gp-pause -1` is rejected before host access; focused `git diff --check` passed.
 - Result: A single failed GPPro attempt no longer inherits the upstream 20-second post-failure sleep. No USB/PCSC commands or physical tests were run.
 - Decision: Retry reports are bounded by the configured GP timeout and no retry pause by default. Explicit different-reader failover remains manual.
-- Commit: `79ab8e30cee768646b9996a6cafc24e9c2ade275`.
+- Commit: `f7dc8b4ed141ec5e5b380e41661d9c2a3f22d172`.
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Return every applet module in GET STATUS
@@ -12643,8 +12643,8 @@
 
 - Step/experiment: `gp-get-status-multiple-modules-20261025`
 - Change: Recorded the implementation commit for multi-module GET STATUS encoding and tests.
-- Validation: Confirmed commit `20bc9ec` contains only the GET STATUS implementation, its focused tests, TODO/QKB/handoff updates, and the preceding progress record.
-- Result: The source and VPCD regression are traceable to commit `20bc9ec`; physical P1=10 behavior remains unresolved.
+- Validation: Confirmed commit `fb8f78d` contains only the GET STATUS implementation, its focused tests, TODO/QKB/handoff updates, and the preceding progress record.
+- Result: The source and VPCD regression are traceable to commit `fb8f78d`; physical P1=10 behavior remains unresolved.
 - Decision: Continue physical diagnosis only when PC/SC responds or another identified Pico reader is available.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12663,8 +12663,8 @@
 
 - Step/experiment: `gp-get-status-static-module-scratch-20261025`
 - Change: Recorded the implementation commit SHA for the off-stack GET STATUS module scratch buffer.
-- Validation: Confirmed commit `9801dc1` contains only `src/ccid_device.cpp` and its TODO/QKB/handoff/progress records.
-- Result: The stack-risk mitigation and its explicitly inconclusive physical result are traceable to `9801dc1`.
+- Validation: Confirmed commit `7054a9e` contains only `src/ccid_device.cpp` and its TODO/QKB/handoff/progress records.
+- Result: The stack-risk mitigation and its explicitly inconclusive physical result are traceable to `7054a9e`.
 - Decision: Retry physical P1=10 only when a Pico reader is available through PC/SC.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12683,8 +12683,8 @@
 
 - Step/experiment: `gc-lifecycle-root-enumeration-20261025`
 - Change: Recorded the implementation commit SHA for lifecycle root enumeration coverage.
-- Validation: Confirmed commit `380b956` contains only the focused root test, TODO/handoff updates, and its progress record.
-- Result: The new root assertions are traceable to commit `380b956`.
+- Validation: Confirmed commit `7a3fa27` contains only the focused root test, TODO/handoff updates, and its progress record.
+- Result: The new root assertions are traceable to commit `7a3fa27`.
 - Decision: Continue the remaining GC and persistence-alias coverage.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12703,8 +12703,8 @@
 
 - Step/experiment: `gc-static-reference-root-enumeration-20261025`
 - Change: Recorded the implementation commit SHA for the cached static-reference root assertion.
-- Validation: Confirmed commit `187726f` contains only the focused root test and associated TODO/handoff/progress records.
-- Result: Static-reference enumeration coverage is traceable to commit `187726f`.
+- Validation: Confirmed commit `e22b208` contains only the focused root test and associated TODO/handoff/progress records.
+- Result: Static-reference enumeration coverage is traceable to commit `e22b208`.
 - Decision: Continue root tracing and collection coverage.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12723,8 +12723,8 @@
 
 - Step/experiment: `gc-static-apdu-root-collection-20261025`
 - Change: Recorded the implementation commit SHA for collector-level static/APDU root coverage and jcarray test-harness repairs.
-- Validation: Confirmed commit `f327b21` contains only the collector regression, scoped test support changes, and corresponding TODO/QKB/handoff/progress records.
-- Result: Actual static/APDU retention and six-array reclamation checks are traceable to commit `f327b21`.
+- Validation: Confirmed commit `76d291a` contains only the collector regression, scoped test support changes, and corresponding TODO/QKB/handoff/progress records.
+- Result: Actual static/APDU retention and six-array reclamation checks are traceable to commit `76d291a`.
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12743,8 +12743,8 @@
 
 - Step/experiment: `gc-apdu-outgoing-root-collection-20261025`
 - Change: Recorded the implementation commit SHA for native APDU outgoing-buffer mirror retention coverage.
-- Validation: Confirmed `145d02d` contains only the focused collector regression and its TODO/QKB/handoff/progress records.
-- Result: APDU outgoing-mirror retention assertions are traceable to `145d02d`.
+- Validation: Confirmed `8037016` contains only the focused collector regression and its TODO/QKB/handoff/progress records.
+- Result: APDU outgoing-mirror retention assertions are traceable to `8037016`.
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12753,8 +12753,8 @@
 
 - Step/experiment: `gc-apdu-outgoing-root-collection-20261025`
 - Change: Recorded the progress-record commit SHA for APDU outgoing-mirror retention coverage.
-- Validation: Confirmed `9311677` contains only this append-only progress entry.
-- Result: The tracking chain for implementation commit `145d02d` is complete.
+- Validation: Confirmed `5d94d4f` contains only this append-only progress entry.
+- Result: The tracking chain for implementation commit `8037016` is complete.
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12773,8 +12773,8 @@
 
 - Step/experiment: `gc-reference-array-child-tracing-20261025`
 - Change: Recorded the implementation commit SHA for reference-array child traversal coverage.
-- Validation: Confirmed `4c9296a` contains only the jcarray regression, target-scoped stubs, and associated tracking files.
-- Result: Reference-array parent/child collection coverage is traceable to `4c9296a`.
+- Validation: Confirmed `7faba17` contains only the jcarray regression, target-scoped stubs, and associated tracking files.
+- Result: Reference-array parent/child collection coverage is traceable to `7faba17`.
 - Decision: Continue with instance-field child traversal and transient root tests.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12793,8 +12793,8 @@
 
 - Step/experiment: `gc-top-level-result-typing-20261025`
 - Change: Recorded the implementation commit SHA for typed top-level result retention and release coverage.
-- Validation: Confirmed `b57e03f` contains only the focused jcarray collector regression and tracking files.
-- Result: Typed root-result behavior is traceable to `b57e03f`.
+- Validation: Confirmed `21d6136` contains only the focused jcarray collector regression and tracking files.
+- Result: Typed root-result behavior is traceable to `21d6136`.
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12823,8 +12823,8 @@
 
 - Step/experiment: `gc-transient-reference-graph-lifecycle-20261025`
 - Change: Recorded the implementation commit SHA for transient reference-array lifecycle coverage under collection.
-- Validation: Confirmed `81fab00` contains only the transient graph regression and its project tracking updates.
-- Result: Transient lifecycle regression is traceable to `81fab00`.
+- Validation: Confirmed `74ebc0c` contains only the transient graph regression and its project tracking updates.
+- Result: Transient lifecycle regression is traceable to `74ebc0c`.
 - Decision: Continue toward remaining project acceptance and correctness work.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12843,8 +12843,8 @@
 
 - Step/experiment: `gc-rmi-registry-collection-20261025`
 - Change: Recorded the implementation commit SHA for actual exported-object retention and post-unexport reclamation coverage.
-- Validation: Confirmed `683d435` contains only the focused GC regression and its tracking files.
-- Result: RMI registry root behavior is traceable to `683d435`.
+- Validation: Confirmed `45bbc65` contains only the focused GC regression and its tracking files.
+- Result: RMI registry root behavior is traceable to `45bbc65`.
 - Decision: Continue project completion work.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -12863,8 +12863,8 @@
 
 - Step/experiment: `physical-get-status-response-trace-20261025`
 - Change: Recorded the implementation commit SHA for the CCID response snapshot diagnostics.
-- Validation: Confirmed `3b7de4c` contains only the response-trace code and associated tracking records.
-- Result: Physical GET STATUS diagnostic firmware is traceable to `3b7de4c`.
+- Validation: Confirmed `bbad24b` contains only the response-trace code and associated tracking records.
+- Result: Physical GET STATUS diagnostic firmware is traceable to `bbad24b`.
 - Decision: Continue project acceptance work; retry P1=10 after PC/SC exposes a Pico reader.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T174621Z.log`.
@@ -12883,8 +12883,8 @@
 
 - Step/experiment: `physical-get-status-response-bytes-20261025`
 - Change: Recorded the implementation commit for the retained GET STATUS response-byte diagnostic.
-- Validation: Verified commit `0a14ba8` contains only `src/ccid_device.cpp`, `src/choupi_pico2.cpp`, and the associated TODO, QKB, handoff, and progress updates.
-- Result: The latest D92 diagnostic firmware and its bounded runtime cycle are traceable to `0a14ba8`.
+- Validation: Verified commit `3cf732f` contains only `src/ccid_device.cpp`, `src/choupi_pico2.cpp`, and the associated TODO, QKB, handoff, and progress updates.
+- Result: The latest D92 diagnostic firmware and its bounded runtime cycle are traceable to `3cf732f`.
 - Decision: Continue physical GET STATUS capture after PC/SC stabilizes; pursue an offline priority task in the meantime.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T182059Z.log`.
@@ -12914,10 +12914,10 @@
 - Step/experiment: `official-jc305-rmi-client-arrays-20261025`
 - Change: Recorded the source and tracking commit for the SDK 2.2.1 RMI array,
   returned-interface, and fresh-VPCD-state coverage.
-- Validation: Confirmed commit `7f76560` contains the six intended source and
+- Validation: Confirmed commit `b413233` contains the six intended source and
   project-tracking files for this step.
 - Result: The official client interoperability work is traceable to
-  `7f76560`; its test outcome remains `pass=18 fail=0`.
+  `b413233`; its test outcome remains `pass=18 fail=0`.
 - Decision: Continue current-source Service/RMI work and retain physical GET
   STATUS as an unresolved host diagnostic.
 - Commit: recorded in this follow-up entry's commit.
@@ -12950,9 +12950,9 @@
 - Step/experiment: `ccid-exact-packet-zlp-20261025`
 - Change: Recorded the implementation commit SHA for the exact-packet bulk-IN
   terminator and physical GET STATUS validation.
-- Validation: Confirmed commit `534932b` contains the CCID driver and associated
+- Validation: Confirmed commit `cba41bc` contains the CCID driver and associated
   TODO, QKB, handoff, and implementation progress updates.
-- Result: The response framing correction is traceable to `534932b`; D92 GPPro
+- Result: The response framing correction is traceable to `cba41bc`; D92 GPPro
   listing completed past P1=10 and P1=20 after the change.
 - Decision: Continue remaining correctness items, including simulated versus
   physical atomic-install recovery boundaries.
@@ -12992,7 +12992,7 @@
 - Step/experiment: `jcalgtest-physical-sha224-transport-20261025`
 - Change: Recorded the commit for the targeted probe and VPCD registry-sidecar cleanup step.
 - Validation: `git diff --cached --check` passed before commit; commit contains only the six intended source, test, and continuity files.
-- Result: Commit `a5c79af` records the unresolved physical transaction failure and reproducible VPCD evidence.
+- Result: Commit `846f5ca` records the unresolved physical transaction failure and reproducible VPCD evidence.
 - Decision: Check exact-reader availability; if unavailable, proceed with offline backlog work and retain the probe for the next physical opportunity.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
@@ -13012,7 +13012,7 @@
 - Step/experiment: `jcalgtest-physical-md5-oaep-correction-20261025`
 - Change: Recorded the dedicated correction commit for the JCAlgTest MD5/RSA/OAEP APDU probe.
 - Validation: `git diff --cached --check` passed before commit; only the probe, active tracking notes, and progress records were included.
-- Result: Commit `5137910` supersedes the earlier inaccurate SHA-224 label in the active docs.
+- Result: Commit `44fcb3f` supersedes the earlier inaccurate SHA-224 label in the active docs.
 - Decision: Await a visible Pico PC/SC reader for exact physical replay; continue with offline correctness work while none is available.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-test-20261025.log`.
@@ -13032,7 +13032,7 @@
 - Step/experiment: `asymm-native-dispatch-boundary-audit-20261025`
 - Change: Recorded the architecture-audit commit for the asymmetric-profile work.
 - Validation: `git diff --cached --check` passed; the commit includes only the audit, project TODO, handoff, QKB, and progress notes.
-- Result: Commit `ee5ab79` prevents the current provider-based RSA signature path from being mistaken for native-only implementation.
+- Result: Commit `ba0958c` prevents the current provider-based RSA signature path from being mistaken for native-only implementation.
 - Decision: Continue with direct native API dispatch; preserve all pre-existing asymmetric implementation work until it can be safely reused or removed as part of that refactor.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
@@ -13052,7 +13052,7 @@
 - Step/experiment: `filesystem-persistence-revalidation-20261025`
 - Change: Recorded the documentation/test-evidence commit for the recovery and persistence suite rerun.
 - Validation: `git diff --cached --check` passed; only TODO, HANDOFF, and progress evidence were committed.
-- Result: Commit `3c2084f` preserves the latest offline validation while leaving physical recovery requirements open.
+- Result: Commit `c241dc0` preserves the latest offline validation while leaving physical recovery requirements open.
 - Decision: Continue native-only implementation work; preserve all unrelated dirty asymmetric and profile changes.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261025T200233Z.log` and `artifacts/logs/vpcd-persistence-restore-20261025T200233Z.log`.
@@ -13063,7 +13063,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; PC `asymm_crypto` build passed; `PICO2_HOST_USB_ACCESS=1 ./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 65/65; `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. Before the final precomputed-hash guard adjustment, physical D92 cycle passed `TEST:SUMMARY pass=1 fail=0`, and `./tools/test-asymm-crypto-pcsc` passed 45/45 RSA vectors, including all 6 ISO9796 checks. After the guard adjustment, ARM/RISC-V builds and VPCD passed again; image flash and verification succeeded on D92, but finite monitor failed because no USB serial device appeared. Elevated `lsusb` showed no Pico, `pcsc_scan -r` showed only virtual readers, and the authorized reader helper found 0 physical readers.
 - Result: ISO9796 known signatures matched exactly on emulator and in the previous physical run; full and partial message recovery verified, and altered messages were rejected. The latest reflashed D92 disappeared from guest USB enumeration before runtime monitoring, so the post-guard hardware cycle is incomplete. 2BED previously had the same unknown USB disappearance behavior. The first physical command with a shortened reader label exited before installation; using the exact PC/SC name including `00 00` succeeded.
 - Decision: Keep `ALG_RSA_SHA_ISO9796` enabled in `asymm_crypto`. Continue with `ALG_RSA_SHA_ISO9796_MR`, which needs native `SignatureMessageRecovery` interface dispatch; preserve the native-only firmware boundary.
-- Commit: implementation `50b39a7`; progress/handoff follow-up `dbd3ffe`.
+- Commit: implementation `e74321b`; progress/handoff follow-up `e0ef288`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261026T193337Z.log`, `artifacts/logs/cycle-choupi-20261026T193202Z.log`, `artifacts/logs/cycle-choupi-20261026T194306Z.log`, `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
 
 ## 2026-10-26 — Map adapter-free Java Card Signature dispatch
@@ -13073,7 +13073,7 @@
 - Validation: Source inspection of `choupi/src/jc_bytecodes/bc_others.cpp`, `choupi/src/heap.cpp`, and the Java Card `Signature` API. No build or runtime test was run because this step only records architecture findings; implementation remains pending.
 - Result: A native-only path is identified, but ROM-mask support for making API classes concrete and native reference-return behavior still needs a focused validation.
 - Decision: Preserve the pending Java-provider changes without treating them as valid asymmetric implementation. Next verify ROM-mask handling, then migrate one API factory and operation path without adding Java implementation classes.
-- Commit: `f43354ce3a90ffa84cb4499b4144d9f223e5f337` (documentation); `bb520e01b7957dfd10fe09132b0b933d0f7cf4ea` (progress record); `27844bd` (commit-id follow-up).
+- Commit: `9e4c1976be459ceae64fd3ac939da51bd40c5f00` (documentation); `241476e2ea2d916ad3097cb77972a23000c00ece` (progress record); `f8453e0` (commit-id follow-up).
 - Artifacts/logs: None.
 
 ## 2026-10-26 — Confirm ROM-mask native reference-return mechanics
@@ -13083,7 +13083,7 @@
 - Validation: Inspected `choupi/javacard-sdk/rommask/src/main/java/fr/gouv/ssi/rommask/jcaparser/mask/JCNativeFunctions.java` and `choupi/src/heap.cpp`. No test or build was run; this was code inspection.
 - Result: Native factory reference returns and allocation of the API ROM class appear feasible. Full migration must move signature factory, RSA operations, and symmetric MAC state/operations together; RSA key and cipher API provider objects also remain to migrate.
 - Decision: Next build a focused ROM-mask/native-factory fixture, then implement native API methods as one coherent change. Continue to exclude generated Java provider classes from accepted firmware.
-- Commit: `f00ab2f`.
+- Commit: `57fefb2`.
 - Artifacts/logs: None.
 
 ## 2026-10-26 — Audit asymmetric support-generator test expectations
@@ -13093,7 +13093,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9. Inspection of the test assertions confirmed they require generated `RSAKeyProvider`, `RSACipherProvider`, and `SymmetricMacProvider` classes; this is not native-only acceptance evidence.
 - Result: Existing test suite protects provider generation and will need replacement after direct native API dispatch is implemented.
 - Decision: Do not weaken or change the assertions before the implementation changes; use them as a migration checklist.
-- Commit: `e669594`.
+- Commit: `48a8c9a`.
 - Artifacts/logs: Test output was transient; no log retained.
 
 
@@ -13104,7 +13104,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Exact PC/VPCD run from this implementation step passed SHA-256 prepare/final, static-performance calls, and the full 15-check set (`TEST:SUMMARY pass=15 fail=0`). Physical flash was intentionally skipped; hardware behavior is not claimed.
 - Result: Supported MessageDigest calls use native API dispatch with no generated digest provider classes. The PC/VPCD hang from persistent scratch writes is fixed by transient allocation.
 - Decision: Continue migrating asymmetric and symmetric MAC providers directly onto API-declared native methods; keep Java provider classes out of firmware.
-- Commit: `4e71873` (root); submodule commits `4cc1cf4` (javacard-api), `4932ee0` (rommask).
+- Commit: `031f417` (root); submodule commits `4cc1cf4` (javacard-api), `4932ee0` (rommask).
 - Artifacts/logs: `artifacts/logs/message-digest-native-vpcd-final2-20261026.log`.
 
 
@@ -13115,7 +13115,7 @@
 - Validation: python3 tools/test-javacard-support.py passed 9/9; ./tools/build-pc, ./tools/build arm, and ./tools/build riscv passed. Generated JNI declarations retained expected native MessageDigest symbols. A direct ROM-mask probe accepted both Signature factory descriptors and emitted both C++ overload declarations. PC/VPCD full regression passed 15/15, including SHA-256 operations and static performance.
 - Result: ROM-mask native overrides now match exact API overloads rather than method names alone; MessageDigest behavior remains intact.
 - Decision: Use descriptor-qualified manifest records for both Signature.getInstance overloads in the next migration step.
-- Commit: 713519f (root); rommask submodule commit dfd7f3f.
+- Commit: 56a980a (root); rommask submodule commit dfd7f3f.
 - Artifacts/logs: artifacts/logs/message-digest-native-vpcd-descriptor-20261026.log.
 
 ## 2026-10-26 — Verify native SHA-256 on Pico 2
@@ -13125,7 +13125,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F` flashed and verified the ARM image; finite runtime passed (`TEST:SUMMARY pass=1 fail=0`). On D92, `--sha256-support-only` returned `1500...9000`, and `--sha256-dofinal-only` returned `AA9000` for prepare and measurement (`TEST:PASS sha256_dofinal_only`). The official JCAlgTest extended support run reported `ALG_SHA_256;yes`.
 - Result: Native MessageDigest factory allocation and SHA-256 execution work on the physical RP2350 after a firmware reboot. An earlier `FF05` support attempt passed after reflashing; its cause remains unknown. The extended run reached 1,897 rows before the user intentionally unplugged the device; the partial report is not complete acceptance evidence and the disconnect is not a firmware failure.
 - Decision: Keep the focused probes for regression use. Continue native `Signature` API migration; do not add Java providers or modify upstream CAPs.
-- Commit: 5d87d47.
+- Commit: c7bf7fa.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T044038Z.log`; partial JCAlgTest CSV and log in `artifacts/results/jcalgtest-real-d92-msgdigest-20261026/`.
 ## 2026-10-26 — Move symmetric Signature MACs to native API dispatch
 
@@ -13134,17 +13134,17 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9. `./tools/build-pc --profile symm_crypto` passed. `python3 tools/tests/test_symm_crypto_vpcd.py` passed with `TEST:SUMMARY pass=73 fail=0` (32 cipher vectors, 13 MAC sign vectors, 26 MAC verify vectors, plus ATR/SELECT). `./tools/build arm --profile symm_crypto` passed and produced the full `build/arm/pico2_choupi.uf2` (1,703,936 bytes). `./tools/build riscv --profile symm_crypto` passed its VM-core/smoke build. Targeted `git diff --check` passed. A broad check reports pre-existing trailing whitespace in the user-modified `AGENTS.md` line 52; that file was not changed for this step. Physical testing was intentionally skipped because the user had unplugged the token.
 - Result: Symmetric MAC algorithm calls continue to match all existing known-answer vectors through direct native `Signature` API dispatch. The first VPCD run exposed that the old 80 KiB `algtest-v182-empty-flash.bin` held stale package metadata; switching to the clean 512 KiB current-empty image and a unique writable copy resolved the harness startup error. PC ROM-mask image is 524,300 bytes (SHA-256 `890ab282818f52bec0d5544cdf1cea1f5ef75334f2df5232b4d20a00ca77b338`); ARM full image SHA-256 is `752bcc5dd28f964e9ab336f05107e2fee81a384c86c7a40ee038ad4fb28ec1db`.
 - Decision: Symmetric MAC dispatch is migrated and offline-validated. RSA Signature and existing RSA key/cipher Java provider paths still need native API migration; no native-only claim is made for `asymm_crypto`. The unplugged Pico is an intentional hardware-test skip, not a device or firmware failure.
-- Commit: root `e120363`; Java Card API submodule `d0a1658`.
+- Commit: root `425ccfa`; Java Card API submodule `d0a1658`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` (SHA-256 `a7b887c6b54f65d09a4f71e8c7042a9f4427b4e22e8733976e6de28196d80627`); generated JNI declarations `build/choupi-pc/jni.hpp`.
 
 ## 2026-10-26 — Record native Signature dispatch commit IDs
 
 - Step/experiment: `native-symmetric-signature-api-dispatch-record`
 - Change: Replaced the pending commit notation in the implementation record and handoff with the completed root and Java Card API submodule commit IDs.
-- Validation: Inspected `git show --stat e120363` and `git -C choupi/javacard-sdk/javacard-api show --stat d0a1658`; no additional build or runtime validation was needed for this documentation-only correction.
-- Result: The direct native Signature implementation and its API source state are traceable to root commit `e120363` and submodule commit `d0a1658`.
+- Validation: Inspected `git show --stat 425ccfa` and `git -C choupi/javacard-sdk/javacard-api show --stat d0a1658`; no additional build or runtime validation was needed for this documentation-only correction.
+- Result: The direct native Signature implementation and its API source state are traceable to root commit `425ccfa` and submodule commit `d0a1658`.
 - Decision: Continue with direct native RSA Signature dispatch; the asymmetric RSA key/cipher API providers also remain to migrate.
-- Commit: `d5f124a`.
+- Commit: `c6a1160`.
 - Artifacts/logs: Same VPCD/build artifacts listed in the preceding implementation record.
 
 ## 2026-10-26 — Add native RSA SHA-1 Signature API dispatch
@@ -13154,7 +13154,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Elevated VPCD run passed `TEST:SUMMARY pass=26 fail=0`, including 6 RSA Signature vectors. The equal-to-modulus vector failed against a stale PC executable before the PC rebuild, then passed. Physical validation was skipped because the token was unplugged by the user.
 - Result: This covers one RSA signature algorithm through native `Signature` methods. RSA key construction still relies on generated provider objects, RSA Cipher still uses generated provider classes, and private-operation blinding/hardening is not validated. The asymmetric profile remains incomplete and must not be called native-only.
 - Decision: Continue offline by migrating RSA key APIs and RSA Cipher; keep the upstream CAP unchanged.
-- Commit: `c40a965`.
+- Commit: `2a905d7`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`; VPCD result `TEST:SUMMARY pass=26 fail=0`.
 
 ## 2026-10-26 — Move Java Card key objects to native dispatch
@@ -13164,7 +13164,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; elevated `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 26/26 (10 digest, 5 key-builder, 3 cipher, 6 RSA SHA-1 Signature vectors, ATR and SELECT); `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. Generated PC ROM/JNI outputs contained no `KeyBuilderProvider`, `RSAKeyProvider`, `AESKeyProvider`, `DESKeyProvider`, or `KeyProviderBase` strings. Hardware testing was skipped because the Pico was unplugged.
 - Result: Native key object construction and operations pass current VPCD vectors. RSA Cipher still uses a generated provider, so `asymm_crypto` is not yet native-only or complete. Firmware/image size was not measured. Existing upstream converter/Maven and packed-member warnings remain.
 - Decision: Continue with RSA Cipher native API dispatch; keep physical testing paused until a board is available.
-- Commit: root `b311fa4`; Java Card API submodule `6857bb0`.
+- Commit: root `e0c62b7`; Java Card API submodule `6857bb0`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (VPCD run appended; filename predates this run); generated mask `build/choupi-pc/flash` and JNI header `build/choupi-pc/jni.hpp`.
 
 
@@ -13175,7 +13175,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; elevated VPCD asymmetric suite passed 26/26; elevated VPCD symmetric cipher/MAC suite passed 73/73; ARM and RISC-V `asymm_crypto` wrappers passed. Full ARM cycle passed on Pico 2 `2BED26ED20556535`, including verified UF2 flash and finite serial `TEST:SUMMARY pass=1 fail=0`. On a clean install of the unchanged upstream JCAlgTest 1.8.2 CAP, AES CBC-NOPAD 50-call `doFinal` returned `AA9000` in 3,067 ms; DES CBC-NOPAD preparation returned `AA9000`.
 - Result: Native Cipher dispatch passes PC/VPCD vectors and focused hardware calls. The first physical 50-call request returned `6400` at 6.36 seconds, exposing the overly short shared applet-call cutoff; after separating INSTALL and normal-call budgets, the clean-card workload passed. An older installed applet returned `FF01` after reflash; its cause is unknown.
 - Decision: Cipher provider bytecode is removed from the generated ROM-mask source path. Continue the remaining asymmetric profile work (RSA signature variants, EC APIs, key generation, report comparison and full `/deploy` acceptance); the profile is not complete.
-- Commit: root `6ef15a7`; Java Card API submodule `d3d7e44`.
+- Commit: root `dd81afd`; Java Card API submodule `d3d7e44`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T172320Z.log` (SHA-256 `1b14f81ad60df2c99722c383a381668630765377d2fb3a90f3e95adbec24bb7b`); `build/arm/pico2_choupi.uf2` (1,815,040 bytes; SHA-256 `3195bc0fde9c0a97f4e12da8aa15e8184caed2a1970cc7266220f727e5ea7a0a`).
 
 
@@ -13183,10 +13183,10 @@
 
 - Step/experiment: `native-cipher-api-dispatch-record`
 - Change: Replaced the pending commit notation in the Cipher implementation record and handoff with the completed root and Java Card API submodule commit IDs.
-- Validation: Inspected root commit `6ef15a7` and API submodule commit `d3d7e44`; no additional build or runtime validation was needed for this documentation-only correction.
+- Validation: Inspected root commit `dd81afd` and API submodule commit `d3d7e44`; no additional build or runtime validation was needed for this documentation-only correction.
 - Result: The native Cipher implementation and API source state are traceable to their commits.
 - Decision: Continue the remaining asymmetric profile roadmap; keep native API dispatch and upstream CAP boundary.
-- Commit: `a1e5f44`.
+- Commit: `dbeba75`.
 - Artifacts/logs: Same build, VPCD, and physical artifacts listed in the preceding implementation record.
 
 ## 2026-10-26 — Native RSA SHA-2 signatures and CCID response capacity
@@ -13196,7 +13196,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 44/44; `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid 2BED26ED20556535` passed flash verification and finite serial (`TEST:SUMMARY pass=1 fail=0`). Physical suite on `2BED26ED20556535` passed all 24 vectors (RSA SHA-1/224/256/384/512 sign, verify, bad-signature rejection, and precomputed-hash paths where short APDU permits); temporary package cleanup passed.
 - Result: The prior SHA-2 `6F00` signing responses were caused by the undersized CCID response buffer, not RSA arithmetic. The expanded buffer returns full 96-byte signatures on the physical card. Physical log: `artifacts/logs/asymm-crypto-pcsc-20261026T181526Z.log`; cycle log: `artifacts/logs/cycle-choupi-20261026T181352Z.log`.
 - Decision: Retain the buffer sizing fix and continue native-only asymmetric API work. This does not complete the asymmetric profile.
-- Commit: `71c1ab8`
+- Commit: `b9ef7f4`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261026T181526Z.log`; `artifacts/logs/cycle-choupi-20261026T181352Z.log`
 
 ## 2026-10-26 — Add native RSA-PSS SHA signatures and verify on Pico 2
@@ -13210,7 +13210,7 @@
 - Validation: `python3 -m py_compile tools/javacard-support.py tools/tests/test_asymm_crypto_vpcd.py` and `python3 tools/test-javacard-support.py` passed (9/9). `./tools/build-pc --profile asymm_crypto` passed. The elevated VPCD suite passed 59/59 total checks (57 custom APDUs plus ATR and SELECT), including 39 RSA signature vectors. `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid D92E743D5F640C0F` passed UF2 verification and finite monitor (`TEST:SUMMARY pass=1 fail=0`). The physical RSA suite passed 39/39 and its temporary package cleanup passed.
 - Result: Physical Pico 2 `D92E743D5F640C0F` passes RSA PKCS#1 and PSS signing, verification, precomputed-hash operations where the short APDU permits, and rejection of modified/out-of-range signatures. ARM image size is 1,826,304 bytes (SHA-256 `0fc6b186c936cd34dc460df493672f7e1868144dae3ad5112ee0ddf443a690f2`). The PC ROM mask is 524,300 bytes. Existing SDK/converter and packed-member compiler warnings remain; no new warning was isolated to PSS.
 - Decision: RSA SHA-1/224/256/384/512 PKCS#1/PSS now has VPCD and physical coverage. Continue with remaining RSA signature algorithms and EC/key agreement/key generation; profile comparison and full physical `/deploy` acceptance remain incomplete. Private-operation blinding/hardening is not validated.
-- Commit: `587763e` (implementation); progress reference is corrected in the following metadata commit.
+- Commit: `7340803` (implementation); progress reference is corrected in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T185249Z.log` (SHA-256 `876e27ca1d25ec5c3f13aa00c1fe258b4d72f9497f55c46a4e7da745b93af999`); `artifacts/logs/asymm-crypto-pcsc-20261026T185432Z.log` (SHA-256 `4930590e86124f73e2c69d4cc59adf1f5505c75b61c1bb6ff6769e3d52692231`); `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (SHA-256 `5d9e8f2bafb8c9929502210664bd55e2f2485cdb95ba6df7f9176232d7a7bc2f`).
 ## 2026-10-26 — Native RSA SHA-1 ISO9796-2 message recovery
 
@@ -13235,7 +13235,7 @@
 - Decision: Keep algorithm 30 enabled only in `asymm_crypto`; continue next
   with native EC key storage/ECDSA, then EC agreement/generation and the
   remaining asymmetric-profile acceptance work.
-- Commit: root `1b60dda`; Java Card API submodule `15df6fc`.
+- Commit: root `b289b04`; Java Card API submodule `15df6fc`.
 - Artifacts/logs: `build/choupi-pc/flash`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`, and
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
@@ -13270,7 +13270,7 @@
 - Decision: Retain the exact JC305 interface translation and native-only API
   boundary. Retry hardware testing when a physical PC/SC reader is visible;
   continue with ECDSA and the remaining asymmetric profile work.
-- Commit: root `db529cf`; API submodule `953fcb6`.
+- Commit: root `dbefe3c`; API submodule `953fcb6`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   `build/arm/pico2_choupi.uf2`; `build/riscv/pico2_jcvm_smoke.uf2`.
 
@@ -13297,7 +13297,7 @@
 - Decision: Keep the five algorithms enabled in `asymm_crypto`. Continue with
   EC agreement/generation and the remaining support comparison; repeat these
   calls on an identified Pico when the VM enumerates one.
-- Commit: `ae9728c`.
+- Commit: `2e461fe`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   ARM image `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`;
   no physical log.
@@ -13323,8 +13323,8 @@
   unimplemented; physical validation is pending guest USB enumeration.
 - Decision: Continue remaining asymmetric profile work; do not claim full
   target CSV coverage based on these vectors alone.
-- Commit: implementation `48eabe3` (API submodule `b6e8af6`), edge regressions
-  `34808e6`; this record is in documentation commit `95470ac`.
+- Commit: implementation `71f92f9` (API submodule `b6e8af6`), edge regressions
+  `d9259a7`; this record is in documentation commit `529f62a`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`,
   `build/choupi-pc/flash`, VPCD log
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (runner reuses this
@@ -13358,7 +13358,7 @@
 - Decision: Continue by implementing and validating the missing 128/160-bit EC
   curve generation, then audit all advertised asymm profile claims against the
   target CSV before physical testing.
-- Commit: API submodule `869cb8a`; ROM-mask submodule `5297c51`; root `f17df07`.
+- Commit: API submodule `869cb8a`; ROM-mask submodule `5297c51`; root `01f9668`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
   (runner uses a fixed name); `build/arm/pico2_choupi.uf2`;
   `build/choupi-pc/flash`; no physical log.
@@ -13390,7 +13390,7 @@
   physical `/deploy` acceptance once an identified Pico enumerates in the VM.
   Arbitrary curves, RSA key generation, and private-operation hardening remain
   open.
-- Commit: `0bada8a`.
+- Commit: `851104d`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
   (the runner appends to its fixed-name log); ARM image
   `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`; no
@@ -13421,7 +13421,7 @@
   hardware are not yet measured.
 - Decision: Continue with private RSA operation hardening, full target-report
   comparison, and physical `/deploy` acceptance when a board enumerates.
-- Commit: `65664b3` (this record was finalized in the documentation follow-up).
+- Commit: `875c0a5` (this record was finalized in the documentation follow-up).
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   ARM UF2 `build/arm/pico2_choupi.uf2`, 2,016,768 bytes,
   SHA-256 `29a838cc7c3654c0c6c88887f08c78233dda19ea1a777efa78cc96babccdaab8`;
@@ -13449,7 +13449,7 @@
 - Decision: Build a reproducible conversion/comparison path for legacy target
   CSVs, continue RSA private-operation hardening, and retry physical checks
   after a Pico enumerates through the VM.
-- Commit: `58bafbf` (validation and documentation record).
+- Commit: `88bb314` (validation and documentation record).
 - Artifacts/logs: supplied target CSV above; no hardware log.
 
 ## 2026-10-27 — Implement RSA-CRT private Cipher and Signature operations
@@ -13478,7 +13478,7 @@
 - Decision: Keep physical asymmetric and `/deploy` checks pending. Continue
   private RSA side-channel hardening; current exponentiation has not been
   established as constant-time and is not blinded.
-- Commit: `2848988`.
+- Commit: `61d4125`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   focused CRT log `artifacts/logs/asymm-crypto-crt-debug-vpcd.log`; ARM UF2
   `build/arm/pico2_choupi.uf2`; no physical log.
@@ -13503,7 +13503,7 @@
 - Decision: Use this command alongside the standard 1.8.2 comparator when a
   new physical report is available; physical asymmetric and `/deploy` tests
   remain pending until a board enumerates in the VM.
-- Commit: `e1abde8`.
+- Commit: `5035d50`.
 - Artifacts/logs: `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT*.csv`;
   `build/javacard-support/jcalgtest-supported.csv`; no hardware log.
 
@@ -13525,7 +13525,7 @@
   established constant-time with a scoped statement backed by bundled source.
 - Decision: Keep hardware checks pending. Continue a full private-RSA audit,
   including input blinding and CRT fault resistance.
-- Commit: `a02e5c2`.
+- Commit: `0aaf553`.
 - Artifacts/logs: source files listed above; no hardware log.
 
 ## 2026-10-27 — Add exponent blinding to native RSA-CRT operations
@@ -13555,7 +13555,7 @@
 - Decision: Keep full CRT side-channel review, input blinding, fault checks,
   and physical validation on the remaining list; restore guest USB passthrough
   before attempting hardware tests.
-- Commit: `c64ec3f`.
+- Commit: `99c3019`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   ARM image `build/arm/pico2_choupi.uf2`; no physical log.
 
@@ -13579,7 +13579,7 @@
 - Decision: Keep the independent branch blinders. Do not mark physical
   asymmetric acceptance complete; resume once USB passthrough exposes an
   identified Pico.
-- Commit: `fd5a91d` (implementation); metadata commit recorded separately.
+- Commit: `beeb915` (implementation); metadata commit recorded separately.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   generated images under `build/arm/` and `build/riscv/`.
 
@@ -13606,7 +13606,7 @@
 - Decision: Keep the framing bounds checks. Continue with APDU parser fuzzing
   and structural validation inside variable-length CAP component payloads;
   full WP9 and physical acceptance remain incomplete.
-- Commit: `28e5e47` (implementation); metadata commit recorded separately.
+- Commit: `df659fc` (implementation); metadata commit recorded separately.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T031635Z/`;
   sanitizer corpus is generated in a temporary directory by the wrapper.
 
@@ -13623,7 +13623,7 @@
 - Decision: Keep the parser unchanged. WP9 still requires structural CAP
   payload validation, interrupted persistent-write fault testing, and broader
   fuzzing. Physical acceptance remains incomplete.
-- Commit: `00ae634` (harness); metadata commit recorded separately.
+- Commit: `48b456b` (harness); metadata commit recorded separately.
 - Artifacts/logs: sanitizer test output `TEST:PASS apdu_parser_fuzz inputs=250000`.
 
 ## 2026-10-27 — Validate variable CAP component payloads
@@ -13647,7 +13647,7 @@
 - Decision: Keep the count checks. Class component and nested Descriptor
   records still need a verified full traversal; the CAP parser is not yet a
   complete structural verifier.
-- Commit: `b5f1123` (implementation); metadata commit recorded separately.
+- Commit: `c001d95` (implementation); metadata commit recorded separately.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T032756Z/`;
   sanitizer test output `TEST:PASS cap_parser_framing checks=4038
   fuzz_inputs=100000 corpus_files=48`.
@@ -13672,7 +13672,7 @@
   hardware testing was not performed.
 - Decision: Retain compact Descriptor structural checks. Class component
   record traversal and type-nibble semantic validation remain open.
-- Commit: `891117e`
+- Commit: `a730f34`
 - Artifacts/logs:
   `artifacts/results/gppro-empty-install-vpcd-20261027T034258Z/`;
   test output `TEST:PASS cap_parser_framing checks=4147 fuzz_inputs=100000
@@ -13698,7 +13698,7 @@
 - Decision: Retain the format 2.1 structural checks. Class-reference
   consistency, format 2.2+ Class payloads, and Descriptor type-nibble semantics
   still need separate validation.
-- Commit: `583f272`
+- Commit: `49f261a`
 - Artifacts/logs:
   `artifacts/results/gppro-empty-install-vpcd-20261027T035353Z/`;
   test output `TEST:PASS cap_parser_framing checks=4154 fuzz_inputs=100000
@@ -13722,7 +13722,7 @@
   No Pico was visible through host USB, so physical validation was not done.
 - Decision: Keep the boundary check for CAP 2.1. Cross-reference validation
   for later CAP formats and Descriptor type semantic validation remain open.
-- Commit: `8b4d6e7`
+- Commit: `e1e8e54`
 - Artifacts/logs:
   `artifacts/results/gppro-empty-install-vpcd-20261027T040102Z/`;
   test output `TEST:PASS cap_parser_framing checks=4156 fuzz_inputs=100000
@@ -13748,7 +13748,7 @@
 - Decision: Keep nibble-level validation. Validating Descriptor field/method/
   constant-pool offsets against type record starts remains open, as do newer
   CAP format Class layouts.
-- Commit: `5f046ba`
+- Commit: `69bb9a7`
 - Artifacts/logs:
   `artifacts/results/gppro-empty-install-vpcd-20261027T040937Z/` (pass);
   failed first attempt `artifacts/results/gppro-empty-install-vpcd-20261027T040739Z/`;
@@ -13777,7 +13777,7 @@
 - Decision: Keep the bounded offset validator and compatibility base because
   both observed Descriptor layouts pass while misaligned interior offsets are
   rejected. Investigate the VPCD applet INSTALL `0x6F00` separately.
-- Commit: `f7bd4af` (implementation; this progress/knowledge update follows
+- Commit: `19527a9` (implementation; this progress/knowledge update follows
   in a metadata commit).
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T045732Z/`,
   `artifacts/results/gppro-empty-install-vpcd-20261027T045907Z/`; no passing
@@ -13796,7 +13796,7 @@
 - Result: No physical validation; VPCD integration remains unresolved.
 - Decision: Keep parser tests/build results; diagnose VPCD card-presence and
   applet-install failures independently.
-- Commit: `f7bd4af` (no implementation change; this observation is recorded
+- Commit: `19527a9` (no implementation change; this observation is recorded
   in the following metadata commit).
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T050759Z/`
   (listener connected, card not reported present).
@@ -13809,7 +13809,7 @@
 - Validation: `./tools/test-cap-parser` passed 4,179 checks over all 48 supplied deploy CAPs and 100,000 randomized buffers. `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_handlers/jc_cap.cpp tools/tests/cap_parser/cap_parser_test.cpp` passed.
 - Result: ARM UF2 is 2,029,568 bytes, SHA-256 `a22b5a25cd48c380e1bc490c97f618f7c5b54d7cd30e24fb303bfd5ce13f9a07`; RISC-V smoke UF2 is 79,360 bytes, SHA-256 `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`. The supplied CAP corpus is entirely format 2.1, so the 2.2 path is validated synthetically. The approved PC/SC helper and elevated USB-ID checks found no physical Pico in either CHOUPI or BOOTSEL mode; no flash or hardware test was performed.
 - Decision: Retain the bounded CAP 2.2 parser. Semantic cross-reference validation for remote metadata and CAP 2.3+ Class layouts remain open.
-- Commit: `a7d15cd`
+- Commit: `75893bd`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; sanitizer output `TEST:PASS cap_parser_framing checks=4179 fuzz_inputs=100000 corpus_files=48`.
 
 ## 2026-10-27 — Fix ROM CAP validation and VPCD install setup
@@ -13819,8 +13819,8 @@
 - Validation: `./tools/test-cap-parser` passed 4,179 checks over 48 CAP files and 100,000 fuzz inputs. `./tools/build arm --profile asymm_crypto`, `./tools/build riscv --profile asymm_crypto`, and `./tools/build-pc --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed twice; final clean-build artifact: `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`. `git -c core.whitespace=cr-at-eol diff --check` passed for implementation files.
 - Result: ARM UF2 is 2,029,568 bytes (SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`); RISC-V smoke UF2 is 79,360 bytes (SHA-256 `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`); PC ROM mask is 524,300 bytes (SHA-256 `112eee482fd3f2a049bec6bbb6994740f3e3f086e364cd0f3da0e9e1054ed44d`). The approved PC/SC helper found zero physical readers, so no flash or hardware test was performed.
 - Decision: Keep strict parsing for uploaded CAPs and use emulator GPPro integration for this regression until a physical board enumerates.
-- Commit: `5b8ceb9`
-- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`; implementation commit `5b8ceb9`.
+- Commit: `fa546ab`
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`; implementation commit `fa546ab`.
 
 ## 2026-10-27 — Test ROM payload-validation boundary
 
@@ -13829,7 +13829,7 @@
 - Validation: `./tools/test-cap-parser` passed 4,183 checks over the 48 supplied deploy CAPs and 100,000 fuzz inputs. Existing warnings in packed CAP headers remain; the test change adds no firmware code. Physical reader helper found zero Pico devices; no flash was attempted.
 - Result: The bypass is explicitly constrained to component payload interpretation and does not disable outer frame or duplicate-tag checks.
 - Decision: Keep the strict dynamic-CAP path; next audit the open atomic CAP-install recovery and simulated power-cut matrix.
-- Commit: `4cafe6c`
+- Commit: `82874dc`
 - Artifacts/logs: `build/tests/cap-parser/cap_parser_test`; stdout `TEST:PASS cap_parser_framing checks=4183 fuzz_inputs=100000 corpus_files=48`.
 
 ## 2026-10-27 — Exercise install journal recovery through persisted VPCD resume
@@ -13839,7 +13839,7 @@
 - Validation: `./tools/build-pc --profile asymm_crypto` passed. `./tools/test-rp2350-fs-overlay` passed, including 1,000 randomized cuts each across filesystem update, install journal clear, journal creation, and registry publication. Host restart tests passed: skipped registry publication 17/17; already-published registry 17/17; CAP metadata store failure 15/15; journal-clear sync failure 17/17; ordinary two-process install/restart 30/30. All recovered applets passed SELECT, GETVERSION, JCSystem, and SHA-256. `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` and `git diff --check` passed. Physical reader helper found zero Pico devices, so no hardware or real power-cut test was performed.
 - Result: Fresh-process tests now prove journal replay itself publishes a missing instance, recognizes an already-published entry, and recovers after metadata and cleanup errors. The previously reported host test pass had used an explicit class-index restore and did not prove the missing-instance recovery path.
 - Decision: Keep physical power-loss testing open; continue with remaining acceptance/API work while the board is not reachable.
-- Commit: `662896e`
+- Commit: `c9a813a`
 - Artifacts/logs: `artifacts/logs/install-recovery-gap-audit-current.log`, `artifacts/logs/install-recovery-publication-fixed.log`, `artifacts/logs/install-recovery-metadata-error-fixed.log`, `artifacts/logs/install-recovery-clear-fixed.log`, `artifacts/logs/install-recovery-normal-two-pass.log`.
 
 ## 2026-10-27 — Revalidate multi-package resume after journal recovery changes
@@ -13849,7 +13849,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 20/20. It restored two loaded packages and three applet instances in a fresh process, then passed SCP03, GET STATUS for packages/instances/modules, all three SELECTs, unknown-AID rejection, instance deletion, package-delete refusal with live instances, cascade deletion, and an empty final registry. The approved helper still found zero physical Pico readers.
 - Result: The new pending-journal replay gate does not break clean multi-package resume or deletion behavior.
 - Decision: Keep VPCD multi-package lifecycle coverage green; physical PC/SC multi-package behavior remains unverified in this VM.
-- Commit: Metadata-only validation follows the install-recovery implementation commit `662896e`.
+- Commit: Metadata-only validation follows the install-recovery implementation commit `c9a813a`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261027T070811Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261027T070811Z.log`, and corrupt/missing-sidecar rejection logs with the same timestamp.
 
 ## 2026-10-27 — Recheck asymmetric-profile target support set
@@ -13869,7 +13869,7 @@
 - Validation: Read-only audit of `native_rsa_math.hpp`, the RSA Cipher and Signature call sites, and the Java Card CRT key API. No code tests or builds were run because implementation did not change. Physical access check used the approved elevated helper and found zero PC/SC Pico readers; elevated `lsusb` showed only VirtualBox devices.
 - Result: Existing exponent blinding does not verify the computed result. A recombination-only check would not catch a faulty exponentiation branch and is not recorded as a complete mitigation.
 - Decision: Keep hardware validation pending and avoid a misleading partial fault check. An implementation requires public-exponent association; continue with independent offline backlog items.
-- Commit: `8fc28ff` (audit/documentation); exact progress reference is in the following metadata commit.
+- Commit: `1ace448` (audit/documentation); exact progress reference is in the following metadata commit.
 - Artifacts/logs: none.
 
 ## 2026-10-27 — Preserve timestamps of unchanged build inputs (13 minutes)
@@ -13880,7 +13880,7 @@
 - Validation: `python3 -m py_compile tools/javacard-support.py tools/javacard-class-tokens.py tools/extract-rom-metadata.py tools/test-javacard-support.py` passed. `python3 tools/test-javacard-support.py` passed 11/11. `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Three timed PC builds took 96.45 s (first rebuild after generator edits), 20.88 s (C++ refresh), and 32.84 s (unchanged); the last run skipped Java Card API and ROM-mask generation and compiled no C++ objects. Host OS build/relink and manifest checks still run. The existing VPCD asymmetric suite passed 99/99 before this build-only change. No flash was attempted because no physical reader was visible.
 - Result: Repeated builds no longer invalidate Java Card API, ROM-mask, or C++ compilation inputs when generated contents are unchanged. Runtime for the host OS build/relink remains in the steady-state wrapper path.
 - Decision: Keep the generator regression and continue through the open runtime/API backlog; retry physical acceptance when a Pico enumerates.
-- Commit: `0c51ea1`.
+- Commit: `13815e6`.
 - Artifacts/logs: PC build logs in `/tmp/pico2-build-pc-incremental-first.log`, `/tmp/pico2-build-pc-incremental-second.log`, and `/tmp/pico2-build-pc-incremental-third.log` (temporary, not committed); generated ARM UF2 `build/arm/pico2_choupi.uf2` and RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`.
 
 ## 2026-10-27 — Build profile UF2s and flash one Pico 2 (18 minutes)
@@ -13891,7 +13891,7 @@
 - Validation: `./tools/build arm --profile symm_crypto`, `./tools/build riscv --profile symm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid d92e743d5f640c0f` passed both architecture builds, verified the flash, and captured a finite serial monitor with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. No JCAlgTest CAP was installed or changed.
 - Result: Chip `D92E743D5F640C0F` boots the combined `asymm_crypto` firmware. The second enumerated BOOTSEL board was not touched. `symm_crypto` UF2 is 1,779,712 bytes (SHA-256 `3b08470b555ac899a01058df8ab46753290f52dacc28a9e9c7e49e51adbe8d69`); `asymm_crypto` UF2 is 2,029,568 bytes (SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`).
 - Decision: Provide both profile-specific ARM UF2s for external Windows testing. The physical smoke cycle was for `asymm_crypto`; symmetric algorithm report parity still requires the user's external JCAlgTest run.
-- Commit: `3c1dc03`.
+- Commit: `f67ac4a`.
 - Artifacts/logs: `build/external-test/firmware/pico2_choupi_symm_crypto.uf2`, `build/external-test/firmware/pico2_choupi_asymm_crypto.uf2`, and `artifacts/logs/cycle-choupi-20261027T075044Z.log`.
 
 ## 2026-10-27 — Run asymmetric known-answer vectors on Pico 2 (6 minutes)
@@ -13902,7 +13902,7 @@
 - Validation: The first physical probe attempt exited before CAP installation because it found 53 vectors while expecting 48. After the guard fix, `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-pcsc 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passed 53/53 on physical D92. Coverage includes PKCS#1, PSS, ISO9796-2 full and partial message recovery, malformed-signature rejection, and three EC key-storage checks. GPPro cleanup passed. `bash -n tools/test-asymm-crypto-pcsc` and `git diff --check` passed.
 - Result: The combined `asymm_crypto` image responds to the 53 selected crypto API vectors on D92; no `TEST:FAIL` occurred. This does not establish full profile support-report parity or complete `/deploy` acceptance.
 - Decision: Keep `asymm_crypto` acceptance open for ECDSA, key agreement/generation vector coverage, full report comparison, broader deploy runs, and private-operation hardening. Continue using D92 while it remains visible.
-- Commit: `a577ac7`.
+- Commit: `406732d`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log` and `build/symm-crypto-probe/asymm-crypto-physical-vectors.tsv`.
 
 ## 2026-10-27 — Run symmetric vectors on combined asymmetric firmware (716 minutes actual runtime)
@@ -13913,7 +13913,7 @@
 - Validation: The first GPPro attempt used D92's stale reader suffix `00 00` and failed before card mutation because a second Pico was now present. `pcsc_scan -r` identified D92 as the full reader name ending `01 00` and 2BED as `00 00`. GPPro LOAD/INSTALL then succeeded on D92; `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-pcsc '<exact D92 reader name>'` passed all 71 cipher/MAC KATs. GPPro cleanup ran, and a post-test `--list` confirmed the temporary A000 package was absent.
 - Result: D92 passed `TEST:SUMMARY pass=71 fail=0` on the combined profile. Existing JCAlgTest applet/package and package `F01234567890` remained installed; no pre-existing card data was removed. The image's full support report and `/deploy` matrix remain open.
 - Decision: Record the reader-name renumbering as a host procedure issue; always re-enumerate and match the reader's embedded chip ID after device hotplug. Continue with physical ECDSA/key-agreement coverage and full profile acceptance.
-- Commit: `54b2ccf`.
+- Commit: `2682d3d`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`, `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`, and `build/symm-crypto-probe/physical-vectors.tsv`.
 
 ## 2026-10-27 — Quick flash check on a connected Pico 2 (4 minutes)
@@ -13924,7 +13924,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid d92e743d5f640c0f` passed. Both ARM and RISC-V builds passed, flash verification passed, and the finite 18-second monitor reported repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The log also contained one `CHOUPI:WATCHDOG_RECOVERY ... cause=other` record before subsequent passing iterations. No PC/SC or applet test was run.
 - Result: The combined-profile image boots and the smoke check passes on D92. The other connected token was not touched. Image size: 2,029,568 bytes; SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`.
 - Decision: Physical flash path is operational. Inspect the watchdog recovery marker if it appears again during a clean power-up; continue remaining asymmetric coverage.
-- Commit: `44a04b4` (TODO/QKB/HANDOFF update); this progress entry records the documentation commit.
+- Commit: `1ce3097` (TODO/QKB/HANDOFF update); this progress entry records the documentation commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T200454Z.log`; image `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-27 — Keep long RSA operations alive and validate on D92 (55 minutes)
@@ -13935,7 +13935,7 @@
 - Validation: ARM and RISC-V `asymm_crypto` wrapper builds passed; PC/VPCD suite passed 99/99. Flashed identified D92 and inspected finite serial output (`TEST:SUMMARY pass=1 fail=0`). Physical asymmetric suite passed 79/79. Isolated RSA-3072 passed in 137.724 s; isolated RSA-CRT-3072 passed in 171.517 s. Full-suite RSA-3072 and RSA-CRT-3072 took 138.521 s and 110.769 s. GPPro cleanup passed.
 - Result: Prior `6400` timeout on RSA-3072 is fixed for tested workloads. Full 79-vector physical suite passes. The combined ARM UF2 is 2,031,104 bytes, SHA-256 `2c17467a26a2d035dec9bb0fb9e3eba329e1e5d05989a8f25ed7b2b720768a1d`. Intermittent `cause=other` watchdog marker and broader profile acceptance remain open.
 - Decision: Keep the 600-second finite host bound and inactivity timeout. Continue with support-report comparison, physical `/deploy`, Windows validation, and RSA hardening.
-- Commit: `205fa66` (test and continuity notes); this progress record is committed separately.
+- Commit: `9198b6b` (test and continuity notes); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T212115Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`.
 
 ## 2026-10-28 — Baseline physical API 3.0.5 failure clusters (12 minutes)
@@ -13961,7 +13961,7 @@
 - Decision: Reproduce a focused KeyPair constructor with current-source
   VPCD, then inspect native API dispatch and interface return semantics.
   Hardware firmware changes remain gated by both architecture builds.
-- Commit: `38caf7a` (continuity metadata is recorded in the following commit).
+- Commit: `9bae8a3` (continuity metadata is recorded in the following commit).
 - Artifacts/logs: `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
 
 ## 2026-10-28 — Complete physical asymm_crypto report and trace RSA-3072 mismatch (29 minutes)
@@ -13972,7 +13972,7 @@
 - Validation: The full unchanged upstream JCAlgTest 1.8.2 client completed on physical D92 (`D92E743D5F640C0F`) through the elevated host-access path, exit status 0. CSV has all 4,525 rows, 196 yes, 4,329 no, zero other; normalized row identities match jCardSim exactly. Comparator reports 143/145 declared positives; the only missing rows are RSA and RSA-CRT KeyPair 3072. The exact client query is `B07519000301100000`, which sends key length `0x1000` (4096), while the Java Card API's 3072 length is `0x0C00`; the card correctly returns `NO_SUCH_ALGORITHM` because 4096 is disabled. The independent physical vector suite passed RSA-3072 in 31.224 s and RSA-CRT-3072 in 170.478 s (`TEST:SUMMARY pass=2 fail=0`); GPPro temporary-package cleanup passed. `tools/env javac` and `python3 -m py_compile tools/compare-jcalgtest-support.py` passed. Task-file `git diff --check` passed. A repo-wide `git diff --check` also reported pre-existing trailing whitespace in the user's `AGENTS.md` edit; it was left untouched. ARM/RISC-V builds were not rerun because no firmware source changed.
 - Result: The native RSA-3072 and RSA-CRT-3072 generators work on hardware. The two missing support-report positives are caused by the unchanged upstream CAP/client sending 4096 for rows labeled 3072, not by missing native implementation. The generated-support comparison intentionally remains failed for these two rows; do not hide the mismatch by enabling 4096 or changing the CAP.
 - Decision: Keep the upstream CAP unchanged and continue with `/deploy` physical acceptance, Windows validation, and RSA private-operation hardening. Track the two rows as an upstream test limitation, not supported manifest parity.
-- Commit: `4129f24` (metadata correction is in the following commit).
+- Commit: `bcebd05` (metadata correction is in the following commit).
 - Artifacts/logs: `artifacts/results/jcalgtest/asymm_crypto_D92_complete_20261028/`; `artifacts/logs/asymm-crypto-pcsc-20261028T191018Z.log`; comparator console output shows `ROWS matched=4525` and `DECLARED_SUPPORT expected=145 actual=143 missing=2`.
 ## 2026-10-28 — Fix imported key-interface method mapping 14 minutes
 
@@ -13982,7 +13982,7 @@
 - Validation: Reproduced the unchanged API 3.0.5 Security CAP RSA-512 `KeyPair(byte,short)` failure on VPCD before the change (`SW=6F00`); after the change, the focused run completed 901 calls with 900 `SKIPPED_BY_USER` and the constructor `OK`. `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Flashed identified physical D92 (`D92E743D5F640C0F`) using `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --serial D92E743D5F640C0F`; flash verify passed and finite serial monitor ended `TEST:SUMMARY pass=1 fail=0`. A physical deploy runner attempt installed and removed the Security CAP but was invalid as API evidence because the configured client was the JCAlgTest report client; no physical constructor result is claimed.
 - Result: The imported key-interface token mapping caused the stack imbalance responsible for the constructor `6F00`. One watchdog recovery marker appeared during physical startup, followed by repeated passing runtime summaries. Physical API constructor retest remains open pending the correct API test client.
 - Decision: Keep the native interface remap. Retest the full Security deploy set physically when its API client is available; continue triaging marker-interface and remaining API 3.0.5 findings.
-- Commit: `a6bdb2f`.
+- Commit: `cb9dc2b`.
 - Artifacts/logs: `artifacts/results/deploy/keypair-constructor-vpcd-20261028/rsa512-after-map-fix.csv`; `artifacts/logs/cycle-choupi-20261028T204343Z.log`; invalid client attempt `artifacts/results/deploy/keypair-constructor-physical-20261028/security.csv` (UPLOAD/CLEANUP only).
 
 
@@ -13994,7 +13994,7 @@
 - Validation: Physical constructor subset completed 39 probes (27 `OK`, 12 `UNSUPPORTED_PER_SPEC`; no wrong result/runtime failure). `genKeyPair()` subset completed 14 probes (9 supported RSA/RSA-CRT/EC_FP `OK`, five unsupported per spec). GPPro cleanup passed for both. Full Security started but aborted after 42 calls at `KeyBuilder.buildKey(TYPE_RSA_PUBLIC, LENGTH_RSA_4096)` with `SCARD_E_NOT_TRANSACTED`; subsequent client calls saw disconnected card and cleanup could not reconnect. USB serial D92 remained enumerated. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial D92E743D5F640C0F --seconds 8` then passed repeated `TEST:SUMMARY pass=1 fail=0`, while PC/SC listed only Virtual PCD readers.
 - Result: The native interface fix is validated on hardware for every selected constructor and generation case. The full Security run is not a pass; the RSA public 4096 boundary caused or coincided with a PC/SC transport loss, whose cause remains unknown.
 - Decision: Keep the token map fix. Restore PC/SC discovery, isolate the RSA public 4096 KeyBuilder call, and capture serial output at failure before claiming full Security coverage.
-- Commit: `746517a`.
+- Commit: `db2bdd3`.
 - Artifacts/logs: `AlgTest_JavaCard/deploy/results/keypair-constructor-physical-20261028/all-keypair-constructors.csv`; `.../keypair-generation.csv`; `.../security-full.csv`; `artifacts/logs/cycle-choupi-20261028T204343Z.log`.
 ## 2026-10-28 — Refine JC305 key marker `instanceof` behavior (28 minutes)
 
@@ -14023,7 +14023,7 @@
 - Decision: Retry the final-source focused Security marker tests when a Pico is
   enumerated; then continue API 3.0.5 `ECKey.getK()`, null
   `copyDomainParametersFrom`, and Crypto failure triage.
-- Commit: `19b6d6b`.
+- Commit: `fb4973f`.
 - Artifacts/logs: VPCD
   `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware4/`;
   final attempted VPCD
@@ -14050,7 +14050,7 @@
   CAP code and a successful presence probe before the deploy runner.
 - Decision: Test the final image physically when a Pico is reconnected, then
   continue the remaining API 3.0.5 Security and Crypto failures.
-- Commit: `c9ab8c8`.
+- Commit: `d176d8f`.
 - Artifacts/logs: `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware10/`;
   `artifacts/results/gppro-empty-install-vpcd-20261028T222954Z/`.
 
@@ -14076,7 +14076,7 @@
   inconsistent and no Pico was attached.
 - Decision: Establish a clean reader/card state and rerun only these API rows;
   then verify the final ARM image on a physical Pico.
-- Commit: `92ecf0a`.
+- Commit: `224266e`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-guards-vpcd-20261028/`,
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-retry/`,
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-reader00/`,
@@ -14099,7 +14099,7 @@
 - Decision: Continue offline source review; before more deploy calls, identify
   the exact VPCD reader and verify package and applet registry using the same
   GPPro connection.
-- Commit: `eaf39cb`.
+- Commit: `f308687`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-guards-vpcd-20261028-inventory/`;
   `artifacts/results/deploy/ec-key-getk-vpcd-direct-20261028/`.
 
@@ -14128,7 +14128,7 @@
   per-byte filesystem-call bottleneck for RSA and EC keys.
 - Decision: Validate the same call on a physical ARM Pico when available, then
   resume the remaining API 3.0.5 Security and Crypto failures.
-- Commit: `4a178a2`.
+- Commit: `9206494`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-getk-final-20261029/`;
   pre-change dispatch trace `artifacts/results/deploy/ec-key-getk-native-index-20261029/`.
 
@@ -14154,7 +14154,7 @@
   stall on per-byte persistent filesystem writes in the tested emulator cases.
 - Decision: Run these focused cases on an identified physical ARM Pico when
   available; continue triaging remaining API 3.0.5 Security/Crypto failures.
-- Commit: `b101b0a`.
+- Commit: `2e2d014`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-getfield-final-20261029/`;
   `artifacts/results/deploy/ec-key-copy-domain-null-batched-20261029/`.
 
@@ -14181,7 +14181,7 @@
 - Decision: Reuse the paired `00 00`/35963 endpoint after VPCD timeouts. Run
   the tested EC paths on physical ARM hardware when available; continue the
   remaining API 3.0.5 backlog offline.
-- Commit: `8f50afa`.
+- Commit: `cb61428`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/`;
   `artifacts/results/deploy/ec-key-copy-domain-errors-reader00-20261029/`;
   failed endpoint attempts under `ec-key-copy-domain-p256-*-20261029/`.
@@ -14201,7 +14201,7 @@
   justify changing native Cipher dispatch.
 - Decision: Rerun that exact case on an identified physical ARM Pico when
   available; meanwhile continue confirmed API 3.0.5 native failures.
-- Commit: `c3be5bd`.
+- Commit: `d762ce1`.
 - Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.
 ## 2026-10-29 — Add native Signature initial-digest continuation (23 minutes)
 
@@ -14225,7 +14225,7 @@
 - Decision: Keep the implementation pending focused VPCD or physical vectors.
   First restore a responsive reader, then test valid continuation, invalid
   state lengths/block counts, RSA continuation, and ECDSA precomputed hashes.
-- Commit: `4b546aa`
+- Commit: `c28dec9`
 - Artifacts/logs: Prior failed transport attempts under
   `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`,
   `signature-initial-digest-invalid-trace-20261029/`, and
@@ -14258,7 +14258,7 @@
   emulator and running only one API client at a time.
 - Decision: Retain the native metadata layout. Continue with isolated ECDSA and
   remaining SHA vectors, then run physical ARM tests when a Pico is available.
-- Commit: `d6ebeeb`.
+- Commit: `d35f0d2`.
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/`
 
 ## 2026-10-29 — Validate ECDSA initial-digest round trips on paired VPCD (7 minutes)
@@ -14276,7 +14276,7 @@
   unverified.
 - Decision: Use paired VPCD endpoint 00 00 for subsequent Crypto continuation
   tests, then verify on a physical ARM Pico when available.
-- Commit: `d6ebeeb` (native implementation validated in this record).
+- Commit: `d35f0d2` (native implementation validated in this record).
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa256-reader00.csv`;
   `crypto-ecdsa-sha1-reader00.csv`.
 
@@ -14297,7 +14297,7 @@
   verification remain open.
 - Decision: Continue with remaining digest algorithms and repeat these
   vectors on physical ARM hardware when available.
-- Commit: `d6ebeeb` (native dispatch implementation under validation).
+- Commit: `d35f0d2` (native dispatch implementation under validation).
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa-precomputed-sha256-testonly-reader00-retry.csv`;
   `crypto-ecdsa-precomputed-sha1-reader00.csv`.
 
@@ -14317,7 +14317,7 @@
   API case now passes the same upstream vector on VPCD.
 - Decision: Keep the spec-matching exception code; test remaining signature
   error and state-length cases on hardware when available.
-- Commit: `1aaf17c`.
+- Commit: `126b152`.
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-rsa-precomputed-invalid-reader00-fixed.csv`.
 
 ## 2026-10-29 — Complete the upstream initial-digest Crypto group (7 minutes)
@@ -14336,7 +14336,7 @@
   with the current native Signature implementation.
 - Decision: Keep the current SHA state layout and exception handling. Remaining
   SHA-224/384/512 runtime vectors and physical validation are open.
-- Commit: `d6ebeeb` and `1aaf17c` (source commits validated by this run).
+- Commit: `d35f0d2` and `126b152` (source commits validated by this run).
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-setinitialdigest-group-reader00.csv`.
 
 ## 2026-10-29 — Correct SignatureMessageRecovery mode error (19 minutes)
@@ -14360,7 +14360,7 @@
 - Decision: Continue with the remaining API 3.0.5 Crypto failures and retest
   this fix on physical ARM when hardware is available. No hardware metric was
   measured.
-- Commit: `be0ea69`.
+- Commit: `b29041a`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (focused CSVs and VPCD flash image).
 
@@ -14383,7 +14383,7 @@
   contract. No hardware metric was measured.
 - Decision: Continue with remaining Crypto deploy failures and retest on
   physical ARM hardware when available.
-- Commit: `2ae55a4`.
+- Commit: `231332a`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-init-parameters-fixed.csv`.
 
 ## 2026-10-29 — Triage dated Crypto secp192r1 failures (16 minutes)
@@ -14406,7 +14406,7 @@
 - Decision: Continue triaging remaining API 3.0.5 Crypto rows and retest the
   transient KeyAgreement result on physical hardware when available. No
   hardware metric was measured.
-- Commit: `5a3564e` (validation and documentation record).
+- Commit: `322e89c` (validation and documentation record).
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (five focused CSVs and `ec-keyagreement-trace.log`).
 
@@ -14431,7 +14431,7 @@
   fresh-image reproduction.
 - Decision: Continue checking remaining dated Crypto rows, then repeat on
   identified physical hardware. No hardware metric was measured.
-- Commit: `7fd27f7` (validation and documentation record).
+- Commit: `48844d2` (validation and documentation record).
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (focused Crypto CSVs and persistent-storage trace log).
 
@@ -14454,7 +14454,7 @@
 - Decision: Continue using focused row filters on fresh VPCD storage; reserve
   the unfiltered run for a suitable longer window. Retest outstanding failures
   on physical ARM after both architecture builds and reader availability.
-- Commit: `58bafbf` (validation and documentation record).
+- Commit: `88bb314` (validation and documentation record).
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`full-crypto-current.csv`, `full-crypto-emulator.log`); temporary client
   log `/tmp/apitest_card_5x39_p6b/APITEST_log_1793245348258.log`.
@@ -14478,7 +14478,7 @@
 - Decision: Keep the API CAP result open; inspect its test-key setup or capture
   the exact key size before changing PSS validation. Retry physical Crypto
   testing when a Pico reader is available.
-- Commit: `ba81951` (validation and documentation record).
+- Commit: `1d58b68` (validation and documentation record).
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
   (existing test log overwritten by the repository test); full API CAP data in
   `artifacts/results/deploy/crypto-current-vpcd-20261029/rsa-sha512-pss.csv`.
@@ -14502,7 +14502,7 @@
   it does not demonstrate a broken SHA-512 PSS implementation.
 - Decision: Keep SHA-512 PSS support enabled; do not relax native size checks or
   change the upstream CAP. Physical verification remains pending.
-- Commit: `20a24a6` (validation and documentation record).
+- Commit: `9951ee6` (validation and documentation record).
 - Artifacts/logs: `AlgTest_JavaCard/deploy/client/AlgTestJClient.jar`
   (read-only bytecode inspection); no new result artifact.
 
@@ -14528,7 +14528,7 @@
   physical retest; continue with remaining Crypto/API test coverage. SHA-224,
   SHA-384, and SHA-512 initial-digest continuation and precomputed-hash vectors
   still need coverage where an unchanged upstream CAP exercises them.
-- Commit: `0711ec6` (test and continuity notes); this progress record is committed separately.
+- Commit: `0a8d29a` (test and continuity notes); this progress record is committed separately.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`ecdsa-sha384-focused.csv`, `ecdsa-sha224-512-focused.csv`,
   `ecdsa-sha224-512-trace.csv`, `ecdsa-sha512-trace.csv`,
@@ -14560,7 +14560,7 @@
 - Decision: Retain the native mode distinction and retry physical RSA NOPAD
   coverage when an identified Pico is available. Continue with unresolved API
   Crypto rows.
-- Commit: `4a3d04a`.
+- Commit: `3cd9b19`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`rsa-nopad-focused.csv`, `rsa-nopad-fixed.csv`,
   `rsa-pkcs1-regression.csv`, `rsa-pkcs1-regression-fresh.csv`);
@@ -14588,7 +14588,7 @@
 - Decision: Keep this as incremental private-operation hardening. Continue the
   audit for non-CRT private-operation mitigations and public-exponent
   association, then resume physical acceptance when a Pico is available.
-- Commit: implementation `f7595d9`; progress/continuity record `2c39f16`.
+- Commit: implementation `6485c87`; progress/continuity record `7fdc3ac`.
 - Artifacts/logs: VPCD log `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
@@ -14610,7 +14610,7 @@
   same exception-safe wiping policy as the outer RSA operations.
 - Decision: Retain this incremental cleanup. Private input blinding and
   complete CRT fault verification remain separate design gaps.
-- Commit: implementation `4ecd522`; validation/doc record commit `21fa7f6`.
+- Commit: implementation `14a2406`; validation/doc record commit `930ec06`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
@@ -14633,7 +14633,7 @@
   key material retained in Java Card key objects or Mbed TLS MPI internals.
 - Decision: Keep this incremental cleanup; continue audit of the remaining RSA
   private-operation timing/fault protections and broader project backlog.
-- Commit: implementation `df2d2d9`; validation/doc record commit `e5562ec`.
+- Commit: implementation `41d45b7`; validation/doc record commit `91eba37`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
@@ -14656,7 +14656,7 @@
 - Decision: Keep private-key objects intact as Java Card state. Remaining
   security gaps are input blinding for private operations and full CRT fault
   verification with an associated public exponent.
-- Commit: implementation `bedf23a`; progress/continuity commit `9fe6ed1`.
+- Commit: implementation `01a1ef1`; progress/continuity commit `5cafd2b`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   SDK source `.local-toolchain/sdk/lib/mbedtls/library/bignum.c`.
 
@@ -14675,7 +14675,7 @@
 - Decision: Keep the reservation and retain the PSS vectors as regression
   coverage. This is incremental cleanup, not a complete private-RSA side-channel
   or fault-protection solution.
-- Commit: implementation `da8ee60`; validation/doc record commit `9f0b5a4`.
+- Commit: implementation `220f4e9`; validation/doc record commit `bb889b0`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
 
 
@@ -14699,7 +14699,7 @@
   is made.
 - Decision: Keep this discrepancy open and compare select/deselect counters on
   physical ARM when a Pico enumerates. Continue with offline implementation.
-- Commit: `352b366` (result/TODO/QKB/handoff); this progress record follows.
+- Commit: `d75652a` (result/TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/core-deselect-vpcd-20261029/`;
   no image flashed.
 
@@ -14724,7 +14724,7 @@
 - Decision: Preserve current native behavior; no reproducible VPCD defect was
   established. For each next attempt, enforce `pipefail`, require a positive
   presence probe, use a new flash image, and wait for runner exit.
-- Commit: `4d810c5` (validation/TODO/QKB/handoff); this progress record follows.
+- Commit: `fa1278e` (validation/TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/crypto-dh-vpcd-20261029/retry2/`;
   CSV SHA-256 `037dcf8f543f9b80a2c71ab6085b493af5def7ecb6301dbe307004a46298cf89`;
   emulator log SHA-256 `4b110de29b00b76abd14804af926e2e6fbf78e9b795e9433ea3f3353adccd508`.
@@ -14746,7 +14746,7 @@
 - Decision: Keep the physical discrepancy open. Compare the exact profile
   image, reader, and unchanged CAP when an identified physical Pico is
   available.
-- Commit: `eb45d61` (validation/TODO/QKB/handoff); this progress record follows.
+- Commit: `affb405` (validation/TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`;
   runner log SHA-256 `017d7e9e913ad2fe284b135b8aa516e3111e32902eb1374603f999de3a8887eb`.
 
@@ -14770,7 +14770,7 @@
   APDUs, or WTX.
 - Decision: Keep physical AC1–AC5 outstanding; proceed with the remaining API
   and install/persistence acceptance work without treating VPCD as hardware.
-- Commit: `1bf6eb0` (TODO/QKB/handoff); this progress record follows.
+- Commit: `63e5f63` (TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261029-two-pass.log`;
   SHA-256 `268d50220c34b277fc8235e0b5afa97cdb728f7907a8ebaf1d91ad14a25fe967`.
 
@@ -14782,7 +14782,7 @@
 - Validation: Official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` on host PC/SC VPCD installed successfully and reported RSA-512 support, but its generation APDU took 133.756 s. The attempt was stopped during the next request; the resulting CSV is partial. Repeated `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` through host access passed 99/99. RSA/RSA-CRT generation measured 1.068/1.149 s (512), 1.334/3.469 s (1024), and 47.488/23.334 s (3072). `git diff --check` found only pre-existing trailing whitespace in modified `AGENTS.md`; the new/edited task files themselves are clean. No ARM/RISC-V rebuild or hardware flash was needed because source did not change.
 - Result: The official 133.756 s RSA-512 observation is not explained by native generation time; do not attribute it to RSA or alter the implementation without an exact request/workload comparison. The partial CSV is invalid for profile comparison. The interrupted client's `apdu must be at least 2 bytes long` followed emulator shutdown while its next APDU was in flight.
 - Decision: Keep the investigation open. Compare exact JCAlgTest request semantics against the native probe on the same fresh VPCD image, then rerun/capture a complete official support report if feasible.
-- Commit: `e453aeb` (TODO/QKB/handoff); this progress record follows.
+- Commit: `b946cf8` (TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/` (partial official run); `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`, SHA-256 `71ee2f1af942215b726cac1285910a84fa2650c6b1f4c1743212e546a8dc96b2`.
 
 ## 2026-10-29 — Add synthetic CPLC GET DATA response (23 minutes)
@@ -14793,7 +14793,7 @@
 - Validation: `./tools/test-gp-get-data` passed 14/14, including exact CPLC TLV bytes/length and `9000`. `./tools/build arm` and `./tools/build riscv` passed on `current`; the RISC-V wrapper builds its VM-core smoke image only. `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed CAP LOAD/INSTALL. The SmartcardIO GET DATA probe compiled, but the PC VPCD endpoint returned `6999` for `80CA006600`; it does not run through the Pico CCID card-manager dispatcher, so this is not evidence against the firmware CPLC path. No physical flash/test was run. `git diff --check` passed for files in this step.
 - Result: The shared GET DATA encoder now returns CPLC bytes through the CCID dispatch path, with synthetic rather than unique manufacturing identity. The separate physical CCID probe is ready for a later hardware run.
 - Decision: Keep physical CPLC validation open until ARM firmware is flashed and queried through a real CCID reader. Do not treat PC VPCD's `6999` as a CPLC failure.
-- Commit: `6d08baf` (CPLC implementation/build fixes); this progress record follows.
+- Commit: `1040186` (CPLC implementation/build fixes); this progress record follows.
 - Artifacts/logs: GPPro host VPCD pass: `artifacts/results/gppro-empty-install-vpcd-20261029T142152Z/`; exact unit output was 14/14. The failed PC VPCD GET DATA attempt is recorded in `.agent/QKB.md`.
 
 ## 2026-10-29 — Validate CPLC GET DATA on physical Pico 2 boards (7 minutes)
@@ -14804,7 +14804,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` and the equivalent D92 command both passed ARM/RISC-V build gates, verified flash, and finite serial monitors with `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The bounded `./tools/probe-gp-get-data` SmartcardIO probe returned the exact CPLC TLV with `9000` on both boards, both in open mode and after SCP03 C-MAC authentication. A reader temporarily disappeared from PC/SC; the authorized access helper restored enumeration and validation continued on the second board. `git diff --check` passed for the documentation changes.
 - Result: The physical CCID path serves `9F7F` correctly before and after SCP03 authentication on two Pico 2 identities. The APDU value contains the configured synthetic Feitian/RP2350 markers, `6302` date fields, and zero serial/batch/equipment identifiers.
 - Decision: CPLC hardware validation is closed. Continue with the highest-priority open implementation and acceptance items in `TODO.md`; retain per-device failover and reader-refresh guidance.
-- Commit: `ecd1b7b` (TODO/QKB/handoff validation record); this progress entry follows.
+- Commit: `e0e5409` (TODO/QKB/handoff validation record); this progress entry follows.
 - Artifacts/logs: `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`; `artifacts/logs/cycle-choupi-20261029T143004Z.log`; `artifacts/logs/cycle-choupi-20261029T143255Z.log`; logs are ignored by `.gitignore` and remain local.
 
 ## 2026-10-29 — Compare physical Core API results on two Pico 2 boards (18 minutes)
@@ -14815,7 +14815,7 @@
 - Validation: Both boards were previously flashed with the same current ARM CHOUPI image (SHA-256 `8d4bbbd1b395de7babf97915202316ff8b9239161f2e32d5685a0b4cc7468791`) and passed finite startup monitors. Exact-reader Core 3.0.5 runs used `--no-scenarios`. D92 (`D92E743D5F640C0F`) completed 291 calls: 272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, eight unavailable scenario rows, zero `SW_ERROR`. 2BED (`2BED26ED20556535`) completed 291 calls twice with identical results: 198 `OK`, 74 `SW_ERROR`/`6F00`, 11 unsupported, eight unavailable scenario rows. Both boards returned `Applet.deselect()` as `OK`, `returned=-19`, `effect=as expected`; both CAP cleanups succeeded. `git diff --check` passed for the tracked documentation.
 - Result: The deselect discrepancy is resolved on physical boards. A 2BED-specific Core response-error cluster is reproducible and differs from D92 under the same image and test command; it is not a transport abort. GPPro lists showed different pre-existing package registries; cause remains unknown. The optional Ext scenario CAP still refuses INSTALL with `6A88`, is rolled back, and the exact Core tests complete with scenarios disabled.
 - Decision: Investigate equivalent persistent card state and collect runtime fault/exception diagnostics on 2BED before changing VM code. Do not count the 2BED Core run as passing.
-- Commit: `9a267f8` (TODO/QKB/handoff results); this progress record follows.
+- Commit: `dd32ee9` (TODO/QKB/handoff results); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/core-physical-retest-20261029/core-no-scenarios.csv` SHA-256 `47d6ca9c6c142f607ec0299b900a09d0cba96e07afea6e925a45a46c86afc1a0`; `2BED-core-no-scenarios-retry.csv` SHA-256 `d6743b6f4dbab7431c096a6ea56aa98900afe11c4a1f384cf6679fcda96c837f`; `D92-core-no-scenarios.csv` SHA-256 `1b355c6da4fdd26723420a419961e58f4dc01cb65c5f6a2e5fafeacea188ab97`; `pico1.csv` SHA-256 `fb1b444b4d615d023889bcf0506e2fc3d9ac34b416997ac71645de4c049fb815`. These result files are ignored by `.gitignore` and remain local.
 
 ## 2026-10-29 — Track available-memory allocation investigation (2 minutes)
@@ -14826,7 +14826,7 @@
 - Validation: `git diff --check -- TODO.md` passed. No firmware changes, measurements, or tests were performed, as requested.
 - Result: The suspected over-reporting is recorded as unverified; the TODO requires a reproducible baseline and allocator/storage comparison before any code change is proposed.
 - Decision: Leave implementation deferred until the investigation is selected as the next work item.
-- Commit: `432dee1` (TODO entry); this progress record follows.
+- Commit: `3e530b0` (TODO entry); this progress record follows.
 - Artifacts/logs: none.
 
 ## 2026-10-29 — Track JCOP4 P71 symmetric algorithm coverage gaps (4 minutes)
@@ -14837,18 +14837,18 @@
 - Validation: Verified the supplied matrix hash `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`; confirmed it identifies JCAlgTest 1.7.9 and has no `ALG_AES_CTR` row. `git diff --check -- TODO.md` passed. No implementation or device tests were performed, as requested.
 - Result: TODO now distinguishes existing AES/DES primitives and current profile modes from missing Java Card factories/modes, and explicitly requires independent expected-support evidence for API rows absent from the legacy matrix.
 - Decision: Keep this as a separate implementation task; do not claim `ALG_AES_CTR` support from the supplied CSV alone.
-- Commit: `ac029eb` (TODO entry); this progress record follows.
+- Commit: `28fedd3` (TODO entry); this progress record follows.
 - Artifacts/logs: reference matrix `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`.
 
 ## 2026-10-29 Fix repeated Core failures after GP DELETE (50 minutes)
 
 - Step/experiment: `physical-core-delete-context-invalidation`
 - When: '2026-10-29 15:07 UTC' - '2026-10-29 15:57 UTC'
-- Change: GP DELETE removed persistent applet records but retained the selected applet context and heap. Added `choupi_vm_forget_selected_applet()` after a successful DELETE so reinstalling the same AID cannot reuse stale object fields whose persistent array bodies were deleted. Ordinary deselect/reset behavior remains unchanged. Implementation commit: `1c06845`.
+- Change: GP DELETE removed persistent applet records but retained the selected applet context and heap. Added `choupi_vm_forget_selected_applet()` after a successful DELETE so reinstalling the same AID cannot reuse stale object fields whose persistent array bodies were deleted. Ordinary deselect/reset behavior remains unchanged. Implementation commit: `a655d8a`.
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The current ARM CHOUPI image was flashed to Pico 2 `2BED26ED20556535`; finite monitor passed `TEST:SUMMARY pass=1 fail=0`. Two consecutive unchanged API 3.0.5 Core `--no-scenarios` runs, each including GPPro upload and DELETE cleanup, completed 291 calls with 272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, eight expected unavailable scenario rows, zero `SW_ERROR`. Scoped `git diff --check` passed. Attempted to flash D92, but targeted BOOTSEL recovery timed out; no result is attributed to that board.
 - Result: Before the fix, physical serial traces showed 74 uncaught `IOException`/`arraylength` failures at missing persistent array-body tags. After the fix, both consecutive 2BED reruns had zero failed calls. The previous 2BED result was 198 `OK` plus 74 `6F00`; the previous D92 baseline had 272 `OK` and zero `SW_ERROR`.
 - Decision: Close the repeated Core `6F00` investigation for the tested DELETE/reinstall path. Continue with physical EC/Crypto retesting and the interrupted Security sweep on an identified board.
-- Commit: `1c06845` (implementation; this progress/QKB/HANDOFF record follows in a documentation commit).
+- Commit: `a655d8a` (implementation; this progress/QKB/HANDOFF record follows in a documentation commit).
 - Artifacts/logs: `artifacts/results/deploy/core-physical-retest-20261029/2BED-candidate-fix-pass1.csv` SHA-256 `7d5cf036c16ec994c0e110858047b5a35234bb9d2d5f342612bb722816f07131`; `2BED-candidate-fix-pass2.csv` SHA-256 `e6631f6a590059637ec1a1de8d17a52316b93371a3dcd01a5b9bdfde608ee799`; `artifacts/logs/cycle-choupi-20261029T154706Z.log` SHA-256 `30903f2e8a91dce433aea70f1a8aacdad53b847ab0bdbf1be6b121ead15366eb`; build image `build/arm/pico2_choupi.uf2` SHA-256 `6a3915f6611dca76a728b6085fda6af6671a16ca1e59ba1fef674e9ed3a4b17a`.
 
 ## 2026-10-29 Compact continuity documents 5 minutes
@@ -14870,7 +14870,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid 2BED26ED20556535` passed ARM and RISC-V builds, flash verification, and the finite monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The current-profile sanity run completed Crypto 466 calls (22 `OK`, 444 `UNSUPPORTED_PER_SPEC`). After flashing `asymm_crypto`, Crypto completed 466 calls (302 `OK`, 163 `UNSUPPORTED_PER_SPEC`, one SHA-512 PSS `EXC_CARDRUNTIME reason=0x0001`); all earlier unexpected Crypto rows except that known undersized-key PSS case passed. Security pass 1 completed 901 calls (396 `OK`, 503 unsupported, two `SW_ERROR`); pass 2 completed 901 (396 `OK`, 504 unsupported, one `SW_ERROR`). All CAP cleanups passed. Focused RSA-public-4096 KeyBuilder, RSA CRT `setP`/`setPQ` 2048, and `MessageDigest.OneShot.open(ALG_SHA)` checks produced 3 `OK` calls. A narrowed prefix through the preceding API classes completed 629 exercised calls (323 `OK`, 305 unsupported, one `SW_ERROR`) and reproduced RSA CRT `setP` 2048. Serial log records `FS_WRITE_FAIL op=new tag_len=20 size=131 files=5929 bytes=65409/65536`, followed by internal `IOException` id 5 and APDU `6F00`. `git diff --check` passed for the four task documentation files. No Windows, VPCD, or power-cycle checks were run.
 - Result: The public RSA-4096 KeyBuilder transport boundary now returns `OK`; RSA/RSA-CRT KeyPair 4096 are correctly unsupported. Prior Crypto errors are resolved on this image except the known SHA-512 PSS size error. Repeated full-run `setP` failure is cumulative persistent-filesystem exhaustion, not evidence of RSA arithmetic failure; isolated setP/setPQ pass. Current ARM CHOUPI UF2 SHA-256 is `620f4c739c1891bbc921e8bcb7202988a1bbff9ff878ea566b3d3523b7e9fcb3`; RISC-V VM smoke image SHA-256 is `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`; ROM-mask SHA-256 is `112eee482fd3f2a049bec6bbb6994740f3e3f086e364cd0f3da0e9e1054ed44d`.
 - Decision: Investigate safe persistent-object reclamation/root retention and translate filesystem `OutOfFlash` into the appropriate Java Card resource exception, preserving stable handles. Then continue the exact RSA-512 official-client/VPCD timing comparison. No automatic recovery or partition-size change is justified by this run.
-- Commit: `5718f4e`.
+- Commit: `fc4aa1d`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-physical-retest-20261029/2BED-asymm-crypto.csv` SHA-256 `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`; `2BED-asymm-security.csv` SHA-256 `925fa829ccd85435af6bfedd568d614579cd1ccc655cc890fa7c0de206c547e2`; `2BED-asymm-security-repeat.csv` SHA-256 `8136c7961e4ff3576418199c530b0fb13a6b8164320bac5e86315f7f75448784`; `2BED-asymm-security-focus.csv` SHA-256 `24ae0ea320e42c35e1ae10324186c7905785dbc44a010aa6fbf5f1dd5d99380b1`; `2BED-asymm-security-prefix.csv` SHA-256 `140c9bd1a8426f4cf8034d204171b43e573a389162013bb2eb5de399b37a86`; serial trace `artifacts/logs/2BED-asymm-security-prefix-serial.log`; flash cycle `artifacts/logs/cycle-choupi-20261029T160719Z.log` SHA-256 `bf6166d3174f326c1f1aede3b835e6998d6fb78b583f2f186207e150bc66a6a2`.
 
 ## 2026-10-29 Fix persistent write exhaustion handling and offset bound 65 minutes
@@ -14881,7 +14881,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed, including near-full write rejection and cleanup (`TEST:SUMMARY fail=0`). `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed; both build gates were also repeated in the physical cycle. Physical 2BED `2BED26ED20556535` full API 3.0.5 Security run completed 901 calls: 396 `OK`, 504 `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, zero `SW_ERROR`/wrong results; temporary CAP cleanup succeeded. The formerly uncaught RSA CRT 2048 `setP` now returned `NO_MEMORY; EXC_SYSTEM reason=0x0005 (NO_RESOURCE)`. Concurrent bounded serial capture contained 600 `TEST:SUMMARY pass=1 fail=0` startup checks and the `FS_WRITE_FAIL` event at 65,409/65,535 bytes. D92 was flashed with the corrected image and picotool verification passed, but its runtime/PCSC reader did not return; recovery remains unconfirmed. Latest elevated PC/SC scan showed 8E and 2BED. Scoped `git -c core.whitespace=cr-at-eol diff --check` passed for modified source and docs. Windows and power-cycle checks were not run.
 - Result: Storage-full is now surfaced as a Java Card resource limit instead of `6F00`; no RSA implementation defect was indicated. An earlier 77,824-byte capacity trial exceeded 16-bit offsets and caused D92 snapshot tag reconstruction failure and DELETE `6581`; the bound was corrected before the passing 2BED retest. Persistent-object reclamation remains open and must preserve stable handles.
 - Decision: Keep the storage capacity boundary at 65,535 bytes until an on-flash format and offset-width migration is implemented. Next investigate the exact official-client RSA-512 timing APDU on a fresh matching VPCD image, then address safe persistent-object reclamation.
-- Commit: `26ff5a2` (implementation and test record); this metadata-only commit records its SHA.
+- Commit: `fbba9ef` (implementation and test record); this metadata-only commit records its SHA.
 - Artifacts/logs: ARM UF2 SHA-256 `e99fe641f95d45a8775edf8996bade276103134dbfd6ba05855f0f10847856ea`; corrected D92 cycle log `artifacts/logs/cycle-choupi-20261029T173659Z.log` SHA-256 `e1d38f12bf055a74841e8e38d7b5d13e6e7e1b034911912d6c8be7d01c400b40`; 2BED corrected serial `artifacts/logs/2BED-asymm-security-corrected-serial.log` SHA-256 `21d3fefbae54ca8aeaa1ce1130e484d5fa83b09564b4899c1bff6a18526a19aa`; Security CSV `artifacts/results/deploy/asymm-storage-20261029/2BED-security-bounded.csv` SHA-256 `cdc05f4904d39fddfda86b5233b8a3a61ea112b2b31f013a3455a9e55c918ea1`.
 
 ## 2026-10-29 Batch persistent RSA KeyPair component writes 25 minutes
@@ -14892,7 +14892,7 @@
 - Validation: `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. Physical `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid 2BED26ED20556535` flashed and verified the image; finite monitor passed `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`. One `CHOUPI:WATCHDOG_RECOVERY marker=494E5354 cause=other` marker occurred during the cycle and remains under investigation. Fresh VPCD run of unchanged JCAlgTest APDU `B07519000301020000` passed with response ending `9000` in 16.419 s, compared with prior 240.101 s timeout. Before fix, native trace showed RSA primes ready in 539 ms before per-byte persistent updates stalled. A matching native-probe APDU `801A000000` completed in 0.288 s. No physical applet APDU, full official support sweep, or Windows validation yet. `git diff --check` passed for changed source/docs.
 - Result: The long request time is after RSA prime generation and in persistent key-component storage. Batching resolves the timeout on PC VPCD by reducing repeated writes; the remaining 16.419 s and physical behavior need validation. Current ARM UF2 SHA-256 `64607ee4d6b95e89cff0d0a9c5f0ee675a9b49ccd310dc31259d5fbbc6739d74`.
 - Decision: Physically run the unchanged RSA-512 support APDU on 2BED, inspect the watchdog recovery marker, then rerun a complete JCAlgTest support report. Preserve the incomplete 2026-10-29 report as partial evidence only.
-- Commit: `59e0a53` (source and validation record); this metadata-only commit records its SHA.
+- Commit: `4670960` (source and validation record); this metadata-only commit records its SHA.
 - Artifacts/logs: `artifacts/logs/jcalgtest-rsa512-instrumented-20261030.log` SHA-256 `e9d33089b1970c76dcca84806f907e131594c46a2f380ff42f3ed3456afc4ddd`; `artifacts/logs/jcalgtest-rsa512-bulk-write-20261030.log` SHA-256 `c4a0f49c75698c7b275d01ef710c3b4b62cf004e4202227637b39b42bcfa6938`; `artifacts/logs/cycle-choupi-20261029T231730Z.log` SHA-256 `c45d40f8c2c7a46f965a1599b9d4608da4ffa27853404c34794b3d663921e531`.
 
 ## 2026-10-29 Validate RSA-512 support APDU on physical Pico 2 10 minutes
@@ -14903,7 +14903,7 @@
 - Validation: On identified physical Pico 2 `2BED26ED20556535`, with exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00`, the probe selected installed JCAlgTest 1.8.2 (`GETVERSION` response `1.8.2_jc305`) and ran the RSA-512 support APDU three times. Measured 1,532 ms, 1,707 ms, and 1,650 ms; every result was `status=00`, APDU response SW `9000`. Elevated USB/PCSC path and `pcscd` ACL refresh were used. `git diff --check` passed. No firmware rebuild, flash, full support suite, or Windows validation was needed for this host utility change.
 - Result: The persistent-component batching fix is physically validated for the RSA-512 KeyPair support call, with no timeout or error. The full official support report and one intermittent watchdog recovery marker remain open.
 - Decision: Rerun the complete official JCAlgTest 1.8.2 support suite on the current image, preserving the partial 2026-10-29 report as incomplete evidence. Investigate the watchdog recovery marker separately.
-- Commit: `1053bca` (probe and validation record); this metadata-only commit records its SHA.
+- Commit: `fd20713` (probe and validation record); this metadata-only commit records its SHA.
 - Artifacts/logs: `artifacts/logs/rsa512-jcalgtest-physical-2BED-20261030.log` SHA-256 `65ce6c742b447c4bb306fccf77fc0e17bdb32987c2c6674262f17e29f9f4a718`.
 
 ## 2026-10-30 Complete physical JCAlgTest support report on asymm_crypto 56 minutes
@@ -14914,7 +14914,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid 8E464F4E2BBC0A19` passed ARM and RISC-V build gates, flash verification, and the finite serial runtime checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`); one `WATCHDOG_RECOVERY ... cause=other` line preceded further passing checks. On 8E, after CAP reinstall, JCSystem info and RSA-512 support returned `9000`; the complete official `ALG_SUPPORT_EXTENDED` CSV matched 4,525 reference rows, with 196 yes, 4,329 no, zero other values. The report matches the reference support matrix. The generated declared-capability comparison is 143/145 because the two unchanged upstream RSA/RSA-CRT 3072 KeyPair rows send 4096; preserve this known mismatch. On 2BED, the original report lost its PC/SC transaction at RSA-736, but the card reappeared and finite runtime passed. After reinstall, isolated RSA-512 then RSA-736 probes both returned status 00 / `9000` (1,447 ms and 4,078 ms); the official report then passed both rows and reached 4,484/4,525 reference rows before its explicit 900-second timeout. That CSV contains 196 yes, 4,290 no, zero other; it is partial. Final elevated PC/SC scan showed both 8E and 2BED. `git diff --check` passed for the task files.
 - Result: The complete physical report on 8E matches the JCAlgTest reference exactly. The 2BED interruption was not reproducible after reinstall; its second incomplete run stopped at the configured time bound, with all supported results already captured. The 8E `cause=other` marker is retained RP2350 scratch context from a non-watchdog reset/reflash and is consumed once; it is not by itself a VM/runtime failure. Reflashing between profiles can leave installed test-app state stale; deleting/reinstalling that test app restores correct API calls.
 - Decision: Mark the full `asymm_crypto` JCAlgTest support-report acceptance complete based on 8E. Keep 2BED’s partial report clearly labeled. Continue with safe persistent-object reclamation from the prioritized backlog; revisit watchdog diagnostics only if `cause=watchdog`, repeated resets, or failing runtime checks appear.
-- Commit: `fbe3086` (probe, evidence, and documentation); this metadata-only commit records its SHA.
+- Commit: `14966c8` (probe, evidence, and documentation); this metadata-only commit records its SHA.
 - Artifacts/logs: 8E report `artifacts/results/jcalgtest/asymm_crypto_complete_20261030_physical_8E_reinstalled/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(8E464F4E2BBC0A19)_00_00_ALGSUPPORT__3b_80_01_81.csv` SHA-256 `ce655a87c41cdf160c2e514abf0ff54ea5902b074489da2573a49055fad52997`; official log SHA-256 `881ce1f6d3f727ba3686c3b085d29c7fa01c0ee6b4d9cd9230b69c076cfb6c6a`; 2BED partial CSV SHA-256 `aa3e8f4ef25e43061c6374ecbb4e831d49ed36cae099cea65dcd62a14df33534`, log SHA-256 `36d0bd6d89d61aea4487a0cdce86c79d57635861d9d05f7d69e67c273d1f4ea1`; 8E flash-cycle log `artifacts/logs/cycle-choupi-20261029T234124Z.log` SHA-256 `f0f13e8bba8fd12b99e454df2f0df11876a41b8540d17f805c49b3a85b643e28`; ARM UF2 SHA-256 `64607ee4d6b95e89cff0d0a9c5f0ee675a9b49ccd310dc31259d5fbbc6739d74`.
 
 ## 2026-10-30 Add bounded-memory persistent-tag visitor 9 minutes
@@ -14925,7 +14925,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Focused OS test `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host visits_active_tags -- --nocapture` passed. Full functional OS suite passed 66 tests, 0 failed, 2 ignored, with `--skip bindgen_test_layout`; those generated layout tests abort with `null reference produced`. Host suite required elevated execution because its MPU emulator uses `PTRACE_ATTACH`. No physical flash or hardware test was run because this primitive is not connected to runtime code.
 - Result: The filesystem index can now be scanned with bounded temporary memory in tests and future internal code. Persistent root discovery, owner-scoped bridge design, and deletion safety remain open.
 - Decision: Next define and implement a trusted owner-scoped tag inventory bridge, then enumerate persistent roots and aliases. Keep deletion disabled until the full persisted graph is accounted for.
-- Commit: `88cd0f5` (OS submodule), `94f3446` (root docs and pointer); this metadata-only commit records the root SHA.
+- Commit: `88cd0f5` (OS submodule), `ab0d37e` (root docs and pointer); this metadata-only commit records the root SHA.
 - Artifacts/logs: `/tmp/javacard-os-tests.log` captures the sandbox-only PTRACE failure; no persistent test artifact.
 
 ## 2026-10-30 Add trusted active-tag cursor bridge 11 minutes
@@ -14936,7 +14936,7 @@
 - Validation: `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host -- --skip bindgen_test_layout` passed 67 tests, 0 failed, 2 ignored, 49 filtered. Focused syscall regression passed. `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` passed flash verification and finite runtime on physical board 2BED; output included `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`/`FAULT`. A retained `WATCHDOG_RECOVERY ... cause=other` diagnostic preceded repeated successful checks; it is not evidence of watchdog reset per current QKB. `git diff --check` passed before commit.
 - Result: The trusted VM can now page active tags through the OS boundary without allocating a whole-index snapshot, while respecting the current context's tag read access. The bridge has not yet been consumed by VM root inventory; no reclamation safety claim is made.
 - Decision: Implement the native owner-scoped inventory consumer next. Include static roots, applet roots, fields, array bodies, and aliases; keep persistent deletion disabled until graph accounting and recovery validation are complete.
-- Commit: `cf908e5` (CHOUPI OS submodule), `b0db3e2` (parent docs/progress and OS pointer); this metadata-only commit records the parent SHA.
+- Commit: `cf908e5` (CHOUPI OS submodule), `ee3c14a` (parent docs/progress and OS pointer); this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T004223Z.log` SHA-256 `70f7e80aa212490893cbbe49d825f2577ff647a9d89231c6388daf959b41eae8`. Host suite: 67 passed, 0 failed, 2 ignored; no separate archived log.
 
 ## 2026-10-30 Make trusted tag cursor callable without filesystem reinitialization 7 minutes
@@ -14947,7 +14947,7 @@
 - Validation: `./tools/build-pc` passed and compiled the OS C++ wrapper; its ROM-mask generation completed. `./tools/build arm` and `./tools/build riscv` passed. `git diff --check` passed for the OS change and task documentation. No physical flash was needed: this change is confined to the host-facing C++ wrapper and is not used by the ARM firmware.
 - Result: Trusted VM code can call the cursor API without triggering `fs_init`; the wrapper is compiled but no persistent root scan consumes it yet. No flash records are deleted.
 - Decision: Next implement and test a read-only owner-scoped VM inventory that accounts for serialized static roots, applet roots, object fields, arrays, and aliases. Do not enable persistent-record reclamation until malformed, inaccessible, and cross-owner edges fail closed.
-- Commit: `dfdbcbf` (CHOUPI OS submodule), `a32dcc6` (parent docs/progress and OS pointer); this metadata-only commit records the parent SHA.
+- Commit: `dfdbcbf` (CHOUPI OS submodule), `6c74d99` (parent docs/progress and OS pointer); this metadata-only commit records the parent SHA.
 - Artifacts/logs: PC build final result `ROMMASK:PASS image=build/choupi-pc/flash header=build/choupi-pc/jni.hpp manifest=build/choupi-pc/generation.sha256`; ARM and RISC-V builds passed. No standalone build log archived.
 
 ## 2026-10-30 Add Pico overlay tag cursor matching host ABI 12 minutes
@@ -14958,7 +14958,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed all cases (`TEST:SUMMARY fail=0`), including the existing 1,000-cut persistence tests. `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host -- --skip bindgen_test_layout` passed 67 tests, 0 failed, 2 ignored; the compiler emitted existing OS warnings. `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed ARM/RISC-V build gates, flash verification, and finite physical runtime checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The hardware cycle did not invoke `fs_next_tag`; physical cursor-call validation remains open.
 - Result: Both filesystem backends now expose a bounded cursor interface with the same ABI. Host OS behavior is regression-tested; Pico overlay behavior is unit-tested and the flashed image boots. No persistent records are deleted, and no claim is made that the VM root inventory consumes the cursor yet.
 - Decision: Next implement a trusted read-only VM inventory consumer and verify on hardware that its call path reaches the Pico overlay cursor. Include static/applet roots, object fields, array bodies, and aliases; keep reclamation disabled until all persisted references and stable handles are proven safe.
-- Commit: `53397b4` (OS submodule), `9f83a0b` (parent implementation); this metadata-only commit records the parent SHA.
+- Commit: `53397b4` (OS submodule), `d799659` (parent implementation); this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T010244Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cb74c57d1916e3be5d65a593247934d962292048ee355e4227f0db33f7724a0b`.
 
 ## 2026-10-30 Add read-only applet persistent-tag inventory 6 minutes
@@ -14969,7 +14969,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all four cases (`TEST:SUMMARY fail=0`). `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, verified the ARM image, and passed repeated finite monitor checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The physical cycle did not call `PersistentInventory::visitApplet`; actual cursor-call validation remains open. Scoped `git diff --check` passed.
 - Result: Native VM code now has a bounded read-only way to inventory applet-owned persistent tags, with fail-closed behavior for cursor and tag corruption. Full graph inventory and safe persistent-record reclamation remain unimplemented.
 - Decision: Next enumerate persisted roots and decode typed object/array/alias edges, including package-static roots; only then compare the persistent graph against live VM roots. Keep flash deletion disabled.
-- Commit: `16b4695`; this metadata-only commit records the parent SHA.
+- Commit: `b9c575b`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011112Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
 
 ## 2026-10-30 Add package-static persistent-tag inventory 4 minutes
@@ -14980,7 +14980,7 @@
 - Validation: `./tools/test-persistent-inventory` passed five cases (`TEST:SUMMARY fail=0`). `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite runtime (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The monitor did not call the inventory visitor. Scoped `git diff --check` passed.
 - Result: Package-static tags can now be streamed separately, which is needed before reference-valued statics can be considered graph roots. No flash record is modified or deleted.
 - Decision: Inspect CAP static metadata to enumerate reference slots for every installed package, then traverse serialized typed fields, arrays, and aliases. Keep reclamation disabled.
-- Commit: `68b61c0`; this metadata-only commit records the parent SHA.
+- Commit: `c02f879`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011703Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
 
 ## 2026-10-30 Enumerate CAP static-reference slot tags 4 minutes
@@ -14991,7 +14991,7 @@
 - Validation: `./tools/test-persistent-inventory` passed eight cases (`TEST:SUMMARY fail=0`), including 129 static reference slots crossing offset 255 and inconsistent image metadata. `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite physical runtime (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The monitor did not invoke the inventory helper. Scoped `git diff --check` passed.
 - Result: CAP package metadata can now enumerate candidate persistent reference-static tags without scanning unrelated primitive-static records. The stored values and transitive object graph remain unexamined; no record is deleted.
 - Decision: Read those static slots through the native persistent API, skip nulls, and then traverse object, reference-array, and alias records under fail-closed rules.
-- Commit: `386a186`; this metadata-only commit records the parent SHA.
+- Commit: `84897f4`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012137Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
 
 ## 2026-10-30 Add fail-closed static root visitor 9 minutes
@@ -15002,7 +15002,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all 11 checks (`TEST:SUMMARY fail=0`). `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` recovered from a missing reset-interface attempt via the wrapper's BOOTSEL path, verified the ARM flash, and passed the finite monitor with repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. The physical runtime did not invoke the inventory visitor. Scoped `git diff --check` passed for implementation/test files.
 - Result: Static-root iteration can now fail closed at the read boundary and skip null values. It remains an abstraction only: no production reader connects it to CAP metadata or heap root caching, and the existing persistent-reference API still collapses some read errors to null. No reclamation is enabled.
 - Decision: Implement a strict storage reader that distinguishes missing records, valid null records, and I/O/corruption, then connect it to package CAP metadata and static-root caching. Continue to keep flash deletion disabled until the rest of the object graph and aliases are accounted for.
-- Commit: `68d57f5` (visitor and tests); this progress record is committed separately.
+- Commit: `9b93bd4` (visitor and tests); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012825Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
 
 ## 2026-10-30 Add strict persistent-reference restore 8 minutes
@@ -15013,7 +15013,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `./tools/test-persistent-inventory` passed all 11 cases; these test the visitor abstraction, not `getPersistentField_ReferenceStrict` itself. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` verified the ARM flash and passed the finite monitor with repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. The hardware monitor did not invoke the strict reader. Scoped `git -c core.whitespace=cr-at-eol diff --check` passed; the source files use CRLF endings.
 - Result: A production decoder can now distinguish missing static-reference records from invalid or unreadable present records and fail closed. This reader is not yet connected to CAP metadata, static-root caching, or the inventory callback; no graph inventory or flash reclamation is enabled.
 - Decision: Add a package/CAP adapter that checks the per-heap static-root cache before restoring reference slots, then feed all valid roots into an owner-bounded graph walk. Add direct strict-reader tests before relying on it for any destructive cleanup.
-- Commit: `51b347e` (strict decoder); this progress record is committed separately.
+- Commit: `9b07533` (strict decoder); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T013616Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `bcd9cbfdd19110febb760da2c0d6dcd2a56019b1086a71b0590605f57c938479`.
 
 ## 2026-10-30 Connect static inventory to strict flash restore 5 minutes
@@ -15024,7 +15024,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed; all three compiled the new adapter. `./tools/test-persistent-inventory` passed all 11 abstraction-level cases. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` verified the ARM flash and passed repeated finite runtime checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`); the runtime monitor did not call this adapter. Scoped CRLF-aware `git diff --check` passed.
 - Result: There is now a production adapter from package static slots to heap-cached references with strict storage error propagation. Direct adapter behavior is not yet unit-tested or invoked by firmware; full package enumeration and object/array/alias traversal remain open. No persistent record was changed or deleted.
 - Decision: Add direct adapter tests with a mock storage/heap boundary, then design an owner-aware inventory entry point that supplies validated CAP static metadata and all necessary applet/runtime roots. Do not enable flash deletion.
-- Commit: `d7fb19f` (adapter); this progress record is committed separately.
+- Commit: `5d5a82f` (adapter); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T014218Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cefc89fb69c41255406a4941b3ef7c04c515c2fbf88f49b9bf94356f6832e9a8`.
 
 ## 2026-10-30 Read static root metadata from installed CAP 3 minutes
@@ -15035,7 +15035,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `./tools/test-persistent-inventory` passed all 11 cases. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` verified flash and passed repeated finite monitor checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`), with no `TEST:FAIL`/`FAULT`. The physical monitor did not call the CAP reader. Scoped `git diff --check` passed.
 - Result: A caller can request static roots using metadata from the actual installed CAP instead of manually supplied counts. The API is not yet called by GC and no persistent records are removed.
 - Decision: Add direct tests for installed CAP metadata extraction and strict restore, then determine a safe context/owner inventory that includes every live applet root, object-field edge, array edge, and alias before any persistent-store deletion.
-- Commit: `2334781` (CAP metadata adapter); this progress record is committed separately.
+- Commit: `ec7bfbf` (CAP metadata adapter); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T014537Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cefc89fb69c41255406a4941b3ef7c04c515c2fbf88f49b9bf94356f6832e9a8`.
 
 ## 2026-10-30 Inventory registered applet instance roots 4 minutes
@@ -15046,7 +15046,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all 15 checks (`TEST:SUMMARY fail=0`). `./tools/build-pc` passed. The elevated cycle rebuilt and passed ARM/RISC-V gates, then flashed 2BED `2BED26ED20556535`; the finite monitor passed repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`/`FAULT`. The cycle recovered from the initial missing reset interface through BOOTSEL. Hardware startup did not invoke the new applet-root adapter. Scoped `git diff --check` passed.
 - Result: A selected applet owner's registered root records can now be decoded and resolved with tag/object identity checks. No ordinary GC or deletion path calls this visitor; all object-field, array, cross-context, and alias graph accounting remains incomplete.
 - Decision: Add direct persistent-store adapter tests and define the complete owner/context root set before using this in any collection decision. Keep persistent record deletion disabled.
-- Commit: `69f0a49` (root scanner and parser tests); this progress record is committed separately.
+- Commit: `9b9616b` (root scanner and parser tests); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T015008Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
 
 ## 2026-10-30 Refresh persistent-inventory handoff 2 minutes
@@ -15057,7 +15057,7 @@
 - Validation: `git diff --check -- TODO.md .agent/QKB.md .agent/HANDOFF.md` passed. No builds or hardware checks were needed for this documentation-only step.
 - Result: Continuation docs now distinguish parser/build/startup evidence from actually invoking the persistent inventory on device.
 - Decision: Continue with direct tests for the flash/CAP adapters and a bounded diagnostic invocation; do not enable persistent deletion until typed edges and all context roots are accounted for.
-- Commit: `2c92b7f` (test build fix and QKB note); this progress record is committed separately.
+- Commit: `b91eab1` (test build fix and QKB note); this progress record is committed separately.
 - Artifacts/logs: none.
 ## 2026-10-30 — Isolate persistent inventory adapter host fault — 16 minutes
 
@@ -15067,7 +15067,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all 15 focused checks; `./tools/build-pc` passed. The control `./tools/test-jcsystem-transaction-applet --case 14` passed ATR, SELECT, and static-reference identity (`TEST:SUMMARY pass=3 fail=0`, 52.343 s). With the temporary inventory diagnostic, VPCD closed after static slot offset 0 returned compact reference 10 and slot offset 2 entered heap persistent-reference cache lookup; the Rust host emulator reported SIGSEGV / unauthorized address `0x0`. No ARM/RISC-V build or physical test was run because no source change was retained and the probe was PC-only.
 - Result: Existing control behavior is intact. The installed static adapter cannot yet be safely invoked in the host emulator; the fault's cause is not established. No persistent records were deleted or changed.
 - Decision: Add a focused heap/cache or minimal adapter test to isolate the fault before direct hardware invocation or reclamation work. Keep persistent deletion disabled.
-- Commit: `3e0728d` (QKB/HANDOFF investigation record)
+- Commit: `533eb7a` (QKB/HANDOFF investigation record)
 - Artifacts/logs: `artifacts/logs/persistent-inventory-static-vpcd-20261030e.log`, `artifacts/logs/persistent-inventory-control-vpcd-20261030.log`, `/tmp/build-pc-inventory.log`
 
 ## 2026-10-30 — Fix and exercise static-root inventory adapter — 7 minutes
@@ -15078,7 +15078,7 @@
 - Validation: `./tools/test-persistent-inventory` passed; PC, ARM, and RISC-V wrappers passed. With the unchanged JCSystem transaction CAP, `PICO2_PERSISTENT_INVENTORY=1 ./tools/test-jcsystem-transaction-applet --case 14 --case 15 --case 16` passed (`TEST:SUMMARY pass=5 fail=0`, 49.098 s). All four post-APDU scans reported `static_result=0 static_roots=6 applet_result=0 applet_roots=1`. Physical `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, recovered from an unavailable reset interface through the wrapper's CDC-1200 BOOTSEL path, verified the flash, and passed finite serial (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The physical monitor did not invoke the PC-only inventory hook.
 - Result: Both installed-CAP static and applet root adapters now complete against the VPCD JCSystem workload. Full object-field/reference-array/alias traversal is not implemented; no persistent records were deleted.
 - Decision: Keep reclamation disabled. Next implement/test serialized object and reference-array edges, then add all active applet/context roots before reachability can authorize deletion. Physical invocation of the adapters remains open.
-- Commit: `7e755e1`
+- Commit: `67170e6`
 - Artifacts/logs: VPCD `artifacts/logs/persistent-inventory-vpcd-fixed-20261030.log` (SHA-256 `2e2e570a91d6fdc98b84314fc6efead267d03ad1b16f3e2150d5e1163a53f0e5`); physical `artifacts/logs/cycle-choupi-20261030T021444Z.log` (SHA-256 `a62337be82ee683ad3bb089e97a15255ee12d7f89c9402428f9a5bf7d1f957b0`); ARM UF2 SHA-256 `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
 
 ## 2026-10-30 — Trace reachability from inventory roots — 8 minutes
@@ -15089,7 +15089,7 @@
 - Validation: `./tools/build-pc` passed. Unchanged JCSystem transaction CAP VPCD cases 14–16 and nested-alias case 82 passed (`TEST:SUMMARY pass=6 fail=0`, 44.790 s). Four post-APDU scans reported both adapters `Complete`, six static roots, one applet root; after setup, `trace_complete=1`, arrays 11/11 and instances 7/7 reachable, zero invalid refs, and zero edge-load failures. This source change is entirely inside `PC_VERSION`; ARM/RISC-V builds and physical flash were intentionally skipped for this diagnostic-only extension.
 - Result: Existing graph traversal reaches the fixture's persistent fields, reference arrays, aliases, and context roots. The walk still uses tolerant child getters, and only one applet/context workload is covered; this does not establish fail-closed semantics or authorize record deletion.
 - Decision: Next add strict object-field and reference-array edge readers, then broaden root enumeration across installed packages and active contexts before any reclamation.
-- Commit: `ad973f3`
+- Commit: `8f54f0b`
 - Artifacts/logs: `artifacts/logs/persistent-inventory-edges-vpcd-20261030b.log` (SHA-256 `69a40e6e57eb978993f6e4085ce8151fda55179b2c172799d111a736193678a7`); `/tmp/build-pc-inventory-edges.log`.
 
 ## 2026-10-30 Strictly traverse persistent heap edges 15 minutes
@@ -15100,7 +15100,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all 14 displayed cases. Strict VPCD JCSystem cases 14–16 and nested-alias case 82 passed 6/6 harness checks; trace reported `complete=1`, arrays 11/11 and instances 7/7 reachable, zero invalid refs and edge failures. PC, ARM, and RISC-V builds passed. Two identified Pico 2 boards passed ARM flash verification and finite startup monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). Physical JCSystem transaction probe on 8E passed 9/9, including rollback/commit, large array length, catchable `BUFFER_FULL`, and CCID card-power-cycle persistence. Scoped CRLF-aware `git diff --check` passed. No persistent records were deleted.
 - Result: Persistent heap graph edges are now loaded fail-closed by the read-only tracer for the exercised workloads. All-root coverage and proof that incomplete traversal can never authorize deletion remain open; the tracer itself remains PC-only.
 - Decision: Add malformed-edge/alias negative tests, inventory every installed package and active context/native root, and explicitly gate reclamation on complete traversal. Preserve persistent deletion as disabled until these are validated.
-- Commit: `b512b0d` (strict edge implementation and unique physical-probe AID); documentation and this progress entry are recorded in subsequent commits.
+- Commit: `6988148` (strict edge implementation and unique physical-probe AID); documentation and this progress entry are recorded in subsequent commits.
 - Artifacts/logs: VPCD strict edges `artifacts/logs/persistent-inventory-strict-edges-vpcd-20261030.log` (SHA-256 `ebaa2cf38722416ec891b4c4109434a36823d0cba77c287fb26cdf7f656513fa`); VPCD after unique test AID `artifacts/logs/persistent-inventory-strict-edges-vpcd-20261030-aid.log` (SHA-256 `166241ec6e221859383e489a5da5d02f78d4b841b4d2fea218080a479c744bc`); physical cycle logs `artifacts/logs/cycle-choupi-20261030T023020Z.log` (SHA-256 `aca83ec66c681f5ed94fb7b51c616b918b6014fcf222bf42245f562ccbcee48a`) and `artifacts/logs/cycle-choupi-20261030T023256Z.log` (SHA-256 `ecf4c2d02e35b81061e1f655d7dab60129c5f28a0c78eaa2a9b4cb879cf365b2`); physical JCSystem probe `artifacts/logs/jcsystem-transaction-physical-20261030T023635Z.log` (SHA-256 `4ee8084a4a818a05ef31ab98415e1622ca285843fd43d246842bfc6fa37bb76d`); ARM UF2 SHA-256 `4a28bb894b91f7ff18f0aec1fa92149ffb292dbb257a358d382f4e69ef0d51bb`.
 
 ## 2026-10-30 Restore standalone RMI unit build 4 minutes
@@ -15111,18 +15111,18 @@
 - Validation: `./tools/test-rmi-registry` passed and printed `RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1`. Scoped `git diff --check` passed. No hardware or full firmware builds were needed for this test-build-only fix.
 - Result: The repository RMI test wrapper compiles again with the updated heap source.
 - Decision: Add a dedicated heap/persistent-storage unit harness before claiming negative coverage for malformed serialized edges or incomplete-mark reclamation safety.
-- Commit: `ccbec3e` (restart evidence and continuity notes); this progress record is committed separately.
+- Commit: `33382c6` (restart evidence and continuity notes); this progress record is committed separately.
 - Artifacts/logs: none.
 
 ## 2026-10-30 Progress log commit-reference correction
 
 - Step/experiment: `progress-commit-reference-erratum`
 - When: '2026-10-30 02:45 UTC' - '2026-10-30 02:46 UTC'
-- Change: Corrected two commit references affected by a mistaken first-match update. The earlier `persistent-inventory-handoff-sync` record belongs to documentation commit `00095ac`, not the later RMI build fix. The `rmi-test-ffi-include-path` record above belongs to code/QKB commit `2c92b7f` and progress commit `7394221`.
+- Change: Corrected two commit references affected by a mistaken first-match update. The earlier `persistent-inventory-handoff-sync` record belongs to documentation commit `0deafbb`, not the later RMI build fix. The `rmi-test-ffi-include-path` record above belongs to code/QKB commit `b91eab1` and progress commit `20152db`.
 - Validation: Compared the affected records with `git show` for the referenced commits; no source or test files changed.
 - Result: The append-only log now has an explicit correction without rewriting historical entries.
 - Decision: Continue using unique section-scoped edits when updating commit references.
-- Commit: `7394221` records the RMI progress entry; this erratum is committed separately.
+- Commit: `20152db` records the RMI progress entry; this erratum is committed separately.
 - Artifacts/logs: none.
 
 ## 2026-10-30 Integrate strict inventory into device collector 22 minutes
@@ -15133,7 +15133,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all 15 cases, including the 7-byte array-body `0xFF` suffix regression. `./tools/test-rmi-registry` passed. `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Physical ARM cycle on 2BED `2BED26ED20556535` passed flash verification and finite monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). Read-only JCAlgTest 1.8.2 SELECT, GETVERSION, and JCSystem-info APDUs all returned `9000`; saved serial shows all three interpreter/GC begin/end sequences and no `HEAP_GC_SKIP` or root failures. Scoped CRLF-aware source and documentation `git diff --check` passed.
 - Result: Device-side inventory adapters now participate in the collector for the selected applet/package and the physical applet workload traverses GC successfully. All-installed-package and all-live-context/native root coverage remain incomplete; persistent filesystem records are not deleted.
 - Decision: Continue broadening root coverage and add malformed serialized edge/alias tests that prove incomplete traversal never authorizes reclamation. A full physical transaction-probe retest remains open: 8E verified flash but did not re-enumerate; 2BED has 56,714/65,535 bytes used (8,821 free), and probe installation returned `6A80` while trying to write a 32,770-byte record. The upstream JCAlgTest package was preserved, and GPPro confirmed the failed probe left no temporary package installed.
-- Commit: `3fea696` (implementation and status docs); this progress record is committed separately.
+- Commit: `df6cb32` (implementation and status docs); this progress record is committed separately.
 - Artifacts/logs: 2BED cycle `artifacts/logs/cycle-choupi-20261030T030140Z.log` (SHA-256 `4265c1c380196fbf12a037ed4d27715764e52a06b09cd7e3d9107bcd20f75bf6`); ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `58001f50ed7501b772afceacc8a071c0d62f39901a4b894ff7a4efbdd4fbf5c5`); read-only physical APDUs `artifacts/logs/persistent-inventory-device-apdu-2BED-20261030-retry.log` (SHA-256 `a835343133df15784e387a82072e5ff27545a89212a2b9f339671a8f56b3181e`); physical serial `artifacts/logs/persistent-inventory-device-gc-monitor-2BED-20261030-retry.log` (SHA-256 `de7a2d8b883c08e947893a29ab104dc9f3561aaa7f91ce30b74d05a0c5ffae47`); failed transaction-probe install log `build/jcsystem-transaction-probe/physical-install-20261030T030326Z.log`.
 
 ## 2026-10-30 Scan all installed package static roots 10 minutes
@@ -15144,18 +15144,18 @@
 - Validation: `./tools/test-persistent-inventory` passed all 15 cases; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. The full ARM CHOUPI image was flashed to identified Pico 2 `2BED26ED20556535`; cycle log reports `CYCLE:PASS` and finite serial `TEST:SUMMARY pass=1 fail=0`. Physical JCAlgTest 1.8.2 SELECT, GETVERSION, and JCSystem-info APDUs returned `9000`. Captured serial contains 3 `gc_begin` and 3 `gc_end` events and no `HEAP_GC_SKIP`. `git diff --check` passed. The PC/SC ACL helper was rerun once after re-enumeration before the reader appeared.
 - Result: All installed packages now contribute reference-valued static slots to the mark roots on both the device collector and PC diagnostic path. This does not enumerate all live applet/context/native owners, test malformed serialized-edge recovery, or authorize persistent-record deletion. The build emitted existing Rust `javacard-os` cfg/deprecation/unsafe warnings and C++ packed-member alignment warnings; no build errors.
 - Decision: Next identify a safe enumeration model for all live applet/context/native owners and add malformed edge/alias tests that prove incomplete walks cannot authorize reclamation. Keep persistent deletion disabled.
-- Commit: `4e7c31a` (continuity notes); this progress record is committed separately.
+- Commit: `82e02a9` (continuity notes); this progress record is committed separately.
 - Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261030T031258Z.log` (SHA-256 `a9390c1a6e36bb67e165461f1a47d2d47b43b3fd5993df59cad3f018734243dd`); physical APDU serial `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log` (SHA-256 `77b58646ab691615dae495ef1817ac2341251d310584f30521853b86e5e2f218`); ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `ccb0550252a9a1ecec2c38ed37b403fb0418cbd920bb32033f8a4517530a63c8`).
 
 ## 2026-10-30 Progress commit reference correction
 
 - Step/experiment: `persistent-inventory-all-package-static-roots`
 - When: '2026-10-30 03:17 UTC' - '2026-10-30 03:18 UTC'
-- Change: Replaced the pending commit reference for the immediately preceding implementation record with its completed code-and-documentation commit, `54c31a2`.
-- Validation: `git show --stat --oneline 54c31a2` confirms the commit contains the all-package collector change, TODO/QKB/HANDOFF updates, and its progress record.
+- Change: Replaced the pending commit reference for the immediately preceding implementation record with its completed code-and-documentation commit, `70cd549`.
+- Validation: `git show --stat --oneline 70cd549` confirms the commit contains the all-package collector change, TODO/QKB/HANDOFF updates, and its progress record.
 - Result: The implementation progress record now points to its committed change; no source or test files changed.
 - Decision: Continue with complete live-root enumeration and malformed-edge reclamation safety tests.
-- Commit: `54c31a2` (the progress reference correction is recorded in the following administrative commit).
+- Commit: `70cd549` (the progress reference correction is recorded in the following administrative commit).
 - Artifacts/logs: none.
 
 ## 2026-10-30 Identify applet root identity collision 2 minutes
@@ -15166,18 +15166,18 @@
 - Validation: Source inspection of `runtime_install_method()`, `choupi_vm_restore_applet()`, and `FlashMemory_Handler::getAppletInstanceTag()` confirmed the shared owner and tag identity. No implementation or test run was performed in this investigation step.
 - Result: Two installed instances of the same package/class cannot currently own independent registered-applet root tags; complete root enumeration and persistent deletion remain unsafe.
 - Decision: Design a collision-free stable owner mapping persisted in install metadata, and test legacy owner-0 migration before changing collector authorization.
-- Commit: `e2621cf` (recovery notes); this progress record is committed separately.
+- Commit: `b2e3c68` (recovery notes); this progress record is committed separately.
 - Artifacts/logs: none.
 
 ## 2026-10-30 Applet-root audit commit reference correction
 
 - Step/experiment: `persistent-applet-root-owner-audit`
 - When: '2026-10-30 03:20 UTC' - '2026-10-30 03:21 UTC'
-- Change: Replaced the pending commit reference for the applet-root owner audit with documentation commit `05ef053`.
-- Validation: `git show --stat --oneline 05ef053` confirms it contains the TODO, QKB, handoff, and progress updates for the owner collision finding.
+- Change: Replaced the pending commit reference for the applet-root owner audit with documentation commit `5a75b97`.
+- Validation: `git show --stat --oneline 5a75b97` confirms it contains the TODO, QKB, handoff, and progress updates for the owner collision finding.
 - Result: The audit record now points to its committed documentation; no source or test files changed.
 - Decision: Implement a stable per-instance owner mapping only after specifying on-flash compatibility and migration behavior.
-- Commit: `05ef053` (this correction is recorded in the following administrative commit).
+- Commit: `5a75b97` (this correction is recorded in the following administrative commit).
 - Artifacts/logs: none.
 
 ## 2026-10-30 Persist independent applet root owners 30 minutes
@@ -15188,7 +15188,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed all cases (`TEST:SUMMARY fail=0`), including distinct same-class owners across registry reinitialization, idempotent replay when instance metadata is already published, rejecting conflicting owners, and preserving the remaining mapping after deletion. `./tools/build-pc` passed. VPCD `./tools/test-jcsystem-transaction-applet` passed 85/85 APDU checks after rebuilding the host emulator with the OS permission fix. Final `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 23/23 checks covering two packages, three instances, VCR2 owner uniqueness/restart stability, restart selection, and DELETE. `./tools/test-persistent-inventory` passed all 15 cases and `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed after the replay fix. Identified board 2BED `2BED26ED20556535` was reflashed via `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535`; flash verification and finite monitor passed (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The Rust unit test command was attempted but the pinned `lock_api-0.3.4` dependency enables removed `feature(const_fn)` on the installed compiler; the rebuilt host integration test exercises the changed permission path. No warnings were introduced in the new C++ owner code; existing Rust and packed-member warnings remain.
 - Result: Applet instance roots now have distinct stable owners on the Pico registry and across host-emulator process restart. Existing owner-0 card/app data remains readable. Physical validation covered firmware startup only; installing multiple instances and restoring their separate roots on a physical card remains untested. Persistent record deletion remains disabled because inactive applets and other live contexts/native roots are not yet enumerated.
 - Decision: Implement complete all-live applet/context/native root enumeration and malformed serialized-edge/alias negative tests before enabling any persistent reclamation. Retain VCR1, INS1, and CAP v3/v4 compatibility.
-- Commit: `9f7d1f7` (implementation, tests, QKB/TODO/HANDOFF, and progress); nested Rust OS permission commit `7e6dd11`.
+- Commit: `1f4bb5f` (implementation, tests, QKB/TODO/HANDOFF, and progress); nested Rust OS permission commit `7e6dd11`.
 - Artifacts/logs: final physical cycle `artifacts/logs/cycle-choupi-20261030T035044Z.log` (SHA-256 `956debc0a0919dbd270139a27c6d15ce69dfb4a41f2e5c97cd67eb600e4c4661`); flashed ARM image `build/arm/pico2_choupi.uf2` (SHA-256 `4ca86e0337194f90ef4c87640dbd2a77dfd4030040a71a097bdfc2552f29e5a8`); VPCD multipackage run logs `artifacts/logs/host-vpcd-multipackage-apdu-20261030T034819Z.log` and `artifacts/logs/host-vpcd-multipackage-restart-20261030T034819Z.log`; emulator failure before rebuilding the Rust OS: `emulator exited before VPCD connect` due `filename::can_read` denying nonzero logical owners.
 
 ## 2026-10-30 Correct VPCD multipackage check count 1 minute
@@ -15199,18 +15199,18 @@
 - Validation: Compared the summary count against the final `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` output (`TEST:SUMMARY pass=23 fail=0`). No source changed.
 - Result: Handoff and QKB counts now match the final run.
 - Decision: Continue with root enumeration for inactive applets and other live owners.
-- Commit: `11c25d6` (this commit reference is recorded in the following correction entry).
+- Commit: `047b2e1` (this commit reference is recorded in the following correction entry).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T034819Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261030T034819Z.log`.
 
 ## 2026-10-30 Progress reference correction
 
 - Step/experiment: `persistent-applet-owner-progress-count-correction`
 - When: '2026-10-30 03:54 UTC' - '2026-10-30 03:55 UTC'
-- Change: Recorded documentation commit `11c25d6` for the corrected VPCD suite count.
-- Validation: `git show --stat --oneline 11c25d6` confirms it contains only the handoff, QKB, and progress update.
+- Change: Recorded documentation commit `047b2e1` for the corrected VPCD suite count.
+- Validation: `git show --stat --oneline 047b2e1` confirms it contains only the handoff, QKB, and progress update.
 - Result: The record now identifies the documentation commit.
 - Decision: Continue with inactive applet and other live-owner root enumeration.
-- Commit: `9277022` (the progress record containing this reference is committed in the follow-up correction commit).
+- Commit: `09aab5e` (the progress record containing this reference is committed in the follow-up correction commit).
 - Artifacts/logs: none.
 
 ## 2026-10-30 Enumerate roots for every installed applet instance 17 minutes
@@ -15221,7 +15221,7 @@
 - Validation: PC VPCD multipackage APDU/restart suite passed `TEST:SUMMARY pass=25 fail=0`; logs have SHA-256 `9f397c883b02706990a84e532fc1ffe02a706ab89eba1debb1b7d4412e8016ab` and `177355201566029f929b9fbe945c325799573a10a57ba66d0aeef3d1d5416995`. Inventory records show `applet_roots=3 trace_complete=1`, `invalid_refs=0`, and `edge_failures=0` after restart. `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Identified Pico 2 `2BED26ED20556535` was flashed with the full ARM image and finite serial monitor passed `TEST:SUMMARY pass=1 fail=0`; cycle log SHA-256 `10c15e1c5b5b1793e42fe6bb334b44487ba7e9253e56ed0a2acd4b0d4815b3f4`. Physical read-only SELECT, GETVERSION, JCSystem-info, and SHA-256 probes were also run. Scoped `git diff --check` passed.
 - Result: Registered roots for all installed applet instances now enter the read-only mark walk. Physical applet multi-instance installation/root restoration was not tested. On physical 2BED, SHA-256 setup returned `9000` but `doFinal` returned `FF01`; this remains an unresolved physical discrepancy, while unchanged JCAlgTest SHA-256 tests pass on VPCD. No persistent records were deleted. Current ARM image SHA-256: `ef604f796e541a4cc06bf24548255c32abcc02db0c086daef277bad3a059d36d`.
 - Decision: Add fail-closed negative tests for malformed persistent edges/aliases and prove incomplete walks cannot authorize deletion. Then account for other live contexts and native-held roots. Keep persistent record reclamation disabled until these conditions and power-cycle recovery are validated.
-- Commit: `dba80cb` (implementation, VPCD assertions, and continuity/backlog updates); this record is committed separately.
+- Commit: `338de1c` (implementation, VPCD assertions, and continuity/backlog updates); this record is committed separately.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T040017Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261030T040017Z.log`, `artifacts/logs/cycle-choupi-20261030T040156Z.log`, `artifacts/logs/sha256-dofinal-2BED-after-all-applet-inventory-20261030.log`.
 
 ## 2026-10-30 Require each installed applet to have one matching root 10 minutes
@@ -15232,7 +15232,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Elevated `./tools/env python3 tools/tests/pc_vpcd_multipackage_test.py` passed `TEST:SUMMARY pass=25 fail=0`; three registered roots were found before and after restart. The initial restricted VPCD attempt could not bind its local socket (`Operation not permitted`) and was rerun with host access. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` passed flash verification and finite runtime (`TEST:SUMMARY pass=1 fail=0`); it used the CDC-1200 BOOTSEL recovery after reset-interface detection failed. Following the authorized PC/SC helper, a read-only physical probe selected JCAlgTest 1.8.2 and SELECT, GETVERSION, and JCSystem-info all returned `9000`. Scoped `git diff --check` passed.
 - Result: Normal multi-instance root metadata passes on VPCD before and after restart and the rebuilt firmware boots on physical 2BED. Deliberate missing/duplicate/mismatched root corruption has not been injected. The existing physical SHA-256 `doFinal` discrepancy remains separate. No persistent records were deleted. ARM UF2 SHA-256: `8ce742b58ce39bf275e20bd6221f3e1a6289b2603d8f5d49f488a4f05a8c1093`.
 - Decision: Add malformed root/edge fault-injection tests and verify incomplete traversal cannot reclaim anything after power-cycle recovery. Continue accounting for all live contexts/native-held roots before enabling persistent-record reclamation.
-- Commit: `2940316` (implementation and continuity/backlog updates); this record is committed separately.
+- Commit: `3545f06` (implementation and continuity/backlog updates); this record is committed separately.
 - Artifacts/logs: VPCD APDU/restart logs `artifacts/logs/host-vpcd-multipackage-apdu-20261030T041653Z.log` (SHA-256 `167d088aad3f9460ad5d83c22969a9ce8daafbcdb90c7b111bed2a05cb17293e`) and `artifacts/logs/host-vpcd-multipackage-restart-20261030T041653Z.log` (SHA-256 `81ec147bfd69840c39f275a28ff1c6ea451e209c5f22432a3d1ecbd2cd263391`); physical cycle `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256 `b59c48f302d59bd9cecd14b6877b89abbe7036d49a080bbef831127b572b332f`). The read-only APDU probe output was not archived separately.
 
 ## 2026-10-30 Refresh physical inventory handoff 2 minutes
@@ -15243,7 +15243,7 @@
 - Validation: Compared against `artifacts/logs/cycle-choupi-20261030T041755Z.log` and the just-completed probe/scan output; the probe returned `9000` for SELECT, GETVERSION, and JCSystem-info. `git diff --check -- .agent/HANDOFF.md` passed. No source/build behavior changed.
 - Result: Handoff now reports the current identified board as 2BED, ARM image SHA-256 `8ce742b58ce39bf275e20bd6221f3e1a6289b2603d8f5d49f488a4f05a8c1093`, and reader scan contents accurately. Probe output was not archived separately.
 - Decision: Continue with malformed-root/edge fail-closed coverage and all-live-root accounting; do not enable persistent-record reclamation.
-- Commit: `fa33e55` (handoff refresh); this record is committed separately.
+- Commit: `e2df53b` (handoff refresh); this record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256 `b59c48f302d59bd9cecd14b6877b89abbe7036d49a080bbef831127b572b332f`); no separate APDU log.
 
 ## 2026-10-30 Test that incomplete heap traces reclaim nothing 4 minutes
@@ -15254,7 +15254,7 @@
 - Validation: `./tools/test-jcarray` passed all existing checks plus `gc_skips_reclamation_after_incomplete_root_scan` and `gc_skips_reclamation_after_invalid_child_ref`. The first rebuild exposed a missing OS `ffi.h` include and then missing strict-reader test stubs; both were fixed before the passing run. Existing upstream packed-member and ignored-qualifier warnings remain. `git diff --check` passed. ARM/RISC-V were not rebuilt because only the host test and its fixture changed.
 - Result: The real heap collector keeps all previously allocated handles when root traversal fails or a reachable in-memory edge is invalid. Serialized flash corruption and alias cycles are not exercised; physical record reclamation remains disabled.
 - Decision: Add fault injection for malformed serialized fields/aliases and reboot recovery, then audit additional live contexts/native-held roots before enabling any persistent-record deletion.
-- Commit: `ad147f8` (heap safety tests, harness repair, and status updates); this record is committed separately.
+- Commit: `241c9cf` (heap safety tests, harness repair, and status updates); this record is committed separately.
 - Artifacts/logs: `/tmp/jcarray-gc-safety.log`; the final `./tools/test-jcarray` run passed. No hardware access was needed.
 
 ## 2026-10-30 Inject a persistent child read failure into the heap guard 3 minutes
@@ -15265,7 +15265,7 @@
 - Validation: `./tools/test-jcarray` passed the full existing suite plus `gc_skips_reclamation_after_persistent_edge_failure`; output was saved at `/tmp/jcarray-gc-safety.log`. `git diff --check` passed. This is host-only test-fixture/test-code work; ARM/RISC-V builds and physical hardware were not involved.
 - Result: A persistent child read exception cannot authorize heap-handle reclamation. Serialized malformed data and power-cycle recovery are not tested, and no persistent storage deletion exists.
 - Decision: Build byte-level malformed field/alias fixtures and exercise restoration across emulator restart before expanding the feature's scope to persistent-record reclamation.
-- Commit: `8aa1aba` (test, fixture, and notes); this record is committed separately.
+- Commit: `373cd0a` (test, fixture, and notes); this record is committed separately.
 - Artifacts/logs: `/tmp/jcarray-gc-safety.log`; no hardware artifacts.
 
 ## 2026-10-30 Reject malformed persistent array-alias headers 3 minutes
@@ -15276,7 +15276,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `persistent_array_alias_rejects_truncated_target_header` and `persistent_array_alias_rejects_mismatched_target_length`. Scoped `git diff --check` passed. No ARM/RISC-V build or hardware run was needed for host-test-only changes.
 - Result: Two malformed array-alias encodings fail with a Java Card VM exception instead of being accepted as a type. This does not yet demonstrate the collector skipping reclamation for corrupt serialized bytes, and object-alias chain handling remains untested.
 - Decision: Inject malformed reference records through the real strict restore path and collector, then verify no handle or persistent data is reclaimed across restart.
-- Commit: `125db15` (decoder regressions, fixture, and status notes); this record is committed separately.
+- Commit: `eeb85ae` (decoder regressions, fixture, and status notes); this record is committed separately.
 - Artifacts/logs: `/tmp/persistent-alias-malformed.log`; final output contains `TEST:SUMMARY fail=0`. No hardware artifacts.
 
 ## 2026-10-30 Audit post-APDU context and native roots 3 minutes
@@ -15287,7 +15287,7 @@
 - Validation: `./tools/test-rmi-registry` passed: `lifecycle_roots=6`, `sensitive_result_cross_context=1`, `session_cleanup=1`. `git diff --check` passed for the continuity files. No source changed; no hardware/build run was needed.
 - Result: At the post-APDU collection boundary, this implementation has no additional live interpreter context to enumerate. All installed applet roots and package statics are handled separately. Malformed persisted records/alias chains and reboot recovery remain open; no persistent records have been deleted.
 - Decision: Continue byte-level strict restore/collector fault coverage and recovery testing before authorizing any persistent-record deletion.
-- Commit: `aacbd0e` (root-scope audit and status docs); this record is committed separately.
+- Commit: `11f636c` (root-scope audit and status docs); this record is committed separately.
 - Artifacts/logs: `./tools/test-rmi-registry` output; no archived log or hardware artifact.
 
 ## 2026-10-30 Reject array aliases to scalar records 1 minute
@@ -15298,7 +15298,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `persistent_array_alias_rejects_non_array_target`. Scoped `git diff --check` passed. No platform build or hardware run was needed.
 - Result: Three actual array-alias decoder failure cases now pass: truncated header, mismatched declared target length, and a non-array target. This does not prove a malformed serialized record aborts collection; no persistent record deletion was attempted.
 - Decision: Continue malformed object-alias chain coverage and strict-restore/collector integration before considering reclamation of persistent records.
-- Commit: `8e5f9dc` (test and status notes); this progress record is committed separately.
+- Commit: `9729596` (test and status notes); this progress record is committed separately.
 - Artifacts/logs: `/tmp/persistent-alias-malformed.log`; final output contains `TEST:SUMMARY fail=0`. No hardware artifacts.
 
 ## 2026-10-30 Exercise malformed aliases through heap collection 5 minutes
@@ -15309,7 +15309,7 @@
 - Validation: `./tools/test-persistent-transaction` passed all cases with `TEST:SUMMARY fail=0`, including all three malformed-alias collector cases. `git diff --check` passed. No firmware source changed, so ARM/RISC-V builds and hardware were not run.
 - Result: The production strict decoder and collector fail closed for these malformed serialized edges and do not reclaim heap handles. The filesystem is an in-memory fixture; no persistent records were deleted and power-cycle/restart recovery was not measured.
 - Decision: Continue with restart/power-cycle recovery and stable-handle validation before implementing any persistent-record deletion.
-- Commit: `8407f2a` (test and continuity notes); this progress record is committed separately.
+- Commit: `18df062` (test and continuity notes); this progress record is committed separately.
 - Artifacts/logs: Final test output from `./tools/test-persistent-transaction`; no archived log or hardware artifacts.
 
 ## 2026-10-30 Exercise malformed object fields through collection 2 minutes
@@ -15320,7 +15320,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `malformed_serialized_object_field_blocks_heap_reclamation`. `git diff --check` passed. No firmware code changed; platform builds and hardware were not run.
 - Result: Strict persisted object-field traversal also fails closed before heap-handle reclamation. The in-memory filesystem fixture does not model reboot or persistent-record deletion.
 - Decision: Proceed to explicit restart/power-cycle recovery tests before enabling persistent-record reclamation.
-- Commit: `3602fdf` (QKB note); this progress record is committed separately.
+- Commit: `99ed26c` (QKB note); this progress record is committed separately.
 - Artifacts/logs: Final output from `./tools/test-persistent-transaction`; no archived log or hardware artifact.
 
 ## 2026-10-30 Reconstruct heap from retained persistent records 2 minutes
@@ -15331,7 +15331,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`. An initial assertion treated `Heap::getArray()` on a reclaimed handle as a nullable lookup; the secure heap correctly throws `SecurityException`, so the test was corrected to assert that invalidation. `git diff --check` passed. No firmware source or hardware was involved.
 - Result: A newly constructed host Heap restores a valid persistent alias graph from retained filesystem-fixture data and can reclaim an unrelated volatile slot. Actual FS/process/emulator/physical restart recovery and persistent-record deletion remain untested.
 - Decision: Keep persistent-record reclamation disabled and continue with real restart recovery and stable-handle semantics.
-- Commit: `e0ebd22` (test evidence and continuity notes); this progress record is committed separately.
+- Commit: `3cac2e2` (test evidence and continuity notes); this progress record is committed separately.
 - Artifacts/logs: `./tools/test-persistent-transaction` final output; no archived log or hardware artifact.
 
 ## 2026-10-30 Validate GC across VPCD process restart 4 minutes
@@ -15342,7 +15342,7 @@
 - Validation: Initial `./tools/test-vpcd-persistence` attempt failed before APDUs with local socket `Operation not permitted` in the restricted sandbox. Reran `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` via elevated host execution; install/commit passed 3/3, process-restart restore and GC passed 38/38, and command exited successfully. The restore covered a reclaimed array restored from flash, nested aliases, identity checks, and four GC-pressure rounds.
 - Result: PC VPCD process restart preserved persistent state and GC restored reachable persistent records while handling four allocation-pressure rounds. This is emulator evidence only; RP2350 power-loss/interrupted-write recovery is still unverified. No physical device was accessed.
 - Decision: Retain the persistent reclamation restriction until physical power-cycle and interrupted-update recovery are validated.
-- Commit: `7dfeaad` (evidence correction); this progress record is committed separately.
+- Commit: `fb9c34d` (evidence correction); this progress record is committed separately.
 - Artifacts/logs: Commit log `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` SHA-256 `df4578db168deb7b1751623e486f3e9d696623eaadd3af56890d6ca916ee9192`; restore log `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log` SHA-256 `68a9b4f9169ec699143095dec88f64c840043a16485f125c9849aed797fe8c75`.
 
 ## 2026-10-30 Confirm current physical card state 3 minutes
@@ -15353,7 +15353,7 @@
 - Validation: `pcsc_scan -r` showed Virtual PCD 00 00, Virtual PCD 00 01, and `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed: GPPro listed the JCAlgTest 1.8.2 applet and package; SELECT, GETVERSION, and JCSystem-info returned `9000`.
 - Result: The currently attached 2BED runtime and persistent applet are accessible. This command does not initiate a power cycle, so physical reboot/power-loss recovery remains unvalidated.
 - Decision: Preserve the no-persistent-record-deletion gate until a true hardware power cycle and interrupted-update recovery are tested.
-- Commit: `0f06e7e` (implementation, tests, and status notes); this progress record is committed separately.
+- Commit: `72a02d8` (implementation, tests, and status notes); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T044725Z.log`, SHA-256 `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
 
 ## 2026-10-30 Validate overlay interrupted-update recovery 2 minutes
@@ -15364,7 +15364,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed 75 checks with `TEST:SUMMARY fail=0`, including 1,000 randomized multi-record power cuts, 1,000 install-journal clear cuts, 1,000 cross-store registry/filesystem header cuts, reset restoring the last committed transaction, and full-overlay cleanup cases. The expected negative-fixture `FAULT FS snapshot unavailable; preserve flash for recovery` appeared while the overall suite passed. Repeated once with output archived to `/tmp/persistent-gc-overlay-recovery.log`.
 - Result: Host model storage snapshots and install metadata recover atomically across tested simulated interruption points. This does not simulate physical flash loss during actual heap GC and does not authorize persistent object-record deletion.
 - Decision: Keep deletion disabled; physical Pico 2 power-cycle validation remains the next recovery gate.
-- Commit: `69708c5` (recorded in closeout below).
+- Commit: `a38c64a` (recorded in closeout below).
 - Artifacts/logs: `/tmp/persistent-gc-overlay-recovery.log` (ephemeral, not committed).
 
 ## 2026-10-30 Check PCSC reset behavior without claiming power cycle 1 minute
@@ -15375,7 +15375,7 @@
 - Validation: A subsequent elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed its read-only package listing and three APDUs (`9000`), showing the card remained accessible after the attempt.
 - Result: No verified reset result and no USB power cycle. Do not treat this as recovery evidence.
 - Decision: Leave hardware power-cycle recovery open; use a reset method with observable completion if further testing is pursued.
-- Commit: `c9aa6c4` (recorded in closeout below).
+- Commit: `1025e7b` (recorded in closeout below).
 - Artifacts/logs: Follow-up log `artifacts/logs/pico-powerup-persistence-20261030T045057Z.log`, SHA-256 `9e2043dec2516401449b81cbc0cf51bf4ec4fd40f135532b58c9c3dce2528205`; no log was captured from the reset attempt itself.
 
 ## 2026-10-30 Validate multi-owner restart and card reset 3 minutes
@@ -15386,7 +15386,7 @@
 - Validation: Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 25/25. Initial and restart traces each reported 9 static roots, 3 applet roots, 14/14 arrays, 4/4 instances, and zero invalid refs/edge failures/root failures. On physical 2BED, Java SmartcardIO SELECT returned `9000` before reset; `Card.disconnect(true)` requested PC/SC reset; after reconnect, SELECT returned `9000`, GETVERSION returned `1.8.2_jc305`/`9000`, and JCSystem-info returned `9000`.
 - Result: Stable multi-owner metadata and root inventory survive emulator restart; the physical CCID card-reset path preserves/selects the applet. Neither test removes USB power; cold reboot/recovery and actual power-loss behavior remain unverified.
 - Decision: Continue the inventory consumer work while retaining the persistent-record deletion gate until an actual hardware power-cycle test is available.
-- Commit: `3ede9fd` (recorded in closeout below).
+- Commit: `35b0e5e` (recorded in closeout below).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T045329Z.log` SHA-256 `f5d8ce2f8575477a63b16bacd50344916d40c37abd64833369f741143ba967cd`; restart log SHA-256 `dd132b4f47944c3f720b2d5997e0384e78aa5322d8d9b2e63d58ce820ec94c00`; physical reset log `artifacts/logs/pcsc-card-reset-2BED-20261030T0455Z.log` SHA-256 `441c027f1afd5e9cebdf31e46fe761d5292ecafdafdeadb56863e13caec80f7e`.
 
 ## 2026-10-30 Correct malformed-edge collector fixtures 2 minutes
@@ -15397,7 +15397,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including malformed object alias, truncated array alias, self-referential array alias, and malformed object-field cases with valid parent/root representation. No ARM/RISC-V build or hardware run was needed for the test-only fixture correction.
 - Result: The collector now reaches malformed child records through valid serialized reference arrays; incomplete traces still reclaim zero handles. Direct recursion-depth behavior remains unverified.
 - Decision: Continue by adding strict alias-chain type resolution and a direct recursion-bound test, then return to persistent-record inventory.
-- Commit: `c4280c9`.
+- Commit: `897e26e`.
 - Artifacts/logs: `./tools/test-persistent-transaction` output; no archived log or hardware artifact.
 
 ## 2026-10-30 Resolve nested persistent array aliases consistently 8 minutes
@@ -15408,7 +15408,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` flash-verified the updated full ARM image and the finite monitor passed `TEST:SUMMARY pass=1 fail=0`; physical JCAlgTest SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem-info returned `9000`; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed install/commit 3/3 and process-restart restore/GC 38/38.
 - Result: The type walker and reference restorer now agree on nested array aliases and reject cyclic/malformed inputs within a fixed bound. The updated image runs on physical 2BED. No persistent records were deleted. Build logs include pre-existing PC/Rust packed-layout and lint warnings; ARM/RISC-V and new alias code produced no errors.
 - Decision: Continue building the read-only inventory consumer that identifies which serialized records belong to the complete reachable graph; keep persistent-record deletion disabled pending physical power-loss recovery.
-- Commit: `1741120`.
+- Commit: `3498569`.
 - Artifacts/logs: UF2 SHA-256 `b4a26add8ef5bfc28b948633d2f4790caaf48aaaa7addcae8f236f57c1ab8de6`; cycle log `artifacts/logs/cycle-choupi-20261030T050119Z.log` SHA-256 `264a3e499c8c3f06f96176e20e5fc8899418fc4d8a28a03a67b0bf8adc1ac39d`; physical APDU log `artifacts/logs/pico-powerup-persistence-20261030T050239Z.log` SHA-256 `69af8d88d141cf607dbb43153801f3ecb9c62812cb274884ac2421d99baa6601`; VPCD logs `vpcd-persistence-commit-20261030T050312Z.log` SHA-256 `be259af5c5f3f89cddde6b4e1d77900ddf594829c8e8f01bd3211fa257590006` and `vpcd-persistence-restore-20261030T050312Z.log` SHA-256 `98f2affc12a813d2b423d545ce27eb6a26680831b7e22a814cba7dedd09cbf9e`.
 
 ## 2026-10-30 Add read-only unreachable applet-tag inventory 14 minutes
@@ -15419,7 +15419,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passed with `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` flash-verified the full ARM image on physical board 2BED and its 18-second finite monitor passed repeatedly with `TEST:SUMMARY pass=1 fail=0`. This step's new inventory API is not wired to runtime collection and did not run an inventory APDU on hardware.
 - Result: The host consumer retains reachable alias subtrees and only reports unrelated records in the requested owner namespace. Malformed reachable data reports zero candidates. No persistent tags were erased. Physical validation confirms the rebuilt firmware boots; it does not validate consumer invocation or power-loss recovery.
 - Decision: Keep deletion disabled. Next, connect this read-only consumer to trusted installed-root inventory after root completeness is established, and add cursor-error behavior tests before any deletion design.
-- Commit: `c7bc50a` (implementation; this progress record is committed separately).
+- Commit: `368ed4b` (implementation; this progress record is committed separately).
 - Artifacts/logs: ARM UF2 SHA-256 `5e6aefac07fb265c109c1d11b4b58eda1a2a83ecdd87452cea615f438393b31e`; cycle log `artifacts/logs/cycle-choupi-20261030T051629Z.log` SHA-256 `827e92b4fc6b4eab5c14d95e104825f9e14d1cc3701bc26ad8cafbd686a7e294`; test outputs were not separately archived.
 
 ## 2026-10-30 Verify partial cursor results remain provisional 2 minutes
@@ -15430,7 +15430,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including the new case where one provisional candidate is observed, the next cursor step returns `InvalidCursor`, and both stored records remain unchanged.
 - Result: A cursor failure is distinguishable from a completed inventory and cannot be mistaken for a complete candidate list. No persistent records were erased. No firmware behavior changed, so ARM/RISC-V builds and physical flashing were not repeated.
 - Decision: Keep deletion disabled; integrate only a consumer that stages candidates and commits work after `Complete`, using the combined installed-package static and per-instance applet roots.
-- Commit: `49f3c9e` (implementation/test; this progress record is committed separately).
+- Commit: `0afad1f` (implementation/test; this progress record is committed separately).
 - Artifacts/logs: Test output only; no separate log.
 
 ## 2026-10-30 Integrate owner-tag scan into VPCD inventory diagnostic 5 minutes
@@ -15441,7 +15441,7 @@
 - Validation: The first VPCD attempt used a stale PC emulator and failed the new output assertion; after `./tools/build-pc`, elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 25/25. Before and after restart the log reports 9 static roots, 3 applet roots, `trace_complete=1`, `owner_scans=3`, `unreachable_complete=1`, `unreachable_tags=0`, arrays 14/14, instances 4/4, and zero invalid references or edge/root failures. `./tools/build arm` and `./tools/build riscv` passed. No physical reflash was run because the change is PC_VERSION-only; the previously flash-verified ARM runtime code is unchanged.
 - Result: The PC VPCD diagnostic now exercises the consumer against full installed roots and multiple owner namespaces, including a fresh process restore. It found no orphaned owner tags in this fixture. The scan is read-only; physical owner inventory and power-loss behavior remain unvalidated.
 - Decision: Continue physical read-only inventory validation with a suitable multi-instance fixture; keep persistent record deletion disabled until actual power-cycle recovery is established.
-- Commit: `122e675` (implementation/test; this progress record is committed separately).
+- Commit: `c042162` (implementation/test; this progress record is committed separately).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T052500Z.log` SHA-256 `02e070d02cf7fe104c9aae7efc87d3b847a1a99060fbd74cc012e076ec4022ee`; restart log `artifacts/logs/host-vpcd-multipackage-restart-20261030T052500Z.log` SHA-256 `8b14a51875cb60ca3ac1c71cf6aa19dd88cf1dd1fab96c880538c0eaeb20c67a`.
 
 ## 2026-10-30 Validate physical read-only owner inventory 11 minutes
@@ -15452,7 +15452,7 @@
 - Validation: `PICO2_DEBUG_HEAP_GC=1 ./tools/build arm` and `... riscv` passed. Elevated `PICO2_DEBUG_HEAP_GC=1 PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` flash-verified the ARM image on physical 2BED and the finite startup monitor passed. A read-only `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed JCAlgTest SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem-info (`9000`). The bounded monitor captured `CHOUPI:PERSISTENT_INVENTORY owner=0 result=0 candidate_tags=0 static_roots=71 applet_roots=1 static_result=0 applet_result=0`; repeated runtime summaries passed with no `FAULT`.
 - Result: The native consumer now runs on physical hardware under an explicit debug build and confirms complete roots and zero candidate tags for the installed legacy owner-0 JCAlgTest applet. This did not enumerate all owners physically, install multiple applets, remove USB power, or delete any persistent records. Owner 0 reflects legacy installed metadata.
 - Decision: Keep record deletion disabled. Next test a physical multi-owner installation only if safe free space permits; otherwise continue offline fail-closed recovery tests. Require actual power-cycle and interrupted-update evidence before any deletion path.
-- Commit: `1d9b38a` (implementation/test; this progress record is committed separately).
+- Commit: `3e584c2` (implementation/test; this progress record is committed separately).
 - Artifacts/logs: ARM UF2 SHA-256 `2f1d13a2a539a890bb9a914c2f5759595d6d13b14ceec39c9d4ea3a2ef16b10e`; cycle log `artifacts/logs/cycle-choupi-20261030T053625Z.log` SHA-256 `b0252c9ea524691652ea83e34c5f376f25f28fadb3e706b0af4658d08b09de0e`; monitor `artifacts/logs/persistent-inventory-physical-monitor-2BED-20261030-final.log` SHA-256 `aed092de9894cf7683b60dbd663148b9a1f4d1da7787a6a2cfa90294907f5879`; APDU log `artifacts/logs/pico-powerup-persistence-20261030T053745Z.log` SHA-256 `3941c7bba8baf6783b60d66bed9108e65d4376a5963c77bccd9ea6b33c2c8394`.
 
 ## 2026-10-30 Stress read-only inventory across persistence restore and GC 11 minutes
@@ -15477,7 +15477,7 @@
   power-cycle recovery and persistent-record reclamation remain unvalidated.
 - Decision: Keep persistent-record deletion disabled; require actual Pico 2
   power-cycle and interrupted-update recovery evidence before enabling it.
-- Commit: `af0483c` (TODO/HANDOFF evidence; progress record committed
+- Commit: `06af8e2` (TODO/HANDOFF evidence; progress record committed
   separately).
 - Artifacts/logs: install log SHA-256
   `fe7fcfb782b1647f431b88a5992db3d50e27bbe5b65e92a490635dc4a62dd95c`;
@@ -15504,7 +15504,7 @@
   untested, while the remaining physical acceptance gates stay explicit.
 - Decision: Preserve the persistent-record deletion gate until power-cycle
   recovery and physical multi-owner behavior are validated.
-- Commit: `9dba8ce` (checklist update; progress record committed separately).
+- Commit: `c9444fb` (checklist update; progress record committed separately).
 - Artifacts/logs: See previous progress entry for full logs and hashes.
 
 ## 2026-10-30 Revalidate physical persistence reader without changing card 2 minutes
@@ -15526,7 +15526,7 @@
   power; those recovery/acceptance gates remain open.
 - Decision: Preserve the physical power-cycle and interrupted-update gate
   before any persistent-record reclamation.
-- Commit: `2207cf3` (handoff; progress record committed separately).
+- Commit: `db05265` (handoff; progress record committed separately).
 - Artifacts/logs: APDU log SHA-256
   `d38739da339528ea0c6934fdd8707e0a82b5d87e296d0a25362fd7920d93645b`;
   serial monitor SHA-256
@@ -15554,7 +15554,7 @@
   remain open.
 - Decision: Keep the TODO investigation open and avoid changing the native
   accounting until the available estimate is independently reconciled.
-- Commit: `12f3d1d` (probe and findings; progress record committed separately).
+- Commit: `7452ab7` (probe and findings; progress record committed separately).
 - Artifacts/logs: `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`,
   SHA-256 `5515f87702c561c819ffc418af005749479f90e8a030d0a1a343ce9f12d5c74a`;
   `artifacts/logs/jcsystem-memory-monitor-2BED-20261030.log`, SHA-256
@@ -15595,7 +15595,7 @@
   characterize the current-profile transient `NO_SUCH_ALGORITHM` result as a
   defect. Continue by independently measuring runtime allocator and stack
   bounds before changing firmware reporting.
-- Commit: `bf70ca5` (probe and findings; this progress record committed separately).
+- Commit: `8d053c8` (probe and findings; this progress record committed separately).
 - Artifacts/logs: current profile key probe SHA-256
   `0bc0383840824edfc5ae8945a3fcf364ebaa4d1f3cc04ddf71dc07abd743bba8`;
   symm_crypto key probe SHA-256
@@ -15636,7 +15636,7 @@
 - Decision: Close the memory-reporting investigation without changing native
   accounting. Keep the debug-only raw-counter output for future diagnostics;
   move to the next open TODO priority.
-- Commit: `0d44495` (diagnostics and findings; this progress record committed separately).
+- Commit: `20dcef2` (diagnostics and findings; this progress record committed separately).
 - Artifacts/logs: raw serial
   `artifacts/logs/jcsystem-memory-raw-counters-2BED-20261030.log`, SHA-256
   `09da99e3278f03f333cfe4c18bd2aac910af4ee196eabbe959db03de2c08d7d5`; raw
@@ -15691,7 +15691,7 @@
 - Decision: Keep strict serialized validation and fail-closed malformed-record
   behavior, while treating valid current in-memory references as additional
   roots. Continue remaining acceptance and persistence hardening work.
-- Commit: `993b8da` (native fix and regression test; this knowledge/progress
+- Commit: `207f32c` (native fix and regression test; this knowledge/progress
   record is committed separately).
 - Artifacts/logs: ARM image SHA-256
   `18a7a230adf2e1719c26e1f79ccd48f60e93ae108c4b989ade4a2a89d943604e`;
@@ -15726,7 +15726,7 @@
 - Decision: Repeat on a normal image with concurrent serial and USB event
   capture, or isolate the exact method through official client filters if
   available. Do not claim the official static workload passes.
-- Commit: `9f95a6a` (documentation commit for this investigation)
+- Commit: `e03c7b6` (documentation commit for this investigation)
 - Artifacts/logs: Debug cycle SHA-256
   `659a1f38218d73e60625576c0604908e90a56473938efd619afe4d8e275e11d3`;
   restore cycle SHA-256
@@ -15761,7 +15761,7 @@
 - Decision: Keep the 8E transport issue open pending a controlled same-board
   retry. Evaluate the DES MAC `FF01` only against intended profile support and
   upstream expectations; do not treat absent RSA/signature algorithms as bugs.
-- Commit: `9684dc7` (documentation commit for this hardware run)
+- Commit: `8368640` (documentation commit for this hardware run)
 - Artifacts/logs: Client log SHA-256
   `5b054c044d7c5a7c511906bc1498100473886aa9ce3cb6a69f310fef013c2e45`; CSV
   SHA-256 `488708254d7189dc4bdde7b3c31eea04489537a5dfaff044a56bfb8115570e46`;
@@ -15812,12 +15812,12 @@
 - When: '2026-10-30 14:13 UTC' - '2026-10-30 14:14 UTC'
 - Change: Record the commit identifier for the preceding physical report,
   comparator, TODO, STATUS, QKB, and handoff update.
-- Validation: `git show --stat --oneline daddc01` confirms that commit contains
+- Validation: `git show --stat --oneline 37d13fb` confirms that commit contains
   the five intended documentation files and no source changes.
-- Result: The preceding acceptance record is committed as `daddc01`.
+- Result: The preceding acceptance record is committed as `37d13fb`.
 - Decision: Continue with the remaining project backlog; leave the historic
   partial 900-second report separate from the complete report.
-- Commit: `daddc01` (evidence/documentation commit recorded here)
+- Commit: `37d13fb` (evidence/documentation commit recorded here)
 - Artifacts/logs: none.
 
 ## 2026-10-30 Audit symmetric profile against JCOP4 P71 5 minutes
@@ -15849,12 +15849,12 @@
 - When: '2026-10-30 14:19 UTC' - '2026-10-30 14:21 UTC'
 - Change: Record the commit identifier for the completed JCOP4 symmetric
   profile parity audit and its continuity updates.
-- Validation: `git show --stat --oneline 6183ebf` confirms the commit contains
+- Validation: `git show --stat --oneline a907deb` confirms the commit contains
   only the five intended documentation files.
 - Result: The parity audit and completed symmetric TODO item are committed as
-  `6183ebf`.
+  `a907deb`.
 - Decision: Continue with the remaining open backlog.
-- Commit: `6183ebf` (audit evidence commit recorded here)
+- Commit: `a907deb` (audit evidence commit recorded here)
 - Artifacts/logs: none.
 
 ## 2026-10-30 Verify asymmetric profile parity against JCOP4 P71 7 minutes
@@ -15890,11 +15890,11 @@
 - When: '2026-10-30 14:28 UTC' - '2026-10-30 14:29 UTC'
 - Change: Record the commit identifier for the asymmetric profile parity
   summary, TODO status, and QKB/HANDOFF findings.
-- Validation: `git show --stat --oneline 01b826e` confirms only the five
+- Validation: `git show --stat --oneline 5d0e457` confirms only the five
   intended documentation files are committed.
-- Result: The profile audit record is committed as `01b826e`.
+- Result: The profile audit record is committed as `5d0e457`.
 - Decision: Continue with unrelated open acceptance and robustness work.
-- Commit: `01b826e` (audit evidence commit recorded here)
+- Commit: `5d0e457` (audit evidence commit recorded here)
 - Artifacts/logs: none.
 
 
@@ -15937,9 +15937,9 @@
 - When: '2026-10-30 14:42 UTC' - '2026-10-30 14:43 UTC'
 - Change: Record the immutable commit for the refreshed Windows test package,
   corrected run sheet, and continuity updates.
-- Validation: `git show --stat --oneline 6295780` confirms six intended files
+- Validation: `git show --stat --oneline 59e4d55` confirms six intended files
   are included and unrelated worktree changes were not staged.
-- Result: The package refresh is committed as `6295780`.
+- Result: The package refresh is committed as `59e4d55`.
 - Decision: Continue with remaining JCVM work; Windows external validation is
   pending.
 - Commit: recorded by the following progress entry.
@@ -15951,12 +15951,12 @@
 - When: '2026-10-30 14:43 UTC' - '2026-10-30 14:44 UTC'
 - Change: Record the immutable commit identifier for the Windows package
   refresh and its progress evidence.
-- Validation: `git show --stat --oneline 6295780` confirms the script, run sheet,
+- Validation: `git show --stat --oneline 59e4d55` confirms the script, run sheet,
   TODO, QKB, HANDOFF, and main progress record are the intended committed
   files.
-- Result: The Windows package change is committed as `6295780`.
+- Result: The Windows package change is committed as `59e4d55`.
 - Decision: Resume the remaining project backlog.
-- Commit: `50bb405` (package commit reference record)
+- Commit: `37e5a94` (package commit reference record)
 - Artifacts/logs: none.
 
 ## 2026-10-30 Make power-up check scope explicit 10 minutes
@@ -15991,11 +15991,11 @@
 - Step/experiment: `powerup-probe-power-cycle-scope-commit-id`
 - When: '2026-10-30 14:54 UTC' - '2026-10-30 14:55 UTC'
 - Change: Record the immutable commit containing the probe-scope correction.
-- Validation: `git show --stat --oneline 2ab9306` confirms only the six
+- Validation: `git show --stat --oneline 1c68093` confirms only the six
   intended script/documentation/progress files were committed.
-- Result: The correction is committed as `2ab9306`.
+- Result: The correction is committed as `1c68093`.
 - Decision: Continue with the safe persistent-reclamation acceptance gaps.
-- Commit: `2ab9306` (change commit recorded here)
+- Commit: `1c68093` (change commit recorded here)
 - Artifacts/logs: none.
 
 ## 2026-10-30 Verify packaged symmetric manifest against physical report 2 minutes
@@ -16065,12 +16065,12 @@
 - Step/experiment: `deploy-java-pcsc-library-reader-index-commit-id`
 - When: '2026-10-30 17:16 UTC' - '2026-10-30 17:17 UTC'
 - Change: Recorded the commit identifier for the deploy reader-selection fix.
-- Validation: `git show --stat --oneline 9aaf6f1` confirms only the runner,
+- Validation: `git show --stat --oneline 99ae2c1` confirms only the runner,
   progress, QKB, and handoff files for this step were committed.
-- Result: The fix is committed as `9aaf6f1`.
+- Result: The fix is committed as `99ae2c1`.
 - Decision: Continue with the broader backlog; recapture an exact named-reader
   result before treating any prior `/deploy` regression as firmware behavior.
-- Commit: `9aaf6f1` (change commit recorded here)
+- Commit: `99ae2c1` (change commit recorded here)
 - Artifacts/logs: none.
 
 ## 2026-10-30 Close physical JC305 Service API coverage 2 minutes
@@ -16124,11 +16124,11 @@
 - When: '2026-10-30 17:20 UTC' - '2026-10-30 17:21 UTC'
 - Change: Recorded the commit identifier for the physical Service acceptance
   tracker update.
-- Validation: `git show --stat --oneline d50ea84` confirms only `TODO.md` and
+- Validation: `git show --stat --oneline 1cfd332` confirms only `TODO.md` and
   `progress.md` are included.
-- Result: The acceptance record is committed as `d50ea84`.
+- Result: The acceptance record is committed as `1cfd332`.
 - Decision: Continue with the remaining project backlog.
-- Commit: `d50ea84` (tracker update recorded here)
+- Commit: `1cfd332` (tracker update recorded here)
 - Artifacts/logs: none.
 
 ## 2026-10-30 Focus current physical RSA NOPAD and KeyAgreement cases 3 minutes
@@ -16138,7 +16138,7 @@
 - Change: No firmware/source change. Ran a focused upstream API 3.0.5 Crypto
   CAP check on the already-flashed `asymm_crypto` image on Pico 2
   `8E464F4E2BBC0A19`; updated TODO, QKB, and handoff with the current-image
-  result. This also records prior evidence-correction commit `26c2285`.
+  result. This also records prior evidence-correction commit `6bfa3e2`.
 - Validation: `api_card_runner.py --api 305 --areas Crypto` used the exact 8E
   reader and Linux PC/SC library; a negative-lookahead filter selected the four
   RSA NOPAD rows and the secp192r1 known-secret DH/DHC rows. All six returned
@@ -16151,7 +16151,7 @@
   physical 8E. The complete Crypto and broader deploy regressions remain open.
 - Decision: Keep the remaining deploy verification focused; use the result as
   current physical coverage for NOPAD and secp192r1 DH/DHC only.
-- Commit: `c17dd0d`.
+- Commit: `c710127`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-focused-current-8E-20261030.csv`
   (SHA-256 `321cd73f1664deaac455729b2806b426185733a36fb3d3bc46009fd7263ecdbb`).
 
@@ -16161,10 +16161,10 @@
 - When: '2026-10-30 17:28 UTC' - '2026-10-30 17:29 UTC'
 - Change: Recorded the commit IDs for the preceding NOPAD evidence correction
   and current-image focused hardware result.
-- Validation: `git show --stat --oneline 26c2285 c17dd0d` confirms each change
+- Validation: `git show --stat --oneline 6bfa3e2 c710127` confirms each change
   contains only TODO/QKB/handoff/progress documentation.
-- Result: The stale status correction is `26c2285`; the current 8E focused
-  hardware result is `c17dd0d`.
+- Result: The stale status correction is `6bfa3e2`; the current 8E focused
+  hardware result is `c710127`.
 - Decision: Continue with the remaining prioritized firmware and deploy work.
 - Commit: recorded in the following progress entry.
 - Artifacts/logs: none.
@@ -16235,8 +16235,8 @@
 - Change: No firmware change. Compared JCSystem-info persistent-free-memory
   fields before and after the focused NO_RESOURCE repetition. Added the
   measurements and safe probe invocation to TODO, QKB, and HANDOFF. The prior
-  full-run evidence commit is `fc706ac`; the isolated-repeat commit is
-  `21cf172`.
+  full-run evidence commit is `a02800c`; the isolated-repeat commit is
+  `a634397`.
 - Validation: On 2BED, the read-only `tools/test-pico-powerup` run after the
   full suite returned GETVERSION and JCSystem-info `9000`. Its P1=01 current
   legacy persistent-free-memory field is `0x177A` (6,010 bytes). After the
@@ -16403,7 +16403,7 @@
 - Decision: Keep the feature isolated in `symm_crypto_ctr`; use it for a
   physical JCAlgTest run when PC/SC returns. Continue independent TODO work in
   the meantime.
-- Commit: `1ea9c7e`
+- Commit: `8b0dbd9`
 - Artifacts/logs: VPCD log
   `artifacts/logs/aes-ctr-vpcd-20261030T185802Z.log` SHA-256
   `f057331e506e4ae1b764915bfdb4c37606f6b65dc0a3e30a649e13eb102555ad`; ARM
@@ -16468,7 +16468,7 @@
 - Decision: Provide this ARM image for external testing. It is not physically
   validated; flash, finite-monitor, GPPro install/select, and official
   JCAlgTest report comparison remain outstanding on a registered Pico.
-- Commit: `8a2c5ec`
+- Commit: `7eac820`
 - Artifacts/logs: firmware and CSV above; symmetric VPCD log
   `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` SHA-256
   `856a0913cc52dd5becf28f16ddee3b7066697c24e9c96d3070b27b08abb0fe22`,
@@ -16501,7 +16501,7 @@
 - Decision: Optional AES-CTR inclusion follows the selected capability in both
   Pico architecture builds. Physical validation remains open because a Pico
   PC/SC reader is not registered.
-- Commit: `73859a8` (validation record is completed in the following log commit)
+- Commit: `4d8715e` (validation record is completed in the following log commit)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; no new build log archived.
 
@@ -16568,9 +16568,9 @@
 - When: '2026-10-30 20:35 UTC' - '2026-10-30 20:36 UTC'
 - Change: Added the implementation commit SHA to the preceding validation
   record, preserving the append-only progress log.
-- Validation: Confirmed commit `3c4e95d` contains only the DES-MAC fix,
+- Validation: Confirmed commit `19d8c12` contains only the DES-MAC fix,
   regression tests, related task notes, and refreshed max_crypto ARM artifact.
-- Result: The validated source/test/artifact step is committed as `3c4e95d`.
+- Result: The validated source/test/artifact step is committed as `19d8c12`.
 - Decision: Continue physical confirmation when a Pico PC/SC reader is
   available; current worktree contains unrelated changes that remain unstaged.
 - Commit: recorded in this follow-up commit.
@@ -16608,9 +16608,9 @@
 - Step/experiment: `persistent-inventory-and-vpcd-restart-regression-log-closeout`
 - When: '2026-10-30 20:45 UTC' - '2026-10-30 20:46 UTC'
 - Change: Added the preceding validation commit SHA to the append-only log.
-- Validation: Confirmed commit `183bfe6` contains only TODO, QKB, handoff, and
+- Validation: Confirmed commit `e142a34` contains only TODO, QKB, handoff, and
   the detailed persistence regression record.
-- Result: The latest persistence-suite rerun is documented in commit `183bfe6`.
+- Result: The latest persistence-suite rerun is documented in commit `e142a34`.
 - Decision: Continue the project; retain physical power-cycle and persistent
   record reclamation as open work.
 - Commit: recorded in this follow-up commit.
@@ -16646,10 +16646,10 @@
 - Step/experiment: `physical-reader-registration-diagnostic-log-closeout`
 - When: '2026-10-30 20:51 UTC' - '2026-10-30 20:52 UTC'
 - Change: Added the diagnostic commit SHA to the append-only progress log.
-- Validation: Confirmed commit `1523f34` includes only TODO, QKB, handoff, and
+- Validation: Confirmed commit `ba3a5ce` includes only TODO, QKB, handoff, and
   the PC/SC registration diagnostic record.
 - Result: The current host reader-registration evidence is documented in
-  `1523f34`.
+  `ba3a5ce`.
 - Decision: Leave PC/SC root-cause work open pending daemon-side IFD logs.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
@@ -16682,8 +16682,8 @@
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`
 - When: '2026-10-30 20:53 UTC' - '2026-10-30 20:54 UTC'
 - Change: Recorded the implementation-log commit SHA in the append-only log.
-- Validation: Confirmed commit `920e878` contains only this progress record.
-- Result: The 25/25 VPCD multi-package rerun is recorded in `920e878`.
+- Validation: Confirmed commit `f8af539` contains only this progress record.
+- Result: The 25/25 VPCD multi-package rerun is recorded in `f8af539`.
 - Decision: Preserve all existing source changes and continue with independent
   project work.
 - Commit: recorded in this follow-up commit.
@@ -16714,9 +16714,9 @@
 - Step/experiment: `pc-vpcd-refused-connect-retry-log-closeout`
 - When: '2026-10-30 21:01 UTC' - '2026-10-30 21:02 UTC'
 - Change: Recorded the implementation commit SHA for the VPCD retry step.
-- Validation: Confirmed commit `7e998ef` contains only the retry source change,
+- Validation: Confirmed commit `a55631d` contains only the retry source change,
   QKB/HANDOFF updates, and its original progress record.
-- Result: VPCD retry step is committed as `7e998ef`.
+- Result: VPCD retry step is committed as `a55631d`.
 - Decision: Continue with the next requested task.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
@@ -16764,10 +16764,10 @@
 - Step/experiment: `max-crypto-artifact-current-hash-log-closeout`
 - When: '2026-10-30 21:06 UTC' - '2026-10-30 21:07 UTC'
 - Change: Recorded the documentation correction commit SHA.
-- Validation: Confirmed commit `efe4cd5` contains only the handoff checksum
+- Validation: Confirmed commit `a218585` contains only the handoff checksum
   correction and its original progress record.
 - Result: The current max-profile artifact hash correction is committed as
-  `efe4cd5`.
+  `a218585`.
 - Decision: Continue with unresolved project priorities.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
@@ -16777,9 +16777,9 @@
 - Step/experiment: `physical-pico-pcsc-diagnostic-log-closeout`
 - When: '2026-10-30 21:09 UTC' - '2026-10-30 21:10 UTC'
 - Change: Recorded the commit SHA for the current Pico PC/SC diagnostic.
-- Validation: Confirmed commit `48d803c` contains only QKB/HANDOFF evidence and
+- Validation: Confirmed commit `e844f44` contains only QKB/HANDOFF evidence and
   its progress records.
-- Result: Fresh reader-registration status is committed as `48d803c`.
+- Result: Fresh reader-registration status is committed as `e844f44`.
 - Decision: Continue with offline tasks until a physical reader registers.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
@@ -16823,9 +16823,9 @@
 - Step/experiment: `cap-parser-supported-version-boundary-log-closeout`
 - When: '2026-10-30 21:24 UTC' - '2026-10-30 21:25 UTC'
 - Change: Recorded the commit SHA for the CAP version-boundary implementation.
-- Validation: Confirmed commit `77931cf` contains the parser, regression,
+- Validation: Confirmed commit `76c1f62` contains the parser, regression,
   TODO/QKB/HANDOFF, and original progress changes only.
-- Result: The CAP version-boundary step is committed as `77931cf`.
+- Result: The CAP version-boundary step is committed as `76c1f62`.
 - Decision: Continue with the next independent project priority.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
@@ -16859,13 +16859,13 @@
 - Step/experiment: `continuation-progress-append-order-reconciliation`
 - When: '2026-10-30 21:29 UTC' - '2026-10-30 21:30 UTC'
 - Change: Added this end-of-file index because four continuation records
-  (VPCD retry `7e998ef`, artifact hash correction `efe4cd5`, PC/SC diagnostic
-  `48d803c`, CAP parser hardening `77931cf`) had initially been inserted before
+  (VPCD retry `a55631d`, artifact hash correction `a218585`, PC/SC diagnostic
+  `e844f44`, CAP parser hardening `76c1f62`) had initially been inserted before
   older progress entries rather than appended at EOF. Their full records remain
   intact; this index restores the chronological tail without rewriting history.
 - Validation: Confirmed each referenced implementation commit and its
-  immediately following SHA closeout (`de0fbb7`, `5aea2c4`, `1350bdb`,
-  `c037ae0`).
+  immediately following SHA closeout (`1ee69e2`, `2fc9191`, `66043b0`,
+  `67e138a`).
 - Result: All newly discovered progress entries now have an EOF chronology
   index; prior records were not removed or rewritten.
 - Decision: Append future progress records at the actual file end.
@@ -16877,10 +16877,10 @@
 - Step/experiment: `readme-profile-report-comparison-log-closeout`
 - When: '2026-10-30 21:30 UTC' - '2026-10-30 21:31 UTC'
 - Change: Recorded the documentation correction commit SHA.
-- Validation: Confirmed commit `5787b45` contains only the README, QKB,
+- Validation: Confirmed commit `1abcfa7` contains only the README, QKB,
   HANDOFF, and progress changes for the comparison workflow.
 - Result: The corrected profile comparison instructions are committed as
-  `5787b45`.
+  `1abcfa7`.
 - Decision: Continue with remaining project acceptance and implementation
   work.
 - Commit: recorded in this follow-up commit.
@@ -16904,7 +16904,7 @@
   packed-structure alignment warnings appeared during compilation; no errors.
 - Decision: Provide the refreshed UF2 and matching expected-support CSV for
   external test setup. Physical flash and runtime validation were not run.
-- Commit: `3b2d03f`.
+- Commit: `21f975d`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`,
   `artifacts/firmware/README-max_crypto.txt`.
@@ -16915,7 +16915,7 @@
 - When: '2026-10-30 21:38 UTC' - '2026-10-30 21:39 UTC'
 - Change: Recorded the implementation commit for the refreshed external-test
   firmware artifact.
-- Validation: Confirmed commit `0b90024` contains only the UF2, its README,
+- Validation: Confirmed commit `e028cca` contains only the UF2, its README,
   and the required progress and handoff records; rechecked both artifact hashes.
 - Result: The refreshed ARM image and manifest are committed and reproducible
   from the wrapper build.
@@ -16945,7 +16945,7 @@
 - Decision: Treat the archived OwnerPINBuilder failures as historical and
   resolved for the current source; retain the fresh report as emulator-only
   evidence.
-- Commit: `4af21b6` (fixture and regressions); this progress record is committed in the following metadata commit.
+- Commit: `3f31a62` (fixture and regressions); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`
   (CSV SHA-256
   `a76dd25089b50e0269388c057098eafdbb434b5a96bbcdeb4b868b75b9537fac`; client
@@ -16958,7 +16958,7 @@
 - When: '2026-10-30 21:59 UTC' - '2026-10-30 22:00 UTC'
 - Change: Added the commit reference for the completed base-profile VPCD
   validation record.
-- Validation: Confirmed commit `5093b6a` contains TODO, QKB, HANDOFF, and
+- Validation: Confirmed commit `9c13084` contains TODO, QKB, HANDOFF, and
   progress documentation only; the generated VPCD evidence remains ignored by
   the repository's `artifacts/results/` rule.
 - Result: The fresh report outcome and its emulator-only limitation are recorded
@@ -16983,7 +16983,7 @@
   deletion remain green in the current worktree. This is VPCD evidence only.
 - Decision: Keep physical power-loss recovery and enabled persistent-record
   reclamation open; the test does not validate USB power removal.
-- Commit: `9e61860` (fixture and converter option); this progress record is committed in the following metadata commit.
+- Commit: `e789086` (fixture and converter option); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T220126Z.log`
   (SHA-256
   `67fc5ac0901290ac0db8120eed1078784dbbb115999879a1e711b6a0b7c257cf`),
@@ -16994,7 +16994,7 @@
 - Step/experiment: `vpcd-multipackage-base-profile-rerun-closeout`
 - When: '2026-10-30 22:02 UTC' - '2026-10-30 22:03 UTC'
 - Change: Recorded the commit reference for the fresh VPCD lifecycle evidence.
-- Validation: Confirmed commit `1906ef2` contains only TODO, QKB, HANDOFF, and
+- Validation: Confirmed commit `8cce24a` contains only TODO, QKB, HANDOFF, and
   progress documentation; all four log hashes were rechecked.
 - Result: The 25/25 test result and its emulator-only scope are recorded in the
   current handoff and knowledge base.
@@ -17023,7 +17023,7 @@
 - Decision: Retain the parser validation and regressions. Investigate the
   helper-install failure and why temporary stage diagnostics did not appear in
   captured emulator output before claiming current SDK interoperability.
-- Commit: `5ed8ede` (fixture and exception regression); this progress record is committed in the following metadata commit.
+- Commit: `6f157af` (fixture and exception regression); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`
   (SHA-256
   `0883d2596271a2233ee256744dac7a663d0c8c88abb1cc93fe5e8c85d706a5bd`);
@@ -17034,16 +17034,16 @@
 
 - Step/experiment: `cap22-remote-signature-offset-validation-closeout`
 - When: '2026-10-30 22:31 UTC' - '2026-10-30 22:32 UTC'
-- Change: Recorded commit `69708c5` in the parser validation handoff and
+- Change: Recorded commit `a38c64a` in the parser validation handoff and
   progress entry.
-- Validation: Confirmed `69708c5` contains the parser, its regression tests,
+- Validation: Confirmed `a38c64a` contains the parser, its regression tests,
   TODO/QKB/HANDOFF, and the progress record; unrelated worktree changes remain
   unstaged.
 - Result: The CAP 2.2 validation step is committed; the SDK VPCD helper-install
   failure remains open.
 - Decision: Continue investigating current VPCD INSTALL failure and remaining
   prioritized TODO items.
-- Commit: `f2f0859` (proxy retention regression); this progress record is committed in the following metadata commit.
+- Commit: `449ea7a` (proxy retention regression); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`.
 
 ## 2026-10-30 Refresh max-crypto ARM test image 8 minutes
@@ -17065,7 +17065,7 @@
   reader visibility was not confirmed.
 - Decision: Keep the image available for external testing. Resume physical
   acceptance when a Pico is registered by PC/SC; continue offline backlog work.
-- Commit: `bc0e4f3` (proxy method firewall regression); this progress record is committed in the following metadata commit.
+- Commit: `a567855` (proxy method firewall regression); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above, expected
   CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
@@ -17075,13 +17075,13 @@
 - Step/experiment: `max-crypto-arm-image-refresh-closeout`
 - When: '2026-10-30 22:40 UTC' - '2026-10-30 22:41 UTC'
 - Change: Recorded the refreshed image commit in the handoff and progress log.
-- Validation: Verified commit `c9aa6c4` contains only the max-crypto image,
+- Validation: Verified commit `1025e7b` contains only the max-crypto image,
   README, TODO, HANDOFF, and associated progress record.
 - Result: The current max-crypto image is committed with its exact size and
   checksum. Physical testing remains pending PC/SC reader registration.
 - Decision: Continue with the offline prioritized backlog while hardware access
   remains unavailable.
-- Commit: `c9aa6c4`.
+- Commit: `1025e7b`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
 
 ## 2026-10-30 Recheck cryptographic VPCD known-answer suites 11 minutes
@@ -17101,7 +17101,7 @@
   a single combined `max_crypto` emulator run or physical hardware behavior.
 - Decision: Keep previous physical reports distinct from these fresh VPCD
   results; rerun external/physical acceptance when the reader is available.
-- Commit: `eddf1f4`.
+- Commit: `0c69bdb`.
 - Artifacts/logs: See QKB's “Current-source cryptographic VPCD vectors” with
   paths and SHA-256 hashes for all three runs.
 
@@ -17111,12 +17111,12 @@
 - When: '2026-10-30 22:51 UTC' - '2026-10-30 22:52 UTC'
 - Change: Recorded the crypto VPCD evidence commit in the handoff and progress
   log.
-- Validation: Verified commit `3ede9fd` contains only TODO, QKB, HANDOFF, and
+- Validation: Verified commit `35b0e5e` contains only TODO, QKB, HANDOFF, and
   progress documentation.
 - Result: Current-source VPCD vector results and their emulator-only scope are
   committed.
 - Decision: Continue prioritized offline correctness work.
-- Commit: `3ede9fd`.
+- Commit: `35b0e5e`.
 - Artifacts/logs: The three VPCD logs listed in QKB.
 
 ## 2026-10-30 Validate CAP 2.2 remote method tokens 9 minutes
@@ -17140,7 +17140,7 @@
   available through PC/SC.
 - Decision: Keep remote-interface class-reference resolution open. Revisit
   JCRMI helper INSTALL diagnosis separately; do not claim current SDK RMI pass.
-- Commit: `3ed1a42` (recorded in closeout below).
+- Commit: `ad2ba38` (recorded in closeout below).
 - Artifacts/logs: max-profile UF2 and expected CSV under
   `artifacts/firmware/`; GPPro evidence is under
   `artifacts/results/gppro-empty-install-vpcd-20261030T225743Z/` (ignored).
@@ -17149,7 +17149,7 @@
 
 - Step/experiment: `cap22-remote-public-method-token-validation-closeout`
 - When: '2026-10-30 23:00 UTC' - '2026-10-30 23:01 UTC'
-- Change: Recorded commit `3ed1a42` in the current handoff and progress entry.
+- Change: Recorded commit `ad2ba38` in the current handoff and progress entry.
 - Validation: Verified the commit includes the CAP validator, negative fixture
   cases, rebuilt max ARM artifact, and its progress/TODO/QKB/HANDOFF records;
   unrelated dirty changes were not staged.
@@ -17182,7 +17182,7 @@
   the standalone host parser build.
 - Decision: Internal target validation is complete for CAP 2.2; external target
   resolution still requires package-context validation.
-- Commit: `ffab347`.
+- Commit: `996d17f`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`;
   GPPro log under `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/`
   (emulator.log SHA-256
@@ -17193,9 +17193,9 @@
 
 - Step/experiment: `cap22-internal-remote-interface-reference-validation-closeout`
 - When: '2026-10-30 23:10 UTC' - '2026-10-30 23:11 UTC'
-- Change: Recorded implementation commit `ffab347` in the progress entry and
+- Change: Recorded implementation commit `996d17f` in the progress entry and
   session handoff.
-- Validation: Confirmed `ffab347` contains the parser implementation, forward
+- Validation: Confirmed `996d17f` contains the parser implementation, forward
   and malformed-reference fixtures, refreshed max ARM image, and corresponding
   TODO/QKB/HANDOFF/progress records. Unrelated worktree changes remain unstaged.
 - Result: Internal remote-interface reference validation is committed;
@@ -17228,7 +17228,7 @@
   VPCD/build evidence; no physical reader was registered or flashed.
 - Decision: Keep broader RMI profile coverage and physical-card validation open;
   the previously failing official SDK interop subset is restored.
-- Commit: `5f82ed8`.
+- Commit: `30ab432`.
 - Artifacts/logs: client log SHA-256
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`; emulator
   log SHA-256
@@ -17240,7 +17240,7 @@
 
 - Step/experiment: `cap22-directory-layout-and-jcrmi-closeout`
 - When: '2026-10-30 23:31 UTC' - '2026-10-30 23:32 UTC'
-- Change: Recorded implementation commit `5f82ed8` in progress and handoff.
+- Change: Recorded implementation commit `30ab432` in progress and handoff.
 - Validation: Confirmed the commit includes the version-aware Directory parser,
   regression cases, passing-test evidence, refreshed max ARM image, and
   corresponding TODO/QKB/HANDOFF records. Existing unrelated worktree entries
@@ -17272,7 +17272,7 @@
 - Decision: Keep installation-time resolution of external class tokens to
   exported interfaces open; then continue the prioritized persistent-object
   reclamation and cold power-cycle work.
-- Commit: `6bd2619`.
+- Commit: `5ac9c8a`.
 - Artifacts/logs: client log SHA-256
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
   emulator log SHA-256
@@ -17307,7 +17307,7 @@
 - Decision: Keep the loader validation; add explicit external target fixtures
   and restore VPCD registration before claiming GPPro install regression
   coverage. Then continue safe persistent-object reclamation.
-- Commit: `ed5511b`.
+- Commit: `33cea90`.
 - Artifacts/logs: official RMI client SHA-256
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
   emulator SHA-256
@@ -17460,7 +17460,7 @@
   Java Card 3.0.5 conformance or close the open API test audit.
 - Decision: Keep the per-API behavior audit and physical acceptance open;
   continue with offline implementation gaps while PC/SC is unavailable.
-- Commit: `5ebbfe5` (this progress pointer is recorded in the follow-up
+- Commit: `9fd1469` (this progress pointer is recorded in the follow-up
   closeout commit)
 - Artifacts/logs: `docs/supported-profile.md`; no dedicated test log.
 
@@ -17490,7 +17490,7 @@
 - Decision: Continue with a runtime-owned EPO/heap model and cross-context
   tests; investigate the APDU getter independently. This does not close the
   Java Card `lookupAID()` compatibility item.
-- Commit: `027c384` (nested Java API source commit `5785fb1`)
+- Commit: `005bf4e` (nested Java API source commit `5785fb1`)
 - Artifacts/logs: APDU log
   `artifacts/logs/host-vpcd-multipackage-apdu-20261031T011006Z.log`, SHA-256
   `be3729bfd76833d476a948eccdeab2771c2e795ac75c06cffeb1165114fd5637`;
@@ -17526,7 +17526,7 @@
   has a separate observed 13-versus-1 mismatch.
 - Decision: Keep physical validation and APDU getter correction open; continue
   with the next prioritized native/API gap.
-- Commit: `03356ba`
+- Commit: `e36b613`
 - Artifacts/logs: Multipackage log
   `artifacts/logs/host-vpcd-multipackage-apdu-20261031T012842Z.log`, SHA-256
   `5de30452bdad8beefc12aa3d3aee6feb3226438a814d72a8068ac5d56e0efbee`;
@@ -17556,7 +17556,7 @@
   Hardware validation remains open.
 - Decision: Keep physical APDU validation open; proceed with the next
   prioritized APDU/API backlog item.
-- Commit: `0f80232` (implementation; this validation closeout is committed
+- Commit: `3ef1a0e` (implementation; this validation closeout is committed
   separately)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T014336Z.log`,
   SHA-256 `67f5ec8afb06e974e45181d95fa68cf8ed94cc5da4e80c74faed786dbedc39cf`;
@@ -17580,7 +17580,7 @@
 - Result: APDU parser/context unit tests build and run against current heap
   sources again.
 - Decision: Resume the next prioritized APDU/API implementation gap.
-- Commit: `3e1bcbd`
+- Commit: `40312f2`
 - Artifacts/logs: no saved logs; command output only.
 
 ## 2026-10-31 align JC array GC fixture with global handles 5 minutes
@@ -17598,7 +17598,7 @@
 - Result: The collector regression now tests an invalid local handle and no
   longer accidentally supplies a handle marked global.
 - Decision: Continue with the next open deploy/API behavior gap.
-- Commit: `f3722bf` (implementation; this validation closeout is committed
+- Commit: `270b409` (implementation; this validation closeout is committed
   separately)
 - Artifacts/logs: no saved logs; command output only.
 
@@ -17619,7 +17619,7 @@
 - Result: The full JCSystem transaction API fixture passes in PC VPCD against
   the current max-profile emulator image; this is not physical validation.
 - Decision: Continue with the next open Java Card API/deploy coverage gap.
-- Commit: `63aefd4` (evidence documentation; this runtime closeout is committed
+- Commit: `2d6947d` (evidence documentation; this runtime closeout is committed
   separately)
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log`,
   SHA-256 `b9c1988f1b8934999bd7470a43c6492b6c2aa733c0c3f23a5a85975d1dd71c75`.
@@ -17641,7 +17641,7 @@
   `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
 - Decision: External users can test current max_crypto source; retain physical
   APDU validation as open work and continue the API backlog.
-- Commit: `c73fc70` (artifact; this runtime closeout is committed separately)
+- Commit: `e387fcc` (artifact; this runtime closeout is committed separately)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; no runtime log.
 
@@ -17662,7 +17662,7 @@
   unavailable. The monitor counters were `rx_events=2761 tasks=1945`.
 - Decision: Continue offline implementation and use another identified Pico
   if PC/SC access becomes available.
-- Commit: `f1992d0` (evidence; this runtime closeout is committed separately)
+- Commit: `46abbe0` (evidence; this runtime closeout is committed separately)
 - Artifacts/logs: monitor output only; no log was saved.
 
 ## 2026-10-31 strengthen JC305 APDU getter regression 2 minutes
@@ -17681,7 +17681,7 @@
   `TEST:SUMMARY pass=37 fail=0`.
 - Decision: Keep the mapping fix and the three-getter regression; continue with
   the remaining APDU/API backlog. Physical PC/SC testing remains unavailable.
-- Commit: `ebabbe1`
+- Commit: `6bd3569`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T020553Z.log`,
   SHA-256 `dc1ed42e2bc73b05a9eb1df4697723ab60f672e1065071ff0faeb5b0eb1e3078`;
   restart log SHA-256
@@ -17708,7 +17708,7 @@
   No physical card-manager validation is claimed.
 - Decision: Keep the transient discovery retry; continue offline with remaining
   GET STATUS continuation and API gaps while physical PC/SC remains absent.
-- Commit: `f2914a5`
+- Commit: `73d6f4b`
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261031T021340Z/`;
   inventory SHA-256 `fb0167c87354f218d690dbbb16b5276f5e507f60910a3284af5d4f72f31906de`,
   install SHA-256 `fbf01704b262c6ffa9bf18b9ec2b01a83c390bb50f4e96e8c683da09dfb7ce5a`,
@@ -17745,7 +17745,7 @@
 - Decision: Keep the exact-query check. Continue the remaining GET STATUS
   pagination/lifecycle audit and TODO items; physical PC/SC is presently
   available on 2BED.
-- Commit: `0885372`
+- Commit: `d5f62a8`
 - Artifacts/logs: Physical SCP03 transcript
   `artifacts/logs/physical-get-status-continuation-2BED-20261031.log`,
   SHA-256 `1dc6e481c90e05eb7fb37be8d6544cce892525fc8263e74a5ee98005901e3435`;
@@ -17777,7 +17777,7 @@
 - Decision: Preserve this partial report as evidence, do not call the full
   JCAlgTest acceptance complete, and correct CPLC source plus fixtures before
   the next ARM artifact refresh.
-- Commit: `857717a`
+- Commit: `6691707`
 - Artifacts/logs: CSV
   `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
   SHA-256 `90e003669f7c90ce64ce83246ce82d4cd68f85de6afe23e2d22252d1b83ed8a9`;
@@ -17804,7 +17804,7 @@
   build used on the identified board. It remains an empty-card image.
 - Decision: Keep using this refreshed artifact for external testing. Complete
   the already-running physical JCAlgTest report before claiming its results.
-- Commit: `69e00b2`
+- Commit: `247c5f3`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   SHA-256 above; physical cycle log
   `artifacts/logs/cycle-choupi-20261031T022105Z.log`, SHA-256
@@ -17837,7 +17837,7 @@
 - Decision: Use this UF2 for external `max_crypto` testing. The full JCAlgTest
   run on the prior image remains partial (1,155/4,525 rows); it is not claimed
   to be complete evidence for the refreshed image.
-- Commit: `c5f8bc2`
+- Commit: `db6b00d`
 - Artifacts/logs: Cycle log
   `artifacts/logs/cycle-choupi-20261031T024632Z.log`, SHA-256
   `eb245d3a2a7b6170b3cee1a2961ee3737951b39d81e64d97f8de12688c4fe3bf`;
@@ -17865,7 +17865,7 @@
   complete support report are still unverified.
 - Decision: Keep the standalone-profile and full-suite TODO item open; current
   evidence validates native CTR behavior on the combined profile only.
-- Commit: `a59cca5`
+- Commit: `cf5ffb9`
 - Artifacts/logs: install, KAT, cleanup, and post-cleanup list logs are in
   `artifacts/logs/aes-ctr-pcsc-*-2BED-20261031.log`; SHA-256 values are recorded
   in `.agent/QKB.md`. KAT log SHA-256 is
@@ -17895,7 +17895,7 @@
   host-timed evidence, not a completed full official static-suite report.
 - Decision: Use the new stop option for profile-specific SHA checks; keep full
   `ALG_PERFORMANCE_STATIC` completion open.
-- Commit: `9117bd4`
+- Commit: `4254a18`
 - Artifacts/logs: Passing log
   `artifacts/logs/jcalgtest-sha256-static-only-2BED-20261031.log`, SHA-256
   `1f02365a2898bc045004d0ad626ea547dfe2b4e44875453bc3b4b8bb0204a15f`; first
@@ -17928,7 +17928,7 @@
 - Decision: Full `max_crypto` physical support reporting is now verified except
   the documented upstream query mismatch. Exact standalone `symm_crypto_ctr`,
   Windows checks, and wider AC1–AC5 integration remain open.
-- Commit: `5a49d46` (evidence/handoff update; progress closeout follows)
+- Commit: `064475c` (evidence/handoff update; progress closeout follows)
 - Artifacts/logs: CSV
   `artifacts/results/jcalgtest/max_crypto_full_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
   SHA-256 `b3aa5964c499a16e812c9b336712415127874a7a3d638d8989404dca51b30d81`;
@@ -17958,7 +17958,7 @@
   `8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
 - Decision: The standalone profile is running on hardware; await the already
   active complete JCAlgTest report before deciding parity.
-- Commit: `b14e6ca` (build/flash handoff; support report remains active)
+- Commit: `6e3e54b` (build/flash handoff; support report remains active)
 - Artifacts/logs: Full cycle log
   `artifacts/logs/cycle-choupi-20261031T035348Z.log`, SHA-256
   `95486ebfff85c265434154f1e71e2bb184062045a816f566209fb66471326c2b`;
@@ -17991,7 +17991,7 @@
   NIST vectors were previously run on the `max_crypto` superset; repeat them on
   this exact profile only if CTR dispatch or profile linking changes. Broader
   project acceptance remains open.
-- Commit: `3f26ff9` (support result/TODO/handoff; progress closeout follows)
+- Commit: `dd08352` (support result/TODO/handoff; progress closeout follows)
 - Artifacts/logs: CSV
   `artifacts/results/jcalgtest/symm_crypto_ctr_full_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
   SHA-256 `4dd12ac4de12f0cc127b0af090d5fab32a4eb7ce8cb3d8bfd178b4ecb4ec1f98`;
@@ -18094,7 +18094,7 @@
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); debug ARM and RISC-V `symm_crypto` wrapper builds passed; the physical probe on Pico 2 `2BED26ED20556535` passed 5/5 APDU checks and package cleanup; standard debug-off `max_crypto` ARM and RISC-V wrapper builds passed; `cmp` confirmed the external UF2 equals the ARM build; both artifact SHA checks passed. No physical power interruption or flash for the release artifact was performed. Existing upstream converter, packed-member, and Rust warnings were observed; no build errors occurred.
 - Result: Physical collection removed one orphan object-body tag after its root was cleared and preserved a separately rooted object. The empty-card ARM image is 2,088,448 bytes, SHA-256 `cf21bae06443f3b7e0e8d6150eb2927cbaecc908fe6cca19fd435791e8d4d2f2`; its expected manifest SHA-256 is `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
 - Decision: Keep persistent deletion test-only until an actual interrupted erase and on-device recovery/retry are verified. The refreshed UF2 is ready for external testing; no hardware flash was done for it.
-- Commit: source/test `1521cda`; this progress, handoff, QKB/TODO update and release artifact are recorded in the following documentation/artifact commit.
+- Commit: source/test `bb2f32a`; this progress, handoff, QKB/TODO update and release artifact are recorded in the following documentation/artifact commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; physical logs `artifacts/logs/persistent-reclaimer-monitor-2BED-20261031-fixed.log` (SHA-256 `b395ae8298ab06289794071a5b8011c93182fc0e47d1476b2200593b801bce86`) and `artifacts/logs/persistent-reclaimer-physical-20261031T052908Z.log` (SHA-256 `d161d673120e22172dcb6ae97f4363049ba0d435c38f72ac4e846d6b1bca936a`).
 
 ## 2026-10-31 Bound GET STATUS responses by Le 27 minutes
@@ -18124,7 +18124,7 @@
   image includes the final change.
 - Decision: Continue with physical multi-page GET STATUS and the remaining GET
   DATA/package lifecycle items in TODO.md.
-- Commit: `5b3a6c7` (source, tests, and firmware artifact); this progress and
+- Commit: `4258113` (source, tests, and firmware artifact); this progress and
   session documentation are in the follow-up documentation commit.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T060525Z.log`,
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T060525Z.log`,
@@ -18151,7 +18151,7 @@
   applet, so multi-entry physical pagination is still open.
 - Decision: Keep the physical multi-entry gate open; use the new direct probe
   for short-Le semantics and continue with remaining GET DATA/package gaps.
-- Commit: `405b853` (probe); this progress and knowledge/handoff updates are in
+- Commit: `312c4bb` (probe); this progress and knowledge/handoff updates are in
   the follow-up documentation commit.
 - Artifacts/logs: `artifacts/logs/physical-get-status-le-20261031T061319Z.log`,
   SHA-256 `bac3e5e627312edf9be024ffc12ee6761cd6abfb693da384debb099af42fb40f`.
@@ -18177,7 +18177,7 @@
   on three real applet instances. No firmware source changed in this step.
 - Decision: Continue with the remaining GET DATA and cold-power persistence
   items; the physical multipage regression is reusable for future changes.
-- Commit: `01a0805` (test code); this progress and tracker/handoff updates are
+- Commit: `2aaa1ae` (test code); this progress and tracker/handoff updates are
   in the follow-up documentation commit.
 - Artifacts/logs: `artifacts/logs/physical-get-status-multipage-20261031T061734Z.log`
   (SHA-256
@@ -18204,7 +18204,7 @@
   the noted optional Ext limitation. The card was left in its original state.
 - Decision: Continue validation on the same identified board with Security,
   then Crypto using the deploy README's RSA-2048 exclusion.
-- Commit: `eb4a94b` (validation record; commit reference finalized in the
+- Commit: `d9fbaf1` (validation record; commit reference finalized in the
   follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-core-20261031.csv`
   (ignored; SHA-256
@@ -18232,7 +18232,7 @@
   algorithms.
 - Decision: Continue with Crypto using the deploy README's RSA-2048 keygen
   exclusion; investigate resource recovery and transient reset separately.
-- Commit: `a448f54` (validation record; commit reference finalized in the
+- Commit: `e216278` (validation record; commit reference finalized in the
   follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-security-20261031.csv`
   (ignored; SHA-256
@@ -18258,7 +18258,7 @@
 - Decision: Keep the combined firmware available for external testing with
   these limitations documented; investigate memory reclamation and the specific
   Signature cases before claiming the deploy API suite passes.
-- Commit: `967a731` (validation record; commit reference finalized in the
+- Commit: `0293425` (validation record; commit reference finalized in the
   follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-crypto-20261031.csv`
   (ignored; SHA-256
@@ -18311,7 +18311,7 @@
   remains pending device availability.
 - Decision: Keep the 2 MiB layout; do not use the unverified second flash half.
   Continue physical API validation when an identified Pico reader returns.
-- Commit: `c876703`
+- Commit: `3dd7ecd`
 - Artifacts/logs: ARM image SHA-256
   `03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df`;
   finite cycle log `artifacts/logs/cycle-choupi-20261031T081609Z.log` (SHA-256
@@ -18337,7 +18337,7 @@
   not a claim that the API deployment suite passes.
 - Decision: Retry physical API suites and exact-reader cleanup when a Pico reader
   is again available.
-- Commit: `9597132` (documentation and artifact commit; this record's SHA is
+- Commit: `ec4fbd9` (documentation and artifact commit; this record's SHA is
   finalized in the following progress-only commit)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above.
@@ -18361,7 +18361,7 @@
 - Decision: Leave firmware descriptors unchanged. Resume hardware API testing
   only after PC/SC registers a physical reader or host diagnostics become
   available; continue offline project work.
-- Commit: `8bdeca8`
+- Commit: `c7380f3`
 - Artifacts/logs: No persistent logs; live `lsusb -v`, plist parse,
   `pcsc_scan`, and `doctor` outputs were inspected during the session.
 
@@ -18384,7 +18384,7 @@
   known upstream report discrepancy without modifying the CAP or support set.
 - Decision: Keep current max_crypto selection; do not enable unsupported 4096
   keypair generation or add EC-112 absent from the target matrix.
-- Commit: `1b6b0cb`
+- Commit: `148862e`
 - Artifacts/logs: `artifacts/firmware/README-max_crypto.txt`, `TODO.md`, and
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`.
 
@@ -18412,7 +18412,7 @@
 - Decision: Keep ISO `00 CB` and GP `80 CA` response forms distinct. Retry the
   recorded VPCD wrapper when `Virtual PCD 00 00` is available; continue other
   offline project work meanwhile.
-- Commit: `827a0ba`
+- Commit: `17797a2`
 - Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.
 
 ## 2026-10-31 Future language-selectable backend analysis 10 minutes
@@ -18463,7 +18463,7 @@
 - Decision: Keep the VPCD and firmware implementations aligned. Continue with
   ARCH-01 from the scheduled TODO block; retry PC/SC validation when a reader
   is registered.
-- Commit: `cc8063d39a4fb8ec3a6a7ccd0c5b09b92ddfb48d`; this SHA is recorded in
+- Commit: `6a4d0e89985a8f816177046a150aa079ef646400`; this SHA is recorded in
   the immediate follow-up progress-only commit because Git cannot include a
   commit's own SHA in itself.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T093729Z.log`,
@@ -18511,7 +18511,7 @@
   propagation remains intentionally unchanged.
 - Decision: ARCH-01 is complete. ARCH-02 remains next in TODO; stop here as
   requested.
-- Commit: Root `77b58fa137bcb6c22cffeeac19f914bd87ebeb79`; nested
+- Commit: Root `4248940414c0de4060fff66c25f4f8b0b46b0179`; nested
   `choupi/os` commit `28dd851c4253386d7adc7402a896593fdef1de14`. These SHAs are
   recorded in the immediate progress-only follow-up commit.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T094555Z.log`,
@@ -18543,7 +18543,7 @@
   disk checkpointing remain backend discrepancies.
 - Decision: ARCH-02 is complete. Continue with ARCH-03; retain the four
   explicitly tracked backend-alignment follow-ups.
-- Commit: Root `6aec961` (`Specify filesystem ABI and harden bounds checks`);
+- Commit: Root `df6dcff` (`Specify filesystem ABI and harden bounds checks`);
   nested OS submodule `08f78a6` (`Fix filesystem syscall bounds and empty
   reads`). The root SHA is recorded in the progress-only follow-up commit.
 - Artifacts/logs: No persistent logs; test and build results are recorded above.
@@ -18568,7 +18568,7 @@
   Runtime diagnostic behavior is unchanged by the refactor.
 - Decision: ARCH-03 is complete. Continue with ARCH-04; no output behavior
   change or physical validation is claimed.
-- Commit: Root `54bcb3f` (`Centralize VM and transport diagnostic
+- Commit: Root `67ad1b0` (`Centralize VM and transport diagnostic
   declarations`); the SHA is recorded in the progress-only follow-up.
 - Artifacts/logs: No persistent logs; build results are recorded above.
 
@@ -18600,7 +18600,7 @@
 - Decision: Keep ARCH-04 open until a physical long native operation verifies
   watchdog service, recurring CCID time extensions, and final APDU completion.
   Continue with the independent ARCH-05 startup/filesystem split meanwhile.
-- Commit: `6bc468f` (`Guard native progress callback reentry`); this SHA is
+- Commit: `8f3d2ff` (`Guard native progress callback reentry`); this SHA is
   recorded in the progress-only follow-up commit.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
   SHA-256 `723f9d2d5b55e4cc6e697149f75dd5dc7b7e4a5a7c2d252fdf785f7631b845d6`;
@@ -18630,7 +18630,7 @@
   still needs a Pico boot/reboot check.
 - Decision: Keep ARCH-05 open only for physical startup/persistence acceptance.
   Continue with ARCH-06 independently while no physical reader is registered.
-- Commit: `ef5552e` (`Extract Pico filesystem implementation`); this SHA is
+- Commit: `0283efa` (`Extract Pico filesystem implementation`); this SHA is
   recorded in the progress-only follow-up commit.
 - Artifacts/logs: No persistent logs; overlay test and firmware build outputs
   are ignored under `build/`.
@@ -18662,7 +18662,7 @@
   not yet verified.
 - Decision: Keep ARCH-06 open for physical hardware acceptance; continue with
   offline implementation while no physical Pico reader is registered.
-- Commit: `26aacef` (`Move CAP static initialization into VM`); this SHA is
+- Commit: `fe6b8d9` (`Move CAP static initialization into VM`); this SHA is
   recorded in the progress-only follow-up commit.
 - Artifacts/logs: GPPro install artifacts in
   `artifacts/results/gppro-empty-install-vpcd-20261031T204052Z/`;
@@ -18694,7 +18694,7 @@
   acceptance remains open.
 - Decision: Close the oversized-read discrepancy and continue the remaining
   filesystem ABI and JCVM backlog items.
-- Commit: Root `7de8aef` (`Align Pico oversized filesystem reads with OS`);
+- Commit: Root `12f3770` (`Align Pico oversized filesystem reads with OS`);
   OS test commit `c3ccaa5` (`Test oversized filesystem reads preserve buffer
   tail`).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261031T205709Z.log` and
@@ -18727,7 +18727,7 @@
 - Decision: Close the filesystem tag-limit discrepancy; keep detailed error
   alignment and host disk-checkpoint durability as open ARCH-02 follow-ups.
 - Commit: OS `52772f1` (`Align OS filesystem tag length with Pico`); root
-  `23ab3b1` (`Align OS filesystem tag capacity with Pico`).
+  `5adcdfe` (`Align OS filesystem tag capacity with Pico`).
 - Artifacts/logs: No persistent test logs; test and build outputs are ignored
   under `choupi/os/target` and `build/`.
 
@@ -18756,7 +18756,7 @@
 - Decision: Close detailed filesystem status parity. Keep PC emulator disk
   checkpoint durability as the remaining ARCH-02 discrepancy.
 - Commit: OS `7362164` (`Align filesystem error statuses across backends`);
-  root `21c8336` (`Align filesystem status codes across backends`).
+  root `2fe8396` (`Align filesystem status codes across backends`).
 - Artifacts/logs: No persistent logs; test and build outputs are ignored under
   `build/` and `choupi/os/target/`.
 
@@ -18790,7 +18790,7 @@
 - Validation: Current PC emulator build passed. The prior `./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` built ARM and RISC-V, flashed and verified the ARM image, and passed its 18-second runtime monitor. Physical `tools/test-asymm-crypto-pcsc` performed GPPro CAP LOAD/INSTALL, selected the temporary applet, passed the RSA-3072 APDU (`019000`, 49,184 ms), then deleted the temporary applet/package and reported cleanup pass. Physical `tools/test-jcsystem-transaction-physical` on both 2BED and 8E loaded its package but received GP INSTALL `6A80`; both cleanup paths confirmed the temporary package was absent afterward. This is consistent on 2BED with the known 32,770-byte persistent-record request exceeding the remaining 8,821-byte transaction commit budget; the 8E low-level capacity cause was not captured. The test fixture therefore did not alter or remove existing packages. Existing PC/VPCD multipackage registry/restart/delete coverage passed 42/42 in its earlier validation. An isolated PC transaction-applet run timed out before the harness received VPCD connect; the emulator log later showed `APPLET_INSTALLED` and `CONNECTED`, but no APDU result, so that attempt is not counted.
 - Result: Physical GPPro successful installation, applet call, and cleanup are verified on the current image. A separately induced failed install leaves no registered package on either reader. Existing JCAlgTest/ApiSec data remained listed.
 - Decision: Mark ARCH-06 complete. Continue the top unfinished persistent-object reclamation item in `TODO.md`; do not delete installed packages to create room for the oversized transaction fixture.
-- Commit: `99dfe3b` (`Verify physical GPPro install and rollback`)
+- Commit: `f0ec574` (`Verify physical GPPro install and rollback`)
 - Artifacts/logs: successful install/APDU/cleanup `artifacts/logs/asymm-crypto-pcsc-20261031T214638Z.log` SHA-256 `2f20190fdb89991d5aae79bf028ff2bcf4868c28a1e766998fb0fce27686bc81`; failed-install cleanup logs `artifacts/logs/jcsystem-transaction-physical-20261031T215221Z.log` SHA-256 `e7dfa67d97c98c23f1f5e423555a3ef40b9e1cf1518b3806e6f43a610886c42b` and `...T215407Z.log` SHA-256 `11fc4da7519e5490c964bdd5f1aff0ec6d69dd37ff56d0ecea79708df1ac8210`; uncounted VPCD attempt `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T215736Z.log` SHA-256 `1e24acc9c3fe906c6a390d06d705c9edbd7555ece125395a2f82ea3ecf1a202f`.
 
 ## 2026-10-31 Verify Pico startup and registry persistence 13 minutes
@@ -18801,7 +18801,7 @@
 - Validation: The preceding `./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed ARM and RISC-V builds, flash verification, and finite runtime monitor. `JCSystemTransactionPhysicalProbe --reset-only` returned `PCSC:RESET_PASS`; immediately afterward `./tools/test-pico-powerup '<exact 2BED reader name>'` listed the installed JCAlgTest package/applet and passed SELECT (`9000`), GETVERSION (`1.8.2_jc305`), and JCSystem-info (`9000`). A deeper transaction-probe GPPro install returned `6A80` on both visible cards, and cleanup verified no test package remained. Existing issue data identifies 2BED storage at 56,714/65,535 bytes used (8,821 free) while the fixture needs a 32,770-byte persistent record; prior 8E evidence passed its full 9/9 transaction/power-cycle probe on 2026-10-30. A fresh PC build passed, but the isolated VPCD harness timed out waiting for connect; its delayed log later showed the applet installed and VPCD connected, so it produced no APDU pass and is not counted as validation.
 - Result: Current firmware boots, the pre-existing packages/applets survive firmware reflashing and a CCID slot reset, and JCAlgTest/JCSystem APDUs work after reset. The oversized transaction fixture cannot be installed into the current full persistent store; this does not affect the registry/startup check. No physical unplug/reinsert power loss was performed.
 - Decision: Mark ARCH-05 complete for its startup and registry/app persistence acceptance. Keep the current-card large-transaction-fixture capacity limitation explicit. Continue ARCH-06 physical GPPro installation/rollback validation with existing user applets preserved.
-- Commit: `4dfbbd1` (`Verify Pico startup and registry persistence`)
+- Commit: `221b1b3` (`Verify Pico startup and registry persistence`)
 - Artifacts/logs: Cycle `artifacts/logs/cycle-choupi-20261031T214423Z.log` SHA-256 `c398105410336334a0553b6c78ce211afe096f7d225dbaf5aa74f9b1ea08e954`; slot reset `artifacts/logs/ccid-slot-reset-2BED-20261031.log` SHA-256 `9b81bdd584c94f23addee956a8200ccc73ff770c4c0a0fdd2778e7e42ec64ad8`; persistence probe `artifacts/logs/pico-powerup-persistence-20261031T220152Z.log` SHA-256 `b208622e4db414715df2bf5c107999714183c5eebb291e3139e6937a79f9d7be`; failed fixture logs `artifacts/logs/jcsystem-transaction-physical-20261031T215221Z.log` and `...T215407Z.log`; ARM UF2 SHA-256 `de06d766469b459c299ce5831a9d3ad5a8139643cf4630e431fe019bd1724719`.
 
 ## 2026-10-31 Rerun max_crypto v4 Security and Crypto 42 minutes
@@ -18834,7 +18834,7 @@
 - Decision: Close the v4 storage-capacity question for 2BED only. Diagnose the
   first Security/Crypto runtime exceptions and retry full physical validation;
   clean the temporary 8E package only when that exact reader returns.
-- Commit: `b891643` (`Record v4 API capacity rerun`)
+- Commit: `6155e9a` (`Record v4 API capacity rerun`)
 - Artifacts/logs: Security CSV `artifacts/results/deploy/isolated-security-v4-2BED-20261031/pico1.csv` SHA-256 `c9996d6300f7732e74ac98c5b6ee4937a18a9ceaf5950618e3267855bca658c7`; Crypto CSV `artifacts/results/deploy/isolated-crypto-v4-2BED-20261031/pico1.csv` SHA-256 `01376ff948b4502bbdfb98e14dc84e2fdc083053793be6534c933314a5ecda97`; 8E Security CSV `artifacts/results/deploy/isolated-security-v4-8E-20261031/security.csv` SHA-256 `319b6a97d1404acd7fabeccfb200259698339744a7d50a96014014dbd00d1d53`; excluded retry CSV SHA-256 `b3c91a9c17676f3051418ed539b42eaef1c2452e98d3a4826a0831de8d13d4e6`; serial captures `artifacts/logs/deploy-isolated-security-progress-2BED-20261031.log` SHA-256 `f31ceee8f58a7613fffe457985ff91822ab08061ee0c1de24c3639faea6f7e07`, `artifacts/logs/deploy-isolated-crypto-progress-2BED-20261031.log` SHA-256 `2da02d4f85045f113c7ada31ff711bf70ef3e2c8a55091090d5ad6191187fbf4`, and `artifacts/logs/deploy-isolated-security-postfailure-8E-20261031.log` SHA-256 `c2b1862dc671eec0ad1fd1f0945ff514c053f3f3a048e8a3541a8cf0c2d51d5c`; VPCD artifacts are in `artifacts/results/deploy/vpcd-maxcrypto-security-20261031/` (no API call rows).
 
 ## 2026-10-31 Isolate v4 API runtime exceptions 8 minutes
@@ -18845,7 +18845,7 @@
 - Validation: Security isolated `KeyPair.genKeyPair()` for `ALG_RSA, LENGTH_RSA_512`: 900 calls skipped, one `EXC_RUNTIME`; temporary CAP cleanup passed. Crypto isolated `ALG_DES_MAC8_NOPAD`: 458 calls skipped, three `OK`, five `EXC_RUNTIME`; cleanup passed. Bounded concurrent serial captures reported caught VM exception ID 28 (`NullPointerException`) at Security CAP pc 6387/opcode `83` and Crypto CAP PCs 8624, 9291, 9842, and 10317. No source changed, so builds and flash were intentionally skipped. `TEST:SUMMARY` is the firmware self-check only.
 - Result: Both runtime failures reproduce independently, so full-sweep ordering is not required; this does not yet identify the exact native method or common root cause. No `NO_MEMORY` was reported in these isolated calls.
 - Decision: Map the recorded CAP PCs to API subcalls and inspect dispatch receiver/method-token values before modifying algorithm implementations. Keep API correctness open.
-- Commit: `456d250` (`Record focused v4 API exception reproductions`)
+- Commit: `9419f20` (`Record focused v4 API exception reproductions`)
 - Artifacts/logs: Security CSV `artifacts/results/deploy/focused-runtime-v4-20261031/security-rsa512.csv` SHA-256 `4847189649c47c212001a9d7dcadccb993a570759f5892303fd267091e5d0161`; serial log `artifacts/logs/focused-security-v4-2BED-20261031.log` SHA-256 `7735c76a0c088d624887980a95ab9ccb54f77c99441d633d1b81e74f56e0fdba`; Crypto CSV `artifacts/results/deploy/focused-runtime-v4-20261031/crypto-des-mac8.csv` SHA-256 `448146a8865687d0603b2fe6b15fbe4619edaa2d0994fce7c716b1d6f82301d5`; serial log `artifacts/logs/focused-crypto-v4-2BED-20261031.log` SHA-256 `974249930095e5a615eaf10833e89d67b2bd46d8f9aeef21a12d13ce211ee94e`.
 
 ## 2026-11-01 Recheck API null-receiver failures on flashed image 29 minutes
@@ -18878,7 +18878,7 @@
 - Decision: Run full current-image Security and Crypto areas next and compare
   exact source/profile/image identity with the 2026-10-31 reports. Then diagnose
   the single DES-MAC8 IV `WRONG_RESULT`.
-- Commit: `0e2d437` (`Add Java Card null receiver diagnostics`)
+- Commit: `6ce1747` (`Add Java Card null receiver diagnostics`)
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`; cycle
   `artifacts/logs/cycle-choupi-20261101T074258Z.log` SHA-256
   `258c3041a0448c014a47d65285ec182f511841127e5b2f2edc086ace16ca97fb`;
@@ -18901,7 +18901,7 @@
 - Validation: Refreshed the authorized PC/SC helper and confirmed 2BED (`2BED26ED20556535`) available while 8E remained absent. Ran upstream API 3.0.5 Crypto filtered to KeyAgreement/Cipher with exact reader, concurrent 180-second serial capture, 150-second client timeout, and successful temporary CAP cleanup. The filter recorded 65 executed calls: KeyAgreement 25 and Cipher 40; 50 `OK`, 15 `UNSUPPORTED_PER_SPEC`, zero `NO_MEMORY`. `git diff --check` passed. Builds and flashing were intentionally skipped because this was a diagnostic-only run on the already identified image.
 - Result: The nine `NO_MEMORY` results from the complete 466-call Crypto suite (two KeyAgreement, six Cipher, one AEADCipher) did not recur among the 65 completed fresh-CAP calls. The filtered client timed out before the plan completed, so this supports but does not prove cumulative/order-dependent resource pressure. Full Crypto also had three IV-specific `WRONG_RESULT` and one RSA SHA-512 PSS `EXC_CARDRUNTIME`, with no `EXC_RUNTIME`. Security on 8E lost transport at transient RSA private 2048 allocation and became unavailable; its temporary CAP remains for cleanup on return.
 - Decision: Isolate the nine exact memory cases individually and measure allocator/persistent-store state around first failure before changing implementation. Continue on 2BED while 8E is unavailable.
-- Commit: `ad0a9e0`
+- Commit: `e5cf564`
 - Artifacts/logs: CSV `artifacts/results/deploy/max-crypto-full-current-20261101/isolated-memory-2BED.csv` SHA-256 `2996f7e8d5b5cc3ead35620e952b7d28c97915216c1859aee392d5ac8596cd09`; serial log `artifacts/logs/max-crypto-isolated-memory-2BED-20261101.serial.log` SHA-256 `de0b789f19b046a7ef34d0f7318771c5b972a4ac4da0ef12f6bcf6144f2df77c`; full Security CSV `artifacts/results/deploy/max-crypto-full-current-20261101/pico1.csv` SHA-256 `28f590545c6c094ed478637a4271b4232955478ad1d0c5cbbe0185e19494479b`; full Crypto CSV `artifacts/results/deploy/max-crypto-full-current-20261101/pico2.csv` SHA-256 `b9bd226b811f3391e6e8d9a9e0c754ec5c5c3af0b195b95c1561ab069e9188f8`.
 
 ## 2026-11-01 — Trace Crypto NO_MEMORY to overlay limits 5 minutes
@@ -18912,7 +18912,7 @@
 - Validation: Reconciled the complete physical Crypto CSV with its concurrent serial log: nine `FS_WRITE_FAIL` and nine caught `NO_RESOURCE` events line up with the nine `NO_MEMORY` outcomes. Computed the exact v4 dynamic limit from the 0x28000-byte snapshot slot, 4 KiB header, 1 KiB occupancy bitmap, and 8-byte entries. Ran a fresh exact-case upstream filter: 10 selected calls, eight `OK`, two `NO_MEMORY`; CAP cleanup passed. `git diff --check` passed. Build and flash intentionally skipped for this diagnostic/documentation step.
 - Result: At 8,016 records the payload ceiling is 94,592 bytes and the full-run failure trace had 94,573 bytes used (19 bytes remaining). Later, at 8,192 records, new allocation failed at 89,801/90,150 bytes due to the hard record-count ceiling. The two exact-filter failures were the padded DES-64 CBC case and `AEADCipher()`; the other eight selected cases, including the original key-size and KeyAgreement failures, passed. The current log's fixed `/98304` denominator masks the dynamic limit.
 - Decision: Treat current Crypto `NO_MEMORY` as confirmed persistent overlay capacity exhaustion. Next inspect how unreachable API-created records survive collection/uninstall; enable persistent reclamation only after its safety/power-loss behavior is validated. Improve diagnostics to print dynamic payload and free record capacity.
-- Commit: `acbff8d`
+- Commit: `7b22c88`
 - Artifacts/logs: Full Crypto serial `artifacts/logs/full-current-crypto-2BED-20261101.serial.log` (SHA-256 `402c22976c5e62784a2a8752619e80cc5b8ddb4465c7112a8759b8b1841f1680`); exact-case CSV `artifacts/results/deploy/max-crypto-full-current-20261101/nine-memory-2BED.csv` (SHA-256 `a7d30c2eb7045d5d386b582f4e1a545d48df2fc8a574f7e4a0c48ea69982dbe9`); serial `artifacts/logs/max-crypto-nine-memory-isolation-2BED-20261101.serial.log` (SHA-256 `a28357fee22e19f4d7fac9d51fe8dd5b940377ffe74b482fbbd1308198cea6af`).
 
 ## 2026-11-01 — Report effective filesystem capacity 9 minutes
@@ -18923,7 +18923,7 @@
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed build gates, flash verification, and finite monitor (`TEST:SUMMARY pass=1 fail=0`). `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0` and exercised the diagnostic at `files=4894/8192 free_slots=3298 bytes=98287/98304 arena=98304`. `git diff --check` passed. A follow-up AEADCipher-class physical filter wrote one `OK` and seven `UNSUPPORTED_PER_SPEC` rows, but the client timed out after 60 seconds; its temporary CAP cleanup passed.
 - Result: New firmware is on Pico 2 `2BED26ED20556535`. The diagnostic now exposes the effective dynamic limit and count pressure; host overlay validation exercised the output. The API-client timeout remains a failed validation, not a pass.
 - Decision: Keep this diagnostic. Continue investigating persistent object lifetime and safe reclamation before attempting another full Crypto sweep. No user packages or persistent state were removed.
-- Commit: `9c940d4`
+- Commit: `1c7746f`
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2` SHA-256 `52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`; physical cycle `artifacts/logs/cycle-choupi-20261101T082713Z.log` SHA-256 `7579e8ce5ebec06af8283b47929e0f025c021b822a71d321879fb88e622a35c9`; client CSV `artifacts/results/deploy/max-crypto-full-current-20261101/aead-limit-correct-2BED.csv` SHA-256 `3cc22a9f95c16340f5bea3d02fd97aa296e91c8e31ef00bccbd7a655e267ad00`; bounded serial `artifacts/logs/max-crypto-effective-limit-2BED-20261101.serial.log` SHA-256 `57ad70e25f4431c657526b7177fd84d47d5d4976731828bf1fbfed3069fc1e8a`.
 ## 2026-11-01 — Reclaim persistent overlay tombstones after package deletion 5 minutes
 
@@ -18933,7 +18933,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including six generations of 128 package records with delete/restart and preservation of an unrelated record, plus 64 randomized cuts during compacted snapshot publication with old-or-new recovery. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. Source/test `git diff --check` passed. The approved reader helper reported zero attached Pico 2 CHOUPI CCID devices, so physical flash and runtime validation were skipped.
 - Result: Repeated package-state deletion no longer accumulates index tombstones in host recovery tests. Latest ARM UF2 SHA-256 is `841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70`; ELF SHA-256 is `b26559e21002241d9ca971c10431c2e422ae55b7d4e276cc0fd599ac3308eef1`. No new BSS table was added. Hardware validation and complete upstream Crypto-sweep acceptance remain open.
 - Decision: Keep the compaction fix; on an available Pico, flash the latest ARM image, inspect the finite serial monitor, run repeated temporary CAP install/delete cycles and confirm `CHOUPI:FS_COMPACT`, then rerun API 3.0.5 Crypto to measure remaining live-set storage pressure.
-- Commit: `182e768` (implementation and regression tests); this progress record and tracker updates are recorded in the following metadata commit.
+- Commit: `aebe2a0` (implementation and regression tests); this progress record and tracker updates are recorded in the following metadata commit.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` (SHA-256 above); `build/arm/pico2_choupi.elf` (SHA-256 above); host test output ended `TEST:SUMMARY fail=0`; physical logs: none (no device enumerated).
 
 ## 2026-11-01 — Refresh max_crypto ARM external-test bundle 4 minutes
@@ -18944,7 +18944,7 @@
 - Validation: `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Image size is 2,098,176 bytes and SHA-256 is `841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70`. Manifest SHA-256 remains `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. The build used the current worktree, which included pre-existing uncommitted `src/cap_load.cpp` changes; the README records that this image is not reproducible from a clean checkout of the artifact commit alone. Build gates and overlay tests are recorded in the preceding compaction step. Physical validation was intentionally not attempted because no Pico was enumerated.
 - Result: The download artifact now matches the latest ARM build byte-for-byte; README does not imply that this image has already passed hardware runtime checks.
 - Decision: Provide this artifact for external tests; resume physical validation when a Pico 2 reader is available.
-- Commit: `1411107` (artifact); this progress/handoff record is in the following metadata commit.
+- Commit: `4aa0ce8` (artifact); this progress/handoff record is in the following metadata commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` and `artifacts/firmware/README-max_crypto.txt`; no hardware log.
 
 ## 2026-11-01 — Reconcile historical overlay diagnostic notes 1 minute
@@ -18955,7 +18955,7 @@
 - Validation: `rg` confirmed no current-status sentence incorrectly describes the old logger as current. `git -c core.whitespace=cr-at-eol diff --check` passed. No builds, tests, or hardware operations were needed for this documentation-only correction.
 - Result: Current diagnostic status no longer contradicts the completed diagnostic item; old result captures remain properly labeled as historical.
 - Decision: Keep old physical measurements as recorded and use the new output format for the next hardware API sweep.
-- Commit: `708c9d2`; exact commit reference recorded by follow-up metadata commit.
+- Commit: `56c4ef8`; exact commit reference recorded by follow-up metadata commit.
 - Artifacts/logs: TODO/QKB/HANDOFF text only; no runtime logs.
 
 ## 2026-11-01 — Cover all dynamic package state tag forms 3 minutes
@@ -18966,7 +18966,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including restart after each of eight package deletions, unrelated-record preservation, and the existing 64 randomized snapshot power cuts. `git diff --check` passed. Firmware builds were not rerun because only host-test and documentation sources changed.
 - Result: The erase predicate and compactor are exercised against all supported dynamic package slots and all three package-owned persistent namespaces.
 - Decision: Keep this expanded coverage; continue with physical confirmation when a reader is available.
-- Commit: `da568ae` (regression); `985b303` (progress and tracker update).
+- Commit: `f2f09e4` (regression); `954f824` (progress and tracker update).
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output ended `TEST:SUMMARY fail=0`.
 
 ## 2026-11-01 — Guard compaction offsets and refresh max_crypto image 4 minutes
@@ -18977,7 +18977,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including all eight dynamic package IDs and 64 power-cut recovery cases. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The external artifact compared byte-for-byte with the ARM build. UF2 size is 2,098,176 bytes; SHA-256 `122a172ca7a412881afaa2529f1c1c7c4a782c3adb9f91ca436f5545ca071c2c`. The approved reader helper had reported zero physical Pico readers earlier in this session; no flash/monitor was attempted.
 - Result: The preflight cannot read payload outside `overlay_bytes_used`, and validated latest firmware is again the downloadable artifact. No additional BSS was introduced.
 - Decision: Keep the guard. Wait for an identified Pico before hardware validation and full Crypto API rerun.
-- Commit: source `e1cf05b`; artifact `3217b51`; progress/handoff `a53dcdf`.
+- Commit: source `e58df1b`; artifact `ff49c4e`; progress/handoff `cd7f8c6`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` SHA-256 above; overlay test stdout ended `TEST:SUMMARY fail=0`; no physical log.
 
 ## 2026-11-01 — Exercise compaction at the full overlay limit 3 minutes
@@ -18988,7 +18988,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); the new full-capacity setup, delete/compact, and restart assertions all passed. `git diff --check` passed. Firmware builds were not rerun because firmware source did not change.
 - Result: Package deletion reclaims a fully saturated file index and retains unrelated persistent data in the host fake-flash model.
 - Decision: Keep the regression. Physical installation/deletion and API-sweep validation still require an enumerated Pico.
-- Commit: `7c0c5d8` (test); `b112c04` (progress/tracker update).
+- Commit: `1653d1b` (test); `bf09e02` (progress/tracker update).
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; stdout ended `TEST:SUMMARY fail=0`.
 
 ## 2026-11-01 — Re-run VPCD persistence integration 6 minutes
@@ -18999,7 +18999,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed: PC build and transaction-probe CAP generation succeeded; install/commit passed 3/3 in 70.009 seconds; a fresh emulator process restored the applet and passed 38/38 checks, including four GC-pressure rounds (8.096 seconds). Build emitted existing upstream Maven/Rust/packed-member warnings but no errors. The helper independently reported zero physical Pico readers, so no hardware test was run.
 - Result: Current applet persistence, aliases, and heap behavior pass in PC VPCD after process restart. This does not test Pico overlay compaction or physical USB power-loss recovery.
 - Decision: Preserve the physical power-cycle and overlay-compaction hardware gates as open; continue on other offline acceptance work until a Pico is enumerated.
-- Commit: `afea6d0`.
+- Commit: `2c7c053`.
 - Artifacts/logs: build log `artifacts/logs/build-pc-vpcd-persistence-20261101T090958Z.log` SHA-256 `934851bcba5aa93232a3143fc24e5cd28af09e741a44266a5d633480073f7f6d`; install `artifacts/logs/vpcd-persistence-commit-20261101T090958Z.log` SHA-256 `cf6d2dea05127a8a158e6ab17e54184cc843844d0206edabc459e6aebba16608`; restore `artifacts/logs/vpcd-persistence-restore-20261101T090958Z.log` SHA-256 `88b09bed68228baf815f7d1b42cc24acd9367cc5f1179985833e543f1d52c390`; install emulator `artifacts/logs/vpcd-persistence-install-emulator-20261101T090958Z.log` SHA-256 `a59063a9ea41911232371332ac00a0466f3b6ed09ccf0c6685627710ef277a55`; restore emulator `artifacts/logs/vpcd-persistence-restore-emulator-20261101T090958Z.log` SHA-256 `7864218199c8d00946503e126bd0c8fefcec218a555e4d0153ede5b8490ab9fb`.
 
 ## 2026-11-01 Honor Signature MAC initialization IV 13 minutes
@@ -19010,7 +19010,7 @@
 - Validation: `./tools/test-symm-crypto-vpcd` passed the complete probe: 79 vectors, `TEST:SUMMARY pass=81 fail=0` counting select and emulator phases. The three added algorithms each passed both sign and verify with nonzero IVs. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The authorized Pico reader helper returned `found 0`, so hardware flashing and physical JCAlgTest rerun were not attempted. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: All three full Crypto `WRONG_RESULT` cases share this cause and are fixed in the PC VM regression. The SHA-512 PSS `EXC_CARDRUNTIME reason=0x0001` is the upstream 1024-bit/64-byte-salt invalid test input, not this implementation defect.
 - Decision: Re-run the three API 3.0.5 IV cases and full Crypto sweep on physical hardware when a reader is available; continue offline meanwhile.
-- Commit: `7628e4e` (`Honor Signature MAC initialization IV`)
+- Commit: `94e864d` (`Honor Signature MAC initialization IV`)
 - Artifacts/logs: VPCD log `artifacts/logs/symm-crypto-kat-vpcd-20261026.log`, SHA-256 `1fd4b52a93999cbb01925868cab637b13a6be218ab256977163714ac33e32198`.
 
 ## 2026-11-01 Validate Signature MAC IV via API 3.0.5 VPCD 24 minutes
@@ -19021,7 +19021,7 @@
 - Validation: The focused official-client run passed all three targeted Signature IV calls (`OK`), skipped 463 unrelated Crypto calls, and removed the test CAP successfully. The full Crypto client run hit the configured 800-second timeout after writing 190 partial client rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`); this is a failed full-area validation. Emulator and VPCD reader were shut down. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: The three prior physical `WRONG_RESULT` IV cases now pass through both native deterministic vectors and upstream client calls on PC VPCD. Physical confirmation remains pending. Full Crypto VPCD performance/timeout remains unexplained and the PSS case was not reached in that run.
 - Decision: Rerun the three IV rows and full Crypto area on a physical Pico when available; separately diagnose why the full official client does not complete on PC VPCD within 800 seconds.
-- Commit: `807cd8e` (`Record Signature IV API client validation`)
+- Commit: `08c8112` (`Record Signature IV API client validation`)
 - Artifacts/logs: Selected-run CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-iv-filtered.csv` SHA-256 `b085ef9ed89517e8e6d9f467ea9bc63ad7e7a16963c5ef59e66515273be58006`; full-run timeout CSV `crypto.csv`; partial official client output `crypto-full-client-partial.csv` SHA-256 `66637996f43c46ec4c4d254bb6adf899b4fb3ace920db9018e531fb9c2440b3e`; filtered-run emulator log SHA-256 `26e851c466fc454febd7ef7f4364ce4960f313cc54002b96f81b0cf0f3a6a143`.
 
 ## 2026-11-01 Isolate VPCD Crypto client timeout 6 minutes
@@ -19032,7 +19032,7 @@
 - Validation: `UPLOAD OK`; seven matching `ALG_RSA_SHA_384_PKCS1` API rows returned `OK`, with 187 unrelated rows skipped. Client timed out at 120 seconds; the outer 180-second command bound then interrupted cleanup. VPCD emulator was started after bounded reader discovery and a passing `VpcdPresenceProbe`. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: RSA SHA-384 PKCS#1 calls do not reproduce an API error; the full Crypto client completion issue persists beyond those calls and is not localized to RSA-384. This is a failed overall VPCD area run, not a full-area pass.
 - Decision: Diagnose why the official client / VPCD run fails to return and complete cleanup after filtered runs; physical API confirmation remains pending until a Pico reader is available.
-- Commit: `0c2b121` (`Record VPCD Crypto timeout follow-up`)
+- Commit: `ee2f5e6` (`Record VPCD Crypto timeout follow-up`)
 - Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-rsa384-followup.csv` SHA-256 `be8ad238b6b99b20099503b8800c6355a0bb32e2b8b37036b0c97f39f4815e62`; reader, presence, and emulator logs `artifacts/logs/vpcd-api-rsa384-20261101T095317Z/`.
 
 ## 2026-11-01 Check RSA-384 PSS VPCD follow-up 5 minutes
@@ -19043,7 +19043,7 @@
 - Validation: VPCD reader discovery, `VpcdPresenceProbe`, and `UPLOAD OK` passed. Four selected API checks returned `OK`; 462 unrelated rows were skipped; CAP cleanup passed. Recorded stage timestamps show the client phase took 88 seconds. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: This selected PSS case does not reproduce a functional error. The full 466-call area still times out at 800 seconds; the official VPCD API path has substantial per-run overhead, and current evidence does not isolate a specific failing algorithm.
 - Decision: Keep the full-area VPCD timeout as a validation limitation. Retest on a physical Pico and separately profile client/APDU throughput before increasing timeouts further.
-- Commit: `9dea2eb` (`Record RSA-384 PSS VPCD follow-up`)
+- Commit: `0f5f569` (`Record RSA-384 PSS VPCD follow-up`)
 - Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-pss384-followup.csv` SHA-256 `8a80fdadfdda4d6df847c1c586f1d3bf1f998e284a85c344d1208896de388c17`; logs `artifacts/logs/vpcd-api-pss384-20261101T095909Z/`.
 
 
@@ -19055,7 +19055,7 @@
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` both passed. `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Image size is 2,098,176 bytes; SHA-256 is `1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`. `git diff --check` passed for changed text files. The authorized reader helper returned zero physical Pico devices, so flashing and hardware monitoring were skipped.
 - Result: The downloadable UF2 exactly matches the validated current ARM build and contains the IV fix. The unchanged support manifest SHA-256 remains `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. The image is built from the current worktree, including unrelated pre-existing `src/cap_load.cpp` changes, and is not reproducible from a clean checkout of the artifact commit alone.
 - Decision: Use this image for external testing; revalidate it on a Pico when one enumerates. The reader inventory is currently empty.
-- Commit: `21eb7d5` (artifact and metadata); this progress entry is recorded in a follow-up metadata commit.
+- Commit: `4542365` (artifact and metadata); this progress entry is recorded in a follow-up metadata commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (2,098,176 bytes, SHA-256 above); build outputs under `build/arm/` and `build/riscv/`; no physical log.
 
 ## 2026-11-01 — Refresh Windows symmetric/asymmetric test bundle 12 minutes
@@ -19066,7 +19066,7 @@
 - Validation: `./tools/package-asymm-symm-windows-test` passed both ARM and RISC-V wrapper builds for each profile, CAP provenance validation, per-file SHA-256 checks, and ZIP integrity. The build emitted existing Java Card converter warnings, a cached Maven metadata DNS warning, and a logback local-hostname permission diagnostic; ROM-mask generation and all builds completed successfully. Archive SHA-256: `a26c86489c2fd9887aac58c987585eae8d10410317ca3279c939ff524124c7fa`. `unzip -t` reported no errors.
 - Result: The ignored Windows bundle is current with the Signature MAC IV fix. `symm_crypto` UF2 SHA-256 is `d36b6128fc2caea130e689614a12d62906ac46fa6add30085b253aa46b01e826`; `asymm_crypto` UF2 SHA-256 is `cda8a3b7dee0d7536575bc3173d00f04848cf9d68a370ae207d595a9a8148e2f`. Expected CSV hashes are `0e1c3064b9821f9e58103d8110a1a425f8519afba6cb1fb36ea11cb4ac829a61` and `b0ffc08bdac193686ac103bf9b2f9438a2f681403082e5dc744752d37836f2bf`. CAP hash remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. No physical Pico reader was available and Windows tests were not run.
 - Decision: Keep the updated archive for external Windows validation; compare each returned support CSV with its packaged expected manifest and reference after the user runs it.
-- Commit: `7f423b4` (TODO/HANDOFF); progress metadata is committed separately. The generated archive remains under ignored `build/external-test/`.
+- Commit: `af41d32` (TODO/HANDOFF); progress metadata is committed separately. The generated archive remains under ignored `build/external-test/`.
 - Artifacts/logs: `build/external-test/pico2-jcvm-windows-test.zip` (18 MiB, archive SHA above); member hashes are in `build/external-test/windows-profile-package/SHA256SUMS.txt`.
 
 ## 2026-11-01 — Revalidate native symmetric and asymmetric crypto on VPCD 12 minutes
@@ -19077,7 +19077,7 @@
 - Validation: A default restricted run of `./tools/test-symm-crypto-vpcd` failed at local socket creation with `Operation not permitted`; rerunning the same wrapper as `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` through elevated host access passed. It reported 32 cipher + 47 MAC vectors, including six IV checks, with `TEST:SUMMARY pass=81 fail=0`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` through the same path passed 97 asymmetric vectors with `TEST:SUMMARY pass=99 fail=0`. Both wrappers rebuilt their PC profiles successfully. Existing converter, Maven network-metadata, Rust, and packed-member warnings remained nonfatal.
 - Result: Current-source emulator vectors cover the symmetric and asymmetric implementation suites, including MAC IV sign/verify and RSA/EC checks. This does not provide physical Pico or Windows acceptance.
 - Decision: Keep physical-profile validation open; when hardware access is restored, use the max_crypto artifact and check the complete API behavior there.
-- Commit: `d47f9f6` (HANDOFF); this progress entry is committed separately. Implementation files were unchanged.
+- Commit: `978acdf` (HANDOFF); this progress entry is committed separately. Implementation files were unchanged.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` SHA-256 `6b6c6a0dc53828fcb3521e0dc71f124f4da13d9fab7183b5b6f9520958876808`; `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256 `85528e25f28aeb55050fdfaa8afda5f33b44d893e1afb4f01317292e259acec7`.
 
 ## 2026-11-01 Audit multi-applet context lifetime 7 minutes
@@ -19088,7 +19088,7 @@
 - Validation: Read-only source trace through `src/ccid_device.cpp` selection dispatch and `choupi/src/main.cpp` restore/deselect/forget paths confirms there is one `selected_applet_context` and it is replaced for a different applet. The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper returned `found 0`; no USB/PCSC hardware test was attempted. No build was run because source behavior was not changed.
 - Result: Multi-applet switching remains explicitly outside the currently declared supported profile. Retaining multiple applet heaps safely requires collector root enumeration for inactive contexts and a bounded RAM policy; do not enable persistent reclamation or cache contexts without those safeguards.
 - Decision: Design a bounded context registry and identify a regression path using existing deploy CAPs before implementing switching semantics. Physical testing remains pending reader availability.
-- Commit: `44a376a` (`Document applet context lifetime gap`)
+- Commit: `953bfbe` (`Document applet context lifetime gap`)
 - Artifacts/logs: None; source inspection only.
 
 ## 2026-11-01 Recheck multipackage VPCD selection 4 minutes
@@ -19099,7 +19099,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed with `TEST:SUMMARY pass=42 fail=0`; 3 packages and 21 instances loaded, selection and lookup tests passed, and deletion returned the registry to empty. Run used `sandbox_permissions: require_escalated`. `git diff --check` passed for the edited root docs. Physical helper previously reported zero readers, so no hardware test was attempted.
 - Result: Current VPCD regression exercises package/applet routing and persistent AID identity, but cannot verify the confirmed inactive-context transient-state loss.
 - Decision: Design a context registry with inactive-context roots and bounded RAM behavior, then identify a way to assert transient lifecycle semantics without changing upstream CAPs.
-- Commit: `105fe4d` (`Record multipackage context coverage gap`)
+- Commit: `0efa40b` (`Record multipackage context coverage gap`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T104132Z.log` SHA-256 `36c3633cbab73368b2c8bfd17575d9363a2d52214e8579161724a1dd799e9db7`; restart log SHA-256 `e938327d476345a034f022364e5a3793845c0c05bfc317284bf34ee2c1ae2fb7`.
 
 ## 2026-11-01 Preserve bounded applet contexts 64 minutes
@@ -19110,7 +19110,7 @@
 - Validation: `./tools/build-pc --profile current`, `./tools/build arm`, `./tools/build riscv`, `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`, `python3 -m py_compile tools/tests/pc_vpcd_multipackage_test.py` passed. Multipackage suite reported `TEST:SUMMARY pass=46 fail=0`. `git diff --check` reports only pre-existing trailing whitespace in unrelated `AGENTS.md:52`. `sudo -n /usr/local/sbin/pico2-pcsc-reader` returned `found 0`; hardware test was skipped.
 - Result: Cross-AID transient lifecycle regression passes with a final empty registry. ARM produced the full `build/arm/pico2_choupi.uf2`; RISC-V wrapper produced the VM-core smoke image. Post-delete SELECT of a surviving applet remains an open VPCD disconnect; no hardware behavior was assessed.
 - Decision: Keep the post-delete VPCD session transition as the next diagnostic. Do not claim hardware validation or that the broader firewall/logical-channel work is complete.
-- Commit: `9c1e328` (`Retain bounded applet contexts across selection`)
+- Commit: `3fa93a1` (`Retain bounded applet contexts across selection`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T120306Z.log` SHA-256 `bfaa4c1981b43efef70556259553e462f2b5bc2b119b128d187c5c2792f61057`; restart/reject logs share timestamp `20261101T120306Z`.
 
 ## 2026-11-01 Review architecture maintenance completion 6 minutes
@@ -19121,8 +19121,8 @@
   validation records with original intent. Added TODO review and ARCH-07–09
   for remaining shared declarations, bounded USB progress and production-path
   reentry tests; updated handoff. No implementation changes.
-- Validation: Inspected commits 77b58fa, 6aec961, 54bcb3f, 6bc468f, ef5552e,
-  26aacef and their alignment/physical validation follow-ups. Checked remaining
+- Validation: Inspected commits 4248940, df6dcff, 67ad1b0, 8f3d2ff, 0283efa,
+  fe6b8d9 and their alignment/physical validation follow-ups. Checked remaining
   declarations against committed HEAD to avoid crediting uncommitted work.
   `./tools/test-native-progress-guard` passed 6/6; targeted documentation
   whitespace check passed. Builds and physical validation intentionally skipped
@@ -19145,7 +19145,7 @@
 - Validation: `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed; ARM image is 1,824,768 bytes. `python3 -m py_compile tools/tests/pc_vpcd_multipackage_test.py` passed. The elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. Refreshed the authorized PC/SC helper; two Pico readers were available. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 8E464F4E2BBC0A19` flashed the ARM image and its finite serial monitor passed. On physical token `8E464F4E2BBC0A19`, installed the transaction-probe CAP with GPPro, observed `019000` after lifecycle preparation and `039000` after switching away and back, deleted its applet and package, then SELECTed the surviving Core applet successfully (`9000`). GPPro confirmed the probe package was absent and the existing JCAlgTest/Core/Security packages remained. A second eight-second serial monitor ended with `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. `git -c core.whitespace=cr-at-eol diff --cached --check` passed. ARM/RISC-V builds emit existing warnings from the pinned Rust OS source and packed CAP members; no new build errors.
 - Result: The VPCD EOF and physical post-delete reselection path both pass. The ARM image was built and tested with unrelated pre-existing dirty source changes present (`choupi/src/heap.cpp`, `choupi/src/heap.hpp`, and `src/cap_load.cpp`), so its image hash is not reproducible from this focused commit alone. Broader package static sharing, firewall/shareable calls, and logical channels remain outside this fix.
 - Decision: Mark the post-delete reselection regression resolved. Continue remaining context/firewall work from TODO; use either identified Pico reader as a failover target.
-- Commit: `4d91d2f` (`Fix applet root enumeration after package deletion`)
+- Commit: `1a074dd` (`Fix applet root enumeration after package deletion`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T125822Z.log` SHA-256 `8179640d2e66b9cf4e023f5732a43117596721943a68c3b077e11bcdc72d19a3`; restart log SHA-256 `f6d33d34819dfb43099a2aa92b0450f953909f573247b2e583550b27064ee8ee`; physical log `artifacts/logs/physical-delete-reselect-8E464F4E2BBC0A19-20261101.log` SHA-256 `9a5f81dbf575d711db819678004ada861969a934f296b458c2972b7ba503ecd3`; monitor log `artifacts/logs/monitor-choupi-8E464F4E2BBC0A19-20261101.log` SHA-256 `b054d15da01d989b53cb46e9faf7b9acc36d1836760bcfc00ae002ab1863703a`; ARM UF2 SHA-256 `8d341848a4e54e1fd29de067ad0f77888c729726cf72e9724020c088e40dbe02`.
 
 ## 2026-11-01 Centralize VM and storage boundary declarations 16 minutes
@@ -19156,7 +19156,7 @@
 - Validation: `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The authorized `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. The helper enumerated two Pico 2 readers; `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 8E464F4E2BBC0A19` flashed the ARM image and ended `CYCLE:PASS`; the finite monitor reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. One retained `WATCHDOG_RECOVERY marker=INSTALL cause=other` diagnostic appeared, which existing QKB/TODO evidence says is not by itself proof of a watchdog reset. Targeted staged diff whitespace check passed with CRLF recognized. Build output retains existing warnings from the pinned Rust OS and packed CAP members.
 - Result: The shared declarations have a single repository-owned authority without changing runtime/storage behavior or asserting that Rust exports the C++ filesystem extensions. PC, both architecture wrappers, filesystem storage regression, VPCD lifecycle regression, and physical runtime cycle pass.
 - Decision: Close ARCH-07. Begin ARCH-08: inspect pinned TinyUSB event processing and find a supported finite service budget that does not drop events or break control transfers; if unsupported locally, document the concrete limitation. ARCH-09 remains coordinated follow-up work.
-- Commit: `a252e73` (`Centralize VM and storage boundary declarations`)
+- Commit: `6a4030f` (`Centralize VM and storage boundary declarations`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T131130Z.log` SHA-256 `52ad6cc4506ffced4d03629a31dd1734608ad648f545bb4b3e83839c429c71f8`; restart log SHA-256 `5702175f4ba1d3b4883d37f684c899e74ce944e952a881a778ad228a3db60587`; `artifacts/logs/cycle-choupi-20261101T131543Z.log` SHA-256 `22072e5e2af890c29909d34f5ece736e2d812908076f19a36852d5a7ffe481b6`; ARM UF2 SHA-256 `8d341848a4e54e1fd29de067ad0f77888c729726cf72e9724020c088e40dbe02`.
 
 ## 2026-11-01 Bound JCVM TinyUSB event servicing 30 minutes
@@ -19167,7 +19167,7 @@
 - Validation: `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. ARM/RISC-V `max_crypto` builds also passed via the cycle wrapper. The patch application script was tested after reverting and reapplying the TinyUSB patch; `git -C .local-toolchain/sdk/lib/tinyusb diff --check`, `bash -n tools/build tools/flash tools/apply-tinyusb-event-budget`, host probe compilation, and staged `git diff --cached --check` passed. Physical `current` cycle on Pico 2 `2BED26ED20556535` and `max_crypto` cycle on `8E464F4E2BBC0A19` passed their finite monitors. The attempted temporary crypto probe install on 2BED returned `6A80` and cleanup confirmed it absent. The existing probe applet on 8E returned `6F00` under `current` (RSA is disabled there); after switching to `max_crypto`, 8E disappeared from PC/SC. The later 2BED max_crypto flash verified successfully, but editing `tools/flash` while that old cycle process was active caused its later shell parse to fail; a separate monitor then reported no USB serial device. The authorized helper returned zero Pico devices and `lsusb -d 2e8a:` found none. No sustained control-event workload or per-call wall-time bound was measured.
 - Result: Each JCVM invocation now has a fixed limit of eight queued USB events, with later events retained FIFO. Both architecture builds and physical runtime monitors passed. The strict stress, wall-time measurement, long-operation extension/final ordering gate, and multi-device `tools/flash` selector validation remain open.
 - Decision: Keep ARCH-08 unchecked. When a physical reader is enumerated, run the new `JCAlgTestApduProbe --rsa-3072-keypair-generation` on `max_crypto` and concurrently flood benign USB control requests; measure service duration, prove eventual queue drain, and verify the final response follows CCID extensions. Then test multi-device flashing and proceed to ARCH-09.
-- Commit: `1f1c2cd` (`Bound JCVM TinyUSB event servicing`)
+- Commit: `410b0cb` (`Bound JCVM TinyUSB event servicing`)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261101T132943Z.log` SHA-256 `7ddb47008809bf91152d20a6284578dbabf25b61ca8c57382bcccafe1dcb8bd3`; `artifacts/logs/cycle-choupi-20261101T133931Z.log` SHA-256 `0071b87d930b2995cc7960512202c46241c04583af5bccc5551b218553663c55`; interrupted monitor cycle `artifacts/logs/cycle-choupi-20261101T134505Z.log` SHA-256 `17bd3516f0d80e37541dc7b7caafbad0fc848c5fc39388e6cce22ec6667f257f`. `build/arm/pico2_choupi.uf2` max_crypto: 2,099,200 bytes, SHA-256 `501bc3f1f925472f0b6dc4823df0e119c12fb0b981bf7a875b3327bd4499c046`; ROM mask `build/choupi-pc/flash`: 524,300 bytes, SHA-256 `712c862529dbc9c66e4ce84c72d2b6a09983b96a31d82d18182dc93aa5096cdd`. Image includes unrelated pre-existing dirty `choupi/src/heap.cpp`, `choupi/src/heap.hpp`, and `src/cap_load.cpp` changes.
 ## 2026-11-01 Exercise production CCID progress flow 6 minutes
 
@@ -19177,7 +19177,7 @@
 - Validation: `./tools/test-ccid-progress-flow` passed `TEST:SUMMARY pass=9 fail=0`; `./tools/build-pc --profile current`, `./tools/build arm`, `./tools/build riscv`, `bash -n tools/test-ccid-progress-flow`, and targeted `git diff --check` passed. `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `found 0`; physical validation was skipped despite the user reporting the boards plugged in.
 - Result: Host regression covers deferred messages and exact-once dispatch, recursive task/progress rejection, endpoint-busy deferral, extension completion, and final-response ordering including a stuck extension. Existing Rust OS, CAP converter and packed-CAP compiler warnings remain. No hardware measurement was made.
 - Decision: ARCH-09 host production-shared logic is covered. Keep ARCH-08 open until identified-board control-event flood, wall-time measurement, RSA long-call extension ordering, and multi-device flash selection pass physically.
-- Commit: `309aa5b` (`Exercise production CCID progress flow`)
+- Commit: `9302f15` (`Exercise production CCID progress flow`)
 - Artifacts/logs: `tools/test-ccid-progress-flow`; build outputs under `build/choupi-pc/`, `build/arm/`, and `build/riscv/`; no physical log.
 ## 2026-11-01 Refresh high-level project status 4 minutes
 
@@ -19187,7 +19187,7 @@
 - Validation: Cross-checked the new summary against `TODO.md`, `.agent/HANDOFF.md`, recent commits, and the current elevated USB/PCSC results. `git diff --check -- STATUS.md` passed. No software tests were needed for this documentation-only change.
 - Result: The file now explicitly distinguishes previous passing physical monitors from the current VM state, where `lsusb -d 2e8a:` found no devices and `pcsc_scan -r` listed only Virtual PCD readers.
 - Decision: Keep the overall project active; next prioritize offline work while restoring physical USB passthrough remains an external gate.
-- Commit: `9364a9b` (`Refresh project status snapshot`)
+- Commit: `5b7f7fb` (`Refresh project status snapshot`)
 - Artifacts/logs: `STATUS.md`; host USB/PCSC command output from this session; no new log artifact.
 
 ## 2026-11-01 Repeat VPCD persistence recovery verification 14 minutes
@@ -19209,7 +19209,7 @@
 - Validation: `./tools/test-cap-parser` passed under ASan/UBSan with `TEST:PASS cap_parser_framing checks=4208 fuzz_inputs=100000 corpus_files=48`. `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed against the final source. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`, including three package loads, 21 instances, fresh-process restore, and final cleanup. The first VPCD attempt returned `6F00` because the PC emulator had not been rebuilt after the subset adjustment; after rebuilding, the complete suite passed. The authorized reader helper reported zero Pico devices, so no physical flash or monitor ran.
 - Result: Directory sizes are cross-checked for present components while valid partial GP LOAD inputs remain accepted. Existing warnings remain from Java Card converters, pinned Rust OS sources, packed CAP members, and offline Maven metadata.
 - Decision: Close this parser consistency subtask. Keep the broader WP9 CAP nested-table/fuzzing item open and physical ARM validation pending until a board enumerates.
-- Commit: `eff5b38`
+- Commit: `ef8c08b`
 - Artifacts/logs: `tools/test-cap-parser`; `artifacts/logs/host-vpcd-multipackage-apdu-20261101T145042Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261101T145042Z.log`; corrupt/missing-sidecar logs with the same timestamp; PC, ARM, and RISC-V build outputs under `build/`.
 
 ## 2026-11-01 Revalidate current-source multipackage integration 12 minutes
@@ -19308,7 +19308,7 @@
 - Validation: `./tools/test-rmi-registry` passed with typed root/method return and proxy-root assertions. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 48` passed the unchanged upstream CAP (`TEST:SUMMARY pass=3 fail=0 elapsed_s=74.206`). Final `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Initial PC build caught a missing `Interpretor` include; a later review found and fixed root `void` return-kind capture before final validation. Physical validation intentionally not run; the existing transaction CAP has no positive Shareable implementation path.
 - Result: Proxy dispatch and basic firewall gates compile across targets, but successful cross-AID method forwarding is not proven without a positive fixture. ARM firmware image ends at `0x100e04dc`. Existing converter, Rust OS, and packed-CAP warnings remain.
 - Decision: Keep CTX-01 open. Add a positive two-applet Shareable regression, then implement descriptor-aware argument copying, nonnull reference translation, exception propagation, and cross-context restoration checks.
-- Commit: `e743c5d`
+- Commit: `923225d`
 - Artifacts/logs: Case-48 output from `tools/test-jcsystem-transaction-applet`; registry binary `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Verify proxy casts against server type 21 minutes
@@ -19319,7 +19319,7 @@
 - Validation: `./tools/test-rmi-registry` passed; final `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0` before the final cast-only adjustment; no proxy handles occur in that suite. Positive proxy casts remain untestable without a matching upstream fixture. No physical operation was run.
 - Result: `instanceof` no longer reports true for every Shareable interface merely because the requested interface carries the flag; the server class's actual interface relation is checked. Successful proxy interface calls remain unverified end to end.
 - Decision: Keep CTX-01 open. Continue by checking for any existing upstream applet with a positive SIO export, then add safe global/reference return handling and broader method signatures as permitted by a real fixture.
-- Commit: `a4da035`
+- Commit: `893b0be`
 - Artifacts/logs: Multipackage regression `artifacts/logs/host-vpcd-multipackage-apdu-20261101T171653Z.log` and companion restart/reject logs; PC/ARM/RISC-V build outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Translate Shareable reference returns 24 minutes
@@ -19330,7 +19330,7 @@
 - Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. The authorized physical reader helper returned `found 0`; no board could be flashed or monitored. The upstream multipackage suite does not create or use proxy handles, so this does not prove positive SIO reference returns.
 - Result: Cross-heap references are no longer returned raw. A positive Shareable return/interface fixture is still absent; zero-argument primitive/void service calls and reference conversions remain unexercised by CAP-level tests.
 - Decision: Keep CTX-01 open. Find an existing upstream positive SIO applet if one exists; then validate proxy returns, descriptor-aware arguments, exception propagation, GC/reset lifetime, and physical behavior when a board enumerates.
-- Commit: `c90df31`
+- Commit: `1239f30`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T175352Z.log` (SHA-256 `ce1216bc0c358f0e63f91e924b3976bc4a8076a0001af4381e3c4099071e0d95`); restart log `artifacts/logs/host-vpcd-multipackage-restart-20261101T175352Z.log` (SHA-256 `f22beb56a13d0770dea92af4f58e0636ab6fe19b04cb506cfd74dd3132c40283`); companion corrupt/missing-sidecar logs with same timestamp; build outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Exercise positive Shareable proxy on upstream CAP 31 minutes
@@ -19341,7 +19341,7 @@
 - Validation: Focused run of unchanged `AlgTestApiCore_305.cap` on fresh VPCD passed its three selected Shareable calls; the sub-interface call returned `1` as expected and CAP cleanup passed. `./tools/test-rmi-registry`, `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An initial runner attempt was rejected by its host-access guard; a later VPCD startup attempt hit a known idle socket-activation refusal. The final run primed PC/SC first and passed. No physical flash/test was run; the latest authorized reader inventory found zero Pico readers.
 - Result: The existing upstream fixture does exercise a same-applet positive Shareable proxy call end to end, correcting the earlier “fixture missing” note. Cross-AID calls, argument conversion, exception propagation, GC/reset lifetime and physical behavior remain unverified. Existing unrelated SDK/CAP warnings remain; no new warning was observed.
 - Decision: Keep CTX-01 open. Add a cross-AID positive fixture or upstream multi-applet service case, then cover argument/reference firewalling and cross-context exception/restoration before broader acceptance.
-- Commit: `7027cd2`
+- Commit: `b5e30f9`
 - Artifacts/logs: `artifacts/results/shareable-vpcd-verified-20261101T183526Z/` (Core CSV; 3 selected calls OK, `returned=1`); `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Preserve same-context SIO call operands 17 minutes
@@ -19352,7 +19352,7 @@
 - Validation: `./tools/test-rmi-registry` passed with `stack_receiver_replace=1`; the unchanged upstream `AlgTestApiCore_305.cap` passed all three focused Shareable rows through fresh VPCD storage, with the sub-interface call returning `1` and CAP cleanup OK. `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Physical reader refresh was not repeated in this step; the immediately preceding authorized refresh found zero Pico devices, and no flash was performed.
 - Result: Same-context SIO proxy dispatch preserves the entire operand stack and has both unit and CAP-level coverage. Cross-AID behavior and cross-context argument conversion are still not covered. Existing Rust/CAP warnings remain; no new warnings were observed.
 - Decision: Keep CTX-01 open. Next add cross-AID server routing coverage from an unchanged upstream CAP if available, then implement descriptor-aware cross-context argument conversion and exception propagation. Physical validation is pending device enumeration.
-- Commit: `1c6b3e1`
+- Commit: `89e8a7e`
 - Artifacts/logs: `artifacts/results/shareable-same-context-stack-20261101T185456Z/`; `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V build outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Copy primitive arguments across SIO contexts 16 minutes
@@ -19363,7 +19363,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`stack_receiver_replace=1` and all registry assertions); `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed; scoped `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed package load, restart, peer AID lookup, and deletion cases, then failed with `INSTALL a000000062030101: timed out` while reinstalling the transaction probe; the cause is unknown. `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 48` failed before APDUs with `timed out waiting for emulator VPCD connect`; not counted as SIO validation. The authorized reader helper and elevated `lsusb -d 2e8a:0009` found zero physical Pico devices in the VM; `pcsc_scan -r` listed only two VPCD readers. No physical test was run.
 - Result: Descriptor-driven primitive copying compiles for all repository targets. No positive cross-AID CAP-level test exercises the new branch; existing upstream Shareable coverage is same-context only. Firmware image size was not compared for this step.
 - Decision: Keep CTX-01 open. Add a regression for descriptor signature and word layout, find or identify an unchanged upstream fixture for a cross-AID call, then add safe reference translation and cross-context exception restoration. Continue physical validation when a Pico is enumerated in the VM.
-- Commit: `39bda86`
+- Commit: `54e4523`
 - Artifacts/logs: Multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261101T191433Z.log`, and companion corrupt/missing-sidecar logs; transaction probe log `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261101T192506Z.log`; builds under `build/`; no physical logs.
 
 ## 2026-11-01 Test Shareable argument marshalling 13 minutes
@@ -19374,7 +19374,7 @@
 - Validation: `./tools/test-rmi-registry` passed with `shareable_cross_context_arguments=1`; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed; scoped `git diff --check` passed. Hardware testing was skipped because the authorized reader helper and host USB listing found no Pico USB nodes in the VM.
 - Result: The local signature-to-local conversion has unit coverage and compiles for all configured targets. Descriptor-method lookup and the actual cross-context interpreter invocation are still not exercised by an upstream CAP. Firmware image size was not compared.
 - Decision: Keep CTX-01 open. Add an unchanged-CAP cross-AID invocation if an existing fixture supports it; then cover non-null ownership translation and cross-context exception restoration.
-- Commit: `467d1ff`
+- Commit: `f3170e7`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; builds under `build/`; no hardware logs.
 
 ## 2026-11-01 Allow JCRE-global SIO argument references 8 minutes
@@ -19385,7 +19385,7 @@
 - Validation: `./tools/test-rmi-registry` passed with `shareable_cross_context_arguments=1`; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An escalated `lsusb -d 2e8a:` returned no Pico devices, so hardware testing was skipped.
 - Result: The marshaller accepts the explicitly JCRE-global handles and still refuses private applet references. End-to-end Descriptor lookup/cross-AID invocation remains untested. Build output retained existing CHOUPI packed-member and upstream Rust warnings; no new warning was observed.
 - Decision: Keep CTX-01 open. Validate against an unchanged cross-AID CAP fixture and implement explicit local reference ownership translation/firewall checks before accepting applet-local references.
-- Commit: `ffb94ad`
+- Commit: `2460397`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Enforce SIO argument reference shape 7 minutes
@@ -19396,7 +19396,7 @@
 - Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An escalated USB inventory returned no Pico devices in the VM; no physical test was performed.
 - Result: Accepted global reference handles are checked against the declared reference category before server entry. End-to-end cross-AID descriptor lookup remains untested. Existing upstream CHOUPI packed-member and Rust warnings remain.
 - Decision: Keep CTX-01 open. Continue looking for an unchanged upstream CAP capable of cross-AID service invocation; retain local-reference rejection until ownership and firewall semantics are defined.
-- Commit: `9e05b90`
+- Commit: `2ae3973`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 # 2026-11-01 — Cross-AID Shareable fixture and physical install diagnosis 17 minutes
 
@@ -19406,7 +19406,7 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Final `SIO_CROSS_AID_REUSE_FIXTURE=1 python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 4/4; response `45679000`, including byte/short arguments, global AID, null array, previous-context AID and service AID checks. `bash -n` and scoped `git diff --check` passed.
 - Result: Positive cross-AID `invokeinterface` and context/AID restoration are now verified end to end on VPCD. Physical 2BED contract LOAD was confirmed in GET STATUS, but service installation failed at internal stage 9 (`6F00`; VM status, exception and PC telemetry zero); no physical cross-AID APDU ran. Package deletion returned `6581`. Current USB view exposes only runtime reader `2BED26ED20556535` (`2e8a:0009`), not the reported BOOTSEL boards, so no new flash was attempted. Existing Rust/upstream and packed-member build warnings remain.
 - Decision: Keep CTX-01 open. Diagnose the stage-9 physical install failure and repeat on a clean identified card before claiming hardware SIO coverage; then test exception unwinding, proxy roots, reset/delete and denied firewall paths.
-- Commit: `c2685d3` (implementation and fixture); this progress record is committed in the following metadata commit.
+- Commit: `acd0484` (implementation and fixture); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214236Z.log`; physical GPPro logs under `build/sio-cross-aid-fixture/physical-gp-*20261101T212154Z.log` and `artifacts/logs/sio-cross-aid-gppro-*.log`.
 
 ## 2026-11-01 Preserve array-to-Object SIO compatibility 8 minutes
@@ -19417,7 +19417,7 @@
 - Validation: `./tools/test-rmi-registry` passed, including array-to-Object acceptance and instance-to-array rejection; PC, ARM, and RISC-V current-profile builds passed. USB enumeration still found no Pico devices in the VM.
 - Result: The reference guard no longer rejects an array solely because `Object` is the declared class type, while refusing non-array handles for array parameters. End-to-end cross-AID invocation remains untested.
 - Decision: Keep CTX-01 open; proceed with upstream CAP discovery and cross-context execution coverage.
-- Commit: `d968c67`
+- Commit: `da70b38`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Refresh current SIO handoff summary 3 minutes
@@ -19428,7 +19428,7 @@
 - Validation: Reviewed the handoff against `TODO.md`, QKB and the current code/test state; no source changed. `git diff --check -- .agent/HANDOFF.md progress.md` passed.
 - Result: The handoff now leads with accurate implementation state and concrete next acceptance checks; no physical test was possible because no Pico is enumerated in the VM.
 - Decision: Keep CTX-01 open and preserve all unrelated worktree changes.
-- Commit: `f09d0c6`
+- Commit: `7684cf1`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`; no hardware logs.
 
 ## 2026-11-01 Validate current SIO path on a physical Pico 2 12 minutes
@@ -19439,7 +19439,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 8e464f4e2bbc0a19` passed; finite serial output repeatedly reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. `pcsc_scan -r` showed the physical reader. Deploy Core upload, test, and cleanup all passed: 291 calls (272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, 8 `APPLET_NOT_INSTALLED` because Multi/Ext scenarios were skipped). All 3 SIO rows were `OK`; positive sub-interface invocation returned `1`.
 - Result: Confirms real-board firmware boot, reader enumeration, CAP install/cleanup, and unchanged upstream same-applet Shareable invocation. Does not validate cross-AID calls or descriptor-based argument forwarding. Concurrent picotool queries to multiple BOOTSEL devices failed; sequential chip-ID reads worked.
 - Decision: Keep CTX-01 open. Use sequential per-device identification, and continue seeking cross-AID coverage without modifying upstream CAPs.
-- Commit: `227859f`
+- Commit: `29ad14a`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261101T201412Z.log` SHA-256 `b24d090271acf05a2b2cfa020394d116f25c4d68fb4efdb01d35f45b1252d4fe`; `artifacts/results/shareable-physical-core-8E464F4E2BBC0A19-20261101.csv` SHA-256 `6045b2d17131fcc7739e437c19bcab153f2164fa76dd8ffa15f7f89414880713`.
 
 ## 2026-11-01 — Exercise cross-AID denial and reference firewall 5 minutes
@@ -19565,7 +19565,7 @@
 - Decision: Keep the fail-closed contract and CTX-01 open. Diagnose physical
   client package INSTALL stage 9 with a clean/test-safe device before claiming
   hardware acceptance. Other connected boards were not guest-visible.
-- Commit: `12e17b7`.
+- Commit: `372abdd`.
 - Artifacts/logs: VPCD SIO
   `artifacts/logs/sio-cross-aid-vpcd-20261101T233118Z.log` (SHA-256
   `bde444b99091b7694caf8802b49c59468bf4bc4313e3897384a8bc25ed87e0a7`);
@@ -19595,7 +19595,7 @@
 - Decision: Keep all pre-existing packages untouched. Diagnose the physical
   import/install validation failure with a clean-safe board or equivalent
   firmware-side trace; other claimed boards are not currently guest-visible.
-- Commit: `ad8f22a`.
+- Commit: `58625e2`.
 - Artifacts/logs: No dedicated raw GPPro transcript was saved; responses are
   recorded above. Existing physical cycle log:
   `artifacts/logs/cycle-choupi-20261101T234222Z.log`.
@@ -19619,7 +19619,7 @@
 - Decision: Keep the existing card packages untouched. Repeat the physical
   fixture on a clean-safe card or add firmware-side diagnostics before changing
   install validation.
-- Commit: `e937b88`.
+- Commit: `f6e0e1a`.
 - Artifacts/logs: `artifacts/logs/rmi-external-link-valid-interface-20261102T000421Z.log`
   (SHA-256 `aac5570d8c5cbc8caa812996f8d9eb6951c49e9a2487dcbe1a6ce76fa72965a2`),
   `artifacts/logs/rmi-external-link-exported-class-20261102T000459Z.log`
@@ -19635,7 +19635,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm --profile current` and `./tools/build riscv --profile current` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite monitor (`TEST:SUMMARY pass=1 fail=0`). The cycle used CDC-1200 BOOTSEL recovery after picotool could not locate the reset interface. `git diff --check` passed. Physical GPPro INSTALL was not repeated; that board-level acceptance remains open. The VM enumerated one runtime CCID (`2BED26ED20556535`), not the three BOOTSEL boards reported by the user.
 - Result: The regression demonstrates on-demand recovery when deleted records occupy the full index. A fully live 8,192-record set still cannot be compacted to make room. ARM image size is 1,846,784 bytes, end address `0x100e1598`, SHA-256 `b8e3f894001ca6304e26e55684ffc2f5e9cdec642191f0e39f6c30665d847936`; RISC-V smoke image end is `0x10009a78`.
 - Decision: Keep physical INSTALL acceptance open and do not delete unrelated card data. Next inspect the currently loaded fixture package inventory read-only; continue hardware installation only through a package-scoped safe path or another clean, identified board.
-- Commit: `fe6dea2` (implementation and regression); this record and tracker updates are committed separately.
+- Commit: `bd9ab2f` (implementation and regression); this record and tracker updates are committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T003214Z.log` (SHA-256 `52f1e5093c08c32a0515bfe17b9261cd588f595f8d7c7de04b9e2e25bb87019e`); image `build/arm/pico2_choupi.uf2`; focused regression stdout ended `TEST:SUMMARY fail=0`.
 
 ## 2026-11-02 Remap parent references during overlay compaction 20 minutes
@@ -19646,7 +19646,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Physical current ARM cycle on `2BED26ED20556535` passed flash verification and finite monitor (`TEST:SUMMARY pass=1 fail=0`). GPPro INSTALL of existing client and service CAPs each returned `9000`; serial showed `FS_COMPACT files=8192->696 bytes=82578->16749`. The subsequent cross-AID probe selected the existing client but returned `6F00`, with serial showing `SecurityException` at client `invokeinterface`; package code identity is unknown. `git diff --check` passed.
 - Result: Tombstone compaction now handles the legacy parent-reference format and restored the card's ability to install. Existing package AIDs were preserved. The positive physical SIO result remains unverified; no distinct-AID fixture has yet been installed.
 - Decision: Keep CTX-01 open. Test with new package and applet AIDs before attributing the SIO exception to current code. Current USB enumeration must be refreshed because the user now reports all three Pico 2 boards in BOOTSEL.
-- Commit: `5e13c30` (implementation and regression); this record and tracker updates are committed separately.
+- Commit: `937b054` (implementation and regression); this record and tracker updates are committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T004543Z.log` (SHA-256 `93fa1bda0e6d6d1595d4802ebd6ebb92535b1649000df67c6678434004ad3765`); ARM image `build/arm/pico2_choupi.uf2` (1,847,296 bytes; SHA-256 `0bf2af8f1ecaf97f01e7567bba010293f3ecc1d74b9fc5f2b8482cad307d0248`); RISC-V smoke image end `0x10009a78`.
 
 ## 2026-11-02 Allow receiver-only cross-context SIO without Descriptor 8 minutes
@@ -19657,7 +19657,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`RMI_REGISTRY:PASS ... shareable_cross_context_arguments=1`); `./tools/build arm` passed with full CHOUPI image end `0x100e1790`; `./tools/build riscv` passed with smoke image end `0x10009a78`. Reader refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`) found one USB node, and elevated `lsusb -d 2e8a:` identified only runtime CCID `2e8a:0009`; physical fallback testing and flashing were skipped. Scoped diff checks allow the source's existing CRLF line endings.
 - Result: Descriptor-free zero-argument SIO calls can enter the server context without guessing argument types. Typed calls with missing Descriptor data and any malformed present Descriptor remain rejected. No positive runtime/hardware invocation has yet verified this fallback.
 - Decision: Keep CTX-01 open. Capture a physical GP LOAD stream and find a safe positive receiver-only test route; preserve existing package AIDs and continue cross-context firewall work.
-- Commit: `1c4729e` (implementation, regression and tracker updates); this
+- Commit: `9ef20f7` (implementation, regression and tracker updates); this
   entry's exact hash is finalized in a metadata commit.
 - Artifacts/logs: `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and `artifacts/logs/sio-two-package-probe-20261102T013345Z.log` contain the preceding descriptor-missing hardware trace; current test/build outputs are not retained as separate logs.
 
@@ -19669,7 +19669,7 @@
 - Validation: Inspected `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`: `loadCapFile()` assigns `cap.getCode()` to the LOAD `C4` block. Decompiled the pinned `capfile-26.02.22` `CAPFile` class using the repository Java environment: default `getCode()` calls `_getCode(false)`, which skips `Descriptor` and `Debug`. This confirms the normal client path; no physical APDU capture was made and no card was accessed.
 - Result: Descriptor absence is expected from standard GPPro LOAD rather than a firmware parse defect. General typed forwarding cannot rely on optional Descriptor metadata.
 - Decision: Keep the receiver-only fallback and reject explicit arguments until runtime operand/local type metadata or another trustworthy on-card source is available. Do not infer types from raw stack words.
-- Commit: `de501c8` (QKB/TODO/HANDOFF and this investigation record); this
+- Commit: `8d6ea23` (QKB/TODO/HANDOFF and this investigation record); this
   record's exact hash is finalized in a metadata commit.
 - Artifacts/logs: dependency source `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`; bytecode inspection target `.local-toolchain/m2/com/github/martinpaljak/capfile/26.02.22/capfile-26.02.22.jar`; prior physical trace `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log`.
 
@@ -19706,7 +19706,7 @@
 - Decision: Keep CTX-01 open for physical validation, broader type-tag path
   coverage, persistent proxy routing, and remaining firewall cases. Preserve
   all unrelated pre-existing worktree changes; none were staged.
-- Commit: `be28faa`.
+- Commit: `fa99486`.
 - Artifacts/logs: VPCD logs above; ARM image `build/arm/pico2_choupi.uf2`;
   RISC-V smoke image `build/riscv/pico2_jcvm_smoke.uf2`.
 
@@ -19737,7 +19737,7 @@
   successfully and no new warning attributable to this change was identified.
 - Decision: Keep CTX-01 open. Next continue firewall/type-tag path coverage and
   physical positive cross-AID acceptance when a board is guest-visible.
-- Commit: `e78cb7b` (implementation); this progress record and stale TODO
+- Commit: `83f2fcb` (implementation); this progress record and stale TODO
   correction are committed separately.
 - Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2` and
   `build/riscv/pico2_jcvm_smoke.uf2` with hashes above.
@@ -19775,7 +19775,7 @@
 - Decision: CTX-01 remains open for physical positive cross-AID tests, stable
   proxy rehydration/persistence policy, and remaining ownership/firewall gates.
   Continue on offline acceptance while BOOTSEL hardware is not guest-visible.
-- Commit: `738dd87` (implementation); this progress record is committed
+- Commit: `9d18329` (implementation); this progress record is committed
   separately.
 - Artifacts/logs: VPCD logs above, multipackage log above, and firmware images
   `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`.
@@ -19810,7 +19810,7 @@
 - Decision: Keep CTX-01 open for physical cross-AID acceptance, server-reference
   ownership/firewall cases, and upstream Multi CAP integration. Retry hardware
   when BOOTSEL devices become guest-visible.
-- Commit: `a6fdb0f`.
+- Commit: `7449af3`.
 - Artifacts/logs: VPCD log above; `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
 
@@ -19845,7 +19845,7 @@
 - Decision: Keep CTX-01 open for physical cross-AID testing and remaining
   reference-ownership/firewall acceptance. Continue offline until reported
   BOOTSEL devices are visible in the VM.
-- Commit: `ec7a736`.
+- Commit: `5acf115`.
 - Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
 ## 2026-11-02 Clarify SIO reference firewall boundary 2 minutes
@@ -19856,7 +19856,7 @@
 - Validation: Reviewed Oracle Java Card RE Specification 3.0.5 §§6.1.4, 6.2.2, 6.2.4.3 and 6.2.8 against the current marshaller, `jref_t`, and per-applet heap model; `git diff --check` passed. No build/test run; no source code changed.
 - Result: Existing private-reference rejection remains necessary until references preserve originating context and handle and every access path enforces ownership. No BOOTSEL device was visible in the authorized USB refresh; no flash performed.
 - Decision: Retain fail-closed marshalling. Next implement and test explicit foreign-reference tracking and compact-handle collision rejection, then resume physical acceptance when BOOTSEL enumerates in the VM.
-- Commit: `c23c87a`
+- Commit: `7f67f72`
 - Artifacts/logs: None.
 ## 2026-11-02 Revalidate SIO and architecture gates 10 minutes
 
@@ -19866,7 +19866,7 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed. `python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 15/15 with Descriptor omitted; the same test with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1` passed 15/15. The restricted first VPCD attempt failed at loopback bind (`EPERM`); rerunning the same local emulator test through elevated execution passed. Authorized physical refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && lsusb -d 2e8a:`) showed one runtime reader and no BOOTSEL device.
 - Result: Current SIO VPCD coverage and ARM/RISC-V builds are green. ARM UF2 is 1,854,464 bytes, SHA-256 `7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`; RISC-V smoke UF2 is 79,872 bytes, SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`. VPCD logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` (SHA-256 `4f12fee93e4d7eb412620e0c0867f100ea2cfc802d267c2065ffc5d3c52d99f0`) and `artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (SHA-256 `013b6f75fbe8cbd24b627089f96ee78b9ab0a7557348df29a1bfe41b321f3332`). No physical flashing was possible because BOOTSEL was not guest-visible.
 - Decision: Keep CTX-01 open. Proceed with foreign-reference/global-array ownership analysis and fixture coverage; refresh USB visibility before physical testing.
-- Commit: `c9d013b`
+- Commit: `2b2a603`
 - Artifacts/logs: VPCD logs listed above; build images in `build/arm` and `build/riscv`.
 ## 2026-11-02 Identify global Object[] firewall mismatch 4 minutes
 
@@ -19876,7 +19876,7 @@
 - Validation: Read-only comparison of the current array store, global heap/reference representation, and Java Card RE 3.0.5 §§6.2.2 and 6.2.8.2. Prior current-worktree SIO tests (15/15 with Descriptor absent and present) and ARM/RISC-V builds passed. `git diff --check` passed. No source/test code changed.
 - Result: Directly relaxing the check is unsafe because compact object handles are allocated independently in applet heaps. The implementation must preserve owner identity and integrate GC, applet deletion, persistence, reset, and stale-owner handling.
 - Decision: Keep the current check fail-closed while designing the full ownership representation. Update transaction probe case 41 only with the implementation and corresponding lifecycle regressions.
-- Commit: `3afee1e`
+- Commit: `279a3b8`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (hashes in `.agent/HANDOFF.md`).
 ## 2026-11-02 Reproduce global Object[] restriction 5 minutes
 
@@ -19886,7 +19886,7 @@
 - Validation: `./tools/test-jcsystem-transaction-applet --case 41` completed with `TEST:SUMMARY pass=3 fail=0 elapsed_s=85.593`; it observed APDU response `019000` because the applet caught `SecurityException` from `global[0] = this`. This confirms the current implementation's behavior, while the Java Card 3.0.5 spec review confirms the restriction is over-strict. `git diff --check` passed.
 - Result: Reproduced the global Object[] compatibility gap in the PC emulator. Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`, SHA-256 `8cf6cb16df35f096ee1fa3c3befcc3a99adb48ef5e13e307aab1c1f2f114e1e4`. No physical test was possible: latest USB refresh still showed one runtime CCID and no BOOTSEL devices.
 - Decision: Keep the runtime restriction until owner-preserving handles, garbage-collection roots, deletion protection, persistence, and reset semantics are implemented. Replace the current case 41 expectation only with those changes.
-- Commit: `24b9761`
+- Commit: `89299fb`
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log` (hash above).
 
 ## 2026-11-02 — Quiet expected host MPU fault warnings 12 minutes
@@ -19897,7 +19897,7 @@
 - Validation: `./tools/build-pc --profile current` passed. `./tools/test-jcsystem-transaction-applet --case 41` passed (`TEST:SUMMARY pass=3 fail=0`, 83.362 s). `python3 tools/tests/sio_cross_aid_vpcd_test.py` passed under elevated execution after the restricted run failed localhost bind with `EPERM`; final result `TEST:SUMMARY pass=15 fail=0`. `git -C choupi/os diff --check -- src/arch/host/emulator.rs` passed. Physical USB refresh found one runtime CCID and no BOOTSEL devices, so hardware testing was skipped.
 - Result: Focused probe output decreased from 37,441 bytes / 322 expected page-fault warnings to 591 bytes / zero. Elapsed time decreased from 85.593 s to 83.362 s (~2.6% across two single runs); this does not establish a meaningful runtime optimization. SIO log SHA-256: `a152f71bb608fc1af8ee132f71bda30a3685e8f67fa4174bdd39d28c7cae6a14`. Transaction log SHA-256: `d2fd036dc2260aabd9c25efa80350521ab22dd55bc2a82c6f467b45083bd5806`.
 - Decision: Keep expected-fault logging quiet by default. Profile ptrace stepping and protection-fault counts next; do not infer a busy loop from wall time alone.
-- Commit: root `3e0c840d1634332921228fd599c388afd1e28522`; `choupi/os` submodule `0579387b7b1e6a990f6b35054a7e4e213bde5fc4`.
+- Commit: root `8af7156c375d0e57713d3f0adf30bd2524fc9bcc`; `choupi/os` submodule `0579387b7b1e6a990f6b35054a7e4e213bde5fc4`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T043156Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261102T043717Z.log`; PC build output under `build/choupi-pc/`.
 
 ## 2026-11-02 — Measure host VPCD CPU usage 5 minutes
@@ -19908,7 +19908,7 @@
 - Validation: `/usr/bin/time -v ./tools/test-jcsystem-transaction-applet --case 41` passed: `TEST:SUMMARY pass=3 fail=0 elapsed_s=71.198`. Outer command time was 87.56 s wall, 26.84 s user, 59.61 s system, 98% CPU; max RSS 98,432 KiB. `perf stat` availability check failed because performance events are restricted (`perf_event_paranoid=4`).
 - Result: This run averaged roughly one logical CPU and spent more time in system than user mode, consistent with syscall/ptrace overhead. It does not explain the separate report of all eight VM cores being busy. No host security setting was changed.
 - Decision: Preserve the existing MPU behavior. Next measure per-process CPU during an actual saturation reproduction and collect ptrace/fault counts before attempting optimization.
-- Commit: `236a7ce771b8e4d3084977ee010711bd3c88e404`; metadata reference in the follow-up commit.
+- Commit: `b91e5fdcdab0d7b6ce6795ae30fb0c5efc14e326`; metadata reference in the follow-up commit.
 - Artifacts/logs: Transaction emulator output `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T043156Z.log` (591 bytes; SHA-256 `d2fd036dc2260aabd9c25efa80350521ab22dd55bc2a82c6f467b45083bd5806`); timing printed by `/usr/bin/time -v`, not archived separately.
 
 ## 2026-11-02 Fix privileged host MPU access during region updates 15 minutes
@@ -19961,7 +19961,7 @@
 - Decision: Keep this architecture issue open and design package-scoped heap/
   context with separate per-instance lifecycle/owner records before relaxing
   foreign-reference checks.
-- Commit: `6deb788` (finding); this progress entry follows in the root log.
+- Commit: `64c596d` (finding); this progress entry follows in the root log.
 - Artifacts/logs: Official spec PDF `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`;
   no test logs.
 
@@ -19979,7 +19979,7 @@
   PC/SC test was attempted.
 - Decision: Refresh and identify devices before the next hardware operation;
   retain both visible readers for failover.
-- Commit: `96c2495`.
+- Commit: `9498ab7`.
 - Artifacts/logs: USB inventory output only; no saved log.
 
 ## 2026-11-02 Clarify SIO argument access rules 5 minutes
@@ -20001,7 +20001,7 @@
 - Decision: Preserve fail-closed behavior until an opaque owner-tagged
   reference and the collision/access/lifetime tests exist. Continue CTX-01
   offline.
-- Commit: `07fc0ad`.
+- Commit: `6712187`.
 - Artifacts/logs: Official specification
   `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`; no test log.
 
@@ -20032,7 +20032,7 @@
 - Decision: Use both runtime boards for later physical checks and fail over by
   serial if one disappears. Do not attempt flashing until BOOTSEL enumerates.
   Continue CTX-01/03 implementation offline.
-- Commit: `30d83ec`.
+- Commit: `818c786`.
 - Artifacts/logs: The two physical logs above; build images under `build/arm/`
   and `build/riscv/` (not flashed).
 
@@ -20061,7 +20061,7 @@
 - Decision: Keep CTX-03 open; design CAP-scoped context with per-instance owner
   and lifecycle state before modifying runtime context allocation. Preserve all
   unrelated shared worktree changes.
-- Commit: `cdca37c`.
+- Commit: `68bc838`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T080935Z.log`
   (SHA-256 `cec4c3fed14d26d89b37ce7c7e9d70eaf64baf69b070398e426fbb378a958642`),
   `artifacts/logs/host-vpcd-multipackage-restart-20261102T080935Z.log` (SHA-256
@@ -20088,7 +20088,7 @@
   persistence. No firmware was flashed.
 - Decision: Keep CTX-03 acceptance open; add same-CAP sibling object/static
   access coverage before claiming package-context correctness.
-- Commit: `2709d41`.
+- Commit: `2229677`.
 - Artifacts/logs: `artifacts/logs/physical-get-status-multipage-20261102T081605Z.log`
   (SHA-256 `8d385e1043b3909317f2b0a5f219ba06cdc173316426a9be2d5ea9310f24c12c`)
   and `artifacts/logs/physical-get-status-multipage-20261102T081719Z.log`
@@ -20109,7 +20109,7 @@
   physical package registry validation from the still-open CTX-03 semantics.
 - Decision: Keep CTX-03 open and preserve both runtime devices for future
   physical tests; no BOOTSEL device has been enumerated.
-- Commit: `471dfe4`.
+- Commit: `ffe9c47`.
 - Artifacts/logs: The two `physical-get-status-multipage-20261102T081605Z.log`
   and `...081719Z.log` runs documented above.
 
@@ -20121,7 +20121,7 @@
 - Validation: `./tools/build arm --profile max_crypto` passed; `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && lsusb -d 2e8a: && pcsc_scan -r` ran with elevated host access and found two runtime cards, no BOOTSEL device. No flash attempted.
 - Result: Support generator selected 147/150 capabilities; generated ROM mask was 34,996 bytes. Current ARM UF2 is 2,128,384 bytes, SHA-256 `7fc09911123bf8cfd8f596c45a810391ed1a4a385d1ed621267600acb5259caa`; tracked external-test image is 2,098,176 bytes, SHA-256 `1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`. RISC-V smoke UF2 is 79,872 bytes, SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`. Identity difference has not been isolated; shared tree contains another session's uncommitted changes.
 - Decision: Preserve the external-test artifact and unrelated worktree edits. Continue CTX-03 offline; require a fresh authorized inventory before physical actions.
-- Commit: `ce03233`
+- Commit: `bd7239b`
 - Artifacts/logs: build outputs under `build/arm/` and `build/riscv/`; artifact comparison against `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no serial log.
 
 ## 2026-11-02 Keep max firmware inside the 1 MiB flash window 18 minutes
@@ -20132,7 +20132,7 @@
 - Validation: `./tools/test-firmware-flash-boundary` passed below/at/above-limit cases; `./tools/build arm --profile max_crypto` passed and reported `FLASH_LAYOUT:PASS`; `./tools/build riscv --profile max_crypto` passed. Fresh elevated USB inventory found two runtime readers and no BOOTSEL device. No flash attempted. An LTO build was tried, failed at ARM link with assembler `offset out of range`, and its CMake changes were reverted.
 - Result: Previous max image ended at `0x101000c4`, 196 bytes over the 1 MiB boundary; the first shared-tree rebuild ended at `0x10103b28`, 15,144 bytes over. Size-optimized build ends at `0x100e64cc` (943,308 bytes from base), leaving 105,268 bytes in the 1 MiB firmware window. The 2 MiB data layout ends at `0x1f0000`, leaving 65,536 bytes unallocated. Current UF2 is 1,887,232 bytes, SHA-256 `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`; this UF2 file size includes transfer overhead. Physical runtime and crypto-throughput impact of `-Os` remain unverified.
 - Decision: Keep the partition guard and size optimization. Do not replace the tracked external-test artifact until the optimized image passes physical runtime/crypto tests; continue CTX-03 offline while no BOOTSEL board is visible.
-- Commit: `e3405df`
+- Commit: `e50a666`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/pico2_choupi.elf.map`, `build/riscv/pico2_jcvm_smoke.uf2`; no hardware log.
 
 ## 2026-11-02 Refresh max_crypto external-test image after flash-fit fix 3 minutes
@@ -20143,7 +20143,7 @@
 - Validation: `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Artifact size is 1,887,232 bytes, SHA-256 `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`; linker end is `0x100e64cc`, below the `0x10100000` firmware limit. ARM/RISC-V builds and boundary tests are recorded in the preceding step. No hardware test; VM inventory had no BOOTSEL device.
 - Result: The named external-test UF2 now fits the firmware partition. It has not been flashed or runtime/performance-tested; the current shared worktree includes uncommitted source edits from another session.
 - Decision: Provide as an external-test candidate with exact source and hardware limitations disclosed. Do not describe it as hardware-validated.
-- Commit: `ded91a7`
+- Commit: `a3afdd4`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, `artifacts/firmware/README-max_crypto.txt`; no hardware log.
 
 ## 2026-11-02 Recheck multipackage VPCD baseline on current source 5 minutes
@@ -20154,7 +20154,7 @@
 - Validation: The wrapper required the authorized route; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`. No physical device operation occurred.
 - Result: Three packages and 21 applet instances passed restart recovery, AID lookup identity, GET STATUS paging, per-instance/cascade DELETE, and transient lifecycle. The suite does not establish static, heap, or firewall-context sharing between sibling instances in one CAP.
 - Decision: Keep CTX-03 open; use this suite as a regression baseline while adding same-CAP behavior coverage.
-- Commit: `73f9667`
+- Commit: `a521b5e`
 - Artifacts/logs: APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261102T085227Z.log` SHA-256 `1edcb100128fafc0e8b3f977dc85525da12ae69d55d6950ed65448c2aa6dfe18`; restart and sidecar log hashes in `.agent/QKB.md`.
 
 ## 2026-11-02 Group applet instance state ahead of CTX-03 6 minutes
@@ -20165,7 +20165,7 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `./tools/test-firmware-flash-boundary` passed (`below_limit=1 at_limit=0 above_limit=0`). `git diff --check -- choupi/src/context.cpp choupi/src/context.hpp` passed. Fresh authorized host USB inventory found two runtime CCID devices and no BOOTSEL device; no flash/runtime test.
 - Result: ARM image end `0x100e648c` (943,244 bytes from flash base), leaving 105,332 bytes in the 1 MiB firmware window. UF2 is 1,887,232 bytes, SHA-256 `029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62`.
 - Decision: Keep the refactor as groundwork only; next define and test package firewall context semantics before changing lifetimes.
-- Commit: `2fc060f`.
+- Commit: `79c3f3c`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no physical log.
 
 ## 2026-11-02 Probe same-CAP static state and correct default reads 16 minutes
@@ -20176,7 +20176,7 @@
 - Validation: Fixture conversion passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `TEST:SUMMARY pass=4 fail=0`, proving static short/array visibility over sibling AID switches, including retained contexts. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, `./tools/test-rmi-registry`, and `./tools/test-firmware-flash-boundary` passed. `./tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed with end `0x100e64bc`. Fresh host-access inventory found two runtime CCID readers and no BOOTSEL devices; no physical flash/test.
 - Result: ARM firmware occupies 943,292 bytes of the 1 MiB firmware partition and leaves 105,284 bytes. UF2 is 1,887,232 bytes, SHA-256 `f0187cc260839d2905a868b2babdad71f84f7819ffcaf190d437077296c76159`. Probe log: `artifacts/logs/same-cap-sibling-vpcd-20261102T091916Z.log`. The test does not establish single-heap identity or owner isolation.
 - Decision: Keep CTX-03 open. Next implement same-CAP object identity and per-object owner behavior; include CAP static non-default initialization in the same acceptance suite.
-- Commit: `a2c56ae`.
+- Commit: `4f8402f`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/logs/same-cap-sibling-vpcd-20261102T091916Z.log`.
 
 ## 2026-11-02 Read CAP static primitive initial values lazily 20 minutes
@@ -20187,7 +20187,7 @@
 - Validation: `./tools/build-pc --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=5 fail=0`) with Descriptor omitted; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-registry` passed; `./tools/test-firmware-flash-boundary` passed. Fresh elevated inventory found two runtime CCID devices and no BOOTSEL device, so no physical flash or serial monitor was run.
 - Result: Converter fixture encodes 2 default primitive bytes followed by 7 non-default bytes `12 34 56 12 34 56 78`; the VPCD applets read the expected static short/byte/int values and see subsequent writes across sibling AIDs. ARM binary is 943,592 bytes, ends at `0x100e65e8`, and leaves 104,984 bytes below the 1 MiB firmware boundary. Build UF2 SHA-256: `b5d240cc067b1cbd38a22bfdfb5f83dbb970027c64a2017730dd3c768bfc6daf`. Physical behavior remains unverified.
 - Decision: Keep CTX-03 open for package-scoped firewall context, shared object identity, and per-object owner isolation; the optional Descriptor is not needed for static primitive initial values.
-- Commit: `5102c6e`
+- Commit: `8c683b9`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T093948Z.log`; ARM/RISC-V/PC build outputs under `build/`
 
 ## 2026-11-02 Revalidate VPCD multipackage lifecycle after static fix 4 minutes
@@ -20198,7 +20198,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`.
 - Result: Three packages and 21 applet instances passed pagination, restart recovery, lookupAID identity, transient lifecycle, and DELETE cases. This is PC emulator evidence only. Static initializer work remains untested on physical hardware because the current live USB refresh found runtime CCID readers and no BOOTSEL device.
 - Decision: Continue CTX-03 by designing package-shared heap/handle/root storage with stable per-applet owner facades; do not alias the current Context or immutable-owner Heap objects.
-- Commit: `1d5c5f5`
+- Commit: `420ade9`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T094628Z.log`; `host-vpcd-multipackage-restart-20261102T094628Z.log`; corrupt/missing-sidecar logs with same timestamp.
 
 ## 2026-11-02 Retain sibling applet lifecycle state 21 minutes
@@ -20228,7 +20228,7 @@
 - Decision: Keep the cross-sibling reference path fail-closed. Next implement
   a package-scoped heap/handle store with stable per-object owners and deletion
   semantics, then wire package context lookup and rerun the fixture.
-- Commit: `84ebacb`
+- Commit: `b1fbc6c`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`;
   `build/arm/pico2_choupi.uf2`.
 
@@ -20256,7 +20256,7 @@
   `8691a8141ecc8a7d123590cdd33770fedfe73eae48f97d310cbd305f259405c6`.
 - Decision: Keep local-reference rejection fail-closed until firmware lookup
   selects a shared package context and ownership behavior is proven end-to-end.
-- Commit: `4f2c206`
+- Commit: `6004fcc`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; prior SIO probe log
   `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`.
 
@@ -20268,7 +20268,7 @@
 - Validation: `./tools/test-rmi-registry`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `TEST:SUMMARY pass=6 fail=0`; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `pass=47 fail=0`; elevated `PICO2_HOST_USB_ACCESS=1 python3 -u tools/tests/sio_cross_aid_vpcd_test.py` passed `pass=15 fail=0`. Authorized USB refresh found two runtime CCID devices and no BOOTSEL device; physical flash/runtime validation was skipped.
 - Result: Same-CAP sibling SIO, cross-AID SIO state restoration, multi-package restart, deletion and transient lifecycle pass in VPCD. ARM linker end `0x100e70ec`, firmware usage 946,412/1,048,576 bytes, 102,164 bytes remaining. UF2 is 1,893,376 bytes, SHA-256 `93b9f5770d349ba1b1d8a8f1ea8abea243e07b999d3317908589e0b9a0be6124`.
 - Decision: Continue hardware validation when a BOOTSEL Pico enumerates. Review tombstoned owner-facade growth over repeated delete/reinstall and test sibling reset/transient and persistence semantics on hardware.
-- Commit: `0a746d9`; progress SHA reference is recorded in the metadata commit.
+- Commit: `dc3c86d`; progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T104652Z.log`; `artifacts/logs/host-vpcd-multipackage-apdu-20261102T104740Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261102T105231Z.log`; current ARM build `build/arm/pico2_choupi.uf2`.
 
 ## 2026-11-02 Scope RMI and Shareable state to applet instances 19 minutes
@@ -20279,7 +20279,7 @@
 - Validation: `./tools/test-rmi-registry` passed with new sibling registry isolation, deletion root cleanup, independent object-ID namespace, and proxy invalidation checks. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `6/6`; elevated cross-AID SIO VPCD passed `15/15`; elevated `./tools/test-vpcd-multipackage --timeout 60` passed `47/47`. USB refresh still found two runtime CCID devices and no BOOTSEL; no physical flash/runtime test.
 - Result: Package siblings share heap/firewall context but keep distinct RMI/SIO registries. Same-CAP lookup, cross-AID SIO, restart, deletion, and transient lifecycle regressions remain green. ARM image ends at `0x100e7380`, using 947,072/1,048,576 firmware-window bytes and leaving 101,504 bytes. UF2 size 1,894,912 bytes, SHA-256 `af4101c0012773b366979ea85a6c05d0b31bf1e130326001b8e8cce4c321cba6`.
 - Decision: Continue CTX-03 by resolving owner-ID reuse and tombstoned owner-facade lifetime across repeated delete/reinstall. Physical validation remains pending until BOOTSEL enumerates.
-- Commit: `1011216`; progress SHA reference is recorded in the metadata commit.
+- Commit: `b9bd36c`; progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T110633Z.log` SHA-256 `83044b9393582fd428fe372d65fd2f1ecff99fd898e401f9895390835e86f402`; `artifacts/logs/sio-cross-aid-vpcd-20261102T110722Z.log` SHA-256 `94efba3581458c6af6970f5cd2eb4c48a90f900b0f705bf7d6937ff03804c68c`; `artifacts/logs/host-vpcd-multipackage-apdu-20261102T110903Z.log` SHA-256 `f8b5d72ee7ab43a38e9d724b43958546f069cace6b00cc016239206d6c397571`; UF2 `build/arm/pico2_choupi.uf2`.
 
 ## 2026-11-02 Prevent owner-ID reuse while package objects survive deletion 30 minutes
@@ -20290,7 +20290,7 @@
 - Validation: `./tools/test-rmi-registry` passed with `deleted_owner_reservation=1`; `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed (`TEST:SUMMARY pass=4 fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed (`TEST:SUMMARY pass=47 fail=0`); PC, ARM and RISC-V `max_crypto` builds passed. Latest authorized USB inventory found two runtime CCID readers and no BOOTSEL interface; no physical flash/test was run.
 - Result: Same-process VPCD initially exposed a real PC backend bug: after writer owner 1 was deleted, reinstall reused ID 1 despite its package-shared array still being live. Root cause was a separate allocator in `main_pc.cpp` that did not call the runtime reservation callback. After wiring it, IDs `[1, 2]` became `[3, 2]`, and the reader still observed the shared array. ARM image end `0x100e75f4` uses 947,700 of 1,048,576 firmware bytes, leaving 100,876. UF2 size 1,895,936 bytes, SHA-256 `db74bd5a3efe95df2594957e3b9f5932456e40c883fade5319e23ddeb791c497`. Physical acceptance remains pending because no BOOTSEL device enumerated.
 - Decision: Keep deleted owner facades reserved for as long as VM objects reference them. Next analyze bounded facade/object reclamation and add repeated instance/package DELETE/reinstall coverage, then complete CTX-03 reset, transient, persistence and hardware acceptance.
-- Commit: `b33d401` (recorded in follow-up metadata commit)
+- Commit: `4fa2ec4` (recorded in follow-up metadata commit)
 - Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T114313Z.log`; multipackage logs at `artifacts/logs/host-vpcd-multipackage-*20261102T114510Z.log`; `build/arm/pico2_choupi.uf2`.
 
 ## 2026-11-02 Verify owner reclamation across repeated and package deletion 6 minutes
@@ -20301,7 +20301,7 @@
 - Validation: `./tools/build-pc --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed (`TEST:SUMMARY pass=9 fail=0`). ARM and RISC-V builds had passed in the immediately preceding owner-reservation commit; no firmware source changed in this step. No physical flash/test because authorized USB refresh found two runtime CCID devices and no BOOTSEL board.
 - Result: Writer owner history was `[1, 3, 3, 3]`: owner 1 stayed reserved while its shared array remained live, while object-free replacement owner 3 was reclaimed after each DELETE. Full package DELETE/reinstall reclaimed the shared heap and reused owner 1. Log: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T115429Z.log`.
 - Decision: Repeated instance lifecycle does not monotonically consume owner IDs in the tested case, and deleting the package releases the owner-bound objects. Still test owner-ID exhaustion and interaction with reset/transient GC, then continue CTX-03 acceptance.
-- Commit: `a4d5cfe` (recorded in follow-up metadata commit)
+- Commit: `7dde071` (recorded in follow-up metadata commit)
 - Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T115429Z.log`.
 
 ## 2026-11-02 Verify transient clear events across sibling applets 7 minutes
@@ -20312,7 +20312,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients --timeout 60` passed (`TEST:SUMMARY pass=5 fail=0`). The first converter attempt rejected `invokestatic` from `<clinit>`; moving transient allocation to an explicit install helper produced a valid CAP. The test-only source changed but firmware source did not, so no ARM/RISC-V rebuild was required for this step. No physical flash/test because the last approved USB inventory found no BOOTSEL board.
 - Result: Writer set the arrays to `5A` (`CLEAR_ON_DESELECT`) and `6B` (`CLEAR_ON_RESET`). Selecting the same-CAP reader returned `00 6B`, proving deselection clears only the former. A simulated card reset followed by writer selection returned `00 00`, proving reset clears both. Log: `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`.
 - Decision: Shared package heap transient lifecycle behaves correctly for single-channel sibling selection and reset in PC VPCD. Physical validation and multi-logical-channel behavior remain open. Next review owner exhaustion and other GC/reset edges, then continue persistence acceptance.
-- Commit: `c201188` (recorded in follow-up metadata commit)
+- Commit: `f3dc7d3` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/same_cap_transient_fixture/`, `tools/build-same-cap-transient-fixture`, `tools/test-same-cap-transients`, and `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`.
 
 ## 2026-11-02 Exercise all applet owner IDs through GC reclamation 3 minutes
@@ -20323,7 +20323,7 @@
 - Validation: `./tools/test-rmi-registry` passed with `owner_id_exhaustion=1`; it confirmed all 255 owner identities remained reserved with live arrays and were no longer retained after roots were dropped and GC completed. No firmware source changed; no hardware test.
 - Result: Owner retention and tombstone pruning work across the full 8-bit nonzero ID range in the Context/Heap model. This does not exercise the CAP store allocator's INSTALL failure when every ID is persisted as live.
 - Decision: Keep actual allocator no-free-ID INSTALL behavior open; continue CTX-03 remaining reset/GC/persistence acceptance.
-- Commit: `6b20d05` (recorded in follow-up metadata commit)
+- Commit: `42ed41c` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rmi_registry/rmi_registry_test.cpp`; no external log.
 
 ## 2026-11-02 Verify CAP owner allocation exhaustion and reuse 3 minutes
@@ -20334,7 +20334,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including `cap_owner_allocator_rejects_exhaustion_at_255` and `cap_owner_allocator_reuses_id_after_instance_delete`. No firmware source changed; no hardware operation.
 - Result: The actual `src/cap_store.cpp` allocator handles all 255 assigned IDs and reuses owner 1 after deletion. The separate PC/VPCD allocator is integration-tested for retained live owners but was not filled to exhaustion.
 - Decision: Native CAP store exhaustion/reuse is verified. Continue remaining GC/reset and persistence acceptance; physical validation is still blocked by no BOOTSEL enumeration.
-- Commit: `8281870` (recorded in follow-up metadata commit)
+- Commit: `e7b46b4` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output only.
 
 # 2026-11-02 JCAlgTest VPCD integration regression 3 minutes
@@ -20345,7 +20345,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet` exited 0 after two clean emulator passes. It reported `TEST:SUMMARY pass=30 fail=0`; both passes completed ATR, applet SELECT, JCSystem info, support probes, SHA-256 final and static performance calls, and expected `NO_SUCH_ALGORITHM` behavior. No hardware was accessed.
 - Result: Full selected JCAlgTest APDU sequence passed twice, including emulator process restart between passes. First-pass connection took 29.258 s and GETVERSION APDU 16.570 s; second-pass connection took 0.181 s and GETVERSION APDU 0.349 s. The broad run is emulator evidence only; physical acceptance remains open.
 - Decision: Keep the test as a broad integration baseline. Continue CTX-03 reset/GC edge review and PERSIST-02 actual cold-power acceptance when an identified board is available.
-- Commit: `b91a255`
+- Commit: `2723c7a`
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` SHA-256 `b612c9f275c898a73221d1694e21f7b8dda06d9d986b8cb54eff5918383ee7c0`; the wrapper's final console summary is the authoritative per-run pass count.
 
 ## 2026-11-02 Verify same-CAP sibling restoration after restart 3 minutes
@@ -20356,7 +20356,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-restart` passed (`TEST:SUMMARY pass=7 fail=0`). The test fixture CAP converted with one existing int-support warning. No firmware source changed; no architecture rebuild or physical flash/test.
 - Result: After restart both sibling AIDs were present in GET STATUS, the reader restored the same static scalar/array values, SIO returned identity success for the writer's restored array, and a writer update was visible to the reader. Log: `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.
 - Decision: Same-CAP clean-process restart state restoration is now covered. This does not verify hardware power loss or corrupted storage. Continue remaining CTX-03 GC/reset and persistence cases.
-- Commit: `624f266` (recorded in follow-up metadata commit)
+- Commit: `0524531` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/test-same-cap-restart`, `tools/tests/same_cap_restart_vpcd_test.py`, and `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.
 
 ## 2026-11-02 Unify and exhaustively test applet owner-ID selection 7 minutes
@@ -20367,7 +20367,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`owner_id_exhaustion=1`); a first tightened assertion failed because the test had left the expected output sentinel at the prior success value, then passed after resetting the sentinel. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). PC, ARM and RISC-V max_crypto builds passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed 9/9. Targeted `git diff --check` passed. USB inventory found two runtime readers and no BOOTSEL; no flash or physical card test.
 - Result: Both backends now share one selection algorithm. The test rejects all 255 occupied IDs, chooses ID 17 when it is the only free ID, rejects allocation when all persistent assignments are cleared but objects still retain each owner, then returns ID 1 after GC. RP2350 metadata exhaustion/reuse and PC/VPCD owner lifecycle regressions pass. Full 255-entry serialized PC VCR2 restore remains untested. ARM firmware end `0x100e75f4`, leaving 100,876 bytes in the 1 MiB firmware window.
 - Decision: Close selection-loop parity and full search-boundary coverage. Keep serialized PC registry exhaustion and remaining GC/reset/persistence acceptance open; hardware work waits for BOOTSEL enumeration.
-- Commit: `30904e6`
+- Commit: `e9d47ed`
 - Artifacts/logs: `tools/test-rmi-registry`, `tools/test-rp2350-fs-overlay`, `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T122308Z.log`; no board image was written.
 
 ## 2026-11-02 Run physical read-only persistence probes on two boards 2 minutes
@@ -20378,7 +20378,7 @@
 - Validation: After authorized helper refresh and `pcsc_scan -r`, readers `8E464F4E2BBC0A19` and `2BED26ED20556535` each passed `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'`. Both showed JCAlgTest package/applet, ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`.
 - Result: SELECT/GETVERSION/JCSystem timings were 75/59/129 ms on 8E and 47/73/121 ms on 2BED. Existing package inventories differ between devices. The probe did not verify firmware hash or remove USB power, so PERSIST-02 cold-power acceptance remains open.
 - Decision: Both current runtime cards are reachable and the JCAlgTest read path works; use their exact reader identities for later physical acceptance. Keep BOOTSEL/flash tasks gated on actual enumeration.
-- Commit: `9ce59e9`
+- Commit: `98df2d1`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T122841Z.log`, `artifacts/logs/pico-powerup-persistence-20261102T122908Z.log`.
 
 ## 2026-11-02 Flash max_crypto and close Signature IV physical retest 10 minutes
@@ -20389,7 +20389,7 @@
 - Validation: ARM and RISC-V wrappers passed before flash. A serial-targeted cycle entered BOOTSEL but timed out while polling; `picotool info -a` then identified BOOTSEL chip ID `2BED26ED20556535`. Chip-ID-targeted `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` passed: flash write and verification reached 100%, monitor showed repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. API runner uploaded `AlgTestApiCrypto_305.cap`, ran 466 catalog rows with 463 intentionally skipped and the three target rows all `OK`, and removed the CAP (`CLEANUP OK`).
 - Result: On flashed board 2BED, DES-MAC8-NOPAD IV row returned 8 bytes, AES-MAC-128 IV row 16 bytes, and DES-MAC8-ISO9797-M2 IV row 8 bytes; each matched expected behavior. UF2 is 1,895,936 bytes, SHA-256 `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`; firmware uses 947,700/1,048,576 bytes and leaves 100,876 bytes. Full Crypto sweep remains open.
 - Decision: API-02 physical acceptance is closed. Use stable chip-ID selection when this VM path loses serial-based BOOTSEL selection; continue API-03 and remaining acceptance with fresh device identification.
-- Commit: `47db89c`
+- Commit: `fb8e2be`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T123918Z.log`; `artifacts/results/Pico2_2BED_api305_signature-iv_maxcrypto_20261102.csv` SHA-256 `0c88385d492e08d0c1dd40c8328176b08fe86fc01abd9929695848635332cbba`.
 
 ## 2026-11-02 Complete JCAlgTest BASIC support and diagnose EXTENDED timeout 34 minutes
@@ -20400,7 +20400,7 @@
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` passed flash verification and finite serial monitor (`TEST:SUMMARY pass=1 fail=0`). Exact-reader SELECT, GETVERSION and JCSystem-info passed; raw `B07526000309051300` returned `9000` in 163 ms. Official `ALG_SUPPORT_BASIC` completed on exact reader 2BED. EXTENDED had timed out at 900 seconds with exit 124 after 2,094 CSV lines.
 - Result: BASIC contains 362 result rows: 148 yes, 214 no, zero other. Of 147 expected support identities, the 142 covered in BASIC all returned yes; two RSA/RSA-CRT-3072 rows are the known upstream CAP/client bug that sends 4096, and three `Cipher.getInstance` aliases are not tested by BASIC. Image end `0x100e75f4`, 947,700/1,048,576 bytes, leaves 100,876; UF2 1,895,936 bytes, SHA-256 `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`.
 - Decision: BASIC support conformance is established for the 142 expected identities it exercises. EXTENDED remains incomplete; the last sent APDU did not reproduce a hang when isolated. Choose an explicit longer deadline or a narrower EXTENDED plan to check factory aliases. Continue API-01/03 and remaining acceptance work.
-- Commit: `7921bef` (recorded in follow-up metadata commit)
+- Commit: `a457a32` (recorded in follow-up metadata commit)
 - Artifacts/logs: BASIC CSV SHA-256 `eb56504b226a92ac5f34a8ff97569e307211d189b079ed612bf26178343a4ade`; EXTENDED partial CSV and client log under `artifacts/results/jcalgtest-maxcrypto-2BED-20261102/`; recovery log `artifacts/logs/cycle-choupi-20261102T130445Z.log`, SHA-256 `96bc300f0fd785ebbdb9c6392e27a0dccf4e69ffcd6ebd3a3200c658473da063`.
 
 ## 2026-11-02 Instrument and physically accept bounded CCID USB progress 25 minutes
@@ -20411,7 +20411,7 @@
 - Validation: `./tools/build arm --profile max_crypto` passed with firmware end `0x100e7804`; `./tools/build riscv --profile max_crypto` passed. `./tools/test-ccid-progress-flow` passed 9/9. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` passed flash verify and finite serial monitor. The corrected elevated physical run on exact reader 2BED completed the RSA-3072 generation/signature APDU and cleanup; `python3 -m py_compile tools/test-ccid-progress-physical.py` and targeted `git diff --check` passed.
 - Result: APDU returned `019000` in 118,055 ms. Of 5,608 USB GET_DESCRIPTOR requests, 4,336 began during the 118,267-ms APDU, zero failed, and all 5 after-APDU drain requests succeeded (average 7,999 us, maximum 331,254 us). Firmware measured 5,795 progress calls (3,301 us total, 117 us max; integer average displayed as 0 us), 169 USB service passes (1,006 us total, 94 us max), 86 events with max two per pass, and 85/85 time extensions completed. No `WATCHDOG_RECOVERY`, `TEST:FAIL`, or `FAULT` in the serial log. ARM image uses 948,228/1,048,576 bytes, leaves 100,348; UF2 is 1,897,472 bytes, SHA-256 `50e9ed105bb3a933ce1dc44313a0b2987747524e1af3cb028690daab132b1334`.
 - Decision: ARCH-08 physical gate is accepted: no measured progress pass monopolized execution; sustained control traffic, watchdog servicing, CCID extensions, final APDU response ordering, and request drain all passed. An initial host counter undercounted overlap because it discarded request starts before the APDU end marker; the corrected implementation records timestamps and calculates after the interval. Continue CTX-01/03 and other open TODO items.
-- Commit: `49b5c8a`
+- Commit: `75a4b3b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T132946Z.log` SHA-256 `05bcfddcd9817ddec5ccb29e88cfa70eba675b12530cb480051f8b8e8b662a82`; `artifacts/logs/ccid-progress-monitor-2BED26ED20556535-20261102T133921Z.log` SHA-256 `a705dea68a4a212e589d8505631cd2a19fd7366ce6c73d9b0a76c1fce04703bf`; `artifacts/logs/asymm-crypto-pcsc-20261102T133921Z.log` SHA-256 `feee0e7dff4afcc22ee6e5fcd014eeaf3e62b23b6130511bdd3b67ce9745ea4b`; harness `tools/test-ccid-progress-physical`.
 
 ## 2026-11-02 Invalidate Shareable routes on physical card reset 34 minutes
@@ -20422,7 +20422,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`shareable_reset=1`). `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Updated `tools/tests/sio_cross_aid_vpcd_test.py` passed `TEST:SUMMARY pass=15 fail=0`. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 8E464F4E2BBC0A19` passed flash verification and finite monitor. Guarded `tools/test-sio-cross-aid-physical` on that card completed SIO, reset, firewall, exception and cleanup checks. `git -c core.whitespace=cr-at-eol diff --check -- <task files>` passed; plain `git diff --check` also reports carriage returns from CRLF/mixed-line-ending pre-existing modified files.
 - Result: On physical Pico 2 `8E464F4E2BBC0A19`, clean contract/service/client packages loaded and installed. Positive cross-AID SIO returned `45679000`; retained proxy after PC/SC reset returned caught stale-proxy result `6A0A9000`; 32-bit argument/return returned `765432109000`; exception unwind `6A079000`; denied lookup `6A019000`; applet-local reference firewall `6A039000`; proxy method firewall `6A099000`. Cleanup passed and removed the fixture packages. ARM image ends at `0x100e7890`, binary size 948,368 bytes, leaving 100,208 bytes in the firmware window; UF2 SHA-256 `ea72d4ac21a28ccadcf6328d90f9d4e4ced47d58c4c4a5b027ad6e6abfce745e`.
 - Decision: Close the clean channel-0 physical SIO positive path and stale-route reset boundary. CTX-01 remains open for same-CAP/multi-package physical lifecycle, GC/delete and global-array/reference ownership coverage; continue the next open project priority after those checks.
-- Commit: `4bb785b`
+- Commit: `975d7c8`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T141341Z.log` SHA-256 `8a5a9287f124916fcbd302bb17f8b5ff2bff167b874ba71dec4b286cb6390e13`; `artifacts/logs/sio-cross-aid-physical-20261102T141553Z.log` SHA-256 `4504e1371df260b2ddcea535d2ae9ddf546aab55d0ded385eb212aad1460cfa2`; `artifacts/logs/sio-reset-monitor-8E-20261102.log` SHA-256 `e95eddc87adcc7b534d1d0635a1979d02daed4457149a9324d3ae0c75c0fe21c`; VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261102T140857Z.log`.
 
 ## 2026-11-02 Verify same-CAP sibling Shareable identity 7 minutes
@@ -20433,7 +20433,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=6 fail=0`). Fixture conversion completed with only its existing int-support warning. No physical reader was used; this wrapper's host gate was followed for its local VPCD run.
 - Result: Writer/reader applets installed from one CAP. Cross-sibling SIO invocation observed identical package static byte-array identity (`019000`); default/non-default static values and subsequent cross-sibling writes also passed. This remains emulator evidence and does not close physical same-CAP acceptance.
 - Decision: Keep CTX-03 open. Add a separate guarded physical LOAD/INSTALL/select/delete test, then continue GC/restart and broader firewall coverage.
-- Commit: `2d899a1`
+- Commit: `5eaacd4`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T142314Z.log` SHA-256 `e0d86e0ebcaf3cae104caa73369816d6398cbf9516ed7ad51c92dcce07574f50`; test fixture sources under `tools/tests/same_cap_sibling_fixture/`.
 
 
@@ -20445,7 +20445,7 @@
 - Validation: `bash -n tools/test-same-cap-siblings-physical` and targeted `git diff --check` passed. The physical harness installed the fixture CAP once on Pico 2 `8E464F4E2BBC0A19`; applet creates, channel-0 APDUs and cleanup passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `TEST:SUMMARY pass=6 fail=0`.
 - Result: SIO static-array identity returned `019000`; initialized static fields returned `000012340056123456789000`; writer update and sibling read returned `000012350157123456799000`. An initial physical sequence without the VPCD test's reader reselect returned `6D00`; matching its sequence passed, so no firmware defect was established. Firmware image size was not remeasured in this test.
 - Decision: Basic same-CAP physical selection, SIO identity and static sharing pass. Continue remaining physical delete/reinstall, reset/transient, GC and cold-power acceptance.
-- Commit: `17b9e4a`; this progress SHA reference is recorded in the metadata commit.
+- Commit: `c3f49dc`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T143223Z.log` SHA-256 `0a8551584c163700174dd6fe767f09d146db1b30726df8e98f3027d207fca5fe`; VPCD `artifacts/logs/same-cap-sibling-vpcd-20261102T143438Z.log`; failed sequence diagnostic `artifacts/logs/same-cap-sibling-physical-20261102T142905Z.log`.
 
 ## 2026-11-02 Verify physical same-CAP instance reinstall 8 minutes
@@ -20456,7 +20456,7 @@
 - Validation: `bash -n tools/test-same-cap-siblings-physical` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed sibling SIO/static checks, reader DELETE, CREATE, post-reinstall APDU, and final cleanup. Java probe compilation occurred inside the wrapper.
 - Result: After writer mutation, physical reader DELETE and recreation succeeded. The new reader returned `000012350157123456799000`, preserving package static values across applet instance removal/recreation. Package-level DELETE/reinstall, reset/transient, GC and cold-power persistence were not tested.
 - Decision: Physical same-CAP sibling identity, static visibility, and applet instance DELETE/recreate now have direct hardware evidence. Continue package deletion and reset/lifecycle acceptance.
-- Commit: `28a18f8`; this progress SHA reference is recorded in the metadata commit.
+- Commit: `4090cf8`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T144016Z.log` SHA-256 `b1ba3eb64e4144fbd7e974bc1304a5168b584c2af23f8d90bdfb90d52480d7a0`.
 
 ## 2026-11-02 Validate physical same-CAP package reinstall 4 minutes
@@ -20467,7 +20467,7 @@
 - Validation: `bash -n tools/test-same-cap-siblings-physical` passed. On identified Pico 2 `8E464F4E2BBC0A19`, physical GPPro package DELETE, CAP LOAD, both CREATE operations, PC/SC sibling-SIO probe and final cleanup all passed.
 - Result: After package reinstall, sibling static-array identity returned `019000` and initial state returned `000012340056123456789000`; prior package mutation was gone. Reset/transient, GC and cold-power cases were not exercised.
 - Decision: Physical same-CAP instance and package delete/reinstall paths now pass. Continue the remaining reset/transient, GC and persistence gates.
-- Commit: `36a519b`; this progress SHA reference is recorded in the metadata commit.
+- Commit: `2dbb16b`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T144405Z.log` SHA-256 `76a13511ff8b972d0b46e52d485be7c12b02d6878a5b2597a88aa1ca92957e7b`.
 
 ## 2026-11-02 Verify same-CAP transient clears on physical Pico 2 6 minutes
@@ -20478,7 +20478,7 @@
 - Validation: `bash -n tools/test-same-cap-transients-physical` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=5 fail=0`. Physical `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients-physical '<exact Pico 2 reader>'` passed on `8E464F4E2BBC0A19`; GPPro cleanup passed.
 - Result: Physical APDUs returned `5A6B9000` after initialization, `006B9000` after sibling switch, and `00009000` after PC/SC reset. Thus deselect cleared only its array, and reset cleared both. No firmware rebuild or flash occurred.
 - Decision: Same-CAP transient deselect/reset behavior has direct physical evidence. Continue CTX-01/03 with GC and cold-power persistence coverage.
-- Commit: `0a6110a`; this progress SHA reference is recorded in the metadata commit.
+- Commit: `6fe7513`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: Physical `artifacts/logs/same-cap-transient-physical-20261102T145117Z.log` SHA-256 `904aab987b954ef4846e7ba480d90704e8f79e567afc2c3a40c18aa53d4976b7`; VPCD `artifacts/logs/same-cap-transient-vpcd-20261102T145043Z.log` SHA-256 `ec92680ca2d78aa928e39d03b2787160867481eabf7f22cb72eef059efff662d`.
 
 ## 2026-11-02 Replicate transient hardware test on second Pico 2 4 minutes
@@ -20489,7 +20489,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00'` passed; GPPro cleanup passed.
 - Result: Pico `2BED26ED20556535` matched `8E464F4E2BBC0A19`: initialization `5A6B9000`, sibling deselect `006B9000`, and PC/SC reset `00009000`. No error-code, transient-state or cleanup difference was observed. No flash or rebuild occurred.
 - Decision: Physical transient lifecycle result is replicated on two tokens. Continue GC/persistence acceptance and remaining CTX-01 firewall behavior.
-- Commit: `2c0c912`; this progress SHA reference is recorded in the metadata commit.
+- Commit: `2e7181c`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-transient-physical-20261102T145504Z.log` SHA-256 `b340ba2d91faba8ee42ad49df14b0929221c61731b897c3439941cb5ecd83be5`.
 
 ## 2026-11-02 Replicate same-CAP lifecycle on second Pico 2 5 minutes
@@ -20500,7 +20500,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00'` passed on Pico 2 `2BED26ED20556535`.
 - Result: All observed status words and static values matched Pico `8E464F4E2BBC0A19`; package cleanup passed. No device-level difference was observed. Firmware image hash on 2BED was not collected, so same-image equivalence is unverified.
 - Decision: Same-CAP basic lifecycle behavior is replicated across two physical devices. Continue GC and persistence coverage; capture firmware identity when comparing boards in future.
-- Commit: `53cd1a2`; this progress SHA reference is recorded in the metadata commit.
+- Commit: `c366c72`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T145819Z.log` SHA-256 `c7ca0453911b758544a8a5dce5572a7df8f825f6f41ea2784de638affe6187db`.
 
 ## 2026-11-02 Fix generated ISOException token and validate heap pressure 40 minutes
@@ -20511,7 +20511,7 @@
 - Validation: `./tools/build arm --profile current`, `./tools/build riscv --profile current`, and the full `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-arrays-vpcd` passed; VPCD summaries were 42/42 and 3/3. Exact-chip-ID `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 8E464F4E2BBC0A19` and the same cycle for `2BED26ED20556535` passed flash verification and finite serial monitoring. `tools/test-rmi-arrays-physical` passed on both exact readers with all four pressure calls, all array/exception responses, JCAlgTest preservation, and fixture cleanup. Targeted `git -c core.whitespace=cr-at-eol diff --check` passed.
 - Result: VPCD's first pressure call left 5/261 arrays reachable and reclaimed 256 arrays; the next three pressure APDUs and all remaining array/exception tests passed. Correct CardException RMI result is `822112349000`, distinct from ISOException `82236A829000`. Both boards produced matching responses. Current ARM firmware ends at `0x100cf988`, leaving 198,264 bytes in the 1 MiB firmware region. UF2 SHA-256: `5a105ffd8d4b5171c1ede2c8468bf62d86406983c585556979d3950a69db7e14`.
 - Decision: Close the repeated RMI allocation-pressure APDU and physical exception-type checks on two boards. Cold-power persistence and global Object[] reference ownership remain open. The first serial-targeted flash attempt timed out entering BOOTSEL; stable chip-ID targeting succeeded for both devices.
-- Commit: `ea6a005` (implementation/test); metadata record follows in its own commit.
+- Commit: `1500003` (implementation/test); metadata record follows in its own commit.
 - Artifacts/logs: VPCD RMI `artifacts/logs/rmi-array-invoke-vpcd-20261102T155109Z.log` SHA-256 `8c450e4d6d5f885cffc20b5de0ad5d88d35695b0a244f5adf1f7cb50a9333857`; VPCD references `artifacts/logs/rmi-reference-interfaces-vpcd-20261102T155109Z.log` SHA-256 `cc8189d264a054ef1c31e53585d169d6eb402da05c765da2503a3b760b4778b1`; physical 8E `artifacts/logs/rmi-array-physical-20261102T155323Z.log` SHA-256 `3fa3283abaa57d6e503c92edb66730ce8d9bb88d717a52cf06da0c2977971c1a`; physical 2BED `artifacts/logs/rmi-array-physical-20261102T155426Z.log` SHA-256 `af4dfd07b721559e1af1b56b78f3ea2b5fcbcb2fd52731cdbfc0f4a107c90445`; cycles `artifacts/logs/cycle-choupi-20261102T154302Z.log` and `...154730Z.log`.
 
 ## 2026-11-02 Recheck physical readers and current-profile build 4 minutes
@@ -20522,7 +20522,7 @@
 - Validation: `./tools/build arm --profile current` and `./tools/build riscv --profile current` passed. Elevated `picotool info` found no BOOTSEL devices; `pcsc_scan -r` found runtime readers `8E464F4E2BBC0A19` and `2BED26ED20556535`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'` passed for each board. Both returned ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`. ARM firmware end `0x100cf988`, using 850,312/1,048,576 bytes with 198,264 bytes remaining (80.9% used).
 - Result: Both available cards are responsive. Their installed package inventories differ, but the JCAlgTest/power-up probe results match. This is not a cold-power test and the flashed image hash was not measured.
 - Decision: Continue using identified runtime boards for read-only checks. Do not flash until a specific BOOTSEL target is visible; continue global Object[] reference ownership work offline.
-- Commit: `9015f69`
+- Commit: `f3c49c4`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T160303Z.log` SHA-256 `50d66044c9d3ceca4caf9b2e11bbf23a6bddda940dd80af35554ca5060e207f2`; `artifacts/logs/pico-powerup-persistence-20261102T160327Z.log` SHA-256 `e8ecf4a053d5b39aa1795c8fd20a18a01ac97a0bdb6ac478f267a16b5d9aadbd`.
 
 
@@ -20534,7 +20534,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`global_object_array_owner=1`); `./tools/build arm --profile current` and `./tools/build riscv --profile current` passed. ARM firmware ends at `0x100cff20`, using 851,744/1,048,576 bytes and leaving 196,832 bytes. Focused VPCD `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 41 --timeout 120` passed: response `009000`, `TEST:SUMMARY pass=3 fail=0 elapsed_s=71.496`. Earlier physical run on Pico 2 `2BED26ED20556535` passed transaction suite 10/10 and cleanup. On `8E464F4E2BBC0A19`, flash verify passed but post-flash serial monitoring did not find a USB serial device; switched to 2BED. Its successful monitor had a retained `CHOUPI:WATCHDOG_RECOVERY ... cause=other` marker followed by runtime pass summaries. No cause established. `git -c core.whitespace=cr-at-eol diff --check` passed before commit.
 - Result: Same-package global-array retention and identity, independent-heap handle-collision isolation, package-scoped root retention/reclamation, reset cleanup, and package-delete cleanup pass unit/VPCD/physical checks. Cross-package `aaload` still fails closed; global arrays in this runtime are transient, so persistent-slot support is not part of this implementation. No new physical flash was performed during the resumed validation.
 - Decision: Keep cross-package reads fail closed until an opaque owner-aware reference can preserve Java Card firewall checks without aliasing. Continue CTX-01 with cross-package read/access and stale-owner tests. Do not claim full global Object[] conformance.
-- Commit: `fffebb8`
+- Commit: `9bd4c26`
 - Artifacts/logs: VPCD focused run emitted to command output and its wrapper artifacts; physical probe `artifacts/logs/jcsystem-transaction-physical-20261102T164149Z.log` (SHA-256 `97c7d2ebad717b082d3c4ab10fb4c490809c1eb09be0cacdd3254f6e1ffb2e0c`); physical cycle `artifacts/logs/cycle-choupi-20261102T163612Z.log` (SHA-256 `b75f5e863e66953a52216ddfef74ff4ddf7cb5e2d2b4055696ecdb5b538cc07d`). Build stdout was not archived.
 
 
@@ -20546,7 +20546,7 @@
 - Validation: `PICO2_DEBUG_PERSISTENT_GC=1 ./tools/build arm --profile current` and the RISC-V wrapper both passed. `PICO2_HOST_USB_ACCESS=1 PICO2_DEBUG_PERSISTENT_GC=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed after the wrapper recovered from `Unable to locate reset interface` via CDC-1200 BOOTSEL; flash write and verify reached 100%, and finite monitor had repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical '<exact 2BED reader>'` passed all five APDU assertions and `PERSISTENT_RECLAIMER:CLEANUP_PASS`. Concurrent serial capture showed `CHOUPI:PERSISTENT_GC owner=4 result=0 erased=1 ... candidates=1` after root release, then later rooted data remained readable. No `FAULT` or `TEST:FAIL` appeared.
 - Result: The hook-enabled physical path did erase one unreachable owner-scoped persistent tag while preserving the surviving root. The physical image uses 852,280/1,048,576 bytes and leaves 196,296 bytes. UF2 SHA-256 `38d585f20414648427011e5a21a78f3acfa13bce3bb442eeb7861ad38d267604`. This is one-owner live erase evidence, not multi-owner or power-interruption validation. An earlier APDU-only run without serial verification passed but cannot establish that the persistent hook ran.
 - Decision: Keep normal persistent-object reclamation disabled until physical multi-owner and interrupted-erase/power-loss recovery pass. Improve the wrapper to assert serial erase telemetry, then continue CTX-01/03. Hook-enabled firmware currently remains on board 2BED.
-- Commit: `afbfb15`
+- Commit: `7b2dd8c`
 - Artifacts/logs: physical APDU `artifacts/logs/persistent-reclaimer-physical-20261102T170042Z.log` SHA-256 `833d036b146cbb87723a0663e6b117be0a90245e62d0fbf656f5c1fad7cb5fd3`; serial `artifacts/logs/persistent-reclaimer-serial-2BED-20261102T171000Z.log` SHA-256 `3e89318190f7a290db287e50ae9e0497c1fedb332e54fa032a68acf22bd86bff`; cycle `artifacts/logs/cycle-choupi-20261102T165652Z.log` SHA-256 `dea23a2e06ee37be165115c2f74e6034cec9c2f4a4fc0debbb0d284ea753c4e1`.
 
 
@@ -20558,7 +20558,7 @@
 - Validation: `bash -n tools/test-persistent-reclaimer-physical` and targeted `git diff --check` passed. Hook-enabled physical test on `2BED26ED20556535` passed all five APDU assertions, required telemetry, and cleanup: `PERSISTENT_RECLAIMER:TELEMETRY_PASS`, `PERSISTENT_RECLAIMER:PASS`, `PERSISTENT_RECLAIMER:CLEANUP_PASS`. A stale exact reader suffix (`00 00`) was rejected safely before installation; refreshed suffix (`01 00`) succeeded. No firmware change in this step.
 - Result: The test now cannot claim physical reclaimer success based only on APDU behavior when no completed tag erase was recorded. The physical monitor line reported `owner=4 result=0 erased=1 candidates=1`; no `FAULT` or `TEST:FAIL` was present.
 - Decision: Keep power-loss/multi-owner gates open; continue CTX-01/03. Re-enumerate before using exact PC/SC reader names because slot numbers change.
-- Commit: `982a802`
+- Commit: `5a7ccaa`
 - Artifacts/logs: APDU `artifacts/logs/persistent-reclaimer-physical-20261102T185839Z.log` SHA-256 `65a060fd983ab98c408761abad656d9f5b0e52387c0de18973b1f2ab1704aa66`; serial `artifacts/logs/persistent-reclaimer-serial-2BED26ED20556535-20261102T185839Z.log` SHA-256 `81c454dec8a9411846aac84e8698e8b5dd187543ec59437e073dabcb4a1f9258`. Failed stale-name GPPro log: `build/persistent-reclaimer-probe/gp-list-20261102T185749Z.log`.
 
 
@@ -20570,7 +20570,7 @@
 - Validation: `./tools/build arm --profile max_crypto` passed (147/150 selectable capabilities enabled). `./tools/build riscv --profile max_crypto` passed its VM-core build. ARM linker boundary check passed. `cmp` confirmed the published UF2 and support CSV match the build outputs byte-for-byte.
 - Result: ARM firmware ends at `0x100e7df8`, uses 949,752/1,048,576 bytes (98,824 bytes remain in the firmware window). Published UF2 is 1,900,032 bytes, SHA-256 `7456bf4826c0aa9578e989992f566fd58878c8f212d06ed23e9b27ac756b114d`. Support CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. No physical flashing or runtime validation was performed; BOOTSEL devices were left untouched.
 - Decision: The refreshed max_crypto ARM image is ready for external testing. It was built with current local changes including `src/cap_load.cpp`; README records that provenance and the physical-validation limitation.
-- Commit: `ec395d9`
+- Commit: `f5877b9`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; `artifacts/firmware/README-max_crypto.txt`.
 
 
@@ -20582,7 +20582,7 @@
 - Validation: `./tools/test-rmi-registry` passed with owner checks for locals, pop, duplicate/swap, and global references. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed (147/150 capabilities). ARM image end `0x100e8160`; flash-boundary guard passed. Elevated `lsusb -d 2e8a:000f` returned no device, so no flash or physical monitor was run. Scoped `git diff --check` passed.
 - Result: Owner provenance can now move with a reference across the immediate stack/local/nested-call paths without changing `jref_t` or exposing a local heap slot as a cross-heap identity. This step does not yet enforce owner tags at dereference sites and does not enable private-reference SIO arguments; they remain rejected.
 - Decision: Next make consumers firewall-aware, including equality semantics and arrays, before enabling private references. Preserve fail-closed marshalling until that work and end-to-end tests pass.
-- Commit: `2c2cf93`
+- Commit: `aa0df70`
 - Artifacts/logs: No hardware artifacts; focused test output `RMI_REGISTRY:PASS`; ARM/RISC-V build output was not archived.
 
 
@@ -20650,7 +20650,7 @@
 - Validation: Refreshed readers through `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`; GPPro showed two physical Pico readers and their existing package inventories. GPPro `--uninstall` of the existing 1.8.2 CAP, `--install AlgTest_JavaCard/AlgTest_v1.8.4_jc305.cap`, and `--list` passed on exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00`. `PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00' -op ALG_SUPPORT_BASIC -fresh -outpath artifacts/results/jcalgtest-1.8.4-cap-on-8e-basic` completed. The local client is 1.8.2; CSV reports applet version `1.8.4_jc305`. GPPro restore and SELECT/GETVERSION verified `1.8.2_jc305` afterward.
 - Result: The 1.8.4 CAP loads, installs, selects, and executes the basic support suite on physical Pico 2. The CSV has 362 algorithm result rows (148 yes, 214 no, zero values other than yes/no) plus 20 section labels. The support rows are a basic subset only; extended support and static performance were not run. A matching 1.8.4 host client was unavailable locally, so this is not full 1.8.4 client acceptance.
 - Decision: Treat basic CAP/runtime compatibility as passed. Obtain a matching 1.8.4 client before claiming complete 1.8.4 suite acceptance; retain 1.8.2 as the card's installed applet.
-- Commit: `672beb8daf580549a893614bb86f73c966865597`
+- Commit: `eae684f35d07c3f66f07b696854d42cd66e8eff4`
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-cap-on-8e-basic/ALGTEST_log_1793653373952.log` (SHA-256 `b5bfe394f51c4c535b80dee965f6065220246d3b55cc501e026b637c93d72a70`); `artifacts/results/jcalgtest-1.8.4-cap-on-8e-basic/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(8E464F4E2BBC0A19)_00_00_ALGSUPPORT__3b_80_01_81.csv` (SHA-256 `494a2d2bef6b602b633c002a9e4dbfb5420fb18737bac663a40c407b581a115a`); upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
 
 
@@ -20662,7 +20662,7 @@
 - Validation: Exact-reader GPPro install/selection and matching-client runs: `ALG_SUPPORT_EXTENDED` on Pico 2 `8E464F4E2BBC0A19` stopped after `SCARD_E_NOT_TRANSACTED`; it had 7,881 successful `9000` responses and 7,875 support rows (198 yes, 7,677 no). The reader then disappeared from PC/SC; cause is unknown. `ALG_SUPPORT_EXTENDED` on `2BED26ED20556535` ran to its 3,600-second command bound with no transport exception, reaching 5,842 `9000` responses and 5,836 support rows (15 yes, 5,821 no). `ALG_SUPPORT_BASIC` on 2BED ran to its 900-second bound with 1,427 `9000` responses and 1,421 support rows (13 yes, 1,408 no), without a transport exception. `ALG_PERFORMANCE_STATIC` on 2BED ran to its 900-second bound with 1,157 `9000` responses, 962 expected `NO_SUCH_ALGORITHM` cases, and 170 completed timing values; it did not finish the full matrix. Restored 1.8.2 on 2BED using GPPro; `tools/probe-jc-algtest --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 static probe, and unsupported-signature probe (`TEST:PASS`). No build or flash was applicable because only host-side tests and package replacement were performed.
 - Result: The 1.8.4 CAP installs and executes substantial BASIC, EXTENDED, and static-performance subsets with the matching supplied client. These operations are too large to claim full completion from the bounded runs. The 2BED board remained usable and was restored; 8E disappeared during its extended run. The 1.8.4 jar help/banner identifies itself as 1.8.4, but generated result metadata says `AlgTestJClient version; 1.8.3` while correctly reporting applet `1.8.4_jc305`; treat that as a client metadata discrepancy pending upstream clarification. Performance memory deltas remain subject to the existing memory-reporting TODO.
 - Decision: Keep 1.8.2 restored on 2BED. For future 1.8.4 acceptance, resume operations from their output directories (without `-fresh`) in bounded per-operation runs, and use another identified reader if one disappears. Do not classify `NO_SUCH_ALGORITHM` as a firmware defect.
-- Commit: `a40fee9`
+- Commit: `52805a8`
 - Artifacts/logs: 8E extended `artifacts/results/jcalgtest-1.8.4-cap-on-8e-extended/` (CSV SHA-256 `6b3a068981b692df6e1623935f882a5a59d5bc9195fd40948b5f0842d6f5d580`; client log SHA-256 `32acff10806c9b907b4cb9953a63d67fa608bcbb5e57140c8a0912fbc0a98a11`); 2BED extended `artifacts/results/jcalgtest-1.8.4-cap-on-2bed-extended/` (CSV SHA-256 `2948f6d7327b99d9e1b89debbeeb6e13460019c0bf80b88d04537b9871179805`; client log SHA-256 `7d059b6c6d9eaee0cbbf6dcb293456d01c0864050f5cfb40a193083a9c72242`); 2BED basic `artifacts/results/jcalgtest-1.8.4-cap-on-2bed-basic/` (CSV SHA-256 `55e8198830cd46a40c58e07e55b22acf15a91a96306bcc4f2683baea7c9c9ba8`; client log SHA-256 `2d206d736f7d3b9f0bd8e372f303ecd69b7dd763a2665d43c7f87dd5de57a8c3`); 2BED static `artifacts/results/jcalgtest-1.8.4-cap-on-2bed-performance-static/` (CSV SHA-256 `40bb595b1933b3e73a48eda8addedbbaa6515f949d24de6595f113b08b103757`; client log SHA-256 `f504c3d6ef87a2b9dab4a7849fcebfb5052f2c5e163bcdfa1c3eedd772d60fe4`). Outputs are ignored local artifacts; no source files changed.
 
 ## 2026-11-03 CTO implementation retrospective approximately 15 minutes
@@ -20673,7 +20673,7 @@
 - Validation: Read plan, active and historical task context, dated progress, handoff, QKB, reviews, profile/filesystem contracts and selected current build source. Checked all report links/anchors and eight page sections/seven print breaks. Independently parsed the latest Crypto CSV: 304 OK, 161 UNSUPPORTED_PER_SPEC and one EXC_CARDRUNTIME. Documentation whitespace checks passed. Builds and hardware tests intentionally skipped because no implementation changed.
 - Result: Approximately 3,650 words across eight page-sized Markdown sections; historical hardware evidence remains distinct from current-source emulator acceptance. Work duration is an estimate, not a measured labor metric. No new performance measurements or hardware observations were made. Existing worktree changes were preserved.
 - Decision: Deliver the report; continue implementation under existing TODO acceptance owners. This analysis closes no firmware or physical acceptance gate.
-- Commit: `ad2cceb` (SHA recorded in metadata follow-up).
+- Commit: `4bd4d40` (SHA recorded in metadata follow-up).
 - Artifacts/logs: `docs/CTO_IMPLEMENTATION_REVIEW.md`; existing linked evidence only; no new runtime logs.
 
 ## 2026-11-03 Detailed current-code functionality review approximately 40 minutes
@@ -20695,7 +20695,7 @@
 - Validation: `bash -n tools/run-jcalgtest`, wrapper `--help`, and scoped whitespace checks passed. On Pico 2 `2BED26ED20556535`, exact-reader selection via the supplied `AlgTestJClient_v1.8.4.jar` succeeded and invoked the unchanged 1.8.4 CAP. SELECT returned `9000`, GETVERSION returned `FF05`, and the basic run was stopped after 3,275 rows, all `NullPointerException`. Reinstalled unchanged JCAlgTest 1.8.2 twice; GPPro lists its applet selectable, but `tools/probe-jc-algtest` still gets GETVERSION `FF05`. A finite serial monitor reported `TEST:SUMMARY pass=1 fail=0`; this establishes firmware runtime availability only, not applet correctness. No firmware flash/build was needed or performed.
 - Result: The wrapper can now explicitly use the matching supplied client. This physical recheck did not pass the applet smoke test and did not complete the support matrix. The first cleanup printed failure because the terminated client propagated exit 143 even though GPPro uninstall/reinstall/list operations succeeded; a second clean reinstall did not restore GETVERSION. Cause remains unresolved; do not claim the card is healthy based only on GPPro inventory.
 - Decision: Diagnose the physical GETVERSION `FF05`/applet initialization path before another long suite. Preserve the installed 1.8.2 CAP and use another identified reader if it becomes available.
-- Commit: `c12d966`
+- Commit: `86b9fb5`
 - Artifacts/logs: client CSV `artifacts/results/jcalgtest-1.8.4-basic-explicit-client/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`, SHA-256 `b7ffdc9de78ae9bb7780a8b61b57e69a77b4eb17a884d97ffd224cd55f439b08` (3,275 rows, all `NullPointerException`); client log SHA-256 `faffffffd7096810ab51b06205d5455baea3c627d446b9940ec6b433dd1a61c2`; 1.8.4 CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; 1.8.4 client SHA-256 `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`; post-restore probe `tools/probe-jc-algtest` returned `FF05`; monitor log `artifacts/logs/jcalgtest-182-getversion-ff05-2bed-20261103T002621Z.log` SHA-256 `dc295ad8e2bb7f1be34b2753f178e32a8b1ca23a3e92accdfbaec1d9ceb40bae`.
 
 ## 2026-11-03 Reflash and isolate physical JCAlgTest GETVERSION failure 14 minutes
@@ -20706,7 +20706,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. ARM image ends at `0x100e83bc`, leaving 97,348 bytes in the 1 MiB firmware window; UF2 SHA-256 `78e7fdbffa6654091963c81e8839b4034646db1d02047d4c268ff4f504e42e43`. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` completed flash verify and `TEST:SUMMARY pass=1 fail=0` 18/18 times; one `WATCHDOG_RECOVERY cause=other` marker appeared. Post-flash physical SELECT returned `9000`, but GETVERSION remained `FF05`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 1 --log artifacts/logs/host-vpcd-jcalgtest-20261103T0043Z.log` passed `TEST:SUMMARY pass=15 fail=0`, including GETVERSION `1.8.2_jc305`, JCSystem, SHA-256 operations and expected unsupported-algorithm behavior. No full physical support suite was run after the failure.
 - Result: Reflash and a clean applet reinstall did not recover the physical APDU. Current code and CAP pass in a fresh PC VPCD setup, so this does not look like a simple source/build failure. Physical package/static state and PC/SC-to-CCID routing remain unisolated; unrelated packages and persistent storage were left untouched.
 - Decision: Inspect physical per-package instance/static state and correlate actual CCID APDUs with VM traces before another support sweep. Fail over to another identified board if available.
-- Commit: `a951dea`
+- Commit: `c4c5538`
 - Artifacts/logs: ARM build log SHA-256 `cf9bcfaabcec655b6e5d95851ba2bdbfba63f836dc8c35c02b9e9cc42b9fb49b`; RISC-V build log SHA-256 `6b05eac977fdefac2ed6c3469dbc0d4c10f4f8ef1950e3c6aad4eb0cec867c79`; cycle `artifacts/logs/cycle-choupi-20261103T003857Z.log` SHA-256 `c55aab88dedc50f91f19e1c537f1c3aa12fc82776a6c0787b3d048edd342685e`; physical probe/serial `artifacts/logs/jcalgtest-182-getversion-after-reflash-2bed-20261103T004117Z.log` SHA-256 `03aa9fafebfa6ae945f75ba2c8e7fa1a7bc13c507a1de174cc90284bfe4cebf8`; VPCD `artifacts/logs/host-vpcd-jcalgtest-20261103T0043Z.log` SHA-256 `4b9ea019f45e54dda0820af322d17467f93fcb00bfe19c2fe61709163d1afbe0`. Original VPCD log was recovered exactly with its recorded SHA-256 `b612c9f275c898a73221d1694e21f7b8dda06d9d986b8cb54eff5918383ee7c0`.
 
 ## 2026-11-03 Check alternate Pico PC/SC availability 6 minutes
@@ -20717,7 +20717,7 @@
 - Validation: Elevated host-path `lsusb -v -s 001:029` and `-s 001:031` identified 8E and 2BED as `2e8a:0009`, both with CDC and CCID interfaces. `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `count=2`; elevated `getfacl` showed `user:pcscd:rw-` on both nodes. Repeated `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only 2BED and the two Virtual PCD readers. No APDU or flash operation was attempted on 8E.
 - Result: 8E is attached at USB but cannot currently serve as PC/SC failover. Both device nodes have PCSC permissions, so lack of ACL is not the observed cause.
 - Decision: Retry discovery later and use 8E if it appears as a PC/SC reader; meanwhile continue diagnosis on 2BED without claiming the second board is available for APDUs.
-- Commit: `23d2520`
+- Commit: `ad01b43`
 - Artifacts/logs: USB descriptor, ACL and PC/SC output were inspected live and not archived; board serials and observed enumeration state are recorded above.
 
 
@@ -20725,11 +20725,11 @@
 
 - Step/experiment: `ctx01-revalidation-and-jcalgtest-ff05-20261103`
 - When: '2026-11-03 00:51 UTC' - '2026-11-03 01:06 UTC'
-- Change: Re-read the updated repository instructions and handoff, then committed the validated pending cross-context private-reference boundary as `9165fc4`.
+- Change: Re-read the updated repository instructions and handoff, then committed the validated pending cross-context private-reference boundary as `352f2ad`.
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `./tools/test-rmi-registry` passed. `tools/tests/sio_cross_aid_vpcd_test.py` passed 18/18 with Descriptor omitted and 18/18 with Descriptor included. Authorized PC/SC refresh reported two USB nodes; `pcsc_scan -r` showed only 2BED plus two virtual readers. Read-only physical probe on 2BED returned SELECT `9000`, GETVERSION `FF05`. Concurrent finite serial capture reported `TEST:SUMMARY pass=1 fail=0` for the startup runtime self-check, but host polling had already replaced the CCID response snapshot with a slot-status response, so it did not correlate the failed GETVERSION response.
 - Result: Owner-tagged SIO behavior remains green in both VPCD loading modes and both physical Pico boards had not been changed in this step. The 1.8.2 physical applet failure remains reproducible after the prior firmware reflash; no root cause was established.
 - Decision: Continue CTX-01 with a deliberate equal-handle collision regression and the remaining reference-consumer audit. For the independent FF05 issue, retain the last actual XfrBlock response separately from later CCID slot-status responses, then rerun the exact-reader probe before any long JCAlgTest sweep.
-- Commit: `9165fc4`
+- Commit: `352f2ad`
 - Artifacts/logs: Descriptor-omitted VPCD `artifacts/logs/sio-cross-aid-vpcd-20261103T010107Z.log`, SHA-256 `8616921d1bce2c4ed5d5e77428db6731ac46b4eb0f521607226928bbeb5e7ca8`; Descriptor-included VPCD `artifacts/logs/sio-cross-aid-vpcd-20261103T010308Z.log`, SHA-256 `b8478eb69d56e87d0efa626bb0f07a3082d09a23a18355889ae0562dcd055b20`; serial and APDU output were observed live and not archived.
 
 ## 2026-11-03 Retain CCID APDU response and trace JCAlgTest FF05 14 minutes
@@ -20740,7 +20740,7 @@
 - Validation: `git -c core.whitespace=cr-at-eol diff --check -- src/ccid_device.cpp` passed. ARM and RISC-V `max_crypto` wrapper builds passed. Refreshed PC/SC access, flashed Pico 2 `2BED26ED20556535` with `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535`; flash verify reached 100%, finite monitor passed `TEST:SUMMARY pass=1 fail=0` (one `WATCHDOG_RECOVERY cause=other` marker appeared at boot). Concurrent physical probe returned SELECT `9000`, GETVERSION `FF05`; retained CCID telemetry reported APDU `B0E1000000`, length 2, status `FF05` after subsequent slot-status messages.
 - Result: The applet exception is a NullPointerException (`id=28`) at `arraylength` (`opcode=0x92`) in package 56, Method PC 15865. CAP class disassembly shows `JCAlgTestApplet.GetVersion` reads instance field `ALGTEST_JAVACARD_VERSION_CURRENT` and executes `arraylength`; the field is null at runtime although the constructor assigns the JC305 version array. This localizes the physical failure to instance-field initialization/persistence/restore but does not yet explain why the value is lost.
 - Decision: Trace the constructor `putfield_a_this`, serialized field record and persistent restore; add a focused reference-valued applet-instance-field reset regression. Keep the upstream CAP and unrelated persistent card contents unchanged. Do not run another full JCAlgTest sweep until GETVERSION succeeds.
-- Commit: `7fb08a3`
+- Commit: `24a24ba`
 - Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261103T010854Z.log`, SHA-256 `82e52063d48caa67210a0222e04e02274836041aabf94b7a0111616613fa47d9`; ARM UF2 SHA-256 `12dcd6db3e410923740e3c9de255ab0c334113fa5cb6159207a25a0782857d9d`; serial trace `artifacts/logs/ccid-retained-apdu-monitor-2bed-20261103T0120Z.log`, SHA-256 `6badf32af9a654af0a0991dbf3371a22a0a9461f4c13ec9ae505ffdf02d802cb`; probe `artifacts/logs/ccid-retained-apdu-probe-2bed-20261103T0120Z.log`, SHA-256 `7e1b4d1f80b32badce113a58e8ca6b497030e6a864444c8c412738d10506a662`.
 
 ## 2026-11-03 Reinstall and test JCAlgTest 1.8.4 on Pico 2 48 minutes
@@ -20751,7 +20751,7 @@
 - Validation: `./tools/test-vpcd-persistence` passed install/commit 3/3 and restored persistence plus four GC-pressure rounds 38/38. Refreshed the authorized PC/SC helper; exact-reader `pcsc_scan -r` showed 2BED. GPPro deleted applet AID `4A43416C675465737431` and package AID `4A43416C6754657374`, then installed `AlgTest_JavaCard/AlgTest_v1.8.4_jc305.cap`. A probe built from `tools/JCAlgTestApduProbe.java` with expected version changed only in ignored `build/` output returned SELECT `9000`, GETVERSION `1.8.4_jc305`/`9000`, JCSystem info `9000`; after the client timeout, the same probe passed again. The official 1.8.4 `ALG_SUPPORT_BASIC` run returned valid APDU responses without transport errors but hit the 900-second wrapper timeout (exit 124) at 2,617 result rows; it is incomplete. No ARM/RISC-V build was needed because no firmware source changed and no flash was attempted.
 - Result: Deleting/reloading the whole JCAlgTest package cleared the previous physical GETVERSION `FF05`. The partial BASIC CSV contains 148 `yes` and 2,427 `no` results; missing algorithms are expected. The client's banner reports 1.8.4 while CSV metadata says 1.8.3. Generic VPCD field/reference persistence passing does not explain the previous CAP-specific null field.
 - Decision: Keep the fresh 1.8.4 installation. Investigate the old persisted instance separately and verify this fresh install across reset. A full BASIC report needs a longer timeout and a separate output directory; omitting `-fresh` restarts the matrix rather than resuming.
-- Commit: `ece5e72`
+- Commit: `0ccf04e`
 - Artifacts/logs: CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; client SHA-256 `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`; partial CSV `artifacts/results/jcalgtest-184-basic-2bed-20261103/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv` SHA-256 `77a1eadd49efeca49ff7145e399d150a042a883ad95aaae9775a900ff31633ca`; run log `artifacts/results/jcalgtest-184-basic-2bed-20261103/ALGTEST_log_1793670639605.log` SHA-256 `7d488e4baa0ec5420e05743051a01a285632d18f1339980d74581ee90f54ed36`; post-timeout probe `artifacts/logs/jcalgtest-184-post-basic-timeout-2bed-20261103.log` SHA-256 `e6fc5f0f5df0fd8c5bfc2b45ae329ae84eb43dba34287f0f51faaae1c6540ab3`.
 
 ## 2026-11-03 Extended JCAlgTest 1.8.4 physical BASIC attempt 24 minutes
@@ -20762,7 +20762,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_TIMEOUT_SECONDS=1800 ./tools/run-jcalgtest --client-jar AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' -op ALG_SUPPORT_BASIC -fresh -outpath artifacts/results/jcalgtest-184-basic-2bed-20261103-complete-attempt` exited 1 after 2,680 support records with `SCARD_E_NOT_TRANSACTED`; the result is incomplete. Afterward, helper refresh plus `pcsc_scan -r` restored the 2BED reader. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial 2BED26ED20556535 --seconds 10` passed repeated `TEST:SUMMARY pass=1 fail=0`; the exact-reader 1.8.4 SELECT/version/JCSystem probe also passed. 8E remained absent from PC/SC, so no physical failover was available.
 - Result: Partial CSV has 148 `yes` and 2,532 `no` results, with no applet exception in the saved APDU log. The PC/SC error interrupted an APDU; device firmware and the fresh applet remained responsive after reader rediscovery. The root cause is unknown.
 - Decision: Keep the current 1.8.4 installation and continue using the supplied 1.8.4 client. Do not count BASIC as complete or launch another long sweep until the long-run reader loss is diagnosed or another physical PC/SC target is available. Investigate the old persisted instance's null field separately.
-- Commit: `0e40335`
+- Commit: `52659e2`
 - Artifacts/logs: Partial CSV `artifacts/results/jcalgtest-184-basic-2bed-20261103-complete-attempt/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv` SHA-256 `7912582d59b97dd0c52d995cd63b1424a2fa41cad30e09276603a43e5d6e2aeb`; client log `artifacts/results/jcalgtest-184-basic-2bed-20261103-complete-attempt/ALGTEST_log_1793671910139.log` SHA-256 `7591f2c857a2213a0098b1a63ab4302cb54b9828025bb1e4df83c7193472fac0`; post-failure APDU probe `artifacts/logs/jcalgtest-184-post-transport-failure-2bed-20261103.log` SHA-256 `725459fd25561cd4509547ec8263b244cae2c3340d43f3cdd55dc5e57c279966`; post-failure serial monitor `artifacts/logs/jcalgtest-184-post-transport-failure-monitor-2bed-20261103.log` SHA-256 `f91e1fe1e6427be2be9905a834385896c0d0a2c527d05e54fbf50e0c8c78b25d`.
 
 ## 2026-11-03 Isolate final 1.8.4 support APDU 6 minutes
@@ -20773,7 +20773,7 @@
 - Validation: After refreshing `sudo -n /usr/local/sbin/pico2-pcsc-reader`, `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=2s 15s ./tools/env java -cp build/jcalgtest-single-apdu SingleApdu 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' B0752A000307081000` returned SELECT `9000`, then mode APDU `9000` with JCAlgTest status byte `03`. Repeated once with identical result. This uses the upstream CAP and physically connected 2BED.
 - Result: The exact request does not reproduce the prior long-run `SCARD_E_NOT_TRANSACTED`; status `03` is expected unsupported. The cause remains cumulative/time-dependent or transport-related and is not proven.
 - Decision: Leave the 1.8.4 installation intact. Keep the full BASIC run marked incomplete; continue investigating long-run reader loss or use another board if it becomes a PC/SC reader.
-- Commit: `510cef4`
+- Commit: `52b9b61`
 - Artifacts/logs: `artifacts/logs/jcalgtest-184-single-hmac-mode-2bed-20261103.log` SHA-256 `592674c04c5a3c2eb2383c3fa704d7c54acd12af4945424e2f0e70a80c4bf17d`.
 
 ## 2026-11-03 Complete JCAlgTest 1.8.4 BASIC on physical Pico 2 25 minutes
@@ -20784,7 +20784,7 @@
 - Validation: Refreshed authorized access with `sudo -n /usr/local/sbin/pico2-pcsc-reader`; `pcsc_scan -r` identified the exact reader. `PICO2_HOST_USB_ACCESS=1 JCALGTEST_TIMEOUT_SECONDS=1800 ./tools/run-jcalgtest --client-jar AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' -op ALG_SUPPORT_BASIC -fresh -outpath artifacts/results/jcalgtest-184-basic-2bed-20261103-new-client-check` exited 0 with “Testing complete.” CSV parsing found 4,446 yes/no results (148 yes, 4,298 no), with no other result status. SELECT, GETVERSION `1.8.4_jc305`, JCSystem info, and the full BASIC operation completed without a PC/SC error. No build or flash was required or run.
 - Result: The previously observed 2,680-row reader drop did not recur; this run passed that point and completed. The run took 24 minutes 20 seconds from CSV start time to artifact completion. The client banner says 1.8.4, but generated CSV metadata says 1.8.3. A standalone repository probe remains hardcoded to expect 1.8.2 and returned nonzero after correctly reading `1.8.4_jc305`; the official matching client run itself passed.
 - Decision: Treat upstream 1.8.4 BASIC support as physically completed on board 2BED. The earlier transport failure remains unexplained but has not reproduced. Keep the CAP and client unchanged; perform any other test mode as a separate bounded run.
-- Commit: `b61c7bc` (metadata reference was added in a follow-up commit)
+- Commit: `7f26093` (metadata reference was added in a follow-up commit)
 - Artifacts/logs: CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; client SHA-256 `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`; CSV `artifacts/results/jcalgtest-184-basic-2bed-20261103-new-client-check/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv` SHA-256 `e6103afaa14a7b489c5df6a1c7bb46f88998a1a850cd662646afbce61f2d1b8`; client log `artifacts/results/jcalgtest-184-basic-2bed-20261103-new-client-check/ALGTEST_log_1793674025192.log` SHA-256 `6dd78f7c83a7b501788c2423de6bdebeb6f9001709639cf93e27220f3f1f01af`.
 
 ## 2026-11-03 Keep foreign-reference stack rejection catchable 31 minutes
@@ -20795,7 +20795,7 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed. Escalated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 47/47; escalated `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` passed 18/18. First `./tools/cycle choupi --profile current --serial 2BED26ED20556535` attempt failed before flashing because picotool could not locate the composite device reset interface and its initial BOOTSEL recovery timed out. Delayed BOOTSEL enumeration then appeared. Escalated `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial 2BED26ED20556535 build/arm/pico2_choupi.uf2` successfully flashed and verified 100% of the image. Escalated `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial 2BED26ED20556535 --seconds 18` passed with repeated `TEST:SUMMARY pass=1 fail=0` and no `TEST:FAIL`/`FAULT`. Firmware SHA-256: `1ca1093340e936276b52869c9637adf22c8627fe21598c8b6cf1d0379b85d963`.
 - Result: Security rejection remains catchable independent of optional bounds-check configuration. Physical runtime remains healthy after flash. `git diff --check` flags the three newly edited stack-header lines because the tracked file uses CRLF; other step files are clean.
 - Decision: Commit the exception contract fix and test. Continue CTX-01 with a complete audit of reference-consuming operations and owner-aware lifecycle.
-- Commit: `a8258a3`
+- Commit: `d3a48e7`
 - Artifacts/logs: VPCD and RMI logs at `artifacts/logs/host-vpcd-multipackage-*` and `artifacts/logs/rmi-client-official-vpcd-client-20261103T033058Z.log`; physical monitor was inspected directly and not archived.
 
 
@@ -20807,7 +20807,7 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed. Escalated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 47/47; `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` passed 18/18. ARM firmware ends at `0x100d050c`, leaving 195,316 bytes of the 1 MiB firmware window. Attempted escalated `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial 2BED26ED20556535 build/arm/pico2_choupi.uf2`; picotool again lacked the composite reset interface, CDC 1200-baud reset was requested, then `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero devices and escalated `lsusb -d 2e8a:` also found none. Physical flash/monitor validation is incomplete.
 - Result: Cross-package invocations and RMI behavior still pass on VPCD; malformed primitive and foreign-owner receiver references fail closed. Physical hardware identity and state became unavailable during reset; cause unknown.
 - Decision: Commit the locally validated typed-reference boundary. Continue CTX-01 offline, then flash and capture finite serial output when a physical board is again enumerated.
-- Commit: `d627e9a`
+- Commit: `1de52c4`
 - Artifacts/logs: VPCD APDU/restart/reject logs `artifacts/logs/host-vpcd-multipackage-*20261103T035537Z.log`; RMI client log `artifacts/logs/rmi-client-official-vpcd-client-20261103T035809Z.log`; no physical log was captured.
 
 
@@ -20819,7 +20819,7 @@
 - Validation: Initial `./tools/test-rmi-registry` and ARM/RISC-V builds exposed and caught a const-correctness error in the root filter; corrected it to compare against the stored applet package ID. The final `./tools/test-rmi-registry`, `./tools/build arm`, and `./tools/build riscv` passed. `CHOUPI_JCVM_DEBUG=ON ./tools/build-pc` passed (upstream Rust/packed-member warnings remain). VPCD SIO fixture passed 18/18 with Descriptor omitted and 18/18 with Descriptor included. The first new return probe failed `6F00`; trace isolated owner normalization comparing applet-instance ID against the package ID used during argument marshalling. Comparing with `context.getCurrentPackageID()` fixed it. ARM firmware end is `0x100d05d8`, remaining 195,112 bytes; UF2 SHA-256 `98f4c036d6fe56b80cbcf0582ff6a8ec60bea6b3de83a2770220b59234190873`. Physical flash/runtime was intentionally not retried because escalated USB inventory and the authorized reader helper found zero Pico devices.
 - Result: A client-private array now survives a cross-AID Shareable call/return with identity preserved and can be dereferenced after the caller context is restored. VPCD passed both Descriptor paths; physical validation remains open.
 - Decision: Commit this SIO return implementation and test. Continue CTX-01 GC/lifecycle and opaque third-party return audit; perform hardware validation when a board is again visible.
-- Commit: `b70fa32`
+- Commit: `a234631`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T041029Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T041135Z.log`; first failed diagnostic run `artifacts/logs/sio-cross-aid-vpcd-20261103T040743Z.log`; debug emulator log contains trace output.
 
 
@@ -20831,7 +20831,7 @@
 - Validation: `./tools/test-rmi-registry` passed. No firmware source changed; ARM/RISC-V build and physical validation were not required for this test-only addition.
 - Result: Root return owner tracking and GC filtering have direct regression coverage in addition to the cross-AID VPCD round-trip test.
 - Decision: Commit the focused regression and continue CTX-01 audit.
-- Commit: `fbc7413`
+- Commit: `751ed04`
 - Artifacts/logs: test output inspected live; no separate log.
 
 
@@ -20843,7 +20843,7 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed; ARM image end `0x100d06a8`, 194,904 bytes remain in the firmware window. VPCD SIO fixture passed 18/18 without Descriptor and 18/18 with Descriptor. `git diff --check` passed on the focused step files. Refreshed the authorized PC/SC helper; it found zero Pico devices, so physical validation was unavailable. Several exploratory fixture runs intentionally failed while exposing stale CAP reuse, outdated firewall expectations, and a multi-reference marshalling anomaly; see QKB and HANDOFF.
 - Result: Foreign opaque handles retain identity for branch tests without becoming resolvable in the receiver heap; dereference and virtual dispatch denial remain covered. A temporary two-reference SIO probe observed second server local `0x005A` and `6F00`; this remains unverified/open.
 - Decision: Commit this focused comparison fix and continue CTX-01 collision, lifecycle, casts, and multi-reference SIO marshalling audit. No firmware flash or JCAlgTest run was possible/needed in this step. The upstream AlgTest client for subsequent client runs is `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`.
-- Commit: `1aaf7cd`
+- Commit: `220d37e`
 - Artifacts/logs: Passing VPCD logs `artifacts/logs/sio-cross-aid-vpcd-20261103T043054Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T043207Z.log`; exploratory multi-reference failure `artifacts/logs/sio-cross-aid-vpcd-20261103T042112Z.log`.
 
 
@@ -20855,7 +20855,7 @@
 - Validation: Rebuilt fixture CAPs through `./tools/build-sio-cross-aid-fixture` as part of `./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py`; VPCD passed 18/18 without Descriptor and 18/18 with Descriptor. The 2-argument path, global Object[] virtual-call denial, caller-owned array return, and null/identity behavior passed. No firmware source changed, so ARM/RISC-V build and hardware flash were not repeated; physical reader helper had already found zero Pico devices.
 - Result: The earlier `6F00` / suspicious second local `0x005A` observation did not reproduce with the regenerated CAPs and distinct method token. Its original cause remains unknown; no multi-reference runtime defect is established.
 - Decision: Keep the multi-reference regression and treat the earlier failure as nonreproducing. Continue the CTX-01 owner/lifecycle audit.
-- Commit: `dc8769e`
+- Commit: `1dcfd3d`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T043825Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T044006Z.log`.
 
 
@@ -20867,7 +20867,7 @@
 - Validation: Rebuilt the test-only contract, service, and client CAPs. `./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 18/18 without Descriptor; `SIO_CROSS_AID_REUSE_FIXTURE=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 ./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 18/18 with Descriptor. The reference identity/null, two-reference, array dereference, virtual-call, cast, and instanceof probes passed. No firmware source changed, so ARM/RISC-V builds and hardware flashing were not repeated; physical reader discovery remains zero.
 - Result: The current `pop_Reference()` ownership checks prevent a foreign compact handle reaching class lookup through `checkcast` or `instanceof`; each rejection is catchable by the applet.
 - Decision: Keep the end-to-end regression. Continue the remaining CTX-01 collision/storage/GC/stale-owner/DELETE audit.
-- Commit: `18afebd`
+- Commit: `1dbc1e5`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T044420Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T044608Z.log`.
 ## 2026-11-03 Reproduce stale SIO proxy after GP DELETE 16 minutes
 
@@ -20891,7 +20891,7 @@
 - Decision: Keep the failing regression and trace the precise exception path
   before implementing a fix. Windows diagnosis needs a correlated firmware
   serial log and Windows PC/SC trace.
-- Commit: `789c79d`
+- Commit: `3022961`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T095524Z.log`,
   `artifacts/logs/sio-cross-aid-vpcd-20261103T100259Z.log`,
   `artifacts/logs/sio-cross-aid-vpcd-20261103T100540Z.log`,
@@ -20913,7 +20913,7 @@
   framing, and host interpretation.
 - Decision: Capture a firmware serial log and Windows PC/SC trace together
   before changing CCID framing or ATR bytes.
-- Commit: `a1c0a4f`
+- Commit: `37f0156`
 - Artifacts/logs: `src/ccid_device.cpp`; Windows output supplied in the
   conversation; no local host-side trace available.
 
@@ -20925,7 +20925,7 @@
 - Validation: `./tools/build-pc`, `./tools/test-rmi-registry`, ARM and RISC-V wrapper builds passed. VPCD SIO suite passed 20/20 with and without Descriptor. Physical Pico 2 `8E464F4E2BBC0A19` passed the full cross-AID SIO run, including GPPro service DELETE, retained-proxy `6A0A9000`, fresh lookup `6A049000`, and cleanup. A second board `2BED26ED20556535` was flashed and passed finite serial monitor (`TEST:SUMMARY pass=1 fail=0`); its preinstalled packages were preserved. `git diff --check` passed with CRLF handling. Windows `certutil -scinfo` MUTE remains unresolved; no Windows host trace was available.
 - Result: GP DELETE no longer leaves an uncaught `ClassCastException`/`6F00` path when an applet later uses its stale proxy; the failure is catchable and fresh lookup remains available. ARM firmware end `0x100d06e0`, 194,848 bytes remain in the firmware window; UF2 SHA-256 `e6cb1364fdba43e99ca0c043363eb9b7b30d5d23dcd06ceb363ef73afaec6512`.
 - Decision: Commit the focused stale-proxy fix and continue investigating the Windows PRESENT/MUTE symptom. Broader CTX-01 lifecycle/GC acceptance remains open.
-- Commit: `e09d677`
+- Commit: `3e65549`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T103610Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T103738Z.log`, `artifacts/logs/sio-cross-aid-physical-20261103T110344Z.log`, and finite monitor log for `2BED26ED20556535` (see `.agent/HANDOFF.md`).
 
 ## 2026-11-03 Make Pico power-up probe version-selectable 11 minutes
@@ -20936,7 +20936,7 @@
 - Validation: `bash -n tools/test-pico-powerup tools/probe-jc-algtest` and scoped `git diff --check` passed. Initial simultaneous probes against 8E and 2BED failed the hardcoded 1.8.2 assertion after reading the valid installed `1.8.4_jc305`; one attempt also had a transient `SCARD_F_COMM_ERROR`. After the override, sequential read-only physical probes passed on 8E `8E464F4E2BBC0A19` and 2BED `2BED26ED20556535`: ATR `3B800181`, SELECT/GETVERSION `9000`, version `1.8.4_jc305`, JCSystem info `9000`. No firmware build/flash or card modification was needed.
 - Result: The power-up probe now works with both supported installed JCAlgTest versions. USB power-removal persistence remains untested. The concurrent PC/SC error was not reproduced or diagnosed.
 - Decision: Commit the focused tooling and documentation update; continue CTX-01 lifecycle/firewall work.
-- Commit: `3baffb4`
+- Commit: `8205fa1`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T111821Z.log` and `artifacts/logs/pico-powerup-persistence-20261103T111840Z.log`.
 
 ## 2026-11-03 Verify SIO foreign-array firewall at native Util boundary 9 minutes
@@ -20947,7 +20947,7 @@
 - Validation: The first VPCD run reused stale generated CAPs and returned the fixture's default `45679000`; rerunning without the reuse flag rebuilt the fixtures. The cross-AID VPCD suite then passed 20/20 with Descriptor omitted and 20/20 included. The expanded physical test passed on Pico 2 `8E464F4E2BBC0A19`, including native Util foreign-array denial `6A269000`, prior array/owner firewall cases, reset stale-proxy check, GP DELETE stale-proxy check, and cleanup. Fixture CAP conversion completed with zero errors and the existing int-support warning. Firmware builds were not required because firmware source did not change.
 - Result: One generated JNI native-reference path is now verified to reject a foreign owner before the native body resolves the compact handle in the service heap. This does not close the full native API or lifecycle audit.
 - Decision: Commit the focused fixture and acceptance coverage; continue CTX-01's remaining stale-owner, GC-root and multi-package audit.
-- Commit: `a3660d4`
+- Commit: `f19bc65`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T112302Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T112447Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T112637Z.log`.
 ## 2026-11-03 Windows MUTE Linux cross-check 5 minutes
 
@@ -20957,7 +20957,7 @@
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader && pcsc_scan -r` passed; escalated host-access exact-reader GPPro `--list` passed on `8E464F4E2BBC0A19` and `2BED26ED20556535`. No firmware build or flash was performed.
 - Result: Both Linux devices completed card activation and APDU listing. Windows MUTE is narrowed to Windows/host-path behavior, but the exact cause is unknown without a USBPcap trace, correlated serial log, and image hash.
 - Decision: Keep CCID behavior unchanged pending those diagnostics; inspect CCID power-on command `0x62` and response `0x80` in the trace.
-- Commit: `b91a255`
+- Commit: `2723c7a`
 - Artifacts/logs: read-only command output in this session; no archived log.
 
 ## 2026-11-03 Correlate Linux CCID APDU and serial behavior 2 minutes
@@ -20968,7 +20968,7 @@
 - Validation: Exact Pico `8E464F4E2BBC0A19` GPPro `--list` exited 0; `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial 8E464F4E2BBC0A19 --seconds 8` exited 0 and showed CCID/APDU traffic, `9000`, and `TEST:PASS choupi_runtime`. The first monitor call omitted `--serial` and correctly failed because two CDC devices were attached; rerun with exact identity passed.
 - Result: Current Linux reader path completes APDU exchange and runtime checks; this does not determine why Windows reports MUTE.
 - Decision: Keep firmware unchanged and request a Windows USBPcap trace correlated with serial output and the flashed image hash.
-- Commit: `faeca16`
+- Commit: `f521d4b`
 - Artifacts/logs: monitor and GPPro output observed in session; not archived.
 
 ## 2026-11-03 Exercise cross-owner SIO object identity 11 minutes
@@ -20979,7 +20979,7 @@
 - Validation: The first VPCD attempt failed with restricted-loopback `EPERM`; elevated rerun passed 20/20 with Descriptor omitted. Descriptor-included VPCD passed 20/20. Exact-reader physical regression on Pico 2 `8E464F4E2BBC0A19` passed cross-AID calls, global Object[] owner firewall (`6B319000`), reset and stale-proxy checks, exception handling, GP DELETE, and cleanup. CAP conversion completed with zero errors and the existing int-support warning.
 - Result: Cross-owner object identity comparison and subsequent foreign virtual-call denial pass in emulator and hardware. The test does not expose compact handles, so an equal-handle collision is not proven by this particular integration run.
 - Decision: Retain the integration regression; continue CTX-01 with deterministic collision and foreign-owner lifecycle coverage.
-- Commit: `9288592`
+- Commit: `1ffe505`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T114056Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T114257Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T114515Z.log`.
 
 ## 2026-11-03 Verify global array non-retention rules 10 minutes
@@ -20990,7 +20990,7 @@
 - Validation: VPCD cross-AID suite passed 20/20 with Descriptor omitted and included. Physical exact-reader test on Pico 2 `8E464F4E2BBC0A19` passed global-array denials (`6B339000`), SIO/firewall cases, reset and GP DELETE stale-proxy checks, and fixture cleanup. CAP conversion completed with zero errors and the existing int-support warning. No firmware source changed, so architecture builds were not required.
 - Result: Static, instance, and array-component retention of a global transient array is rejected as required; passing it temporarily across SIO remains supported. The `RESTORE_READ_FAIL` was caused by the test attempting a prohibited store.
 - Decision: Close this global-array retention item; continue CTX-01 owner collision, stale-owner and broader native-reference acceptance.
-- Commit: `0ec3d92`
+- Commit: `1aaaca3`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T115208Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T115407Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.
 ## 2026-11-03 Retain foreign refs in volatile Object arrays 16 minutes
 
@@ -21000,7 +21000,7 @@
 - Validation: `./tools/build arm` passed (firmware end `0x100d07fc`, 194,564 bytes remain); `./tools/build riscv` passed its VM-core build; `./tools/build-pc` passed; `./tools/test-rmi-registry` passed. VPCD cross-AID suite passed 20/20 without Descriptor and 20/20 with Descriptor. The new status `6B43` proves same-reference identity after volatile array retention while static/instance stores remain denied. Targeted `git diff --check` passed. No physical device was used.
 - Result: Volatile applet-owned wildcard Object[] storage preserves foreign package provenance through `aastore`/`aaload`; later foreign dereference checks remain owner-aware. Static and instance fields, typed arrays, persistent arrays, and stable foreign-reference serialization remain incomplete. PC build emits pre-existing Rust/dependency warnings; no new C++ warnings were observed.
 - Decision: Keep CTX-01 open. Next implement owner-preserving persistent references for static/instance fields and persistent arrays without resolving foreign handles in the current heap; then add typed component compatibility and reset/delete/GC coverage.
-- Commit: `ace5a37`
+- Commit: `f0695e9`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T121552Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T121825Z.log`; official source [Oracle JCRE 3.0.5 §6.2.8](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
 ## 2026-11-03 Validate foreign-reference array retention on Pico 2 8 minutes
 
@@ -21010,7 +21010,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 8E464F4E2BBC0A19` passed build gates, flash verification, and finite monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed the physical suite and cleanup. APDU result was `6B439000`; GPPro installed and removed all three temporary fixtures. Targeted `git diff --check` passed.
 - Result: Volatile applet-owned wildcard Object[] retention preserves opaque foreign-reference identity on real hardware. Static and instance foreign-reference stores remain denied and are not accepted. No other package or user-installed applet was altered. The monitor printed a retained `WATCHDOG_RECOVERY cause=other` startup marker followed by repeated runtime PASS; QKB records its established interpretation as retained reset context rather than current failure.
 - Decision: Physical validation for this volatile-array slice is closed on 8E. Continue with persistent owner-preserving references and their reset/delete/GC behavior; this does not close CTX-01.
-- Commit: `bd6761c`
+- Commit: `d7ef714`
 - Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261103T122420Z.log` SHA-256 `a96fc72bbcf0e1c1ab7087055cc52a38fa40584fd59d5ebbb26fa146c2988765`; physical suite `artifacts/logs/sio-cross-aid-physical-20261103T122634Z.log` SHA-256 `5fb0036a5b871c8ebad9a2e3e6ef431e9a334c9a96f4bc744f5b21b96e52bda4`; UF2 SHA-256 `d1d3f5d9a54368905644cbbbe45da8c781b1a9d2ddf083cf00a8fb5b538be8cd`.
 ## 2026-11-03 Verify JCAlgTest survived firmware flash 4 minutes
 
@@ -21020,7 +21020,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_EXPECTED_VERSION=1.8.4_jc305 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed. GPPro listed the ISD and three installed applets/packages; ATR was `3B800181`; SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info all returned `9000`. No firmware or card contents were changed by the probe.
 - Result: Existing JCAlgTest 1.8.4 and two additional applets remained available after the firmware flash. This is a warm PC/SC reader check, not a cold-power persistence test.
 - Decision: Preserve the current applet state. Continue CTX-01 persistent foreign-reference support.
-- Commit: `1ba12a4`
+- Commit: `0d8f619`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T123155Z.log` SHA-256 `54fc6a4c7ffe003d98e80c09d3712d8521263c684f61883487c2d8062ef16232`.
 ## 2026-11-03 Complete JCAlgTest 1.8.4 static performance on Pico 2 34 minutes
 
@@ -21062,7 +21062,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` enumerated 8E and 2BED. `PICO2_HOST_USB_ACCESS=1 JCALGTEST_EXPECTED_VERSION=1.8.4_jc305 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` and the equivalent exact-reader command for `2BED26ED20556535` passed.
 - Result: Both readers returned ATR `3B800181`; SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info returned `9000`. The test does not establish that Windows used either of these exact boards or the same UF2 image.
 - Decision: Linux card activation and applet communication currently work on both connected boards. Keep Windows MUTE diagnosis open pending USBPcap plus same-run Pico serial evidence.
-- Commit: `59f124c`.
+- Commit: `8dc0fce`.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T134305Z.log` SHA-256 `1e5ba35569b26bc474d9693cbf1e5a9d4ec67bd324de0293b4bb017278f71f25`; `artifacts/logs/pico-powerup-persistence-20261103T134321Z.log` SHA-256 `95766be0b144662faf0e7f20f2eba9582d9f49717a8671150f67ca1b142bf989`.
 
 ## 2026-11-03 Flash failover and prepare physical same-AID SIO check 7 minutes
@@ -21073,7 +21073,7 @@
 - Validation: `bash -n tools/test-sio-cross-aid-physical` and `./tools/env javac -d build/sio-cross-aid-fixture/physical-probe-classes tools/tests/sio_cross_aid_physical_probe/SioCrossAidPhysicalProbe.java` passed. The 8E cycle passed flash verification but failed finite monitoring (`ERROR: no USB serial device found`); subsequent authorized enumeration listed only 2BED. The 2BED cycle then passed flash verification and finite serial monitoring (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). Its post-flash read-only `test-pico-powerup` passed ATR `3B800181`, SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info. The physical same-AID fixture itself was not run because 2BED already contains the fixture package AIDs and the wrapper refuses to overwrite them; 8E was unavailable.
 - Result: Failover kept hardware validation moving on 2BED and confirmed existing user applets remained installed and responsive. 8E's failure is a USB serial/PCSC enumeration issue after verified flash; its cause is unknown. The same-AID physical regression harness is compiled but awaits a board without these fixture AIDs.
 - Decision: Keep 8E offline until it re-enumerates; do not delete or overwrite 2BED's existing fixture packages. Continue with offline work until an eligible physical board is available.
-- Commit: `58e493b`.
+- Commit: `1d06c2e`.
 - Artifacts/logs: image SHA-256 `13f39ce7139297e423c63bf3b6ecd15386c2e550edd932e23efb612df082d863`; 8E cycle `artifacts/logs/cycle-choupi-20261103T134713Z.log` SHA-256 `2b1a4704d3fdd389defc5941282ec3a4662be8bf1fc97d95704f5d7cb4d60ecd`; 2BED cycle `artifacts/logs/cycle-choupi-20261103T134916Z.log` SHA-256 `4e6eb8c8f8dba428800e4683d83166548d404ebea5ebe33856532b85d7ab643f`; post-flash probe `artifacts/logs/pico-powerup-persistence-20261103T135041Z.log` SHA-256 `c981d9a64741a6dccffd1bf8aaeda7c3a8fc8e9223e33b0a64e1c059848dc03c`.
 
 ## 2026-11-03 Review CCID implementation against Windows MUTE report 3 minutes
@@ -21084,7 +21084,7 @@
 - Validation: Inspected `src/ccid_device.cpp` and the official CCID Rev 1.1 fields for `dwFeatures`, supported protocols, PowerOn, and DataBlock. Linux exact-reader checks on both boards passed earlier in this session. No Windows USBPcap or same-run serial trace was available.
 - Result: Descriptor advertises T=1 and short-APDU, with `dwFeatures=0x00020042` comprising automatic ATR parameter configuration, automatic parameter negotiation, and short-APDU exchange; this matches the T=1 ATR and required APDU-level feature bits. PowerOn returns a success DataBlock containing ATR. An unproven risk remains: the default handler responds to unsupported CCID commands with SlotStatus, potentially incorrect for a command such as GetParameters.
 - Decision: Do not change CCID behavior until Windows capture proves which command/response fails. Obtain USBPcap through PowerOn and follow-on command(s), paired with CDC serial, exact board ID, and UF2 hash.
-- Commit: `103bceb`.
+- Commit: `8b2911e`.
 - Artifacts/logs: no new logs. Sources: USB-IF CCID Rev 1.1 and Microsoft reader-state documentation, linked in `.agent/QKB.md`.
 
 ## 2026-11-03 Record repeated Windows certutil MUTE result 3 minutes
@@ -21095,18 +21095,18 @@
 - Validation: Compared the new output to the existing Windows MUTE investigation and current CCID trace requirements. No firmware, CCID descriptor, APDU, or card state was changed. No USBPcap or same-run Pico CDC trace was supplied.
 - Result: Windows enumerates `Pico2 JCVM CCID 0`, reports `SCARD_STATE_PRESENT | SCARD_STATE_MUTE` and “The card is unrecognized or not responding,” then exits `certutil` successfully after several minutes. The failed card activation remains localized only to the Windows PC/SC/CCID path; the failed USB message is not identified. Host-side delay is consistent with retries/timeouts but is not proof of their exact cause.
 - Decision: Continue to require a Windows USBPcap capture through `PC_to_RDR_IccPowerOn` and subsequent commands, correlated with CDC serial, board ID, and UF2 SHA-256, before changing CCID behavior.
-- Commit: `c261035`
+- Commit: `7d0c8bf`
 - Artifacts/logs: user-provided `certutil -scinfo` output; no PCAP or serial artifact.
 
 ## 2026-11-03 Restore historical progress placeholder 1 minute
 
 - Step/experiment: `progress-history-metadata-correction-20261103`
 - When: '2026-11-03 14:00 UTC' - '2026-11-03 14:02 UTC'
-- Change: Restored the historical `Commit: pending` field in the 2026-10-15 physical restore diagnostic record after an overly broad commit-reference substitution changed it accidentally. The 2026-11-03 Windows MUTE record continues to point to its correct commit, `c261035`.
+- Change: Restored the historical `Commit: pending` field in the 2026-10-15 physical restore diagnostic record after an overly broad commit-reference substitution changed it accidentally. The 2026-11-03 Windows MUTE record continues to point to its correct commit, `7d0c8bf`.
 - Validation: Reviewed the complete diff for both progress entries; only the unintended historical metadata hunk and this correction record changed. No code or hardware validation was involved.
 - Result: The historical progress record is back to its committed content, and the current documentation record retains the correct commit reference.
 - Decision: No implementation action; continue with the project backlog and Windows trace-based diagnosis.
-- Commit: `c2f331d`
+- Commit: `2c80c2a`
 - Artifacts/logs: none.
 
 ## 2026-11-03 Refresh physical SIO test availability 2 minutes
@@ -21117,7 +21117,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` succeeded and exposed one physical reader, `2BED26ED20556535`. Exact-reader `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' --list` succeeded. No firmware was flashed and no applet/package was modified.
 - Result: The reader already contains both SIO fixture packages `A000000151000003` and `A000000151000004`, so the physical delete/reinstall test was not run. The harness would require those AIDs absent and refuses overwriting them. JCAlgTest and API applets are also installed and preserved.
 - Decision: Keep the physical same-AID acceptance open; use a different identified token without conflicting AIDs when one is available and continue offline work meanwhile.
-- Commit: `66364ba`
+- Commit: `2134243`
 - Artifacts/logs: live command output only; no new log file.
 
 ## 2026-11-03 Classify JCAlgTest static-performance failures 5 minutes
@@ -21128,7 +21128,7 @@
 - Validation: Read-only source/log inspection. `Util_arrayCopy_EEPROM`, `Util_arrayCopy_RAM2EEPROM`, and `SWAlgs_AES` return `6400` at 15,421/15,074/15,107 ms; `Interpretor::run()` has a 15,000,000-us non-install budget returning `0x6400`. DES `clearKey()` at 64/128/192 bits returns `6F00` after 715–750 ms. No firmware or CAP was changed and no test was rerun.
 - Result: The three `6400` failures are explained by the configured interpreter budget; the three DES failures are not and remain unisolated. Prior blanket classification of all six as undiagnosed is now superseded.
 - Decision: Design a cooperative bytecode progress/CCID extension mechanism before changing the guard; separately instrument the DES persistent-key path. Preserve upstream CAP/client bytes.
-- Commit: `0c7eca5`
+- Commit: `5fc008b`
 - Artifacts/logs: existing `artifacts/results/jcalgtest-184-static-8e-20261103/ALGTEST_log_1793709244220.log`; code path `choupi/src/interpretor.cpp`.
 
 ## 2026-11-03 Service CCID during long interpreted JCAlgTest calls 48 minutes
@@ -21139,7 +21139,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed; native-progress guard passed 6/6 and CCID progress flow passed 9/9. The unchanged upstream `AlgTest_v1.8.4_jc305.cap` and `AlgTestJClient_v1.8.4.jar` completed `ALG_PERFORMANCE_STATIC` on Pico 2 `2BED26ED20556535` in 2,209 seconds with zero reconnects or manual resets. The 60-second firmware returned valid results for the two former `6400` EEPROM-copy cases; `SWAlgs_AES()` still hit `6400` at 60,497 ms. The 120-second image was then flashed and passed the finite runtime monitor. A focused replay of the official 50-iteration SW AES measurement returned `AA9000` on the 120-second image. The final full static sweep was not repeated after raising the limit to 120 seconds.
 - Result: `Util_arrayCopy_EEPROM()` measured 496.33 ms/op over 250 iterations; `Util_arrayCopy_RAM2EEPROM()` measured 472.22 ms/op; SHA-256 `MessageDigest_doFinal()` measured 5.79 ms/op (min 5.58, max 5.92). No `6400` occurred for either EEPROM-copy case. The full 60-second run contained 1,847 expected `NO_SUCH_ALGORITHM` results and four `CANT_BE_MEASURED` rows (three DES `clearKey()` plus SW AES). The SW AES failure was the same explicit interpreter budget, not reader loss. ARM image hash after setting the 120-second budget: `84655280ec0b1f2151f3c862210917bc24717190d11b07100e6e1a646e5d5963`.
 - Decision: Cooperative CCID progress plus a 120-second finite applet budget lets the exact SW AES APDU complete, while the two persistent-copy workloads already fit under 60 seconds. Keep the full upstream CAP unchanged; the exact reader/board remained responsive throughout.
-- Commit: `2d55ad5`
+- Commit: `74a5fd9`
 - Artifacts/logs: Full static log `artifacts/results/jcalgtest-184-static-2bed-cooperative-20261103/ALGTEST_log_1793715344528.log` SHA-256 `c333e47f33e4833938f4f079e36eba3debf7341b6e032f9f2227c0f57a913867`; CSV SHA-256 `096c5b75ae0b8ab9b4e30a15bb55f4595033f86a4e70a1c28ea7c17be47ae100`; flash/monitor `artifacts/logs/cycle-choupi-20261103T145516Z.log`.
 
 ## 2026-11-03 Correct JC305 DESKey inherited method remap 10 minutes
@@ -21150,7 +21150,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, `./tools/build riscv`, `./tools/test-native-progress-guard` (6/6), and `./tools/test-ccid-progress-flow` (9/9) passed. The final ARM image was flashed and verified on Pico 2 `2BED26ED20556535`; its finite monitor passed. On the exact reader, the unchanged 1.8.4 applet received `INS=30` preparation, five `INS=40` baselines, and the `INS=40` static clearKey measurement for DES 64, 128, and 192 bits; all responses were `AA9000`. A final full static rerun was attempted but not started because the authorized helper found zero physical readers and PC/SC showed only VPCD.
 - Result: All three previously failing DES clearKey measurements pass on the final ARM image. Root cause is token remapping, superseding the prior unproven persistent-flash-write hypothesis. Full-suite acceptance after combining this fix with the 120-second applet budget remains pending physical reader availability.
 - Decision: Preserve the DES interface map fix. When a physical Pico reader reappears, run the complete unchanged `ALG_PERFORMANCE_STATIC` operation with the 1.8.4 client before closing API-03 static-performance acceptance.
-- Commit: `a9d0fdf` (progress reference is recorded in the follow-up metadata commit)
+- Commit: `22a6255` (progress reference is recorded in the follow-up metadata commit)
 - Artifacts/logs: Final UF2 SHA-256 `07605231943cf52dbfaeeb3e17ff7e7b621cf5b904fc5e63a74ca7d886e16010`; flash/runtime `artifacts/logs/cycle-choupi-20261103T150345Z.log`; focused results `artifacts/logs/jcalgtest-184-des-clear-2bed-20261103.log` SHA-256 `0a7490531f73b30b39c41a1d5ee234cc40052bce67191285ef382c208a70a359`; serial `artifacts/logs/jcalgtest-184-des-clear-2bed-monitor-20261103.log` SHA-256 `0d5c71eb57f75a8ac5f91196349739e227c06264d87d058c779d31b798ac8e8a`.
 ## 2026-11-03 Classify Windows GPPro and certutil results 3 minutes
 
@@ -21160,7 +21160,7 @@
 - Validation: Inspected repository CPLC bytes and the pinned GlobalPlatformPro date decoder/tests; compared them with the exact GPPro and certutil output. Confirmed Microsoft discovery/minidriver behavior against official documentation. No firmware, CAP, applet state, or physical device was changed; no build or hardware validation was required.
 - Result: Both Windows reader slots connect with ATR `3B800181`; ISD SELECT, CPLC, and Card Data return `9000`. Optional IIN/CIN/Card Capabilities/Key Info Template return `6A88`. `certutil` reaches provider lookup after identifying the available, unpowered card and fails with `ERROR_FILE_NOT_FOUND`, indicating no Windows card-type/provider association for that ATR.
 - Decision: No firmware change is indicated. Windows certificate/minidriver integration would require a separately defined provider/ATR mapping requirement. The earlier MUTE hypothesis is superseded for this successful GPPro session.
-- Commit: `30e840b`
+- Commit: `fe10e4f`
 - Artifacts/logs: user-provided Windows output; none archived locally. Microsoft references are linked in `.agent/QKB.md`.
 
 ## 2026-11-03 Update Windows acceptance from GPPro evidence 3 minutes
@@ -21171,7 +21171,7 @@
 - Validation: Cross-checked the exact user-provided trace against `.agent/QKB.md`, pinned GlobalPlatformPro CPLC date parsing, and the Windows acceptance guides. No firmware or device state changed. No build/test needed for this backlog correction.
 - Result: Basic Windows reader activation and APDU exchange are evidenced on two reader slots; profile installation and complete JCAlgTest acceptance remain open.
 - Decision: Preserve AC-01 as open until both packaged workflows and reports are run on Windows; do not treat certutil's missing provider mapping as a firmware APDU failure.
-- Commit: `e0d203f` (implementation; progress SHA reference is recorded in the metadata follow-up commit)
+- Commit: `c6a38d4` (implementation; progress SHA reference is recorded in the metadata follow-up commit)
 - Artifacts/logs: Windows output supplied in conversation; no local artifact.
 
 ## 2026-11-03 Add interpreted SensitiveResult checks across SIO 10 minutes
@@ -21204,7 +21204,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Fixture CAP conversion and Python syntax check passed. Elevated local VPCD cross-AID integration passed `TEST:SUMMARY pass=31 fail=0`, including the SHA known-answer and both SensitiveResult outcomes. Authorized physical-reader refresh found zero Pico devices, so physical flash/validation was skipped.
 - Result: A real runtime defect was found: SHA-256 returned 32 but left SensitiveResult unset. The fixed interpreter path returns 32 with the expected SHA-256 of `1234`, and exceptions leave the result unassigned. ARM image uses `0x100d09d8` endpoint with 194,088 bytes remaining in the current 1 MiB window.
 - Decision: Keep CTX-02 open for additional PIN/signature/key result producers, object-result GC rooting after locals drop, and physical acceptance of this native change when a device is passed through.
-- Commit: `f0c276a`
+- Commit: `8499891`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T154309Z.log`.
 
 ## 2026-11-03 Fix native Cipher SensitiveResult propagation 13 minutes
@@ -21215,7 +21215,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed; `./tools/build-sio-cross-aid-fixture` converted all three CAPs with zero conversion errors (expected int-support warnings); elevated VPCD SIO suite passed `TEST:SUMMARY pass=31 fail=0`. Authorized Pico reader refresh found zero devices, so physical flash/validation was skipped.
 - Result: The interpreter now preserves the native Cipher result through cross-applet calls and leaves failed calls unassigned by construction. The first transient AES key fixture returned uncaught `SecurityException`; using the persistent key form used by the existing symmetric crypto fixture passed. ARM image ends at `0x100d0a00`, leaving 194,048 bytes in the 1 MiB window.
 - Decision: Keep CTX-02 open for PIN, signature, random data, checksum, AEAD, key API producers, object-result GC rooting after locals drop, and physical validation.
-- Commit: `c98d59a`
+- Commit: `09eb9b6`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T155804Z.log`.
 
 ## 2026-11-03 Native Signature SensitiveResult propagation 24 minutes
@@ -21236,7 +21236,7 @@
   input passes. ARM endpoint is `0x100e8820`, leaving 96,224 bytes in 1 MiB.
 - Decision: Continue CTX-02 with remaining result producers, object-result GC
   rooting, and physical validation.
-- Commit: `4e67103`
+- Commit: `70248fa`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T162028Z.log`;
   no hardware log.
 
@@ -21247,10 +21247,10 @@
 - Change: Replaced the pending commit reference for the completed Signature
   SensitiveResult step with its implementation commit SHA in this log and the
   session handoff.
-- Validation: Confirmed commit `9ce59e9` contains the Signature implementation,
+- Validation: Confirmed commit `98df2d1` contains the Signature implementation,
   interpreted fixture, TODO, QKB, handoff, and original progress record. No
   runtime code changed in this metadata follow-up.
-- Result: Implementation commit is recorded as `9ce59e9`.
+- Result: Implementation commit is recorded as `98df2d1`.
 - Decision: Continue the CTX-02 audit.
 - Commit: metadata-only follow-up
 - Artifacts/logs: none.
@@ -21272,7 +21272,7 @@
   reader helper reported zero attached Pico 2 devices.
 - Decision: Continue CTX-01/03 audit, then return to the remaining CTX-02
   producers and physical acceptance when hardware is available.
-- Commit: `14b8375`
+- Commit: `2ff86a1`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T163223Z.log`,
   SHA-256 `61c7955c8b267f8fed7859a1c3f49aba65c76a114c609275de2efddee8eecc7a`.
 
@@ -21280,9 +21280,9 @@
 
 - Step/experiment: `ctx02-signature-false-result-metadata-20261103`
 - When: '2026-11-03 16:34 UTC' - '2026-11-03 16:35 UTC'
-- Change: Recorded implementation commit `47db89c` in the false-result test
+- Change: Recorded implementation commit `fb8e2be` in the false-result test
   progress entry and session handoff.
-- Validation: Confirmed commit `47db89c` contains the interpreted fixture,
+- Validation: Confirmed commit `fb8e2be` contains the interpreted fixture,
   TODO/QKB/handoff updates, and its progress record. No test or firmware code
   changed in this metadata update.
 - Result: The test change is traceable to its implementation commit.
@@ -21309,18 +21309,18 @@
   Context/Heap resolution first. Current guards remain intact.
 - Decision: Implement owner-aware lookup and equal-handle typed-array coverage
   before enabling that store path; then design persistent owner encoding.
-- Commit: `95931ce` (documentation; handoff SHA update follows)
+- Commit: `e5ed1ac` (documentation; handoff SHA update follows)
 - Artifacts/logs: source inspection only; no test log.
 
 ## 2026-11-03 Record foreign-store audit commit metadata 1 minute
 
 - Step/experiment: `ctx01-foreign-reference-store-audit-metadata-20261103`
 - When: '2026-11-03 16:36 UTC' - '2026-11-03 16:37 UTC'
-- Change: Recorded implementation commit `9015f69` in the source-audit progress
+- Change: Recorded implementation commit `f3c49c4` in the source-audit progress
   record.
 - Validation: Confirmed the commit contains the TODO, QKB, HANDOFF and progress
   record describing the owner-aware lookup prerequisite. No source code changed.
-- Result: The CTX-01 audit finding is traceable to commit `9015f69`.
+- Result: The CTX-01 audit finding is traceable to commit `f3c49c4`.
 - Decision: Continue with the owner-aware lookup design and implementation.
 - Commit: metadata-only follow-up
 - Artifacts/logs: none.
@@ -21333,7 +21333,7 @@
 - Validation: `./tools/build arm --profile max_crypto` passed and reported RP2350 ARM Secure; `./tools/build riscv --profile max_crypto` passed (VM core build). UF2 block magic validated across all 3,722 blocks. `tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed: firmware end `0x100e8820`, 96,224 bytes remaining. Generated support header has RSA-2048, RSA cipher/signature, EC-256, ECDSA, and EC key-pair support enabled. Authorized physical-reader helper found zero devices; hardware runtime was not tested.
 - Result: The current ARM file is a structurally valid, build-passing `max_crypto` image containing RSA/ECC capability selection. No evidence establishes physical operation of this exact image hash.
 - Decision: Keep hardware acceptance open. Reconfirm reader identity and flash this exact image only after both architecture builds pass and a reader is available; run finite serial monitor and unchanged upstream JCAlgTest CAP/client.
-- Commit: `30e840b`
+- Commit: `fe10e4f`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`; `.agent/HANDOFF.md`; no hardware log.
 
 ## 2026-11-03 Package current max_crypto firmware for external testing 2 minutes
@@ -21344,7 +21344,7 @@
 - Validation: `sha256sum` confirmed source and packaged image both equal `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`; both are 1,905,664 bytes. No firmware rebuild or physical flash was performed in this packaging step.
 - Result: A current, shareable max_crypto image is available without replacing the older packaged artifact. It enables RSA and ECC and does not bundle the upstream JCAlgTest CAP.
 - Decision: Use the newly dated artifact for external validation. The exact image is build-validated but not hardware-runtime-validated; it was generated from the shared worktree containing uncommitted local source changes.
-- Commit: `8751e26`
+- Commit: `6f6327c`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-20261103-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-03 Clarify empty-card max firmware delivery 2 minutes
@@ -21355,7 +21355,7 @@
 - Validation: `sha256sum` confirms `build/arm/pico2_choupi.uf2` and the new `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` match (`756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`). No rebuild or physical card operation was needed. Reviewed the deletion/list-verification flow against `docs/windows-asymm-symm-test.md` and `docs/symm-crypto-windows-test.md`.
 - Result: Current max firmware bundles no applet. Because firmware flashing preserves the token's separate CAP store, the runbook now requires GPPro deletion and a zero-APP/PKG list before loading JCAlgTest to establish a clean card state.
 - Decision: Use the explicitly named empty-card current UF2 for Windows tests; never imply BOOTSEL alone clears previously installed CAPs.
-- Commit: `ecf29c9`
+- Commit: `2302127`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt` and `.agent/HANDOFF.md`.
 
 ## 2026-11-03 Complete full API 3.0.5 Crypto VPCD sweep 106 minutes
@@ -21366,7 +21366,7 @@
 - Validation: `api_card_runner.py --api 305 --areas Crypto --reader-name 'Virtual PCD 00 00' --test-timeout 14400` completed 466/466 calls. GPPro upload and cleanup both passed. Total elapsed upload-to-cleanup 1:45:54. Outcomes: 304 `OK`, 161 `UNSUPPORTED_PER_SPEC`, and one known `EXC_CARDRUNTIME reason=0x0001` for upstream `ALG_RSA_SHA_512_PKCS1_PSS`; zero `WRONG_RESULT`, transport errors, or missing calls. Reader presence probe passed after keeping a live `pcsc_scan` poller active.
 - Result: A full Crypto sweep completes reliably within the finite deadline on this emulator setup. The PSS exception is the previously documented correct rejection of an undersized 1024-bit test key with default SHA-512 PSS salt; not a firmware defect. No physical board was involved.
 - Decision: EMU-01 is closed. Keep API-03 physical Crypto acceptance open and retain the upstream CAP unchanged.
-- Commit: `65b0e65`
+- Commit: `b5bb8c3`
 - Artifacts/logs: CSV `artifacts/results/deploy/vpcd-full-crypto-current-max-20261103/crypto.csv` SHA-256 `bee902ce4129238268c061f0e32334ba06c9f8f81e34cd9ddbf8dcf13c9e44f0`; runner log SHA-256 `9fa53e11f874a618ba287bf1760b62419ab58b9ec53fb0a5f2fe61c368672a64`; emulator log SHA-256 `204eafd093875401e926bd9802562ad3daca4a5a416226b498779b17a647a3dc`; unchanged CAP SHA-256 `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`.
 
 ## 2026-11-03 Complete full Security VPCD acceptance sweep 201 minutes
@@ -21377,7 +21377,7 @@
 - Validation: `api_card_runner.py --cap-dir AlgTest_JavaCard/deploy/caps --gp AlgTest_JavaCard/deploy/gp.jar --client AlgTest_JavaCard/deploy/client/AlgTestJClient.jar --api 305 --areas Security --reader-name 'Virtual PCD 00 00' --pcsc-lib /usr/lib/x86_64-linux-gnu/libpcsclite.so.1 --no-scenarios --test-timeout 14400 --gp-timeout 240` completed with exit 0; upload and GPPro cleanup succeeded. Full result: 901 calls, 397 `OK`, 504 `UNSUPPORTED_PER_SPEC`; no unexpected runtime, memory, result, SW, transport, or missing-call errors. A live `pcsc_scan` poller remained active throughout.
 - Result: Full Security API coverage completed on PC VPCD in 3:21:12. Large RSA/EC API calls took multiple minutes but completed. The run did not reproduce cumulative memory pressure on emulator storage; physical behavior remains unverified.
 - Decision: Keep API-01 open for current-image physical Security/Crypto sweeps and allocator-state capture on any future unexpected failure; continue with API-03 when a physical Pico is available.
-- Commit: `26a05bf`
+- Commit: `6c4db8b`
 - Artifacts/logs: `artifacts/results/deploy/vpcd-full-security-current-max-20261103/security.csv` SHA-256 `7124660ce335ba7bd5034e67a30a45c45e8da1b65030cc36e5fc668b05d5e776`; `security-client-raw.log` SHA-256 `8b81f0836159f77e44eb3b36d8f897fc488f9aafc952dfabf7c95590d3b4477e`; emulator and runner hashes in `.agent/QKB.md`; `AlgTestApiSecurity_305.cap` SHA-256 `bf9fb13fa342aa6c7739eb5750897011d25801d1db50ee9a75e7a714d11fef70`.
 
 
@@ -21409,7 +21409,7 @@
   `PKG:` entries before explicit CAP installation.
 - Decision: Provide the `*-empty-card-current.uf2` artifact and retain
   HOST-01/STORE-01 follow-up for package DELETE transport and storage cleanup.
-- Commit: `afb32f8` (metadata follow-up records this SHA)
+- Commit: `0965106` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`;
   Security CSV SHA-256 `bd1476f53c853dbf5000ff3cffe5b06575bca0e02ac79a20630801e531e557d8`;
   2BED Crypto CSV SHA-256 `e5df54bec9e09a3f26c0e1551b315fbc616fc460cab9887c566e767290860f0d`;
@@ -21444,7 +21444,7 @@
 - Decision: Close RV-01 on the passing 2BED failover validation; track 8E's
   post-flash enumeration issue as a separate board-level item. Continue with
   the next P1 implementation/offline integration proof.
-- Commit: `85eda56` (metadata follow-up records this SHA)
+- Commit: `4ace576` (metadata follow-up records this SHA)
 - Artifacts/logs: `tools/tests/ccid_rx_framing_test.cpp`;
   cycle recovery `artifacts/logs/cycle-choupi-20261103T232334Z.log`;
   8E flash/monitor `artifacts/logs/cycle-choupi-20261103T232841Z.log`;
@@ -21461,7 +21461,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; review real-heap probe `./build/review-20261103/persistence_probe array-retarget` passed (`old=0003 new=0005 old_byte=11 alias_byte=11`). `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed flash verification and finite serial monitoring on Pico 2 2BED (`TEST:SUMMARY pass=1 fail=0`).
 - Result: Existing aliases retain the old array across reassignment; the new array restores independently. GC preserves both while referenced, abort restores the original field graph, and the next committed allocation uses a fresh ID. Current ARM UF2: 1,905,664 bytes, SHA-256 `96d1f3486ba9fd910d58c0ede2e5dfc863f562700e44a34037cd93e50e1a0f26`, end `0x100e8990`, 95,856 bytes remaining. CAP-level alias behavior was not tested on hardware.
 - Decision: Close RV-20261103-02. Continue with RV-20261103-03, aborted static reference cache restoration.
-- Commit: `bdd5cd4` (metadata follow-up records this SHA)
+- Commit: `2f8cb6a` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261103T235906Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; review probe output recorded in `.agent/QKB.md`.
 
 
@@ -21473,7 +21473,7 @@
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed flash verification and finite serial monitor on identified Pico 2 2BED (`TEST:SUMMARY pass=1 fail=0`) after CDC BOOTSEL recovery.
 - Result: Static roots from pre-rollback state no longer satisfy reads or GC. The original persistent array resolves to the same canonical handle after abort or failed commit. Current ARM UF2 is 1,905,664 bytes, SHA-256 `1bcfd83bb1660c9122b8419e65c76846a4716cc16c4453a1a33999eef2cb41da`, end `0x100e89b8`, 95,816 bytes remaining.
 - Decision: Close RV-20261103-03. Next is RV-20261103-04, making DELETE prefix erases participate in rollback/recovery at the storage boundary.
-- Commit: `4069880` (metadata follow-up records this SHA)
+- Commit: `10ddbae` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T000827Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.
 
 
@@ -21485,7 +21485,7 @@
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including actual overlay deletion followed by rollback and cold `fs_init`, restored values, package and instance registry verification, and unrelated namespace preservation. `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/env cmake --build build/choupi-pc --parallel 2` passed. Physical cycle on Pico 2 2BED passed verified flash and finite serial (`TEST:SUMMARY pass=1 fail=0`).
 - Result: Failed package or applet bulk erases now restore their before-images before returning failure. The production overlay injection confirms actual backend mutation was rolled back; package metadata remains discoverable. PC build emitted existing Rust `cargo-clippy` cfg and packed-member warnings, with exit status 0. Current ARM UF2 1,907,200 bytes, SHA-256 `b4f1120c7dfec2c653176eb5298b55de1f6d9b2e9a5a56d078b3109c9d7ab1d5`, end `0x100e8b14`, remaining 95,468 bytes.
 - Decision: Close RV-20261103-04. Next: RV-20261103-05, cross-store lifecycle publication and recovery.
-- Commit: `b2673b9` (metadata follow-up records this SHA)
+- Commit: `c28f0d4` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T003256Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; production overlay suite output `TEST:SUMMARY fail=0`.
 
 ## 2026-11-04 Recover interrupted CAP lifecycle publication 33 minutes
@@ -21496,7 +21496,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including disabled staged LOAD cleanup, package DELETE completion after filesystem publication, enabled-without-CAP cleanup, and stale instance registry removal. `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Physical Pico 2 `2BED26ED20556535` passed CHOUPI flash verification and finite serial monitor with repeated `TEST:SUMMARY pass=1 fail=0`; flash reset used CDC BOOTSEL recovery after reset-interface discovery failed.
 - Result: Recovery handles the observed cross-store cut states idempotently and allows retry without retaining an unavailable package slot. ARM firmware ends at `0x100e8cd4`, leaving 95,020 bytes. Current max empty-card UF2 is 1,907,712 bytes, SHA-256 `a3fa5e7ff07c166b8220b72caef3871215d57710695be7e1c3f47eae0a7eeb8e`. PC build completed with existing pinned Rust cfg and packed-member warnings. Cross-store tests seed the durable state at each publication boundary; they do not simulate physical power loss during a live CAP-store sector write.
 - Decision: Close RV-20261103-05. Continue with RV-20261103-06, preflighting duplicate and full-registry INSTALL before applet execution.
-- Commit: `acad726`
+- Commit: `0914836`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T005831Z.log`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Preflight duplicate and full-registry applet INSTALL 62 minutes
@@ -21507,7 +21507,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` and `./tools/test-install-status` passed (`TEST:SUMMARY fail=0`); `./tools/test-persistent-transaction` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed (`TEST:SUMMARY pass=47 fail=0`). Physical ARM cycle on Pico 2 `2BED26ED20556535` flashed/verified and finite serial passed (`TEST:SUMMARY pass=1 fail=0`). Physical GPPro duplicate INSTALL returned `6A80`; registry remained unchanged; fresh instance install succeeded; GET STATUS page chain passed (`TEST:SUMMARY pass=2 fail=0`) and cleanup removed only the test package.
 - Result: Duplicate/full-registry requests are rejected before applet INSTALL execution. The physical image is 1,908,224 bytes, SHA-256 `3444fddf181ebffb71933904b69abeb3d0d921d771c64a64ce4d3603406f5407`, firmware end `0x100e8d94`, 94,828 bytes remain. This tested firmware bundles no applet; pre-existing token packages were preserved.
 - Decision: Close RV-20261103-06. Continue with RV-20261103-07, applet transaction abortion at lifecycle and reset boundaries.
-- Commit: `b00ddcf` (this metadata follow-up records its SHA)
+- Commit: `7f572a4` (this metadata follow-up records its SHA)
 - Artifacts/logs: VPCD `artifacts/logs/host-vpcd-multipackage-apdu-20261104T013815Z.log` SHA-256 `3229dc8e5a9bbe28e7714654842be803a84678038db71020de8b653679b646ba`; restart log `artifacts/logs/host-vpcd-multipackage-restart-20261104T013815Z.log` SHA-256 `4ea194e85004178a34b0557aec03c057efde881fcccc7bcecbab5440cfd7a106`; physical log `artifacts/logs/physical-get-status-multipage-20261104T020406Z.log` SHA-256 `2733b5b38425e6b6d19135e85f049ef900cebae74efdb7a8afdb5a9f86405105`; cycle log `artifacts/logs/cycle-choupi-20261104T020103Z.log` SHA-256 `42aa6becad47e641843a2d81eec27ae412b9499ff5913dd191bf563aa2feb673`.
 
 ## 2026-11-04 Correct persistent array identity counter tag 12 minutes
@@ -21518,7 +21518,7 @@
 - Validation: `./tools/test-persistent-transaction`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The protected PC VPCD integration passed card startup, SELECT, GET DATA, malformed tag checks, and SCP03, then was stopped during fixture pagination after eight installs; duplicate/retry acceptance remains unverified.
 - Result: CAP static initialization no longer hits the filesystem tag namespace assertion in PC VPCD. ARM image end `0x100e8d94`, 94,828 bytes remain in the firmware window. Hardware validation of this fix was not run in this step.
 - Decision: Close the tag ABI repair. Continue RV-20261103-06 with instrumented VPCD duplicate/full-registry INSTALL scenarios.
-- Commit: `53f706e`
+- Commit: `7cd2490`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261104T013001Z.log` (partial, eight instance records); focused test output `TEST:SUMMARY fail=0`.
 
 ## 2026-11-04 Abort applet transactions at lifecycle boundaries 51 minutes
@@ -21529,7 +21529,7 @@
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`), including runtime/app ownership separation. `./tools/test-jcsystem-transaction-applet --light-install --case 85 --case 86 --case 87 --case 88` passed (`TEST:SUMMARY pass=6 fail=0`, elapsed 151.984 s); local VPCD required elevated network access because restricted execution returns `EPERM` creating its loopback socket. `python3 -m py_compile` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed verified flash and finite serial (`TEST:SUMMARY pass=1 fail=0`) on identified Pico 2 2BED.
 - Result: Runtime-owned INSTALL state survived the applet abort guard; every VPCD lifecycle case rolled back the persistent write, and rejected selection was followed by successful fresh selection. Current ARM image `build/arm/pico2_choupi.uf2` is 1,908,736 bytes, SHA-256 `d451ce0482558b4eed6e09470c4ea69fc7bc3707c4f30e05c885634c3b51ddce`, firmware end `0x100e8e34`, 94,668 bytes remaining. It bundles no applet; flashing does not clear persistent token contents. Timeout and reset during an actively executing APDU were not directly injected: all interpreter exit statuses share the tested transaction cleanup, and the synchronous runtime cannot interleave a warm reset with an executing APDU. No CPU profile was captured during the 151.984-second PC CAP setup.
 - Decision: Close RV-20261103-07 implementation. Continue with RV-20261103-08, foreign retained-reference owner provenance; retain direct timeout/reset-interruption injection as a test limitation.
-- Commit: `a33439d`
+- Commit: `8ece8ec`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261104T025837Z.log` (SHA-256 `058a5e226ba0a33fffbcc414cfc130806c6e68650741baf2f1ea7004d4c6449b`); `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261104T025114Z.log` (SHA-256 `30dccca047b27b2335764c6e9ecd6e9757c1b2ebf8c8ff88e0a52e03aaaf5095`).
 
 ## 2026-11-04 Reject unsafe foreign references in applet arrays 23 minutes
@@ -21540,7 +21540,7 @@
 - Validation: `./tools/test-rmi-registry` passed, including both collision and non-collision cases and reuse of both collected slots. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The elevated-loopback `python3 tools/tests/sio_cross_aid_vpcd_test.py` suite passed `TEST:SUMMARY pass=31 fail=0`, including service package deletion, same-AID reinstall and old-proxy rejection. Pico 2 `2BED26ED20556535` passed final ARM flash verification and finite serial (`TEST:SUMMARY pass=1 fail=0`).
 - Result: Foreign references can no longer remain in package-local Object arrays whose collector cannot route owner provenance. Runtime-global-array references and cross-AID proxy behavior remain covered by passing cases. ARM UF2 is 1,908,736 bytes, SHA-256 `7f0eeba6e0af85d859e4d5c7a5a777a97f2d23b1e15f9addd8344acc465d8e13`, firmware end `0x100e8e30`, 94,672 bytes remaining. The image bundles no CAP; flashing does not clear token-resident packages.
 - Decision: Close RV-20261103-08. Continue with RV-20261103-09, object-sensitive results and roots with missing owner provenance.
-- Commit: `d4c12cc` (implementation; progress SHA follow-up follows)
+- Commit: `046afbc` (implementation; progress SHA follow-up follows)
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T031510Z.log` SHA-256 `8d31156959a9222acdbff0d34eeaa889442cb13131d665fa05b7bffaeb833c0a`; `artifacts/logs/cycle-choupi-20261104T032120Z.log` SHA-256 `7da2144f5187c2080738f303f4995f89b3075581c5b84be13708dd37aa5f7ea3`.
 ## 2026-11-04 Preserve SensitiveResult object ownership 19 minutes
 
@@ -21550,7 +21550,7 @@
 - Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto` passed; elevated `python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 32/32; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed finite serial (`TEST:SUMMARY pass=1 fail=0`).
 - Result: Interpreted service and client applet objects both had compact handle `0002`, owners 57 and 58. Cross-owner assertion correctly threw SecurityException; diagnostic collision records confirm the exact handle/owner pair. Firmware UF2 is 1,908,736 bytes, SHA-256 `b3c521ea19a8cb1832d97f99faa8a4f4817d136798a50d10d076b2675041e617`. The cycle used CDC BOOTSEL recovery after reset-interface discovery failed.
 - Decision: RV-09 acceptance is complete. Continue with RV-10, the renewable execution-budget finding.
-- Commit: `562870f`
+- Commit: `7057014`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T033440Z.log` SHA-256 `dc83725821ea28cad699e0ed59a52641f06f3c4821edef227e12b2a7f365b930`; `artifacts/logs/cycle-choupi-20261104T034116Z.log` SHA-256 `cd60290d67e2b46bceeb5bd2c41f1d7fdfe14551f0ce91fe1331cc2a743bb28e`.
 
 ## 2026-11-04 Enforce an immutable applet execution deadline 29 minutes
@@ -21561,7 +21561,7 @@
 - Validation: `./tools/test-execution-budget` passed; PC, ARM and RISC-V `max_crypto` builds passed; `python3 tools/tests/test_asymm_crypto_vpcd.py` passed `TEST:SUMMARY pass=99 fail=0` (97 vectors); elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed finite serial; elevated `./tools/test-asymm-crypto-pcsc ... 'RSA-CRT 3072-bit generation and components'` passed `019000` and package cleanup.
 - Result: VPCD fixture CAP setup needed 77.145 seconds, exceeding its previous 60-second connect timeout; the 300-second finite connect limit resolved the harness failure. Physical RSA-CRT-3072 completed in 72,612 ms. The current ARM UF2 is 1,909,248 bytes, SHA-256 `61a8f2462d80871942dd8b62000cf646b54cdb5c6647c0563d49d96f383eb5d6`. The cycle log includes an existing `WATCHDOG_RECOVERY cause=other` marker, but no `FAULT` or test failure; repeated runtime summaries pass.
 - Decision: RV-10 implementation acceptance is complete; exact 600-second expiration was tested through the production budget manager with fake time, not by waiting for the hardware timeout. Continue with RV-11 Cipher/transient-key lifetime.
-- Commit: `07de73e`
+- Commit: `4251243`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256 `1061bf7665519fd6024bbe41eca55844feacf872f00454d9bc582415acc98d23`; `artifacts/logs/asymm-crypto-pcsc-20261104T040227Z.log` SHA-256 `08b7397d42936035d7042e834495fa5d3ecc33e05e55b7875c83a02995ba9f2f`; `artifacts/logs/cycle-choupi-20261104T040104Z.log` SHA-256 `52689d2718db2a4d79917c1f9dfee35ea2ea9a3b0d02407b5218ce8caaf2ce1c`.
 
 ## 2026-11-04 Refresh current max_crypto empty-card firmware 2 minutes
@@ -21572,7 +21572,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. ARM flash-boundary check passed. Build reports 147/150 declared capabilities enabled and 92,780 bytes remaining.
 - Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 1,912,320 bytes, SHA-256 `b964b6cf96fe9989d0740ff3fe9783d2a9c54ab9f92241282ba71ed6e7b71d57`. It matches `build/arm/pico2_choupi.uf2`. Hardware was not available for testing this rebuild; flashing firmware does not erase CAPs already stored on a token.
 - Decision: Provide this current image for external validation. Delete existing applet and package AIDs on the target card before testing if it must be empty.
-- Commit: `1e4529a` (implementation; progress SHA follow-up follows)
+- Commit: `b7cd206` (implementation; progress SHA follow-up follows)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Clear Cipher key workspaces with transient key lifetime 68 minutes
@@ -21583,7 +21583,7 @@
 - Validation: `./tools/test-cipher-lifecycle-vpcd` passed `TEST:SUMMARY pass=29 fail=0`; it exercised AES and RSA key setup and Cipher use, clearing after deselect and reader reset, re-populating the source keys before asserting that retained Cipher copies were invalid, and direct use after a separate emulator process restored the applet. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Java client compilation, Python byte-compilation, and shell syntax checks passed. Authorized hardware refresh returned USB access but `pcsc_scan -r` showed only Virtual PCD 00 00/01; physical validation was skipped.
 - Result: In every tested boundary, repopulating source transient key bytes did not restore the retained Cipher workspace; calls returned `42 9000`. A first false `6F00` was caused by sending a four-byte APDU without Le; valid case-2 framing returned `019000`. Fresh restore also exposed a separate transient RSA key repopulation failure with `ArrayIndexOutOfBoundsException` (`62 9000`), recorded under RV-20261103-13. ARM endpoint is `0x100e9200`, leaving 93,696 bytes.
 - Decision: Keep RV-11 open until physical validation, with PC VPCD acceptance passing. Continue the separately tracked transient-array restore bug under RV-13.
-- Commit: `73afaf2`
+- Commit: `c619063`
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261104T084348Z.log` SHA-256 `e487a385b643a8d0bd6f346b9bb2a71600fced1b121c682721199adacb2bc73a`; `artifacts/logs/cipher-lifecycle-vpcd-restore-direct.log` SHA-256 `937c85f629c47615b08a44493b85e614c376cc7059238e706c5a8d0e00ba718f`.
 
 ## 2026-11-04 Clear both transient classes during card reset 12 minutes
@@ -21594,7 +21594,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=5 fail=0`; it verified direct reset clears both arrays without a deselect callback and sibling applet switching still clears only `CLEAR_ON_DESELECT`. `git diff --check` passed. Authorized hardware refresh found no Pico PC/SC reader, so physical validation was not run.
 - Result: VPCD reported direct active reset with unchanged deselect counter, reset clears both arrays, sibling selection clears only the deselect array; 5/5 checks passed. ARM image endpoint `0x100e9218`, leaving 93,672 bytes. PC/ARM dependency warnings were present; no new warning attributed to changed source.
 - Decision: Keep RV-12 open for physical and inactive-context transient-key coverage; continue RV-13 restore lengths/storage next.
-- Commit: `e6f55b91560da357b7463d6bc82385cef175a47f`
+- Commit: `10e3af45531da9b1e493fceab7acf29404141599`
 - Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T091128Z.log` SHA-256 `a543c2f51609e067cb02e16fc5b9f1dca338f47d3badbf5ba5fe15b6bae2f65d`; initial default-timeout attempts also logged as `artifacts/logs/same-cap-transient-vpcd-20261104T090735Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T090906Z.log`.
 
 ## 2026-11-04 Restore logical size and zero transient storage 35 minutes
@@ -21605,7 +21605,7 @@
 - Validation: `./tools/test-jcarray` passed its full suite, including byte/boolean/short/int/reference restored arrays, zero values, clearing, largest backing lengths, final valid entries and oversized rejection. `SAME_CAP_CONNECT_TIMEOUT_S=300 SAME_CAP_APDU_TIMEOUT_S=120 PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=6 fail=0`, including fresh emulator-process restoration with expected transient array lengths `04 04` and zero values. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Python/shell syntax and `git diff --check` passed. Physical scan exposed only Virtual PCD readers, so hardware validation was skipped.
 - Result: Test confirms restored arrays report their logical length four regardless of the three-byte tag prefix, contain zero data after process restore, and retain their shape after clear. Maximum tag+header+data backing allocations fit in 65,535 bytes; the next byte-array size is rejected. ARM firmware endpoint `0x100e926c`, leaving 93,588 bytes.
 - Decision: Keep RV-13 open for physical restore validation and broader persisted transient-key coverage; continue to the next high-priority TODO after this commit.
-- Commit: `35041e5`
+- Commit: `233f522`
 - Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261104T094553Z.log` SHA-256 `56a58e457b16886c6db8a963761c738e2cfbfef43fd5e5221beb3f6abfdc0ec5`; earlier rejected restart attempts are `artifacts/logs/same-cap-transient-vpcd-20261104T093323Z.log` and `artifacts/logs/same-cap-transient-vpcd-20261104T093949Z.log`.
 
 ## 2026-11-04 Make Signature workspaces lifecycle-cleared transients 9 minutes
@@ -21627,7 +21627,7 @@
 - Validation: `./tools/build arm --profile max_crypto` passed; build reported 147/150 selected capabilities and firmware end `0x100e932c` (93,396 bytes remain in the firmware window). `picotool info -a` identified the combined UF2 as RP2350 ARM Secure `pico2_choupi`. A UF2 block inspection verified 3,732 firmware blocks plus exactly 4,096 `0xFF` storage blocks, no overlap, RP2350 ARM-S family ID `0xe48bff59`, and storage coverage through `0x101FFFFF`. No board was flashed.
 - Result: Current firmware UF2 is 1,911,296 bytes (SHA-256 `9820f9dcee53120f0fca18b9f63bc2cabfbc8890cbeabbda4a9ddf7d68ef77f8`). Empty-card Windows test UF2 is 4,008,448 bytes (SHA-256 `dc3fdc634a0d06eb699e990ccbbdea19912cbc1795d65a04c91bdb64acebed04`). Neither image pre-installs JCAlgTest; only the combined image erases existing card storage during flashing.
 - Decision: Use `build/arm/pico2_choupi_max_crypto_empty_card.uf2` for Windows tests requiring a genuinely empty card, then install the unchanged upstream CAP explicitly with GPPro. Treat copying this image as destructive to stored CAPs/data. Continue with RV-20261103-15.
-- Commit: `093e1a3` (artifact metadata; progress SHA reference is recorded in the metadata follow-up commit); generated binaries remain ignored under `build/`.
+- Commit: `b849f1b` (artifact metadata; progress SHA reference is recorded in the metadata follow-up commit); generated binaries remain ignored under `build/`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; no serial/hardware log.
 
 
@@ -21639,7 +21639,7 @@
 - Validation: `./tools/test-jcarray` passed, including runtime-only sidecar defaults and reset clearing. `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` passed `TEST:SUMMARY pass=107 fail=0` and `asymmetric_vectors=102 ... rsa_signature_vectors=51 fail=0`. `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. No physical-token test was run. The combined empty-card UF2 passed inspection: 4,096 data blocks contain `0xFF` across `0x10100000`–`0x101FFFFF`; picotool identifies the image as RP2350 ARM Secure.
 - Result: The digest returned SHA-256(`abcdef`) after an aborted transaction, SHA-256(empty) after warm reset and after cold process restore. RSA ISO9796-2 recovery returned success after its suffix update occurred inside an aborted transaction. ARM firmware ends at `0x100E9564`, leaving 92,828 bytes. The current firmware-only UF2 is 1,912,320 bytes, SHA-256 `5087cb3352b61752f9c4e68a25aeb6f8ac3f59d700987a7bd3d1e04e6aec3bfc`; the current max empty-card UF2 is 4,009,472 bytes, SHA-256 `247b0d30bd2c0dab5fdfd5f4360a086932e5868ac82deb1993bfa26b624a5c5d`.
 - Decision: Close RV-20261103-15 implementation based on native, PC VPCD and cross-target build validation. Physical validation remains unverified. The refreshed empty-card image is `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; it erases stored CAP and filesystem data when flashed. Continue with RV-20261103-16, reused CBC object's post-final IV state.
-- Commit: `c163280e9ed54e0e3a3656a3bae43f63868cce4e`
+- Commit: `4b4345e9a756e74d1f2c8ca0f774ed34936b8e70`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-r15-20261104T1245CET.log` SHA-256 `d9baa259fc0afeaab65eb8e0d778b442a8d3f27bd8df9c6ee607a1f93be12629`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Reset CBC chaining state after doFinal 29 minutes
@@ -21650,7 +21650,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` passed `TEST:SUMMARY pass=99 fail=0` (`cipher_vectors=38`, `mac_vectors=47`, 97 total vectors plus setup/reset phases). The vectors cover AES and DES nonzero-IV first operation, zero-IV second operation, and caller-IV reinitialization. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The PC max-profile build and CAP conversion passed through the test wrapper. No physical-token validation was run. Rebuilt and inspected the max empty-card UF2; its storage section is 4,096 `0xFF` blocks over `0x10100000`–`0x101FFFFF`.
 - Result: Both AES and DES reused operations match independent zero-IV reference outputs; explicit `init()` matches the original supplied IV. One initial suite run exposed that the in-progress retained-Cipher probe expected only `UNINITIALIZED_KEY` after reset; the corrected probe also treats the correct `INVALID_INIT` as a rejected operation. The successful run log reports no failures. ARM firmware ends at `0x100E9590`, leaving 92,784 bytes. Current firmware-only UF2 is 1,912,320 bytes, SHA-256 `34e95e0e1504add5130f5a0d7d11c102f939708ce3fa82699e33e7d6d7a8680e`; current max empty-card UF2 is 4,009,472 bytes, SHA-256 `7f7538c0b83faf826682848f39d4148cb4530f2fc11c95731f52bba33e03357a`.
 - Decision: Close RV-20261103-16 implementation using PC VPCD and cross-target build validation; hardware remains unverified. For Windows testing with an empty card, use `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, which clears previous CAP and filesystem data. Continue with RV-20261103-17, streaming digest behavior beyond the current cumulative input limit.
-- Commit: `b36c5fb5a5e25a912a1c9d1ccc8505f4b353ed83`
+- Commit: `2edc1b2aeafcb47393351c362ebd21632798465d`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261104T120640Z.log` SHA-256 `1e67eb5eec3a133139518b2b10f4f83feacc038b431e60037ad12112162a6a4f`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Reset CBC chaining state after doFinal 29 minutes
@@ -21661,7 +21661,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` passed `TEST:SUMMARY pass=99 fail=0` (`cipher_vectors=38`, `mac_vectors=47`, 97 total vectors plus setup/reset phases). The vectors cover AES and DES nonzero-IV first operation, zero-IV second operation, and caller-IV reinitialization. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The PC max-profile build and CAP conversion passed through the test wrapper. No physical-token validation was run. Rebuilt and inspected the max empty-card UF2; its storage section is 4,096 `0xFF` blocks over `0x10100000`–`0x101FFFFF`.
 - Result: Both AES and DES reused operations match independent zero-IV reference outputs; explicit `init()` matches the original supplied IV. One initial suite run exposed that the in-progress retained-Cipher probe expected only `UNINITIALIZED_KEY` after reset; the corrected probe also treats the correct `INVALID_INIT` as a rejected operation. ARM firmware ends at `0x100E9590`, leaving 92,784 bytes. Current firmware-only UF2 is 1,912,320 bytes, SHA-256 `34e95e0e1504add5130f5a0d7d11c102f939708ce3fa82699e33e7d6d7a8680e`; current max empty-card UF2 is 4,009,472 bytes, SHA-256 `7f7538c0b83faf826682848f39d4148cb4530f2fc11c95731f52bba33e03357a`.
 - Decision: Close RV-20261103-16 implementation using PC VPCD and cross-target build validation; hardware remains unverified. For Windows testing with an empty card, use `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, which clears previous CAP and filesystem data. Continue with RV-20261103-17, streaming digest behavior beyond the current cumulative input limit.
-- Commit: `b36c5fb5a5e25a912a1c9d1ccc8505f4b353ed83`
+- Commit: `2edc1b2aeafcb47393351c362ebd21632798465d`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261104T120640Z.log` SHA-256 `1e67eb5eec3a133139518b2b10f4f83feacc038b431e60037ad12112162a6a4f`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Declare current MessageDigest input limit 2 minutes
@@ -21672,7 +21672,7 @@
 - Validation: Inspected `choupi/src/native_message_digest.cpp` and RV-15 transaction/reset coverage. No runtime source changed; build, VPCD tests and hardware checks were intentionally skipped.
 - Result: The declared compatibility profile now matches the current fixed-buffer behavior. Removing this limit still requires transaction-abort-safe native digest context rollback and large-message, block-boundary, empty-final and reuse tests.
 - Decision: Close the documentation branch of RV-17 acceptance; continue implementation with RV-18 checked `int[]` length allocation. Existing firmware images remain current because firmware source did not change.
-- Commit: `788df11`
+- Commit: `b6b4302`
 - Artifacts/logs: none.
 
 ## 2026-11-04 Check array backing and record sizes 20 minutes
@@ -21683,7 +21683,7 @@
 - Validation: `./tools/test-jcarray` passed, including `int[16383]`, rejection of `int[16384]`, and byte/short/int record boundaries. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Existing dependency and packed-member warnings remain. A standalone `./tools/test-jcvmarray-allocation` attempt failed to link because its harness omits existing `FlashMemory_Handler` and `JC_Object` symbols; the repository `test-jcarray` suite covers the new boundaries and passed. No hardware test was run.
 - Result: Oversized arrays no longer wrap their backing allocation to zero or a smaller length. ARM firmware ends at `0x100E9764`, leaving 92,316 bytes. Current firmware UF2 is 1,913,344 bytes (SHA-256 `32bdc2bb486a05ef8730b47cbafa4b0662b16bb686684b5fd2dc4e493f6f75fb`). Empty-card max UF2 is 4,010,496 bytes (SHA-256 `b30953d6e4ce191638150af647992089a14f6d99f5bb3c167bd31574f8cb49fd`); picotool recognizes RP2350 ARM Secure and all 4,096 storage blocks contain `0xFF` over `0x10100000`–`0x101FFFFF`.
 - Decision: Close RV-18 implementation. Physical validation remains pending. Continue to RV-19 minimum signed division behavior.
-- Commit: `85906fd`
+- Commit: `9246f28`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Preserve signed minimum division result 12 minutes
@@ -21694,7 +21694,7 @@
 - Validation: `bash -n tools/build-division-probe tools/test-division-vpcd` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` passed `TEST:SUMMARY pass=5 fail=0`; generated JCA inspection confirmed all four target bytecodes. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The test wrapper's PC build and CAP conversion passed. Existing compiler/dependency warnings remain. No physical token run occurred.
 - Result: Both minimum-overflow divisions return the unchanged dividend; signed quotient/remainder cases and Java Card divide-by-zero exception handling pass. VPCD took 114.859 seconds to connect, 26.991 seconds to select the applet, and 27.341 seconds for the next selection/install phase; the arithmetic APDU took 2 ms. ARM image remains 1,913,344 bytes, ends at `0x100E9764` and leaves 92,316 bytes. Empty-card UF2 is 4,010,496 bytes.
 - Decision: Close RV-19. Continue with RV-20 arithmetic defined behavior and preserve the generated fixture as test-only Java Card bytecode source; no upstream CAP was modified. Refresh the current empty-card firmware artifact for Windows testing.
-- Commit: `f4fe3f7`
+- Commit: `b4cc795`
 - Artifacts/logs: `artifacts/logs/division-vpcd-20261104T125922Z.log` SHA-256 `1311ba904a36128b897cb62acb95434bf11d19975f241d8480e07b5b512768ba`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`.
 
 ## 2026-11-04 Define Java Card arithmetic wrap and shifts 15 minutes
@@ -21705,7 +21705,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/test-jcarray` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-division-vpcd` passed `TEST:SUMMARY pass=5 fail=0`. Existing Rust and packed-member warnings remain. No physical token was tested. The current empty-card image was regenerated and checked against the firmware UF2 block-for-block; 4,096 storage blocks spanning `0x10100000`–`0x101FFFFF` are all `0xFF`.
 - Result: Java Card overflow, signed shifts, negative shift distances, short shift extension, and signed word decoding no longer depend on undefined or implementation-defined C++ behavior. ARM firmware is 1,913,344 bytes, ends at `0x100E97E4`, and leaves 92,188 bytes before the storage boundary. The empty-card UF2 is 4,010,496 bytes.
 - Decision: Close RV-20. Continue with RV-21 owner-safe exception propagation across SIO calls. The max-profile Windows test image remains applet-free; no hardware flashing was performed.
-- Commit: `f85a564`
+- Commit: `1146c48`
 - Artifacts/logs: `artifacts/logs/division-vpcd-20261104T134625Z.log` SHA-256 `02585b570acc4617f742ce276926885523489c546fd1d6429ad666b638863d3c`; `build/arm/pico2_choupi.uf2` SHA-256 `1506bd0429e6413ef78bf2e3f43942ab0ed1a896d8ba85c48ba7e4e84cff28b6`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2` SHA-256 `b1543eba771770db6e671351122ddaee810c23803034a3b8482197cedf58f0ef`.
 
 
@@ -21717,7 +21717,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The full elevated VPCD suite passed `TEST:SUMMARY pass=33 fail=0`; `bash -n` and Python bytecode compilation passed earlier in the step. Generated UF2 inspection confirmed all current firmware payload blocks and 4,096 all-`0xFF` blocks at `0x10100000`–`0x101FFFFF`. Existing Rust/C++ dependency warnings remain. No physical device was accessed.
 - Result: Java exceptions now cross the SIO boundary without replacing their type or scalar reason; the client can catch the original subclass, and a follow-up server call succeeds. Current ARM max firmware is 1,915,392 bytes, ends at `0x100E9B0C`, leaving 91,380 bytes. The empty-card max UF2 is 4,012,544 bytes. Firmware SHA-256: `398a73319dc924d8ce5508bf3baee5dc11ed2454cf5052b776f4c63edba29cd3`; empty-card UF2 SHA-256: `088987ee16747f2f7f048e23444ffcc559a3ef01dfad854356d6b9d656cd8f99`.
 - Decision: Close RV-21. Continue with RV-22 inherited interface membership. Do not flash or claim physical validation until separately requested and available.
-- Commit: `2e3f58f`
+- Commit: `d5f6ec6`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T142957Z.log`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 
@@ -21729,7 +21729,7 @@
 - Validation: `./tools/build-sio-cross-aid-fixture`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Focused VPCD inherited-interface test passed `TEST:SUMMARY pass=1 fail=0`; full cross-AID suite passed `TEST:SUMMARY pass=34 fail=0`. Both used the authorized local host-access path. Existing Rust and packed-member warnings remain. UF2 block inspection verified current firmware payloads and 4,096 all-`0xFF` blocks across `0x10100000`–`0x101FFFFF`. No physical device was accessed.
 - Result: `checkcast` and `instanceof` accept inherited interfaces declared in local and imported class ancestors and transitive superinterfaces. Current ARM firmware is 1,915,392 bytes, ends at `0x100E9BEC`, leaving 91,156 bytes. Empty-card max UF2 is 4,012,544 bytes. Firmware SHA-256: `0cc13ca28be022152134a2c66e8f23a916bce59c6917ea144c3f71b430dc70b1`; empty-card UF2 SHA-256: `178efc20a53ab7fea314e0251bcbb05c8f84deefe2bed537d57b15764907368d`.
 - Decision: Close RV-22. Continue with RV-23 argument prevalidation for native Util operations. No physical validation was performed.
-- Commit: `a22bbd2`
+- Commit: `8b5f682`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261104T153105Z.log`; focused log `artifacts/logs/sio-cross-aid-vpcd-20261104T152600Z.log`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Prevalidate non-atomic Util ranges 43 minutes
@@ -21740,7 +21740,7 @@
 - Validation: `./tools/build-sio-cross-aid-fixture`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Focused elevated VPCD CAP-to-native coverage passed `TEST:SUMMARY pass=1 fail=0` for negative lengths/offsets, source/destination overruns, null source/destination at zero length, valid zero-length end boundaries, valid overlap, invalid overlap without partial writes, fill failures without partial writes, exact exceptions and SensitiveResult state. Full cross-AID VPCD regression passed `TEST:SUMMARY pass=34 fail=0`. Builds retain existing Rust and packed-member warnings; Java Card fixture conversion emits its existing int-support warning. Offline UF2 inspection confirmed RP2350 ARM Secure, current firmware end `0x100E9F08`, and 4,096 all-`0xFF` storage blocks spanning `0x10100000`–`0x101FFFFF`. No physical device was accessed.
 - Result: The focused test uses 90-second connect and 120-second APDU deadlines because CAP LOAD is slow on this VM; the final run passes. Current firmware UF2 is 1,917,440 bytes, SHA-256 `803997081387ed53fa4fad5f4afafa1d93447666e5b6341d886838e0fa6f3d7e`; applet-free empty-card UF2 is 4,014,592 bytes, SHA-256 `041144a8a5116111aef9f4e501f87355e90a4e1e9731cdf7969a75da9ac2e328`; 90,360 bytes remain before the `0x10100000` storage boundary. Persistent non-atomic journal semantics were not changed.
 - Decision: Close RV-23. Continue with RV-24, implementing non-atomic persistent mutation independently from transaction journaling and validating mixed atomic/non-atomic abort behavior. Hardware validation was not requested or performed.
-- Commit: `67f29dd`
+- Commit: `83c8486`
 - Artifacts/logs: focused `artifacts/logs/sio-cross-aid-vpcd-20261104T163909Z.log` SHA-256 `7f080e5e82027e34b9314127a2b4add189f5983bfc6c05d559a43c63409bbd1b`; full regression `artifacts/logs/sio-cross-aid-vpcd-20261104T163028Z.log` SHA-256 `a4b54442ac3eb993858aaeb8a1553aa20e02834768b97e13808f1207c074af25`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Keep non-atomic array writes outside transaction journal 74 minutes
@@ -21751,7 +21751,7 @@
 - Validation: `./tools/build-pc --profile max_crypto` (passed after source changes), `./tools/build arm --profile max_crypto` (passed), `./tools/build riscv --profile max_crypto` (passed); `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --timeout 600 --case 83 --case 89 --case 90 --case 91 --case 92 --log artifacts/logs/rv24-nonatomic-vpcd-20261104.log` passed `TEST:SUMMARY pass=7 fail=0 elapsed_s=231.098`. Existing build warnings remain. No physical device was used. The refreshed combined UF2 was inspected with picotool and contains all 4,096 all-0xFF storage blocks.
 - Result: Non-atomic writes bypass transaction capacity; abort retains those bytes on existing arrays and rolls back atomic writes to the correct non-atomic baseline. Current ARM firmware is 1,917,952 bytes, SHA-256 `2457caba615ceec3c8d2979c0a76825533e06ed7f856621776c09bcf04fef3e4`, ending at `0x100EA064` with 90,012 bytes before `0x10100000`. Applet-free empty-card UF2 is 4,015,104 bytes, SHA-256 `9c712067e835f61231c1b70556acfee15fa77cf9b06cd44d31f6dc7f70d45000`. Power-loss durability during an active transaction was not evaluated.
 - Decision: Close RV-24 and proceed to RV-25, defining a single CCID/card-session dispatch contract. Do not claim physical validation.
-- Commit: `2688698c9a20204f90c13a46d280b42345cea253`
+- Commit: `5b0b5e5f4611abd6c256a79c89899509f9a712bc`
 - Artifacts/logs: `artifacts/logs/rv24-nonatomic-vpcd-20261104.log` SHA-256 `58cdfabe3db6561fa8236e50e126c6467437c26bf15b84a88fd09c244a2d0f66`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Track VPCD selected AID and restore outcomes 10 minutes
@@ -21762,7 +21762,7 @@
 - Validation: `./tools/test-vpcd-session` passed `TEST:SUMMARY pass=25 fail=0`; `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 1` was attempted with elevated host access, then timed out before VPCD connected. The appended log reaches early emulator startup but has no `VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED` marker. `git diff --check` passed for the four source/test files. Physical hardware was not used.
 - Result: Session state and restore errors now have explicit, tested behavior. Production VPCD restore callback runtime remains unvalidated because the emulator startup timed out; no claim of hardware validation.
 - Decision: Keep RV-27 open and diagnose the pre-connect integration timeout before closing acceptance. No firmware was flashed.
-- Commit: `2ae7a1a`
+- Commit: `9410649`
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (appended; integration startup timeout); focused runner `tools/test-vpcd-session`.
 
 ## 2026-11-04 Reject native bytecodes from uploaded CAPs 13 minutes
@@ -21773,7 +21773,7 @@
 - Validation: `./tools/test-cap-native-opcode-policy` passed `TEST:SUMMARY pass=5 fail=0`; `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Existing Rust and packed-CAP-member warnings appeared. `git -c core.whitespace=cr-at-eol diff --check -- <scoped files>` passed; the setting accounts for existing CRLF line endings. No malformed-CAP runtime/sanitizer test or physical validation was run.
 - Result: Uploaded package bytecode can no longer enter the native API dispatcher by executing `impdep1`; valid ROM package dispatch remains allowed. The instruction fetch/method bounds, branch target validation, and heap field-kind gaps remain unresolved. The current ARM image has not been flashed; image size was not measured.
 - Decision: Keep RV-28 open; next address bytecode/method bounds and runtime malformed-CAP coverage, then field type enforcement. Do not claim hostile CAP validation complete.
-- Commit: `0d750f9`
+- Commit: `9bf3166`
 - Artifacts/logs: `tools/test-cap-native-opcode-policy`; `docs/CAP_EXECUTION_TRUST_MODEL.md`; no firmware log.
 
 ## 2026-11-04 Route CCID commands once — 79 minutes
@@ -21784,7 +21784,7 @@
 - Validation: `./tools/test-ccid-apdu-route` passed `TEST:SUMMARY pass=12 fail=0`; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. No physical CCID or PCSC test was performed; production USB behavior remains unverified.
 - Result: The classifier has one route for explicit/default ISD selection, applet selection, public/protected card-manager APDUs, active applet APDUs, no-applet APDUs, invalid slots, powered-off state and SCP authentication failure. Current firmware-only ARM UF2 is 1,918,464 bytes, SHA-256 `689bbc0985df4e3096012c42cbabe3c7198199109f0c9f70acfbf80c909565e7`; endpoint `0x100EA1D4`, leaving 89,644 bytes. Current applet-free empty-card UF2 is 4,015,616 bytes, SHA-256 `6a4e25626a465b125ecd89a40a442c78a8111984f9876c1685acce57c6c2e50e`. It contains all 4,096 0xFF blocks from `0x10100000` through `0x101FFFFF` and picotool recognizes RP2350 ARM Secure.
 - Decision: Keep RV-25 open until CCID response/status and end-to-end routing are validated through production runtime. Do not claim physical acceptance.
-- Commit: `0f98760fd411aed6741d8359d80e37fa040f8b79`
+- Commit: `832489c4eb748e0544c90a9afe43d557e3fb7942`
 - Artifacts/logs: `tools/test-ccid-apdu-route`; `build/arm/pico2_choupi.uf2`; `build/arm/pico2_choupi_max_crypto_empty_card.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Bound CAP method header reads 12 minutes
@@ -21805,7 +21805,7 @@
 - Validation: `./tools/test-cap-bytecode-pc-bounds` passed 11/11; `./tools/test-cap-method-bounds` passed 7/7; `./tools/test-cap-native-opcode-policy` passed 5/5; `./tools/build arm` and `./tools/build riscv` passed; scoped `git diff --check` passed. No malformed-CAP runtime/sanitizer test or physical test was run.
 - Result: Current ARM firmware ends at `0x100d27f8`, leaving 186,376 bytes before the storage limit. Invalid operand widths and relative offsets cannot access beyond their frame's Method component. Branches can still enter another method or switch data within that component; instruction-boundary and malformed-input behavior are not established.
 - Decision: Keep RV-28 open. Next, establish individual method body ranges and instruction-boundary branch validation, then add malformed-CAP runtime tests; heap field-kind checks and nested-linkage validation remain separate gates.
-- Commit: `8d4d3cf` (implementation; progress/handoff SHA follow-up pending)
+- Commit: `a556c2d` (implementation; progress/handoff SHA follow-up pending)
 - Artifacts/logs: `tools/test-cap-bytecode-pc-bounds`; firmware build output only, no archived runtime log.
 
 ## 2026-11-04 Bound execution to Descriptor method bodies 27 minutes
@@ -21816,7 +21816,7 @@
 - Validation: `./tools/test-cap-method-body-bounds` passed 7/7; `./tools/test-cap-bytecode-pc-bounds` passed 14/14; method-header tests passed 7/7; native-opcode policy tests passed 5/5; ARM and RISC-V wrapper builds passed. An offline structural scan checked 11 deployed `*_305.cap` packages and validated 978 concrete method ranges; 975 counts ended at the next method offset and three exceeded it by one byte and were clamped. No malformed-CAP runtime/sanitizer or physical-device test was run.
 - Result: Each entered frame is limited to its Descriptor-recorded bytecode body, and malformed operand diagnostics no longer bypass PC bounds. Three upstream bytecode counts were 1 byte too long and are clamped before they can reach the next header. Branches can still land on non-instruction bytes inside a body. ARM firmware ends at `0x100d2ac0`, leaving 185,664 bytes before the storage limit.
 - Decision: Keep RV-28 open. Next verify branch targets against decoded instruction boundaries without trusting malformed instruction lengths; then run malformed-CAP runtime/sanitizer cases and continue nested-linkage and heap field-kind validation.
-- Commit: `2496a92` (implementation; progress/handoff SHA follow-up pending)
+- Commit: `12afae6` (implementation; progress/handoff SHA follow-up pending)
 - Artifacts/logs: `tools/test-cap-method-body-bounds`; offline structural scan output (11 CAPs / 978 methods, not separately archived); no firmware runtime log.
 
 ## 2026-11-04 Make deployed method-bound scan repeatable 4 minutes
@@ -21849,7 +21849,7 @@
 - Validation: `./tools/test-ccid-progress-flow` passed `TEST:SUMMARY pass=15 fail=0`; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. No physical CCID runtime test was possible: PC/SC listed only Virtual PCD readers despite a brief `2e8a:0009` USB enumeration.
 - Result: Final responses remain queued across late extension completion and synchronous IN rejection, with bounded retries and a recoverable OUT rearm path. Latest ARM firmware is 1,919,488 bytes, SHA-256 `692c1fb42f8c7dd2aa92a37b6b23aa999f93c657eeb7144f63e66e2cbd72dbed`, ending at `0x100EA3BC` with 89,156 bytes before `0x10100000`. Applet-free empty-card UF2 is 4,016,640 bytes, SHA-256 `7112f8f52a14ef60027904648338f85c7e7dee8e02739c9a52de8046fa6b5d2e`.
 - Decision: Keep RV-26 open until production USB callbacks demonstrate recovery through a subsequent slot-status command and APDU. RV-25 also remains open for production routing runtime validation.
-- Commit: `d68461f7691f26645f0ccb9dad2c93b3b7ddcbae`
+- Commit: `0d4b271fd338bb8aa76230de74fdf03c2ffe7692`
 - Artifacts/logs: `tools/test-ccid-progress-flow`; current firmware and empty-card UF2 under `build/arm/`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Sanitize malformed branch decoder inputs 8 minutes
@@ -21860,7 +21860,7 @@
 - Validation: `./tools/test-cap-instruction-boundaries` passed 13/13 and printed `FUZZ:SUMMARY inputs=100000 max_bytes=32`; no ASan/UBSan finding. The test wrapper configured and built successfully through the repository environment wrapper. No production firmware source changed, so ARM/RISC-V builds were not rerun. No physical or malformed-CAP interpreter/runtime test was run.
 - Result: The width and boundary helpers remained memory-safe for the deterministic malformed-bytecode corpus under ASan/UBSan. This is helper-level evidence only.
 - Decision: Keep RV-28 open. Next pursue a malformed CAP runtime fixture, then nested-linkage validation and heap field-kind/access enforcement.
-- Commit: `9ed7d6a`
+- Commit: `31822a1`
 - Artifacts/logs: `tools/test-cap-instruction-boundaries`; sanitizer output was emitted to stdout and not archived.
 
 ## 2026-11-04 Refresh max_crypto empty-card Windows image 10 minutes
@@ -21871,7 +21871,7 @@
 - Validation: `./tools/env picotool info -a build/arm/pico2_choupi_max_crypto_empty_card.uf2` identified RP2350 ARM Secure. An independent UF2 address-map check confirmed 3,761 firmware blocks exactly match `build/arm/pico2_choupi.uf2`, plus 4,096 all-`0xFF` blocks covering `0x10100000`–`0x101FFFFF`. Firmware-only image is 1,925,632 bytes (SHA-256 `d484379d46065ddaf32fb1360a48f528e1059e24568250ab30f81fc67dd73d0e`); empty-card image is 4,022,784 bytes (SHA-256 `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`). No hardware flash/test was run.
 - Result: The combined UF2 is current and erases existing CAP/persistent data when copied to the Pico 2 BOOTSEL drive. It includes no preinstalled applet.
 - Decision: Provide this exact image for Windows testing; continue RV-28 offline.
-- Commit: `4583552`
+- Commit: `c07bf28`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-04 Diagnose RV-28 PC VPCD timeout 22 minutes
@@ -21882,7 +21882,7 @@
 - Validation: `./tools/build-pc --profile max_crypto` passed. The one-pass `./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 90 --apdu-timeout 45 --select-only` attempt failed `TEST:FAIL timed out` before VPCD connection. A prior rebuilt-PC attempt logged `INSTALL_FAIL stage=5 sw=6A80 vm=6F00 exception=29 opcode=00 pc=00000000`; the trace attempt later hit the Rust host emulator's `Unknown ptrace signal received: 639` at `choupi/os/src/arch/host/emulator.rs:683`. No `CAP_BRANCH_ALIGNMENT_FAIL` diagnostic appeared. Offline CAP scan passed 75 methods / 1,303 destinations, all aligned and in range. No physical token was used.
 - Result: Runtime acceptance remains unresolved; the failure is not currently attributable to branch alignment. The host emulator stopped before the VPCD test could connect.
 - Decision: Do not repeat the same integration command unchanged. Isolate the install-time `SecurityException` and host emulator stop handling before another VPCD attempt; continue static/sanitizer work meanwhile.
-- Commit: `26325a7`
+- Commit: `590d70b`
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` (append-only shared log; contains multiple historical attempts and is not isolated to this run).
 
 
@@ -21909,7 +21909,7 @@
 - Commit: pending; the primary commit reference is appended after commit.
 - Artifacts/logs: `docs/FIRMWARE_JCVM_ARCHITECTURE.md`, `.agent/HANDOFF.md`,
   `.agent/QKB.md`; no new runtime logs.
-- Commit: `dadcb9e9943c2261e8b801863dac9826f45426e3` (resolves the pending primary-step reference above).
+- Commit: `c8907ba4d82e49f4a86d69092134448972227036` (resolves the pending primary-step reference above).
 
 ## 2026-11-04 Isolate JCAlgTest VPCD startup timeout 12 minutes
 
@@ -21919,7 +21919,7 @@
 - Validation: Ran bounded VPCD install/select attempts using `PICO2_HOST_USB_ACCESS=1` and the elevated host-access path. Both timed out before `VPCD:APPLET_INSTALLED` or `VPCD:CONNECTED`. A direct restricted emulator run failed at `PTRACE_ATTACH` with `Operation not permitted`; elevated execution reached MPU/FS initialization and remote contexts. Recent division-probe logs connect successfully. The full upstream CAP component set was inspected; no physical USB or real token was used.
 - Result: Descriptor omission alone does not explain the AlgTest install/startup stall. The corrected diagnostic LOAD-code is 30,836 bytes, SHA-256 `f9b0b23a0caa6adce7867d16feaa6c379d680254cf88eed08768b905d0366e5b`. No implementation or hardware validation was completed.
 - Decision: Keep RV-28 runtime acceptance open. Instrument or bisect the JCAlgTest install path through the elevated host-access route; preserve upstream CAP bytes and unrelated worktree changes.
-- Commit: `f8a6325` (primary diagnostic/QKB/handoff record).
+- Commit: `045e96f` (primary diagnostic/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-20261104.log`, `artifacts/logs/rv28-jcalgtest-vpcd-retry-20261104.log`, `artifacts/logs/rv28-jcalgtest-vpcd-cpu-20261104.log` (ignored); regenerated ignored input `build/algtest-v182-load-code.bin`.
 
 ## 2026-11-04 Capture emulator activity during JCAlgTest startup 5 minutes
@@ -21930,7 +21930,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 timeout ... ./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 10 ...` remained in emulator startup and timed out before connection. At approximately one second, `ps` showed the emulator at 27.8% CPU and guest at 39.1% CPU; the processes were running rather than blocked in a wait state. This is one sample, not a sustained measurement. No physical device was used.
 - Result: Confirms active execution during the stall, but does not prove an infinite loop or identify the hot function. Dynamic branch-target validation decodes the method prefix for each target and is a candidate for profiling.
 - Decision: Profile the exact AlgTest install workload and branch checks next; keep the cause open until a reproducible measurement or trace identifies it.
-- Commit: `e986901` (primary process-state diagnostic/QKB/handoff record).
+- Commit: `850e258` (primary process-state diagnostic/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-live2-20261104.log`; process snapshot was printed to the command output and not separately archived.
 
 ## 2026-11-04 Compare branch-check path and flash three max images 20 minutes
@@ -21941,7 +21941,7 @@
 - Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed after source restoration. The branch-check-disabled VPCD attempt still timed out before applet installation or socket connection. `tools/flash --chipid` reported 100% flash, 100% verify, `OK`, reboot, and `FLASH:PASS` on chips `D92E743D5F640C0F`, `8E464F4E2BBC0A19`, and `2BED26ED20556535`. Finite monitor failed with `ERROR: no USB serial device found`; later USB inventory had no Pico and PC/SC listed only the two virtual readers. No runtime serial or PC/SC hardware test completed.
 - Result: Instruction-start validation alone does not explain the JCAlgTest VPCD stall. All three boards accepted and verified the current 4,022,784-byte empty-card max_crypto UF2 (SHA-256 `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`); runtime behavior remains unverified because VirtualBox detached devices on reboot.
 - Decision: Keep JCAlgTest startup cause open and continue offline. Resume physical verification only when the runtime USB devices are attached to the guest; do not treat missing guest enumeration as firmware failure.
-- Commit: `61548d3` (primary board-flash/QKB/handoff record).
+- Commit: `c73b7cf` (primary board-flash/QKB/handoff record).
 - Artifacts/logs: `artifacts/logs/rv28-jcalgtest-vpcd-no-boundary-check-20261104.log` (SHA-256 `d7e6b149b44386452476a3b292a9fc41728ece4917cca53075bee8f28dd5c796`); flash/USB output remained in command transcript, not separately archived.
 
 ## 2026-11-04 Make CAP LOAD fixtures complete and surface VPCD startup failures 44 minutes
@@ -21952,7 +21952,7 @@
 - Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed; existing Rust and packed-member warnings remain. `./tools/build-algtest-v182-load-code` emitted 30,836 bytes, SHA-256 `b1967af560baa602a1330704d98589fe2cc85f32c25a2595efe7639e087314e7`. Six generated probe inputs matched exact ordered CAP component concatenation, with Descriptor present. Python compilation and shell syntax checks passed. `./tools/test-cap-method-body-deploy-caps` passed 11 packages / 978 methods / 8,720 branch targets; `./tools/test-cap-instruction-boundaries` passed 13/13 and 100,000 deterministic malformed spans. A focused mocked harness check detected an INSTALL log marker immediately. The elevated VPCD applet integration attempt failed after its 120-second connect deadline without process exit or INSTALL marker. Authorized guest USB inventory returned no Pico devices; the identified-chip flash wrapper was interrupted before a flash write.
 - Result: Test inputs now preserve the upstream CAP's full required component sequence, and emulator process exits or explicit install failures will be reported promptly by the main VPCD harness. The unresolved startup workload can remain alive without output, so this change does not bound its CPU use or resolve the VPCD timeout. Current max_crypto image configuration enables 147/150 declared capabilities, including RSA/ECC. No physical flash or runtime test was completed.
 - Decision: Keep RV-28 integration acceptance open. Continue profiling the live install path offline; retry physical testing only after RP2350 USB devices enumerate in the VM.
-- Commit: `a84dcaf`
+- Commit: `e172fc7`
 - Artifacts/logs: `build/algtest-v182-load-code.bin` (ignored; 30,836 bytes; SHA-256 above); `artifacts/logs/host-vpcd-jcalgtest-20261014.log` appended by the timed out VPCD run; current applet-free UF2 remains `build/arm/pico2_choupi_max_crypto_empty_card.uf2` (4,022,784 bytes; SHA-256 `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`).
 
 ## 2026-11-05 Correct dynamic CAP Descriptor method offsets 81 minutes
@@ -21963,7 +21963,7 @@
 - Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 timeout ... ./tools/test-vpcd-multipackage --timeout 180 --install-smoke` passed with `TEST:SUMMARY pass=1 fail=0`, loading Core and Multi and installing three applet instances. The full multipackage run passed three-package/21-instance LOAD/INSTALL, GET STATUS pagination, lookupAID, reset, VCR2 restoration, and restart checks, then exited 124 at its 1,400-second outer limit during instance cleanup; no APDU failure was reported. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` showed only USB root hubs and the VirtualBox tablet; physical validation was unavailable.
 - Result: The previous `6A80` / VM `6F00` SecurityException on valid Descriptor-backed package installation is resolved in VPCD. ARM image size remains within the configured flash limit. Hardware runtime behavior remains unverified because the three reported BOOTSEL devices were not attached to the guest.
 - Decision: Keep the full physical and broader GP lifecycle acceptance open. Once any Pico enumerates in the VM, flash only after reconfirming board identity and run the finite monitor plus explicit empty-card GPPro install. Continue offline if guest USB remains unavailable.
-- Commit: `da4c39f`
+- Commit: `ca72f14`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261105T001621Z.log` (focused pass); `artifacts/logs/host-vpcd-multipackage-apdu-20261104T232332Z.log` (full suite stopped at outer limit); `build/arm/pico2_choupi.uf2` rebuilt, no physical flash performed.
 
 ## 2026-11-05 Refresh applet-free max_crypto image 9 minutes
@@ -21974,7 +21974,7 @@
 - Validation: `picotool info -a` identified the combined image as RP2350 ARM Secure. A UF2 block verifier confirmed all 3,761 firmware blocks match `build/arm/pico2_choupi.uf2` and all 4,096 blocks covering `0x10100000–0x101FFFFF` contain `0xFF`; total 7,857 blocks. Image size is 4,022,784 bytes, SHA-256 `370a360f39bdbefdaf955406a8865b88b6542f34cd170b1a04b1153bf7b5cd75`. Firmware-only UF2 is 1,925,632 bytes, SHA-256 `78d70491e088bd0e3159282f131714091e279d4d405c2b853d2a8403e6b27e98`.
 - Result: The current build is packaged for explicit clean-card Windows testing; no CAP/applet is bundled. No physical write occurred because guest USB inventory still lacked Pico devices.
 - Decision: Use the combined UF2 for a clean-card test once a board enumerates in the VM; use the firmware-only UF2 only when preserving card storage is intended.
-- Commit: `d7e3550`
+- Commit: `8ea6191`
 - Artifacts/logs: `build/arm/pico2_choupi_max_crypto_empty_card.uf2` (ignored build output); `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 ## 2026-11-05 Complete multipackage lifecycle regression 49 minutes
@@ -21985,7 +21985,7 @@
 - Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=5s 1800s ./tools/test-vpcd-multipackage --timeout 180` passed `TEST:SUMMARY pass=47 fail=0`; it covered package LOAD/INSTALL, duplicate-install rollback/retry, 21-instance GET STATUS pagination, applet lookup and context identity, reset/restart persistence, sidecar corruption rejection, individual and cascade DELETE, registry cleanup, and JCSystem transient lifecycle. Latest elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` returned only USB root hubs and VirtualBox tablet, no Pico.
 - Result: The full VPCD suite completes with all 47 checks passing. The current empty-card max_crypto UF2 remains 4,022,784 bytes with SHA-256 `370a360f39bdbefdaf955406a8865b88b6542f34cd170b1a04b1153bf7b5cd75`; target firmware blocks were unchanged by this PC-only diagnostic update. No hardware flash or runtime test was possible.
 - Decision: Keep physical acceptance open; retry guest enumeration and test the current empty-card image when available. Continue other TODO work offline in the meantime.
-- Commit: `1de59dc`
+- Commit: `ce92b0c`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261105T005410Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261105T005410Z.log`, `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261105T005410Z.log`, and `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261105T005410Z.log` (ignored).
 
 ## 2026-11-05 Cross-AID Descriptor-mode regression and device check 17 minutes
@@ -21996,7 +21996,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py` passed `TEST:SUMMARY pass=34 fail=0`. The same regression with Descriptor omitted loaded the contract, then service applet INSTALL returned `6A80`. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` showed only USB root hubs and the VirtualBox Tablet; `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero CCID devices. No BOOTSEL Pico was visible, no flash occurred, and no build was run because source code did not change.
 - Result: SIO integration passes when all three CAPs carry Descriptor metadata; standard-GPPro-style Descriptor omission still has an install-time failure to investigate. The 30-second default APDU timeout is too short; 90-second connect and 120-second APDU deadlines allowed the full run. Hardware validation remains unavailable in this VM.
 - Decision: Keep CTX-01 open. Next isolate why service INSTALL fails without Descriptor, retain both fixture variants, and resume physical testing once a BOOTSEL board enumerates inside the guest.
-- Commit: `e699e26`
+- Commit: `3862ae1`
 - Artifacts/logs: passing emulator log `artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log`, SHA-256 `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`; failed Descriptor-omitted emulator log `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log` (failure SW captured in command output).
 
 ## 2026-11-05 Isolate descriptor-free CAP install rejection 3 minutes
@@ -22007,7 +22007,7 @@
 - Validation: Read the failing VPCD emulator log and `Method_Handler::callMethod`, `cap_method_body_bounds::find`, and `cap_execution_policy::is_dynamic_package` source paths. Failure data is stage 5, SW `6A80`, VM status `6F00`, exception 29 (`SecurityException`), opcode `00`, PC `00000000`. No code changed; no build or additional test was run.
 - Result: Missing Descriptor bounds cause the dynamic-package guard to reject the applet's first INSTALL-time method call. An unbounded Method-component fallback would allow execution to cross method bodies and is not safe.
 - Decision: Keep the Descriptor-absent issue open until a verifiable method-bounds source or safe package policy is designed; preserve Descriptor-present and Descriptor-absent regressions.
-- Commit: `09ffaf7`
+- Commit: `aef9b9a`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
 
 ## 2026-11-05 Confirm optional Descriptor method-bound constraint 16 minutes
@@ -22018,7 +22018,7 @@
 - Validation: Reviewed Oracle's [Java Card 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf), §6.10 and §6.14 (pages 79 and 126–128): Descriptor loading is optional; Method lacks complete method details; Descriptor supplies offsets and bytecode counts needed to parse methods. Confirmed in the pinned GlobalPlatformPro `capfile` source that `CAPFile.getCode()` calls `_getCode(false)`, which excludes both Descriptor and Debug. Updated the trust-model doc, TODO, QKB and handoff. No source code changed; no build or runtime test was run.
 - Result: No safe per-method bound can be reconstructed from the standard Descriptor-free LOAD stream using only the Method component. Relaxing to the whole component would permit method-body crossing and would violate the current uploaded-CAP trust boundary.
 - Decision: Keep the guard fail-closed. The remaining work is to provide a separate verifiable method-bound source or a distinct CAP verification/trust pipeline; this does not equate GlobalPlatform SCP authentication with CAP safety. Continue other project priorities offline.
-- Commit: `a7de1f2`
+- Commit: `ae6e4aa`
 - Artifacts/logs: [Oracle Java Card 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf); [GlobalPlatformPro `CAPFile.getCode()`](https://github.com/martinpaljak/capfile/blob/master/src/main/java/pro/javacard/CAPFile.java); VPCD failure log `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
 
 ## 2026-11-05 Make cross-AID VPCD regression repeatable 14 minutes
@@ -22029,7 +22029,7 @@
 - Validation: `git diff --check -- tools/test-sio-cross-aid-vpcd tools/tests/sio_cross_aid_vpcd_test.py` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. No target build was run because only the host test entry point and timeout defaults changed.
 - Result: The complete Descriptor-present three-package SIO regression is runnable through one documented host-access-gated wrapper without per-run timeout overrides. Descriptor-omitted INSTALL still returns `6A80` and remains open.
 - Decision: Use the wrapper for future cross-AID VPCD regression runs; continue tracking Descriptor-omitted CAP execution as a separate firmware compatibility issue.
-- Commit: `804e7f9`
+- Commit: `8e055b8`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`.
 
 ## 2026-11-05 Repeat cross-AID VPCD regression after BOOTSEL report 15 minutes
@@ -22088,9 +22088,9 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T074812Z.log` SHA-256 `a6c85f12b1f3ebe9b6ff9629ddfed8884321a78c481eb9e1cfb03049d1c0b45e`; `artifacts/logs/sio-cross-aid-vpcd-20261105T075613Z.log` SHA-256 `e4fb5aec92eb4fee606f912ee05b302a5261d0348d920e41f218379b97379bc8`; `artifacts/logs/sio-cross-aid-vpcd-20261105T075840Z.log` SHA-256 `ff64fb3e1cd24989e3d55be821ce86169ef948bfb1768e6e914fbd3514d7e956`.
 
-- Commit resolved for `review-20261105-cap-reinstall`: `36ce3a3` (Document same-AID CAP reinstall lifecycle review).
+- Commit resolved for `review-20261105-cap-reinstall`: `dc0b404` (Document same-AID CAP reinstall lifecycle review).
 
-- Commit resolved for `hard-20261105-descriptor-field-kinds`: `4322d1a` (Enforce CAP Descriptor field types).
+- Commit resolved for `hard-20261105-descriptor-field-kinds`: `c245264` (Enforce CAP Descriptor field types).
 
 ## 2026-11-05 Flash current ARM image to identified Pico 10 minutes
 
@@ -22103,7 +22103,7 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261105T081020Z.log`, SHA-256 `aede2b7c1a48993a6d73ef8a6dc8ce1d8f7a7330807c6c105618fedc8466f782`; flashed `build/arm/pico2_choupi.uf2`, SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 
-- Commit resolved for `hard-20261105-descriptor-field-kinds-physical-cycle`: `fba83b5` (Record identified Pico flash validation).
+- Commit resolved for `hard-20261105-descriptor-field-kinds-physical-cycle`: `b2d2f97` (Record identified Pico flash validation).
 - Continuity record: `.agent/HANDOFF.md` now records the physical validation commit.
 
 ## 2026-11-05 Refresh physical device status in TODO 1 minute
@@ -22117,7 +22117,7 @@
 - Commit: `pending`
 - Artifacts/logs: `.agent/HANDOFF.md`; `artifacts/logs/cycle-choupi-20261105T081020Z.log`.
 
-- Commit resolved for `docs-20261105-physical-device-inventory`: `b85d6db` (Refresh Pico availability in TODO).
+- Commit resolved for `docs-20261105-physical-device-inventory`: `0256311` (Refresh Pico availability in TODO).
 
 
 ## 2026-11-05 Add CAP reinstall review action items 2 minutes
@@ -22139,7 +22139,7 @@
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `javac` compilation through `tools/load-cap-with-descriptor` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid D92E743D5F640C0F` passed flash verification and finite serial monitoring (`TEST:SUMMARY pass=1 fail=0`, no `FAULT`). Descriptor-aware GPPro install passed. `JCSystemTransactionPhysicalProbe --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passed `TEST:SUMMARY pass=13 fail=0`, including transaction abort/commit, 32,767-byte persistent array, `BUFFER_FULL`, CCID power-cycle persistence, and commit capacity. `git diff --cached --check` passed before commit. The integrated script rerun and PC VPCD case-84 test were attempted but did not pass: PC/SC lost the Pico reader before the rerun; VPCD timed out before connecting.
 - Result: Current ARM `max_crypto` firmware and the physical JCSystem probe passed on Pico 2 `D92E743D5F640C0F`. Standard GPPro LOAD omitted Descriptor and returned `6A80`; the test-only loader fixed install without changing CAP bytes. Initial cases 83/84 returned `6F00` before clean package deletion/reload; both passed after clean reinstall, so the precise initial cause remains unconfirmed. After validation, `lsusb` still showed three Pico USB nodes while `pcsc_scan -r` showed only virtual readers. Package and applet were deleted, and GPPro confirmed the card empty before reader loss. APDU transcript was not saved to a durable file. Cycle log: `artifacts/logs/cycle-choupi-20261105T083813Z.log`, SHA-256 `4cae53d3d986215facdd36e5150bf41ac084053733518c475ec771a8b950663e`; flashed UF2 SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 - Decision: Keep the Descriptor-aware loader for this test only; don't alter upstream CAPs or production GPPro behavior. Resume physical checks when any Pico reader reappears; if it remains unavailable, continue offline.
-- Commit: `0b4173a`
+- Commit: `fee45c0`
 - Artifacts/logs: cycle log above; no durable APDU transcript; failed automated rerun `artifacts/logs/jcsystem-transaction-physical-20261105T085028Z.log`
 
 ## 2026-11-05 Refresh max_crypto empty-card UF2 10
@@ -22150,7 +22150,7 @@
 - Validation: `./tools/package-empty-card-uf2` passed. A second package to `build/arm/pico2_choupi_max_crypto_empty_card.uf2` produced identical bytes. `picotool info -a` reported RP2350 ARM Secure, end `0x100EB604`. UF2 validation confirmed 7,863 unique data blocks including 4,096 erased storage blocks. SHA-256: `0868a0ec81b13bd5a5a7c9e42f2ac64fe061ade69d12ac93bded6aa852ec5873`. The preceding ARM and RISC-V max_crypto builds passed earlier in this session. The combined erase image was not flashed.
 - Result: Current external-test artifact is `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,026,368 bytes. The firmware-only input is `build/arm/pico2_choupi.uf2`, 1,929,216 bytes, SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 - Decision: Use the combined artifact for Windows tests requiring an empty card; use firmware-only UF2 only when preserving stored data.
-- Commit: `528c4cc`
+- Commit: `2856556`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; README `artifacts/firmware/README-max_crypto-current-20261103.txt`; no hardware log.
 
 ## 2026-11-05 Stop timed-out VPCD emulator leaks 18 minutes
@@ -22164,4 +22164,18 @@
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T093238Z.log`, SHA-256 `c6a3dd61bcc6d4ca65444cf190e65045be7e9b7af607660455da7998b55eea10`; outer-timeout result returned directly by the command tool.
 
-- Commit resolved for `host-20261105-vpcd-process-group-cleanup`: `67df3d9` (Stop timed-out VPCD emulator leaks).
+- Commit resolved for `host-20261105-vpcd-process-group-cleanup`: `d2282b9` (Stop timed-out VPCD emulator leaks).
+
+
+## 2026-11-05 Clean generated artifacts from repository history 5.9 minutes
+
+- Step/experiment: `repository-history-cleanup-20261105`
+- When: '2026-11-05T10:56:09+01:00' - '2026-11-05T11:02:04+01:00'
+- Change: Authorized in-place history cleanup excludes generated logs/results/metrics, review output, firmware UF2s, backups, and Python caches. Preserved packaging reference data and report under reference/jcalgtest; updated both packaging scripts, ignore rules, current document hash references, and continuity guidance.
+- Validation: Complete recovery bundle verified; filtered fsck passed (expected dangling shared-source objects); all 2,038 commits retained; 484 retained tree entries matched original modes/object IDs; 1,083 working files matched checksums during switch; 602 generated tracked paths excluded. Historical size scan passed with largest remaining blob 2,064,891 bytes. Document translation changed 1,364 references in eight files with no ambiguity. Packaging syntax, CSV identity, and ignore checks are recorded with this maintenance commit. Firmware builds/hardware/package execution intentionally skipped: no firmware implementation changed.
+- Result: Original 260,631,857-byte offending log is absent from cleaned main history; local artifacts and unrelated dirty work remain intact. GitHub main was absent before cleanup. Throughput and hardware metrics were not measured.
+- Decision: Continue normal commits in this same folder; push cleaned main after validation. Preserve old/new mapping and recovery bundle; never merge old history back.
+- Commit: `a8bc9093932ab8df442ed1e819ae464f4ad5bffd` (rewritten tip; following maintenance commit contains these rules, translations, preserved fixtures, and this record).
+- Artifacts/logs: `.agent/history/2026-11-05-commit-map.tsv`; `.agent/history/2026-11-05-history-cleanup.md`; ignored `artifacts/backups/history-cleanup-20261105/`; recovery bundle SHA-256 `7c723dc6d09d9271df0e6e837ac37b4134d112a9e73f0a5f70954d2b20e15a6d`.
+
+Validation note for this step: the byte-identical upstream CSV retains original CRLF/data whitespace. Initial staged whitespace validation flagged it; a scoped .gitattributes rule preserves its bytes and disables whitespace lint for that fixture. Packaging script bash syntax, CSV parsing (4,595 rows), reference SHA-256 identity, all mapped commit lookups, ignore checks, and unrelated-file preservation checks passed.

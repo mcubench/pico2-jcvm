@@ -1,6 +1,6 @@
 # Practical Pico 2 development patterns from pico2-jcvm
 
-Repository review: **2026-10-31**, HEAD **`19a58c8`**, including the current working tree. This guide extracts reusable patterns for a different native Pico 2 application; Java Card ownership, tags, and APDUs are examples rather than prerequisites.
+Repository review: **2026-10-31**, HEAD **`eeb02fb`**, including the current working tree. This guide extracts reusable patterns for a different native Pico 2 application; Java Card ownership, tags, and APDUs are examples rather than prerequisites.
 
 **How to read:** the table of contents gives a short summary of each topic, and the recommendation index summarizes every recommendation in one or two sentences. Follow a recommendation link for a short implementation example and its real source location.
 

@@ -13,7 +13,7 @@ archive="${package_root}/pico2-jcvm-windows-test.zip"
 cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 client_jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
-reference_csv="${repo_root}/artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+reference_csv="${repo_root}/reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
 
 for input in "${cap}" "${gp_jar}" "${client_jar}" "${reference_csv}" \
              "${repo_root}/tools/compare-jcalgtest-support.py" \

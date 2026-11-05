@@ -7,3 +7,15 @@ artifacts/metrics/
 build/
 tools/__pycache__
 tools/tests/__pycache__
+
+# Generated firmware, review output, backups, and language caches
+/artifacts/firmware/*.uf2
+/artifacts/reviews/**/*.log
+/artifacts/reviews/**/probe-results.json
+/artifacts/reviews/**/ubsan-results.json
+/artifacts/reviews/**/asan-results.json
+/artifacts/reviews/review_20261103/iteration2/
+*.bak
+*~
+__pycache__/
+*.py[cod]
