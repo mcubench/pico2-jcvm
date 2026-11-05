@@ -1497,7 +1497,14 @@ void FlashMemory_Handler::setPersistentField_Instance(
 #ifdef JCVM_INT_SUPPORTED
 
     case FieldType::FIELD_TYPE_INT: {
-      jc_field_t field_low = fields->at(++idx);
+      if (static_cast<std::size_t>(idx) + 1 >= fields->size()) {
+        throw Exceptions::SecurityException;
+      }
+      jc_field_t field_low = fields->at(static_cast<uint16_t>(idx + 1));
+      if (field_low.type != FieldType::FIELD_TYPE_INT_LOW) {
+        throw Exceptions::SecurityException;
+      }
+      ++idx;
       jint_t value = signedIntFromBits(SHORTS_TO_INT(
           signedShortFromBits(field.value),
           signedShortFromBits(field_low.value)));

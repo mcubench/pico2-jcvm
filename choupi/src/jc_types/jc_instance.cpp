@@ -42,6 +42,52 @@ namespace jcvm {
 
 namespace {
 
+void initialize_field_slots(JCVMArray<jc_field_t> *fields) noexcept {
+  if (fields == nullptr) return;
+  for (uint16_t index = 0; index < fields->size(); ++index) {
+    fields->at(index).type = FieldType::FIELD_TYPE_UNINITIALIZED;
+    fields->at(index).value = 0;
+  }
+}
+
+bool is_reference_field_type(const FieldType type) noexcept {
+  switch (type) {
+  case FieldType::FIELD_TYPE_OBJECT:
+  case FieldType::FIELD_TYPE_GLOBAL_AID_OBJECT:
+  case FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT:
+  case FieldType::FIELD_TYPE_ARRAY_BYTE:
+  case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+  case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+  case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+  case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
+    return true;
+  default:
+    return false;
+  }
+}
+
+void require_field_type(const FieldType actual,
+                        const FieldType expected) {
+  if (actual == FieldType::FIELD_TYPE_UNINITIALIZED) return;
+  if (expected == FieldType::FIELD_TYPE_OBJECT) {
+    if (is_reference_field_type(actual)) return;
+  } else if (actual == expected ||
+             (expected == FieldType::FIELD_TYPE_BYTE &&
+              actual == FieldType::FIELD_TYPE_BOOLEAN)) {
+    return;
+  }
+  throw Exceptions::SecurityException;
+}
+
 uint8_t persistent_tag_root_length(uint8_t first, uint8_t length) {
   if (length == 0) {
     return 0;
@@ -83,6 +129,7 @@ JC_Instance::JC_Instance(Heap &owner, const Package &package_owner,
   Class_Handler class_handler(this->packageID);
   uint16_t fields_size = class_handler.getInstanceFieldsSize(this->claz);
   this->fields = new JCVMArray<jc_field_t>(fields_size);
+  initialize_field_slots(this->fields);
 }
 
 /**
@@ -106,6 +153,7 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
   choupi_install_stage(8);
 #endif
   this->fields = new JCVMArray<jc_field_t>(fields_size);
+  initialize_field_slots(this->fields);
 #ifndef PC_VERSION
   choupi_install_stage(9);
 #endif
@@ -362,14 +410,13 @@ void JC_Instance::setClassIndex(const jclass_index_t class_index) noexcept {
 const jbyte_t JC_Instance::getField_Byte(const uint16_t index) {
   if (this->isPersistent()) {
     const auto fields = this->getFields();
-    return static_cast<jbyte_t>(fields->at(index).value);
+    const jc_field_t &field = fields->at(index);
+    require_field_type(field.type, FieldType::FIELD_TYPE_BYTE);
+    return static_cast<jbyte_t>(field.value);
   } else {
-
-#ifdef JCVM_TYPED_HEAP
-    // TODO: the instance data value type should be verified.
-#endif /* JCVM_TYPED_HEAP */
-
-    return (jbyte_t)(this->fields->at(index).value);
+    const jc_field_t &field = this->fields->at(index);
+    require_field_type(field.type, FieldType::FIELD_TYPE_BYTE);
+    return static_cast<jbyte_t>(field.value);
   }
 }
 
@@ -382,14 +429,13 @@ const jbyte_t JC_Instance::getField_Byte(const uint16_t index) {
 const jshort_t JC_Instance::getField_Short(const uint16_t index) {
   if (this->isPersistent()) {
     const auto fields = this->getFields();
-    return signedShortFromBits(fields->at(index).value);
+    const jc_field_t &field = fields->at(index);
+    require_field_type(field.type, FieldType::FIELD_TYPE_SHORT);
+    return signedShortFromBits(field.value);
   } else {
-
-#ifdef JCVM_TYPED_HEAP
-    // TODO: the instance data value type should be verified.
-#endif /* JCVM_TYPED_HEAP */
-
-    return signedShortFromBits(this->fields->at(index).value);
+    const jc_field_t &field = this->fields->at(index);
+    require_field_type(field.type, FieldType::FIELD_TYPE_SHORT);
+    return signedShortFromBits(field.value);
   }
 }
 
@@ -403,19 +449,38 @@ const jshort_t JC_Instance::getField_Short(const uint16_t index) {
 const jint_t JC_Instance::getField_Int(const uint16_t index) {
   if (this->isPersistent()) {
     const auto fields = this->getFields();
-    const jword_t field_high_part = fields->at(index).value;
-    const jword_t field_low_part =
-        fields->at(static_cast<uint16_t>(index + 1)).value;
+    if (static_cast<std::size_t>(index) + 1 >= fields->size()) {
+      throw Exceptions::SecurityException;
+    }
+    const jc_field_t &high = fields->at(index);
+    const jc_field_t &low = fields->at(static_cast<uint16_t>(index + 1));
+    if (high.type == FieldType::FIELD_TYPE_UNINITIALIZED &&
+        low.type == FieldType::FIELD_TYPE_UNINITIALIZED) {
+      return 0;
+    }
+    if (high.type != FieldType::FIELD_TYPE_INT ||
+        low.type != FieldType::FIELD_TYPE_INT_LOW) {
+      throw Exceptions::SecurityException;
+    }
+    const jword_t field_high_part = high.value;
+    const jword_t field_low_part = low.value;
     return signedIntFromBits(SHORTS_TO_INT(field_high_part, field_low_part));
   } else {
-
-    const jword_t field_high_part = this->fields->at(index).value;
-    const jword_t field_low_part =
-        this->fields->at((uint16_t)(index + 1)).value;
-
-#ifdef JCVM_TYPED_HEAP
-    // TODO: the instance data value type should be verified.
-#endif /* JCVM_TYPED_HEAP */
+    if (static_cast<std::size_t>(index) + 1 >= this->fields->size()) {
+      throw Exceptions::SecurityException;
+    }
+    const jc_field_t &high = this->fields->at(index);
+    const jc_field_t &low = this->fields->at(static_cast<uint16_t>(index + 1));
+    if (high.type == FieldType::FIELD_TYPE_UNINITIALIZED &&
+        low.type == FieldType::FIELD_TYPE_UNINITIALIZED) {
+      return 0;
+    }
+    if (high.type != FieldType::FIELD_TYPE_INT ||
+        low.type != FieldType::FIELD_TYPE_INT_LOW) {
+      throw Exceptions::SecurityException;
+    }
+    const jword_t field_high_part = high.value;
+    const jword_t field_low_part = low.value;
 
     return signedIntFromBits(SHORTS_TO_INT(field_high_part, field_low_part));
   }
@@ -435,14 +500,13 @@ const jref_t JC_Instance::getField_Reference(const uint16_t index) {
     // fresh heap wrapper each time; transient arrays stored by crypto objects
     // then leak one backing allocation per operation and lose object identity.
     const auto fields = this->getFields();
-    return jref_t(fields->at(index).value);
+    const jc_field_t &field = fields->at(index);
+    require_field_type(field.type, FieldType::FIELD_TYPE_OBJECT);
+    return jref_t(field.value);
   } else {
-
-#ifdef JCVM_TYPED_HEAP
-    // TODO: the instance data value type should be verified.
-#endif /* JCVM_TYPED_HEAP */
-
-    return jref_t(this->fields->at(index).value);
+    const jc_field_t &field = this->fields->at(index);
+    require_field_type(field.type, FieldType::FIELD_TYPE_OBJECT);
+    return jref_t(field.value);
   }
 }
 
@@ -456,8 +520,10 @@ void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
   if (this->isPersistent()) {
     (void)this->getFields();
   }
-  this->fields->at(index).type = FieldType::FIELD_TYPE_BYTE;
-  this->fields->at(index).value = static_cast<jword_t>(BYTE_TO_WORD(value));
+  jc_field_t &field = this->fields->at(index);
+  require_field_type(field.type, FieldType::FIELD_TYPE_BYTE);
+  field.type = FieldType::FIELD_TYPE_BYTE;
+  field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
@@ -482,8 +548,10 @@ void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
   if (this->isPersistent()) {
     (void)this->getFields();
   }
-  this->fields->at(index).type = FieldType::FIELD_TYPE_SHORT;
-  this->fields->at(index).value = static_cast<jword_t>(value);
+  jc_field_t &field = this->fields->at(index);
+  require_field_type(field.type, FieldType::FIELD_TYPE_SHORT);
+  field.type = FieldType::FIELD_TYPE_SHORT;
+  field.value = static_cast<jword_t>(value);
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
@@ -509,12 +577,20 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
   if (this->isPersistent()) {
     (void)this->getFields();
   }
-  this->fields->at(index).type = FieldType::FIELD_TYPE_INT;
-  this->fields->at(index).value = static_cast<jword_t>(INT_2_MSSHORTS(value));
-  this->fields->at(static_cast<uint16_t>(index + 1)).type =
-      FieldType::FIELD_TYPE_UNINITIALIZED;
-  this->fields->at(static_cast<uint16_t>(index + 1)).value =
-      static_cast<jword_t>(INT_2_LSSHORTS(value));
+  jc_field_t &field = this->fields->at(index);
+  require_field_type(field.type, FieldType::FIELD_TYPE_INT);
+  if (static_cast<std::size_t>(index) + 1 >= this->fields->size()) {
+    throw Exceptions::SecurityException;
+  }
+  jc_field_t &low = this->fields->at(static_cast<uint16_t>(index + 1));
+  if (low.type != FieldType::FIELD_TYPE_UNINITIALIZED &&
+      low.type != FieldType::FIELD_TYPE_INT_LOW) {
+    throw Exceptions::SecurityException;
+  }
+  field.type = FieldType::FIELD_TYPE_INT;
+  field.value = static_cast<jword_t>(INT_2_MSSHORTS(value));
+  low.type = FieldType::FIELD_TYPE_INT_LOW;
+  low.value = static_cast<jword_t>(INT_2_LSSHORTS(value));
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
@@ -574,6 +650,7 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   }
 #endif
   jc_field_t &field = this->fields->at(index);
+  require_field_type(field.type, FieldType::FIELD_TYPE_OBJECT);
   record_field_write(3, 0);
   field.value = static_cast<jword_t>(ref.compact());
   if (ref.isNullPointer()) {
@@ -739,7 +816,7 @@ auto JC_Instance::getFields() const -> decltype(fields) {
       if (index + 1 >= this->fields->size()) {
         throw Exceptions::SecurityException;
       }
-      this->fields->at(++index).type = FieldType::FIELD_TYPE_UNINITIALIZED;
+      this->fields->at(++index).type = FieldType::FIELD_TYPE_INT_LOW;
       this->fields->at(index).value =
           static_cast<jword_t>(INT_2_LSSHORTS(value));
       break;

@@ -105,6 +105,80 @@ bool enumerate_root_vector(jcvm::Heap::ReferenceVisitor visitor,
 } // namespace
 
 int main() {
+  {
+    persistent_transaction_test::instance_field_count = 4;
+    jcvm::Heap heap(7);
+    const auto reference = heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    const auto instance = heap.getInstance(reference);
+    expect(instance->getField_Byte(0) == 0 &&
+               instance->getField_Short(0) == 0 &&
+               instance->getField_Reference(0).isNullPointer() &&
+               instance->getField_Int(2) == 0,
+           "new_instance_fields_have_typed_zero_and_null_defaults");
+
+    instance->setField_Byte(0, 0x23);
+    bool numeric_as_reference_rejected = false;
+    try {
+      (void)instance->getField_Reference(0);
+    } catch (jcvm::Exceptions exception) {
+      numeric_as_reference_rejected =
+          exception == jcvm::Exceptions::SecurityException;
+    }
+    bool reference_over_numeric_rejected = false;
+    try {
+      instance->setField_Reference(0, jcvm::jref_t());
+    } catch (jcvm::Exceptions exception) {
+      reference_over_numeric_rejected =
+          exception == jcvm::Exceptions::SecurityException;
+    }
+    instance->setField_Int(2, static_cast<jcvm::jint_t>(0x12345678));
+    bool int_low_word_as_short_rejected = false;
+    try {
+      (void)instance->getField_Short(3);
+    } catch (jcvm::Exceptions exception) {
+      int_low_word_as_short_rejected =
+          exception == jcvm::Exceptions::SecurityException;
+    }
+    expect(numeric_as_reference_rejected && reference_over_numeric_rejected &&
+               int_low_word_as_short_rejected &&
+               instance->getField_Int(2) == 0x12345678,
+           "instance_field_access_enforces_runtime_kinds_and_int_word_pair");
+    instance->getFields()->at(3).type = jcvm::FieldType::FIELD_TYPE_SHORT;
+    bool malformed_int_pair_rejected = false;
+    try {
+      (void)instance->getField_Int(2);
+    } catch (jcvm::Exceptions exception) {
+      malformed_int_pair_rejected =
+          exception == jcvm::Exceptions::SecurityException;
+    }
+    expect(malformed_int_pair_rejected,
+           "malformed_int_field_pair_is_rejected");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+  {
+    persistent_transaction_test::instance_field_count = 2;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(1, 2, 3);
+    const auto int_field_tag =
+        jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
+    persistent_transaction_test::seed(
+        int_field_tag.value, int_field_tag.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_INT), 0x12, 0x34,
+         0x56, 0x78});
+    jcvm::JC_Instance instance(heap, 2, 3, instance_tag);
+    const bool int_restored = instance.getField_Int(0) == 0x12345678;
+    bool restored_int_low_word_rejected = false;
+    try {
+      (void)instance.getField_Short(1);
+    } catch (jcvm::Exceptions exception) {
+      restored_int_low_word_rejected =
+          exception == jcvm::Exceptions::SecurityException;
+    }
+    expect(int_restored && restored_int_low_word_rejected,
+           "restored_int_field_preserves_and_checks_low_word_marker");
+    persistent_transaction_test::instance_field_count = 0;
+  }
   using jcvm::FlashMemory_Handler;
   using persistent_transaction_test::read;
   using persistent_transaction_test::seed;

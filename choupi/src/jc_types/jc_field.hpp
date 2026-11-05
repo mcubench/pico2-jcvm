@@ -43,6 +43,9 @@ enum FieldType : uint8_t {
   FIELD_TYPE_GLOBAL_AID_OBJECT = (uint8_t)5,
   // Internal persistent marker; never exposed as a Java Card field type.
   FIELD_TYPE_SHAREABLE_PROXY_OBJECT = (uint8_t)6,
+  // The trailing word of an in-memory Java Card int field. It is never
+  // serialized as a separate field record.
+  FIELD_TYPE_INT_LOW = (uint8_t)7,
 
   FIELD_TYPE_ARRAY_BYTE = (uint8_t)((1 << 7) | FIELD_TYPE_BYTE),
   FIELD_TYPE_ARRAY_BOOLEAN = (uint8_t)((1 << 7) | FIELD_TYPE_BOOLEAN),

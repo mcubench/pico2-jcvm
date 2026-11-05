@@ -22042,3 +22042,14 @@
 - Decision: Continue offline while guest USB enumeration is unavailable; retain this emulator regression as the baseline for the next CTX-01/03 change.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T023146Z.log` (SHA-256 `e626973dcfdf5e499d4918e430dc2ceeb51ebe0d27d5100f901e38319c0f2f1d`).
+
+## 2026-11-05 Enforce runtime instance field kinds 58 minutes
+
+- Step/experiment: `hard-20261105-runtime-instance-field-kinds`
+- When: '2026-11-05 03:41 CET' - '2026-11-05 04:39 CET'
+- Change: Initialize new instance fields as uninitialized, enforce runtime field-kind consistency on byte/short/int/reference reads and writes, and tag/check the trailing word of an int. Persistence restore/serialization and GC cache traversal recognize the internal int-low marker without permitting it in serialized records. Added focused native regressions for default values, numeric/reference mismatch, conflicting stores, valid int round-trip, malformed int pairs and restored persistent ints.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. ARM image ends at `0x100eb154` with 85,676 bytes left in the firmware window. `PICO2_HOST_USB_ACCESS=1 ... ./tools/test-sio-cross-aid-vpcd` passed 34/34 and `PICO2_HOST_USB_ACCESS=1 ... ./tools/test-vpcd-multipackage --timeout 180` passed 47/47. After build, elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` found only root hubs and the VirtualBox Tablet; physical testing was unavailable.
+- Result: Existing CAP applet, crypto, SIO, persistence, restart and multipackage lifecycle cases remain compatible. Runtime field-kind mismatches are rejected once a non-default runtime kind is established. A first store is not yet checked against the CAP-declared kind; static fields and hostile-CAP interpreter coverage also remain open.
+- Decision: Continue HARD-01 by mapping CAP-declared field kinds to field tokens and applying the same checks to static accessors, then add hostile-CAP regressions. Do not claim physical acceptance or mark HARD-01 complete.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log` (SHA-256 `b45cfa3e00081346f5761a3ce0baa1fb0eeb83f1be95a1e8aff3b44521bef1a4`); `artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256 `fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`); restart log `artifacts/logs/host-vpcd-multipackage-restart-20261105T030724Z.log` (SHA-256 `be6875ba56c24b620e5c7d80c73dd014f280643d75d7e18cac1abbba9150dcbc`).

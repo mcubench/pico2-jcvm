@@ -6356,3 +6356,39 @@ original terminology/status; check current summary and later fixes before reuse.
   `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`.
   Descriptor-omitted failure was reported in the command output; emulator log
   `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
+
+## Runtime instance field kinds require checks even with serialized typing — 2026-11-05
+
+- **Finding:** `JC_Instance` already stores a `FieldType` beside every 16-bit
+  field word, but its byte/short/int/reference accessors ignored those tags.
+  A malformed opcode sequence could write a numeric value and read it back as
+  a compact object reference. New fields were value-initialized to enum value
+  zero (`BYTE`) only by C++ aggregate initialization, which did not represent
+  Java's default/null or default-int state explicitly. Int fields occupy two
+  words, but the trailing word was otherwise indistinguishable from an
+  ordinary uninitialized field.
+- **Change:** New fields now start with an explicit uninitialized tag. Field
+  getters and setters enforce runtime category consistency; reference array
+  and proxy variants share the reference category, and byte access accepts
+  boolean. The int low word has an internal `FIELD_TYPE_INT_LOW` marker that
+  is checked by int access and persistent serialization and ignored as a
+  reference by cached-heap traversal. The marker is never accepted as a
+  serialized field-record type.
+- **Validation:** `./tools/test-persistent-transaction` passes, including
+  default zero/null reads, numeric-to-reference denial, conflicting setter
+  denial, int round-trip, malformed int-pair denial, and restoration of a
+  serialized int with its low-word marker. ARM, RISC-V, and PC
+  max_crypto builds pass. Cross-AID VPCD passes 34/34; multipackage lifecycle,
+  restart, pagination, lookupAID, reset and delete/reinstall passes 47/47.
+- **Limit:** These are runtime consistency checks, not yet a CAP-declared kind
+  check on the first store. Static fields and hostile CAP interpreter tests
+  remain open. Do not mark HARD-01 complete from this work alone.
+- **Hardware:** A fresh elevated host-access `lsusb` refresh after builds found
+  only VM root hubs and the VirtualBox Tablet despite the user's report of
+  three BOOTSEL boards. No image was flashed or physically tested.
+- **Artifacts:** cross-AID log
+  `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log` (SHA-256
+  `b45cfa3e00081346f5761a3ce0baa1fb0eeb83f1be95a1e8aff3b44521bef1a4`);
+  multipackage APDU log
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256
+  `fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`).

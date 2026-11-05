@@ -1,4 +1,34 @@
-# Current continuation — cross-AID VPCD and BOOTSEL visibility — 2026-11-05 03:40 CET
+# Current continuation — runtime instance field checks and BOOTSEL visibility — 2026-11-05 04:39 CET
+
+Implemented runtime field-kind consistency checks in `JC_Instance`: byte,
+short, int, and reference getters reject a value tagged as another kind;
+setters refuse to overwrite a known different kind; new in-memory fields
+start explicitly uninitialized; and the trailing int word has an internal
+marker that is validated on read, write, persistence serialization, and GC
+cache traversal. Java-default reads from uninitialized fields still produce
+zero/null. These checks do not yet validate a first store against the CAP's
+declared field kind, and static fields remain outside this change.
+
+Validation passed: `./tools/test-persistent-transaction` (`TEST:SUMMARY
+fail=0`), including a persistent int restore and low-word type check, ARM and
+RISC-V max_crypto builds, PC max_crypto build,
+`tools/test-sio-cross-aid-vpcd` (`TEST:SUMMARY pass=34 fail=0`), and the full
+`tools/test-vpcd-multipackage --timeout 180` suite (`TEST:SUMMARY pass=47
+fail=0`). ARM image ends at `0x100eb154`, leaving 85,676 bytes in the firmware
+window. Latest VPCD logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log`
+(SHA-256 `b45cfa3e00081346f5761a3ce0baa1fb0eeb83f1be95a1e8aff3b44521bef1a4`),
+`artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256
+`fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`), and
+restart log `artifacts/logs/host-vpcd-multipackage-restart-20261105T030724Z.log`
+(SHA-256 `be6875ba56c24b620e5c7d80c73dd014f280643d75d7e18cac1abbba9150dcbc`).
+
+After these builds and before physical testing, elevated `./tools/env lsusb`
+again saw only the USB root hubs and VirtualBox Tablet; no BOOTSEL Pico was
+attached to this guest. No flash or physical test occurred. Next: inspect CAP
+field metadata and static-field dispatch to validate first writes against
+declared kinds, then add hostile-CAP regressions. Preserve unrelated worktree
+changes; `choupi/src/heap.cpp` contains both this step's int-low GC case and a
+pre-existing unrelated deletion, so stage only the intended hunk.
 
 After the user again reported all three tokens in BOOTSEL, the required
 elevated host-access refresh (`PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb`)

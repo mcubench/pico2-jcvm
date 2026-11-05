@@ -916,6 +916,7 @@ void Heap::visitChildReferences(const JC_Instance &instance,
       case FieldType::FIELD_TYPE_SHORT:
 #ifdef JCVM_INT_SUPPORTED
       case FieldType::FIELD_TYPE_INT:
+      case FieldType::FIELD_TYPE_INT_LOW:
 #endif
       case FieldType::FIELD_TYPE_UNINITIALIZED:
         break;
