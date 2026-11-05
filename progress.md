@@ -22152,3 +22152,14 @@
 - Decision: Use the combined artifact for Windows tests requiring an empty card; use firmware-only UF2 only when preserving stored data.
 - Commit: `528c4cc`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; README `artifacts/firmware/README-max_crypto-current-20261103.txt`; no hardware log.
+
+## 2026-11-05 Stop timed-out VPCD emulator leaks 18 minutes
+
+- Step/experiment: `host-20261105-vpcd-process-group-cleanup`
+- When: '2026-11-05 10:17 CET' - '2026-11-05 10:35 CET'
+- Change: Kept both SIO VPCD emulator launches in the test's inherited process group. Previously `start_new_session=True` let an emulator survive when an outer timeout terminated only the test process. Added the reproducible cause and cleanup rule to QKB and updated the handoff.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` passed. With fixture reuse, an outer 8-second `timeout` returned 124 and `ps -C choupi` showed no remaining process. A separate 12-second internal VPCD connect timeout failed before `VPCD:CONNECTED` but also left no emulator process. Firmware builds and hardware validation were not needed for this host-only test-harness change.
+- Result: Timed-out SIO VPCD runs no longer accumulate detached emulator processes or their CPU load. The original pre-connect runtime stall remains unresolved; the configured interpreter progress interval produced no trace before timeout.
+- Decision: Keep the process-group cleanup fix. Continue tracing whether `starting_jcre()` stalls in PC storage initialization or interpreter startup; do not treat the cleanup change as fixing the VM stall.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T093238Z.log`, SHA-256 `c6a3dd61bcc6d4ca65444cf190e65045be7e9b7af607660455da7998b55eea10`; outer-timeout result returned directly by the command tool.

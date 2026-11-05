@@ -6496,3 +6496,25 @@ original terminology/status; check current summary and later fixes before reuse.
   in `lsusb`, but `pcsc_scan -r` showed only the two virtual readers and GPPro
   could not select a Pico. The authorized reader helper granted access to all
   three USB nodes. Continue with another board when it reappears in PC/SC.
+
+## Detached VPCD emulator survives test timeout and burns CPU — 2026-11-05
+
+- **Finding:** `tools/tests/sio_cross_aid_vpcd_test.py` launched the emulator
+  with `start_new_session=True`. An outer `timeout` sent TERM to the test
+  process but not its detached emulator session, so failed startup attempts
+  left traced `choupi` parent/child processes running after the test exited.
+  One diagnostic orphan was still consuming CPU more than two minutes later.
+- **Viable fix:** Keep both emulator launches in the test process group by
+  omitting `start_new_session=True`. The test's `finally` block still handles
+  its own connect/APDU timeout; an external process-group timeout now terminates
+  the test and emulator together.
+- **Validation:** With fixture reuse and an 8-second external timeout, the
+  command returned timeout status 124 and `ps -C choupi` showed no emulator
+  remaining. A separate 12-second internal VPCD-connect timeout also cleaned
+  up all emulator processes. The VPCD startup still failed before
+  `VPCD:CONNECTED`; this cleanup change does not explain or fix that runtime
+  stall. Log: `artifacts/logs/sio-cross-aid-vpcd-20261105T093238Z.log`, SHA-256
+  `c6a3dd61bcc6d4ca65444cf190e65045be7e9b7af607660455da7998b55eea10`.
+- **Use:** When running emulator tests under `timeout`, do not detach the
+  emulator into a new session unless the harness traps termination and kills
+  that process group explicitly. Recheck `ps -C choupi` after timeouts.

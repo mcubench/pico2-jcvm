@@ -213,8 +213,7 @@ def main() -> int:
         emulator_env["CHOUPI_TRACE_REFERENCE_COLLISIONS"] = "1"
         with log_path.open("wb") as log:
             process = subprocess.Popen(command, cwd=ROOT, stdout=log,
-                                       stderr=log, start_new_session=True,
-                                       env=emulator_env)
+                                       stderr=log, env=emulator_env)
         connection = None
         try:
             connection, _ = vpcd.accept_vpcd(listener, process, CONNECT_TIMEOUT,
@@ -558,8 +557,7 @@ def main() -> int:
                   f"across owners; trace={collision_lines[0].strip()}")
             with log_path.open("ab") as log:
                 process = subprocess.Popen(command, cwd=ROOT, stdout=log,
-                                           stderr=log, start_new_session=True,
-                                           env=emulator_env)
+                                           stderr=log, env=emulator_env)
             connection, _ = vpcd.accept_vpcd(
                 listener, process, CONNECT_TIMEOUT, log_path,
                 "cross-AID SIO restart"

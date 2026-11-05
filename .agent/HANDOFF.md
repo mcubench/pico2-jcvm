@@ -1,3 +1,31 @@
+# Current continuation — prevent timed-out VPCD tests from orphaning emulator processes — 2026-11-05 10:35 CET
+
+Removed `start_new_session=True` from the two emulator launches in
+`tools/tests/sio_cross_aid_vpcd_test.py`. The harness's own `finally` block
+still terminates an emulator after an internal timeout; external `timeout`
+signals now also reach the emulator and its traced child through the inherited
+process group. This addresses the accumulating CPU use from timed-out VPCD
+tests. An orphan from an earlier diagnostic was terminated explicitly.
+
+Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py`
+passed. A fixture-reuse test killed after 8 seconds returned status 124 and
+left no process in `ps -C choupi`. A separate 12-second connect-timeout run
+failed before `VPCD:CONNECTED` as before, but its cleanup left no emulator
+process. Log:
+`artifacts/logs/sio-cross-aid-vpcd-20261105T093238Z.log`, SHA-256
+`c6a3dd61bcc6d4ca65444cf190e65045be7e9b7af607660455da7998b55eea10`.
+The underlying VPCD startup/runtime stall is still open; the VM progress trace
+did not reach its configured interval. No firmware build or physical USB
+operation was needed. The user reports all three devices are now in BOOTSEL;
+that state has not been refreshed from inside the VM during this continuation.
+
+Next: retain this cleanup change, then isolate the pre-connect stall. Check
+whether `starting_jcre()` is blocked in host storage initialization or in the
+interpreter before changing VM behavior. The CPUs were released after each
+bounded test. Commit: pending.
+
+---
+
 # Current external-test artifact — max_crypto empty-card UF2 — 2026-11-05 10:02 CET
 
 Refreshed `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
