@@ -33,7 +33,7 @@ Windows clean-card instructions are in
 `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
 Root `progress.md` has the 81-minute code-fix record (commit `da4c39f`) and the
-9-minute image-packaging record. SHA bookkeeping is commit `f869ce9`;
+9-minute image-packaging record (commit `d7e3550`). SHA bookkeeping is commit `f869ce9`;
 `.agent/QKB.md` documents the reusable cause and fix; `TODO.md` records the
 resolved bug and current physical-device visibility.
 

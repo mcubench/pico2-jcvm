@@ -21974,5 +21974,5 @@
 - Validation: `picotool info -a` identified the combined image as RP2350 ARM Secure. A UF2 block verifier confirmed all 3,761 firmware blocks match `build/arm/pico2_choupi.uf2` and all 4,096 blocks covering `0x10100000–0x101FFFFF` contain `0xFF`; total 7,857 blocks. Image size is 4,022,784 bytes, SHA-256 `370a360f39bdbefdaf955406a8865b88b6542f34cd170b1a04b1153bf7b5cd75`. Firmware-only UF2 is 1,925,632 bytes, SHA-256 `78d70491e088bd0e3159282f131714091e279d4d405c2b853d2a8403e6b27e98`.
 - Result: The current build is packaged for explicit clean-card Windows testing; no CAP/applet is bundled. No physical write occurred because guest USB inventory still lacked Pico devices.
 - Decision: Use the combined UF2 for a clean-card test once a board enumerates in the VM; use the firmware-only UF2 only when preserving card storage is intended.
-- Commit: `<recorded in follow-up commit>`
+- Commit: `d7e3550`
 - Artifacts/logs: `build/arm/pico2_choupi_max_crypto_empty_card.uf2` (ignored build output); `artifacts/firmware/README-max_crypto-current-20261103.txt`.
