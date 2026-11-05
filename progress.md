@@ -21998,3 +21998,14 @@
 - Decision: Keep CTX-01 open. Next isolate why service INSTALL fails without Descriptor, retain both fixture variants, and resume physical testing once a BOOTSEL board enumerates inside the guest.
 - Commit: `e699e26`
 - Artifacts/logs: passing emulator log `artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log`, SHA-256 `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`; failed Descriptor-omitted emulator log `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log` (failure SW captured in command output).
+
+## 2026-11-05 Isolate descriptor-free CAP install rejection 3 minutes
+
+- Step/experiment: `ctx-20261105-descriptor-free-install-cause`
+- When: '2026-11-05 02:47 CET' - '2026-11-05 02:50 CET'
+- Change: Traced the Descriptor-omitted cross-AID service INSTALL failure to the intentional method-boundary guard for untrusted dynamic CAPs and recorded the safety requirement in TODO, QKB and handoff.
+- Validation: Read the failing VPCD emulator log and `Method_Handler::callMethod`, `cap_method_body_bounds::find`, and `cap_execution_policy::is_dynamic_package` source paths. Failure data is stage 5, SW `6A80`, VM status `6F00`, exception 29 (`SecurityException`), opcode `00`, PC `00000000`. No code changed; no build or additional test was run.
+- Result: Missing Descriptor bounds cause the dynamic-package guard to reject the applet's first INSTALL-time method call. An unbounded Method-component fallback would allow execution to cross method bodies and is not safe.
+- Decision: Keep the Descriptor-absent issue open until a verifiable method-bounds source or safe package policy is designed; preserve Descriptor-present and Descriptor-absent regressions.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.

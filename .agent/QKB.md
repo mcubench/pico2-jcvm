@@ -6331,3 +6331,12 @@ original terminology/status; check current summary and later fixes before reuse.
   `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`.
   Descriptor-omitted failure was reported in the command output; emulator log
   `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
+- **Root cause isolated:** The failing emulator log reports INSTALL stage 5,
+  `SW=6A80`, `vm=6F00`, exception ID 29 (`SecurityException`), opcode `00`,
+  and PC `00000000`. `Method_Handler::callMethod` finds no method-body range
+  because the package lacks Descriptor, then deliberately throws
+  `SecurityException` for package IDs 56–63 (`cap_execution_policy`). This is
+  a fail-closed uploaded-CAP method-boundary policy, not a VPCD socket or
+  transport timeout. Do not resolve it by bounding execution to the entire
+  Method component: that would permit branches/reads to cross method bodies.
+  A safe metadata source or another installable-CAP trust policy is needed.

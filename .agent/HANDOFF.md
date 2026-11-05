@@ -12,8 +12,13 @@ reinstall. Passing log:
 
 The Descriptor-omitted variant failed during service applet INSTALL with
 `6A80`, after contract LOAD succeeded. Since standard GPPro `getCode()` omits
-Descriptor, investigate the install-time method/metadata path; the passing
-Descriptor-present run does not close that compatibility gap. The script's
+Descriptor, `Method_Handler::callMethod` cannot find a method-body range and
+throws `SecurityException` for dynamic package IDs 56–63. The failing install
+log reports stage 5, `vm=6F00`, exception 29, opcode `00`, PC `00000000`.
+This is the fail-closed method-boundary guard, not a VPCD transport failure.
+Do not widen execution to the whole Method component; find a verifiable bounds
+source or a different safe policy. The passing Descriptor-present run does not
+close this compatibility gap. The script's
 default 30-second APDU timeout is too short for this VM; retain the 90-second
 connect and 120-second APDU values for full regressions.
 

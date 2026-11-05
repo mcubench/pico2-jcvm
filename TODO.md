@@ -768,9 +768,13 @@ source-based follow-ups, without a new physical reproduction in this review.
   Latest full three-package cross-AID regression passes 34/34 when Descriptor
   components are included. The same fixture with Descriptor omitted (matching
   standard GPPro `getCode()` behavior) LOADs the contract but fails service
-  applet INSTALL with `6A80`; investigate the install-time bytecode/metadata
-  path and preserve both Descriptor-present and Descriptor-absent acceptance
-  cases. The current default VPCD script has a 30-second APDU deadline that is
+  applet INSTALL with `6A80`. Root cause: `Method_Handler::callMethod` cannot
+  find a Descriptor method-body range and throws `SecurityException` for the
+  dynamic package. Identify a verifiable source for method bounds before
+  changing this fail-closed guard; never widen dynamic method execution to the
+  entire Method component. Preserve both Descriptor-present and
+  Descriptor-absent acceptance cases. The current default VPCD script has a
+  30-second APDU deadline that is
   too short for this VM; use 90 seconds to connect and 120 seconds per APDU.
   A new test-only SIO method passes a caller-owned byte array into native
   `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner
