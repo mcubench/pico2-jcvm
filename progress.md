@@ -22191,3 +22191,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep local recovery data, preserve unrelated dirty changes, and continue normal development. Publish this verification record as a small follow-up commit.
 - Commit: `f6ec7b18a35fb43f9041b322bffb9bfb3e54b0cf` (validated cleanup implementation).
 - Artifacts/logs: `.agent/history/2026-11-05-history-cleanup.md`; `.agent/history/2026-11-05-commit-map.tsv`; ignored `artifacts/backups/history-cleanup-20261105/`.
+
+## 2026-11-05 Prepare max and symmetric-only ARM release UF2s 17 minutes
+
+- Step/experiment: `release-20261105-arm-crypto-empty-card-images`
+- When: '2026-11-05 11:06 CET' - '2026-11-05 11:23 CET'
+- Change: Built ARM `max_crypto` and `symm_crypto` firmware and packaged each with the full erased 1 MiB storage range so both are empty-card release images. Added a release manifest and rebuild commands. UF2 binaries remain ignored by `.gitignore`; only the manifest and continuity record are included in Git.
+- Validation: `./tools/build arm --profile max_crypto` passed with 147/150 capabilities; `./tools/build arm --profile symm_crypto` passed with 46/150. `./tools/package-empty-card-uf2` produced each artifact. `./tools/env picotool info -a` identified both as RP2350 ARM Secure. A structural UF2 validator confirmed block numbering, unique addresses, exact file lengths and all 4,096 storage blocks set to `0xFF`. No physical flash or runtime test was performed.
+- Result: `max_crypto`: 4,026,368 bytes, SHA-256 `0868a0ec81b13bd5a5a7c9e42f2ac64fe061ade69d12ac93bded6aa852ec5873`, firmware end `0x100EB604`. `symm_crypto`: 3,837,440 bytes, SHA-256 `40032e23306d73d4c095659b41ecb9b90441c447accaf870a88048b2bc501571`, firmware end `0x100D45A8`. Both cards start empty; flashing erases stored card data. Neither artifact was uploaded to GitHub.
+- Decision: These two files are prepared for manual release upload and external Windows testing. Use the tracked manifest for hashes and boot instructions; install an unchanged upstream CAP separately.
+- Commit: pending
+- Artifacts/logs: ignored UF2s under `artifacts/firmware/`; tracked manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`.

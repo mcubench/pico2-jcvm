@@ -26,6 +26,36 @@ The previously open VPCD work remains described below.
 
 ---
 
+# Current release-preparation outputs — ARM max and symmetric-only empty-card UF2s — 2026-11-05 11:22 CET
+
+Built and packaged two current-source ARM profiles for external/GitHub release
+use. Both images are empty-card images (no preinstalled CAP/applet) and include
+4,096 `0xFF` storage blocks spanning `0x10100000`–`0x101FFFFF`:
+
+- `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` —
+  `max_crypto`, 147/150 declared capabilities, 4,026,368 bytes, SHA-256
+  `0868a0ec81b13bd5a5a7c9e42f2ac64fe061ade69d12ac93bded6aa852ec5873`.
+- `artifacts/firmware/pico2-jcvm-symm_crypto-arm-empty-card-current.uf2` —
+  `symm_crypto`, 46/150 capabilities, 3,837,440 bytes, SHA-256
+  `40032e23306d73d4c095659b41ecb9b90441c447accaf870a88048b2bc501571`.
+
+Both `./tools/build arm --profile ...` invocations passed. `picotool info -a`
+identified each as RP2350 ARM Secure. A UF2 validator checked block sequence,
+unique addresses, full erased storage, exact sizes and hashes. Firmware ends
+at `0x100EB604` for max and `0x100D45A8` for symmetric-only. These artifacts
+were not flashed to hardware and have not been uploaded to GitHub. Flashing
+clears the card's persistent storage. See
+`artifacts/firmware/README-crypto-arm-empty-card-current.md` for release notes
+and rebuild commands. UF2s remain ignored by `.gitignore`; the README is
+tracked. Commit: pending.
+
+The attempted PC-only VPCD storage trace from the previous continuation was
+reverted before these builds. It did not enter either firmware image. The
+VPCD harness process-group cleanup fix remains committed as `d2282b90` in the
+cleaned history.
+
+---
+
 # Current continuation — prevent timed-out VPCD tests from orphaning emulator processes — 2026-11-05 10:35 CET
 
 Removed `start_new_session=True` from the two emulator launches in
