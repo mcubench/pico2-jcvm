@@ -22460,3 +22460,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: Cycle `artifacts/logs/cycle-choupi-20261105T230607Z.log`, SHA-256 `e5d99d4d95b98eb326c05c6338000f577a8cfbba973ce86b22002d2ecc5ff98f`; physical `artifacts/logs/cipher-lifecycle-pcsc-20261105T230800Z.log`, SHA-256 `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.
 
 - Commit resolved for `ccid-extension-error-recovery-20261106`: `8a90e71c` (Preserve pending CCID response on extension error).
+
+## 2026-11-06 Validate VPCD restore and selection integration 6 minutes
+
+- Step/experiment: `rv27-vpcd-production-callback-20261106`
+- When: '2026-11-06 00:09 CET' - '2026-11-06 00:15 CET'
+- Change: Rebuilt the max_crypto PC emulator and reran the VPCD JCAlgTest install/restore path after the earlier connection-timeout report. Updated RV-20261103-27 and continuity notes with current production-callback results.
+- Validation: `./tools/build-pc --profile max_crypto` passed (upstream Rust warnings were emitted); `./tools/test-vpcd-session` passed 29/29. Elevated bounded `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 180s ./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 60 --apdu-timeout 45 --log artifacts/logs/rv27-pc-vpcd-20261106.log` passed `TEST:SUMMARY pass=15 fail=0`. VPCD connect took 18.601 s; the run took 54.888 s. The test covered applet install/restore, SELECT, GETVERSION, JCSystem info, supported/unsupported algorithms, SHA-256 prepare/final/static performance, AES, RSA, secure random and CRC16. No physical USB device was used; ARM/RISC-V build gates had passed with the implementation in its earlier step.
+- Result: The production PC restore callback and APDU selection path run successfully. The earlier VPCD pre-connect timeout is no longer reproducible in this current run.
+- Decision: Mark RV-20261103-27 complete; continue to RV-20261103-28 (CAP execution trust boundary).
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv27-pc-vpcd-20261106.log`, SHA-256 `c35ad52fd4b3d85e7de8c143abbb32952713b7afcc8e547693ecb07117435d72`.

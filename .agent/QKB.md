@@ -108,6 +108,14 @@
 - **Viable access path:** Run this local VPCD wrapper only with elevated host
   access when the restricted attempt reports `Operation not permitted`; do not
   rerun in restricted mode.
+- **Resolution (2026-11-06):** The current max_crypto PC emulator rebuild and
+  elevated one-pass rerun connected after 18.601 s and passed
+  `TEST:SUMMARY pass=15 fail=0` in 54.888 s. VPCD installed and selected
+  JCAlgTest, returned GETVERSION `1.8.2_jc305`, JCSystem info and all expected
+  support/performance probes. Treat the 2026-11-04 pre-connect timeout as
+  transient and superseded, not as the current behavior. Current log:
+  `artifacts/logs/rv27-pc-vpcd-20261106.log`, SHA-256
+  `c35ad52fd4b3d85e7de8c143abbb32952713b7afcc8e547693ecb07117435d72`.
 
 ## PC VPCD upstream applet install and host-emulator timeout — observed 2026-11-04
 

@@ -1,4 +1,27 @@
-# Active handoff — CCID extension-error recovery validated — 2026-11-06 00:09 CET
+# Active handoff — VPCD session restore integration validated — 2026-11-06 00:15 CET
+
+## Latest continuation — close RV-27 with current VPCD runtime evidence — 2026-11-06 00:15 CET
+
+RV-20261103-27 is complete. The session unit suite passes 29/29, including
+two known AIDs, different-AID switch, same-AID reselection, unknown AID,
+rejected applet `select()`, corrupted restore, and distinct `6A82` versus
+`6F00` outcomes. After `./tools/build-pc --profile max_crypto`, the bounded
+VPCD JCAlgTest production callback integration passes 15/15. It installed and
+restored JCAlgTest, selected it (`9000`), returned GETVERSION
+`1.8.2_jc305`, JCSystem info, SHA-256 support/doFinal/static tests, AES/RSA,
+random, CRC16 and expected unsupported-algorithm status. Connect took
+18.601 s and full pass took 54.888 s. The prior pre-connect timeout is
+superseded. Log:
+`artifacts/logs/rv27-pc-vpcd-20261106.log`, SHA-256
+`c35ad52fd4b3d85e7de8c143abbb32952713b7afcc8e547693ecb07117435d72`.
+This was PC/VPCD-only; no physical device was used. ARM/RISC-V builds were
+already validated with the implementation.
+
+Next: RV-20261103-28, uploaded-CAP execution trust boundary. Preserve unrelated
+worktree changes. RV-27 progress/TODO/QKB/handoff records are updated; this
+validation commit is pending.
+
+# Prior continuation — CCID extension-error recovery validated — 2026-11-06 00:09 CET
 
 ## Latest continuation — preserve response across failed CCID extension — 2026-11-06 00:09 CET
 

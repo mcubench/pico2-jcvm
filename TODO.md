@@ -254,10 +254,10 @@ during the review.
 
 ### RV-20261103-27
 
-- [ ] **P2: Test compile drift plus wrong reselection/restore status.**
+- [x] **P2: Test compile drift plus wrong reselection/restore status.**
   Owner: PROFILE-01, GP-01. Evidence: Reproduced; [review R27](docs/review_20261103.md#r27--vpcd-session-tests-are-stale-and-mask-selection-regressions).
   Acceptance: restore the test's build, track the actual selected AID and retain meaningful restore failure status. Expand to two known applets, unknown AID, same-AID reselection, rejected `select()` and corrupted restore. Do not simply change assertions to the current wrong behavior. ,
-  Progress: Focused session test restored and expanded; `./tools/test-vpcd-session` passes 25/25. ARM and RISC-V wrappers build. `./tools/test-pc-vpcd-applet --passes 1` timed out before VPCD connected (startup log has no `VPCD:APPLET_INSTALLED` marker), so production callback/runtime acceptance remains open.
+  Progress: The stale session test constructor was restored; session state now tracks the selected AID, identifies same-AID reselection, and distinguishes missing applets (`6A82`) from restore failures (`6F00`). Tests cover two known AIDs, switching, same-AID selection, unknown AID, rejected `select()`, and corrupted restore. `./tools/test-vpcd-session` passes 29/29; ARM/RISC-V builds passed with the implementation. After rebuilding the max_crypto PC emulator, the production VPCD integration passed `TEST:SUMMARY pass=15 fail=0`: install/restore, applet SELECT (`9000`), GETVERSION `1.8.2_jc305`, JCSystem info, support probes, SHA-256 prepare/doFinal/static, AES/RSA/random/CRC16 and expected NO_SUCH_ALGORITHM. VPCD connected in 18.601 s; complete pass took 54.888 s. Earlier pre-connect timeout is superseded. No physical hardware was involved in this PC-only acceptance.
 
 ### RV-20261103-28
 
