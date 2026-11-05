@@ -22064,3 +22064,15 @@
 - Decision: Keep these layout checks. Next, implement and test Descriptor-backed field-kind lookup, while keeping Descriptor-free dynamic execution fail-closed until a verifiable metadata/trust source exists.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T041209Z.log`, SHA-256 `bb7a401db76bf61b65aae5ac662f95edefa9e5f359bf0418b6d08006910f7ce1`; no hardware log.
+
+
+## 2026-11-05 Same-AID CAP reinstall analysis approximately 10 minutes
+
+- Step/experiment: `review-20261105-cap-reinstall`
+- When: '2026-11-05 approximately 08:55 CET' - '2026-11-05 09:05 CET' (start and total estimated)
+- Change: Added a source review explaining retained CAP code after instance DELETE, duplicate-AID LOAD rejection, full package replacement safeguards, and two runtime cleanup risks requiring reproduction. Updated continuity and issues records; firmware and CAPs unchanged.
+- Validation: `./tools/test-gp-delete` exited 0, `TEST:SUMMARY pass=26 fail=0`. `./tools/test-rp2350-fs-overlay` exited 0, `TEST:SUMMARY fail=0`, but emits an intentionally injected `FAULT FS snapshot unavailable; preserve flash for recovery` in its unrecoverable migration test; this is not a clean fault-free run under the strict repository rule. Source inspection traced flash erasure, byte verification, context/proxy cleanup, and recovery.
+- Result: No normal-path silent retention of old bytecode identified after successful package DELETE/LOAD/INSTALL. Instance-only deletion leaves old code by design. Package-cascade SIO proxy invalidation and late-DELETE-failure context cleanup remain un-reproduced risks. Changed-version behavior and physical performance were not measured.
+- Decision: Report analysis; reproduce the two cleanup paths and add changed-version/restart coverage before claiming upgrade correctness. Target builds and hardware validation intentionally skipped because no firmware source changed and this was an offline analysis.
+- Commit: pending; resolved in the appended bookkeeping line.
+- Artifacts/logs: `docs/cap-reinstall-review-20261105.md`; test output observed in tool sessions, no archived logs.

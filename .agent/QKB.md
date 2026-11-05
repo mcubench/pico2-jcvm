@@ -6422,3 +6422,10 @@ original terminology/status; check current summary and later fixes before reuse.
   standard GPPro LOAD omits it, so the VM cannot verify first primitive stores
   against field declarations for such packages. Continue fail-closed method
   bounds, and do not claim declared-kind enforcement for Descriptor-free CAPs.
+
+
+## CAP upgrade versus instance reinstall — reviewed 2026-11-05
+
+- **Established behavior:** Instance DELETE retains the CAP package and its static state. Same-package-AID LOAD rejects the existing package (`6A80` from embedded CCID). A subsequent INSTALL from the resident package uses old code. Full package DELETE is needed for a changed CAP; check all APDU statuses and package absence before LOAD.
+- **Open issues:** Package DELETE skips surviving client SIO route invalidation; late storage failure after persistent DELETE commit can skip runtime context invalidation. These are source-review findings, not reproduced bugs in this session. No fix is claimed.
+- **Reference:** `docs/cap-reinstall-review-20261105.md`. GP DELETE unit tests passed 26/26; overlay summary fail=0/exit 0 includes an intentionally injected migration FAULT. Existing same-CAP reinstall tests do not prove changed bytecode behavior.
