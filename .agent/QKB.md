@@ -6554,4 +6554,9 @@ Validation on 2026-11-05: `./tools/build-pc --profile symm_crypto` passed.
 The bounded cross-AID VPCD run now reaches `VPCD:CONNECTED` and starts CAP
 LOAD; it subsequently fails installing the second fixture with `6A80` / VM
 exception 29. This later failure is still open and is separate from the
-resolved VPCD startup stall. No physical hardware was used.
+resolved VPCD startup stall. The failure is the known Descriptor-free fixture
+limitation: execution bounds cannot be reconstructed without the optional
+Descriptor component. With `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`, the complete
+suite then passed `TEST:SUMMARY pass=34 fail=0` at
+`artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`. No physical hardware
+was used.

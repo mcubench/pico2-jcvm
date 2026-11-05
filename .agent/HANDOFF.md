@@ -6354,17 +6354,17 @@ to trusted Installer/RuntimeEnvironment contexts. The cause and fix are in
 `.agent/QKB.md`.
 
 Validation: `./tools/build-pc --profile symm_crypto` passes. The bounded
-cross-AID harness reaches `VPCD:CONNECTED` and loads the first Shareable
-fixture, but fails during INSTALL of the second fixture with `6A80`, VM
-exception 29. Latest log:
-`artifacts/logs/sio-cross-aid-vpcd-20261105T125342Z.log`. No emulator process
-remained after the run. No physical hardware used. The startup duration was
-not measured. Temporary diagnostic prints were removed.
+cross-AID harness reaches `VPCD:CONNECTED`; its Descriptor-free run fails on
+the second fixture's INSTALL with `6A80`, exception 29, the previously
+documented fail-closed limitation. With
+`SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`, the full suite passed 34/34:
+`artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`. No emulator process
+remained after the run. No physical hardware used. Startup duration was not
+measured. Temporary diagnostic prints were removed.
 
-Next: investigate the second fixture's INSTALL exception as a distinct issue.
-Do not remove or modify unrelated existing source, documentation, review
-artifact, or submodule changes. In particular, `src/cap_load.cpp` still
-contains pre-existing uncommitted lifecycle/install refactoring; stage only
-the package erase changes for this step.
+Next: continue with the next high-priority runtime item in `TODO.md`. Preserve
+unrelated existing source, documentation, review artifact, and submodule
+changes. In particular, `src/cap_load.cpp` still contains pre-existing
+uncommitted lifecycle/install refactoring; do not stage it wholesale.
 
 ---

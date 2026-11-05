@@ -22228,3 +22228,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T125342Z.log`; no hardware logs.
 
 - Commit resolved for `vpcd-orphan-static-cleanup-20261105`: `aedd21f9` (Speed up VPCD orphan state recovery).
+
+## 2026-11-05 Validate VPCD cleanup with Descriptor-present cross-AID suite 9 minutes
+
+- Step/experiment: `vpcd-orphan-cleanup-regression-20261105`
+- When: '2026-11-05 13:55 CET' - '2026-11-05 14:04 CET'
+- Change: Re-ran the complete cross-AID VPCD suite against the committed startup cleanup, then updated QKB and handoff with the result and clarified the known Descriptor-free limitation.
+- Validation: `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_REUSE_FIXTURE=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=30 timeout --signal=TERM --kill-after=5s 180s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. No orphan `choupi` process remained. No physical hardware was used.
+- Result: Full cross-AID install, dispatch, lifecycle, restart/reset and delete/reinstall scenarios pass when the CAP Descriptor is present. Descriptor-free INSTALL still fails closed as documented. The max empty-card UF2 is 4,026,368 bytes as a container; programmed flash payload is approximately 2,012,676 bytes (964,100 firmware + 1,048,576 erased storage), leaving 84,476 bytes of the 2 MiB flash range. The previous ~2 MiB UF2 omitted the explicit erased-storage payload.
+- Decision: Keep the VPCD cleanup fix. Use the Descriptor-present suite for positive cross-AID validation; treat Descriptor-free `6A80` as the known metadata boundary. No firmware rebuild was needed for this PC-only change.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T130057Z.log`; max image manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`.
