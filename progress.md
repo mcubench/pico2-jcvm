@@ -22163,3 +22163,5 @@
 - Decision: Keep the process-group cleanup fix. Continue tracing whether `starting_jcre()` stalls in PC storage initialization or interpreter startup; do not treat the cleanup change as fixing the VM stall.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T093238Z.log`, SHA-256 `c6a3dd61bcc6d4ca65444cf190e65045be7e9b7af607660455da7998b55eea10`; outer-timeout result returned directly by the command tool.
+
+- Commit resolved for `host-20261105-vpcd-process-group-cleanup`: `67df3d9` (Stop timed-out VPCD emulator leaks).

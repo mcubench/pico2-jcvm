@@ -22,7 +22,7 @@ that state has not been refreshed from inside the VM during this continuation.
 Next: retain this cleanup change, then isolate the pre-connect stall. Check
 whether `starting_jcre()` is blocked in host storage initialization or in the
 interpreter before changing VM behavior. The CPUs were released after each
-bounded test. Commit: pending.
+bounded test. Implementation commit: `67df3d9`.
 
 ---
 
