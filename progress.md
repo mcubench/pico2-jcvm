@@ -22226,3 +22226,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the bulk erase fix. Next investigate the second fixture's VM exception 29/`6A80`; do not conflate it with the resolved startup stall. Preserve all unrelated worktree changes.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T125342Z.log`; no hardware logs.
+
+- Commit resolved for `vpcd-orphan-static-cleanup-20261105`: `aedd21f9` (Speed up VPCD orphan state recovery).
