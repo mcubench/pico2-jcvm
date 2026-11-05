@@ -22350,3 +22350,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the fail-closed behavior. Continue CTX-01/03 with explicit cross-heap root routing and lifecycle tests before enabling foreign applet-owned array stores.
 - Commit: pending.
 - Artifacts/logs: Existing D92 result `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`; no new log.
+
+- Commit resolved for `sio-foreign-array-fail-closed-status-20261105`: `169473ea` (Clarify cross-heap array root policy).
