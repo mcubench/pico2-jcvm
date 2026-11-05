@@ -1,3 +1,20 @@
+## Runtime USB visible but one of two JCVM boards is missing from PC/SC — observed 2026-11-05
+
+- **Observation:** Elevated enumeration at 15:38 CET found two runtime `2e8a:0009`
+  boards: `D92E743D5F640C0F` and `2BED26ED20556535`. Both expose Communications,
+  CDC Data, and Chip/SmartCard CCID interfaces. The authorized helper granted
+  access to USB nodes 020 and 021. `pcsc_scan -r` listed D92 and omitted 2BED;
+  `lsusb -v` confirmed 2BED's CCID interface. The expected third board was not
+  visible in the guest at that time.
+- **Interpretation:** This is guest USB/PCSC registration divergence. It is not
+  evidence that 2BED firmware failed, nor that firmware supports only one
+  reader. Keep USB enumeration, PC/SC registration, ATR/APDU response, and
+  firmware execution as separate diagnostic layers.
+- **Next:** Refresh reader access and record serial-to-node mappings. Inspect
+  pcscd logs/driver registration for 2BED and compare its interface descriptors
+  against D92 before changing firmware. Use an already registered reader for
+  hardware work while the second-reader cause is investigated.
+
 ## Flash succeeds but VirtualBox drops Pico runtime USB after reboot — observed 2026-11-04
 
 - **Finding:** With three RP2350 boards in BOOTSEL, `picotool info -a`

@@ -1,4 +1,4 @@
-# High-priority startup TODO — HOST-02 — 2026-11-05
+# Active handoff — HOST-02 acceptance and available boards — 2026-11-05 15:42 CET
 
 HOST-02 implementation and max_crypto Windows test image are complete locally.
 Normal ARM startup removes the CDC/DTR wait and 500 ms sleep; bounded
@@ -8,8 +8,21 @@ separately named diagnostic UF2 plus sidecar. ARM/RISC-V max_crypto normal,
 diagnostic 30000 ms, then normal again passed; both CMake caches end at zero.
 Physical normal firmware passed `tools/cycle choupi` on Pico 2
 `D92E743D5F640C0F` (`TEST:SUMMARY pass=1 fail=0`); targeted GPPro SELECT,
-CPLC and Card Data returned `9000`. Windows reconnect timings and physical
-DTR/deadline diagnostic behavior remain untested. Implementation commit: `1d3b5f95`.
+CPLC and Card Data returned `9000`. The 30000 ms diagnostic build was also
+flashed and its finite serial cycle passed, validating DTR-triggered capture;
+no-DTR deadline behavior remains untested. The user reports that the normal
+image became visible under Windows certutil almost instantly after replug.
+Exact timing, image hash used, and reader-list method were not supplied, so the
+three-run Windows acceptance remains open. Implementation commit: `1d3b5f95`.
+
+Latest elevated USB refresh at 2026-11-05 15:38 CET found runtime JCVM devices
+`D92E743D5F640C0F` and `2BED26ED20556535`, not BOOTSEL. `lsusb -v` confirmed
+both provide the CCID interface. `pcsc_scan -r` listed only D92; 2BED is
+USB-visible but not registered by PC/SC, and the third expected board was not
+visible in this guest. Do not attribute that difference to firmware until the
+USB/PCSC handoff is isolated. Logs from the recent cycles are under
+`artifacts/logs/cycle-choupi-20261105T143119Z.log` and
+`artifacts/logs/cycle-choupi-20261105T143418Z.log`.
 
 Current Windows empty-card image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,025,856

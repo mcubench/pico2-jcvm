@@ -22302,3 +22302,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit and push the README update to main as explicitly requested.
 - Commit: Resolve with `git log -1 --format=%H -- README.md` after commit creation.
 - Artifacts/logs: `README.md`; `https://github.com/mcubench/pico2-jcvm/releases`; no generated binaries.
+
+## 2026-11-05 Record live USB/PCSC state and HOST-02 acceptance evidence 5 minutes
+
+- Step/experiment: `host-02-and-reader-state-refresh-20261105`
+- When: '2026-11-05 15:37 CET' - '2026-11-05 15:42 CET'
+- Change: Corrected stale physical-device state in `TODO.md`; recorded the user's Windows report as unmeasured, distinguished it from the captured diagnostic-DTR hardware pass, and updated HOST-02 remaining acceptance. Added a current concise project overview in `STATUS.md`, refreshed `.agent/HANDOFF.md`, and recorded the observed USB/PCSC discrepancy in `.agent/QKB.md`.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/env picotool info -a` found no BOOTSEL device and identified runtime USB serial connections. `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to two nodes. `timeout 8s pcsc_scan -r` listed virtual readers and physical `D92E743D5F640C0F`, but not `2BED26ED20556535`. `lsusb -v -d 2e8a:0009` confirmed both runtime boards expose CCID interfaces and their serials. `git diff --check` passed. No firmware was flashed in this step.
+- Result: Two runtime Pico boards are USB-visible; only D92 is registered with PC/SC in this guest. The third expected board was absent. Windows near-instant visibility remains user-reported without timing values or image hash. HOST-02 is not closed.
+- Decision: Continue using the available D92 reader for hardware tests while investigating guest PC/SC registration separately. Proceed with CTX-01/03 runtime work; retain all unrelated existing modifications.
+- Commit: pending.
+- Artifacts/logs: `STATUS.md`, `TODO.md`, `.agent/HANDOFF.md`, `.agent/QKB.md`; no new hardware log.

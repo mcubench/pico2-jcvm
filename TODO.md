@@ -7,9 +7,10 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. Complete **HOST-02 (P1)**: remove the normal-build serial-console startup
-   wait and add explicit diagnostic builds for agentic development. See the
-   [planned diagnostic workflow](docs/usb-startup-diagnostics.md).
+1. Close **HOST-02 (P1)** acceptance: collect exact no-console Windows
+   reconnect timings and exercise the diagnostic deadline without DTR. Normal
+   startup wait removal is implemented; the user reports near-instant Windows
+   visibility. See the [diagnostic workflow](docs/usb-startup-diagnostics.md).
 2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
@@ -18,15 +19,13 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. At the latest elevated host-access refresh
-on 2026-11-05, three Pico 2 devices enumerated in CHOUPI runtime mode as
-`2e8a:0009` readers (`8E464F4E2BBC0A19`, `2BED26ED20556535`, and
-`D92E743D5F640C0F`); they were not in BOOTSEL despite the reported state. The
-last board was explicitly flashed and passed finite serial/PCSC checks; the
-other two remain unmodified. Refresh USB/PCSC immediately before further
-hardware work. Results and the exact image are in `.agent/HANDOFF.md` and
-`.agent/QKB.md`. See [.agent/HANDOFF.md](.agent/HANDOFF.md) for active
-continuation and last observations.
+Physical availability is volatile. On 2026-11-05 15:38 CET, elevated
+enumeration found runtime `2e8a:0009` JCVM boards `D92E743D5F640C0F` and
+`2BED26ED20556535`; neither was in BOOTSEL. PC/SC listed D92 and omitted 2BED.
+The third expected board was not visible in this refresh. D92's flash/runtime
+checks are recorded in `.agent/HANDOFF.md`; refresh USB/PC/SC immediately
+before further hardware work. See `.agent/QKB.md` for USB/PCSC diagnostic
+history.
 
 ## How to use this backlog
 
@@ -1024,9 +1023,13 @@ source-based follow-ups, without a new physical reproduction in this review.
   normal builds passed in the same build directories; both CMake caches end at
   zero. Physical ARM runtime cycle and read-only GPPro SELECT/CPLC/Card Data
   checks passed on D92E743D5F640C0F. The normal Windows release UF2 is packaged
-  with erased storage. Remaining: exercise diagnostic DTR/deadline behavior on
-  hardware and measure at least three Windows cold reconnects without a serial
-  client; the causal timing is not established until that comparison is done.
+  with erased storage. The 30000 ms diagnostic image was flashed and its finite
+  serial cycle passed (`TEST:SUMMARY pass=1 fail=0`), establishing DTR-triggered
+  capture. The user reports the no-delay image became visible under Windows
+  certutil almost instantly after replug. Exact timings, image hash used for
+  that Windows run, and reader-list measurement method were not supplied.
+  Remaining: exercise the diagnostic deadline without DTR and record at least
+  three Windows cold reconnect timings without a serial client.
   Acceptance: build ARM/RISC-V in normal and diagnostic modes, then switch
   back to normal in the same build directories and verify the setting resets.
   Diagnostic mode exits on DTR or its deadline; normal mode reaches runtime
@@ -1034,7 +1037,7 @@ source-based follow-ups, without a new physical reproduction in this review.
   only after both architecture builds pass; require finite serial PASS/no
   FAULT and successful PC/SC/APDU checks. Separately measure at least three
   Windows cold reconnects with **no serial terminal or monitor open**, plus
-  a diagnostic capture run; record image hashes, reader-list method, timing,
+  a diagnostic deadline run with no DTR; record image hashes, reader-list method, timing,
   and remaining host overhead. A monitor-assisted cycle alone cannot close
   the no-console startup gate. Firmware should impose no 30-second delay;
   do not claim an exact Windows readiness bound before measurement.
