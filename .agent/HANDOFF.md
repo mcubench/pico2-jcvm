@@ -20,7 +20,7 @@ No physical card was flashed.
 Next: validate imported static/instance field and method tokens using their
 Export records; then check internal ConstantPool targets and construct
 malformed interpreter runtime coverage. Preserve unrelated dirty worktree
-changes. This slice's commit is pending.
+changes. This slice's commit is `0fb196af` (Validate external CAP export class tokens).
 
 ## Previous continuation — validate external ConstantPool import tokens — 2026-11-06 00:31 CET
 
