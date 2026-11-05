@@ -22,10 +22,20 @@ outer limit during slow deletion cleanup (exit 124; no APDU failure observed).
 elevated `./tools/env lsusb` showed only USB root hubs and VirtualBox tablet;
 there were no Pico devices in this guest. No flash or hardware test occurred.
 
-Root `progress.md` has the required 81-minute record with implementation commit
-`da4c39f`; the progress SHA update is commit `f869ce9`. `.agent/QKB.md`
-documents the reusable cause and fix; `TODO.md` records this resolved bug and
-current physical-device visibility.
+The current combined, applet-free max_crypto image has now been regenerated:
+`build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,022,784 bytes, SHA-256
+`370a360f39bdbefdaf955406a8865b88b6542f34cd170b1a04b1153bf7b5cd75`. It
+contains the just-built firmware plus 1 MiB of `0xFF` storage blocks. The
+firmware-only `build/arm/pico2_choupi.uf2` is 1,925,632 bytes, SHA-256
+`78d70491e088bd0e3159282f131714091e279d4d405c2b853d2a8403e6b27e98`.
+`picotool info` and a UF2 block-by-block verification passed. Metadata and
+Windows clean-card instructions are in
+`artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+Root `progress.md` has the 81-minute code-fix record (commit `da4c39f`) and the
+9-minute image-packaging record. SHA bookkeeping is commit `f869ce9`;
+`.agent/QKB.md` documents the reusable cause and fix; `TODO.md` records the
+resolved bug and current physical-device visibility.
 
 Current implementation files in this step are `choupi/src/jc_handlers/jc_method.cpp`
 and `tools/tests/pc_vpcd_multipackage_test.py`. Build outputs and logs are
@@ -33,10 +43,10 @@ ignored. Preserve all unrelated pre-existing dirty files, especially
 `choupi/src/heap.cpp`, `choupi/src/heap.hpp`, and `src/cap_load.cpp`; stage
 only this step plus TODO/progress/QKB/handoff files.
 
-Next: complete the scoped commit and record its SHA. When a Pico enumerates,
-reconfirm chip identity, flash the rebuilt ARM image only after both target
-builds pass, then inspect finite serial output and explicit PC/SC/GPPro
-behavior. If unavailable, continue the remaining TODO priorities offline.
+Next: when a Pico enumerates, reconfirm chip identity and flash the combined
+empty-card ARM image only after both target builds pass, then inspect finite
+serial output and explicit PC/SC/GPPro behavior. If unavailable, continue the
+remaining TODO priorities offline.
 
 ---
 

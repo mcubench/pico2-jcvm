@@ -1,7 +1,7 @@
 Current max_crypto ARM firmware for Raspberry Pi Pico 2 / RP2350
 
-Refreshed: 2026-11-04, after RV-28 added decoded instruction-boundary checks
-for taken branches from uploaded CAPs.
+Refreshed: 2026-11-05, after correcting Descriptor lookup offsets for methods
+in uploaded CAP packages.
 
 Profile: max_crypto (147/150 declared JCAlgTest capabilities enabled,
 including RSA and ECC). No applet or CAP is bundled.
@@ -10,7 +10,7 @@ For Windows testing with a genuinely empty card, flash this combined UF2:
 
   build/arm/pico2_choupi_max_crypto_empty_card.uf2
   Size: 4,022,784 bytes
-  SHA-256: 9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584
+  SHA-256: 370a360f39bdbefdaf955406a8865b88b6542f34cd170b1a04b1153bf7b5cd75
 
 It contains the current ARM firmware plus 1 MiB of 0xFF blocks covering
 0x10100000–0x101FFFFF. Copying it to the Pico 2 BOOTSEL drive clears existing
@@ -21,9 +21,9 @@ Firmware-only build output:
 
   build/arm/pico2_choupi.uf2
   Size: 1,925,632 bytes
-  SHA-256: d484379d46065ddaf32fb1360a48f528e1059e24568250ab30f81fc67dd73d0e
+  SHA-256: 78d70491e088bd0e3159282f131714091e279d4d405c2b853d2a8403e6b27e98
 
-The firmware image ends at 0x100EAF84, leaving 86,140 bytes before the
+The firmware image ends at 0x100EAFAC, leaving 86,100 bytes before the
 0x10100000 firmware boundary. PC, ARM and RISC-V max_crypto builds passed.
 Focused VPCD tests passed 7/7: capacity overflow is catchable and leaves data
 unchanged; non-atomic copy on a record larger than commit capacity does not
@@ -35,7 +35,13 @@ picotool as RP2350 ARM Secure and contains the current firmware blocks plus
 4,096 all-0xFF storage blocks; an address-map check confirmed all firmware
 blocks match the standalone image and the complete 0x10100000–0x101FFFFF data
 region is erased. It has not been flashed or runtime-tested on a
-physical token. The CCID route unit test passed 12/12, and ARM/RISC-V builds
+physical token. On 2026-11-05, ARM, RISC-V, and PC max_crypto builds passed
+after the Descriptor-offset fix; a focused VPCD smoke loaded Core and Multi
+CAP packages and installed three applet instances (`TEST:SUMMARY pass=1
+fail=0`). A broader 21-instance multipackage run passed installation,
+pagination, lookup, reset, and restart checks but exceeded its outer time
+limit during cleanup. No physical hardware test was possible because the VM
+did not enumerate the BOOTSEL devices. The CCID route unit test passed 12/12, and ARM/RISC-V builds
 passed after RV-25 source changes. RV-26's CCID flow test passed 15/15 and
 ARM/RISC-V builds passed after its source changes. The production CCID path
 has not yet been exercised at runtime on physical hardware. `pcsc_scan -r`
