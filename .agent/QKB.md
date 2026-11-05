@@ -6670,3 +6670,18 @@ normal reconnect readiness separately with all serial clients closed.
   `af49ea2c19e1375e12ace40bc07b542c90629cb331ae7a2cb041c1e19ec75c34`; and
   `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`, SHA-256
   `8684d5c1834b6506354390280db449f5570fa8d57eae3d7fa8f369c2c257560a`.
+
+## Current status: cross-applet references in applet-owned arrays remain fail-closed — 2026-11-05
+
+The earlier `6B439000` observation in “Ordinary foreign applet references may
+be retained” described an experimental firmware state, not the current
+acceptance. Root backlog item RV-20261103-08 explicitly requires foreign
+retention to be disabled until the source package's GC roots can be traced
+safely. Owner tags on `JC_Array` entries preserve identity but do not by
+themselves make another applet heap's collector scan those references. Current
+`JC_Array::setReferenceEntry` therefore rejects foreign values in applet-owned
+arrays; the physical regression on D92 `D92E743D5F640C0F` confirmed
+`6B479000`. Keep the physical and VPCD expectations at `6B47` until cross-heap
+root routing, owner slot reuse, and package DELETE are implemented and tested.
+Runtime-global arrays have their separate owner-root mechanism and remain
+covered independently.

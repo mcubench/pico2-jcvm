@@ -642,13 +642,16 @@ source-based follow-ups, without a new physical reproduction in this review.
   point objects and global-array references are forbidden values for these
   stores. A cross-AID VPCD regression initially denied all three ordinary
   foreign-reference stores. The VM now preserves owner metadata in
-  applet-owned transient wildcard `Object[]` arrays. Descriptor-free VPCD
-  verifies identity on read, and Pico 2 `8E464F4E2BBC0A19` returned `6B439000`
-  after the current ARM image was flash-verified; the full GPPro fixture
-  cleanup passed. Persistent foreign references
-  still fail closed because static/instance fields and persistent arrays need
-  a stable cross-package identity encoding and owner-aware roots/restoration.
-  Instance/static stores and typed foreign array stores remain unimplemented.
+  applet-owned transient wildcard `Object[]` arrays was explored and once
+  returned `6B439000` on Pico 2 `8E464F4E2BBC0A19`. That experiment is not the
+  current acceptance: per-slot owner tags preserve provenance but do not route
+  references found in another applet's heap into the referenced package's GC
+  roots. The current implementation therefore keeps foreign references in
+  applet-owned arrays fail-closed (`6B479000`); runtime-global array roots are
+  separately routed through the owning package. Static/instance stores and
+  persistent arrays also remain fail-closed until stable cross-package identity
+  and owner-aware roots/restoration are implemented. Typed foreign array stores
+  remain unimplemented.
   Do not relax the `aastore` guard alone: the current typed-array assignability
   path resolves an instance handle through the active package Heap, which can
   alias an equal compact handle from that package. First add owner-aware lookup

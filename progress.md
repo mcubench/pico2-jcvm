@@ -22339,3 +22339,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261105T194437Z.log` (SHA-256 `af49ea2c19e1375e12ace40bc07b542c90629cb331ae7a2cb041c1e19ec75c34`); `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log` (SHA-256 `8684d5c1834b6506354390280db449f5570fa8d57eae3d7fa8f369c2c257560a`).
 
 - Commit resolved for `sio-negative-branch-offset-physical-20261105`: `8bdeffbc` (Fix signed Java Card branch offsets).
+
+## 2026-11-05 Reconcile stale foreign-array acceptance notes 7 minutes
+
+- Step/experiment: `sio-foreign-array-fail-closed-status-20261105`
+- When: '2026-11-05 20:49 CET' - '2026-11-05 20:56 CET'
+- Change: Corrected CTX-01 and QKB status to distinguish the historical `6B43` experimental result from the current RV-20261103-08 fail-closed acceptance. Per-slot owner tags do not route GC roots across applet heaps; applet-owned arrays therefore remain rejected for foreign references until cross-heap tracing is implemented. The physical probe remains at `6B47`.
+- Validation: Cross-checked `TODO.md` RV-08 acceptance, `JC_Array::setReferenceEntry`, `Heap::visitChildReferences`, and CTX-01's stale historical claim. `git diff --check` with repository CRLF-aware whitespace handling passed. No source, build, or device test was run in this documentation-only correction.
+- Result: TODO/QKB now agree with current fail-closed code and the passing D92 physical fixture (`6B479000`). Runtime-global array root routing remains a distinct supported path.
+- Decision: Keep the fail-closed behavior. Continue CTX-01/03 with explicit cross-heap root routing and lifecycle tests before enabling foreign applet-owned array stores.
+- Commit: pending.
+- Artifacts/logs: Existing D92 result `artifacts/logs/sio-cross-aid-physical-20261105T194640Z.log`; no new log.
