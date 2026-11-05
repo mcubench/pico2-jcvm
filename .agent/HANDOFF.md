@@ -10,6 +10,7 @@ reports RP2350 ARM Secure; the block-map validator confirmed unique addresses
 and fully erased storage. Regenerate after `./tools/build arm --profile
 max_crypto` with `./tools/package-empty-card-uf2`. This combined image was not
 flashed in this session; it intentionally erases card data when used.
+Implementation commit: `528c4cc`; detailed record is in `progress.md`.
 
 ---
 

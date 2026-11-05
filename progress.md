@@ -22141,3 +22141,14 @@
 - Decision: Keep the Descriptor-aware loader for this test only; don't alter upstream CAPs or production GPPro behavior. Resume physical checks when any Pico reader reappears; if it remains unavailable, continue offline.
 - Commit: `0b4173a`
 - Artifacts/logs: cycle log above; no durable APDU transcript; failed automated rerun `artifacts/logs/jcsystem-transaction-physical-20261105T085028Z.log`
+
+## 2026-11-05 Refresh max_crypto empty-card UF2 10
+
+- Step/experiment: `max-crypto-current-empty-card-image`
+- When: '2026-11-05 09:52 CET' - '2026-11-05 10:02 CET'
+- Change: Added `tools/package-empty-card-uf2` to combine current ARM firmware UF2 blocks with a full 1 MiB erased storage range. Replaced the stale tracked Windows-test image and refreshed its README and handoff details.
+- Validation: `./tools/package-empty-card-uf2` passed. A second package to `build/arm/pico2_choupi_max_crypto_empty_card.uf2` produced identical bytes. `picotool info -a` reported RP2350 ARM Secure, end `0x100EB604`. UF2 validation confirmed 7,863 unique data blocks including 4,096 erased storage blocks. SHA-256: `0868a0ec81b13bd5a5a7c9e42f2ac64fe061ade69d12ac93bded6aa852ec5873`. The preceding ARM and RISC-V max_crypto builds passed earlier in this session. The combined erase image was not flashed.
+- Result: Current external-test artifact is `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,026,368 bytes. The firmware-only input is `build/arm/pico2_choupi.uf2`, 1,929,216 bytes, SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
+- Decision: Use the combined artifact for Windows tests requiring an empty card; use firmware-only UF2 only when preserving stored data.
+- Commit: `528c4cc`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; README `artifacts/firmware/README-max_crypto-current-20261103.txt`; no hardware log.
