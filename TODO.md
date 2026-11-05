@@ -45,11 +45,13 @@ Archive text is historical evidence, not current device state or priorities.
   computes the Descriptor offset from the method header, including the
   handler-table and method-count prefix. The multipackage VPCD smoke passes
   LOAD for two distinct packages and INSTALL for three instances. ARM,
-  RISC-V, and PC max_crypto builds pass. The full pagination/persistence suite
-  reached and passed its install, lookup, reset, and restart checks but was
-  stopped by its outer runtime limit during slow deletion cleanup. Physical
-  board validation remains pending because none of the user-reported BOOTSEL
-  boards enumerated inside the VM.
+  RISC-V, and PC max_crypto builds pass. The complete 47-check
+  pagination/persistence/DELETE/JCSystem transient VPCD suite passes. The
+  fixture limits persistent-inventory diagnostics to one scan per owner ID
+  and cascades deletion of the 18 stress instances after validating pagination;
+  individual DELETE behavior remains separately covered. Physical board
+  validation remains pending because none of the user-reported BOOTSEL boards
+  enumerated inside the VM.
 
 The detailed current-code review is [docs/review_20261103.md](docs/review_20261103.md).
 These are concrete review follow-ups under the existing task owners.

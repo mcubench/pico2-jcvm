@@ -21976,3 +21976,14 @@
 - Decision: Use the combined UF2 for a clean-card test once a board enumerates in the VM; use the firmware-only UF2 only when preserving card storage is intended.
 - Commit: `d7e3550`
 - Artifacts/logs: `build/arm/pico2_choupi_max_crypto_empty_card.uf2` (ignored build output); `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-05 Complete multipackage lifecycle regression 49 minutes
+
+- Step/experiment: `rv-20261105-complete-vpcd-multipackage-lifecycle`
+- When: '2026-11-05 01:31 CET' - '2026-11-05 02:20 CET'
+- Change: Added PC-only `PICO2_PERSISTENT_INVENTORY=once`, which records inventory/reachability once per owner ID while preserving the existing `1` per-APDU diagnostic mode. Updated the multipackage test to cascade-delete the 18 pagination stress instances after validating all 21 registrations and pagination; individual DELETE and package-cascade behaviors remain covered by separate checks.
+- Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=5s 1800s ./tools/test-vpcd-multipackage --timeout 180` passed `TEST:SUMMARY pass=47 fail=0`; it covered package LOAD/INSTALL, duplicate-install rollback/retry, 21-instance GET STATUS pagination, applet lookup and context identity, reset/restart persistence, sidecar corruption rejection, individual and cascade DELETE, registry cleanup, and JCSystem transient lifecycle. Latest elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` returned only USB root hubs and VirtualBox tablet, no Pico.
+- Result: The full VPCD suite completes with all 47 checks passing. The current empty-card max_crypto UF2 remains 4,022,784 bytes with SHA-256 `370a360f39bdbefdaf955406a8865b88b6542f34cd170b1a04b1153bf7b5cd75`; target firmware blocks were unchanged by this PC-only diagnostic update. No hardware flash or runtime test was possible.
+- Decision: Keep physical acceptance open; retry guest enumeration and test the current empty-card image when available. Continue other TODO work offline in the meantime.
+- Commit: `<recorded in follow-up commit>`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261105T005410Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261105T005410Z.log`, `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261105T005410Z.log`, and `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261105T005410Z.log` (ignored).

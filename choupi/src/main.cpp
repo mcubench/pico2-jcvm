@@ -314,7 +314,8 @@ bool inventory_unreachable_tags_for_owner(
 
 void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   const char *setting = std::getenv("PICO2_PERSISTENT_INVENTORY");
-  if (setting == nullptr || std::strcmp(setting, "1") != 0) {
+  if (setting == nullptr ||
+      (std::strcmp(setting, "1") != 0 && std::strcmp(setting, "once") != 0)) {
     return;
   }
 
@@ -374,7 +375,13 @@ void trace_heap_after_apdu_if_enabled() {
                                std::strcmp(collect_setting, "1") == 0;
   const bool trace_enabled = trace_setting != nullptr;
   const bool inventory_enabled = inventory_setting != nullptr &&
-                                 std::strcmp(inventory_setting, "1") == 0;
+                                 (std::strcmp(inventory_setting, "1") == 0 ||
+                                  std::strcmp(inventory_setting, "once") == 0);
+  // The "once" mode is for integration tests: preserve one inventory/heap
+  // snapshot per owner ID without rescanning every retained context per APDU.
+  const bool inventory_once = inventory_setting != nullptr &&
+                              std::strcmp(inventory_setting, "once") == 0;
+  static std::array<bool, 256> inventory_reported{};
   if ((!trace_enabled && !collect_enabled && !inventory_enabled) ||
       !selected_applet_context) {
     return;
@@ -393,6 +400,11 @@ void trace_heap_after_apdu_if_enabled() {
   }
 
   const auto trace_context = [&](jcvm::Context &context) {
+    const unsigned owner = static_cast<unsigned>(context.getAppletID());
+    if (inventory_once && owner < inventory_reported.size() &&
+        inventory_reported[owner]) {
+      return;
+    }
     if (!context.getStack().empty()) {
       if (trace_enabled || collect_enabled) {
         std::fprintf(stderr,
@@ -437,6 +449,9 @@ void trace_heap_after_apdu_if_enabled() {
                    pass);
       break;
     }
+    }
+    if (inventory_once && owner < inventory_reported.size()) {
+      inventory_reported[owner] = true;
     }
   };
   trace_context(*selected_applet_context);

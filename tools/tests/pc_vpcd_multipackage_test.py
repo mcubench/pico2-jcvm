@@ -380,7 +380,7 @@ def main() -> int:
             str(dummy_code), "--rom-mask", str(rom_mask),
         ]
         emulator_env = os.environ.copy()
-        emulator_env["PICO2_PERSISTENT_INVENTORY"] = "1"
+        emulator_env["PICO2_PERSISTENT_INVENTORY"] = "once"
         with log_path.open("wb") as log:
             process = subprocess.Popen(command, cwd=root, stdout=log,
                                        stderr=log, start_new_session=True,
@@ -978,15 +978,26 @@ def main() -> int:
                 raise RuntimeError("cascade DELETE removed unrelated Core entries")
             print("TEST:PASS cascade DELETE removes Multi only")
 
-            for aid in pagination_aids:
-                delete_object(scp, aid, False,
-                              f"DELETE paginated lookup instance {aid.hex()}")
-            delete_object(scp, lookup_applets[0], False,
-                          "DELETE lookup applet instance")
-            delete_object(scp, lookup_second_aid, False,
-                          "DELETE second lookup applet instance")
-            delete_object(scp, lookup_package, False,
-                          "DELETE lookup package")
+            delete_object(scp, lookup_package, True,
+                          "DELETE lookup package and paginated instances")
+            packages = get_status(scp, 0x20)
+            applets = get_status(scp, 0x40)
+            lookup_instance_aids = (
+                lookup_applets + [lookup_second_aid] + pagination_aids
+            )
+            if lookup_package in packages or any(
+                    aid in applets for aid in lookup_instance_aids):
+                raise RuntimeError(
+                    "lookup package cascade left its package or applet instances"
+                )
+            if core_package not in packages or core_applets[0] not in applets:
+                raise RuntimeError(
+                    "lookup package cascade removed unrelated Core entries"
+                )
+            print(
+                "TEST:PASS cascade DELETE removes lookup package and all 18 "
+                "instances only"
+            )
 
             delete_object(scp, core_applets[0], False, "DELETE Core instance")
             delete_object(scp, core_package, False, "DELETE Core package")

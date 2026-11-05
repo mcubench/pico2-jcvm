@@ -6292,7 +6292,12 @@ original terminology/status; check current summary and later fixes before reuse.
   VPCD smoke loaded the unchanged upstream Core and Multi CAPs and installed
   all three applet instances (`TEST:SUMMARY pass=1 fail=0`). A full
   multipackage persistence/pagination run passed LOAD/INSTALL, 21-instance
-  pagination, lookupAID, reset, and restart checks but exceeded its 1,400
-  second outer limit during slow deletion cleanup; this is not a reported
-  APDU failure. No physical card was accessible in the VM: USB inventory
-  showed only root hubs and the VirtualBox tablet.
+  pagination, lookupAID, reset, restart, deletion, and JCSystem transient
+  lifecycle checks (`TEST:SUMMARY pass=47 fail=0`). The first full attempt hit
+  an outer timeout because the test deleted 16 pagination instances one APDU
+  at a time. The harness now uses one lookup-package cascade after retaining
+  separate individual-instance DELETE tests. Test-only
+  `PICO2_PERSISTENT_INVENTORY=once` emits one inventory and reachability scan
+  per owner ID; the existing value `1` retains per-APDU diagnostics. No
+  physical card was accessible in the VM: current USB inventory showed only
+  root hubs and the VirtualBox tablet.

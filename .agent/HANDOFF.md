@@ -14,13 +14,18 @@ Validation: `./tools/build arm --profile max_crypto`,
 `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 timeout --signal=TERM
 --kill-after=5s 360s ./tools/test-vpcd-multipackage --timeout 180
 --install-smoke` passed: Core and Multi packages LOADed and three applet
-instances INSTALLed (`TEST:SUMMARY pass=1 fail=0`). The full multipackage
-test reached/passed three-package and 21-instance install, GET STATUS
-pagination, lookupAID, reset, and restart checks, then hit its 1,400-second
-outer limit during slow deletion cleanup (exit 124; no APDU failure observed).
-`tools/doctor` passed. The user said all boards are in BOOTSEL, but current
-elevated `./tools/env lsusb` showed only USB root hubs and VirtualBox tablet;
-there were no Pico devices in this guest. No flash or hardware test occurred.
+instances INSTALLed (`TEST:SUMMARY pass=1 fail=0`). The complete
+multipackage/persistence/JCSystem transient suite now passes
+`TEST:SUMMARY pass=47 fail=0`. A previous full run exceeded its time limit
+because cleanup deleted 16 pagination instances individually. The test now
+verifies all 21 instances and uses package cascade for those cleanup instances;
+individual DELETE remains tested separately. Added PC diagnostic value
+`PICO2_PERSISTENT_INVENTORY=once` to record one inventory/heap scan per owner
+ID and avoid per-APDU diagnostic rescans; value `1` still means scan each APDU.
+`tools/doctor` passed. The latest elevated `./tools/env lsusb` still showed
+only USB root hubs and the VirtualBox tablet; no Pico devices enumerated
+despite the user reporting all three in BOOTSEL. No flash or hardware test
+occurred.
 
 The current combined, applet-free max_crypto image has now been regenerated:
 `build/arm/pico2_choupi_max_crypto_empty_card.uf2`, 4,022,784 bytes, SHA-256
@@ -32,14 +37,16 @@ firmware-only `build/arm/pico2_choupi.uf2` is 1,925,632 bytes, SHA-256
 Windows clean-card instructions are in
 `artifacts/firmware/README-max_crypto-current-20261103.txt`.
 
-Root `progress.md` has the 81-minute code-fix record (commit `da4c39f`) and the
-9-minute image-packaging record (commit `d7e3550`). SHA bookkeeping is commit `f869ce9`;
-`.agent/QKB.md` documents the reusable cause and fix; `TODO.md` records the
-resolved bug and current physical-device visibility.
+Root `progress.md` has the 81-minute code-fix record (commit `da4c39f`), the
+9-minute image-packaging record (commit `d7e3550`), and the current full-suite
+record (SHA to be filled after its scoped commit). SHA bookkeeping is commit
+`f869ce9`; `.agent/QKB.md` documents the reusable cause and fix; `TODO.md`
+records the resolved bug and current physical-device visibility.
 
-Current implementation files in this step are `choupi/src/jc_handlers/jc_method.cpp`
-and `tools/tests/pc_vpcd_multipackage_test.py`. Build outputs and logs are
-ignored. Preserve all unrelated pre-existing dirty files, especially
+Current implementation/test files in this follow-up are `choupi/src/main.cpp`
+and `tools/tests/pc_vpcd_multipackage_test.py`; the Descriptor offset fix is
+committed. Build outputs and logs are ignored. Preserve all unrelated
+pre-existing dirty files, especially
 `choupi/src/heap.cpp`, `choupi/src/heap.hpp`, and `src/cap_load.cpp`; stage
 only this step plus TODO/progress/QKB/handoff files.
 
