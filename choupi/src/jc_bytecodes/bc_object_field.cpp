@@ -46,7 +46,103 @@ void rejectShareableProxyFieldAccess(Context &context, const jref_t reference) {
   }
 }
 
-uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index) {
+uint16_t readDescriptorU16(const uint8_t *data) noexcept {
+  return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 8) |
+                               data[1]);
+}
+
+void validateDeclaredInstanceType(
+    const std::pair<Package, const jc_cap_class_info *> &declaring_class,
+    const uint8_t token, const FieldType expected) {
+  if (!FlashMemory_Handler::isDynamicPackageID(
+          declaring_class.first.getPackageID())) {
+    return;
+  }
+  const auto cap = declaring_class.first.getCap();
+  const auto *descriptor = cap.getDescriptor();
+  if (descriptor == nullptr) return;
+
+  const auto *class_component = cap.getClass();
+  if (class_component == nullptr) throw Exceptions::SecurityException;
+  const uintptr_t class_data =
+      reinterpret_cast<uintptr_t>(class_component->infos);
+  const uintptr_t class_address =
+      reinterpret_cast<uintptr_t>(declaring_class.second);
+  if (class_address < class_data || class_address - class_data > UINT16_MAX) {
+    throw Exceptions::SecurityException;
+  }
+  const uint16_t class_offset =
+      static_cast<uint16_t>(class_address - class_data);
+
+  const auto *payload =
+      reinterpret_cast<const uint8_t *>(&descriptor->class_count);
+  const size_t payload_size = NTOHS(descriptor->size);
+  if (payload_size == 0) throw Exceptions::SecurityException;
+  size_t offset = 1;
+  bool found = false;
+  FieldType declared = FieldType::FIELD_TYPE_UNINITIALIZED;
+  for (uint8_t class_index = 0; class_index < descriptor->class_count;
+       ++class_index) {
+    if (offset > payload_size || payload_size - offset < 9) {
+      throw Exceptions::SecurityException;
+    }
+    const uint8_t *class_info = payload + offset;
+    const size_t interfaces = class_info[4];
+    const size_t fields = readDescriptorU16(class_info + 5);
+    const size_t methods = readDescriptorU16(class_info + 7);
+    const size_t fields_offset = 9 + interfaces * 2;
+    const size_t record_size = fields_offset + fields * 7 + methods * 12;
+    if (record_size > payload_size - offset) {
+      throw Exceptions::SecurityException;
+    }
+    if (readDescriptorU16(class_info + 2) != class_offset) {
+      offset += record_size;
+      continue;
+    }
+
+    for (size_t field_index = 0; field_index < fields; ++field_index) {
+      const uint8_t *field = class_info + fields_offset + field_index * 7;
+      constexpr uint8_t kStaticAccessFlag = 0x08;
+      if ((field[1] & kStaticAccessFlag) != 0 ||
+          readDescriptorU16(field + 2) != class_offset || field[4] != token) {
+        continue;
+      }
+      if (found) throw Exceptions::SecurityException;
+      found = true;
+      const uint16_t type = readDescriptorU16(field + 5);
+      if ((type & 0x8000) == 0) {
+        declared = FieldType::FIELD_TYPE_OBJECT;
+      } else {
+        switch (type & 0x7fff) {
+        case 2:
+          declared = FieldType::FIELD_TYPE_BOOLEAN;
+          break;
+        case 3:
+          declared = FieldType::FIELD_TYPE_BYTE;
+          break;
+        case 4:
+          declared = FieldType::FIELD_TYPE_SHORT;
+          break;
+        case 5:
+          declared = FieldType::FIELD_TYPE_INT;
+          break;
+        default:
+          throw Exceptions::SecurityException;
+        }
+      }
+    }
+    offset += record_size;
+  }
+
+  const bool byte_boolean = expected == FieldType::FIELD_TYPE_BYTE &&
+      declared == FieldType::FIELD_TYPE_BOOLEAN;
+  if (!found || (declared != expected && !byte_boolean)) {
+    throw Exceptions::SecurityException;
+  }
+}
+
+uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index,
+                                   const FieldType expected) {
   ConstantPool_Handler constant_pool(context.getCurrentPackage());
   const jc_cap_instance_field_ref_info field_ref =
       constant_pool.getInstanceFieldRef(cp_index);
@@ -56,6 +152,7 @@ uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index) {
   // The heap stores the complete inheritance chain in one flat field array,
   // so add the declared field count of each superclass before indexing it.
   const auto declaring_class = constant_pool.classref2class(field_ref.class_ref);
+  validateDeclaredInstanceType(declaring_class, field_ref.token, expected);
   ConstantPool_Handler declaring_cp(declaring_class.first);
   auto superclass = declaring_cp.classref2class(
       declaring_class.second->super_class_ref);
@@ -159,7 +256,7 @@ void Bytecodes::bc_getfield_a() {
     throw Exceptions::NullPointerException;
   }
   auto instance = heap.getInstance(objectref);
-  const auto field_token = resolveInstanceFieldToken(this->context, index);
+  const auto field_token = resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT);
   ref = instance->getField_Reference(field_token);
   TRACE_JCVM_DEBUG("GETFIELD_A value=0x%04X",
                    static_cast<unsigned>(ref.compact()));
@@ -233,7 +330,7 @@ void Bytecodes::bc_getfield_b() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_BYTE));
 
   stack.push_Byte(value);
 
@@ -306,7 +403,7 @@ void Bytecodes::bc_getfield_s() {
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Short(
-      resolveInstanceFieldToken(this->context, index));
+      resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_SHORT));
 
   stack.push_Short(value);
 
@@ -382,7 +479,7 @@ void Bytecodes::bc_getfield_i() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Int(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Int(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_INT));
 
   stack.push_Int(value);
 
@@ -463,7 +560,7 @@ void Bytecodes::bc_putfield_a() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Reference(resolveInstanceFieldToken(this->context, index),
+  instance->setField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT),
                                value);
 
   return;
@@ -542,7 +639,7 @@ void Bytecodes::bc_putfield_b() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Byte(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Byte(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_BYTE), value);
 
   return;
 }
@@ -620,7 +717,7 @@ void Bytecodes::bc_putfield_s() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Short(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Short(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_SHORT), value);
 
   return;
 }
@@ -702,7 +799,7 @@ void Bytecodes::bc_putfield_i() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Int(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Int(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_INT), value);
 
   return;
 }
@@ -782,7 +879,7 @@ void Bytecodes::bc_getfield_a_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  ref = instance->getField_Reference(resolveInstanceFieldToken(this->context, index));
+  ref = instance->getField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT));
 
   stack.push_Reference(ref);
 
@@ -863,7 +960,7 @@ void Bytecodes::bc_getfield_b_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_BYTE));
 
   stack.push_Byte(value);
 
@@ -944,7 +1041,7 @@ void Bytecodes::bc_getfield_s_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Short(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Short(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_SHORT));
 
   stack.push_Short(value);
 
@@ -1029,7 +1126,7 @@ void Bytecodes::bc_getfield_i_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Int(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Int(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_INT));
 
   stack.push_Int(value);
 
@@ -1115,7 +1212,7 @@ void Bytecodes::bc_getfield_a_this() {
   objectref = stack.readLocal_Reference(0);
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
-  const auto field_token = resolveInstanceFieldToken(this->context, index);
+  const auto field_token = resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT);
   ref = instance->getField_Reference(field_token);
   TRACE_JCVM_DEBUG("GETFIELD_A_THIS value=0x%04X",
                    static_cast<unsigned>(ref.compact()));
@@ -1200,7 +1297,7 @@ void Bytecodes::bc_getfield_b_this() {
   objectref = stack.readLocal_Reference(0);
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_BYTE));
   stack.push_Byte(value);
 
   return;
@@ -1282,7 +1379,7 @@ void Bytecodes::bc_getfield_s_this() {
   objectref = stack.readLocal_Reference(0);
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
-  const uint16_t field_token = resolveInstanceFieldToken(this->context, index);
+  const uint16_t field_token = resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_SHORT);
   value = instance->getField_Short(field_token);
   stack.push_Short(value);
 
@@ -1366,7 +1463,7 @@ void Bytecodes::bc_getfield_i_this() {
   objectref = stack.readLocal_Reference(0);
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Int(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Int(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_INT));
   stack.push_Int(value);
 
   return;
@@ -1450,7 +1547,7 @@ void Bytecodes::bc_putfield_a_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Reference(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT), value);
 
   return;
 }
@@ -1531,7 +1628,7 @@ void Bytecodes::bc_putfield_b_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Byte(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Byte(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_BYTE), value);
 
   return;
 }
@@ -1613,7 +1710,7 @@ void Bytecodes::bc_putfield_s_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
 
-  instance->setField_Short(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Short(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_SHORT), value);
 
   return;
 }
@@ -1695,7 +1792,7 @@ void Bytecodes::bc_putfield_i_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Int(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Int(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_INT), value);
 
   return;
 }
@@ -1779,7 +1876,7 @@ void Bytecodes::bc_putfield_a_this() {
   rejectShareableProxyFieldAccess(this->context, objectref);
   value = stack.pop_Reference();
   auto instance = heap.getInstance(objectref);
-  instance->setField_Reference(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT), value);
 
   return;
 }
@@ -1859,7 +1956,7 @@ void Bytecodes::bc_putfield_b_this() {
 
   value = stack.pop_Byte();
   auto instance = heap.getInstance(objectref);
-  instance->setField_Byte(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Byte(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_BYTE), value);
 
   return;
 }
@@ -1939,7 +2036,7 @@ void Bytecodes::bc_putfield_s_this() {
   value = stack.pop_Short();
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Short(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Short(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_SHORT), value);
 
   return;
 }
@@ -2020,7 +2117,7 @@ void Bytecodes::bc_putfield_i_this() {
   value = stack.pop_Int();
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Int(resolveInstanceFieldToken(this->context, index), value);
+  instance->setField_Int(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_INT), value);
 
   return;
 }

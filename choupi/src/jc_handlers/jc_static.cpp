@@ -66,6 +66,93 @@ void validateStaticPrimitiveType(const fs::Tag &tag,
   if (!compatible) throw Exceptions::SecurityException;
 }
 
+uint16_t readDescriptorU16(const uint8_t *data) noexcept {
+  return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 8) |
+                               data[1]);
+}
+
+void validateDeclaredStaticType(const Package &package, const uint16_t index,
+                                const FieldType expected) {
+  if (!FlashMemory_Handler::isDynamicPackageID(package.getPackageID())) return;
+
+  const auto *descriptor = package.getCap().getDescriptor();
+  // Descriptor is optional in CAP LOAD. The method-boundary policy separately
+  // rejects execution without it; retain compatibility for non-executing
+  // inspection paths and make no declared-kind claim when it is absent.
+  if (descriptor == nullptr) return;
+
+  const auto *payload = reinterpret_cast<const uint8_t *>(&descriptor->class_count);
+  const size_t payload_size = NTOHS(descriptor->size);
+  if (payload_size == 0) throw Exceptions::SecurityException;
+
+  size_t offset = 1;
+  bool found = false;
+  FieldType declared = FieldType::FIELD_TYPE_UNINITIALIZED;
+  for (uint8_t class_index = 0; class_index < descriptor->class_count;
+       ++class_index) {
+    if (offset > payload_size || payload_size - offset < 9) {
+      throw Exceptions::SecurityException;
+    }
+    const uint8_t *class_info = payload + offset;
+    const size_t interfaces = class_info[4];
+    const size_t fields = readDescriptorU16(class_info + 5);
+    const size_t methods = readDescriptorU16(class_info + 7);
+    const size_t field_offset = 9 + interfaces * 2;
+    const size_t record_size = field_offset + fields * 7 + methods * 12;
+    if (record_size > payload_size - offset) {
+      throw Exceptions::SecurityException;
+    }
+
+    for (size_t field_index = 0; field_index < fields; ++field_index) {
+      const uint8_t *field = class_info + field_offset + field_index * 7;
+      constexpr uint8_t kStaticAccessFlag = 0x08;
+      if ((field[1] & kStaticAccessFlag) == 0 ||
+          (field[2] & 0x80) != 0) {
+        continue;
+      }
+
+      // Internal static references use one padding byte followed by the
+      // two-byte offset into the StaticField image. External references are
+      // resolved in their owning package and are checked there.
+      if (readDescriptorU16(field + 3) != index) continue;
+      if (found) throw Exceptions::SecurityException;
+      found = true;
+
+      const uint16_t type = readDescriptorU16(field + 5);
+      if ((type & 0x8000) == 0) {
+        declared = FieldType::FIELD_TYPE_OBJECT;
+      } else {
+        switch (type & 0x7fff) {
+        case 2:
+          declared = FieldType::FIELD_TYPE_BOOLEAN;
+          break;
+        case 3:
+          declared = FieldType::FIELD_TYPE_BYTE;
+          break;
+        case 4:
+          declared = FieldType::FIELD_TYPE_SHORT;
+          break;
+        case 5:
+          declared = FieldType::FIELD_TYPE_INT;
+          break;
+        default:
+          throw Exceptions::SecurityException;
+        }
+      }
+    }
+    offset += record_size;
+  }
+
+  if (!found) throw Exceptions::SecurityException;
+  const bool expected_byte = expected == FieldType::FIELD_TYPE_BYTE &&
+      declared == FieldType::FIELD_TYPE_BOOLEAN;
+  const bool expected_reference = expected == FieldType::FIELD_TYPE_OBJECT &&
+      declared == FieldType::FIELD_TYPE_OBJECT;
+  if (declared != expected && !expected_byte && !expected_reference) {
+    throw Exceptions::SecurityException;
+  }
+}
+
 uint16_t readStaticU16(const uint8_t *data) noexcept {
   return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 8) |
                                data[1]);
@@ -130,6 +217,7 @@ void getInitialPrimitiveBytes(const Package &package, const size_t index,
  */
 jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
   validateStaticSlot(this->package, index, 1, false);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_BYTE);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
@@ -149,6 +237,7 @@ jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
  */
 jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
   validateStaticSlot(this->package, index, sizeof(jshort_t), false);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_SHORT);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
@@ -170,6 +259,7 @@ jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
  */
 jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
   validateStaticSlot(this->package, index, sizeof(jint_t), false);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_INT);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
@@ -194,6 +284,7 @@ jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
 jref_t Static_Handler::getPersistentRef(const uint16_t index,
                                         Heap &heap) const {
   validateStaticSlot(this->package, index, 2, true);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_OBJECT);
   jref_t reference;
   const jpackage_ID_t package_id = this->package.getPackageID();
   if (heap.getStaticReferenceRoot(package_id, index, reference)) {
@@ -218,6 +309,7 @@ jref_t Static_Handler::getPersistentRef(const uint16_t index,
 void Static_Handler::setPersistentRef(const uint16_t index,
                                       const jref_t value, Heap &heap) {
   validateStaticSlot(this->package, index, 2, true);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_OBJECT);
   if (value.isGlobalArray()) {
     throw Exceptions::SecurityException;
   }
@@ -238,6 +330,7 @@ void Static_Handler::setPersistentRef(const uint16_t index,
 void Static_Handler::setPersistentByte(const uint16_t index,
                                        const jbyte_t value) {
   validateStaticSlot(this->package, index, 1, false);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_BYTE);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
 
@@ -254,6 +347,7 @@ void Static_Handler::setPersistentByte(const uint16_t index,
 void Static_Handler::setPersistentShort(const uint16_t index,
                                         const jshort_t value) {
   validateStaticSlot(this->package, index, sizeof(jshort_t), false);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_SHORT);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
 
@@ -271,6 +365,7 @@ void Static_Handler::setPersistentShort(const uint16_t index,
 void Static_Handler::setPersistentInt(const uint16_t index,
                                       const jint_t value) {
   validateStaticSlot(this->package, index, sizeof(jint_t), false);
+  validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_INT);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
 

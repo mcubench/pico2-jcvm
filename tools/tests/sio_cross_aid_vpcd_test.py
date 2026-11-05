@@ -71,6 +71,100 @@ def install(scp: vpcd.Scp03, cap: tuple[bytes, bytes, list[bytes]]) -> None:
     vpcd.install_applet(scp, package_aid, applets[0], applets[0])
 
 
+def replace_static_field_descriptor_type(code: bytes, static_offset: int,
+                                         field_type: int) -> bytes:
+    """Change one internal static field's declared type in a test CAP image."""
+    mutated = bytearray(code)
+    component_offset = 0
+    while component_offset < len(mutated):
+        if len(mutated) - component_offset < 3:
+            raise RuntimeError("truncated test CAP component header")
+        tag = mutated[component_offset]
+        size = int.from_bytes(mutated[component_offset + 1:component_offset + 3],
+                              "big")
+        payload_offset = component_offset + 3
+        payload_end = payload_offset + size
+        if payload_end > len(mutated):
+            raise RuntimeError("truncated test CAP component payload")
+        if tag == 11:
+            payload = payload_offset
+            if size < 1:
+                raise RuntimeError("empty Descriptor component")
+            class_count = mutated[payload]
+            offset = payload + 1
+            for _ in range(class_count):
+                if payload_end - offset < 9:
+                    raise RuntimeError("truncated Descriptor class record")
+                interfaces = mutated[offset + 4]
+                fields = int.from_bytes(mutated[offset + 5:offset + 7], "big")
+                methods = int.from_bytes(mutated[offset + 7:offset + 9], "big")
+                fields_offset = offset + 9 + interfaces * 2
+                record_end = fields_offset + fields * 7 + methods * 12
+                if record_end > payload_end:
+                    raise RuntimeError("truncated Descriptor class tables")
+                for field_index in range(fields):
+                    field = fields_offset + field_index * 7
+                    is_static = (mutated[field + 1] & 0x08) != 0
+                    is_internal = (mutated[field + 2] & 0x80) == 0
+                    declared_offset = int.from_bytes(
+                        mutated[field + 3:field + 5], "big")
+                    if is_static and is_internal and declared_offset == static_offset:
+                        mutated[field + 5:field + 7] = field_type.to_bytes(2, "big")
+                        return bytes(mutated)
+                offset = record_end
+            raise RuntimeError(
+                f"no internal static field at image offset {static_offset}")
+        component_offset = payload_end
+    raise RuntimeError("test CAP has no Descriptor component")
+
+
+def replace_instance_field_descriptor_type(code: bytes, class_offset: int,
+                                           token: int, field_type: int) -> bytes:
+    """Change one instance field's declared type in a test CAP image."""
+    mutated = bytearray(code)
+    component_offset = 0
+    while component_offset < len(mutated):
+        if len(mutated) - component_offset < 3:
+            raise RuntimeError("truncated test CAP component header")
+        tag = mutated[component_offset]
+        size = int.from_bytes(mutated[component_offset + 1:component_offset + 3],
+                              "big")
+        payload_offset = component_offset + 3
+        payload_end = payload_offset + size
+        if payload_end > len(mutated):
+            raise RuntimeError("truncated test CAP component payload")
+        if tag == 11:
+            if size < 1:
+                raise RuntimeError("empty Descriptor component")
+            class_count = mutated[payload_offset]
+            offset = payload_offset + 1
+            for _ in range(class_count):
+                if payload_end - offset < 9:
+                    raise RuntimeError("truncated Descriptor class record")
+                interfaces = mutated[offset + 4]
+                fields = int.from_bytes(mutated[offset + 5:offset + 7], "big")
+                methods = int.from_bytes(mutated[offset + 7:offset + 9], "big")
+                fields_offset = offset + 9 + interfaces * 2
+                record_end = fields_offset + fields * 7 + methods * 12
+                if record_end > payload_end:
+                    raise RuntimeError("truncated Descriptor class tables")
+                for field_index in range(fields):
+                    field = fields_offset + field_index * 7
+                    is_static = (mutated[field + 1] & 0x08) != 0
+                    field_class = int.from_bytes(
+                        mutated[field + 2:field + 4], "big")
+                    field_token = mutated[field + 4]
+                    if not is_static and field_class == class_offset and \
+                            field_token == token:
+                        mutated[field + 5:field + 7] = field_type.to_bytes(2, "big")
+                        return bytes(mutated)
+                offset = record_end
+            raise RuntimeError(
+                f"no instance field at class offset {class_offset}, token {token}")
+        component_offset = payload_end
+    raise RuntimeError("test CAP has no Descriptor component")
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -140,6 +234,40 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_INSTANCE_TYPE") == "1":
+                bad_service_code = replace_instance_field_descriptor_type(
+                    service[0], 0x0013, 0, 0x8005)
+                vpcd.load_package(scp, bad_service_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6A80,))
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "CAP with an int declaration for a reference instance "
+                        f"field returned {response[-2:].hex().upper()}, "
+                        "expected fail-closed INSTALL status 6A80"
+                    )
+                print("TEST:PASS rejected a reference store whose Descriptor "
+                      "declares int")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_STATIC_TYPE") == "1":
+                bad_service_code = replace_static_field_descriptor_type(
+                    service[0], 0, 0x8005)
+                vpcd.load_package(scp, bad_service_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6F00,))
+                if response[-2:] != bytes.fromhex("6F00"):
+                    raise RuntimeError(
+                        "CAP with a primitive declaration for a reference "
+                        f"static slot returned {response[-2:].hex().upper()}, "
+                        "expected fail-closed VM status 6F00"
+                    )
+                print("TEST:PASS rejected a static reference initialization "
+                      "whose Descriptor declares int")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             install(scp, service)
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)

@@ -24,9 +24,13 @@ public final class ServiceApplet extends Applet implements Probe {
     (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x03, 0x01
   };
   private static Object retainedForeignStatic;
+  private static byte descriptorByte;
+  private static short descriptorShort;
+  private static int descriptorInt;
   private Object retainedForeignInstance;
 
   private ServiceApplet() {
+    retainedForeignInstance = this;
     register();
   }
 
@@ -44,6 +48,13 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public short exercise(byte marker, short offset, short wide, AID callerAID,
                         byte[] nullable) {
+    descriptorByte = marker;
+    descriptorShort = offset;
+    descriptorInt = 0x12345678;
+    if (descriptorByte != (byte) 0xA5 || descriptorShort != (short) 0x1234 ||
+        descriptorInt != 0x12345678) {
+      return (short) 0x6F02;
+    }
     AID caller = JCSystem.getPreviousContextAID();
     AID self = JCSystem.getAID();
     if (marker != (byte) 0xA5 || offset != (short) 0x1234 ||

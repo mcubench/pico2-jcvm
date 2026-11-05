@@ -1,110 +1,41 @@
-# Current continuation — static field slot validation and BOOTSEL visibility — 2026-11-05 05:20 CET
+# Current continuation — Descriptor-backed field-kind checks — 2026-11-05 09:02 CET
 
-Implemented runtime field-kind consistency checks in `JC_Instance`: byte,
-short, int, and reference getters reject a value tagged as another kind;
-setters refuse to overwrite a known different kind; new in-memory fields
-start explicitly uninitialized; and the trailing int word has an internal
-marker that is validated on read, write, persistence serialization, and GC
-cache traversal. Java-default reads from uninitialized fields still produce
-zero/null. These checks do not yet validate a first store against the CAP's
-declared field kind.
+Implemented Descriptor-backed first-store type checks for dynamic CAPs when the
+optional Descriptor component is present. `Static_Handler` maps internal
+static offsets to declared field types; all 24 normal, wide and `_this`
+instance field bytecodes map their field token and declaring class to the
+Descriptor type. Byte access accepts both byte and boolean. Malformed or
+ambiguous Descriptor records fail closed. Descriptor-free packages keep the
+existing runtime tag/layout checks; declared-kind guarantees cannot be claimed
+for them because standard GPPro LOAD omits Descriptor.
 
-Extended `Static_Handler` to validate primitive access width against the CAP
-StaticField `image_size`, keep references aligned and inside the leading
-`reference_count * 2` region, and reject later primitive accesses that conflict
-with their persisted type tag. These checks establish static layout
-consistency; they do not infer byte/short/int declaration for an absent
-primitive tag. Descriptor has field type metadata, but it is optional and
-standard GPPro LOAD omits it. Do not claim first-store declared-kind checks on
-Descriptor-free CAPs. The Descriptor-free INSTALL `6A80` remains the known
-fail-closed method-boundary issue, not a static-slot failure.
+Validation: `./tools/build arm --profile max_crypto`,
+`./tools/build riscv --profile max_crypto`, and
+`./tools/build-pc --profile max_crypto` passed. ARM image ends at
+`0x100eb604`, leaving 84,476 bytes in the firmware window. Python fixture test
+syntax and diff whitespace checks passed. Descriptor-present cross-AID VPCD
+passed `TEST:SUMMARY pass=34 fail=0`; a static reference slot falsely declared
+int failed closed (`1/1`), and an instance reference field falsely declared int
+failed closed (`1/1`). Logs:
+- `artifacts/logs/sio-cross-aid-vpcd-20261105T074812Z.log`, SHA-256
+  `a6c85f12b1f3ebe9b6ff9629ddfed8884321a78c481eb9e1cfb03049d1c0b45e`
+- `artifacts/logs/sio-cross-aid-vpcd-20261105T075613Z.log`, SHA-256
+  `e4fb5aec92eb4fee606f912ee05b302a5261d0348d920e41f218379b97379bc8`
+- `artifacts/logs/sio-cross-aid-vpcd-20261105T075840Z.log`, SHA-256
+  `ff64fb3e1cd24989e3d55be821ce86169ef948bfb1768e6e914fbd3514d7e956`
 
-Validation passed: `./tools/test-persistent-transaction` (`TEST:SUMMARY
-fail=0`), including a persistent int restore and low-word type check, ARM and
-RISC-V max_crypto builds, PC max_crypto build,
-`tools/test-sio-cross-aid-vpcd` with Descriptor included (`TEST:SUMMARY pass=34 fail=0`), and the full
-`tools/test-vpcd-multipackage --timeout 180` suite (`TEST:SUMMARY pass=47
-fail=0`). ARM image ends at `0x100eb154`, leaving 85,676 bytes in the firmware
-window. Latest VPCD logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log`
-(SHA-256 `b45cfa3e00081346f5761a3ce0baa1fb0eeb83f1be95a1e8aff3b44521bef1a4`),
-`artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256
-`fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`), and
-restart log `artifacts/logs/host-vpcd-multipackage-restart-20261105T030724Z.log`
-(SHA-256 `be6875ba56c24b620e5c7d80c73dd014f280643d75d7e18cac1abbba9150dcbc`).
+The user reported three boards in BOOTSEL. Elevated `PICO2_HOST_USB_ACCESS=1
+./tools/env lsusb` actually enumerated three devices as `2e8a:0009` CHOUPI CCID
+runtime firmware, not BOOTSEL mass-storage devices. No board was flashed or
+physically tested. Continue offline until the device state is resolved; do not
+flash the currently running reader images as part of this validation step.
 
-The static-field validation build used ARM end `0x100eb2d4` (85,292 bytes
-remaining in the 1 MiB firmware window); RISC-V core and PC max_crypto builds
-also passed. The fresh-PC cross-AID log is
-`artifacts/logs/sio-cross-aid-vpcd-20261105T041209Z.log` (SHA-256
-`bb7a401db76bf61b65aae5ac662f95edefa9e5f359bf0418b6d08006910f7ce1`). An
-attempted multipackage run stopped during Descriptor-free INSTALL and is not
-counted as a pass.
-
-After these builds and before physical testing, elevated
-`PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` again saw only USB root hubs and
-VirtualBox Tablet; no BOOTSEL Pico was attached to this guest. No flash or
-physical test occurred. Next: implement Descriptor-backed declared field-kind
-checks for instance/static slots, with a valid CAP fixture and malformed
-Descriptor cases. Preserve unrelated worktree changes; `choupi/src/heap.cpp`
-contains both this step's int-low GC case and a pre-existing unrelated
-deletion, so stage only the intended hunk.
-
-After the user again reported all three tokens in BOOTSEL, the required
-elevated host-access refresh (`PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb`)
-still listed only the USB root hubs and VirtualBox Tablet. No RP2350 was
-attached to this guest, so no flash or physical validation was possible.
-
-Repeated the full Descriptor-present cross-AID VPCD regression through the
-approved wrapper after that refresh. It again passed `TEST:SUMMARY pass=34
-fail=0`; log `artifacts/logs/sio-cross-aid-vpcd-20261105T023146Z.log` (SHA-256
-`e626973dcfdf5e499d4918e430dc2ceeb51ebe0d27d5100f901e38319c0f2f1d`). This
-is emulator validation only. Continue with offline implementation priorities;
-keep the Descriptor-omitted bounds issue fail-closed and open.
-
-The full cross-AID SIO VPCD regression passed `TEST:SUMMARY pass=34 fail=0`
-when run with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`,
-`SIO_CROSS_AID_CONNECT_TIMEOUT_S=90`, and
-`SIO_CROSS_AID_APDU_TIMEOUT_S=120`. It covers three-package LOAD/INSTALL,
-SIO calls and native API behavior, type/firewall and reference ownership,
-exceptions, restart/reset, stale proxy rejection, DELETE and same-AID
-reinstall. Passing log:
-`artifacts/logs/sio-cross-aid-vpcd-20261105T013949Z.log` (SHA-256
-`b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`).
-
-The Descriptor-omitted variant failed during service applet INSTALL with
-`6A80`, after contract LOAD succeeded. Since standard GPPro `getCode()` omits
-Descriptor, `Method_Handler::callMethod` cannot find a method-body range and
-throws `SecurityException` for dynamic package IDs 56–63. The failing install
-log reports stage 5, `vm=6F00`, exception 29, opcode `00`, PC `00000000`.
-This is the fail-closed method-boundary guard, not a VPCD transport failure.
-Do not widen execution to the whole Method component; find a verifiable bounds
-source or a different safe policy. Oracle's Java Card 3.0.5 VM specification
-confirms Descriptor loading is optional and the Method component lacks method
-offsets/bytecode lengths; Descriptor provides them (§6.10, §6.14). There is no
-safe per-method range to reconstruct from the standard Descriptor-free LOAD
-stream alone. The passing Descriptor-present run does not close this
-compatibility gap. The original 30-second APDU timeout was too short for this
-VM. The executable wrapper `tools/test-sio-cross-aid-vpcd` now enforces the
-approved host-access path and defaults to 90 seconds to connect and 120 seconds
-per APDU. Its Descriptor-present run passed `TEST:SUMMARY pass=34 fail=0`; log
-`artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`. This is
-host-emulator evidence only.
-
-The user reported three boards in BOOTSEL, but elevated guest `lsusb` again
-listed only USB root hubs and the VirtualBox Tablet. The authorized PC/SC
-helper found zero CCID readers (expected in BOOTSEL); no BOOTSEL Pico enumerated
-in the VM, so no physical flash or runtime test occurred. Before physical work,
-refresh USB enumeration through the approved host-access path and use another
-board if any one disappears.
-
-The wrapper/timing change and its progress record are committed as a separate
-logical step; no firmware source changed, so target builds were not rerun. The
-active source worktree still contains unrelated changes; preserve them and
-stage only files belonging to each new step. Continue with another open
-implementation priority offline; if hardware becomes guest-visible, perform
-physical tests only after current ARM and RISC-V builds pass.
-
----
+Next: inspect Descriptor parser/type metadata edge cases and add hostile-CAP
+coverage. Keep the Descriptor-omitted dynamic method-boundary failure fail-
+closed and open. Preserve unrelated worktree modifications (including
+`heap.cpp`, `heap.hpp`, `cap_load.cpp`, fixture/review changes and supplied
+SDK trees); stage only the declared-field implementation and its focused
+fixture/test/docs records.
 
 # Current session — fix uploaded CAP Descriptor lookup and multipackage INSTALL — 2026-11-05 01:21 CET
 

@@ -6429,3 +6429,25 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Established behavior:** Instance DELETE retains the CAP package and its static state. Same-package-AID LOAD rejects the existing package (`6A80` from embedded CCID). A subsequent INSTALL from the resident package uses old code. Full package DELETE is needed for a changed CAP; check all APDU statuses and package absence before LOAD.
 - **Open issues:** Package DELETE skips surviving client SIO route invalidation; late storage failure after persistent DELETE commit can skip runtime context invalidation. These are source-review findings, not reproduced bugs in this session. No fix is claimed.
 - **Reference:** `docs/cap-reinstall-review-20261105.md`. GP DELETE unit tests passed 26/26; overlay summary fail=0/exit 0 includes an intentionally injected migration FAULT. Existing same-CAP reinstall tests do not prove changed bytecode behavior.
+
+## Descriptor-backed CAP field-kind enforcement — 2026-11-05
+
+- **Finding:** Runtime instance field tags can reject conflicting later reads
+  and writes, but do not validate a first store against the CAP declaration.
+  StaticField exposes layout/reference counts but not primitive declarations.
+- **Viable solution for Descriptor-present dynamic CAPs:** Parse each class's
+  bounded Descriptor field records and map instance `(class offset, token)` or
+  internal static image offset to the declared field type before dispatching a
+  field access. Java Card byte access also serves boolean fields. Reject
+  missing, duplicate, unsupported or mismatched declarations with
+  `SecurityException`. This is now implemented in `bc_object_field.cpp` and
+  `jc_static.cpp`; all 24 instance get/put opcode variants are covered.
+- **Validation:** ARM, RISC-V and PC max_crypto builds passed. The full
+  Descriptor-present cross-AID VPCD suite passed 34/34; test-only corrupted
+  Descriptor declarations for static and instance reference slots failed
+  closed, each 1/1. Logs and hashes are in the 2026-11-05 09:02 CET section of
+  `.agent/HANDOFF.md`.
+- **Limitation:** Descriptor is optional and standard GPPro LOAD omits it.
+  Therefore these declaration checks cannot establish a field's declared kind
+  for Descriptor-free packages. Do not weaken the separate method-body bounds
+  policy to compensate; establish a verifiable metadata/trust path first.
