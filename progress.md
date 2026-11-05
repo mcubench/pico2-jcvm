@@ -21773,7 +21773,7 @@
 - Validation: `./tools/test-cap-native-opcode-policy` passed `TEST:SUMMARY pass=5 fail=0`; `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Existing Rust and packed-CAP-member warnings appeared. `git -c core.whitespace=cr-at-eol diff --check -- <scoped files>` passed; the setting accounts for existing CRLF line endings. No malformed-CAP runtime/sanitizer test or physical validation was run.
 - Result: Uploaded package bytecode can no longer enter the native API dispatcher by executing `impdep1`; valid ROM package dispatch remains allowed. The instruction fetch/method bounds, branch target validation, and heap field-kind gaps remain unresolved. The current ARM image has not been flashed; image size was not measured.
 - Decision: Keep RV-28 open; next address bytecode/method bounds and runtime malformed-CAP coverage, then field type enforcement. Do not claim hostile CAP validation complete.
-- Commit: `pending`
+- Commit: `0d750f9`
 - Artifacts/logs: `tools/test-cap-native-opcode-policy`; `docs/CAP_EXECUTION_TRUST_MODEL.md`; no firmware log.
 
 ## 2026-11-04 Route CCID commands once — 79 minutes
