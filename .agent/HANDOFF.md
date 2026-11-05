@@ -24,12 +24,25 @@ failed closed (`1/1`). Logs:
 - `artifacts/logs/sio-cross-aid-vpcd-20261105T075840Z.log`, SHA-256
   `ff64fb3e1cd24989e3d55be821ce86169ef948bfb1768e6e914fbd3514d7e956`
 
-The user reported three boards in BOOTSEL. Elevated `PICO2_HOST_USB_ACCESS=1
-./tools/env lsusb` actually enumerated three devices as `2e8a:0009` CHOUPI CCID
-runtime firmware, not BOOTSEL mass-storage devices. No board was flashed or
-physically tested. Continue offline until the device state is resolved; do not
-flash the currently running reader images as part of this validation step.
+The user reported three boards in BOOTSEL, but elevated USB enumeration found
+three runtime `2e8a:0009` CHOUPI readers. Their USB serials were
+`8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. The last
+identified board was flashed with the current `max_crypto` ARM image using
+`PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid
+D92E743D5F640C0F`. The first picotool force-load could not find a reset
+interface; the wrapper recovered through CDC 1200-baud BOOTSEL, detected ROM in
+3 seconds, wrote and verified the image, and rebooted. Its 18-second monitor
+passed repeatedly (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, no
+`FAULT`). The board returned as a PC/SC reader; GPPro `--list` reported only
+`ISD: A000000151000000 (OP_READY)`, with no loaded packages/applets. The other
+two boards remain unchanged. This validates firmware boot/reader visibility,
+not Descriptor-backed field bytecodes through a physical CAP: standard GPPro
+LOAD omits Descriptor, while the SIO fixture execution pass used VPCD.
+Physical cycle log: `artifacts/logs/cycle-choupi-20261105T081020Z.log` (SHA-256
+`aede2b7c1a48993a6d73ef8a6dc8ce1d8f7a7330807c6c105618fedc8466f782`); flashed
+image SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 
+Commits: `4322d1a` (field checks), `fcde3cf` (progress SHA bookkeeping).
 Next: inspect Descriptor parser/type metadata edge cases and add hostile-CAP
 coverage. Keep the Descriptor-omitted dynamic method-boundary failure fail-
 closed and open. Preserve unrelated worktree modifications (including

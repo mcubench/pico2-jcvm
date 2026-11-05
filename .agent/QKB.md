@@ -6451,3 +6451,21 @@ original terminology/status; check current summary and later fixes before reuse.
   Therefore these declaration checks cannot establish a field's declared kind
   for Descriptor-free packages. Do not weaken the separate method-body bounds
   policy to compensate; establish a verifiable metadata/trust path first.
+
+## Targeting and recovering a Pico 2 flash among multiple runtime readers — 2026-11-05
+
+- **Finding:** With three connected CHOUPI readers, an unselected flash attempt
+  is ambiguous. The USB serial shown by `lsusb -v -d 2e8a:0009` identifies each
+  runtime Pico and is accepted by the repository wrapper as `--chipid`.
+- **Viable solution:** Build both architectures first, then use the gated,
+  elevated repository cycle with a specific ID, for example
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid
+  D92E743D5F640C0F`. On 2026-11-05, picotool's initial force-load could not
+  find the reset interface; the wrapper's CDC 1200-baud fallback entered
+  BOOTSEL in 3 seconds. The full ARM image write and verification succeeded,
+  the application rebooted, and the finite monitor passed repeatedly. The
+  device returned to PC/SC as reader serial `D92E743D5F640C0F`; GPPro listed an
+  empty card (`ISD ... OP_READY`, no loaded packages). Log/hash are in
+  `.agent/HANDOFF.md`.
+- **Use:** Continue selecting one board explicitly by chip ID when several
+  physical devices are attached. Do not rely on USB enumeration order.
