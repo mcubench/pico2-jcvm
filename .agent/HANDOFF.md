@@ -1,3 +1,45 @@
+# Current session — fix uploaded CAP Descriptor lookup and multipackage INSTALL — 2026-11-05 01:21 CET
+
+Fixed a runtime bug in `choupi/src/jc_handlers/jc_method.cpp`: per-method
+Descriptor bounds were queried using the bytecode-start offset, but the
+Descriptor records the method-header offset. The corrected calculation checks
+the method pointer is in the Method component and uses its header offset plus
+the handler-table and method-count prefix. Also corrected the VPCD
+multipackage fixture to include optional `Export.cap` before `Descriptor.cap`.
+The upstream CAP files were not modified.
+
+Validation: `./tools/build arm --profile max_crypto`,
+`./tools/build riscv --profile max_crypto`, and
+`./tools/build-pc --profile max_crypto` passed. The focused command
+`PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 timeout --signal=TERM
+--kill-after=5s 360s ./tools/test-vpcd-multipackage --timeout 180
+--install-smoke` passed: Core and Multi packages LOADed and three applet
+instances INSTALLed (`TEST:SUMMARY pass=1 fail=0`). The full multipackage
+test reached/passed three-package and 21-instance install, GET STATUS
+pagination, lookupAID, reset, and restart checks, then hit its 1,400-second
+outer limit during slow deletion cleanup (exit 124; no APDU failure observed).
+`tools/doctor` passed. The user said all boards are in BOOTSEL, but current
+elevated `./tools/env lsusb` showed only USB root hubs and VirtualBox tablet;
+there were no Pico devices in this guest. No flash or hardware test occurred.
+
+Root `progress.md` has the required 81-minute record; `.agent/QKB.md` documents
+the reusable cause and fix; `TODO.md` records this resolved bug and current
+physical-device visibility. The progress entry still needs the final commit
+SHA added by a small follow-up record/commit.
+
+Current implementation files in this step are `choupi/src/jc_handlers/jc_method.cpp`
+and `tools/tests/pc_vpcd_multipackage_test.py`. Build outputs and logs are
+ignored. Preserve all unrelated pre-existing dirty files, especially
+`choupi/src/heap.cpp`, `choupi/src/heap.hpp`, and `src/cap_load.cpp`; stage
+only this step plus TODO/progress/QKB/handoff files.
+
+Next: complete the scoped commit and record its SHA. When a Pico enumerates,
+reconfirm chip identity, flash the rebuilt ARM image only after both target
+builds pass, then inspect finite serial output and explicit PC/SC/GPPro
+behavior. If unavailable, continue the remaining TODO priorities offline.
+
+---
+
 # Current session — CAP fixture completeness and VPCD diagnosis — 2026-11-04 23:50 CET
 
 The reusable `tools/build-algtest-v182-load-code` now extracts the unchanged

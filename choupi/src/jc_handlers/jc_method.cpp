@@ -180,10 +180,16 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
   const std::size_t handler_table_bytes =
       static_cast<std::size_t>(method_component->handler_count) *
       sizeof(jc_cap_exception_handler_info);
-  const std::size_t method_stream_offset =
-      static_cast<std::size_t>(new_pc_address - method_begin_address);
+  const uintptr_t method_to_call_address =
+      reinterpret_cast<uintptr_t>(method_to_call);
+  if (method_to_call_address < method_begin_address ||
+      method_to_call_address >= method_end_address) {
+    throw Exceptions::SecurityException;
+  }
+  const std::size_t method_header_offset =
+      static_cast<std::size_t>(method_to_call_address - method_begin_address);
   const std::size_t component_method_offset =
-      handler_table_bytes + 1 + method_stream_offset;
+      handler_table_bytes + 1 + method_header_offset;
   const auto *descriptor = this->package.getCap().getDescriptor();
   cap_method_body_bounds::Range body{};
   bool have_body_bounds = false;

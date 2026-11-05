@@ -6275,3 +6275,24 @@ original terminology/status; check current summary and later fixes before reuse.
   confirmed cause. The host claimed BOOTSEL boards were not visible in the VM:
   authorized `lsusb` returned no RP2350 devices; the identified-chip flash
   wrapper therefore made no write and was stopped.
+
+## Descriptor method ranges must use the CAP method-header offset — 2026-11-05
+
+- **Finding:** `Method_Handler::callMethod` passed the bytecode-start offset to
+  `cap_method_body_bounds::find`. Descriptor method offsets identify each
+  method header, which precedes its bytecode. For uploaded packages with a
+  Descriptor component, this mismatch rejected valid static install-method
+  calls before the applet frame was created and surfaced as `6A80` / `6F00`
+  `SecurityException`.
+- **Viable fix:** Validate that the method pointer lies inside the Method
+  component, calculate its offset from `method_to_call` (the method header),
+  then add the handler table and method-count prefix before Descriptor lookup.
+  Keep the bytecode PC for actual interpreter entry separately.
+- **Validation:** ARM, RISC-V, and PC `max_crypto` builds passed. The focused
+  VPCD smoke loaded the unchanged upstream Core and Multi CAPs and installed
+  all three applet instances (`TEST:SUMMARY pass=1 fail=0`). A full
+  multipackage persistence/pagination run passed LOAD/INSTALL, 21-instance
+  pagination, lookupAID, reset, and restart checks but exceeded its 1,400
+  second outer limit during slow deletion cleanup; this is not a reported
+  APDU failure. No physical card was accessible in the VM: USB inventory
+  showed only root hubs and the VirtualBox tablet.

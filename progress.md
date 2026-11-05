@@ -21954,3 +21954,14 @@
 - Decision: Keep RV-28 integration acceptance open. Continue profiling the live install path offline; retry physical testing only after RP2350 USB devices enumerate in the VM.
 - Commit: `a84dcaf`
 - Artifacts/logs: `build/algtest-v182-load-code.bin` (ignored; 30,836 bytes; SHA-256 above); `artifacts/logs/host-vpcd-jcalgtest-20261014.log` appended by the timed out VPCD run; current applet-free UF2 remains `build/arm/pico2_choupi_max_crypto_empty_card.uf2` (4,022,784 bytes; SHA-256 `9de981869926e22a9062052f4f408859d3ee1d8f5529ae389bdb0975b439f584`).
+
+## 2026-11-05 Correct dynamic CAP Descriptor method offsets 81 minutes
+
+- Step/experiment: `rv-20261105-dynamic-cap-descriptor-method-header-offset`
+- When: '2026-11-05 00:00 CET' - '2026-11-05 01:21 CET'
+- Change: Corrected uploaded-method Descriptor lookup to use the CAP method-header offset rather than bytecode-start offset, while validating the method pointer against the Method component. Corrected multipackage LOAD ordering to include optional Export before Descriptor. Added VPCD install-smoke mode and LOAD/DELETE progress traces; removed temporary PC-only failure instrumentation.
+- Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 timeout ... ./tools/test-vpcd-multipackage --timeout 180 --install-smoke` passed with `TEST:SUMMARY pass=1 fail=0`, loading Core and Multi and installing three applet instances. The full multipackage run passed three-package/21-instance LOAD/INSTALL, GET STATUS pagination, lookupAID, reset, VCR2 restoration, and restart checks, then exited 124 at its 1,400-second outer limit during instance cleanup; no APDU failure was reported. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` showed only USB root hubs and the VirtualBox tablet; physical validation was unavailable.
+- Result: The previous `6A80` / VM `6F00` SecurityException on valid Descriptor-backed package installation is resolved in VPCD. ARM image size remains within the configured flash limit. Hardware runtime behavior remains unverified because the three reported BOOTSEL devices were not attached to the guest.
+- Decision: Keep the full physical and broader GP lifecycle acceptance open. Once any Pico enumerates in the VM, flash only after reconfirming board identity and run the finite monitor plus explicit empty-card GPPro install. Continue offline if guest USB remains unavailable.
+- Commit: `<recorded in follow-up commit>`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261105T001621Z.log` (focused pass); `artifacts/logs/host-vpcd-multipackage-apdu-20261104T232332Z.log` (full suite stopped at outer limit); `build/arm/pico2_choupi.uf2` rebuilt, no physical flash performed.

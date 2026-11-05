@@ -15,12 +15,11 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 3. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. The latest elevated check on 2026-11-02
-found two runtime CCID readers (`8E464F4E2BBC0A19` and `2BED26ED20556535`) and
-no BOOTSEL devices, despite the user reporting three boards in BOOTSEL. Both
-passed the read-only JCAlgTest registry/version/JCSystem probe at 16:03 UTC.
-Their package inventories differ. Refresh identity and access before hardware
-work; continue useful offline work otherwise.
+Physical availability is volatile. On 2026-11-05 the user reported all three
+boards in BOOTSEL, but elevated guest USB inventory showed only the USB root
+hubs and VirtualBox tablet; no Pico devices enumerated. Refresh access before
+hardware work; continue offline until the guest sees a board. Historical
+reader results are recorded in `.agent/HANDOFF.md` and `.agent/QKB.md`.
 See [.agent/HANDOFF.md](.agent/HANDOFF.md) for active continuation and last observations.
 
 ## How to use this backlog
@@ -36,6 +35,21 @@ accounts for every original unchecked item, including historical entries.
 Archive text is historical evidence, not current device state or priorities.
 
 ## Functionality review — 2026-11-03
+
+### RV-20261105-01
+
+- [x] **P1: Dynamic CAP Descriptor lookup used the bytecode offset instead of
+  the method-header offset.** Evidence: reproduced while installing the
+  unchanged deployed Core CAP (`6A80` / VM `6F00` SecurityException).
+  Resolution: `Method_Handler::callMethod` now validates the method pointer and
+  computes the Descriptor offset from the method header, including the
+  handler-table and method-count prefix. The multipackage VPCD smoke passes
+  LOAD for two distinct packages and INSTALL for three instances. ARM,
+  RISC-V, and PC max_crypto builds pass. The full pagination/persistence suite
+  reached and passed its install, lookup, reset, and restart checks but was
+  stopped by its outer runtime limit during slow deletion cleanup. Physical
+  board validation remains pending because none of the user-reported BOOTSEL
+  boards enumerated inside the VM.
 
 The detailed current-code review is [docs/review_20261103.md](docs/review_20261103.md).
 These are concrete review follow-ups under the existing task owners.

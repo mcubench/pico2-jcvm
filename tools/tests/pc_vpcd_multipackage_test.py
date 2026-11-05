@@ -22,7 +22,7 @@ from cap_load_code import ensure_algtest_v182_load_code
 
 COMPONENTS = (
     "Header", "Directory", "Applet", "Import", "ConstantPool", "Class",
-    "Method", "StaticField", "RefLocation", "Descriptor",
+    "Method", "StaticField", "RefLocation", "Export", "Descriptor",
 )
 ISD_AID = bytes.fromhex("A000000151000000")
 STATIC_KEY = bytes.fromhex("404142434445464748494A4B4C4D4E4F")
@@ -255,6 +255,11 @@ def load_package(scp: Scp03, code: bytes, package_aid: bytes) -> None:
         final = offset == len(block)
         scp.command(0xE8, 0x80 if final else 0x00, block_number,
                     chunk, f"LOAD block {package_aid.hex()} #{block_number}")
+        print(
+            f"TEST:TRACE LOAD package={package_aid.hex().upper()} "
+            f"block={block_number} bytes={len(chunk)} final={int(final)}",
+            flush=True,
+        )
         block_number += 1
 
 
@@ -291,8 +296,12 @@ def get_status_pages(scp: Scp03, p1: int) -> tuple[bytes, list[int]]:
 def delete_object(scp: Scp03, aid: bytes, related: bool, label: str,
                   expected_statuses: tuple[int, ...] = (0x9000,)) -> bytes:
     data = bytes((0x4f, len(aid))) + aid
-    return scp.command(0xE4, 0x00, 0x80 if related else 0x00, data,
-                       label, expected_statuses)
+    print(f"TEST:TRACE {label}:start", flush=True)
+    response = scp.command(0xE4, 0x00, 0x80 if related else 0x00, data,
+                           label, expected_statuses)
+    print(f"TEST:TRACE {label}:done sw={response[-2:].hex().upper()}",
+          flush=True)
+    return response
 
 
 def accept_vpcd(listener: socket.socket, process: subprocess.Popen[bytes],
@@ -322,6 +331,11 @@ def main() -> int:
     parser.add_argument("--root", type=Path,
                         default=Path(__file__).resolve().parents[2])
     parser.add_argument("--timeout", type=float, default=90)
+    parser.add_argument(
+        "--install-smoke", action="store_true",
+        help="stop after loading the Core and Multi packages and installing "
+             "their applets",
+    )
     args = parser.parse_args()
     root = args.root.resolve()
     ensure_algtest_v182_load_code(root)
@@ -450,6 +464,11 @@ def main() -> int:
             load_package(scp, multi_code, multi_package)
             install_applet(scp, multi_package, multi_applets[0], multi_applets[0])
             install_applet(scp, multi_package, multi_applets[1], multi_applets[1])
+            if args.install_smoke:
+                print("TEST:PASS loaded Core and Multi packages and installed "
+                      "three applet instances")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             load_package(scp, lookup_code, lookup_package)
             install_applet(scp, lookup_package, lookup_applets[0],
                            lookup_applets[0])
