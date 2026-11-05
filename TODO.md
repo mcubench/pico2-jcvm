@@ -15,12 +15,15 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 3. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. On 2026-11-05 the user reported all three
-boards in BOOTSEL, but elevated guest USB inventory showed only the USB root
-hubs and VirtualBox tablet; no Pico devices enumerated. Refresh access before
-hardware work; continue offline until the guest sees a board. Historical
-reader results are recorded in `.agent/HANDOFF.md` and `.agent/QKB.md`.
-See [.agent/HANDOFF.md](.agent/HANDOFF.md) for active continuation and last observations.
+Physical availability is volatile. At the latest elevated host-access refresh
+on 2026-11-05, three Pico 2 devices enumerated in CHOUPI runtime mode as
+`2e8a:0009` readers (`8E464F4E2BBC0A19`, `2BED26ED20556535`, and
+`D92E743D5F640C0F`); they were not in BOOTSEL despite the reported state. The
+last board was explicitly flashed and passed finite serial/PCSC checks; the
+other two remain unmodified. Refresh USB/PCSC immediately before further
+hardware work. Results and the exact image are in `.agent/HANDOFF.md` and
+`.agent/QKB.md`. See [.agent/HANDOFF.md](.agent/HANDOFF.md) for active
+continuation and last observations.
 
 ## How to use this backlog
 

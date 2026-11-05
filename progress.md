@@ -22105,3 +22105,14 @@
 
 - Commit resolved for `hard-20261105-descriptor-field-kinds-physical-cycle`: `fba83b5` (Record identified Pico flash validation).
 - Continuity record: `.agent/HANDOFF.md` now records the physical validation commit.
+
+## 2026-11-05 Refresh physical device status in TODO 1 minute
+
+- Step/experiment: `docs-20261105-physical-device-inventory`
+- When: '2026-11-05 09:12 CET' - '2026-11-05 09:13 CET'
+- Change: Replaced the stale TODO statement that no Pico devices enumerated with the latest verified three-reader runtime inventory and identified which board was flashed.
+- Validation: Compared the note against elevated `lsusb -v -d 2e8a:0009`, the successful targeted cycle, PC/SC reader enumeration and the GPPro empty-card listing. Documentation only; no hardware command rerun.
+- Result: The active backlog no longer contradicts the latest measured device state.
+- Decision: Refresh this paragraph after each material USB/PCSC state change.
+- Commit: `pending`
+- Artifacts/logs: `.agent/HANDOFF.md`; `artifacts/logs/cycle-choupi-20261105T081020Z.log`.
