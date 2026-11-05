@@ -1168,6 +1168,10 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     } else if (endpoint == ep_in) {
       ++debug_in_xfer_errors;
     }
+    if (choupi::recover_ccid_extension_transfer_error(
+            endpoint == ep_in, native_extension_in_flight)) {
+      return true;
+    }
     // Drop a partial command or a response that could not be delivered. The
     // host owns APDU retry semantics; keep the reader endpoint armed so a
     // subsequent CCID command can recover without a USB re-enumeration.
@@ -1197,8 +1201,11 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
       debug_stage = 7;
       return true;
     }
-    debug_stage = 7;
-    queue_out(rhport);
+    if (choupi::ccid_in_transfer_completion_rearms_out(
+            native_extension_in_flight, tx_zlp_pending)) {
+      debug_stage = 7;
+      queue_out(rhport);
+    }
     return true;
   }
   const size_t armed_length = rx_armed_length;

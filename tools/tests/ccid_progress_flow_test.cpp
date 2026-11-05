@@ -170,6 +170,38 @@ int main() {
       });
   check(retried_submit && !pending_response && final_submit_attempts == 2,
         "final response submits after late extension completion");
+  bool failed_extension = true;
+  bool response_after_extension = true;
+  bool recovery_out_armed = false;
+  const bool extension_error_recovered =
+      choupi::recover_ccid_extension_transfer_error(true, failed_extension);
+  check(extension_error_recovered && !failed_extension &&
+            response_after_extension && !recovery_out_armed,
+        "failed extension preserves queued final response and keeps OUT disarmed");
+  const bool final_after_failed_extension =
+      choupi::retry_pending_ccid_transfer(
+          response_after_extension, failed_extension, [] { return false; },
+          [&] { return true; });
+  check(final_after_failed_extension && !response_after_extension,
+        "final APDU response submits after failed extension completion");
+  // The final IN completion is the point where production driver_xfer rearms
+  // Bulk-OUT; verify the host can then submit both a slot poll and an APDU.
+  recovery_out_armed = choupi::ccid_in_transfer_completion_rearms_out(
+      failed_extension, false);
+  unsigned recovered_slot_status = 0;
+  unsigned recovered_apdu = 0;
+  bool recovered_message_pending = true;
+  choupi::dispatch_pending_ccid_task(
+      task_active, recovered_message_pending, [&] { ++recovered_slot_status; });
+  recovered_message_pending = true;
+  choupi::dispatch_pending_ccid_task(
+      task_active, recovered_message_pending, [&] { ++recovered_apdu; });
+  check(recovery_out_armed && recovered_slot_status == 1 && recovered_apdu == 1,
+        "slot-status and APDU dispatch recover after extension transfer error");
+  bool unrelated_in_flight = false;
+  check(!choupi::recover_ccid_extension_transfer_error(
+            false, unrelated_in_flight),
+        "OUT transfer errors use ordinary CCID transfer recovery");
   uint8_t submit_failures = 0;
   bool retries_exhausted = false;
   for (uint8_t attempt = 0;
@@ -189,6 +221,21 @@ int main() {
       });
   check(out_rearmed && !out_rearm_pending && out_rearm_attempts == 1,
         "aborted response can rearm Bulk-OUT for the host retry");
+  unsigned post_abort_slot_status = 0;
+  unsigned post_abort_apdu = 0;
+  bool post_abort_message_pending = true;
+  choupi::dispatch_pending_ccid_task(
+      task_active, post_abort_message_pending,
+      [&] { ++post_abort_slot_status; });
+  post_abort_message_pending = true;
+  choupi::dispatch_pending_ccid_task(
+      task_active, post_abort_message_pending, [&] { ++post_abort_apdu; });
+  check(post_abort_slot_status == 1 && post_abort_apdu == 1,
+        "slot-status poll and retried APDU dispatch after bounded abort");
+  check(!choupi::ccid_in_transfer_completion_rearms_out(true, false) &&
+            !choupi::ccid_in_transfer_completion_rearms_out(false, true) &&
+            choupi::ccid_in_transfer_completion_rearms_out(false, false),
+        "OUT rearms only after final response and terminating ZLP completion");
   check(!task_active && !progress_active,
         "production-shared guards release on return");
   std::printf("TEST:SUMMARY pass=%u fail=0\n", checks);

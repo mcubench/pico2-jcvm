@@ -6837,3 +6837,29 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Artifact:** `artifacts/logs/cipher-lifecycle-pcsc-20261105T225050Z.log`,
   SHA-256
   `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.
+
+## Failed CCID time-extension transfer must not discard final APDU response — 2026-11-06
+
+- **Finding:** `driver_xfer` handled any failed IN transfer by clearing
+  `pending_final_response` and immediately rearming Bulk-OUT. A CCID time
+  extension can fail asynchronously after the applet operation has already
+  queued its final response behind that extension. The generic error cleanup
+  then dropped the valid final response and accepted a new command while the
+  previous host exchange was unresolved.
+- **Viable fix:** Detect a failed IN transfer while
+  `native_extension_in_flight` is true. Clear that extension state only and
+  preserve the queued final response. Do not rearm Bulk-OUT in this branch;
+  let the final-response completion callback perform the normal rearm. Keep
+  generic final-response transfer errors on the bounded host-retry path.
+- **Validation:** The exact helpers used in the production CCID callback are
+  exercised by `./tools/test-ccid-progress-flow`, now 21/21, including pending
+  final response retry and subsequent slot-status/APDU dispatch after both
+  failed-extension and bounded-abort recovery. ARM/RISC-V max_crypto builds
+  pass. Updated firmware flashed and passed finite monitor and 36/36 physical
+  lifecycle/routing checks on D92 `D92E743D5F640C0F`; the test package was
+  removed. Physical USB transfer fault injection was not performed.
+- **Artifact:** `artifacts/logs/cycle-choupi-20261105T230607Z.log`, SHA-256
+  `e5d99d4d95b98eb326c05c6338000f577a8cfbba973ce86b22002d2ecc5ff98f`;
+  physical `artifacts/logs/cipher-lifecycle-pcsc-20261105T230800Z.log`,
+  SHA-256
+  `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.

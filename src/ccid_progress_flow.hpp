@@ -13,6 +13,21 @@ inline bool record_pending_ccid_submit_failure(uint8_t &failure_count) {
   return failure_count >= kMaxPendingCcidSubmitFailures;
 }
 
+inline bool recover_ccid_extension_transfer_error(
+    const bool in_endpoint, bool &extension_in_flight) {
+  if (!in_endpoint || !extension_in_flight) return false;
+  // The APDU operation may still be running, or its final response may already
+  // be queued behind this extension. Preserve that response and keep Bulk-OUT
+  // disarmed until the final IN transfer completes.
+  extension_in_flight = false;
+  return true;
+}
+
+inline constexpr bool ccid_in_transfer_completion_rearms_out(
+    const bool extension_in_flight, const bool terminating_zlp_pending) {
+  return !extension_in_flight && !terminating_zlp_pending;
+}
+
 template <typename Pending, typename Dispatch>
 void dispatch_pending_ccid_task(bool &task_active, Pending &message_pending,
                                 Dispatch &&dispatch) {

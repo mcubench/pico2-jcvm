@@ -22447,3 +22447,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-pcsc-20261105T225050Z.log`, SHA-256 `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`; prior end-to-end run `artifacts/logs/cipher-lifecycle-pcsc-20261105T224903Z.log`, SHA-256 `7559316b43b97f0695e0284bd79805ef29d8042d4d3484f6f0d383049fa3c978`.
 
 - Commit resolved for `ccid-single-route-physical-20261105`: `10a3ab66` (Fix CCID GET RESPONSE routing and validate on Pico 2).
+
+## 2026-11-06 Preserve CCID final response after failed extension 17 minutes
+
+- Step/experiment: `ccid-extension-error-recovery-20261106`
+- When: '2026-11-05 23:52 CET' - '2026-11-06 00:09 CET'
+- Change: Fixed asynchronous CCID time-extension IN errors to clear only the failed extension, preserve a final APDU response queued behind it, and leave Bulk-OUT disarmed until the final response completes. Expanded production-shared recovery flow tests for failed extension delivery, pending final response retry, bounded abort, subsequent slot-status polling and APDU dispatch.
+- Validation: Final `./tools/test-ccid-progress-flow` passes 21/21; scoped `git diff --check` passes. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` pass. Final `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid D92E743D5F640C0F` passes; flash verification completed and finite serial monitor reports `TEST:SUMMARY pass=1 fail=0`. Post-flash `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-lifecycle-pcsc 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passes `TEST:SUMMARY pass=36 fail=0`; temporary package cleanup passes. USB failure itself was not injected on hardware; recovery failure paths are simulated through the helper called by the production callback.
+- Result: An asynchronous error ending a time-extension transfer no longer discards a completed APDU response or prematurely rearms Bulk-OUT. The normal path remains healthy on physical D92 after flashing.
+- Decision: Mark RV-20261103-26 complete. Continue to RV-20261103-27 and preserve remaining physical RV-11/12 checks.
+- Commit: pending.
+- Artifacts/logs: Cycle `artifacts/logs/cycle-choupi-20261105T230607Z.log`, SHA-256 `e5d99d4d95b98eb326c05c6338000f577a8cfbba973ce86b22002d2ecc5ff98f`; physical `artifacts/logs/cipher-lifecycle-pcsc-20261105T230800Z.log`, SHA-256 `9fefb8de1f2dbc0622797b2cecdc4e890498875f6e0e89ba0b12af448dee86f8`.

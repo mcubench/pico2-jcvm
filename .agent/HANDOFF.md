@@ -1,4 +1,34 @@
-# Active handoff — CCID routing validated on Pico 2 — 2026-11-05 23:52 CET
+# Active handoff — CCID extension-error recovery validated — 2026-11-06 00:09 CET
+
+## Latest continuation — preserve response across failed CCID extension — 2026-11-06 00:09 CET
+
+RV-20261103-26 is implemented and marked complete. `driver_xfer` now treats
+an asynchronous failed Bulk-IN time extension separately: it clears the
+extension-in-flight flag but retains a final response that may already be
+queued behind that extension. Bulk-OUT stays unarmed until final-response
+completion. The shared recovery suite passes 21/21, including failure,
+response retry, bounded-abort behavior, and subsequent slot-status/APDU
+dispatch.
+
+Both `./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto` pass. The updated ARM image was
+flashed to Pico 2 `D92E743D5F640C0F`; finite serial monitor passed
+`TEST:SUMMARY pass=1 fail=0`. PC/SC re-enumerated that board and the physical
+lifecycle/routing test passed 36/36, then removed its disposable package.
+No physical USB transfer error was injected; error behavior is covered by the
+same helper called by the production callback. Cycle log:
+`artifacts/logs/cycle-choupi-20261105T230607Z.log`; PC/SC log:
+`artifacts/logs/cipher-lifecycle-pcsc-20261105T230800Z.log`.
+
+Next: RV-20261103-27, stale VPCD session tests/reselection restore behavior.
+Physical RV-11/12 lifecycle follow-ups remain open. USB helper most recently
+granted three nodes; D92 is the PC/SC-visible reader. Preserve unrelated dirty
+files. RV-26 source/test files:
+`src/ccid_progress_flow.hpp`, `src/ccid_device.cpp`,
+`tools/tests/ccid_progress_flow_test.cpp`; TODO/progress/QKB/handoff updated,
+commit pending.
+
+# Prior continuation — CCID APDU routing and physical dispatch — 2026-11-05 23:52 CET
 
 ## Latest continuation — CCID APDU routing and physical dispatch — 2026-11-05 23:52 CET
 
