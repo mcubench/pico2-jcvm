@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -le 2 ]] || die "usage: ./tools/package-empty-card-uf2 [firmware.uf2 [output.uf2]]"
+require_command python3
+
+firmware="${1:-${repo_root}/build/arm/pico2_choupi.uf2}"
+output="${2:-${repo_root}/artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2}"
+[[ -s "${firmware}" ]] || die "firmware UF2 not found: ${firmware}"
+mkdir -p "$(dirname "${output}")"
+
+python3 - "${firmware}" "${output}" <<'PY'
+import struct
+import sys
+from pathlib import Path
+
+MAGIC0 = 0x0A324655
+MAGIC1 = 0x9E5D5157
+MAGIC_END = 0x0AB16F30
+FLAG_FAMILY_ID = 0x00002000
+FLASH_START = 0x10000000
+STORAGE_START = 0x10100000
+STORAGE_END = 0x10200000
+PAYLOAD_SIZE = 256
+RECORD_SIZE = 512
+
+source, destination = map(Path, sys.argv[1:])
+image = source.read_bytes()
+if len(image) % RECORD_SIZE:
+    raise SystemExit("input is not a whole number of UF2 blocks")
+records = [image[i:i + RECORD_SIZE] for i in range(0, len(image), RECORD_SIZE)]
+if len(records) < 2:
+    raise SystemExit("input UF2 is incomplete")
+
+container = records[0]
+meta = struct.unpack_from("<IIIIIIII", container)
+if meta[0] != MAGIC0 or meta[1] != MAGIC1 or not (meta[2] & 0x8000):
+    raise SystemExit("input UF2 is missing the RP2350 image container record")
+
+blocks = {}
+family_id = None
+for record in records[1:]:
+    fields = struct.unpack_from("<IIIIIIII", record)
+    magic0, magic1, flags, address, size, _index, _count, family = fields
+    if magic0 != MAGIC0 or magic1 != MAGIC1 or struct.unpack_from("<I", record, 508)[0] != MAGIC_END:
+        raise SystemExit("invalid UF2 data block")
+    if flags != FLAG_FAMILY_ID or size != PAYLOAD_SIZE:
+        raise SystemExit("unexpected UF2 data flags or payload size")
+    if family_id is None:
+        family_id = family
+    elif family != family_id:
+        raise SystemExit("mixed UF2 target families")
+    if address < FLASH_START or address >= STORAGE_START or address % PAYLOAD_SIZE:
+        raise SystemExit(f"firmware block outside expected range: 0x{address:08X}")
+    if address in blocks:
+        raise SystemExit(f"duplicate firmware block address: 0x{address:08X}")
+    blocks[address] = record
+
+storage_records = []
+for address in range(STORAGE_START, STORAGE_END, PAYLOAD_SIZE):
+    header = struct.pack("<IIIIIIII", MAGIC0, MAGIC1, FLAG_FAMILY_ID,
+                         address, PAYLOAD_SIZE, 0, 0, family_id)
+    storage_records.append(header + bytes([0xFF]) * PAYLOAD_SIZE +
+                           bytes(RECORD_SIZE - 32 - PAYLOAD_SIZE - 4) +
+                           struct.pack("<I", MAGIC_END))
+
+data_records = [blocks[address] for address in sorted(blocks)] + storage_records
+count = len(data_records)
+rewritten = []
+for index, record in enumerate(data_records):
+    mutable = bytearray(record)
+    struct.pack_into("<II", mutable, 20, index, count)
+    rewritten.append(bytes(mutable))
+
+result = container + b"".join(rewritten)
+destination.write_bytes(result)
+if destination.stat().st_size != (count + 1) * RECORD_SIZE:
+    raise SystemExit("output UF2 size validation failed")
+print(f"EMPTY_CARD_UF2:PASS path={destination} bytes={len(result)} "
+      f"firmware_blocks={len(blocks)} storage_blocks={len(storage_records)} "
+      f"storage=0x{STORAGE_START:08X}-0x{STORAGE_END - 1:08X}")
+PY

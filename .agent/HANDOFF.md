@@ -1,3 +1,18 @@
+# Current external-test artifact — max_crypto empty-card UF2 — 2026-11-05 10:02 CET
+
+Refreshed `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
+from the current ARM `max_crypto` build. It is 4,026,368 bytes, SHA-256
+`0868a0ec81b13bd5a5a7c9e42f2ac64fe061ade69d12ac93bded6aa852ec5873`, contains
+3,767 firmware blocks and all 4,096 `0xFF` storage blocks
+(`0x10100000`–`0x101FFFFF`), and has no preinstalled CAP/applet. The same bytes
+are at `build/arm/pico2_choupi_max_crypto_empty_card.uf2`. `picotool info -a`
+reports RP2350 ARM Secure; the block-map validator confirmed unique addresses
+and fully erased storage. Regenerate after `./tools/build arm --profile
+max_crypto` with `./tools/package-empty-card-uf2`. This combined image was not
+flashed in this session; it intentionally erases card data when used.
+
+---
+
 # Current continuation — Descriptor-aware physical JCSystem validation — 2026-11-05 09:52 CET
 
 Implemented a test-only GPPro loader at `tools/load-cap-with-descriptor` and
