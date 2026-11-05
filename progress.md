@@ -22116,3 +22116,5 @@
 - Decision: Refresh this paragraph after each material USB/PCSC state change.
 - Commit: `pending`
 - Artifacts/logs: `.agent/HANDOFF.md`; `artifacts/logs/cycle-choupi-20261105T081020Z.log`.
+
+- Commit resolved for `docs-20261105-physical-device-inventory`: `b85d6db` (Refresh Pico availability in TODO).
