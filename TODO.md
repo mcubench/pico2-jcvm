@@ -773,8 +773,12 @@ source-based follow-ups, without a new physical reproduction in this review.
   dynamic package. Identify a verifiable source for method bounds before
   changing this fail-closed guard; never widen dynamic method execution to the
   entire Method component. Preserve both Descriptor-present and
-  Descriptor-absent acceptance cases. The current default VPCD script has a
-  30-second APDU deadline that is
+  Descriptor-absent acceptance cases. The [Java Card 3.0.5 VM specification,
+  §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf) makes
+  Descriptor loading optional and states that method offsets and bytecode
+  counts needed to parse methods are provided by Descriptor; the Method
+  component alone does not carry that information. The current default VPCD
+  script has a 30-second APDU deadline that is
   too short for this VM; use 90 seconds to connect and 120 seconds per APDU.
   A new test-only SIO method passes a caller-owned byte array into native
   `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner

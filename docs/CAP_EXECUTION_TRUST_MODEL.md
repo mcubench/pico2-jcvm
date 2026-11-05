@@ -27,5 +27,17 @@ and bounds variable-size switch tables. It does not statically check untaken
 edges or control-flow stack types. The VM also does not yet verify nested
 constant-pool linkage or enforce heap field kinds/access. Malformed-CAP
 runtime/sanitizer coverage is still required before claiming safe execution of
-malformed or hostile CAP programs. Valid upstream CAPs remain the compatibility
-baseline.
+malformed or hostile CAP programs.
+
+There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
+VM specification makes Descriptor loading optional, and GlobalPlatformPro's
+default CAP load omits Descriptor and Debug. The Method component alone does
+not include the per-method bytecode lengths needed by this VM's strict frame
+bounds. Therefore dynamic packages without Descriptor currently fail closed
+when execution enters their method. Do not replace the missing per-method
+bounds with the entire Method component: that allows bytecode branches and
+reads to cross method bodies. Supporting standard Descriptor-free loads while
+keeping this trust policy requires another verifiable method-bounds source or
+a separate CAP verification/trust mechanism. See `.agent/QKB.md` for the
+reproduced `6A80` SIO service-install result and the [Java Card 3.0.5 VM
+specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf), §6.10 and §6.14.

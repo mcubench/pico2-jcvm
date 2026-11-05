@@ -22009,3 +22009,14 @@
 - Decision: Keep the Descriptor-absent issue open until a verifiable method-bounds source or safe package policy is designed; preserve Descriptor-present and Descriptor-absent regressions.
 - Commit: `09ffaf7`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
+
+## 2026-11-05 Confirm optional Descriptor method-bound constraint 16 minutes
+
+- Step/experiment: `hard-20261105-descriptor-free-bounds-source`
+- When: '2026-11-05 02:50 CET' - '2026-11-05 03:06 CET'
+- Change: Confirmed from the Java Card 3.0.5 VM specification that Descriptor is optional, while the Method component does not contain method offsets or bytecode lengths. Recorded the resulting descriptor-free dynamic-CAP compatibility gap and maintained the fail-closed execution bound.
+- Validation: Reviewed Oracle's [Java Card 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf), §6.10 and §6.14 (pages 79 and 126–128): Descriptor loading is optional; Method lacks complete method details; Descriptor supplies offsets and bytecode counts needed to parse methods. Confirmed in the pinned GlobalPlatformPro `capfile` source that `CAPFile.getCode()` calls `_getCode(false)`, which excludes both Descriptor and Debug. Updated the trust-model doc, TODO, QKB and handoff. No source code changed; no build or runtime test was run.
+- Result: No safe per-method bound can be reconstructed from the standard Descriptor-free LOAD stream using only the Method component. Relaxing to the whole component would permit method-body crossing and would violate the current uploaded-CAP trust boundary.
+- Decision: Keep the guard fail-closed. The remaining work is to provide a separate verifiable method-bound source or a distinct CAP verification/trust pipeline; this does not equate GlobalPlatform SCP authentication with CAP safety. Continue other project priorities offline.
+- Commit: `pending`
+- Artifacts/logs: [Oracle Java Card 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf); [GlobalPlatformPro `CAPFile.getCode()`](https://github.com/martinpaljak/capfile/blob/master/src/main/java/pro/javacard/CAPFile.java); VPCD failure log `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.

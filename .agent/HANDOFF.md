@@ -17,8 +17,12 @@ throws `SecurityException` for dynamic package IDs 56–63. The failing install
 log reports stage 5, `vm=6F00`, exception 29, opcode `00`, PC `00000000`.
 This is the fail-closed method-boundary guard, not a VPCD transport failure.
 Do not widen execution to the whole Method component; find a verifiable bounds
-source or a different safe policy. The passing Descriptor-present run does not
-close this compatibility gap. The script's
+source or a different safe policy. Oracle's Java Card 3.0.5 VM specification
+confirms Descriptor loading is optional and the Method component lacks method
+offsets/bytecode lengths; Descriptor provides them (§6.10, §6.14). There is no
+safe per-method range to reconstruct from the standard Descriptor-free LOAD
+stream alone. The passing Descriptor-present run does not close this
+compatibility gap. The script's
 default 30-second APDU timeout is too short for this VM; retain the 90-second
 connect and 120-second APDU values for full regressions.
 

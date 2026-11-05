@@ -6312,10 +6312,26 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Reproduction:** With the same script's default Descriptor omission, the
   contract package LOAD succeeds, but service applet INSTALL fails with
   `6A80`. Standard GPPro `CAPFile.getCode()` omits Descriptor, so this fixture
-  variant is relevant to deployment. This does not yet isolate whether the
-  failure is the service applet's install method, a method-boundary lookup, or
-  another Descriptor-dependent metadata path. Keep this as an open runtime
-  compatibility issue; do not treat the Descriptor-present pass as closing it.
+  variant is relevant to deployment. The emulator log reports stage 5,
+  `SW=6A80`, `vm=6F00`, exception 29 (`SecurityException`), opcode `00`, and
+  PC `00000000`. `Method_Handler::callMethod` finds no method-body range
+  because the package lacks Descriptor, then deliberately throws
+  `SecurityException` for package IDs 56–63 (`cap_execution_policy`).
+- **CAP-format constraint confirmed:** The Java Card 3.0.5 VM specification
+  says Descriptor loading is optional and explains that the Method component
+  itself lacks complete method details; Descriptor supplies each method's
+  offset and bytecode count. GPPro's default load path omits Descriptor. Thus
+  the standard LOAD stream does not contain the metadata currently required by
+  our per-method execution guard. There is no safe bound to reconstruct from
+  the Method component alone. Reference: [Java Card 3.0.5 VM Specification,
+  §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf), especially
+  PDF pages 79 and 126–128.
+- **Decision constraint:** Keep fail-closed bounds for untrusted packages.
+  Do not accept whole-Method-component bounds as a substitute. To support
+  ordinary GPPro loads, design a separate verifiable method-bound metadata
+  source or a trust/verification pipeline that does not equate SCP
+  authentication with CAP safety. This remains open; the passing VPCD result
+  used Descriptor-present fixtures.
 - **Harness timing:** The test's default 30-second APDU timeout is too short
   for the local VM. Use `SIO_CROSS_AID_CONNECT_TIMEOUT_S=90` and
   `SIO_CROSS_AID_APDU_TIMEOUT_S=120`; earlier 30-second attempts expired during
@@ -6331,12 +6347,3 @@ original terminology/status; check current summary and later fixes before reuse.
   `b5561969177d61455a598a34cbfbd3e663b5908383853a9f1795b7652395c644`.
   Descriptor-omitted failure was reported in the command output; emulator log
   `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
-- **Root cause isolated:** The failing emulator log reports INSTALL stage 5,
-  `SW=6A80`, `vm=6F00`, exception ID 29 (`SecurityException`), opcode `00`,
-  and PC `00000000`. `Method_Handler::callMethod` finds no method-body range
-  because the package lacks Descriptor, then deliberately throws
-  `SecurityException` for package IDs 56–63 (`cap_execution_policy`). This is
-  a fail-closed uploaded-CAP method-boundary policy, not a VPCD socket or
-  transport timeout. Do not resolve it by bounding execution to the entire
-  Method component: that would permit branches/reads to cross method bodies.
-  A safe metadata source or another installable-CAP trust policy is needed.
