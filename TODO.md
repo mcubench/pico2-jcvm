@@ -777,7 +777,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   find a Descriptor method-body range and throws `SecurityException` for the
   dynamic package. Identify a verifiable source for method bounds before
   changing this fail-closed guard; never widen dynamic method execution to the
-  entire Method component. Preserve both Descriptor-present and
+  entire Method component. The same failure was reproduced physically on Pico
+  2 `D92E743D5F640C0F`: contract and service package LOAD succeeded, service
+  applet INSTALL returned `6A80`, and post-cleanup GPPro listing showed only
+  the ISD. Preserve both Descriptor-present and
   Descriptor-absent acceptance cases. The [Java Card 3.0.5 VM specification,
   §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf) makes
   Descriptor loading optional and states that method offsets and bytecode

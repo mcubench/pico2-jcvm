@@ -15,6 +15,30 @@
   against D92 before changing firmware. Use an already registered reader for
   hardware work while the second-reader cause is investigated.
 
+## Standard GPPro CAP loading omits Descriptor and blocks dynamic applet INSTALL — reproduced on Pico 2 2026-11-05
+
+- **Observation:** The cross-AID physical fixture on Pico 2
+  `D92E743D5F640C0F` successfully LOADed contract package
+  `A000000151000002` and service package `A000000151000003`, then service
+  applet INSTALL returned `6A80`. The exact reader was PC/SC-visible. A final
+  GPPro `--list` showed only the ISD, confirming fixture cleanup removed the
+  temporary packages. ARM and RISC-V max_crypto builds passed on the same
+  worktree.
+- **Cause:** This matches the Descriptor-free VPCD failure. The standard pinned
+  GPPro `--load` path serializes `CAPFile.getCode()` without Descriptor. Dynamic
+  `Method_Handler::callMethod` requires a verified body range from Descriptor
+  and throws `SecurityException` when it is absent. The current denial is
+  fail-closed; do not widen a method's executable range to the whole Method
+  component.
+- **Next:** Find a bounds source that remains valid with Descriptor omitted,
+  or alter the loader test workflow only if the production requirement allows
+  it. Preserve standard GPPro behavior as the acceptance path. Keep the
+  Descriptor-present VPCD pass separate from Descriptor-free acceptance.
+- **Artifacts:**
+  `artifacts/logs/sio-cross-aid-physical-20261105T144606Z.log`,
+  `build/sio-cross-aid-fixture/physical-gp-install-20261105T144606Z.log`,
+  and `build/sio-cross-aid-fixture/physical-gp-list-20261105T144606Z.log`.
+
 ## Flash succeeds but VirtualBox drops Pico runtime USB after reboot — observed 2026-11-04
 
 - **Finding:** With three RP2350 boards in BOOTSEL, `picotool info -a`

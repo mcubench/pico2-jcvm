@@ -24,6 +24,16 @@ USB/PCSC handoff is isolated. Logs from the recent cycles are under
 `artifacts/logs/cycle-choupi-20261105T143119Z.log` and
 `artifacts/logs/cycle-choupi-20261105T143418Z.log`.
 
+After both current ARM and RISC-V `max_crypto` wrappers passed, the physical
+cross-AID fixture ran on D92. Contract and service CAP LOAD returned success;
+service applet INSTALL failed with `6A80`, matching the known Descriptor-free
+dynamic method-body bounds limitation. The cleanup trap reported a failure
+while trying to delete an applet AID that was not installed; an independent
+GPPro `--list` afterward showed only the ISD, so no fixture package remains.
+The reproducible blocker and logs are in `.agent/QKB.md` under the
+Descriptor-free GPPro finding. Continue by deriving safe Method body bounds
+without Descriptor; do not expand execution to the whole Method component.
+
 Current Windows empty-card image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,025,856
 bytes, SHA-256 `09d0a1ee76b3512314795eea796148141fc2e22fb7d7a28d21c97045aee61d15`;

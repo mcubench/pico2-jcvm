@@ -22313,3 +22313,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue using the available D92 reader for hardware tests while investigating guest PC/SC registration separately. Proceed with CTX-01/03 runtime work; retain all unrelated existing modifications.
 - Commit: pending.
 - Artifacts/logs: `STATUS.md`, `TODO.md`, `.agent/HANDOFF.md`, `.agent/QKB.md`; no new hardware log.
+
+- Commit resolved for `host-02-and-reader-state-refresh-20261105`: `cf0d9880` (Record current device and project status).
+
+## 2026-11-05 Reproduce Descriptor-free SIO INSTALL failure on physical Pico 2 12 minutes
+
+- Step/experiment: `sio-descriptor-free-physical-reproduction-20261105`
+- When: '2026-11-05 15:37 CET' - '2026-11-05 15:49 CET'
+- Change: Ran the current ARM/RISC-V max_crypto build gates, then executed the repository's existing three-package cross-AID physical fixture on the registered board. Added the reproduced standard-GPPro Descriptor omission failure and safe-bounds constraint to TODO/QKB/HANDOFF.
+- Validation: `./tools/build arm --profile max_crypto` passed (`firmware_end=0x100eb518`, 84,712 bytes remaining); `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` loaded contract package `A000000151000002` and service package `A000000151000003`, then failed service applet INSTALL with `6A80`. A subsequent read-only GPPro `--list` showed only the ISD, confirming no fixture package remains. `git diff --check` passed. No firmware was flashed in this step.
+- Result: Standard GPPro LOAD omits Descriptor and the physical service install fails at the already documented dynamic method-body bounds guard. Descriptor-present VPCD passing does not satisfy this path. The cleanup script printed a failure for an absent applet AID despite final card state being empty; review that diagnostic separately.
+- Decision: Implement a safe Descriptor-independent method-bound source. Do not weaken the fail-closed dynamic execution guard or widen to the Method component. Preserve unrelated dirty source changes.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-physical-20261105T144606Z.log`; GPPro logs under `build/sio-cross-aid-fixture/physical-gp-*-20261105T144606Z.log`.
