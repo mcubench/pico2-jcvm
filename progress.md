@@ -22423,3 +22423,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-20261103-12 open for physical acceptance; proceed offline to RV-20261103-13 while awaiting a hardware PC/SC reader.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/same-cap-transient-vpcd-20261105T221737Z.log` (SHA-256 `b05eec26293e70ae671bf941a61df265fcc6e237d3e18ad899a23fc6bdb19c00`).
+
+## 2026-11-05 Verify restored transient RSA key capacity 7 minutes
+
+- Step/experiment: `restored-transient-rsa-key-capacity-20261105`
+- When: '2026-11-05 22:20 UTC' - '2026-11-05 22:27 UTC'
+- Change: Extended the Cipher lifecycle VPCD regression to rewrite the retained AES transient key and RSA modulus/exponent after a fresh emulator-process restore. Updated RV-20261103-13 to resolve the historical restored-key failure report using current native and VPCD evidence; the old failure's cause is not established.
+- Validation: `./tools/test-jcarray` exited 0 and passed restored byte/boolean/short/int/reference logical lengths, zero initialization, clear behavior, final valid entries, maximum backing length and overflow rejection. The rebuilt PC VM lifecycle suite `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 240s ./tools/test-cipher-lifecycle-vpcd` passed `TEST:SUMMARY pass=31 fail=0`; post-restore AES/RSA setters returned `019000`. `bash -n tools/test-cipher-lifecycle-vpcd` and scoped `git diff --check` passed. No firmware source changed or physical test was performed.
+- Result: The previously reported RSA post-restore `ArrayIndexOutOfBoundsException` is not reproducible against the current rebuilt VM; restored transient component capacity is sufficient for 512-bit RSA modulus/exponent and AES-128 key writes.
+- Decision: Mark RV-20261103-13 complete based on the specified native and interpreter restore/capacity acceptance. Continue to RV-20261103-25; retain RV-11/12 physical work as open follow-up.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cipher-lifecycle-vpcd-20261105T222334Z.log` (SHA-256 `0a06c8bd3522341f384d5ca495a3bd5db302bd04a27ea20386bb94d663be3748`).

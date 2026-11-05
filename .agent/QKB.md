@@ -6792,3 +6792,19 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   CCID devices, but PC/SC currently lists only the two VPCD readers.
 - **Artifact:** `artifacts/logs/same-cap-transient-vpcd-20261105T221737Z.log`
   SHA-256 `b05eec26293e70ae671bf941a61df265fcc6e237d3e18ad899a23fc6bdb19c00`.
+
+## Recheck RSA transient key writes after fresh restore — 2026-11-05
+
+- **Observation:** An earlier handoff reported that repopulating the restored
+  transient RSA key raised `ArrayIndexOutOfBoundsException`. This did not
+  reproduce against the rebuilt current PC VM. The lifecycle fixture now
+  explicitly calls `setKey` on the restored AES transient key and sets both
+  modulus and exponent on the restored RSA transient key after process restart;
+  all return success. The prior failure's root cause is not established.
+- **Validation:** `./tools/test-jcarray` exits 0 with all restored logical-length,
+  zero-init, clear-event, max-capacity and overflow cases passing. Rebuilt PC
+  VM lifecycle integration passes `TEST:SUMMARY pass=31 fail=0`, including
+  reset/restore statuses and post-restore AES/RSA key setters.
+- **Artifact:** `artifacts/logs/cipher-lifecycle-vpcd-20261105T222334Z.log`
+  SHA-256 `0a06c8bd3522341f384d5ca495a3bd5db302bd04a27ea20386bb94d663be3748`.
+  Hardware validation was not performed.

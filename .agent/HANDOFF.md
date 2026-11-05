@@ -1,5 +1,23 @@
 # Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
 
+## Latest continuation — verify restored RSA transient key capacity — 2026-11-05 23:27 CET
+
+RV-20261103-13 is resolved. Native `./tools/test-jcarray` passes restored
+byte/boolean/short/int/reference logical lengths, zero initialization, clear
+events, final valid elements, maximum backing capacity, and overflow rejection.
+Extended `tools/test-cipher-lifecycle-vpcd` to set the retained AES transient
+key and both RSA modulus/exponent components after a fresh emulator-process
+restore. After a rebuilt PC max_crypto VM, the lifecycle suite passes 31/31;
+the previously reported RSA `ArrayIndexOutOfBoundsException` is not reproduced
+and its historical cause is unknown. No physical run was performed. RV-11/12
+physical validation remains pending because PC/SC currently exposes only VPCD
+readers.
+
+Next highest implementation review item: RV-20261103-25, the production CCID
+dispatch contract. Preserve unrelated worktree files and check the QKB before
+changing shared routing. VPCD lifecycle log:
+`artifacts/logs/cipher-lifecycle-vpcd-20261105T222334Z.log`.
+
 ## Latest continuation — VPCD reset must skip applet deselect — 2026-11-05 23:20 CET
 
 The RV-20261103-12 transient test exposed a regression in VPCD: tracking the

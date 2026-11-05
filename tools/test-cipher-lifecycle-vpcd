@@ -55,6 +55,9 @@ add_apdu 800C000000 449000 # Reset cleared Cipher initialization state.
 args+=(
   --resume-apdu 8005000000 --expect-resume-apdu-response 449000
   --resume-apdu 800C000000 --expect-resume-apdu-response 449000
+  # Ensure restored transient key arrays retain usable logical capacities.
+  --resume-apdu 8002000000 --expect-resume-apdu-response 019000
+  --resume-apdu 800D000000 --expect-resume-apdu-response 019000
 )
 
 printf 'VPCD:LOG %s\n' "${log}"
