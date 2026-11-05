@@ -6687,3 +6687,19 @@ Runtime-global arrays have their separate owner-root mechanism and remain
 covered independently. After the signed branch-offset fix, the Descriptor-free
 VPCD SIO suite passed 34/34 and returned the same `6B47` result; log:
 `artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`.
+
+
+## SHA-256 reset appears slower than doFinal — 2026-11-05
+
+Local JCAlgTest 1.8.2 `PerformanceTesting.testMessageDigest` passes doFinal's
+ms/operation result into the reset measurement. The inner measurement
+subtracts it once from the whole batch instead of multiplying by repeats.
+The upstream applet reset benchmark calls doFinal then reset per iteration.
+For 50 repeats and doFinal 3.78 ms, reset is overstated by 3.7044 ms/op:
+the supplied 6.2044 ms becomes 2.50 ms including VM overhead. Native doFinal
+already clears buffered input; the following reset clears zero bytes.
+Viable correction identified by bytecode inspection and arithmetic: subtract
+N times the matching per-operation comparator from each N-operation batch.
+No patch or new hardware measurement was made. Confirm the actual client
+binary and full doFinal block before treating corrected figures as precise.
+See `docs/sha256-reset-timing-analysis-20261105.md`.

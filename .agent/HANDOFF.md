@@ -1,3 +1,19 @@
+# Active analysis — SHA-256 reset benchmark units — 2026-11-05 22:13 CET
+
+User-supplied reset 6.20 ms vs doFinal 3.78 ms is consistent with a host
+client units bug. Local JCAlgTest 1.8.2 bytecode subtracts doFinal's
+ms/operation once from a 50-operation batch; missing subtraction is
+49 * 3.78 = 185.22 ms/batch. Corrected reset differential is 2.50 ms,
+including VM/dispatch/loop overhead. The applet reset loop calls doFinal then
+reset; native doFinal already clears input, so that reset wipes zero bytes.
+See `docs/sha256-reset-timing-analysis-20261105.md` for arithmetic, bytecode
+provenance and limitations. No source/CAP changes, builds or hardware actions.
+Actual user's client/CAP/firmware identity remains unverified. Host fix would
+scale the subtraction by the matching batch count; no client fix was requested
+or implemented. Prior firmware continuation remains below.
+
+---
+
 # Active handoff — signed branch offsets and physical SIO validation — 2026-11-05 20:49 CET
 
 Fixed the physical cross-AID `JCSystem.getAppletShareableInterfaceObject`

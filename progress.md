@@ -22365,3 +22365,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T195820Z.log`; no hash measured.
 
 - Commit resolved for `sio-vpcd-post-branch-fix-20261105`: `7a2776a7` (Record SIO VPCD parity after branch fix).
+
+
+## 2026-11-05 Analyze SHA-256 reset benchmark 10 minutes
+
+- Step/experiment: `sha256-reset-timing-analysis-20261105`
+- When: '2026-11-05 22:03 CET (approximate)' - '2026-11-05 22:13 CET'
+- Change: Documented applet reset/doFinal paths and a local JCAlgTest 1.8.2 host subtraction units bug; updated handoff and QKB. No runtime or CAP changes.
+- Validation: Inspected native digest/session field source and local client bytecode with javap; Python arithmetic reconstructs integer wall times and corrected reset samples. Documentation whitespace inspection passed. Builds and physical tests intentionally skipped for analysis-only documentation.
+- Result: Host subtracts 3.78 ms once per 50-operation batch; missing subtraction 185.22 ms/batch. Supplied mean 6.2044 ms/op corrects to 2.50 ms/op including VM overhead. Actual user's binary identities and native-only timings were not measured.
+- Decision: Interpret supplied inversion as consistent with the verified local host bug; a host correction should scale subtraction by matching repeats. Preserve upstream CAP.
+- Commit: Resolve with `git log -1 --format=%H -- docs/sha256-reset-timing-analysis-20261105.md` (self-reference avoided).
+- Artifacts/logs: `artifacts/sha256-reset-client-javap.txt`, SHA-256 `90ce5413747122e4d0e7d8f7ad3443a447c20acf0b61f6e776dbf990e0419b2f`; local client hash recorded in analysis document.
