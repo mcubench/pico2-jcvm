@@ -22399,3 +22399,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep reset and process-restart expectations distinct. Continue with the next highest open project TODO; preserve static/instance foreign-object and persistent-array fail-closed policy.
 - Commit: pending.
 - Artifacts/logs: VPCD `artifacts/logs/sio-cross-aid-vpcd-20261105T214508Z.log`, SHA-256 `4683c4ae56e77e4eb6fd9b520e8c756cc11ec77edced1ec734de5ad22c3d4b2f`; physical `artifacts/logs/sio-cross-aid-physical-20261105T214741Z.log`, SHA-256 `e75fd33f4f3022b8e8781a748c2b87f7f732113e076f6e8c32b9142ba76e2107`.
+
+- Commit resolved for `cross-package-volatile-array-cold-restore-20261105`: `2f50699b` (Test foreign array field cold restore).

@@ -1,4 +1,4 @@
-# Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:50 CET
+# Active handoff — foreign references in applet-owned Object[] — 2026-11-05 22:51 CET
 
 Implemented cross-package GC roots for foreign references held by applet-owned
 volatile wildcard/Object arrays. Per-slot owner provenance routes each edge to
@@ -27,9 +27,9 @@ array result `6B439000`, post-GC result `6A2E9000`, DELETE/reinstall and cleanup
 Next: continue with the highest remaining project TODO after RV-20261103-08;
 read `.agent/QKB.md` for existing failure resolutions before touching related
 code. Preserve unrelated dirty files and skip the pre-existing
-`releaseGlobalAIDObject` removal when staging heap files. The implementation
-commit is `ec00a265`; the cold-restore regression is a separate uncommitted test
-step.
+`releaseGlobalAIDObject` removal when staging heap files. Implementation commit:
+`ec00a265`. Cold-restore regression commit: `2f50699b`. Next highest open P1
+is RV-20261103-11: Cipher key copies across transient-key clear events.
 
 ## Previous handoff — SHA-256 reset benchmark units — 2026-11-05 22:13 CET
 
