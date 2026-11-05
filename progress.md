@@ -22089,3 +22089,5 @@
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T074812Z.log` SHA-256 `a6c85f12b1f3ebe9b6ff9629ddfed8884321a78c481eb9e1cfb03049d1c0b45e`; `artifacts/logs/sio-cross-aid-vpcd-20261105T075613Z.log` SHA-256 `e4fb5aec92eb4fee606f912ee05b302a5261d0348d920e41f218379b97379bc8`; `artifacts/logs/sio-cross-aid-vpcd-20261105T075840Z.log` SHA-256 `ff64fb3e1cd24989e3d55be821ce86169ef948bfb1768e6e914fbd3514d7e956`.
 
 - Commit resolved for `review-20261105-cap-reinstall`: `36ce3a3` (Document same-AID CAP reinstall lifecycle review).
+
+- Commit resolved for `hard-20261105-descriptor-field-kinds`: `4322d1a` (Enforce CAP Descriptor field types).
