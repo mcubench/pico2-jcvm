@@ -22029,5 +22029,5 @@
 - Validation: `git diff --check -- tools/test-sio-cross-aid-vpcd tools/tests/sio_cross_aid_vpcd_test.py` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. No target build was run because only the host test entry point and timeout defaults changed.
 - Result: The complete Descriptor-present three-package SIO regression is runnable through one documented host-access-gated wrapper without per-run timeout overrides. Descriptor-omitted INSTALL still returns `6A80` and remains open.
 - Decision: Use the wrapper for future cross-AID VPCD regression runs; continue tracking Descriptor-omitted CAP execution as a separate firmware compatibility issue.
-- Commit: `pending`
+- Commit: `804e7f9`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`.
