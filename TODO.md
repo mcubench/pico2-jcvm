@@ -1014,20 +1014,19 @@ source-based follow-ups, without a new physical reproduction in this review.
 
 - [ ] **P1 / high priority: remove the serial-console wait from normal firmware;
   make startup capture an explicit diagnostic build option.**
-  Status: source-confirmed startup defect; implementation not started. The
-  current ARM startup waits for CDC/DTR for up to `120 * 250 ms = 30 s`, then
-  sleeps another 500 ms before storage/runtime initialization. During that
-  loop USB is serviced intermittently, but normal CCID command handling has
-  not started. The user reports a roughly 20–30-second Windows reader delay;
-  the exact causal timing has not been measured.
-  Remaining: remove both waits from normal startup; retain optional CDC
-  diagnostics; add validated `PICO2_DEBUG_SERIAL_WAIT_MS` build-wrapper input
-  with default `0` and explicit bounded opt-in (e.g. `30000`) for agents
-  capturing early startup. Always propagate the selected value, including
-  zero, into build configuration so a diagnostic build cannot contaminate
-  the next normal build. Keep USB enumeration serviced during any explicit
-  diagnostic wait and avoid dispatching applets before runtime is ready.
-  Record the setting in build provenance and identify diagnostic images.
+  Status: implementation added. Normal ARM startup no longer waits for CDC/DTR
+  or sleeps an extra 500 ms; it services USB once and enters filesystem/VM
+  startup. `PICO2_DEBUG_SERIAL_WAIT_MS` defaults explicitly to zero, accepts
+  bounded values through 120000, and services USB during diagnostic waits.
+  Diagnostic images receive a duration-specific filename, and build
+  provenance records profile, mode, setting, image and support-config hashes.
+  Validation completed: ARM and RISC-V max_crypto normal/30000 ms diagnostic/
+  normal builds passed in the same build directories; both CMake caches end at
+  zero. Physical ARM runtime cycle and read-only GPPro SELECT/CPLC/Card Data
+  checks passed on D92E743D5F640C0F. The normal Windows release UF2 is packaged
+  with erased storage. Remaining: exercise diagnostic DTR/deadline behavior on
+  hardware and measure at least three Windows cold reconnects without a serial
+  client; the causal timing is not established until that comparison is done.
   Acceptance: build ARM/RISC-V in normal and diagnostic modes, then switch
   back to normal in the same build directories and verify the setting resets.
   Diagnostic mode exits on DTR or its deadline; normal mode reaches runtime
@@ -1041,9 +1040,9 @@ source-based follow-ups, without a new physical reproduction in this review.
   do not claim an exact Windows readiness bound before measurement.
   Agent instructions: [normal and diagnostic build workflow](docs/usb-startup-diagnostics.md).
   Related: HOST-01 (reader disappearance), AC-01 (Windows acceptance).
-  Evidence: `src/choupi_pico2.cpp` startup and `src/ccid_device.cpp` deferred
-  message processing; `.agent/QKB.md` startup-wait finding. No fix or Windows
-  trace is claimed by this task record.
+  Evidence: `src/choupi_pico2.cpp`, `tools/build`, CMake configuration, and
+  `docs/usb-startup-diagnostics.md`. Do not close until validation gates and
+  external Windows timing measurement are recorded.
 
 ### AC-01
 

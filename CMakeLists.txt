@@ -19,6 +19,14 @@ option(CHOUPI_DEBUG_PERSISTENT_GC
   "Exercise experimental persistent tag reclamation after each applet APDU" OFF)
 option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
 option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
+set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING
+  "Bounded CDC DTR startup wait for diagnostic firmware builds (milliseconds)")
+if(NOT CHOUPI_DEBUG_SERIAL_WAIT_MS MATCHES "^(0|[1-9][0-9]*)$")
+  message(FATAL_ERROR "CHOUPI_DEBUG_SERIAL_WAIT_MS must be an integer from 0 to 120000")
+endif()
+if(CHOUPI_DEBUG_SERIAL_WAIT_MS GREATER 120000)
+  message(FATAL_ERROR "CHOUPI_DEBUG_SERIAL_WAIT_MS must be an integer from 0 to 120000")
+endif()
 add_compile_options(-Wall -Wextra -Werror)
 if(LOCAL_ARM_NEWLIB_INCLUDE)
   include_directories(SYSTEM "${LOCAL_ARM_NEWLIB_INCLUDE}")
@@ -187,6 +195,9 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   target_compile_definitions(pico2_choupi PRIVATE
     MBEDTLS_PLATFORM_MS_TIME_ALT
     MBEDTLS_PLATFORM_ZEROIZE_ALT)
+  set_source_files_properties(src/choupi_pico2.cpp PROPERTIES
+    COMPILE_DEFINITIONS
+      "CHOUPI_DEBUG_SERIAL_WAIT_MS=${CHOUPI_DEBUG_SERIAL_WAIT_MS}")
   if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD OR
      JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 OR JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 OR
      JC_SUPPORT_CIPHER_DES_CBC_PKCS5 OR JC_SUPPORT_CIPHER_DES_ECB_NOPAD OR

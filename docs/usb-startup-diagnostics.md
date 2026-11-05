@@ -1,12 +1,12 @@
 # USB startup and diagnostic builds for agents
 
-**Planned workflow — HOST-02 is not implemented yet.** The option below is a
-required interface for that task, not a currently working switch. Existing
-wrappers do not consume `PICO2_DEBUG_SERIAL_WAIT_MS`; setting it today leaves
-the existing unconditional startup wait unchanged. Implement and validate
-HOST-02 before relying on these commands to change firmware behavior.
+**Implemented workflow.** The build wrapper consumes
+`PICO2_DEBUG_SERIAL_WAIT_MS`, defaults it to zero on every invocation, and
+rejects values outside `0..120000`. Diagnostic ARM UF2s are copied to a
+filename containing the wait duration. Build provenance records profile,
+wait, mode, image hash, and support-config hash.
 
-## Intended behavior
+## Behavior and setting
 
 Normal firmware must start without a serial terminal. Remove the existing
 30-second CDC/DTR wait and unconditional 500 ms sleep from normal startup.
@@ -14,21 +14,22 @@ Keep CDC logging available when a terminal connects later. Preserve one-context
 USB/CCID handling; do not reintroduce competing background USB workers.
 
 For agentic development, use an explicit diagnostic build only when early
-startup output is needed. Proposed wrapper input:
+startup output is needed. Wrapper input:
 
 - `PICO2_DEBUG_SERIAL_WAIT_MS=0` (default): no console wait.
 - A positive value, such as `30000`: wait at most that many milliseconds for
   CDC DTR, servicing USB frequently; continue when connected or at the deadline.
-- Reject malformed, negative, or out-of-range values; set and document a finite
-  upper bound. Never allow an indefinite wait.
+- Reject malformed, negative, or out-of-range values. The finite upper bound
+  is 120000 ms; never allow an indefinite wait.
 
-The build wrapper must translate the input into an explicit firmware setting
-on **every invocation**, including default zero. A diagnostic-to-normal build
-in an existing build directory must not inherit the prior wait from CMake
-cache or generated files. The option must work independently of crypto profile.
-Record the value/profile/image hash in build metadata and diagnostic artifacts.
+The build wrapper translates the input into an explicit firmware setting on
+every invocation, including default zero. A diagnostic-to-normal build in an
+existing directory resets the CMake cache value. The option works independently
+of crypto profile. Normal output remains `pico2_choupi.uf2`; diagnostic output
+is copied to `pico2_choupi_debug_serial_wait_<N>ms.uf2` with a matching
+`.provenance.txt` sidecar.
 
-## Build commands after HOST-02 implementation
+## Build commands
 
 Run from the repository root. Use these wrappers, not compiler binaries.
 
@@ -59,7 +60,7 @@ The environment marker alone is insufficient. Follow [AGENTS.md](../AGENTS.md),
 refresh board identity, and stop hardware work if host access is unavailable.
 
 With `board_serial` set to the freshly identified device, a diagnostic cycle
-must preserve the wait option through its internal builds and capture a finite
+preserves the wait option through its internal builds and captures a finite
 serial log:
 
 ```sh
@@ -97,5 +98,7 @@ DTR ends the diagnostic wait; this is intentional for early-log capture.
 5. Record results and remaining limitations in progress/handoff. Keep HOST-02
    open until normal startup and diagnostic behavior pass their own gates.
 
-This document schedules and specifies the fix; it does not establish new
-firmware builds, hardware validation, or a measured Windows startup time.
+This implementation removes the 30-second wait and 500 ms sleep from normal
+startup. This document does not establish a particular build, physical
+hardware result, or measured Windows startup time; check `progress.md` and
+`.agent/HANDOFF.md` for current evidence.

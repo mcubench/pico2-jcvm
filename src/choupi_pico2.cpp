@@ -117,17 +117,19 @@ int main_arm(void) {
   }
 
   stdio_init_all();
-  for (unsigned int attempt = 0; attempt < 120; ++attempt) {
-    // IRQ background servicing is disabled so TinyUSB and CCID stay on one
-    // context. Drive enumeration here too; stdio output alone does not poll
-    // TinyUSB before the CDC host has connected.
+  // Normal firmware must initialize storage and the VM immediately after USB
+  // setup; waiting for CDC DTR prevents CCID from serving readers that never
+  // open the diagnostic serial interface. A bounded opt-in wait is retained
+  // for capturing early boot logs. Keep TinyUSB on this context during it.
+  choupi::service_usb_task();
+#if CHOUPI_DEBUG_SERIAL_WAIT_MS > 0
+  const absolute_time_t serial_wait_deadline =
+      make_timeout_time_ms(CHOUPI_DEBUG_SERIAL_WAIT_MS);
+  while (!stdio_usb_connected() && !time_reached(serial_wait_deadline)) {
     choupi::service_usb_task();
-    if (stdio_usb_connected()) break;
-    printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
-    fflush(stdout);
-    sleep_ms(250);
+    sleep_ms(1);
   }
-  sleep_ms(500);
+#endif
   printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
   printf("CHOUPI:STAGE fs_init:start\r\n");
   fflush(stdout);

@@ -1,13 +1,28 @@
 # High-priority startup TODO — HOST-02 — 2026-11-05
 
-The user requested a high-priority task to remove the normal-build 30-second
-serial-console startup wait and document explicit diagnostic builds for agents.
-HOST-02 is now first in TODO priorities. Its workflow is specified in
-`docs/usb-startup-diagnostics.md`; the proposed PICO2_DEBUG_SERIAL_WAIT_MS
-option is **not implemented** and must not be relied on yet. Acceptance includes
-normal/diagnostic/default-reset builds, both target architectures, and Windows
-reconnect measurements with no serial monitor open. Existing source work is
-untouched. This is backlog/documentation work, not a firmware fix.
+HOST-02 implementation and max_crypto Windows test image are complete locally.
+Normal ARM startup removes the CDC/DTR wait and 500 ms sleep; bounded
+`PICO2_DEBUG_SERIAL_WAIT_MS` supports 0..120000 ms and services USB every 1 ms.
+Build wrapper always passes the value, writes provenance, and preserves
+separately named diagnostic UF2 plus sidecar. ARM/RISC-V max_crypto normal,
+diagnostic 30000 ms, then normal again passed; both CMake caches end at zero.
+Physical normal firmware passed `tools/cycle choupi` on Pico 2
+`D92E743D5F640C0F` (`TEST:SUMMARY pass=1 fail=0`); targeted GPPro SELECT,
+CPLC and Card Data returned `9000`. Windows reconnect timings and physical
+DTR/deadline diagnostic behavior remain untested.
+
+Current Windows empty-card image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,025,856
+bytes, SHA-256 `09d0a1ee76b3512314795eea796148141fc2e22fb7d7a28d21c97045aee61d15`;
+contains 4,096 verified erased storage blocks and no preinstalled applet. See
+`artifacts/firmware/README-crypto-arm-empty-card-current.md`.
+
+Flash recovery note: two initial runtime-mode cycles failed because picotool
+could not find the reset interface and CDC 1200-baud reset did not re-enumerate
+in time. A third attempt hit a sysfs disappearance race during re-enumeration.
+After the devices appeared in BOOTSEL, an identified D92 board flashed and
+passed. Keep this distinct from the HOST-02 boot delay. Preserve unrelated dirty
+files; only stage HOST-02, its progress record, and image manifest.
 
 ---
 

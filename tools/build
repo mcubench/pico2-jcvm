@@ -8,6 +8,12 @@ shift
 support_profile=current
 debug_heap_gc=OFF
 debug_persistent_gc=OFF
+debug_serial_wait_ms="${PICO2_DEBUG_SERIAL_WAIT_MS:-0}"
+[[ "${debug_serial_wait_ms}" =~ ^(0|[1-9][0-9]*)$ && \
+   ${#debug_serial_wait_ms} -le 6 ]] || \
+  die "PICO2_DEBUG_SERIAL_WAIT_MS must be an integer from 0 to 120000"
+(( debug_serial_wait_ms <= 120000 )) || \
+  die "PICO2_DEBUG_SERIAL_WAIT_MS must be an integer from 0 to 120000"
 if [[ "${PICO2_DEBUG_HEAP_GC:-0}" == 1 ]]; then
   debug_heap_gc=ON
 elif [[ "${PICO2_DEBUG_HEAP_GC:-0}" != 0 ]]; then
@@ -104,6 +110,7 @@ cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCHOUPI_DEBUG_HEAP_GC="${debug_heap_gc}" \
   -DCHOUPI_DEBUG_PERSISTENT_GC="${debug_persistent_gc}" \
+  -DCHOUPI_DEBUG_SERIAL_WAIT_MS="${debug_serial_wait_ms}" \
   -DLOCAL_ARM_NEWLIB_INCLUDE="${arm_newlib_include}" \
   -DLOCAL_ARM_NEWLIB_LIBRARY_DIR="${arm_newlib_dir}" \
   -DCMAKE_EXE_LINKER_FLAGS="${linker_flags}"
@@ -132,4 +139,34 @@ if [[ "${arch}" == arm ]]; then
   python3 "${repo_root}/tools/check-firmware-flash-boundary" \
     "${build_dir}/pico2_choupi.elf.map"
   printf 'BUILD:PASS target=choupi image=%s\n' "${choupi_image#${repo_root}/}"
+  if (( debug_serial_wait_ms > 0 )); then
+    cp "${choupi_image}" \
+      "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
+  fi
 fi
+provenance_file="${build_dir}/build-provenance.txt"
+{
+  printf 'architecture=%s\nprofile=%s\nserial_wait_ms=%s\n' \
+    "${arch}" "${support_profile}" "${debug_serial_wait_ms}"
+  if [[ "${arch}" == arm ]]; then
+    if (( debug_serial_wait_ms > 0 )); then
+      printf 'mode=diagnostic\nimage=%s\n' \
+        "pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
+      sha256sum "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
+    else
+      printf 'mode=normal\nimage=pico2_choupi.uf2\n'
+      sha256sum "${build_dir}/pico2_choupi.uf2"
+    fi
+  else
+    printf 'mode=shared-code-build-only\nimage=pico2_jcvm_smoke.uf2\n'
+    sha256sum "${build_dir}/pico2_jcvm_smoke.uf2"
+  fi
+  sha256sum "${repo_root}/config/javacard-support.json"
+} > "${provenance_file}"
+if [[ "${arch}" == arm && "${debug_serial_wait_ms}" != 0 ]]; then
+  cp "${provenance_file}" \
+    "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2.provenance.txt"
+fi
+printf 'BUILD:PROVENANCE path=%s serial_wait_ms=%s mode=%s\n' \
+  "${provenance_file#${repo_root}/}" "${debug_serial_wait_ms}" \
+  "$([[ "${debug_serial_wait_ms}" == 0 ]] && echo normal || echo diagnostic)"

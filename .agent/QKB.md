@@ -6564,7 +6564,7 @@ was used. Follow-up `./tools/build arm` and `./tools/build riscv` both exited
 passed with 182,644 bytes remaining. No hardware was flashed.
 
 
-## 2026-11-05 Normal startup waits for diagnostic CDC/DTR — fix pending (HOST-02)
+## 2026-11-05 Normal startup waits for diagnostic CDC/DTR — implementation added (HOST-02)
 
 The user reports an approximately 20–30-second Windows reader-list delay.
 Source review found the ARM startup loop waits up to 120 times 250 ms for
@@ -6575,9 +6575,26 @@ complete CCID messages remain deferred until the normal main loop. PC/SC use
 does not require opening the diagnostic COM port. This is a source-confirmed
 startup dependency and a strong cause to test, not a timed Windows diagnosis.
 
-Planned solution: HOST-02 removes the normal wait and exposes a bounded,
-explicit diagnostic build setting with default zero for agentic development.
-See `docs/usb-startup-diagnostics.md`. No implementation or viable hardware
-fix is claimed yet. Important diagnostic trap: opening a serial monitor can
+Implementation: normal ARM startup now performs one TinyUSB service call and
+continues to filesystem/runtime initialization without waiting for CDC DTR or
+the former extra 500 ms. A diagnostic-only wait is selected by
+`PICO2_DEBUG_SERIAL_WAIT_MS` (0..120000), with a 1 ms USB service cadence.
+`tools/build` always propagates zero or the chosen value into CMake; diagnostic
+ARM UF2s have duration-specific names and a matching provenance sidecar;
+`build-provenance.txt` records the profile, mode, image hash, and support-config
+hash. ARM/RISC-V max_crypto normal/diagnostic-30000/normal builds passed in the
+same directories, leaving both cache values at zero. Normal ARM cycle passed on
+`D92E743D5F640C0F` (`TEST:SUMMARY pass=1 fail=0`); targeted GPPro SELECT, CPLC,
+and Card Data APDUs succeeded. Three insertion-to-PCSC Windows timings and
+physical diagnostic deadline behavior remain unmeasured.
+
+Flash recovery observation: two runtime-mode attempts failed with
+`Unable to locate reset interface`; the subsequent CDC 1200-baud request did
+not bring a device back within 20 seconds. A third attempt encountered a
+sysfs device-removal race as the board re-enumerated. Later picotool inspection
+found boards in BOOTSEL; a retry on identified board D92 then flashed, verified,
+and passed runtime monitoring. Treat these as host/reset-path recovery events,
+not as evidence of HOST-02 firmware failure.
+See `docs/usb-startup-diagnostics.md`. Important diagnostic trap: opening a serial monitor can
 assert DTR and bypass the wait, masking the no-console problem. Validate
 normal reconnect readiness separately with all serial clients closed.
