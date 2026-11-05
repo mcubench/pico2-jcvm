@@ -22179,3 +22179,15 @@
 - Artifacts/logs: `.agent/history/2026-11-05-commit-map.tsv`; `.agent/history/2026-11-05-history-cleanup.md`; ignored `artifacts/backups/history-cleanup-20261105/`; recovery bundle SHA-256 `7c723dc6d09d9271df0e6e837ac37b4134d112a9e73f0a5f70954d2b20e15a6d`.
 
 Validation note for this step: the byte-identical upstream CSV retains original CRLF/data whitespace. Initial staged whitespace validation flagged it; a scoped .gitattributes rule preserves its bytes and disables whitespace lint for that fixture. Packaging script bash syntax, CSV parsing (4,595 rows), reference SHA-256 identity, all mapped commit lookups, ignore checks, and unrelated-file preservation checks passed.
+
+
+## 2026-11-05 Verify cleaned-history publication 1.0 minutes
+
+- Step/experiment: `repository-history-publication-20261105`
+- When: '2026-11-05T11:03:50+01:00' - '2026-11-05T11:05:15+01:00'
+- Change: Recorded the successful publication of the cleaned repository and configured main to track origin/main.
+- Validation: `git push -u origin HEAD:main` passed, creating GitHub main; `git ls-remote origin refs/heads/main` returned `f6ec7b18a35fb43f9041b322bffb9bfb3e54b0cf`, matching local HEAD. Final historical blob scan passed, largest reachable blob 2,067,309 bytes (progress.md); the offending log path was absent. Unrelated working-file checksum checks passed; staging was empty after the cleanup commit.
+- Result: GitHub accepted cleaned history; ordinary future commits and pushes can continue in the existing working folder. Recovery data occupies approximately 20 MiB locally and remains ignored. No firmware or hardware metrics were measured.
+- Decision: Keep local recovery data, preserve unrelated dirty changes, and continue normal development. Publish this verification record as a small follow-up commit.
+- Commit: `f6ec7b18a35fb43f9041b322bffb9bfb3e54b0cf` (validated cleanup implementation).
+- Artifacts/logs: `.agent/history/2026-11-05-history-cleanup.md`; `.agent/history/2026-11-05-commit-map.tsv`; ignored `artifacts/backups/history-cleanup-20261105/`.

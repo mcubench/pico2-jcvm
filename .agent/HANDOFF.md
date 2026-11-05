@@ -1,3 +1,13 @@
+# Cleaned history published — 2026-11-05
+
+GitHub accepted cleanup commit `f6ec7b18a35fb43f9041b322bffb9bfb3e54b0cf`;
+`git ls-remote` verified the same main tip. Local main now tracks origin/main.
+This publication record follows that verified implementation commit. Continue
+normal commits/pushes from this same folder. Existing unrelated worktree and
+submodule changes remain uncommitted. Recovery backup is local and ignored.
+
+---
+
 # Repository history cleaned — 2026-11-05
 
 The authorized artifact cleanup retained all 2,038 commits and preserved local
