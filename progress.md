@@ -22497,3 +22497,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-28 open; validate class/export/member target compatibility and then add malformed runtime-execution tests.
 - Commit: `a76989ec`
 - Artifacts/logs: `artifacts/logs/rv28-import-token-vpcd-20261106.log`, SHA-256 `23249161c70c958e3dfd53aded4c340cf73e13f100d4abaaa1ea087fececbb09`.
+
+## 2026-11-06 Bound external CAP class tokens 11 minutes
+
+- Step/experiment: `rv28-external-class-token-validation-20261106`
+- When: '2026-11-06 00:31 CET' - '2026-11-06 00:42 CET'
+- Change: Install preflight now resolves external ConstantPool class references through the Import table, applies JC305 compatibility mappings, and rejects mapped tokens outside the target package Export table. `CONSTANT_Classref` permits either valid class or interface mapping; execution checks the actual type. Added callback-based helper tests; updated RV-28, trust model, QKB, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 16/16 under ASan/UBSan. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The unchanged upstream JCAlgTest VPCD install/APDU suite passed 15/15. No physical card was flashed; member-token and malformed-interpreter runtime cases remain untested.
+- Result: Valid imported class/interface references in JCAlgTest still install and execute; external class tokens outside an imported Export table fail preflight.
+- Decision: Continue RV-28 with exported field/method member-token validation and internal class/member references; then test malformed interpreter execution under sanitizers.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-export-token-vpcd-20261106.log`, SHA-256 `5401b45d0df8495fc31c5dca2127cc9dc51a4517bc3e4ee1cdf2bb78a36e622c`.

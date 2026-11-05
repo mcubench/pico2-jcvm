@@ -44,6 +44,27 @@ inline bool valid_import_tokens(const uint8_t *entries,
   return true;
 }
 
+inline bool valid_export_class_token(const std::size_t token,
+                                     const std::size_t export_count) noexcept {
+  return token < export_count;
+}
+
+template <typename ResolveExportToken>
+bool validate_external_class_tokens(const uint8_t *entries,
+                                    const std::size_t count,
+                                    ResolveExportToken resolve) {
+  if (entries == nullptr && count != 0) return false;
+  for (std::size_t index = 0; index < count; ++index) {
+    const uint8_t *entry = entries + index * 4;
+    if (entry[0] < 1 || entry[0] > 6) return false;
+    if ((entry[1] & 0x80u) != 0 &&
+        !resolve(entry[0], entry[1] & 0x7fu, entry[2])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 } // namespace jcvm::cap_constant_pool_validation
 
 #endif // JCVM_CAP_CONSTANT_POOL_VALIDATION_HPP

@@ -6907,3 +6907,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   ARM/RISC-V max_crypto builds pass. No physical flash was done.
 - **Limit:** This does not validate export class/member indices or internal
   class/member targets; those remain separate RV-28 work.
+
+## External CAP class tokens must be bounded in the imported Export table — 2026-11-06
+
+- **Finding:** A valid Import package slot does not establish that an external
+  ConstantPool class token exists in the imported package's Export table.
+  Runtime resolution bounds the export lookup, but install preflight should
+  reject invalid class links before calling applet INSTALL.
+- **Viable fix:** Resolve the imported package, apply the JC305 compatibility
+  map for uploaded packages, and require the resulting class token to be less
+  than Export.class_count. For `CONSTANT_Classref`, allow either a class or
+  interface mapping because the using opcode provides the distinction.
+- **Validation:** ASan/UBSan helper tests pass 16/16. The unchanged upstream
+  JCAlgTest VPCD run passes 15/15; PC, ARM, and RISC-V max_crypto builds pass.
+  VPCD log SHA-256:
+  `5401b45d0df8495fc31c5dca2127cc9dc51a4517bc3e4ee1cdf2bb78a36e622c`.
+- **Limit:** Static/instance field and method token validity, internal CP
+  offsets, and hostile interpreter runtime coverage remain open. No physical
+  firmware flash was performed.

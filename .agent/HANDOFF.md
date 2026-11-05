@@ -1,6 +1,30 @@
-# Active handoff — RV-28 ConstantPool linkage validation — 2026-11-06 00:31 CET
+# Active handoff — RV-28 external class-token validation — 2026-11-06 00:42 CET
 
-## Latest continuation — validate external ConstantPool import tokens — 2026-11-06 00:31 CET
+## Latest continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
+
+Install preflight now validates external ConstantPool class tokens against the
+target package's Export table. It resolves Import package tokens, applies
+JC305 class-token mapping for uploaded packages, and rejects a token outside
+`Export.class_count`. For ambiguous `CONSTANT_Classref`, either the class or
+interface mapping may satisfy the bound; runtime dispatch checks the actual
+class/interface use. Exported member tokens, internal targets, and malformed
+interpreter execution remain open.
+
+Tests: focused ASan/UBSan suite passes 16/16; PC emulator max_crypto build
+passes; unchanged JCAlgTest VPCD install/APDU suite passes 15/15; ARM and
+RISC-V max_crypto wrappers pass. VPCD log:
+`artifacts/logs/rv28-export-token-vpcd-20261106.log`, SHA-256
+`5401b45d0df8495fc31c5dca2127cc9dc51a4517bc3e4ee1cdf2bb78a36e622c`.
+No physical card was flashed.
+
+Next: validate imported static/instance field and method tokens using their
+Export records; then check internal ConstantPool targets and construct
+malformed interpreter runtime coverage. Preserve unrelated dirty worktree
+changes. This slice's commit is pending.
+
+## Previous continuation — validate external ConstantPool import tokens — 2026-11-06 00:31 CET
+
+## Previous continuation — validate external ConstantPool import tokens — 2026-11-06 00:31 CET
 
 RV-20261103-28 has a second validation slice. `validate_cap_imports` now
 checks all six ConstantPool entry kinds: when the reference discriminator marks

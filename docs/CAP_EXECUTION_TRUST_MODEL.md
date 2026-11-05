@@ -35,8 +35,12 @@ and size. This is structural screening only: it does not prove that each
 class, import, field, or method reference resolves to a compatible target.
 Install preflight also rejects external ConstantPool package tokens that do
 not identify an entry in the source CAP's Import component. It confirms every
-declared import resolves to an installed package. Export class/member token
-compatibility and internal class/member target validation remain open.
+declared import resolves to an installed package, and checks that external
+class tokens resolve within the imported package's Export table after JC305
+compatibility mapping. For ambiguous `CONSTANT_Classref` entries it accepts a
+valid class or interface token mapping; execution still validates the concrete
+reference type. Static/instance field and method member tokens, internal
+class/member targets, and malformed-interpreter runtime behavior remain open.
 
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's

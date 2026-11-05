@@ -41,6 +41,8 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
 }
 #endif
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_handlers/jc_cp.hpp"
+#include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/jc_import.hpp"
 #include "jc_handlers/package.hpp"
 
@@ -548,6 +550,53 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
         }
         return CapImportValidation::internal_error;
       }
+    }
+    if (constant_pool != nullptr) {
+      const auto *entries = reinterpret_cast<const uint8_t *>(
+          constant_pool->constant_pool);
+      const bool use_compatibility_tokens =
+          jcvm::usesJC305CompatibilityTokens(package);
+      const std::size_t entry_count = HTONS(constant_pool->count);
+      const bool exports_valid =
+          jcvm::cap_constant_pool_validation::validate_external_class_tokens(
+              entries, entry_count,
+              [&imports, use_compatibility_tokens](
+                  uint8_t reference_kind, uint8_t package_token,
+                  uint8_t source_class_token) {
+                const auto *imported_package =
+                    imports.getPackageAID(package_token);
+                const uint8_t imported_id =
+                    imports.getPackageIndex(imported_package);
+                const auto *exports =
+                    jcvm::Package(imported_id).getCap().getExport();
+                if (exports == nullptr) return false;
+
+                const uint8_t class_token =
+                    use_compatibility_tokens
+                        ? jcvm::remap_imported_class_token(
+                              *imported_package, source_class_token)
+                        : source_class_token;
+                const bool valid_class_token =
+                    jcvm::cap_constant_pool_validation::
+                        valid_export_class_token(class_token,
+                                                 exports->class_count);
+                // A CONSTANT_Classref can name either a class or an
+                // interface; the bytecode using it supplies that distinction.
+                // Accept either compatibility-token mapping here, and let
+                // opcode dispatch enforce the concrete type on resolution.
+                if (!valid_class_token &&
+                    reference_kind == JC_CP_TAG_CONSTANT_CLASSREF &&
+                    use_compatibility_tokens) {
+                  const uint8_t interface_token =
+                      jcvm::remap_imported_interface_token(
+                          *imported_package, source_class_token);
+                  return jcvm::cap_constant_pool_validation::
+                      valid_export_class_token(interface_token,
+                                               exports->class_count);
+                }
+                return valid_class_token;
+              });
+      if (!exports_valid) return CapImportValidation::internal_error;
     }
     imports.validateRemoteInterfaceReferences();
   } catch (...) {
