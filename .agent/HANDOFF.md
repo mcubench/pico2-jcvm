@@ -1,4 +1,4 @@
-# Current continuation — cross-AID VPCD and BOOTSEL visibility — 2026-11-05 02:47 CET
+# Current continuation — cross-AID VPCD and BOOTSEL visibility — 2026-11-05 03:20 CET
 
 The full cross-AID SIO VPCD regression passed `TEST:SUMMARY pass=34 fail=0`
 when run with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`,
@@ -22,9 +22,12 @@ confirms Descriptor loading is optional and the Method component lacks method
 offsets/bytecode lengths; Descriptor provides them (§6.10, §6.14). There is no
 safe per-method range to reconstruct from the standard Descriptor-free LOAD
 stream alone. The passing Descriptor-present run does not close this
-compatibility gap. The script's
-default 30-second APDU timeout is too short for this VM; retain the 90-second
-connect and 120-second APDU values for full regressions.
+compatibility gap. The original 30-second APDU timeout was too short for this
+VM. The executable wrapper `tools/test-sio-cross-aid-vpcd` now enforces the
+approved host-access path and defaults to 90 seconds to connect and 120 seconds
+per APDU. Its Descriptor-present run passed `TEST:SUMMARY pass=34 fail=0`; log
+`artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`. This is
+host-emulator evidence only.
 
 The user reported three boards in BOOTSEL, but elevated guest `lsusb` again
 listed only USB root hubs and the VirtualBox Tablet. The authorized PC/SC
@@ -33,13 +36,12 @@ in the VM, so no physical flash or runtime test occurred. Before physical work,
 refresh USB enumeration through the approved host-access path and use another
 board if any one disappears.
 
-This step updated `TODO.md` and `.agent/QKB.md`; no source code changed, so
-builds were not rerun. The VPCD pass is a local-emulator result only. The active
-source worktree still contains unrelated changes; preserve them and stage only
-the documentation/progress files for this validation record. Continue by
-isolating the Descriptor-omitted service INSTALL failure; if hardware becomes
-guest-visible, perform separately requested physical tests only after current
-ARM and RISC-V builds pass.
+The wrapper/timing change and its progress record are committed as a separate
+logical step; no firmware source changed, so target builds were not rerun. The
+active source worktree still contains unrelated changes; preserve them and
+stage only files belonging to each new step. Continue with another open
+implementation priority offline; if hardware becomes guest-visible, perform
+physical tests only after current ARM and RISC-V builds pass.
 
 ---
 

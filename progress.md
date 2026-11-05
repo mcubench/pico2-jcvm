@@ -22020,3 +22020,14 @@
 - Decision: Keep the guard fail-closed. The remaining work is to provide a separate verifiable method-bound source or a distinct CAP verification/trust pipeline; this does not equate GlobalPlatform SCP authentication with CAP safety. Continue other project priorities offline.
 - Commit: `a7de1f2`
 - Artifacts/logs: [Oracle Java Card 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf); [GlobalPlatformPro `CAPFile.getCode()`](https://github.com/martinpaljak/capfile/blob/master/src/main/java/pro/javacard/CAPFile.java); VPCD failure log `artifacts/logs/sio-cross-aid-vpcd-20261105T013654Z.log`.
+
+## 2026-11-05 Make cross-AID VPCD regression repeatable 14 minutes
+
+- Step/experiment: `ctx-20261105-cross-aid-test-wrapper-timeouts`
+- When: '2026-11-05 03:06 CET' - '2026-11-05 03:20 CET'
+- Change: Added executable `tools/test-sio-cross-aid-vpcd`, which applies the repository's required USB host-access gate before launching the VPCD test. Changed default connection/APDU deadlines from 45/30 seconds to 90/120 seconds, matching measured runtime on this VM.
+- Validation: `git diff --check -- tools/test-sio-cross-aid-vpcd tools/tests/sio_cross_aid_vpcd_test.py` passed. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. No target build was run because only the host test entry point and timeout defaults changed.
+- Result: The complete Descriptor-present three-package SIO regression is runnable through one documented host-access-gated wrapper without per-run timeout overrides. Descriptor-omitted INSTALL still returns `6A80` and remains open.
+- Decision: Use the wrapper for future cross-AID VPCD regression runs; continue tracking Descriptor-omitted CAP execution as a separate firmware compatibility issue.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`.

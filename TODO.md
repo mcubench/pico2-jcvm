@@ -780,6 +780,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   component alone does not carry that information. The current default VPCD
   script has a 30-second APDU deadline that is
   too short for this VM; use 90 seconds to connect and 120 seconds per APDU.
+  The repeatable entry point is now `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-sio-cross-aid-vpcd`; it enforces the elevated host-access path
+  and uses those longer defaults. Latest run passed 34/34 with Descriptor
+  included; the Descriptor-omitted install failure remains open.
   A new test-only SIO method passes a caller-owned byte array into native
   `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner
   before resolving the compact handle in the service heap; the applet catches

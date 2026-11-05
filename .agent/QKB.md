@@ -6333,9 +6333,14 @@ original terminology/status; check current summary and later fixes before reuse.
   authentication with CAP safety. This remains open; the passing VPCD result
   used Descriptor-present fixtures.
 - **Harness timing:** The test's default 30-second APDU timeout is too short
-  for the local VM. Use `SIO_CROSS_AID_CONNECT_TIMEOUT_S=90` and
-  `SIO_CROSS_AID_APDU_TIMEOUT_S=120`; earlier 30-second attempts expired during
-  service LOAD and produced misleading connection/LOAD timeout reports.
+  for the local VM. The script defaults are now 90 seconds to connect and 120
+  seconds per APDU. Use the new host-access-gated entry point
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd`; this avoids
+  accidentally invoking the Python integration script from a restricted
+  context. Earlier 30-second attempts expired during service LOAD and produced
+  misleading connection/LOAD timeout reports. Through the wrapper, the full
+  Descriptor-present regression again passed 34/34; log
+  `artifacts/logs/sio-cross-aid-vpcd-20261105T021333Z.log`.
 - **Device availability:** User reported all three boards in BOOTSEL. Elevated
   guest `./tools/env lsusb` still listed only root hubs and the VirtualBox USB
   Tablet. `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero CCID devices;
