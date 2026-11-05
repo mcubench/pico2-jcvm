@@ -19,7 +19,7 @@ already validated with the implementation.
 
 Next: RV-20261103-28, uploaded-CAP execution trust boundary. Preserve unrelated
 worktree changes. RV-27 progress/TODO/QKB/handoff records are updated; this
-validation commit is pending.
+validation commit `2ada2e15` (Validate VPCD applet restore integration).
 
 # Prior continuation — CCID extension-error recovery validated — 2026-11-06 00:09 CET
 

@@ -22471,3 +22471,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark RV-20261103-27 complete; continue to RV-20261103-28 (CAP execution trust boundary).
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv27-pc-vpcd-20261106.log`, SHA-256 `c35ad52fd4b3d85e7de8c143abbb32952713b7afcc8e547693ecb07117435d72`.
+
+- Commit resolved for `rv27-vpcd-production-callback-20261106`: `2ada2e15` (Validate VPCD applet restore integration).
