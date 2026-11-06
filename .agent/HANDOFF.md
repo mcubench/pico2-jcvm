@@ -14,7 +14,7 @@ rebuilt `symm_crypto` PC VM. ARM `current` and RISC-V `current` builds pass.
 ARM image ends at `0x100D4B48`, leaving 177,336 bytes. No physical device was
 used. Python syntax and scoped CRLF-aware diff checks pass.
 
-Source/test commit: pending; progress record is at the end of `progress.md`.
+Source/test commit: `4234bf7f`; progress record is at the end of `progress.md`.
 
 Current API Checksum factory branches both throw `NO_SUCH_ALGORITHM`, and no
 AEAD provider is enabled; leave those out of runtime result coverage until the
