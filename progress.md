@@ -22827,3 +22827,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep this focused regression. Diagnose the full-suite Signature failure before relying on the suite; then continue remaining CTX-02 producers and GC-root lifetime coverage. Rebuild the PC VM before each native VPCD run because the test wrapper does not build it.
 - Commit: pending.
 - Artifacts/logs: focused VPCD `artifacts/logs/sio-cross-aid-vpcd-20261106T044216Z.log`, SHA-256 `e219531ad52019436da119d423a5d749826952dfd9bb689eaf26caaa46555cae`; full suite failure `artifacts/logs/sio-cross-aid-vpcd-20261106T044305Z.log`, SHA-256 `3e8645d7789f9d65ad57b4d7404d547d309a4aac84ca01e281f463f7ab901a8b`. ARM UF2: 1,742,336 bytes, SHA-256 `766edd21f988cbb34646bc9759f34d43c307e53fb5dd2f5ffc5eb39077d9a56b`; PC emulator SHA-256 `07e5ff87f8bf783312466e55e3b69a087e687fdebaf852564c58240187dbbf57`. Not flashed.
+
+## 2026-11-06 Diagnose SIO AES-MAC profile mismatch 11 minutes
+
+- Step/experiment: `ctx02-sio-signature-profile-requirement-20261106`
+- When: '2026-11-06 06:00 CET' - '2026-11-06 06:11 CET'
+- Change: Diagnosed the prior full-suite failure as a profile mismatch: `current` disables `signature_aes_mac_128_nopad`, and the service correctly reports `CryptoException.NO_SUCH_ALGORITHM` (reason 3). Documented that the cross-AID fixture requires a rebuilt `symm_crypto` or `max_crypto` PC VM. Added an isolated Signature APDU mode to the fixture runner to make this dependency easy to verify. No firmware C++ change was needed.
+- Validation: `./tools/build-pc --profile symm_crypto` passes and enables 46 capabilities. The isolated AES-MAC Signature SIO case passes `TEST:SUMMARY pass=1 fail=0`; the full cross-AID suite passes `TEST:SUMMARY pass=34 fail=0`, including the new `makeGlobalArray()` object-result case. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and CRLF-aware `git diff --check` pass. ARM and RISC-V `current` builds passed in the immediately preceding implementation step. No physical device was used.
+- Result: The VM behavior is correct for both profiles: `current` rejects unsupported AES-MAC; `symm_crypto` completes all 34 cross-AID checks.
+- Decision: Keep profile selection explicit for the SIO fixture and proceed with remaining CTX-02 result producers / object rooting. Emulator-only evidence; hardware acceptance remains open.
+- Commit: pending.
+- Artifacts/logs: isolated Signature VPCD `artifacts/logs/sio-cross-aid-vpcd-20261106T050746Z.log`, SHA-256 `5ccdb06c6cab916bda4cdb67b24d6302e056e3846825f6fdcba5b9e071cefb45`; full 34/34 VPCD `artifacts/logs/sio-cross-aid-vpcd-20261106T050831Z.log`, SHA-256 `69ef5a3a882075ed3ada5711bfaa1802c1b4deeddd39dd61a6a1594fa57db9da`. PC VM SHA-256 `85f71ad0c4cc5282907af754f52aa1f072d195ea8722c318ee9f415eaff26a08`; generated profile manifest SHA-256 `2fc7b146e6f59a4d49b6c4e4604f989f8d0e36468d3c7cfd32d997881143b95d`.

@@ -854,10 +854,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   `JCSystem.makeGlobalArray()` now resets stale state and publishes its returned
   global array as an object result. A three-package interpreted fixture returns
   a global byte array from the service and the caller asserts its identity after
-  SIO; the isolated VPCD case passes. The rebuilt PC full SIO suite currently
-  fails at the AES-MAC Signature probe with `6F00` before reaching
-  the new case; diagnose that integration regression before treating the full
-  suite as green.
+  SIO; the isolated VPCD case passes. The full cross-AID suite passes 34/34 on a
+  rebuilt `symm_crypto` PC VM. Its AES-MAC Signature cases are not supported by
+  `current`, which correctly returns `CryptoException.NO_SUCH_ALGORITHM`; use
+  `symm_crypto` or `max_crypto` for this suite.
   Remaining: exercise other result producers (PIN, random-data,
   checksum, AEAD and key APIs where enabled), verify GC rooting of object
   results after ordinary locals are dropped through interpreted SIO, and

@@ -1,4 +1,4 @@
-# Active handoff — SensitiveResult for `makeGlobalArray` — 2026-11-06 05:45 CET
+# Active handoff — SIO SensitiveResult profile validation — 2026-11-06 06:11 CET
 
 `JCSystem.makeGlobalArray()` now clears stale `SensitiveResult` state and
 publishes the returned global array as an object result in native
@@ -9,19 +9,22 @@ fixture draft used an `Object[]` containing a nested byte array; the VM
 correctly rejected that unsupported global-array nesting. The test now uses a
 global `byte[]`.
 
-Builds: `./tools/build-pc --profile current`, `./tools/build arm`, and
-`./tools/build riscv` all pass. ARM reports 177,888 bytes remaining in its
-firmware window. The full cross-AID suite fails at the AES-MAC Signature probe
-before reaching the new APDU: `6F00`, runtime exception 29 (`SecurityException`),
-opcode `8E`, PC `77CC0006`. This remains undiagnosed. See progress and QKB; do
-not claim the full suite passes. The first runs used a stale PC binary because
-the test wrapper does not build it; rebuild PC before rerunning. Source/test
-commit: `438e8581` (`Track makeGlobalArray SensitiveResult`).
+Builds: PC `symm_crypto`, ARM `current`, and RISC-V `current` pass. ARM reports
+177,888 bytes remaining. The full VPCD suite passes 34/34 when run against the
+rebuilt `symm_crypto` PC VM, including AES-MAC Signature and the new global-array
+case. The isolated Signature case passes too. Running the same suite with PC
+`current` correctly fails because that profile disables AES-MAC; the VM reports
+`CryptoException.NO_SUCH_ALGORITHM` (reason 3). This was a test-profile mismatch,
+not a runtime regression. The test harness now documents the required profile
+and includes an isolated Signature mode.
 
-Next: inspect why the full SIO Signature probe fails, then rerun the entire suite
-against a fresh PC build. Keep current unrelated worktree edits unstaged. After
-that, continue CTX-02 coverage for remaining native result producers and GC
-rooting. No physical device was used in this step.
+The `makeGlobalArray` implementation/test commit is `438e8581`; its metadata
+follow-up is `fc268448`. This profile-diagnosis and harness-clarification step
+is being recorded separately. No physical device was used.
+
+Next: continue CTX-02 with the remaining native result producers (PIN,
+random-data, checksum, AEAD and key APIs), then extend GC-rooting coverage for
+object results after locals are dropped. Preserve unrelated dirty files.
 
 # Active handoff — exception table protected ranges — 2026-11-06 05:20 CET
 

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Exercise successful cross-AID Shareable dispatch through the PC VPCD."""
+"""Exercise cross-AID Shareable dispatch through the PC VPCD.
+
+Build the PC VM with ``symm_crypto`` or ``max_crypto`` first; the fixture's
+AES-MAC Signature cases are intentionally unsupported by the ``current``
+profile.
+"""
 
 from __future__ import annotations
 
@@ -288,6 +293,19 @@ def main() -> int:
                     )
                 print("TEST:PASS interpreted JCSystem.makeGlobalArray result "
                       "is assertable after the SIO context switch")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_SIGNATURE") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8028000000"),
+                    "AES-MAC Signature SensitiveResult across SIO"
+                )
+                if response != bytes.fromhex("6A509000"):
+                    raise RuntimeError(
+                        "isolated Signature SensitiveResult returned "
+                        f"{response.hex().upper()}, expected 6A509000"
+                    )
+                print("TEST:PASS isolated AES-MAC Signature SIO assertion")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":

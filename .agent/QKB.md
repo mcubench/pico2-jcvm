@@ -4,12 +4,15 @@
   existing `build/choupi-pc/choupi` binary; it does not build the PC VM. After
   native edits, running the wrapper alone can exercise stale firmware and
   produce misleading results.
-- **Viable solution:** Run `./tools/build-pc --profile current` after native
-  changes, then `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd`.
-  The wrapper's host-access requirement still applies. In this run, the focused
-  `SIO_CROSS_AID_ONLY_GLOBAL_ARRAY=1` case passed after rebuilding. The full
-  suite then failed at its AES-MAC Signature case (`6F00`, runtime exception
-  29, opcode `8E`); that failure is not diagnosed yet and remains open.
+- **Viable solution:** Run `./tools/build-pc --profile symm_crypto` (or
+  `max_crypto`) after native changes, then
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd`. The wrapper's
+  host-access requirement still applies. This fixture includes AES-MAC
+  Signature calls; profile `current` correctly rejects that algorithm with
+  `CryptoException.NO_SUCH_ALGORITHM` (reason 3), so its full suite cannot pass
+  under that profile. With a rebuilt `symm_crypto` VM, the isolated Signature
+  case and the full suite pass (34/34). The isolated global-array SensitiveResult
+  case also passes with a rebuilt PC VM.
 
 ## Runtime USB visible but one of two JCVM boards is missing from PC/SC — observed 2026-11-05
 
