@@ -19,13 +19,13 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. On 2026-11-05 15:38 CET, elevated
-enumeration found runtime `2e8a:0009` JCVM boards `D92E743D5F640C0F` and
-`2BED26ED20556535`; neither was in BOOTSEL. PC/SC listed D92 and omitted 2BED.
-The third expected board was not visible in this refresh. D92's flash/runtime
-checks are recorded in `.agent/HANDOFF.md`; refresh USB/PC/SC immediately
-before further hardware work. See `.agent/QKB.md` for USB/PCSC diagnostic
-history.
+Physical availability is volatile. On 2026-11-06 01:47 CET, elevated
+enumeration found three runtime `2e8a:0009` JCVM boards:
+`8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`; none was in
+BOOTSEL. The authorized helper granted access to all three USB nodes, but
+PC/SC listed only D92. Refresh USB/PC/SC immediately before further hardware
+work; see `.agent/HANDOFF.md` and `.agent/QKB.md` for the current observation
+and diagnostic history.
 
 ## How to use this backlog
 

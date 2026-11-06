@@ -22597,3 +22597,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv28-descriptor-static-method-vpcd-20261106.log`, SHA-256 `444284a42b9c84b8153618cf91b06d3adf81428f783a1fda3ea7ac09320c3fa2`.
 
 - Commit resolved for `rv28-descriptor-static-method-offset-validation-20261106`: `5836a12f88cdea04cd5bbdc8e09e66d0aad666e8` (Validate Descriptor static method targets).
+
+## 2026-11-06 Refresh three-device PC/SC state and assess Descriptor-free method targets 8 minutes
+
+- Step/experiment: `rv28-descriptor-free-target-source-and-reader-refresh-20261106`
+- When: '2026-11-06 01:40 CET' - '2026-11-06 01:48 CET'
+- Change: Recorded the current three-board USB/PCSC discrepancy in HANDOFF/QKB/TODO: three unique JCVM USB serials enumerate, the authorized helper grants all three device nodes, but only D92 appears in pcsc_scan. Documented why Descriptor-free ConstantPool static method offsets cannot independently prove their own exact method starts; retained the existing bounded component/header/next-target control and marked stronger exact-start proof open.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` with `PICO2_HOST_USB_ACCESS=1` granted three nodes; elevated `lsusb -v -d 2e8a:0009` identified serials `8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`; elevated `pcsc_scan -r` listed only D92 and Virtual PCD 00/01. Source inspection confirmed Descriptor supplies exact offsets, while Descriptor-free private/internal static offsets originate in ConstantPool records. No APDU, flash, source build, or test was performed.
+- Result: Three devices are USB-visible and running JCVM CCID firmware, but two are unavailable through PC/SC in this guest. Descriptor-free exact-start validation has no independent metadata source established; no code change is justified from the current evidence.
+- Decision: Keep D92 as the only present physical PC/SC target. Diagnose missing reader registration separately; continue RV-28 with malformed interpreter execution coverage and do not claim exact method starts for Descriptor-free LOADs.
+- Commit: pending.
+- Artifacts/logs: live command output only; no persistent log.

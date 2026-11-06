@@ -7045,3 +7045,34 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limit:** Descriptor-free LOAD still lacks authoritative private-method
   starts; malformed runtime execution and physical hostile-CAP recovery remain
   open.
+
+## Three JCVM USB devices but only one PC/SC reader — 2026-11-06
+
+- **Observation:** The authorized reader helper granted pcscd access to three
+  USB nodes. `lsusb -v -d 2e8a:0009` reported runtime JCVM CCID devices with
+  unique serials `8E464F4E2BBC0A19`, `2BED26ED20556535`, and
+  `D92E743D5F640C0F`. `pcsc_scan -r` listed only D92 and two VPCD readers.
+- **Effect:** USB enumeration does not make the first two boards usable by
+  SmartcardIO/GPPro. Do not attribute this to firmware without a transaction
+  or driver-level failure trace.
+- **Next:** Diagnose pcscd reader discovery/access for the two missing
+  interfaces; use D92 only for physical APDU tests and keep source validation
+  offline meanwhile. No flash or APDU was performed in this observation.
+
+## Descriptor-free StaticMethodref starts lack an independent metadata source — 2026-11-06
+
+- **Finding:** CAP `Descriptor` records carry authoritative method-entry
+  offsets. When absent (as in the standard GPPro LOAD path), the Class,
+  Applet, and Export structures provide starts for their declared callable
+  methods, but private/internal static call targets are supplied by the same
+  uploaded ConstantPool references being validated. Treating those CP offsets
+  as proof of themselves cannot establish that a target points to a genuine
+  header rather than bytes inside another body.
+- **Current control:** Descriptor-free invocation remains bounded by the
+  Method component, checks that the selected header fits, and bounds execution
+  using the next enumerated callable offset. Descriptor-backed LOADs receive
+  exact method-start matching.
+- **Decision:** Do not add a fabricated exact-start guarantee. A stronger
+  proof needs either Descriptor-preserving loading or an independently
+  specified/verifiable method stream format. Keep this trust-model gap open
+  while continuing malformed interpreter execution coverage.

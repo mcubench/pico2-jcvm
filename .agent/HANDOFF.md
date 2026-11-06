@@ -1,5 +1,18 @@
 # Active handoff — RV-28 Descriptor-backed StaticMethodref validation — 2026-11-06 01:40 CET
 
+## Latest device visibility refresh — 2026-11-06 01:47 CET
+
+The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper granted
+pcscd access to three USB nodes. `lsusb -v -d 2e8a:0009` identified three
+runtime JCVM CCID devices by unique serials `8E464F4E2BBC0A19`,
+`2BED26ED20556535`, and `D92E743D5F640C0F`; none are in BOOTSEL. However,
+`pcsc_scan -r` exposes only D92 plus the two VPCD readers. Thus the boards are
+USB-visible, while two are not currently usable through PC/SC. No APDU, flash,
+or firmware attribution was performed. This matches a prior unresolved
+multiple-reader enumeration symptom; do not call it firmware failure. Continue
+the RV-28 Descriptor-free method-target investigation offline and refresh the
+helper before any later hardware action.
+
 ## Latest continuation — match StaticMethodref offsets to Descriptor — 2026-11-06 01:40 CET
 
 When Descriptor is present, every internal StaticMethodref now must match
@@ -20,6 +33,14 @@ Next: find a safe authoritative method-start map for Descriptor-free CAPs, then
 add malformed interpreter-execution coverage. Preserve unrelated dirty changes.
 This slice's commit is `5836a12f88cdea04cd5bbdc8e09e66d0aad666e8` (Validate
 Descriptor static method targets).
+
+Descriptor-free investigation: standard GPPro LOAD omits Descriptor. Class,
+Applet, and Export tables independently identify listed callable methods, but
+private/internal static targets are introduced through the ConstantPool offsets
+under validation. Those offsets cannot self-authenticate an exact method
+header. Current enforcement therefore stays at component/header bounds and
+next enumerated target bounds; no exact-start claim is made. Stronger assurance
+requires preserving Descriptor or an independently verifiable stream format.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 
