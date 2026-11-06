@@ -22869,5 +22869,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build-pc --profile symm_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Focused `SIO_CROSS_AID_ONLY_PIN=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed 34/34. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped CRLF-aware diff checks passed. ARM image ends at `0x100D4A30`, leaving 177,616 bytes. No physical test was run.
 - Result: All selected interface-based PIN result producers retain the expected SensitiveResult through the SIO context switch. A first run against a stale PC emulator failed OwnerPINx assertion; rebuilding the PC VM made the focused and full tests pass. `.agent/QKB.md` already records this stale-emulator procedure.
 - Decision: Continue CTX-02 with concrete-class PIN `invokevirtual` coverage, then RandomData/checksum/AEAD. Keep physical acceptance open.
-- Commit: pending.
+- Commit: `35bbbfaf`.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T075231Z.log`, SHA-256 `a161862ff4b94481871302b6793e611f5e11af064e8c6163e4661f3140c48465`; full 34/34 `artifacts/logs/sio-cross-aid-vpcd-20261106T075444Z.log`, SHA-256 `1ab9c9fafabf00e7cc7eca973237a44fcae35eb46d2a94aa76bc8f35057f348c`.

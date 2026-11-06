@@ -17,7 +17,7 @@ an old PC emulator and failed; rebuilt PC passed. QKB already records that the
 VPCD wrapper consumes an existing PC binary, so rebuild with
 `./tools/build-pc --profile symm_crypto` after native edits.
 
-Source/test commit: pending; progress record is at the end of `progress.md`.
+Source/test commit: `35bbbfaf`; progress record is at the end of `progress.md`.
 
 Next: add equivalent coverage for PIN methods called through concrete-class
 `invokevirtual` (current fixture calls the sensitive methods through
