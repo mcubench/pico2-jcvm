@@ -22991,3 +22991,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep both Descriptor modes in regression. Next add malformed-CAP cases for incomplete structural entry tables and repeat the physical GPPro install when a Pico reader is registered.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`; no hardware log.
+
+## 2026-11-06 Recheck Descriptor-present SIO path 5 minutes
+
+- Step/experiment: `ctx01-descriptor-present-bounds-revalidation-20261106`
+- When: '2026-11-06 12:06 CET' - '2026-11-06 12:11 CET'
+- Change: Revalidated the Descriptor-present three-package VPCD case after the descriptor-free run; no runtime or fixture source changed. Added its evidence to QKB and HANDOFF.
+- Validation: `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. The preceding Descriptor-omitted run also passed 34/34. No physical Pico was available in PC/SC; `pcsc_scan -r` timed out without output after the authorized helper refreshed USB access.
+- Result: Both Descriptor-present and Descriptor-omitted method-bound paths complete the same three-package SIO and lifecycle suite successfully. Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`, SHA-256 `7c4d8b53dd82cc0fcb03f01a4a4f7cb227725cc0eb90b90a77454eb8e26c2aba`.
+- Decision: Keep both modes as regression gates; proceed with hostile-CAP structural-entry validation and repeat physical GPPro install once PC/SC is responsive.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`; no hardware log.

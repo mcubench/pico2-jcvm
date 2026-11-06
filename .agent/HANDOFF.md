@@ -10,7 +10,10 @@ Validated through the authorized VPCD wrapper using its default mode, which
 omits Descriptor like standard GPPro `CAPFile.getCode()`: the three-package
 cross-AID suite passes 34/34, including service and client INSTALL, call
 coverage and cleanup. The separate Descriptor-included 34/34 result is recorded
-in the earlier handoff entry. Log:
+in a companion run immediately afterward. Descriptor-included log:
+`artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`, SHA-256
+`7c4d8b53dd82cc0fcb03f01a4a4f7cb227725cc0eb90b90a77454eb8e26c2aba`. The
+Descriptor-omitted log:
 `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`, SHA-256
 `cf16e9c3786b41220256e712701e76b172a9b8bcb0c59b7a3710fd7f6e298910`.
 

@@ -79,9 +79,13 @@
 - **Viable workaround:** Keep the descriptor-free structural-offset fallback
   and its offset helper tests. The standard-GPPro-shaped three-package VPCD
   suite now passes 34/34 with Descriptor omitted; the separate Descriptor-
-  included run also passes 34/34. Latest omitted run log:
+  included run also passes 34/34. Omitted run log:
   `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`, SHA-256
   `cf16e9c3786b41220256e712701e76b172a9b8bcb0c59b7a3710fd7f6e298910`.
+- **Descriptor-included regression:**
+  `artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`, SHA-256
+  `7c4d8b53dd82cc0fcb03f01a4a4f7cb227725cc0eb90b90a77454eb8e26c2aba`
+  (`TEST:SUMMARY pass=34 fail=0`).
 - **Remaining:** Re-run the Descriptor-free installation on a Pico flashed with
   the fallback, and add malformed-CAP tests showing that missing/incomplete
   entry metadata fails closed. Exact bytecode lengths are available in
