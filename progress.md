@@ -22530,3 +22530,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RV-28 with internal ConstantPool targets and malformed interpreter runtime tests; physical hostile-CAP recovery remains unverified.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-instance-virtual-vpcd-20261106.log`, SHA-256 `71662b7c9bae81fbe2d9e61ccffb0671627fd1cc0e77178d7492a6317a06b858`.
+
+- Commit resolved for `rv28-instance-virtual-token-validation-20261106`: `6f7a37df2474a855286a44ca772b9c8440f2a8e5` (Validate external CAP instance and virtual tokens).

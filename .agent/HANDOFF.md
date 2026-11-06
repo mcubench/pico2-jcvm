@@ -19,7 +19,8 @@ No physical flash was performed.
 
 Next: validate internal ConstantPool targets and design malformed interpreter
 execution tests. Preserve unrelated dirty worktree changes. This slice's commit
-will be recorded in progress.md after commit.
+is `6f7a37df2474a855286a44ca772b9c8440f2a8e5` (Validate external CAP
+instance and virtual-method tokens).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 
