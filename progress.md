@@ -22989,7 +22989,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-cap-method-body-bounds` passed 11/11. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed 34/34 in the default Descriptor-omitted mode. No target build or physical test was run because firmware was unchanged and the current PC/SC inventory has no Pico reader.
 - Result: Standard-GPPro-shaped Descriptor-free contract/service/client LOAD and INSTALL now passes in VPCD; the earlier physical failure predates this fallback. Log `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`, SHA-256 `cf16e9c3786b41220256e712701e76b172a9b8bcb0c59b7a3710fd7f6e298910`.
 - Decision: Keep both Descriptor modes in regression. Next add malformed-CAP cases for incomplete structural entry tables and repeat the physical GPPro install when a Pico reader is registered.
-- Commit: `pending`
+- Commit: `142243b5`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`; no hardware log.
 
 ## 2026-11-06 Recheck Descriptor-present SIO path 5 minutes
@@ -23000,7 +23000,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. The preceding Descriptor-omitted run also passed 34/34. No physical Pico was available in PC/SC; `pcsc_scan -r` timed out without output after the authorized helper refreshed USB access.
 - Result: Both Descriptor-present and Descriptor-omitted method-bound paths complete the same three-package SIO and lifecycle suite successfully. Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`, SHA-256 `7c4d8b53dd82cc0fcb03f01a4a4f7cb227725cc0eb90b90a77454eb8e26c2aba`.
 - Decision: Keep both modes as regression gates; proceed with hostile-CAP structural-entry validation and repeat physical GPPro install once PC/SC is responsive.
-- Commit: `pending`
+- Commit: `9ce3959f`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`; no hardware log.
 
 ## 2026-11-06 Reject unlisted Descriptor-free install offset 6 minutes
@@ -23011,7 +23011,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. Descriptor-free `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_UNLISTED_INSTALL_OFFSET=1 ... ./tools/test-sio-cross-aid-vpcd` passed; the same with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1` passed. Each VPCD case reported `TEST:SUMMARY pass=1 fail=0`; generated CAP LOAD succeeded and the malformed Applet INSTALL returned `6A80`.
 - Result: Both the structural-offset fallback and Descriptor lookup reject unlisted interior method starts before executing them. The candidate offset was `0x01D1`. Descriptor-free log `artifacts/logs/sio-cross-aid-vpcd-20261106T111814Z.log` SHA-256 `58adf2a276978085e41cc40075ceab0494fb3a039eddaef6942dc2282dfaa306`; Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T111843Z.log` SHA-256 `fda0b3e4da852740e6cc65edcb76a00d0f9f5afe250007e478ed7094be44dab2`.
 - Decision: Keep both negative cases. Next cover missing/incomplete Class, ConstantPool and Export entries; repeat GPPro LOAD/INSTALL on Pico when PC/SC responds.
-- Commit: `pending`
+- Commit: `e2b9867d`
 - Artifacts/logs: both VPCD logs listed above; no hardware log.
 
 ## 2026-11-06 Clarify malformed offset fixture description 1 minute
@@ -23022,5 +23022,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. No runtime behavior changed, so the VPCD result remains from the immediately preceding two-mode run.
 - Result: Test description now matches what the fixture actually guarantees; it does not claim the offset is an actual NOP instruction.
 - Decision: Keep the negative guard test and continue hostile structural-entry coverage.
-- Commit: `pending`
+- Commit: `0dd38b4a`
 - Artifacts/logs: VPCD logs from the preceding record; no new run.
