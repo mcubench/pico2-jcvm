@@ -23079,3 +23079,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close the no-DTR diagnostic subgate. Keep HOST-02 open for at least three Windows cold reconnect timings without a serial client; PC/SC hardware checks remain blocked by reader registration.
 - Commit: `pending`
 - Artifacts/logs: `build/arm/pico2_choupi_debug_serial_wait_30000ms.uf2`, both architecture build provenance files, and `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.
+
+## 2026-11-06 Cover empty Export method table entries in SIO CAP regression 10 minutes
+
+- Step/experiment: `ctx01-empty-export-class-table-20261106`
+- When: '2026-11-06 13:05 CET' - '2026-11-06 13:15 CET'
+- Change: Added `SIO_CROSS_AID_TEST_EMPTY_EXPORT_TABLE=1`, which removes the generated service CAP's sole Export class record after verifying it has no field/method entries, sets `class_count=0`, and updates the Directory's Export component size. Upstream CAP archives and runtime source are unchanged.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. Focused host-access VPCD LOAD and INSTALL passed with `TEST:SUMMARY pass=1 fail=0`. The normal Descriptor-free three-package cross-AID VPCD suite passed `TEST:SUMMARY pass=34 fail=0`, including cleanup. No ARM/RISC-V build was needed because runtime source did not change. Physical testing was unavailable: three runtime Pico USB nodes received access, but `pcsc_scan -r` listed no Pico reader.
+- Result: The method-offset fallback accepts a structurally empty optional Export class table and still completes a service applet INSTALL. Focused log `artifacts/logs/sio-cross-aid-vpcd-20261106T121242Z.log`, SHA-256 `b13d09f269e687cd6c59bd41261e6a085c979e2e93b5ce01580f97d8b83b0c51`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261106T121319Z.log`, SHA-256 `409c417d789dfbfca12045844d268396b75010172607c55e36caf90e1cd8df85`.
+- Decision: Keep this inverse Export regression alongside zero-offset rejection. Whole-entry omission coverage for Class/ConstantPool and physical standard-GPPro validation remain open.
+- Commit: `pending`
+- Artifacts/logs: The two VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.

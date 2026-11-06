@@ -1,4 +1,20 @@
-# Current handoff — diagnostic no-DTR deadline passed; normal empty-card image restored — 2026-11-06 13:04 CET
+# Current handoff — zero-entry Export table case passes VPCD — 2026-11-06 13:15 CET
+
+Added opt-in `SIO_CROSS_AID_TEST_EMPTY_EXPORT_TABLE=1`. It removes the service
+CAP's sole Export class record (which has no fields or methods), sets Export
+`class_count` to zero and updates the Directory size. CAP LOAD and service
+Applet INSTALL both pass (`TEST:SUMMARY pass=1 fail=0`). The generated fixture
+is test-only; upstream CAPs and runtime source are unchanged. Focused log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T121242Z.log`, SHA-256
+`b13d09f269e687cd6c59bd41261e6a085c979e2e93b5ce01580f97d8b83b0c51`.
+
+The normal Descriptor-free three-package cross-AID VPCD suite also passes
+34/34 at `artifacts/logs/sio-cross-aid-vpcd-20261106T121319Z.log`, SHA-256
+`409c417d789dfbfca12045844d268396b75010172607c55e36caf90e1cd8df85`.
+Remaining method-table work is whole-entry omission for Class/ConstantPool;
+physical GPPro revalidation requires a Pico reader in `pcsc_scan -r`.
+
+# Previous active handoff — diagnostic no-DTR deadline passed; normal empty-card image restored — 2026-11-06 13:04 CET
 
 Fresh ARM/RISC-V `max_crypto` diagnostic builds with a 30,000 ms CDC wait
 passed. Diagnostic image SHA-256:

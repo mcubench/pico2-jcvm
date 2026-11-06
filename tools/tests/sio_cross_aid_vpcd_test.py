@@ -447,6 +447,64 @@ def inject_zero_exported_static_method_offset(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def remove_empty_export_class_records(code: bytes) -> bytes:
+    """Drop Export class records that have no fields or methods."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = code[offset]
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    if offset != len(code):
+        raise RuntimeError("unaccounted CAP code bytes")
+
+    export_index = next((i for i, component in enumerate(components)
+                         if component[0] == 10), None)
+    directory_index = next((i for i, component in enumerate(components)
+                            if component[0] == 2), None)
+    if export_index is None or directory_index is None:
+        raise RuntimeError("test CAP lacks Export or Directory component")
+    export = components[export_index]
+    if len(export) < 4 or export[3] == 0:
+        raise RuntimeError("Export component has no class records")
+    cursor = 4
+    for _ in range(export[3]):
+        if len(export) - cursor < 4:
+            raise RuntimeError("truncated Export class record")
+        fields = export[cursor + 2]
+        methods = export[cursor + 3]
+        record_size = 4 + 2 * (fields + methods)
+        if record_size > len(export) - cursor:
+            raise RuntimeError("Export class record exceeds component")
+        if fields or methods:
+            raise RuntimeError("cannot remove a populated Export class record")
+        cursor += record_size
+    if cursor != len(export):
+        raise RuntimeError("Export component has trailing class-table data")
+
+    old_size = int.from_bytes(export[1:3], "big")
+    if old_size != len(export) - 3:
+        raise RuntimeError("Export component size mismatch")
+    components[export_index] = bytearray(b"\x0A\x00\x01\x00")
+    directory = components[directory_index]
+    directory_size_offset = 3 + 9 * 2
+    if len(directory) < directory_size_offset + 2:
+        raise RuntimeError("Directory lacks Export component size field")
+    declared = int.from_bytes(
+        directory[directory_size_offset:directory_size_offset + 2], "big"
+    )
+    if declared != old_size:
+        raise RuntimeError("Directory Export size does not match component")
+    directory[directory_size_offset:directory_size_offset + 2] = b"\x00\x01"
+    return b"".join(bytes(component) for component in components)
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -515,6 +573,21 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get("SIO_CROSS_AID_TEST_EMPTY_EXPORT_TABLE") == "1":
+                empty_export_code = remove_empty_export_class_records(service[0])
+                vpcd.load_package(scp, empty_export_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0]
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "INSTALL with an empty Export class table returned "
+                        f"{response[-2:].hex().upper()}, expected 9000"
+                    )
+                print("TEST:PASS loaded and installed service CAP with an "
+                      "empty Export class table")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_EXPORT_METHOD_OFFSET") == "1":
                 bad_service_code = inject_zero_exported_static_method_offset(
                     service[0]
