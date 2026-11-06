@@ -1073,6 +1073,11 @@ source-based follow-ups, without a new physical reproduction in this review.
   APDU outcomes and behavior evidence; validate on physical Pico hardware after
   emulator coverage. Document package versus instance deletion in upgrade
   instructions so a rejected LOAD cannot be mistaken for a successful upgrade.
+  VPCD coverage now passes both V1→larger V2 and V2→shorter V1 replacement,
+  including duplicate LOAD `6A80`, fresh defaults, changed behavior and state
+  restoration after emulator restart. The review document records exact hashes
+  and APDU outcomes. Remaining acceptance: repeat on a physical Pico after a
+  reader appears in PC/SC.
   Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md).
 
 - [ ] **Finish remaining GET DATA and cold-power registry validation.**

@@ -83,6 +83,15 @@ int main() {
   check(!jcvm::cap_constant_pool_validation::valid_instance_field_token(
             0, 5, 6, 0),
         "invalid reference-token layout rejected");
+  check(jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            0, 1, 0xff, 0),
+        "primitive-only instance layout accepts no-reference sentinel");
+  check(!jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            0, 1, 0xfe, 0),
+        "invalid empty reference-token layout rejected");
+  check(!jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            0, 1, 0xff, 1),
+        "no-reference sentinel rejected when reference fields are declared");
   const uint8_t internal_member_records[] = {
       5, 0, 0, 3, 6, 0, 0, 7, 5, 0x80, 0, 0};
   check(jcvm::cap_constant_pool_validation::valid_internal_member_offsets(

@@ -1,3 +1,36 @@
+## Primitive-only instance CAPs use `0xFF` for no reference fields — 2026-11-06
+
+- **Finding:** A valid test CAP with one primitive instance field encoded
+  `first_reference_token=0xFF` and `reference_count=0`, the CAP sentinel for no
+  reference fields. The CAP import validator treated `0xFF` as a real layout
+  index and rejected INSTALL with `6F00` at import-validation stage 9, before
+  applet code ran. This blocked ordinary primitive-only applet instance state.
+- **Viable fix:** In `valid_instance_field_token`, accept `0xFF` only when
+  `reference_count == 0`; otherwise validate the reference range against the
+  declared instance size. Keep normal field-token bounds unchanged.
+- **Validation:** Added positive/negative unit cases; constant-pool validation
+  passes 38/38. ARM, RISC-V, and PC `max_crypto` builds pass. Changed-version
+  VPCD CAP replacement passes in both directions: shorter V1 (392-byte LOAD
+  image) to longer V2 (479 bytes), then back to V1, with expected behavior and
+  persistent state after two emulator restarts. Full APDU outcomes and CAP
+  hashes are recorded in `docs/cap-reinstall-review-20261105.md` and
+  `progress.md`. Physical acceptance is still pending because the latest
+  authorized USB helper granted nodes `001/040`, `001/053`, `001/049` but
+  `timeout 8s pcsc_scan -r` exited 124 without listing a reader.
+
+## Restricted sandbox denies localhost VPCD bind — 2026-11-06
+
+- **Observation:** The first default-context run of the CAP replacement test
+  failed at `socket.bind(("127.0.0.1", 0))` with
+  `PermissionError: [Errno 1] Operation not permitted`, before starting the
+  emulator or sending APDUs.
+- **Viable solution:** Run this local VPCD test wrapper with elevated sandbox
+  network permission on the first retry. It only binds loopback for the PC
+  emulator and uses no USB/PCSC device; no `PICO2_HOST_USB_ACCESS` flag is
+  needed. The same test then completed successfully.
+- **Scope:** This is an execution-environment restriction, not a VPCD socket or
+  firmware failure. Do not retry the network bind in the default sandbox.
+
 ## Late GP DELETE failure still requires runtime invalidation — 2026-11-06
 
 - **Finding:** DELETE commits persistent-state removal before deleting the CAP

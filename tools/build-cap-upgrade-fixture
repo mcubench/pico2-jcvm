@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${repo_root}/tools/tests/cap_upgrade_fixture"
+build_dir="${repo_root}/build/cap-upgrade-fixture"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+package_aid="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x06"
+applet_aid="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x06:0x01"
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}"/{v1-classes,v1-cap,v2-classes,v2-cap}
+
+converter=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
+  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" "-Djc.home=${kit}"
+  -cp "${kit}/lib/tools.jar" com.sun.javacard.converter.Main -nobanner -i
+  -exportpath "${kit}/api_export_files")
+
+for version in v1 v2; do
+  "${repo_root}/tools/env" "${java8_home}/bin/javac" \
+    -source 1.7 -target 1.7 -Xlint:-options \
+    -classpath "${kit}/lib/api_classic.jar" \
+    -d "${build_dir}/${version}-classes" \
+    "${source_root}/${version}/UpgradeApplet.java"
+  major=1
+  [[ "${version}" == v2 ]] && major=2
+  "${converter[@]}" \
+    -classdir "${build_dir}/${version}-classes" \
+    -d "${build_dir}/${version}-cap" -out CAP \
+    -applet "${applet_aid}" capupgrade.UpgradeApplet capupgrade \
+    "${package_aid}" "${major}.0"
+done
+
+python3 - "${build_dir}" <<'PY'
+from pathlib import Path
+from zipfile import ZipFile
+import sys
+
+root = Path(sys.argv[1])
+for version in ("v1", "v2"):
+    cap_path = root / f"{version}-cap/capupgrade/javacard/capupgrade.cap"
+    if not cap_path.is_file():
+        raise SystemExit(f"CAP fixture missing: {cap_path}")
+    with ZipFile(cap_path) as archive:
+        names = {Path(name).name for name in archive.namelist()}
+        if not {"Header.cap", "Applet.cap", "StaticField.cap", "Class.cap"} <= names:
+            raise SystemExit(f"CAP fixture lacks expected components: {cap_path}")
+print("CAP_UPGRADE_FIXTURE:PASS " + " ".join(
+    str(root / f"{v}-cap/capupgrade/javacard/capupgrade.cap")
+    for v in ("v1", "v2")
+))
+PY

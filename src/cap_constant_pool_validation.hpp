@@ -58,7 +58,15 @@ inline bool valid_instance_field_token(const std::size_t token,
                                       const std::size_t declared_size,
                                       const std::size_t first_reference_token,
                                       const std::size_t reference_count) noexcept {
-  return token < declared_size && first_reference_token <= declared_size &&
+  if (token >= declared_size) return false;
+  // CAP encodes 0xFF when the class has no reference fields. This is valid
+  // even when the class has primitive instance fields; do not interpret the
+  // sentinel as a layout index.
+  if (reference_count == 0) {
+    return first_reference_token == 0xff ||
+           first_reference_token <= declared_size;
+  }
+  return first_reference_token <= declared_size &&
          reference_count <= declared_size - first_reference_token;
 }
 

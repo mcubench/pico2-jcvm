@@ -1,7 +1,8 @@
-# Same-AID CAP reinstall review — 2026-11-05
+# Same-AID CAP replacement review — updated 2026-11-06
 
-Reviewed the current working tree, including pre-existing edits to
-`src/cap_load.cpp`. No firmware source was changed for this review.
+The initial review covered the current working tree, including pre-existing
+edits to `src/cap_load.cpp`. The later changed-version regression added a
+native CAP validation fix to `src/cap_constant_pool_validation.hpp`.
 
 ## Conclusion
 
@@ -11,10 +12,10 @@ resident package runs the old code. This is a plausible explanation for an
 apparent unsuccessful upgrade if host tooling ignores a LOAD failure or skips
 LOAD when it finds a resident package.
 
-After a successful full package DELETE and successful LOAD/INSTALL, the normal
-path should use the new code. No normal-path silent bytecode replacement bug
-was identified. This is a source-review conclusion, not a changed-version
-hardware reproduction.
+After a successful full package DELETE and successful LOAD/INSTALL, the new
+code runs. A changed-version VPCD regression now verifies replacement in both
+code-size directions and after emulator restart. Physical CCID acceptance is
+still pending because the Pico readers are currently absent from PC/SC.
 
 ## Evidence
 
@@ -35,6 +36,55 @@ hardware reproduction.
 - `src/ccid_device.cpp:705` and `choupi/src/main.cpp:1076`: successful DELETE
   invalidates matching runtime contexts; package DELETE discards contexts
   belonging to that package.
+- `tools/tests/cap_upgrade_vpcd_test.py`: test-only V1/V2 CAP fixtures share
+  package AID `A000000151000006` and applet/instance AID
+  `A00000015100000601`. Their load images are 392 and 479 bytes respectively.
+  The VPCD regression checks V1→V2 and V2→V1 replacement, state mutation,
+  same-AID duplicate LOAD rejection, and restoration after emulator restart.
+
+## Upgrade procedure
+
+1. DELETE the applet instance if needed. This removes its instance state and
+   registration only; it leaves the package code and package static state.
+2. DELETE the package AID with the related-objects flag and require `9000`.
+   If instances remain and related deletion is not requested, expect `6985`.
+3. LOAD the new CAP and check every response, including the final LOAD block.
+   A resident package with the same AID is rejected with `6A80`; that is not a
+   successful upgrade and must not be ignored by orchestration scripts.
+4. INSTALL the applet and require `9000`, SELECT its instance, then verify a
+   version-specific behavior or response before reporting upgrade success.
+5. For persistence-sensitive changes, power-cycle and repeat SELECT and the
+   behavior check.
+
+Do not infer success from deleting an instance, from a host command returning
+zero while suppressing APDU errors, or from an INSTALL against a package that
+was already resident.
+
+## Changed-version emulator result
+
+The test-only V1 CAP has one static byte and one instance byte; V2 changes the
+static layout to a byte plus short and the instance layout to a byte plus
+short. It mutates each version to a distinct state. V1→V2 rejects duplicate
+LOAD after instance-only DELETE with `6A80`, package DELETE returns `9000`,
+V2 LOAD/INSTALL and SELECT succeed, V2 initial values are observed, and
+mutated V2 state restores after emulator restart. V2→V1 package DELETE,
+shorter LOAD/INSTALL and SELECT also succeed; V1 defaults appear instead of
+V2 state, and mutated V1 state restores after a second restart.
+
+Validation log: `artifacts/logs/cap-upgrade-vpcd-run-20261106T154810Z.log`
+(`TEST:SUMMARY pass=1 fail=0`). The helper script also prints the assembled
+load-image SHA-256 values. Exact generated artifacts from that run:
+
+| Version | CAP archive bytes | CAP archive SHA-256 | Loaded component bytes | Loaded bytes SHA-256 |
+|---|---:|---|---:|---|
+| V1 | 4054 | `5e31a70b14f11aefaf0fc885f455b846f6d20e4352d1cdfd9e12d755e57684db` | 392 | `e70417f50bb64ea503a70599b0e55da236b8178577d41cbc4932b0f5e4c4cda7` |
+| V2 | 4308 | `e1e4ff9346c9a4c9293ade6bee713b550387cf5bcac47b8e1475cce3e8dd3fc9` | 479 | `cc069da48ec7f881ada8c3ccee52326dbbcbcc0a604183bc8df1c045cdcdb01c` |
+
+The run log SHA-256 is
+`67029e601bdc4aa36cd6c1977c4885445b49c8d7a025c17cdac11362f585c2c5`.
+Physical test remains pending: the authorized USB helper granted three device
+nodes, but `timeout 8s pcsc_scan -r` returned 124 without enumerating a Pico
+reader.
 
 ## Runtime cleanup findings requiring reproduction
 
@@ -61,7 +111,7 @@ hardware reproduction.
    for successful DELETE. Test failure injection after persistent commit,
    then recovery/reinstall without reset.
 
-## Validation and missing coverage
+## Earlier review validation and remaining coverage
 
 - `./tools/test-gp-delete`: exit 0, `TEST:SUMMARY pass=26 fail=0`.
 - `./tools/test-rp2350-fs-overlay`: exit 0, `TEST:SUMMARY fail=0`, including

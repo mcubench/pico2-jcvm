@@ -7784,9 +7784,48 @@ hashes are in `progress.md` under `gp-delete-late-cleanup-restart-20261106`.
 No physical PC/SC operation was run; the latest recorded host state has no Pico
 reader in `pcsc_scan -r`.
 
-The previous change is commit `3385f68e09d40fbb655f5560db93bade5230a77f`
+The runtime invalidation fix is commit `3385f68e09d40fbb655f5560db93bade5230a77f`
 (`Invalidate runtime state after committed DELETE failures`). The restart
-hardening is not committed yet. Preserve unrelated dirty worktree changes.
-Next: commit this restart-recovery step, then implement CAP-REINSTALL-03
-changed-version package replacement. Keep CAP-REINSTALL-02 open only for
-physical CCID/APDU acceptance.
+hardening is commit `a1365c63ad514ba95905edea21a18ba46bc60fb3`
+(`Recover deleted package proxies after restart`). Preserve unrelated dirty
+worktree changes. Next: implement CAP-REINSTALL-03 changed-version package
+replacement. Keep CAP-REINSTALL-02 open only for physical CCID/APDU acceptance.
+# Current handoff — changed-version CAP replacement verified in VPCD — 2026-11-06 16:50 CET
+
+## Completed
+
+Implemented CAP-REINSTALL-03 emulator coverage using two test-only CAPs with
+identical package/applet/instance AIDs. The V1 load image is 392 bytes
+(`e70417f50bb64ea503a70599b0e55da236b8178577d41cbc4932b0f5e4c4cda7`); V2
+is 479 bytes (`cc069da48ec7f881ada8c3ccee52326dbbcbcc0a604183bc8df1c045cdcdb01c`).
+Both AIDs are package `A000000151000006`, applet/instance
+`A00000015100000601`.
+
+`./tools/test-cap-upgrade-vpcd` passes both directions: V1→larger V2 and
+V2→shorter V1. Instance-only DELETE returns `9000`; duplicate LOAD of the
+resident package returns `6A80` during LOAD data, not at LOAD initialization.
+Full package DELETE returns `9000`; LOAD/INSTALL/SELECT all succeed. V2's
+new static/instance layout and fresh defaults are observed; state persists
+after restart. V2→V1 yields V1 defaults and behavior, then persists its
+mutated state after a second restart. Full output:
+`artifacts/logs/cap-upgrade-vpcd-run-20261106T154810Z.log`; emulator trace:
+`artifacts/logs/cap-upgrade-vpcd-20261106T154927Z.log`.
+
+The fixture exposed a valid CAP reference-field sentinel incorrectly rejected
+at INSTALL. `valid_instance_field_token` now accepts `0xFF` only when the
+reference field count is zero. Unit validation passes 38/38. PC, ARM, and
+RISC-V `max_crypto` wrapper builds pass. Upgrade procedure and evidence are in
+`docs/cap-reinstall-review-20261105.md`; TODO-REINSTALL-03 is complete for
+offline emulator acceptance, but remains open for physical acceptance.
+
+## Physical test blocker and next action
+
+Refreshed access with `sudo -n /usr/local/sbin/pico2-pcsc-reader`; it granted
+USB nodes `001/040`, `001/053`, and `001/049`. `timeout 8s pcsc_scan -r`
+exited 124 without listing any reader. No physical APDU or flash operation
+was attempted. When a Pico reader appears, flash the rebuilt ARM image only
+after refreshing device identity, then repeat the changed-version GP DELETE,
+LOAD, INSTALL, SELECT and restart checks on hardware. Continue offline while
+PC/SC has no Pico reader.
+
+# Previous current handoff — package DELETE invalidates cross-AID SIO routes — 2026-11-06 14:22 CET
