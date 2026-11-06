@@ -1,3 +1,20 @@
+# Current handoff — transaction recovery review R44–R47 — 2026-11-06 22:30:54 CET
+
+Review-only goal made progress: report and lowercase todo now contain 47
+findings/tasks. Added failed rollback journal disposal/partial sync, snapshot
+capacity charge before throwable publication, persistent element validation
+allocations (reference owner-vector initialization per access), and missing
+transaction-created object reference invalidation on abort.
+
+Pass6 is source-confirmed only; proposed fault injection and runtime cases
+were not executed. Source hashes and scope are under
+`artifacts/reviews/review_20261106/pass6/`. All 47 finding/TODO mappings,
+links/anchors, JSON and 14 source hashes passed verification. No implementation,
+test source, generated JNI, CAP, firmware build or hardware operation changed.
+Performance complexity was inferred from loops/allocations, not measured.
+Continue review-only; implementation is explicitly prohibited. Preserve all
+unrelated dirty files and preceding continuity records below.
+
 # Current handoff — APDU and invocation review R41–R43 — 2026-11-06 22:27:05 CET
 
 Review-only active goal made progress: three additional source-confirmed

@@ -23335,3 +23335,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass5/source-sha256.txt` and `review-state.json`; no runtime logs produced.
 
 - Commit: `5ba675258ed1e9ba5ccaac71f3e83957794b1a5f` — completed `review-20261106-pass5`; this append resolves the pending SHA above. Documentation/provenance only; 43 finding/task mappings checked, no implementation or hardware operations.
+
+
+## 2026-11-06 Review follow-up on failed recovery and allocation lifetime 4 minutes
+
+- Step/experiment: `review-20261106-pass6`
+- When: '2026-11-06 22:27:50 CET' - '2026-11-06 22:30:54 CET'
+- Change: Added R44–R47 and matching lowercase TODO entries, bringing each total to 47. Added source provenance and continuity notes. Documentation/evidence only; preserved unrelated dirty implementation/fixture/submodule files.
+- Validation: Traced rollback cleanup and Pico overlay sync, snapshot publication/accounting, persistent array reconstruction and native abort/heap allocation against checked-in filesystem/API contracts. Inspected existing failed-commit/successful-rollback test scope. All 47 finding/task mappings, document links/anchors, pass6 JSON and 14 source hashes passed. Proposed rollback/allocation fault injection and abort-reference cases remain unexecuted; no new builds or hardware operations.
+- Result: Four source-confirmed issues: rollback errors discard recovery journal and can sync mixed state, vector insertion failure leaves phantom capacity charge, reference element validation initializes a full owner vector per access, and successful abort leaves transaction-created references live. No latency, heap pressure rate, flash wear, power-cut or runtime reproduction measured this pass.
+- Decision: Continue review-only; prioritize failed-rollback containment separately from successful rollback generation/cache fixes. Preserve security validation while investigating allocation costs; do not count parser/helper tests as API lifecycle acceptance.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass6/source-sha256.txt` and `review-state.json`; no runtime logs produced.

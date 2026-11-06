@@ -1,0 +1,12 @@
+{
+  "head": "606e5a0f1c7f3ef91e7a49da2b87db9213512e76",
+  "scope": "Review-only transaction and storage pass; no implementation/test/CAP changes",
+  "findings": {
+    "R44": "Failed rollback drops snapshots and closes transaction",
+    "R45": "Snapshot capacity charged before vector publication can throw",
+    "R46": "Persistent array validation constructs temporary owning arrays per element access",
+    "R47": "Abort lacks tracking/invalidation of objects allocated within transaction"
+  },
+  "validation": "Source paths, checked-in API and filesystem contracts, and existing fixture scope inspected; proposed failure injections and end-to-end cases not executed",
+  "performance": "Complexity inferred from allocation/initialization loops; no latency, peak memory, wear or failure rate measured"
+}
