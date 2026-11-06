@@ -23221,3 +23221,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep GP-01 GET DATA open only for physical CCID, malformed-data, continuation and cold-power acceptance; continue with other offline GP-01 work.
 - Commit: `2a3ca0925014ccbe592122c8f9d06ce095260276`
 - Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261106T170234Z/apdu-probe.log` SHA-256 `54ecabd9a94cabbef79356c1c2e3de2f219349145035a861279ad08f0ea77f23`; `emulator.log` SHA-256 `43d0517b24ab4d1b131dd76c38cadb38bb4cdd80c09afc1542c05732a55ea04a`; `reader-ready.log` SHA-256 `2c1f62c800fff978a82d171b0b3a79c453809928d886477d830ddf35c278be54`.
+
+## 2026-11-06 Verify multipackage GET DATA continuation and restart 8 minutes
+
+- Step/experiment: `gp-get-data-multipackage-vpcd-20261106`
+- When: '2026-11-06 18:15 CET' - '2026-11-06 18:23 CET'
+- Change: Re-ran the complete multipackage VPCD lifecycle suite to close offline GP-01 GET DATA continuation and process-restart gaps. Updated TODO, QKB and HANDOFF with the expanded acceptance result and timeout requirement. No firmware or test source changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 120` passed `TEST:SUMMARY pass=47 fail=0`. It loaded three packages, installed 21 applet instances, verified open and authenticated GET DATA continuation, confirmed the 21-AID application list after emulator restart, exercised GET STATUS paging and lifecycle cleanup, and removed all temporary packages. An initial run with `--timeout 60` timed out during the 18-instance cascade DELETE; the documented 120-second allowance completed it. This is VPCD only; no physical reader was enumerated.
+- Result: `61xx`/GET RESPONSE and list restoration across process restart pass for the 21-instance registry; large cascade cleanup needs the 120-second APDU timeout. No new firmware-size or performance metric was measured.
+- Decision: GP-01 GET DATA remains open for physical CCID and actual cold-power acceptance; continue offline on other work.
+- Commit: `pending`
+- Artifacts/logs: APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261106T171545Z.log` SHA-256 `ea518d52c38ccf367c4277a152ff391ea332839d7b24163768110d03fa590d12`; restart `artifacts/logs/host-vpcd-multipackage-restart-20261106T171545Z.log` SHA-256 `59865183269121b34a1347af93153b00a540efea7187540f6ba3d891116a9ffe`; corrupt/missing sidecar rejection logs are in the same directory with hashes recorded during this session.

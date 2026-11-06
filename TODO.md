@@ -1098,7 +1098,10 @@ review.
   pass 25/25 and VPCD lifecycle passed 42/42 at implementation; later suite 47/47.
   The dedicated VPCD probe now passes open and SCP03-authenticated GP/ISO card
   recognition, CPLC, and dynamic `2F00` response checks. Physical CCID checks
-  remain open.
+  remain open. The complete multipackage VPCD suite passes 47/47 with a
+  120-second APDU bound, including `61xx`/GET RESPONSE for all 21 installed
+  AIDs and identical list reconstruction after emulator restart. The 18-instance
+  cascade DELETE exceeds a 60-second bound.
   Verify multi-package registry reconstruction across actual cold power via
   PERSIST-02/AC-02. Selected-profile completion does not close these extensions.
   Acceptance: exact response/status and each AID once, correct continuation,

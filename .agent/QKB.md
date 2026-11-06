@@ -7604,3 +7604,7 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   dynamic `2F00` application lists. `./tools/test-gp-get-data` passes 25/25.
   PC VPCD only; no physical CCID test was possible because PC/SC enumerated only
   Virtual PCD readers.
+- **Continuation note:** The full multipackage VPCD suite exercises `61xx` and
+  GET RESPONSE for 21 installed AIDs and confirms the same list after emulator
+  restart. Use `--timeout 120`: its 18-instance cascade DELETE exceeded 60
+  seconds once, then completed with the larger bound. Full suite passes 47/47.

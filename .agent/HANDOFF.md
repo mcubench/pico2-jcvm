@@ -20,6 +20,10 @@ emulator log SHA-256
 `43d0517b24ab4d1b131dd76c38cadb38bb4cdd80c09afc1542c05732a55ea04a`.
 Results are under `artifacts/results/gp-get-data-vpcd-20261106T170234Z/`.
 Implementation/test-tool commit: `2a3ca092` (`Repair GP GET DATA VPCD acceptance`).
+The multipackage VPCD integration also passes 47/47 with `--timeout 120`,
+including GET DATA `61xx`/GET RESPONSE for 21 installed AIDs, restart registry
+reconstruction, and lifecycle cleanup. A 60-second timeout expired on the
+18-instance cascade DELETE, which completed under the 120-second bound.
 
 Prior scoped implementation: commit `e91f9d65` rejects deletion of packages
 imported by another loaded CAP (`6985`), validated in VPCD; its handoff and
