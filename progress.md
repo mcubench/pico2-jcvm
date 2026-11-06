@@ -23449,6 +23449,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `aeb62471387e32cc20db6c812945a1bc7a7a06da` — completed `review-20261106-pass10`; this append resolves the pending SHA above. Only review documents/evidence and this step's continuity hunks were staged.
 
 
+## 2026-11-06 Fix positive-depth dup_x stack insertion 13 minutes
+
+- Step/experiment: `rv-20261106-60-dup-x`
+- When: '2026-11-06 23:05 CET' - '2026-11-06 23:18 CET'
+- Change: Corrected `Stack::dup` to duplicate the top M words and insert them before the top N words, preserving word kinds and reference-owner metadata. Corrected bytecode operand validation to accept the specification's inclusive N bounds and reject invalid no-int ranges. Added regression coverage for positive-depth ordering, owner metadata, underflow/overflow, and maximum legal/invalid bounds.
+- Validation: `./tools/test-rmi-registry` passed with `stack_dup_x=1`; `./tools/build arm` passed (including PC build and ROM-mask generation); `./tools/build riscv` passed; scoped `git diff --check` passed. No flash or physical-card test was run. A generated CAP-to-interpreter `dup_x` case is still outstanding.
+- Result: ARM and RISC-V wrappers both build successfully. The direct native stack regression passes. No firmware image-size delta, runtime latency, or physical behavior was measured.
+- Decision: Keep RV-20261106-60 open until a CAP exercises the instruction through interpreter dispatch and all remaining legal operand forms, including int-pair permutations where enabled, have explicit coverage.
+- Commit: `6fb521d58aabd98bb29593f70f9b14e4817b6896` — implementation and regression source.
+- Artifacts/logs: ARM `build/arm/pico2_jcvm_smoke.uf2` and `build/arm/pico2_choupi.uf2`; RISC-V `build/riscv/pico2_jcvm_smoke.uf2`; test output from `./tools/test-rmi-registry` (no saved log).
+
 ## 2026-11-06 Review follow-up on foreign-array cycle reachability 3 minutes
 
 - Step/experiment: `review-20261106-pass11`

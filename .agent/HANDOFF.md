@@ -1,3 +1,24 @@
+# Current handoff — positive-depth dup_x VM instruction — 2026-11-06 23:18 CET
+
+Commit `6fb521d58aabd98bb29593f70f9b14e4817b6896` fixes positive-depth
+`dup_x`: only the top M words are copied, the top N words are shifted, and
+word-kind/reference-owner metadata is preserved. The int and no-int operand
+range checks now use the specification's inclusive upper bound; the prior
+no-int check accidentally accepted invalid values.
+
+`./tools/test-rmi-registry` passes with `stack_dup_x=1`; `./tools/build arm`
+and `./tools/build riscv` pass. The test covers M=1/N=2 and M=2/N=3 ordering,
+reference-owner preservation, underflow/overflow, and maximum legal/invalid
+bounds. No hardware was flashed. This is direct stack-unit coverage, not
+CAP-to-interpreter coverage; RV-20261106-60 remains open until a CAP exercises
+the handler and legal operand permutations are covered, including int pairs
+when enabled.
+
+Continue from R60 by adding a generated CAP/interpreter fixture for positive
+depth `dup_x`, then validate and commit it separately. Preserve all unrelated
+worktree/review changes. The implementation/progress entry is in
+`progress.md`; the implementation source commit is `6fb521d5`.
+
 # Current handoff — foreign-array GC review R59 — 2026-11-06 22:51:33 CET
 
 Review-only active goal made progress: report/lowercase todo totals now 59.
