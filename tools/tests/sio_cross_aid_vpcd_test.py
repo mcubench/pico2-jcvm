@@ -497,6 +497,50 @@ def zero_first_internal_static_methodref_offset(code: bytes) -> bytes:
     raise RuntimeError("test CAP has no ConstantPool component")
 
 
+def remove_all_constant_pool_entries(code: bytes) -> bytes:
+    """Keep a valid empty ConstantPool component in a generated test CAP."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = code[offset]
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+
+    cp_index = next((i for i, component in enumerate(components)
+                     if component[0] == 5), None)
+    directory_index = next((i for i, component in enumerate(components)
+                            if component[0] == 2), None)
+    if cp_index is None or directory_index is None:
+        raise RuntimeError("test CAP lacks ConstantPool or Directory component")
+    cp_component = components[cp_index]
+    old_size = int.from_bytes(cp_component[1:3], "big")
+    if old_size < 2 or (old_size - 2) % 4 != 0:
+        raise RuntimeError("ConstantPool count/size mismatch")
+    count = int.from_bytes(cp_component[3:5], "big")
+    if old_size != 2 + count * 4 or count == 0:
+        raise RuntimeError("ConstantPool is empty or count/size mismatch")
+    cp_component[1:3] = (2).to_bytes(2, "big")
+    components[cp_index] = cp_component[:5]
+
+    directory = components[directory_index]
+    directory_size_offset = 3 + 4 * 2
+    if len(directory) < directory_size_offset + 2:
+        raise RuntimeError("Directory lacks ConstantPool component size field")
+    declared = int.from_bytes(
+        directory[directory_size_offset:directory_size_offset + 2], "big"
+    )
+    if declared != old_size:
+        raise RuntimeError("Directory ConstantPool size does not match component")
+    directory[directory_size_offset:directory_size_offset + 2] = (2).to_bytes(2, "big")
+    return b"".join(bytes(component) for component in components)
+
+
 def inject_zero_exported_static_method_offset(code: bytes) -> bytes:
     """Add one malformed Export method entry to the generated test CAP."""
     components: list[bytearray] = []
@@ -721,6 +765,22 @@ def main() -> int:
                     )
                 print("TEST:PASS INSTALL rejects a service CAP whose complete "
                       "Class method tables are omitted (6F00)")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_TEST_EMPTY_CONSTANT_POOL") == "1":
+                empty_cp_code = remove_all_constant_pool_entries(service[0])
+                vpcd.load_package(scp, empty_cp_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6F00,),
+                )
+                if response[-2:] != bytes.fromhex("6F00"):
+                    raise RuntimeError(
+                        "INSTALL with an empty ConstantPool returned "
+                        f"{response[-2:].hex().upper()}, expected fail-closed 6F00"
+                    )
+                print("TEST:PASS INSTALL rejects a service CAP whose ConstantPool "
+                      "entries are omitted (6F00)")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_EXPORT_METHOD_OFFSET") == "1":

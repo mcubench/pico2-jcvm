@@ -1,4 +1,32 @@
-# Current handoff — empty Class method tables fail closed at INSTALL — 2026-11-06 13:30 CET
+# Current handoff — empty CAP ConstantPool rejected at INSTALL — 2026-11-06 13:38 CET
+
+Added opt-in `SIO_CROSS_AID_TEST_EMPTY_CONSTANT_POOL=1`. The generated service
+CAP keeps a valid ConstantPool component with `count=0`, updates the component
+and Directory sizes, and leaves all other CAP bytes intact. CAP LOAD succeeds;
+service Applet INSTALL rejects with `6F00` both when Descriptor is omitted and
+included. The default Descriptor-free three-package cross-AID VPCD suite still
+passes 34/34. The first focused run caught the wrong Directory size-field
+offset in the fixture mutator; the corrected index passes all runs.
+
+Logs: first failed fixture-metadata attempt
+`artifacts/logs/sio-cross-aid-vpcd-20261106T123424Z.log`, SHA-256
+`8349280326b29babab22495be551e919c09e29e5e74baccda3deed8319db18d5`;
+Descriptor-free focused
+`artifacts/logs/sio-cross-aid-vpcd-20261106T123520Z.log`, SHA-256
+`dc2779d90d517795d60b8caff14319e6bc44ad2d6b54ba678ace6bbeca0e69b2`;
+Descriptor-included focused
+`artifacts/logs/sio-cross-aid-vpcd-20261106T123550Z.log`, SHA-256
+`5abf8e10263f16047253c1be3a4a1a651554f92de13d0493ca9de7624f38218b`;
+default suite
+`artifacts/logs/sio-cross-aid-vpcd-20261106T123619Z.log`, SHA-256
+`2db5a4f9ab556370d01fa58d6fcccb923a43d8bd48d5344433a8a83fa308d259`.
+
+No runtime code or upstream CAP was modified; no firmware build or physical
+test was needed. Previous Class omission case remains committed as `b5230539`.
+Next: continue the remaining CTX-01 work and retry physical Descriptor-free
+GPPro validation when PC/SC enumerates a Pico reader.
+
+# Previous active handoff — empty Class method tables fail closed at INSTALL — 2026-11-06 13:30 CET
 
 Added opt-in `SIO_CROSS_AID_TEST_EMPTY_CLASS_TABLES=1`. The mutator removes
 all public/package method-offset entries from the generated service CAP's

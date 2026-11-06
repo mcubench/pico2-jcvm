@@ -23112,3 +23112,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the Class omission test in both Descriptor modes. Whole-entry ConstantPool omission and physical Descriptor-free GPPro revalidation remain open.
 - Commit: `pending`
 - Artifacts/logs: The three VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.
+
+## 2026-11-06 Reject empty CAP ConstantPool 8 minutes
+
+- Step/experiment: `ctx01-empty-constant-pool-20261106`
+- When: '2026-11-06 13:30 CET' - '2026-11-06 13:38 CET'
+- Change: Added an opt-in generated-CAP mutation that retains a structurally valid ConstantPool component with zero entries and updates both component and Directory sizes. Upstream CAPs and runtime source were not modified.
+- Validation: Python syntax and scoped diff checks passed. Descriptor-free and Descriptor-included focused VPCD runs both LOAD the generated package and reject applet INSTALL with `6F00` (`TEST:SUMMARY pass=1 fail=0`). The default Descriptor-free three-package suite passes `34/34`. The initial run exposed the wrong Directory field offset in the fixture mutator; it was corrected and all subsequent runs passed. No target build or physical test was needed because runtime source did not change.
+- Result: Empty ConstantPool handling now has explicit fail-closed INSTALL coverage independent of Descriptor transport. Descriptor-free log `artifacts/logs/sio-cross-aid-vpcd-20261106T123520Z.log`, SHA-256 `dc2779d90d517795d60b8caff14319e6bc44ad2d6b54ba678ace6bbeca0e69b2`; Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T123550Z.log`, SHA-256 `5abf8e10263f16047253c1be3a4a1a651554f92de13d0493ca9de7624f38218b`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261106T123619Z.log`, SHA-256 `2db5a4f9ab556370d01fa58d6fcccb923a43d8bd48d5344433a8a83fa308d259`. Initial failed metadata attempt: `artifacts/logs/sio-cross-aid-vpcd-20261106T123424Z.log`, SHA-256 `8349280326b29babab22495be551e919c09e29e5e74baccda3deed8319db18d5`.
+- Decision: Treat whole-entry omission coverage for Class tables and ConstantPool as complete; keep the optional Descriptor-present and standard Descriptor-free cases. Physical GPPro Descriptor-free validation remains open because no Pico is registered in PC/SC.
+- Commit: `pending`
+- Artifacts/logs: The four VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.

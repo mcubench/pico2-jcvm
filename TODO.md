@@ -812,8 +812,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   successfully with Descriptor omitted and included (focused VPCD passes 1/1
   in each mode); the default cross-AID suite passes 34/34. Whole-entry
   Class-table omission now also LOADs and is rejected at INSTALL with `6F00`
-  in both Descriptor modes. Whole-entry ConstantPool omission and full
-  physical GPPro revalidation remain open.
+  in both Descriptor modes. A generated CAP with an empty ConstantPool also
+  LOADs and is rejected at INSTALL with `6F00` in both Descriptor modes;
+  whole-entry ConstantPool omission coverage is complete. Full physical GPPro
+  revalidation remains open.
   The [Java
   Card 3.0.5 VM specification, §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf)
   makes Descriptor loading optional and provides exact method offsets and
