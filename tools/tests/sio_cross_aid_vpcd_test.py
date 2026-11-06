@@ -400,6 +400,20 @@ def main() -> int:
                       "failed-copy reset across SIO")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_RESET") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("803E000000"),
+                    "caller reset clears SensitiveResult after SIO"
+                )
+                if response != bytes.fromhex("6A3E9000"):
+                    raise RuntimeError(
+                        "SensitiveResult.reset after SIO returned "
+                        f"{response.hex().upper()}, expected 6A3E9000"
+                    )
+                print("TEST:PASS caller asserts SIO result, resets it, then "
+                      "observes the result as unassigned")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_JCSYSTEM") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("803C000000"),
@@ -663,6 +677,17 @@ def main() -> int:
                 )
             print("TEST:PASS atomic Util arrayCopy/arrayFill/arrayCompare and "
                   "failed-copy SensitiveResult across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("803E000000"),
+                "caller SensitiveResult.reset after SIO"
+            )
+            if response != bytes.fromhex("6A3E9000"):
+                raise RuntimeError(
+                    "SensitiveResult.reset after SIO returned "
+                    f"{response.hex().upper()}, expected 6A3E9000"
+                )
+            print("TEST:PASS caller resets the SIO SensitiveResult after "
+                  "asserting it")
             response = vpcd.exchange(
                 connection, bytes.fromhex("803C000000"),
                 "JCSystem lookupAID/getAppletShareableInterfaceObject SensitiveResult"

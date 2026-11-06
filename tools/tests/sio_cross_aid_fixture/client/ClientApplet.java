@@ -64,6 +64,22 @@ public final class ClientApplet extends Applet {
     }
   }
 
+  private short checkSensitiveResultReset(Probe probe) {
+    short copied = probe.sensitiveCopy();
+    try {
+      SensitiveResult.assertEquals(copied);
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) 0x6A45;
+    }
+    SensitiveResult.reset();
+    try {
+      SensitiveResult.assertEquals(copied);
+      return (short) 0x6A46;
+    } catch (SecurityException correctlyReset) {
+      return (short) 0x6A3E;
+    }
+  }
+
   private short checkSensitiveJCSystemResults() {
     AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
                                     (byte) SERVICE_AID.length);
@@ -372,6 +388,8 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).sensitiveAIDResults();
     } else if (buffer[1] == 0x3D) {
       result = checkSensitiveAtomicUtilResults((Probe) shareable);
+    } else if (buffer[1] == 0x3E) {
+      result = checkSensitiveResultReset((Probe) shareable);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();
