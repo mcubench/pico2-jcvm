@@ -23333,3 +23333,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue review-only; prioritize package-entry containment alongside R01/R02 without treating them as interchangeable fixes. Proposed APDU state and allocation-failure acceptance remains unexecuted.
 - Commit: pending review commit; exact SHA will be appended after creation.
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass5/source-sha256.txt` and `review-state.json`; no runtime logs produced.
+
+- Commit: `5ba675258ed1e9ba5ccaac71f3e83957794b1a5f` — completed `review-20261106-pass5`; this append resolves the pending SHA above. Documentation/provenance only; 43 finding/task mappings checked, no implementation or hardware operations.
