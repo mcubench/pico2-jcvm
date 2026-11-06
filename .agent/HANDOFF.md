@@ -128,6 +128,8 @@ Next: add this case to TODO/QKB/progress and commit it. Then continue auditing
 malformed exception-handler entries and test runtime containment separately
 from PC VPCD and physical acceptance. No malformed CAP has been installed on
 physical hardware.
+The fixture and knowledge-base step is committed as `0443d57e`; progress
+metadata follow-up is pending.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
