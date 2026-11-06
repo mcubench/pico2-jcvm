@@ -18,7 +18,8 @@ No physical flash was performed.
 
 Next: validate internal field and method tokens, then add malformed
 interpreter-execution coverage. Preserve unrelated dirty changes. This slice's
-commit will be recorded in progress.md after commit.
+commit is `423a0b40a154aa26cb87ca6cd9a299b7a997ae8b` (Validate internal CAP
+class reference targets).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

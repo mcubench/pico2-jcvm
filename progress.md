@@ -22556,3 +22556,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RV-28 with internal member-token semantics and malformed interpreter execution coverage.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-internal-classref-vpcd-20261106.log`, SHA-256 `fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.
+
+- Commit resolved for `rv28-internal-classref-validation-20261106`: `423a0b40a154aa26cb87ca6cd9a299b7a997ae8b` (Validate internal CAP class reference targets).
