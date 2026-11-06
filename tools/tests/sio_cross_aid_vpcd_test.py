@@ -381,6 +381,72 @@ def zero_first_internal_static_methodref_offset(code: bytes) -> bytes:
     raise RuntimeError("test CAP has no ConstantPool component")
 
 
+def inject_zero_exported_static_method_offset(code: bytes) -> bytes:
+    """Add one malformed Export method entry to the generated test CAP."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = code[offset]
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        payload = offset + 3
+        end = payload + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    if offset != len(code):
+        raise RuntimeError("unaccounted CAP code bytes")
+
+    export_index = next((i for i, component in enumerate(components)
+                         if component[0] == 10), None)
+    directory_index = next((i for i, component in enumerate(components)
+                            if component[0] == 2), None)
+    if export_index is None or directory_index is None:
+        raise RuntimeError("test CAP lacks Export or Directory component")
+
+    export = components[export_index]
+    export_size = int.from_bytes(export[1:3], "big")
+    if export_size < 1 or export[3] == 0:
+        raise RuntimeError("Export component has no class record")
+    cursor = 4
+    if len(export) - cursor < 4:
+        raise RuntimeError("truncated first Export class record")
+    field_count = export[cursor + 2]
+    method_count = export[cursor + 3]
+    record_size = 4 + 2 * (field_count + method_count)
+    if record_size > len(export) - cursor:
+        raise RuntimeError("first Export class record exceeds component")
+
+    if method_count:
+        method_offset_index = cursor + 4 + 2 * field_count
+        if export[method_offset_index:method_offset_index + 2] == b"\x00\x00":
+            raise RuntimeError("first exported method offset is already zero")
+        export[method_offset_index:method_offset_index + 2] = b"\x00\x00"
+    else:
+        # Expand the first class record by one u2 method offset and update its
+        # component length. Directory component_sizes[9] describes tag 10.
+        export[cursor + 3] = 1
+        insert_at = cursor + record_size
+        export[insert_at:insert_at] = b"\x00\x00"
+        export[1:3] = (export_size + 2).to_bytes(2, "big")
+        directory = components[directory_index]
+        directory_size = int.from_bytes(directory[1:3], "big")
+        directory_size_offset = 3 + 9 * 2
+        if directory_size < directory_size_offset + 2:
+            raise RuntimeError("Directory lacks Export component size field")
+        declared = int.from_bytes(
+            directory[directory_size_offset:directory_size_offset + 2], "big"
+        )
+        if declared != export_size:
+            raise RuntimeError("Directory Export size does not match component")
+        directory[directory_size_offset:directory_size_offset + 2] = (
+            (export_size + 2).to_bytes(2, "big")
+        )
+    return b"".join(bytes(component) for component in components)
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -449,6 +515,24 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_EXPORT_METHOD_OFFSET") == "1":
+                bad_service_code = inject_zero_exported_static_method_offset(
+                    service[0]
+                )
+                vpcd.load_package(scp, bad_service_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "zero Export static-method offset INSTALL returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS INSTALL rejected a zero Export static-method "
+                      "offset before applet execution")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_STATIC_METHODREF_OFFSET") == "1":
                 bad_service_code = zero_first_internal_static_methodref_offset(
                     service[0]

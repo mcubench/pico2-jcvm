@@ -805,7 +805,9 @@ source-based follow-ups, without a new physical reproduction in this review.
   method-table offset: LOAD succeeds and INSTALL rejects it with `6A80`.
   A zero internal `StaticMethodref` offset also LOADs but INSTALL rejects it
   with `6F00` at stage-9 package-import validation (no Java Card exception).
-  Export corruption and fuller incomplete-table cases remain open.
+  A test-injected zero Export static-method offset is rejected at INSTALL with
+  `6A80`. Cases that remove entire entries and full hardware revalidation
+  remain open.
   The [Java
   Card 3.0.5 VM specification, §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf)
   makes Descriptor loading optional and provides exact method offsets and

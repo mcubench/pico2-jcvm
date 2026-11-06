@@ -23044,5 +23044,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Python bytecode compilation and scoped `git diff --check` passed. Focused Descriptor-free VPCD LOAD succeeded; INSTALL was rejected with `6F00` at package-import validation stage 9, and the negative test passed `TEST:SUMMARY pass=1 fail=0`.
 - Result: Invalid internal ConstantPool method targets fail closed before applet INSTALL bytecode, but currently map to `6F00` rather than a specific ISO invalid-CAP status. Log `artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`, SHA-256 `f7c7094bab23f6339fc74e2bd3147f36044f45d64d288f8b1b22e350e882da5a`.
 - Decision: Preserve the observed result explicitly; investigate status mapping separately only if required. Next cover Export method offsets and retain the Class-table negative regression.
-- Commit: `pending`
+- Commit: `a04e1c34`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`; no hardware log.
+
+## 2026-11-06 Reject invalid Export method offset 10 minutes
+
+- Step/experiment: `ctx01-invalid-export-method-offset-20261106`
+- When: '2026-11-06 12:33 CET' - '2026-11-06 12:43 CET'
+- Change: Added a generated-CAP mutation that injects a zero-offset static-method entry into Export component tag 10 and updates Directory's declared payload size. The mutation is limited to the test image; upstream CAP sources and runtime firmware remain unchanged.
+- Validation: `./tools/build-sio-cross-aid-fixture` passed; its service CAP has no existing Export method entry, so the test mutator adds a well-formed record. Python syntax and scoped diff checks passed. Focused VPCD LOAD succeeded and INSTALL returned `6A80`; test summary `TEST:SUMMARY pass=1 fail=0`.
+- Result: `visit_cap_method_offsets` rejects a zero Export method offset during descriptor-free applet INSTALL. Log `artifacts/logs/sio-cross-aid-vpcd-20261106T114248Z.log`, SHA-256 `9f272a603d610a51df1a8ab76b76372f04c6e4e555ff0080b07b546ff4941c6f`.
+- Decision: Preserve the negative test. Next remove whole table entries in the generated image and revalidate standard GPPro physical installation when a Pico appears in PC/SC.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T114248Z.log`; no hardware log.

@@ -65,8 +65,26 @@ reported. The focused test passes and the card manager/emulator remains
 available for later operations. Log
 `artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`, SHA-256
 `f7c7094bab23f6339fc74e2bd3147f36044f45d64d288f8b1b22e350e882da5a`.
-Next: cover an Export method offset and continue physical retry when PC/SC
+Next: cover omitted structural entries and continue physical retry when PC/SC
 responds.
+
+## Latest continuation — malformed Export offset rejected
+
+The generated service CAP fixture has no Export static-method entry, so the
+negative test now injects one zero-offset method record into its Export
+component and updates Directory's tag-10 payload size. CAP LOAD succeeds and
+Applet INSTALL rejects the invalid structural entry with `6A80`. The focused
+VPCD run passes (`TEST:SUMMARY pass=1 fail=0`) at
+`artifacts/logs/sio-cross-aid-vpcd-20261106T114248Z.log`, SHA-256
+`9f272a603d610a51df1a8ab76b76372f04c6e4e555ff0080b07b546ff4941c6f`.
+No upstream CAP or runtime source was modified. The fixture mutation changes
+only its generated CAP input; original archives remain intact.
+
+Together, the focused negative cases now cover an unlisted Applet interior
+offset, an invalid Class method-table offset, an invalid internal
+ConstantPool `StaticMethodref` (`6F00` at install validation stage 9), and an
+invalid Export offset. Next: test omitted table entries and repeat GPPro
+Descriptor-free installation on physical hardware once PC/SC responds.
 
 ---
 

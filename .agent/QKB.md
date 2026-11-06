@@ -87,8 +87,8 @@
   `7c4d8b53dd82cc0fcb03f01a4a4f7cb227725cc0eb90b90a77454eb8e26c2aba`
   (`TEST:SUMMARY pass=34 fail=0`).
 - **Remaining:** Re-run the Descriptor-free installation on a Pico flashed with
-  the fallback, and test missing/incomplete ConstantPool and Export entry
-  metadata. The Applet-entry negative test now points at a zero-valued interior
+  the fallback, and test complete omission of Class/ConstantPool/Export entries.
+  The Applet-entry negative test now points at a zero-valued interior
   byte whose following bytes resemble a method header; INSTALL gets `6A80` with
   Descriptor absent and present. A second case zeroes the first Class
   method-table offset: LOAD succeeds and INSTALL gets `6A80` in descriptor-free
@@ -100,6 +100,10 @@
   Class-offset log:
   `artifacts/logs/sio-cross-aid-vpcd-20261106T112657Z.log`, SHA-256
   `ca66d9a84d4c94fc4877b2d82de63fc6e0c983aa228303d8328676aaff74af46`.
+  An injected zero Export static-method entry also LOADs but is rejected by
+  INSTALL with `6A80`:
+  `artifacts/logs/sio-cross-aid-vpcd-20261106T114248Z.log`, SHA-256
+  `9f272a603d610a51df1a8ab76b76372f04c6e4e555ff0080b07b546ff4941c6f`.
   Descriptor-free Applet-offset log
   `artifacts/logs/sio-cross-aid-vpcd-20261106T111814Z.log`, SHA-256
   `58adf2a276978085e41cc40075ceab0494fb3a039eddaef6942dc2282dfaa306`;
