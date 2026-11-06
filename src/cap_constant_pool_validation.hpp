@@ -54,6 +54,14 @@ inline bool valid_export_member_token(const std::size_t token,
   return token < member_count;
 }
 
+inline bool valid_instance_field_token(const std::size_t token,
+                                      const std::size_t declared_size,
+                                      const std::size_t first_reference_token,
+                                      const std::size_t reference_count) noexcept {
+  return token < declared_size && first_reference_token <= declared_size &&
+         reference_count <= declared_size - first_reference_token;
+}
+
 template <typename ResolveExportToken>
 bool validate_external_class_tokens(const uint8_t *entries,
                                     const std::size_t count,

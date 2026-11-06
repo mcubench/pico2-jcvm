@@ -41,6 +41,7 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
 }
 #endif
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_handlers/jc_class.hpp"
 #include "jc_handlers/jc_cp.hpp"
 #include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/jc_import.hpp"
@@ -560,7 +561,7 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
       const bool exports_valid =
           jcvm::cap_constant_pool_validation::validate_external_class_tokens(
               entries, entry_count,
-              [&imports, use_compatibility_tokens](
+              [&imports, &package, use_compatibility_tokens](
                   uint8_t reference_kind, uint8_t package_token,
                   uint8_t source_class_token, uint8_t member_token) {
                 const auto *imported_package =
@@ -596,15 +597,59 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
                 }
                 if (!valid_class_token) return false;
 
-                if (reference_kind != JC_CP_TAG_CONSTANT_STATICFIELDREF &&
-                    reference_kind != JC_CP_TAG_CONSTANT_STATICMETHODREF) {
-                  return true;
-                }
                 const jcvm::Package imported_runtime_package(imported_id);
                 const jcvm::Export_Handler imported_exports(
                     imported_runtime_package);
                 const jcvm::jc_cap_class_export_info &exported_class =
                     imported_exports.getExportedClass(class_token);
+                if (reference_kind == JC_CP_TAG_CONSTANT_INSTANCEFIELDREF) {
+                  const auto class_component =
+                      imported_runtime_package.getCap().getClass();
+                  if (class_component == nullptr) return false;
+                  const auto class_bytes = class_component->claz();
+                  const std::size_t class_offset =
+                      NTOHS(exported_class.class_offset);
+                  if (class_offset > class_bytes.size() ||
+                      class_bytes.size() - class_offset <
+                          sizeof(jcvm::jc_cap_class_info)) {
+                    return false;
+                  }
+                  const auto *class_info =
+                      reinterpret_cast<const jcvm::jc_cap_class_info *>(
+                          class_bytes.data() + class_offset);
+                  if ((class_info->flags & JC_CAP_CLASS_ACC_INTERFACE) != 0) {
+                    return false;
+                  }
+                  return jcvm::cap_constant_pool_validation::
+                      valid_instance_field_token(
+                          member_token,
+                          class_info->declared_instance_size & 0xffu,
+                          class_info->first_reference_token,
+                          class_info->reference_count);
+                }
+                if (reference_kind == JC_CP_TAG_CONSTANT_VIRTUALMETHODREF) {
+                  jcvm::jc_cap_virtual_method_ref_info method_ref{};
+                  method_ref.class_ref.external_classref.package_token =
+                      static_cast<uint8_t>(0x80u | package_token);
+                  method_ref.class_ref.external_classref.class_token =
+                      source_class_token;
+                  method_ref.token = member_token;
+                  // Use the interpreter's resolver so package/public token
+                  // namespaces and the JC305 compatibility remaps stay exact.
+                  jcvm::Class_Handler class_handler(package);
+                  (void)class_handler.getMethodOffset(method_ref);
+                  return true;
+                }
+                if (reference_kind == JC_CP_TAG_CONSTANT_SUPERMETHODREF) {
+                  // CAP 2.2 specifies SuperMethodref's class reference as
+                  // package-local; invokespecial resolves it against the
+                  // declaring class's immediate superclass.
+                  return false;
+                }
+                if (reference_kind != JC_CP_TAG_CONSTANT_STATICFIELDREF &&
+                    reference_kind != JC_CP_TAG_CONSTANT_STATICMETHODREF) {
+                  return true;
+                }
                 if (reference_kind == JC_CP_TAG_CONSTANT_STATICFIELDREF) {
                   return jcvm::cap_constant_pool_validation::
                       valid_export_member_token(

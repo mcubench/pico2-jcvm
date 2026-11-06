@@ -22519,3 +22519,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RV-28 with external instance-field and virtual/super-method tokens, then internal CP targets and malformed interpreter execution.
 - Commit: `6953d83d`
 - Artifacts/logs: `artifacts/logs/rv28-static-member-token-vpcd-20261106.log`, SHA-256 `f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.
+
+## 2026-11-06 Validate external instance and virtual-method tokens 12 minutes
+
+- Step/experiment: `rv28-instance-virtual-token-validation-20261106`
+- When: '2026-11-06 00:50 CET' - '2026-11-06 01:02 CET'
+- Change: Install preflight now bounds external instance-field tokens against the exported class's declared instance size and reference-token interval. External virtual-method references run through the production `Class_Handler` resolver, preserving public/package token handling and JC305 remapping. External SuperMethodref records are rejected because the CAP format requires a package-local class reference. Added three sanitizer helper cases and updated RV-28 trust documentation, QKB, TODO, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passes 21/21 under ASan/UBSan; `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` pass. Unchanged upstream JCAlgTest VPCD install/APDU suite passes 15/15, including SELECT, JCSystem, SHA-256, AES, RSA, random and expected unsupported-algorithm behavior. No physical flash or malformed-CAP installation was performed. Scoped `git diff --check` passes.
+- Result: Existing JCAlgTest external field/method references remain installable and executable. Out-of-layout fields, unresolved virtual methods, and external SuperMethodref entries fail preflight. ARM firmware end address is `0x100ec3b0`, leaving 80,976 bytes in the firmware window.
+- Decision: Continue RV-28 with internal ConstantPool targets and malformed interpreter runtime tests; physical hostile-CAP recovery remains unverified.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-instance-virtual-vpcd-20261106.log`, SHA-256 `71662b7c9bae81fbe2d9e61ccffb0671627fd1cc0e77178d7492a6317a06b858`.

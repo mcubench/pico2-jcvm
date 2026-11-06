@@ -1,27 +1,25 @@
-# Active handoff — RV-28 static member-token validation — 2026-11-06 00:50 CET
+# Active handoff — RV-28 external instance and method-token validation — 2026-11-06 01:00 CET
 
-## Latest continuation — bound external static field and method tokens — 2026-11-06 00:50 CET
+## Latest continuation — bound external instance and virtual-method tokens — 2026-11-06 01:00 CET
 
-Install preflight validates external StaticFieldref tokens against the
-imported Export record's static-field count. External StaticMethodref tokens
-must fit the exported static-method count after either the JC305 ordinary
-static-call mapping or constructor mapping. Instance field and virtual/super
-method tokens remain open, along with internal targets and malformed
-interpreter runtime coverage.
+Install preflight bounds external instance-field tokens by the exported
+class's declared instance layout and reference-range metadata. External
+virtual-method tokens now pass through the production Class_Handler resolver,
+preserving JC305/public/package remapping. External SuperMethodref values are
+rejected because the CAP format requires a package-local class reference.
+Internal class/member targets and malformed interpreter runtime coverage
+remain open.
 
-Validation: helper sanitizer suite 18/18; PC emulator max_crypto build;
-unchanged JCAlgTest VPCD install/APDU suite 15/15; ARM/RISC-V max_crypto builds.
-The initial ARM attempt caught a dangling-reference warning from retaining an
-Export record via a temporary handler; named local Package and Export_Handler
-objects fixed it. VPCD log:
-`artifacts/logs/rv28-static-member-token-vpcd-20261106.log`, SHA-256
-`f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.
+Validation: helper sanitizer suite 21/21; PC, ARM, and RISC-V max_crypto
+builds; unchanged JCAlgTest VPCD install/APDU suite 15/15. ARM image ends at
+`0x100ec3b0`, leaving 80,976 bytes in the firmware window. VPCD log:
+`artifacts/logs/rv28-instance-virtual-vpcd-20261106.log`, SHA-256
+`71662b7c9bae81fbe2d9e61ccffb0671627fd1cc0e77178d7492a6317a06b858`.
 No physical flash was performed.
 
-Next: validate external instance-field and virtual/super-method tokens using
-class metadata; then internal CP targets and malformed interpreter execution.
-Preserve unrelated dirty worktree changes. This slice's commit is `6953d83d`
-(Validate external CAP static member tokens).
+Next: validate internal ConstantPool targets and design malformed interpreter
+execution tests. Preserve unrelated dirty worktree changes. This slice's commit
+will be recorded in progress.md after commit.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

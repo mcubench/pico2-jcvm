@@ -6944,3 +6944,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `f818c48debeddf35c528fbc92069726a7a2c9a5b7a63c58eb245499ee6f99c47`.
 - **Limit:** Instance field and virtual/super-method token checks, internal
   targets, and malformed interpreter execution remain open.
+
+## Validate external instance and virtual-method tokens — 2026-11-06
+
+- **Finding:** Export class bounds alone do not ensure an external field or
+  virtual-method token is valid for that class. External `SuperMethodref`
+  tokens use a package-local class reference under the CAP format.
+- **Viable fix:** Bound instance-field tokens by the exported class's declared
+  instance size and ensure the reference-field interval fits that layout. Pass
+  external virtual references to the existing `Class_Handler` resolver so
+  public/package dispatch and JC305 compatibility mapping remain aligned.
+  Reject external `SuperMethodref` records.
+- **Validation:** ASan/UBSan helper suite passes 21/21; PC, ARM, and RISC-V
+  max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes
+  15/15. VPCD log SHA-256:
+  `71662b7c9bae81fbe2d9e61ccffb0671627fd1cc0e77178d7492a6317a06b858`.
+- **Limit:** This does not validate internal field/method offsets, bytecode
+  opcode-to-reference-kind agreement, malformed interpreter execution, or
+  hostile CAP recovery on physical hardware.

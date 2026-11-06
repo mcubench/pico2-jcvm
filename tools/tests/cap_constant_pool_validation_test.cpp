@@ -74,6 +74,15 @@ int main() {
         "first exported member token accepted");
   check(!jcvm::cap_constant_pool_validation::valid_export_member_token(2, 2),
         "member token at member count rejected");
+  check(jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            2, 5, 3, 2),
+        "instance field token within declared layout accepted");
+  check(!jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            5, 5, 3, 2),
+        "instance field token at declared size rejected");
+  check(!jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            0, 5, 6, 0),
+        "invalid reference-token layout rejected");
 
   unsigned int resolved_external_tokens = 0;
   check(jcvm::cap_constant_pool_validation::validate_external_class_tokens(

@@ -42,8 +42,13 @@ valid class or interface token mapping; execution still validates the concrete
 reference type. Static field tokens are checked against each Export record's
 static-field count. Static method references accept the imported static-method
 or constructor mapping only when it fits the exported static-method count.
-Instance-field and virtual/super-method member tokens, internal class/member
-targets, and malformed-interpreter runtime behavior remain open.
+External instance-field tokens are bounded by the exported class's declared
+instance layout, including consistency of its reference-field range. External
+virtual-method tokens are resolved through the same class and compatibility
+mapping path used by dispatch. External `SuperMethodref` values are rejected:
+the CAP format requires their class references to be local to the package.
+Internal class/member targets and malformed-interpreter runtime behavior
+remain open.
 
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's
