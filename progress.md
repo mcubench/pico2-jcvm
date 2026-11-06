@@ -23547,5 +23547,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm` passed for the full ARM image; firmware end `0x100d51ec`, reserved-region remaining `175636` bytes. `./tools/build riscv` passed for the VM core. `./tools/test-rmi-registry` passed. Focused host VPCD test `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_REUSE_FIXTURE=1 SIO_CROSS_AID_TEST_INSTANCE_DELETE_FOREIGN_ROOT=1 ./tools/test-sio-cross-aid-vpcd` passed 2/2. Full cross-AID VPCD suite passed 35/35 with the PC emulator built as `symm_crypto`; an initial full run under `current` failed at the expected AES-MAC Signature case and was not implementation evidence. Python syntax check passed. No physical firmware test was completed: the authorized helper found three USB nodes, but bounded `pcsc_scan -r` produced no reader listing before timeout.
 - Result: VPCD confirms `6985` before clearing the retained reference, `9000` after clearing it, and successful sibling selection/service call. Same-package cross-instance references and persistent/static roots remain outside this change and keep CTX-01 open.
 - Decision: Preserve the guard for verified volatile cross-package array edges. Audit same-package and persistent reference sources before claiming complete applet deletion semantics; retry physical validation when PC/SC enumerates readers.
-- Commit: pending.
+- Commit: `3b4e3804` — implementation, regression, and status records.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T232326Z.log` SHA-256 `f06d4637861eb14ef777393e9f683275538c0bdfd8a8d5352fa84c6394c171cb`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261106T232906Z.log` SHA-256 `4e957c70c45dafd72a25d5987a16ddda6f9b9e2c9a03020bd2a5456a62cad3a0`. No physical log.
+
+## 2026-11-07 Record applet DELETE guard commit 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-foreign-array-root-commit`
+- When: '2026-11-07 00:48 CET' - '2026-11-07 00:49 CET'
+- Change: Replaced the pending commit marker and recorded the implementation SHA in the active handoff.
+- Validation: No new tests; ARM/RISC-V builds, RMI registry test, focused VPCD 2/2, and full symm_crypto VPCD 35/35 passed in the preceding implementation step.
+- Result: Commit evidence is now complete in the continuity log.
+- Decision: Continue CTX-01 by auditing same-package references and persistent roots; retry hardware validation after PC/SC enumeration recovers.
+- Commit: pending.
+- Artifacts/logs: See the implementation entry above.

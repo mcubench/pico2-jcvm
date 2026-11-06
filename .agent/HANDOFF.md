@@ -21,6 +21,8 @@ persistent/static reference roots still need an audit and targeted tests before
 CTX-01 deletion semantics can be closed. Prior handoff entries below are
 historical and preserved.
 
+Implementation and VPCD regression are committed as `3b4e3804`.
+
 # Current handoff — positive-depth dup_x validation complete — 2026-11-06 23:55 CET
 
 Commit `6fb521d58aabd98bb29593f70f9b14e4817b6896` fixes positive-depth
