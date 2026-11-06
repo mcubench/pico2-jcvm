@@ -33,6 +33,24 @@ Shared continuity files have concurrent edits from another session; stage only
 this review's own hunks. Preserve those edits and other dirty files. Continue
 review-only; implementation remains prohibited.
 
+# Current handoff — applet-instance DELETE foreign-root audit — 2026-11-06 22:54 CET
+
+Read-only CTX-01 audit found a possible retention gap: VM cleanup calls
+`clearForeignArrayReferencesForPackage()` only for whole-package DELETE.
+Applet-instance DELETE forgets that AID's runtime context and invokes GC, while
+foreign array edges are tagged only by package ID and continue to route into
+the package heap. This may retain objects from a deleted applet as long as a
+foreign-reference array remains live. Source evidence only; runtime impact and
+the safe invalidation granularity are not yet verified. Do not claim handle
+aliasing or a reproduced bug.
+
+`./tools/test-rmi-registry` passes package-delete edge cleanup and owner-slot
+reuse; it does not cover applet-instance DELETE with a live foreign array edge.
+Next: add a VPCD case that deletes one applet while a sibling service retains a
+reference into it, then validate edge clearing and GC/resource behavior. AID
+and package DELETE must remain distinct. No source implementation changed in
+this audit; hardware was not accessed.
+
 # Current handoff — typed foreign-array regression committed — 2026-11-06 22:44 CET
 
 Commit `21051098` adds a negative `aastore` regression for an incompatible

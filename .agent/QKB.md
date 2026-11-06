@@ -7667,3 +7667,26 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   the emulator started, connected or saved successfully; verify actual service
   outcomes and error output. This is an evidence precaution, not a tested fix.
   No robust implementation solution was applied under review-only scope.
+
+
+## Foreign array roots are not pruned on applet-instance DELETE — 2026-11-06
+
+- **Source observation:** `choupi_vm_forget_deleted_applet_contexts()` clears
+  foreign-array edges only when `deleting_package != 0`. For an applet-instance
+  DELETE, it forgets that AID's `AppletInstanceState` and runs package-heap GC,
+  but owner-tagged array entries remain. Those entries identify only the
+  source package, and `visitForeignArrayReferencesForPackage()` routes them as
+  GC roots into that package heap. A service applet that retained an ordinary
+  reference into the deleted instance can therefore keep that object graph
+  alive after instance deletion. The exact applet-deletion persistence and
+  resource effect has not been reproduced; do not claim handle aliasing.
+- **Existing coverage:** `./tools/test-rmi-registry` passes package-delete
+  edge clearing and package-owner-slot reuse, but does not exercise deletion of
+  one applet instance while another applet retains a foreign array edge.
+- **Next validation:** Add a three-package VPCD case that retains a reference
+  to a client-owned object in a service-owned volatile reference array, deletes
+  only that client applet, then checks the edge and GC/resource outcome while
+  another applet in the package remains installed. Define whether instance
+  ownership must be tracked on reference slots or whether safe targeted
+  invalidation can use the deleted instance's root/reference identity. Keep
+  package DELETE coverage separate.

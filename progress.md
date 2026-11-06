@@ -23418,6 +23418,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 
 - Commit: `21051098` — committed the validated fixture and test changes with this record and CTX-01 TODO update.
 
+
+## 2026-11-06 Audit foreign-array roots on instance DELETE 10 minutes
+
+- Step/experiment: `ctx01-instance-delete-foreign-root-audit`
+- When: '2026-11-06 22:44 CET' - '2026-11-06 22:54 CET'
+- Change: Traced applet-instance and package DELETE cleanup, foreign-reference owner tags, package-heap root routing, and heap-slot reuse. Recorded a source-confirmed lifecycle gap candidate in `.agent/QKB.md` and CTX-01; no implementation or test source changed.
+- Validation: `./tools/test-rmi-registry` passed, including `package_delete_root_cleared=1` and `owner_slot_reuse_safe=1`. Source inspection confirms foreign-array clearing is gated on package DELETE, while applet-instance DELETE forgets the AID context and then collects. This test does not cover instance DELETE with a retained edge. No VPCD reproduction, target build or physical access was attempted.
+- Result: Package deletion/root reuse remain covered. A foreign-reference array may keep an object graph from a deleted applet instance rooted in the shared package heap; actual resource retention was not measured or reproduced. No timing, memory or flash metric was collected.
+- Decision: Add a distinct VPCD instance-DELETE case and determine a safe per-instance invalidation design before changing runtime behavior.
+- Commit: pending audit-note commit; exact SHA will be appended after creation.
+- Artifacts/logs: `./tools/test-rmi-registry` terminal output; no persistent log generated.
+
 - Attribution note for `review-20261106-pass9`: commit `1a22693b` also captured another session's concurrently added HANDOFF/progress records for `ctx01-typed-array-reject-foreign`. Those 35/35 VPCD results belong to that session, not to this review pass. Its implementation/test files were not staged by this review. The continuity records were preserved; future staging must isolate this review's hunks in shared logs.
 
 
