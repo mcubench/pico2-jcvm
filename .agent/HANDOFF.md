@@ -24,6 +24,7 @@ The multipackage VPCD integration also passes 47/47 with `--timeout 120`,
 including GET DATA `61xx`/GET RESPONSE for 21 installed AIDs, restart registry
 reconstruction, and lifecycle cleanup. A 60-second timeout expired on the
 18-instance cascade DELETE, which completed under the 120-second bound.
+Acceptance evidence and timeout note are committed in `2e94869d`.
 
 Prior scoped implementation: commit `e91f9d65` rejects deletion of packages
 imported by another loaded CAP (`6985`), validated in VPCD; its handoff and
