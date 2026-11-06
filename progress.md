@@ -22981,3 +22981,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline on high-priority native tasks; run the prepared physical probe when `pcsc_scan -r` lists a Pico.
 - Commit: `17950d66` (test fixture; documentation follows).
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T105304Z.log`, SHA-256 `99f2f9819ec209e3b31e7dd9fb970fafe6502fe6be2c268b19f902113652cec3`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T105336Z.log`, SHA-256 `032aa65b9ad2f4b01c5a30f12147e08d5d7f218c639bd3ea3f593dbd588cc1c3`.
+## 2026-11-06 Revalidate Descriptor-free SIO method bounds 5 minutes
+
+- Step/experiment: `ctx01-descriptor-free-bounds-revalidation-20261106`
+- When: '2026-11-06 12:00 CET' - '2026-11-06 12:05 CET'
+- Change: Reconciled stale CTX-01, QKB and handoff notes with the structural-offset method-boundary fallback already in the runtime. Documented its collected entry-point sources, fail-closed behavior and remaining hardware/hostile-CAP checks; runtime code was not changed.
+- Validation: `./tools/test-cap-method-body-bounds` passed 11/11. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed 34/34 in the default Descriptor-omitted mode. No target build or physical test was run because firmware was unchanged and the current PC/SC inventory has no Pico reader.
+- Result: Standard-GPPro-shaped Descriptor-free contract/service/client LOAD and INSTALL now passes in VPCD; the earlier physical failure predates this fallback. Log `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`, SHA-256 `cf16e9c3786b41220256e712701e76b172a9b8bcb0c59b7a3710fd7f6e298910`.
+- Decision: Keep both Descriptor modes in regression. Next add malformed-CAP cases for incomplete structural entry tables and repeat the physical GPPro install when a Pico reader is registered.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`; no hardware log.

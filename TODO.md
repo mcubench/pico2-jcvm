@@ -788,28 +788,26 @@ source-based follow-ups, without a new physical reproduction in this review.
   a fresh lookup. This caught and fixed proxy-route invalidation that previously
   only ran in the deleted server's own cached Context. PC, ARM and RISC-V builds
   pass; VPCD summary is 25/25. Physical same-AID reinstall remains unverified.
-  Latest full three-package cross-AID regression passes 34/34 when Descriptor
-  components are included. The same fixture with Descriptor omitted (matching
-  standard GPPro `getCode()` behavior) LOADs the contract but fails service
-  applet INSTALL with `6A80`. Root cause: `Method_Handler::callMethod` cannot
-  find a Descriptor method-body range and throws `SecurityException` for the
-  dynamic package. Identify a verifiable source for method bounds before
-  changing this fail-closed guard; never widen dynamic method execution to the
-  entire Method component. The same failure was reproduced physically on Pico
-  2 `D92E743D5F640C0F`: contract and service package LOAD succeeded, service
-  applet INSTALL returned `6A80`, and post-cleanup GPPro listing showed only
-  the ISD. Preserve both Descriptor-present and
-  Descriptor-absent acceptance cases. The [Java Card 3.0.5 VM specification,
-  §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf) makes
-  Descriptor loading optional and states that method offsets and bytecode
-  counts needed to parse methods are provided by Descriptor; the Method
-  component alone does not carry that information. The current default VPCD
-  script has a 30-second APDU deadline that is
-  too short for this VM; use 90 seconds to connect and 120 seconds per APDU.
-  The repeatable entry point is now `PICO2_HOST_USB_ACCESS=1
-  ./tools/test-sio-cross-aid-vpcd`; it enforces the elevated host-access path
-  and uses those longer defaults. Latest run passed 34/34 with Descriptor
-  included; the Descriptor-omitted install failure remains open.
+  Latest full three-package cross-AID regression passes 34/34 with Descriptor
+  omitted (matching standard GPPro `getCode()` behavior) and with Descriptor
+  included. Descriptor-free dynamic method bounds are inferred from verified
+  callable entry offsets in the Applet, Class, internal static-method
+  references, and Export components; the method range ends at the next known
+  entry or Method-component end. Unknown, malformed, or unlisted method starts
+  still fail closed. This resolves the prior VPCD service INSTALL `6A80`; it
+  does not widen execution to the whole Method component. A physical
+  Descriptor-free run has not yet been repeated on firmware containing this
+  fallback: the earlier Pico 2 failure (`D92E743D5F640C0F`) predates the fix.
+  Preserve both Descriptor-present and Descriptor-absent acceptance cases and
+  add hostile-CAP coverage for incomplete structural entry tables. The [Java
+  Card 3.0.5 VM specification, §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf)
+  makes Descriptor loading optional and provides exact method offsets and
+  bytecode counts there; the Method component alone does not carry exact body
+  lengths. The current default VPCD script has a 30-second APDU deadline that
+  is too short for this VM; use 90 seconds to connect and 120 seconds per APDU.
+  The repeatable entry point is `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-sio-cross-aid-vpcd`; the latest default Descriptor-omitted run
+  passed 34/34, and the Descriptor-included pass remains recorded separately.
   A new test-only SIO method passes a caller-owned byte array into native
   `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner
   before resolving the compact handle in the service heap; the applet catches

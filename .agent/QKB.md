@@ -60,7 +60,7 @@
   against D92 before changing firmware. Use an already registered reader for
   hardware work while the second-reader cause is investigated.
 
-## Standard GPPro CAP loading omits Descriptor and blocks dynamic applet INSTALL — reproduced on Pico 2 2026-11-05
+## Standard GPPro CAP loading omits Descriptor — structural-offset bounds workaround validated in VPCD 2026-11-06
 
 - **Observation:** The cross-AID physical fixture on Pico 2
   `D92E743D5F640C0F` successfully LOADed contract package
@@ -69,16 +69,26 @@
   GPPro `--list` showed only the ISD, confirming fixture cleanup removed the
   temporary packages. ARM and RISC-V max_crypto builds passed on the same
   worktree.
-- **Cause:** This matches the Descriptor-free VPCD failure. The standard pinned
-  GPPro `--load` path serializes `CAPFile.getCode()` without Descriptor. Dynamic
-  `Method_Handler::callMethod` requires a verified body range from Descriptor
-  and throws `SecurityException` when it is absent. The current denial is
-  fail-closed; do not widen a method's executable range to the whole Method
-  component.
-- **Next:** Find a bounds source that remains valid with Descriptor omitted,
-  or alter the loader test workflow only if the production requirement allows
-  it. Preserve standard GPPro behavior as the acceptance path. Keep the
-  Descriptor-present VPCD pass separate from Descriptor-free acceptance.
+- **Cause:** The standard pinned GPPro `--load` path serializes
+  `CAPFile.getCode()` without Descriptor. This initially caused the service
+  INSTALL failure because the VM had no method-body boundary. A later fallback
+  enumerates starts from the Applet, Class method tables, internal static
+  method references and Export records, bounding each method by the next
+  structural start or component end. It rejects malformed offsets and does not
+  grant the full Method component to one method.
+- **Viable workaround:** Keep the descriptor-free structural-offset fallback
+  and its offset helper tests. The standard-GPPro-shaped three-package VPCD
+  suite now passes 34/34 with Descriptor omitted; the separate Descriptor-
+  included run also passes 34/34. Latest omitted run log:
+  `artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`, SHA-256
+  `cf16e9c3786b41220256e712701e76b172a9b8bcb0c59b7a3710fd7f6e298910`.
+- **Remaining:** Re-run the Descriptor-free installation on a Pico flashed with
+  the fallback, and add malformed-CAP tests showing that missing/incomplete
+  entry metadata fails closed. Exact bytecode lengths are available in
+  Descriptor; the fallback's bound is an upper envelope from structural entry
+  points, not Descriptor bytecode counts. Preserve both Descriptor modes in
+  VPCD acceptance. Never widen execution to the whole Method component merely
+  to make installation succeed.
 - **Artifacts:**
   `artifacts/logs/sio-cross-aid-physical-20261105T144606Z.log`,
   `build/sio-cross-aid-fixture/physical-gp-install-20261105T144606Z.log`,

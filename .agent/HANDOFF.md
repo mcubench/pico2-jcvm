@@ -1,3 +1,28 @@
+# Active continuation — Descriptor-free method bounds regression revalidated — 2026-11-06 12:05 CET
+
+The old CTX-01 note that Descriptor-free service INSTALL still fails is stale.
+The runtime fallback already present in `Method_Handler::callMethod` gathers
+callable starts from the Applet, Class method tables, internal static method
+references and Export component, then bounds execution at the next known start
+or Method-component end. Unknown/malformed offsets still fail closed.
+
+Validated through the authorized VPCD wrapper using its default mode, which
+omits Descriptor like standard GPPro `CAPFile.getCode()`: the three-package
+cross-AID suite passes 34/34, including service and client INSTALL, call
+coverage and cleanup. The separate Descriptor-included 34/34 result is recorded
+in the earlier handoff entry. Log:
+`artifacts/logs/sio-cross-aid-vpcd-20261106T110214Z.log`, SHA-256
+`cf16e9c3786b41220256e712701e76b172a9b8bcb0c59b7a3710fd7f6e298910`.
+
+No runtime source change was made in this continuation. The older physical
+`D92E743D5F640C0F` INSTALL failure occurred before the structural-offset
+fallback and does not validate the fix. Next: add hostile-CAP regression for
+incomplete structural method entry metadata, then repeat standard GPPro
+Descriptor-free LOAD/INSTALL on Pico hardware when PC/SC registers a reader.
+Preserve unrelated worktree modifications.
+
+---
+
 # Active handoff — SensitiveResult.reset across SIO — 2026-11-06 11:56 CET
 
 ## Latest continuation — caller reset lifecycle tested
