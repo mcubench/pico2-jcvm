@@ -7129,3 +7129,22 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   process call does not prevent subsequent manager/applet selection in this
   PC emulator. Keep physical and sanitizer hostile-CAP recovery acceptance
   open; next test malformed branch targets at runtime.
+
+## Dynamic branch into its operand is rejected at runtime — 2026-11-06
+
+- **Fixture detail:** JCVM `GOTO` (`0x70`) is two bytes with a signed 8-bit
+  displacement. `GOTO +1` lands at its own operand byte, not an instruction
+  start. An initial mistaken three-byte/16-bit encoding became `GOTO 0`, a
+  self-loop that reached the 20-second VPCD APDU timeout; this was a test
+  fixture error. The corrected fixture leaves the third original body byte
+  intact and mutates only the first two bytes.
+- **Observed:** The corrected uploaded package's applet SELECT returns
+  `6F00`; direct processing returns `6999`. ISD selection succeeds after the
+  error, and a later applet reselect again fails `6F00` while another ISD
+  selection succeeds. VPCD test passes 6/6. Log:
+  `artifacts/logs/rv28-malformed-branch-into-operand-vpcd-20261106.log`,
+  SHA-256 `8cda8aa982a28cfa74acd94955fed3a79ef052604a789e013c8dedb1439ff7d8`.
+- **Decision:** The taken-branch runtime guard rejects a target into an
+  instruction operand for this dynamic CAP, and manager recovery remains
+  functional. PC VPCD only; sanitizer and physical recovery acceptance remain
+  open.

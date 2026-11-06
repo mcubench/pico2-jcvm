@@ -191,18 +191,24 @@ def build_malformed_load_code(mutation: str) -> Path:
         raise ValueError("assembled Method component offset mismatch")
     if mutation == "impdep1":
         mutation_index = code_index
-        replacement = 0xFE
-        if mutable[mutation_index] == replacement:
+        replacement = bytes((0xFE,))
+        if mutable[mutation_index] == replacement[0]:
             raise ValueError("upstream process already starts with impdep1")
     elif mutation == "truncated-sipush":
         mutation_index = method_start + body_end - 1
-        replacement = 0x13  # SIPUSH requires two operand bytes.
+        replacement = bytes((0x13,))  # SIPUSH requires two operand bytes.
         if mutable[mutation_index] != 0x7A:
             raise ValueError("expected process method to end with BC_RETURN")
+    elif mutation == "branch-into-operand":
+        mutation_index = code_index
+        replacement = bytes((0x70, 0x01))  # GOTO +1 targets its operand byte.
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for branch fixture")
     else:
         raise ValueError(f"unsupported mutation: {mutation}")
-    original_opcode = mutable[mutation_index]
-    mutable[mutation_index] = replacement
+    original_bytes = bytes(mutable[mutation_index :
+                                   mutation_index + len(replacement)])
+    mutable[mutation_index : mutation_index + len(replacement)] = replacement
 
     output = ROOT / f"build/rv28-malformed-{mutation}-load-code.bin"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -210,8 +216,8 @@ def build_malformed_load_code(mutation: str) -> Path:
     print(
         f"MALFORMED_CAP:PASS sha256={digest} class={owner_index} "
         f"method_offset=0x{PROCESS_METHOD_OFFSET:04X} "
-        f"body_byte_index=0x{mutation_index:X} original=0x{original_opcode:02X} "
-        f"mutated=0x{replacement:02X} type={mutation} "
+        f"body_byte_index=0x{mutation_index:X} original={original_bytes.hex().upper()} "
+        f"mutated={replacement.hex().upper()} type={mutation} "
         "source_cap_unchanged=true"
     )
     return output
@@ -220,14 +226,19 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("impdep1", "truncated-sipush"),
+        "--mutation", choices=("impdep1", "truncated-sipush",
+                                "branch-into-operand"),
         default="impdep1",
     )
     args = parser.parse_args()
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
-    select_status = "6F00" if args.mutation == "impdep1" else "9000"
-    process_status = "6999" if args.mutation == "impdep1" else "6F00"
+    select_status = (
+        "9000" if args.mutation == "truncated-sipush" else "6F00"
+    )
+    process_status = (
+        "6F00" if args.mutation == "truncated-sipush" else "6999"
+    )
     commands = [
         "--passes", "1",
         "--cap-code", str(code),

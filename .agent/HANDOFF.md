@@ -1,4 +1,27 @@
-# Active handoff — RV-28 truncated operand runtime bounds — 2026-11-06 02:32 CET
+# Active handoff — RV-28 malformed branch runtime rejection — 2026-11-06 02:38 CET
+
+## Latest continuation — dynamic `GOTO` into its operand is rejected
+
+The malformed fixture supports `branch-into-operand`: it replaces the first
+two bytecode bytes in JCAlgTest `process()` with the valid two-byte JCVM
+instruction `GOTO +1`, whose target is the displacement operand itself. A
+first bad fixture encoded a 16-bit displacement for JCVM's 8-bit GOTO and
+made a self-loop; the 20-second VPCD APDU timeout caught that fixture error.
+The corrected fixture completed normally.
+
+PC VPCD passes 6/6: target applet SELECT returns `6F00`, process APDU returns
+`6999`, ISD selection returns its FCI/`9000`, applet reselect returns `6F00`,
+and ISD selection succeeds again. Log:
+`artifacts/logs/rv28-malformed-branch-into-operand-vpcd-20261106.log`, SHA-256
+`8cda8aa982a28cfa74acd94955fed3a79ef052604a789e013c8dedb1439ff7d8`. The
+upstream CAP hash remains unchanged. Emulator-only; no firmware build, physical
+test, or sanitizer run was done.
+
+Next: consider invalid out-of-method branch targets and improve fail-closed
+runtime coverage. Keep Descriptor-free exact method starts and physical/
+sanitizer hostile-CAP recovery as open items. Preserve unrelated changes.
+
+## Previous handoff — RV-28 truncated operand runtime bounds — 2026-11-06 02:32 CET
 
 ## Latest continuation — truncated `SIPUSH` operand fails closed and recovers
 

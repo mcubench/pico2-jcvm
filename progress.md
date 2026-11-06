@@ -22641,3 +22641,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Operand fetch stays within the method body and card-manager recovery succeeds in this PC VPCD case. Next add malformed branch-target runtime coverage; physical and sanitizer hostile-CAP acceptance remain open.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log`, SHA-256 `2bdda893892a1056bbc2558083ccab2e5f0299a35669e1fc55c2b24c46274456`; generated input `build/rv28-malformed-truncated-sipush-load-code.bin` (ignored).
+
+## 2026-11-06 Exercise runtime branch target alignment 6 minutes
+
+- Step/experiment: `rv28-malformed-branch-target-vpcd-20261106`
+- When: '2026-11-06 02:32 CET' - '2026-11-06 02:38 CET'
+- Change: Added a generated CAP case replacing the beginning of JCAlgTest `process()` with the valid two-byte JCVM `GOTO +1`; the branch target is its own displacement operand. The original upstream CAP remains unchanged. Recorded findings and the fixture-encoding correction in TODO, QKB, and handoff.
+- Validation: Offline VPCD runtime test passes 6/6 with bounded default APDU timeout; Python compile, shell syntax, and scoped diff checks pass. An initial wrong three-byte encoding was a self-loop and timed out at 20 seconds; corrected JCVM encoding was tested successfully. No production C++ build, sanitizer, physical device, or flash was performed.
+- Result: Applet SELECT returns `6F00`, direct process returns `6999`; ISD selection succeeds after the error, and later applet selection again fails closed while ISD selection remains successful. CAP SHA-256 remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- Decision: The runtime taken-branch guard rejects this target into a bytecode operand in the PC VPCD emulator. Continue with an invalid out-of-method target, then sanitizer and controlled hardware recovery when safe and available.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-branch-into-operand-vpcd-20261106.log`, SHA-256 `8cda8aa982a28cfa74acd94955fed3a79ef052604a789e013c8dedb1439ff7d8`; generated input `build/rv28-malformed-branch-into-operand-load-code.bin` (ignored).
