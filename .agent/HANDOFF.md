@@ -7810,6 +7810,7 @@ after restart. V2→V1 yields V1 defaults and behavior, then persists its
 mutated state after a second restart. Full output:
 `artifacts/logs/cap-upgrade-vpcd-run-20261106T154810Z.log`; emulator trace:
 `artifacts/logs/cap-upgrade-vpcd-20261106T154927Z.log`.
+Implementation commit: `cc00f4a1` (`Test changed-version CAP package replacement`).
 
 The fixture exposed a valid CAP reference-field sentinel incorrectly rejected
 at INSTALL. `valid_instance_field_token` now accepts `0xFF` only when the

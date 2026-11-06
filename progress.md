@@ -21838,7 +21838,7 @@
 - Validation: `./tools/test-cap-instruction-boundaries` passed 12/12; `./tools/test-cap-bytecode-pc-bounds` passed 17/17; `./tools/test-cap-method-body-deploy-caps` passed across 11 packages, 978 concrete methods and 8,720 destinations with zero out-of-range or misaligned targets. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. Scoped `git -c core.whitespace=cr-at-eol diff --check` passed. No malformed-CAP runtime/sanitizer or physical test was run.
 - Result: Dynamic taken branches cannot enter decoded instruction operands or inline switch data. Three upstream Descriptor method counts still clamp by one byte to the next method. ARM firmware ends at `0x100eaf84`, leaving 86,140 bytes before the `0x10100000` storage limit.
 - Decision: Keep RV-28 open; next cover malformed CAP runtime behavior under sanitizers, nested linkage/import validation, and heap field-kind/access checks.
-- Commit: `pending`
+- Commit: `cc00f4a1`
 - Artifacts/logs: `tools/test-cap-instruction-boundaries`, `tools/test-cap-bytecode-pc-bounds`, and `tools/test-cap-method-body-deploy-caps`; build output only, no archived hardware log.
 
 ## 2026-11-04 Retain CCID final responses and recover endpoint 15 minutes
