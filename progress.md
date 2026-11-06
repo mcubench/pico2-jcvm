@@ -23377,3 +23377,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass8/source-sha256.txt` and `review-state.json`; existing generated header inspected without regeneration, no new runtime logs.
 
 - Commit: `00f6ca5366521f4eb7be78fcbab0e40772bfffa9` — completed `review-20261106-pass8`; this append resolves the pending SHA above. Review documentation/provenance only; 54 finding/task mappings checked, no implementation or hardware operations.
+
+
+## 2026-11-06 Test incompatible foreign value in typed reference array 27 minutes
+
+- Step/experiment: `ctx01-typed-array-reject-foreign`
+- When: '2026-11-06 22:01 CET' - '2026-11-06 22:28 CET'
+- Change: Added a negative CAP-to-VM regression that passes an incompatible foreign applet object through an `Object` SIO parameter and stores it into a runtime `Shareable[]` through an `Object[]` alias. The bytecode must raise catchable `ArrayStoreException`; the existing compatible foreign Shareable proxy store remains covered. Assigned INS `0x3F` after the first full run revealed a collision with the KeyBuilder test on INS `0x32`.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. Full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0` without Descriptor. `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0` with Descriptor. A preliminary run failed solely because the new test reused the existing KeyBuilder APDU command; after moving to INS `0x3F`, focused and full tests passed. Physical testing intentionally not run because PC/SC exposed only Virtual PCD readers.
+- Result: Both assignable and incompatible foreign-reference array stores now have end-to-end VPCD coverage in both Descriptor modes. No firmware binary size, timing, performance or physical-device metric was measured.
+- Decision: Retain the regression; continue CTX-01 owner/reference lifecycle audit and rerun the fixtures on physical CCID when PC/SC registers a Pico reader.
+- Commit: pending test-source commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T211815Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261106T212814Z.log`.
+
+
+## 2026-11-06 Review follow-up on library readiness and orphan traversal 4 minutes
+
+- Step/experiment: `review-20261106-pass9`
+- When: '2026-11-06 22:38:50 CET' - '2026-11-06 22:41:58 CET'
+- Change: Added R55–R56 and two matching lowercase TODOs, bringing each total to 56. Extended existing R29 resource audit to RSA CRT raw MPIs. Added provenance and continuity notes; documentation only, preserving unrelated implementation/fixture/submodule edits.
+- Validation: Traced LOAD publication versus INSTALL direct-import checks, library import closure, version compatibility, importer deletion protection, lifecycle recovery and per-free-ID orphan enumeration/erase scans. All 56 unique finding/task mappings, document links/anchors, pass9 JSON and 11 source hashes passed. Proposed A→B→C linking cases and scan/latency measurements unexecuted; no new runtime tests, builds or hardware actions.
+- Result: Two source-confirmed findings: applet preflight does not recursively establish loaded library readiness, and clean free IDs trigger repeated full-store cleanup work. Existing correct version/deletion/recovery mechanisms explicitly retained. No flash erase count, wear, throughput, manager latency, peak memory or failure rate measured.
+- Decision: Continue review-only. Validate transitive readiness without changing supported load ordering blindly; preserve crash recovery before optimizing cleanup. No implementation authorization implied.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass9/source-sha256.txt` and `review-state.json`; no runtime logs generated.

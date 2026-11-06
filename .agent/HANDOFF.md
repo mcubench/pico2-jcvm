@@ -1,3 +1,42 @@
+# Current handoff — CAP dependency and cleanup review R55–R56 — 2026-11-06 22:41:58 CET
+
+Review-only goal made progress: report/lowercase todo totals now 56. Added
+source-confirmed library dependency-closure validation gap and repeated
+full-store orphan cleanup work for clean free package IDs. Confirmed import
+version matching, loaded-uninstalled importer deletion guards and lifecycle
+recovery already exist; did not report those as missing. Extended R29 raw
+resource allocation-failure audit to RSA CRT helpers without duplicating it.
+
+Pass9 source provenance: `artifacts/reviews/review_20261106/pass9/`. All 56
+finding/task mappings, links/anchors, JSON and 11 source hashes verified.
+No new runtime cases, build, hardware operation, CAP/test/generated/source
+implementation changes. Dependency setup and scan/latency measurements remain
+unexecuted. Review-only scope remains mandatory; preserve unrelated dirty
+worktree edits and previous implementation handoffs below.
+
+# Current handoff — typed foreign-array rejection regression — 2026-11-06 22:40 CET
+
+Added a negative typed-array store case to the three-package SIO fixture. It
+passes an incompatible client applet object through an `Object` argument and
+stores it into a runtime `Shareable[]` via an `Object[]` alias; the VM raises
+catchable `ArrayStoreException`. The positive foreign `Shareable` proxy store
+continues to pass. This directly covers both outcomes of the `aastore`
+component-type check.
+
+Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and
+scoped `git diff --check` passed. The full VPCD suite passed 35/35 with
+Descriptor omitted and 35/35 with Descriptor included. An initial test run
+exposed an APDU INS collision with the existing KeyBuilder test; the new case
+now uses INS `0x3F`. Logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T211815Z.log`
+and `artifacts/logs/sio-cross-aid-vpcd-20261106T212814Z.log`. No firmware
+source/build or hardware validation was involved. At the last device check,
+three Pico USB CCID nodes were visible but PC/SC listed only two Virtual PCD
+readers; refresh PC/SC before physical testing.
+
+The test-source commit is pending. Preserve unrelated review, crypto-test,
+submodule and source edits in the worktree. Resume CTX-01 by auditing remaining
+foreign-reference consumers/lifecycle roots; keep physical acceptance open.
+
 # Current handoff — JCSystem transient/activity review R52–R54 — 2026-11-06 22:38:03 CET
 
 Review-only active goal made progress: report and lowercase todo now contain

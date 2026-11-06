@@ -1,0 +1,16 @@
+{
+  "head": "ef8959d8398278f0cfe880a34a27b1cfdb812359",
+  "scope": "Review-only CAP dependency validation and cleanup cost inspection",
+  "findings": {
+    "R55": "INSTALL validates only direct imports of the applet, not loaded library dependency closure",
+    "R56": "Orphan cleanup treats free package IDs as orphans and repeats full store walks"
+  },
+  "excluded_candidates": [
+    "Import matching does enforce same major and equal/newer resident minor",
+    "Loaded-but-uninstalled importer dependency deletion is guarded",
+    "Cross-store lifecycle recovery exists; missing-state claims are not made"
+  ],
+  "additional_scope": "Existing R29 raw-resource exception cleanup audit extended to RSA CRT helpers",
+  "validation": "Source and documented import readiness/host test coverage inspected; no CAP mutation, new tests, builds, runtime cases or hardware operations",
+  "performance": "Traversal multiplicity identified by source; no latency, scan-count instrumentation, endurance or throughput measurements"
+}

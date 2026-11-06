@@ -118,3 +118,13 @@ There are now 54 matching findings/tasks. These additions are source-confirmed; 
 - [ ] **RV-20261106-54 — Report NO_TRANSIENT_SPACE for transient backing-limit failures.** P2; owner: PROFILE-01 / HARD-01 / CTX-03. Cover local/global per-type backing boundaries and allocator exhaustion, int-enabled/disabled profiles and negative lengths; assert exact Java reasons and no leaked registrations. Keep persistent NO_RESOURCE behavior separate; larger supported arrays are not required. [R54](docs/review_20261106.md#r54--p2-transient-allocation-limit-failures-report-the-wrong-resource-reason)
 
 Extend RV-20261106-11 to repeated distinct-AID install/lookup/delete and global AID cache lifetime/lookup costs. Reclaim only unreferenced entries while preserving live runtime AID references and identity semantics; no memory-exhaustion rate was measured.
+
+
+## Ninth pass — CAP dependency closure and cleanup cost R55–R56
+
+The report and additional task list now contain 56 matching entries. These two additions are source-confirmed; the dependency scenario and scan/latency measurements remain unexecuted. Existing version matching, importer deletion guards and lifecycle recovery were verified present.
+
+- [ ] **RV-20261106-55 — Validate loaded-library dependency readiness before applet execution.** P2; owner: GP-01 / PROFILE-01 / HARD-01. Cover A→B→C with missing/wrong-version/present C and C used only inside B's method body. Validate reachable dependencies with bounded traversal or an earlier library linking boundary, preserve supported load order, define cycle handling and demonstrate correction permits INSTALL. Direct-import and deletion guards are insufficient evidence. [R55](docs/review_20261106.md#r55--p2-install-preflight-does-not-validate-the-dependency-closure-of-loaded-libraries)
+- [ ] **RV-20261106-56 — Avoid repeated full-store orphan sweeps for already clean free IDs.** P2; owner: STORE-01 / HOST-01 / PERSIST-03. Measure scan counts/manager latency for 0/1/7 free slots and sparse/dense clean/orphaned stores. Batch or cache only with validated recovery invariants; cover interrupted publication and package-ID reuse. Traversal counts are source-inferred; no flash erase count or speedup is claimed. [R56](docs/review_20261106.md#r56--p2-orphan-cleanup-repeats-full-storage-walks-for-ordinary-free-package-slots)
+
+Extend RV-20261106-29's allocation-failure resource audit to RSA CRT modulus/exponentiation helpers in `native_rsa_math.hpp`, including vector failures while raw MPIs are live. This is the existing exception-cleanup issue, not another task.
