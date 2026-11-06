@@ -7296,3 +7296,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limits:** This is emulator/runtime regression evidence only. No malformed
   CAP was installed on physical hardware; hostile-CAP recovery on Pico remains
   open.
+
+## Exception protected-range offsets and boundaries — 2026-11-06
+
+- **Issue:** The Method exception table's `start_pc` is one-based after its
+  handler table. Subtracting only the handler-table byte count shifted the
+  range start one byte into the preceding instruction. A trial guard that
+  checked all rows also rejected ranges belonging to other methods, and a
+  stricter end-opcode check rejected valid JCAlgTest ranges.
+- **Viable solution:** Convert the active start as
+  `start - handler_table_bytes - 1`. Validate component bounds on each row, but
+  check decoded instruction alignment and frame membership only after the row
+  matches the current throwing PC. Require the active start to be an opcode
+  boundary and the exclusive end to remain inside the frame; do not require
+  the end to be an opcode boundary. Regression: malformed start into a
+  `BSPUSH` operand returns `6F00` with selection recovery (6/6); valid upstream
+  JCAlgTest returns 15/15 including RSA-SHA1 and expected unsupported results.
+  ARM/RISC-V/PC builds pass.
+- **Limits:** PC VPCD only; no hostile-CAP physical recovery test was run.
