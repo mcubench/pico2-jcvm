@@ -22617,5 +22617,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Ran exact-reader read-only GPPro `--list` against `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00` with a 30-second timeout and elevated host-access path. It produced no output and exited 124. No source build or test was performed.
 - Result: PC/SC lists D92 but the bounded GPPro inventory did not complete; the command may have reached PC/SC, with no transaction trace available. No firmware was flashed.
 - Decision: Keep physical validation blocked on a successful bounded read-only APDU. Continue RV-28 source work offline and do not infer hardware firmware malfunction from the timeout alone.
-- Commit: pending.
+- Commit: `ed88c1b1` (`Record GPPro reader transaction timeout`).
 - Artifacts/logs: command output was empty; timeout exit status 124; no persistent log.
