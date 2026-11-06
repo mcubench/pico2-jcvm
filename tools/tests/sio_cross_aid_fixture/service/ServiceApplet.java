@@ -4,6 +4,11 @@ import javacard.framework.AID;
 import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.JCSystem;
+import javacard.framework.OwnerPIN;
+import javacard.framework.OwnerPINBuilder;
+import javacard.framework.OwnerPINx;
+import javacard.framework.OwnerPINxWithPredecrement;
+import javacard.framework.PIN;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
 import javacard.security.CryptoException;
@@ -227,6 +232,59 @@ public final class ServiceApplet extends Applet implements Probe {
       } catch (SecurityException staleSensitiveResultCleared) {
         return (short) 0x6A75;
       }
+    }
+  }
+
+  public short sensitivePinResults() {
+    OwnerPIN ownerPIN = new OwnerPIN((byte) 3, (byte) 4);
+    PIN pin = ownerPIN;
+    try {
+      if (pin.getTriesRemaining() != 3) return (short) 0x6A7B;
+      SensitiveResult.assertEquals((short) 3);
+      byte[] correct = { 0x12, 0x34 };
+      byte[] incorrect = { 0x12, 0x35 };
+      ownerPIN.update(correct, (short) 0, (byte) correct.length);
+      if (!pin.check(correct, (short) 0, (byte) correct.length))
+        return (short) 0x6A7B;
+      SensitiveResult.assertTrue();
+      if (!pin.isValidated()) return (short) 0x6A7B;
+      SensitiveResult.assertTrue();
+      if (pin.check(incorrect, (short) 0, (byte) incorrect.length))
+        return (short) 0x6A7B;
+      SensitiveResult.assertFalse();
+      if (pin.getTriesRemaining() != 2) return (short) 0x6A7B;
+      SensitiveResult.assertEquals((short) 2);
+      pin.reset();
+      if (pin.isValidated()) return (short) 0x6A7B;
+      SensitiveResult.assertFalse();
+      return (short) 0x6A7C;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) 0x6A7D;
+    }
+  }
+
+  public short sensitiveOwnerPinXResults() {
+    byte stage = 1;
+    try {
+      OwnerPINx pin = (OwnerPINx) OwnerPINBuilder.buildOwnerPIN(
+          (byte) 3, (byte) 4, OwnerPINBuilder.OWNER_PIN_X);
+      stage = 2;
+      if (pin.getTryLimit() != 3) return (short) 0x6A7E;
+      stage = 3;
+      SensitiveResult.assertEquals((short) 3);
+      stage = 4;
+      OwnerPINxWithPredecrement predecrement =
+          (OwnerPINxWithPredecrement) OwnerPINBuilder.buildOwnerPIN(
+              (byte) 3, (byte) 4,
+              OwnerPINBuilder.OWNER_PIN_X_WITH_PREDECREMENT);
+      stage = 5;
+      if (predecrement.decrementTriesRemaining() != 2)
+        return (short) 0x6A7E;
+      stage = 6;
+      SensitiveResult.assertEquals((short) 2);
+      return (short) 0x6A7F;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) (0x6A90 + stage);
     }
   }
 

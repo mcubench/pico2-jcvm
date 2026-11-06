@@ -861,12 +861,17 @@ source-based follow-ups, without a new physical reproduction in this review.
   Native `KeyBuilder.buildKey()` overloads now clear stale results at entry and
   publish the created key object only after construction succeeds. An
   interpreted SIO case asserts the successful key identity and verifies an
-  invalid key type clears the previous object result. Focused and full VPCD
-  coverage pass; PC, ARM and RISC-V builds pass. No physical device was used.
-  Remaining: exercise other result producers (PIN, random-data,
-  checksum, AEAD and key APIs where enabled), verify GC rooting of object
-  results after ordinary locals are dropped through interpreted SIO, and
-  repeat selected coverage on physical hardware when available.
+  invalid key type clears the previous object result. PIN and OwnerPINx
+  `invokeinterface` results are now captured at the interpreted callee return:
+  `getTriesRemaining`, `check`, `isValidated`, `getTryLimit`, and
+  `decrementTriesRemaining` are asserted in the service and after SIO by the
+  caller. Focused and full VPCD coverage pass; PC `symm_crypto`, ARM `current`,
+  and RISC-V `current` builds pass. No physical device was used.
+  Remaining: cover PIN methods called through concrete-class `invokevirtual`,
+  exercise random-data, checksum, AEAD and remaining key API results where
+  enabled, verify GC rooting of object results after ordinary locals are
+  dropped through interpreted SIO, and repeat selected coverage on physical
+  hardware when available.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.

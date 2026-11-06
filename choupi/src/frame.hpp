@@ -37,6 +37,9 @@
 namespace jcvm {
 
 class Frame {
+public:
+  enum class SensitiveReturn : uint8_t { None, Boolean, Short };
+
 private:
   struct old_pc_t {
     bool isUsed;
@@ -50,6 +53,7 @@ private:
   pc_t pc;      // method program counter
   const uint8_t *method_start_pc; // entry bytecode for this frame
   const uint8_t *instruction_pc; // address of the currently executing opcode
+  SensitiveReturn sensitive_return = SensitiveReturn::None;
 
   List<old_pc_t> old_pcs;
 
@@ -85,6 +89,8 @@ public:
   const uint8_t *getInstructionPC() const noexcept;
   /// Get the entry bytecode of this frame's method.
   const uint8_t *getMethodStartPC() const noexcept { return method_start_pc; }
+  SensitiveReturn getSensitiveReturn() const noexcept { return sensitive_return; }
+  void setSensitiveReturn(SensitiveReturn value) noexcept { sensitive_return = value; }
   /// Save the address of the opcode before it is decoded.
   void setInstructionPC(const uint8_t *instruction_pc) noexcept;
   /// Discard all operands in this frame.

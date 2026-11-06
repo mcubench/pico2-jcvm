@@ -57,6 +57,38 @@
 namespace jcvm {
 
 namespace {
+Frame::SensitiveReturn pinSensitiveReturn(
+    Context &context, const jc_cap_class_ref &interface_ref,
+    const uint8_t mapped_method) {
+  if (!FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID()) ||
+      !interface_ref.isExternalClassRef()) {
+    return Frame::SensitiveReturn::None;
+  }
+  const auto &external = interface_ref.external_classref;
+  const auto *package_info = Import_Handler(context.getCurrentPackage())
+                                .getPackageAID(external.package_token & 0x7F);
+  if (package_info == nullptr || package_info->AID_length != 7 ||
+      std::memcmp(package_info->AID, "\xA0\x00\x00\x00\x62\x01\x01", 7) != 0) {
+    return Frame::SensitiveReturn::None;
+  }
+  // Embedded PIN method order: getTriesRemaining, check, isValidated, reset.
+  if (external.class_token == 1) {
+    if (mapped_method == 0) return Frame::SensitiveReturn::Short;
+    if (mapped_method == 1 || mapped_method == 2)
+      return Frame::SensitiveReturn::Boolean;
+  }
+  // OwnerPINx and its predecrement variant extend the same PIN prefix.
+  if (external.class_token == 19 || external.class_token == 20) {
+    if (mapped_method == 0 || mapped_method == 5 ||
+        (external.class_token == 20 && mapped_method == 8)) {
+      return Frame::SensitiveReturn::Short;
+    }
+    if (mapped_method == 1 || mapped_method == 2)
+      return Frame::SensitiveReturn::Boolean;
+  }
+  return Frame::SensitiveReturn::None;
+}
+
 // Descriptor access_flags use java.lang.reflect.Modifier bit values, unlike
 // the compact Class component flags used by JC_CAP_CLASS_ACC_INTERFACE.
 constexpr uint8_t JC_CAP_DESCRIPTOR_ACC_INTERFACE = 0x80;
@@ -1338,9 +1370,17 @@ void Bytecodes::bc_invokeinterface() {
                              .getImplementedInterfaceMethodOffset(
                                  classref, interface_ref, interface_method,
                                  false, context.getCurrentPackage());
+    const auto sensitive_return =
+        pinSensitiveReturn(context, interface_ref, interface_method);
+    if (sensitive_return != Frame::SensitiveReturn::None) {
+      context.resetSensitiveResult();
+    }
     // Calling the method
     method_handler.setPackage(method_offset.first);
     method_handler.callVirtualMethod(method_offset.second);
+    if (sensitive_return != Frame::SensitiveReturn::None) {
+      stack.getCurrentFrame().setSensitiveReturn(sensitive_return);
+    }
   }
 
   return;

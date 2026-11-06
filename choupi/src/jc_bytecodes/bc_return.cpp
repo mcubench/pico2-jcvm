@@ -26,6 +26,7 @@
 */
 
 #include "../debug.hpp"
+#include "../context.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 
@@ -106,6 +107,13 @@ void Bytecodes::bc_sreturn() {
 
   returned_value = stack.pop_Short();
   stack.recordMethodReturn(Stack::ReturnKind::Short);
+
+  const auto sensitive_return = stack.getCurrentFrame().getSensitiveReturn();
+  if (sensitive_return == Frame::SensitiveReturn::Short) {
+    context.setSensitiveResultShort(returned_value);
+  } else if (sensitive_return == Frame::SensitiveReturn::Boolean) {
+    context.setSensitiveResultBoolean(returned_value != 0);
+  }
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();

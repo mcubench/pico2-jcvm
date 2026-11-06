@@ -327,6 +327,24 @@ def main() -> int:
                       "and clears stale result on failure")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_PIN") == "1":
+                for command, expected, description in (
+                    ("8036000000", "6A7C9000",
+                     "PIN byte/boolean results across SIO"),
+                    ("8037000000", "6A7F9000",
+                     "OwnerPINx byte results across SIO"),
+                ):
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex(command), description
+                    )
+                    if response != bytes.fromhex(expected):
+                        raise RuntimeError(
+                            f"{description} returned {response.hex().upper()}, "
+                            f"expected {expected}"
+                        )
+                print("TEST:PASS PIN/OwnerPINx SensitiveResult assertions across SIO")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("802C000000"),
@@ -506,6 +524,26 @@ def main() -> int:
                 )
             print("TEST:PASS KeyBuilder publishes successful object result and "
                   "clears stale result on failure")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8036000000"),
+                "PIN SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A7C9000"):
+                raise RuntimeError(
+                    f"PIN SensitiveResult returned {response.hex().upper()}, "
+                    "expected 6A7C9000"
+                )
+            print("TEST:PASS PIN byte/boolean result assertions across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8037000000"),
+                "OwnerPINx SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A7F9000"):
+                raise RuntimeError(
+                    f"OwnerPINx SensitiveResult returned {response.hex().upper()}, "
+                    "expected 6A7F9000"
+                )
+            print("TEST:PASS OwnerPINx and predecrement byte results across SIO")
             response = vpcd.exchange(
                 connection, bytes.fromhex("802B000000"),
                 "propagate exact exception type and reason across SIO"

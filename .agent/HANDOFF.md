@@ -1,3 +1,32 @@
+# Active handoff — PIN SensitiveResult through SIO — 2026-11-06 09:03 CET
+
+## Latest continuation — interface-based PIN result propagation
+
+`invokeinterface` now marks interpreted Java Card framework PIN result frames.
+On successful `sreturn`, the VM publishes the returned byte/boolean as
+SensitiveResult. The service fixture and three-package SIO caller check
+`PIN.getTriesRemaining`, `PIN.check` true and false, `PIN.isValidated` true and
+false, `OwnerPINx.getTryLimit`, and
+`OwnerPINxWithPredecrement.decrementTriesRemaining`.
+
+Validation passed: focused PIN VPCD and the full cross-AID VPCD suite (34/34)
+on a freshly rebuilt `symm_crypto` PC emulator; ARM `current` and RISC-V
+`current` wrappers pass. ARM firmware ends at `0x100D4A30` with 177,616 bytes
+remaining. No physical hardware test was run. The first OwnerPINx attempt used
+an old PC emulator and failed; rebuilt PC passed. QKB already records that the
+VPCD wrapper consumes an existing PC binary, so rebuild with
+`./tools/build-pc --profile symm_crypto` after native edits.
+
+Source/test commit: pending; progress record is at the end of `progress.md`.
+
+Next: add equivalent coverage for PIN methods called through concrete-class
+`invokevirtual` (current fixture calls the sensitive methods through
+interfaces), then continue with RandomData/checksum/AEAD result producers and
+GC rooting of returned objects. Preserve unrelated dirty worktree changes and
+do not claim physical acceptance without a real board test.
+
+---
+
 # Active handoff — SIO SensitiveResult profile validation — 2026-11-06 06:11 CET
 
 ## Latest continuation — KeyBuilder SensitiveResult results
