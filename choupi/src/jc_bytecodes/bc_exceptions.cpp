@@ -410,7 +410,11 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
         }
         stack.getCurrentFrame().clearOperands();
         stack.push_Reference(objectref, reference_owner);
-        stack.getPC().setValue(methods.data() + handler_method_offset);
+        // Handler offsets come from the uploaded Method component. Keep the
+        // transfer inside this frame and reject offsets into instruction
+        // operands just like dynamic-package branch targets.
+        stack.getPC().setBranchFromOffset(
+            methods.data() + handler_method_offset, 0, true);
         return;
       }
     }
