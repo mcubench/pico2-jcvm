@@ -1,3 +1,20 @@
+# Current handoff — JCSystem transient/activity review R52–R54 — 2026-11-06 22:38:03 CET
+
+Review-only active goal made progress: report and lowercase todo now contain
+54 findings/tasks. New source-confirmed mismatches: deselect-transient
+allocation lacks selected-context check, isAppletActive queries only the
+executing applet, and transient backing-limit errors map to NO_RESOURCE
+instead of NO_TRANSIENT_SPACE. Extended R11 retention scope to historical
+runtime AID cache entries rather than creating a duplicate retention task.
+
+Two candidate defects were excluded: raw Object stack pops already reject
+foreign owners; AID bytes use retained nontransient buffers and survive reset.
+Pass8 source/generated hashes and scope under
+`artifacts/reviews/review_20261106/pass8/`. All 54 mapping/link/anchor checks,
+JSON and 11 input hashes passed. No new runtime tests, builds, CAP/generated
+edits, implementation changes or hardware operations. Continue review-only;
+preserve unrelated worktree edits and prior handoffs below.
+
 # Current handoff — ArrayLogic native API review R48–R51 — 2026-11-06 22:34:30 CET
 
 Review-only active goal made progress: report and lowercase todo now contain

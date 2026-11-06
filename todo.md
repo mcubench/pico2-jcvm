@@ -107,3 +107,14 @@ The report and additional task list now contain 51 matching findings/tasks. All 
 - [ ] **RV-20261106-51 — Dispatch native utility errors as catchable Java UtilException with reasons.** P2; owner: PROFILE-01 / HARD-01 / CTX-01. Provide ILLEGAL_VALUE versus TYPE_MISMATCHED through native exception dispatch. Test exact/superclass catches for invalid types and mismatched fills, assert reasons and complete valid work in the same and next APDU. [R51](docs/review_20261106.md#r51--p2-native-utility-errors-cannot-be-caught-as-the-declared-utilexception)
 
 Extend R19/R46 measurements to the generic copy helper's whole-input `uint32_t` vector, including byte copies. Scratch overhead is source-observed; peak memory and throughput remain unmeasured.
+
+
+## Eighth pass — JCSystem transient and activity contracts R52–R54
+
+There are now 54 matching findings/tasks. These additions are source-confirmed; new runtime cases remain unexecuted. Foreign raw Object arguments and reset-zeroed AID bytes were investigated and excluded as defects after checking owner validation and retained storage.
+
+- [ ] **RV-20261106-52 — Enforce selected-context rules for CLEAR_ON_DESELECT allocation.** P2; owner: CTX-03 / PROFILE-01 / HARD-01. Use a native selected-context predicate for all transient array types. Test selected A invoking unselected service B, both clear events, same-context/sibling cases, installation/select callbacks and invalid events; assert ILLEGAL_TRANSIENT where required and following-call recovery. [R52](docs/review_20261106.md#r52--p2-deselect-transient-allocation-does-not-check-whether-its-applet-context-is-selected)
+- [ ] **RV-20261106-53 — Query requested applet activity independently of the executing applet.** P2; owner: CTX-01/03 / PROFILE-01. Test selected A, inactive B and B querying A during SIO, registration/install/select callbacks, reset and sibling instances. Answer from actual instance state keyed by AID; this does not require logical-channel expansion. [R53](docs/review_20261106.md#r53--p2-isappletactive-answers-only-for-the-executing-applets-own-aid)
+- [ ] **RV-20261106-54 — Report NO_TRANSIENT_SPACE for transient backing-limit failures.** P2; owner: PROFILE-01 / HARD-01 / CTX-03. Cover local/global per-type backing boundaries and allocator exhaustion, int-enabled/disabled profiles and negative lengths; assert exact Java reasons and no leaked registrations. Keep persistent NO_RESOURCE behavior separate; larger supported arrays are not required. [R54](docs/review_20261106.md#r54--p2-transient-allocation-limit-failures-report-the-wrong-resource-reason)
+
+Extend RV-20261106-11 to repeated distinct-AID install/lookup/delete and global AID cache lifetime/lookup costs. Reclaim only unreferenced entries while preserving live runtime AID references and identity semantics; no memory-exhaustion rate was measured.

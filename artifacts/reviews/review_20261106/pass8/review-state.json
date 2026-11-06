@@ -1,0 +1,16 @@
+{
+  "head": "b2dbfa613f79033fe2f9ea475769d16eff7ae942",
+  "scope": "Review-only JCSystem transient and activity contract inspection",
+  "findings": {
+    "R52": "Deselect transient allocation does not check selected context",
+    "R53": "isAppletActive searches only executing applet identity/state",
+    "R54": "FullMemory transient allocation maps to NO_RESOURCE instead of NO_TRANSIENT_SPACE"
+  },
+  "rejected_candidates": [
+    "Generated raw Object pops do not silently discard foreign owners: Stack.pop_Reference explicitly rejects them",
+    "Global AID byte buffers use retained nontransient storage and are not zeroed by clearGlobalArrays"
+  ],
+  "additional_scope": "AID cache retention added to existing R11 rather than a duplicate finding",
+  "validation": "Source/API contracts and current probe coverage inspected; no builds, runtime cases, implementation/test/CAP/generated changes or hardware operations",
+  "performance": "AID cache lifetime and lookup work inferred; no measurements"
+}

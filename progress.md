@@ -23363,3 +23363,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass7/source-sha256.txt` and `review-state.json`; existing generated header hashed, no new runtime logs produced.
 
 - Commit: `04799e6f1c3c7be1462a7bda2d675190a0e4774f` — completed `review-20261106-pass7`; this append resolves the pending SHA above. Review documents and provenance only; 51 finding/task mappings checked.
+
+
+## 2026-11-06 Review follow-up on transient context and activity queries 4 minutes
+
+- Step/experiment: `review-20261106-pass8`
+- When: '2026-11-06 22:35:10 CET' - '2026-11-06 22:38:03 CET'
+- Change: Added R52–R54 and three matching lowercase TODOs, bringing each total to 54; extended existing R11 retention scope to the AID cache and recorded excluded hypotheses. Added provenance and continuity notes. Documentation/evidence only; no implementation/test/CAP/generated changes.
+- Validation: Traced JCSystem factories, clear-event decoding, backing-size failures, activity query and selected-client/SIO-server paths against checked-in API contracts. Verified foreign reference rejection in raw stack pops and retained AID bytes before excluding those candidates. All 54 unique mapping/link/anchor checks, pass8 JSON and 11 source/generated hashes passed. No new runtime cases, builds or hardware operations; proposed API acceptance remains unexecuted.
+- Result: Three source-confirmed mismatches and two rejected defect candidates. A positive 16,384-int request reaches the 65,536-byte backing limit by source arithmetic; the resulting wrong reason was not executed. Memory exhaustion rates, AID-cache latency and hardware metrics not measured.
+- Decision: Continue review-only; distinguish selected instance state from currently executing service context, and distinguish transient unavailability from persistent resource exhaustion in future implementation tasks.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass8/source-sha256.txt` and `review-state.json`; existing generated header inspected without regeneration, no new runtime logs.
