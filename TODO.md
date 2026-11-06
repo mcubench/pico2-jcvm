@@ -1049,13 +1049,15 @@ source-based follow-ups, without a new physical reproduction in this review.
   `.agent/QKB.md`, and `progress.md`.
 
 - [ ] **CAP-REINSTALL-02: Reconcile runtime contexts after a late DELETE failure.**
-  Owners: GP-01, PERSIST-02, CTX-03. Source-review risk; not yet reproduced.
-  Inject CAP erase or instance-metadata removal failure after persistent DELETE
-  commits (`6581`), then recover and reinstall under the same AIDs/slot without
-  reset. Acceptance: recovery cannot reuse stale applet roots, heap state or
-  proxy routes; correct runtime invalidation if confirmed. Exercise both package
-  and instance deletion, and verify behavior again after restart.
-  Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md).
+  Owners: GP-01, PERSIST-02, CTX-03. Reproduced and fixed in PC VPCD and CCID
+  paths: persistent DELETE can commit before package/instance metadata cleanup
+  returns `6581`, so runtime contexts and their SIO routes must be invalidated
+  whenever that commit occurred, regardless of the final status word. Injected
+  package and instance cleanup failures both return `6581`; same-process
+  reinstall keeps the old proxy blocked and a fresh lookup reaches the new
+  service (`45679000`). Remaining acceptance: repeat each injected failure
+  across emulator restart and on physical Pico hardware. Evidence in
+  `.agent/QKB.md` and `progress.md`.
 
 - [ ] **CAP-REINSTALL-03: Verify changed-version CAP replacement end to end.**
   Owners: GP-01, CTX-03, AC-02. Current same-CAP tests reload identical bytes.

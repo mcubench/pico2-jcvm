@@ -20,6 +20,9 @@ public:
                                 size_t length) noexcept;
   uint16_t deleteObject(const uint8_t *aid, uint8_t aid_length,
                         bool delete_related_objects) noexcept;
+  bool deletePersistentStateCommitted() const noexcept {
+    return delete_persistent_state_committed_;
+  }
   bool recoverPendingInstalls() noexcept;
   void restoreInstalled() noexcept;
   bool restorePackageForAid(const uint8_t *package_aid,
@@ -113,6 +116,7 @@ private:
   bool loading_ = false;
   bool loaded_ = false;
   bool installed_ = false;
+  bool delete_persistent_state_committed_ = false;
   uint8_t install_failure_stage_ = 0;
   uint16_t install_vm_status_ = 0;
   uint8_t install_vm_exception_id_ = 0;

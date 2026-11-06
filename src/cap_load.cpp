@@ -1296,9 +1296,10 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
 
 uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
                                      bool delete_related_objects) noexcept {
+  delete_persistent_state_committed_ = false;
   // Card-manager DELETE may target any previously installed package or
-  // instance. Complete interrupted cross-store publication before resolving
-  // the requested AID.
+  // instance. Complete interrupted cross-store lifecycle publication before
+  // resolving the requested AID.
   if (!recover_pending_lifecycle_state() ||
       !clear_orphaned_dynamic_persistent_state()) {
     return 0x6581;
@@ -1408,10 +1409,24 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
 #endif
     return transaction_status;
   }
+  delete_persistent_state_committed_ = true;
 
   if (delete_package) {
     const uint8_t deleted_package_id = package_id_;
     reset();
+#ifdef PC_VERSION
+    static bool package_cleanup_failure_injected = false;
+    const char *fail_package_cleanup =
+        std::getenv("CHOUPI_TEST_FAIL_DELETE_PACKAGE_CLEANUP_ONCE");
+    if (!package_cleanup_failure_injected && fail_package_cleanup != nullptr &&
+        fail_package_cleanup[0] == '1') {
+      package_cleanup_failure_injected = true;
+      std::fprintf(stderr,
+                   "VPCD:TEST_FAILED_DELETE_PACKAGE_CLEANUP package=%u\n",
+                   static_cast<unsigned>(deleted_package_id));
+      return 0x6581;
+    }
+#endif
     if (!cap_store_delete_package(deleted_package_id)) {
 #ifdef PC_VERSION
       std::fprintf(stderr, "VPCD:DELETE_FAIL stage=7 sw=6581\n");
@@ -1423,6 +1438,19 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
     }
     return 0x9000;
   } else {
+#ifdef PC_VERSION
+    static bool instance_cleanup_failure_injected = false;
+    const char *fail_instance_cleanup =
+        std::getenv("CHOUPI_TEST_FAIL_DELETE_INSTANCE_CLEANUP_ONCE");
+    if (!instance_cleanup_failure_injected &&
+        fail_instance_cleanup != nullptr && fail_instance_cleanup[0] == '1') {
+      instance_cleanup_failure_injected = true;
+      std::fprintf(stderr,
+                   "VPCD:TEST_FAILED_DELETE_INSTANCE_CLEANUP package=%u\n",
+                   static_cast<unsigned>(package_id_));
+      return 0x6581;
+    }
+#endif
     if (!cap_store_remove_package_instance(package_id_, aid, aid_length))
       return 0x6581;
     installed_ = false;

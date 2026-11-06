@@ -1,3 +1,24 @@
+## Late GP DELETE failure still requires runtime invalidation — 2026-11-06
+
+- **Finding:** DELETE commits persistent-state removal before deleting the CAP
+  slot or instance registry entry. A later cleanup failure returns `6581`, even
+  though the applet's persistent roots are already gone. CCID and VPCD handlers
+  that invalidated contexts only on `9000` left a live `Context` holding stale
+  static roots and SIO proxy routes. A same-AID package reinstall could then
+  reuse those stale routes.
+- **Viable fix:** Have `CapLoadSession` expose whether persistent DELETE
+  committed. Both physical CCID and VPCD handlers call deleted-context
+  invalidation on either `9000` or a committed DELETE, including a later `6581`.
+  Package restore also refuses to restore a dynamic package whose package
+  record no longer exists. Do not infer commit from status word alone.
+- **Validation:** PC VPCD injected package-cleanup and instance-cleanup failures
+  each returned `6581` after durable DELETE. In both same-process recovery runs
+  the old proxy stayed blocked and, after reinstall, fresh SIO lookup returned
+  `45679000`. Full SIO VPCD suite passed 34/34; RMI registry, ARM, and RISC-V
+  builds passed. Logs and hashes are in the `gp-delete-late-cleanup-20261106`
+  progress entry. Restart-after-injected-failure and physical CCID validation
+  remain open.
+
 ## Pico USB CCID interfaces enumerate while pcscd omits all physical readers — observed 2026-11-06
 
 - **Observation:** After a successful physical SIO run, the updated follow-up

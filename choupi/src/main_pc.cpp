@@ -1598,7 +1598,8 @@ uint16_t vpcd_process_card_manager(
     (void)choupi_vm_deselect_applet(0);
     const uint16_t status = vpcd_cap_load_session.deleteObject(
         request.aid, request.aid_length, request.delete_related_objects);
-    if (status == 0x9000) {
+    if (status == 0x9000 ||
+        vpcd_cap_load_session.deletePersistentStateCommitted()) {
       choupi_vm_forget_deleted_applet_contexts(
           request.aid, request.aid_length, deleted_package_id,
           deleting_package ? 1 : 0);

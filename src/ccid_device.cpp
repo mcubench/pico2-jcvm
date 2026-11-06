@@ -720,9 +720,11 @@ void process_message(uint8_t rhport) {
           status = cap_load_session.deleteObject(
               request.aid, request.aid_length,
               request.delete_related_objects);
-          if (status == 0x9000) {
-            // DELETE removes persistent fields and child arrays. Discard only
-            // cached contexts belonging to the deleted instance/package.
+          if (status == 0x9000 ||
+              cap_load_session.deletePersistentStateCommitted()) {
+            // Persistent DELETE may commit before CAP metadata cleanup. Drop
+            // runtime state whenever durable state is gone, even if the APDU
+            // reports a recoverable 6581 from the later cleanup stage.
             choupi_vm_forget_deleted_applet_contexts(
                 request.aid, request.aid_length, deleted_package_id,
                 deleting_package ? 1 : 0);

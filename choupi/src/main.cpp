@@ -1157,7 +1157,8 @@ jcvm::Context *choupi_vm_find_or_restore_applet_context(
   uint16_t class_index = 0;
   if (!cap_store_find_instance(aid, aid_length, package_id, applet_aid,
                                applet_aid_length, class_index) ||
-      !cap_store_applet_owner(aid, aid_length, owner)) {
+      !cap_store_applet_owner(aid, aid_length, owner) ||
+      !jcvm::FlashMemory_Handler::isPackageExist(package_id)) {
     return nullptr;
   }
 

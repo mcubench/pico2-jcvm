@@ -952,11 +952,25 @@ def main() -> int:
                 response = vpcd.delete_object(
                     delete_scp, SERVICE_PACKAGE, True,
                     "DELETE cross-AID service package with related objects",
-                    expected_statuses=(0x9000, 0x6985, 0x6A80),
+                    expected_statuses=(0x9000, 0x6581, 0x6985, 0x6A80),
                 )
-                if response == bytes.fromhex("9000"):
-                    print("TEST:PASS package DELETE succeeded with dependent "
-                          "client still installed")
+                injected_late_failure = (
+                    os.environ.get(
+                        "CHOUPI_TEST_FAIL_DELETE_PACKAGE_CLEANUP_ONCE"
+                    ) == "1" and response == bytes.fromhex("6581")
+                )
+                if response == bytes.fromhex("9000") or injected_late_failure:
+                    if injected_late_failure:
+                        if "VPCD:TEST_FAILED_DELETE_PACKAGE_CLEANUP" not in \
+                                log_path.read_text(errors="replace"):
+                            raise RuntimeError(
+                                "late package DELETE failure was not injected"
+                            )
+                        print("TEST:PASS late package cleanup failure returned "
+                              "6581 after durable DELETE")
+                    else:
+                        print("TEST:PASS package DELETE succeeded with "
+                              "dependent client still installed")
                     response = vpcd.exchange(
                         connection, select_client,
                         "reselect client after package DELETE"
@@ -1003,6 +1017,17 @@ def main() -> int:
                         raise RuntimeError(
                             "service applet INSTALL after package DELETE "
                             f"returned {response[-2:].hex().upper()}, expected 9000"
+                        )
+                    select_service = bytes((0x00, 0xA4, 0x04, 0x00,
+                                            len(SERVICE_APPLET))) + SERVICE_APPLET
+                    response = vpcd.exchange(
+                        connection, select_service,
+                        "select reinstalled service applet"
+                    )
+                    if response[-2:] != bytes.fromhex("9000"):
+                        raise RuntimeError(
+                            "reinstalled service SELECT returned "
+                            f"{response.hex().upper()}, expected 9000"
                         )
                     response = vpcd.exchange(
                         connection, select_client,
@@ -1786,8 +1811,91 @@ def main() -> int:
             scp = vpcd.Scp03(connection)
             scp.authenticate()
             response = vpcd.delete_object(
-                scp, SERVICE_APPLET, False, "DELETE cross-AID service applet"
+                scp, SERVICE_APPLET, False, "DELETE cross-AID service applet",
+                expected_statuses=(0x9000, 0x6581),
             )
+            injected_instance_failure = (
+                os.environ.get(
+                    "CHOUPI_TEST_FAIL_DELETE_INSTANCE_CLEANUP_ONCE"
+                ) == "1" and response == bytes.fromhex("6581")
+            )
+            if injected_instance_failure:
+                if "VPCD:TEST_FAILED_DELETE_INSTANCE_CLEANUP" not in \
+                        log_path.read_text(errors="replace"):
+                    raise RuntimeError(
+                        "late instance DELETE failure was not injected"
+                    )
+                print("TEST:PASS late instance cleanup failure returned "
+                      "6581 after durable DELETE")
+                response = vpcd.exchange(
+                    connection, select_client,
+                    "reselect client after failed service DELETE"
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "client SELECT after failed service DELETE returned "
+                        f"{response.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8016000000"),
+                    "reject proxy after failed service DELETE"
+                )
+                if response != bytes.fromhex("6A0A9000"):
+                    raise RuntimeError(
+                        "old proxy after failed service DELETE returned "
+                        f"{response.hex().upper()}, expected 6A0A9000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8010000000"),
+                    "fresh lookup after failed service DELETE"
+                )
+                if response != bytes.fromhex("6A049000"):
+                    raise RuntimeError(
+                        "fresh lookup after failed service DELETE returned "
+                        f"{response.hex().upper()}, expected 6A049000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before instance reinstall"
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "SELECT ISD before instance reinstall returned "
+                        f"{response.hex().upper()}"
+                    )
+                reinstall_scp = vpcd.Scp03(connection)
+                reinstall_scp.authenticate()
+                response = vpcd.install_applet(
+                    reinstall_scp, SERVICE_PACKAGE, SERVICE_APPLET,
+                    SERVICE_APPLET
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "service INSTALL after late DELETE failure returned "
+                        f"{response[-2:].hex().upper()}, expected 9000"
+                    )
+                response = vpcd.exchange(
+                    connection, select_client,
+                    "reselect client after service instance reinstall"
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "client SELECT after instance reinstall returned "
+                        f"{response.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8010000000"),
+                    "fresh lookup after service instance reinstall"
+                )
+                if response != bytes.fromhex("45679000"):
+                    raise RuntimeError(
+                        "fresh lookup after instance reinstall returned "
+                        f"{response.hex().upper()}, expected 45679000"
+                    )
+                print("TEST:PASS recovery and instance reinstall preserve "
+                      "blocked proxy and fresh SIO service")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if response != bytes.fromhex("9000"):
                 raise RuntimeError(
                     f"DELETE service applet {response.hex().upper()}, expected 9000"

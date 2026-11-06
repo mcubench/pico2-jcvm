@@ -7735,3 +7735,28 @@ progress entry still says `pending` because the commit hash was not copied into
 the earlier entry. No earlier progress records were rewritten here.
 
 # Previous active continuation — Descriptor-free method bounds regression revalidated — 2026-11-06 12:05 CET
+
+## Late DELETE failure context invalidation — 2026-11-06 15:25 CET
+
+Reproduced the CAP-REINSTALL-02 risk with PC VPCD failpoints for both package
+slot cleanup and instance-registry cleanup. Persistent DELETE commits before
+those later cleanups; the resulting APDU status is `6581`. `CapLoadSession`
+now exposes the commit state, and both CCID and VPCD invalidate selected and
+inactive applet contexts if DELETE committed even when cleanup returns `6581`.
+Package context restoration also refuses to restore a dynamic package whose
+package record is gone.
+
+Validation: rebuilt PC `max_crypto`, ARM `max_crypto`, and RISC-V `max_crypto`;
+all wrappers passed. `./tools/test-rmi-registry` passed. Full cross-AID VPCD
+suite passed 34/34. Both injected same-process cases passed: old SIO proxy
+blocked after DELETE and same-AID reinstall, fresh lookup returned
+`45679000`. Logs are `artifacts/logs/sio-cross-aid-vpcd-20261106T142352Z.log`
+(package cleanup, SHA-256
+`0bbed3993975ac642d200a921f3110de1fc9c2c4e40ec21bd1c786a82894bb42`) and
+`artifacts/logs/sio-cross-aid-vpcd-20261106T142510Z.log` (instance cleanup,
+SHA-256 `c06f3b1b1625496e721ac6da1608e77729ae4054ba8ee991d9b527a567d3efbf`).
+No physical test was run; PC/SC reader registration is still absent. Restart
+after each injected cleanup failure remains untested. Preserve pre-existing
+unrelated worktree changes. Next: extend the injected-failure VPCD path to
+restart before recovery/reinstall, then proceed with changed-version CAP
+replacement (CAP-REINSTALL-03).

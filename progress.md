@@ -23156,3 +23156,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep failed-CAP recovery in the negative fixture, alongside acceptance of both Descriptor transport modes. Physical GPPro revalidation remains open until PC/SC enumerates a Pico reader.
 - Commit: `pending`
 - Artifacts/logs: The two VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.
+
+## 2026-11-06 Reconcile runtime after late DELETE failure 54 minutes
+
+- Step/experiment: `gp-delete-late-cleanup-20261106`
+- When: '2026-11-06 14:32 CET' - '2026-11-06 15:26 CET'
+- Change: Reproduced the stale-runtime condition when persistent DELETE commits but later CAP-slot or instance-registry cleanup fails with `6581`. `CapLoadSession` now exposes whether persistent DELETE committed. Both CCID and VPCD invalidate selected/inactive contexts on successful DELETE or any committed DELETE, even when the final status is `6581`; package context restore also refuses a missing package record. Added PC-only package and instance cleanup failpoints and same-AID SIO recovery regressions. Updated CAP-REINSTALL-02, QKB, and handoff. Restart-after-injected-failure and physical CCID acceptance remain open.
+- Validation: `./tools/build-pc --profile max_crypto` passed; `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` passed; `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build riscv --profile max_crypto` passed; `./tools/test-rmi-registry` passed. Full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. Injected package cleanup returned `6581` after persistent DELETE; same-process reinstallation kept old proxy blocked and fresh lookup returned `45679000` (`TEST:SUMMARY pass=1 fail=0`). Injected instance cleanup had the same result (`TEST:SUMMARY pass=1 fail=0`). No physical operation was run; current handoff reports no Pico PC/SC reader.
+- Result: Both late-cleanup failure paths now invalidate runtime roots and proxy routes on both firmware CCID and VPCD dispatch paths. Same-process VPCD recovery/reinstall is verified. Restart recovery and physical card behavior are not yet verified.
+- Decision: Keep CAP-REINSTALL-02 open for restart and physical acceptance. Next extend the failure-injection VPCD cases across emulator restart, then continue CAP-REINSTALL-03 changed-version replacement.
+- Commit: `pending`
+- Artifacts/logs: Full suite `artifacts/logs/sio-cross-aid-vpcd-20261106T141926Z.log` SHA-256 `fe640a0a1539ea82abf9d300bd05dcfeda589b65e9191e8009c991aa719ef375`; injected package cleanup `artifacts/logs/sio-cross-aid-vpcd-20261106T142352Z.log` SHA-256 `0bbed3993975ac642d200a921f3110de1fc9c2c4e40ec21bd1c786a82894bb42`; injected instance cleanup `artifacts/logs/sio-cross-aid-vpcd-20261106T142510Z.log` SHA-256 `c06f3b1b1625496e721ac6da1608e77729ae4054ba8ee991d9b527a567d3efbf`.
