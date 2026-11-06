@@ -265,6 +265,91 @@ def replace_applet_install_with_unlisted_body_offset(
     return bytes(mutated), candidate_offset
 
 
+def zero_first_class_method_offset(code: bytes, cap_archive: Path) -> bytes:
+    """Corrupt a Class method-table entry without changing component lengths."""
+    with ZipFile(cap_archive) as archive:
+        header_name = next(
+            name for name in archive.namelist() if name.endswith("/Header.cap")
+        )
+        header = archive.read(header_name)
+    if len(header) < 9:
+        raise RuntimeError("truncated CAP Header component")
+    minor_version = header[7]
+
+    mutated = bytearray(code)
+    offset = 0
+    while offset < len(mutated):
+        if len(mutated) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = mutated[offset]
+        size = int.from_bytes(mutated[offset + 1:offset + 3], "big")
+        payload = offset + 3
+        end = payload + size
+        if end > len(mutated):
+            raise RuntimeError("truncated CAP component payload")
+        if tag == 6:
+            data = payload
+            if minor_version >= 2:
+                if size < 2:
+                    raise RuntimeError("truncated Class signature-pool prefix")
+                signature_length = int.from_bytes(mutated[data:data + 2], "big")
+                if signature_length > size - 2:
+                    raise RuntimeError("Class signature pool exceeds component")
+                data += 2 + signature_length
+            class_end = end
+
+            # Skip interface_info records; method tables begin in class_info.
+            while data < class_end and mutated[data] & 0x80:
+                flags = mutated[data] >> 4
+                superinterfaces = mutated[data] & 0x0f
+                record_size = 1 + superinterfaces * 2
+                name_offset = data + record_size
+                if flags & 0x02:
+                    if name_offset >= class_end:
+                        raise RuntimeError("truncated remote interface name")
+                    record_size += 1 + mutated[name_offset]
+                if record_size > class_end - data:
+                    raise RuntimeError("interface_info exceeds Class component")
+                data += record_size
+
+            while data < class_end:
+                if class_end - data < 10 or mutated[data] & 0x80:
+                    raise RuntimeError("invalid Class class_info prefix")
+                interface_count = mutated[data] & 0x0f
+                public_count = mutated[data + 7]
+                package_count = mutated[data + 9]
+                method_count = public_count + package_count
+                table = data + 10
+                table_bytes = method_count * 2
+                if table_bytes > class_end - table:
+                    raise RuntimeError("Class method table exceeds component")
+                if method_count:
+                    entry = table
+                    if mutated[entry:entry + 2] == b"\x00\x00":
+                        raise RuntimeError("first Class method offset is already zero")
+                    mutated[entry:entry + 2] = b"\x00\x00"
+                    return bytes(mutated)
+
+                cursor = table + table_bytes
+                for _ in range(interface_count):
+                    if class_end - cursor < 3:
+                        raise RuntimeError("truncated class interface map")
+                    record_size = 3 + mutated[cursor + 2]
+                    if record_size > class_end - cursor:
+                        raise RuntimeError("class interface map exceeds component")
+                    cursor += record_size
+                flags = mutated[data] >> 4
+                if flags & 0x02:
+                    # The supported fixture has no remote class records; do
+                    # not guess their variable-length extent in this mutator.
+                    raise RuntimeError("remote class records need a dedicated fixture")
+                if cursor <= data or cursor > class_end:
+                    raise RuntimeError("invalid Class class_info extent")
+                data = cursor
+        offset = end
+    raise RuntimeError("test CAP has no Class method-table entry")
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -333,6 +418,31 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_CLASS_METHOD_OFFSET") == "1":
+                bad_service_code = zero_first_class_method_offset(
+                    service[0],
+                    build / "service-cap/sio/service/javacard/service.cap",
+                )
+                try:
+                    vpcd.load_package(scp, bad_service_code, service[1])
+                except RuntimeError as exc:
+                    if not any(status in str(exc) for status in ("6A80", "6F00")):
+                        raise
+                    print("TEST:PASS LOAD rejected a zero Class method offset")
+                    print("TEST:SUMMARY pass=1 fail=0")
+                    return 0
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "zero Class method offset INSTALL returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS INSTALL rejected zero Class method offset")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_UNLISTED_INSTALL_OFFSET") == "1":
                 bad_service_code, bad_offset = (
                     replace_applet_install_with_unlisted_body_offset(

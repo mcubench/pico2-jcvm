@@ -23024,3 +23024,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the negative guard test and continue hostile structural-entry coverage.
 - Commit: `0dd38b4a`
 - Artifacts/logs: VPCD logs from the preceding record; no new run.
+
+## 2026-11-06 Reject invalid Class method-table offset 7 minutes
+
+- Step/experiment: `ctx01-invalid-class-method-offset-20261106`
+- When: '2026-11-06 12:20 CET' - '2026-11-06 12:27 CET'
+- Change: Added a VPCD fixture mutation that zeroes the first public/package method offset in the generated service CAP Class component, plus a focused negative INSTALL mode. CAP component lengths and upstream source CAPs remain unchanged.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_BAD_CLASS_METHOD_OFFSET=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 600s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=1 fail=0`; LOAD succeeded and INSTALL rejected the invalid method entry with `6A80`.
+- Result: The descriptor-free method-bound enumeration fails closed on an invalid Class table entry at dynamic Applet INSTALL. No runtime, ARM/RISC-V build or physical-card change was made.
+- Decision: Keep the negative case; add ConstantPool and Export malformed-entry cases and resume hardware verification when PC/SC registers a Pico.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T112657Z.log`, SHA-256 `ca66d9a84d4c94fc4877b2d82de63fc6e0c983aa228303d8328676aaff74af46`.

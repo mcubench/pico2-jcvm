@@ -42,6 +42,19 @@ syntax and scoped diff checks pass. No firmware change, target build or
 physical operation occurred. Next test missing/incomplete method-entry table
 metadata and retry hardware only once PC/SC is responsive.
 
+## Latest continuation — invalid Class method-table offset rejected
+
+Added opt-in `SIO_CROSS_AID_TEST_BAD_CLASS_METHOD_OFFSET=1`. It zeroes the first
+Class public/package method-table offset in the generated service CAP while
+preserving component sizes. CAP LOAD succeeds; Applet INSTALL returns `6A80`,
+as the descriptor-free method-bound scan rejects the invalid structural entry.
+Focused VPCD summary: `TEST:SUMMARY pass=1 fail=0`. Log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T112657Z.log`, SHA-256
+`ca66d9a84d4c94fc4877b2d82de63fc6e0c983aa228303d8328676aaff74af46`.
+Python syntax and scoped diff checks pass. Firmware and upstream CAPs were not
+changed. Next: add ConstantPool/Export malformed-entry coverage and repeat the
+standard GPPro hardware install once PC/SC registers a Pico reader.
+
 ---
 
 # Active handoff — SensitiveResult.reset across SIO — 2026-11-06 11:56 CET
