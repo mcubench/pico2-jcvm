@@ -1466,7 +1466,19 @@ def main() -> int:
                         f"{response.hex().upper()}, expected 6B509000"
                     )
                 print("TEST:PASS typed Shareable[] retained the foreign proxy")
-                print("TEST:SUMMARY pass=1 fail=0")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("803F000000"),
+                    "reject incompatible foreign object from typed Shareable[]"
+                )
+                if response != bytes.fromhex("6B529000"):
+                    raise RuntimeError(
+                        "incompatible foreign reference-array store returned "
+                        f"{response.hex().upper()}, expected catchable "
+                        "ArrayStoreException 6B529000"
+                    )
+                print("TEST:PASS typed Shareable[] rejects an incompatible "
+                      "foreign applet object with ArrayStoreException")
+                print("TEST:SUMMARY pass=2 fail=0")
                 return 0
             response = vpcd.exchange(
                 connection, bytes.fromhex("8021000000"),
@@ -1835,6 +1847,18 @@ def main() -> int:
                 )
             print("TEST:PASS retained foreign Shareable proxy is type-checked "
                   "and stored in a typed Shareable[]")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("803F000000"),
+                "reject incompatible foreign object from typed Shareable[]"
+            )
+            if response != bytes.fromhex("6B529000"):
+                raise RuntimeError(
+                    "incompatible foreign reference-array store returned "
+                    f"{response.hex().upper()}, expected catchable "
+                    "ArrayStoreException 6B529000"
+                )
+            print("TEST:PASS typed Shareable[] rejects an incompatible foreign "
+                  "applet object with ArrayStoreException")
             connection.close()
             connection = None
             process.wait(timeout=SHUTDOWN_TIMEOUT)
@@ -2263,7 +2287,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=34 fail=0")
+            print("TEST:SUMMARY pass=35 fail=0")
             return 0
         finally:
             if connection is not None:

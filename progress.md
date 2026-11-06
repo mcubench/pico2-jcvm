@@ -23404,4 +23404,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 
 - Commit: `1a22693b49fbfbc7ea2c616d071218c5233fa8d0` — completed `review-20261106-pass9`; this append resolves the pending SHA above. Documentation/provenance only; 56 finding/task mappings checked.
 
+
+## 2026-11-06 Commit typed-array negative regression source 1 minute
+
+- Step/experiment: `ctx01-typed-array-reject-foreign-source-commit`
+- When: '2026-11-06 22:42 CET' - '2026-11-06 22:43 CET'
+- Change: Finalized the focused regression sources and CTX-01 status update after their VPCD validation was recorded above. The new incompatible foreign-object store uses unused INS `0x3F` and checks for catchable `ArrayStoreException`.
+- Validation: No test rerun during commit finalization; the preceding `ctx01-typed-array-reject-foreign` record contains the exact successful full-suite commands/logs for both Descriptor modes. Staged only the four fixture/test files, this progress record, and the CTX-01 TODO update.
+- Result: Source commit packages the previously validated test-only change. No firmware, build, physical-card or performance measurement was part of this finalization step.
+- Decision: Continue the CTX-01 owner/lifecycle audit; physical acceptance remains pending PC/SC visibility.
+- Commit: pending; exact SHA will be appended after creation.
+- Artifacts/logs: Same two full-suite logs recorded in the preceding progress entry.
+
 - Attribution note for `review-20261106-pass9`: commit `1a22693b` also captured another session's concurrently added HANDOFF/progress records for `ctx01-typed-array-reject-foreign`. Those 35/35 VPCD results belong to that session, not to this review pass. Its implementation/test files were not staged by this review. The continuity records were preserved; future staging must isolate this review's hunks in shared logs.

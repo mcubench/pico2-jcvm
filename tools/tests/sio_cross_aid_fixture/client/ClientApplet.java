@@ -247,6 +247,8 @@ public final class ClientApplet extends Applet {
       result = (short) 0x6A04;
     } else if (buffer[1] == 0x31) {
       result = ((Probe)shareable).retainShareableReference(retainedShareable);
+    } else if (buffer[1] == 0x3F) {
+      result = ((Probe)shareable).rejectIncompatibleShareableReference(this);
     } else if (buffer[1] == 0x1A) {
       Probe probe = (Probe) shareable;
       result = probe.inspectPrivateArray(new byte[] { 0x33 });

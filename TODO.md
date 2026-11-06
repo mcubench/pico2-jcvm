@@ -842,6 +842,14 @@ review.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress
   records. Preserve unrelated ongoing source changes while continuing this work.
 
+  Update 2026-11-06: Typed foreign-reference-array storage now has a negative
+  three-package SIO case. An incompatible foreign applet object passed through
+  an `Object` interface parameter and stored into a runtime `Shareable[]` via
+  an `Object[]` alias raises catchable `ArrayStoreException`; the compatible
+  retained proxy case still succeeds. Full cross-AID VPCD passes 35/35 both
+  with Descriptor omitted and included. This is VPCD only; physical validation
+  remains pending.
+
 ### CTX-02
 
 - [ ] **Complete Java-level SensitiveResult coverage across SIO calls.**
