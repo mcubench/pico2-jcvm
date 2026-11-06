@@ -1,4 +1,24 @@
-# Active handoff — RV-28 malformed branch runtime rejection — 2026-11-06 02:38 CET
+# Active handoff — RV-28 out-of-method branch runtime rejection — 2026-11-06 02:41 CET
+
+## Latest continuation — dynamic `GOTO_W` beyond frame is rejected
+
+Added the `branch-outside-method` fixture, replacing the first three bytes of
+JCAlgTest `process()` with `GOTO_W +32767` (`A8 7F FF`), which exceeds the
+Descriptor-bounded method frame. The unchanged upstream CAP SHA is still
+`b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+
+Offline PC VPCD passes 6/6: applet SELECT `6F00`, direct process `6999`, ISD
+selection FCI/`9000`, applet reselect `6F00`, and ISD selection FCI/`9000`.
+Log: `artifacts/logs/rv28-malformed-branch-outside-method-vpcd-20261106.log`,
+SHA-256 `46d1376d3ce64f8710ef231d0bfec6f441e0fb85158c060ec045274ea6cd7b92`.
+No C++ source changed; no build, sanitizer, physical test, or flash was done.
+
+Next: continue malformed runtime coverage only where it can distinguish a
+separate guard; then run the focused interpreter-related sanitizer tests and
+review runtime exception containment. Keep physical recovery and Descriptor-
+free exact method-start assurance open. Preserve unrelated worktree edits.
+
+## Previous handoff — RV-28 malformed branch runtime rejection — 2026-11-06 02:38 CET
 
 ## Latest continuation — dynamic `GOTO` into its operand is rejected
 

@@ -7148,3 +7148,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   instruction operand for this dynamic CAP, and manager recovery remains
   functional. PC VPCD only; sanitizer and physical recovery acceptance remain
   open.
+
+## Dynamic wide branch outside method frame is rejected — 2026-11-06
+
+- **Fixture:** Replace the start of the process method with `GOTO_W +32767`
+  (`A8 7F FF`), targeting well beyond the Descriptor-bounded frame.
+- **Observed:** VPCD applet SELECT returns `6F00`, direct process returns
+  `6999`, and ISD selection returns expected FCI/`9000`; applet reselection is
+  rejected again while ISD remains selectable. The bounded run passes 6/6.
+- **Decision:** Method frame range checks reject the wide branch before an
+  out-of-frame access in the PC VPCD emulator. No sanitizer or physical test
+  was performed; hostile-CAP recovery acceptance remains open for those
+  environments.

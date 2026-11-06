@@ -22652,3 +22652,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The runtime taken-branch guard rejects this target into a bytecode operand in the PC VPCD emulator. Continue with an invalid out-of-method target, then sanitizer and controlled hardware recovery when safe and available.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-branch-into-operand-vpcd-20261106.log`, SHA-256 `8cda8aa982a28cfa74acd94955fed3a79ef052604a789e013c8dedb1439ff7d8`; generated input `build/rv28-malformed-branch-into-operand-load-code.bin` (ignored).
+
+## 2026-11-06 Exercise out-of-method wide branch rejection 3 minutes
+
+- Step/experiment: `rv28-out-of-method-branch-vpcd-20261106`
+- When: '2026-11-06 02:38 CET' - '2026-11-06 02:41 CET'
+- Change: Added a malformed dynamic-CAP fixture that replaces the start of `process()` with `GOTO_W +32767`, beyond the method frame. Updated TODO, QKB, and handoff.
+- Validation: Offline VPCD run passes 6/6. Python compile, wrapper shell syntax and scoped `git diff --check` pass. CAP remains unchanged. No firmware build, sanitizer or physical test was run.
+- Result: Applet SELECT returns `6F00`, direct process returns `6999`, and the ISD remains selectable before and after reselecting the rejected applet.
+- Decision: Wide out-of-frame branch rejection and manager recovery pass in the PC VPCD emulator. Continue only with distinct runtime guards, followed by focused sanitizer checks; physical recovery remains open.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-branch-outside-method-vpcd-20261106.log`, SHA-256 `46d1376d3ce64f8710ef231d0bfec6f441e0fb85158c060ec045274ea6cd7b92`; generated input `build/rv28-malformed-branch-outside-method-load-code.bin` (ignored).

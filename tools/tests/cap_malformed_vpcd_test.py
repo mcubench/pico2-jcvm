@@ -204,6 +204,11 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0x70, 0x01))  # GOTO +1 targets its operand byte.
         if process_length < len(replacement):
             raise ValueError("process body is too short for branch fixture")
+    elif mutation == "branch-outside-method":
+        mutation_index = code_index
+        replacement = bytes((0xA8, 0x7F, 0xFF))  # GOTO_W beyond this frame.
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for wide-branch fixture")
     else:
         raise ValueError(f"unsupported mutation: {mutation}")
     original_bytes = bytes(mutable[mutation_index :
@@ -227,7 +232,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mutation", choices=("impdep1", "truncated-sipush",
-                                "branch-into-operand"),
+                                "branch-into-operand", "branch-outside-method"),
         default="impdep1",
     )
     args = parser.parse_args()
