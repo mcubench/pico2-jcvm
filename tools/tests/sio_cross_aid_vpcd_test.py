@@ -777,6 +777,32 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get(
+                "SIO_CROSS_AID_TEST_DELETE_IMPORTED_UNINSTALLED"
+            ) == "1":
+                vpcd.load_package(scp, service[0], service[1])
+                response = vpcd.delete_object(
+                    scp, contract[1], True,
+                    "DELETE library imported by loaded, uninstalled service",
+                    expected_statuses=(0x9000, 0x6985),
+                )
+                if response[-2:] != b"\x69\x85":
+                    raise RuntimeError(
+                        "DELETE of a library imported by a loaded service "
+                        f"returned {response[-2:].hex().upper()}, expected 6985"
+                    )
+                vpcd.delete_object(
+                    scp, service[1], True,
+                    "DELETE uninstalled importing service package",
+                )
+                vpcd.delete_object(
+                    scp, contract[1], True,
+                    "DELETE library after uninstalled importer removal",
+                )
+                print("TEST:PASS loaded but uninstalled importer blocks library "
+                      "DELETE; removing it permits library DELETE")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_EMPTY_EXPORT_TABLE") == "1":
                 empty_export_code = remove_empty_export_class_records(service[0])
                 vpcd.load_package(scp, empty_export_code, service[1])

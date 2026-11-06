@@ -23243,3 +23243,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit the focused regression and continue with offline priorities; repeat the flow on physical hardware when a Pico reader appears.
 - Commit: `dce22b92a7038fde70492b517fb291c9a760fee9`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T172818Z.log` SHA-256 `f26cda758522bb0504a6bbf5040dec9b496c9e161a367e6b9ea537e8136079e0`.
+
+## 2026-11-06 Verify loaded-uninstalled package import blocks DELETE 2 minutes
+
+- Step/experiment: `gp-delete-loaded-uninstalled-importer-20261106`
+- When: '2026-11-06 20:01 CET' - '2026-11-06 20:03 CET'
+- Change: Added an opt-in VPCD regression that LOADs a service package importing a library without INSTALLing an applet, confirms library DELETE returns `6985`, removes the importing package, and confirms library DELETE then returns `9000`. Updated TODO, QKB and HANDOFF.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py`, scoped `git diff --check`, and elevated `SIO_CROSS_AID_TEST_DELETE_IMPORTED_UNINSTALLED=1 SIO_CROSS_AID_REUSE_FIXTURE=1 python3 -u tools/tests/sio_cross_aid_vpcd_test.py` passed `TEST:SUMMARY pass=1 fail=0`. APDU statuses: library DELETE with loaded importer `6985`; importer DELETE `9000`; library DELETE after importer removal `9000`. PC/SC listed only Virtual PCD readers, so no physical validation.
+- Result: The deletion guard correctly includes loaded packages even without applet instances and releases the library after importer removal. No firmware source changed.
+- Decision: Continue offline with GP-01/CTX work; repeat on physical Pico when PC/SC enumerates it.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T190213Z.log` SHA-256 `1780394f19841a4e8b2e9acc425c53a4e979e6da1197981995c610b9cccfa1b2`.

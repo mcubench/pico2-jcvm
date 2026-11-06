@@ -7587,6 +7587,8 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   deletes the dependent client and service with `9000`, then confirms DELETE of
   the formerly imported library succeeds with `9000` (`TEST:SUMMARY pass=2
   fail=0`); the guard does not leave stale AID dependencies behind.
+  A loaded but uninstalled service also blocks library DELETE with `6985`; after
+  deleting that uninstalled importer, library DELETE returns `9000` (`pass=1`).
 
 ## GP GET DATA VPCD test failed on stale empty flash and omitted ISD SELECT — 2026-11-06
 

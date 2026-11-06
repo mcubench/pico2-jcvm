@@ -1,4 +1,21 @@
-# Current handoff — GP GET DATA VPCD validation and wrapper repair — 2026-11-06 18:05 CET
+# Current handoff — loaded package import deletion policy — 2026-11-06 20:02 CET
+
+## Latest GP-01 dependency validation
+
+The package dependency preflight now has VPCD evidence for both installed and
+merely loaded importers. An installed service/client importing a library blocks
+library DELETE with `6985`, remains usable, then both importer packages can be
+deleted and the library DELETE succeeds with `9000` (`2/2`). A separate case
+loads the service CAP without installing its applet and confirms that this
+loaded importer still blocks library DELETE (`6985`); deleting it permits
+library DELETE (`9000`, `1/1`). Latest log SHA-256
+`1780394f19841a4e8b2e9acc425c53a4e979e6da1197981995c610b9cccfa1b2`.
+
+PC/SC refresh shows only Virtual PCD 00/00 and 00/01, no Pico. Physical package
+DELETE remains open. Next: continue offline GP-01/CTX work and repeat these
+scenarios on hardware once a Pico reader appears.
+
+# Previous handoff — GP GET DATA VPCD validation and wrapper repair — 2026-11-06 18:05 CET
 
 ## Completed offline GP-01 GET DATA validation
 

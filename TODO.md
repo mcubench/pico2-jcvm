@@ -289,7 +289,9 @@ other loaded package's Import component is rejected with `6985`; the client
 continues to select and invoke its service. The opt-in regression and default
 suite pass. It then deletes the client and service importers and confirms the
 library package DELETE succeeds with `9000`. Physical CCID validation remains
-pending. CTX-01/STORE-01 should
+pending. A separate VPCD case confirms that a loaded but uninstalled service
+also blocks library DELETE (`6985`), and removing that package permits library
+DELETE (`9000`). CTX-01/STORE-01 should
 establish bounded lifetime/reclamation for user-created global arrays. These
 remain source-based follow-ups without a new physical reproduction in this
 review.
