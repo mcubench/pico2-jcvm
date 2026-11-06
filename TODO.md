@@ -891,8 +891,12 @@ source-based follow-ups, without a new physical reproduction in this review.
   implemented/enabled. The documented active producers currently supported
   by this profile have interpreted SIO coverage, including `buildKey()`;
   remaining: verify GC rooting of object results after ordinary local
-  references are dropped through interpreted SIO, then broaden physical
-  SensitiveResult acceptance beyond the JCSystem probe already run.
+  references are dropped. The native heap regression now confirms a
+  SensitiveResult object is the sole VM root after ordinary frames are gone,
+  and that reset permits collection. Interpreted SIO propagation/assertion is
+  covered separately; the public Java Card API has no synchronous GC trigger
+  to combine those phases in one CAP call. Broaden physical SensitiveResult
+  acceptance beyond the JCSystem probe already run.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.

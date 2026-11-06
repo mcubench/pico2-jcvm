@@ -1,4 +1,27 @@
-# Active handoff — JCSystem SensitiveResult through SIO — 2026-11-06 11:20 CET
+# Active handoff — SensitiveResult GC roots — 2026-11-06 11:23 CET
+
+## Latest continuation — object result is the sole native GC root
+
+Extended `tools/tests/rmi_registry/rmi_registry_test.cpp` with a real heap
+array. The test sets it as the VM-wide object SensitiveResult without adding
+the handle to any VM stack roots, collects, verifies it remains reachable, then
+resets SensitiveResult and verifies collection reclaims it and stale access is
+rejected. `./tools/test-rmi-registry` passes with
+`sensitive_result_gc_root=1`.
+
+Test commit: `b2a72fbd`. No firmware source changed, so target builds and
+physical testing were intentionally skipped for this test-only native heap
+step. Combined with the interpreted SIO tests, ownership and propagation are
+covered, but a single CAP cannot force synchronous GC through the public API;
+there is no Java Card method to request it. See CTX-02 in `TODO.md` for that
+scope and the remaining broader physical acceptance.
+
+Next: broaden physically validated SensitiveResult coverage, then continue the
+remaining high-priority plan items. Preserve unrelated dirty files.
+
+---
+
+# Previous handoff — JCSystem SensitiveResult through SIO — 2026-11-06 11:20 CET
 
 ## Latest continuation — JCSystem shareable object result fixed and verified
 

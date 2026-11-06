@@ -22926,3 +22926,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The currently supported SensitiveResult producers covered by the fixture have interpreted SIO evidence. Continue CTX-02 with object-result GC rooting after ordinary local references are dropped; keep Checksum and disabled AEAD outside this coverage until providers are supported.
 - Commit: `d9503b8e` (implementation and test; this record captures the follow-up hardware/acceptance evidence).
 - Artifacts/logs: Physical runtime `artifacts/logs/cycle-choupi-20261106T095247Z.log`, SHA-256 `c1793909ab53a3aa520669b67ebe9d349663acfda3f0433e0253d07cc29ed01b`; physical SIO `artifacts/logs/sio-cross-aid-physical-20261106T095508Z.log`, SHA-256 `4d32268cd9311b15fcc87a3d512bac3ff01371c8db5ea7d810b261c27f8960bb`; focused JCSystem `artifacts/logs/sio-cross-aid-vpcd-20261106T101315Z.log`, SHA-256 `37785609235f59973b1f2e9c83e371730c7b4d65bbfba0d77ae1553c956ec3a7`; isolated Signature `artifacts/logs/sio-cross-aid-vpcd-20261106T101200Z.log`, SHA-256 `eb3ce149c67c656cbcdced1d2954ec60269e902d303f53891b16dec14d201e75`; full VPCD `artifacts/logs/sio-cross-aid-vpcd-20261106T101347Z.log`, SHA-256 `9243d860388a84d1f3581b1d5250e7a829f44cb4bcdd8b2baa2b3bed6ab129b6`.
+
+## 2026-11-06 SensitiveResult sole-root garbage collection regression 3 minutes
+
+- Step/experiment: `ctx02-sensitive-result-gc-root-20261106`
+- When: '2026-11-06 10:20 UTC' - '2026-11-06 10:23 UTC'
+- Change: Added a native heap regression that creates an ordinary array with no VM-stack root, sets it as the object SensitiveResult, and runs Context root enumeration plus heap collection. It verifies the result is the remaining root, then resets SensitiveResult and verifies the array is reclaimed and stale handle access fails.
+- Validation: `./tools/test-rmi-registry` passed and printed `sensitive_result_gc_root=1`; the first draft exposed that `Heap::getArray()` throws on reclaimed handles, so the final regression checks the expected rejection rather than null. No firmware source changed; ARM/RISC-V builds, VPCD, and physical testing were intentionally skipped for this native test-only change.
+- Result: The Context GC root keeps an object alive after app frames are absent and releases it after reset. The interpreted SIO call/return assertion is covered separately; CAP code cannot synchronously request GC through the current public Java Card API.
+- Decision: Keep the direct heap-GC proof and interpreted SIO propagation evidence distinct. Continue with broader physical SensitiveResult validation.
+- Commit: `b2a72fbd`.
+- Artifacts/logs: None archived; test output was `RMI_REGISTRY:PASS ... sensitive_result_gc_root=1`.
