@@ -221,6 +221,18 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0x10, 0x00, 0x98, 0x00, 0x01))
         if process_length < len(replacement):
             raise ValueError("process body is too short for wide conditional fixture")
+    elif mutation == "jsr-into-operand":
+        mutation_index = code_index
+        # JSR +1 targets its first displacement byte instead of an opcode.
+        replacement = bytes((0x71, 0x00, 0x01))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for JSR fixture")
+    elif mutation == "ret-non-return-address":
+        mutation_index = code_index
+        # Process local 0 is the receiver/reference argument, not a return PC.
+        replacement = bytes((0x72, 0x00))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for RET fixture")
     elif mutation == "itableswitch-into-operand":
         mutation_index = code_index
         # IIPUSH 0 then ITABLESWITCH; default and selected case target operand.
@@ -289,6 +301,7 @@ def main() -> int:
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
                                 "wide-conditional-branch-into-operand",
+                                "jsr-into-operand", "ret-non-return-address",
                                 "itableswitch-into-operand",
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",
@@ -298,12 +311,8 @@ def main() -> int:
     args = parser.parse_args()
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
-    select_status = (
-        "9000" if args.mutation == "truncated-sipush" else "6F00"
-    )
-    process_status = (
-        "6F00" if args.mutation == "truncated-sipush" else "6999"
-    )
+    select_status = "9000" if args.mutation == "truncated-sipush" else "6F00"
+    process_status = "6F00" if args.mutation == "truncated-sipush" else "6999"
     commands = [
         "--passes", "1",
         "--cap-code", str(code),

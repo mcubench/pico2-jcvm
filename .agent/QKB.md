@@ -7217,3 +7217,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Decision:** Short/wide conditional and all table/lookup switch taken target
   paths are now covered in PC VPCD, as are both reserved native opcodes. This
   does not cover physical hostile-CAP recovery or every branch/return case.
+
+## JSR and RET malformed runtime coverage — 2026-11-06
+
+- **Finding:** `Bytecodes::bc_jsr()` routes its computed target through the
+  dynamic-package branch-boundary checker before saving/pushing the return
+  address. `Bytecodes::bc_ret()` requires the selected local to have the
+  `ReturnAddress` value kind; a normal receiver reference fails closed.
+- **Validation:** The upstream JCAlgTest CAP hash was verified unchanged.
+  JSR +1 into its own displacement operand and RET from process local 0 each
+  pass the PC VPCD recovery sequence (6/6): SELECT `6F00`, direct process
+  `6999`, ISD `9000`, rejected applet reselect `6F00`, then ISD `9000`.
+- **Viable test pattern:** Mutate only generated LOAD code under ignored
+  `build/`, retain the original CAP SHA guard, and assert ISD selection after
+  both the initial rejection and a second applet selection. Keep the VPCD
+  runtime result distinct from sanitizer and physical-card acceptance.
