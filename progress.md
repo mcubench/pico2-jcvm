@@ -23433,3 +23433,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass10/source-sha256.txt` and `review-state.json`; existing generated inputs only, no new runtime logs.
 
 - Commit: `aeb62471387e32cc20db6c812945a1bc7a7a06da` — completed `review-20261106-pass10`; this append resolves the pending SHA above. Only review documents/evidence and this step's continuity hunks were staged.
+
+
+## 2026-11-06 Review follow-up on foreign-array cycle reachability 3 minutes
+
+- Step/experiment: `review-20261106-pass11`
+- When: '2026-11-06 22:48:00 CET' - '2026-11-06 22:51:33 CET'
+- Change: Added R59 and one matching lowercase TODO, bringing each total to 59. Added source/test evidence and continuity notes. Documentation/evidence only; no implementation, CAP or test source changed.
+- Validation: Existing `./tools/test-rmi-registry` passed exit 0 with foreign-root routing, owner-collision isolation, overwrite release, package-delete clearing and handle-reuse markers. Inspected source-array registry/root enumeration, per-heap marking, GC unregistration and SIO return restrictions. All 59 finding/task mappings, links/anchors, pass11 JSON and 10 source hashes passed. No new cycle runtime case or hardware operation; wrapper host build reused its existing target, no firmware build.
+- Result: Source-derived unreachable cross-heap cycle retention; passing normal-root tests do not establish cycle reclamation. Excluded suspected GC dangling registry pointer after verifying unregister-before-reset ordering. End-to-end creation via nested SIO arguments and repeated-collection behavior remain unexecuted; no RAM growth rate or latency measured.
+- Decision: Continue review-only. Preserve incoming references from genuinely reachable arrays while evaluating coordinated lifetime/collection; do not remove safety roots merely to avoid retention.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass11/review-state.json`, `source-sha256.txt`, local ignored `rmi-registry.log` with committed SHA-256/outcome markers.

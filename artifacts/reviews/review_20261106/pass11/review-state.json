@@ -1,0 +1,19 @@
+{
+  "head": "c3c3d1dbf2d3f8e0847e0a9b7abceb186777a1a6",
+  "scope": "Review-only foreign-array GC root audit; no implementation/test/CAP changes",
+  "finding": {
+    "R59": "All registered foreign arrays contribute target roots regardless of source reachability; an otherwise unreachable cross-heap cycle can retain itself"
+  },
+  "existing_check": {
+    "command": "./tools/test-rmi-registry",
+    "exit": 0,
+    "markers": [
+      "RMI_REGISTRY:PASS local_foreign_array_roots_routed=2 equal_handle_alias_not_marked=1 overwritten_root_released=1 package_delete_root_cleared=1 owner_slot_reuse_safe=1",
+      "RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 sensitive_result_gc_root=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1"
+    ],
+    "log_sha256": "9b659dfc68ea7b6a611081d9fc88ede4fa57be7d63739a10a5e6d871ea92fc34",
+    "scope": "Existing normal foreign-root routing, overwrite release, package-delete clearing and handle-reuse cases; no unreachable cross-heap cycle case"
+  },
+  "excluded_candidate": "GC unregisters foreign array before resetting its owning slot, so that GC path does not leave the suspected dangling registry pointer",
+  "performance": "No GC latency/heap growth rate measured; cycle retention is source-derived and not runtime reproduced"
+}

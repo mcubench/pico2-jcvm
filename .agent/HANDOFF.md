@@ -1,3 +1,21 @@
+# Current handoff — foreign-array GC review R59 — 2026-11-06 22:51:33 CET
+
+Review-only active goal made progress: report/lowercase todo totals now 59.
+Added source-derived cross-heap cycle retention from unconditional incoming
+foreign-array roots. Existing ./tools/test-rmi-registry passed normal rooting,
+overwrite/delete cleanup and owner slot reuse. The new unreachable-cycle case
+was not run; CAP-path reachability needs nested SIO argument handoff and must
+not assume direct return of a server-local array bypasses wrapping rules.
+
+Pass11 evidence/hashes under `artifacts/reviews/review_20261106/pass11/`.
+Raw log is local/ignored; committed JSON contains both PASS lines and its hash.
+All 59 mappings/links/anchors, JSON and 10 source hashes checked. Suspected
+GC dangling registry pointer excluded because collection unregisters first.
+No implementation/test/CAP change or hardware action. Current wrapper used
+its existing host fixture; no firmware build or performance measurement.
+Continue review-only; stage only own shared-log hunks and preserve unrelated
+worktree edits and prior handoffs below.
+
 # Current handoff — asymmetric key coverage review R57–R58 — 2026-11-06 22:46:42 CET
 
 Review-only active goal made progress: report and lowercase todo now contain
