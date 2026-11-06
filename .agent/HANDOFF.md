@@ -64,9 +64,9 @@ rejected applet reselect. The upstream CAP remains unchanged at SHA-256
 Per-case log hashes are in the latest progress record. No firmware build or
 physical CAP test was needed; this modifies only the offline fixture.
 
-Next: commit this fixture-coverage step, then cover JSR/RET and inspect the
-remaining malformed ConstantPool/interpreter call edges. Physical hostile-CAP
-recovery remains open.
+Committed as `d3597a27` (`Test conditional and switch branch target rejection`).
+Next: cover JSR/RET and inspect the remaining malformed ConstantPool/interpreter
+call edges. Physical hostile-CAP recovery remains open.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 

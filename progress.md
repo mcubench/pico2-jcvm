@@ -17202,7 +17202,7 @@
   external cross-package resolution and the unrelated JCRMI helper INSTALL
   failure remain open.
 - Decision: Continue with the next prioritized TODO item.
-- Commit: pending.
+- Commit: `d3597a27`.
 - Artifacts/logs: GPPro VPCD evidence is under
   `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/`.
 
