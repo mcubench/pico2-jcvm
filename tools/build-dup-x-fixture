@@ -90,9 +90,40 @@ PY
 python3 - "${build_dir}/output/fixture.cap" \
   "${build_dir}/dup-x-fixture-load-code.bin" <<'PY'
 import sys
-from zipfile import ZipFile
+import os
+import tempfile
+from zipfile import ZIP_DEFLATED, ZipFile
 
 source, target = sys.argv[1:]
+operand = int(os.environ.get("DUP_X_OPERAND", "18"), 0)
+if not 0 <= operand <= 0xFF:
+    raise SystemExit("DUP_X_OPERAND must be a byte value")
+if operand != 18:
+    needle = bytes.fromhex("11 00 0a 11 00 14 3f 12 43 41 78")
+    with ZipFile(source, "r") as cap:
+        entries = [(entry, cap.read(entry.filename)) for entry in cap.infolist()]
+    updated_entries = []
+    method_matches = 0
+    for entry, content in entries:
+        if entry.filename.endswith("/Method.cap"):
+            method_matches += content.count(needle)
+            if content.count(needle) == 1:
+                content = content.replace(
+                    needle, needle[:7] + bytes([operand]) + needle[8:], 1)
+        updated_entries.append((entry, content))
+    if method_matches != 1:
+        raise SystemExit(
+            f"expected one assembled dup_x instruction sequence, found {method_matches}")
+    fd, temporary = tempfile.mkstemp(dir=os.path.dirname(source), suffix=".cap")
+    os.close(fd)
+    try:
+        with ZipFile(temporary, "w", ZIP_DEFLATED) as cap:
+            for entry, content in updated_entries:
+                cap.writestr(entry, content)
+        os.replace(temporary, source)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
               "Class", "Method", "StaticField", "RefLocation", "Descriptor")
 with ZipFile(source) as cap, open(target, "wb") as output:
@@ -103,5 +134,5 @@ with ZipFile(source) as cap, open(target, "wb") as output:
         if name not in names:
             raise SystemExit(f"CAP is missing required component {name}")
         output.write(cap.read(name))
-print(f"DUP_X_CAP:PASS cap={source} load_code={target}")
+print(f"DUP_X_CAP:PASS operand=0x{operand:02X} cap={source} load_code={target}")
 PY

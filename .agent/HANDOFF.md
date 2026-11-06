@@ -1,4 +1,4 @@
-# Current handoff — positive-depth dup_x CAP interpreter test — 2026-11-06 23:41 CET
+# Current handoff — positive-depth dup_x validation complete — 2026-11-06 23:55 CET
 
 Commit `6fb521d58aabd98bb29593f70f9b14e4817b6896` fixes positive-depth
 `dup_x`: only the top M words are copied, the top N words are shifted, and
@@ -16,19 +16,24 @@ instance persistence failure and must not be attributed to this change. The
 first VPCD attempt was sandbox-blocked at localhost socket creation; the same
 test was rerun with host access. No USB device was accessed or flashed.
 
-The stack-test extension is committed as `7141905d`. The fixture/wrapper commit
-is `c41e89f7`; `tools/build-dup-x-fixture`, `tools/test-dup-x-vpcd`, and
-`tools/tests/dup_x_fixture/DupXApplet.java` build a test-only CAP with a helper
-that executes `dup_x 0x12` on `[10,20]` and checks result 10 during install.
-The repeatable `./tools/test-dup-x-vpcd` passed under host access: interpreter
-log shows `DUP_X 0x12`, applet installation succeeds, ATR and SELECT pass,
-and `TEST:SUMMARY pass=2 fail=0`. Log SHA-256 is recorded in `progress.md`.
+The stack implementation is committed in `6fb521d5`; legal-form/int-pair unit
+coverage in `7141905d`; and the CAP fixture/wrapper in `c41e89f7`. Unit tests
+enumerate all legal M/N pairs and all 256 encoded nibble pairs, preserve the
+stack on every invalid pair, test values/order, exact bounds, capacity,
+reference owners, and 32-bit int pairs. `./tools/test-dup-x-vpcd` passes both
+positive and negative interpreter cases: operand `0x12` on `[10,20]` yields
+10, installs/selects successfully, and operand `0x17` reaches the handler and
+fails closed with `RuntimeException`, opcode `0x3F`, and `6F00`. Test logs and
+hashes are in `progress.md`. ARM, RISC-V, PC, and focused native tests pass.
+No physical board was accessed; this validation used a test-only CAP and the
+PC VPCD emulator.
 
-RV-20261106-60 remains open for interpreter-level invalid-operand recovery and
-broader CAP permutations; unit tests cover every legal M/N pair and int-pair
-ordering for this build. Preserve all unrelated review/worktree changes. Next
-extend the CAP fixture to test an invalid encoded operand if the error path can
-be observed cleanly, then move to the next unresolved P1 VM issue.
+RV-20261106-60's requested software semantics and interpreter checks are
+complete. Preserve unrelated review/worktree changes. Continue with the
+applet-instance DELETE / retained foreign-array root issue documented under
+CTX-01 in `TODO.md` and `.agent/QKB.md`; build a VPCD regression before
+changing lifecycle cleanup. Keep package DELETE and per-instance DELETE
+coverage distinct.
 
 # Current handoff — foreign-array GC review R59 — 2026-11-06 22:51:33 CET
 

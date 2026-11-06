@@ -27,5 +27,33 @@ rg -q 'VPCD:APPLET_INSTALLED package-id=56' \
   printf 'ERROR: dup_x fixture applet installation was not observed\n' >&2
   exit 1
 }
+
+DUP_X_OPERAND=23 "${repo_root}/tools/build-dup-x-fixture"
+invalid_log="${log_dir}/dup-x-invalid-vpcd-${timestamp}.log"
+invalid_host_log="${log_dir}/dup-x-invalid-host-${timestamp}.log"
+if PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
+  --passes 1 \
+  --cap-code "${repo_root}/build/dup-x-fixture/dup-x-fixture-load-code.bin" \
+  --applet-aid A0000001510000006001 \
+  --package-id 63 \
+  --select-only \
+  --log "${invalid_log}" > "${invalid_host_log}" 2>&1; then
+  printf 'ERROR: invalid dup_x operand unexpectedly installed\n' >&2
+  exit 1
+fi
+rg -q 'DUP_X 0x17' "${invalid_log}" || {
+  printf 'ERROR: invalid dup_x operand did not reach interpreter dispatch\n' >&2
+  exit 1
+}
+rg -q 'ERROR: PC applet INSTALL failed .*vm=6F00' "${invalid_log}" || {
+  printf 'ERROR: invalid dup_x operand did not fail applet install safely\n' >&2
+  exit 1
+}
+if rg -q 'VPCD:APPLET_INSTALLED' "${invalid_log}"; then
+  printf 'ERROR: invalid dup_x CAP was recorded as installed\n' >&2
+  exit 1
+fi
+"${repo_root}/tools/build-dup-x-fixture" > /dev/null
+printf 'DUP_X_INVALID_VPCD:PASS operand=0x17 rejected with vm=6F00\n'
 printf 'DUP_X_VPCD:PASS log=%s\n' \
   "${log_dir}/dup-x-vpcd-${timestamp}.log"

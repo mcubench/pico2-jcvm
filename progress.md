@@ -23516,3 +23516,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with interpreter-level invalid-operand coverage for R60.
 - Commit: `c41e89f799c08de3f8e50a6efa73df8b5368859c` — fixture/wrapper; this documentation update is a follow-up.
 - Artifacts/logs: The preceding progress entry contains test and debug build log hashes.
+
+## 2026-11-06 Verify every dup_x operand boundary 13 minutes
+
+- Step/experiment: `rv-20261106-60-dup-x-invalid-operand`
+- When: '2026-11-06 23:42 CET' - '2026-11-06 23:55 CET'
+- Change: Extended the native regression across every 4-bit M/N pair, requiring all invalid combinations to throw `RuntimeException` without changing the stack. Extended the test CAP builder to patch a valid assembled Method component for a negative runtime case, and updated `tools/test-dup-x-vpcd` to check both positive execution and fail-closed invalid-operand behavior.
+- Validation: `./tools/test-rmi-registry` passed with `stack_dup_x=1`. `./tools/test-dup-x-vpcd` passed: valid operand `0x12` was observed in interpreter trace, test applet installed and selected, ATR passed, and summary was 2/2; invalid operand `0x17` was observed at opcode `0x3F` and rejected with exception id 7 / VM status `6F00`, with no `VPCD:APPLET_INSTALLED` marker. `bash -n` and scoped/cached `git diff --check` passed. This was PC VPCD only; no USB/PCSC or hardware test. The ARM/RISC-V source builds passed before these test-only changes.
+- Result: All 256 M/N nibble combinations are checked directly; all legal forms pass value/order tests, and all illegal forms preserve the original stack. The interpreter path verifies one positive-depth form and an invalid upper N boundary. No firmware size, performance, or physical metric was collected.
+- Decision: Close RV-20261106-60 software semantics. Continue CTX-01 with applet-instance DELETE while a live foreign array retains a reference into that instance; keep package deletion behavior separate.
+- Commit: pending; exact SHA will be appended after the scoped test/progress/handoff commit.
+- Artifacts/logs: Positive log `artifacts/logs/dup-x-vpcd-20261106T225221Z.log` SHA-256 `3a350516eec2c95c24df2e4163ebdfbcfc234e6f69051a4bbc65ae13e112b007`; invalid emulator log `artifacts/logs/dup-x-invalid-vpcd-20261106T225221Z.log` SHA-256 `2fe1b7c782fba665001b00e83c50ca4642e2b100ec0012ad2a529cd9158df4d1`; host wrapper log `artifacts/logs/dup-x-invalid-host-20261106T225221Z.log` SHA-256 `1258f4ee3c29e8028a6d8d183a3ab2642f97cc51d713fedc525bbf1d1d26e52b`; PC debug build log SHA-256 `98eea36a52e7f60c6221f0e504c1941b6987f2c40c94e500de2beb4f5d00194e`.

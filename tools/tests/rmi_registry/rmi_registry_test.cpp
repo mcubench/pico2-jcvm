@@ -180,6 +180,28 @@ void verify_dup_x_positive_depth() {
     }
   }
 
+  for (uint8_t m = 0; m < 16; ++m) {
+    for (uint8_t n = 0; n < 16; ++n) {
+      const bool valid_m = m >= 1 && m <= maximum_m;
+      const bool valid_n = n == 0 ||
+          (n >= m && n <= static_cast<uint8_t>(m + maximum_extra_n));
+      if (valid_m && valid_n) {
+        continue;
+      }
+      jcvm::Stack stack;
+      push_test_frame(stack, 0, 0, 1);
+      stack.push_Short(42);
+      bool rejected = false;
+      try {
+        stack.dup(m, n);
+      } catch (jcvm::Exceptions error) {
+        rejected = error == jcvm::Exceptions::RuntimeException;
+      }
+      assert(rejected);
+      assert(stack.pop_Short() == 42);
+    }
+  }
+
 #ifdef JCVM_INT_SUPPORTED
   {
     jcvm::Stack stack;
