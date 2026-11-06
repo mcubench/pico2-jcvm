@@ -197,6 +197,13 @@ public final class ServiceApplet extends Applet implements Probe {
     return (short) 0x6A57;
   }
 
+  public byte[] sensitiveGlobalArrayResult() {
+    byte[] result = (byte[]) JCSystem.makeGlobalArray(
+        JCSystem.ARRAY_TYPE_BYTE, (short) 1);
+    result[0] = 0x6D;
+    return result;
+  }
+
   public short sensitiveFailedCopy() {
     byte[] source = { 0x12, 0x34 };
     byte[] destination = { 0, 0 };

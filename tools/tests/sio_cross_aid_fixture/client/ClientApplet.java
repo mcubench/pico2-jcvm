@@ -53,6 +53,20 @@ public final class ClientApplet extends Applet {
     return probe.sensitiveAIDResults();
   }
 
+  private short checkSensitiveGlobalArrayResult(Probe probe) {
+    byte[] value = probe.sensitiveGlobalArrayResult();
+    if (value == null || value.length != 1 ||
+        value[0] != (byte) 0x6D) {
+      return (short) 0x6A71;
+    }
+    try {
+      SensitiveResult.assertEquals(value);
+      return (short) 0x6A70;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) 0x6A72;
+    }
+  }
+
   private short checkPreservedSensitiveAID(Probe probe) {
     AID own = JCSystem.getAID();
     short marker = probe.noSensitiveApi();
@@ -292,6 +306,8 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).inspectInheritedInterfaces();
     } else if (buffer[1] == 0x2D) {
       result = ((Probe) shareable).validateNonAtomicUtil();
+    } else if (buffer[1] == 0x30) {
+      result = checkSensitiveGlobalArrayResult((Probe) shareable);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

@@ -1609,6 +1609,7 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
     const jbyte_t type, const jshort_t length) {
   Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   if (length < 0) {
     throw Exceptions::NegativeArraySizeException;
   }
@@ -1641,7 +1642,10 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
   }
 
   try {
-    return Heap::addGlobalArray(static_cast<uint16_t>(length), array_type);
+    const jref_t result =
+        Heap::addGlobalArray(static_cast<uint16_t>(length), array_type);
+    context.setSensitiveResultObject(result);
+    return result;
   } catch (const Exceptions exception) {
     if (exception != Exceptions::FullMemoryException) throw;
     context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE

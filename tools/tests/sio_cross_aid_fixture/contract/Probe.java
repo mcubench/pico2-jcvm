@@ -16,6 +16,7 @@ public interface Probe extends Shareable {
   short sensitiveSignatureResult();
   short sensitiveSignatureMismatchResult();
   short sensitiveObjectResult();
+  byte[] sensitiveGlobalArrayResult();
   int exerciseWide(int value);
   short throwSecurityException();
   short throwCryptoException();

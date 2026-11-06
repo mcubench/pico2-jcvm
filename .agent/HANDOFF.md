@@ -1,3 +1,27 @@
+# Active handoff — SensitiveResult for `makeGlobalArray` — 2026-11-06 05:45 CET
+
+`JCSystem.makeGlobalArray()` now clears stale `SensitiveResult` state and
+publishes the returned global array as an object result in native
+`choupi/src/jni.cpp`. The interpreted three-package fixture returns a global
+byte array from its service applet and asserts the same object after the SIO
+call. Its isolated PC VPCD test passes (`TEST:SUMMARY pass=1 fail=0`). A first
+fixture draft used an `Object[]` containing a nested byte array; the VM
+correctly rejected that unsupported global-array nesting. The test now uses a
+global `byte[]`.
+
+Builds: `./tools/build-pc --profile current`, `./tools/build arm`, and
+`./tools/build riscv` all pass. ARM reports 177,888 bytes remaining in its
+firmware window. The full cross-AID suite fails at the AES-MAC Signature probe
+before reaching the new APDU: `6F00`, runtime exception 29 (`SecurityException`),
+opcode `8E`, PC `77CC0006`. This remains undiagnosed. See progress and QKB; do
+not claim the full suite passes. The first runs used a stale PC binary because
+the test wrapper does not build it; rebuild PC before rerunning.
+
+Next: inspect why the full SIO Signature probe fails, then rerun the entire suite
+against a fresh PC build. Keep current unrelated worktree edits unstaged. After
+that, continue CTX-02 coverage for remaining native result producers and GC
+rooting. No physical device was used in this step.
+
 # Active handoff — exception table protected ranges — 2026-11-06 05:20 CET
 
 ## Latest continuation — active exception range validated

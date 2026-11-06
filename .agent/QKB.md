@@ -1,3 +1,16 @@
+## VPCD SIO regression must use a rebuilt PC VM — 2026-11-06
+
+- **Issue:** `tools/test-sio-cross-aid-vpcd` compiles fixture CAPs and runs the
+  existing `build/choupi-pc/choupi` binary; it does not build the PC VM. After
+  native edits, running the wrapper alone can exercise stale firmware and
+  produce misleading results.
+- **Viable solution:** Run `./tools/build-pc --profile current` after native
+  changes, then `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd`.
+  The wrapper's host-access requirement still applies. In this run, the focused
+  `SIO_CROSS_AID_ONLY_GLOBAL_ARRAY=1` case passed after rebuilding. The full
+  suite then failed at its AES-MAC Signature case (`6F00`, runtime exception
+  29, opcode `8E`); that failure is not diagnosed yet and remains open.
+
 ## Runtime USB visible but one of two JCVM boards is missing from PC/SC — observed 2026-11-05
 
 - **Observation:** Elevated enumeration at 15:38 CET found two runtime `2e8a:0009`

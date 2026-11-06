@@ -276,6 +276,20 @@ def main() -> int:
             response = vpcd.exchange(connection, select_client, "SELECT client")
             if response[-2:] != b"\x90\x00":
                 raise RuntimeError(f"SELECT client failed: {response.hex().upper()}")
+            if os.environ.get("SIO_CROSS_AID_ONLY_GLOBAL_ARRAY") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8030000000"),
+                    "global array SensitiveResult survives SIO context switch"
+                )
+                if response != bytes.fromhex("6A709000"):
+                    raise RuntimeError(
+                        "global array SensitiveResult assertion returned "
+                        f"{response.hex().upper()}, expected 6A709000"
+                    )
+                print("TEST:PASS interpreted JCSystem.makeGlobalArray result "
+                      "is assertable after the SIO context switch")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("802C000000"),
@@ -424,6 +438,17 @@ def main() -> int:
             print("TEST:PASS interpreted SIO SensitiveResult rejects the "
                   "server applet object when its compact handle collides "
                   "with the client applet object")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8030000000"),
+                "global array SensitiveResult survives SIO context switch"
+            )
+            if response != bytes.fromhex("6A709000"):
+                raise RuntimeError(
+                    "global array SensitiveResult assertion returned "
+                    f"{response.hex().upper()}, expected 6A709000"
+                )
+            print("TEST:PASS interpreted JCSystem.makeGlobalArray result "
+                  "is assertable after the SIO context switch")
             response = vpcd.exchange(
                 connection, bytes.fromhex("802B000000"),
                 "propagate exact exception type and reason across SIO"
