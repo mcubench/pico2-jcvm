@@ -350,6 +350,122 @@ def zero_first_class_method_offset(code: bytes, cap_archive: Path) -> bytes:
     raise RuntimeError("test CAP has no Class method-table entry")
 
 
+def remove_all_class_method_tables(code: bytes, cap_archive: Path) -> bytes:
+    """Remove complete public/package method-offset tables from Class.cap."""
+    with ZipFile(cap_archive) as archive:
+        header_name = next(
+            name for name in archive.namelist() if name.endswith("/Header.cap")
+        )
+        header = archive.read(header_name)
+    if len(header) < 9:
+        raise RuntimeError("truncated CAP Header component")
+    minor_version = header[7]
+
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = code[offset]
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    if offset != len(code):
+        raise RuntimeError("unaccounted CAP code bytes")
+
+    class_index = next((i for i, component in enumerate(components)
+                        if component[0] == 6), None)
+    directory_index = next((i for i, component in enumerate(components)
+                            if component[0] == 2), None)
+    if class_index is None or directory_index is None:
+        raise RuntimeError("test CAP lacks Class or Directory component")
+
+    class_component = components[class_index]
+    class_data = class_component[3:]
+    output = bytearray()
+    cursor = 0
+    if minor_version >= 2:
+        if len(class_data) < 2:
+            raise RuntimeError("truncated Class signature-pool prefix")
+        signature_length = int.from_bytes(class_data[:2], "big")
+        if signature_length > len(class_data) - 2:
+            raise RuntimeError("Class signature pool exceeds component")
+        output.extend(class_data[:2 + signature_length])
+        cursor = 2 + signature_length
+
+    while cursor < len(class_data) and class_data[cursor] & 0x80:
+        flags = class_data[cursor] >> 4
+        superinterfaces = class_data[cursor] & 0x0F
+        name_offset = cursor + 1 + superinterfaces * 2
+        record_size = 1 + superinterfaces * 2
+        if flags & 0x02:
+            if name_offset >= len(class_data):
+                raise RuntimeError("truncated remote interface name")
+            record_size += 1 + class_data[name_offset]
+        if record_size > len(class_data) - cursor:
+            raise RuntimeError("interface_info exceeds Class component")
+        output.extend(class_data[cursor:cursor + record_size])
+        cursor += record_size
+
+    class_count = 0
+    while cursor < len(class_data):
+        if len(class_data) - cursor < 10 or class_data[cursor] & 0x80:
+            raise RuntimeError("invalid Class class_info prefix")
+        flags = class_data[cursor] >> 4
+        if flags & 0x02:
+            raise RuntimeError("remote class records need a dedicated fixture")
+        interface_count = class_data[cursor] & 0x0F
+        public_count = class_data[cursor + 7]
+        package_count = class_data[cursor + 9]
+        method_count = public_count + package_count
+        table_bytes = method_count * 2
+        if table_bytes > len(class_data) - cursor - 10:
+            raise RuntimeError("Class method table exceeds component")
+
+        prefix = bytearray(class_data[cursor:cursor + 10])
+        prefix[7] = 0
+        prefix[9] = 0
+        output.extend(prefix)
+        map_cursor = cursor + 10 + table_bytes
+        for _ in range(interface_count):
+            if len(class_data) - map_cursor < 3:
+                raise RuntimeError("truncated class interface map")
+            record_size = 3 + class_data[map_cursor + 2]
+            if record_size > len(class_data) - map_cursor:
+                raise RuntimeError("class interface map exceeds component")
+            output.extend(class_data[map_cursor:map_cursor + record_size])
+            map_cursor += record_size
+        if map_cursor <= cursor or map_cursor > len(class_data):
+            raise RuntimeError("invalid Class class_info extent")
+        cursor = map_cursor
+        class_count += 1
+
+    if class_count == 0:
+        raise RuntimeError("Class component has no class_info records")
+    old_size = int.from_bytes(class_component[1:3], "big")
+    if old_size != len(class_data) or len(output) >= old_size:
+        raise RuntimeError("Class component size mismatch or no table bytes removed")
+    class_component[1:3] = len(output).to_bytes(2, "big")
+    components[class_index] = class_component[:3] + output
+
+    directory = components[directory_index]
+    directory_size_offset = 3 + 5 * 2
+    if len(directory) < directory_size_offset + 2:
+        raise RuntimeError("Directory lacks Class component size field")
+    declared = int.from_bytes(
+        directory[directory_size_offset:directory_size_offset + 2], "big"
+    )
+    if declared != old_size:
+        raise RuntimeError("Directory Class size does not match component")
+    directory[directory_size_offset:directory_size_offset + 2] = (
+        len(output).to_bytes(2, "big")
+    )
+    return b"".join(bytes(component) for component in components)
+
+
 def zero_first_internal_static_methodref_offset(code: bytes) -> bytes:
     """Zero an internal StaticMethodref offset in the ConstantPool component."""
     mutated = bytearray(code)
@@ -586,6 +702,25 @@ def main() -> int:
                     )
                 print("TEST:PASS loaded and installed service CAP with an "
                       "empty Export class table")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_TEST_EMPTY_CLASS_TABLES") == "1":
+                empty_class_code = remove_all_class_method_tables(
+                    service[0],
+                    build / "service-cap/sio/service/javacard/service.cap",
+                )
+                vpcd.load_package(scp, empty_class_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6F00,),
+                )
+                if response[-2:] != bytes.fromhex("6F00"):
+                    raise RuntimeError(
+                        "INSTALL with all Class method tables omitted returned "
+                        f"{response[-2:].hex().upper()}, expected fail-closed 6F00"
+                    )
+                print("TEST:PASS INSTALL rejects a service CAP whose complete "
+                      "Class method tables are omitted (6F00)")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_EXPORT_METHOD_OFFSET") == "1":

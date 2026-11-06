@@ -23101,3 +23101,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep both Descriptor modes in the negative-CAP suite. Whole-entry omission coverage for Class/ConstantPool remains open.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T121812Z.log`.
+
+## 2026-11-06 Reject complete Class method-table omission 11 minutes
+
+- Step/experiment: `ctx01-empty-class-method-tables-20261106`
+- When: '2026-11-06 13:19 CET' - '2026-11-06 13:30 CET'
+- Change: Added an opt-in generated-CAP mutation that removes all populated public/package method-offset tables from the service Class component, preserves class/interface records, and updates Directory's Class size. The existing zero-offset test remains unchanged. Upstream CAPs and runtime source were not modified.
+- Validation: Python syntax and scoped diff checks passed. Focused VPCD CAP LOAD succeeds and INSTALL rejects with `6F00` in Descriptor-free and Descriptor-included modes (`TEST:SUMMARY pass=1 fail=0` each). The first attempt exposed a fixture assumption that every class had methods; the corrected mutator preserves already-empty class tables. The default Descriptor-free cross-AID suite passes `34/34` with cleanup. The authorized reader helper granted three USB nodes, but `pcsc_scan -r` timed out with no Pico reader; no hardware operation was attempted. No target build was needed because runtime source did not change.
+- Result: Full Class virtual-method table omission is rejected at INSTALL with `6F00` in both method-bound modes. Descriptor-free log `artifacts/logs/sio-cross-aid-vpcd-20261106T122638Z.log`, SHA-256 `43cd74626fb19efb9e10d1aa7e6614ae2607d1d1de5466a75c611e08a151c183`; Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T122717Z.log`, SHA-256 `954d928a7e4656fb20e1de0427a78015cfeb29302843b6df5340183f134a170f`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261106T122752Z.log`, SHA-256 `37510c80de31f742dd23659f2398a3dd3dcca1664191f43dad9f9c9fcb7190c5`.
+- Decision: Keep the Class omission test in both Descriptor modes. Whole-entry ConstantPool omission and physical Descriptor-free GPPro revalidation remain open.
+- Commit: `pending`
+- Artifacts/logs: The three VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.

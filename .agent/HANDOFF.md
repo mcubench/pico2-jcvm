@@ -1,4 +1,31 @@
-# Current handoff — zero-entry Export table case passes VPCD — 2026-11-06 13:15 CET
+# Current handoff — empty Class method tables fail closed at INSTALL — 2026-11-06 13:30 CET
+
+Added opt-in `SIO_CROSS_AID_TEST_EMPTY_CLASS_TABLES=1`. The mutator removes
+all public/package method-offset entries from the generated service CAP's
+Class component, preserves class/interface records, and updates the Directory
+Class size. In Descriptor-free and Descriptor-included modes, CAP LOAD
+succeeds but service Applet INSTALL rejects the incomplete tables with
+`6F00`; both focused VPCD summaries pass 1/1. The first run caught a fixture
+assumption that every class has a nonempty table; the mutator now preserves
+already-empty tables while removing populated ones. The default Descriptor-free
+cross-AID integration remains 34/34 with cleanup.
+
+Logs: Descriptor-free
+`artifacts/logs/sio-cross-aid-vpcd-20261106T122638Z.log` SHA-256
+`43cd74626fb19efb9e10d1aa7e6614ae2607d1d1de5466a75c611e08a151c183`;
+Descriptor-included
+`artifacts/logs/sio-cross-aid-vpcd-20261106T122717Z.log` SHA-256
+`954d928a7e4656fb20e1de0427a78015cfeb29302843b6df5340183f134a170f`;
+default suite
+`artifacts/logs/sio-cross-aid-vpcd-20261106T122752Z.log` SHA-256
+`37510c80de31f742dd23659f2398a3dd3dcca1664191f43dad9f9c9fcb7190c5`.
+
+The authorized reader helper granted all three USB nodes at 13:30 CET, but a
+bounded `pcsc_scan -r` timed out without listing a Pico. No physical operation
+was attempted. Next CAP metadata gap is complete ConstantPool method-entry
+omission; physical Descriptor-free GPPro revalidation remains pending.
+
+# Previous active handoff — zero-entry Export table case passes VPCD — 2026-11-06 13:15 CET
 
 Added opt-in `SIO_CROSS_AID_TEST_EMPTY_EXPORT_TABLE=1`. It removes the service
 CAP's sole Export class record (which has no fields or methods), sets Export
