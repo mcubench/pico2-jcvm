@@ -7232,3 +7232,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `build/`, retain the original CAP SHA guard, and assert ISD selection after
   both the initial rejection and a second applet selection. Keep the VPCD
   runtime result distinct from sanitizer and physical-card acceptance.
+
+## Out-of-range ConstantPool operand at runtime — 2026-11-06
+
+- **Finding:** `ConstantPool_Handler::getCPEntry()` indexes the packed CAP
+  pool through `JCVMArray`. The active `choupi/src/jc_config.h` defines
+  `JCVM_ARRAY_SIZE_CHECK`, and `JCVMArray::at()` throws on an index outside
+  the declared pool count. The dynamic invocation path catches this as a
+  failed applet operation; an explicit second bounds check is not needed for
+  this build configuration. Revisit if array-size checks are disabled.
+- **Validation:** A generated JCAlgTest mutation replaces the start of
+  `process()` with complete `INVOKESTATIC 0xFFFF`, preserving the upstream CAP
+  hash. PC VPCD passes 6/6: malformed applet SELECT `6F00`, direct process
+  `6999`, and successful ISD FCI/`9000` before and after rejected reselect.
+- **Viable test pattern:** Use a full-width out-of-range index rather than a
+  truncated opcode so the test isolates ConstantPool lookup bounds. This
+  validates the current emulator/configuration, not a sanitizer or physical
+  card run.

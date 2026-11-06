@@ -233,6 +233,12 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0x72, 0x00))
         if process_length < len(replacement):
             raise ValueError("process body is too short for RET fixture")
+    elif mutation == "invoke-static-cp-out-of-range":
+        mutation_index = code_index
+        # The instruction is complete, but its CP index is outside the pool.
+        replacement = bytes((0x8D, 0xFF, 0xFF))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for INVOKESTATIC fixture")
     elif mutation == "itableswitch-into-operand":
         mutation_index = code_index
         # IIPUSH 0 then ITABLESWITCH; default and selected case target operand.
@@ -302,6 +308,7 @@ def main() -> int:
                                 "conditional-branch-into-operand",
                                 "wide-conditional-branch-into-operand",
                                 "jsr-into-operand", "ret-non-return-address",
+                                "invoke-static-cp-out-of-range",
                                 "itableswitch-into-operand",
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",

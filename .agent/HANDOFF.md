@@ -1,4 +1,4 @@
-# Active handoff — JSR/RET malformed control-flow runtime coverage — 2026-11-06 03:57 CET
+# Active handoff — malformed ConstantPool invocation runtime coverage — 2026-11-06 04:02 CET
 
 ## Critical continuation — extended method header was one byte overestimated
 
@@ -78,6 +78,21 @@ recovery path. Physical hostile-CAP recovery remains open.
 The JSR/RET fixture step is committed as `11669af0` (`Test malformed JSR and
 RET execution`). Its progress record includes both VPCD log hashes. Preserve
 the other dirty worktree files; they were not part of these commits.
+
+## Latest RV-28 call edge — out-of-range ConstantPool invocation operand
+
+Added `invoke-static-cp-out-of-range` to `tools/tests/cap_malformed_vpcd_test.py`.
+It replaces the generated process method start with the complete instruction
+`INVOKESTATIC 0xFFFF`; the source JCAlgTest CAP is still hash-verified and
+unchanged. PC VPCD passes 6/6 with SELECT `6F00`, process `6999`, and ISD
+recovery before and after applet reselect. The active `JCVM_ARRAY_SIZE_CHECK`
+configuration makes `JCVMArray::at()` reject the out-of-range CP slot. No
+explicit code change was needed. Log hash: `9e362456b4abbdb994217dc03d8d16d12ed801f9388bb0853bb141c8c0391709`.
+
+Next: audit the other method-call operands and catch-type CP lookups for
+runtime range protection; retain the distinction between validation from the
+current array-check configuration, no-check builds, sanitizers, and physical
+card behavior.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
