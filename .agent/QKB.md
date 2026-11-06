@@ -1,3 +1,15 @@
+## Pico 2 PC/SC channel suffix can change after USB re-enumeration — observed 2026-11-06
+
+- **Observation:** After reflashing and runtime USB re-enumeration, board
+  `D92E743D5F640C0F` appeared under reader names ending in channel `00` and
+  later `02`. A physical-test helper using the stale full reader name failed
+  before sending APDUs; this was not a card or firmware failure.
+- **Viable solution:** Immediately before physical PC/SC work, run the
+  authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper and inspect
+  `pcsc_scan -r`; pass the exact currently listed reader name to the test.
+  Refresh again after USB re-enumeration. Retrying with the current name
+  succeeded, and the JCSystem SensitiveResult APDU returned `6A8B9000`.
+
 ## VPCD SIO regression must use a rebuilt PC VM — 2026-11-06
 
 - **Issue:** `tools/test-sio-cross-aid-vpcd` compiles fixture CAPs and runs the

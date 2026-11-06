@@ -1,4 +1,37 @@
-# Active handoff — AID SensitiveResult through SIO — 2026-11-06 10:15 CET
+# Active handoff — JCSystem SensitiveResult through SIO — 2026-11-06 11:20 CET
+
+## Latest continuation — JCSystem shareable object result fixed and verified
+
+Fixed the intercepted `JCSystem.getAppletShareableInterfaceObject()` static
+call path: it now clears stale SensitiveResult before validation, publishes the
+returned proxy or null only after the helper completes successfully, and then
+pushes the same return value. Exceptions remain unassigned. The interpreted
+three-package CAP test asserts successful proxy and denied/null results, and
+also checks `lookupAID()` identity.
+
+Source/test commit: `d9503b8e`; source implementation and test had been
+committed before this documentation/progress commit. On Pico 2
+`D92E743D5F640C0F`, the physical SIO probe returned `6A8B9000` and cleanup
+removed the temporary applets/packages. ARM and RISC-V builds passed; a finite
+ARM cycle reported `TEST:SUMMARY pass=1 fail=0`. The rebuilt PC `symm_crypto`
+VPCD focused JCSystem test passes 1/1, isolated AES-MAC Signature passes 1/1,
+and the full cross-AID suite passes 34/34.
+
+The prior isolated Signature failure was caused by running the fixture against
+a stale `current` PC VM binary. The fixture wrapper builds its CAPs but does not
+build the VM; AES-MAC is unavailable in `current`. Rebuild first with
+`./tools/build-pc --profile symm_crypto` (or `max_crypto`). QKB records the
+reader-channel suffix re-enumeration issue: refresh the reader helper and use
+the exact name from `pcsc_scan -r` before hardware APDUs.
+
+Next: continue CTX-02 with interpreted SIO object-result GC rooting after local
+references are dropped. Existing object-result tests cover ownership and GC
+roots at native/context level; no new Java provider or CAP implementation is
+allowed. Keep unrelated worktree changes intact.
+
+---
+
+# Previous handoff — AID SensitiveResult through SIO — 2026-11-06 10:15 CET
 
 ## Latest continuation — AID boolean results verified
 

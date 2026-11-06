@@ -888,10 +888,11 @@ source-based follow-ups, without a new physical reproduction in this review.
   The current API has no supported Checksum provider (both factory branches
   return `NO_SUCH_ALGORITHM`) and no enabled AEAD provider; those results are
   not current producers and remain outside this coverage until separately
-  implemented/enabled. Remaining: cover enabled key API results beyond
-  `buildKey()`, verify GC rooting of object results after ordinary locals are
-  dropped through interpreted SIO, and repeat selected coverage on physical
-  hardware when available.
+  implemented/enabled. The documented active producers currently supported
+  by this profile have interpreted SIO coverage, including `buildKey()`;
+  remaining: verify GC rooting of object results after ordinary local
+  references are dropped through interpreted SIO, then broaden physical
+  SensitiveResult acceptance beyond the JCSystem probe already run.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.
