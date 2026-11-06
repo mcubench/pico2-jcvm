@@ -38,10 +38,12 @@ not establish the header fix on hardware. `pcsc_scan -r` timed out without
 output despite the helper granting access; PC/SC reader status remains
 unconfirmed.
 
-Next: commit the validated method-header fix and its progress record while
-staging only the files listed for this step. Preserve all other pre-existing
-worktree changes. Follow up with a runtime CAP/APDU known to invoke one of the
-extended methods; physical extended-method execution remains open.
+Commit: `618d1f1a` (`Correct extended CAP method header size`). The required
+source, tests, progress record, TODO correction, QKB and handoff update are
+committed; unrelated dirty files and the CHOUPI submodule changes remain
+unstaged. Next, identify a CAP/APDU that dispatches into one of the extended
+methods and prove runtime execution; physical extended-method execution remains
+open.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
