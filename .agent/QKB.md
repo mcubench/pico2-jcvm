@@ -7320,3 +7320,9 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   VPCD manager/applet recovery passes 6/6. Fixture:
   `exception-handler-range-out-of-bounds`; log SHA-256 is recorded in
   `progress.md`. No physical card was used.
+
+- **Additional start bound regression (2026-11-06):** An active handler row with
+  `start_pc=0xFFFF` is rejected during dispatch. The malformed process returns
+  `6F00`, and PC VPCD ISD/applet recovery passes 6/6. Test:
+  `exception-handler-range-start-out-of-bounds`; full log hash is in
+  `progress.md`. No physical card was used.

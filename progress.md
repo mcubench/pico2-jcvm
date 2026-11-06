@@ -22806,3 +22806,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the overflow fixture with the exception range operand case. Continue malformed handler table structure/entry checks.
 - Commit: `5a4abd65`.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-exception-handler-range-out-of-bounds-vpcd-20261106.log`, SHA-256 `abc46b9cae1f2bb7b5aef1dcdfdb47f7bc1760293bd35e60aa120c5a9bb69e70`.
+
+## 2026-11-06 Test exception range start bounds 2 minutes
+
+- Step/experiment: `rv28-exception-range-start-out-of-bounds-vpcd-20261106`
+- When: '2026-11-06 05:23 CET' - '2026-11-06 05:25 CET'
+- Change: Added a generated malformed CAP case setting an active process exception row's `start_pc` to `0xFFFF`, with a catch-all type and an invalid CP invocation to enter exception dispatch. Upstream CAP remains unchanged.
+- Validation: Python syntax check passes. PC VPCD passes 6/6: applet SELECT `9000`, malformed process `6F00`, ISD selection and applet reselection recover. This is a fixture-only change; no build or physical test was needed.
+- Result: The runtime component-bounds guard rejects an out-of-component protected-range start and manager recovery remains available.
+- Decision: Keep start and end overflow variants as independent coverage; continue auditing exception table record fields.
+- Commit: `3e20fbb4`.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-exception-handler-range-start-out-of-bounds-vpcd-20261106.log`, SHA-256 `ac277626ee2cb02c6310ea77d16e42b9c829cbe2284281d93da970590a998c6b`.

@@ -8,6 +8,10 @@ Exception-table `start_pc` conversion now accounts for the one-based CAP coordin
 
 The malformed suite now includes an active 32,767-byte catch-all range whose end exceeds the Method image. VPCD rejects process with `6F00` and confirms recovery (6/6). Regression commit: `5a4abd65`; its progress record and metadata follow. No source/build/hardware change in this test-only step.
 
+## Latest continuation — exception range start bounds covered
+
+An active handler range with `start_pc=0xFFFF` is now tested: VPCD rejects the process with `6F00` and recovery passes 6/6. Test commit: `3e20fbb4`; progress/QKB/TODO metadata follows. No production source/build/hardware change in this test-only step.
+
 Next: audit malformed Method exception-table framing/counts and continue separating emulator evidence from physical recovery acceptance.
 
 # Active handoff — exception-handler target boundary — 2026-11-06 04:51 CET
