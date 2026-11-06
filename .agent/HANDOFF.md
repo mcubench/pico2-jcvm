@@ -1,4 +1,4 @@
-# Active handoff — explicit ConstantPool bounds guard and hardware cycle — 2026-11-06 04:27 CET
+# Active handoff — malformed exception-handler catch CP runtime case — 2026-11-06 04:37 CET
 
 ## Critical continuation — extended method header was one byte overestimated
 
@@ -101,19 +101,33 @@ current array-check configuration, no-check builds, sanitizers, and physical
 card behavior.
 The initial INVOKESTATIC case and audit are committed as `d4e13a32`; all four
 invocation opcodes are covered in `00165ee1` with complete operands and
-recovery checks. The source-level CP guard and validation summary are the
-current uncommitted step. All four VPCD cases pass against the rebuilt PC VM;
+recovery checks. The source-level CP guard and validation summary are committed
+as `6e751a98` with metadata commit `a59b998d`. All four VPCD cases pass against the rebuilt PC VM;
 the unchanged upstream JCAlgTest VPCD regression passes 15/15. ARM, RISC-V,
 and PC builds pass. The full ARM image was flashed to Pico `8E464F4E2BBC0A19`
 and the 18-second monitor passed `TEST:SUMMARY pass=1 fail=0`; the monitor does
 not exercise malformed CP behavior. Cycle log SHA-256:
 `238b7d76ec36311326991e21e47f64b37c5a54add9f600283006da643b698644`.
 
-Next: inspect exception-handler catch-type CP indices and consider a test for
-the malformed handler-lookup path. Physical malformed-CAP recovery and
-sanitizer runtime containment remain open.
-The explicit CP guard and this validation step are committed as `6e751a98`;
-the progress record's commit field is being recorded in a metadata follow-up.
+The commit SHA, build hashes, physical log and latest PC log hashes are in the
+progress record.
+
+## Latest RV-28 exception-dispatch case — malformed active catch CP index
+
+The generated `exception-catch-cp-out-of-range` case changes active handler
+row 39's catch-type index to `0xFFFF` and replaces the first instruction in its
+protected process range with complete `INVOKESTATIC 0xFFFF`. The upstream CAP
+hash remains unchanged. PC VPCD passes 6/6: initial SELECT `9000`, process
+returns `6F00`, ISD returns FCI/`9000`, applet reselect returns `9000`, and a
+second ISD selection succeeds. The first run failed only because the fixture
+incorrectly expected SELECT to execute the process method; correcting that
+expectation produced the full passing recovery sequence. Log SHA-256:
+`e5c72c2245565b7709c74f707fa7f6c92dc53fddbea4c6c0a03eebf7e8fa5f70`.
+
+Next: add this case to TODO/QKB/progress and commit it. Then continue auditing
+malformed exception-handler entries and test runtime containment separately
+from PC VPCD and physical acceptance. No malformed CAP has been installed on
+physical hardware.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 

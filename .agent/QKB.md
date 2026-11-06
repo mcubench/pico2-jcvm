@@ -7260,3 +7260,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   this source change. The identified Pico `8E464F4E2BBC0A19` was flashed and
   passed the bounded runtime monitor, but malformed CP execution itself was
   not tested on hardware.
+
+## Malformed exception-handler catch CP index — 2026-11-06
+
+- **Finding:** Exception dispatch resolves an active catch type through
+  `ConstantPool_Handler::getCPEntry()`. If that lookup throws while handling a
+  different VM exception, the interpreter's nested dispatch guard catches the
+  failure and takes the VM error path rather than recursively dispatching.
+- **Validation:** Generated code replaces a valid invocation at the beginning
+  of a process try-range with out-of-range `INVOKESTATIC 0xFFFF`, and changes
+  the active catch row's CP index to `0xFFFF`. The upstream JCAlgTest CAP stays
+  unchanged at its expected SHA. PC VPCD passes 6/6: initial SELECT `9000`,
+  direct process returns `6F00`, ISD remains selectable, applet reselect
+  returns `9000`, and ISD remains selectable again.
+- **Viable test pattern:** Calculate a process-body offset from the active
+  Exception Handler start and patch a whole valid instruction there; also
+  mutate the catch index in the Method component's handler table. SELECT alone
+  does not execute this process path. This is emulator evidence only; physical
+  hostile-CAP and sanitizer runtime checks remain open.

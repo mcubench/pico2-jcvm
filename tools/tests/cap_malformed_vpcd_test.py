@@ -251,6 +251,39 @@ def build_malformed_load_code(mutation: str) -> Path:
             replacement = bytes((0x8E, 0x01, 0xFF, 0xFF, 0x00))
         if process_length < len(replacement):
             raise ValueError("process body is too short for invocation fixture")
+    elif mutation == "exception-catch-cp-out-of-range":
+        handler_bytes = handler_count * 8
+        process_methods_offset = PROCESS_METHOD_OFFSET - handler_bytes - 1
+        process_body_methods_offset = process_methods_offset + header_size
+        handler_index = None
+        handler_relative_offset = None
+        for index in range(handler_count):
+            entry_index = 4 + index * 8
+            start_offset = int.from_bytes(
+                method_component[entry_index : entry_index + 2], "big"
+            )
+            active_flags = int.from_bytes(
+                method_component[entry_index + 2 : entry_index + 4], "big"
+            )
+            start_methods_offset = start_offset - handler_bytes
+            relative = start_methods_offset - process_body_methods_offset
+            if (active_flags & 0x7FFF) and 0 <= relative < process_length:
+                handler_index = index
+                handler_relative_offset = relative
+                break
+        if handler_index is None or handler_relative_offset is None:
+            raise ValueError("no active process exception handler was found")
+        if process_length - handler_relative_offset < 3:
+            raise ValueError("active handler starts too close to process end")
+        mutation_index = code_index + handler_relative_offset
+        replacement = bytes((0x8D, 0xFF, 0xFF))
+        catch_index = method_start + 4 + handler_index * 8 + 6
+        mutable[catch_index : catch_index + 2] = b"\xFF\xFF"
+        print(
+            f"MALFORMED_CAP:HANDLER index={handler_index} "
+            f"relative_body_offset={handler_relative_offset} "
+            "catch_type_index=0xFFFF"
+        )
     elif mutation == "itableswitch-into-operand":
         mutation_index = code_index
         # IIPUSH 0 then ITABLESWITCH; default and selected case target operand.
@@ -324,6 +357,7 @@ def main() -> int:
                                 "invoke-virtual-cp-out-of-range",
                                 "invoke-special-cp-out-of-range",
                                 "invoke-interface-cp-out-of-range",
+                                "exception-catch-cp-out-of-range",
                                 "itableswitch-into-operand",
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",
@@ -333,8 +367,12 @@ def main() -> int:
     args = parser.parse_args()
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
-    select_status = "9000" if args.mutation == "truncated-sipush" else "6F00"
-    process_status = "6F00" if args.mutation == "truncated-sipush" else "6999"
+    select_status = "9000" if args.mutation in (
+        "truncated-sipush", "exception-catch-cp-out-of-range"
+    ) else "6F00"
+    process_status = "6F00" if args.mutation in (
+        "truncated-sipush", "exception-catch-cp-out-of-range"
+    ) else "6999"
     commands = [
         "--passes", "1",
         "--cap-code", str(code),
