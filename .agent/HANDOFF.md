@@ -13,7 +13,7 @@ Focused PIN/OwnerPINx/OwnerPIN VPCD passes; the full cross-AID regression passes
 builds pass; the ARM image ends at `0x100D4AB8`, leaving 177,480 bytes. Python
 syntax and scoped CRLF-aware diff checks pass. No physical device was used.
 
-Source/test commit: pending; progress record is at the end of `progress.md`.
+Source/test commit: `4f3be8c3`; progress record is at the end of `progress.md`.
 
 Next: continue CTX-02 with RandomData, checksum, AEAD and key API result
 producers, then object-result GC rooting after ordinary locals are dropped.

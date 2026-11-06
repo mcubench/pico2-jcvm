@@ -22880,5 +22880,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build-pc --profile symm_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Focused `SIO_CROSS_AID_ONLY_PIN=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed 34/34. Python syntax and scoped CRLF-aware diff checks passed. ARM image ends at `0x100D4AB8`, leaving 177,480 bytes. No physical device was used.
 - Result: SensitiveResult propagation now covers interface-typed PIN calls, OwnerPINx/predecrement calls, and concrete OwnerPIN invocation for the asserted API methods. Test evidence is VPCD/emulator only.
 - Decision: Continue with RandomData, checksum, AEAD and key API results, then object-result GC rooting. Physical hardware acceptance remains open.
-- Commit: pending.
+- Commit: `4f3be8c3`.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T081220Z.log`, SHA-256 `47f36edd37f2a31f77ec65e659de71a58421f4ec70c76ae795998cd9b80c5a3a`; full 34/34 `artifacts/logs/sio-cross-aid-vpcd-20261106T081322Z.log`, SHA-256 `3b8b5066c0a850839c00958cd88fbefadaa9195a18be1d2fa376be862471d36e`.
