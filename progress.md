@@ -22738,5 +22738,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 python3 tools/tests/cap_malformed_vpcd_test.py --mutation invoke-static-cp-out-of-range` passes VPCD 6/6. SELECT returns `6F00`, direct processing returns `6999`, and ISD remains selectable before and after rejected applet reselect. Python compile and scoped whitespace check pass. Upstream CAP SHA remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. No production build, sanitizer run, or physical card test was needed for this fixture-only change.
 - Result: The active emulator configuration rejects an invocation CP index beyond the declared ConstantPool count without losing manager availability.
 - Decision: Retain this regression. Continue auditing other CP lookup call paths and record that configurations without `JCVM_ARRAY_SIZE_CHECK` need separate review.
-- Commit: pending.
+- Commit: `d4e13a32`.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-invoke-static-cp-out-of-range-vpcd-20261106.log`, SHA-256 `9e362456b4abbdb994217dc03d8d16d12ed801f9388bb0853bb141c8c0391709`; generated LOAD data is under ignored `build/`.

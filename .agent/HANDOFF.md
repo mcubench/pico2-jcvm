@@ -93,6 +93,8 @@ Next: audit the other method-call operands and catch-type CP lookups for
 runtime range protection; retain the distinction between validation from the
 current array-check configuration, no-check builds, sanitizers, and physical
 card behavior.
+This fixture/documentation step is committed as `d4e13a32`; its progress
+record contains the complete validation and log hash.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
