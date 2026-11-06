@@ -23375,3 +23375,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue review-only; distinguish selected instance state from currently executing service context, and distinguish transient unavailability from persistent resource exhaustion in future implementation tasks.
 - Commit: pending review commit; exact SHA will be appended after creation.
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass8/source-sha256.txt` and `review-state.json`; existing generated header inspected without regeneration, no new runtime logs.
+
+- Commit: `00f6ca5366521f4eb7be78fcbab0e40772bfffa9` — completed `review-20261106-pass8`; this append resolves the pending SHA above. Review documentation/provenance only; 54 finding/task mappings checked, no implementation or hardware operations.
