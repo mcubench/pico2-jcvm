@@ -480,19 +480,18 @@ uint8_t remap_imported_interface_method_token(
  * @return Get associated Constant Pool offset.
  */
 const jc_cap_constant_pool_info
-ConstantPool_Handler::getCPEntry(const jc_cp_offset_t offset)
-#ifndef JCVM_ARRAY_SIZE_CHECK
-    noexcept
-#endif /* JCVM_ARRAY_SIZE_CHECK */
-{
-  if (offset >= 64) {
-    TRACE_JCVM_DEBUG("CP lookup index=%u count=%u package=%u",
+ConstantPool_Handler::getCPEntry(const jc_cp_offset_t offset) {
+  const auto *constant_pool = this->package.getCap().getConstantPool();
+  if (constant_pool == nullptr || offset >= HTONS(constant_pool->count)) {
+    TRACE_JCVM_DEBUG("CP lookup out of range index=%u count=%u package=%u",
                      static_cast<unsigned>(offset),
-                     static_cast<unsigned>(HTONS(
-                         this->package.getCap().getConstantPool()->count)),
+                     constant_pool == nullptr
+                         ? 0u
+                         : static_cast<unsigned>(HTONS(constant_pool->count)),
                      static_cast<unsigned>(this->package.getPackageID()));
+    throw Exceptions::SecurityException;
   }
-  return this->package.getCap().getConstantPool()->constantpool()[offset];
+  return constant_pool->constantpool()[offset];
 }
 
 /*
@@ -505,11 +504,7 @@ ConstantPool_Handler::getCPEntry(const jc_cp_offset_t offset)
  * pool offset.
  */
 std::pair<jpackage_ID_t, jclass_index_t>
-ConstantPool_Handler::getClassInformation(const jc_cp_offset_t offset)
-#ifndef JCVM_ARRAY_SIZE_CHECK
-    noexcept
-#endif /* JCVM_ARRAY_SIZE_CHECK */
-{
+ConstantPool_Handler::getClassInformation(const jc_cp_offset_t offset) {
   jpackage_ID_t package;
   jclass_index_t claz;
 
@@ -559,11 +554,7 @@ ConstantPool_Handler::getClassInformation(const jc_cp_offset_t offset)
  * @return a jc_class_ref structure.
  */
 const jc_cap_class_ref
-ConstantPool_Handler::getClassRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+ConstantPool_Handler::getClassRef(const jc_cp_offset_t offset) {
   const jc_cap_constant_pool_info cp_entry = this->getCPEntry(offset);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
@@ -630,11 +621,7 @@ const jc_cap_class_ref ConstantPool_Handler::getClassRefFromClassIndex(
  * @return a struct jc_cap_instance_field_ref_info structure.
  */
 const jc_cap_instance_field_ref_info
-ConstantPool_Handler::getInstanceFieldRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+ConstantPool_Handler::getInstanceFieldRef(const jc_cp_offset_t offset) {
   const jc_cap_constant_pool_info cp_entry = this->getCPEntry(offset);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
@@ -656,11 +643,7 @@ ConstantPool_Handler::getInstanceFieldRef(const jc_cp_offset_t offset)
  * @return a struct jc_cap_virtual_method_ref_info structure.
  */
 const jc_cap_virtual_method_ref_info
-ConstantPool_Handler::getVirtualMethodRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+ConstantPool_Handler::getVirtualMethodRef(const jc_cp_offset_t offset) {
   const jc_cap_constant_pool_info cp_entry = this->getCPEntry(offset);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
@@ -682,11 +665,7 @@ ConstantPool_Handler::getVirtualMethodRef(const jc_cp_offset_t offset)
  * @return a struct jc_cap_super_method_ref_info structure.
  */
 const jc_cap_super_method_ref_info
-ConstantPool_Handler::getSuperMethodRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+ConstantPool_Handler::getSuperMethodRef(const jc_cp_offset_t offset) {
   const jc_cap_constant_pool_info cp_entry = this->getCPEntry(offset);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP

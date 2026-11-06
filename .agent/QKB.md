@@ -7251,3 +7251,12 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   full-width out-of-range index rather than a truncated instruction. This
   validates the current emulator/configuration, not a sanitizer or physical
   card run.
+- **Hardening:** The first implementation relied on `JCVM_ARRAY_SIZE_CHECK`
+  inside `JCVMArray`. `ConstantPool_Handler::getCPEntry()` now checks for a
+  missing pool and compares the operand index directly to the declared count,
+  throwing `SecurityException` unconditionally. CP accessors that delegate to
+  it no longer become `noexcept` when optional checks are disabled. ARM,
+  RISC-V, and PC builds pass; all four opcode VPCD cases still pass 6/6 after
+  this source change. The identified Pico `8E464F4E2BBC0A19` was flashed and
+  passed the bounded runtime monitor, but malformed CP execution itself was
+  not tested on hardware.

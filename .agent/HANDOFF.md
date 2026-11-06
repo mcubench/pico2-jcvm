@@ -1,4 +1,4 @@
-# Active handoff — malformed ConstantPool invocation runtime coverage — 2026-11-06 04:02 CET
+# Active handoff — explicit ConstantPool bounds guard and hardware cycle — 2026-11-06 04:27 CET
 
 ## Critical continuation — extended method header was one byte overestimated
 
@@ -86,18 +86,32 @@ It replaces the generated process method start with complete INVOKESTATIC,
 INVOKEVIRTUAL, INVOKESPECIAL, or INVOKEINTERFACE instructions using CP index
 `0xFFFF`; the source JCAlgTest CAP is still hash-verified and unchanged. All
 four PC VPCD variants pass 6/6 with SELECT `6F00`, process `6999`, and ISD
-recovery before and after applet reselect. The active `JCVM_ARRAY_SIZE_CHECK`
-configuration makes `JCVMArray::at()` reject the out-of-range CP slot. No
-explicit code change was needed. Logs and hashes are in the latest progress
-entry.
+recovery before and after applet reselect. Initially the active
+`JCVM_ARRAY_SIZE_CHECK` configuration made `JCVMArray::at()` reject the
+out-of-range CP slot. The source now also performs an unconditional
+declared-count check in `getCPEntry()` and throws `SecurityException`; its CP
+accessor chain no longer has conditional `noexcept` specifications. All four
+opcode variants were rerun against the changed source. Their logs were
+overwritten by those reruns, so use the replacement hashes in the latest
+progress entry rather than the earlier per-case hashes.
 
 Next: audit the other method-call operands and catch-type CP lookups for
 runtime range protection; retain the distinction between validation from the
 current array-check configuration, no-check builds, sanitizers, and physical
 card behavior.
 The initial INVOKESTATIC case and audit are committed as `d4e13a32`; all four
-invocation opcodes are now covered in commit `00165ee1` with complete operand
-forms and independent recovery logs. Metadata follow-up pending.
+invocation opcodes are covered in `00165ee1` with complete operands and
+recovery checks. The source-level CP guard and validation summary are the
+current uncommitted step. All four VPCD cases pass against the rebuilt PC VM;
+the unchanged upstream JCAlgTest VPCD regression passes 15/15. ARM, RISC-V,
+and PC builds pass. The full ARM image was flashed to Pico `8E464F4E2BBC0A19`
+and the 18-second monitor passed `TEST:SUMMARY pass=1 fail=0`; the monitor does
+not exercise malformed CP behavior. Cycle log SHA-256:
+`238b7d76ec36311326991e21e47f64b37c5a54add9f600283006da643b698644`.
+
+Next: inspect exception-handler catch-type CP indices and consider a test for
+the malformed handler-lookup path. Physical malformed-CAP recovery and
+sanitizer runtime containment remain open.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 

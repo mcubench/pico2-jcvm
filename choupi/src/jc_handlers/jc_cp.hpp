@@ -69,18 +69,10 @@ public:
   ConstantPool_Handler(Package package) noexcept : Component_Handler(package){};
 
   std::pair<jpackage_ID_t, jclass_index_t>
-  getClassInformation(const jc_cp_offset_t instantiated_class)
-#ifndef JCVM_ARRAY_SIZE_CHECK
-      noexcept
-#endif /* JCVM_ARRAY_SIZE_CHECK */
-      ;
+  getClassInformation(const jc_cp_offset_t instantiated_class);
 
   ///  Get a cp_entry
-  const jc_cap_constant_pool_info getCPEntry(const jc_cp_offset_t offset)
-#ifndef JCVM_ARRAY_SIZE_CHECK
-      noexcept
-#endif /* JCVM_ARRAY_SIZE_CHECK */
-      ;
+  const jc_cap_constant_pool_info getCPEntry(const jc_cp_offset_t offset);
 
   /// Converting a union cap_class_ref to either jc_cap_class or
   /// jc_cap_interface structure.
@@ -93,11 +85,7 @@ public:
       ;
 
   /// Convert constant pool offset to jc_class_ref
-  const jc_cap_class_ref getClassRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  const jc_cap_class_ref getClassRef(const jc_cp_offset_t offset);
 
   // Convert class index to jc_cap_class_info *
   const jc_cap_class_info *
@@ -113,27 +101,15 @@ public:
 
   ///  Convert constant pool offset to struct jc_cap_virtual_method_ref_info
   const jc_cap_instance_field_ref_info
-  getInstanceFieldRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  getInstanceFieldRef(const jc_cp_offset_t offset);
 
   /// Convert constant pool offset to struct jc_cap_virtual_method_ref_info
   const jc_cap_virtual_method_ref_info
-  getVirtualMethodRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  getVirtualMethodRef(const jc_cp_offset_t offset);
 
   ///  Convert constant pool offset to struct jc_cap_super_method_ref_info
   const jc_cap_super_method_ref_info
-  getSuperMethodRef(const jc_cp_offset_t offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  getSuperMethodRef(const jc_cp_offset_t offset);
 
   /// Convert jc_class_ref to struct jc_cap_interface structure.
   std::pair<Package, const jc_cap_class_info *>
