@@ -75,6 +75,17 @@ int main() {
           branch.setBranchFromOffset(code, 2, true);
         }),
         "dynamic branch into a decoded instruction operand is rejected");
+  check(branch.isInstructionBoundary(code, false),
+        "method start is a decoded instruction boundary");
+  check(!branch.isInstructionBoundary(code + 2, false),
+        "instruction boundary query rejects an operand address");
+  check(branch.isInstructionBoundary(code + sizeof(code), true),
+        "optional method-end boundary is recognized");
+  check(!branch.isInstructionBoundary(code + sizeof(code), false),
+        "method end is not an instruction start");
+  check(branch.containsAddress(code + 2, false) &&
+            !branch.containsAddress(code + sizeof(code) + 1, true),
+        "frame membership query rejects addresses beyond the method");
   branch.setBranchFromOffset(code, 2, false);
   check(branch.getValue() == code + 2,
         "trusted branch skips dynamic instruction-alignment policy");

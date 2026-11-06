@@ -142,6 +142,25 @@ public:
     this->value = reinterpret_cast<const uint8_t *>(target);
   }
 
+  /// Check an instruction boundary inside this method frame.
+  bool isInstructionBoundary(const uint8_t *target,
+                             const bool allow_end) const noexcept {
+    if (!this->contains(target, allow_end)) return false;
+    const std::size_t code_size = static_cast<std::size_t>(
+        this->address(this->end) - this->address(this->begin));
+    const std::size_t target_offset = static_cast<std::size_t>(
+        this->address(target) - this->address(this->begin));
+    if (allow_end && target_offset == code_size) return true;
+    return cap_instruction_boundaries::is_instruction_start(
+        this->begin, code_size, target_offset);
+  }
+
+  /// Check whether an address belongs to this method frame.
+  bool containsAddress(const uint8_t *target,
+                       const bool allow_end) const noexcept {
+    return this->contains(target, allow_end);
+  }
+
   /// Branch relative to the current PC value, with optional opcode alignment.
   void updateBranchFromOffset(const int64_t offset,
                               const bool require_instruction_start) {

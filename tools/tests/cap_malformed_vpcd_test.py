@@ -265,7 +265,7 @@ def build_malformed_load_code(mutation: str) -> Path:
             active_flags = int.from_bytes(
                 method_component[entry_index + 2 : entry_index + 4], "big"
             )
-            start_methods_offset = start_offset - handler_bytes
+            start_methods_offset = start_offset - handler_bytes - 1
             relative = start_methods_offset - process_body_methods_offset
             if (active_flags & 0x7FFF) and 0 <= relative < process_length:
                 handler_index = index
@@ -298,7 +298,7 @@ def build_malformed_load_code(mutation: str) -> Path:
             active_flags = int.from_bytes(
                 method_component[entry_index + 2 : entry_index + 4], "big"
             )
-            start_methods_offset = start_offset - handler_bytes
+            start_methods_offset = start_offset - handler_bytes - 1
             relative = start_methods_offset - process_body_methods_offset
             if (active_flags & 0x7FFF) and 0 <= relative < process_length:
                 handler_index = index
@@ -326,6 +326,53 @@ def build_malformed_load_code(mutation: str) -> Path:
             f"relative_body_offset={handler_relative_offset} "
             f"handler_component_offset=0x{target_component_offset:04X} "
             "catch_type_index=0x0000 target=operand"
+        )
+    elif mutation == "exception-handler-range-into-operand":
+        handler_bytes = handler_count * 8
+        process_methods_offset = PROCESS_METHOD_OFFSET - handler_bytes - 1
+        process_body_methods_offset = process_methods_offset + header_size
+        handler_index = None
+        handler_relative_offset = None
+        for index in range(handler_count):
+            entry_index = 4 + index * 8
+            start_offset = int.from_bytes(
+                method_component[entry_index : entry_index + 2], "big"
+            )
+            active_flags = int.from_bytes(
+                method_component[entry_index + 2 : entry_index + 4], "big"
+            )
+            start_methods_offset = start_offset - handler_bytes - 1
+            relative = start_methods_offset - process_body_methods_offset
+            if (active_flags & 0x7FFF) and 0 <= relative < process_length:
+                handler_index = index
+                handler_relative_offset = relative
+                break
+        if handler_index is None or handler_relative_offset is None:
+            raise ValueError("no active process exception handler was found")
+        if process_length - handler_relative_offset < 5:
+            raise ValueError("active handler starts too close to process end")
+        mutation_index = code_index + handler_relative_offset
+        # Start the protected range at BSPUSH's operand, then throw from the
+        # following INVOKESTATIC. The range is active but malformed.
+        replacement = bytes((0x10, 0x00, 0x8D, 0x00, 0x00))
+        entry_index = method_start + 4 + handler_index * 8
+        range_start = (
+            process_body_methods_offset + handler_relative_offset + 1
+        )
+        mutable[entry_index : entry_index + 2] = (
+            (range_start + handler_bytes + 1).to_bytes(2, "big")
+        )
+        old_range_flags = int.from_bytes(
+            mutable[entry_index + 2 : entry_index + 4], "big"
+        )
+        mutable[entry_index + 2 : entry_index + 4] = (
+            (old_range_flags & 0x8000 | 4).to_bytes(2, "big")
+        )
+        mutable[entry_index + 6 : entry_index + 8] = b"\x00\x00"
+        print(
+            f"MALFORMED_CAP:HANDLER index={handler_index} "
+            f"range_start=0x{range_start:04X} length=4 "
+            "catch_type_index=0x0000 start=operand"
         )
     elif mutation == "itableswitch-into-operand":
         mutation_index = code_index
@@ -402,6 +449,7 @@ def main() -> int:
                                 "invoke-interface-cp-out-of-range",
                                 "exception-catch-cp-out-of-range",
                                 "exception-handler-target-into-operand",
+                                "exception-handler-range-into-operand",
                                 "itableswitch-into-operand",
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",
@@ -414,10 +462,12 @@ def main() -> int:
     select_status = "9000" if args.mutation in (
         "truncated-sipush", "exception-catch-cp-out-of-range",
         "exception-handler-target-into-operand",
+        "exception-handler-range-into-operand",
     ) else "6F00"
     process_status = "6F00" if args.mutation in (
         "truncated-sipush", "exception-catch-cp-out-of-range",
         "exception-handler-target-into-operand",
+        "exception-handler-range-into-operand",
     ) else "6999"
     commands = [
         "--passes", "1",

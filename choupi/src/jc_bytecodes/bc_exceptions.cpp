@@ -309,13 +309,21 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
                      static_cast<unsigned>(catch_type_index));
       }
 #endif
-      if (start < handler_table_bytes ||
+      if (start <= handler_table_bytes ||
           handler_component_offset <= handler_table_bytes) {
         throw Exceptions::SecurityException;
       }
-      const uint32_t start_method_offset = start - handler_table_bytes;
+      // CAP offsets are one-based after the handler table, like handler
+      // destinations; convert them to the zero-based methods() span.
+      const uint32_t start_method_offset = start - handler_table_bytes - 1;
       const uint32_t handler_method_offset =
           handler_component_offset - handler_table_bytes - 1;
+      const uint32_t protected_range_end =
+          start_method_offset + static_cast<uint32_t>(active_length);
+      if (start_method_offset >= methods.size() ||
+          protected_range_end > methods.size()) {
+        throw Exceptions::SecurityException;
+      }
       // The current frame stores the address of its throwing instruction.
       // An unwound caller stores the invoke opcode, while the CAP handler
       // range begins at the caller's next bytecode boundary.
@@ -326,6 +334,27 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
           exception_range_pc < start_method_offset + active_length;
       if (!handler_active) {
         continue;
+      }
+
+      const auto *range_start = methods.data() + start_method_offset;
+      const auto *range_end = methods.data() + protected_range_end;
+      const pc_t &frame_pc = stack.getPC();
+      const bool start_boundary =
+          frame_pc.isInstructionBoundary(range_start, false);
+      const bool end_in_frame = frame_pc.containsAddress(range_end, true);
+#ifdef PC_VERSION
+      if (trace_dispatch) {
+        std::fprintf(stderr,
+                     "CHOUPI:EXCEPTION_ACTIVE_RANGE index=%u start=%u end=%u "
+                     "start_boundary=%u end_in_frame=%u\n",
+                     static_cast<unsigned>(index),
+                     static_cast<unsigned>(start_method_offset),
+                     static_cast<unsigned>(protected_range_end),
+                     start_boundary ? 1u : 0u, end_in_frame ? 1u : 0u);
+      }
+#endif
+      if (!start_boundary || !end_in_frame) {
+        throw Exceptions::SecurityException;
       }
 
       bool matches = catch_type_index == 0;
