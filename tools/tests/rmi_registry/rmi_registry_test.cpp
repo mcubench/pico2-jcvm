@@ -45,6 +45,113 @@ bool contains(const VisitedReferences &visited, const jcvm::jref_t reference) {
   return false;
 }
 
+void verify_dup_x_positive_depth() {
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 3);
+    stack.push_Short(10);
+    stack.push_Short(20);
+    stack.dup(1, 2);
+    assert(stack.pop_Short() == 20);
+    assert(stack.pop_Short() == 10);
+    assert(stack.pop_Short() == 20);
+  }
+
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 5);
+    stack.push_Short(10);
+    stack.push_Short(20);
+    stack.push_Short(30);
+    stack.dup(2, 3);
+    assert(stack.pop_Short() == 30);
+    assert(stack.pop_Short() == 20);
+    assert(stack.pop_Short() == 10);
+    assert(stack.pop_Short() == 30);
+    assert(stack.pop_Short() == 20);
+  }
+
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 3);
+    const auto lower = make_reference(7);
+    const auto top = make_reference(8);
+    stack.push_Reference(lower, 17);
+    stack.push_Reference(top, 23);
+    stack.dup(1, 2);
+    const auto original_top = stack.pop_ReferenceValue();
+    assert(original_top.reference == top && original_top.owner == 23);
+    const auto middle = stack.pop_ReferenceValue();
+    assert(middle.reference == lower && middle.owner == 17);
+    const auto inserted = stack.pop_ReferenceValue();
+    assert(inserted.reference == top && inserted.owner == 23);
+  }
+
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 2);
+    stack.push_Short(10);
+    bool underflow = false;
+    try {
+      stack.dup(1, 2);
+    } catch (jcvm::Exceptions error) {
+      underflow = error == jcvm::Exceptions::StackUnderflowException;
+    }
+    assert(underflow);
+    assert(stack.pop_Short() == 10);
+  }
+
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 2);
+    stack.push_Short(10);
+    stack.push_Short(20);
+    bool overflow = false;
+    try {
+      stack.dup(1, 2);
+    } catch (jcvm::Exceptions error) {
+      overflow = error == jcvm::Exceptions::StackOverflowException;
+    }
+    assert(overflow);
+    assert(stack.pop_Short() == 20);
+    assert(stack.pop_Short() == 10);
+  }
+
+#ifdef JCVM_INT_SUPPORTED
+  constexpr uint8_t maximum_m = 4;
+  constexpr uint8_t maximum_n = maximum_m + 4;
+#else
+  constexpr uint8_t maximum_m = 2;
+  constexpr uint8_t maximum_n = maximum_m + 2;
+#endif
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, maximum_m + maximum_n);
+    for (uint8_t value = 1; value <= maximum_n; ++value) {
+      stack.push_Short(value);
+    }
+    stack.dup(maximum_m, maximum_n);
+    for (uint8_t value = maximum_n; value > 0; --value) {
+      assert(stack.pop_Short() == value);
+    }
+    for (uint8_t value = maximum_n; value > maximum_n - maximum_m; --value) {
+      assert(stack.pop_Short() == value);
+    }
+  }
+
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 1);
+    bool invalid_range = false;
+    try {
+      stack.dup(maximum_m, maximum_n + 1);
+    } catch (jcvm::Exceptions error) {
+      invalid_range = error == jcvm::Exceptions::RuntimeException;
+    }
+    assert(invalid_range);
+  }
+}
+
 void verify_sensitive_result_cross_context(jcvm::Context &producer,
                                            jcvm::Context &consumer) {
   const auto previous = jcvm::Context::setActiveContext(&producer);
@@ -1081,6 +1188,7 @@ void verify_typed_operand_pops() {
 } // namespace
 
 int main() {
+  verify_dup_x_positive_depth();
   jcvm::Stack argument_stack;
   push_test_frame(argument_stack, 0, 0, 3);
   const auto proxy_receiver = make_reference(20);
@@ -1215,6 +1323,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 sensitive_result_gc_root=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 sensitive_result_gc_root=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1 stack_dup_x=1");
   return 0;
 }

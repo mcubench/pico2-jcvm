@@ -238,8 +238,8 @@ void Bytecodes::bc_dup_x() {
     throw Exceptions::RuntimeException;
   }
 
-  // checking n value. Permissible values for n are 0 and m through m+4.
-  if (!((n == 0) || ((m <= n) && (n < (m + 4))))) {
+  // Permissible values for n are 0 and m through m+4, inclusive.
+  if (!((n == 0) || ((m <= n) && (n <= (m + 4))))) {
     // Incorrect n value
     throw Exceptions::RuntimeException;
   }
@@ -252,8 +252,8 @@ void Bytecodes::bc_dup_x() {
     throw Exceptions::RuntimeException;
   }
 
-  // checking n value.
-  if ((n != 0) && (n < m) && (n < (m + 2))) {
+  // Permissible values for n are 0 and m through m+2, inclusive.
+  if ((n != 0) && ((n < m) || (n > (m + 2)))) {
     // Incorrect n value
     throw Exceptions::RuntimeException;
   }

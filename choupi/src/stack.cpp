@@ -30,6 +30,7 @@
 #include "debug.hpp"
 #include "jc_utils.hpp"
 
+#include <array>
 #include <cassert> // for check when NDEBUG is undefined.
 #ifdef PC_VERSION
 #include <cstdio>
@@ -726,44 +727,66 @@ void Stack::writeLocal_ReturnAddress(const uint8_t local_number,
  *  dup_x instruction)
  */
 void Stack::dup(const uint8_t m, const uint8_t n) {
-  jword_t *mnpart, *old_tos;
   Frame &current_frame = this->getCurrentFrame();
+#ifdef JCVM_INT_SUPPORTED
+  constexpr uint8_t maximum_m = 4;
+  constexpr uint8_t maximum_extra_n = 4;
+#else
+  constexpr uint8_t maximum_m = 2;
+  constexpr uint8_t maximum_extra_n = 2;
+#endif
+  if (m == 0 || m > maximum_m ||
+      (n != 0 && (n < m || n > static_cast<uint8_t>(m + maximum_extra_n)))) {
+    throw Exceptions::RuntimeException;
+  }
 
-#ifdef JCRE_STACK_OVERFLOW_PROTECTION
-
-  // Checking if the operand stack may store enough words to push the result.
-  if ((int16_t *)(current_frame.getTOS() + (m + n)) > current_frame.getEOS()) {
-    // Stack overflow detected!!!!
+  jword_t *const old_tos = current_frame.getTOS();
+  const std::ptrdiff_t available = old_tos - current_frame.getOP();
+  const std::ptrdiff_t free = current_frame.getEOS() - old_tos;
+  const std::ptrdiff_t required = n == 0 ? m : n;
+  if (available < required) {
+    throw Exceptions::StackUnderflowException;
+  }
+  if (free < m) {
     throw Exceptions::StackOverflowException;
   }
 
-  // Checking if the operand stack has enough words to compute the result.
-  if ((jword_t *)(current_frame.getTOS() - (m + n)) < current_frame.getOP()) {
-    // Stack underflow detected!!!!
-    throw Exceptions::StackUnderflowException;
+  struct WordCopy {
+    jword_t value;
+    ValueKind kind;
+    uint8_t reference_owner;
+  };
+  std::array<WordCopy, maximum_m> copied{};
+  for (uint8_t index = 0; index < m; ++index) {
+    jword_t *const source = old_tos - m + index;
+    copied[index] = {
+        *source,
+        this->getValueKind(source),
+        this->jc_stack_reference_owners[source - this->jc_stack]};
   }
 
-#endif /* JCRE_STACK_OVERFLOW_PROTECTION */
+  if (n != 0) {
+    // Shift the n existing words up by m slots from top to bottom. This
+    // preserves their order and opens the insertion range.
+    for (uint8_t depth = 1; depth <= n; ++depth) {
+      jword_t *const source = old_tos - depth;
+      jword_t *const destination = source + m;
+      *destination = *source;
+      this->setValueKind(destination, this->getValueKind(source));
+      this->jc_stack_reference_owners[destination - this->jc_stack] =
+          this->jc_stack_reference_owners[source - this->jc_stack];
+    }
+  }
 
-  // frame->tos points the next empty word from the stack
-  mnpart = (jword_t *)(current_frame.getTOS() - (n + m));
-  old_tos = current_frame.getTOS();
-
-  // This loop isn't done when n = 0
-  for (; mnpart < old_tos; mnpart++) {
-#if false
-      // XXX: this implementation is disable because the cost is
-      // overweight regarding the checks done by the push_Value function
-      current_frame.push_Value(*npart);
-#else
-    jword_t *destination = current_frame.getTOS();
-    *destination = *mnpart;
-    this->setValueKind(destination, this->getValueKind(mnpart));
+  jword_t *const insertion = old_tos - n;
+  for (uint8_t index = 0; index < m; ++index) {
+    jword_t *const destination = insertion + index;
+    *destination = copied[index].value;
+    this->setValueKind(destination, copied[index].kind);
     this->jc_stack_reference_owners[destination - this->jc_stack] =
-        this->jc_stack_reference_owners[mnpart - this->jc_stack];
-    current_frame.setTOS(current_frame.getTOS() + 1);
-#endif
+        copied[index].reference_owner;
   }
+  current_frame.setTOS(old_tos + m);
 }
 
 /**
