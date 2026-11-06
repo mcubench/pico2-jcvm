@@ -881,16 +881,16 @@ source-based follow-ups, without a new physical reproduction in this review.
   SIO caller assert both. Focused and full 34/34 VPCD coverage pass, as do PC,
   ARM and RISC-V builds. No physical device was used.
   The interpreted service also asserts the boolean SensitiveResult values from
-  `AID.partialEquals()` and both `AID.equals()` overloads; focused and full
-  cross-AID VPCD coverage pass. This extends the existing `JCSystem.getAID()`
-  and `getPreviousContextAID()` object-result checks. No runtime source change
-  was needed for these API results.
+  `AID.partialEquals()`, both `AID.equals()` overloads, and `AID.RIDEquals()`
+  true/false outcomes; focused AID and full cross-AID VPCD coverage pass. This
+  extends the existing `JCSystem.getAID()` and `getPreviousContextAID()`
+  object-result checks. No runtime source change was needed for these API
+  results. The currently supported SensitiveResult producers now have
+  interpreted SIO coverage, including `buildKey()`.
   The current API has no supported Checksum provider (both factory branches
   return `NO_SUCH_ALGORITHM`) and no enabled AEAD provider; those results are
   not current producers and remain outside this coverage until separately
-  implemented/enabled. The documented active producers currently supported
-  by this profile have interpreted SIO coverage, including `buildKey()`;
-  The native heap regression confirms a
+  implemented/enabled. The native heap regression confirms a
   SensitiveResult object is the sole VM root after ordinary frames are gone,
   and that reset permits collection. Interpreted SIO propagation/assertion is
   covered separately; the public Java Card API has no synchronous GC trigger

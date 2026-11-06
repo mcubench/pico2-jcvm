@@ -22948,3 +22948,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline/emulator work; retry this physical probe only after `pcsc_scan -r` lists a Pico reader. Use its exact current name.
 - Commit: `5e875772`.
 - Artifacts/logs: Prior physical pass `artifacts/logs/sio-cross-aid-physical-20261106T102553Z.log`, SHA-256 `1290201a5f4f78b558ac32cb76703808a45cd16542c1dc38dcddaa0dedd7952f`; failed pre-traffic GPPro list `build/sio-cross-aid-fixture/physical-gp-list-20261106T102843Z.log`, SHA-256 `a1db974ee9a6a906729879ff24ea6431c5e0bd52fe0561b1697d37a417e11d09`.
+
+## 2026-11-06 AID RIDEquals SensitiveResult across SIO 8 minutes
+
+- Step/experiment: `ctx02-aid-ridequals-sensitive-result-sio-20261106`
+- When: '2026-11-06 10:32 UTC' - '2026-11-06 10:40 UTC'
+- Change: Extended the interpreted AID SensitiveResult case with `RIDEquals(previous)` true and `RIDEquals(null)` false assertions. Updated CTX-02 and handoff to include this documented API producer and retain the physical PC/SC limitation.
+- Validation: Focused `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_AID=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=1 fail=0`; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. The physical probe compiles with the added AID command but has not run against hardware because no Pico reader is currently registered in PC/SC. No firmware source changed; target builds were not rerun.
+- Result: `AID.RIDEquals()` true/false SensitiveResult values survive the interpreted SIO call and are assertable by the caller. This closes the remaining currently available AID result branch in this fixture; Checksum/AEAD remain unsupported or disabled. Physical AID result validation is pending reader registration.
+- Decision: Continue offline with high-priority native runtime backlog; retry the physical probe after a Pico reappears in `pcsc_scan -r`.
+- Commit: `cc9a072f` (test fixture; metadata is recorded in the following documentation commit).
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T103631Z.log`, SHA-256 `662946299d973675114e4c6d828a6ee798a7e6297cd057f09d56a183450bb5ae`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T103721Z.log`, SHA-256 `bfa8b510557c54e5e3795bbbd03badda3533d270cedc498822906583735925c4`.

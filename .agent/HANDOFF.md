@@ -1,4 +1,31 @@
-# Active handoff — Physical AID SensitiveResult probe — 2026-11-06 11:32 CET
+# Active handoff — AID.RIDEquals SensitiveResult — 2026-11-06 11:40 CET
+
+## Latest continuation — RIDEquals true/false results covered through SIO
+
+Extended the interpreted AID SIO case to assert true for
+`AID.RIDEquals(previous)` and false for `AID.RIDEquals(null)`. The focused AID
+case and full cross-AID VPCD suite pass on the rebuilt PC `symm_crypto` VM
+(34/34). Test commit: `cc9a072f`.
+
+Focused log `artifacts/logs/sio-cross-aid-vpcd-20261106T103631Z.log`, SHA-256
+`662946299d973675114e4c6d828a6ee798a7e6297cd057f09d56a183450bb5ae`; full log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T103721Z.log`, SHA-256
+`bfa8b510557c54e5e3795bbbd03badda3533d270cedc498822906583735925c4`.
+
+The physical SmartcardIO probe now sends `803B000000` expecting `6A319000`,
+but no hardware result is available yet: the latest run stopped before card
+traffic because `pcsc_scan -r` listed only the two VPCD readers despite three
+USB-enumerated Pico devices with CCID descriptors. QKB and the previous
+handoff section record the host registration diagnosis. Retry the physical
+probe only when a Pico appears in `pcsc_scan -r`.
+
+Next: continue the high-priority native runtime backlog offline while physical
+PC/SC registration is absent. Do not change upstream CAPs or implement
+cryptographic behavior inside test CAPs.
+
+---
+
+# Previous handoff — Physical AID SensitiveResult probe — 2026-11-06 11:32 CET
 
 ## Latest continuation — AID physical check added, reader registration dropped
 
