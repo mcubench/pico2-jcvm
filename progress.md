@@ -17341,7 +17341,7 @@
 - Decision: Add an install-level multi-package fixture for actual exported
   interface/class/missing-token lookup, then continue persistent-object
   reclamation and cold USB power-cycle work.
-- Commit: pending.
+- Commit: `e13071af`.
 - Artifacts/logs: max ARM image
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no dedicated
   build logs archived.

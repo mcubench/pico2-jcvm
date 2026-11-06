@@ -19,8 +19,8 @@ not a runtime regression. The test harness now documents the required profile
 and includes an isolated Signature mode.
 
 The `makeGlobalArray` implementation/test commit is `438e8581`; its metadata
-follow-up is `fc268448`. This profile-diagnosis and harness-clarification step
-is being recorded separately. No physical device was used.
+follow-up is `fc268448`. Profile diagnosis and harness clarification are
+committed as `e13071af`. No physical device was used.
 
 Next: continue CTX-02 with the remaining native result producers (PIN,
 random-data, checksum, AEAD and key APIs), then extend GC-rooting coverage for
