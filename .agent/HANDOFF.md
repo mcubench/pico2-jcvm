@@ -1,4 +1,22 @@
-# Current handoff — empty CAP ConstantPool rejected at INSTALL — 2026-11-06 13:38 CET
+# Current handoff — card-manager recovery after malformed CAP — 2026-11-06 13:43 CET
+
+Extended the opt-in empty-ConstantPool negative case to install the separate
+valid client package after the malformed service package is rejected. The valid
+LOAD and INSTALL succeed in the same VPCD session after the `6F00` failure,
+with Descriptor both omitted and included. Focused summaries pass 1/1 in each
+mode. Descriptor-free log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T124223Z.log`, SHA-256
+`b1a61117741e48f1fd3d3e7ed494adb5aaebc19b9eb95c8812ca4d62ec4f84cd`;
+Descriptor-included log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T124249Z.log`, SHA-256
+`c643efc054a20ebedd79a92d70c2664331509a7dbc872e49d6d6a952878bb0c3`.
+
+No runtime code or upstream CAP changed. PC/SC enumeration still times out
+despite three USB nodes granted by the authorized helper; no physical testing
+was attempted. Next: continue offline CTX-01/03 work; repeat physical GPPro
+Descriptor-free validation once a Pico reader is registered.
+
+# Previous active handoff — empty CAP ConstantPool rejected at INSTALL — 2026-11-06 13:38 CET
 
 Added opt-in `SIO_CROSS_AID_TEST_EMPTY_CONSTANT_POOL=1`. The generated service
 CAP keeps a valid ConstantPool component with `count=0`, updates the component

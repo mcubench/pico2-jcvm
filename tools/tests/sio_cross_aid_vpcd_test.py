@@ -779,8 +779,20 @@ def main() -> int:
                         "INSTALL with an empty ConstantPool returned "
                         f"{response[-2:].hex().upper()}, expected fail-closed 6F00"
                     )
+                vpcd.load_package(scp, client[0], client[1])
+                response = vpcd.install_applet(
+                    scp, client[1], client[2][0], client[2][0]
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "valid client INSTALL after empty ConstantPool rejection "
+                        f"returned {response[-2:].hex().upper()}, expected 9000"
+                    )
                 print("TEST:PASS INSTALL rejects a service CAP whose ConstantPool "
                       "entries are omitted (6F00)")
+                print("TEST:PASS valid client package installs after malformed "
+                      "service CAP rejection")
+                print("TEST:PASS card manager remains usable after failed INSTALL")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_EXPORT_METHOD_OFFSET") == "1":

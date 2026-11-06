@@ -23123,3 +23123,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Treat whole-entry omission coverage for Class tables and ConstantPool as complete; keep the optional Descriptor-present and standard Descriptor-free cases. Physical GPPro Descriptor-free validation remains open because no Pico is registered in PC/SC.
 - Commit: `pending`
 - Artifacts/logs: The four VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.
+
+## 2026-11-06 Verify loader recovery after malformed CAP 5 minutes
+
+- Step/experiment: `ctx01-malformed-cap-recovery-20261106`
+- When: '2026-11-06 13:38 CET' - '2026-11-06 13:43 CET'
+- Change: Extended the empty-ConstantPool generated-CAP negative case to LOAD and INSTALL a separate valid client package in the same VPCD session after the malformed service INSTALL is rejected.
+- Validation: Descriptor-free and Descriptor-included focused VPCD runs both reject malformed INSTALL with `6F00`, then successfully LOAD and INSTALL the valid client (`9000`); each reports `TEST:SUMMARY pass=1 fail=0`. PC/SC helper granted three USB nodes, but bounded `pcsc_scan -r` timed out without a Pico reader; no physical operation was attempted. No target build was needed because runtime source did not change.
+- Result: The card manager remains usable for a subsequent valid package after this failed INSTALL. Descriptor-free log `artifacts/logs/sio-cross-aid-vpcd-20261106T124223Z.log`, SHA-256 `b1a61117741e48f1fd3d3e7ed494adb5aaebc19b9eb95c8812ca4d62ec4f84cd`; Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T124249Z.log`, SHA-256 `c643efc054a20ebedd79a92d70c2664331509a7dbc872e49d6d6a952878bb0c3`.
+- Decision: Keep failed-CAP recovery in the negative fixture, alongside acceptance of both Descriptor transport modes. Physical GPPro revalidation remains open until PC/SC enumerates a Pico reader.
+- Commit: `pending`
+- Artifacts/logs: The two VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.
