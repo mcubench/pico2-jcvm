@@ -1,4 +1,4 @@
-# Current handoff — positive-depth dup_x VM instruction — 2026-11-06 23:29 CET
+# Current handoff — positive-depth dup_x CAP interpreter test — 2026-11-06 23:41 CET
 
 Commit `6fb521d58aabd98bb29593f70f9b14e4817b6896` fixes positive-depth
 `dup_x`: only the top M words are copied, the top N words are shifted, and
@@ -16,12 +16,19 @@ instance persistence failure and must not be attributed to this change. The
 first VPCD attempt was sandbox-blocked at localhost socket creation; the same
 test was rerun with host access. No USB device was accessed or flashed.
 
-The exhaustive stack-test extension is committed as `7141905d`. Its progress
-record captures both the passing unit test and the failed/insufficient VPCD
-attempt. Next create a test-only CAP fixture whose interpreted method contains
-`dup_x` with positive N, prove the handler ran and assert its result. Preserve
-all unrelated review/worktree changes. RV-20261106-60 remains open until the
-CAP-to-interpreter case passes.
+The stack-test extension is committed as `7141905d`. New uncommitted files
+`tools/build-dup-x-fixture`, `tools/test-dup-x-vpcd`, and
+`tools/tests/dup_x_fixture/DupXApplet.java` build a test-only CAP with a helper
+that executes `dup_x 0x12` on `[10,20]` and checks result 10 during install.
+The repeatable `./tools/test-dup-x-vpcd` passed under host access: interpreter
+log shows `DUP_X 0x12`, applet installation succeeds, ATR and SELECT pass,
+and `TEST:SUMMARY pass=2 fail=0`. Log SHA-256 is recorded in `progress.md`.
+
+RV-20261106-60 remains open for interpreter-level invalid-operand recovery and
+broader CAP permutations; unit tests cover every legal M/N pair and int-pair
+ordering for this build. Preserve all unrelated review/worktree changes. Next
+extend the CAP fixture to test an invalid encoded operand if the error path can
+be observed cleanly, then move to the next unresolved P1 VM issue.
 
 # Current handoff — foreign-array GC review R59 — 2026-11-06 22:51:33 CET
 

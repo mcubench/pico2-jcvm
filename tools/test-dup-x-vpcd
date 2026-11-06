@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log_dir="${repo_root}/artifacts/logs"
+mkdir -p "${log_dir}"
+
+CHOUPI_JCVM_DEBUG=ON "${repo_root}/tools/build-pc" \
+  > "${log_dir}/build-pc-dup-x-${timestamp}.log" 2>&1
+"${repo_root}/tools/build-dup-x-fixture"
+
+PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
+  --passes 1 \
+  --cap-code "${repo_root}/build/dup-x-fixture/dup-x-fixture-load-code.bin" \
+  --applet-aid A0000001510000006001 \
+  --package-id 63 \
+  --select-only \
+  --log "${log_dir}/dup-x-vpcd-${timestamp}.log"
+
+rg -q 'DUP_X 0x12' "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
+  printf 'ERROR: positive-depth dup_x was not observed in the interpreter log\n' >&2
+  exit 1
+}
+rg -q 'VPCD:APPLET_INSTALLED package-id=56' \
+  "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
+  printf 'ERROR: dup_x fixture applet installation was not observed\n' >&2
+  exit 1
+}
+printf 'DUP_X_VPCD:PASS log=%s\n' \
+  "${log_dir}/dup-x-vpcd-${timestamp}.log"

@@ -23494,3 +23494,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with a generated CAP test method that executes positive-depth `dup_x` through the interpreter.
 - Commit: `7141905ddb2ff2b8a0245fd24bf8ab27b2a15dc3` — regression source; documentation follow-up commit pending.
 - Artifacts/logs: Same logs and test evidence listed in the preceding step.
+
+## 2026-11-06 Execute positive-depth dup_x through CAP interpreter 10 minutes
+
+- Step/experiment: `rv-20261106-60-dup-x-cap-vpcd`
+- When: '2026-11-06 23:31 CET' - '2026-11-06 23:41 CET'
+- Change: Added a dedicated test-only applet CAP fixture. Its generated JCA method is replaced with `sspush 10; sspush 20; dup_x 18; ssub; sadd; sreturn`; applet installation checks the returned result is 10. Added a repeatable `tools/test-dup-x-vpcd` wrapper that builds a debug PC emulator, creates the fixture, and checks the interpreter trace contains the opcode and installation marker.
+- Validation: `bash -n tools/build-dup-x-fixture tools/test-dup-x-vpcd` and scoped `git diff --check` passed. `./tools/test-dup-x-vpcd` passed: `DUP_X_CAP:PASS`, `DUP_X 0x12` observed, applet installed, ATR and SELECT passed, `TEST:SUMMARY pass=2 fail=0`. This was VPCD emulator-only; no USB/PCSC or physical board was used. ARM/RISC-V builds were already passing for the identical VM source revision, and this step changes test fixture tooling only.
+- Result: The interpreter executed positive-depth m=1,n=2 on `[10,20]`; the test method returned 10 and the applet installed/selected successfully. No firmware size, performance, or hardware metric was collected.
+- Decision: Keep RV-20261106-60 open for invalid encoded operand execution and broader interpreter cases; unit helper tests cover all legal M/N pairs and int-pair ordering, but the CAP path currently exercises one positive-depth form.
+- Commit: pending; exact SHA will be appended after the fixture/wrapper commit.
+- Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261106T223945Z.log` SHA-256 `e1d335f4de9c9edaddc151d7bc7f6a813ef6adf5818a18d058000a7ddf9d91e3`; debug build log `artifacts/logs/build-pc-dup-x-20261106T223945Z.log` SHA-256 `b17cd69b5b8bf2eab1a6e106466662959bc126bbf655c9abbd371b1327b3fb72`.
