@@ -22606,5 +22606,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` with `PICO2_HOST_USB_ACCESS=1` granted three nodes; elevated `lsusb -v -d 2e8a:0009` identified serials `8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`; elevated `pcsc_scan -r` listed only D92 and Virtual PCD 00/01. Source inspection confirmed Descriptor supplies exact offsets, while Descriptor-free private/internal static offsets originate in ConstantPool records. No APDU, flash, source build, or test was performed.
 - Result: Three devices are USB-visible and running JCVM CCID firmware, but two are unavailable through PC/SC in this guest. Descriptor-free exact-start validation has no independent metadata source established; no code change is justified from the current evidence.
 - Decision: Keep D92 as the only present physical PC/SC target. Diagnose missing reader registration separately; continue RV-28 with malformed interpreter execution coverage and do not claim exact method starts for Descriptor-free LOADs.
-- Commit: pending.
+- Commit: `01eeeb9d` (`Record Pico PCSC and Descriptor-free findings`).
 - Artifacts/logs: live command output only; no persistent log.
