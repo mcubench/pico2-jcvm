@@ -1041,6 +1041,9 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     const jpackage_ID_t package = target_data[1];
     const jclass_index_t claz =
         static_cast<jclass_index_t>(BYTES_TO_SHORT(target_data[2], target_data[3]));
+    const bool missing_package_proxy =
+        target_data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT &&
+        !FlashMemory_Handler::isPackageExist(package);
     if (heap.getPersistentReference(target_tag, existing_reference)) {
       if (target_data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT) {
         heap.getInstance(existing_reference)->setShareableProxyPlaceholder();
@@ -1048,7 +1051,8 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
       return existing_reference;
     }
     const jref_t reference =
-        heap.addInstance(JC_Instance(heap, package, claz, target_tag));
+        heap.addInstance(JC_Instance(heap, package, claz, target_tag,
+                                     missing_package_proxy));
     if (target_data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT) {
       heap.getInstance(reference)->setShareableProxyPlaceholder();
     }
@@ -1171,8 +1175,11 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     const jpackage_ID_t package = static_cast<jpackage_ID_t>(data[1]);
     const jclass_index_t claz =
         static_cast<jclass_index_t>(BYTES_TO_SHORT(data[2], data[3]));
+    const bool missing_package_proxy =
+        !FlashMemory_Handler::isPackageExist(package);
     const jref_t reference =
-        heap.addInstance(JC_Instance(heap, package, claz, tag));
+        heap.addInstance(JC_Instance(heap, package, claz, tag,
+                                     missing_package_proxy));
     heap.getInstance(reference)->setShareableProxyPlaceholder();
     return reference;
   }

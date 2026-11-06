@@ -7760,3 +7760,33 @@ after each injected cleanup failure remains untested. Preserve pre-existing
 unrelated worktree changes. Next: extend the injected-failure VPCD path to
 restart before recovery/reinstall, then proceed with changed-version CAP
 replacement (CAP-REINSTALL-03).
+
+## CAP-REINSTALL-02 VPCD restart recovery verified — 2026-11-06 16:22 CET
+
+Extended late-DELETE failure tests across emulator restart. Two additional
+restart defects are fixed:
+
+- VCR1 v2 sidecar restore skipped the serialized owner-ID byte when a package
+  was disabled, corrupting all later package records. It now consumes and
+  validates every owner ID before skipping disabled-package restoration.
+- A persistent client proxy to a deleted service package could not be restored
+  because its saved class metadata was gone, making the client unselectable.
+  `JC_Instance` now restores that record as a fieldless stale proxy placeholder;
+  dispatch still fails closed.
+
+Package late-cleanup injection: `6581`, restart, client SELECT `9000`, old proxy
+`6A0A`, missing service, same-AID package LOAD/INSTALL, fresh lookup
+`45679000`; summary pass=1. Instance late-cleanup injection: `6581`, restart,
+old proxy blocked, package DELETE `9000`, same-AID reinstall and fresh lookup
+`45679000`; summary pass=1. The full cross-AID SIO suite passes 34/34. PC,
+ARM, and RISC-V max_crypto builds pass; RMI registry unit passes. Logs and
+hashes are in `progress.md` under `gp-delete-late-cleanup-restart-20261106`.
+No physical PC/SC operation was run; the latest recorded host state has no Pico
+reader in `pcsc_scan -r`.
+
+The previous change is commit `3385f68e09d40fbb655f5560db93bade5230a77f`
+(`Invalidate runtime state after committed DELETE failures`). The restart
+hardening is not committed yet. Preserve unrelated dirty worktree changes.
+Next: commit this restart-recovery step, then implement CAP-REINSTALL-03
+changed-version package replacement. Keep CAP-REINSTALL-02 open only for
+physical CCID/APDU acceptance.

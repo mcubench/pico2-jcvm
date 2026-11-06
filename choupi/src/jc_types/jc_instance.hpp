@@ -77,7 +77,8 @@ public:
   JC_Instance(Heap &owner, const jpackage_ID_t packageID,
               const jclass_index_t claz_index);
   JC_Instance(Heap &owner, const jpackage_ID_t packageID,
-              const jclass_index_t claz_index, const fs::Tag &tag);
+              const jclass_index_t claz_index, const fs::Tag &tag,
+              bool missing_package_proxy = false);
   JC_Instance(JC_Instance &&other) noexcept;
   JC_Instance(const JC_Instance &) = delete;
   JC_Instance &operator=(JC_Instance &&) = delete;

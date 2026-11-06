@@ -665,6 +665,38 @@ def remove_empty_export_class_records(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def restart_vpcd_after_disconnect(
+        connection: socket.socket,
+        process: subprocess.Popen[bytes],
+        listener: socket.socket,
+        command: list[str],
+        emulator_env: dict[str, str],
+        log_path: Path,
+        phase: str) -> tuple[subprocess.Popen[bytes], socket.socket]:
+    connection.close()
+    process.wait(timeout=SHUTDOWN_TIMEOUT)
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"emulator exited with {process.returncode} before {phase}"
+        )
+    restarted_env = emulator_env.copy()
+    restarted_env.pop("CHOUPI_TEST_FAIL_DELETE_PACKAGE_CLEANUP_ONCE", None)
+    restarted_env.pop("CHOUPI_TEST_FAIL_DELETE_INSTANCE_CLEANUP_ONCE", None)
+    with log_path.open("ab") as log:
+        process = subprocess.Popen(command, cwd=ROOT, stdout=log,
+                                   stderr=log, env=restarted_env)
+    connection, _ = vpcd.accept_vpcd(
+        listener, process, CONNECT_TIMEOUT, log_path, phase
+    )
+    connection.settimeout(APDU_TIMEOUT)
+    vpcd.send_message(connection, b"\x01")
+    vpcd.send_message(connection, b"\x04")
+    atr = vpcd.receive_message(connection)
+    if atr != bytes.fromhex("3B800181"):
+        raise RuntimeError(f"{phase} ATR {atr.hex().upper()}")
+    return process, connection
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -968,6 +1000,13 @@ def main() -> int:
                             )
                         print("TEST:PASS late package cleanup failure returned "
                               "6581 after durable DELETE")
+                        process, connection = restart_vpcd_after_disconnect(
+                            connection, process, listener, command,
+                            emulator_env, log_path,
+                            "package DELETE failure restart",
+                        )
+                        print("TEST:PASS VPCD restarted after committed package "
+                              "DELETE cleanup failure")
                     else:
                         print("TEST:PASS package DELETE succeeded with "
                               "dependent client still installed")
@@ -1827,23 +1866,58 @@ def main() -> int:
                     )
                 print("TEST:PASS late instance cleanup failure returned "
                       "6581 after durable DELETE")
+                process, connection = restart_vpcd_after_disconnect(
+                    connection, process, listener, command, emulator_env,
+                    log_path, "instance DELETE failure restart",
+                )
+                print("TEST:PASS VPCD restarted after committed instance "
+                      "DELETE cleanup failure")
                 response = vpcd.exchange(
                     connection, select_client,
-                    "reselect client after failed service DELETE"
+                    "reselect client after instance DELETE failure restart"
                 )
                 if response[-2:] != bytes.fromhex("9000"):
                     raise RuntimeError(
-                        "client SELECT after failed service DELETE returned "
+                        "client SELECT after instance DELETE restart returned "
                         f"{response.hex().upper()}"
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("8016000000"),
-                    "reject proxy after failed service DELETE"
+                    "reject stale proxy after instance DELETE restart"
                 )
                 if response != bytes.fromhex("6A0A9000"):
                     raise RuntimeError(
-                        "old proxy after failed service DELETE returned "
+                        "old proxy after instance DELETE restart returned "
                         f"{response.hex().upper()}, expected 6A0A9000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD to finish instance DELETE after restart"
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "SELECT ISD after instance DELETE restart returned "
+                        f"{response.hex().upper()}"
+                    )
+                recovery_scp = vpcd.Scp03(connection)
+                recovery_scp.authenticate()
+                response = vpcd.delete_object(
+                    recovery_scp, SERVICE_PACKAGE, True,
+                    "delete recovered service package after restart",
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "package DELETE after instance recovery returned "
+                        f"{response[-2:].hex().upper()}, expected 9000"
+                    )
+                response = vpcd.exchange(
+                    connection, select_client,
+                    "reselect client after recovered service package DELETE"
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        "client SELECT after recovered package DELETE returned "
+                        f"{response.hex().upper()}"
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("8010000000"),
@@ -1856,27 +1930,28 @@ def main() -> int:
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("00A4040000"),
-                    "SELECT ISD before instance reinstall"
+                    "SELECT ISD before recovered service package reinstall"
                 )
                 if response[-2:] != bytes.fromhex("9000"):
                     raise RuntimeError(
-                        "SELECT ISD before instance reinstall returned "
+                        "SELECT ISD before recovered package reinstall returned "
                         f"{response.hex().upper()}"
                     )
                 reinstall_scp = vpcd.Scp03(connection)
                 reinstall_scp.authenticate()
+                vpcd.load_package(reinstall_scp, service[0], SERVICE_PACKAGE)
                 response = vpcd.install_applet(
                     reinstall_scp, SERVICE_PACKAGE, SERVICE_APPLET,
                     SERVICE_APPLET
                 )
                 if response[-2:] != bytes.fromhex("9000"):
                     raise RuntimeError(
-                        "service INSTALL after late DELETE failure returned "
+                        "service INSTALL after restarted package recovery returned "
                         f"{response[-2:].hex().upper()}, expected 9000"
                     )
                 response = vpcd.exchange(
                     connection, select_client,
-                    "reselect client after service instance reinstall"
+                    "reselect client after recovered service package reinstall"
                 )
                 if response[-2:] != bytes.fromhex("9000"):
                     raise RuntimeError(
@@ -1885,14 +1960,14 @@ def main() -> int:
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("8010000000"),
-                    "fresh lookup after service instance reinstall"
+                    "fresh lookup after recovered service package reinstall"
                 )
                 if response != bytes.fromhex("45679000"):
                     raise RuntimeError(
                         "fresh lookup after instance reinstall returned "
                         f"{response.hex().upper()}, expected 45679000"
                     )
-                print("TEST:PASS recovery and instance reinstall preserve "
+                print("TEST:PASS restart recovery and package reinstall preserve "
                       "blocked proxy and fresh SIO service")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0

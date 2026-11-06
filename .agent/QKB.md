@@ -15,9 +15,17 @@
   each returned `6581` after durable DELETE. In both same-process recovery runs
   the old proxy stayed blocked and, after reinstall, fresh SIO lookup returned
   `45679000`. Full SIO VPCD suite passed 34/34; RMI registry, ARM, and RISC-V
-  builds passed. Logs and hashes are in the `gp-delete-late-cleanup-20261106`
-  progress entry. Restart-after-injected-failure and physical CCID validation
-  remain open.
+  builds passed. Both injected cases then passed across emulator restart and
+  same-AID recovery/reinstall. Restart revealed two additional issues and
+  viable fixes: (1) the VCR1 v2 reader skipped the serialized owner byte for a
+  disabled package, shifting later package records; always consume and validate
+  the owner field before skipping restoration of a disabled package; (2) a
+  retained proxy object names its deleted server package/class, so ordinary
+  deserialization made an unrelated client applet unselectable. Restore a
+  missing-package proxy as a fieldless stale placeholder; invocation checks
+  still reject it. Full suite and injected restart logs/hashes are in the
+  `gp-delete-late-cleanup-20261106` progress entry. Physical CCID validation
+  remains open.
 
 ## Pico USB CCID interfaces enumerate while pcscd omits all physical readers — observed 2026-11-06
 

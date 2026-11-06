@@ -833,7 +833,13 @@ bool load_host_cap_registry(const uint8_t *package_bits,
         !read_u32(data, offset, code_length) || code_length < 13 ||
         code_length > 64 * 1024 || offset > crc_offset ||
         code_length > crc_offset - offset) {
-      std::fprintf(stderr, "ERROR: malformed VPCD CAP package record\n");
+      std::fprintf(stderr,
+                   "ERROR: malformed VPCD CAP package record index=%u "
+                   "package=%u aid_length=%zu code_length=%u offset=%zu "
+                   "crc_offset=%zu\n",
+                   static_cast<unsigned>(package_index),
+                   static_cast<unsigned>(package_id), package_aid.size(),
+                   static_cast<unsigned>(code_length), offset, crc_offset);
       return false;
     }
     std::vector<uint8_t> code(data.begin() + offset,
@@ -884,11 +890,6 @@ bool load_host_cap_registry(const uint8_t *package_bits,
         std::fprintf(stderr, "ERROR: malformed VPCD applet registry record\n");
         return false;
       }
-      if (!package_enabled) continue;
-      uint8_t existing_package_id = 0xff;
-      uint8_t existing_applet_aid[16]{};
-      uint8_t existing_applet_aid_length = 0;
-      uint16_t existing_class_index = 0xffff;
       uint8_t owner_id = 0; // VCR1 instances used the original owner 0.
       if (registry_version == 2) {
         if (offset >= crc_offset) {
@@ -903,6 +904,11 @@ bool load_host_cap_registry(const uint8_t *package_bits,
         }
         if (owner_id != 0) used_owner_ids[owner_id] = true;
       }
+      if (!package_enabled) continue;
+      uint8_t existing_package_id = 0xff;
+      uint8_t existing_applet_aid[16]{};
+      uint8_t existing_applet_aid_length = 0;
+      uint16_t existing_class_index = 0xffff;
       if (!cap_declares_applet(package_id, applet_aid.data(),
                                static_cast<uint8_t>(applet_aid.size())) ||
           cap_store_find_instance(

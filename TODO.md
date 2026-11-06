@@ -1055,9 +1055,11 @@ source-based follow-ups, without a new physical reproduction in this review.
   whenever that commit occurred, regardless of the final status word. Injected
   package and instance cleanup failures both return `6581`; same-process
   reinstall keeps the old proxy blocked and a fresh lookup reaches the new
-  service (`45679000`). Remaining acceptance: repeat each injected failure
-  across emulator restart and on physical Pico hardware. Evidence in
-  `.agent/QKB.md` and `progress.md`.
+  service (`45679000`). Both injected cases also pass across PC VPCD restart:
+  stale proxies remain blocked, the unrelated client remains selectable, and
+  same-AID package reinstall restores fresh lookup. Remaining acceptance:
+  repeat the cases on physical Pico hardware. Evidence in `.agent/QKB.md` and
+  `progress.md`.
 
 - [ ] **CAP-REINSTALL-03: Verify changed-version CAP replacement end to end.**
   Owners: GP-01, CTX-03, AC-02. Current same-CAP tests reload identical bytes.

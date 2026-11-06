@@ -170,7 +170,8 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
  */
 JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
                          const jclass_index_t claz_index,
-                         const fs::Tag &tag)
+                         const fs::Tag &tag,
+                         const bool missing_package_proxy)
     : JC_Object(owner, true), packageID(packageID), claz(claz_index) {
   this->has_persistent_tag = true;
   this->persistent_tag_length = tag.len;
@@ -203,6 +204,18 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
     }
   } else {
     std::memcpy(stored_tag, tag.value, tag.len);
+  }
+
+  if (missing_package_proxy) {
+    // Retained SIO proxies can outlive DELETE of their server package. Keep a
+    // lightweight stale-reference object so the owning applet remains
+    // restorable; routing checks fail closed before class metadata or object
+    // fields are consulted.
+    this->setShareableProxyPlaceholder();
+    this->fields = new JCVMArray<jc_field_t>(0);
+    this->persistent_fields_loaded = true;
+    this->persistent_tag_overflow = pending_tag_overflow.release();
+    return;
   }
 
   Class_Handler class_handler(this->packageID);
