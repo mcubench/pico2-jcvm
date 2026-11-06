@@ -665,23 +665,20 @@ review.
   and components of an accessible reference array. Only temporary JCRE entry
   point objects and global-array references are forbidden values for these
   stores. A cross-AID VPCD regression initially denied all three ordinary
-  foreign-reference stores. The VM now preserves owner metadata in
-  applet-owned transient wildcard `Object[]` arrays was explored and once
-  returned `6B439000` on Pico 2 `8E464F4E2BBC0A19`. That experiment is not the
-  current acceptance: per-slot owner tags preserve provenance but do not route
-  references found in another applet's heap into the referenced package's GC
-  roots. The current implementation therefore keeps foreign references in
-  applet-owned arrays fail-closed (`6B479000`); runtime-global array roots are
-  separately routed through the owning package. Static/instance stores and
-  persistent arrays also remain fail-closed until stable cross-package identity
-  and owner-aware roots/restoration are implemented. Typed foreign array stores
-  remain unimplemented.
-  Do not relax the `aastore` guard alone: the current typed-array assignability
-  path resolves an instance handle through the active package Heap, which can
-  alias an equal compact handle from that package. First add owner-aware lookup
-  of the referenced package's retained Context/Heap, then test assignability
-  across equal-handle collisions. Field and persistent-array stores also need
-  to retain/serialize the package owner and add owner-aware GC roots.
+  foreign-reference stores. Volatile applet-owned reference arrays now retain
+  foreign references with per-slot owner provenance; root traversal routes
+  them through the owning package. A retained-context lookup resolves the
+  referenced object's class in its owner Heap, avoiding equal compact-handle
+  aliases in the receiving package. JC 3.0.5 class/interface token metadata is
+  generated from the API exports; a typed `Shareable[]` SIO regression exposed
+  that constant-pool classrefs otherwise resolve interface tokens through the
+  class map. Class/interface token overlaps are rejected by generation. The
+  typed store passes with and without Descriptor data, and the complete
+  cross-AID VPCD suite passes 34/34. Persistent foreign references and
+  static/instance field stores remain fail-closed pending stable owner
+  serialization and owner-aware restoration.
+  Field and persistent-array stores still need to retain/serialize the package
+  owner and add owner-aware GC roots.
   Every later access must still apply firewall rules; never resolve a foreign
   compact handle in the receiving package's heap. See `.agent/QKB.md`.
   Global `Object[]` support is partially implemented for volatile JCRE global

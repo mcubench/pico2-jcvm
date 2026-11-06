@@ -183,17 +183,17 @@ void verify_previous_context_aid() {
 
 void verify_retained_applet_context_lookup() {
   jcvm::Context selected(1, 1);
-  jcvm::Context cached_a(2, 1);
-  jcvm::Context cached_b(3, 1);
+  auto cached_a = std::make_unique<jcvm::Context>(2, 1);
+  auto cached_b = std::make_unique<jcvm::Context>(3, 1);
   constexpr uint8_t selected_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x01};
   constexpr uint8_t cached_a_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x02};
   constexpr uint8_t cached_b_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x03};
   assert(selected.setAppletAID(selected_aid, sizeof(selected_aid)));
-  assert(cached_a.setAppletAID(cached_a_aid, sizeof(cached_a_aid)));
-  assert(cached_b.setAppletAID(cached_b_aid, sizeof(cached_b_aid)));
+  assert(cached_a->setAppletAID(cached_a_aid, sizeof(cached_a_aid)));
+  assert(cached_b->setAppletAID(cached_b_aid, sizeof(cached_b_aid)));
   std::array<std::unique_ptr<jcvm::Context>, 2> inactive{};
-  inactive[0] = std::make_unique<jcvm::Context>(std::move(cached_a));
-  inactive[1] = std::make_unique<jcvm::Context>(std::move(cached_b));
+  inactive[0] = std::move(cached_a);
+  inactive[1] = std::move(cached_b);
 
   assert(jcvm::findAppletContext(&selected, inactive, 1, selected_aid,
                                  sizeof(selected_aid)) == &selected);
@@ -217,6 +217,12 @@ void verify_package_context_lookup() {
   assert(jcvm::findPackageContext(&selected, inactive, 20) == inactive[0].get());
   assert(jcvm::findPackageContext(&selected, inactive, 30) == inactive[2].get());
   assert(jcvm::findPackageContext(&selected, inactive, 99) == nullptr);
+  jcvm::Context::setActiveContext(&selected);
+  assert(jcvm::Context::findRetainedPackageContext(10) == &selected);
+  assert(jcvm::Context::findRetainedPackageContext(20) == inactive[0].get());
+  assert(jcvm::Context::findRetainedPackageContext(30) == inactive[2].get());
+  jcvm::Context::setActiveContext(nullptr);
+  assert(jcvm::Context::findRetainedPackageContext(10) == nullptr);
 }
 
 void verify_context_retains_sibling_instance_state() {

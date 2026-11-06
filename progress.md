@@ -23254,3 +23254,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline with GP-01/CTX work; repeat on physical Pico when PC/SC enumerates it.
 - Commit: `e52ceb3d06d91d70fe501744428be71b0cee5fd7`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T190213Z.log` SHA-256 `1780394f19841a4e8b2e9acc425c53a4e979e6da1197981995c610b9cccfa1b2`.
+
+## 2026-11-06 Retain owner-checked foreign references in typed arrays 34 minutes
+
+- Step/experiment: `ctx-typed-foreign-array-20261106`
+- When: '2026-11-06 21:08 CET' - '2026-11-06 21:42 CET'
+- Change: Added retained package-Context lookup so transient applet-owned reference arrays resolve foreign handles through the owning Heap. Added JC305 imported interface-token metadata to the class-token generator and classref resolver; generation now rejects overlapping class/interface tokens for mapped exports. Added a cross-AID `Shareable[]` store/identity fixture and registry lookup assertions. Updated TODO and QKB with current limits and the classref token-kind diagnosis.
+- Validation: `./tools/test-rmi-registry` passed. Focused typed-array VPCD passed with Descriptor data included. Full SIO VPCD suite passed with Descriptor included (`34/34`) and in the normal Descriptor-free mode (`34/34`). PC, ARM and RISC-V `max_crypto` repository builds passed. `git diff --check` reports CR characters on added lines in existing CRLF source files; no whitespace normalization was made to avoid rewriting those files. No physical board was flashed or tested.
+- Result: The foreign Shareable proxy is accepted and retained by a typed `Shareable[]` only after owner-Heap resolution and interface-aware token remapping; equal compact handles remain covered by the full suite. ARM firmware ends at `0x100ecf2c`, leaving `78,036` bytes in the 1 MiB firmware window. Persistent foreign arrays and static/instance foreign stores remain fail-closed. Runtime: 34 minutes actual work; physical metrics were not measured.
+- Decision: Continue the CTX-01/03 reference consumer and lifecycle/root audit. Do not expand persistent or static/instance retention until durable owner identity, restoration and GC roots are implemented.
+- Commit: `<recorded in immediate follow-up commit>`
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T202558Z.log` SHA-256 `91b36bc55d1d0f051ed785195a813a6880ea9ebb27fe1febb22022e703252c52`; Descriptor-present suite `artifacts/logs/sio-cross-aid-vpcd-20261106T202739Z.log` SHA-256 `2842239a1222db66537c5bd0d1bd048469b0a4c23fabf5f021e8f4fd0dd09f19`; Descriptor-free suite `artifacts/logs/sio-cross-aid-vpcd-20261106T203319Z.log` SHA-256 `3aadbcf21a81fc782cc6c7306637625272fdf78c57e437117df2f4db9c6bee68`; ARM UF2 SHA-256 `cd3ca51f771785e819cd227ba2174d13fee4da8b9c141d9684710a437afb88da`.

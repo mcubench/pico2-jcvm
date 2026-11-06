@@ -777,10 +777,16 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
       this->reference_type != 0xFFFF) {
     auto current_package = context.getCurrentPackage();
     ConstantPool_Handler cp_handler(current_package);
-    const auto component = cp_handler.classref2class(
-        cp_handler.getClassRef(this->reference_type));
-    object_component_array = component.second != nullptr &&
-                             component.second->isObjectClass();
+    try {
+      const auto component = cp_handler.classref2class(
+          cp_handler.getClassRef(this->reference_type));
+      object_component_array = component.second != nullptr &&
+                               component.second->isObjectClass();
+    } catch (Exceptions) {
+      // An interface-typed array component is not Object, but remains valid
+      // for the regular assignability check below.
+      object_component_array = false;
+    }
   }
 #endif
   if (foreign_reference && this->isPersistent()) {
@@ -793,9 +799,8 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
       !this->getOwner().isGlobalHeap() &&
       (this->isPersistent() ||
        this->type != jc_array_type::JAVA_ARRAY_T_REFERENCE ||
-       (this->reference_type != 0xFFFF && !object_component_array) ||
        this->getOwner().getOwner() != context.getAppletID())) {
-    // Only volatile Object[] arrays owned by the active applet may retain
+    // Only volatile reference arrays owned by the active applet may retain
     // foreign entries. Context routes their roots into the referenced package
     // heap before it is collected.
     throw Exceptions::SecurityException;
@@ -819,7 +824,15 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
     // Wildcard arrays accept any reference; null is valid for all arrays.
     ;
   } else if (value.isInstance()) {
-    auto instanceref_to_add = heap.getInstance(value);
+    std::shared_ptr<JC_Instance> instanceref_to_add;
+    if (foreign_reference) {
+      Context *owner_context =
+          Context::findRetainedPackageContext(value_owner);
+      if (owner_context == nullptr) throw Exceptions::SecurityException;
+      instanceref_to_add = owner_context->getHeap().getInstance(value);
+    } else {
+      instanceref_to_add = heap.getInstance(value);
+    }
 
     auto classref_in = std::make_pair<uint32_t, const uint8_t *>(
         instanceref_to_add->getPackageID(),
@@ -833,6 +846,11 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
       throw Exceptions::ArrayStoreException;
     }
   } else {
+    if (foreign_reference) {
+      // All Java Card arrays are Object instances. Object[] accepts them via
+      // the fast path above; other typed reference arrays cannot.
+      throw Exceptions::ArrayStoreException;
+    }
     auto arrayref_to_add = heap.getArray(value);
 
     /// It is an array reference.

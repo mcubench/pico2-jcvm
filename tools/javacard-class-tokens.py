@@ -104,6 +104,14 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
         arrays.append("};")
         arrays.append("")
         source_interfaces = read_interfaces(source_root / relative_path)
+        class_tokens = set(source_classes.values())
+        source_interface_tokens = set(source_interfaces.values())
+        overlapping_tokens = sorted(class_tokens & source_interface_tokens)
+        if overlapping_tokens:
+            raise ValueError(
+                f"{relative_path}: JC305 class and interface tokens overlap: "
+                + ", ".join(str(token) for token in overlapping_tokens)
+            )
         target_interfaces = read_interfaces(target_root / relative_path)
         missing_interfaces = sorted(set(source_interfaces) - set(target_interfaces))
         if missing_interfaces:
@@ -111,20 +119,32 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
                 f"{relative_path}: embedded API is missing JC305 interfaces: "
                 + ", ".join(missing_interfaces)
             )
-        interface_tokens = (
+        interface_mapping = (
             list(range(max(source_interfaces.values()) + 1))
             if source_interfaces
             else []
         )
         for name, source_token in source_interfaces.items():
-            interface_tokens[source_token] = target_interfaces[name]
+            interface_mapping[source_token] = target_interfaces[name]
         arrays.append(
             f"inline constexpr uint8_t jc305_{package}_interface_tokens[] = {{"
         )
-        for offset in range(0, len(interface_tokens), 8):
+        for offset in range(0, len(interface_mapping), 8):
             values = ", ".join(
-                str(value) for value in interface_tokens[offset : offset + 8]
+                str(value) for value in interface_mapping[offset : offset + 8]
             )
+            arrays.append(f"    {values},")
+        arrays.append("};")
+        arrays.append("")
+        interface_flags = [
+            1 if token in source_interface_tokens else 0
+            for token in range(max(class_tokens | source_interface_tokens) + 1)
+        ]
+        arrays.append(
+            f"inline constexpr uint8_t jc305_{package}_interface_token_flags[] = {{"
+        )
+        for offset in range(0, len(interface_flags), 16):
+            values = ", ".join(str(value) for value in interface_flags[offset : offset + 16])
             arrays.append(f"    {values},")
         arrays.append("};")
         arrays.append("")

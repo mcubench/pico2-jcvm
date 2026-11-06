@@ -664,5 +664,15 @@ public final class ServiceApplet extends Applet implements Probe {
     }
   }
 
+  public short retainShareableReference(Shareable value) {
+    Shareable[] references = new Shareable[1];
+    try {
+      references[0] = value;
+      return references[0] == value ? (short)0x6B50 : (short)0x6B51;
+    } catch (ArrayStoreException incompatibleType) {
+      return (short)0x6B52;
+    }
+  }
+
   public void process(APDU apdu) {}
 }

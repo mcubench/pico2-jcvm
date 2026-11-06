@@ -1,4 +1,51 @@
-# Current handoff — loaded package import deletion policy — 2026-11-06 20:02 CET
+# Current handoff — owner-aware typed foreign arrays — 2026-11-06 21:42 CET
+
+## CTX-01/03 typed foreign reference-array implementation
+
+Applet-owned volatile reference arrays can retain ordinary foreign references
+with owner provenance. `aastore` resolves the foreign instance through the
+retained Context for its package, so equal compact handles in the active Heap
+cannot make the wrong class pass. Persistent foreign arrays and foreign
+static/instance field stores remain fail-closed.
+
+The typed `Shareable[]` test exposed an additional class/interface resolution
+bug: generic CAP constant-pool classrefs carry the imported token but no
+separate kind bit, and JC305 tokens must use separate class and interface
+remapping tables. `tools/javacard-class-tokens.py` now emits source-token
+interface flags and rejects overlapping class/interface token values in the
+mapped exports. Dynamic classref resolution uses those flags. The VPCD fixture
+retains a foreign Shareable proxy in `Shareable[]` and checks identity.
+
+Validation passed:
+
+- `./tools/test-rmi-registry` (`RMI_REGISTRY:PASS`, including unique/ambiguous
+  retained-package lookup and owner-root checks).
+- `SIO_CROSS_AID_TEST_TYPED_ARRAY_ONLY=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`
+  focused VPCD typed-array case: pass.
+- Full VPCD cross-AID SIO suite with Descriptor included: `34/34`.
+- Full default Descriptor-free VPCD suite: `34/34`.
+- `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile
+  max_crypto`, `./tools/build riscv --profile max_crypto`: pass. ARM image
+  ends at `0x100ecf2c`, leaving `78,036` bytes in the 1 MiB firmware window.
+- No physical token was flashed or tested during this step. The last physical
+  observation remains the previous handoff’s PC/SC state; refresh the helper
+  before any hardware work.
+
+VPCD logs: focused `artifacts/logs/sio-cross-aid-vpcd-20261106T202558Z.log`
+(SHA-256 `91b36bc55d1d0f051ed785195a813a6880ea9ebb27fe1febb22022e703252c52`),
+Descriptor-present full suite `...T202739Z.log` (SHA-256
+`2842239a1222db66537c5bd0d1bd048469b0a4c23fabf5f021e8f4fd0dd09f19`),
+Descriptor-free full suite `...T203319Z.log` (SHA-256
+`3aadbcf21a81fc782cc6c7306637625272fdf78c57e437117df2f4db9c6bee68`). ARM
+image SHA-256 `cd3ca51f771785e819cd227ba2174d13fee4da8b9c141d9684710a437afb88da`.
+
+Next: continue the open CTX-01/03 owner-aware reference audit, especially
+remaining foreign-reference consumers and lifecycle/root edges. Do not broaden
+persistent or static/instance foreign-reference stores without durable owner
+identity, restoration, and GC-root coverage. Follow root `AGENTS.md` for
+validation and commits. This implementation commit: pending.
+
+# Previous handoff — loaded package import deletion policy — 2026-11-06 20:02 CET
 
 ## Latest GP-01 dependency validation
 

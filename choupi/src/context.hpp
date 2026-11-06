@@ -137,8 +137,13 @@ public:
   /// Get the context used by context-free native method implementations.
   static Context &getActiveContext();
 
+  /// Resolve a retained package context without consulting another heap's
+  /// compact handle table. Returns null when the package is unavailable or
+  /// has multiple independent retained contexts.
+  static Context *findRetainedPackageContext(jpackage_ID_t package_id) noexcept;
   /// Default constructor
   Context(const uint8_t appletID, const jpackage_ID_t packageID);
+  ~Context() noexcept;
   /// Select or create per-applet lifecycle state held by this CAP context.
   bool activateAppletInstance(const japplet_ID_t owner, const uint8_t *aid,
                               uint8_t aid_length) noexcept;

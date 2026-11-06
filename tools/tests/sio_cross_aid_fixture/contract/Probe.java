@@ -42,4 +42,5 @@ public interface Probe extends Shareable {
   boolean sameReferences(byte[] left, byte[] right);
   short inspectForeignCast(Object value);
   short inspectForeignInstanceof(Object value);
+  short retainShareableReference(Shareable value);
 }

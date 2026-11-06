@@ -43,6 +43,8 @@ namespace jcvm {
 
 struct jc_cap_package_info;
 bool usesJC305CompatibilityTokens(const Package &source_package) noexcept;
+bool isJC305ImportedInterfaceToken(const jc_cap_package_info &package_info,
+                                   uint8_t token) noexcept;
 uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
                                    uint8_t token) noexcept;
 uint8_t remap_imported_interface_token(

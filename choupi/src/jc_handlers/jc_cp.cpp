@@ -85,6 +85,35 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
   return mapping[token];
 }
 
+bool isJC305ImportedInterfaceToken(
+    const jc_cap_package_info &package_info, const uint8_t token) noexcept {
+  const uint8_t *mapping = nullptr;
+  size_t mapping_size = 0;
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID, "\xA0\x00\x00\x00\x62\x00\x01", 7) ==
+          0) {
+    mapping = jc305_java_lang_interface_token_flags;
+    mapping_size = sizeof(jc305_java_lang_interface_token_flags);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0) {
+    mapping = jc305_javacard_framework_interface_token_flags;
+    mapping_size = sizeof(jc305_javacard_framework_interface_token_flags);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0) {
+    mapping = jc305_javacard_security_interface_token_flags;
+    mapping_size = sizeof(jc305_javacard_security_interface_token_flags);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0) {
+    mapping = jc305_javacardx_crypto_interface_token_flags;
+    mapping_size = sizeof(jc305_javacardx_crypto_interface_token_flags);
+  }
+
+  return mapping != nullptr && token < mapping_size && mapping[token] != 0;
+}
+
 // JC305 export files assign interface tokens independently from class tokens.
 // Map the framework interfaces to the generated ROM API's interface tokens.
 uint8_t remap_imported_interface_token(
@@ -811,11 +840,16 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref,
 
     const uint8_t imported_class_token =
         BYTE_TO_SHORT(classref.external_classref.class_token);
+    const bool imported_token_is_interface =
+        use_jc305_compatibility_tokens &&
+        isJC305ImportedInterfaceToken(*imported_package_ID,
+                                      imported_class_token);
+    const bool resolve_as_interface = is_interface || imported_token_is_interface;
     // JC305 class references use a compatibility map because the embedded
     // ROM API was assembled from a different export ordering. Interface
     // tokens have their own namespace and must retain their interface index.
     if (use_jc305_compatibility_tokens) {
-      class_token = is_interface
+      class_token = resolve_as_interface
                         ? remap_imported_interface_token(*imported_package_ID,
                                                          imported_class_token)
                         : remap_imported_class_token(*imported_package_ID,

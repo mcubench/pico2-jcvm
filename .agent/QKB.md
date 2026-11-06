@@ -940,10 +940,9 @@ future cross-context exception marshalling.
 ## Foreign typed-array stores require owner-aware class resolution — 2026-11-03
 
 - **Finding:** `bc_aastore()` preserves the pushed reference's owner package
-  and passes it to `JC_Array::setReferenceEntry()`. That setter currently
-  rejects foreign references unless the destination is an applet-owned
-  transient wildcard `Object[]`. The check is deliberately fail-closed for
-  typed arrays.
+  and passes it to `JC_Array::setReferenceEntry()`. Typed array validation
+  must resolve the instance in the reference owner's Heap, then compare its
+  runtime class/interface with the destination component.
 - **Why the guard cannot simply be removed:** For typed arrays, the existing
   assignability check calls `context.getHeap().getInstance(value)` on the
   active service package heap. A foreign compact handle can collide with a
@@ -955,12 +954,17 @@ future cross-context exception marshalling.
   retention. Persistent array/instance/static fields need stable owner
   serialization and owner-aware root tracing before they can retain foreign
   references.
-- **Next implementation prerequisite:** Provide a safe lookup of the retained
-  Context/Heap that owns the reference package, use that Heap to obtain the
-  runtime class, and compare it with the destination component type. Add a
-  typed-array test that forces equal compact handles in both packages and
-  confirms the foreign object's real class controls `aastore` acceptance.
-  Keep current guards until that path exists.
+- **Viable solution:** A fixed-capacity registry of retained package Contexts
+  resolves the owner Heap without searching a receiving Heap's compact handles.
+  The existing JC305-to-ROM token remapper also needs generated token-kind
+  flags: constant-pool classrefs contain only the token, so interface tokens
+  must select the interface map even when a generic resolver call did not
+  explicitly carry the type. The generator rejects class/interface token
+  overlaps in the mapped JC305 exports. The fixture passes a foreign
+  `Shareable` proxy into a typed `Shareable[]` under both Descriptor-present and
+  Descriptor-free VPCD runs; the full cross-AID suite passes 34/34. Keep
+  persistent arrays and field stores fail-closed until their owner encoding,
+  restoration, and GC roots are implemented.
 
 ## Native Signature methods omitted SensitiveResult updates — 2026-11-03
 

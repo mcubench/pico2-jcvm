@@ -1446,6 +1446,28 @@ def main() -> int:
                 )
             print("TEST:PASS cross-AID SIO byte/short args, global AID and "
                   "null array; response=45679000")
+            if os.environ.get("SIO_CROSS_AID_TEST_TYPED_ARRAY_ONLY") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8015000000"),
+                    "create Shareable proxy for typed-array test"
+                )
+                if response != bytes.fromhex("6A109000"):
+                    raise RuntimeError(
+                        "typed-array proxy setup returned "
+                        f"{response.hex().upper()}, expected 6A109000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8031000000"),
+                    "store foreign Shareable proxy in typed Shareable[]"
+                )
+                if response != bytes.fromhex("6B509000"):
+                    raise RuntimeError(
+                        "typed foreign reference-array store returned "
+                        f"{response.hex().upper()}, expected 6B509000"
+                    )
+                print("TEST:PASS typed Shareable[] retained the foreign proxy")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             response = vpcd.exchange(
                 connection, bytes.fromhex("8021000000"),
                 "SensitiveResult from service API survives SIO context switch"
@@ -1801,6 +1823,18 @@ def main() -> int:
                     f"proxy retention result {response.hex().upper()}, "
                     "expected 6A109000"
                 )
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8031000000"),
+                "store a foreign Shareable proxy in a typed Shareable array"
+            )
+            if response != bytes.fromhex("6B509000"):
+                raise RuntimeError(
+                    "typed foreign reference-array store returned "
+                    f"{response.hex().upper()}, expected assignable proxy "
+                    "retention and identity 6B509000"
+                )
+            print("TEST:PASS retained foreign Shareable proxy is type-checked "
+                  "and stored in a typed Shareable[]")
             connection.close()
             connection = None
             process.wait(timeout=SHUTDOWN_TIMEOUT)

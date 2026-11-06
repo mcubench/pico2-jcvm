@@ -38,6 +38,7 @@ namespace jcvm {
 
 namespace {
 Context *active_context = nullptr;
+std::array<Context *, 40> retained_contexts{};
 }
 
 Context::SensitiveResultKind Context::sensitive_result_kind =
@@ -66,6 +67,19 @@ Context &Context::getActiveContext() {
     throw Exceptions::RuntimeException;
   }
   return *active_context;
+}
+
+Context *Context::findRetainedPackageContext(
+    const jpackage_ID_t package_id) noexcept {
+  Context *match = nullptr;
+  for (Context *context : retained_contexts) {
+    if (context == nullptr || context->getAppletPackageID() != package_id)
+      continue;
+    if (context == active_context) return context;
+    if (match != nullptr && match != context) return nullptr;
+    match = context;
+  }
+  return match;
 }
 Context::AppletInstanceState &Context::activeAppletInstance() noexcept {
   return this->applet_instances[this->active_applet_index];
@@ -199,6 +213,19 @@ Context::Context(const japplet_ID_t appletID,
   this->activeAppletInstance().owner_heap =
       std::make_shared<Heap>(appletID, this->heap);
   this->packagesID.push_front(packageID);
+  for (Context *&context : retained_contexts) {
+    if (context != nullptr) continue;
+    context = this;
+    return;
+  }
+  throw Exceptions::RuntimeException;
+}
+
+Context::~Context() noexcept {
+  for (Context *&context : retained_contexts) {
+    if (context == this) context = nullptr;
+  }
+  if (active_context == this) active_context = nullptr;
 }
 
 /**
