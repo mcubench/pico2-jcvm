@@ -283,10 +283,14 @@ during the review.
   Update 2026-11-06: Enabled ASan/UBSan in the PC-bound and method-body-bound helper wrappers. PC bounds pass 19/19 and Descriptor/Descriptor-free method ranges pass 11/11 under both sanitizers. Instruction-boundary suite passes 13/13, including 100,000 deterministic malformed inputs under ASan/UBSan. No source firmware changes or physical test.
   Update 2026-11-06: Dynamic `STABLESWITCH` default/case targets into the switch displacement operand fail closed (`6F00`/`6999`), with subsequent ISD selection passing; VPCD test passes 6/6. No physical card used.
 
-Additional scoped investigations: GP-01 should test deletion of a library
-package imported by an installed client; CTX-01/STORE-01 should establish
-bounded lifetime/reclamation for user-created global arrays. These are
-source-based follow-ups, without a new physical reproduction in this review.
+Additional scoped investigations: GP-01's imported-library deletion policy is
+now implemented and VPCD-tested: deleting a loaded package referenced by any
+other loaded package's Import component is rejected with `6985`; the client
+continues to select and invoke its service. The opt-in regression and default
+suite pass; physical CCID validation remains pending. CTX-01/STORE-01 should
+establish bounded lifetime/reclamation for user-created global arrays. These
+remain source-based follow-ups without a new physical reproduction in this
+review.
 
 ## Open architecture acceptance
 

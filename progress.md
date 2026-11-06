@@ -23199,3 +23199,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: CAP-REINSTALL-01's unrelated-client emulator acceptance is complete. Keep CAP-REINSTALL-01/02/03 open only for physical CCID/APDU acceptance; the last `pcsc_scan -r` found no Pico reader.
 - Commit: `f036d20c`
 - Artifacts/logs: `tools/build-unrelated-client-fixture`; `tools/tests/unrelated_client_fixture/UnrelatedApplet.java`; `tools/tests/sio_cross_aid_vpcd_test.py`; three stdout and three emulator logs listed above.
+
+## 2026-11-06 Reject deletion of imported library packages 19 minutes
+
+- Step/experiment: `gp-delete-imported-library-20261106`
+- When: '2026-11-06 17:09 CET' - '2026-11-06 17:28 CET'
+- Change: Added a fail-closed preflight that scans loaded dynamic package Import components before full package DELETE. If another package imports the target package AID, DELETE returns `6985`; unreadable or malformed dependency metadata returns `6581` before mutation. Added an opt-in three-package VPCD regression and documented policy in TODO/QKB/HANDOFF.
+- Validation: `./tools/build-pc --profile max_crypto`, `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto`, and the same RISC-V wrapper passed. Focused imported-package test passed `TEST:SUMMARY pass=1 fail=0` with DELETE `6985`, dependent client SELECT `9000`, and service response `45679000`. Default `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. Python syntax and scoped `git diff --check` passed. No physical PC/SC reader was available; hardware validation was skipped.
+- Result: Loaded package imports are now protected from deletion in emulator/firmware code paths. Focused VPCD log SHA-256 `150a4a652ab0ee59ce5899cc141e4511cf3230a3c0b96cccf22bca2aad5ceb30`; default suite log SHA-256 `c4731899e42c4f3e9d5f1c055a5deeef8cf296ccb25aaf04a938655ba09d4800`.
+- Decision: Commit the scoped implementation and continue with the next open GP-01 item; repeat package DELETE acceptance on physical hardware when PC/SC enumerates a Pico.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T161945Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261106T162058Z.log`; no physical artifacts.

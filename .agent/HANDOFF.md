@@ -1,4 +1,31 @@
-# Current handoff — package DELETE invalidates cross-AID SIO routes — 2026-11-06 14:22 CET
+# Current handoff — reject deletion of imported library packages — 2026-11-06 17:25 CET
+
+## Completed offline GP-01 follow-up
+
+Added a fail-closed package dependency scan before full package DELETE. It parses
+the Import component of every other loaded dynamic package and rejects deletion
+when any package imports the target AID (`6985`); malformed package/import
+metadata returns `6581` without starting deletion. This keeps an installed
+client/service pair usable. Added an opt-in VPCD regression to
+`tools/tests/sio_cross_aid_vpcd_test.py`.
+
+Validation: PC build `./tools/build-pc --profile max_crypto` passed; focused
+imported-package VPCD check passed (`6985`, dependent client SELECT `9000`,
+service invocation `45679000`, `TEST:SUMMARY pass=1 fail=0`); default VPCD suite
+passed `TEST:SUMMARY pass=34 fail=0`; ARM and RISC-V max_crypto wrappers passed.
+Python syntax and scoped `git diff --check` passed. This work used emulator
+only; PC/SC still has no enumerated Pico, so no flash or physical APDU test was
+run. Focused log SHA-256 `150a4a652ab0ee59ce5899cc141e4511cf3230a3c0b96cccf22bca2aad5ceb30`;
+default suite log SHA-256
+`c4731899e42c4f3e9d5f1c055a5deeef8cf296ccb25aaf04a938655ba09d4800`.
+
+The unrelated pre-existing edits in `src/cap_load.cpp` (filesystem erase
+adapter and expanded LOAD diagnostics), crypto tests, artifacts, and submodule
+trees were not part of this step. Stage the DELETE dependency hunks in
+`src/cap_load.cpp` selectively. Next: commit this bounded change, then proceed
+with the next open GP-01 item. Physical package DELETE validation remains open.
+
+# Previous handoff — package DELETE invalidates cross-AID SIO routes — 2026-11-06 14:22 CET
 
 ## Latest: CAP-REINSTALL-01 defect reproduced and fixed in VPCD
 

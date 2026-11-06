@@ -7,6 +7,7 @@
 #include "vm_filesystem.h"
 #include "vm_cap_initialization.h"
 #include "cap_constant_pool_validation.hpp"
+#include "cap_package_dependencies.hpp"
 
 #ifdef PC_VERSION
 #include <cstdio>
@@ -1320,6 +1321,18 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
       delete_related_objects, target);
   if (target_status != 0x9000) return target_status;
   const bool delete_package = target.package;
+  if (delete_package) {
+    const cap_package_dependencies::CheckResult dependency_check =
+        cap_package_dependencies::findImporter(package_id_);
+    if (dependency_check ==
+        cap_package_dependencies::CheckResult::dependent_package_exists) {
+      return 0x6985;
+    }
+    if (dependency_check ==
+        cap_package_dependencies::CheckResult::registry_error) {
+      return 0x6581;
+    }
+  }
   uint8_t applet_owner = 0;
   if (!delete_package &&
       !cap_store_applet_owner(instance_aid_, instance_aid_length_,

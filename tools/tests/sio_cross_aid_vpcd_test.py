@@ -983,6 +983,52 @@ def main() -> int:
             select_unrelated = (bytes((0x00, 0xA4, 0x04, 0x00,
                                       len(UNRELATED_APPLET))) + UNRELATED_APPLET)
 
+            if os.environ.get("SIO_CROSS_AID_TEST_DELETE_IMPORTED_PACKAGE") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before imported-package DELETE"
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "SELECT ISD before imported-package DELETE returned "
+                        f"{response.hex().upper()}"
+                    )
+                dependency_scp = vpcd.Scp03(connection)
+                dependency_scp.authenticate()
+                response = vpcd.delete_object(
+                    dependency_scp, contract[1], True,
+                    "DELETE library package imported by installed service/client",
+                    expected_statuses=(0x9000, 0x6985),
+                )
+                if response[-2:] != b"\x69\x85":
+                    raise RuntimeError(
+                        "DELETE of a package imported by installed packages "
+                        f"returned {response[-2:].hex().upper()}, expected 6985"
+                    )
+                selected = vpcd.exchange(
+                    connection, select_client,
+                    "SELECT client after rejected imported-package DELETE"
+                )
+                if selected[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "client SELECT after rejected package DELETE returned "
+                        f"{selected.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8010000000"),
+                    "invoke service after rejected imported-package DELETE"
+                )
+                if response != bytes.fromhex("45679000"):
+                    raise RuntimeError(
+                        "SIO after rejected package DELETE returned "
+                        f"{response.hex().upper()}, expected 45679000"
+                    )
+                print("TEST:PASS package DELETE was rejected with 6985 while "
+                      "installed CAPs import it")
+                print("TEST:PASS dependent client and service remain usable")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+
             def check_unrelated_applet(label: str) -> None:
                 selected = vpcd.exchange(
                     connection, select_unrelated, label + " SELECT"

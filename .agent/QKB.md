@@ -7569,3 +7569,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   applet. Also rebuild the PC VM (`./tools/build-pc --profile max_crypto`)
   before VPCD tests after runtime C++ edits; the test wrapper reuses the
   existing executable and does not rebuild it.
+
+## Deleting an imported library package breaks loaded importers — 2026-11-06
+
+- **Issue:** Full package DELETE accepted a target package even when another
+  loaded CAP's Import component referenced its package AID. The dependent
+  package could remain installed with unresolved runtime imports.
+- **Viable fix:** Before persistent DELETE starts, scan the other dynamic
+  packages and compare each declared imported AID to the target package AID.
+  Reject a match with `6985`; fail closed with `6581` if package/import metadata
+  cannot be read. VPCD coverage loads a library contract plus importing service
+  and client, confirms DELETE returns `6985`, then selects the client and invokes
+  the service successfully (`45679000`).
+- **Validation:** Focused opt-in VPCD regression passes; default SIO suite passes
+  34/34; PC, ARM and RISC-V max_crypto builds pass. No physical reader was
+  enumerated, so physical package DELETE is unverified.
