@@ -35,6 +35,7 @@ log SHA-256 `f26cda758522bb0504a6bbf5040dec9b496c9e161a367e6b9ea537e8136079e0`.
 No Pico reader is listed by PC/SC, so this is emulator-only. Next continue with
 offline GP-01/CTX work; repeat the deletion sequence physically when a reader
 appears.
+This regression extension is committed as `dce22b92`.
 
 Prior scoped implementation: commit `e91f9d65` rejects deletion of packages
 imported by another loaded CAP (`6985`), validated in VPCD; its handoff and

@@ -23241,5 +23241,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py`, scoped `git diff --check`, and elevated `SIO_CROSS_AID_TEST_DELETE_IMPORTED_PACKAGE=1 SIO_CROSS_AID_REUSE_FIXTURE=1 python3 -u tools/tests/sio_cross_aid_vpcd_test.py` passed. The first library DELETE returned `6985`; client and service DELETEs returned `9000`; library DELETE after removing both importers returned `9000`; `TEST:SUMMARY pass=2 fail=0`. PC/SC lists only Virtual PCD readers, so physical validation was skipped.
 - Result: Dependency enforcement follows the live loaded-package set and permits library removal after its importers are deleted. No firmware source changed.
 - Decision: Commit the focused regression and continue with offline priorities; repeat the flow on physical hardware when a Pico reader appears.
-- Commit: `pending`
+- Commit: `dce22b92a7038fde70492b517fb291c9a760fee9`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T172818Z.log` SHA-256 `f26cda758522bb0504a6bbf5040dec9b496c9e161a367e6b9ea537e8136079e0`.
