@@ -50,6 +50,8 @@ Next: add a VPCD case that deletes one applet while a sibling service retains a
 reference into it, then validate edge clearing and GC/resource behavior. AID
 and package DELETE must remain distinct. No source implementation changed in
 this audit; hardware was not accessed.
+Audit record: commit `c79a8808`; RMI registry test output is in the preceding
+progress entry.
 
 # Current handoff — typed foreign-array regression committed — 2026-11-06 22:44 CET
 

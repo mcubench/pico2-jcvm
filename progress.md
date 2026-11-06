@@ -23430,6 +23430,8 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: pending audit-note commit; exact SHA will be appended after creation.
 - Artifacts/logs: `./tools/test-rmi-registry` terminal output; no persistent log generated.
 
+- Commit: `c79a8808` — committed the CTX-01 lifecycle audit note and scoped QKB/TODO/handoff updates.
+
 - Attribution note for `review-20261106-pass9`: commit `1a22693b` also captured another session's concurrently added HANDOFF/progress records for `ctx01-typed-array-reject-foreign`. Those 35/35 VPCD results belong to that session, not to this review pass. Its implementation/test files were not staged by this review. The continuity records were preserved; future staging must isolate this review's hunks in shared logs.
 
 
