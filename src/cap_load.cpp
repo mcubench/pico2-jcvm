@@ -48,6 +48,7 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
 #include "jc_handlers/package.hpp"
 
 #include <cstring>
+#include <array>
 #include <cstddef>
 #include <cstdio>
 
@@ -521,6 +522,77 @@ enum class CapImportValidation : uint8_t {
   internal_error,
 };
 
+bool validate_internal_class_references(
+    const jcvm::JC_Cap &cap, const uint8_t *entries,
+    const std::size_t count) noexcept {
+  if (entries == nullptr && count != 0) return false;
+  const auto *class_component = cap.getClass();
+  const auto *header = cap.getHeader();
+  if (header == nullptr) return false;
+  if (class_component == nullptr) {
+    for (std::size_t index = 0; index < count; ++index) {
+      const uint8_t *entry = entries + index * 4;
+      if (entry[0] >= JC_CP_TAG_CONSTANT_CLASSREF &&
+          entry[0] <= JC_CP_TAG_CONSTANT_SUPERMETHODREF &&
+          (entry[1] & 0x80u) == 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  const auto class_bytes = class_component->claz();
+  const std::size_t class_size = class_bytes.size();
+  std::size_t offset = 0;
+  if (header->minor_version >= 2) {
+    if (!class_component->hasValidSignaturePool()) return false;
+    offset = class_component->classInfoStartOffset();
+  }
+
+  // Class component records are already structurally validated by JC_Cap.
+  // This compact bitmap lets every internal CP class offset be checked in
+  // linear time without allocating proportional scratch on the loader stack.
+  static std::array<uint8_t, (UINT16_MAX + 1u + 7u) / 8u> record_starts{};
+  record_starts.fill(0);
+  while (offset < class_size) {
+    const uint8_t *record = class_bytes.data() + offset;
+    const bool is_interface = (record[0] & 0x80u) != 0;
+    const std::size_t record_size =
+        is_interface
+            ? reinterpret_cast<const jcvm::jc_cap_interface_info *>(record)
+                  ->getSize()
+            : reinterpret_cast<const jcvm::jc_cap_class_info *>(record)
+                  ->getSize();
+    if (record_size == 0 || record_size > class_size - offset) return false;
+    record_starts[offset / 8] |=
+        static_cast<uint8_t>(1u << (offset & 7));
+    offset += record_size;
+  }
+  if (offset != class_size) return false;
+
+  for (std::size_t index = 0; index < count; ++index) {
+    const uint8_t *entry = entries + index * 4;
+    if (entry[0] < JC_CP_TAG_CONSTANT_CLASSREF ||
+        entry[0] > JC_CP_TAG_CONSTANT_SUPERMETHODREF ||
+        (entry[1] & 0x80u) != 0) {
+      continue;
+    }
+    const std::size_t token =
+        (static_cast<std::size_t>(entry[1]) << 8) | entry[2];
+    const bool record_start = token < class_size &&
+        (record_starts[token / 8] &
+         static_cast<uint8_t>(1u << (token & 7))) != 0;
+    const bool is_interface = token < class_size &&
+        (class_bytes.data()[token] & 0x80u) != 0;
+    const bool requires_class = entry[0] != JC_CP_TAG_CONSTANT_CLASSREF;
+    if (!jcvm::cap_constant_pool_validation::valid_internal_class_token(
+            token, class_size, record_start, is_interface, requires_class)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
   try {
     const jcvm::Package package(package_id);
@@ -534,6 +606,13 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
         !jcvm::cap_constant_pool_validation::valid_import_tokens(
             reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
             HTONS(constant_pool->count), import_count)) {
+      return CapImportValidation::internal_error;
+    }
+    if (constant_pool != nullptr &&
+        !validate_internal_class_references(
+            cap,
+            reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
+            HTONS(constant_pool->count))) {
       return CapImportValidation::internal_error;
     }
     if (constant_pool != nullptr) {

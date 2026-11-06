@@ -22545,3 +22545,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv28-internal-static-vpcd-20261106.log`, SHA-256 `4bcc077c8f5e84a14621f6d9ea384f71e9758d459cfbe76dcf5219f6b1b0d938`.
 
 - Commit resolved for `rv28-internal-static-offset-validation-20261106`: `e6ee9248` (Bound internal CAP static reference offsets).
+
+## 2026-11-06 Validate internal ConstantPool class references 11 minutes
+
+- Step/experiment: `rv28-internal-classref-validation-20261106`
+- When: '2026-11-06 01:10 CET' - '2026-11-06 01:21 CET'
+- Change: Install preflight now requires internal ConstantPool class references to point at exact Class-component record starts, using a single bounded bitmap walk that accounts for the CAP 2.2 signature-pool prefix. InstanceFieldref, VirtualMethodref, and SuperMethodref entries must name classes rather than interfaces. Added five helper tests and updated trust documentation, QKB, TODO, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passes 30/30 under ASan/UBSan; PC, ARM and RISC-V max_crypto wrapper builds pass; unchanged JCAlgTest VPCD install/APDU suite passes 15/15. No physical flash or malformed-CAP runtime execution was performed. Scoped diff check passes.
+- Result: CP internal class offsets into record bodies and class-only references to interface records fail preflight; valid upstream JCAlgTest still installs and runs. ARM image ends at `0x100ec618`, leaving 80,360 bytes in the firmware window.
+- Decision: Continue RV-28 with internal member-token semantics and malformed interpreter execution coverage.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-internal-classref-vpcd-20261106.log`, SHA-256 `fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.

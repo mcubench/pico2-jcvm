@@ -6978,3 +6978,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limit:** This is a range check only; exact method-header starts, internal
   class/instance references, field types, and malformed runtime behavior remain
   to be validated.
+
+## Validate internal ConstantPool class record starts — 2026-11-06
+
+- **Finding:** Internal ConstantPool class offsets are byte offsets into the
+  Class component; a range check alone allows a reference into the middle of a
+  variable-length class or interface record. Member refs must not target an
+  interface.
+- **Viable fix:** Walk the structurally validated Class component once, mark
+  exact record starts in a fixed bitmap, and validate internal CP offsets and
+  class/interface kind in linear time. Start after the CAP 2.2 signature pool
+  when present.
+- **Validation:** ASan/UBSan helper suite passes 30/30; PC, ARM, and RISC-V
+  max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes
+  15/15. VPCD log SHA-256:
+  `fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.
+- **Limit:** Internal field/method token correctness and malformed
+  interpreter/runtime recovery remain open; no physical flash was performed.

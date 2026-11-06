@@ -82,6 +82,15 @@ inline bool valid_internal_member_offsets(const uint8_t *entries,
   return true;
 }
 
+inline bool valid_internal_class_token(const std::size_t token,
+                                      const std::size_t component_size,
+                                      const bool record_start,
+                                      const bool is_interface,
+                                      const bool requires_class) noexcept {
+  return token < component_size && record_start &&
+         (!requires_class || !is_interface);
+}
+
 template <typename ResolveExportToken>
 bool validate_external_class_tokens(const uint8_t *entries,
                                     const std::size_t count,

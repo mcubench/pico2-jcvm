@@ -1,24 +1,24 @@
-# Active handoff — RV-28 internal static-offset validation — 2026-11-06 01:10 CET
+# Active handoff — RV-28 internal class-reference validation — 2026-11-06 01:21 CET
 
-## Latest continuation — bound internal StaticFieldref and StaticMethodref offsets — 2026-11-06 01:10 CET
+## Latest continuation — require internal CP class-record starts — 2026-11-06 01:21 CET
 
-Install preflight checks internal StaticFieldref offsets against
-StaticField.image_size and StaticMethodref offsets against the Method
-component's executable methods area. External references remain checked
-against their imported Export tokens. Internal class and instance-member
-targets, exact method-header starts, and malformed interpreter runtime
-coverage remain open.
+Install preflight walks the already-validated Class component and marks exact
+class/interface record starts. Internal CP class offsets into record bodies
+are rejected, and InstanceFieldref/VirtualMethodref/SuperMethodref cannot name
+interfaces. The walk respects the CAP 2.2 signature-pool prefix. Internal
+member-token validation beyond class kind/bounds, exact method-header starts,
+and malformed interpreter runtime coverage remain open.
 
-Validation: helper sanitizer suite 25/25; PC, ARM, and RISC-V max_crypto
+Validation: helper sanitizer suite 30/30; PC, ARM, and RISC-V max_crypto
 builds; unchanged JCAlgTest VPCD install/APDU suite 15/15. ARM image ends at
-`0x100ec438`, leaving 80,840 bytes in the firmware window. VPCD log:
-`artifacts/logs/rv28-internal-static-vpcd-20261106.log`, SHA-256
-`4bcc077c8f5e84a14621f6d9ea384f71e9758d459cfbe76dcf5219f6b1b0d938`.
+`0x100ec618`, leaving 80,360 bytes in the firmware window. VPCD log:
+`artifacts/logs/rv28-internal-classref-vpcd-20261106.log`, SHA-256
+`fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.
 No physical flash was performed.
 
-Next: validate internal ConstantPool class and instance-member targets and
-design malformed interpreter execution tests. Preserve unrelated dirty changes.
-This slice's commit is `e6ee9248` (Bound internal CAP static reference offsets).
+Next: validate internal field and method tokens, then add malformed
+interpreter-execution coverage. Preserve unrelated dirty changes. This slice's
+commit will be recorded in progress.md after commit.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

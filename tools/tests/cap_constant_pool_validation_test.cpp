@@ -99,6 +99,21 @@ int main() {
   check(!jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
             nullptr, 1, 0, 0),
         "missing internal member records rejected");
+  check(jcvm::cap_constant_pool_validation::valid_internal_class_token(
+            4, 8, true, false, true),
+        "internal class reference to class record accepted");
+  check(jcvm::cap_constant_pool_validation::valid_internal_class_token(
+            2, 8, true, true, false),
+        "generic internal class reference to interface accepted");
+  check(!jcvm::cap_constant_pool_validation::valid_internal_class_token(
+            2, 8, true, true, true),
+        "class-only internal reference to interface rejected");
+  check(!jcvm::cap_constant_pool_validation::valid_internal_class_token(
+            3, 8, false, false, false),
+        "internal reference into record body rejected");
+  check(!jcvm::cap_constant_pool_validation::valid_internal_class_token(
+            8, 8, true, false, false),
+        "internal class reference at component size rejected");
 
   unsigned int resolved_external_tokens = 0;
   check(jcvm::cap_constant_pool_validation::validate_external_class_tokens(

@@ -54,6 +54,10 @@ Internal StaticFieldref offsets are checked against the StaticField image size;
 internal StaticMethodref offsets are checked against the Method component's
 method-body area. These range checks do not prove that a method offset is an
 exact method-header start or that a field offset has the correct declared type.
+Internal ConstantPool class references must identify an exact class/interface
+record start in the Class component. InstanceFieldref, VirtualMethodref, and
+SuperMethodref cannot target an interface record. Member-token semantics for
+internal references remain incomplete.
 
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's
