@@ -371,6 +371,10 @@ public final class ServiceApplet extends Applet implements Probe {
     SensitiveResult.assertFalse();
     if (!self.equals(self)) return (short) 0x6A89;
     SensitiveResult.assertTrue();
+    if (!self.RIDEquals(previous)) return (short) 0x6A89;
+    SensitiveResult.assertTrue();
+    if (self.RIDEquals(null)) return (short) 0x6A89;
+    SensitiveResult.assertFalse();
     return (short)0x6A31;
   }
 
