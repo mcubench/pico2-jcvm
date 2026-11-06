@@ -22582,3 +22582,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Exact method-header start proof remains open, especially for Descriptor-free LOADs; continue trust-boundary work with this explicit gap recorded.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-static-method-offset-correction-vpcd-20261106.log`, SHA-256 `3c8e804dc0911fbae3775fd6b76bfac8b4ec279ce21c0c399541c5dcf20cb37e`.
+
+- Commit resolved for `rv28-static-method-offset-coordinate-fix-20261106`: `711926215d6f8f9c5d86044bf14d9b4fceaf2927` (Fix internal StaticMethodref offset bounds).

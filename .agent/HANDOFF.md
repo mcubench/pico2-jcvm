@@ -18,7 +18,8 @@ No physical flash was performed.
 Next: resolve exact StaticMethodref starts when Descriptor is present; decide
 how descriptor-free source metadata can prove method starts. Then add malformed
 interpreter execution coverage. Preserve unrelated dirty changes. This slice's
-commit will be recorded in progress.md after commit.
+commit is `711926215d6f8f9c5d86044bf14d9b4fceaf2927` (Fix internal
+StaticMethodref offset bounds).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 
