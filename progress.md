@@ -23057,3 +23057,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Preserve the negative test. Next remove whole table entries in the generated image and revalidate standard GPPro physical installation when a Pico appears in PC/SC.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T114248Z.log`; no hardware log.
+
+## 2026-11-06 Rebuild empty-card max_crypto Windows image and verify runtime boards 12 minutes
+
+- Step/experiment: `host02-max-crypto-empty-card-refresh-20261106`
+- When: '2026-11-06 12:43 CET' - '2026-11-06 12:55 CET'
+- Change: Rebuilt the current ARM and RISC-V `max_crypto` profile with normal startup wait set to zero, packaged a fresh empty-card ARM UF2, and refreshed HOST-02 physical evidence. No source code or token flash changed in this step.
+- Validation: `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` and the matching RISC-V command both passed. `./tools/package-empty-card-uf2` passed with 3,787 firmware blocks and 4,096 erased storage blocks at `0x10100000..0x101FFFFF`. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed. Host-access reader refresh granted three Pico nodes; bounded `pcsc_scan -r` timed out without listing a Pico reader. Eight-second serial monitor passed individually for `2BED26ED20556535`, `8E464F4E2BBC0A19`, and `D92E743D5F640C0F`; D92 reported `84F220020A` with status `9000`. No Windows timing or no-DTR diagnostic deadline test was run.
+- Result: Fresh ARM UF2 SHA-256 `fca53590c3631c8c69f529a8b4a861d63d621c85dab1dfcefb46963fed177654` (1,939,456 bytes); firmware ends at `0x100ECAD0`, leaving 79,152 bytes. Empty-card artifact `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,036,608 bytes, SHA-256 `2578fa07aa5d6dc92e1eaed947774964bdde40c3eb4f596f8841e387b9058a9c`. Build emitted existing packed-member warnings and Maven/network metadata warnings; wrappers completed successfully.
+- Decision: Use the packaged empty-card artifact for external Windows testing and identify it by hash. Keep HOST-02 open for three no-console Windows reconnect measurements and a bounded diagnostic wait with no DTR. Physical PC/SC/applet acceptance is still unavailable in this VM despite all three serial runtimes passing.
+- Commit: `pending`
+- Artifacts/logs: `build/arm/build-provenance.txt`, `build/riscv/build-provenance.txt`, and the empty-card UF2 above; monitor and PC/SC output were captured in the command session, not saved as separate logs.

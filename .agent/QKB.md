@@ -27,6 +27,22 @@
   Refresh again after USB re-enumeration. Retrying with the current name
   succeeded, and the JCSystem SensitiveResult APDU returned `6A8B9000`.
 
+## Three Pico runtime interfaces enumerate while PC/SC omits all — observed 2026-11-06 12:49 CET
+
+- **Observation:** The authorized host-access helper granted USB nodes 039,
+  040 and 045. `lsusb -d 2e8a:` identified three runtime JCVM boards:
+  `2BED26ED20556535`, `8E464F4E2BBC0A19`, and `D92E743D5F640C0F`. `pcsc_scan
+  -r` produced no reader list before a bounded 10-second timeout. `tools/doctor`
+  passed. An eight-second serial monitor passed on each identified board;
+  D92 showed an actual CCID APDU response `84F220020A` with status `9000`.
+- **Interpretation:** Firmware enumeration and runtime monitor can work while
+  PC/SC reader registration is absent. Serial success does not establish
+  SmartcardIO availability or applet APDU behavior.
+- **Next:** Continue offline until a Pico reader appears in `pcsc_scan -r`.
+  Re-run the authorized access helper and check the exact current reader name
+  before any GPPro operation. No service restart or host configuration change
+  was made.
+
 ## VPCD SIO regression must use a rebuilt PC VM — 2026-11-06
 
 - **Issue:** `tools/test-sio-cross-aid-vpcd` compiles fixture CAPs and runs the

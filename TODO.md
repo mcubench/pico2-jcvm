@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-05. This is the active backlog for `plan.md`.
+Updated: 2026-11-06. This is the active backlog for `plan.md`.
 Implementation and validation are separate: an implemented task stays open when
 its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 `AGENTS.md` for native API boundaries, build gates, hardware access and commits.
@@ -19,13 +19,14 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. On 2026-11-06 01:47 CET, elevated
+Physical availability is volatile. On 2026-11-06 12:49 CET, elevated
 enumeration found three runtime `2e8a:0009` JCVM boards:
-`8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`; none was in
-BOOTSEL. The authorized helper granted access to all three USB nodes, but
-PC/SC listed only D92. Refresh USB/PC/SC immediately before further hardware
-work; see `.agent/HANDOFF.md` and `.agent/QKB.md` for the current observation
-and diagnostic history.
+`8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. The authorized
+helper granted access to all three, but a bounded `pcsc_scan -r` timed out
+without listing a reader. Eight-second finite serial monitors passed on all
+three boards; D92 also reported an APDU status `9000`. No board was in BOOTSEL.
+Refresh USB/PC/SC immediately before hardware work; see `.agent/HANDOFF.md`
+and `.agent/QKB.md` for the current observation and diagnostic history.
 
 ## How to use this backlog
 
@@ -1107,6 +1108,16 @@ source-based follow-ups, without a new physical reproduction in this review.
   that Windows run, and reader-list measurement method were not supplied.
   Remaining: exercise the diagnostic deadline without DTR and record at least
   three Windows cold reconnect timings without a serial client.
+  Current rebuild: ARM and RISC-V max_crypto normal builds passed with
+  `PICO2_DEBUG_SERIAL_WAIT_MS=0`. Fresh ARM UF2 SHA-256 is
+  `fca53590c3631c8c69f529a8b4a861d63d621c85dab1dfcefb46963fed177654`;
+  packaged empty-card UF2 SHA-256 is
+  `2578fa07aa5d6dc92e1eaed947774964bdde40c3eb4f596f8841e387b9058a9c`
+  (4,036,608 bytes). All three identified boards pass an eight-second serial
+  runtime monitor on the current attached firmware. The package script filled
+  flash storage at `0x10100000..0x101FFFFF` with `0xFF`; no token was flashed
+  during this rebuild. Exact no-console Windows timing and a fresh no-DTR
+  diagnostic-deadline run remain outstanding.
   Acceptance: build ARM/RISC-V in normal and diagnostic modes, then switch
   back to normal in the same build directories and verify the setting resets.
   Diagnostic mode exits on DTR or its deadline; normal mode reaches runtime

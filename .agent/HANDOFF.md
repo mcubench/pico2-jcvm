@@ -7537,3 +7537,38 @@ limits. Links and scoped whitespace checked; no new builds or hardware tests.
 Implementation work and priorities remain as in the active handoffs above.
 All unrelated pre-existing worktree changes were preserved. Resolve the review
 commit with `git log -1 --format=%H -- docs/CTO_PROGRESS_REVIEW_20261106.md`.
+# Current handoff — max_crypto Windows image rebuilt; three boards pass runtime monitor — 2026-11-06 12:53 CET
+
+Built ARM and RISC-V max_crypto in normal mode with
+`PICO2_DEBUG_SERIAL_WAIT_MS=0`; both repository wrappers passed. The fresh ARM
+UF2 is `build/arm/pico2_choupi.uf2` (1,939,456 bytes, SHA-256
+`fca53590c3631c8c69f529a8b4a861d63d621c85dab1dfcefb46963fed177654`). Its
+firmware end is `0x100ECAD0`, leaving 79,152 bytes in the 1 MiB firmware
+window. Packaged the external-test, empty-card image at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
+(4,036,608 bytes, SHA-256
+`2578fa07aa5d6dc92e1eaed947774964bdde40c3eb4f596f8841e387b9058a9c`). It
+contains 3,787 firmware blocks plus 4,096 erased storage blocks covering
+`0x10100000..0x101FFFFF`. No token was flashed.
+
+On 2026-11-06 around 12:49 CET, the authorized host-access helper granted all
+three Pico USB nodes; `lsusb` identified runtime JCVM boards
+`2BED26ED20556535`, `8E464F4E2BBC0A19`, and `D92E743D5F640C0F`. Eight-second
+finite serial monitors passed on all three. D92 included an observed CCID
+APDU response with status `9000`; the other two reported `TEST:PASS
+choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. `tools/doctor` passed. PC/SC
+still listed no Pico reader: bounded `pcsc_scan -r` timed out after access was
+granted. This is not a successful PC/SC/APDU or applet test.
+
+For Windows testing use the empty-card artifact above. Its hash is the fresh
+build to identify during external measurements. HOST-02 remains open for
+three cold reconnect timings with no serial client and for exercising the
+diagnostic deadline without DTR. See `TODO.md` and
+`docs/usb-startup-diagnostics.md`; preserve the current user changes in the
+worktree.
+
+The preceding malformed Export-offset test commit is `89d1c8a7`; its appended
+progress entry still says `pending` because the commit hash was not copied into
+the earlier entry. No earlier progress records were rewritten here.
+
+# Previous active continuation — Descriptor-free method bounds regression revalidated — 2026-11-06 12:05 CET
