@@ -22630,3 +22630,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue malformed interpreter runtime coverage with truncated operands and invalid branch targets. This does not establish sanitizer or physical hostile-CAP recovery, and does not close the Descriptor-free exact StaticMethodref-start gap.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-impdep-vpcd-20261106.log` (SHA-256 `9b293ca679a1c7e0c49b378331a5e9ba7b2c0f48b971b4c46fdcab5363a1fc97`); `artifacts/logs/rv28-normal-vpcd-after-status-harness-20261106-rerun.log` (SHA-256 `bdb6ed02b582cd19c03e233a5907e781fb060c6b1626bec7f41bd265dc44abba`); generated input `build/rv28-malformed-impdep-load-code.bin` (ignored).
+
+## 2026-11-06 Exercise truncated bytecode operand bounds 8 minutes
+
+- Step/experiment: `rv28-truncated-operand-vpcd-20261106`
+- When: '2026-11-06 02:24 CET' - '2026-11-06 02:32 CET'
+- Change: Generalized the malformed-CAP fixture to replace the last `BC_RETURN` in the Descriptor-bounded JCAlgTest `process()` body with `BC_SIPUSH`, whose two operand bytes would lie beyond that method body. The generated altered LOAD payload stays under ignored `build/`; upstream CAP is unchanged. Added the case to the existing tool and recorded it in TODO, QKB, and handoff.
+- Validation: `python3 -m py_compile tools/tests/cap_malformed_vpcd_test.py tools/tests/pc_vpcd_applet_test.py`, `bash -n tools/test-cap-malformed-vpcd`, and scoped `git diff --check` pass. Offline VPCD test passes 6/6 under escalated process permissions after restricted execution is known to fail with EPERM. No physical device, sanitizer, or firmware build was used; production C++ was unchanged.
+- Result: Applet SELECT returns `9000`; the malformed process call returns `6F00`; subsequent ISD selection returns its FCI and `9000`; applet reselection and a second ISD selection also succeed. Emulator connect took 18.347 s; malformed process calls took 15.110 s and 15.461 s. Upstream CAP SHA-256 remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- Decision: Operand fetch stays within the method body and card-manager recovery succeeds in this PC VPCD case. Next add malformed branch-target runtime coverage; physical and sanitizer hostile-CAP acceptance remain open.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log`, SHA-256 `2bdda893892a1056bbc2558083ccab2e5f0299a35669e1fc55c2b24c46274456`; generated input `build/rv28-malformed-truncated-sipush-load-code.bin` (ignored).

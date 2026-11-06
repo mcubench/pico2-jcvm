@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -41,11 +42,11 @@ def component(archive: ZipFile, folder: str, name: str, tag: int) -> bytes:
     return data
 
 
-def descriptor_method_owners(descriptor: bytes) -> list[list[int]]:
+def descriptor_methods(descriptor: bytes) -> list[list[tuple[int, int]]]:
     payload = descriptor[3:]
     if not payload:
         raise ValueError("empty Descriptor component")
-    owner_offsets: list[list[int]] = []
+    owner_methods: list[list[tuple[int, int]]] = []
     offset = 1
     for _ in range(payload[0]):
         if offset > len(payload) or len(payload) - offset < 9:
@@ -56,15 +57,19 @@ def descriptor_method_owners(descriptor: bytes) -> list[list[int]]:
         method_start = offset + 9 + interfaces * 2 + fields * 7
         if method_start > len(payload) or methods > (len(payload) - method_start) // 12:
             raise ValueError("truncated Descriptor method table")
-        owner_offsets.append([
-            int.from_bytes(payload[method_start + index * 12 + 2 :
-                                   method_start + index * 12 + 4], "big")
+        owner_methods.append([
+            (
+                int.from_bytes(payload[method_start + index * 12 + 2 :
+                                       method_start + index * 12 + 4], "big"),
+                int.from_bytes(payload[method_start + index * 12 + 6 :
+                                       method_start + index * 12 + 8], "big"),
+            )
             for index in range(methods)
         ])
         offset = method_start + methods * 12
     if offset > len(payload):
         raise ValueError("Descriptor records exceed component bounds")
-    return owner_offsets
+    return owner_methods
 
 
 def class_public_method_tables(class_component: bytes) -> list[list[int]]:
@@ -112,7 +117,7 @@ def component_version_header(class_component: bytes) -> tuple[int, int]:
     return header[8], header[7]
 
 
-def build_malformed_load_code() -> Path:
+def build_malformed_load_code(mutation: str) -> Path:
     raw_cap = CAP_PATH.read_bytes()
     digest = hashlib.sha256(raw_cap).hexdigest()
     if digest != EXPECTED_CAP_SHA256:
@@ -139,10 +144,11 @@ def build_malformed_load_code() -> Path:
     install_method_offset = int.from_bytes(
         applet[install_offset_index : install_offset_index + 2], "big"
     )
-    owners = descriptor_method_owners(parts["Descriptor"])
+    owners = descriptor_methods(parts["Descriptor"])
     owner_index = next(
         (index for index, methods in enumerate(owners)
-         if install_method_offset in methods and PROCESS_METHOD_OFFSET in methods),
+         if install_method_offset in {offset for offset, _ in methods} and
+         PROCESS_METHOD_OFFSET in {offset for offset, _ in methods}),
         None,
     )
     if owner_index is None:
@@ -150,6 +156,14 @@ def build_malformed_load_code() -> Path:
     public_tables = class_public_method_tables(parts["Class"])
     if owner_index >= len(public_tables) or PROCESS_METHOD_OFFSET not in public_tables[owner_index]:
         raise ValueError("process target is not a public virtual method start")
+
+    process_length = next(
+        (length for methods in owners for offset, length in methods
+         if offset == PROCESS_METHOD_OFFSET),
+        None,
+    )
+    if process_length is None or process_length == 0:
+        raise ValueError("process method has no Descriptor bytecode length")
 
     method_component = parts["Method"]
     handler_count = method_component[3]
@@ -163,8 +177,9 @@ def build_malformed_load_code() -> Path:
         raise ValueError("process method header outside Method component")
     header_size = 5 if method_component[method_header_index] & 0x80 else 2
     bytecode_index = method_header_index + header_size
-    if bytecode_index >= len(method_component):
-        raise ValueError("process bytecode missing from Method component")
+    body_end = bytecode_index + process_length
+    if body_end > len(method_component):
+        raise ValueError("process bytecode body exceeds Method component")
 
     ordered = b"".join(parts[name] for name, _ in COMPONENTS if name in parts)
     # Method follows Header, Directory, Applet, Import, ConstantPool, Class.
@@ -174,35 +189,54 @@ def build_malformed_load_code() -> Path:
     mutable = bytearray(ordered)
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
-    original_opcode = mutable[code_index]
-    if original_opcode == 0xFE:
-        raise ValueError("upstream process already starts with impdep1")
-    mutable[code_index] = 0xFE
+    if mutation == "impdep1":
+        mutation_index = code_index
+        replacement = 0xFE
+        if mutable[mutation_index] == replacement:
+            raise ValueError("upstream process already starts with impdep1")
+    elif mutation == "truncated-sipush":
+        mutation_index = method_start + body_end - 1
+        replacement = 0x13  # SIPUSH requires two operand bytes.
+        if mutable[mutation_index] != 0x7A:
+            raise ValueError("expected process method to end with BC_RETURN")
+    else:
+        raise ValueError(f"unsupported mutation: {mutation}")
+    original_opcode = mutable[mutation_index]
+    mutable[mutation_index] = replacement
 
-    output = ROOT / "build/rv28-malformed-impdep-load-code.bin"
+    output = ROOT / f"build/rv28-malformed-{mutation}-load-code.bin"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(mutable)
     print(
         f"MALFORMED_CAP:PASS sha256={digest} class={owner_index} "
         f"method_offset=0x{PROCESS_METHOD_OFFSET:04X} "
-        f"body_byte_index=0x{code_index:X} original=0x{original_opcode:02X} "
-        "mutated=0xFE source_cap_unchanged=true"
+        f"body_byte_index=0x{mutation_index:X} original=0x{original_opcode:02X} "
+        f"mutated=0x{replacement:02X} type={mutation} "
+        "source_cap_unchanged=true"
     )
     return output
 
 
 def main() -> int:
-    code = build_malformed_load_code()
-    log = ROOT / "artifacts/logs/rv28-malformed-impdep-vpcd-20261106.log"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mutation", choices=("impdep1", "truncated-sipush"),
+        default="impdep1",
+    )
+    args = parser.parse_args()
+    code = build_malformed_load_code(args.mutation)
+    log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
+    select_status = "6F00" if args.mutation == "impdep1" else "9000"
+    process_status = "6999" if args.mutation == "impdep1" else "6F00"
     commands = [
         "--passes", "1",
         "--cap-code", str(code),
-        "--expect-select-status", "6F00",
-        "--apdu", "B0E1000000", "--expect-apdu-response", "6999",
+        "--expect-select-status", select_status,
+        "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
         "--apdu", "00A4040008A00000015100000000",
         "--expect-apdu-response", "6F0A8408A0000001510000009000",
         "--apdu", "00A404000A" + APPLET_AID.hex() + "00",
-        "--expect-apdu-response", "6F00",
+        "--expect-apdu-response", select_status,
         "--apdu", "00A4040008A00000015100000000",
         "--expect-apdu-response", "6F0A8408A0000001510000009000",
         "--log", str(log),

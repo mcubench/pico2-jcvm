@@ -1,4 +1,27 @@
-# Active handoff — RV-28 malformed dynamic opcode recovery — 2026-11-06 02:24 CET
+# Active handoff — RV-28 truncated operand runtime bounds — 2026-11-06 02:32 CET
+
+## Latest continuation — truncated `SIPUSH` operand fails closed and recovers
+
+Extended `tools/test-cap-malformed-vpcd` with a `truncated-sipush` fixture.
+It reuses the unchanged JCAlgTest CAP and replaces the final `BC_RETURN` in
+the Descriptor-bounded `process()` body with `BC_SIPUSH`; that bytecode's two
+operands would cross the method end. The generated LOAD byte is at Method file
+index `0x4798`; upstream CAP SHA-256 remains
+`b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+
+Offline VPCD passes 6/6: applet SELECT `9000`, malformed process APDU `6F00`,
+ISD SELECT returns FCI/`9000`, applet reselection `9000`, and another ISD
+selection returns FCI/`9000`. Process APDUs took 15.110 and 15.461 seconds;
+connect took 18.347 seconds. Log:
+`artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log`, SHA-256
+`2bdda893892a1056bbc2558083ccab2e5f0299a35669e1fc55c2b24c46274456`.
+Validation is PC VPCD only; no physical device or sanitizer was used.
+
+Next: add a runtime branch target into an instruction operand and verify the
+applet/manager recover. Keep malformed runtime sanitizer and physical recovery
+acceptance open. Preserve unrelated worktree changes.
+
+## Prior handoff — RV-28 malformed dynamic opcode recovery — 2026-11-06 02:24 CET
 
 ## Latest continuation — dynamic-package `impdep1` rejection and valid-CAP regression
 

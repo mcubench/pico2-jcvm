@@ -7111,3 +7111,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limit:** This establishes one dynamic opcode rejection and manager recovery
   path in the PC VPCD emulator only. It is not sanitizer or physical-card
   hostile-CAP coverage. Continue with malformed operand/branch paths.
+
+## Truncated fixed-width bytecode operand stays inside Descriptor body — 2026-11-06
+
+- **Fixture:** In the same unchanged upstream CAP, replace the last byte of
+  JCAlgTest's `process()` bytecode body (the original `BC_RETURN`, Method
+  component file index `0x4798`) with `BC_SIPUSH` (`0x13`), which requires two
+  operand bytes beyond the Descriptor-bounded body. The generated LOAD payload
+  is isolated under ignored `build/`; CAP SHA-256 remains
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- **Observed:** VPCD applet SELECT succeeds (`9000`); executing the malformed
+  process APDU returns `6F00`. Both later ISD selections return the expected
+  FCI and `9000`, and reselecting the applet still returns `9000`. The VPCD
+  regression passes 6/6. The two process APDUs took 15.110 s and 15.461 s in
+  this emulator run; connection took 18.347 s.
+- **Decision:** Method-body operand fetch remains bounded and a rejected
+  process call does not prevent subsequent manager/applet selection in this
+  PC emulator. Keep physical and sanitizer hostile-CAP recovery acceptance
+  open; next test malformed branch targets at runtime.
