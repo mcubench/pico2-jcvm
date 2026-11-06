@@ -18,7 +18,7 @@ No physical flash was performed.
 
 Next: validate internal ConstantPool class and instance-member targets and
 design malformed interpreter execution tests. Preserve unrelated dirty changes.
-This slice's commit will be resolved in progress.md after commit.
+This slice's commit is `e6ee9248` (Bound internal CAP static reference offsets).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

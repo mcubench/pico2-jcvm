@@ -22543,3 +22543,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RV-28 with internal class and instance-member targets; exact method-header starts and hostile-CAP runtime recovery remain open.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-internal-static-vpcd-20261106.log`, SHA-256 `4bcc077c8f5e84a14621f6d9ea384f71e9758d459cfbe76dcf5219f6b1b0d938`.
+
+- Commit resolved for `rv28-internal-static-offset-validation-20261106`: `e6ee9248` (Bound internal CAP static reference offsets).
