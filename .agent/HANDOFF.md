@@ -1,3 +1,25 @@
+# Current handoff — typed foreign-array regression committed — 2026-11-06 22:44 CET
+
+Commit `21051098` adds a negative `aastore` regression for an incompatible
+foreign applet object passed through SIO. The test passes it via an `Object`
+parameter and stores it into a runtime `Shareable[]` through an `Object[]`
+alias, expecting catchable `ArrayStoreException`. Compatible foreign
+Shareable proxy storage remains positive coverage. No runtime algorithm or
+firmware implementation changed.
+
+Both full VPCD modes pass 35/35: Descriptor omitted log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T211815Z.log`; Descriptor included
+log `artifacts/logs/sio-cross-aid-vpcd-20261106T212814Z.log`. The Python syntax
+check and scoped diff check passed. An initial full test failure was caused by
+an INS collision with KeyBuilder; moving the new command to `0x3F` fixed it.
+No device was flashed. Last refreshed USB enumeration showed three Pico CCID
+nodes, while PC/SC only exposed the two Virtual PCD readers. Refresh the helper
+and PC/SC before physical validation.
+
+Next: continue auditing foreign-reference consumers, roots and lifecycle
+boundaries under CTX-01. Preserve the parallel review work and all unrelated
+dirty source, test, submodule and artifact changes.
+
 # Current handoff — CAP dependency and cleanup review R55–R56 — 2026-11-06 22:41:58 CET
 
 Review-only goal made progress: report/lowercase todo totals now 56. Added
