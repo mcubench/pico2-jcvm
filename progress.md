@@ -22795,3 +22795,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep start alignment and frame-contained exclusive-end checks, but do not require the exclusive end itself to be an opcode boundary. Continue auditing malformed handler table framing and physical recovery separately.
 - Commit: `9951d0ac`.
 - Artifacts/logs: malformed range `artifacts/logs/rv28-malformed-exception-handler-range-into-operand-vpcd-20261106.log`, SHA-256 `82845fd9a7e58ee256dc7fc874023a35bbc8272506dd4f273b81db38a68807f2`; catch CP `artifacts/logs/rv28-malformed-exception-catch-cp-out-of-range-vpcd-20261106.log`, SHA-256 `c6a28cdfdab8f481e2a5a9d8cf365f438bc17d313f9bde26ef2babbef7ccde45`; handler target `artifacts/logs/rv28-malformed-exception-handler-target-into-operand-vpcd-20261106.log`, SHA-256 `61ff998cec86dd573d8545b759d38955b49d2d2104edc20138f61a9265b5ae84`; positive JCAlgTest `artifacts/logs/rv28-exception-range-jcalgtest-vpcd-20261106.log`, SHA-256 `deff4cd2cf8d910983644a813301a872881a5ff22b96350e4932dd208bd4b256`.
+
+## 2026-11-06 Cover exception range overflow 2 minutes
+
+- Step/experiment: `rv28-exception-range-out-of-bounds-vpcd-20261106`
+- When: '2026-11-06 05:21 CET' - '2026-11-06 05:23 CET'
+- Change: Added a generated CAP mutation that replaces the process start with `INVOKESTATIC 0`, makes the handler catch-all, and expands its active protected-range length to 32,767 bytes so its end exceeds the Method span. The upstream CAP is unchanged.
+- Validation: Python syntax check passes. PC VPCD passes 6/6: initial applet SELECT `9000`, malformed process `6F00`, ISD selection and applet reselection recover, then ISD remains selectable. The prior ARM/RISC-V/PC builds validate the source guard; no source changed in this fixture-only step. No physical card was used.
+- Result: The explicit Method-component end bound rejects an active range that exceeds the bytecode image without damaging manager availability.
+- Decision: Keep the overflow fixture with the exception range operand case. Continue malformed handler table structure/entry checks.
+- Commit: `5a4abd65`.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-exception-handler-range-out-of-bounds-vpcd-20261106.log`, SHA-256 `abc46b9cae1f2bb7b5aef1dcdfdb47f7bc1760293bd35e60aa120c5a9bb69e70`.

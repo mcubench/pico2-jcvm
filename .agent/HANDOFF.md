@@ -4,6 +4,10 @@
 
 Exception-table `start_pc` conversion now accounts for the one-based CAP coordinate after the handler table. `doThrow()` checks Method bounds and validates instruction alignment/frame containment only for the range active at the current throw PC. The exclusive end is required to stay within the frame, but is not required to be an opcode boundary. A malformed range starting inside a `BSPUSH` operand fails with `6F00`; recovery checks pass 6/6. Catch CP and handler destination malformed cases also pass 6/6. The unchanged JCAlgTest positive VPCD suite passes 15/15, and ARM/RISC-V/PC builds pass. Unit PC bounds checks pass 24/24. Source commit: `9951d0ac`; progress/QKB/TODO metadata follows it. No physical hostile-CAP test was run.
 
+## Latest continuation — range overflow fixture added
+
+The malformed suite now includes an active 32,767-byte catch-all range whose end exceeds the Method image. VPCD rejects process with `6F00` and confirms recovery (6/6). Regression commit: `5a4abd65`; its progress record and metadata follow. No source/build/hardware change in this test-only step.
+
 Next: audit malformed Method exception-table framing/counts and continue separating emulator evidence from physical recovery acceptance.
 
 # Active handoff — exception-handler target boundary — 2026-11-06 04:51 CET

@@ -7314,3 +7314,9 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   JCAlgTest returns 15/15 including RSA-SHA1 and expected unsupported results.
   ARM/RISC-V/PC builds pass.
 - **Limits:** PC VPCD only; no hostile-CAP physical recovery test was run.
+
+- **Additional bound regression (2026-11-06):** An active catch-all range with
+  length 32,767 extending beyond the Method image is rejected with `6F00`; PC
+  VPCD manager/applet recovery passes 6/6. Fixture:
+  `exception-handler-range-out-of-bounds`; log SHA-256 is recorded in
+  `progress.md`. No physical card was used.
