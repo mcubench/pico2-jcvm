@@ -23068,3 +23068,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the packaged empty-card artifact for external Windows testing and identify it by hash. Keep HOST-02 open for three no-console Windows reconnect measurements and a bounded diagnostic wait with no DTR. Physical PC/SC/applet acceptance is still unavailable in this VM despite all three serial runtimes passing.
 - Commit: `pending`
 - Artifacts/logs: `build/arm/build-provenance.txt`, `build/riscv/build-provenance.txt`, and the empty-card UF2 above; monitor and PC/SC output were captured in the command session, not saved as separate logs.
+
+## 2026-11-06 Verify diagnostic deadline without DTR and restore normal image 8 minutes
+
+- Step/experiment: `host02-diagnostic-no-dtr-deadline-20261106`
+- When: '2026-11-06 12:56 CET' - '2026-11-06 13:04 CET'
+- Change: Built fresh ARM/RISC-V max_crypto diagnostic images with a 30,000 ms CDC wait, flashed only identified board D92, exercised the no-DTR deadline path, then restored the normal empty-card image and normal build settings.
+- Validation: Diagnostic ARM and RISC-V wrappers passed at `PICO2_DEBUG_SERIAL_WAIT_MS=30000`. `tools/flash` selected D92 by USB serial; its picotool reset-interface attempt failed, then its CDC 1200-baud recovery entered BOOTSEL and the UF2 flash verification passed. With no serial client open for 32 seconds after the flash command exited, the subsequent finite 8-second monitor reached runtime and reported repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. Restoring `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` passed flash verification and a second finite monitor. ARM and RISC-V max_crypto wrappers passed again with `serial_wait_ms=0`; both provenance files record normal mode. The access helper granted 3 USB nodes, but `pcsc_scan -r` timed out without a Pico reader.
+- Result: The 30-second diagnostic wait ends without DTR and firmware reaches its runtime loop; D92 is restored to the current normal max_crypto empty-card image. Diagnostic image SHA-256 `805ff85b5335704b8d3317ae76c9c79c0376086c86e1aabbfb34c9a1edee4300`; restored image SHA-256 `2578fa07aa5d6dc92e1eaed947774964bdde40c3eb4f596f8841e387b9058a9c`. Serial output was captured in the command session but not saved to a separate log.
+- Decision: Close the no-DTR diagnostic subgate. Keep HOST-02 open for at least three Windows cold reconnect timings without a serial client; PC/SC hardware checks remain blocked by reader registration.
+- Commit: `pending`
+- Artifacts/logs: `build/arm/pico2_choupi_debug_serial_wait_30000ms.uf2`, both architecture build provenance files, and `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.

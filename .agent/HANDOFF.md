@@ -1,4 +1,32 @@
-# Active continuation — Descriptor-free method bounds regression revalidated — 2026-11-06 12:05 CET
+# Current handoff — diagnostic no-DTR deadline passed; normal empty-card image restored — 2026-11-06 13:04 CET
+
+Fresh ARM/RISC-V `max_crypto` diagnostic builds with a 30,000 ms CDC wait
+passed. Diagnostic image SHA-256:
+`805ff85b5335704b8d3317ae76c9c79c0376086c86e1aabbfb34c9a1edee4300`.
+Flashed only D92 (`D92E743D5F640C0F`) using
+`tools/flash --serial D92E743D5F640C0F`; picotool could not locate the reset
+interface, and the wrapper's CDC 1200-baud fallback entered BOOTSEL and
+completed flash verification. Kept all serial clients closed for 32 seconds
+after the flash command completed (therefore longer than the configured
+deadline), then opened the finite monitor. Runtime passed repeatedly with
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. This confirms the
+deadline path without DTR; no serial log was saved separately.
+
+Restored D92 using the same empty-card image prepared for Windows testing,
+SHA-256 `2578fa07aa5d6dc92e1eaed947774964bdde40c3eb4f596f8841e387b9058a9c`.
+The flash wrapper verified the full image and storage; a fresh eight-second
+monitor passed. ARM and RISC-V were rebuilt at `serial_wait_ms=0` after the
+diagnostic run; both provenance files confirm normal mode. Current empty-card
+max_crypto image remains at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.
+
+Latest reader refresh still grants three USB nodes, but a bounded
+`pcsc_scan -r` times out without any Pico reader. PC/SC applet validation is
+not available. HOST-02 has the no-DTR diagnostic deadline check; remaining
+gate is at least three Windows cold reconnect timings with no serial terminal.
+Preserve unrelated dirty files.
+
+# Previous active handoff — max_crypto Windows image rebuilt; three boards pass runtime monitor — 2026-11-06 12:53 CET
 
 The old CTX-01 note that Descriptor-free service INSTALL still fails is stale.
 The runtime fallback already present in `Method_Handler::callMethod` gathers

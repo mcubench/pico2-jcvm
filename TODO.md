@@ -1106,8 +1106,8 @@ source-based follow-ups, without a new physical reproduction in this review.
   capture. The user reports the no-delay image became visible under Windows
   certutil almost instantly after replug. Exact timings, image hash used for
   that Windows run, and reader-list measurement method were not supplied.
-  Remaining: exercise the diagnostic deadline without DTR and record at least
-  three Windows cold reconnect timings without a serial client.
+  Remaining: record at least three Windows cold reconnect timings without a
+  serial client.
   Current rebuild: ARM and RISC-V max_crypto normal builds passed with
   `PICO2_DEBUG_SERIAL_WAIT_MS=0`. Fresh ARM UF2 SHA-256 is
   `fca53590c3631c8c69f529a8b4a861d63d621c85dab1dfcefb46963fed177654`;
@@ -1116,8 +1116,12 @@ source-based follow-ups, without a new physical reproduction in this review.
   (4,036,608 bytes). All three identified boards pass an eight-second serial
   runtime monitor on the current attached firmware. The package script filled
   flash storage at `0x10100000..0x101FFFFF` with `0xFF`; no token was flashed
-  during this rebuild. Exact no-console Windows timing and a fresh no-DTR
-  diagnostic-deadline run remain outstanding.
+  during this rebuild. A fresh 30,000 ms diagnostic ARM/RISC-V build passed;
+  its image was flashed to D92, left without a serial client for more than 32
+  seconds after the flash command completed, then reached the runtime loop
+  when monitored (`TEST:SUMMARY pass=1 fail=0`). D92 was restored to the
+  zero-wait empty-card image, and both architecture builds were returned to
+  zero and passed again. Exact no-console Windows timing remains outstanding.
   Acceptance: build ARM/RISC-V in normal and diagnostic modes, then switch
   back to normal in the same build directories and verify the setting resets.
   Diagnostic mode exits on DTR or its deadline; normal mode reaches runtime
@@ -1125,8 +1129,8 @@ source-based follow-ups, without a new physical reproduction in this review.
   only after both architecture builds pass; require finite serial PASS/no
   FAULT and successful PC/SC/APDU checks. Separately measure at least three
   Windows cold reconnects with **no serial terminal or monitor open**, plus
-  a diagnostic deadline run with no DTR; record image hashes, reader-list method, timing,
-  and remaining host overhead. A monitor-assisted cycle alone cannot close
+  record image hashes, reader-list method, timing, and remaining host overhead.
+  A monitor-assisted cycle alone cannot close
   the no-console startup gate. Firmware should impose no 30-second delay;
   do not claim an exact Windows readiness bound before measurement.
   Agent instructions: [normal and diagnostic build workflow](docs/usb-startup-diagnostics.md).

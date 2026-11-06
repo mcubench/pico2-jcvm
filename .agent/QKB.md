@@ -43,6 +43,21 @@
   before any GPPro operation. No service restart or host configuration change
   was made.
 
+## `tools/flash` can enter BOOTSEL through CDC when picotool reset lookup fails — observed 2026-11-06
+
+- **Observation:** Runtime board D92 `D92E743D5F640C0F` had no picotool reset
+  interface. The authorized wrapper logged
+  `FLASH:BOOTSEL recovery=cdc-after-missing-reset-interface`, set CDC to
+  1200 baud, saw BOOTSEL after 2 seconds, flashed, verified, and rebooted the
+  selected board. This occurred both when loading a diagnostic image and when
+  restoring the normal empty-card image.
+- **Viable solution:** Select runtime devices by stable `--serial` and use
+  `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial <serial> <image.uf2>` through
+  the elevated host-access path. The wrapper handles the CDC fallback; do not
+  manually pick a bus/address after re-enumeration.
+- **Limit:** Reader registration in PC/SC remained absent after the runtime
+  board rebooted; a successful flash does not establish PC/SC/APDU operation.
+
 ## VPCD SIO regression must use a rebuilt PC VM — 2026-11-06
 
 - **Issue:** `tools/test-sio-cross-aid-vpcd` compiles fixture CAPs and runs the
