@@ -11,6 +11,9 @@ is test-only; upstream CAPs and runtime source are unchanged. Focused log
 The normal Descriptor-free three-package cross-AID VPCD suite also passes
 34/34 at `artifacts/logs/sio-cross-aid-vpcd-20261106T121319Z.log`, SHA-256
 `409c417d789dfbfca12045844d268396b75010172607c55e36caf90e1cd8df85`.
+The focused empty-Export case also passes with Descriptor present:
+`artifacts/logs/sio-cross-aid-vpcd-20261106T121812Z.log`, SHA-256
+`36ff47e521377d934ef13a7eedf5be23b67000962e45d9217e48a48418e19cc7`.
 Remaining method-table work is whole-entry omission for Class/ConstantPool;
 physical GPPro revalidation requires a Pico reader in `pcsc_scan -r`.
 

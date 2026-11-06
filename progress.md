@@ -23090,3 +23090,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep this inverse Export regression alongside zero-offset rejection. Whole-entry omission coverage for Class/ConstantPool and physical standard-GPPro validation remain open.
 - Commit: `pending`
 - Artifacts/logs: The two VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.
+
+## 2026-11-06 Verify empty Export table with Descriptor present 4 minutes
+
+- Step/experiment: `ctx01-empty-export-descriptor-present-20261106`
+- When: '2026-11-06 13:15 CET' - '2026-11-06 13:19 CET'
+- Change: Repeated the empty Export class-table VPCD test with the optional Descriptor component included, to check both structural parsing and the exact Descriptor method-bound path. Test implementation is in commit `1eaaa295`.
+- Validation: `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_TEST_EMPTY_EXPORT_TABLE=1 ... ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=1 fail=0`; CAP LOAD and service applet INSTALL succeeded. No runtime source changed, so architecture builds and hardware operations were skipped.
+- Result: Empty Export record removal is accepted in both Descriptor-free and Descriptor-included installations. Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T121812Z.log`, SHA-256 `36ff47e521377d934ef13a7eedf5be23b67000962e45d9217e48a48418e19cc7`.
+- Decision: Keep both Descriptor modes in the negative-CAP suite. Whole-entry omission coverage for Class/ConstantPool remains open.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T121812Z.log`.

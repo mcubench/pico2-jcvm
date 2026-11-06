@@ -809,9 +809,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   A test-injected zero Export static-method offset is rejected at INSTALL with
   `6A80`. A generated CAP with its sole empty Export class record removed,
   Directory size updated, and Export `class_count=0` LOADs and INSTALLs
-  successfully; focused VPCD passes 1/1 and the default cross-AID suite passes
-  34/34. Whole-entry omission coverage for Class/ConstantPool and full physical
-  GPPro revalidation remain open.
+  successfully with Descriptor omitted and included (focused VPCD passes 1/1
+  in each mode); the default cross-AID suite passes 34/34. Whole-entry
+  omission coverage for Class/ConstantPool and full physical GPPro
+  revalidation remain open.
   The [Java
   Card 3.0.5 VM specification, §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf)
   makes Descriptor loading optional and provides exact method offsets and
