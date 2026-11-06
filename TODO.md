@@ -287,7 +287,9 @@ Additional scoped investigations: GP-01's imported-library deletion policy is
 now implemented and VPCD-tested: deleting a loaded package referenced by any
 other loaded package's Import component is rejected with `6985`; the client
 continues to select and invoke its service. The opt-in regression and default
-suite pass; physical CCID validation remains pending. CTX-01/STORE-01 should
+suite pass. It then deletes the client and service importers and confirms the
+library package DELETE succeeds with `9000`. Physical CCID validation remains
+pending. CTX-01/STORE-01 should
 establish bounded lifetime/reclamation for user-created global arrays. These
 remain source-based follow-ups without a new physical reproduction in this
 review.

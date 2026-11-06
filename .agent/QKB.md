@@ -7583,7 +7583,10 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   the service successfully (`45679000`).
 - **Validation:** Focused opt-in VPCD regression passes; default SIO suite passes
   34/34; PC, ARM and RISC-V max_crypto builds pass. No physical reader was
-  enumerated, so physical package DELETE is unverified.
+  enumerated, so physical package DELETE is unverified. Follow-up coverage also
+  deletes the dependent client and service with `9000`, then confirms DELETE of
+  the formerly imported library succeeds with `9000` (`TEST:SUMMARY pass=2
+  fail=0`); the guard does not leave stale AID dependencies behind.
 
 ## GP GET DATA VPCD test failed on stale empty flash and omitted ISD SELECT — 2026-11-06
 

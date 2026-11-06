@@ -26,6 +26,16 @@ reconstruction, and lifecycle cleanup. A 60-second timeout expired on the
 18-instance cascade DELETE, which completed under the 120-second bound.
 Acceptance evidence and timeout note are committed in `2e94869d`.
 
+## Latest GP-01 dependency-check follow-up
+
+Extended the imported-library DELETE regression to remove importers after the
+expected `6985`: dependent client and service package DELETEs both return
+`9000`, then the library DELETE returns `9000`. Focused VPCD summary is 2/2;
+log SHA-256 `f26cda758522bb0504a6bbf5040dec9b496c9e161a367e6b9ea537e8136079e0`.
+No Pico reader is listed by PC/SC, so this is emulator-only. Next continue with
+offline GP-01/CTX work; repeat the deletion sequence physically when a reader
+appears.
+
 Prior scoped implementation: commit `e91f9d65` rejects deletion of packages
 imported by another loaded CAP (`6985`), validated in VPCD; its handoff and
 progress SHA are in the next commit `c8bfc576`. Physical DELETE and GET DATA

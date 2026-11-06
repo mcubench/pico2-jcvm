@@ -23232,3 +23232,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: GP-01 GET DATA remains open for physical CCID and actual cold-power acceptance; continue offline on other work.
 - Commit: `2e94869d0c85bced870dbd2dc02ad678b469d758`
 - Artifacts/logs: APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261106T171545Z.log` SHA-256 `ea518d52c38ccf367c4277a152ff391ea332839d7b24163768110d03fa590d12`; restart `artifacts/logs/host-vpcd-multipackage-restart-20261106T171545Z.log` SHA-256 `59865183269121b34a1347af93153b00a540efea7187540f6ba3d891116a9ffe`; corrupt/missing sidecar rejection logs are in the same directory with hashes recorded during this session.
+
+## 2026-11-06 Verify library DELETE after removing importers 4 minutes
+
+- Step/experiment: `gp-delete-imported-library-cleanup-20261106`
+- When: '2026-11-06 18:25 CET' - '2026-11-06 18:29 CET'
+- Change: Extended the opt-in imported-library VPCD regression: after `6985` and a successful dependent service call, delete the client importer, delete the service importer, then retry DELETE of the library package. Updated TODO, QKB and handoff.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py`, scoped `git diff --check`, and elevated `SIO_CROSS_AID_TEST_DELETE_IMPORTED_PACKAGE=1 SIO_CROSS_AID_REUSE_FIXTURE=1 python3 -u tools/tests/sio_cross_aid_vpcd_test.py` passed. The first library DELETE returned `6985`; client and service DELETEs returned `9000`; library DELETE after removing both importers returned `9000`; `TEST:SUMMARY pass=2 fail=0`. PC/SC lists only Virtual PCD readers, so physical validation was skipped.
+- Result: Dependency enforcement follows the live loaded-package set and permits library removal after its importers are deleted. No firmware source changed.
+- Decision: Commit the focused regression and continue with offline priorities; repeat the flow on physical hardware when a Pico reader appears.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T172818Z.log` SHA-256 `f26cda758522bb0504a6bbf5040dec9b496c9e161a367e6b9ea537e8136079e0`.

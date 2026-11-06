@@ -1026,7 +1026,34 @@ def main() -> int:
                 print("TEST:PASS package DELETE was rejected with 6985 while "
                       "installed CAPs import it")
                 print("TEST:PASS dependent client and service remain usable")
-                print("TEST:SUMMARY pass=1 fail=0")
+                manager = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before deleting package importers"
+                )
+                if manager[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "SELECT ISD before dependency cleanup returned "
+                        f"{manager.hex().upper()}"
+                    )
+                cleanup_scp = vpcd.Scp03(connection)
+                cleanup_scp.authenticate()
+                for package_aid, label in (
+                    (client[1], "DELETE dependent client package"),
+                    (service[1], "DELETE dependent service package"),
+                ):
+                    vpcd.delete_object(cleanup_scp, package_aid, True, label)
+                response = vpcd.delete_object(
+                    cleanup_scp, contract[1], True,
+                    "DELETE library after removing all importers"
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "DELETE of an unreferenced library package returned "
+                        f"{response[-2:].hex().upper()}, expected 9000"
+                    )
+                print("TEST:PASS library DELETE succeeds after deleting all "
+                      "loaded importers")
+                print("TEST:SUMMARY pass=2 fail=0")
                 return 0
 
             def check_unrelated_applet(label: str) -> None:
