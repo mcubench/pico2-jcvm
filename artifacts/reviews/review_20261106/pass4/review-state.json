@@ -1,0 +1,12 @@
+{
+  "head": "44e0b5b82598508f800084a9076ad9e85df0a222",
+  "scope": "Source-only contract review; no implementation, test source, CAP or generated artifact changes; no build or hardware operations",
+  "findings": {
+    "R37": "EC initialization and ECDSA require optional K",
+    "R38": "Key-pair generation replaces caller-supplied exponent and EC parameters",
+    "R39": "CBC MAC finalization retains nonzero init IV",
+    "R40": "Reset clears crypto initialization/mode/output-length sidecars even with persistent keys"
+  },
+  "validation": "Control/data paths and checked-in API contracts inspected; proposed runtime cases not executed",
+  "performance": "No measurements"
+}

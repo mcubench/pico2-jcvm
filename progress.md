@@ -23307,3 +23307,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass3/` source hashes, state and two command/error manifests; raw logs are local and ignored, their hashes are in committed manifests.
 
 - Commit: `b315f47cd13e3de235cd5c4cd218aa0f0a0fd634` — completed `review-20261106-pass3`; this append resolves the pending SHA above. Scoped documentation/evidence commit only; 36 finding/TODO mappings and source hashes validated.
+
+
+## 2026-11-06 Review follow-up on native API contract and reset behavior 4 minutes
+
+- Step/experiment: `review-20261106-pass4`
+- When: '2026-11-06 22:19:30 CET' - '2026-11-06 22:23:01 CET'
+- Change: Added R37–R40 and four matching TODOs, bringing totals to 40; recorded source provenance and continuity notes. Extended existing R29 resource scope to EC key-pair curveA. Documentation/evidence only; no implementation, tests, CAP or generated source modified.
+- Validation: Inspected native key/EC/key-pair/MAC/Cipher lifecycle paths against checked-in API contracts. Inspected existing nonzero-IV and transient-reset test coverage. All 40 unique finding/TODO mappings, document links/anchors, pass4 JSON and 20 source hashes passed verification. No runtime cases, full builds or hardware operations run under this source-only review pass; proposed acceptance remains unexecuted.
+- Result: Four additional source-confirmed mismatches: optional EC K required, preinitialized generation parameters overwritten, nonzero CBC MAC IV reused after finalization, and persistent-key crypto initialization lost on reset. Existing transient-key rejection coverage does not establish persistent-key reset behavior. No performance/heap/security metrics measured.
+- Decision: Continue review-only; keep unsupported-domain rejection distinct from silently replacing parameters, and keep reset configuration separate from intermediate-state lifetime in future implementation tasks.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass4/source-sha256.txt` and `review-state.json`; no runtime logs generated this pass.

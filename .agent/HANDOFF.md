@@ -1,3 +1,21 @@
+# Current handoff — native API contract review R37–R40 — 2026-11-06 22:23:01 CET
+
+Review-only goal made progress: four additional source-confirmed findings and
+matching TODOs; report and lowercase todo now contain 40 each. No runtime,
+API implementation, tests, generated JNI or CAP changed. This pass inspected
+native APIs and the checked-in API contracts: optional EC K is required by
+initialization/ECDSA, genKeyPair overwrites preinitialized exponent/domain,
+CBC MAC finalization retains nonzero IV, and reset drops initialization for
+persistent-key Cipher/Signature objects. Extended R29's resource audit to EC
+key-pair curveA across vector allocation rather than duplicating the finding.
+
+Pass4 provenance is in `artifacts/reviews/review_20261106/pass4/`. No new
+runtime case/build/hardware operation was run; do not claim runtime reproduction.
+All 40 finding/task mappings, file links, anchors and source hashes checked.
+Prior pass's two emulator failures remain the latest runtime observations.
+Continue review-only under the active goal; implementation remains prohibited.
+Preserve all unrelated dirty files and earlier handoffs below.
+
 # Current handoff — review follow-up R32–R36 — 2026-11-06 22:19:12 CET
 
 Review-only scope remains mandatory: no implementation is authorized. Report
