@@ -7241,11 +7241,13 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   the declared pool count. The dynamic invocation path catches this as a
   failed applet operation; an explicit second bounds check is not needed for
   this build configuration. Revisit if array-size checks are disabled.
-- **Validation:** A generated JCAlgTest mutation replaces the start of
-  `process()` with complete `INVOKESTATIC 0xFFFF`, preserving the upstream CAP
-  hash. PC VPCD passes 6/6: malformed applet SELECT `6F00`, direct process
-  `6999`, and successful ISD FCI/`9000` before and after rejected reselect.
-- **Viable test pattern:** Use a full-width out-of-range index rather than a
-  truncated opcode so the test isolates ConstantPool lookup bounds. This
+- **Validation:** Generated JCAlgTest mutations replace the start of
+  `process()` with complete INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL, or
+  INVOKEINTERFACE instructions using CP index `0xFFFF`, preserving the
+  upstream CAP hash. All four PC VPCD variants pass 6/6: malformed applet
+  SELECT `6F00`, direct process `6999`, and successful ISD FCI/`9000` before
+  and after rejected reselect.
+- **Viable test pattern:** Use complete, opcode-specific operands and a
+  full-width out-of-range index rather than a truncated instruction. This
   validates the current emulator/configuration, not a sanitizer or physical
   card run.

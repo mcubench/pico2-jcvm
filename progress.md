@@ -22740,3 +22740,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Retain this regression. Continue auditing other CP lookup call paths and record that configurations without `JCVM_ARRAY_SIZE_CHECK` need separate review.
 - Commit: `d4e13a32`.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-invoke-static-cp-out-of-range-vpcd-20261106.log`, SHA-256 `9e362456b4abbdb994217dc03d8d16d12ed801f9388bb0853bb141c8c0391709`; generated LOAD data is under ignored `build/`.
+
+## 2026-11-06 Cover remaining invocation ConstantPool accessors 6 minutes
+
+- Step/experiment: `rv28-malformed-invoke-cp-opcodes-vpcd-20261106`
+- When: '2026-11-06 04:02 CET' - '2026-11-06 04:08 CET'
+- Change: Extended the malformed CAP generator to replace the process entry with complete INVOKEVIRTUAL, INVOKESPECIAL, and INVOKEINTERFACE instructions whose CP index is `0xFFFF`. The interface form includes its full nargs/index/method operands.
+- Validation: Each `PICO2_HOST_USB_ACCESS=1 python3 tools/tests/cap_malformed_vpcd_test.py --mutation ...` VPCD invocation passes 6/6. All reject applet SELECT with `6F00`, direct process with `6999`, and preserve ISD FCI/`9000` before and after rejected reselect. Python compile and scoped whitespace check pass. Upstream CAP SHA remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. No production build, sanitizer, or physical device test was needed for this test-only change.
+- Result: All four invocation forms route out-of-range CP accesses through bounds checking in the current `JCVM_ARRAY_SIZE_CHECK` build and emulator recovery remains functional.
+- Decision: Keep each opcode fixture because operand shapes and handler paths differ. Continue reviewing exception-handler catch CP lookup and no-array-check configurations.
+- Commit: pending.
+- Artifacts/logs: INVOKEVIRTUAL `artifacts/logs/rv28-malformed-invoke-virtual-cp-out-of-range-vpcd-20261106.log`, SHA-256 `26b90f308b99ee13a63b6ed17f8197afceb905dfc487f6dbae69374d994c540e`; INVOKESPECIAL `artifacts/logs/rv28-malformed-invoke-special-cp-out-of-range-vpcd-20261106.log`, SHA-256 `343caaa8861a9c4e69305fdfabd0f23ed4d7e848c46ce729ea8535da24f5407f`; INVOKEINTERFACE `artifacts/logs/rv28-malformed-invoke-interface-cp-out-of-range-vpcd-20261106.log`, SHA-256 `748292c82a82b6a9e200f1cb9a69b72e52c790811aa561785db4f3cf8f82f35f`. Generated LOAD data is under ignored `build/`.

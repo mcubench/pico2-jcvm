@@ -82,19 +82,22 @@ the other dirty worktree files; they were not part of these commits.
 ## Latest RV-28 call edge — out-of-range ConstantPool invocation operand
 
 Added `invoke-static-cp-out-of-range` to `tools/tests/cap_malformed_vpcd_test.py`.
-It replaces the generated process method start with the complete instruction
-`INVOKESTATIC 0xFFFF`; the source JCAlgTest CAP is still hash-verified and
-unchanged. PC VPCD passes 6/6 with SELECT `6F00`, process `6999`, and ISD
+It replaces the generated process method start with complete INVOKESTATIC,
+INVOKEVIRTUAL, INVOKESPECIAL, or INVOKEINTERFACE instructions using CP index
+`0xFFFF`; the source JCAlgTest CAP is still hash-verified and unchanged. All
+four PC VPCD variants pass 6/6 with SELECT `6F00`, process `6999`, and ISD
 recovery before and after applet reselect. The active `JCVM_ARRAY_SIZE_CHECK`
 configuration makes `JCVMArray::at()` reject the out-of-range CP slot. No
-explicit code change was needed. Log hash: `9e362456b4abbdb994217dc03d8d16d12ed801f9388bb0853bb141c8c0391709`.
+explicit code change was needed. Logs and hashes are in the latest progress
+entry.
 
 Next: audit the other method-call operands and catch-type CP lookups for
 runtime range protection; retain the distinction between validation from the
 current array-check configuration, no-check builds, sanitizers, and physical
 card behavior.
-This fixture/documentation step is committed as `d4e13a32`; its progress
-record contains the complete validation and log hash.
+The initial INVOKESTATIC case and audit are committed as `d4e13a32`; the
+remaining invocation variants are in progress and will be committed as a
+separate test-only step.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 

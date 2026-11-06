@@ -233,12 +233,24 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0x72, 0x00))
         if process_length < len(replacement):
             raise ValueError("process body is too short for RET fixture")
-    elif mutation == "invoke-static-cp-out-of-range":
+    elif mutation in (
+        "invoke-static-cp-out-of-range",
+        "invoke-virtual-cp-out-of-range",
+        "invoke-special-cp-out-of-range",
+        "invoke-interface-cp-out-of-range",
+    ):
         mutation_index = code_index
-        # The instruction is complete, but its CP index is outside the pool.
-        replacement = bytes((0x8D, 0xFF, 0xFF))
+        # Each instruction is complete, but its CP index is outside the pool.
+        if mutation == "invoke-static-cp-out-of-range":
+            replacement = bytes((0x8D, 0xFF, 0xFF))
+        elif mutation == "invoke-virtual-cp-out-of-range":
+            replacement = bytes((0x8B, 0xFF, 0xFF))
+        elif mutation == "invoke-special-cp-out-of-range":
+            replacement = bytes((0x8C, 0xFF, 0xFF))
+        else:
+            replacement = bytes((0x8E, 0x01, 0xFF, 0xFF, 0x00))
         if process_length < len(replacement):
-            raise ValueError("process body is too short for INVOKESTATIC fixture")
+            raise ValueError("process body is too short for invocation fixture")
     elif mutation == "itableswitch-into-operand":
         mutation_index = code_index
         # IIPUSH 0 then ITABLESWITCH; default and selected case target operand.
@@ -309,6 +321,9 @@ def main() -> int:
                                 "wide-conditional-branch-into-operand",
                                 "jsr-into-operand", "ret-non-return-address",
                                 "invoke-static-cp-out-of-range",
+                                "invoke-virtual-cp-out-of-range",
+                                "invoke-special-cp-out-of-range",
+                                "invoke-interface-cp-out-of-range",
                                 "itableswitch-into-operand",
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",
