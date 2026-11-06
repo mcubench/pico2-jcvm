@@ -23403,3 +23403,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass9/source-sha256.txt` and `review-state.json`; no runtime logs generated.
 
 - Commit: `1a22693b49fbfbc7ea2c616d071218c5233fa8d0` — completed `review-20261106-pass9`; this append resolves the pending SHA above. Documentation/provenance only; 56 finding/task mappings checked.
+
+- Attribution note for `review-20261106-pass9`: commit `1a22693b` also captured another session's concurrently added HANDOFF/progress records for `ctx01-typed-array-reject-foreign`. Those 35/35 VPCD results belong to that session, not to this review pass. Its implementation/test files were not staged by this review. The continuity records were preserved; future staging must isolate this review's hunks in shared logs.
