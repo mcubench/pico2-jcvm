@@ -386,6 +386,19 @@ def main() -> int:
                 print("TEST:PASS AID true/false results across SIO")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_JCSYSTEM") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("803C000000"),
+                    "JCSystem lookupAID/getAppletShareableInterfaceObject SensitiveResult"
+                )
+                if response != bytes.fromhex("6A8B9000"):
+                    raise RuntimeError(
+                        "JCSystem SensitiveResult returned "
+                        f"{response.hex().upper()}, expected 6A8B9000"
+                    )
+                print("TEST:PASS JCSystem lookupAID and shareable results")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("802C000000"),
@@ -625,6 +638,16 @@ def main() -> int:
                     "expected 6A319000"
                 )
             print("TEST:PASS AID partialEquals and equals true/false results across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("803C000000"),
+                "JCSystem lookupAID/getAppletShareableInterfaceObject SensitiveResult"
+            )
+            if response != bytes.fromhex("6A8B9000"):
+                raise RuntimeError(
+                    "JCSystem SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A8B9000"
+                )
+            print("TEST:PASS JCSystem lookupAID and shareable object results across SIO")
             response = vpcd.exchange(
                 connection, bytes.fromhex("802B000000"),
                 "propagate exact exception type and reason across SIO"

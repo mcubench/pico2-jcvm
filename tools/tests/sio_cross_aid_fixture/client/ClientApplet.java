@@ -53,6 +53,34 @@ public final class ClientApplet extends Applet {
     return probe.sensitiveAIDResults();
   }
 
+  private short checkSensitiveJCSystemResults() {
+    AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
+                                    (byte) SERVICE_AID.length);
+    if (server == null) return (short) 0x6A8C;
+    try {
+      SensitiveResult.assertEquals(server);
+    } catch (SecurityException missingLookupResult) {
+      return (short) 0x6A8D;
+    }
+    Shareable shareable = JCSystem.getAppletShareableInterfaceObject(
+        server, (byte) 0x5A);
+    if (shareable == null) return (short) 0x6A8E;
+    try {
+      SensitiveResult.assertEquals(shareable);
+    } catch (SecurityException missingShareableResult) {
+      return (short) 0x6A8F;
+    }
+    Shareable denied = JCSystem.getAppletShareableInterfaceObject(
+        server, (byte) 0x5B);
+    if (denied != null) return (short) 0x6A92;
+    try {
+      SensitiveResult.assertEquals(denied);
+      return (short) 0x6A8B;
+    } catch (SecurityException missingNullResult) {
+      return (short) 0x6A93;
+    }
+  }
+
   private short checkSensitiveGlobalArrayResult(Probe probe) {
     byte[] value = probe.sensitiveGlobalArrayResult();
     if (value == null || value.length != 1 ||
@@ -163,6 +191,13 @@ public final class ClientApplet extends Applet {
       return;
     }
     byte[] buffer = apdu.getBuffer();
+    if (buffer[1] == 0x3C) {
+      short result = checkSensitiveJCSystemResults();
+      buffer[0] = (byte) (result >> 8);
+      buffer[1] = (byte) result;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
     boolean denial_probe = buffer[1] == 0x11;
     Shareable shareable;
     if (buffer[1] == 0x16 || buffer[1] == 0x18 || buffer[1] == 0x19) {

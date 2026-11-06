@@ -102,6 +102,16 @@ public final class SioCrossAidPhysicalProbe {
       }
       System.out.println("SIO_PHYSICAL:PASS cross_aid_shareable");
 
+      response = channel.transmit(new CommandAPDU(hex("803C000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:JCSystemSensitiveResults response=" + actual);
+      if (!actual.equals("6A8B9000")) {
+        throw new AssertionError("JCSystem lookupAID and " +
+                                 "getAppletShareableInterfaceObject " +
+                                 "SensitiveResult assertions should pass " +
+                                 "with 6A8B9000, got " + actual);
+      }
+
       response = channel.transmit(new CommandAPDU(hex("801A000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:privateArrayFirewall response=" + actual);

@@ -931,6 +931,7 @@ void Bytecodes::bc_invokestatic() {
   // Calling the method
   if (intercept_shareable_lookup) {
     constexpr uint8_t expected_arguments = 2;
+    context.resetSensitiveResult();
     if (method_handler.getArgumentCount(method_offset) !=
         expected_arguments) {
       throw Exceptions::SecurityException;
@@ -939,8 +940,10 @@ void Bytecodes::bc_invokestatic() {
         stack.get_Pushed_Reference(expected_arguments);
     const int8_t parameter = static_cast<int8_t>(stack.pop_Byte());
     (void)stack.pop_Reference();
-    stack.push_Reference(choupi_vm_get_applet_shareable_interface_object(
-        context, client_aid, parameter));
+    const jref_t shareable = choupi_vm_get_applet_shareable_interface_object(
+        context, client_aid, parameter);
+    context.setSensitiveResultObject(shareable);
+    stack.push_Reference(shareable);
     return;
   }
   if (intercept_util_non_atomic != 0) {
