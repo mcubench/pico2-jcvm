@@ -22773,3 +22773,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep this focused catch-dispatch regression. Continue with malformed handler entry bounds and sanitizer/physical hostile-CAP recovery; do not treat this emulator result as physical validation.
 - Commit: `0443d57e`.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-exception-catch-cp-out-of-range-vpcd-20261106.log`, SHA-256 `e5c72c2245565b7709c74f707fa7f6c92dc53fddbea4c6c0a03eebf7e8fa5f70`; generated LOAD code is under ignored `build/`.
+
+## 2026-11-06 Reject malformed exception-handler operand targets 9 minutes
+
+- Step/experiment: `rv28-exception-handler-target-boundary-vpcd-20261106`
+- When: '2026-11-06 04:42 CET' - '2026-11-06 04:51 CET'
+- Change: `Bytecodes::doThrow()` now transfers to an exception handler with the current frame's bounded PC and decoded instruction-start validation. Added a generated malformed CAP with a catch-all handler offset into the operand byte of `INVOKESTATIC`; the upstream CAP remains unchanged.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc --profile current` passed. The instruction-boundary ASan/UBSan helper passed 13/13 including 100,000 deterministic malformed inputs. The new VPCD case passes 6/6: applet SELECT `9000`, process APDU `6F00`, ISD and applet reselection recover, and ISD remains selectable. The neighboring out-of-range catch CP case passes 6/6. Unchanged upstream JCAlgTest positive VPCD regression passes 15/15. Python compile and scoped CRLF-aware diff check pass. No physical device was used and malformed CAP recovery on hardware remains unverified.
+- Result: Before the guard, the malformed handler resumed at a CP operand and the process APDU returned `9000`; after the guard, it fails closed with `6F00` and the card manager remains usable. ARM image remains inside the firmware window; build reported 178,040 bytes remaining.
+- Decision: Retain the common PC boundary check for handler dispatch and continue auditing malformed exception table range semantics. Do not claim physical hostile-CAP acceptance.
+- Commit: `52f51fe1`.
+- Artifacts/logs: operand-target VPCD `artifacts/logs/rv28-malformed-exception-handler-target-into-operand-vpcd-20261106.log`, SHA-256 `b983d2d6075ce4906b51d3efa764d4d93de9fb65b04f904f5e1574e33628dbf0`; catch CP `artifacts/logs/rv28-malformed-exception-catch-cp-out-of-range-vpcd-20261106.log`, SHA-256 `d833845ddc20c1472ba3ba029de1d8465e405b86a9d295e47bf77cb0a28a4162`; JCAlgTest positive `artifacts/logs/rv28-handler-target-jcalgtest-vpcd-20261106.log`, SHA-256 `04b91445db773daf1a4db94c5f92033cdf6e09279f425b3480cfe9592f57852d`.

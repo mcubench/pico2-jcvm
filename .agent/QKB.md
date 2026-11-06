@@ -7278,3 +7278,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   mutate the catch index in the Method component's handler table. SELECT alone
   does not execute this process path. This is emulator evidence only; physical
   hostile-CAP and sanitizer runtime checks remain open.
+
+## Exception-handler target into bytecode operand — 2026-11-06
+
+- **Issue:** `Bytecodes::doThrow()` checked that the Method-component handler
+  offset was within the component, then assigned the pointer directly to the
+  frame PC. A malformed catch-all handler could target an operand byte inside
+  a dynamic method. Reproducer: `exception-handler-target-into-operand` changes
+  the process start to `INVOKESTATIC 0`, sets catch type to catch-all, and
+  targets the first operand byte. Before the fix, the process APDU returned
+  `9000` after resuming at that byte.
+- **Viable solution:** Transfer with `pc_t::setBranchFromOffset(target, 0,
+  true)`. This validates both the current frame bounds and decoded instruction
+  starts before execution. After the fix, the same APDU fails closed with
+  `6F00`; manager and applet reselection recovery pass in PC VPCD. The upstream
+  JCAlgTest regression remains 15/15. ARM, RISC-V, and PC builds pass.
+- **Limits:** This is emulator/runtime regression evidence only. No malformed
+  CAP was installed on physical hardware; hostile-CAP recovery on Pico remains
+  open.

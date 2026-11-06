@@ -1182,3 +1182,5 @@ Full original checklists, measurements, image hashes and exceptions remain in
 Do not apply an old firmware hash or an older physical pass to a newly rebuilt
 artifact. Generated capability manifests describe selection; measured test
 results establish behavior. Keep validation limitations attached to both.
+
+  Update 2026-11-06: Exception-handler dispatch now validates uploaded handler offsets against the current frame and decoded instruction starts. A generated catch-all handler targeting an INVOKESTATIC operand previously let the process APDU return `9000`; it now fails closed with `6F00`, and manager/app selection recovery passes VPCD 6/6. Out-of-range catch CP regression also passes 6/6. PC/ARM/RISC-V builds and the unchanged JCAlgTest positive VPCD regression pass; no physical hostile-CAP test was run.

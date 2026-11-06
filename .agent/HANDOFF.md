@@ -1,4 +1,11 @@
-# Active handoff — malformed exception-handler catch CP runtime case — 2026-11-06 04:37 CET
+# Active handoff — exception-handler target boundary — 2026-11-06 04:51 CET
+
+## Latest continuation — handler target into an operand rejected
+
+The runtime previously accepted an active catch-all handler whose offset pointed into an INVOKESTATIC operand. Its process APDU returned `9000`. `Bytecodes::doThrow()` now transfers through the current frame PC bounds and decoded instruction-start check. The generated regression now returns `6F00` for the malformed process and confirms ISD/applet reselection recovery (6/6). The neighboring out-of-range catch CP case also passes 6/6. ARM, RISC-V and PC builds pass; unchanged upstream JCAlgTest VPCD passes 15/15. Instruction-boundary sanitizer helper passes 13/13 with 100,000 malformed inputs. No physical hostile-CAP test was run. Source/test commit: `52f51fe1`; progress and knowledge-base metadata are recorded after it.
+
+Next: continue reviewing malformed exception table range/entry semantics; keep physical hostile-CAP recovery explicitly open.
+
 
 ## Critical continuation — extended method header was one byte overestimated
 
@@ -124,12 +131,9 @@ incorrectly expected SELECT to execute the process method; correcting that
 expectation produced the full passing recovery sequence. Log SHA-256:
 `e5c72c2245565b7709c74f707fa7f6c92dc53fddbea4c6c0a03eebf7e8fa5f70`.
 
-Next: add this case to TODO/QKB/progress and commit it. Then continue auditing
-malformed exception-handler entries and test runtime containment separately
-from PC VPCD and physical acceptance. No malformed CAP has been installed on
-physical hardware.
-The fixture and knowledge-base step is committed as `0443d57e`; progress
-metadata follow-up is pending.
+Historical note: the catch-index fixture and knowledge-base step was committed
+as `0443d57e`; its progress metadata follow-up is complete. The operand-target
+runtime fix and adjacent invalid-target regression are recorded above.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
