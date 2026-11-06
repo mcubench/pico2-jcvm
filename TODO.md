@@ -858,6 +858,11 @@ source-based follow-ups, without a new physical reproduction in this review.
   rebuilt `symm_crypto` PC VM. Its AES-MAC Signature cases are not supported by
   `current`, which correctly returns `CryptoException.NO_SUCH_ALGORITHM`; use
   `symm_crypto` or `max_crypto` for this suite.
+  Native `KeyBuilder.buildKey()` overloads now clear stale results at entry and
+  publish the created key object only after construction succeeds. An
+  interpreted SIO case asserts the successful key identity and verifies an
+  invalid key type clears the previous object result. Focused and full VPCD
+  coverage pass; PC, ARM and RISC-V builds pass. No physical device was used.
   Remaining: exercise other result producers (PIN, random-data,
   checksum, AEAD and key APIs where enabled), verify GC rooting of object
   results after ordinary locals are dropped through interpreted SIO, and

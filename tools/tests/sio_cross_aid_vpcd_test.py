@@ -308,6 +308,25 @@ def main() -> int:
                 print("TEST:PASS isolated AES-MAC Signature SIO assertion")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_KEYBUILDER") == "1":
+                for command, expected, description in (
+                    ("8032000000", "6A739000",
+                     "KeyBuilder success records its created key"),
+                    ("8033000000", "6A759000",
+                     "failed KeyBuilder clears the stale object result"),
+                ):
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex(command), description
+                    )
+                    if response != bytes.fromhex(expected):
+                        raise RuntimeError(
+                            f"{description} returned {response.hex().upper()}, "
+                            f"expected {expected}"
+                        )
+                print("TEST:PASS KeyBuilder publishes successful object result "
+                      "and clears stale result on failure")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("802C000000"),
@@ -467,6 +486,26 @@ def main() -> int:
                 )
             print("TEST:PASS interpreted JCSystem.makeGlobalArray result "
                   "is assertable after the SIO context switch")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8032000000"),
+                "KeyBuilder success records its created key"
+            )
+            if response != bytes.fromhex("6A739000"):
+                raise RuntimeError(
+                    "KeyBuilder SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A739000"
+                )
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8033000000"),
+                "failed KeyBuilder clears stale object result"
+            )
+            if response != bytes.fromhex("6A759000"):
+                raise RuntimeError(
+                    "failed KeyBuilder SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A759000"
+                )
+            print("TEST:PASS KeyBuilder publishes successful object result and "
+                  "clears stale result on failure")
             response = vpcd.exchange(
                 connection, bytes.fromhex("802B000000"),
                 "propagate exact exception type and reason across SIO"

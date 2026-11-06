@@ -22849,3 +22849,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Deliver the review; implementation priorities and acceptance gates remain unchanged.
 - Commit: Resolve the exact SHA with `git log -1 --format=%H -- docs/CTO_PROGRESS_REVIEW_20261106.md` (a commit cannot embed its own hash).
 - Artifacts/logs: `docs/CTO_PROGRESS_REVIEW_20261106.md`; no new runtime logs.
+
+## 2026-11-06 KeyBuilder SensitiveResult across SIO 6 minutes
+
+- Step/experiment: `ctx02-keybuilder-sensitive-result-20261106`
+- When: '2026-11-06 05:19 UTC' - '2026-11-06 05:25 UTC'
+- Change: Both native `KeyBuilder.buildKey()` overloads now reset stale SensitiveResult before validation/construction and publish the returned key object only after successful construction. Added interpreted three-package SIO APDUs proving successful object identity and result clearing after an invalid key type. Updated CTX-02 and session handoff.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc --profile symm_crypto` passed. `SIO_CROSS_AID_ONLY_KEYBUILDER=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed 1/1. Full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed 34/34. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped CRLF-aware `git diff --check` passed. No physical device used.
+- Result: The SIO caller can assert the constructed key identity; invalid construction leaves no stale object result. No ARM size delta was captured for this step.
+- Decision: Continue CTX-02 with other native result producers and later add an object-rooting/GC SIO case; physical acceptance remains outstanding.
+- Commit: pending.
+- Artifacts/logs: focused `artifacts/logs/sio-cross-aid-vpcd-20261106T052220Z.log`, SHA-256 `46d7ce6ffaf930e1ab52ac72ae49685d3a151ab5df2c2edc07b373a04e70dc99`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T052256Z.log`, SHA-256 `def9f6dbb967b3df15eb2a6ea1679e18ab6c2b897a4aabadc48b0d34ad1af4bf`.

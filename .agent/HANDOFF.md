@@ -1,5 +1,29 @@
 # Active handoff — SIO SensitiveResult profile validation — 2026-11-06 06:11 CET
 
+## Latest continuation — KeyBuilder SensitiveResult results
+
+Both native `KeyBuilder.buildKey()` overloads in `choupi/src/native_key.cpp`
+now clear stale SensitiveResult state before validation/construction and publish
+the returned key object only on success. The interpreted three-package SIO
+fixture proves that the caller can assert the created key identity and that an
+invalid key type leaves the result unassigned. Focused VPCD passes 1/1; full
+cross-AID VPCD passes 34/34. PC `symm_crypto`, ARM `current`, and RISC-V
+`current` builds pass. Python syntax and CRLF-aware scoped diff checks pass.
+No physical device was used.
+
+Implementation/test commit and metadata follow-up are recorded in `progress.md`
+after commit completion. Logs: focused
+`artifacts/logs/sio-cross-aid-vpcd-20261106T052220Z.log` (SHA-256
+`46d7ce6ffaf930e1ab52ac72ae49685d3a151ab5df2c2edc07b373a04e70dc99`), full
+`artifacts/logs/sio-cross-aid-vpcd-20261106T052256Z.log` (SHA-256
+`def9f6dbb967b3df15eb2a6ea1679e18ab6c2b897a4aabadc48b0d34ad1af4bf`).
+
+Next: continue CTX-02 with other native result producers (PIN, random-data,
+checksum, AEAD and remaining key APIs), then test object-result GC rooting
+through interpreted SIO after ordinary locals are dropped. Preserve unrelated
+dirty files; do not claim physical validation without flashing and a finite
+serial log.
+
 `JCSystem.makeGlobalArray()` now clears stale `SensitiveResult` state and
 publishes the returned global array as an object result in native
 `choupi/src/jni.cpp`. The interpreted three-package fixture returns a global

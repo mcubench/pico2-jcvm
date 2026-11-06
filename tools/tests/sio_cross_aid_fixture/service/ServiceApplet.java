@@ -204,6 +204,32 @@ public final class ServiceApplet extends Applet implements Probe {
     return result;
   }
 
+  public short sensitiveKeyBuilderResult() {
+    AESKey key = (AESKey) KeyBuilder.buildKey(
+        KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+    try {
+      SensitiveResult.assertEquals(key);
+      return (short) 0x6A73;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) 0x6A74;
+    }
+  }
+
+  public short sensitiveFailedKeyBuilderResult() {
+    AID own = JCSystem.getAID();
+    try {
+      KeyBuilder.buildKey((byte) 0x7F, KeyBuilder.LENGTH_AES_128, false);
+      return (short) 0x6A76;
+    } catch (CryptoException unsupportedKeyType) {
+      try {
+        SensitiveResult.assertEquals(own);
+        return (short) 0x6A77;
+      } catch (SecurityException staleSensitiveResultCleared) {
+        return (short) 0x6A75;
+      }
+    }
+  }
+
   public short sensitiveFailedCopy() {
     byte[] source = { 0x12, 0x34 };
     byte[] destination = { 0, 0 };

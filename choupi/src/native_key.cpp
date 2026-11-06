@@ -432,14 +432,24 @@ jshort_t getEcComponent(JC_Instance &key, uint16_t component,
 
 jref_t javacard_security_KeyBuilder_buildKey(jbyte_t type, jshort_t length,
                                               jbool_t encrypted) {
-  return buildNativeKey(static_cast<uint8_t>(type), static_cast<uint16_t>(length),
-                        encrypted != FALSE);
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
+  const jref_t result = buildNativeKey(static_cast<uint8_t>(type),
+                                       static_cast<uint16_t>(length),
+                                       encrypted != FALSE);
+  context.setSensitiveResultObject(result);
+  return result;
 }
 jref_t javacard_security_KeyBuilder_buildKey(jbyte_t algorithm, jbyte_t memory,
                                               jshort_t length, jbool_t encrypted) {
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   const uint8_t type = typeForAlgorithm(static_cast<uint8_t>(algorithm),
                                         static_cast<uint8_t>(memory));
-  return buildNativeKey(type, static_cast<uint16_t>(length), encrypted != FALSE);
+  const jref_t result =
+      buildNativeKey(type, static_cast<uint16_t>(length), encrypted != FALSE);
+  context.setSensitiveResultObject(result);
+  return result;
 }
 
 jbool_t javacard_security_NativeKey_isInitialized(jref_t receiver) {

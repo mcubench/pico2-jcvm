@@ -308,6 +308,10 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).validateNonAtomicUtil();
     } else if (buffer[1] == 0x30) {
       result = checkSensitiveGlobalArrayResult((Probe) shareable);
+    } else if (buffer[1] == 0x32) {
+      result = ((Probe) shareable).sensitiveKeyBuilderResult();
+    } else if (buffer[1] == 0x33) {
+      result = ((Probe) shareable).sensitiveFailedKeyBuilderResult();
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();
