@@ -1,23 +1,27 @@
-# Current handoff — positive-depth dup_x VM instruction — 2026-11-06 23:18 CET
+# Current handoff — positive-depth dup_x VM instruction — 2026-11-06 23:29 CET
 
 Commit `6fb521d58aabd98bb29593f70f9b14e4817b6896` fixes positive-depth
 `dup_x`: only the top M words are copied, the top N words are shifted, and
-word-kind/reference-owner metadata is preserved. The int and no-int operand
-range checks now use the specification's inclusive upper bound; the prior
-no-int check accidentally accepted invalid values.
+word-kind/reference-owner metadata is preserved. Operand validation now uses
+the specification's inclusive N bounds. The follow-up regression enumerates
+every legal M/N pair for this build and validates a 32-bit int-pair case.
+`./tools/test-rmi-registry` passes with `stack_dup_x=1`; ARM and RISC-V builds
+pass.
 
-`./tools/test-rmi-registry` passes with `stack_dup_x=1`; `./tools/build arm`
-and `./tools/build riscv` pass. The test covers M=1/N=2 and M=2/N=3 ordering,
-reference-owner preservation, underflow/overflow, and maximum legal/invalid
-bounds. No hardware was flashed. This is direct stack-unit coverage, not
-CAP-to-interpreter coverage; RV-20261106-60 remains open until a CAP exercises
-the handler and legal operand permutations are covered, including int pairs
-when enabled.
+The attempted `./tools/test-rmi-arrays-vpcd` run fails during applet install:
+`stage=5 sw=6A80 vm=6F00`, before VPCD connects. A debug run confirms the
+currently generated ROM `Dispatcher.addService` bytecode does not contain
+`dup_x`, so this is not opcode execution evidence. It is an unrelated applet
+instance persistence failure and must not be attributed to this change. The
+first VPCD attempt was sandbox-blocked at localhost socket creation; the same
+test was rerun with host access. No USB device was accessed or flashed.
 
-Continue from R60 by adding a generated CAP/interpreter fixture for positive
-depth `dup_x`, then validate and commit it separately. Preserve all unrelated
-worktree/review changes. The implementation/progress entry is in
-`progress.md`; the implementation source commit is `6fb521d5`.
+The exhaustive stack-test extension is committed as `7141905d`. Its progress
+record captures both the passing unit test and the failed/insufficient VPCD
+attempt. Next create a test-only CAP fixture whose interpreted method contains
+`dup_x` with positive N, prove the handler ran and assert its result. Preserve
+all unrelated review/worktree changes. RV-20261106-60 remains open until the
+CAP-to-interpreter case passes.
 
 # Current handoff — foreign-array GC review R59 — 2026-11-06 22:51:33 CET
 

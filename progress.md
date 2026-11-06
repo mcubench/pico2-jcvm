@@ -23472,3 +23472,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass11/review-state.json`, `source-sha256.txt`, local ignored `rmi-registry.log` with committed SHA-256/outcome markers.
 
 - Commit: `2cadec2f391327223f1b7ea93d0dc8e83bcee536` — completed `review-20261106-pass11`; this append resolves the pending SHA above. Review documents/evidence only; existing normal-root test passed, new cycle case unexecuted.
+
+## 2026-11-06 Expand dup_x legal-form regression and investigate interpreter fixture 11 minutes
+
+- Step/experiment: `rv-20261106-60-dup-x-coverage`
+- When: '2026-11-06 23:18 CET' - '2026-11-06 23:29 CET'
+- Change: Extended the `dup_x` stack regression to iterate every legal M/N pair for the configured int-support build and added a 32-bit int-pair ordering check. Investigated a VPCD fixture that appeared to exercise the opcode.
+- Validation: `./tools/test-rmi-registry` passed with `stack_dup_x=1`; scoped `git diff --check` passed. `CHOUPI_JCVM_DEBUG=ON ./tools/build-pc` passed. `./tools/test-rmi-arrays-vpcd` failed on applet install with `stage=5 sw=6A80 vm=6F00` before VPCD connection. Debug trace and generated `build/choupi-pc/javacard-api/javacard/framework/service/javacard/service.jca` show the current `Dispatcher.addService` bytecode does not execute `dup_x`; this fixture is not opcode coverage. A restricted localhost-socket attempt failed with `Operation not permitted`; rerun with host access reached the same applet-install failure. No USB or physical device was accessed.
+- Result: All legal stack-unit forms and int-pair values pass. The VPCD failure is not yet attributed to this change and must not be counted as a `dup_x` result. No firmware size or performance metric was collected.
+- Decision: Keep RV-20261106-60 open. Create a test-only CAP whose actual interpreted bytecode invokes positive-depth `dup_x`; separately diagnose the RMI fixture's applet persistence failure if it blocks later coverage.
+- Commit: pending; exact SHA will be appended after the scoped test commit.
+- Artifacts/logs: `artifacts/logs/dup-x-debug-install-20261106T2318.log`; build logs `artifacts/logs/build-arm-rmi-arrays-20261106T222222Z.log` and `artifacts/logs/build-pc-rmi-arrays-20261106T222222Z.log`; unit test output in terminal only.
+
+## 2026-11-06 Record dup_x coverage commit resolution 1 minute
+
+- Step/experiment: `rv-20261106-60-dup-x-coverage-commit`
+- When: '2026-11-06 23:29 CET' - '2026-11-06 23:30 CET'
+- Change: Committed the expanded legal-form/int-pair regression separately and updated the active handoff with the next interpreter-fixture action.
+- Validation: No additional test run; the prior `./tools/test-rmi-registry` pass and its unmodified output are recorded in the preceding step.
+- Result: The test source is committed; unrelated review worktree files remain unstaged.
+- Decision: Continue with a generated CAP test method that executes positive-depth `dup_x` through the interpreter.
+- Commit: `7141905ddb2ff2b8a0245fd24bf8ab27b2a15dc3` — regression source; documentation follow-up commit pending.
+- Artifacts/logs: Same logs and test evidence listed in the preceding step.
