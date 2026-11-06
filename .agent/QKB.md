@@ -7654,3 +7654,16 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Evidence:** `artifacts/reviews/review_20261106/pass2/review-state.json`
   records the local raw-log hash. R22–R31 remain source-confirmed findings, not
   runtime-reproduced outcomes. Continue to preserve this pre-existing fixture.
+
+
+## Emulator errors can report successful process status — 2026-11-06
+
+- **Observed:** Existing hashed PC binary returned exit 0 both after storage
+  initialization refusal and after VPCD `Connection refused`. Startup C++/Rust
+  context status and transport status are discarded at different boundaries.
+- **Evidence:** `artifacts/reviews/review_20261106/pass3/connection-failure.json`
+  and `connection-refused.json`; report R32. Local sockets only, no hardware.
+- **Interim evidence rule:** Do not treat process exit 0 alone as proof that
+  the emulator started, connected or saved successfully; verify actual service
+  outcomes and error output. This is an evidence precaution, not a tested fix.
+  No robust implementation solution was applied under review-only scope.

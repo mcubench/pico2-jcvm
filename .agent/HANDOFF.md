@@ -1,3 +1,23 @@
+# Current handoff — review follow-up R32–R36 — 2026-11-06 22:19:12 CET
+
+Review-only scope remains mandatory: no implementation is authorized. Report
+`docs/review_20261106.md` and lowercase `todo.md` now contain 36 findings/tasks.
+This pass added emulator failure-status loss (observed twice), shared build
+publication without standalone PC locking, serial-only flash target fallback,
+mixed-reader power-up evidence and physical/VPCD power-off callback mismatch.
+
+Two local-socket attempts used the existing hashed emulator binary, with no
+fresh build, USB/PCSC, flash or saved image. Storage startup failure and VPCD
+connection refusal both incorrectly exited 0. These are failed acceptance
+checks, not passing startup tests. See committed pass3 manifests for commands,
+errors and binary/source hashes; raw logs are local and ignored. R33–R36 are
+source-confirmed, with proposed validation unexecuted. All 36 finding/task
+mappings and documentation links were checked. No performance measurements.
+
+Preserve all unrelated dirty source, fixture, submodule and artifact changes.
+Continue review-only if requested; do not fix listed defects under this task.
+Earlier implementation handoffs and physical blockers remain below.
+
 # Current handoff — review follow-up R22–R31 — 2026-11-06 22:11:12 CET
 
 Review-only goal remains active. User explicitly prohibits implementation.

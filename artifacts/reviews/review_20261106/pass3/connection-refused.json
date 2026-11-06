@@ -1,0 +1,25 @@
+{
+  "command": [
+    "build/choupi-pc/choupi",
+    "--memory",
+    "build/review-20261106-pass3-connect.bin",
+    "--rom-mask",
+    "build/choupi-pc/flash",
+    "--vpcd",
+    "127.0.0.1:41067",
+    "--applet-aid",
+    "4A43416C675465737431",
+    "--package-id",
+    "63",
+    "--cap-code",
+    "build/algtest-v182-load-code.bin"
+  ],
+  "exit": 0,
+  "seconds": 4.866,
+  "test": "Valid existing CAP template metadata, connection to a bound non-listening loopback socket",
+  "binary_sha256": "35ea60906df426431cdb8adcba15c74d93f51999f5f90aea13e48b0b7d4e856c",
+  "log_sha256": "c9a1f7c9f14375e6251451e647497da20733573456b583a7a09724d67dd183d0",
+  "observed_error": "ERROR connecting to vpcd endpoint 127.0.0.1:41067: Connection refused",
+  "interpretation": "Transport failure incorrectly returned process exit 0; this is a failed acceptance check",
+  "rom_sha256": "712c862529dbc9c66e4ce84c72d2b6a09983b96a31d82d18182dc93aa5096cdd"
+}

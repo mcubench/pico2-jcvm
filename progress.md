@@ -23293,3 +23293,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass2/source-sha256.txt` and `review-state.json`; local ignored `persistence-probes.log` hash recorded in the manifest. Hardware throughput/latency/peak memory/security metrics not measured.
 
 - Commit: `be74e73139880296aeb9e87bf990602c223f9729` — completed `review-20261106-pass2`; this append resolves the pending SHA above. Review documents/TODOs, continuity notes and evidence manifests only; no implementation changes.
+
+
+## 2026-11-06 Review follow-up on host failures and device attribution 8 minutes
+
+- Step/experiment: `review-20261106-pass3`
+- When: '2026-11-06 22:12:17 CET' - '2026-11-06 22:19:12 CET'
+- Change: Added R32–R36 and five matching lowercase TODO items, bringing each to 36; updated continuity/QKB and committed-evidence manifests. Documentation/evidence only; preserved unrelated worktree edits and changed no implementation, CAP, generated file or test source.
+- Validation: Two existing-binary local emulator attempts produced storage startup failure and connection refusal but both exited 0 (1.706 and 4.866 seconds). These are failed acceptance checks. Source inspection confirmed status loss through C++/Rust, build-pc lock bypass, serial fallback, mixed-reader evidence and physical/VPCD callback mismatch. All 36 finding/TODO mappings, anchors, file links, JSON and pass3 source hashes passed inspection. Full builds, hardware operations and proposed new regression cases intentionally skipped under review-only scope.
+- Result: Five additional prioritized findings with explicit evidence limits. Binary SHA-256 `35ea60906df426431cdb8adcba15c74d93f51999f5f90aea13e48b0b7d4e856c`; no assertion that this existing binary includes every reviewed dirty source edit. No firmware/APDU latency, throughput or peak-memory metric measured.
+- Decision: Keep implementation separate from review; acceptance must propagate failures and attribute results to one positively identified device. Existing deadlines documentation correction is included under R21 rather than duplicated.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass3/` source hashes, state and two command/error manifests; raw logs are local and ignored, their hashes are in committed manifests.

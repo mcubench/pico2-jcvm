@@ -1,0 +1,16 @@
+{
+  "head": "b7da0e7d5dcafdbd1613e62cccc3d9287d76d9ee",
+  "scope": "Review-only; existing binary and local sockets; no USB/PCSC, flash, source/test/CAP changes or fresh build",
+  "observations": [
+    "storage initialization failure returned exit 0",
+    "VPCD connection refused returned exit 0"
+  ],
+  "source_findings": [
+    "shared generation directory lacks build-pc locking",
+    "explicit serial selector falls through to unrelated sole board",
+    "power-up phases do not pin the same reader",
+    "physical POWER_OFF invokes applet deselect unlike VPCD"
+  ],
+  "binary_provenance": "Existing binary hash recorded in each attempt; not asserted to be a fresh build of the reviewed worktree",
+  "performance": "Elapsed orchestration times only; no APDU/firmware performance measurements"
+}

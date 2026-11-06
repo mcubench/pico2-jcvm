@@ -1,0 +1,23 @@
+{
+  "command": [
+    "build/choupi-pc/choupi",
+    "--memory",
+    "build/review-20261106-pass3-empty.bin",
+    "--rom-mask",
+    "build/choupi-pc/flash",
+    "--vpcd",
+    "127.0.0.1:56273",
+    "--applet-aid",
+    "A000000151000001",
+    "--resume"
+  ],
+  "exit": 0,
+  "seconds": 1.706,
+  "test": "Connect to a bound, non-listening loopback socket; connection failure must be nonzero",
+  "binary_sha256": "35ea60906df426431cdb8adcba15c74d93f51999f5f90aea13e48b0b7d4e856c",
+  "rom_sha256": "712c862529dbc9c66e4ce84c72d2b6a09983b96a31d82d18182dc93aa5096cdd",
+  "log_sha256": "ce9dd1a5d0ea6eeee5ebdff4a4650bc20395ece17e380168998b6a0bf9b8a4c2",
+  "transport_connection_reached": false,
+  "observed_error": "--applet-aid is absent from the restored registry; PC storage initialization failed",
+  "interpretation": "Failure status was lost before reaching transport; this is a storage-startup exit-status observation"
+}
