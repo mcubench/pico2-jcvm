@@ -1,4 +1,28 @@
-# Active handoff — atomic Util SensitiveResult SIO — 2026-11-06 11:50 CET
+# Active handoff — SensitiveResult.reset across SIO — 2026-11-06 11:56 CET
+
+## Latest continuation — caller reset lifecycle tested
+
+Added APDU `803E000000`: the client receives a `Util.arrayCopyNonAtomic`
+SensitiveResult through SIO, asserts it, calls `SensitiveResult.reset()`, then
+verifies another assertion throws `SecurityException`. Focused VPCD passes
+1/1 and full cross-AID VPCD passes 34/34. Test commit: `17950d66`.
+
+The physical exact-reader probe now also includes `803E`, but physical
+validation is still blocked before card traffic: USB enumerates three Pico
+devices with CCID descriptors while `pcsc_scan -r` lists only VPCD readers.
+The probe compiled with `./tools/env javac`; no firmware code changed.
+
+Focused log `artifacts/logs/sio-cross-aid-vpcd-20261106T105304Z.log`, SHA-256
+`99f2f9819ec209e3b31e7dd9fb970fafe6502fe6be2c268b19f902113652cec3`; full log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T105336Z.log`, SHA-256
+`032aa65b9ad2f4b01c5a30f12147e08d5d7f218c639bd3ea3f593dbd588cc1c3`.
+
+Next: continue high-priority native runtime work offline. Retry physical APDUs
+after a Pico appears in `pcsc_scan -r`.
+
+---
+
+# Previous handoff — atomic Util SensitiveResult SIO — 2026-11-06 11:50 CET
 
 ## Latest continuation — atomic Util results asserted across SIO
 

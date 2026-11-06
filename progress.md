@@ -22970,3 +22970,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Current supported SensitiveResult producers now have interpreted SIO test coverage for atomic Util as well as the preceding API paths. Continue high-priority offline runtime work and resume physical checks when a Pico reader reappears in PC/SC.
 - Commit: `d37ca778` (test fixture; documentation follows).
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T104555Z.log`, SHA-256 `a6d4af2d1f7f1f4abbd25209293cfde06c3e5d292a06f71fb10b5c2cd778e943`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T104628Z.log`, SHA-256 `c95c5b8220d1f3671a6ced468e750023e257debb582ce3106ad625ed8ad7209d`.
+
+## 2026-11-06 SensitiveResult caller reset after SIO 6 minutes
+
+- Step/experiment: `ctx02-sensitive-result-reset-sio-20261106`
+- When: '2026-11-06 10:50 UTC' - '2026-11-06 10:56 UTC'
+- Change: Added client-side SIO coverage that asserts the service's successful `Util.arrayCopyNonAtomic()` result, calls public `SensitiveResult.reset()`, and verifies the same result is now unassigned. Added physical probe APDU `803E` for this lifecycle check.
+- Validation: Focused `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_RESET=1 ./tools/test-sio-cross-aid-vpcd` passed 1/1; full cross-AID VPCD passed 34/34. Physical probe compiles with `./tools/env javac`; Python syntax and scoped diff checks pass. No firmware source changed. No physical test was run because no Pico reader appears in PC/SC.
+- Result: The SIO caller retains the service result until it explicitly resets the global result channel, after which the assertion fails as specified. Physical validation remains pending host reader registration.
+- Decision: Continue offline on high-priority native tasks; run the prepared physical probe when `pcsc_scan -r` lists a Pico.
+- Commit: `17950d66` (test fixture; documentation follows).
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T105304Z.log`, SHA-256 `99f2f9819ec209e3b31e7dd9fb970fafe6502fe6be2c268b19f902113652cec3`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T105336Z.log`, SHA-256 `032aa65b9ad2f4b01c5a30f12147e08d5d7f218c639bd3ea3f593dbd588cc1c3`.
