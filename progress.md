@@ -23349,3 +23349,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass6/source-sha256.txt` and `review-state.json`; no runtime logs produced.
 
 - Commit: `4df2f294fc494043454e842fa5622d99def6c78d` — completed `review-20261106-pass6`; this append resolves the pending SHA above. Review documents/provenance only; no implementation or hardware operations.
+
+
+## 2026-11-06 Review follow-up on generic array native contracts 3 minutes
+
+- Step/experiment: `review-20261106-pass7`
+- When: '2026-11-06 22:31:30 CET' - '2026-11-06 22:34:30 CET'
+- Change: Added R48–R51 and matching lowercase TODO entries, bringing each total to 51. Added source/generated-header provenance and continuity notes. Documentation/evidence only; preserved all unrelated implementation/fixture/submodule changes.
+- Validation: Compared native ArrayLogic copy/fill/compare/find with checked-in API contracts; traced ordinary versus non-atomic setters, transaction snapshot gating, generated JNI entrypoints and interpreter Java-exception dispatch. Static initialization was inspected without adding an unsupported defect. All 51 unique finding/task mappings, file links/anchors, pass7 JSON and 12 input hashes passed inspection. No new runtime cases, builds or hardware operations.
+- Result: Four source-confirmed mismatches: missing primitive repacking, missing standalone atomic boundary, NonAtomic writes participating in rollback, and uncatchable native utility enum errors with missing reasons. Existing byte Util interception is a separate path and does not establish ArrayLogic correctness. Generic byte copy uses uint32 scratch per source element; peak memory/throughput remain unmeasured.
+- Decision: Continue review-only; keep native repacking, atomic/nonatomic semantics and error dispatch as separate acceptance tasks. No implementation authorization or runtime confirmation implied.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass7/source-sha256.txt` and `review-state.json`; existing generated header hashed, no new runtime logs produced.

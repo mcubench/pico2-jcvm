@@ -1,3 +1,20 @@
+# Current handoff — ArrayLogic native API review R48–R51 — 2026-11-06 22:34:30 CET
+
+Review-only active goal made progress: report and lowercase todo now contain
+51 findings/tasks. Four additions: cross-type repacking rejected, atomic
+generic calls lack a standalone transaction/capacity boundary, NonAtomic
+calls use rollback-participating setters, and native UtilException lacks
+Java dispatch/reason plumbing. Native utility code and checked-in API contract
+establish these findings; no runtime acceptance cases were executed.
+
+Pass7 provenance under `artifacts/reviews/review_20261106/pass7/` hashes 12
+sources/generated inputs. Existing JNI dispatch was inspected, not rebuilt
+or edited. All 51 mappings/links/anchors and hashes checked. No implementation,
+CAP, test source, build or hardware operation changed. Generic copy scratch
+vector cost was linked to existing performance tasks, without measurements.
+Continue review-only under the active goal. Preserve unrelated worktree edits
+and prior implementation/physical-blocker handoffs below.
+
 # Current handoff — transaction recovery review R44–R47 — 2026-11-06 22:30:54 CET
 
 Review-only goal made progress: report and lowercase todo now contain 47
