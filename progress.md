@@ -23033,5 +23033,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_BAD_CLASS_METHOD_OFFSET=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 600s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=1 fail=0`; LOAD succeeded and INSTALL rejected the invalid method entry with `6A80`.
 - Result: The descriptor-free method-bound enumeration fails closed on an invalid Class table entry at dynamic Applet INSTALL. No runtime, ARM/RISC-V build or physical-card change was made.
 - Decision: Keep the negative case; add ConstantPool and Export malformed-entry cases and resume hardware verification when PC/SC registers a Pico.
-- Commit: `pending`
+- Commit: `01d7aeaf`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T112657Z.log`, SHA-256 `ca66d9a84d4c94fc4877b2d82de63fc6e0c983aa228303d8328676aaff74af46`.
+
+## 2026-11-06 Reject invalid ConstantPool method reference 5 minutes
+
+- Step/experiment: `ctx01-invalid-constantpool-method-offset-20261106`
+- When: '2026-11-06 12:27 CET' - '2026-11-06 12:32 CET'
+- Change: Added a test-only mutation that zeroes the first internal `CONSTANT_StaticMethodref` offset in the generated service CAP while preserving the ConstantPool component size.
+- Validation: Python bytecode compilation and scoped `git diff --check` passed. Focused Descriptor-free VPCD LOAD succeeded; INSTALL was rejected with `6F00` at package-import validation stage 9, and the negative test passed `TEST:SUMMARY pass=1 fail=0`.
+- Result: Invalid internal ConstantPool method targets fail closed before applet INSTALL bytecode, but currently map to `6F00` rather than a specific ISO invalid-CAP status. Log `artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`, SHA-256 `f7c7094bab23f6339fc74e2bd3147f36044f45d64d288f8b1b22e350e882da5a`.
+- Decision: Preserve the observed result explicitly; investigate status mapping separately only if required. Next cover Export method offsets and retain the Class-table negative regression.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`; no hardware log.

@@ -92,7 +92,12 @@
   byte whose following bytes resemble a method header; INSTALL gets `6A80` with
   Descriptor absent and present. A second case zeroes the first Class
   method-table offset: LOAD succeeds and INSTALL gets `6A80` in descriptor-free
-  mode. Class-offset log:
+  mode. A zero internal ConstantPool `StaticMethodref` target also LOADs but
+  INSTALL returns `6F00` during stage-9 package-import validation (no applet
+  exception). ConstantPool log
+  `artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`, SHA-256
+  `f7c7094bab23f6339fc74e2bd3147f36044f45d64d288f8b1b22e350e882da5a`.
+  Class-offset log:
   `artifacts/logs/sio-cross-aid-vpcd-20261106T112657Z.log`, SHA-256
   `ca66d9a84d4c94fc4877b2d82de63fc6e0c983aa228303d8328676aaff74af46`.
   Descriptor-free Applet-offset log

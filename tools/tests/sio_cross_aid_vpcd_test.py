@@ -350,6 +350,37 @@ def zero_first_class_method_offset(code: bytes, cap_archive: Path) -> bytes:
     raise RuntimeError("test CAP has no Class method-table entry")
 
 
+def zero_first_internal_static_methodref_offset(code: bytes) -> bytes:
+    """Zero an internal StaticMethodref offset in the ConstantPool component."""
+    mutated = bytearray(code)
+    offset = 0
+    while offset < len(mutated):
+        if len(mutated) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = mutated[offset]
+        size = int.from_bytes(mutated[offset + 1:offset + 3], "big")
+        payload = offset + 3
+        end = payload + size
+        if end > len(mutated):
+            raise RuntimeError("truncated CAP component payload")
+        if tag == 5:
+            if size < 2:
+                raise RuntimeError("truncated ConstantPool count")
+            entry_count = int.from_bytes(mutated[payload:payload + 2], "big")
+            if entry_count > (size - 2) // 4 or 2 + entry_count * 4 != size:
+                raise RuntimeError("ConstantPool entry count/size mismatch")
+            for index in range(entry_count):
+                entry = payload + 2 + index * 4
+                if mutated[entry] == 6 and mutated[entry + 1] & 0x80 == 0:
+                    if mutated[entry + 2:entry + 4] == b"\x00\x00":
+                        raise RuntimeError("internal StaticMethodref is already zero")
+                    mutated[entry + 2:entry + 4] = b"\x00\x00"
+                    return bytes(mutated)
+            raise RuntimeError("ConstantPool has no internal StaticMethodref")
+        offset = end
+    raise RuntimeError("test CAP has no ConstantPool component")
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -418,6 +449,32 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_STATIC_METHODREF_OFFSET") == "1":
+                bad_service_code = zero_first_internal_static_methodref_offset(
+                    service[0]
+                )
+                try:
+                    vpcd.load_package(scp, bad_service_code, service[1])
+                except RuntimeError as exc:
+                    if not any(status in str(exc) for status in ("6A80", "6F00")):
+                        raise
+                    print("TEST:PASS LOAD rejected a zero internal "
+                          "StaticMethodref offset")
+                    print("TEST:SUMMARY pass=1 fail=0")
+                    return 0
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6F00,),
+                )
+                if response[-2:] != bytes.fromhex("6F00"):
+                    raise RuntimeError(
+                        "zero StaticMethodref offset INSTALL returned "
+                        f"{response[-2:].hex().upper()}, expected 6F00"
+                    )
+                print("TEST:PASS INSTALL rejected a zero internal "
+                      "StaticMethodref offset during stage-9 package validation")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_CLASS_METHOD_OFFSET") == "1":
                 bad_service_code = zero_first_class_method_offset(
                     service[0],

@@ -803,7 +803,9 @@ source-based follow-ups, without a new physical reproduction in this review.
   it with `6A80`. Preserve both Descriptor-present and Descriptor-absent
   acceptance cases. A second Descriptor-free negative fixture zeroes a Class
   method-table offset: LOAD succeeds and INSTALL rejects it with `6A80`.
-  ConstantPool/Export corruption and fuller incomplete-table cases remain open.
+  A zero internal `StaticMethodref` offset also LOADs but INSTALL rejects it
+  with `6F00` at stage-9 package-import validation (no Java Card exception).
+  Export corruption and fuller incomplete-table cases remain open.
   The [Java
   Card 3.0.5 VM specification, §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf)
   makes Descriptor loading optional and provides exact method offsets and

@@ -55,6 +55,19 @@ Python syntax and scoped diff checks pass. Firmware and upstream CAPs were not
 changed. Next: add ConstantPool/Export malformed-entry coverage and repeat the
 standard GPPro hardware install once PC/SC registers a Pico reader.
 
+## Latest continuation — invalid ConstantPool static-method offset rejected
+
+Added opt-in `SIO_CROSS_AID_TEST_BAD_STATIC_METHODREF_OFFSET=1`. It zeroes the
+first internal `CONSTANT_StaticMethodref` target in the generated service CAP.
+CAP LOAD succeeds, but INSTALL is rejected with `6F00` at package-import
+validation stage 9, before applet bytecode runs; no Java Card exception is
+reported. The focused test passes and the card manager/emulator remains
+available for later operations. Log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T113216Z.log`, SHA-256
+`f7c7094bab23f6339fc74e2bd3147f36044f45d64d288f8b1b22e350e882da5a`.
+Next: cover an Export method offset and continue physical retry when PC/SC
+responds.
+
 ---
 
 # Active handoff — SensitiveResult.reset across SIO — 2026-11-06 11:56 CET
