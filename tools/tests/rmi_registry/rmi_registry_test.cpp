@@ -109,6 +109,42 @@ void verify_sensitive_result_owner_provenance() {
   jcvm::Context::setActiveContext(previous);
 }
 
+void verify_sensitive_result_roots_heap_object_until_reset() {
+  constexpr jcvm::jpackage_ID_t owner_package = 27;
+  jcvm::Context owner(11, owner_package);
+  const auto previous = jcvm::Context::setActiveContext(&owner);
+  owner.resetSensitiveResult();
+
+  // This local handle is deliberately not supplied to the collector. After
+  // the interpreted caller's frame is gone, SensitiveResult must be the root.
+  const auto local_only_object =
+      owner.getHeap().addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+  owner.setSensitiveResultObject(local_only_object);
+
+  std::vector<jcvm::jref_t> roots;
+  owner.appendRootReferences(roots);
+  const auto retained = owner.getHeap().collectUnreachableFrom(roots);
+  assert(retained.complete);
+  assert(retained.arrays_reachable == 1);
+  assert(retained.arrays_reclaimed == 0);
+  assert(owner.getHeap().getArray(local_only_object) != nullptr);
+
+  owner.resetSensitiveResult();
+  roots.clear();
+  owner.appendRootReferences(roots);
+  const auto reclaimed = owner.getHeap().collectUnreachableFrom(roots);
+  assert(reclaimed.complete);
+  assert(reclaimed.arrays_reclaimed == 1);
+  bool stale_reference_rejected = false;
+  try {
+    (void)owner.getHeap().getArray(local_only_object);
+  } catch (...) {
+    stale_reference_rejected = true;
+  }
+  assert(stale_reference_rejected);
+  jcvm::Context::setActiveContext(previous);
+}
+
 void verify_previous_context_aid() {
   jcvm::Context client(2, 1);
   jcvm::Context server(3, 1);
@@ -1043,6 +1079,7 @@ int main() {
   jcvm::Context second_context(2, 1);
   verify_sensitive_result_cross_context(context, second_context);
   verify_sensitive_result_owner_provenance();
+  verify_sensitive_result_roots_heap_object_until_reset();
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
   verify_package_context_lookup();
@@ -1159,6 +1196,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 sensitive_result_gc_root=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }
