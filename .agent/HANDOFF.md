@@ -18,7 +18,8 @@ No physical flash was performed.
 
 Next: check exact StaticMethodref header starts and add malformed
 interpreter-execution coverage. Preserve unrelated dirty changes. This slice's
-commit will be recorded in progress.md after commit.
+commit is `8a58318d2c286de04c8430da2d5a6bd111fa03f0` (Validate internal CAP
+member tokens).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

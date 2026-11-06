@@ -22569,3 +22569,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RV-28 with exact internal StaticMethodref header validation, then malformed bytecode runtime coverage.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-internal-member-vpcd-20261106.log`, SHA-256 `0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.
+
+- Commit resolved for `rv28-internal-member-token-validation-20261106`: `8a58318d2c286de04c8430da2d5a6bd111fa03f0` (Validate internal CAP member tokens).
