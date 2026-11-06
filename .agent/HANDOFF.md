@@ -1,3 +1,20 @@
+# Current handoff — asymmetric key coverage review R57–R58 — 2026-11-06 22:46:42 CET
+
+Review-only active goal made progress: report and lowercase todo now contain
+58 findings/tasks. Added unsupported transient EC private-key ECDSA signing
+and the unbound existing-key KeyPair constructor. RSA transient private-key
+Signature support is present; it was not reported missing. Extended R28's EC
+matrix to allocatable versus usable lengths/domains without duplicating it.
+
+Pass10 hashes/scope: `artifacts/reviews/review_20261106/pass10/`. All 58
+finding/task mappings, links/anchors, JSON and 12 inputs checked. No runtime
+acceptance, builds, implementation/test/CAP/generated changes or hardware
+operations. Profile flags and existing generated JNI were inspected, not
+regenerated. Runtime combination/constructor checks remain unexecuted.
+Shared continuity files have concurrent edits from another session; stage only
+this review's own hunks. Preserve those edits and other dirty files. Continue
+review-only; implementation remains prohibited.
+
 # Current handoff — typed foreign-array regression committed — 2026-11-06 22:44 CET
 
 Commit `21051098` adds a negative `aastore` regression for an incompatible

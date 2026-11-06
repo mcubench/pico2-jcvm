@@ -1,0 +1,14 @@
+{
+  "head": "961f3c09d3cbd7e4ab0f02c53d1e3490a1e3aa23",
+  "scope": "Review-only asymmetric key-type and constructor support matrix",
+  "findings": {
+    "R57": "ECDSA init rejects both enabled transient EC private-key types",
+    "R58": "KeyPair existing-key constructor remains unbound throwing stub"
+  },
+  "excluded_candidates": [
+    "RSA signature init already accepts reset/deselect transient private and CRT types"
+  ],
+  "additional_scope": "R28 acceptance extended to enabled key sizes versus usable EC operations; no duplicate finding",
+  "validation": "Native type predicates, profile flags, binding generator, checked-in API source and existing generated dispatch inspected; no implementation/test/CAP/generated changes, runtime acceptance, builds or hardware operations",
+  "generated_provenance": "Existing generated files hashed, not regenerated; no new image provenance claim"
+}

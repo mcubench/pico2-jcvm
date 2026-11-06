@@ -23419,3 +23419,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `21051098` — committed the validated fixture and test changes with this record and CTX-01 TODO update.
 
 - Attribution note for `review-20261106-pass9`: commit `1a22693b` also captured another session's concurrently added HANDOFF/progress records for `ctx01-typed-array-reject-foreign`. Those 35/35 VPCD results belong to that session, not to this review pass. Its implementation/test files were not staged by this review. The continuity records were preserved; future staging must isolate this review's hunks in shared logs.
+
+
+## 2026-11-06 Review follow-up on asymmetric key-type composition 4 minutes
+
+- Step/experiment: `review-20261106-pass10`
+- When: '2026-11-06 22:43:35 CET' - '2026-11-06 22:46:42 CET'
+- Change: Added R57–R58 and two matching lowercase TODOs, bringing each total to 58; extended R28's EC capability matrix. Added provenance and continuity notes. No implementation, test, CAP or generated file changed.
+- Validation: Compared EC/RSA Signature accepted types, enabled profile flags, KeyPair source overloads and native binding selection/generated dispatch. Verified RSA transient types already accepted. All 58 unique findings/tasks, links/anchors, pass10 JSON and 12 input hashes passed. No proposed key-combination/constructor runtime cases, full builds or hardware operations.
+- Result: Two source-confirmed capability gaps: transient EC private types 30/31 rejected by ECDSA init; KeyPair(existing public/private keys) lacks native binding and keeps its throwing stub. Current algorithm/length pair probes do not cover that overload. No clearing outcome, crypto vector, throughput or memory metric measured.
+- Decision: Continue review-only; disclose unsupported combinations precisely and validate native key lifetime semantics before future support. Stage only this review's own continuity hunks alongside documents/evidence; preserve concurrent session notes.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass10/source-sha256.txt` and `review-state.json`; existing generated inputs only, no new runtime logs.
