@@ -1,4 +1,30 @@
-# Active handoff — SensitiveArrays SensitiveResult through SIO — 2026-11-06 10:00 CET
+# Active handoff — AID SensitiveResult through SIO — 2026-11-06 10:15 CET
+
+## Latest continuation — AID boolean results verified
+
+Extended the existing interpreted service method that checks
+`JCSystem.getAID()` and `getPreviousContextAID()` to also assert the boolean
+SensitiveResult values from `AID.partialEquals()`, `AID.equals(byte[],...)`,
+and `AID.equals(AID)`. This confirms the AID results survive the SIO return;
+the VM implementation already handled these calls correctly. The focused AID
+VPCD test and full cross-AID VPCD suite pass (34/34). No runtime source change,
+target build, or physical hardware was involved.
+
+Test commit: `e938db26`; progress record follows. Full log:
+`artifacts/logs/sio-cross-aid-vpcd-20261106T091117Z.log`, SHA-256
+`08f6f65cf48d37097c0d640b2dd9f6b25d4534c15551cb727c53a9c0ef3177d2`.
+Focused log: `artifacts/logs/sio-cross-aid-vpcd-20261106T091027Z.log`, SHA-256
+`e69811575add0b5749532da8af7850ec2eb5fd02ed03b1bb2de58a5081e4053a`.
+
+Next: continue CTX-02 by inspecting the other currently enabled key API result
+producers, then add interpreted SIO coverage for object SensitiveResult rooting
+after ordinary local references are dropped. Checksum and AEAD remain excluded
+because those providers are unavailable/disabled. Preserve unrelated dirty
+files and rebuild the PC VM before native VPCD tests.
+
+---
+
+# Previous handoff — SensitiveArrays SensitiveResult through SIO — 2026-11-06 10:00 CET
 
 ## Latest continuation — unsupported array capability results now recorded
 

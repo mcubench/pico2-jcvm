@@ -880,6 +880,11 @@ source-based follow-ups, without a new physical reproduction in this review.
   their correct `false` results from native code; the interpreted service and
   SIO caller assert both. Focused and full 34/34 VPCD coverage pass, as do PC,
   ARM and RISC-V builds. No physical device was used.
+  The interpreted service also asserts the boolean SensitiveResult values from
+  `AID.partialEquals()` and both `AID.equals()` overloads; focused and full
+  cross-AID VPCD coverage pass. This extends the existing `JCSystem.getAID()`
+  and `getPreviousContextAID()` object-result checks. No runtime source change
+  was needed for these API results.
   The current API has no supported Checksum provider (both factory branches
   return `NO_SUCH_ALGORITHM`) and no enabled AEAD provider; those results are
   not current producers and remain outside this coverage until separately

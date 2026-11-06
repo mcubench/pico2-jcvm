@@ -22904,3 +22904,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Checksum has no supported API provider and AEAD is not enabled in this profile, so keep them outside current result coverage rather than treating expected `NO_SUCH_ALGORITHM` as a SensitiveResult defect. Continue with other enabled key APIs and object-result GC rooting.
 - Commit: `4234bf7f`.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T085036Z.log`, SHA-256 `aeb0d9b62e41c7e8c7f5bb6bfc6a7e1b9e36ed5247c85608799f08f0db3c8c2c`; full 34/34 `artifacts/logs/sio-cross-aid-vpcd-20261106T085135Z.log`, SHA-256 `05e1486acf2d536723984320646a608e8f1ceb3ab5f4c761d6f42a886c9d5687`.
+
+## 2026-11-06 AID SensitiveResult across SIO 10 minutes
+
+- Step/experiment: `ctx02-aid-sensitive-result-sio-20261106`
+- When: '2026-11-06 09:05 UTC' - '2026-11-06 09:15 UTC'
+- Change: Extended the existing interpreted AID result fixture to assert successful and unsuccessful `AID.partialEquals()`, `AID.equals(byte[],...)`, and `AID.equals(AID)` results within the service before returning across SIO. Added an isolated AID VPCD mode and full-suite regression check. Existing AID object result tests remain intact.
+- Validation: `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_AID=1 ./tools/test-sio-cross-aid-vpcd` passed with `TEST:SUMMARY pass=1 fail=0`; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. No native source changed, so target builds were not rerun; no physical device was used.
+- Result: All tested AID boolean SensitiveResult values were asserted successfully by the interpreted service and the API result sequence crossed the SIO return. No runtime defect was found.
+- Decision: Continue CTX-02 with remaining enabled key API producers and object-result rooting after local references are dropped. Keep hardware acceptance open.
+- Commit: `e938db26`.
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T091027Z.log`, SHA-256 `e69811575add0b5749532da8af7850ec2eb5fd02ed03b1bb2de58a5081e4053a`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T091117Z.log`, SHA-256 `08f6f65cf48d37097c0d640b2dd9f6b25d4534c15551cb727c53a9c0ef3177d2`.
