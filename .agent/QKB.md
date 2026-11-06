@@ -7201,3 +7201,19 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 
 
 - **Runtime extended-method check:** The unchanged official `AlgTestApiCrypto_305.cap` includes the `Cipher.crypt(byte, byte[])` path selected by API class `0x83`, method `0x05`, argument `0x0D`. Its bundled API class declares 20 local slots, requiring an extended header. The bounded VPCD APDU `B0838305010D00` returns `000020019000`: no exception, 32 output bytes, known-answer result true, then `9000`. Repeat with `./tools/test-api-crypto-extended-method-vpcd`; it verifies the upstream CAP SHA-256 before generating transient LOAD code under ignored `build/`.
+
+## More malformed CAP control-flow paths fail closed — 2026-11-06
+
+- **Fixtures:** Added runtime mutations for short `IFEQ +1`, wide `IFEQ_W +1`,
+  `ITABLESWITCH`, `SLOOKUPSWITCH`, and `ILOOKUPSWITCH`, with each taken
+  destination landing inside its own operand/table. Added `impdep2` alongside
+  the existing `impdep1` native-opcode check. Generated LOAD code stays under
+  ignored `build/`; the upstream JCAlgTest CAP remains byte-for-byte unchanged
+  at SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- **Observed:** All six VPCD cases pass 6/6. Each malformed SELECT returns
+  `6F00`, direct process returns `6999`, and ISD selection returns FCI with
+  `9000` before and after the rejected applet reselect.
+- **Decision:** Short/wide conditional and all table/lookup switch taken target
+  paths are now covered in PC VPCD, as are both reserved native opcodes. This
+  does not cover physical hostile-CAP recovery or every branch/return case.

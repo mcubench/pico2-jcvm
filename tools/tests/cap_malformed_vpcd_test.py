@@ -189,11 +189,11 @@ def build_malformed_load_code(mutation: str) -> Path:
     mutable = bytearray(ordered)
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
-    if mutation == "impdep1":
+    if mutation in ("impdep1", "impdep2"):
         mutation_index = code_index
-        replacement = bytes((0xFE,))
+        replacement = bytes((0xFE if mutation == "impdep1" else 0xFF,))
         if mutable[mutation_index] == replacement[0]:
-            raise ValueError("upstream process already starts with impdep1")
+            raise ValueError(f"upstream process already starts with {mutation}")
     elif mutation == "truncated-sipush":
         mutation_index = method_start + body_end - 1
         replacement = bytes((0x13,))  # SIPUSH requires two operand bytes.
@@ -209,6 +209,50 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0xA8, 0x7F, 0xFF))  # GOTO_W beyond this frame.
         if process_length < len(replacement):
             raise ValueError("process body is too short for wide-branch fixture")
+    elif mutation == "conditional-branch-into-operand":
+        mutation_index = code_index
+        # Push zero so IFEQ is taken; its +1 displacement targets its operand.
+        replacement = bytes((0x10, 0x00, 0x60, 0x01))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for conditional-branch fixture")
+    elif mutation == "wide-conditional-branch-into-operand":
+        mutation_index = code_index
+        # Push zero so IFEQ_W is taken into its first displacement byte.
+        replacement = bytes((0x10, 0x00, 0x98, 0x00, 0x01))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for wide conditional fixture")
+    elif mutation == "itableswitch-into-operand":
+        mutation_index = code_index
+        # IIPUSH 0 then ITABLESWITCH; default and selected case target operand.
+        replacement = bytes((
+            0x14, 0x00, 0x00, 0x00, 0x00,
+            0x74, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x01,
+        ))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for itableswitch fixture")
+    elif mutation == "slookupswitch-into-operand":
+        mutation_index = code_index
+        # SIPUSH 0 then one sorted SLOOKUPSWITCH pair targeting the table.
+        replacement = bytes((
+            0x13, 0x00, 0x00,
+            0x75, 0x00, 0x01, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x01,
+        ))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for slookupswitch fixture")
+    elif mutation == "ilookupswitch-into-operand":
+        mutation_index = code_index
+        # IIPUSH 0 then one sorted ILOOKUPSWITCH pair targeting the table.
+        replacement = bytes((
+            0x14, 0x00, 0x00, 0x00, 0x00,
+            0x76, 0x00, 0x01, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        ))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for ilookupswitch fixture")
     elif mutation == "switch-into-operand":
         mutation_index = code_index
         # Push index 0, then a one-entry STABLESWITCH. Both default and case
@@ -241,8 +285,13 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("impdep1", "truncated-sipush",
+        "--mutation", choices=("impdep1", "impdep2", "truncated-sipush",
                                 "branch-into-operand", "branch-outside-method",
+                                "conditional-branch-into-operand",
+                                "wide-conditional-branch-into-operand",
+                                "itableswitch-into-operand",
+                                "slookupswitch-into-operand",
+                                "ilookupswitch-into-operand",
                                 "switch-into-operand"),
         default="impdep1",
     )

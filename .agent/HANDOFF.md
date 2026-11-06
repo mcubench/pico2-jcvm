@@ -1,4 +1,4 @@
-# Active handoff — validate extended CAP method execution — 2026-11-06 03:37 CET
+# Active handoff — expand malformed control-flow runtime coverage — 2026-11-06 03:49 CET
 
 ## Critical continuation — extended method header was one byte overestimated
 
@@ -51,6 +51,22 @@ The runtime-regression step is committed as `c82c2be2` (`Exercise extended-heade
 execution remains open; the currently installed board firmware passed its
 runtime monitor but the new header-fix image was not flashed. Keep unrelated
 dirty files untouched.
+
+## Latest RV-28 runtime cases — conditional and switch targets / impdep2
+
+Extended `tools/tests/cap_malformed_vpcd_test.py` with `impdep2`, taken short
+and wide conditional branches into their own operands, and ITABLESWITCH,
+SLOOKUPSWITCH, and ILOOKUPSWITCH targets into their operand tables. All six
+cases pass 6/6: malformed applet SELECT returns `6F00`, direct process returns
+`6999`, and ISD FCI/`9000` selection remains available before and after the
+rejected applet reselect. The upstream CAP remains unchanged at SHA-256
+`b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+Per-case log hashes are in the latest progress record. No firmware build or
+physical CAP test was needed; this modifies only the offline fixture.
+
+Next: commit this fixture-coverage step, then cover JSR/RET and inspect the
+remaining malformed ConstantPool/interpreter call edges. Physical hostile-CAP
+recovery remains open.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 

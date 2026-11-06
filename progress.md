@@ -22707,3 +22707,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the extended-header fix. Continue RV-28 with the remaining malformed interpreter and linkage paths; physical validation of this exact source image remains open.
 - Commit: `c82c2be2`.
 - Artifacts/logs: `artifacts/logs/rv28-extended-crypto-crypt-api-vpcd-20261106.log`, SHA-256 `434c6c08e8a5936179b00ce06b6882fe63ab47c863564aaa3014651114f7dcfb`; generated code and emulator memory are under ignored `build/`.
+
+## 2026-11-06 Cover conditional and switch branch runtime targets 12 minutes
+
+- Step/experiment: `rv28-malformed-conditional-switch-targets-vpcd-20261106`
+- When: '2026-11-06 03:37 CET' - '2026-11-06 03:49 CET'
+- Change: Expanded the malformed-CAP VPCD fixture with `impdep2`, taken short/wide `IFEQ` targets into branch operands, and ITABLESWITCH/SLOOKUPSWITCH/ILOOKUPSWITCH targets into their tables. All changes are test-only; upstream CAP is untouched.
+- Validation: Python syntax and scoped whitespace checks pass. Six independent VPCD runs pass 6/6 each. For every case, SELECT returns `6F00`, direct processing returns `6999`, and ISD FCI/`9000` remains available before and after rejected applet reselection. Upstream CAP SHA-256 remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. No firmware rebuild or physical test was needed.
+- Result: Dynamic branch target checking now has emulator runtime evidence for short/wide conditionals and all three additional table/lookup switch forms; both reserved `impdep` opcodes are exercised. Remaining JSR/RET, linkage, sanitizer recovery, and physical hostile-CAP checks are open.
+- Decision: Retain these distinct fixtures and continue with JSR/RET control flow and malformed ConstantPool/interpreter call edges.
+- Commit: pending.
+- Artifacts/logs: conditional `artifacts/logs/rv28-malformed-conditional-branch-into-operand-vpcd-20261106.log` SHA-256 `4b88a25e3d83a4cbf273255b77ba24e6396fdeaf146488f699198216c9731d9d`; wide conditional `artifacts/logs/rv28-malformed-wide-conditional-branch-into-operand-vpcd-20261106.log` SHA-256 `585a9895180c8a8cfde094c9566866e4459ebe689faea1420c4f45f95b754fc1`; ITABLESWITCH `artifacts/logs/rv28-malformed-itableswitch-into-operand-vpcd-20261106.log` SHA-256 `623d4cab2f328bf1cdf6f551ddb3ff25256946e43d4efbf82a28fa68166c459c`; SLOOKUPSWITCH `artifacts/logs/rv28-malformed-slookupswitch-into-operand-vpcd-20261106.log` SHA-256 `f63f027bf7301d7242996c6782b9c8658edff69bd47e48b61ded8d28731851b2`; ILOOKUPSWITCH `artifacts/logs/rv28-malformed-ilookupswitch-into-operand-vpcd-20261106.log` SHA-256 `275f11ac328f627c561591ec3c6a99f8b84a233e3fd4c46ab935698ffc070eb7`; impdep2 `artifacts/logs/rv28-malformed-impdep2-vpcd-20261106.log` SHA-256 `d26a9bd3c7a8d491e43652d37185d45f8124f736f1c047f063338be20a18d53f`. Generated LOAD inputs are under ignored `build/`.
