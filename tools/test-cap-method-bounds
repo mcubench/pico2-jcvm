@@ -6,6 +6,9 @@ build_dir="$(mktemp -d)"
 trap 'rm -rf "${build_dir}"' EXIT
 
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
   "${repo_root}/tools/tests/cap_method_bounds_test.cpp" \
   -o "${build_dir}/cap_method_bounds_test"
-"${build_dir}/cap_method_bounds_test"
+ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+  "${build_dir}/cap_method_bounds_test"

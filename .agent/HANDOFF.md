@@ -1,4 +1,49 @@
-# Active handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
+# Active handoff — extended CAP method header fix validated — 2026-11-06 03:16 CET
+
+## Critical continuation — extended method header was one byte overestimated
+
+Corrected `src/cap_method_bounds.hpp` and `src/cap_method_body_bounds.hpp` to
+use a four-byte extended header (normal headers remain two bytes). JCVMS 3.0.5
+§6.10.3 specifies `flags/padding`, `max_stack`, `nargs`, and `max_locals`, and
+CHOUPI's packed header struct and `callMethod()` bytecode pointer agree. The
+old five-byte assumption moved each Descriptor-derived extended frame start
+one byte into its bytecode. Also corrected the deployed-CAP scanner, malformed
+fixture header helper, and extended-header tests; a unit `static_assert` ties
+the expected size to `sizeof(jc_cap_extended_method_header_info)`.
+
+Evidence: scanned 3,973 concrete Descriptor methods across deployed CAPs and
+found eight extended methods across versions. The 3.0.5 deploy suite contains
+three; those were exactly the three “one-byte overrun” cases previously
+reported. After correction, all 978 3.0.5 concrete method bodies end exactly
+at the next method. Branch scan checks 8,720 destinations: zero out-of-range,
+zero misaligned, zero clamps. Sanitizer helper suites pass: method header 7/7,
+method body 11/11, PC bounds 19/19, instruction boundaries 13/13 including
+100,000 deterministic malformed inputs.
+
+Validation: ARM, RISC-V, and PC builds pass. Unchanged upstream JCAlgTest VPCD
+install and APDU run passes 15/15; its full log is
+`artifacts/logs/rv28-four-byte-extended-header-jcalgtest-full-vpcd-20261106.log`.
+An upstream 3.0.5 Crypto API CAP containing extended methods loads/selects
+successfully (2/2), but that does not prove a specific extended method ran.
+Malformed `impdep1` runtime rejection and manager recovery pass 6/6. The ARM
+UF2 is 1,741,824 bytes, SHA-256
+`69f64c673ce1158b56449027454f5114406cab0a39ac3d1adf3a6fa86c3e17bb`.
+
+Physical check: authorized enumeration sees three Pico 2 CCID USB devices:
+`2BED26ED20556535`, `8E464F4E2BBC0A19`, and `D92E743D5F640C0F`. A bounded
+8-second monitor on `D92E743D5F640C0F` repeatedly reports
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. This only validates
+the firmware currently on that device; no new image was flashed, so it does
+not establish the header fix on hardware. `pcsc_scan -r` timed out without
+output despite the helper granting access; PC/SC reader status remains
+unconfirmed.
+
+Next: commit the validated method-header fix and its progress record while
+staging only the files listed for this step. Preserve all other pre-existing
+worktree changes. Follow up with a runtime CAP/APDU known to invoke one of the
+extended methods; physical extended-method execution remains open.
+
+## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
 ## Latest continuation — dynamic STABLESWITCH operand target rejected
 

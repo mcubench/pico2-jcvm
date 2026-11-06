@@ -1,6 +1,8 @@
 #ifndef CHOUPI_CAP_METHOD_BODY_BOUNDS_HPP
 #define CHOUPI_CAP_METHOD_BODY_BOUNDS_HPP
 
+#include "cap_method_bounds.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -84,7 +86,7 @@ inline bool find(const uint8_t *descriptor_payload,
           static_cast<std::size_t>(method_component_offset) -
           handler_table_bytes - 1;
       const std::size_t header_size =
-          (methods[header_index] & 0x80u) != 0 ? 5u : 2u;
+          cap_method_bounds::header_size(methods[header_index]);
       if (header_size > methods_size - header_index) return false;
       const std::size_t body_begin = header_index + header_size;
       const std::size_t bytecode_count = read_be16(record + 6);
@@ -128,7 +130,7 @@ inline bool find_from_offsets(const uint8_t *methods,
       handler_table_bytes - 1;
   if (method_index >= methods_size) return false;
   const std::size_t header_size =
-      (methods[method_index] & 0x80u) != 0 ? 5u : 2u;
+      cap_method_bounds::header_size(methods[method_index]);
   if (header_size > methods_size - method_index) return false;
   const std::size_t body_begin = method_index + header_size;
   std::size_t next_method_index = methods_size;
@@ -140,7 +142,7 @@ inline bool find_from_offsets(const uint8_t *methods,
     const std::size_t index = static_cast<std::size_t>(offset) -
                               handler_table_bytes - 1;
     if (index >= methods_size ||
-        ((methods[index] & 0x80u) != 0 ? 5u : 2u) >
+        cap_method_bounds::header_size(methods[index]) >
             methods_size - index) {
       return false;
     }

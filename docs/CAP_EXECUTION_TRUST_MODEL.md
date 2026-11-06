@@ -16,10 +16,11 @@ Runtime method lookup checks that the normal or extended method header fits
 inside the Method component before reading it. The Descriptor component's
 method offset and bytecode count define each frame's bytecode body, capped at
 the next descriptor-listed method start. This next start is a hard boundary
-even when the count is too large. In the deployed 3.0.5 API CAP suite, 975 of
-978 concrete method counts end exactly at the next method; three exceed it by
-one byte and are clamped. Uploaded CAP calls fail closed when a valid range
-cannot be resolved. Operand fetches, relative PC updates, and exception
+even when the count is too large. In the deployed 3.0.5 API CAP suite, all
+978 concrete method bodies now end exactly at the next method; no body-length
+clamps are needed. Extended method headers are four bytes, matching the VM
+method-header struct and JCVMS §6.10.3. Uploaded CAP calls fail closed when a
+valid range cannot be resolved. Operand fetches, relative PC updates, and exception
 diagnostics are checked against that body. For dynamic/uploaded packages, each
 taken short, wide, and switch branch also requires a decoded instruction-start
 target. The width decoder fails closed on unknown or truncated instructions

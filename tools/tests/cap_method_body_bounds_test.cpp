@@ -42,11 +42,11 @@ int main() {
       0, 1,                      // bytecode_count
       0, 0, 0, 0,                // exception handler fields
       0, 0};                     // constant_pool_count
-  const uint8_t extended_methods[] = {0x80, 0, 0, 0, 0, 0x55};
+  const uint8_t extended_methods[] = {0x80, 0, 0, 0, 0x55};
   check(jcvm::cap_method_body_bounds::find(
             extended_descriptor, sizeof(extended_descriptor),
             extended_methods, sizeof(extended_methods), 0, 1, range) &&
-            range.begin == 5 && range.end == 6,
+            range.begin == 4 && range.end == 5,
         "extended method header yields exact bytecode range");
 
   check(!jcvm::cap_method_body_bounds::find(

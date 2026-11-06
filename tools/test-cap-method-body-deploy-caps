@@ -9,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CAP_DIR = REPO_ROOT / "AlgTest_JavaCard" / "deploy" / "caps"
 EXPECTED_CAPS = 11
 EXPECTED_METHODS = 978
-EXPECTED_CLAMPS = 3
+EXPECTED_CLAMPS = 0
 
 
 def component(archive: ZipFile, suffix: str, expected_tag: int) -> bytes:
@@ -195,7 +195,7 @@ def validate_cap(path: Path) -> tuple[int, int, int, int]:
     clamped = 0
     branch_targets = out_of_range_targets = misaligned_targets = 0
     for index, (stream_offset, bytecode_count, header) in enumerate(method_entries):
-        header_size = 5 if header & 0x80 else 2
+        header_size = 4 if header & 0x80 else 2
         body_start = stream_offset + header_size
         body_end = body_start + bytecode_count
         next_method = (

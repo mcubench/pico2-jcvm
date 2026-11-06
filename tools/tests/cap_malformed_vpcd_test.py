@@ -175,7 +175,7 @@ def build_malformed_load_code(mutation: str) -> Path:
     method_header_index = PROCESS_METHOD_OFFSET + 3
     if method_header_index >= len(method_component):
         raise ValueError("process method header outside Method component")
-    header_size = 5 if method_component[method_header_index] & 0x80 else 2
+    header_size = 4 if method_component[method_header_index] & 0x80 else 2
     bytecode_index = method_header_index + header_size
     body_end = bytecode_index + process_length
     if body_end > len(method_component):

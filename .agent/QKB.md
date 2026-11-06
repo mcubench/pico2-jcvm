@@ -7172,3 +7172,29 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Decision:** Dynamic variable-width switch target checks reject a target
   inside the switch table and manager recovery works in PC VPCD. Sanitizer
   helper coverage is separate; no physical card was used.
+
+## Extended CAP method header is four bytes, not five — 2026-11-06
+
+- **Finding:** JCVMS 3.0.5 §6.10.3 defines the extended header as flags/padding,
+  max_stack, nargs, and max_locals: four bytes. The CHOUPI packed header struct
+  is also four bytes and `callMethod()` starts `bytecodes` immediately after
+  it. The shared bounds helpers and deployed-CAP scanner incorrectly used
+  five bytes, so Descriptor-derived frames began one byte into the bytecode.
+- **Impact:** Of 3,973 concrete Descriptor methods in deployed CAPs, eight
+  extended methods were found across versions. The 3.0.5 suite's three
+  extended methods exactly matched the three prior one-byte overrun clamps;
+  after correcting the header size, all 978 3.0.5 methods end exactly at the
+  next method and clamp count is zero.
+- **Viable fix:** Derive both method-header fit and body-start bounds from one
+  shared helper that returns 4 for extended headers and 2 for normal headers.
+  Keep a test assertion against `sizeof(jc_cap_extended_method_header_info)`.
+- **Validation:** Method-header tests pass 7/7; method-body tests pass 11/11;
+  PC bounds pass 19/19; instruction-boundary tests pass 13/13 including
+  100,000 deterministic malformed inputs under ASan/UBSan. The deployed-CAP
+  scan verifies 978 method bodies and 8,720 branch targets with zero overrun
+  clamps, out-of-range targets, or misaligned targets. ARM, RISC-V, and PC
+  builds pass. The unchanged upstream JCAlgTest VPCD run passes 15/15; the
+  malformed `impdep1` recovery run passes 6/6. The upstream 3.0.5 Crypto API
+  CAP, which contains extended methods, loads and selects successfully; this
+  does not directly exercise those extended methods. No new image was flashed
+  to hardware.
