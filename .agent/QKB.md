@@ -7690,3 +7690,23 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   ownership must be tracked on reference slots or whether safe targeted
   invalidation can use the deleted instance's root/reference identity. Keep
   package DELETE coverage separate.
+
+### Viable targeted fix — 2026-11-07
+
+- **Verified behavior:** Before applet-instance DELETE, enumerate volatile
+  cross-package foreign-array roots routed to the target package heap, resolve
+  each handle, and compare its allocation applet owner with the target owner.
+  Return `6985` if a matching reference exists; fail closed if a registered
+  reference cannot be resolved. Do not silently clear a live external edge.
+- **Regression:** `SIO_CROSS_AID_TEST_INSTANCE_DELETE_FOREIGN_ROOT=1` installs
+  two instances from one client package, retains an object from the first in a
+  service `Object[]`, verifies DELETE is rejected, clears the exact array slot,
+  retries DELETE successfully, and verifies the sibling still calls the
+  service. Focused VPCD passes 2/2; full `symm_crypto` SIO VPCD passes 35/35.
+- **Builds:** ARM and RISC-V wrappers pass. No physical test was run: the
+  authorized reader helper found three USB nodes, but bounded `pcsc_scan -r`
+  produced no reader listing before timeout.
+- **Scope limit:** This fix proves volatile cross-package array references.
+  Same-package cross-instance references and persistent roots (including
+  static/reference fields) are not covered and must be audited before marking
+  Java Card applet deletion semantics complete.

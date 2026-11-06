@@ -329,6 +329,32 @@ void Heap::clearForeignArrayReferencesForPackage(
   }
 }
 
+bool Heap::hasForeignArrayReferenceToAppletOwner(
+    const jpackage_ID_t package_id, const japplet_ID_t applet_owner,
+    Heap &target_heap) noexcept {
+  struct Query {
+    Heap *heap;
+    japplet_ID_t owner;
+    bool found = false;
+  } query{&target_heap, applet_owner};
+  const auto inspect = [](const jref_t reference, void *opaque) {
+    auto &state = *static_cast<Query *>(opaque);
+    if (state.found || reference.isNullPointer() ||
+        reference.isGlobalArray() || reference.isGlobalInstance()) return;
+    try {
+      JC_Object &object = reference.isArray()
+          ? static_cast<JC_Object &>(*state.heap->getArray(reference))
+          : static_cast<JC_Object &>(*state.heap->getInstance(reference));
+      state.found = object.getOwner().getOwner() == state.owner;
+    } catch (...) {
+      // Fail closed if a registered edge cannot be resolved safely.
+      state.found = true;
+    }
+  };
+  visitForeignArrayReferencesForPackage(package_id, inspect, &query);
+  return query.found;
+}
+
 jref_t Heap::addGlobalInstance(const jpackage_ID_t package_id,
                                const jclass_index_t class_index) {
   Heap &heap = globalArrayHeap();

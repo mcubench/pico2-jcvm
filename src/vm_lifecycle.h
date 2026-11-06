@@ -25,6 +25,8 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id, uint16_t class_index,
 uint8_t choupi_vm_find_applet(const uint8_t *aid, uint8_t aid_length,
                               uint8_t *package_id, uint16_t *install_offset);
 uint8_t choupi_vm_is_dynamic_package(uint8_t package_id);
+uint8_t choupi_vm_has_foreign_reference_to_applet(
+    uint8_t package_id, uint8_t applet_owner);
 void choupi_vm_clear_selected_applet(void);
 uint8_t choupi_vm_is_applet_selected(void);
 uint8_t choupi_vm_is_selecting_applet(void);

@@ -199,6 +199,16 @@ bool Context::isAppletOwnerRetained(const japplet_ID_t owner) noexcept {
   return false;
 }
 
+bool Context::hasForeignArrayReferenceToAppletOwner(
+    const japplet_ID_t owner) noexcept {
+  for (auto &instance : this->applet_instances) {
+    if (instance.owner != owner || !instance.owner_heap) continue;
+    return Heap::hasForeignArrayReferenceToAppletOwner(
+        this->applet_package_ID, owner, *instance.owner_heap);
+  }
+  return false;
+}
+
 
 /**
  * Default constructor

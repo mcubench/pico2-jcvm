@@ -29,6 +29,7 @@ SERVICE_PACKAGE = bytes.fromhex("A000000151000003")
 SERVICE_APPLET = bytes.fromhex("A00000015100000301")
 CLIENT_PACKAGE = bytes.fromhex("A000000151000004")
 CLIENT_APPLET = bytes.fromhex("A00000015100000401")
+CLIENT_SIBLING_APPLET = bytes.fromhex("A00000015100000402")
 UNRELATED_PACKAGE = bytes.fromhex("A000000151000007")
 UNRELATED_APPLET = bytes.fromhex("A00000015100000701")
 CONNECT_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_CONNECT_TIMEOUT_S", "90"))
@@ -993,6 +994,105 @@ def main() -> int:
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)
             print("TEST:PASS installed cross-AID client applet")
+            if os.environ.get("SIO_CROSS_AID_TEST_INSTANCE_DELETE_FOREIGN_ROOT") == "1":
+                response = vpcd.install_applet(
+                    scp, client[1], client[2][0], CLIENT_SIBLING_APPLET
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "sibling client INSTALL returned "
+                        f"{response.hex().upper()}, expected 9000"
+                    )
+                select_source = bytes((0x00, 0xA4, 0x04, 0x00,
+                                       len(CLIENT_APPLET))) + CLIENT_APPLET
+                response = vpcd.exchange(
+                    connection, select_source, "SELECT source client applet"
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("source client SELECT failed")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8020000000"),
+                    "retain source-owned object in service array",
+                )
+                if response != bytes.fromhex("6B439000"):
+                    raise RuntimeError(
+                        "source object retention returned "
+                        f"{response.hex().upper()}, expected 6B439000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before applet-instance DELETE",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("SELECT ISD before DELETE failed")
+                delete_scp = vpcd.Scp03(connection)
+                delete_scp.authenticate()
+                response = vpcd.delete_object(
+                    delete_scp, CLIENT_APPLET, False,
+                    "DELETE applet with retained foreign object",
+                    expected_statuses=(0x6985,),
+                )
+                if response[-2:] != b"\x69\x85":
+                    raise RuntimeError(
+                        "DELETE with retained foreign object returned "
+                        f"{response[-2:].hex().upper()}, expected 6985"
+                    )
+                print("TEST:PASS DELETE is rejected while another applet "
+                      "retains an object owned by the target instance")
+                select_sibling = bytes((0x00, 0xA4, 0x04, 0x00,
+                                        len(CLIENT_SIBLING_APPLET))) + CLIENT_SIBLING_APPLET
+                response = vpcd.exchange(
+                    connection, select_sibling,
+                    "SELECT sibling after rejected DELETE",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "sibling SELECT after rejected DELETE failed: "
+                        f"{response.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8040000000"),
+                    "clear retained foreign edge from sibling",
+                )
+                if response != bytes.fromhex("6A709000"):
+                    raise RuntimeError(
+                        f"clear retained edge returned {response.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before retrying DELETE",
+                )
+                delete_scp = vpcd.Scp03(connection)
+                delete_scp.authenticate()
+                response = vpcd.delete_object(
+                    delete_scp, CLIENT_APPLET, False,
+                    "DELETE applet after clearing retained edge",
+                    expected_statuses=(0x9000,),
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "DELETE after clearing edge returned "
+                        f"{response[-2:].hex().upper()}, expected 9000"
+                    )
+                response = vpcd.exchange(
+                    connection, select_sibling,
+                    "SELECT sibling after source DELETE",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("sibling was lost after source DELETE")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8041000000"),
+                    "verify sibling service remains usable",
+                )
+                if response != bytes.fromhex("6A6E9000"):
+                    raise RuntimeError(
+                        "sibling service check returned "
+                        f"{response.hex().upper()}, expected 6A6E9000"
+                    )
+                print("TEST:PASS clearing the edge permits DELETE and leaves "
+                      "the sibling applet usable")
+                print("TEST:SUMMARY pass=2 fail=0")
+                return 0
             if unrelated is not None:
                 vpcd.load_package(scp, unrelated[0], unrelated[1])
                 response = vpcd.install_applet(

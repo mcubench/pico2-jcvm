@@ -154,6 +154,7 @@ public:
                             uint8_t aid_length) noexcept;
   /// Retain a deleted owner's identity while its facade still owns live objects.
   bool isAppletOwnerRetained(japplet_ID_t owner) noexcept;
+  bool hasForeignArrayReferenceToAppletOwner(japplet_ID_t owner) noexcept;
   /// Get the context ID.
   jpackage_ID_t getCurrentPackageID() noexcept;
   /// Get applet ID

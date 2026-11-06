@@ -37,6 +37,8 @@ public interface Probe extends Shareable {
   short retainForeignReference(Object[] values);
   Object getRetainedForeignArray();
   boolean retainedForeignArrayIsNull();
+  void clearRetainedForeignArray();
+  boolean retainedForeignArrayIsEmpty();
   byte[] echoArray(byte[] value);
   boolean sameReference(byte[] reference);
   boolean sameReferences(byte[] left, byte[] right);

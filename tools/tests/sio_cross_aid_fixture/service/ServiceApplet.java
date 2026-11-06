@@ -27,6 +27,9 @@ public final class ServiceApplet extends Applet implements Probe {
   private static final byte[] CLIENT_AID = {
     (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x04, 0x01
   };
+  private static final byte[] CLIENT_SIBLING_AID = {
+    (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x04, 0x02
+  };
   private static final byte[] SERVICE_AID = {
     (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x03, 0x01
   };
@@ -48,7 +51,9 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public Shareable getShareableInterfaceObject(AID clientAID, byte parameter) {
     if (parameter != 0x5A || clientAID == null ||
-        !clientAID.equals(CLIENT_AID, (short) 0, (byte) CLIENT_AID.length)) {
+        (!clientAID.equals(CLIENT_AID, (short) 0, (byte) CLIENT_AID.length) &&
+         !clientAID.equals(CLIENT_SIBLING_AID, (short) 0,
+                           (byte) CLIENT_SIBLING_AID.length))) {
       return null;
     }
     return this;
@@ -630,6 +635,14 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public boolean retainedForeignArrayIsNull() {
     return retainedForeignArray == null;
+  }
+
+  public boolean retainedForeignArrayIsEmpty() {
+    return retainedForeignArray == null || retainedForeignArray[0] == null;
+  }
+
+  public void clearRetainedForeignArray() {
+    if (retainedForeignArray != null) retainedForeignArray[0] = null;
   }
 
   public byte[] echoArray(byte[] value) {

@@ -1337,6 +1337,10 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
   if (!delete_package &&
       !cap_store_applet_owner(instance_aid_, instance_aid_length_,
                               applet_owner)) return 0x6581;
+  if (!delete_package &&
+      choupi_vm_has_foreign_reference_to_applet(package_id_, applet_owner)) {
+    return 0x6985;
+  }
 
   struct DeleteBackend {
     bool begin() noexcept {

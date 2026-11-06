@@ -849,13 +849,13 @@ review.
   retained proxy case still succeeds. Full cross-AID VPCD passes 35/35 both
   with Descriptor omitted and included. This is VPCD only; physical validation
   remains pending.
-  CTX lifecycle audit: foreign-array root cleanup is currently tied to package
-  DELETE. Applet-instance DELETE forgets its per-AID context and runs GC, but
-  foreign array slots carry only package ownership and are not pruned. A
-  service-retained foreign reference may therefore keep objects from the
-  deleted applet instance rooted. This is source-confirmed but not reproduced;
-  add a VPCD DELETE-one-instance/retain-from-sibling case and establish safe
-  per-instance invalidation before closing CTX-01.
+  CTX lifecycle audit: applet-instance DELETE now checks volatile cross-package
+  reference arrays before committing deletion. A retained reference to an
+  object owned by the target instance returns `6985`; after the retaining applet
+  clears the slot, DELETE returns `9000` and a sibling instance remains usable.
+  The focused three-package VPCD regression and full `symm_crypto` cross-AID
+  suite pass. Keep CTX-01 open: same-package references and persistent roots
+  need separate coverage before claiming complete Java Card deletion semantics.
 
 ### CTX-02
 

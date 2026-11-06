@@ -237,6 +237,11 @@ public:
   /// Clear foreign edges before a package owner ID can be reused.
   static void clearForeignArrayReferencesForPackage(
       jpackage_ID_t package_id) noexcept;
+  /// Whether a foreign reference array points to an object allocated by the
+  /// given applet instance. Handles are resolved in the target package heap.
+  static bool hasForeignArrayReferenceToAppletOwner(
+      jpackage_ID_t package_id, japplet_ID_t applet_owner,
+      Heap &target_heap) noexcept;
   /// Mark reachable handles from a supplied root set without freeing slots.
   ReachabilitySummary traceReachableFrom(
       const std::vector<jref_t> &roots);

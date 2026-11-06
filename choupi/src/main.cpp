@@ -103,6 +103,23 @@ extern "C" bool choupi_vm_applet_owner_in_use(const uint8_t owner_id) noexcept {
   return false;
 }
 
+extern "C" uint8_t choupi_vm_has_foreign_reference_to_applet(
+    const uint8_t package_id, const uint8_t applet_owner) {
+  for (auto &context : inactive_applet_contexts) {
+    if (context && context->getAppletPackageID() == package_id &&
+        context->isAppletOwnerRetained(applet_owner)) {
+      if (context->hasForeignArrayReferenceToAppletOwner(applet_owner)) return 1;
+    }
+  }
+  if (selected_applet_context &&
+      selected_applet_context->getAppletPackageID() == package_id &&
+      selected_applet_context->isAppletOwnerRetained(applet_owner)) {
+    if (selected_applet_context->hasForeignArrayReferenceToAppletOwner(
+            applet_owner)) return 1;
+  }
+  return 0;
+}
+
 bool context_matches_applet(const jcvm::Context &context,
                             const uint8_t owner,
                             const uint8_t *aid,

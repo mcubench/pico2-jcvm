@@ -1,3 +1,26 @@
+# Current handoff — applet DELETE retained-reference guard — 2026-11-07 00:41 CET
+
+Implemented a DELETE preflight for volatile cross-package reference arrays. It
+resolves tracked handles in the target package heap and compares each object's
+allocation applet owner with the applet being deleted; matching edges reject
+DELETE with `6985`, and unresolvable registered references fail closed. The
+three-package VPCD fixture covers two instances from one package: retain an
+object from instance A in a service `Object[]`, reject DELETE A, clear the slot,
+retry DELETE successfully, then confirm instance B still selects and calls the
+service.
+
+Validation: ARM and RISC-V wrappers pass; `./tools/test-rmi-registry` passes;
+focused VPCD passes 2/2 and full `symm_crypto` cross-AID VPCD passes 35/35.
+Full-suite log is `artifacts/logs/sio-cross-aid-vpcd-20261106T232906Z.log`
+(SHA-256 `4e957c70c45dafd72a25d5987a16ddda6f9b9e2c9a03020bd2a5456a62cad3a0`).
+No physical test completed: authorized helper found three USB nodes, but
+bounded `pcsc_scan -r` timed out without listing readers.
+
+Scope remains deliberately partial. Same-package cross-instance references and
+persistent/static reference roots still need an audit and targeted tests before
+CTX-01 deletion semantics can be closed. Prior handoff entries below are
+historical and preserved.
+
 # Current handoff — positive-depth dup_x validation complete — 2026-11-06 23:55 CET
 
 Commit `6fb521d58aabd98bb29593f70f9b14e4817b6896` fixes positive-depth
