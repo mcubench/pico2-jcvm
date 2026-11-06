@@ -22891,5 +22891,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build-pc --profile symm_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Focused `SIO_CROSS_AID_ONLY_RANDOM=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed 34/34. Python syntax and scoped CRLF-aware diff checks passed. ARM image ends at `0x100D4B20`, leaving 177,376 bytes. No physical device was used.
 - Result: `RandomData.getAlgorithm()` and `nextBytes()` SensitiveResult values survive SIO return and match their return values. Random byte contents were not asserted; the test is for SensitiveResult propagation.
 - Decision: Continue with Checksum and enabled AEAD/key result producers, then verify GC rooting of object results after ordinary locals are dropped. Hardware acceptance remains open.
-- Commit: pending.
+- Commit: `f2169c73`.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T083303Z.log`, SHA-256 `4e84368c1589ea5f548e0a67052c342ee69107a2be3645371ef49c2a9749f371`; full 34/34 `artifacts/logs/sio-cross-aid-vpcd-20261106T083357Z.log`, SHA-256 `6903fd84f7630b4573a30af91108fc67623db12f5267dd03cd8d545e1b9ef5b1`.

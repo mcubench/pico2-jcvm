@@ -12,7 +12,7 @@ freshly rebuilt PC `symm_crypto` VM. ARM `current` and RISC-V `current` builds
 pass. The ARM image ends at `0x100D4B20`, leaving 177,376 bytes. Python syntax
 and scoped CRLF-aware diff checks pass. No physical hardware was used.
 
-Source/test commit: pending; progress record is at the end of `progress.md`.
+Source/test commit: `f2169c73`; progress record is at the end of `progress.md`.
 
 Next: cover Checksum and enabled AEAD/key result producers, then test object
 SensitiveResult GC rooting after ordinary local references are dropped through
