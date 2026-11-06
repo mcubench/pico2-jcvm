@@ -28,6 +28,9 @@ hashes are in `progress.md`. ARM, RISC-V, PC, and focused native tests pass.
 No physical board was accessed; this validation used a test-only CAP and the
 PC VPCD emulator.
 
+The exhaustive invalid-nibble and runtime rejection update is committed as
+`c5d16e53`; its detailed progress entry resolves the latest pending SHA.
+
 RV-20261106-60's requested software semantics and interpreter checks are
 complete. Preserve unrelated review/worktree changes. Continue with the
 applet-instance DELETE / retained foreign-array root issue documented under

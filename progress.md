@@ -23527,3 +23527,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close RV-20261106-60 software semantics. Continue CTX-01 with applet-instance DELETE while a live foreign array retains a reference into that instance; keep package deletion behavior separate.
 - Commit: pending; exact SHA will be appended after the scoped test/progress/handoff commit.
 - Artifacts/logs: Positive log `artifacts/logs/dup-x-vpcd-20261106T225221Z.log` SHA-256 `3a350516eec2c95c24df2e4163ebdfbcfc234e6f69051a4bbc65ae13e112b007`; invalid emulator log `artifacts/logs/dup-x-invalid-vpcd-20261106T225221Z.log` SHA-256 `2fe1b7c782fba665001b00e83c50ca4642e2b100ec0012ad2a529cd9158df4d1`; host wrapper log `artifacts/logs/dup-x-invalid-host-20261106T225221Z.log` SHA-256 `1258f4ee3c29e8028a6d8d183a3ab2642f97cc51d713fedc525bbf1d1d26e52b`; PC debug build log SHA-256 `98eea36a52e7f60c6221f0e504c1941b6987f2c40c94e500de2beb4f5d00194e`.
+
+## 2026-11-06 Record dup_x operand guard commit resolution 1 minute
+
+- Step/experiment: `rv-20261106-60-dup-x-invalid-operand-commit`
+- When: '2026-11-06 23:55 CET' - '2026-11-06 23:56 CET'
+- Change: Recorded the commit for exhaustive invalid-nibble stack checks and interpreter rejection coverage; refreshed the active handoff.
+- Validation: No additional test run; `./tools/test-rmi-registry` and `./tools/test-dup-x-vpcd` passed in the preceding step.
+- Result: RV-20261106-60 software semantics are complete with valid and invalid CAP-to-interpreter coverage.
+- Decision: Proceed to CTX-01 applet-instance DELETE and retained foreign-array roots.
+- Commit: `c5d16e53fea2b5d2f53e54f5b3f411fc8e3d526e` — test and coverage changes; this documentation follow-up is separate.
+- Artifacts/logs: See the preceding progress entry for exact log paths and hashes.
