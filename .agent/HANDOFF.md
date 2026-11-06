@@ -43,7 +43,8 @@ Next: continue the open CTX-01/03 owner-aware reference audit, especially
 remaining foreign-reference consumers and lifecycle/root edges. Do not broaden
 persistent or static/instance foreign-reference stores without durable owner
 identity, restoration, and GC-root coverage. Follow root `AGENTS.md` for
-validation and commits. This implementation commit: pending.
+validation and commits. Implementation commit:
+`9e99b9d35cb5924e36e4db41dc8682903dce5ec0`.
 
 # Previous handoff — loaded package import deletion policy — 2026-11-06 20:02 CET
 
