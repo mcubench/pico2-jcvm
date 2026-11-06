@@ -1080,6 +1080,12 @@ void choupi_vm_forget_deleted_applet_contexts(
   if (deleting_package != 0) {
     jcvm::Heap::clearGlobalArrayReferencesForPackage(package_id);
     jcvm::Heap::clearForeignArrayReferencesForPackage(package_id);
+    if (selected_applet_context) {
+      selected_applet_context->forgetShareableProxiesForPackage(package_id);
+    }
+    for (auto &context : inactive_applet_contexts) {
+      if (context) context->forgetShareableProxiesForPackage(package_id);
+    }
   }
   selected_applet_reselection_pending = false;
   selected_applet_is_reselecting = false;
@@ -1374,7 +1380,8 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
   const jcvm::jref_t proxy = client_context.getHeap().addInstance(
       server_object->getPackageID(), server_object->getClassIndex());
   if (!client_context.registerShareableProxy(
-          proxy, server_aid, server_aid_length, server_reference)) {
+          proxy, server_aid, server_aid_length, server_reference,
+          server_object->getPackageID())) {
     throw jcvm::Exceptions::SecurityException;
   }
   TRACE_JCVM_DEBUG("SIO_LOOKUP created proxy=%04X server_ref=%04X",

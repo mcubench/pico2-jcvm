@@ -285,14 +285,14 @@ void verify_sibling_rmi_state_isolation_and_delete() {
       package_context.exportRemoteObject(first_server);
   assert(first_object_id != 0xffff);
   assert(package_context.registerShareableProxy(
-      first_proxy, second_aid, sizeof(second_aid), first_server));
+      first_proxy, second_aid, sizeof(second_aid), first_server, 9));
   assert(package_context.retainShareableObjectRoot(first_server));
 
   assert(package_context.activateAppletInstance(8, second_aid,
                                                  sizeof(second_aid)));
   const auto second_client_proxy = make_reference(43);
   assert(package_context.registerShareableProxy(
-      second_client_proxy, first_aid, sizeof(first_aid), first_server));
+      second_client_proxy, first_aid, sizeof(first_aid), first_server, 9));
   assert(package_context.remoteObjectId(first_server) == 0xffff);
   jcvm::jref_t resolved;
   assert(!package_context.remoteObject(first_object_id, resolved));
@@ -599,11 +599,16 @@ void verify_shareable_proxy_registry() {
   constexpr uint8_t server_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x01};
   const jcvm::jref_t proxy(0x0010);
   const jcvm::jref_t server_object(0x0020);
+  const jcvm::jref_t unrelated_proxy(0x0034);
+  const jcvm::jref_t unrelated_server_object(0x0036);
   assert(client.findShareableProxy(server_aid, sizeof(server_aid),
                                   server_object)
              .isNullPointer());
   assert(client.registerShareableProxy(proxy, server_aid, sizeof(server_aid),
-                                      server_object));
+                                      server_object, 5));
+  assert(client.registerShareableProxy(
+      unrelated_proxy, server_aid, sizeof(server_aid),
+      unrelated_server_object, 6));
   assert(client.findShareableProxy(server_aid, sizeof(server_aid),
                                   server_object) == proxy);
   assert(client.isShareableProxy(proxy));
@@ -618,22 +623,30 @@ void verify_shareable_proxy_registry() {
   assert(std::equal(server_aid, server_aid + sizeof(server_aid),
                     returned_aid));
   assert(returned_server_object == server_object);
+  constexpr uint8_t other_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x02};
+  assert(client.findShareableProxy(other_aid, sizeof(other_aid), server_object)
+             .isNullPointer());
+  assert(!client.registerShareableProxy(proxy, other_aid, sizeof(other_aid),
+                                       server_object, 5));
+  assert(!client.registerShareableProxy(jcvm::jref_t{}, server_aid,
+                                       sizeof(server_aid), server_object, 5));
+  assert(!client.registerShareableProxy(jcvm::jref_t(0x0030), server_aid, 4,
+                                       server_object, 5));
+  client.forgetShareableProxiesForPackage(5);
+  assert(!client.isShareableProxy(proxy));
+  assert(client.isShareableProxy(unrelated_proxy));
+  assert(!client.getShareableProxy(proxy, returned_aid, returned_aid_length,
+                                   returned_server_object));
+  assert(client.getShareableProxy(unrelated_proxy, returned_aid,
+                                  returned_aid_length,
+                                  returned_server_object));
+  assert(returned_server_object == unrelated_server_object);
   assert(server.retainShareableObjectRoot(server_object));
   VisitedReferences server_roots;
   server.visitRootReferences(record_reference, &server_roots);
   assert(contains(server_roots, server_object));
   assert(!server.retainShareableObjectRoot(jcvm::jref_t{}));
   assert(!server.retainShareableObjectRoot(jcvm::jref_t(0x0031)));
-
-  constexpr uint8_t other_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x02};
-  assert(client.findShareableProxy(other_aid, sizeof(other_aid), server_object)
-             .isNullPointer());
-  assert(!client.registerShareableProxy(proxy, other_aid, sizeof(other_aid),
-                                       server_object));
-  assert(!client.registerShareableProxy(jcvm::jref_t{}, server_aid,
-                                       sizeof(server_aid), server_object));
-  assert(!client.registerShareableProxy(jcvm::jref_t(0x0030), server_aid, 4,
-                                       server_object));
 
   client.clearShareableSessionState();
   assert(!client.isShareableProxy(proxy));

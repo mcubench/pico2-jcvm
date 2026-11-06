@@ -23102,6 +23102,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `pending`
 - Artifacts/logs: Command output recorded in this session; no separate log file.
 
+## 2026-11-06 Invalidate SIO proxies on package DELETE 18 minutes
+
+- Step/experiment: `gp-ctx-package-delete-proxy-invalidation-20261106`
+- When: '2026-11-06 14:04 CET' - '2026-11-06 14:22 CET'
+- Change: Reproduced and fixed CAP-REINSTALL-01. Cross-package proxy records now retain their server package ID. Successful package DELETE clears routes for that package from all selected and inactive applet contexts while preserving other packages' routes. Added RMI unit coverage and an opt-in VPCD sequence for package DELETE, same-AID reinstall, stale-proxy denial and fresh lookup.
+- Validation: Before the fix, after package DELETE and same-AID reinstall the retained old proxy dispatched successfully (`45679000`): `artifacts/logs/sio-cross-aid-vpcd-20261106T125643Z.log`, SHA-256 `a7de1fe426f2492cfd1e8876cc0b72b64a23726e60af2beac671c4f1a9ba20ca`. After rebuilding the PC VM, the focused regression passed: old proxy `6A0A` after DELETE and after reinstall, null lookup after DELETE, fresh service lookup `45679000` after reinstall; log `artifacts/logs/sio-cross-aid-vpcd-20261106T131230Z.log`, SHA-256 `d64ab6f8fceb8c9988df19da01004772d733cb1edd24e6a75e058742bfbb8ae5`. The default three-package suite passes 34/34; log SHA-256 `f1a4b9f08db5c92a7e23398e4c779a3e382f9c2cba29b6cb4659c86c1fe6044a`. `./tools/test-rmi-registry` passes. Same-CAP sibling/restart/delete-reinstall suites pass 6/6, 7/7 and 9/9 (logs under `artifacts/logs/` with hashes in HANDOFF/QKB). ARM and RISC-V wrappers pass. Full ARM UF2 SHA-256 `eaf0fda21b394d6dc55a886be8ee19ac0abdb71eab1fbd8424f627e9d90de470` was flashed to Pico 2 `8E464F4E2BBC0A19`; finite full-firmware monitor passes (`TEST:SUMMARY pass=1 fail=0`), log SHA-256 `a0a213ab9aacf5a482c748e3f3ff2e49d52afb02c4ab3bff9e81074bc0d8b4d2`. The authorized helper granted three USB nodes but bounded `pcsc_scan -r` exited 124 without readers, so no physical APDU test ran. `tools/cycle arm` initially chose the smoke UF2; I restored the full image explicitly with `tools/flash` and separately verified the full firmware.
+- Result: VPCD now proves a retained proxy cannot revive across successful package deletion/reinstall even when the service is reinstalled under the same AID; unrelated package routes survive registry invalidation. Physical CCID/APDU behavior and a second independent client applet remain unverified.
+- Decision: Keep CAP-REINSTALL-01 open until the unrelated-client integration case and physical APDU gate pass. Rebuild `build/choupi-pc` with `./tools/build-pc --profile max_crypto` after C++ changes; VPCD wrappers reuse their executable. Continue with offline integration while PC/SC has no Pico reader.
+- Commit: `pending`
+- Artifacts/logs: Focused package-delete/reinstall log `artifacts/logs/sio-cross-aid-vpcd-20261106T131230Z.log`; baseline `artifacts/logs/sio-cross-aid-vpcd-20261106T131316Z.log`; physical monitor `artifacts/logs/monitor-full-choupi-8E464F4E2BBC0A19-20261106.log`; previous failure `artifacts/logs/sio-cross-aid-vpcd-20261106T125643Z.log`.
+
 ## 2026-11-06 Verify empty Export table with Descriptor present 4 minutes
 
 - Step/experiment: `ctx01-empty-export-descriptor-present-20261106`

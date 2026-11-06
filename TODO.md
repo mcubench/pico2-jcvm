@@ -1033,14 +1033,20 @@ source-based follow-ups, without a new physical reproduction in this review.
 ### GP-01
 
 - [ ] **CAP-REINSTALL-01: Reproduce and close stale SIO routes after package DELETE.**
-  Owners: GP-01, CTX-01/03. Source-review risk; not yet reproduced.
-  Package deletion drops server contexts but skips the client proxy invalidation
-  used by instance deletion. Retain a client proxy, delete the server package
-  with related objects, and reinstall with the same AIDs in the same process.
-  Acceptance: old proxies fail closed even when owner/compact handles are
-  reused; fresh lookup reaches the new service; unrelated clients still work.
-  Correct invalidation if confirmed and cover package cascade separately from
-  instance DELETE. Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md).
+  Owners: GP-01, CTX-01/03. The issue is now reproduced and fixed in VPCD.
+  A client retained a server proxy; package DELETE succeeded with the client
+  still installed; after same-AID package reinstall the old proxy incorrectly
+  dispatched (`45679000`). Proxy routes now record the server package ID, and
+  successful package DELETE invalidates those routes across selected and
+  inactive contexts. The opt-in regression verifies old proxy `6A0A`, null
+  lookup after deletion, then old proxy `6A0A` and fresh service result
+  `45679000` after reinstall. The registry unit test confirms another
+  package's route remains. Same-CAP sibling/restart/delete suites pass 6/6,
+  7/7, and 9/9. Remaining: add a distinct unrelated client applet integration
+  case and repeat the package DELETE/reinstall APDUs on physical Pico hardware;
+  PC/SC currently enumerates no Pico reader. Keep open until those gates pass.
+  Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md),
+  `.agent/QKB.md`, and `progress.md`.
 
 - [ ] **CAP-REINSTALL-02: Reconcile runtime contexts after a late DELETE failure.**
   Owners: GP-01, PERSIST-02, CTX-03. Source-review risk; not yet reproduced.

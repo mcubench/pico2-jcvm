@@ -7462,3 +7462,31 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   Exceptions keep the result unassigned. A three-package interpreted VPCD
   fixture now asserts both service-side results and the caller's final result;
   full SIO VPCD passes 34/34.
+
+## SIO proxy revived after full package DELETE and same-AID reinstall — 2026-11-06
+
+- **Issue:** `CAP-REINSTALL-01` was reproduced with a retained cross-AID
+  Shareable proxy. Instance DELETE invalidated cached proxy routes by server
+  AID, but package DELETE only discarded contexts whose package ID matched the
+  deleted server. The client context survived with its route. After deleting
+  and reinstalling the service package under the same AID, the old proxy
+  dispatched to the replacement object (`45679000`) instead of failing closed.
+- **Viable fix:** Each runtime `ShareableProxyEntry` now stores the server's
+  package ID at registration. Successful package DELETE invalidates matching
+  routes in every selected/inactive applet context before the deleted package
+  context is dropped. Other package routes are preserved. The placeholder stays
+  marked, so its old proxy fails closed; a new lookup creates a distinct route.
+- **Validation:** The opt-in VPCD regression passes through package DELETE,
+  `6A0A` for the old route, null lookup after deletion, same-AID LOAD/INSTALL,
+  `6A0A` for the old route after reinstall, and `45679000` for fresh lookup.
+  The unmodified default cross-AID suite passes 34/34. The RMI registry unit,
+  same-CAP sibling, restart, and delete/reinstall suites pass. ARM and RISC-V
+  wrappers pass; the full ARM image was flashed to Pico 2
+  `8E464F4E2BBC0A19` and finite serial monitoring reports
+  `TEST:SUMMARY pass=1 fail=0`.
+- **Limit:** Physical package-delete APDU validation was not possible: the
+  helper granted access to three USB devices, but `pcsc_scan -r` listed no Pico
+  reader. The VPCD test does not yet include a separate unrelated client
+  applet. Also rebuild the PC VM (`./tools/build-pc --profile max_crypto`)
+  before VPCD tests after runtime C++ edits; the test wrapper reuses the
+  existing executable and does not rebuild it.

@@ -335,7 +335,8 @@ jref_t wrapShareableReference(Context &client_context,
   const jref_t proxy = client_context.getHeap().addInstance(
       server_object->getPackageID(), server_object->getClassIndex());
   if (!client_context.registerShareableProxy(
-          proxy, server_aid, server_aid_length, server_reference)) {
+          proxy, server_aid, server_aid_length, server_reference,
+          server_object->getPackageID())) {
     throw Exceptions::SecurityException;
   }
   return proxy;

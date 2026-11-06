@@ -928,6 +928,117 @@ def main() -> int:
             response = vpcd.exchange(connection, select_client, "SELECT client")
             if response[-2:] != b"\x90\x00":
                 raise RuntimeError(f"SELECT client failed: {response.hex().upper()}")
+            if os.environ.get("SIO_CROSS_AID_TEST_PACKAGE_DELETE") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8015000000"),
+                    "retain proxy before package DELETE"
+                )
+                if response != bytes.fromhex("6A109000"):
+                    raise RuntimeError(
+                        "proxy retention before package DELETE returned "
+                        f"{response.hex().upper()}, expected 6A109000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before package DELETE"
+                )
+                if response[-2:] != bytes.fromhex("9000"):
+                    raise RuntimeError(
+                        f"SELECT ISD before package DELETE returned "
+                        f"{response.hex().upper()}"
+                    )
+                delete_scp = vpcd.Scp03(connection)
+                delete_scp.authenticate()
+                response = vpcd.delete_object(
+                    delete_scp, SERVICE_PACKAGE, True,
+                    "DELETE cross-AID service package with related objects",
+                    expected_statuses=(0x9000, 0x6985, 0x6A80),
+                )
+                if response == bytes.fromhex("9000"):
+                    print("TEST:PASS package DELETE succeeded with dependent "
+                          "client still installed")
+                    response = vpcd.exchange(
+                        connection, select_client,
+                        "reselect client after package DELETE"
+                    )
+                    if response[-2:] != bytes.fromhex("9000"):
+                        raise RuntimeError(
+                            "client SELECT after package DELETE returned "
+                            f"{response.hex().upper()}"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("8016000000"),
+                        "reject retained proxy after package DELETE"
+                    )
+                    if response != bytes.fromhex("6A0A9000"):
+                        raise RuntimeError(
+                            "retained proxy after package DELETE returned "
+                            f"{response.hex().upper()}, expected 6A0A9000"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("8010000000"),
+                        "fresh lookup after package DELETE"
+                    )
+                    if response != bytes.fromhex("6A049000"):
+                        raise RuntimeError(
+                            "fresh lookup after package DELETE returned "
+                            f"{response.hex().upper()}, expected 6A049000"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("00A4040000"),
+                        "SELECT ISD before package reinstall"
+                    )
+                    if response[-2:] != bytes.fromhex("9000"):
+                        raise RuntimeError(
+                            "SELECT ISD before package reinstall returned "
+                            f"{response.hex().upper()}"
+                        )
+                    reinstall_scp = vpcd.Scp03(connection)
+                    reinstall_scp.authenticate()
+                    vpcd.load_package(reinstall_scp, service[0], service[1])
+                    response = vpcd.install_applet(
+                        reinstall_scp, service[1], service[2][0], service[2][0]
+                    )
+                    if response[-2:] != bytes.fromhex("9000"):
+                        raise RuntimeError(
+                            "service applet INSTALL after package DELETE "
+                            f"returned {response[-2:].hex().upper()}, expected 9000"
+                        )
+                    response = vpcd.exchange(
+                        connection, select_client,
+                        "reselect client after service package reinstall"
+                    )
+                    if response[-2:] != bytes.fromhex("9000"):
+                        raise RuntimeError(
+                            "client SELECT after service package reinstall "
+                            f"returned {response.hex().upper()}"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("8016000000"),
+                        "reject old proxy after service package reinstall"
+                    )
+                    if response != bytes.fromhex("6A0A9000"):
+                        raise RuntimeError(
+                            "old proxy after package reinstall returned "
+                            f"{response.hex().upper()}, expected 6A0A9000"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("8010000000"),
+                        "fresh lookup after service package reinstall"
+                    )
+                    if response != bytes.fromhex("45679000"):
+                        raise RuntimeError(
+                            "fresh lookup after package reinstall returned "
+                            f"{response.hex().upper()}, expected 45679000"
+                        )
+                    print("TEST:PASS old proxy remains blocked and fresh lookup "
+                          "reaches service after package reinstall")
+                else:
+                    print("TEST:INFO package DELETE refused with "
+                          f"{response[-2:].hex().upper()}; no stale-route path "
+                          "was exercised")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_GLOBAL_ARRAY") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("8030000000"),

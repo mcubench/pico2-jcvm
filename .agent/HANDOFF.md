@@ -1,4 +1,40 @@
-# Current handoff — card-manager recovery after malformed CAP — 2026-11-06 13:43 CET
+# Current handoff — package DELETE invalidates cross-AID SIO routes — 2026-11-06 14:22 CET
+
+## Latest: CAP-REINSTALL-01 defect reproduced and fixed in VPCD
+
+The new package-delete regression exposed that a client retained proxy could
+revive after successful server package DELETE and same-AID package reinstall;
+the old route returned `45679000`. Proxy entries now store the server package
+ID. Package DELETE invalidates matching routes across selected and inactive
+contexts. The final focused regression passes: after delete, old proxy returns
+`6A0A`, fresh lookup is null; after same-AID reinstall, old proxy still returns
+`6A0A` and fresh lookup reaches the service (`45679000`). Unit coverage
+confirms a route to another package remains intact.
+
+Validation: `./tools/test-rmi-registry`; focused
+`PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_PACKAGE_DELETE=1
+./tools/test-sio-cross-aid-vpcd`; default SIO VPCD 34/34; same-CAP sibling
+6/6, restart 7/7, and delete/reinstall 9/9. ARM and RISC-V max_crypto wrapper
+builds pass. Full ARM image SHA-256
+`eaf0fda21b394d6dc55a886be8ee19ac0abdb71eab1fbd8424f627e9d90de470` was
+flashed to `8E464F4E2BBC0A19`; finite monitor log
+`artifacts/logs/monitor-full-choupi-8E464F4E2BBC0A19-20261106.log` SHA-256
+`a0a213ab9aacf5a482c748e3f3ff2e49d52afb02c4ab3bff9e81074bc0d8b4d2`,
+`TEST:SUMMARY pass=1 fail=0`. One `tools/cycle arm` invocation selected the
+smoke image; I immediately restored the full firmware with `tools/flash` and
+verified the full image separately. Do not use that cycle log as firmware
+evidence.
+
+Physical APDU validation remains unavailable. The authorized helper grants
+three USB nodes, but `timeout 8s pcsc_scan -r` exits 124 without listing a Pico.
+The VPCD scenario still lacks an independent unrelated-client applet. After
+runtime C++ edits, rebuild the PC emulator with
+`./tools/build-pc --profile max_crypto` before running VPCD tests; wrappers reuse
+the existing executable. Next: close unrelated-client integration and repeat
+the package-delete/reinstall APDUs on physical hardware once PC/SC enumerates a
+Pico. `TODO.md` keeps CAP-REINSTALL-01 open for these acceptance gates.
+
+# Previous handoff — card-manager recovery after malformed CAP — 2026-11-06 13:43 CET
 
 ## Reader refresh — 2026-11-06 13:46 CET
 

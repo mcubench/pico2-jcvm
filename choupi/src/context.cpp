@@ -529,7 +529,8 @@ bool Context::isStaleShareableProxy(const jref_t reference) noexcept {
 bool Context::registerShareableProxy(const jref_t proxy_reference,
                                      const uint8_t *server_aid,
                                      const uint8_t server_aid_length,
-                                     const jref_t server_reference) noexcept {
+                                     const jref_t server_reference,
+                                     const jpackage_ID_t server_package_id) noexcept {
   if (proxy_reference.isNullPointer() || proxy_reference.isArray() ||
       server_aid == nullptr || server_aid_length < 5 || server_aid_length > 16 ||
       server_reference.isNullPointer() || server_reference.isArray()) {
@@ -547,6 +548,7 @@ bool Context::registerShareableProxy(const jref_t proxy_reference,
     if (!entry.proxy_reference.isNullPointer()) {
       if (entry.proxy_reference == proxy_reference) {
         return entry.server_reference == server_reference &&
+               entry.server_package_id == server_package_id &&
                entry.server_aid_length == server_aid_length &&
                std::equal(server_aid, server_aid + server_aid_length,
                           entry.server_aid.begin());
@@ -555,12 +557,25 @@ bool Context::registerShareableProxy(const jref_t proxy_reference,
     }
     entry.proxy_reference = proxy_reference;
     entry.server_reference = server_reference;
+    entry.server_package_id = server_package_id;
     std::copy(server_aid, server_aid + server_aid_length,
               entry.server_aid.begin());
     entry.server_aid_length = server_aid_length;
     return true;
   }
   return false;
+}
+
+void Context::forgetShareableProxiesForPackage(
+    const jpackage_ID_t server_package_id) noexcept {
+  for (auto &instance : this->applet_instances) {
+    for (auto &proxy : instance.shareable_proxies) {
+      if (!proxy.proxy_reference.isNullPointer() &&
+          proxy.server_package_id == server_package_id) {
+        proxy = ShareableProxyEntry{};
+      }
+    }
+  }
 }
 
 bool Context::getShareableProxy(const jref_t proxy_reference,

@@ -59,6 +59,7 @@ private:
     jref_t server_reference;
     std::array<uint8_t, 16> server_aid{};
     uint8_t server_aid_length = 0;
+    jpackage_ID_t server_package_id = 0;
   };
   /// State owned by one installed applet instance. Kept separate from the
   /// CAP execution context so one context can later retain sibling AIDs,
@@ -190,7 +191,10 @@ public:
   bool registerShareableProxy(jref_t proxy_reference,
                              const uint8_t *server_aid,
                              uint8_t server_aid_length,
-                             jref_t server_reference) noexcept;
+                             jref_t server_reference,
+                             jpackage_ID_t server_package_id) noexcept;
+  void forgetShareableProxiesForPackage(
+      jpackage_ID_t server_package_id) noexcept;
   bool getShareableProxy(jref_t proxy_reference, uint8_t server_aid[16],
                          uint8_t &server_aid_length,
                          jref_t &server_reference) const noexcept;
