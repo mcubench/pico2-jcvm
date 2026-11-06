@@ -22937,3 +22937,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the direct heap-GC proof and interpreted SIO propagation evidence distinct. Continue with broader physical SensitiveResult validation.
 - Commit: `b2a72fbd`.
 - Artifacts/logs: None archived; test output was `RMI_REGISTRY:PASS ... sensitive_result_gc_root=1`.
+
+## 2026-11-06 Add physical AID SensitiveResult check; PCSC reader unavailable 9 minutes
+
+- Step/experiment: `ctx02-aid-sensitive-result-physical-20261106`
+- When: '2026-11-06 10:23 UTC' - '2026-11-06 10:32 UTC'
+- Change: Extended the exact-reader Pico 2 physical probe with AID boolean SensitiveResult APDU `803B000000`, expecting `6A319000`. Updated TODO and continuity notes with the physical registration state.
+- Validation: `git diff --check` passed for the changed Java probe and QKB. The physical harness regenerated all three fixture CAPs and compiled the Java SmartcardIO probe, but stopped at GPPro's initial read-only `--list` before package LOAD/INSTALL because no Pico reader was registered. After the authorized helper, `lsusb -d 2e8a:0009` found devices 039, 040, and 045; each had Communications, CDC Data, and CCID interface 2. Bounded `pcsc_scan -r` listed only the two VPCD readers. No pcscd restart/configuration change was attempted.
+- Result: No hardware result for the new AID APDU. The immediately preceding full physical suite passed the JCSystem SensitiveResult check (`6A8B9000`) and reported cleanup PASS. Do not attribute this attempt to firmware; failure was before card traffic at host PC/SC reader selection.
+- Decision: Continue offline/emulator work; retry this physical probe only after `pcsc_scan -r` lists a Pico reader. Use its exact current name.
+- Commit: `5e875772`.
+- Artifacts/logs: Prior physical pass `artifacts/logs/sio-cross-aid-physical-20261106T102553Z.log`, SHA-256 `1290201a5f4f78b558ac32cb76703808a45cd16542c1dc38dcddaa0dedd7952f`; failed pre-traffic GPPro list `build/sio-cross-aid-fixture/physical-gp-list-20261106T102843Z.log`, SHA-256 `a1db974ee9a6a906729879ff24ea6431c5e0bd52fe0561b1697d37a417e11d09`.

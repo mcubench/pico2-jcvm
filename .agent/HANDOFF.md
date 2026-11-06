@@ -1,4 +1,30 @@
-# Active handoff — SensitiveResult GC roots — 2026-11-06 11:23 CET
+# Active handoff — Physical AID SensitiveResult probe — 2026-11-06 11:32 CET
+
+## Latest continuation — AID physical check added, reader registration dropped
+
+Added an exact-reader physical APDU check (`803B000000`, expected
+`6A319000`) to cover AID boolean SensitiveResult assertions through SIO. The
+updated physical harness built the fixture and compiled the probe, but GPPro's
+initial read-only `--list` failed before any package LOAD/INSTALL because the
+physical PC/SC reader was no longer registered. `lsusb` still showed all three
+Pico 2 devices with CCID interface descriptors; `pcsc_scan -r` showed only the
+two virtual readers after the authorized access helper ran. This is recorded
+in QKB; no pcscd restart or configuration change was attempted.
+
+Previous physical suite passed with JCSystem result `6A8B9000`, including
+cleanup, at `artifacts/logs/sio-cross-aid-physical-20261106T102553Z.log`
+(SHA-256 `1290201a5f4f78b558ac32cb76703808a45cd16542c1dc38dcddaa0dedd7952f`).
+Updated attempt stopped before card traffic; GPPro log:
+`build/sio-cross-aid-fixture/physical-gp-list-20261106T102843Z.log` (SHA-256
+`a1db974ee9a6a906729879ff24ea6431c5e0bd52fe0561b1697d37a417e11d09`).
+
+Next: continue offline/emulator implementation. Retry the updated physical
+probe only when a Pico reader reappears in `pcsc_scan -r`; use its exact
+current name. Preserve all unrelated worktree changes.
+
+---
+
+# Previous handoff — SensitiveResult GC roots — 2026-11-06 11:23 CET
 
 ## Latest continuation — object result is the sole native GC root
 

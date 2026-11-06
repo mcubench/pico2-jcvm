@@ -1,3 +1,20 @@
+## Pico USB CCID interfaces enumerate while pcscd omits all physical readers — observed 2026-11-06
+
+- **Observation:** After a successful physical SIO run, the updated follow-up
+  probe failed at GPPro's initial `--list`, before any LOAD or INSTALL. The
+  saved GPPro output listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`.
+  `lsusb -d 2e8a:0009` still showed three Pico devices (USB nodes 039, 040,
+  045), and `lsusb -v` showed Communications, CDC Data, and Chip/SmartCard
+  interface 2 on each. The access helper granted all three nodes, but two
+  bounded `pcsc_scan -r` checks still listed only the VPCD readers.
+- **Interpretation:** USB passthrough and the CCID descriptors are present;
+  PC/SC registration is missing. Do not classify this as firmware failure or
+  keep retrying GPPro against a reader name that `pcsc_scan -r` does not show.
+- **Next:** Continue emulator/offline work. When physical validation resumes,
+  first confirm a Pico reader appears in `pcsc_scan -r`; then pass its exact
+  current name to the physical test. No pcscd restart or machine-configuration
+  change was attempted.
+
 ## Pico 2 PC/SC channel suffix can change after USB re-enumeration — observed 2026-11-06
 
 - **Observation:** After reflashing and runtime USB re-enumeration, board
