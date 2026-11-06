@@ -1,3 +1,29 @@
+# Active handoff — SensitiveArrays SensitiveResult through SIO — 2026-11-06 10:00 CET
+
+## Latest continuation — unsupported array capability results now recorded
+
+Native `SensitiveArrays.isIntegritySensitive()` and
+`isIntegritySensitiveArraysSupported()` previously returned `false` without
+updating the SensitiveResult channel, despite their API contract. They now
+clear stale state at entry and publish boolean false after successful calls;
+exceptions still leave the channel unassigned. The interpreted three-package
+fixture asserts each result in the service and checks the final one after SIO.
+
+Focused SensitiveArrays VPCD passed; full cross-AID VPCD passed 34/34 on a
+rebuilt `symm_crypto` PC VM. ARM `current` and RISC-V `current` builds pass.
+ARM image ends at `0x100D4B48`, leaving 177,336 bytes. No physical device was
+used. Python syntax and scoped CRLF-aware diff checks pass.
+
+Source/test commit: pending; progress record is at the end of `progress.md`.
+
+Current API Checksum factory branches both throw `NO_SUCH_ALGORITHM`, and no
+AEAD provider is enabled; leave those out of runtime result coverage until the
+algorithms are implemented and selected. Next: cover remaining enabled key
+results and the object-result GC-rooting case after ordinary locals are
+released. Preserve unrelated dirty files.
+
+---
+
 # Active handoff — RandomData SensitiveResult through SIO — 2026-11-06 09:41 CET
 
 ## Latest continuation — RandomData result producers covered

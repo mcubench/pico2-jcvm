@@ -7342,3 +7342,16 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `6F00`, and PC VPCD ISD/applet recovery passes 6/6. Test:
   `exception-handler-range-start-out-of-bounds`; full log hash is in
   `progress.md`. No physical card was used.
+
+## Native SensitiveArrays calls returned the correct boolean without publishing it — 2026-11-06
+
+- **Issue:** `SensitiveArrays.isIntegritySensitive()` and
+  `isIntegritySensitiveArraysSupported()` correctly returned `false` while
+  integrity-sensitive arrays were unsupported, but left the VM-wide
+  SensitiveResult unassigned or stale. This violated the API's documented
+  result-channel contract and caused a caller assertion after SIO to fail.
+- **Viable solution:** Native `NativeImplementation` methods reset the result
+  before validation and set boolean false on successful unsupported queries.
+  Exceptions keep the result unassigned. A three-package interpreted VPCD
+  fixture now asserts both service-side results and the caller's final result;
+  full SIO VPCD passes 34/34.

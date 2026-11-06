@@ -360,6 +360,19 @@ def main() -> int:
                 print("TEST:PASS RandomData getAlgorithm/nextBytes results across SIO")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_SENSITIVE_ARRAYS") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("803A000000"),
+                    "SensitiveArrays SensitiveResult across SIO"
+                )
+                if response != bytes.fromhex("6A889000"):
+                    raise RuntimeError(
+                        "SensitiveArrays SensitiveResult returned "
+                        f"{response.hex().upper()}, expected 6A889000"
+                    )
+                print("TEST:PASS SensitiveArrays false results across SIO")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("802C000000"),
@@ -579,6 +592,16 @@ def main() -> int:
                     "expected 6A859000"
                 )
             print("TEST:PASS RandomData getAlgorithm/nextBytes results across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("803A000000"),
+                "SensitiveArrays SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A889000"):
+                raise RuntimeError(
+                    f"SensitiveArrays SensitiveResult returned {response.hex().upper()}, "
+                    "expected 6A889000"
+                )
+            print("TEST:PASS SensitiveArrays false results across SIO")
             response = vpcd.exchange(
                 connection, bytes.fromhex("802B000000"),
                 "propagate exact exception type and reason across SIO"

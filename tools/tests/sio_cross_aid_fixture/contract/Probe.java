@@ -23,6 +23,7 @@ public interface Probe extends Shareable {
   short sensitivePinVirtualResults();
   short sensitiveOwnerPinXResults();
   short sensitiveRandomDataResults();
+  short sensitiveArrayCapabilityResults();
   int exerciseWide(int value);
   short throwSecurityException();
   short throwCryptoException();

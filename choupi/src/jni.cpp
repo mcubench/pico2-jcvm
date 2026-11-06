@@ -1961,17 +1961,23 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_assertIntegrity(
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(
     const jref_t objectref) {
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   if (objectref.isNullPointer()) {
     throw Exceptions::NullPointerException;
   }
 
   // This VM does not create or track integrity-sensitive arrays.
+  context.setSensitiveResultBoolean(false);
   return FALSE;
 }
 
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported() {
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   // Integrity-sensitive array storage and verification are not implemented.
+  context.setSensitiveResultBoolean(false);
   return FALSE;
 }
 

@@ -320,6 +320,8 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).sensitiveOwnerPinXResults();
     } else if (buffer[1] == 0x39) {
       result = ((Probe) shareable).sensitiveRandomDataResults();
+    } else if (buffer[1] == 0x3A) {
+      result = ((Probe) shareable).sensitiveArrayCapabilityResults();
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

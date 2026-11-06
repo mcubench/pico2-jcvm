@@ -22893,3 +22893,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with Checksum and enabled AEAD/key result producers, then verify GC rooting of object results after ordinary locals are dropped. Hardware acceptance remains open.
 - Commit: `f2169c73`.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T083303Z.log`, SHA-256 `4e84368c1589ea5f548e0a67052c342ee69107a2be3645371ef49c2a9749f371`; full 34/34 `artifacts/logs/sio-cross-aid-vpcd-20261106T083357Z.log`, SHA-256 `6903fd84f7630b4573a30af91108fc67623db12f5267dd03cd8d545e1b9ef5b1`.
+
+## 2026-11-06 SensitiveArrays SensitiveResult through SIO 18 minutes
+
+- Step/experiment: `ctx02-sensitive-arrays-result-20261106`
+- When: '2026-11-06 08:41 UTC' - '2026-11-06 09:00 UTC'
+- Change: Fixed `NativeImplementation.isIntegritySensitive()` and `isIntegritySensitiveArraysSupported()` to clear stale state at entry and publish their supported `false` boolean result. Added an interpreted SIO fixture that asserts both API results in the service and the final result in the caller.
+- Validation: `./tools/build-pc --profile symm_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. Focused `SIO_CROSS_AID_ONLY_SENSITIVE_ARRAYS=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed 34/34. Python syntax and scoped CRLF-aware diff checks passed. ARM image ends at `0x100D4B48`, leaving 177,336 bytes. No physical device was used.
+- Result: Both methods now preserve their documented false result through SIO; null `isIntegritySensitive` failure still resets and leaves the channel unassigned by construction, but that failure path was not separately tested.
+- Decision: Checksum has no supported API provider and AEAD is not enabled in this profile, so keep them outside current result coverage rather than treating expected `NO_SUCH_ALGORITHM` as a SensitiveResult defect. Continue with other enabled key APIs and object-result GC rooting.
+- Commit: pending.
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T085036Z.log`, SHA-256 `aeb0d9b62e41c7e8c7f5bb6bfc6a7e1b9e36ed5247c85608799f08f0db3c8c2c`; full 34/34 `artifacts/logs/sio-cross-aid-vpcd-20261106T085135Z.log`, SHA-256 `05e1486acf2d536723984320646a608e8f1ceb3ab5f4c761d6f42a886c9d5687`.

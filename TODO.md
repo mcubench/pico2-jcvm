@@ -875,8 +875,16 @@ source-based follow-ups, without a new physical reproduction in this review.
   are asserted by the caller after SIO. Focused RandomData VPCD and full 34/34
   cross-AID suite pass; PC `symm_crypto`, ARM `current`, and RISC-V `current`
   builds pass. No physical device was used.
-  Remaining: exercise Checksum, AEAD and key API results beyond `buildKey()`
-  where enabled, verify GC rooting of object results after ordinary locals are
+  `SensitiveArrays.isIntegritySensitive()` and
+  `isIntegritySensitiveArraysSupported()` now clear stale state and publish
+  their correct `false` results from native code; the interpreted service and
+  SIO caller assert both. Focused and full 34/34 VPCD coverage pass, as do PC,
+  ARM and RISC-V builds. No physical device was used.
+  The current API has no supported Checksum provider (both factory branches
+  return `NO_SUCH_ALGORITHM`) and no enabled AEAD provider; those results are
+  not current producers and remain outside this coverage until separately
+  implemented/enabled. Remaining: cover enabled key API results beyond
+  `buildKey()`, verify GC rooting of object results after ordinary locals are
   dropped through interpreted SIO, and repeat selected coverage on physical
   hardware when available.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,

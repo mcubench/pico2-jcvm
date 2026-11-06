@@ -9,6 +9,7 @@ import javacard.framework.OwnerPINBuilder;
 import javacard.framework.OwnerPINx;
 import javacard.framework.OwnerPINxWithPredecrement;
 import javacard.framework.PIN;
+import javacard.framework.SensitiveArrays;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
 import javacard.security.CryptoException;
@@ -325,6 +326,17 @@ public final class ServiceApplet extends Applet implements Probe {
     } catch (SecurityException missingSensitiveResult) {
       return (short) 0x6A86;
     }
+  }
+
+  public short sensitiveArrayCapabilityResults() {
+    byte[] ordinary = new byte[4];
+    if (SensitiveArrays.isIntegritySensitiveArraysSupported())
+      return (short) 0x6A87;
+    SensitiveResult.assertFalse();
+    if (SensitiveArrays.isIntegritySensitive(ordinary))
+      return (short) 0x6A87;
+    SensitiveResult.assertFalse();
+    return (short) 0x6A88;
   }
 
   public short sensitiveFailedCopy() {
