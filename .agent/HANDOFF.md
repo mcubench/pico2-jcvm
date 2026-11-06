@@ -10,6 +10,7 @@ loads the service CAP without installing its applet and confirms that this
 loaded importer still blocks library DELETE (`6985`); deleting it permits
 library DELETE (`9000`, `1/1`). Latest log SHA-256
 `1780394f19841a4e8b2e9acc425c53a4e979e6da1197981995c610b9cccfa1b2`.
+Loaded-uninstalled coverage is committed as `e52ceb3d`.
 
 PC/SC refresh shows only Virtual PCD 00/00 and 00/01, no Pico. Physical package
 DELETE remains open. Next: continue offline GP-01/CTX work and repeat these
