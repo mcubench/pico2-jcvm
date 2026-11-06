@@ -1,5 +1,12 @@
 # Current handoff — card-manager recovery after malformed CAP — 2026-11-06 13:43 CET
 
+## Reader refresh — 2026-11-06 13:46 CET
+
+The authorized helper granted USB nodes `001/039`, `001/040`, and `001/049`.
+`timeout 8s pcsc_scan -r` emitted no reader list and exited 124. Do not attempt
+physical GPPro/SmartcardIO until a Pico reader appears and a bounded
+read-only transaction works. This updated outage is recorded in `.agent/QKB.md`.
+
 Extended the opt-in empty-ConstantPool negative case to install the separate
 valid client package after the malformed service package is rejected. The valid
 LOAD and INSTALL succeed in the same VPCD session after the `6F00` failure,

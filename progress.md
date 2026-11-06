@@ -23091,6 +23091,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `pending`
 - Artifacts/logs: The two VPCD logs listed above; generated CAP outputs under `build/sio-cross-aid-fixture/`.
 
+## 2026-11-06 Record PCSC reader disappearance 3 minutes
+
+- Step/experiment: `pcsc-reader-refresh-20261106-1346`
+- When: '2026-11-06 13:43 CET' - '2026-11-06 13:46 CET'
+- Change: Recorded the current hardware-access failure in `.agent/QKB.md` and updated the session handoff: the authorized helper grants three USB nodes while PC/SC enumerates no readers.
+- Validation: Ran `sudo -n /usr/local/sbin/pico2-pcsc-reader` successfully (`PCSC:ACCESS_GRANTED count=3 nodes=/dev/bus/usb/001/039 /dev/bus/usb/001/040 /dev/bus/usb/001/049`) followed by `timeout 8s pcsc_scan -r`; it emitted no reader list and exited `124`. No flash, APDU, or physical card operation was attempted.
+- Result: USB-node visibility and granted permissions do not establish PC/SC availability; physical GPPro testing remains blocked until reader enumeration and a bounded transaction succeed.
+- Decision: Continue software/VPCD work only while the Pico reader is absent.
+- Commit: `pending`
+- Artifacts/logs: Command output recorded in this session; no separate log file.
+
 ## 2026-11-06 Verify empty Export table with Descriptor present 4 minutes
 
 - Step/experiment: `ctx01-empty-export-descriptor-present-20261106`

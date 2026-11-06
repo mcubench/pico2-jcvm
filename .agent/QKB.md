@@ -7170,6 +7170,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   interfaces; use D92 only for physical APDU tests and keep source validation
   offline meanwhile. No flash or APDU was performed in this observation.
 
+### Follow-up: helper access does not restore any Pico reader
+
+- **Observation (2026-11-06 13:38 CET):** The authorized helper granted access
+  to three USB nodes (`001/039`, `001/040`, `001/049`), but a bounded
+  `timeout 8s pcsc_scan -r` emitted no reader list and exited 124. This is
+  weaker than the earlier case where D92 was still listed.
+- **Decision:** Treat the boards as unavailable for PC/SC testing even when
+  USB nodes are visible and helper access succeeds. Do not attempt GPPro or
+  SmartcardIO through this guest until `pcsc_scan -r` enumerates a Pico and a
+  bounded read-only transaction succeeds. Continue offline; no flash or APDU
+  was attempted.
+
 ### Follow-up: listed reader does not complete GPPro `--list`
 
 - **Observation:** On D92, bounded exact-reader GPPro `--list` with a 30-second
