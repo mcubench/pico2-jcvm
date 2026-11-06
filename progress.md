@@ -22608,3 +22608,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep D92 as the only present physical PC/SC target. Diagnose missing reader registration separately; continue RV-28 with malformed interpreter execution coverage and do not claim exact method starts for Descriptor-free LOADs.
 - Commit: `01eeeb9d` (`Record Pico PCSC and Descriptor-free findings`).
 - Artifacts/logs: live command output only; no persistent log.
+
+## 2026-11-06 Bound the visible reader with a GPPro listing 6 minutes
+
+- Step/experiment: `rv28-reader-gppro-visibility-check-20261106`
+- When: '2026-11-06 01:48 CET' - '2026-11-06 01:54 CET'
+- Change: Appended a follow-up to HANDOFF/QKB distinguishing PC/SC enumeration from a working APDU path and correcting the scope of the prior no-APDU observation.
+- Validation: Ran exact-reader read-only GPPro `--list` against `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00` with a 30-second timeout and elevated host-access path. It produced no output and exited 124. No source build or test was performed.
+- Result: PC/SC lists D92 but the bounded GPPro inventory did not complete; the command may have reached PC/SC, with no transaction trace available. No firmware was flashed.
+- Decision: Keep physical validation blocked on a successful bounded read-only APDU. Continue RV-28 source work offline and do not infer hardware firmware malfunction from the timeout alone.
+- Commit: pending.
+- Artifacts/logs: command output was empty; timeout exit status 124; no persistent log.

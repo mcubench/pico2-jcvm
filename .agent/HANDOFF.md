@@ -13,6 +13,14 @@ multiple-reader enumeration symptom; do not call it firmware failure. Continue
 the RV-28 Descriptor-free method-target investigation offline and refresh the
 helper before any later hardware action.
 
+Follow-up at 01:54 CET: a read-only exact-reader GPPro `--list` against D92
+produced no output and exited 124 at the 30-second timeout. Therefore D92's
+appearance in pcsc_scan does not currently establish a working APDU path. No
+firmware was flashed. Treat the earlier “no APDU” statement as applying only
+to the initial enumeration command; the GPPro attempt may have reached PC/SC
+but returned no observable protocol trace. Continue offline until the PC/SC
+transaction path is diagnosed.
+
 ## Latest continuation — match StaticMethodref offsets to Descriptor — 2026-11-06 01:40 CET
 
 When Descriptor is present, every internal StaticMethodref now must match

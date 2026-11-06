@@ -7059,6 +7059,16 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   interfaces; use D92 only for physical APDU tests and keep source validation
   offline meanwhile. No flash or APDU was performed in this observation.
 
+### Follow-up: listed reader does not complete GPPro `--list`
+
+- **Observation:** On D92, bounded exact-reader GPPro `--list` with a 30-second
+  timeout produced no output and exited 124, even though `pcsc_scan -r` listed
+  the reader. This does not prove that the command sent no APDUs; no transaction
+  trace was captured.
+- **Decision:** PC/SC enumeration alone is insufficient to claim the board is
+  usable. Do not flash or run test applets through this guest until a bounded
+  read-only transaction succeeds. No firmware was changed.
+
 ## Descriptor-free StaticMethodref starts lack an independent metadata source — 2026-11-06
 
 - **Finding:** CAP `Descriptor` records carry authoritative method-entry
