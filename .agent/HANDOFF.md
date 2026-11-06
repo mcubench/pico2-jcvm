@@ -15,7 +15,8 @@ firmware window. The full cross-AID suite fails at the AES-MAC Signature probe
 before reaching the new APDU: `6F00`, runtime exception 29 (`SecurityException`),
 opcode `8E`, PC `77CC0006`. This remains undiagnosed. See progress and QKB; do
 not claim the full suite passes. The first runs used a stale PC binary because
-the test wrapper does not build it; rebuild PC before rerunning.
+the test wrapper does not build it; rebuild PC before rerunning. Source/test
+commit: `438e8581` (`Track makeGlobalArray SensitiveResult`).
 
 Next: inspect why the full SIO Signature probe fails, then rerun the entire suite
 against a fresh PC build. Keep current unrelated worktree edits unstaged. After

@@ -17247,7 +17247,7 @@
   remain unstaged.
 - Result: The CAP 2.2 Directory and official JCRMI VPCD fix is committed.
 - Decision: Continue with the next open project acceptance item.
-- Commit: pending.
+- Commit: `438e8581`.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261030T232628Z.log`.
 
 ## 2026-10-30 CAP 2.2 external remote-interface Import token validation 11 minutes
