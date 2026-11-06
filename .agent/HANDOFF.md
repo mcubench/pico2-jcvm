@@ -1,26 +1,24 @@
-# Active handoff — RV-28 external instance and method-token validation — 2026-11-06 01:00 CET
+# Active handoff — RV-28 internal static-offset validation — 2026-11-06 01:10 CET
 
-## Latest continuation — bound external instance and virtual-method tokens — 2026-11-06 01:00 CET
+## Latest continuation — bound internal StaticFieldref and StaticMethodref offsets — 2026-11-06 01:10 CET
 
-Install preflight bounds external instance-field tokens by the exported
-class's declared instance layout and reference-range metadata. External
-virtual-method tokens now pass through the production Class_Handler resolver,
-preserving JC305/public/package remapping. External SuperMethodref values are
-rejected because the CAP format requires a package-local class reference.
-Internal class/member targets and malformed interpreter runtime coverage
-remain open.
+Install preflight checks internal StaticFieldref offsets against
+StaticField.image_size and StaticMethodref offsets against the Method
+component's executable methods area. External references remain checked
+against their imported Export tokens. Internal class and instance-member
+targets, exact method-header starts, and malformed interpreter runtime
+coverage remain open.
 
-Validation: helper sanitizer suite 21/21; PC, ARM, and RISC-V max_crypto
+Validation: helper sanitizer suite 25/25; PC, ARM, and RISC-V max_crypto
 builds; unchanged JCAlgTest VPCD install/APDU suite 15/15. ARM image ends at
-`0x100ec3b0`, leaving 80,976 bytes in the firmware window. VPCD log:
-`artifacts/logs/rv28-instance-virtual-vpcd-20261106.log`, SHA-256
-`71662b7c9bae81fbe2d9e61ccffb0671627fd1cc0e77178d7492a6317a06b858`.
+`0x100ec438`, leaving 80,840 bytes in the firmware window. VPCD log:
+`artifacts/logs/rv28-internal-static-vpcd-20261106.log`, SHA-256
+`4bcc077c8f5e84a14621f6d9ea384f71e9758d459cfbe76dcf5219f6b1b0d938`.
 No physical flash was performed.
 
-Next: validate internal ConstantPool targets and design malformed interpreter
-execution tests. Preserve unrelated dirty worktree changes. This slice's commit
-is `6f7a37df2474a855286a44ca772b9c8440f2a8e5` (Validate external CAP
-instance and virtual-method tokens).
+Next: validate internal ConstantPool class and instance-member targets and
+design malformed interpreter execution tests. Preserve unrelated dirty changes.
+This slice's commit will be resolved in progress.md after commit.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

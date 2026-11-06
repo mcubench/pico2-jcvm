@@ -22532,3 +22532,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv28-instance-virtual-vpcd-20261106.log`, SHA-256 `71662b7c9bae81fbe2d9e61ccffb0671627fd1cc0e77178d7492a6317a06b858`.
 
 - Commit resolved for `rv28-instance-virtual-token-validation-20261106`: `6f7a37df2474a855286a44ca772b9c8440f2a8e5` (Validate external CAP instance and virtual tokens).
+
+## 2026-11-06 Bound internal static ConstantPool offsets 8 minutes
+
+- Step/experiment: `rv28-internal-static-offset-validation-20261106`
+- When: '2026-11-06 01:02 CET' - '2026-11-06 01:10 CET'
+- Change: Install preflight bounds internal StaticFieldref offsets against `StaticField.image_size` and internal StaticMethodref offsets against the Method component's executable methods area. Added ASan/UBSan helper cases and updated RV-28 trust documentation, QKB, TODO, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passes 25/25 under ASan/UBSan; PC, ARM and RISC-V max_crypto wrapper builds pass; unchanged upstream JCAlgTest VPCD install/APDU suite passes 15/15. No physical flash or malformed-CAP runtime execution was performed. Scoped diff check passes.
+- Result: Internal static references outside their respective component ranges are rejected during install preflight; current JCAlgTest still installs and runs. ARM image ends at `0x100ec438`, leaving 80,840 bytes in the firmware window.
+- Decision: Continue RV-28 with internal class and instance-member targets; exact method-header starts and hostile-CAP runtime recovery remain open.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-internal-static-vpcd-20261106.log`, SHA-256 `4bcc077c8f5e84a14621f6d9ea384f71e9758d459cfbe76dcf5219f6b1b0d938`.

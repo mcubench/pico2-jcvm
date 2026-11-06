@@ -6962,3 +6962,19 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limit:** This does not validate internal field/method offsets, bytecode
   opcode-to-reference-kind agreement, malformed interpreter execution, or
   hostile CAP recovery on physical hardware.
+
+## Bound internal static ConstantPool offsets — 2026-11-06
+
+- **Finding:** Internal StaticFieldref and StaticMethodref entries carry
+  two-byte offsets. Without an extent check, a malformed offset can reach a
+  static image or method-body lookup before it is rejected.
+- **Viable fix:** Check internal field offsets against `StaticField.image_size`
+  and internal method offsets against the Method component's methods area.
+  External forms remain validated against Export token counts.
+- **Validation:** ASan/UBSan helper suite passes 25/25; PC, ARM, and RISC-V
+  max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes
+  15/15. VPCD log SHA-256:
+  `4bcc077c8f5e84a14621f6d9ea384f71e9758d459cfbe76dcf5219f6b1b0d938`.
+- **Limit:** This is a range check only; exact method-header starts, internal
+  class/instance references, field types, and malformed runtime behavior remain
+  to be validated.

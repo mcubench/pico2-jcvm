@@ -62,6 +62,26 @@ inline bool valid_instance_field_token(const std::size_t token,
          reference_count <= declared_size - first_reference_token;
 }
 
+inline bool valid_internal_member_offsets(const uint8_t *entries,
+                                          const std::size_t count,
+                                          const std::size_t static_image_size,
+                                          const std::size_t method_size) noexcept {
+  if (entries == nullptr && count != 0) return false;
+  for (std::size_t index = 0; index < count; ++index) {
+    const uint8_t *entry = entries + index * 4;
+    const uint8_t tag = entry[0];
+    if (tag != 5 && tag != 6) continue;
+    if ((entry[1] & 0x80u) != 0) continue;
+    const std::size_t offset =
+        (static_cast<std::size_t>(entry[2]) << 8) | entry[3];
+    if ((tag == 5 && offset >= static_image_size) ||
+        (tag == 6 && offset >= method_size)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename ResolveExportToken>
 bool validate_external_class_tokens(const uint8_t *entries,
                                     const std::size_t count,

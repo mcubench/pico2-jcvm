@@ -536,6 +536,22 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
             HTONS(constant_pool->count), import_count)) {
       return CapImportValidation::internal_error;
     }
+    if (constant_pool != nullptr) {
+      const auto *static_fields = cap.getStaticField();
+      const auto *methods = cap.getMethod();
+      const std::size_t static_image_size =
+          static_fields == nullptr ? 0 : NTOHS(static_fields->image_size);
+      const std::size_t method_size =
+          methods == nullptr ? 0 : methods->methods().size();
+      if (!jcvm::cap_constant_pool_validation::
+              valid_internal_member_offsets(
+                  reinterpret_cast<const uint8_t *>(
+                      constant_pool->constant_pool),
+                  HTONS(constant_pool->count), static_image_size,
+                  method_size)) {
+        return CapImportValidation::internal_error;
+      }
+    }
     if (component == nullptr) {
       return CapImportValidation::valid;
     }
