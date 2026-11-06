@@ -51,9 +51,10 @@ Internal class/member targets and malformed-interpreter runtime behavior
 remain open.
 
 Internal StaticFieldref offsets are checked against the StaticField image size;
-internal StaticMethodref offsets are checked against the Method component's
-method-body area. These range checks do not prove that a method offset is an
-exact method-header start or that a field offset has the correct declared type.
+internal StaticMethodref offsets use CAP Method-component coordinates, bounded
+after the exception-handler table and through the one-based methods area. These
+range checks do not prove that a method offset is an exact method-header start
+or that a field offset has the correct declared type.
 Internal ConstantPool class references must identify an exact class/interface
 record start in the Class component. InstanceFieldref, VirtualMethodref, and
 SuperMethodref cannot target an interface record. Member-token semantics for

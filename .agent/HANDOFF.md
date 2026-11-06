@@ -1,25 +1,24 @@
-# Active handoff — RV-28 internal member-token validation — 2026-11-06 01:26 CET
+# Active handoff — RV-28 StaticMethodref coordinate correction — 2026-11-06 01:32 CET
 
-## Latest continuation — resolve internal field and method tokens — 2026-11-06 01:26 CET
+## Latest continuation — correct StaticMethodref Method-component bounds — 2026-11-06 01:32 CET
 
-Install preflight bounds internal InstanceFieldref tokens by the target
-class's declared layout. Internal VirtualMethodref tokens resolve through
-`Class_Handler`; SuperMethodref tokens resolve against the named class's
-immediate superclass. Exact Class-component record-start checking remains in
-place. Exact StaticMethodref header starts and malformed interpreter runtime
-coverage remain open.
+Internal StaticMethodref bounds now account for the exception-handler table
+and one-based method-stream coordinate used by `Method_Handler`. The allowed
+range is strictly after the handler table through the inclusive end of the
+methods area. Instance fields still use declared layout bounds; virtual and
+super methods resolve through `Class_Handler`.
 
-Validation: helper sanitizer suite 30/30; PC, ARM, and RISC-V max_crypto
+Validation: helper sanitizer suite 32/32; PC, ARM, and RISC-V max_crypto
 builds; unchanged JCAlgTest VPCD install/APDU suite 15/15. ARM image ends at
-`0x100ec688`, leaving 80,248 bytes in the firmware window. VPCD log:
-`artifacts/logs/rv28-internal-member-vpcd-20261106.log`, SHA-256
-`0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.
+`0x100ec6a0`, leaving 80,224 bytes in the firmware window. VPCD log:
+`artifacts/logs/rv28-static-method-offset-correction-vpcd-20261106.log`, SHA-256
+`3c8e804dc0911fbae3775fd6b76bfac8b4ec279ce21c0c399541c5dcf20cb37e`.
 No physical flash was performed.
 
-Next: check exact StaticMethodref header starts and add malformed
-interpreter-execution coverage. Preserve unrelated dirty changes. This slice's
-commit is `8a58318d2c286de04c8430da2d5a6bd111fa03f0` (Validate internal CAP
-member tokens).
+Next: resolve exact StaticMethodref starts when Descriptor is present; decide
+how descriptor-free source metadata can prove method starts. Then add malformed
+interpreter execution coverage. Preserve unrelated dirty changes. This slice's
+commit will be recorded in progress.md after commit.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

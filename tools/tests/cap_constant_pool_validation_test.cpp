@@ -86,18 +86,26 @@ int main() {
   const uint8_t internal_member_records[] = {
       5, 0, 0, 3, 6, 0, 0, 7, 5, 0x80, 0, 0};
   check(jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
-            internal_member_records, 3, 4, 8),
+            internal_member_records, 3, 4, 2, 8),
         "internal static member offsets within component accepted");
   const uint8_t out_of_range_internal_field[] = {5, 0, 0, 4};
   check(!jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
-            out_of_range_internal_field, 1, 4, 0),
+            out_of_range_internal_field, 1, 4, 0, 0),
         "internal static field offset at image size rejected");
-  const uint8_t out_of_range_internal_method[] = {6, 0, 0, 8};
+  const uint8_t last_valid_internal_method[] = {6, 0, 0, 10};
+  check(jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
+            last_valid_internal_method, 1, 0, 2, 8),
+        "last one-based method offset within method area accepted");
+  const uint8_t out_of_range_internal_method[] = {6, 0, 0, 11};
   check(!jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
-            out_of_range_internal_method, 1, 0, 8),
-        "internal static method offset at method size rejected");
+            out_of_range_internal_method, 1, 0, 2, 8),
+        "internal static method offset beyond component rejected");
+  const uint8_t handler_table_internal_method[] = {6, 0, 0, 2};
   check(!jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
-            nullptr, 1, 0, 0),
+            handler_table_internal_method, 1, 0, 2, 8),
+        "internal static method offset in handler table rejected");
+  check(!jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
+            nullptr, 1, 0, 0, 0),
         "missing internal member records rejected");
   check(jcvm::cap_constant_pool_validation::valid_internal_class_token(
             4, 8, true, false, true),

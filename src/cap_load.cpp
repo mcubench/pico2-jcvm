@@ -652,6 +652,11 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
       const auto *methods = cap.getMethod();
       const std::size_t static_image_size =
           static_fields == nullptr ? 0 : NTOHS(static_fields->image_size);
+      const std::size_t method_offset_base =
+          methods == nullptr
+              ? 0
+              : static_cast<std::size_t>(methods->handler_count) *
+                    sizeof(jcvm::jc_cap_exception_handler_info);
       const std::size_t method_size =
           methods == nullptr ? 0 : methods->methods().size();
       if (!jcvm::cap_constant_pool_validation::
@@ -659,7 +664,7 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
                   reinterpret_cast<const uint8_t *>(
                       constant_pool->constant_pool),
                   HTONS(constant_pool->count), static_image_size,
-                  method_size)) {
+                  method_offset_base, method_size)) {
         return CapImportValidation::internal_error;
       }
     }

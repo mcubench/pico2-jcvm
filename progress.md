@@ -22571,3 +22571,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv28-internal-member-vpcd-20261106.log`, SHA-256 `0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.
 
 - Commit resolved for `rv28-internal-member-token-validation-20261106`: `8a58318d2c286de04c8430da2d5a6bd111fa03f0` (Validate internal CAP member tokens).
+
+## 2026-11-06 Correct internal StaticMethodref offset bounds 5 minutes
+
+- Step/experiment: `rv28-static-method-offset-coordinate-fix-20261106`
+- When: '2026-11-06 01:27 CET' - '2026-11-06 01:32 CET'
+- Change: Corrected internal StaticMethodref bounds to match `Method_Handler::getMethodFromOffset`: offsets begin strictly after the exception-handler table, include the one-based methods origin, and may reach the inclusive final method-area offset. Added tests for the valid upper endpoint and handler-table rejection; updated TODO, trust model, QKB, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passes 32/32 under ASan/UBSan; PC, ARM, and RISC-V max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes 15/15. No physical flash or malformed runtime test was performed. Scoped diff check passes.
+- Result: Current JCAlgTest CAP remains installable and executes normally. ARM image ends at `0x100ec6a0`, leaving 80,224 bytes in the firmware window.
+- Decision: Exact method-header start proof remains open, especially for Descriptor-free LOADs; continue trust-boundary work with this explicit gap recorded.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-static-method-offset-correction-vpcd-20261106.log`, SHA-256 `3c8e804dc0911fbae3775fd6b76bfac8b4ec279ce21c0c399541c5dcf20cb37e`.

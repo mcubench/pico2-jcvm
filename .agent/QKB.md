@@ -7011,3 +7011,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.
 - **Limit:** StaticMethodref exact method-header validation and malformed
   interpreter/runtime recovery remain open; no physical flash was performed.
+
+## StaticMethodref offsets include handler table and one-based body coordinate — 2026-11-06
+
+- **Finding:** `Method_Handler::getMethodFromOffset` interprets a static method
+  offset relative to the Method component data, including exception handlers,
+  then subtracts the handler bytes and one-based method-stream origin. A plain
+  comparison with `methods().size()` can reject valid offsets or accept the
+  wrong endpoint.
+- **Viable fix:** Require `offset > handler_table_bytes` and
+  `offset - handler_table_bytes <= methods().size()`. Test the first/last
+  valid offsets and an offset inside the handler table.
+- **Validation:** ASan/UBSan helper suite passes 32/32; PC, ARM, and RISC-V
+  max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes
+  15/15. VPCD log SHA-256:
+  `3c8e804dc0911fbae3775fd6b76bfac8b4ec279ce21c0c399541c5dcf20cb37e`.
+- **Limit:** This is still a range/header-fit check, not proof of exact method
+  start. Descriptor-free CAPs need a stronger method map; malformed execution
+  and physical hostile-CAP recovery remain untested.

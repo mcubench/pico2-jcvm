@@ -65,6 +65,7 @@ inline bool valid_instance_field_token(const std::size_t token,
 inline bool valid_internal_member_offsets(const uint8_t *entries,
                                           const std::size_t count,
                                           const std::size_t static_image_size,
+                                          const std::size_t method_offset_base,
                                           const std::size_t method_size) noexcept {
   if (entries == nullptr && count != 0) return false;
   for (std::size_t index = 0; index < count; ++index) {
@@ -75,7 +76,9 @@ inline bool valid_internal_member_offsets(const uint8_t *entries,
     const std::size_t offset =
         (static_cast<std::size_t>(entry[2]) << 8) | entry[3];
     if ((tag == 5 && offset >= static_image_size) ||
-        (tag == 6 && offset >= method_size)) {
+        (tag == 6 &&
+         (offset <= method_offset_base ||
+          offset - method_offset_base > method_size))) {
       return false;
     }
   }
