@@ -22696,3 +22696,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the header-size correction; proceed to a targeted runtime test that invokes an extended-header method. Physical validation of this source change remains open because the new image was not flashed.
 - Commit: `618d1f1a`.
 - Artifacts/logs: `artifacts/logs/rv28-four-byte-extended-header-jcalgtest-full-vpcd-20261106.log` SHA-256 `505d596f257b36968ba183584165bdc427d858fb1fedd7dc5acd8e0f04e98510`; `artifacts/logs/rv28-four-byte-extended-header-api-crypto-vpcd-20261106.log` SHA-256 `ebe30ad2c82261197a37ce57901028846e35cf85c1458e2d417a6a98eda99de2`; `artifacts/logs/rv28-malformed-impdep-vpcd-20261106.log` SHA-256 `9b293ca679a1c7e0c49b378331a5e9ba7b2c0f48b971b4c46fdcab5363a1fc97`; generated CAP load code is under ignored `build/`.
+
+## 2026-11-06 Exercise upstream extended-header crypto method 21 minutes
+
+- Step/experiment: `rv28-extended-crypto-crypt-api-vpcd-20261106`
+- When: '2026-11-06 03:16 CET' - '2026-11-06 03:37 CET'
+- Change: Added `tools/test-api-crypto-extended-method-vpcd`, a bounded emulator regression that hash-verifies upstream `AlgTestApiCrypto_305.cap`, extracts transient LOAD code without changing the CAP, then sends its standard Crypto API AES-CBC-NOPAD crypt call. Updated TODO, QKB and handoff with the extended-method runtime evidence.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-api-crypto-extended-method-vpcd` passes 3/3. Upstream API class dispatch maps `B0838305010D00` to `ApiTestCryptoCipher.crypt(byte, byte[])`; its bundled class declares 20 local slots, requiring an extended header. APDU response `000020019000` decodes as no exception, 32 output bytes, known-answer pass, `9000`. CAP SHA-256 is `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`. Python compile and scoped `git diff --check` pass. No firmware build was needed for this test-only step, and no physical token or CAP modification was used.
+- Result: The corrected extended-header runtime path executes a real deployed Crypto API method and returns its expected positive known-answer result in PC VPCD.
+- Decision: Keep the extended-header fix. Continue RV-28 with the remaining malformed interpreter and linkage paths; physical validation of this exact source image remains open.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-extended-crypto-crypt-api-vpcd-20261106.log`, SHA-256 `434c6c08e8a5936179b00ce06b6882fe63ab47c863564aaa3014651114f7dcfb`; generated code and emulator memory are under ignored `build/`.

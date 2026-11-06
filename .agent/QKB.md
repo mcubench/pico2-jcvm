@@ -7195,6 +7195,9 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   clamps, out-of-range targets, or misaligned targets. ARM, RISC-V, and PC
   builds pass. The unchanged upstream JCAlgTest VPCD run passes 15/15; the
   malformed `impdep1` recovery run passes 6/6. The upstream 3.0.5 Crypto API
-  CAP, which contains extended methods, loads and selects successfully; this
-  does not directly exercise those extended methods. No new image was flashed
-  to hardware.
+  CAP, which contains extended methods, loads/selects, and has a targeted
+  Cipher.crypt runtime probe recorded below. No new image was flashed to
+  hardware.
+
+
+- **Runtime extended-method check:** The unchanged official `AlgTestApiCrypto_305.cap` includes the `Cipher.crypt(byte, byte[])` path selected by API class `0x83`, method `0x05`, argument `0x0D`. Its bundled API class declares 20 local slots, requiring an extended header. The bounded VPCD APDU `B0838305010D00` returns `000020019000`: no exception, 32 output bytes, known-answer result true, then `9000`. Repeat with `./tools/test-api-crypto-extended-method-vpcd`; it verifies the upstream CAP SHA-256 before generating transient LOAD code under ignored `build/`.

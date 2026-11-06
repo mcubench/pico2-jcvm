@@ -1,4 +1,4 @@
-# Active handoff — extended CAP method header fix validated — 2026-11-06 03:16 CET
+# Active handoff — validate extended CAP method execution — 2026-11-06 03:37 CET
 
 ## Critical continuation — extended method header was one byte overestimated
 
@@ -38,12 +38,20 @@ not establish the header fix on hardware. `pcsc_scan -r` timed out without
 output despite the helper granting access; PC/SC reader status remains
 unconfirmed.
 
-Commit: `618d1f1a` (`Correct extended CAP method header size`). The required
-source, tests, progress record, TODO correction, QKB and handoff update are
-committed; unrelated dirty files and the CHOUPI submodule changes remain
-unstaged. Next, identify a CAP/APDU that dispatches into one of the extended
-methods and prove runtime execution; physical extended-method execution remains
-open.
+Commit: `618d1f1a` (`Correct extended CAP method header size`), with metadata
+follow-up `913eb1d2`. New repeatable runtime test
+`tools/test-api-crypto-extended-method-vpcd` verifies the upstream Crypto CAP
+hash and sends the official API dispatch for AES-CBC-NOPAD `Cipher.crypt()`.
+The bundled `ApiTestCryptoCipher.crypt(byte, byte[])` has 20 local slots. The
+CAP applet returned `000020019000` (32-byte result, known-answer pass), and the
+VPCD harness passed 3/3. Log:
+`artifacts/logs/rv28-extended-crypto-crypt-api-vpcd-20261106.log`.
+
+Next: commit this independent runtime-regression step. Then continue RV-28
+malformed interpreter paths and linkage validation. Physical extended-method
+execution remains open; the currently installed board firmware passed its
+runtime monitor but the new header-fix image was not flashed. Keep unrelated
+dirty files untouched.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
