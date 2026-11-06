@@ -75,6 +75,10 @@ metadata commit `25b58492`. Next: inspect the remaining malformed
 ConstantPool/interpreter call edges and consider a bounded sanitizer runtime
 recovery path. Physical hostile-CAP recovery remains open.
 
+The JSR/RET fixture step is committed as `11669af0` (`Test malformed JSR and
+RET execution`). Its progress record includes both VPCD log hashes. Preserve
+the other dirty worktree files; they were not part of these commits.
+
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
 ## Latest continuation — dynamic STABLESWITCH operand target rejected
