@@ -88,9 +88,9 @@
   (`TEST:SUMMARY pass=34 fail=0`).
 - **Remaining:** Re-run the Descriptor-free installation on a Pico flashed with
   the fallback, and test missing/incomplete Class, ConstantPool and Export
-  entry metadata. The Applet-entry negative test now points at a normal-header-
-  looking NOP inside the install body and gets `6A80` with Descriptor absent
-  and present. Descriptor-free log
+  entry metadata. The Applet-entry negative test now points at a zero-valued
+  interior byte whose following bytes resemble a method header; INSTALL gets
+  `6A80` with Descriptor absent and present. Descriptor-free log
   `artifacts/logs/sio-cross-aid-vpcd-20261106T111814Z.log`, SHA-256
   `58adf2a276978085e41cc40075ceab0494fb3a039eddaef6942dc2282dfaa306`;
   Descriptor-included log

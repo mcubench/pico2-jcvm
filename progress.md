@@ -23013,3 +23013,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep both negative cases. Next cover missing/incomplete Class, ConstantPool and Export entries; repeat GPPro LOAD/INSTALL on Pico when PC/SC responds.
 - Commit: `pending`
 - Artifacts/logs: both VPCD logs listed above; no hardware log.
+
+## 2026-11-06 Clarify malformed offset fixture description 1 minute
+
+- Step/experiment: `ctx01-unlisted-install-offset-description-20261106`
+- When: '2026-11-06 12:18 CET' - '2026-11-06 12:19 CET'
+- Change: Clarified that the chosen zero byte is an interior byte whose following bytes resemble a method header; instruction-boundary decoding is not part of this test.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. No runtime behavior changed, so the VPCD result remains from the immediately preceding two-mode run.
+- Result: Test description now matches what the fixture actually guarantees; it does not claim the offset is an actual NOP instruction.
+- Decision: Keep the negative guard test and continue hostile structural-entry coverage.
+- Commit: `pending`
+- Artifacts/logs: VPCD logs from the preceding record; no new run.

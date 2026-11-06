@@ -27,9 +27,9 @@ reader. Preserve unrelated worktree modifications.
 ## Latest continuation — unlisted install-body offset rejected
 
 Added opt-in VPCD negative case `SIO_CROSS_AID_TEST_UNLISTED_INSTALL_OFFSET=1`.
-It redirects the generated service Applet entry to an NOP inside the real
-install method body; the following bytes form a header-looking sequence, but
-the offset is not any Descriptor-listed method start. Descriptor-free LOAD
+It redirects the generated service Applet entry to a zero-valued interior byte
+inside the real install method body; the following bytes resemble a method
+header, but the offset is not any Descriptor-listed method start. Descriptor-free LOAD
 succeeds and INSTALL fails closed with `6A80`. Repeating with Descriptor
 included yields the same `6A80`. Both runs preserve the emulator after failure.
 

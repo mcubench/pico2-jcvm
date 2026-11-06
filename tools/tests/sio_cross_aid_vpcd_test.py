@@ -173,7 +173,7 @@ def replace_instance_field_descriptor_type(code: bytes, class_offset: int,
 def replace_applet_install_with_unlisted_body_offset(
     code: bytes, cap_archive: Path
 ) -> tuple[bytes, int]:
-    """Point the test applet at a valid-header-looking byte inside its body."""
+    """Point the test applet at an interior byte that resembles a method header."""
     components: dict[int, tuple[int, int]] = {}
     offset = 0
     while offset < len(code):
@@ -256,7 +256,7 @@ def replace_applet_install_with_unlisted_body_offset(
             candidate_offset = component_offset
             break
     if candidate_offset is None:
-        raise RuntimeError("install body has no unlisted normal-header byte")
+        raise RuntimeError("install body has no unlisted header-looking byte")
 
     mutated = bytearray(code)
     mutated[install_offset_index:install_offset_index + 2] = (
