@@ -170,6 +170,101 @@ def replace_instance_field_descriptor_type(code: bytes, class_offset: int,
     raise RuntimeError("test CAP has no Descriptor component")
 
 
+def replace_applet_install_with_unlisted_body_offset(
+    code: bytes, cap_archive: Path
+) -> tuple[bytes, int]:
+    """Point the test applet at a valid-header-looking byte inside its body."""
+    components: dict[int, tuple[int, int]] = {}
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        tag = code[offset]
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components[tag] = (offset + 3, size)
+        offset = end
+    if offset != len(code) or 3 not in components or 7 not in components:
+        raise RuntimeError("test CAP lacks complete Applet/Method components")
+
+    applet_start, applet_size = components[3]
+    method_start, method_size = components[7]
+    if applet_size < 1 or method_size < 1:
+        raise RuntimeError("empty Applet or Method component")
+    aid_length = code[applet_start + 1]
+    install_offset_index = applet_start + 2 + aid_length
+    if 1 + aid_length + 2 > applet_size:
+        raise RuntimeError("truncated Applet entry")
+    install_offset = int.from_bytes(
+        code[install_offset_index:install_offset_index + 2], "big"
+    )
+
+    method_component = code[method_start:method_start + method_size]
+    handler_bytes = method_component[0] * 8
+    methods = method_component[1 + handler_bytes:]
+    install_index = install_offset - handler_bytes - 1
+    if install_index < 0 or install_index >= len(methods):
+        raise RuntimeError("install offset lies outside Method component")
+    header_size = 4 if methods[install_index] & 0x80 else 2
+    body_start = install_index + header_size
+
+    with ZipFile(cap_archive) as archive:
+        descriptor_name = next(
+            name for name in archive.namelist()
+            if name.endswith("/Descriptor.cap")
+        )
+        descriptor = archive.read(descriptor_name)
+    if len(descriptor) < 4 or descriptor[0] != 11:
+        raise RuntimeError("test archive has invalid Descriptor component")
+    descriptor_size = int.from_bytes(descriptor[1:3], "big")
+    payload = descriptor[3:]
+    if descriptor_size != len(payload) or not payload:
+        raise RuntimeError("test Descriptor component size mismatch")
+    cursor = 1
+    install_length = None
+    method_offsets: set[int] = set()
+    for _ in range(payload[0]):
+        if len(payload) - cursor < 9:
+            raise RuntimeError("truncated Descriptor class record")
+        interfaces = payload[cursor + 4]
+        fields = int.from_bytes(payload[cursor + 5:cursor + 7], "big")
+        method_count = int.from_bytes(payload[cursor + 7:cursor + 9], "big")
+        records = cursor + 9 + interfaces * 2 + fields * 7
+        record_bytes = method_count * 12
+        if records > len(payload) or record_bytes > len(payload) - records:
+            raise RuntimeError("truncated Descriptor method table")
+        for index in range(method_count):
+            record = records + index * 12
+            entry_offset = int.from_bytes(payload[record + 2:record + 4], "big")
+            bytecode_count = int.from_bytes(payload[record + 6:record + 8], "big")
+            method_offsets.add(entry_offset)
+            if entry_offset == install_offset:
+                install_length = bytecode_count
+        cursor = records + record_bytes
+    if cursor > len(payload) or install_length is None:
+        raise RuntimeError("Descriptor has no Applet install method record")
+
+    # Descriptor is used only to construct this test mutation. The CAP sent to
+    # the VM omits it, matching the production GPPro LOAD path.
+    candidate_offset = None
+    body_end = min(body_start + install_length, len(methods) - 2)
+    for body_index in range(body_start, body_end):
+        component_offset = handler_bytes + 1 + body_index
+        if methods[body_index] == 0 and component_offset not in method_offsets:
+            candidate_offset = component_offset
+            break
+    if candidate_offset is None:
+        raise RuntimeError("install body has no unlisted normal-header byte")
+
+    mutated = bytearray(code)
+    mutated[install_offset_index:install_offset_index + 2] = (
+        candidate_offset.to_bytes(2, "big")
+    )
+    return bytes(mutated), candidate_offset
+
+
 def main() -> int:
     vpcd.ensure_algtest_v182_load_code(ROOT)
     if os.environ.get("SIO_CROSS_AID_REUSE_FIXTURE") != "1":
@@ -238,6 +333,27 @@ def main() -> int:
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")
+            if os.environ.get("SIO_CROSS_AID_TEST_UNLISTED_INSTALL_OFFSET") == "1":
+                bad_service_code, bad_offset = (
+                    replace_applet_install_with_unlisted_body_offset(
+                        service[0],
+                        build / "service-cap/sio/service/javacard/service.cap",
+                    )
+                )
+                vpcd.load_package(scp, bad_service_code, service[1])
+                response = vpcd.install_applet(
+                    scp, service[1], service[2][0], service[2][0],
+                    expected_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "unlisted Applet install offset returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS Descriptor-free INSTALL rejected unlisted "
+                      f"method-body offset 0x{bad_offset:04X}")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_INSTANCE_TYPE") == "1":
                 bad_service_code = replace_instance_field_descriptor_type(
                     service[0], 0x0013, 0, 0x8005)

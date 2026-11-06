@@ -20,9 +20,27 @@ Descriptor-omitted log:
 No runtime source change was made in this continuation. The older physical
 `D92E743D5F640C0F` INSTALL failure occurred before the structural-offset
 fallback and does not validate the fix. Next: add hostile-CAP regression for
-incomplete structural method entry metadata, then repeat standard GPPro
-Descriptor-free LOAD/INSTALL on Pico hardware when PC/SC registers a reader.
-Preserve unrelated worktree modifications.
+incomplete Class/constant-pool/Export entry metadata, then repeat standard
+GPPro Descriptor-free LOAD/INSTALL on Pico hardware when PC/SC registers a
+reader. Preserve unrelated worktree modifications.
+
+## Latest continuation — unlisted install-body offset rejected
+
+Added opt-in VPCD negative case `SIO_CROSS_AID_TEST_UNLISTED_INSTALL_OFFSET=1`.
+It redirects the generated service Applet entry to an NOP inside the real
+install method body; the following bytes form a header-looking sequence, but
+the offset is not any Descriptor-listed method start. Descriptor-free LOAD
+succeeds and INSTALL fails closed with `6A80`. Repeating with Descriptor
+included yields the same `6A80`. Both runs preserve the emulator after failure.
+
+Descriptor-free log `artifacts/logs/sio-cross-aid-vpcd-20261106T111814Z.log`,
+SHA-256 `58adf2a276978085e41cc40075ceab0494fb3a039eddaef6942dc2282dfaa306`;
+Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T111843Z.log`,
+SHA-256 `fda0b3e4da852740e6cc65edcb76a00d0f9f5afe250007e478ed7094be44dab2`.
+The generated fixture is test-only; upstream CAP bytes are unchanged. Python
+syntax and scoped diff checks pass. No firmware change, target build or
+physical operation occurred. Next test missing/incomplete method-entry table
+metadata and retry hardware only once PC/SC is responsive.
 
 ---
 

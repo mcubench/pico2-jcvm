@@ -87,12 +87,19 @@
   `7c4d8b53dd82cc0fcb03f01a4a4f7cb227725cc0eb90b90a77454eb8e26c2aba`
   (`TEST:SUMMARY pass=34 fail=0`).
 - **Remaining:** Re-run the Descriptor-free installation on a Pico flashed with
-  the fallback, and add malformed-CAP tests showing that missing/incomplete
-  entry metadata fails closed. Exact bytecode lengths are available in
-  Descriptor; the fallback's bound is an upper envelope from structural entry
-  points, not Descriptor bytecode counts. Preserve both Descriptor modes in
-  VPCD acceptance. Never widen execution to the whole Method component merely
-  to make installation succeed.
+  the fallback, and test missing/incomplete Class, ConstantPool and Export
+  entry metadata. The Applet-entry negative test now points at a normal-header-
+  looking NOP inside the install body and gets `6A80` with Descriptor absent
+  and present. Descriptor-free log
+  `artifacts/logs/sio-cross-aid-vpcd-20261106T111814Z.log`, SHA-256
+  `58adf2a276978085e41cc40075ceab0494fb3a039eddaef6942dc2282dfaa306`;
+  Descriptor-included log
+  `artifacts/logs/sio-cross-aid-vpcd-20261106T111843Z.log`, SHA-256
+  `fda0b3e4da852740e6cc65edcb76a00d0f9f5afe250007e478ed7094be44dab2`.
+  Exact bytecode lengths are available in Descriptor; the fallback's bound is
+  an upper envelope from structural entry points, not Descriptor bytecode
+  counts. Preserve both Descriptor modes in VPCD acceptance. Never widen
+  execution to the whole Method component merely to make installation succeed.
 - **Artifacts:**
   `artifacts/logs/sio-cross-aid-physical-20261105T144606Z.log`,
   `build/sio-cross-aid-fixture/physical-gp-install-20261105T144606Z.log`,

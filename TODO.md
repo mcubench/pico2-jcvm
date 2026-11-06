@@ -798,8 +798,11 @@ source-based follow-ups, without a new physical reproduction in this review.
   does not widen execution to the whole Method component. A physical
   Descriptor-free run has not yet been repeated on firmware containing this
   fallback: the earlier Pico 2 failure (`D92E743D5F640C0F`) predates the fix.
-  Preserve both Descriptor-present and Descriptor-absent acceptance cases and
-  add hostile-CAP coverage for incomplete structural entry tables. The [Java
+  A negative INSTALL fixture now redirects the Applet entry to a valid-header-
+  looking byte inside the install method body; both Descriptor modes reject
+  it with `6A80`. Preserve both Descriptor-present and Descriptor-absent
+  acceptance cases and add hostile-CAP coverage for incomplete Class/constant-
+  pool/Export entry tables. The [Java
   Card 3.0.5 VM specification, §6.10 and §6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf)
   makes Descriptor loading optional and provides exact method offsets and
   bytecode counts there; the Method component alone does not carry exact body

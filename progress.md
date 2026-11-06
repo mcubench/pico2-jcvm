@@ -23002,3 +23002,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep both modes as regression gates; proceed with hostile-CAP structural-entry validation and repeat physical GPPro install once PC/SC is responsive.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T111004Z.log`; no hardware log.
+
+## 2026-11-06 Reject unlisted Descriptor-free install offset 6 minutes
+
+- Step/experiment: `ctx01-unlisted-install-method-offset-20261106`
+- When: '2026-11-06 12:12 CET' - '2026-11-06 12:18 CET'
+- Change: Added a test-only mutation that redirects the generated service Applet install offset to a header-looking NOP inside the install method body, with no Descriptor method record. Added an opt-in VPCD negative test that checks fail-closed INSTALL in both Descriptor modes. The source/upstream CAP files and runtime implementation were not changed.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. Descriptor-free `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_UNLISTED_INSTALL_OFFSET=1 ... ./tools/test-sio-cross-aid-vpcd` passed; the same with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1` passed. Each VPCD case reported `TEST:SUMMARY pass=1 fail=0`; generated CAP LOAD succeeded and the malformed Applet INSTALL returned `6A80`.
+- Result: Both the structural-offset fallback and Descriptor lookup reject unlisted interior method starts before executing them. The candidate offset was `0x01D1`. Descriptor-free log `artifacts/logs/sio-cross-aid-vpcd-20261106T111814Z.log` SHA-256 `58adf2a276978085e41cc40075ceab0494fb3a039eddaef6942dc2282dfaa306`; Descriptor-included log `artifacts/logs/sio-cross-aid-vpcd-20261106T111843Z.log` SHA-256 `fda0b3e4da852740e6cc65edcb76a00d0f9f5afe250007e478ed7094be44dab2`.
+- Decision: Keep both negative cases. Next cover missing/incomplete Class, ConstantPool and Export entries; repeat GPPro LOAD/INSTALL on Pico when PC/SC responds.
+- Commit: `pending`
+- Artifacts/logs: both VPCD logs listed above; no hardware log.
