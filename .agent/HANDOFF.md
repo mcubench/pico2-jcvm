@@ -7843,6 +7843,7 @@ remains selectable/executable after service deletion and same-AID service
 reinstall. The stale proxy still returns `6A0A`, while fresh lookup reaches
 the reinstalled service (`45679000`). The default cross-AID suite remains
 `TEST:SUMMARY pass=34 fail=0`.
+Implementation commit: `f036d20c` (`Test unrelated applet across package DELETE`).
 
 Validation logs: normal opt-in run
 `artifacts/logs/sio-cross-aid-independent-client-20261106T160101Z.log`,
