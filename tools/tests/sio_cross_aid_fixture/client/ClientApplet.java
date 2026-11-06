@@ -53,6 +53,17 @@ public final class ClientApplet extends Applet {
     return probe.sensitiveAIDResults();
   }
 
+  private short checkSensitiveAtomicUtilResults(Probe probe) {
+    short marker = probe.sensitiveAtomicUtilResults();
+    if (marker != (short) 0x6A3D) return marker;
+    try {
+      SensitiveResult.assertEquals((short) 1);
+      return marker;
+    } catch (SecurityException missingAtomicUtilResult) {
+      return (short) 0x6A44;
+    }
+  }
+
   private short checkSensitiveJCSystemResults() {
     AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
                                     (byte) SERVICE_AID.length);
@@ -359,6 +370,8 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).sensitiveArrayCapabilityResults();
     } else if (buffer[1] == 0x3B) {
       result = ((Probe) shareable).sensitiveAIDResults();
+    } else if (buffer[1] == 0x3D) {
+      result = checkSensitiveAtomicUtilResults((Probe) shareable);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

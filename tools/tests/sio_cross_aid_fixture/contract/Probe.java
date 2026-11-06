@@ -9,6 +9,7 @@ public interface Probe extends Shareable {
   short sensitiveCopy();
   short sensitiveFailedCopy();
   short sensitiveAIDResults();
+  short sensitiveAtomicUtilResults();
   short noSensitiveApi();
   short sensitiveDigestResult();
   short sensitiveDigestFailure();

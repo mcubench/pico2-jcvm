@@ -386,6 +386,20 @@ def main() -> int:
                 print("TEST:PASS AID true/false results across SIO")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_UTIL_ATOMIC") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("803D000000"),
+                    "atomic Util SensitiveResult across SIO"
+                )
+                if response != bytes.fromhex("6A3D9000"):
+                    raise RuntimeError(
+                        "atomic Util SensitiveResult returned "
+                        f"{response.hex().upper()}, expected 6A3D9000"
+                    )
+                print("TEST:PASS atomic Util copy/fill/compare results and "
+                      "failed-copy reset across SIO")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_JCSYSTEM") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("803C000000"),
@@ -637,7 +651,18 @@ def main() -> int:
                     f"AID SensitiveResult returned {response.hex().upper()}, "
                     "expected 6A319000"
                 )
-            print("TEST:PASS AID partialEquals and equals true/false results across SIO")
+            print("TEST:PASS AID partialEquals, equals and RIDEquals true/false results across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("803D000000"),
+                "atomic Util SensitiveResult true/false results across SIO"
+            )
+            if response != bytes.fromhex("6A3D9000"):
+                raise RuntimeError(
+                    "atomic Util SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A3D9000"
+                )
+            print("TEST:PASS atomic Util arrayCopy/arrayFill/arrayCompare and "
+                  "failed-copy SensitiveResult across SIO")
             response = vpcd.exchange(
                 connection, bytes.fromhex("803C000000"),
                 "JCSystem lookupAID/getAppletShareableInterfaceObject SensitiveResult"

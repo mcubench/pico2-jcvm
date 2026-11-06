@@ -116,9 +116,18 @@ public final class SioCrossAidPhysicalProbe {
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:AIDSensitiveResults response=" + actual);
       if (!actual.equals("6A319000")) {
-        throw new AssertionError("AID partialEquals/equals SensitiveResult " +
+        throw new AssertionError("AID partialEquals/equals/RIDEquals " +
                                  "assertions should pass with 6A319000, got " +
                                  actual);
+      }
+
+      response = channel.transmit(new CommandAPDU(hex("803D000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:AtomicUtilSensitiveResults response=" + actual);
+      if (!actual.equals("6A3D9000")) {
+        throw new AssertionError("Util arrayCopy/arrayFill/arrayCompare " +
+                                 "SensitiveResult assertions should pass " +
+                                 "with 6A3D9000, got " + actual);
       }
 
       response = channel.transmit(new CommandAPDU(hex("801A000000")));

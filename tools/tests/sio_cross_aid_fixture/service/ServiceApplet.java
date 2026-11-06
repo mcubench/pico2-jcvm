@@ -378,6 +378,33 @@ public final class ServiceApplet extends Applet implements Probe {
     return (short)0x6A31;
   }
 
+  public short sensitiveAtomicUtilResults() {
+    byte[] source = { 1, 2 };
+    byte[] destination = { 0, 0 };
+    try {
+      Util.arrayCopy(source, (short) 0, destination, (short) 0, (short) -1);
+      return (short) 0x6A3E;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      if (!sensitiveResultUnassigned()) return (short) 0x6A3F;
+    }
+
+    short copied = Util.arrayCopy(source, (short) 0, destination,
+                                  (short) 0, (short) 2);
+    if (copied != 2) return (short) 0x6A40;
+    SensitiveResult.assertEquals(copied);
+
+    short filled = Util.arrayFill(destination, (short) 0, (short) 2,
+                                  (byte) 1);
+    if (filled != 2) return (short) 0x6A41;
+    SensitiveResult.assertEquals(filled);
+
+    byte comparison = Util.arrayCompare(source, (short) 0, destination,
+                                        (short) 0, (short) 2);
+    if (comparison != 1) return (short) 0x6A42;
+    SensitiveResult.assertEquals((short) 1);
+    return (short) 0x6A3D;
+  }
+
   public short noSensitiveApi() {
     return (short)0x6A33;
   }
