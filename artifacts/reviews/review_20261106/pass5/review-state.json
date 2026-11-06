@@ -1,0 +1,11 @@
+{
+  "head": "631d4252ef50622dd47afaec7ed53220780636ff",
+  "scope": "Source-only APDU and invocation failure review; implementation prohibited",
+  "findings": {
+    "R41": "APDU.receiveBytes unconditionally returns zero without state or offset validation",
+    "R42": "Outgoing length validation uses buffer capacity and maps native bad length to ILLEGAL_USE",
+    "R43": "noexcept changePackageID performs allocating list insertion after frame push"
+  },
+  "validation": "Inspected checked-in contracts, production call paths and test scope; no new runtime reproductions, no builds or hardware operations",
+  "performance": "Package bookkeeping allocation identified on every method entry; latency/allocation-failure rates not measured"
+}

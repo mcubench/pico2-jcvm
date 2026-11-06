@@ -23321,3 +23321,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass4/source-sha256.txt` and `review-state.json`; no runtime logs generated this pass.
 
 - Commit: `97e31e96608073a2c2d5f5a08e714800cbb5f49c` — completed `review-20261106-pass4`; this append resolves the pending SHA above. Documentation/evidence only; no implementation or hardware actions.
+
+
+## 2026-11-06 Review follow-up on APDU contracts and method-entry allocation 5 minutes
+
+- Step/experiment: `review-20261106-pass5`
+- When: '2026-11-06 22:23:40 CET' - '2026-11-06 22:27:05 CET'
+- Change: Appended R41–R43 and three matching lowercase TODOs, bringing each total to 43. Added source hashes/scope and continuity notes; no implementation, test source, generated file or CAP changed. Preserved pre-existing unrelated edits.
+- Validation: Traced APDU receive/outgoing transitions through checked-in API, JNI, Context and response handling; checked native exception reasons and method/frame/package entry ordering. Inspected arithmetic/stack/return operations without claiming exhaustive validation. All 43 unique finding/TODO pairs, links/anchors, pass5 JSON and 14 source hashes passed. No new runtime cases, builds or hardware operations; previous focused tests were not rerun because no implementation changed and they do not exercise these contracts.
+- Result: Three source-confirmed findings: receiveBytes ignores validation, outgoing positive limits/reasons differ from the declared contract, and allocating noexcept package insertion bypasses interpreter recovery. Per-call allocation work was identified but latency, memory pressure failure rate and hardware behavior were not measured.
+- Decision: Continue review-only; prioritize package-entry containment alongside R01/R02 without treating them as interchangeable fixes. Proposed APDU state and allocation-failure acceptance remains unexecuted.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass5/source-sha256.txt` and `review-state.json`; no runtime logs produced.

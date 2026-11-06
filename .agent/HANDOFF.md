@@ -1,3 +1,19 @@
+# Current handoff — APDU and invocation review R41–R43 — 2026-11-06 22:27:05 CET
+
+Review-only active goal made progress: three additional source-confirmed
+findings, with report/lowercase todo totals of 43. APDU.receiveBytes bypasses
+state/offset checks, outgoing length checks use response buffer capacity and
+lose BAD_LENGTH reasons, and method entry's noexcept package-list insertion
+can terminate on allocation failure after a frame is pushed. Native boundary
+implementation remains mandatory for any later fix; none was implemented.
+
+Pass5 source provenance: `artifacts/reviews/review_20261106/pass5/`. Source
+inspection and 43 finding/TODO/link/hash checks only; no new runtime tests,
+full builds, USB/PCSC, flash, CAP edits or performance measurements. Existing
+parser/APDUUtil tests do not establish these APDU state/error contracts.
+Preserve all unrelated worktree edits and previous handoffs below. Continue
+review-only under the active goal; do not implement any listed TODO.
+
 # Current handoff — native API contract review R37–R40 — 2026-11-06 22:23:01 CET
 
 Review-only goal made progress: four additional source-confirmed findings and
