@@ -523,8 +523,8 @@ enum class CapImportValidation : uint8_t {
 };
 
 bool validate_internal_class_references(
-    const jcvm::JC_Cap &cap, const uint8_t *entries,
-    const std::size_t count) noexcept {
+    const jcvm::Package &package, const jcvm::JC_Cap &cap,
+    const uint8_t *entries, const std::size_t count) {
   if (entries == nullptr && count != 0) return false;
   const auto *class_component = cap.getClass();
   const auto *header = cap.getHeader();
@@ -589,6 +589,38 @@ bool validate_internal_class_references(
             token, class_size, record_start, is_interface, requires_class)) {
       return false;
     }
+    if (!requires_class) continue;
+
+    const auto *class_info =
+        reinterpret_cast<const jcvm::jc_cap_class_info *>(
+            class_bytes.data() + token);
+    if (entry[0] == JC_CP_TAG_CONSTANT_INSTANCEFIELDREF) {
+      if (!jcvm::cap_constant_pool_validation::valid_instance_field_token(
+              entry[3], class_info->declared_instance_size & 0xffu,
+              class_info->first_reference_token,
+              class_info->reference_count)) {
+        return false;
+      }
+      continue;
+    }
+
+    jcvm::jc_cap_class_ref class_ref{};
+    class_ref.internal_classref = HTONS(static_cast<uint16_t>(token));
+    if (entry[0] == JC_CP_TAG_CONSTANT_VIRTUALMETHODREF) {
+      const jcvm::jc_cap_virtual_method_ref_info method_ref{
+          class_ref, entry[3]};
+      jcvm::Class_Handler class_handler(package);
+      (void)class_handler.getMethodOffset(method_ref);
+      continue;
+    }
+
+    if (entry[0] == JC_CP_TAG_CONSTANT_SUPERMETHODREF) {
+      if (class_info->isObjectClass()) return false;
+      const jcvm::jc_cap_virtual_method_ref_info method_ref{
+          class_info->super_class_ref, entry[3]};
+      jcvm::Class_Handler class_handler(package);
+      (void)class_handler.getMethodOffset(method_ref);
+    }
   }
   return true;
 }
@@ -610,7 +642,7 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
     }
     if (constant_pool != nullptr &&
         !validate_internal_class_references(
-            cap,
+            package, cap,
             reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
             HTONS(constant_pool->count))) {
       return CapImportValidation::internal_error;

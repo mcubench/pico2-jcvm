@@ -6995,3 +6995,19 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.
 - **Limit:** Internal field/method token correctness and malformed
   interpreter/runtime recovery remain open; no physical flash was performed.
+
+## Validate internal field and virtual/super method tokens — 2026-11-06
+
+- **Finding:** A valid internal Class-component record start does not prove
+  that an instance-field token fits its class or that a virtual/super method
+  token resolves through the method tables.
+- **Viable fix:** Bound internal instance fields using declared layout metadata;
+  resolve internal VirtualMethodref entries through `Class_Handler`, and
+  resolve SuperMethodref entries through the named class's immediate
+  superclass.
+- **Validation:** ASan/UBSan helper suite passes 30/30; PC, ARM, and RISC-V
+  max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes
+  15/15. VPCD log SHA-256:
+  `0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.
+- **Limit:** StaticMethodref exact method-header validation and malformed
+  interpreter/runtime recovery remain open; no physical flash was performed.

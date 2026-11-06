@@ -22558,3 +22558,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv28-internal-classref-vpcd-20261106.log`, SHA-256 `fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.
 
 - Commit resolved for `rv28-internal-classref-validation-20261106`: `423a0b40a154aa26cb87ca6cd9a299b7a997ae8b` (Validate internal CAP class reference targets).
+
+## 2026-11-06 Validate internal field and method tokens 5 minutes
+
+- Step/experiment: `rv28-internal-member-token-validation-20261106`
+- When: '2026-11-06 01:21 CET' - '2026-11-06 01:26 CET'
+- Change: Install preflight now bounds internal InstanceFieldref tokens by the target class's declared instance layout; internal VirtualMethodref tokens resolve through `Class_Handler`; SuperMethodref tokens resolve against the named class's immediate superclass. Updated RV-28 trust documentation, QKB, TODO, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passes 30/30 under ASan/UBSan; `./tools/build-pc --profile max_crypto`, ARM and RISC-V max_crypto wrappers pass; unchanged JCAlgTest VPCD install/APDU suite passes 15/15. No physical flash or malformed-CAP runtime execution was performed. Scoped diff check passes.
+- Result: Existing JCAlgTest internal member references continue to install and execute. Invalid field layouts and unresolved internal methods fail preflight. ARM image ends at `0x100ec688`, leaving 80,248 bytes in the firmware window.
+- Decision: Continue RV-28 with exact internal StaticMethodref header validation, then malformed bytecode runtime coverage.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-internal-member-vpcd-20261106.log`, SHA-256 `0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.

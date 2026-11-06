@@ -1,25 +1,24 @@
-# Active handoff — RV-28 internal class-reference validation — 2026-11-06 01:21 CET
+# Active handoff — RV-28 internal member-token validation — 2026-11-06 01:26 CET
 
-## Latest continuation — require internal CP class-record starts — 2026-11-06 01:21 CET
+## Latest continuation — resolve internal field and method tokens — 2026-11-06 01:26 CET
 
-Install preflight walks the already-validated Class component and marks exact
-class/interface record starts. Internal CP class offsets into record bodies
-are rejected, and InstanceFieldref/VirtualMethodref/SuperMethodref cannot name
-interfaces. The walk respects the CAP 2.2 signature-pool prefix. Internal
-member-token validation beyond class kind/bounds, exact method-header starts,
-and malformed interpreter runtime coverage remain open.
+Install preflight bounds internal InstanceFieldref tokens by the target
+class's declared layout. Internal VirtualMethodref tokens resolve through
+`Class_Handler`; SuperMethodref tokens resolve against the named class's
+immediate superclass. Exact Class-component record-start checking remains in
+place. Exact StaticMethodref header starts and malformed interpreter runtime
+coverage remain open.
 
 Validation: helper sanitizer suite 30/30; PC, ARM, and RISC-V max_crypto
 builds; unchanged JCAlgTest VPCD install/APDU suite 15/15. ARM image ends at
-`0x100ec618`, leaving 80,360 bytes in the firmware window. VPCD log:
-`artifacts/logs/rv28-internal-classref-vpcd-20261106.log`, SHA-256
-`fde40bbd2b104a71e9d384e288a587cb3433bf103ebe52186af43d9639077115`.
+`0x100ec688`, leaving 80,248 bytes in the firmware window. VPCD log:
+`artifacts/logs/rv28-internal-member-vpcd-20261106.log`, SHA-256
+`0af9449648bb3201e7a772df298e8443925e1d9dbb59934cd9949f83fbd0cd6e`.
 No physical flash was performed.
 
-Next: validate internal field and method tokens, then add malformed
+Next: check exact StaticMethodref header starts and add malformed
 interpreter-execution coverage. Preserve unrelated dirty changes. This slice's
-commit is `423a0b40a154aa26cb87ca6cd9a299b7a997ae8b` (Validate internal CAP
-class reference targets).
+commit will be recorded in progress.md after commit.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

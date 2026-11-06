@@ -57,7 +57,10 @@ exact method-header start or that a field offset has the correct declared type.
 Internal ConstantPool class references must identify an exact class/interface
 record start in the Class component. InstanceFieldref, VirtualMethodref, and
 SuperMethodref cannot target an interface record. Member-token semantics for
-internal references remain incomplete.
+internal InstanceFieldref tokens are bounded by the declared instance layout;
+internal VirtualMethodref and SuperMethodref tokens resolve through the
+production class-method resolver. StaticMethodref offsets are still range-only:
+the loader does not yet prove they point to exact method-header starts.
 
 There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
 VM specification makes Descriptor loading optional, and GlobalPlatformPro's
