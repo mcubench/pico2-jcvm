@@ -1,0 +1,16 @@
+{
+  "head": "80d73e142583833d3a7580d114ece73ab0e99057",
+  "when": "2026-11-06T22:08:10.272675+01:00",
+  "previous_turn": "progress: committed initial review and 21 TODOs",
+  "scope": "Review only; no implementation, test-source, CAP or firmware changes",
+  "test_attempts": [
+    {
+      "command": "python3 artifacts/reviews/review_20261103/run-probes.py --iteration2",
+      "exit": 1,
+      "build_exit": 2,
+      "runtime_cases_executed": 0,
+      "result": "undefined Package::getCap() and JC_Cap::getStaticField()/getDescriptor() in historical review fixture",
+      "log_sha256": "e80a4fcd8a19bb4349c9bc4e5b01f0a044a800cd693985d1dabd77c8c4c45c7f"
+    }
+  ]
+}

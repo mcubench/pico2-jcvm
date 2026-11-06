@@ -7638,3 +7638,19 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Evidence:** `artifacts/reviews/review_20261106/all-tests.json` and local
   ignored logs. Review tasks RV-20261106-01 through -21 are in lowercase
   `todo.md`; no implementation authorization is implied by this review.
+
+
+## Historical persistence review probes no longer match static validation — 2026-11-06
+
+- **Observed:** `python3 artifacts/reviews/review_20261103/run-probes.py --iteration2`
+  fails during link: `Package::getCap()`, `JC_Cap::getStaticField()` and
+  `JC_Cap::getDescriptor()` are missing from the fixture dependencies. Runner
+  exit 1/build exit 2; zero runtime probe cases executed.
+- **Additional source issue:** Those historical cases use static reference slot
+  1, while production validation now requires aligned reference byte offsets.
+  Dependency repair alone will not make the cases exercise their intended
+  persistence behavior. A future test repair must model a valid CAP/static
+  layout and use aligned fields; no repair or viable tested solution was made.
+- **Evidence:** `artifacts/reviews/review_20261106/pass2/review-state.json`
+  records the local raw-log hash. R22–R31 remain source-confirmed findings, not
+  runtime-reproduced outcomes. Continue to preserve this pre-existing fixture.

@@ -23279,3 +23279,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/reviews/review_20261106/` source SHA-256 manifest, initial dirty-worktree snapshot, test manifests and local ignored raw logs. Reviewed HEAD advanced from `9e99b9d3cc5ffc1cf834a5170fe34ab9702875f1` to `ad79194e8e56684be5ada7c0d1af5a17c66c101a` through another session's handoff commit. No new hardware latency, throughput, peak-memory, power-cut or security metric measured.
 
 - Commit: `cd1493fc53b87ca62afe6610f1c9bf095fb2a4b7` — completed `review-20261106-current-code`; this appended linkage resolves the pending SHA above. Documentation links, 21 finding/TODO mappings and source hashes were rechecked before commit; no implementation changes or hardware actions were made.
+
+
+## 2026-11-06 Review follow-up on object persistence and API failure boundaries 9 minutes
+
+- Step/experiment: `review-20261106-pass2`
+- When: '2026-11-06 22:02:00 CET' - '2026-11-06 22:11:12 CET'
+- Change: Appended R22–R31 to `docs/review_20261106.md` and ten matching tasks to lowercase `todo.md`, bringing each to 31. Added source hashes and an exact failed-run manifest. No implementation, test source, generated JNI header, CAP or firmware was modified. Preserved unrelated ongoing source/fixture edits.
+- Validation: Re-inspected production serialization, rollback-generation/cache ordering, boolean array persistence, typed-array CP provenance, generated JNI argument conversion, native EC resources/domain checks and hardware exception diagnostics. Existing `python3 artifacts/reviews/review_20261103/run-probes.py --iteration2` failed (runner exit 1, build exit 2) on unresolved CAP/Package methods in its outdated fixture; zero runtime probe cases executed. Its static slot 1 also conflicts with current aligned-reference validation. All 31 finding/TODO mappings, anchors and file links passed documentation inspection. Source-hash validation passed. No new runtime passing evidence, firmware builds, hardware work or performance measurements.
+- Result: Ten additional source-confirmed findings: ordinary object identity/graph aliasing, self-alias creation, failed first-persistence promotion, JNI failure bypass of SensitiveResult reset, persistent boolean read rejection, missing defining CAP for reference-array types, inconsistent positive EC cofactor acceptance, native EC exception cleanup gaps, field-kind-dependent hardware exception diagnostics, and first-persistence value loss after unrelated rollback. The failed historical harness is recorded as a validation limitation, not as runtime reproduction of these defects.
+- Decision: Continue review-only under the active goal; any fixes require a separately authorized implementation task. Prioritize R22–R24/R26/R31 alongside existing persistence correctness findings.
+- Commit: pending follow-up review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass2/source-sha256.txt` and `review-state.json`; local ignored `persistence-probes.log` hash recorded in the manifest. Hardware throughput/latency/peak memory/security metrics not measured.

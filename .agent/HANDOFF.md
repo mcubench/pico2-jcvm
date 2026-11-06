@@ -1,3 +1,27 @@
+# Current handoff — review follow-up R22–R31 — 2026-11-06 22:11:12 CET
+
+Review-only goal remains active. User explicitly prohibits implementation.
+The report `docs/review_20261106.md` and lowercase `todo.md` now contain 31
+findings/tasks after ten source-confirmed additions. New high priorities are
+ordinary object durable identity and self-aliasing, retry after failed first
+persistence, persistent boolean-array reads and new-object value loss when
+first promoted after an unrelated rollback. JNI argument-conversion failures,
+typed-array CP namespaces, EC metadata/resource cleanup and hardware exception
+diagnostics are also covered.
+
+The unchanged historical review runner `--iteration2` failed to link against
+current static-field validation dependencies; no runtime cases ran. Do not
+claim reproduced persistence outcomes from that attempt. Fixture alignment
+assumptions also need updating before its output is usable. No fixture was
+changed. Manifest and source hashes: `artifacts/reviews/review_20261106/pass2/`.
+No hardware/build acceptance was attempted. All 31 documentation links/tasks
+were checked. Previous goal turn was progress (committed review/evidence);
+this turn extends authoritative review findings and TODOs.
+
+Next review pass can inspect remaining OS/host boundary and lifecycle edges;
+do not implement the listed fixes under this request. Preserve the unrelated
+source/fixture/submodule changes and prior implementation handoffs below.
+
 # Current handoff — review only completed — 2026-11-06 22:00:36 CET
 
 The user requested a thorough current-code review and explicitly said not to
