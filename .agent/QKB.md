@@ -7086,3 +7086,28 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   proof needs either Descriptor-preserving loading or an independently
   specified/verifiable method stream format. Keep this trust-model gap open
   while continuing malformed interpreter execution coverage.
+
+## Malformed dynamic CAP opcode rejection and VPCD process permissions — 2026-11-06
+
+- **Finding:** Replacing the first bytecode of the unchanged upstream
+  JCAlgTest `process()` method with `impdep1` causes applet SELECT to fail with
+  `6F00`; direct processing returns `6999` (SecurityException). After either
+  rejection, selecting the ISD still returns its expected FCI and `9000`.
+- **Fixture:** `tools/test-cap-malformed-vpcd` verifies upstream CAP SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`,
+  writes only a generated LOAD-code copy under ignored `build/`, and leaves the
+  source CAP unchanged. The targeted Method-component body byte is `0x467F`
+  (original `0x19`, mutated `0xFE`).
+- **Execution note:** The first offline VPCD invocation in the restricted
+  process sandbox failed immediately with `EPERM` before connection. Running
+  the same offline wrapper with escalated process permissions completed; this
+  is separate from the host-USB/PCSC access rule and does not imply any USB
+  access. Use the approved elevated execution path for this emulator when the
+  sandbox blocks its process/runtime setup.
+- **Validation:** Malformed VPCD run passes 6/6, including recovery selections;
+  unchanged JCAlgTest VPCD run passes 15/15. Logs are
+  `artifacts/logs/rv28-malformed-impdep-vpcd-20261106.log` and
+  `artifacts/logs/rv28-normal-vpcd-after-status-harness-20261106-rerun.log`.
+- **Limit:** This establishes one dynamic opcode rejection and manager recovery
+  path in the PC VPCD emulator only. It is not sanitizer or physical-card
+  hostile-CAP coverage. Continue with malformed operand/branch paths.

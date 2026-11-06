@@ -44,7 +44,12 @@ def send_message(connection: socket.socket, message: bytes) -> None:
     connection.sendall(len(message).to_bytes(2, "big") + message)
 
 
-def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
+def exchange(
+    connection: socket.socket,
+    command: bytes,
+    label: str,
+    expected_status: bytes = b"\x90\x00",
+) -> bytes:
     started = time.monotonic()
     try:
         send_message(connection, command)
@@ -55,8 +60,13 @@ def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
         print(f"VPCD:PHASE name={phase_name} status=fail elapsed_s={elapsed:.3f}")
         raise
     elapsed = time.monotonic() - started
-    if len(response) < 2 or response[-2:] != b"\x90\x00":
-        raise RuntimeError(f"{label} failed: {response.hex().upper()}")
+    if len(expected_status) != 2:
+        raise ValueError("expected_status must contain exactly SW1/SW2")
+    if len(response) < 2 or response[-2:] != expected_status:
+        raise RuntimeError(
+            f"{label} status mismatch: expected={expected_status.hex().upper()} "
+            f"actual={response[-2:].hex().upper()}"
+        )
     phase_name = label.replace(" ", "_")
     print(f"VPCD:PHASE name={phase_name} status=ok elapsed_s={elapsed:.3f}")
     print(f"TEST:PASS {label} response={response.hex().upper()}")
@@ -219,7 +229,10 @@ def run_emulator(
                 select = bytes((0x00, 0xA4, 0x04, args.select_p2,
                                 len(args.applet_aid)))
                 select += args.applet_aid + b"\x00"
-                select_response = exchange(connection, select, "target applet SELECT")
+                select_response = exchange(
+                    connection, select, "target applet SELECT",
+                    expected_status=args.expect_select_status,
+                )
                 if args.expect_select_data is not None:
                     actual = select_response[:-2]
                     if actual != args.expect_select_data:
@@ -239,13 +252,23 @@ def run_emulator(
                 )
                 if args.apdu or args.resume_apdu:
                     for index, apdu in enumerate(custom_apdus, start=1):
+                        expected_response = (
+                            expected_custom_responses[index - 1]
+                            if expected_custom_responses is not None else None
+                        )
                         response = exchange(connection, apdu,
-                                            f"custom APDU {index}")
-                        if expected_custom_responses is not None and \
-                                response != expected_custom_responses[index - 1]:
+                                            f"custom APDU {index}",
+                                            expected_status=(
+                                                expected_response[-2:]
+                                                if expected_response is not None and
+                                                len(expected_response) >= 2
+                                                else b"\x90\x00"
+                                            ))
+                        if expected_response is not None and \
+                                response != expected_response:
                             raise RuntimeError(
                                 f"custom APDU {index} response mismatch: "
-                                f"expected={expected_custom_responses[index - 1].hex().upper()} "
+                                f"expected={expected_response.hex().upper()} "
                                 f"actual={response.hex().upper()}"
                             )
                         if not resume and index in args.reset_after_custom_apdu:
@@ -588,6 +611,11 @@ def parse_args() -> argparse.Namespace:
         help="expected SELECT response data (hex, excluding SW1/SW2)",
     )
     parser.add_argument(
+        "--expect-select-status",
+        default="9000",
+        help="expected SW1/SW2 for the initial applet SELECT (default: 9000)",
+    )
+    parser.add_argument(
         "--apdu",
         action="append",
         default=[],
@@ -652,10 +680,13 @@ def parse_args() -> argparse.Namespace:
             bytes.fromhex(args.expect_select_data)
             if args.expect_select_data is not None else None
         )
+        args.expect_select_status = bytes.fromhex(args.expect_select_status)
     except ValueError as error:
         parser.error(f"AID, APDUs, and expected SELECT data must be valid hexadecimal: {error}")
     if not 5 <= len(args.applet_aid) <= 16:
         parser.error("--applet-aid must contain 5 to 16 bytes")
+    if len(args.expect_select_status) != 2:
+        parser.error("--expect-select-status must contain exactly four hex digits")
     if any(len(apdu) < 4 for apdu in args.apdu + args.resume_apdu):
         parser.error("each --apdu must contain at least four bytes")
     if args.expect_apdu_response is not None and \

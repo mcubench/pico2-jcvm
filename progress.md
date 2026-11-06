@@ -22619,3 +22619,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep physical validation blocked on a successful bounded read-only APDU. Continue RV-28 source work offline and do not infer hardware firmware malfunction from the timeout alone.
 - Commit: `ed88c1b1` (`Record GPPro reader transaction timeout`).
 - Artifacts/logs: command output was empty; timeout exit status 124; no persistent log.
+
+## 2026-11-06 Exercise malformed dynamic opcode rejection and recovery 29 minutes
+
+- Step/experiment: `rv28-malformed-dynamic-opcode-vpcd-20261106`
+- When: '2026-11-06 01:55 CET' - '2026-11-06 02:24 CET'
+- Change: Added a reproducible offline VPCD fixture that derives altered LOAD code from the upstream JCAlgTest CAP without modifying it. The fixture replaces the first bytecode of the public `process()` method with `impdep1`; expanded the VPCD harness to assert expected non-9000 status words and to verify ISD selection after rejected applet dispatch. Clarified Descriptor-free method-bound claims and updated TODO, QKB, and handoff.
+- Validation: Upstream CAP SHA-256 verified as `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`; `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py tools/tests/cap_malformed_vpcd_test.py`, `bash -n tools/test-cap-malformed-vpcd`, and scoped `git diff --check` pass. The first restricted-sandbox VPCD attempt failed with EPERM before emulator connection; rerun under escalated process permissions passes malformed VPCD 6/6 and unchanged JCAlgTest VPCD 15/15. No physical device was used or flashed. Firmware builds and sanitizer runs were intentionally skipped because this slice changes test/documentation code only.
+- Result: Dynamic `impdep1` is rejected: initial applet SELECT returns `6F00`, direct processing returns `6999`; the ISD returns its expected FCI and `9000` following each rejection. Valid upstream JCAlgTest still completes SELECT, version, JCSystem, SHA-256, AES, RSA, random, and CRC probes. The rejected callback does not prevent later card-manager selection in the PC VPCD emulator.
+- Decision: Continue malformed interpreter runtime coverage with truncated operands and invalid branch targets. This does not establish sanitizer or physical hostile-CAP recovery, and does not close the Descriptor-free exact StaticMethodref-start gap.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-impdep-vpcd-20261106.log` (SHA-256 `9b293ca679a1c7e0c49b378331a5e9ba7b2c0f48b971b4c46fdcab5363a1fc97`); `artifacts/logs/rv28-normal-vpcd-after-status-harness-20261106-rerun.log` (SHA-256 `bdb6ed02b582cd19c03e233a5907e781fb060c6b1626bec7f41bd265dc44abba`); generated input `build/rv28-malformed-impdep-load-code.bin` (ignored).

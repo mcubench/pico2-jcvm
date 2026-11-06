@@ -1,4 +1,33 @@
-# Active handoff — RV-28 Descriptor-backed StaticMethodref validation — 2026-11-06 01:40 CET
+# Active handoff — RV-28 malformed dynamic opcode recovery — 2026-11-06 02:24 CET
+
+## Latest continuation — dynamic-package `impdep1` rejection and valid-CAP regression
+
+Added `tools/test-cap-malformed-vpcd`, which builds a generated LOAD-code
+fixture from the unchanged upstream `AlgTest_v1.8.2_jc305.cap`. Its SHA-256 is
+`b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+The fixture confirms the target is JCAlgTest's public `process()` method at
+Method offset `0x3E63`, then changes its first body opcode at assembled LOAD
+index `0x467F` from `0x19` to dynamic-package `impdep1` (`0xFE`). Only ignored
+`build/` output is mutated; the upstream CAP stays unchanged.
+
+Offline PC VPCD result: malformed applet SELECT returns `6F00`, direct applet
+processing returns `6999`, and selecting the ISD after both failures returns
+its FCI and `9000`; malformed test summary is 6/6. The unchanged upstream
+JCAlgTest regression passes 15/15, including select, GETVERSION, JCSystem,
+SHA-256, AES, RSA, secure-random and CRC paths. Logs:
+`artifacts/logs/rv28-malformed-impdep-vpcd-20261106.log` and
+`artifacts/logs/rv28-normal-vpcd-after-status-harness-20261106-rerun.log`.
+Restricted sandbox execution returned EPERM before connecting; the offline
+VPCD wrapper completed under escalated process permissions. This is not USB
+access, a hardware check, or a firmware failure. No physical flash occurred.
+
+Next: add malformed operand/truncated-instruction and branch-target runtime
+cases, then run under sanitizers if supported. The Descriptor-free exact
+StaticMethodref-start assurance gap remains open. Physical validation is still
+blocked: earlier only one of three JCVM USB boards appeared in PC/SC, and its
+bounded GPPro read-only listing timed out. Preserve unrelated worktree edits.
+
+## Prior active handoff — RV-28 Descriptor-backed StaticMethodref validation — 2026-11-06 01:40 CET
 
 ## Latest device visibility refresh — 2026-11-06 01:47 CET
 

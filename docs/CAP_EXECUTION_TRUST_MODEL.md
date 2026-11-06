@@ -24,10 +24,10 @@ diagnostics are checked against that body. For dynamic/uploaded packages, each
 taken short, wide, and switch branch also requires a decoded instruction-start
 target. The width decoder fails closed on unknown or truncated instructions
 and bounds variable-size switch tables. It does not statically check untaken
-edges or control-flow stack types. The VM also does not yet verify nested
-constant-pool linkage or enforce heap field kinds/access. Malformed-CAP
-runtime/sanitizer coverage is still required before claiming safe execution of
-malformed or hostile CAP programs.
+edges or control-flow stack types. The VM does not yet verify every nested
+constant-pool linkage or enforce all heap field kinds/access paths. Malformed-
+CAP runtime/sanitizer coverage is still required before claiming safe execution
+of malformed or hostile CAP programs.
 
 The loader rejects ConstantPool entries whose tags are outside the six defined
 CAP 2.1/2.2 reference kinds, in addition to checking the component entry count
@@ -47,33 +47,36 @@ instance layout, including consistency of its reference-field range. External
 virtual-method tokens are resolved through the same class and compatibility
 mapping path used by dispatch. External `SuperMethodref` values are rejected:
 the CAP format requires their class references to be local to the package.
-Internal class/member targets and malformed-interpreter runtime behavior
-remain open.
+Malformed-interpreter runtime behavior remains open.
 
 Internal StaticFieldref offsets are checked against the StaticField image size;
 internal StaticMethodref offsets use CAP Method-component coordinates, bounded
-after the exception-handler table and through the one-based methods area. These
-offsets must also match exactly one Descriptor method record when Descriptor
-is present. Descriptor-free CAPs still receive only range/header-fit checks,
-because their method-start metadata is incomplete. Static field offsets are
+after the exception-handler table and through the one-based methods area. When
+Descriptor is present, each internal StaticMethodref must match exactly one
+Descriptor method record. Descriptor-free CAPs receive range/header-fit checks,
+and their execution bounds are inferred from callable offsets in Applet, Class,
+Export, and ConstantPool structures. This bounds each frame but does not
+independently authenticate private/internal StaticMethodref starts, because
+the offset comes from the reference being checked. Static field offsets are
 not yet checked against declared field types.
+
 Internal ConstantPool class references must identify an exact class/interface
 record start in the Class component. InstanceFieldref, VirtualMethodref, and
-SuperMethodref cannot target an interface record. Member-token semantics for
-internal InstanceFieldref tokens are bounded by the declared instance layout;
-internal VirtualMethodref and SuperMethodref tokens resolve through the
-production class-method resolver. StaticMethodref offsets are still range-only:
-the loader does not yet prove they point to exact method-header starts.
+SuperMethodref cannot target an interface record. Internal InstanceFieldref
+tokens are bounded by declared instance layout; internal VirtualMethodref and
+SuperMethodref tokens resolve through the production class-method resolver.
 
-There is a compatibility gap with ordinary CAP loading: the Java Card 3.0.5
-VM specification makes Descriptor loading optional, and GlobalPlatformPro's
-default CAP load omits Descriptor and Debug. The Method component alone does
-not include the per-method bytecode lengths needed by this VM's strict frame
-bounds. Therefore dynamic packages without Descriptor currently fail closed
-when execution enters their method. Do not replace the missing per-method
-bounds with the entire Method component: that allows bytecode branches and
-reads to cross method bodies. Supporting standard Descriptor-free loads while
-keeping this trust policy requires another verifiable method-bounds source or
-a separate CAP verification/trust mechanism. See `.agent/QKB.md` for the
-reproduced `6A80` SIO service-install result and the [Java Card 3.0.5 VM
-specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf), §6.10 and §6.14.
+There is a compatibility and assurance gap with ordinary CAP loading: the Java
+Card 3.0.5 VM specification makes Descriptor loading optional, and
+GlobalPlatformPro's default CAP load omits Descriptor and Debug. The Method
+component alone does not include per-method bytecode lengths. For Descriptor-
+free methods, the VM derives body bounds from enumerated callable offsets and
+fails closed when it cannot resolve a bounded range. This is not an
+independent proof that every private/internal static offset is an authentic
+method start. Do not replace inferred per-method bounds with the entire Method
+component: that allows bytecode branches and reads to cross method bodies.
+Closing the exact-start gap requires preserving Descriptor or adding a
+separate verifier that can independently establish method boundaries. See
+`.agent/QKB.md` for the Descriptor-free GPPro LOAD findings and the [Java Card
+3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf),
+§6.10 and §6.14.
