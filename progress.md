@@ -23319,3 +23319,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue review-only; keep unsupported-domain rejection distinct from silently replacing parameters, and keep reset configuration separate from intermediate-state lifetime in future implementation tasks.
 - Commit: pending review commit; exact SHA will be appended after creation.
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass4/source-sha256.txt` and `review-state.json`; no runtime logs generated this pass.
+
+- Commit: `97e31e96608073a2c2d5f5a08e714800cbb5f49c` — completed `review-20261106-pass4`; this append resolves the pending SHA above. Documentation/evidence only; no implementation or hardware actions.
