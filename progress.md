@@ -22663,3 +22663,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Wide out-of-frame branch rejection and manager recovery pass in the PC VPCD emulator. Continue only with distinct runtime guards, followed by focused sanitizer checks; physical recovery remains open.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-branch-outside-method-vpcd-20261106.log`, SHA-256 `46d1376d3ce64f8710ef231d0bfec6f441e0fb85158c060ec045274ea6cd7b92`; generated input `build/rv28-malformed-branch-outside-method-load-code.bin` (ignored).
+
+## 2026-11-06 Enable sanitizer coverage for bytecode bounds 2 minutes
+
+- Step/experiment: `rv28-bytecode-bounds-asan-ubsan-20261106`
+- When: '2026-11-06 02:41 CET' - '2026-11-06 02:43 CET'
+- Change: Updated the PC-bound and method-body-bound test wrappers to compile and run under ASan/UBSan. Existing deterministic malformed instruction-boundary fuzz remains under both sanitizers.
+- Validation: `./tools/test-cap-bytecode-pc-bounds` passes 19/19 under ASan/UBSan; `./tools/test-cap-method-body-bounds` passes 11/11 under ASan/UBSan; `./tools/test-cap-instruction-boundaries` passes 13/13 including 100,000 malformed bytecode inputs. LeakSanitizer is disabled because its runtime does not initialize under this VM's ptrace restrictions. No production source, firmware builds, physical tests, or flash operations were involved.
+- Result: Program-counter arithmetic, Descriptor and Descriptor-free body range helpers, and the instruction-width/branch decoder now all have sanitizer-backed coverage in their focused wrappers.
+- Decision: Continue with malformed switch/conditional runtime paths only if they add distinct coverage; keep physical hostile-CAP recovery open.
+- Commit: pending.
+- Artifacts/logs: transient wrapper outputs only; generated executables are removed by the wrappers.

@@ -1,4 +1,23 @@
-# Active handoff — RV-28 out-of-method branch runtime rejection — 2026-11-06 02:41 CET
+# Active handoff — RV-28 bytecode-bound sanitizer coverage — 2026-11-06 02:43 CET
+
+## Latest continuation — run PC and method bound helpers under sanitizers
+
+Enabled AddressSanitizer and UndefinedBehaviorSanitizer in
+`tools/test-cap-bytecode-pc-bounds` and
+`tools/test-cap-method-body-bounds`, using the repository wrappers. Both pass:
+PC bounds 19/19 and method ranges 11/11. `tools/test-cap-instruction-boundaries`
+also passes 13/13 under ASan/UBSan, including 100,000 deterministic malformed
+bytecode inputs. Sanitizer environment disables LeakSanitizer because its
+initialization is restricted in this VM; ASan and UBSan remain active.
+
+No production C++ was changed, so platform builds and flashing were not run.
+Prior offline malformed VPCD cases pass for `impdep1`, truncated `SIPUSH`,
+`GOTO +1` into its operand and out-of-frame `GOTO_W`. Next assess whether a
+distinct malformed switch/conditional path adds coverage, then validate runtime
+exception containment under the host VPCD if practical. Keep physical recovery
+and Descriptor-free exact method-start acceptance open.
+
+## Previous handoff — RV-28 out-of-method branch runtime rejection — 2026-11-06 02:41 CET
 
 ## Latest continuation — dynamic `GOTO_W` beyond frame is rejected
 
