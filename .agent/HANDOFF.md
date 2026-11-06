@@ -19,6 +19,7 @@ hardware tests. APDU log SHA-256
 emulator log SHA-256
 `43d0517b24ab4d1b131dd76c38cadb38bb4cdd80c09afc1542c05732a55ea04a`.
 Results are under `artifacts/results/gp-get-data-vpcd-20261106T170234Z/`.
+Implementation/test-tool commit: `2a3ca092` (`Repair GP GET DATA VPCD acceptance`).
 
 Prior scoped implementation: commit `e91f9d65` rejects deletion of packages
 imported by another loaded CAP (`6985`), validated in VPCD; its handoff and
