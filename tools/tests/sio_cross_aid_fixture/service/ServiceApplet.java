@@ -356,11 +356,22 @@ public final class ServiceApplet extends Applet implements Probe {
     SensitiveResult.assertEquals(self);
     AID previous = JCSystem.getPreviousContextAID();
     SensitiveResult.assertEquals(previous);
-    return self.equals(SERVICE_AID, (short)0, (byte)SERVICE_AID.length) &&
-                   previous != null &&
-                   previous.equals(CLIENT_AID, (short)0,
-                                   (byte)CLIENT_AID.length)
-        ? (short)0x6A31 : (short)0x6A32;
+    if (!self.equals(SERVICE_AID, (short)0, (byte)SERVICE_AID.length) ||
+        previous == null ||
+        !previous.equals(CLIENT_AID, (short)0, (byte)CLIENT_AID.length))
+      return (short)0x6A32;
+    if (!self.partialEquals(SERVICE_AID, (short)0, (byte)5))
+      return (short)0x6A89;
+    SensitiveResult.assertTrue();
+    byte[] mismatched = {
+      (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x03, 0x02
+    };
+    if (self.equals(mismatched, (short) 0, (byte) mismatched.length))
+      return (short) 0x6A89;
+    SensitiveResult.assertFalse();
+    if (!self.equals(self)) return (short) 0x6A89;
+    SensitiveResult.assertTrue();
+    return (short)0x6A31;
   }
 
   public short noSensitiveApi() {

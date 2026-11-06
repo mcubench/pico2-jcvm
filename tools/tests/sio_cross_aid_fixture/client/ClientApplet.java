@@ -322,6 +322,8 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).sensitiveRandomDataResults();
     } else if (buffer[1] == 0x3A) {
       result = ((Probe) shareable).sensitiveArrayCapabilityResults();
+    } else if (buffer[1] == 0x3B) {
+      result = ((Probe) shareable).sensitiveAIDResults();
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();
