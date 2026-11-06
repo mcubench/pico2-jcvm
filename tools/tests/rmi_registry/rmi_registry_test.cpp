@@ -150,6 +150,48 @@ void verify_dup_x_positive_depth() {
     }
     assert(invalid_range);
   }
+
+#ifdef JCVM_INT_SUPPORTED
+  constexpr uint8_t maximum_extra_n = 4;
+#else
+  constexpr uint8_t maximum_extra_n = 2;
+#endif
+  for (uint8_t m = 1; m <= maximum_m; ++m) {
+    for (uint8_t form = 0; form <= maximum_extra_n + 1; ++form) {
+      const uint8_t n = form == 0 ? 0 : static_cast<uint8_t>(m + form - 1);
+      const uint8_t input_words = n == 0 ? m : n;
+      jcvm::Stack stack;
+      push_test_frame(stack, 0, 0, input_words + m);
+      for (uint8_t value = 1; value <= input_words; ++value) {
+        stack.push_Short(value);
+      }
+      stack.dup(m, n);
+      for (uint8_t value = input_words; value > 0; --value) {
+        assert(stack.pop_Short() == value);
+      }
+      const uint8_t first_copy = n == 0 ? m : n;
+      const uint8_t last_copy = n == 0 ? 1 : static_cast<uint8_t>(n - m + 1);
+      for (uint8_t value = first_copy; value >= last_copy; --value) {
+        assert(stack.pop_Short() == value);
+        if (value == last_copy) {
+          break;
+        }
+      }
+    }
+  }
+
+#ifdef JCVM_INT_SUPPORTED
+  {
+    jcvm::Stack stack;
+    push_test_frame(stack, 0, 0, 6);
+    stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
+    stack.push_Int(static_cast<jcvm::jint_t>(0x23456789));
+    stack.dup(2, 4);
+    assert(stack.pop_Int() == static_cast<jcvm::jint_t>(0x23456789));
+    assert(stack.pop_Int() == static_cast<jcvm::jint_t>(0x12345678));
+    assert(stack.pop_Int() == static_cast<jcvm::jint_t>(0x23456789));
+  }
+#endif
 }
 
 void verify_sensitive_result_cross_context(jcvm::Context &producer,
