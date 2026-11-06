@@ -22705,5 +22705,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-api-crypto-extended-method-vpcd` passes 3/3. Upstream API class dispatch maps `B0838305010D00` to `ApiTestCryptoCipher.crypt(byte, byte[])`; its bundled class declares 20 local slots, requiring an extended header. APDU response `000020019000` decodes as no exception, 32 output bytes, known-answer pass, `9000`. CAP SHA-256 is `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`. Python compile and scoped `git diff --check` pass. No firmware build was needed for this test-only step, and no physical token or CAP modification was used.
 - Result: The corrected extended-header runtime path executes a real deployed Crypto API method and returns its expected positive known-answer result in PC VPCD.
 - Decision: Keep the extended-header fix. Continue RV-28 with the remaining malformed interpreter and linkage paths; physical validation of this exact source image remains open.
-- Commit: pending.
+- Commit: `c82c2be2`.
 - Artifacts/logs: `artifacts/logs/rv28-extended-crypto-crypt-api-vpcd-20261106.log`, SHA-256 `434c6c08e8a5936179b00ce06b6882fe63ab47c863564aaa3014651114f7dcfb`; generated code and emulator memory are under ignored `build/`.

@@ -47,8 +47,7 @@ CAP applet returned `000020019000` (32-byte result, known-answer pass), and the
 VPCD harness passed 3/3. Log:
 `artifacts/logs/rv28-extended-crypto-crypt-api-vpcd-20261106.log`.
 
-Next: commit this independent runtime-regression step. Then continue RV-28
-malformed interpreter paths and linkage validation. Physical extended-method
+The runtime-regression step is committed as `c82c2be2` (`Exercise extended-header crypto method in VPCD`). Continue RV-28 malformed interpreter paths and linkage validation. Physical extended-method
 execution remains open; the currently installed board firmware passed its
 runtime monitor but the new header-fix image was not flashed. Keep unrelated
 dirty files untouched.
