@@ -95,9 +95,9 @@ Next: audit the other method-call operands and catch-type CP lookups for
 runtime range protection; retain the distinction between validation from the
 current array-check configuration, no-check builds, sanitizers, and physical
 card behavior.
-The initial INVOKESTATIC case and audit are committed as `d4e13a32`; the
-remaining invocation variants are in progress and will be committed as a
-separate test-only step.
+The initial INVOKESTATIC case and audit are committed as `d4e13a32`; all four
+invocation opcodes are now covered in commit `00165ee1` with complete operand
+forms and independent recovery logs. Metadata follow-up pending.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
