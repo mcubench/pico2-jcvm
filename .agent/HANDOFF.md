@@ -11,8 +11,8 @@ cross-AID VPCD passes 34/34. PC `symm_crypto`, ARM `current`, and RISC-V
 `current` builds pass. Python syntax and CRLF-aware scoped diff checks pass.
 No physical device was used.
 
-Implementation/test commit and metadata follow-up are recorded in `progress.md`
-after commit completion. Logs: focused
+Implementation/test commit: `9ffe4da05a9893dede9da4e2e89a378a41f7b81a`.
+Progress record is in `progress.md`. Logs: focused
 `artifacts/logs/sio-cross-aid-vpcd-20261106T052220Z.log` (SHA-256
 `46d7ce6ffaf930e1ab52ac72ae49685d3a151ab5df2c2edc07b373a04e70dc99`), full
 `artifacts/logs/sio-cross-aid-vpcd-20261106T052256Z.log` (SHA-256
