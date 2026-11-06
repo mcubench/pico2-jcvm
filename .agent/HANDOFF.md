@@ -1,3 +1,26 @@
+# Active handoff — RandomData SensitiveResult through SIO — 2026-11-06 09:41 CET
+
+## Latest continuation — RandomData result producers covered
+
+Added framework `RandomData` virtual-return capture for `getAlgorithm()` and
+`nextBytes()`. A three-package interpreted fixture creates the currently
+supported secure-random provider, checks the algorithm byte and returned end
+offset in the service, and asserts both results after SIO.
+
+Focused RandomData VPCD passed; the complete cross-AID suite passed 34/34 on a
+freshly rebuilt PC `symm_crypto` VM. ARM `current` and RISC-V `current` builds
+pass. The ARM image ends at `0x100D4B20`, leaving 177,376 bytes. Python syntax
+and scoped CRLF-aware diff checks pass. No physical hardware was used.
+
+Source/test commit: pending; progress record is at the end of `progress.md`.
+
+Next: cover Checksum and enabled AEAD/key result producers, then test object
+SensitiveResult GC rooting after ordinary local references are dropped through
+interpreted SIO. Preserve unrelated worktree changes. All PIN and RandomData
+evidence remains emulator-only.
+
+---
+
 # Active handoff — concrete PIN SensitiveResult calls — 2026-11-06 09:23 CET
 
 ## Latest continuation — concrete OwnerPIN invocation covered

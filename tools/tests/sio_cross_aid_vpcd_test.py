@@ -347,6 +347,19 @@ def main() -> int:
                 print("TEST:PASS PIN/OwnerPINx SensitiveResult assertions across SIO")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_RANDOM") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8039000000"),
+                    "RandomData SensitiveResult across SIO"
+                )
+                if response != bytes.fromhex("6A859000"):
+                    raise RuntimeError(
+                        "RandomData SensitiveResult returned "
+                        f"{response.hex().upper()}, expected 6A859000"
+                    )
+                print("TEST:PASS RandomData getAlgorithm/nextBytes results across SIO")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_INHERITED") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("802C000000"),
@@ -556,6 +569,16 @@ def main() -> int:
                     "expected 6A7F9000"
                 )
             print("TEST:PASS OwnerPINx and predecrement byte results across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8039000000"),
+                "RandomData SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A859000"):
+                raise RuntimeError(
+                    f"RandomData SensitiveResult returned {response.hex().upper()}, "
+                    "expected 6A859000"
+                )
+            print("TEST:PASS RandomData getAlgorithm/nextBytes results across SIO")
             response = vpcd.exchange(
                 connection, bytes.fromhex("802B000000"),
                 "propagate exact exception type and reason across SIO"

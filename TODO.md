@@ -870,8 +870,13 @@ source-based follow-ups, without a new physical reproduction in this review.
   Concrete `OwnerPIN` `invokevirtual` calls for `getTriesRemaining`, `check`,
   and `isValidated` are now also covered with interpreted service-side
   assertions and SIO return. Both focused and full VPCD runs pass.
-  Remaining: exercise random-data, checksum, AEAD and remaining key API results where
-  enabled, verify GC rooting of object results after ordinary locals are
+  `RandomData.getAlgorithm()` and `nextBytes()` now also publish their short
+  results on successful concrete-class `invokevirtual` return; both results
+  are asserted by the caller after SIO. Focused RandomData VPCD and full 34/34
+  cross-AID suite pass; PC `symm_crypto`, ARM `current`, and RISC-V `current`
+  builds pass. No physical device was used.
+  Remaining: exercise Checksum, AEAD and key API results beyond `buildKey()`
+  where enabled, verify GC rooting of object results after ordinary locals are
   dropped through interpreted SIO, and repeat selected coverage on physical
   hardware when available.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,

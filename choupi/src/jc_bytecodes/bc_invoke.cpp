@@ -119,6 +119,30 @@ Frame::SensitiveReturn ownerPinVirtualSensitiveReturn(
   }
 }
 
+Frame::SensitiveReturn randomDataVirtualSensitiveReturn(
+    Context &context, const jc_cap_virtual_method_ref_info &method_ref) {
+  if (!FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID()) ||
+      !method_ref.class_ref.isExternalClassRef()) {
+    return Frame::SensitiveReturn::None;
+  }
+  const auto &external = method_ref.class_ref.external_classref;
+  if (external.class_token != 14 && external.class_token != 32) {
+    return Frame::SensitiveReturn::None;
+  }
+  const auto *package_info = Import_Handler(context.getCurrentPackage())
+                                .getPackageAID(external.package_token & 0x7F);
+  if (package_info == nullptr || package_info->AID_length != 7 ||
+      std::memcmp(package_info->AID, "\xA0\x00\x00\x00\x62\x01\x02", 7) != 0) {
+    return Frame::SensitiveReturn::None;
+  }
+  // JC305 RandomData tokens: nextBytes=3 and getAlgorithm=4.
+  const uint8_t method_token = method_ref.token & 0x7F;
+  if (method_token == 3 || method_token == 4) {
+    return Frame::SensitiveReturn::Short;
+  }
+  return Frame::SensitiveReturn::None;
+}
+
 // Descriptor access_flags use java.lang.reflect.Modifier bit values, unlike
 // the compact Class component flags used by JC_CAP_CLASS_ACC_INTERFACE.
 constexpr uint8_t JC_CAP_DESCRIPTOR_ACC_INTERFACE = 0x80;
@@ -484,8 +508,12 @@ void Bytecodes::bc_invokevirtual() {
   if (resolved_handler.getArgumentCount(target_method_offset) != nargs) {
     throw Exceptions::SecurityException;
   }
-  const auto sensitive_return =
+  auto sensitive_return =
       ownerPinVirtualSensitiveReturn(context, virtual_method_ref_info);
+  if (sensitive_return == Frame::SensitiveReturn::None) {
+    sensitive_return =
+        randomDataVirtualSensitiveReturn(context, virtual_method_ref_info);
+  }
   if (sensitive_return != Frame::SensitiveReturn::None) {
     context.resetSensitiveResult();
   }

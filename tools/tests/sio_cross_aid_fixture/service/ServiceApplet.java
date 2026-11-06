@@ -12,6 +12,7 @@ import javacard.framework.PIN;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
 import javacard.security.CryptoException;
+import javacard.security.RandomData;
 import javacard.security.MessageDigest;
 import javacard.security.AESKey;
 import javacard.security.KeyBuilder;
@@ -307,6 +308,22 @@ public final class ServiceApplet extends Applet implements Probe {
       return (short) 0x6A7F;
     } catch (SecurityException missingSensitiveResult) {
       return (short) (0x6A90 + stage);
+    }
+  }
+
+  public short sensitiveRandomDataResults() {
+    try {
+      RandomData random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+      if (random.getAlgorithm() != RandomData.ALG_SECURE_RANDOM)
+        return (short) 0x6A84;
+      SensitiveResult.assertEquals((short) RandomData.ALG_SECURE_RANDOM);
+      byte[] output = new byte[8];
+      if (random.nextBytes(output, (short) 2, (short) 4) != 6)
+        return (short) 0x6A84;
+      SensitiveResult.assertEquals((short) 6);
+      return (short) 0x6A85;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) 0x6A86;
     }
   }
 
