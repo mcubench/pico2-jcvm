@@ -22595,3 +22595,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with a Descriptor-free method-start source and malformed interpreter tests; do not claim exact method-start verification for Descriptor-free CAPs.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-descriptor-static-method-vpcd-20261106.log`, SHA-256 `444284a42b9c84b8153618cf91b06d3adf81428f783a1fda3ea7ac09320c3fa2`.
+
+- Commit resolved for `rv28-descriptor-static-method-offset-validation-20261106`: `5836a12f88cdea04cd5bbdc8e09e66d0aad666e8` (Validate Descriptor static method targets).

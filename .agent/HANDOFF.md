@@ -18,7 +18,8 @@ No physical flash was performed.
 
 Next: find a safe authoritative method-start map for Descriptor-free CAPs, then
 add malformed interpreter-execution coverage. Preserve unrelated dirty changes.
-This slice's commit will be recorded in progress.md after commit.
+This slice's commit is `5836a12f88cdea04cd5bbdc8e09e66d0aad666e8` (Validate
+Descriptor static method targets).
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 
