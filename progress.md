@@ -23558,5 +23558,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: No new tests; ARM/RISC-V builds, RMI registry test, focused VPCD 2/2, and full symm_crypto VPCD 35/35 passed in the preceding implementation step.
 - Result: Commit evidence is now complete in the continuity log.
 - Decision: Continue CTX-01 by auditing same-package references and persistent roots; retry hardware validation after PC/SC enumeration recovers.
-- Commit: pending.
+- Commit: `10d428ec` — handoff and progress resolution.
 - Artifacts/logs: See the implementation entry above.
