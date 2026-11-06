@@ -86,6 +86,15 @@ Physical test remains pending: the authorized USB helper granted three device
 nodes, but `timeout 8s pcsc_scan -r` returned 124 without enumerating a Pico
 reader.
 
+The package DELETE regression also installs an independent applet package
+(`A000000151000007`) whose APDU returns `5A9000`. The unrelated applet remains
+selectable and executable after successful service package DELETE and
+same-AID reinstall. With injected package cleanup failure, DELETE returns
+`6581`; after emulator restart/recovery the unrelated applet still returns
+`5A9000`, and it remains usable after service package reinstall. Focused
+captured outputs are recorded in the `sio-cross-aid-independent-client`
+progress entry; the default SIO suite still passes 34/34.
+
 ## Runtime cleanup findings requiring reproduction
 
 1. **Package DELETE leaves other packages' SIO proxy routes intact.**

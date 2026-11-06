@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${repo_root}/tools/tests/unrelated_client_fixture"
+build_dir="${repo_root}/build/unrelated-client-fixture"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+package_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x07'
+applet_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x07:0x01'
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}/classes" "${build_dir}/cap"
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar" \
+  -d "${build_dir}/classes" "${source_root}"/*.java
+env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
+  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" "-Djc.home=${kit}" \
+  -cp "${kit}/lib/tools.jar" com.sun.javacard.converter.Main -nobanner -i \
+  -classdir "${build_dir}/classes" \
+  -exportpath "${kit}/api_export_files" \
+  -d "${build_dir}/cap" -out CAP \
+  -applet "${applet_aid}" unrelated.UnrelatedApplet unrelated \
+  "${package_aid}" 1.0
+
+cap_file="${build_dir}/cap/unrelated/javacard/unrelated.cap"
+[[ -s "${cap_file}" ]] || {
+  printf 'ERROR: unrelated-client CAP fixture missing: %s\n' "${cap_file}" >&2
+  exit 1
+}
+printf 'UNRELATED_CLIENT_FIXTURE:PASS cap=%s\n' "${cap_file}"

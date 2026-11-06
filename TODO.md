@@ -1041,10 +1041,12 @@ source-based follow-ups, without a new physical reproduction in this review.
   inactive contexts. The opt-in regression verifies old proxy `6A0A`, null
   lookup after deletion, then old proxy `6A0A` and fresh service result
   `45679000` after reinstall. The registry unit test confirms another
-  package's route remains. Same-CAP sibling/restart/delete suites pass 6/6,
-  7/7, and 9/9. Remaining: add a distinct unrelated client applet integration
-  case and repeat the package DELETE/reinstall APDUs on physical Pico hardware;
-  PC/SC currently enumerates no Pico reader. Keep open until those gates pass.
+  package's route remains. A third unrelated applet package now remains
+  selectable and executable across successful service package DELETE,
+  injected late-cleanup failure/restart, and same-AID service reinstall.
+  Same-CAP sibling/restart/delete suites pass 6/6, 7/7, and 9/9. Remaining:
+  repeat the package DELETE/reinstall APDUs on physical Pico hardware; PC/SC
+  currently enumerates no Pico reader. Keep open until hardware acceptance.
   Evidence: [CAP reinstall review](docs/cap-reinstall-review-20261105.md),
   `.agent/QKB.md`, and `progress.md`.
 

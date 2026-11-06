@@ -1,3 +1,20 @@
+## Independent applet package remains usable through service package DELETE recovery — 2026-11-06
+
+- **Finding:** The existing stale-proxy regression's only surviving applet
+  belonged to the proxy-owning client package. It did not directly prove that
+  an unrelated installed applet package remained usable during server package
+  deletion and late-cleanup restart recovery.
+- **Viable regression:** Install a third test-only applet package with AID
+  `A000000151000007`; its applet SELECT succeeds and INS `10` returns
+  `5A9000`. Exercise it after service package DELETE, after injected durable
+  DELETE followed by emulator restart, and after same-AID service reinstall.
+- **Validation:** Normal package DELETE/reinstall and injected late cleanup
+  `6581`/restart/reinstall both pass, preserving the unrelated applet and the
+  stale-proxy denial/fresh-service lookup behavior. The unchanged default
+  cross-AID SIO suite remains 34/34. Logs and hashes are in the
+  `sio-cross-aid-independent-client` progress entry. Physical CCID is still
+  blocked by absent Pico PC/SC readers.
+
 ## Primitive-only instance CAPs use `0xFF` for no reference fields — 2026-11-06
 
 - **Finding:** A valid test CAP with one primitive instance field encoded

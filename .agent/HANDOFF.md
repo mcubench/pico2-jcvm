@@ -7830,3 +7830,33 @@ LOAD, INSTALL, SELECT and restart checks on hardware. Continue offline while
 PC/SC has no Pico reader.
 
 # Previous current handoff — package DELETE invalidates cross-AID SIO routes — 2026-11-06 14:22 CET
+# Current handoff — independent client survives package DELETE recovery — 2026-11-06 17:08 CET
+
+## Completed
+
+Closed CAP-REINSTALL-01's offline unrelated-client gap. Added a test-only
+third package (AID `A000000151000007`) with an independent applet; SELECT plus
+INS `10` returns `5A9000`. The focused package DELETE/reinstall scenario passes
+with a normal `9000` DELETE and with injected late cleanup returning `6581`,
+followed by emulator restart and recovery. In both paths the unrelated applet
+remains selectable/executable after service deletion and same-AID service
+reinstall. The stale proxy still returns `6A0A`, while fresh lookup reaches
+the reinstalled service (`45679000`). The default cross-AID suite remains
+`TEST:SUMMARY pass=34 fail=0`.
+
+Validation logs: normal opt-in run
+`artifacts/logs/sio-cross-aid-independent-client-20261106T160101Z.log`,
+late-cleanup/restart run
+`artifacts/logs/sio-cross-aid-independent-client-restart-20261106T160123Z.log`,
+default suite
+`artifacts/logs/sio-cross-aid-default-after-independent-client-20261106T160237Z.log`.
+All use localhost VPCD; no USB/PCSC or firmware build was needed.
+
+## Physical blocker
+
+CAP-REINSTALL-01, -02, and -03 remain open only for physical CCID/APDU
+acceptance. Latest reader refresh granted three USB nodes but
+`pcsc_scan -r` listed no Pico. Continue offline or refresh PC/SC when hardware
+is available; do not claim physical validation.
+
+# Previous handoff — changed-version CAP replacement verified in VPCD — 2026-11-06 16:50 CET

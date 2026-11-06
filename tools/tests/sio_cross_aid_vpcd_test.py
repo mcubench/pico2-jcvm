@@ -29,6 +29,8 @@ SERVICE_PACKAGE = bytes.fromhex("A000000151000003")
 SERVICE_APPLET = bytes.fromhex("A00000015100000301")
 CLIENT_PACKAGE = bytes.fromhex("A000000151000004")
 CLIENT_APPLET = bytes.fromhex("A00000015100000401")
+UNRELATED_PACKAGE = bytes.fromhex("A000000151000007")
+UNRELATED_APPLET = bytes.fromhex("A00000015100000701")
 CONNECT_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_CONNECT_TIMEOUT_S", "90"))
 APDU_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_APDU_TIMEOUT_S", "120"))
 SHUTDOWN_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_SHUTDOWN_TIMEOUT_S", "30"))
@@ -712,9 +714,19 @@ def main() -> int:
     client = cap_components(
         build / "client-cap/sio/client/javacard/client.cap"
     )
+    unrelated = None
+    if os.environ.get("SIO_CROSS_AID_TEST_PACKAGE_DELETE") == "1":
+        subprocess.run([str(ROOT / "tools/build-unrelated-client-fixture")],
+                       cwd=ROOT, check=True, timeout=120)
+        unrelated = cap_components(
+            ROOT / "build/unrelated-client-fixture/cap/unrelated/javacard/unrelated.cap"
+        )
     if contract[2] or service[1:] != (SERVICE_PACKAGE, [SERVICE_APPLET]) or \
             client[1:] != (CLIENT_PACKAGE, [CLIENT_APPLET]):
         raise RuntimeError("fixture package/applet AID validation failed")
+    if unrelated is not None and unrelated[1:] != (
+            UNRELATED_PACKAGE, [UNRELATED_APPLET]):
+        raise RuntimeError("unrelated-client fixture AID validation failed")
 
     emulator = ROOT / "build/choupi-pc/choupi"
     rom_mask = ROOT / "build/choupi-pc/flash"
@@ -955,8 +967,40 @@ def main() -> int:
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)
             print("TEST:PASS installed cross-AID client applet")
+            if unrelated is not None:
+                vpcd.load_package(scp, unrelated[0], unrelated[1])
+                response = vpcd.install_applet(
+                    scp, unrelated[1], unrelated[2][0], unrelated[2][0]
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "unrelated applet INSTALL returned "
+                        f"{response.hex().upper()}, expected 9000"
+                    )
+                print("TEST:PASS installed an unrelated third-package applet")
 
             select_client = bytes((0x00, 0xA4, 0x04, 0x00, len(CLIENT_APPLET))) + CLIENT_APPLET
+            select_unrelated = (bytes((0x00, 0xA4, 0x04, 0x00,
+                                      len(UNRELATED_APPLET))) + UNRELATED_APPLET)
+
+            def check_unrelated_applet(label: str) -> None:
+                selected = vpcd.exchange(
+                    connection, select_unrelated, label + " SELECT"
+                )
+                if selected[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        f"{label} SELECT returned {selected.hex().upper()}"
+                    )
+                executed = vpcd.exchange(
+                    connection, bytes.fromhex("8010000000"), label + " APDU"
+                )
+                if executed != bytes.fromhex("5A9000"):
+                    raise RuntimeError(
+                        f"{label} APDU returned {executed.hex().upper()}, "
+                        "expected 5A9000"
+                    )
+                print(f"TEST:PASS unrelated applet remains selectable and executable: {label}")
+
             response = vpcd.exchange(connection, select_client, "SELECT client")
             if response[-2:] != b"\x90\x00":
                 raise RuntimeError(f"SELECT client failed: {response.hex().upper()}")
@@ -1010,6 +1054,10 @@ def main() -> int:
                     else:
                         print("TEST:PASS package DELETE succeeded with "
                               "dependent client still installed")
+                    if unrelated is not None:
+                        check_unrelated_applet(
+                            "after package DELETE and optional restart"
+                        )
                     response = vpcd.exchange(
                         connection, select_client,
                         "reselect client after package DELETE"
@@ -1077,6 +1125,19 @@ def main() -> int:
                             "client SELECT after service package reinstall "
                             f"returned {response.hex().upper()}"
                         )
+                    if unrelated is not None:
+                        check_unrelated_applet(
+                            "after same-AID service package reinstall"
+                        )
+                        response = vpcd.exchange(
+                            connection, select_client,
+                            "reselect proxy-owning client after unrelated applet"
+                        )
+                        if response[-2:] != bytes.fromhex("9000"):
+                            raise RuntimeError(
+                                "client SELECT after unrelated applet returned "
+                                f"{response.hex().upper()}"
+                            )
                     response = vpcd.exchange(
                         connection, bytes.fromhex("8016000000"),
                         "reject old proxy after service package reinstall"
