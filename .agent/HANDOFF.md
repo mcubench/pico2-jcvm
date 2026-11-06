@@ -1,3 +1,27 @@
+# Current handoff — review only completed — 2026-11-06 22:00:36 CET
+
+The user requested a thorough current-code review and explicitly said not to
+implement anything. `docs/review_20261106.md` records 21 prioritized findings;
+lowercase `todo.md` has 21 matching follow-ups and links to the existing
+uppercase `TODO.md` owners. No implementation or CAP was changed.
+
+Existing offline checks covered 32 targets: 31 passed, one failed to link
+(`test-jcvmarray-allocation`, missing rollback-generation dependency). The
+protocol socket test passed with host permissions after restricted-context
+failure. Test manifests/provenance are in
+`artifacts/reviews/review_20261106/`; raw logs are local and gitignored. No
+firmware build, USB/PCSC, flashing, serial or physical power-cycle work was
+performed. Source-confirmed defects have proposed reproductions, not new
+end-to-end passing evidence.
+
+Highest priorities for a separately authorized implementation task: contain
+opcode-fetch exceptions inside the noexcept interpreter, correct nested
+unwinding direction, validate locals before metadata reads, implement native
+PIN lifecycle/transaction behavior, and make failed persistent setters cache
+consistent. Full details and acceptance cases are in the report. Preserve all
+pre-existing working-tree changes and the prior implementation handoffs below.
+Review commit SHA is recorded in the appended progress linkage.
+
 # Current handoff — owner-aware typed foreign arrays — 2026-11-06 21:42 CET
 
 ## CTX-01/03 typed foreign reference-array implementation

@@ -7617,3 +7617,24 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   GET RESPONSE for 21 installed AIDs and confirms the same list after emulator
   restart. Use `--timeout 120`: its 18-instance cascade DELETE exceeded 60
   seconds once, then completed with the larger bound. Full suite passes 47/47.
+
+
+## Offline review test execution and allocation link gap — 2026-11-06
+
+- **Observed issue:** `./tools/test-jcvmarray-allocation` fails at link with
+  undefined `FlashMemory_Handler::persistentWriteRollbackGeneration()` from
+  heap static-root methods. Its fixture does not provide that dependency.
+  No runtime assertions execute. No fix was implemented during review.
+- **Observed environment issue:** `./tools/test-vpcd-protocol` passed socket
+  creation and idle timeout but failed `send partial frame header` in the
+  restricted context. The existing wrapper passed 18/18 with host permissions.
+  Errno was not captured, so the exact restricted-context mechanism remains
+  unknown; do not classify the first failure as a firmware defect.
+- **Viable execution path:** Use the existing wrapper with host permissions
+  when validating its Unix-socket I/O after a restricted-context failure. This
+  test does not use USB/PCSC. Run the support tests as
+  `python3 tools/test-javacard-support.py`; the Python file is not executable
+  and the interpreter invocation passed 14/14.
+- **Evidence:** `artifacts/reviews/review_20261106/all-tests.json` and local
+  ignored logs. Review tasks RV-20261106-01 through -21 are in lowercase
+  `todo.md`; no implementation authorization is implied by this review.

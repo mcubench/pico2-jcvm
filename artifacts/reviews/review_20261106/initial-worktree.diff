@@ -1,0 +1,802 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index cc276ca9..03fe961d 100755
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -48,6 +48,19 @@ Safety constraints:
+ ```
+ sudo -n /usr/local/sbin/pico2-pcsc-reader
+ ```
++
++## .git/index.lock read-only failure 
++When git add or git commit fails because the sandbox
++cannot write to .git/index.lock, retry the operation
++with elevated sandbox permissions.
++
++Do not retry the same command unchanged inside the
++same restricted sandbox.
++
++Only escalate the required Git operation.
++Never use destructive Git commands or push without
++explicit authorization.
++
+ ## Incremental commits and progress log
+ 
+ Work in small, logical steps. A logical step is one coherent change that can be
+@@ -57,7 +70,7 @@ At the end of every logical step:
+ 
+ 1. Validate the step with the relevant build, test, hardware cycle, or inspection.
+ 2. Append a concise record to the repository-root `progress.md`; never rewrite or
+-   delete earlier records.
++   delete earlier records. Append at the end of file.
+ 3. Create a new Git commit containing the step and its `progress.md` record. Do
+    not amend or reuse the previous step's commit.
+ 4. Commit only files that belong to that step; preserve unrelated pre-existing
+@@ -66,9 +79,10 @@ At the end of every logical step:
+ Each `progress.md` record should be structured as:
+ 
+ ```markdown
+-## YYYY-MM-DD — <short step title>
++## YYYY-MM-DD <short step title> <total minutes of actual work>
+ 
+ - Step/experiment: `<identifier if applicable>`
++- When: '<start date + time>' - '<end date + time>'
+ - Change: <what changed and why>
+ - Validation: <commands/tests/hardware checks run and whether they passed>
+ - Result: <key measured or observed outcome; include failures or limitations>
+diff --git a/artifacts/reviews/review_20261103/CMakeLists.txt b/artifacts/reviews/review_20261103/CMakeLists.txt
+index bea7fea6..914807e1 100644
+--- a/artifacts/reviews/review_20261103/CMakeLists.txt
++++ b/artifacts/reviews/review_20261103/CMakeLists.txt
+@@ -36,3 +36,8 @@ add_executable(session_probe session_probe.cpp "${VM}/vpcd_session.cpp")
+ target_compile_features(session_probe PRIVATE cxx_std_17)
+ target_compile_definitions(session_probe PRIVATE PC_VERSION=1)
+ target_include_directories(session_probe PRIVATE "${VM}")
++option(REVIEW_ASAN "Instrument persistence serialization for memory errors" OFF)
++if(REVIEW_ASAN)
++  target_compile_options(persistence_probe PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
++  target_link_options(persistence_probe PRIVATE -fsanitize=address,undefined)
++endif()
+diff --git a/artifacts/reviews/review_20261103/persistence_probe.cpp b/artifacts/reviews/review_20261103/persistence_probe.cpp
+index c1f68a21..49a6ba3c 100644
+--- a/artifacts/reviews/review_20261103/persistence_probe.cpp
++++ b/artifacts/reviews/review_20261103/persistence_probe.cpp
+@@ -3,11 +3,14 @@
+ #include "jc_handlers/jc_static.hpp"
+ #include "heap.hpp"
+ #include "jc_types/jc_array.hpp"
++#include "jc_types/jc_instance.hpp"
+ #include <cstdio>
+ #include <cstring>
+ #include <vector>
+ namespace jcvm { jpackage_ID_t Package::getPackageID() const noexcept { return this->ID; } }
+ namespace persistent_transaction_test {
++extern uint16_t instance_field_count;
++void fail_one_write();
+ bool track_array_allocations = false;
+ unsigned int tracked_array_allocations = 0, tracked_array_deallocations = 0;
+ }
+@@ -20,6 +23,75 @@ int main(int argc, char **argv) {
+   const bool alias_mode = argc > 1 && std::strcmp(argv[1], "array-retarget") == 0;
+   Heap heap(7);
+   Static_Handler handler{Package(20)};
++  if (argc > 1 && std::strcmp(argv[1], "short-serialization-overflow") == 0) {
++    const auto ref = heap.addArray(32767, JAVA_ARRAY_T_SHORT);
++    handler.setPersistentRef(1, ref, heap);
++    std::puts("SHORT_SERIALIZATION unexpectedly accepted wrapped record length");
++    return 1;
++  }
++  if (argc > 1 && (std::strcmp(argv[1], "object-retarget") == 0 ||
++                   std::strcmp(argv[1], "instance-write-failure") == 0 ||
++                   std::strcmp(argv[1], "failed-first-persist") == 0 ||
++                   std::strcmp(argv[1], "object-self-assignment") == 0)) {
++    persistent_transaction_test::instance_field_count = 1;
++    const auto old_ref = heap.addInstance(20, 0);
++    const auto new_ref = heap.addInstance(20, 0);
++    auto old_object = heap.getInstance(old_ref);
++    auto new_object = heap.getInstance(new_ref);
++    old_object->setField_Short(0, 0x11);
++    new_object->setField_Short(0, 0x22);
++    if (std::strcmp(argv[1], "failed-first-persist") == 0) {
++      persistent_transaction_test::fail_one_write();
++      bool threw = false;
++      try { handler.setPersistentRef(1, old_ref, heap); } catch (...) { threw = true; }
++      bool retry_succeeded = false, fresh_restore_succeeded = false;
++      try { handler.setPersistentRef(1, old_ref, heap); retry_succeeded = true; } catch (...) {}
++      Heap fresh(7);
++      const auto tag = FlashMemory_Handler::getStaticFieldTag(20, 1);
++      try {
++        const auto ref = FlashMemory_Handler::getPersistentField_ReferenceStrict(tag, fresh);
++        fresh_restore_succeeded = fresh.getInstance(ref)->getField_Short(0) == 0x11;
++      } catch (...) {}
++      std::printf("FAILED_FIRST_PERSIST threw=%u has_tag=%u retry_succeeded=%u fresh_restore_succeeded=%u expected=1\n",
++          threw, old_object->hasPersistentTag(), retry_succeeded, fresh_restore_succeeded);
++      return threw && retry_succeeded && fresh_restore_succeeded ? 0 : 1;
++    }
++    handler.setPersistentRef(1, old_ref, heap);
++    if (std::strcmp(argv[1], "object-self-assignment") == 0) {
++      handler.setPersistentRef(1, old_ref, heap);
++      Heap fresh(7);
++      const auto tag = FlashMemory_Handler::getStaticFieldTag(20, 1);
++      bool restored = false;
++      try {
++        const auto ref = FlashMemory_Handler::getPersistentField_ReferenceStrict(tag, fresh);
++        restored = fresh.getInstance(ref)->getField_Short(0) == 0x11;
++      } catch (...) {}
++      std::printf("OBJECT_SELF_ASSIGNMENT fresh_restore_succeeded=%u expected=1\n", restored);
++      return restored ? 0 : 1;
++    }
++    if (std::strcmp(argv[1], "instance-write-failure") == 0) {
++      persistent_transaction_test::fail_one_write();
++      bool threw = false;
++      try { old_object->setField_Short(0, 0x22); } catch (...) { threw = true; }
++      const auto observed = old_object->getField_Short(0);
++      Heap fresh(7);
++      const auto tag = FlashMemory_Handler::getStaticFieldTag(20, 1);
++      const auto restored = FlashMemory_Handler::getPersistentField_Reference(tag, fresh);
++      const auto durable = fresh.getInstance(restored)->getField_Short(0);
++      std::printf("INSTANCE_WRITE_FAILURE threw=%u cached=%04x durable=%04x expected=0011/0011\n",
++          threw, static_cast<uint16_t>(observed), static_cast<uint16_t>(durable));
++      return threw && observed == 0x11 && durable == 0x11 ? 0 : 1;
++    }
++    handler.setPersistentRef(2, old_ref, heap);
++    handler.setPersistentRef(1, new_ref, heap);
++    Heap fresh(7);
++    const auto alias_tag = FlashMemory_Handler::getStaticFieldTag(20, 2);
++    const auto restored_alias = FlashMemory_Handler::getPersistentField_Reference(alias_tag, fresh);
++    const auto value = fresh.getInstance(restored_alias)->getField_Short(0);
++    std::printf("OBJECT_RETARGET alias_after_restore=%04x expected=0011\n", static_cast<uint16_t>(value));
++    return value == 0x11 ? 0 : 1;
++  }
++
+   const auto old_ref = heap.addArray(1, JAVA_ARRAY_T_BYTE);
+   const auto new_ref = heap.addArray(1, JAVA_ARRAY_T_BYTE);
+   heap.getArray(old_ref)->setByteEntry(0, 0x11);
+diff --git a/artifacts/reviews/review_20261103/run-probes.py b/artifacts/reviews/review_20261103/run-probes.py
+index 75a45d7a..3d582c27 100644
+--- a/artifacts/reviews/review_20261103/run-probes.py
++++ b/artifacts/reviews/review_20261103/run-probes.py
+@@ -9,15 +9,27 @@ import sys
+ folder = Path(__file__).resolve().parent
+ root = folder.parents[2]
+ parser = argparse.ArgumentParser()
+-parser.add_argument('--ubsan', action='store_true')
++mode_group = parser.add_mutually_exclusive_group()
++mode_group.add_argument('--ubsan', action='store_true')
++mode_group.add_argument('--iteration2', action='store_true')
++mode_group.add_argument('--asan', action='store_true')
+ args = parser.parse_args()
+-build = root / 'build' / ('review-20261103-ubsan' if args.ubsan else 'review-20261103')
++build = root / 'build' / ('review-20261103-asan' if args.asan else
++                          'review-20261103-ubsan' if args.ubsan else 'review-20261103')
+ configure = [str(root / 'tools/env'), 'cmake', '-S', str(folder), '-B', str(build)]
+ if args.ubsan:
+     configure.append('-DREVIEW_UBSAN=ON')
++if args.asan:
++    configure.append('-DREVIEW_ASAN=ON')
+ for command in [configure, [str(root / 'tools/env'), 'cmake', '--build', str(build), '--parallel', '2']]:
+     subprocess.run(command, check=True, cwd=root, timeout=240)
+-if args.ubsan:
++if args.iteration2:
++    cases = [(name, 'persistence_probe', [name]) for name in
++             ['object-retarget', 'object-self-assignment', 'instance-write-failure',
++              'failed-first-persist']]
++elif args.asan:
++    cases = [('short-serialization-overflow', 'persistence_probe', ['short-serialization-overflow'])]
++elif args.ubsan:
+     cases = [('ubsan-unsigned-shift', 'review_probe', ['unsigned-shift']),
+              ('ubsan-overflow', 'review_probe', ['overflow'])]
+ else:
+@@ -28,19 +40,23 @@ else:
+     cases += [('static-abort', 'persistence_probe', []),
+               ('array-retarget', 'persistence_probe', ['array-retarget']),
+               ('session-adapted', 'session_probe', [])]
++output_folder = folder / 'iteration2' if args.iteration2 or args.asan else folder
++output_folder.mkdir(exist_ok=True)
+ results = []
+ for name, executable, parameters in cases:
+     process = subprocess.run([str(build / executable), *parameters],
+                              capture_output=True, text=True, timeout=30, cwd=root)
+     output = process.stdout + process.stderr
+-    (folder / (name + '.log')).write_text(output + '\nexit=' + str(process.returncode) + '\n')
+-    sanitizer_failure = 'runtime error:' in output
++    (output_folder / (name + '.log')).write_text(output + '\nexit=' + str(process.returncode) + '\n')
++    sanitizer_failure = 'runtime error:' in output or 'ERROR: AddressSanitizer:' in output
+     failed = process.returncode != 0 or sanitizer_failure
+     print(('TEST:FAIL ' if failed else 'TEST:PASS ') + name)
+     print(output.strip())
+     results.append({'probe': name, 'exit': process.returncode,
+                     'sanitizer_failure': sanitizer_failure, 'failed': failed})
+-(folder / ('ubsan-results.json' if args.ubsan else 'probe-results.json')).write_text(
++(output_folder / ('asan-results.json' if args.asan else
++                  'ubsan-results.json' if args.ubsan else
++                  'results.json' if args.iteration2 else 'probe-results.json')).write_text(
+     json.dumps(results, indent=2) + '\n')
+ failures = sum(row['failed'] for row in results)
+ print(f'TEST:SUMMARY pass={len(results) - failures} fail={failures}')
+diff --git a/choupi/src/context.hpp b/choupi/src/context.hpp
+index 294efa07..02ae7444 100755
+--- a/choupi/src/context.hpp
++++ b/choupi/src/context.hpp
+@@ -136,7 +136,6 @@ public:
+   static Context *setActiveContext(Context *context) noexcept;
+   /// Get the context used by context-free native method implementations.
+   static Context &getActiveContext();
+-
+   /// Resolve a retained package context without consulting another heap's
+   /// compact handle table. Returns null when the package is unavailable or
+   /// has multiple independent retained contexts.
+diff --git a/choupi/src/heap.cpp b/choupi/src/heap.cpp
+index d9995289..17b78682 100755
+--- a/choupi/src/heap.cpp
++++ b/choupi/src/heap.cpp
+@@ -430,33 +430,6 @@ jref_t Heap::addGlobalAIDObject(const uint8_t *aid, const uint8_t aid_length,
+   return object_reference;
+ }
+ 
+-void Heap::releaseGlobalAIDObject(const uint8_t *aid,
+-                                 const uint8_t aid_length) noexcept {
+-  if (aid == nullptr || aid_length < 5 || aid_length > 16) return;
+-  Heap &heap = globalArrayHeap();
+-  for (GlobalAIDObject &entry : heap.global_aid_objects) {
+-    if (!entry.reference.isGlobalInstance() ||
+-        entry.aid_length != aid_length ||
+-        !std::equal(aid, aid + aid_length, entry.aid.begin())) {
+-      continue;
+-    }
+-    jref_t bytes_reference;
+-    try {
+-      const auto object = getGlobalInstance(entry.reference);
+-      if (object->getNumberOfFields() == 1) {
+-        bytes_reference = object->getField_Reference(0);
+-      }
+-    } catch (...) {
+-      // Drop the canonical handle even if a damaged cached object cannot be
+-      // inspected; a later lookup can rebuild it from the installed registry.
+-    }
+-    const jref_t object_reference = entry.reference;
+-    releaseGlobalArray(bytes_reference);
+-    releaseGlobalInstance(object_reference);
+-    return;
+-  }
+-}
+-
+ bool Heap::describeGlobalAIDObject(const jref_t reference, uint8_t aid[16],
+                                    uint8_t &aid_length,
+                                    jpackage_ID_t &package_id,
+diff --git a/choupi/src/heap.hpp b/choupi/src/heap.hpp
+index 765f944c..e5fab13b 100755
+--- a/choupi/src/heap.hpp
++++ b/choupi/src/heap.hpp
+@@ -165,8 +165,6 @@ public:
+   static jref_t addGlobalAIDObject(const uint8_t *aid, uint8_t aid_length,
+                                    jpackage_ID_t package_id,
+                                    jclass_index_t class_index);
+-  static void releaseGlobalAIDObject(const uint8_t *aid,
+-                                     uint8_t aid_length) noexcept;
+   static bool describeGlobalAIDObject(jref_t reference, uint8_t aid[16],
+                                       uint8_t &aid_length,
+                                       jpackage_ID_t &package_id,
+diff --git a/src/cap_load.cpp b/src/cap_load.cpp
+index 624d4083..643ef006 100644
+--- a/src/cap_load.cpp
++++ b/src/cap_load.cpp
+@@ -33,7 +33,7 @@ extern "C" uint8_t choupi_fs_erase_prefix(const uint8_t *prefix,
+                                            uint8_t prefix_length);
+ extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
+                                     uint8_t prefix_length) {
+-  return fs_erase(prefix, prefix_length);
++  return choupi_fs_erase_prefix(prefix, prefix_length);
+ }
+ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
+   const uint8_t static_package_prefix[] = {0x02, package_id};
+@@ -1043,17 +1043,32 @@ bool CapLoadSession::finishLoad() noexcept {
+       code_length != load_data_length_ - offset) {
+     return false;
+   }
+-  if (!validate_cap_code(load_data_ + offset, code_length, load_package_aid_,
+-                         load_package_aid_length_, applet_aid_,
+-                         applet_aid_length_) ||
+-      !recover_pending_lifecycle_state() ||
+-      !clear_orphaned_dynamic_persistent_state() ||
+-      cap_store_find_package(load_package_aid_, load_package_aid_length_,
+-                             package_id_) ||
+-      !allocate_dynamic_package_id(package_id_) ||
++  const bool code_valid = validate_cap_code(
++      load_data_ + offset, code_length, load_package_aid_,
++      load_package_aid_length_, applet_aid_, applet_aid_length_);
++  if (!code_valid || !recover_pending_lifecycle_state() ||
++      !clear_orphaned_dynamic_persistent_state()) {
++    return false;
++  }
++  const bool package_exists = cap_store_find_package(
++      load_package_aid_, load_package_aid_length_, package_id_);
++  const bool orphan_state_cleared = !package_exists;
++  const bool package_id_allocated =
++      orphan_state_cleared && allocate_dynamic_package_id(package_id_);
++  const bool package_stored =
++      package_id_allocated &&
+       choupi_store_cap_package(package_id_, load_package_aid_,
+                                load_package_aid_length_, load_data_ + offset,
+-                               static_cast<uint32_t>(code_length)) != 0) {
++                               static_cast<uint32_t>(code_length)) == 0;
++  if (!code_valid || package_exists || !orphan_state_cleared ||
++      !package_id_allocated || !package_stored) {
++#ifdef PC_VERSION
++    std::fprintf(stderr,
++                 "VPCD:CAP_LOAD_REJECT valid=%u exists=%u orphan_clear=%u "
++                 "slot=%u stored=%u length=%zu\n",
++                 code_valid, package_exists, orphan_state_cleared,
++                 package_id_allocated, package_stored, code_length);
++#endif
+     return false;
+   }
+   if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+diff --git a/tools/test-symm-crypto-pcsc b/tools/test-symm-crypto-pcsc
+index 89e6e303..817e44a6 100755
+--- a/tools/test-symm-crypto-pcsc
++++ b/tools/test-symm-crypto-pcsc
+@@ -9,11 +9,16 @@ require_command timeout
+ reader_name="$1"
+ build_dir="${repo_root}/build/symm-crypto-probe"
+ vectors="${build_dir}/physical-vectors.tsv"
++gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
++package_aid="A000000151000201"
++applet_aid="A00000015100020101"
++gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+ log_dir="${repo_root}/artifacts/logs"
+ log_file="${log_dir}/symm-crypto-kat-pcsc-$(date -u +%Y%m%dT%H%M%SZ).log"
+ timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-120}"
+ [[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
+ [[ -f "${build_dir}/output/symm-crypto-probe.cap" ]] || die "probe CAP missing; run ./tools/build-symm-crypto-probe"
++[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+ 
+ python3 - "${repo_root}" "${vectors}" <<'PY'
+ import importlib.util
+@@ -41,16 +46,73 @@ with output.open("w", encoding="ascii") as stream:
+         }.items() for mode in ("encrypt", "decrypt")
+     ]
+     mac_labels = []
+-    for algorithm in (2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 47, 48, 49):
++    for algorithm in (2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 47, 48):
+         mac_labels.extend((f"mac_{algorithm}_sign", f"mac_{algorithm}_verify_valid",
+                            f"mac_{algorithm}_verify_invalid"))
++    mac_labels.extend((
++        "mac_3_long_repeated_sign",
++        "mac_3_long_update_then_sign",
++        "mac_49_cmac_sign",
++        "mac_49_cmac_verify_valid",
++        "mac_49_cmac_verify_invalid",
++        "mac_2_iv_sign",
++        "mac_2_iv_verify",
++        "mac_6_iv_sign",
++        "mac_6_iv_verify",
++        "mac_18_iv_sign",
++        "mac_18_iv_verify",
++    ))
+     for (command, expected, _), label in zip(vectors, labels + mac_labels):
+         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
+-if len(vectors) != 71:
+-    raise SystemExit(f"expected 71 vectors, got {len(vectors)}")
++if len(vectors) != 79 or len(labels) + len(mac_labels) != len(vectors):
++    raise SystemExit(f"expected 79 labeled vectors, got {len(vectors)}")
+ print(f"VECTORS:PASS count={len(vectors)} file={output}")
+ PY
+ 
++PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
++gp_list="${build_dir}/physical-gp-list-$(date -u +%Y%m%dT%H%M%SZ).log"
++timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${gp_list}" 2>&1 || \
++  die "GPPro list failed; see ${gp_list}"
++if grep -Fq "APP: ${applet_aid} " "${gp_list}" || \
++   grep -Fq "PKG: ${package_aid} " "${gp_list}"; then
++  die "symmetric probe AID is already present; refusing to replace existing card data"
++fi
++
++installed_here=0
++cleanup() {
++  local status=$?
++  local cleanup_status=0
++  trap - EXIT
++  if (( installed_here )); then
++    local list="${build_dir}/physical-gp-cleanup-$(date -u +%Y%m%dT%H%M%SZ).log"
++    if timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${list}" 2>&1; then
++      if grep -Fq "APP: ${applet_aid} " "${list}"; then
++        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
++          --delete "${applet_aid}" >>"${log_file}" 2>&1 || cleanup_status=1
++      fi
++      if grep -Fq "PKG: ${package_aid} " "${list}"; then
++        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
++          --delete "${package_aid}" >>"${log_file}" 2>&1 || cleanup_status=1
++      fi
++    else
++      cleanup_status=1
++    fi
++  fi
++  if (( cleanup_status != 0 )); then
++    status=1
++    printf 'PCSC:CLEANUP_FAIL package=%s list=%s\n' \
++      "${package_aid}" "${list:-unavailable}" | tee -a "${log_file}"
++  elif (( installed_here )); then
++    printf 'PCSC:CLEANUP_PASS package=%s\n' "${package_aid}" | tee -a "${log_file}"
++  fi
++  exit "${status}"
++}
++trap cleanup EXIT
++installed_here=1
++timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" \
++  --install "${build_dir}/output/symm-crypto-probe.cap" >"${build_dir}/physical-install-$(date -u +%Y%m%dT%H%M%SZ).log" 2>&1 || \
++  die "GPPro install failed; inspect build/symm-crypto-probe/physical-install-*.log"
++
+ "${repo_root}/tools/env" javac -d "${build_dir}" \
+   "${repo_root}/tools/tests/SymmCryptoPcscProbe.java"
+ mkdir -p "${log_dir}"
+diff --git a/tools/test-symm-crypto-vpcd b/tools/test-symm-crypto-vpcd
+index 0733f7ca..a25222f5 100755
+--- a/tools/test-symm-crypto-vpcd
++++ b/tools/test-symm-crypto-vpcd
+@@ -2,6 +2,6 @@
+ set -euo pipefail
+ 
+ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+-"${repo_root}/tools/build-pc" --profile symm_crypto
++"${repo_root}/tools/build-pc" --profile max_crypto
+ "${repo_root}/tools/build-symm-crypto-probe"
+ "${repo_root}/tools/env" python3 "${repo_root}/tools/tests/test_symm_crypto_vpcd.py"
+diff --git a/tools/tests/SymmCryptoPcscProbe.java b/tools/tests/SymmCryptoPcscProbe.java
+index 189cf029..cc9aadbf 100644
+--- a/tools/tests/SymmCryptoPcscProbe.java
++++ b/tools/tests/SymmCryptoPcscProbe.java
+@@ -10,6 +10,8 @@ import java.util.List;
+ 
+ /** Run precomputed symmetric crypto known-answer vectors through a PC/SC card. */
+ public final class SymmCryptoPcscProbe {
++  private static final byte[] APPLET_AID = fromHex("A00000015100020101");
++  private static final byte[] CARD_MANAGER_AID = fromHex("A000000151000000");
+   private static byte[] fromHex(String value) {
+     byte[] result = new byte[value.length() / 2];
+     for (int i = 0; i < result.length; i++) {
+@@ -24,6 +26,24 @@ public final class SymmCryptoPcscProbe {
+     return result.toString();
+   }
+ 
++  private static void expect(CardChannel channel, CommandAPDU command,
++                             String expected, String label) throws Exception {
++    ResponseAPDU response = channel.transmit(command);
++    String actual = hex(response.getBytes());
++    System.out.printf("TEST:%s %s response=%s%n",
++        actual.equals(expected) ? "PASS" : "FAIL", label, actual);
++    if (!actual.equals(expected))
++      throw new IllegalStateException(label + " expected " + expected + ", got " + actual);
++  }
++
++  private static CardChannel selectApplet(CardChannel channel) throws Exception {
++    ResponseAPDU response = channel.transmit(
++        new CommandAPDU(0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
++    if (response.getSW() != 0x9000)
++      throw new IllegalStateException("probe applet SELECT failed: " + hex(response.getBytes()));
++    return channel;
++  }
++
+   public static void main(String[] args) throws Exception {
+     if (args.length != 2) {
+       throw new IllegalArgumentException("usage: SymmCryptoPcscProbe <reader-name> <vectors.tsv>");
+@@ -43,10 +63,56 @@ public final class SymmCryptoPcscProbe {
+     try {
+       CardChannel channel = card.getBasicChannel();
+       ResponseAPDU select = channel.transmit(new CommandAPDU(0x00, 0xA4, 0x04, 0x00,
+-          fromHex("A00000015100020101"), 256));
++          APPLET_AID, 256));
+       System.out.printf("APDU:SELECT response=%s%n", hex(select.getBytes()));
+       if (select.getSW() != 0x9000) throw new IllegalStateException("probe applet SELECT failed");
+ 
++      expect(channel, new CommandAPDU(0x80, 0x21, 0, 0, 0),
++          "019000", "JCSystem transient byte array allocation");
++      passed++;
++      expect(channel, new CommandAPDU(0x80, 0x22, 0, 0, 0),
++          "019000", "KeyBuilder transient AES allocation");
++      passed++;
++      for (int stage = 1; stage <= 4; stage++) {
++        expect(channel, new CommandAPDU(0x80, 0x1C + stage, 0, 0, 0),
++            "019000", "AES transient setup stage " + stage);
++        passed++;
++      }
++      ResponseAPDU manager = channel.transmit(new CommandAPDU(
++          0x00, 0xA4, 0x04, 0x00, CARD_MANAGER_AID, 256));
++      if (manager.getSW() != 0x9000)
++        throw new IllegalStateException("card manager SELECT failed: " + hex(manager.getBytes()));
++      channel = selectApplet(channel);
++      expect(channel, new CommandAPDU(0x80, 0x1C, 0, 0, 0),
++          "019000", "AES staged Cipher rejects deselected transient key");
++      passed++;
++
++      for (int selector = 0; selector < 2; selector++) {
++        String label = selector == 0 ? "AES" : "RSA";
++        expect(channel, new CommandAPDU(0x80, 0x1B, selector, 0, 0),
++            "019000", label + " transient Cipher init for deselect");
++        passed++;
++        ResponseAPDU managerSelect = channel.transmit(new CommandAPDU(
++            0x00, 0xA4, 0x04, 0x00, CARD_MANAGER_AID, 256));
++        if (managerSelect.getSW() != 0x9000)
++          throw new IllegalStateException("card manager SELECT failed: " + hex(managerSelect.getBytes()));
++        channel = selectApplet(channel);
++        expect(channel, new CommandAPDU(0x80, 0x1C, selector, 0, 0),
++            "019000", label + " Cipher rejects deselected transient key");
++        passed++;
++
++        expect(channel, new CommandAPDU(0x80, 0x1B, selector, 0, 0),
++            "019000", label + " transient Cipher init for reader reset");
++        passed++;
++        card.disconnect(true);
++        card = target.connect("*");
++        channel = card.getBasicChannel();
++        channel = selectApplet(channel);
++        expect(channel, new CommandAPDU(0x80, 0x1C, selector, 0, 0),
++            "019000", label + " Cipher rejects reset-cleared transient key");
++        passed++;
++      }
++
+       try (BufferedReader input = new BufferedReader(new FileReader(args[1]))) {
+         String line;
+         while ((line = input.readLine()) != null) {
+@@ -73,6 +139,7 @@ public final class SymmCryptoPcscProbe {
+         }
+       }
+       System.out.printf("TEST:SUMMARY pass=%d fail=%d%n", passed, failed);
++      System.out.println("TEST:SUMMARY transient_cipher_lifecycle=pass deselect=2 reset=2");
+       if (failed != 0) throw new IllegalStateException("physical crypto vectors failed: " + failed);
+     } finally {
+       card.disconnect(false);
+diff --git a/tools/tests/symm_crypto_applet/SymmCryptoProbe.java b/tools/tests/symm_crypto_applet/SymmCryptoProbe.java
+index 16186819..1d916930 100644
+--- a/tools/tests/symm_crypto_applet/SymmCryptoProbe.java
++++ b/tools/tests/symm_crypto_applet/SymmCryptoProbe.java
+@@ -24,9 +24,11 @@ import javacardx.crypto.Cipher;
+ 
+ /** Test applet that exposes one deterministic cipher or MAC operation per APDU. */
+ public final class SymmCryptoProbe extends Applet {
+-  private static MessageDigest retainedDigest;
++  private static Cipher retainedCipher;
+   private static Cipher retainedCbcCipher;
+   private static Key retainedCbcKey;
++  private static AESKey stagedAesKey;
++  private static MessageDigest retainedDigest;
+   private SymmCryptoProbe() { register(); }
+ 
+   public static void install(byte[] data, short offset, byte length) {
+@@ -45,7 +47,53 @@ public final class SymmCryptoProbe extends Applet {
+     byte[] output;
+     short outputLength;
+     byte instruction = buffer[ISO7816.OFFSET_INS];
+-    if (instruction == (byte)0x2a) {
++    if (instruction == (byte)0x1d) {
++      output = new byte[(short)1];
++      output[0] = stageTransientAes(algorithm, (byte)1);
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x21) {
++      output = new byte[(short)1];
++      try {
++        byte[] transientBuffer = JCSystem.makeTransientByteArray(
++            (short)16, JCSystem.CLEAR_ON_DESELECT);
++        output[0] = transientBuffer.length == 16 ? (byte)1 : (byte)0x7c;
++      } catch (Exception exception) {
++        output[0] = (byte)0x61;
++      }
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x22) {
++      output = new byte[(short)1];
++      try {
++        KeyBuilder.buildKey(KeyBuilder.TYPE_AES_TRANSIENT_DESELECT,
++            KeyBuilder.LENGTH_AES_128, false);
++        output[0] = 1;
++      } catch (CryptoException exception) {
++        output[0] = (byte)(0x40 | exception.getReason());
++      } catch (Exception exception) {
++        output[0] = (byte)0x62;
++      }
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x1e) {
++      output = new byte[(short)1];
++      output[0] = stageTransientAes(algorithm, (byte)2);
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x1f) {
++      output = new byte[(short)1];
++      output[0] = stageTransientAes(algorithm, (byte)3);
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x20) {
++      output = new byte[(short)1];
++      output[0] = stageTransientAes(algorithm, (byte)4);
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x1b) {
++      output = new byte[(short)1];
++      output[0] = initializeRetainedCipher(algorithm);
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x1c) {
++      output = new byte[(short)1];
++      output[0] = useRetainedCipherAfterClear(algorithm);
++      outputLength = (short)1;
++    } else if (instruction == (byte)0x2a) {
+       output = new byte[(short)1];
+       try {
+         retainedDigest = MessageDigest.getInstance(algorithm, false);
+@@ -125,6 +173,90 @@ public final class SymmCryptoProbe extends Applet {
+     apdu.sendBytesLong(output, (short)0, outputLength);
+   }
+ 
++  private static byte stageTransientAes(byte selector, byte stage) {
++    try {
++      if (selector != 0) return (byte)0x7e;
++      if (stage == 1) {
++        stagedAesKey = (AESKey)KeyBuilder.buildKey(
++            KeyBuilder.TYPE_AES_TRANSIENT_DESELECT,
++            KeyBuilder.LENGTH_AES_128, false);
++      } else if (stage == 2) {
++        if (stagedAesKey == null) return (byte)0x7d;
++        stagedAesKey.setKey(new byte[16], (short)0);
++      } else if (stage == 3) {
++        if (stagedAesKey == null) return (byte)0x7d;
++        retainedCipher = Cipher.getInstance(
++            Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
++      } else {
++        if (stagedAesKey == null || retainedCipher == null) return (byte)0x7d;
++        retainedCipher.init(stagedAesKey, Cipher.MODE_ENCRYPT);
++      }
++      return 1;
++    } catch (CryptoException exception) {
++      return (byte)(0x40 | exception.getReason());
++    } catch (Exception exception) {
++      return (byte)(0x60 | stage);
++    }
++  }
++
++  private static byte initializeRetainedCipher(byte selector) {
++    byte stage = 1;
++    try {
++      if (selector == 0) {
++        AESKey key = (AESKey)KeyBuilder.buildKey(
++            KeyBuilder.TYPE_AES_TRANSIENT_DESELECT,
++            KeyBuilder.LENGTH_AES_128, false);
++        key.setKey(new byte[16], (short)0);
++        retainedCipher = Cipher.getInstance(
++            Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
++        retainedCipher.init(key, Cipher.MODE_ENCRYPT);
++      } else {
++        RSAPrivateKey key = (RSAPrivateKey)KeyBuilder.buildKey(
++            KeyBuilder.TYPE_RSA_PRIVATE_TRANSIENT_DESELECT,
++            KeyBuilder.LENGTH_RSA_512, false);
++        stage = 2;
++        byte[] modulus = new byte[64];
++        modulus[0] = (byte)0x80;
++        modulus[63] = 1;
++        key.setModulus(modulus, (short)0, (short)modulus.length);
++        stage = 3;
++        key.setExponent(new byte[] {1}, (short)0, (short)1);
++        stage = 4;
++        retainedCipher = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);
++        stage = 5;
++        retainedCipher.init(key, Cipher.MODE_DECRYPT);
++      }
++      return 1;
++    } catch (CryptoException exception) {
++      return (byte)(0x40 | exception.getReason());
++    } catch (NullPointerException exception) {
++      return (byte)0x71;
++    } catch (ArrayIndexOutOfBoundsException exception) {
++      return (byte)0x72;
++    } catch (SecurityException exception) {
++      return (byte)0x73;
++    } catch (RuntimeException exception) {
++      return (byte)0x74;
++    } catch (Exception exception) {
++      return (byte)(0x60 | stage);
++    }
++  }
++
++  private static byte useRetainedCipherAfterClear(byte selector) {
++    if (retainedCipher == null) return (byte)0x7e;
++    try {
++      byte[] input = selector == 0 ? new byte[16] : new byte[64];
++      byte[] output = new byte[64];
++      retainedCipher.doFinal(input, (short)0, (short)input.length,
++          output, (short)0);
++      return (byte)0x7f;
++    } catch (CryptoException exception) {
++      return exception.getReason() == CryptoException.UNINITIALIZED_KEY ||
++          exception.getReason() == CryptoException.INVALID_INIT
++          ? (byte)1 : (byte)(0x40 | exception.getReason());
++    }
++  }
++
+   private static byte runEcKey(byte selector) {
+     short length = selector == 0 ? KeyBuilder.LENGTH_EC_FP_256 :
+         KeyBuilder.LENGTH_EC_FP_521;
+diff --git a/tools/tests/test_symm_crypto_vpcd.py b/tools/tests/test_symm_crypto_vpcd.py
+index 12182e60..e19bf531 100644
+--- a/tools/tests/test_symm_crypto_vpcd.py
++++ b/tools/tests/test_symm_crypto_vpcd.py
+@@ -4,6 +4,7 @@
+ from __future__ import annotations
+ 
+ import sys
++import time
+ from pathlib import Path
+ 
+ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+@@ -92,7 +93,6 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
+         results.append((lifecycle_apdu(2, iv + second),
+                         expected_supplied_iv + b"\x90\x00",
+                         f"CBC {algorithm} explicit init restores supplied IV"))
+-
+     return results
+ 
+ 
+@@ -186,11 +186,42 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
+     return results
+ 
+ 
++def transient_cipher_lifecycle_vectors() -> list[tuple[bytes, bytes, str]]:
++    # Keep Cipher in an applet static field, then deselect by selecting the
++    # card manager. The transient AES/RSA key and its native Cipher workspace
++    # must both clear before the applet is selected and used again.
++    results = []
++    applet = bytes.fromhex(APPLET_AID)
++    manager = bytes.fromhex("A000000151000000")
++    for selector, label in ((0, "AES"), (1, "RSA")):
++        results.append((bytes((0x80, 0x1B, selector, 0, 0)),
++                        b"\x01\x90\x00", f"{label} transient Cipher init"))
++        results.append((bytes((0x00, 0xA4, 0x04, 0, len(manager))) +
++                        manager + b"\x00",
++                        bytes.fromhex("6F0A8408A0000001510000009000"),
++                        f"{label} deselect transient Cipher"))
++        results.append((bytes((0x00, 0xA4, 0x04, 0, len(applet))) +
++                        applet + b"\x00", b"\x90\x00",
++                        f"{label} reselect transient Cipher applet"))
++        results.append((bytes((0x80, 0x1C, selector, 0, 0)),
++                        b"\x01\x90\x00",
++                        f"{label} Cipher rejects cleared workspace"))
++        results.append((bytes((0x80, 0x1B, selector, 0, 0)),
++                        b"\x01\x90\x00",
++                        f"{label} transient Cipher init before reset"))
++        results.append((bytes((0x80, 0x1C, selector, 0, 0)),
++                        b"\x01\x90\x00",
++                        f"{label} Cipher rejects cleared workspace after reset"))
++    return results
++
++
+ def main() -> int:
+     cipher_count = len(cipher_vectors())
+     mac_count = len(mac_vectors())
+-    vectors = cipher_vectors() + mac_vectors()
+-    log = ROOT / "artifacts/logs/symm-crypto-kat-vpcd-20261026.log"
++    vectors = (cipher_vectors() + mac_vectors() +
++               transient_cipher_lifecycle_vectors())
++    timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
++    log = ROOT / f"artifacts/logs/symm-crypto-kat-vpcd-{timestamp}.log"
+     command = [
+         sys.executable, str(ROOT / "tools/tests/pc_vpcd_applet_test.py"),
+         "--emulator", str(ROOT / "build/choupi-pc/choupi"),
+@@ -198,17 +229,24 @@ def main() -> int:
+         "--cap-code", str(ROOT / "build/symm-crypto-probe/load-code.bin"),
+         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
+         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
++        "--connect-timeout", "300", "--apdu-timeout", "600",
+         "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-vpcd-current.bin"),
+         "--log", str(log),
+     ]
+-    for apdu, expected, _label in vectors:
++    reset_after_indices = []
++    for index, (apdu, expected, label) in enumerate(vectors, start=1):
+         command.extend(("--apdu", apdu.hex(), "--expect-apdu-response", expected.hex()))
++        if label.endswith("init before reset"):
++            reset_after_indices.append(index)
++    for index in reset_after_indices:
++        command.extend(("--reset-after-custom-apdu", str(index)))
+     import subprocess
+     completed = subprocess.run(command, cwd=ROOT, check=False)
+     if completed.returncode:
+         return completed.returncode
+     print(f"TEST:SUMMARY cipher_vectors={cipher_count} mac_vectors={mac_count} "
+-          f"iv_vectors=6 total={len(vectors)} fail=0")
++          f"iv_vectors=6 transient_lifecycle=16 reset_after={len(reset_after_indices)} "
++          f"total={len(vectors)} fail=0")
+     print(f"TEST:LOG {log}")
+     return 0
+ 

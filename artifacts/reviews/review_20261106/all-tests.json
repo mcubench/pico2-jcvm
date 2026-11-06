@@ -1,0 +1,198 @@
+[
+  {
+    "command": "./tools/test-short-apdu",
+    "exit": 0,
+    "seconds": 19.03,
+    "log": "artifacts/reviews/review_20261106/test-short-apdu.log"
+  },
+  {
+    "command": "./tools/test-ccid-rx-framing",
+    "exit": 0,
+    "seconds": 1.52,
+    "log": "artifacts/reviews/review_20261106/test-ccid-rx-framing.log"
+  },
+  {
+    "command": "./tools/test-ccid-apdu-route",
+    "exit": 0,
+    "seconds": 0.9,
+    "log": "artifacts/reviews/review_20261106/test-ccid-apdu-route.log"
+  },
+  {
+    "command": "./tools/test-ccid-progress-flow",
+    "exit": 0,
+    "seconds": 1.05,
+    "log": "artifacts/reviews/review_20261106/test-ccid-progress-flow.log"
+  },
+  {
+    "command": "./tools/test-native-progress-guard",
+    "exit": 0,
+    "seconds": 0.57,
+    "log": "artifacts/reviews/review_20261106/test-native-progress-guard.log"
+  },
+  {
+    "command": "./tools/test-execution-budget",
+    "exit": 0,
+    "seconds": 1.91,
+    "log": "artifacts/reviews/review_20261106/test-execution-budget.log"
+  },
+  {
+    "command": "./tools/test-gp-get-data",
+    "exit": 0,
+    "seconds": 1.42,
+    "log": "artifacts/reviews/review_20261106/test-gp-get-data.log"
+  },
+  {
+    "command": "./tools/test-gp-registry",
+    "exit": 0,
+    "seconds": 1.64,
+    "log": "artifacts/reviews/review_20261106/test-gp-registry.log"
+  },
+  {
+    "command": "./tools/test-gp-delete",
+    "exit": 0,
+    "seconds": 1.68,
+    "log": "artifacts/reviews/review_20261106/test-gp-delete.log"
+  },
+  {
+    "command": "./tools/test-install-status",
+    "exit": 0,
+    "seconds": 2.95,
+    "log": "artifacts/reviews/review_20261106/test-install-status.log"
+  },
+  {
+    "command": "./tools/test-cap-method-bounds",
+    "exit": 0,
+    "seconds": 3.24,
+    "log": "artifacts/reviews/review_20261106/test-cap-method-bounds.log"
+  },
+  {
+    "command": "./tools/test-cap-method-body-bounds",
+    "exit": 0,
+    "seconds": 1.3,
+    "log": "artifacts/reviews/review_20261106/test-cap-method-body-bounds.log"
+  },
+  {
+    "command": "./tools/test-cap-bytecode-pc-bounds",
+    "exit": 0,
+    "seconds": 2.13,
+    "log": "artifacts/reviews/review_20261106/test-cap-bytecode-pc-bounds.log"
+  },
+  {
+    "command": "./tools/test-cap-instruction-boundaries",
+    "exit": 0,
+    "seconds": 3.57,
+    "log": "artifacts/reviews/review_20261106/test-cap-instruction-boundaries.log"
+  },
+  {
+    "command": "./tools/test-cap-constant-pool-validation",
+    "exit": 0,
+    "seconds": 0.86,
+    "log": "artifacts/reviews/review_20261106/test-cap-constant-pool-validation.log"
+  },
+  {
+    "command": "./tools/test-cap-native-opcode-policy",
+    "exit": 0,
+    "seconds": 0.94,
+    "log": "artifacts/reviews/review_20261106/test-cap-native-opcode-policy.log"
+  },
+  {
+    "command": "./tools/test-jcarray",
+    "exit": 0,
+    "seconds": 31.4,
+    "log": "artifacts/reviews/review_20261106/test-jcarray.log"
+  },
+  {
+    "command": "./tools/test-jcvmarray",
+    "exit": 0,
+    "seconds": 3.07,
+    "log": "artifacts/reviews/review_20261106/test-jcvmarray.log"
+  },
+  {
+    "command": "./tools/test-jcvmarray-allocation",
+    "exit": 2,
+    "seconds": 13.1,
+    "log": "artifacts/reviews/review_20261106/test-jcvmarray-allocation.log"
+  },
+  {
+    "command": "./tools/test-rmi-registry",
+    "exit": 0,
+    "seconds": 2.62,
+    "log": "artifacts/reviews/review_20261106/test-rmi-registry.log"
+  },
+  {
+    "command": "./tools/test-persistent-inventory",
+    "exit": 0,
+    "seconds": 4.89,
+    "log": "artifacts/reviews/review_20261106/test-persistent-inventory.log"
+  },
+  {
+    "command": "./tools/test-persistent-transaction",
+    "exit": 0,
+    "seconds": 44.68,
+    "log": "artifacts/reviews/review_20261106/test-persistent-transaction.log"
+  },
+  {
+    "command": "./tools/test-rp2350-fs-overlay",
+    "exit": 0,
+    "seconds": 31.39,
+    "log": "artifacts/reviews/review_20261106/test-rp2350-fs-overlay.log"
+  },
+  {
+    "command": "./tools/test-vpcd-protocol",
+    "exit": 1,
+    "seconds": 6.04,
+    "log": "artifacts/reviews/review_20261106/test-vpcd-protocol.log"
+  },
+  {
+    "command": "./tools/test-vpcd-session",
+    "exit": 0,
+    "seconds": 5.41,
+    "log": "artifacts/reviews/review_20261106/test-vpcd-session.log"
+  },
+  {
+    "command": "./tools/test-firmware-flash-boundary",
+    "exit": 0,
+    "seconds": 1.92,
+    "log": "artifacts/reviews/review_20261106/test-firmware-flash-boundary.log"
+  },
+  {
+    "command": "./tools/test-cap-parser",
+    "exit": 0,
+    "seconds": 24.05,
+    "log": "artifacts/reviews/review_20261106/test-cap-parser.log"
+  },
+  {
+    "command": "./tools/test-rmi-cap-metadata",
+    "exit": 0,
+    "seconds": 6.54,
+    "log": "artifacts/reviews/review_20261106/test-rmi-cap-metadata.log"
+  },
+  {
+    "command": "./tools/test-apdu-parser-fuzz",
+    "exit": 0,
+    "seconds": 21.34,
+    "log": "artifacts/reviews/review_20261106/test-apdu-parser-fuzz.log"
+  },
+  {
+    "command": "./tools/test-apdu-util",
+    "exit": 0,
+    "seconds": 9.45,
+    "log": "artifacts/reviews/review_20261106/test-apdu-util.log"
+  },
+  {
+    "command": "./tools/test-cap-method-body-deploy-caps",
+    "exit": 0,
+    "seconds": 0.3,
+    "log": "artifacts/reviews/review_20261106/test-cap-method-body-deploy-caps.log"
+  },
+  {
+    "command": "./tools/test-vpcd-protocol (host permissions)",
+    "exit": 0,
+    "log": "artifacts/reviews/review_20261106/test-vpcd-protocol-host.log"
+  },
+  {
+    "command": "python3 tools/test-javacard-support.py",
+    "exit": 0,
+    "log": "artifacts/reviews/review_20261106/test-javacard-support-python.log"
+  }
+]

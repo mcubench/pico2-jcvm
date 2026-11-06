@@ -1,0 +1,20 @@
+[
+  {
+    "command": "./tools/test-apdu-parser-fuzz",
+    "exit": 0,
+    "seconds": 21.34,
+    "log": "artifacts/reviews/review_20261106/test-apdu-parser-fuzz.log"
+  },
+  {
+    "command": "./tools/test-apdu-util",
+    "exit": 0,
+    "seconds": 9.45,
+    "log": "artifacts/reviews/review_20261106/test-apdu-util.log"
+  },
+  {
+    "command": "./tools/test-cap-method-body-deploy-caps",
+    "exit": 0,
+    "seconds": 0.3,
+    "log": "artifacts/reviews/review_20261106/test-cap-method-body-deploy-caps.log"
+  }
+]

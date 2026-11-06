@@ -1,0 +1,19 @@
+ M AGENTS.md
+ M artifacts/reviews/review_20261103/CMakeLists.txt
+ M artifacts/reviews/review_20261103/persistence_probe.cpp
+ M artifacts/reviews/review_20261103/run-probes.py
+ M choupi/javacard-sdk/javacard-api
+ M choupi/javacard-sdk/rommask
+ M choupi/src/context.hpp
+ M choupi/src/heap.cpp
+ M choupi/src/heap.hpp
+ M src/cap_load.cpp
+ M tools/test-symm-crypto-pcsc
+ M tools/test-symm-crypto-vpcd
+ M tools/tests/SymmCryptoPcscProbe.java
+ M tools/tests/symm_crypto_applet/SymmCryptoProbe.java
+ M tools/tests/test_symm_crypto_vpcd.py
+?? artifacts/reviews/review_20261106/
+?? artifacts/sha256-reset-client-javap-lines.txt
+?? artifacts/sha256-reset-client-javap.txt
+?? docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv

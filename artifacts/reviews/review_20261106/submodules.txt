@@ -1,0 +1,3 @@
+-5785fb17cac5595d8c82ebffff0a640993d6f877 choupi/javacard-sdk/javacard-api
+-5297c51db5d632c928084fc1dc6f55f23a49f674 choupi/javacard-sdk/rommask
+-e2f27229e6de84640848ca2a906eba3a4d72271a choupi/os
