@@ -1,25 +1,24 @@
-# Active handoff — RV-28 StaticMethodref coordinate correction — 2026-11-06 01:32 CET
+# Active handoff — RV-28 Descriptor-backed StaticMethodref validation — 2026-11-06 01:40 CET
 
-## Latest continuation — correct StaticMethodref Method-component bounds — 2026-11-06 01:32 CET
+## Latest continuation — match StaticMethodref offsets to Descriptor — 2026-11-06 01:40 CET
 
-Internal StaticMethodref bounds now account for the exception-handler table
-and one-based method-stream coordinate used by `Method_Handler`. The allowed
-range is strictly after the handler table through the inclusive end of the
-methods area. Instance fields still use declared layout bounds; virtual and
-super methods resolve through `Class_Handler`.
+When Descriptor is present, every internal StaticMethodref now must match
+exactly one method descriptor's Method-component offset. Its range also follows
+the handler-table base and one-based methods coordinate used by
+`Method_Handler`. Descriptor-free LOADs retain range/header-fit checking only;
+the exact-start gap remains open there. Instance fields use declared layout
+bounds; virtual and super methods resolve through `Class_Handler`.
 
-Validation: helper sanitizer suite 32/32; PC, ARM, and RISC-V max_crypto
+Validation: helper sanitizer suite 35/35; PC, ARM, and RISC-V max_crypto
 builds; unchanged JCAlgTest VPCD install/APDU suite 15/15. ARM image ends at
-`0x100ec6a0`, leaving 80,224 bytes in the firmware window. VPCD log:
-`artifacts/logs/rv28-static-method-offset-correction-vpcd-20261106.log`, SHA-256
-`3c8e804dc0911fbae3775fd6b76bfac8b4ec279ce21c0c399541c5dcf20cb37e`.
+`0x100ec798`, leaving 79,976 bytes in the firmware window. VPCD log:
+`artifacts/logs/rv28-descriptor-static-method-vpcd-20261106.log`, SHA-256
+`444284a42b9c84b8153618cf91b06d3adf81428f783a1fda3ea7ac09320c3fa2`.
 No physical flash was performed.
 
-Next: resolve exact StaticMethodref starts when Descriptor is present; decide
-how descriptor-free source metadata can prove method starts. Then add malformed
-interpreter execution coverage. Preserve unrelated dirty changes. This slice's
-commit is `711926215d6f8f9c5d86044bf14d9b4fceaf2927` (Fix internal
-StaticMethodref offset bounds).
+Next: find a safe authoritative method-start map for Descriptor-free CAPs, then
+add malformed interpreter-execution coverage. Preserve unrelated dirty changes.
+This slice's commit will be recorded in progress.md after commit.
 
 ## Previous continuation — bound external class tokens in Export tables — 2026-11-06 00:42 CET
 

@@ -667,6 +667,19 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
                   method_offset_base, method_size)) {
         return CapImportValidation::internal_error;
       }
+      if (const auto *descriptor = cap.getDescriptor(); descriptor != nullptr) {
+        const std::size_t descriptor_size = NTOHS(descriptor->size);
+        if (!jcvm::cap_constant_pool_validation::
+                valid_descriptor_static_method_offsets(
+                    reinterpret_cast<const uint8_t *>(
+                        constant_pool->constant_pool),
+                    HTONS(constant_pool->count),
+                    reinterpret_cast<const uint8_t *>(
+                        &descriptor->class_count),
+                    descriptor_size)) {
+          return CapImportValidation::internal_error;
+        }
+      }
     }
     if (component == nullptr) {
       return CapImportValidation::valid;

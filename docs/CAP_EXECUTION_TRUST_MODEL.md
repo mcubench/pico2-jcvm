@@ -53,8 +53,10 @@ remain open.
 Internal StaticFieldref offsets are checked against the StaticField image size;
 internal StaticMethodref offsets use CAP Method-component coordinates, bounded
 after the exception-handler table and through the one-based methods area. These
-range checks do not prove that a method offset is an exact method-header start
-or that a field offset has the correct declared type.
+offsets must also match exactly one Descriptor method record when Descriptor
+is present. Descriptor-free CAPs still receive only range/header-fit checks,
+because their method-start metadata is incomplete. Static field offsets are
+not yet checked against declared field types.
 Internal ConstantPool class references must identify an exact class/interface
 record start in the Class component. InstanceFieldref, VirtualMethodref, and
 SuperMethodref cannot target an interface record. Member-token semantics for

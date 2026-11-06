@@ -22584,3 +22584,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/rv28-static-method-offset-correction-vpcd-20261106.log`, SHA-256 `3c8e804dc0911fbae3775fd6b76bfac8b4ec279ce21c0c399541c5dcf20cb37e`.
 
 - Commit resolved for `rv28-static-method-offset-coordinate-fix-20261106`: `711926215d6f8f9c5d86044bf14d9b4fceaf2927` (Fix internal StaticMethodref offset bounds).
+
+## 2026-11-06 Match internal StaticMethodref offsets to Descriptor 8 minutes
+
+- Step/experiment: `rv28-descriptor-static-method-offset-validation-20261106`
+- When: '2026-11-06 01:32 CET' - '2026-11-06 01:40 CET'
+- Change: Install preflight now requires every internal StaticMethodref offset to match exactly one Descriptor method record whenever Descriptor is present. Descriptor-free packages continue using the corrected component-coordinate range and header-fit checks; exact-start proof remains an explicit gap. Added three sanitizer cases and updated TODO, trust model, QKB, and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passes 35/35 under ASan/UBSan; PC, ARM, and RISC-V max_crypto builds pass; unchanged upstream JCAlgTest VPCD install/APDU suite passes 15/15. No physical flash or malformed runtime execution was performed. Scoped diff check passes.
+- Result: Descriptor-backed internal method references outside declared method starts fail install preflight; valid upstream JCAlgTest continues to install and run. ARM image ends at `0x100ec798`, leaving 79,976 bytes in the firmware window.
+- Decision: Continue with a Descriptor-free method-start source and malformed interpreter tests; do not claim exact method-start verification for Descriptor-free CAPs.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-descriptor-static-method-vpcd-20261106.log`, SHA-256 `444284a42b9c84b8153618cf91b06d3adf81428f783a1fda3ea7ac09320c3fa2`.

@@ -94,6 +94,53 @@ inline bool valid_internal_class_token(const std::size_t token,
          (!requires_class || !is_interface);
 }
 
+inline bool valid_descriptor_static_method_offsets(
+    const uint8_t *entries, const std::size_t count,
+    const uint8_t *descriptor_payload,
+    const std::size_t descriptor_size) noexcept {
+  if ((entries == nullptr && count != 0) || descriptor_payload == nullptr ||
+      descriptor_size == 0) {
+    return false;
+  }
+  const auto read_be16 = [](const uint8_t *bytes) {
+    return static_cast<std::size_t>(
+        (static_cast<uint16_t>(bytes[0]) << 8) | bytes[1]);
+  };
+
+  for (std::size_t entry_index = 0; entry_index < count; ++entry_index) {
+    const uint8_t *entry = entries + entry_index * 4;
+    if (entry[0] != 6 || (entry[1] & 0x80u) != 0) continue;
+    const std::size_t target = read_be16(entry + 2);
+    std::size_t matches = 0;
+    std::size_t offset = 1;
+    const std::size_t class_count = descriptor_payload[0];
+    for (std::size_t class_index = 0; class_index < class_count;
+         ++class_index) {
+      if (offset > descriptor_size || descriptor_size - offset < 9) {
+        return false;
+      }
+      const std::size_t interfaces = descriptor_payload[offset + 4];
+      const std::size_t fields = read_be16(descriptor_payload + offset + 5);
+      const std::size_t methods = read_be16(descriptor_payload + offset + 7);
+      const std::size_t method_start = offset + 9 + interfaces * 2 + fields * 7;
+      if (method_start > descriptor_size ||
+          methods > (descriptor_size - method_start) / 12) {
+        return false;
+      }
+      for (std::size_t method_index = 0; method_index < methods;
+           ++method_index) {
+        if (read_be16(descriptor_payload + method_start + method_index * 12 +
+                      2) == target) {
+          ++matches;
+        }
+      }
+      offset = method_start + methods * 12;
+    }
+    if (matches != 1) return false;
+  }
+  return true;
+}
+
 template <typename ResolveExportToken>
 bool validate_external_class_tokens(const uint8_t *entries,
                                     const std::size_t count,

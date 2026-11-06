@@ -122,6 +122,27 @@ int main() {
   check(!jcvm::cap_constant_pool_validation::valid_internal_class_token(
             8, 8, true, false, false),
         "internal class reference at component size rejected");
+  const uint8_t internal_static_method[] = {6, 0, 0, 0x17};
+  const uint8_t descriptor_for_method_0x17[] = {
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0x17,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(jcvm::cap_constant_pool_validation::
+            valid_descriptor_static_method_offsets(
+                internal_static_method, 1, descriptor_for_method_0x17,
+                sizeof(descriptor_for_method_0x17)),
+        "Descriptor method offset accepts internal StaticMethodref");
+  const uint8_t descriptor_with_different_method[] = {
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0x18,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::
+            valid_descriptor_static_method_offsets(
+                internal_static_method, 1, descriptor_with_different_method,
+                sizeof(descriptor_with_different_method)),
+        "Descriptor rejects StaticMethodref without matching method offset");
+  check(!jcvm::cap_constant_pool_validation::
+            valid_descriptor_static_method_offsets(
+                internal_static_method, 1, descriptor_for_method_0x17, 10),
+        "truncated Descriptor method record rejected");
 
   unsigned int resolved_external_tokens = 0;
   check(jcvm::cap_constant_pool_validation::validate_external_class_tokens(

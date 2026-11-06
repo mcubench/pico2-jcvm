@@ -7029,3 +7029,19 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Limit:** This is still a range/header-fit check, not proof of exact method
   start. Descriptor-free CAPs need a stronger method map; malformed execution
   and physical hostile-CAP recovery remain untested.
+
+## Match internal StaticMethodref offsets to Descriptor records — 2026-11-06
+
+- **Finding:** A range-valid internal StaticMethodref offset may still point
+  into a method body. When Descriptor exists, its method records carry exact
+  Method-component offsets.
+- **Viable fix:** For every internal ConstantPool StaticMethodref, require
+  exactly one matching Descriptor method record. Leave the check absent only
+  when Descriptor is absent; do not claim exact-start validation there.
+- **Validation:** ASan/UBSan helper suite passes 35/35; PC, ARM, and RISC-V
+  max_crypto builds pass; unchanged JCAlgTest VPCD install/APDU suite passes
+  15/15. VPCD log SHA-256:
+  `444284a42b9c84b8153618cf91b06d3adf81428f783a1fda3ea7ac09320c3fa2`.
+- **Limit:** Descriptor-free LOAD still lacks authoritative private-method
+  starts; malformed runtime execution and physical hostile-CAP recovery remain
+  open.
