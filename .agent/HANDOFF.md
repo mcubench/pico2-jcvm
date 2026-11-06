@@ -16,8 +16,8 @@ instance persistence failure and must not be attributed to this change. The
 first VPCD attempt was sandbox-blocked at localhost socket creation; the same
 test was rerun with host access. No USB device was accessed or flashed.
 
-The stack-test extension is committed as `7141905d`. New uncommitted files
-`tools/build-dup-x-fixture`, `tools/test-dup-x-vpcd`, and
+The stack-test extension is committed as `7141905d`. The fixture/wrapper commit
+is `c41e89f7`; `tools/build-dup-x-fixture`, `tools/test-dup-x-vpcd`, and
 `tools/tests/dup_x_fixture/DupXApplet.java` build a test-only CAP with a helper
 that executes `dup_x 0x12` on `[10,20]` and checks result 10 during install.
 The repeatable `./tools/test-dup-x-vpcd` passed under host access: interpreter

@@ -23505,3 +23505,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-20261106-60 open for invalid encoded operand execution and broader interpreter cases; unit helper tests cover all legal M/N pairs and int-pair ordering, but the CAP path currently exercises one positive-depth form.
 - Commit: pending; exact SHA will be appended after the fixture/wrapper commit.
 - Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261106T223945Z.log` SHA-256 `e1d335f4de9c9edaddc151d7bc7f6a813ef6adf5818a18d058000a7ddf9d91e3`; debug build log `artifacts/logs/build-pc-dup-x-20261106T223945Z.log` SHA-256 `b17cd69b5b8bf2eab1a6e106466662959bc126bbf655c9abbd371b1327b3fb72`.
+
+## 2026-11-06 Record dup_x CAP test commit resolution 1 minute
+
+- Step/experiment: `rv-20261106-60-dup-x-cap-vpcd-commit`
+- When: '2026-11-06 23:41 CET' - '2026-11-06 23:42 CET'
+- Change: Recorded the CAP fixture/wrapper commit SHA and updated the active handoff with the passing interpreter evidence.
+- Validation: No additional run; `./tools/test-dup-x-vpcd` passed in the preceding step.
+- Result: The repeatable positive-depth CAP interpreter test is committed.
+- Decision: Continue with interpreter-level invalid-operand coverage for R60.
+- Commit: `c41e89f799c08de3f8e50a6efa73df8b5368859c` — fixture/wrapper; this documentation update is a follow-up.
+- Artifacts/logs: The preceding progress entry contains test and debug build log hashes.
