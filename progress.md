@@ -22040,7 +22040,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` succeeded but listed only USB root hubs and the VirtualBox Tablet; no RP2350 device was available to flash. `PICO2_HOST_USB_ACCESS=1 PYTHONUNBUFFERED=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_CONNECT_TIMEOUT_S=90 SIO_CROSS_AID_APDU_TIMEOUT_S=120 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed with `TEST:SUMMARY pass=34 fail=0`. No firmware source changed, so ARM/RISC-V builds and physical testing were not run.
 - Result: Descriptor-present three-package SIO behavior remains green under the wrapper. Physical BOOTSEL boards remain unattached to this VM; the Descriptor-omitted dynamic-package bounds issue remains open and fail-closed.
 - Decision: Continue offline while guest USB enumeration is unavailable; retain this emulator regression as the baseline for the next CTX-01/03 change.
-- Commit: `pending`
+- Commit: `e91f9d651aaa71cef13f29cf95a87b6d56a5a1d4`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T023146Z.log` (SHA-256 `e626973dcfdf5e499d4918e430dc2ceeb51ebe0d27d5100f901e38319c0f2f1d`).
 
 ## 2026-11-05 Enforce runtime instance field kinds 58 minutes
@@ -23208,5 +23208,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build-pc --profile max_crypto`, `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto`, and the same RISC-V wrapper passed. Focused imported-package test passed `TEST:SUMMARY pass=1 fail=0` with DELETE `6985`, dependent client SELECT `9000`, and service response `45679000`. Default `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. Python syntax and scoped `git diff --check` passed. No physical PC/SC reader was available; hardware validation was skipped.
 - Result: Loaded package imports are now protected from deletion in emulator/firmware code paths. Focused VPCD log SHA-256 `150a4a652ab0ee59ce5899cc141e4511cf3230a3c0b96cccf22bca2aad5ceb30`; default suite log SHA-256 `c4731899e42c4f3e9d5f1c055a5deeef8cf296ccb25aaf04a938655ba09d4800`.
 - Decision: Commit the scoped implementation and continue with the next open GP-01 item; repeat package DELETE acceptance on physical hardware when PC/SC enumerates a Pico.
-- Commit: `pending`
+- Commit: `e91f9d651aaa71cef13f29cf95a87b6d56a5a1d4`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T161945Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261106T162058Z.log`; no physical artifacts.

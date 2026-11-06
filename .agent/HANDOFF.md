@@ -22,8 +22,9 @@ default suite log SHA-256
 The unrelated pre-existing edits in `src/cap_load.cpp` (filesystem erase
 adapter and expanded LOAD diagnostics), crypto tests, artifacts, and submodule
 trees were not part of this step. Stage the DELETE dependency hunks in
-`src/cap_load.cpp` selectively. Next: commit this bounded change, then proceed
-with the next open GP-01 item. Physical package DELETE validation remains open.
+`src/cap_load.cpp` selectively. The scoped implementation is committed as
+`e91f9d65` (`Reject deletion of imported CAP packages`). Next: proceed with the
+next open GP-01 item. Physical package DELETE validation remains open.
 
 # Previous handoff — package DELETE invalidates cross-AID SIO routes — 2026-11-06 14:22 CET
 
