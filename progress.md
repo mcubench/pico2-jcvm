@@ -22959,3 +22959,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline with high-priority native runtime backlog; retry the physical probe after a Pico reappears in `pcsc_scan -r`.
 - Commit: `cc9a072f` (test fixture; metadata is recorded in the following documentation commit).
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T103631Z.log`, SHA-256 `662946299d973675114e4c6d828a6ee798a7e6297cd057f09d56a183450bb5ae`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T103721Z.log`, SHA-256 `bfa8b510557c54e5e3795bbbd03badda3533d270cedc498822906583735925c4`.
+
+## 2026-11-06 Atomic Util SensitiveResult through SIO 10 minutes
+
+- Step/experiment: `ctx02-atomic-util-sensitive-result-sio-20261106`
+- When: '2026-11-06 10:40 UTC' - '2026-11-06 10:50 UTC'
+- Change: Added interpreted three-package CAP coverage for successful `Util.arrayCopy()`, `arrayFill()` and `arrayCompare()` SensitiveResult values, including service-side checks, caller assertion after SIO, and invalid-copy clearing. Added physical probe commands `803B` (AID/RIDEquals) and `803D` (atomic Util) for future reader availability.
+- Validation: Focused `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_UTIL_ATOMIC=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=1 fail=0`; full VPCD passed `TEST:SUMMARY pass=34 fail=0`. `./tools/env javac` compiled the physical probe, Python bytecode compilation passed, and scoped `git diff --check` passed. No firmware source changed; target builds were not rerun. Physical test is pending because PC/SC lists only VPCD readers although all three Pico devices remain visible in USB enumeration.
+- Result: The atomic Util successful results survive SIO and are assertable by the caller; an invalid copy clears stale SensitiveResult. An initial fixture expectation incorrectly expected `arrayCompare()` to return 0 for `{1,2}` versus `{1,1}`; the API correctly returned `+1`, and the fixture now asserts `+1`. No firmware defect was found.
+- Decision: Current supported SensitiveResult producers now have interpreted SIO test coverage for atomic Util as well as the preceding API paths. Continue high-priority offline runtime work and resume physical checks when a Pico reader reappears in PC/SC.
+- Commit: `d37ca778` (test fixture; documentation follows).
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261106T104555Z.log`, SHA-256 `a6d4af2d1f7f1f4abbd25209293cfde06c3e5d292a06f71fb10b5c2cd778e943`; full `artifacts/logs/sio-cross-aid-vpcd-20261106T104628Z.log`, SHA-256 `c95c5b8220d1f3671a6ced468e750023e257debb582ce3106ad625ed8ad7209d`.

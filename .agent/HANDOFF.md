@@ -1,4 +1,34 @@
-# Active handoff — AID.RIDEquals SensitiveResult — 2026-11-06 11:40 CET
+# Active handoff — atomic Util SensitiveResult SIO — 2026-11-06 11:50 CET
+
+## Latest continuation — atomic Util results asserted across SIO
+
+Added an interpreted service method covering `Util.arrayCopy()`,
+`Util.arrayFill()`, and `Util.arrayCompare()` SensitiveResult values. It checks
+success results in the service, verifies an invalid atomic copy leaves the
+result unassigned, and the client asserts the final comparison result after
+SIO returns. The focused VPCD case passes, and full cross-AID VPCD passes
+34/34. The physical SmartcardIO probe now includes APDUs `803B` (AID,
+including RIDEquals) and `803D` (atomic Util).
+
+Test commit: `d37ca778`. The first focused attempt exposed an incorrect test
+expectation: comparing `{1,2}` with a destination filled with `{1,1}` correctly
+returns `+1`; the fixture was fixed to assert that result, then focused and
+full VPCD reruns passed. The physical probe source compiles through
+`./tools/env javac`; hardware was intentionally not retried because the Pico
+USB devices remain absent from `pcsc_scan -r`.
+
+Focused log `artifacts/logs/sio-cross-aid-vpcd-20261106T104555Z.log`, SHA-256
+`a6d4af2d1f7f1f4abbd25209293cfde06c3e5d292a06f71fb10b5c2cd778e943`; full log
+`artifacts/logs/sio-cross-aid-vpcd-20261106T104628Z.log`, SHA-256
+`c95c5b8220d1f3671a6ced468e750023e257debb582ce3106ad625ed8ad7209d`.
+
+Next: keep advancing CTX/other high-priority native work offline. Resume the
+physical probe only when a Pico reader is registered in `pcsc_scan -r`.
+Preserve unrelated changes.
+
+---
+
+# Previous handoff — AID.RIDEquals SensitiveResult — 2026-11-06 11:40 CET
 
 ## Latest continuation — RIDEquals true/false results covered through SIO
 

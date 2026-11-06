@@ -886,7 +886,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   extends the existing `JCSystem.getAID()` and `getPreviousContextAID()`
   object-result checks. No runtime source change was needed for these API
   results. The currently supported SensitiveResult producers now have
-  interpreted SIO coverage, including `buildKey()`.
+  interpreted SIO coverage, including `buildKey()` and the atomic Util
+  `arrayCopy()`, `arrayFill()` and `arrayCompare()` results. The atomic Util
+  fixture also verifies an invalid copy clears prior state and the final
+  comparison result is assertable by the caller after SIO.
   The current API has no supported Checksum provider (both factory branches
   return `NO_SUCH_ALGORITHM`) and no enabled AEAD provider; those results are
   not current producers and remain outside this coverage until separately
@@ -895,8 +898,8 @@ source-based follow-ups, without a new physical reproduction in this review.
   and that reset permits collection. Interpreted SIO propagation/assertion is
   covered separately; the public Java Card API has no synchronous GC trigger
   to combine those phases in one CAP call. Broaden physical SensitiveResult
-  acceptance beyond the JCSystem probe already run. An AID boolean-result APDU
-  was added to the exact-reader physical probe, but its latest attempt stopped
+  acceptance beyond the JCSystem probe already run. The exact-reader physical
+  probe now includes AID and atomic Util APDUs, but its latest attempt stopped
   before card traffic because PC/SC no longer registered any of the three
   still-enumerated Pico USB CCID devices; see `.agent/QKB.md`.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
