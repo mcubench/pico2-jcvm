@@ -112,6 +112,8 @@ not exercise malformed CP behavior. Cycle log SHA-256:
 Next: inspect exception-handler catch-type CP indices and consider a test for
 the malformed handler-lookup path. Physical malformed-CAP recovery and
 sanitizer runtime containment remain open.
+The explicit CP guard and this validation step are committed as `6e751a98`;
+the progress record's commit field is being recorded in a metadata follow-up.
 
 ## Previous handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
 
