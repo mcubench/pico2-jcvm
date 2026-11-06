@@ -23305,3 +23305,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep implementation separate from review; acceptance must propagate failures and attribute results to one positively identified device. Existing deadlines documentation correction is included under R21 rather than duplicated.
 - Commit: pending review commit; exact SHA will be appended after creation.
 - Artifacts/logs: `artifacts/reviews/review_20261106/pass3/` source hashes, state and two command/error manifests; raw logs are local and ignored, their hashes are in committed manifests.
+
+- Commit: `b315f47cd13e3de235cd5c4cd218aa0f0a0fd634` — completed `review-20261106-pass3`; this append resolves the pending SHA above. Scoped documentation/evidence commit only; 36 finding/TODO mappings and source hashes validated.
