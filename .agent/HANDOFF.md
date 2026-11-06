@@ -1,4 +1,26 @@
-# Active handoff — RV-28 bytecode-bound sanitizer coverage — 2026-11-06 02:43 CET
+# Active handoff — RV-28 malformed switch runtime rejection — 2026-11-06 02:45 CET
+
+## Latest continuation — dynamic STABLESWITCH operand target rejected
+
+Added `switch-into-operand` to the generated malformed CAP fixture. It starts
+JCAlgTest `process()` with `BSPUSH 0` and a one-entry `STABLESWITCH`; both the
+default and selected case target byte 1 of the switch, inside its first
+displacement operand. The upstream CAP remains unchanged.
+
+PC VPCD passes 6/6: applet SELECT `6F00`, process APDU `6999`, ISD FCI/`9000`,
+reselect applet `6F00`, and ISD FCI/`9000`. Log:
+`artifacts/logs/rv28-malformed-switch-into-operand-vpcd-20261106.log`, SHA-256
+`1f221dd2e441cf5422cf751a5cdc2248a0216de1af1107ff7aff426b9bdf80d9`.
+The PC-bound and instruction decoder helper suites pass under ASan/UBSan
+(19/19 and 13/13 with 100,000 fuzz inputs); method-body bounds also pass
+11/11 under ASan/UBSan. No physical device or firmware build was involved.
+
+Next: decide whether any remaining switch form or conditional-taken path adds
+distinct acceptance; then perform an exact focused sanitizer sweep and review
+runtime exception containment. Physical recovery and Descriptor-free exact
+method-start proof remain open.
+
+## Previous handoff — RV-28 bytecode-bound sanitizer coverage — 2026-11-06 02:43 CET
 
 ## Latest continuation — run PC and method bound helpers under sanitizers
 

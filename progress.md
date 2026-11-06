@@ -22674,3 +22674,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with malformed switch/conditional runtime paths only if they add distinct coverage; keep physical hostile-CAP recovery open.
 - Commit: pending.
 - Artifacts/logs: transient wrapper outputs only; generated executables are removed by the wrappers.
+
+## 2026-11-06 Exercise dynamic switch target rejection 2 minutes
+
+- Step/experiment: `rv28-malformed-switch-target-vpcd-20261106`
+- When: '2026-11-06 02:43 CET' - '2026-11-06 02:45 CET'
+- Change: Added a generated CAP case beginning with `BSPUSH 0` and one-entry `STABLESWITCH`, where default and selected case target the switch's first displacement operand. Upstream CAP bytes remain unchanged.
+- Validation: Offline PC VPCD run passes 6/6; Python syntax and scoped diff checks pass. Prior focused PC-bounds/instruction-boundary/method-body helpers pass under ASan/UBSan (19/19, 13/13 including 100,000 malformed inputs, and 11/11). No production build, physical device, or flash.
+- Result: Malformed switch SELECT returns `6F00`, process APDU `6999`, and ISD selection succeeds before and after another applet reselect attempt.
+- Decision: Dynamic switch target runtime guard and manager recovery are covered in PC VPCD. Continue with distinct switch encodings or conditional branch cases only if they test additional behavior; physical recovery remains open.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-switch-into-operand-vpcd-20261106.log`, SHA-256 `1f221dd2e441cf5422cf751a5cdc2248a0216de1af1107ff7aff426b9bdf80d9`; generated input `build/rv28-malformed-switch-into-operand-load-code.bin` (ignored).

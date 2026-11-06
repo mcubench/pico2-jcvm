@@ -7160,3 +7160,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   out-of-frame access in the PC VPCD emulator. No sanitizer or physical test
   was performed; hostile-CAP recovery acceptance remains open for those
   environments.
+
+## Dynamic STABLESWITCH target into switch operands is rejected — 2026-11-06
+
+- **Fixture:** Begin `process()` with `BSPUSH 0` and a one-entry
+  `STABLESWITCH` whose default and selected case both target the first byte of
+  the switch's own displacement operand.
+- **Observed:** SELECT returns `6F00`, the process APDU returns `6999`, and
+  ISD selection returns FCI/`9000`; later applet SELECT is rejected again and
+  ISD selection still succeeds. VPCD passes 6/6.
+- **Decision:** Dynamic variable-width switch target checks reject a target
+  inside the switch table and manager recovery works in PC VPCD. Sanitizer
+  helper coverage is separate; no physical card was used.

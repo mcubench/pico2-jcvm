@@ -209,6 +209,16 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0xA8, 0x7F, 0xFF))  # GOTO_W beyond this frame.
         if process_length < len(replacement):
             raise ValueError("process body is too short for wide-branch fixture")
+    elif mutation == "switch-into-operand":
+        mutation_index = code_index
+        # Push index 0, then a one-entry STABLESWITCH. Both default and case
+        # destinations point into the first byte of the default displacement.
+        replacement = bytes((
+            0x10, 0x00, 0x73, 0x00, 0x01, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x01,
+        ))
+        if process_length < len(replacement):
+            raise ValueError("process body is too short for switch fixture")
     else:
         raise ValueError(f"unsupported mutation: {mutation}")
     original_bytes = bytes(mutable[mutation_index :
@@ -232,7 +242,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mutation", choices=("impdep1", "truncated-sipush",
-                                "branch-into-operand", "branch-outside-method"),
+                                "branch-into-operand", "branch-outside-method",
+                                "switch-into-operand"),
         default="impdep1",
     )
     args = parser.parse_args()
