@@ -5,8 +5,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 [[ $# -eq 0 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-gp-get-data-vpcd"
 require_host_usb_access
 require_command timeout
-require_command grep
-require_command stdbuf
 require_command pcsc_scan
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -19,31 +17,25 @@ reader="Virtual PCD 00 00"
 endpoint="127.0.0.1:35963"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
-empty_flash="${repo_root}/build/algtest-v182-empty-flash.bin"
 load_code="${repo_root}/build/algtest-v182-load-code.bin"
-for input in "${emulator}" "${rom_mask}" "${empty_flash}" "${load_code}"; do
+for input in "${emulator}" "${rom_mask}" "${load_code}"; do
   [[ -s "${input}" ]] || die "required input is missing: ${input}"
 done
 
 flash_image="${out_dir}/flash.bin"
-cp "${empty_flash}" "${flash_image}"
+: > "${flash_image}"
 
-reader_found=false
+inventory_ready=false
 for attempt in 1 2 3; do
-  inventory_log="${out_dir}/reader-inventory-${attempt}.log"
-  timeout --signal=TERM --kill-after=2s 8s \
-    stdbuf -oL -eL "${repo_root}/tools/env" pcsc_scan -r \
-    > "${inventory_log}" 2>&1 || true
-  if grep -Fq "${reader}" "${inventory_log}"; then
-    reader_found=true
+  if timeout --signal=TERM --kill-after=2s 20s \
+      "${repo_root}/tools/env" pcsc_scan -r; then
+    inventory_ready=true
     break
   fi
   sleep 1
 done
-if [[ "${reader_found}" != true ]]; then
-  for attempt in 1 2 3; do cat "${out_dir}/reader-inventory-${attempt}.log" >&2; done
-  die "configured VPCD reader was not found after 3 bounded PC/SC scans"
-fi
+[[ "${inventory_ready}" == true ]] || \
+  die "PC/SC reader inventory did not complete after 3 bounded attempts"
 
 "${repo_root}/tools/env" "${emulator}" -m "${flash_image}" -s \
   --vpcd "${endpoint}" --vpcd-idle-timeout 30 \
@@ -60,9 +52,9 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 sleep 1
-if ! timeout --signal=TERM --kill-after=2s 8s \
+if ! timeout --signal=TERM --kill-after=2s 15s \
     "${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
-    "${reader}" 5000 --require-present > "${out_dir}/reader-ready.log" 2>&1; then
+    "${reader}" 10000 --require-present > "${out_dir}/reader-ready.log" 2>&1; then
   cat "${out_dir}/emulator.log" >&2
   cat "${out_dir}/reader-ready.log" >&2
   die "emulator did not make the clean VPCD card present"

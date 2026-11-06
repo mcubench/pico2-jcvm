@@ -7584,3 +7584,23 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Validation:** Focused opt-in VPCD regression passes; default SIO suite passes
   34/34; PC, ARM and RISC-V max_crypto builds pass. No physical reader was
   enumerated, so physical package DELETE is unverified.
+
+## GP GET DATA VPCD test failed on stale empty flash and omitted ISD SELECT — 2026-11-06
+
+- **Issue:** The dedicated test wrapper used an 81,920-byte `build/algtest-v182-empty-flash.bin`
+  generated on October 23. Current PC VPCD rejected its package-56 bitmap because
+  the registry sidecar was absent. After replacing that with a zero-byte image,
+  the host probe's first `80CA` still returned `6999` because it had not selected
+  the default ISD.
+- **Viable fix:** Generate a fresh zero-byte VPCD flash for clean-card runs;
+  run the terminal-attached bounded `pcsc_scan -r` before emulator startup to
+  wake the VPCD backend; wait for the exact `Virtual PCD 00 00` presence; and
+  explicitly SELECT the default ISD before manager commands. Redirecting the
+  initial scan to a pipe/log repeatedly timed out during startup in this VM,
+  while terminal-attached `pcsc_scan -r` completed. The test wrapper now keeps
+  that sequence.
+- **Validation:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-gp-get-data-vpcd` passes
+  open and SCP03-authenticated GP `80CA`, ISO `00CB` value responses, and GP/ISO
+  dynamic `2F00` application lists. `./tools/test-gp-get-data` passes 25/25.
+  PC VPCD only; no physical CCID test was possible because PC/SC enumerated only
+  Virtual PCD readers.

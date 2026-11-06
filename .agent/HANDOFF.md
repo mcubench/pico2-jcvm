@@ -1,4 +1,32 @@
-# Current handoff — reject deletion of imported library packages — 2026-11-06 17:25 CET
+# Current handoff — GP GET DATA VPCD validation and wrapper repair — 2026-11-06 18:05 CET
+
+## Completed offline GP-01 GET DATA validation
+
+Repaired `tools/test-gp-get-data-vpcd`: it now starts from a zero-byte flash
+image (the old `algtest-v182-empty-flash.bin` was stale and contained package
+56 without its registry sidecar), performs a bounded terminal-attached
+`pcsc_scan -r` before starting the emulator to activate/keep the VPCD backend,
+and waits for the named reader's card presence. The host-side
+`GPGetDataApduProbe` now explicitly selects the default ISD before GET DATA.
+
+The complete VPCD flow passed. Open GP `80CA` Card Recognition and CPLC
+responses returned `9000`; ISO `00CB` returned the value-only BER objects;
+both GP/ISO `2F00` list queries returned the ISD AID. SCP03 authentication
+succeeded and authenticated GP `80CA` returned matching objects. Companion
+`./tools/test-gp-get-data` passed 25/25. No physical reader was available for
+hardware tests. APDU log SHA-256
+`54ecabd9a94cabbef79356c1c2e3de2f219349145035a861279ad08f0ea77f23`;
+emulator log SHA-256
+`43d0517b24ab4d1b131dd76c38cadb38bb4cdd80c09afc1542c05732a55ea04a`.
+Results are under `artifacts/results/gp-get-data-vpcd-20261106T170234Z/`.
+
+Prior scoped implementation: commit `e91f9d65` rejects deletion of packages
+imported by another loaded CAP (`6985`), validated in VPCD; its handoff and
+progress SHA are in the next commit `c8bfc576`. Physical DELETE and GET DATA
+acceptance remain open. The physical refresh found only Virtual PCD 00/00 and
+00/01, no Pico.
+
+# Previous handoff — reject deletion of imported library packages — 2026-11-06 17:25 CET
 
 ## Completed offline GP-01 follow-up
 

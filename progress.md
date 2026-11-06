@@ -23210,3 +23210,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit the scoped implementation and continue with the next open GP-01 item; repeat package DELETE acceptance on physical hardware when PC/SC enumerates a Pico.
 - Commit: `e91f9d651aaa71cef13f29cf95a87b6d56a5a1d4`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261106T161945Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261106T162058Z.log`; no physical artifacts.
+
+## 2026-11-06 Repair and run GP GET DATA VPCD acceptance 35 minutes
+
+- Step/experiment: `gp-get-data-vpcd-repair-20261106`
+- When: '2026-11-06 17:30 CET' - '2026-11-06 18:05 CET'
+- Change: Repaired the host VPCD test wrapper to create a truly empty flash instead of using the stale October image, activate the VPCD backend with a bounded terminal-attached PC/SC inventory before emulator startup, and wait for the named virtual reader. The host SmartcardIO probe now selects the default ISD before GET DATA. Updated GP-01, QKB and handoff. Firmware source and upstream CAPs were unchanged; Java changes are host-side test tooling only.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-gp-get-data-vpcd` passed. Open GP `80CA` Card Recognition/CPLC and ISO `00CB` value responses returned `9000`; GP/ISO `2F00` lists returned the ISD AID; SCP03 authentication and authenticated GP GET DATA passed. `./tools/test-gp-get-data` passed 25/25; `bash -n tools/test-gp-get-data-vpcd` and scoped `git diff --check` passed. The wrapper's PC build completed. No physical reader was enumerated, so physical CCID validation was skipped.
+- Result: The former wrapper failed because the stale flash image had package 56 without its registry sidecar, then because its host client did not select ISD; a run without the preflight scan also exposed the documented idle VPCD endpoint refusal. All three setup issues are corrected and the complete PCSC/VPCD flow passes.
+- Decision: Keep GP-01 GET DATA open only for physical CCID, malformed-data, continuation and cold-power acceptance; continue with other offline GP-01 work.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261106T170234Z/apdu-probe.log` SHA-256 `54ecabd9a94cabbef79356c1c2e3de2f219349145035a861279ad08f0ea77f23`; `emulator.log` SHA-256 `43d0517b24ab4d1b131dd76c38cadb38bb4cdd80c09afc1542c05732a55ea04a`; `reader-ready.log` SHA-256 `2c1f62c800fff978a82d171b0b3a79c453809928d886477d830ddf35c278be54`.

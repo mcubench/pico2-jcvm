@@ -209,6 +209,12 @@ public final class GPGetDataApduProbe {
     try {
       System.out.println("PCSC:ATR " + hex(card.getATR().getBytes()));
       CardChannel channel = card.getBasicChannel();
+      ResponseAPDU manager = transmit(channel, "SELECT_DEFAULT_ISD",
+          new CommandAPDU(0x00, 0xA4, 0x04, 0x00, new byte[0], 256));
+      if (manager.getSW() != 0x9000) {
+        throw new IllegalStateException("default ISD SELECT failed");
+      }
+
       ResponseAPDU cardData = transmit(channel, "GET_DATA_CARD_RECOGNITION",
           new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256));
       String expected = "6618731606072A864886FC6B01640B06092A864886FC6B040310";

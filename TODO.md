@@ -1096,6 +1096,9 @@ review.
   dynamic `2F00` with `5C00` across open/authenticated PCSC and physical CCID,
   including `61xx`/GET RESPONSE, malformed data, restart and cleanup. Unit tests
   pass 25/25 and VPCD lifecycle passed 42/42 at implementation; later suite 47/47.
+  The dedicated VPCD probe now passes open and SCP03-authenticated GP/ISO card
+  recognition, CPLC, and dynamic `2F00` response checks. Physical CCID checks
+  remain open.
   Verify multi-package registry reconstruction across actual cold power via
   PERSIST-02/AC-02. Selected-profile completion does not close these extensions.
   Acceptance: exact response/status and each AID once, correct continuation,
