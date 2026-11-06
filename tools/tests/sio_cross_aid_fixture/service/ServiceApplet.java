@@ -263,6 +263,28 @@ public final class ServiceApplet extends Applet implements Probe {
     }
   }
 
+  public short sensitivePinVirtualResults() {
+    OwnerPIN pin = new OwnerPIN((byte) 3, (byte) 4);
+    byte[] correct = { 0x12, 0x34 };
+    byte[] incorrect = { 0x12, 0x35 };
+    try {
+      pin.update(correct, (short) 0, (byte) correct.length);
+      if (pin.getTriesRemaining() != 3) return (short) 0x6A81;
+      SensitiveResult.assertEquals((short) 3);
+      if (!pin.check(correct, (short) 0, (byte) correct.length))
+        return (short) 0x6A81;
+      SensitiveResult.assertTrue();
+      if (!pin.isValidated()) return (short) 0x6A81;
+      SensitiveResult.assertTrue();
+      if (pin.check(incorrect, (short) 0, (byte) incorrect.length))
+        return (short) 0x6A81;
+      SensitiveResult.assertFalse();
+      return (short) 0x6A82;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short) 0x6A83;
+    }
+  }
+
   public short sensitiveOwnerPinXResults() {
     byte stage = 1;
     try {

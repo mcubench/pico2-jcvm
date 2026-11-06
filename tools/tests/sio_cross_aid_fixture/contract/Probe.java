@@ -20,6 +20,7 @@ public interface Probe extends Shareable {
   short sensitiveKeyBuilderResult();
   short sensitiveFailedKeyBuilderResult();
   short sensitivePinResults();
+  short sensitivePinVirtualResults();
   short sensitiveOwnerPinXResults();
   int exerciseWide(int value);
   short throwSecurityException();

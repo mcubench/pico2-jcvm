@@ -1,3 +1,27 @@
+# Active handoff — concrete PIN SensitiveResult calls — 2026-11-06 09:23 CET
+
+## Latest continuation — concrete OwnerPIN invocation covered
+
+Extended SensitiveResult capture to Java Card `OwnerPIN` calls dispatched by
+`invokevirtual`, in addition to the prior PIN/OwnerPINx `invokeinterface`
+path. The interpreted three-package fixture checks concrete
+`getTriesRemaining`, successful and failed `check`, and `isValidated`, then
+asserts those results after returning through SIO.
+
+Focused PIN/OwnerPINx/OwnerPIN VPCD passes; the full cross-AID regression passes
+34/34 with the rebuilt PC `symm_crypto` VM. ARM `current` and RISC-V `current`
+builds pass; the ARM image ends at `0x100D4AB8`, leaving 177,480 bytes. Python
+syntax and scoped CRLF-aware diff checks pass. No physical device was used.
+
+Source/test commit: pending; progress record is at the end of `progress.md`.
+
+Next: continue CTX-02 with RandomData, checksum, AEAD and key API result
+producers, then object-result GC rooting after ordinary locals are dropped.
+Interface and concrete OwnerPIN assertions are currently emulator-only.
+Preserve unrelated dirty files.
+
+---
+
 # Active handoff — PIN SensitiveResult through SIO — 2026-11-06 09:03 CET
 
 ## Latest continuation — interface-based PIN result propagation

@@ -89,6 +89,36 @@ Frame::SensitiveReturn pinSensitiveReturn(
   return Frame::SensitiveReturn::None;
 }
 
+Frame::SensitiveReturn ownerPinVirtualSensitiveReturn(
+    Context &context, const jc_cap_virtual_method_ref_info &method_ref) {
+  if (!FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID()) ||
+      !method_ref.class_ref.isExternalClassRef()) {
+    return Frame::SensitiveReturn::None;
+  }
+  const auto &external = method_ref.class_ref.external_classref;
+  if (external.class_token != 9) {
+    return Frame::SensitiveReturn::None;
+  }
+  const auto *package_info = Import_Handler(context.getCurrentPackage())
+                                .getPackageAID(external.package_token & 0x7F);
+  if (package_info == nullptr || package_info->AID_length != 7 ||
+      std::memcmp(package_info->AID, "\xA0\x00\x00\x00\x62\x01\x01", 7) != 0) {
+    return Frame::SensitiveReturn::None;
+  }
+  // JC305 OwnerPIN public method tokens: check=1, getTriesRemaining=2,
+  // getValidatedFlag=3, and isValidated=4.
+  switch (method_ref.token & 0x7F) {
+  case 2:
+    return Frame::SensitiveReturn::Short;
+  case 1:
+  case 3:
+  case 4:
+    return Frame::SensitiveReturn::Boolean;
+  default:
+    return Frame::SensitiveReturn::None;
+  }
+}
+
 // Descriptor access_flags use java.lang.reflect.Modifier bit values, unlike
 // the compact Class component flags used by JC_CAP_CLASS_ACC_INTERFACE.
 constexpr uint8_t JC_CAP_DESCRIPTOR_ACC_INTERFACE = 0x80;
@@ -454,9 +484,17 @@ void Bytecodes::bc_invokevirtual() {
   if (resolved_handler.getArgumentCount(target_method_offset) != nargs) {
     throw Exceptions::SecurityException;
   }
+  const auto sensitive_return =
+      ownerPinVirtualSensitiveReturn(context, virtual_method_ref_info);
+  if (sensitive_return != Frame::SensitiveReturn::None) {
+    context.resetSensitiveResult();
+  }
   // Calling the method and updating PC value
   method_handler.setPackage(target_package);
   method_handler.callVirtualMethod(target_method_offset);
+  if (sensitive_return != Frame::SensitiveReturn::None) {
+    stack.getCurrentFrame().setSensitiveReturn(sensitive_return);
+  }
 
   return;
 }

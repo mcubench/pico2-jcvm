@@ -867,8 +867,10 @@ source-based follow-ups, without a new physical reproduction in this review.
   `decrementTriesRemaining` are asserted in the service and after SIO by the
   caller. Focused and full VPCD coverage pass; PC `symm_crypto`, ARM `current`,
   and RISC-V `current` builds pass. No physical device was used.
-  Remaining: cover PIN methods called through concrete-class `invokevirtual`,
-  exercise random-data, checksum, AEAD and remaining key API results where
+  Concrete `OwnerPIN` `invokevirtual` calls for `getTriesRemaining`, `check`,
+  and `isValidated` are now also covered with interpreted service-side
+  assertions and SIO return. Both focused and full VPCD runs pass.
+  Remaining: exercise random-data, checksum, AEAD and remaining key API results where
   enabled, verify GC rooting of object results after ordinary locals are
   dropped through interpreted SIO, and repeat selected coverage on physical
   hardware when available.

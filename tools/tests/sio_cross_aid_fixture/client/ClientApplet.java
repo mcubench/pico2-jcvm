@@ -314,6 +314,8 @@ public final class ClientApplet extends Applet {
       result = ((Probe) shareable).sensitiveFailedKeyBuilderResult();
     } else if (buffer[1] == 0x36) {
       result = ((Probe) shareable).sensitivePinResults();
+    } else if (buffer[1] == 0x38) {
+      result = ((Probe) shareable).sensitivePinVirtualResults();
     } else if (buffer[1] == 0x37) {
       result = ((Probe) shareable).sensitiveOwnerPinXResults();
     } else if (buffer[1] == 0x16) {

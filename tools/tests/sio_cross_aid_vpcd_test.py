@@ -331,6 +331,8 @@ def main() -> int:
                 for command, expected, description in (
                     ("8036000000", "6A7C9000",
                      "PIN byte/boolean results across SIO"),
+                    ("8038000000", "6A829000",
+                     "OwnerPIN invokevirtual results across SIO"),
                     ("8037000000", "6A7F9000",
                      "OwnerPINx byte results across SIO"),
                 ):
@@ -534,6 +536,16 @@ def main() -> int:
                     "expected 6A7C9000"
                 )
             print("TEST:PASS PIN byte/boolean result assertions across SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8038000000"),
+                "OwnerPIN invokevirtual SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A829000"):
+                raise RuntimeError(
+                    f"OwnerPIN invokevirtual SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A829000"
+                )
+            print("TEST:PASS OwnerPIN invokevirtual byte/boolean result assertions across SIO")
             response = vpcd.exchange(
                 connection, bytes.fromhex("8037000000"),
                 "OwnerPINx SensitiveResult across SIO"
