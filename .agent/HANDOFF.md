@@ -13,6 +13,8 @@ regression passes 35/35, including foreign-reference, native array-copy,
 proxy deletion/reinstall, and reset cases.
 `./tools/test-transient-allocation-failures` passes in int-disabled and
 int-enabled configurations (five focused cases in each).
+`./tools/fixture-path --verify` confirms all 81 pinned fixtures, including the
+unchanged JCAlgTest 1.8.4 baseline and 48 API CAPs.
 
 Refreshed empty-card max_crypto ARM external-test image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,

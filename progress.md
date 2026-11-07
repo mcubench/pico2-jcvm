@@ -25089,3 +25089,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the JCSystem context guard and its VPCD positive/negative cases.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Test output from the wrapper; no separate log.
+
+## 2026-11-07 Verify pinned test fixture integrity 1 minute
+
+- Step/experiment: `fixture-manifest-integrity-check`
+- When: '2026-11-07 22:42 CET' - '2026-11-07 22:43 CET'
+- Change: Recorded the fixture integrity check in the session handoff before external testing.
+- Validation: `./tools/fixture-path --verify` passed: 81 files, unchanged JCAlgTest 1.8.4 fixture, and 48 Java Card API CAPs.
+- Result: Supplied acceptance inputs remain hash-valid; no fixtures were modified. Runtime metrics were not measured.
+- Decision: Use the pinned 1.8.4 CAP/client for future support acceptance.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Fixture manifest verification output; no separate log.
