@@ -21,8 +21,9 @@ physical test was run. The first full-suite attempt used the `current` profile
 and stopped at the fixture's Signature expectation; after rebuilding with
 `symm_crypto`, the full suite passed.
 
-Implementation and this handoff update are pending commit. Preserve the
-unrelated source/review changes in the worktree. Prior handoffs remain below.
+Implementation, tests, QKB and handoff are committed as `722cf6d7`; the
+progress SHA-resolution record follows separately. Preserve the unrelated
+source/review changes in the worktree. Prior handoffs remain below.
 
 # Current handoff — applet DELETE retained-root scan — 2026-11-07 02:02 CET
 

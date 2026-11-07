@@ -23681,3 +23681,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open; next add the dedicated persisted-alias APDU case and same-package DELETE APDU coverage.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T012537Z.log`, SHA-256 `df320b6ada9ef9f404af3743faed2de056dd61377b38e80ddaf5a2ebee521a30`; focused log `artifacts/logs/sio-cross-aid-vpcd-20261107T011931Z.log`.
+
+## 2026-11-07 Record persistent-alias guard commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-persistent-alias-guard-commit`
+- When: '2026-11-07 02:40 CET' - '2026-11-07 02:41 CET'
+- Change: Recorded the implementation commit SHA in the handoff and progress history.
+- Validation: No new run; all 22 persistent-inventory tests, registry tests, ARM/RISC-V builds, focused 2/2 VPCD DELETE and full 35/35 `symm_crypto` VPCD suite passed in the preceding step.
+- Result: Implementation, tests and continuity update are committed as `722cf6d7`.
+- Decision: Continue CTX-01 with a dedicated VPCD case for an unselected sibling's persistent alias and same-package DELETE APDU coverage.
+- Commit: `722cf6d7` — implementation/test/status; this SHA-resolution record is separate.
+- Artifacts/logs: Full VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T012537Z.log`, SHA-256 `df320b6ada9ef9f404af3743faed2de056dd61377b38e80ddaf5a2ebee521a30`.
