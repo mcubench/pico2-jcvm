@@ -24833,5 +24833,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build riscv --profile max_crypto` passed the VM-core/smoke target; the ARM wrapper passed and reported profile max_crypto with 159/162 capabilities and 62,132 bytes before storage. Empty-card packaging reported 3,854 firmware blocks and 4,096 erased storage blocks; `picotool info -a` identified RP2350 ARM Secure. No hardware flash or runtime serial test was performed.
 - Result: Current UF2 is 4,070,912 bytes, SHA-256 `7f750ca9f024c470ef9056e8aa38ce37cc83c45ef959f32ea296198f51109bb2`; release 0.1.1; CPLC source ID `FF558D0C`; firmware end `0x100F0D4C`.
 - Decision: This post-commit image supersedes the just-built pre-commit image in the prior record and is the current max_crypto external-test binary.
-- Commit: `<resolve in next progress entry>`
+- Commit: `00ea607b`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-07 Resolve external image refresh commit 1 minute
+
+- Step/experiment: `HMAC-01-post-commit-max-empty-card-refresh-commit-sha`
+- When: '2026-11-07 19:57 CET' - '2026-11-07 19:58 CET'
+- Change: Recorded the commit reference for the post-commit max_crypto empty-card image README and handoff refresh.
+- Validation: `git show --stat --oneline 00ea607b` confirms the scoped README, handoff, and progress files.
+- Result: Image refresh record is committed as `00ea607b`.
+- Decision: Hand off the current UF2 path and continue with the outstanding JCAlgTest HMAC acceptance diagnosis.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
