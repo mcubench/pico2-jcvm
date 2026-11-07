@@ -24078,3 +24078,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue remaining runtime review findings; RV-20261106-07 remains open pending hostile hierarchy regression and recovery tests.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Resolve superclass traversal SHA-record commit 1 minute
+
+- Step/experiment: `rv-20261107-bounded-superclass-traversals-sha-record`
+- When: '2026-11-07 05:58 CET' - '2026-11-07 05:59 CET'
+- Change: Resolved the progress-record commit SHA for RV-20261106-07's bounded traversal step.
+- Validation: No new run; validation remains as recorded in the implementation entry.
+- Result: Implementation commit `bcfa97ae`; SHA-resolution commit `51c94bfa`.
+- Decision: Continue remaining P1 work with the hierarchy cycle/deep-chain regression still open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
