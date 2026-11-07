@@ -18,6 +18,16 @@ measurements and image comparison are reviewed. No firmware was rebuilt or
 flashed for this documentation/harness step. Harness and workflow are committed
 as `f65c9f8e`; the progress SHA-resolution record follows separately.
 
+CTX-01 continuation: Oracle Java Card 3.0.5 removable-applet guidance confirms
+DELETE must fail when a target-owned object is referenced by an object owned by
+another applet. Thus the cold-start persistent-array blocker is consistent with
+the documented deletion rule while its stored child-object record remains; do
+not change the fail-closed guard based on the dropped-field experiment. The
+reclamation path is a separate PERSIST-01 task: `requestObjectDeletion()` is
+currently unsupported, and its safety acceptance remains open. This
+specification check is recorded in TODO/QKB; implementation work can continue
+on other offline PERSIST-01 gates.
+
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
 Cold-start VPCD now exercises persistent package-static aliases, a direct

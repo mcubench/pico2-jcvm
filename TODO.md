@@ -872,12 +872,14 @@ review.
   remains usable. A second cold-start case stores the target in a sibling-owned
   persistent `Object[]`; DELETE remains blocked until the array element itself
   is set to null, after which DELETE succeeds and the sibling remains usable.
-  Follow-up: the inventory currently scans serialized aliases in all active
-  sibling namespaces, including records whose containing persistent object may
-  no longer be reachable after its field is cleared. Determine whether DELETE
-  should block on such orphan records or whether a complete persistent-root
-  trace can safely distinguish live aliases. Keep fail-closed behavior until
-  root completeness and interrupted-reclamation safety are established.
+  Interpretation: Oracle's Java Card 3.0.5 [removable-applet guidance](https://docs.oracle.com/javacard/3.0.5/prognotes/JCPCL.pdf)
+  states that applet deletion fails when an object owned by the target applet is
+  referenced by an object owned by another applet. The persisted array element
+  remains such a cross-applet reference after its containing field is cleared;
+  this test does not establish that the serialized array object has been
+  reclaimed. Keep the fail-closed DELETE guard. Supporting reclamation of that
+  object requires the separate PERSIST-01 object-deletion safety gates; do not
+  ignore the alias to make DELETE succeed.
 
 ### CTX-02
 

@@ -23836,3 +23836,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Collect external Windows timing rows for normal and original images before closing HOST-02.
 - Commit: `f65c9f8e` — harness/docs/status; this SHA-resolution record is separate.
 - Artifacts/logs: No Windows measurement CSV exists yet.
+
+## 2026-11-07 Resolve persistent-array DELETE interpretation against JC 3.0.5 3 minutes
+
+- Step/experiment: `ctx-20261107-applet-delete-persistent-alias-spec-check`
+- When: '2026-11-07 03:41 CET' - '2026-11-07 03:44 CET'
+- Change: Checked the cold-start persistent-array finding against Oracle's Java Card 3.0.5 Programming Notes. Updated CTX-01/TODO and QKB to treat the extant serialized cross-applet object reference as a valid DELETE blocker and to place reclamation of the referenced object under PERSIST-01. Kept the fail-closed guard unchanged.
+- Validation: Read the official Oracle guide's “Writing Removable Applets” section (pp. 1-3), which lists cross-applet object references and references from package statics as applet deletion failure conditions. Confirmed current native implementation reports object deletion unsupported and throws `ILLEGAL_USE` from `requestObjectDeletion()`. Documentation diff check remains pending commit; no runtime code or tests changed.
+- Result: The dropped-array-field observation is not evidence of a false-positive guard; the serialized child object still contains the cross-applet edge. Safely reclaiming it depends on PERSIST-01's guarded object-deletion service.
+- Decision: Preserve DELETE fail-closed semantics and proceed with other PERSIST-01 acceptance work.
+- Commit: pending.
+- Artifacts/logs: Official reference: [Oracle Java Card 3.0.5 Programming Notes](https://docs.oracle.com/javacard/3.0.5/prognotes/JCPCL.pdf); APDU evidence in `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`.
