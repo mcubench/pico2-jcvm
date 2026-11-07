@@ -7,7 +7,8 @@ passed. The authorized USB helper granted three device nodes, but
 `pcsc_scan -r` returned no readers (exit 124 after the bounded 8-second scan).
 The VPCD GET DATA wrapper built its fixtures but did not reach reader-ready;
 it was stopped after making no progress. No GPPro `--info` query or physical
-flash was performed, so the REL-01 hardware acceptance remains open.
+flash was performed, so the REL-01 hardware acceptance remains open. Its
+validation record is committed as `bb14d126`.
 
 Max-crypto ARM empty-card image for external testing:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF8611E9.uf2`
