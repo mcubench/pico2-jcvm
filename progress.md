@@ -24968,3 +24968,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with the next open acceptance item; physical REL-01 GPPro verification still requires a PC/SC-visible Pico.
 - Commit: `de960d02`
 - Artifacts/logs: None.
+
+## 2026-11-07 Add README architecture picture 1 minute
+
+- Step/experiment: `README-architecture-picture`
+- When: '2026-11-07 22:03 CET' - '2026-11-07 22:04 CET'
+- Change: Added the supplied firmware architecture PNG after the text in README section 2, with descriptive alternative text; included the image in version control.
+- Validation: Python inspection passed: image has a PNG signature and its Markdown reference follows all section 2 text. `git diff --check -- README.md progress.md` passed. Firmware builds and hardware checks intentionally skipped for this documentation-only change.
+- Result: Section 2 displays the supplied architecture picture. Runtime metrics were not measured.
+- Decision: Requested documentation change complete.
+- Commit: `this README-architecture-picture commit; resolve with git log --grep="docs: add architecture picture to README"`
+- Artifacts/logs: `docs/pico2_jcvm_firmware_architecture_flat.png`

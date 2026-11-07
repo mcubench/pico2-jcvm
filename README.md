@@ -20,6 +20,8 @@ The firmware implements a functional **Java Card virtual machine** and **GlobalP
 
 The implementation is based on [CHOUPI, an open-source Java Card Virtual Machine](https://github.com/gavz/choupi), extended with Pico 2 hardware support, USB CCID transport, applet management, persistence, and native cryptography.
 
+![Pico 2 Java Card VM firmware architecture](docs/pico2_jcvm_firmware_architecture_flat.png)
+
 ## 3. Try it
 
 You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these downloads:
