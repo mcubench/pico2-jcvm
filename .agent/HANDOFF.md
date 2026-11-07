@@ -8964,3 +8964,24 @@ acceptance. Latest reader refresh granted three USB nodes but
 is available; do not claim physical validation.
 
 # Previous handoff — changed-version CAP replacement verified in VPCD — 2026-11-06 16:50 CET
+# Current handoff — persistent boolean arrays validated — 2026-11-07 12:06 CET
+
+RV-20261106-26 is implemented in `choupi/src/jc_handlers/flashmemory.cpp`.
+Persistent array decoding now validates the serialized length, reads ordinary
+boolean payloads at the correct offset without a transient clear-event byte,
+and allows the secure byte accessor to accept boolean arrays. Production
+handler tests cover zero/one/multiple elements, static-reference restoration,
+mutation and transaction abort, fresh-heap restore, and malformed records.
+
+`./tools/test-persistent-transaction` and its ASan/UBSan build pass with
+`TEST:SUMMARY fail=0`. ARM and RISC-V wrappers pass; RISC-V remains VM-core and
+smoke only. ARM image ends at `0x100D5A80`, leaving 173,440 bytes. The suite's
+first run exposed three fixture tag collisions, fixed by assigning unique tags.
+The final progress entry records the build warnings and sanitizer limitation.
+No physical test was performed.
+
+Implementation and progress are pending their own commit SHA record. Next:
+commit R26, then build a fresh max-crypto ARM empty-card UF2 for external
+testing, recording its path, size, and SHA-256. Preserve unrelated dirty files.
+
+# Previous current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET

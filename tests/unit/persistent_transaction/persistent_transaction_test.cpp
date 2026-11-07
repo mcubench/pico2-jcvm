@@ -106,6 +106,164 @@ bool enumerate_root_vector(jcvm::Heap::ReferenceVisitor visitor,
 
 int main() {
   {
+    using jcvm::FlashMemory_Handler;
+    jcvm::Heap heap(7);
+    const auto empty_tag = make_tag(0xd0);
+    const auto empty_reference =
+        heap.addArray(0, jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN);
+    FlashMemory_Handler::setPersistentField_Array(
+        empty_tag, *heap.getArray(empty_reference), heap);
+    bool empty_array_restored = false;
+    try {
+      jcvm::Heap restored_heap(7);
+      const auto empty =
+          FlashMemory_Handler::getPersistentField_Array(empty_tag,
+                                                        restored_heap);
+      empty_array_restored = empty->getType() ==
+                                 jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN &&
+                             !empty->isTransientArray() && empty->size() == 0;
+    } catch (...) {
+    }
+    expect(empty_array_restored,
+           "persistent_zero_length_boolean_array_restores_without_clear_event");
+
+    const auto one_tag = make_tag(0xd1);
+    const auto one_reference =
+        heap.addArray(1, jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN);
+    auto one = heap.getArray(one_reference);
+    one->setByteEntry(0, 1);
+    FlashMemory_Handler::setPersistentField_Array(one_tag, *one, heap);
+    bool one_element_restored = false;
+    try {
+      jcvm::Heap one_heap(7);
+      const auto restored_one =
+          FlashMemory_Handler::getPersistentField_Array(one_tag, one_heap);
+      one_element_restored = restored_one->size() == 1 &&
+                             restored_one->getByteEntry(0) == 1;
+    } catch (...) {
+    }
+    expect(one_element_restored,
+           "persistent_one_element_boolean_array_restores_value");
+
+    const auto values_tag = make_tag(0xd2);
+    const auto values_reference =
+        heap.addArray(3, jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN);
+    auto values = heap.getArray(values_reference);
+    values->setByteEntry(0, 0);
+    values->setByteEntry(1, 1);
+    values->setByteEntry(2, 0);
+    FlashMemory_Handler::setPersistentField_Array(values_tag, *values, heap);
+
+    jcvm::Heap restored_heap(7);
+    auto restored =
+        FlashMemory_Handler::getPersistentField_Array(values_tag,
+                                                      restored_heap);
+    bool initial_values_read = false;
+    try {
+      initial_values_read =
+          restored->getByteEntry(0) == 0 && restored->getByteEntry(1) == 1 &&
+          restored->getByteEntry(2) == 0;
+    } catch (...) {
+    }
+    expect(initial_values_read,
+           "persistent_boolean_array_reads_first_middle_and_last_values");
+
+    const bool transaction_started =
+        FlashMemory_Handler::beginPersistentWriteTransaction();
+    bool mutation_visible = false;
+    bool transaction_rolled_back = false;
+    try {
+      restored->setByteEntry(0, 1);
+      mutation_visible = restored->getByteEntry(0) == 1;
+      transaction_rolled_back =
+          FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+          restored->getByteEntry(0) == 0 && restored->getByteEntry(1) == 1 &&
+          restored->getByteEntry(2) == 0;
+    } catch (...) {
+      if (FlashMemory_Handler::persistentWriteTransactionActive()) {
+        (void)FlashMemory_Handler::rollbackPersistentWriteTransaction();
+      }
+    }
+    expect(transaction_started && mutation_visible && transaction_rolled_back,
+           "persistent_boolean_array_mutation_abort_restores_prior_contents");
+
+    jcvm::Heap fresh_heap(7);
+    const auto cold_restored =
+        FlashMemory_Handler::getPersistentField_Array(values_tag, fresh_heap);
+    bool cold_restore_preserves_values = false;
+    try {
+      cold_restore_preserves_values =
+          cold_restored->getType() ==
+                  jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN &&
+              cold_restored->size() == 3 &&
+              cold_restored->getByteEntry(0) == 0 &&
+              cold_restored->getByteEntry(1) == 1 &&
+              cold_restored->getByteEntry(2) == 0;
+    } catch (...) {
+    }
+    expect(cold_restore_preserves_values,
+           "persistent_boolean_array_fresh_heap_restore_preserves_values");
+
+    const auto static_tag = FlashMemory_Handler::getStaticFieldTag(0x72, 0x73);
+    const auto static_reference =
+        heap.addArray(2, jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN);
+    auto static_values = heap.getArray(static_reference);
+    static_values->setByteEntry(0, 1);
+    static_values->setByteEntry(1, 0);
+    FlashMemory_Handler::setPersistentField_Reference(
+        static_tag, static_reference, heap);
+    bool static_array_restored = false;
+    try {
+      jcvm::Heap static_heap(7);
+      const auto restored_reference =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              static_tag, static_heap);
+      const auto restored_static = static_heap.getArray(restored_reference);
+      static_array_restored =
+          restored_static->getType() ==
+                  jcvm::jc_array_type::JAVA_ARRAY_T_BOOLEAN &&
+              restored_static->size() == 2 &&
+              restored_static->getByteEntry(0) == 1 &&
+              restored_static->getByteEntry(1) == 0;
+    } catch (...) {
+    }
+    expect(static_array_restored,
+           "persistent_static_boolean_array_reference_restores_initialized_values");
+
+    const auto truncated_tag = make_tag(0xd3);
+    persistent_transaction_test::seed(
+        truncated_tag.value, truncated_tag.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BOOLEAN),
+         0, 2, 1});
+    bool truncated_rejected = false;
+    try {
+      jcvm::Heap malformed_heap(7);
+      (void)FlashMemory_Handler::getPersistentField_Array(truncated_tag,
+                                                          malformed_heap);
+    } catch (jcvm::Exceptions exception) {
+      truncated_rejected = exception == jcvm::Exceptions::SecurityException;
+    }
+    expect(truncated_rejected,
+           "truncated_persistent_boolean_array_record_is_rejected");
+
+    const auto extra_tag = make_tag(0xd4);
+    persistent_transaction_test::seed(
+        extra_tag.value, extra_tag.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BOOLEAN),
+         0, 0, 0});
+    bool extra_byte_rejected = false;
+    try {
+      jcvm::Heap malformed_heap(7);
+      (void)FlashMemory_Handler::getPersistentField_Array(extra_tag,
+                                                          malformed_heap);
+    } catch (jcvm::Exceptions exception) {
+      extra_byte_rejected = exception == jcvm::Exceptions::SecurityException;
+    }
+    expect(extra_byte_rejected,
+           "persistent_boolean_array_rejects_spurious_clear_event_byte");
+  }
+
+  {
     persistent_transaction_test::instance_field_count = 4;
     jcvm::Heap heap(7);
     const auto reference = heap.addInstance(jcvm::JC_Instance(heap, 2, 3));

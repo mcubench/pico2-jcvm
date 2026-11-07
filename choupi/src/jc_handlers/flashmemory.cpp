@@ -1786,6 +1786,9 @@ void FlashMemory_Handler::setPersistentField_Int(const fs::Tag &tag,
 std::shared_ptr<JC_Array>
 FlashMemory_Handler::getPersistentField_Array(const fs::Tag &tag, Heap &heap) {
   auto [length, array_flash] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
+  if (array_flash == nullptr || length < 3) {
+    throw Exceptions::SecurityException;
+  }
 
   uint16_t pos = 0;
 
@@ -1802,7 +1805,10 @@ FlashMemory_Handler::getPersistentField_Array(const fs::Tag &tag, Heap &heap) {
   case FIELD_TYPE_ARRAY_BOOLEAN: {
     array_type = JAVA_ARRAY_T_BOOLEAN;
     isTransient = false;
-    event = static_cast<ClearEvent>(array_flash[pos]);
+    // Persistent arrays have no clear-event byte; their payload starts at
+    // offset three. In particular, do not read past a zero-length array's
+    // serialized header.
+    event = ClearEvent::None;
     break;
   }
 
@@ -1877,6 +1883,36 @@ FlashMemory_Handler::getPersistentField_Array(const fs::Tag &tag, Heap &heap) {
     throw Exceptions::SecurityException;
   }
 
+  uint32_t expected_length = 3;
+  if (isTransient) {
+    ++expected_length;
+  }
+  if (array_type == JAVA_ARRAY_T_REFERENCE) {
+    expected_length += sizeof(jc_cp_offset_t);
+  } else if (!isTransient) {
+    uint32_t element_width = 0;
+    switch (array_type) {
+    case JAVA_ARRAY_T_BOOLEAN:
+    case JAVA_ARRAY_T_BYTE:
+      element_width = sizeof(jbyte_t);
+      break;
+    case JAVA_ARRAY_T_SHORT:
+      element_width = sizeof(jshort_t);
+      break;
+#ifdef JCVM_INT_SUPPORTED
+    case JAVA_ARRAY_T_INT:
+      element_width = sizeof(jint_t);
+      break;
+#endif /* JCVM_INT_SUPPORTED */
+    case JAVA_ARRAY_T_REFERENCE:
+      break;
+    }
+    expected_length += static_cast<uint32_t>(size) * element_width;
+  }
+  if (length != expected_length) {
+    throw Exceptions::SecurityException;
+  }
+
   return std::make_shared<JC_Array>(heap, array_type, reference_type, tag,
                                     isTransient, event, size);
 }
@@ -1903,7 +1939,9 @@ FlashMemory_Handler::getPersistentField_Array_Byte(const fs::Tag &tag,
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
 
   if (array->isTransientArray() ||
-      array->getType() != JAVA_ARRAY_T_BYTE || array->size() <= index) {
+      (array->getType() != JAVA_ARRAY_T_BYTE &&
+       array->getType() != JAVA_ARRAY_T_BOOLEAN) ||
+      array->size() <= index) {
     throw Exceptions::SecurityException;
   }
 

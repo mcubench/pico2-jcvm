@@ -24416,3 +24416,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with RV-20261106-11 global-array lifetime/reclamation.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+## 2026-11-07 Fix persistent boolean array restore 10 minutes
+
+- Step/experiment: `RV-20261106-26-persistent-boolean-reads`
+- When: '2026-11-07 11:56 CET' - '2026-11-07 12:06 CET'
+- Change: Fixed persistent boolean array reconstruction to use the serialized header and payload without reading a transient clear-event byte. Added exact record-length validation for array types and allowed the secure persistent byte accessor to read boolean elements. Added production-handler tests for empty, one-element and multi-element arrays, static reference restoration, mutation/abort, fresh-heap restore, and malformed/truncated records. Moved fixtures to unique tags after initial runs exposed collisions with existing capacity tests.
+- Validation: `./tools/test-persistent-transaction` PASS (`TEST:SUMMARY fail=0`); ASan/UBSan build and run PASS (`ASAN_OPTIONS=detect_leaks=0`, `TEST:SUMMARY fail=0`); `./tools/build arm` PASS (firmware end `0x100D5A80`, 173,440 bytes remaining); `./tools/build riscv` PASS (VM core/smoke only). Build outputs contain existing CHOUPI packed-member warnings, SDK converter warnings, and Rust warnings. LeakSanitizer was disabled because it reports unsupported ptrace operation in this VM. No physical card test was performed.
+- Result: All new boolean restore and transaction cases pass, along with the existing persistence transaction suite. The first run's three failures were caused by test tag collisions; the unique-tag rerun passes completely.
+- Decision: Mark R26's offline implementation and acceptance complete; hardware acceptance was not requested for this item. Next build the max-crypto ARM empty-card image for external testing.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Unit output was not archived; generated builds are under `build/`.
