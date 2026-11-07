@@ -1,3 +1,22 @@
+# Current handoff — R24 persistence retry regression verified — 2026-11-07 13:41 CET
+
+RV-20261106-24 is closed with production-handler tests. Fault injection covers
+failure before the first object header, between serialized child fields, and
+at root-alias publication. Each case retries the same in-memory object, checks
+that the root alias points to its stable body tag, and confirms field values,
+canonical repeated restore, and restored body identity. A transaction-abort
+case confirms the staged root/body are removed, the same preexisting live
+object can be retried, and a fresh heap restores the same durable identity.
+
+`./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`), and the
+ASan/UBSan build/run passes with `ASAN_OPTIONS=detect_leaks=0`. Only test and
+filesystem-stub code changed; no architecture rebuild or hardware run was
+needed. R24 is marked complete in `todo.md`.
+
+Next backlog priority is HOST-02 Windows reconnect timing. Its Windows-only
+measurements remain externally dependent; then continue CTX-01/03 SIO context
+and firewall implementation. Preserve all other dirty worktree changes.
+
 # Current handoff — REL-01 build check and max-crypto image — 2026-11-07 13:33 CET
 
 REL-01 source behavior is already committed as `971272f3`: CPLC release level

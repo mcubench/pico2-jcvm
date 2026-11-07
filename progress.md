@@ -24569,3 +24569,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Deliver the generated empty-card UF2; physical GPPro acceptance remains open until a physical Pico reader is available.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Verify persistence first-write failure and abort retries 7 minutes
+
+- Step/experiment: `RV-20261106-24-first-persistence-retry`
+- When: '2026-11-07 13:34 CET' - '2026-11-07 13:41 CET'
+- Change: Added production-handler fault-injection coverage for first ordinary-object persistence and promotion rollback. The filesystem stub now fails writes after a configurable number of successful writes and captures the failed tag, allowing assertions that each requested publication boundary was reached. Updated R24 status and handoff.
+- Validation: `./tools/test-persistent-transaction` PASS (`TEST:SUMMARY fail=0`); `./tools/env cmake --build build/tests/unit/persistent-transaction-asan --target persistent_transaction_test --parallel 2` PASS; `ASAN_OPTIONS=detect_leaks=0 ./build/tests/unit/persistent-transaction-asan/persistent_transaction_test` PASS (`TEST:SUMMARY fail=0`). Fault points are before the object header, between two child-field records, and at root-alias publication. Tests verify original live values, same-object retry, root-to-body tag identity, canonical repeated fresh-heap restore, and abort cleanup of root/body before retry. No ARM/RISC-V build or physical test was needed because only unit-test/stub code changed.
+- Result: All four R24 retry cases pass; the already-implemented R22 runtime correctly clears an unpublished first-persistence tag and detects/reconciles a removed body after transaction abort. During test development, an assertion initially checked root absence after retry had already republished it; the check was moved to immediately after rollback, and all final runs pass.
+- Decision: Close R24. Continue with the next actionable priority; HOST-02 requires Windows reconnect measurements, then CTX-01/03 SIO context/firewall work.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Unit output not archived; sanitizer executable under `build/tests/unit/persistent-transaction-asan/`.

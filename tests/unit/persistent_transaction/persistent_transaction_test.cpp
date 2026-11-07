@@ -22,6 +22,8 @@ extern uint16_t instance_field_count;
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
 void fail_one_write();
+void fail_write_after(unsigned int successful_writes);
+std::vector<uint8_t> failed_write_tag();
 void fail_one_read();
 void fail_one_sync();
 unsigned int sync_count_value();
@@ -739,6 +741,163 @@ int main() {
            "same_value_instance_and_static_assignments_preserve_identity_after_restore");
     expect(mutation_after_restore,
            "same_value_assignment_allows_mutation_after_fresh_restore");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+
+  {
+    persistent_transaction_test::instance_field_count = 2;
+    const auto verify_failed_first_publication =
+        [](uint8_t root_index, unsigned int successful_writes,
+           uint8_t expected_failure_stage, const char *test_name) {
+          jcvm::Heap heap(7);
+          const auto root = make_tag(root_index);
+          const auto reference =
+              heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+          auto instance = heap.getInstance(reference);
+          instance->setField_Short(0, 0x31);
+          instance->setField_Short(1, 0x42);
+
+          persistent_transaction_test::fail_write_after(successful_writes);
+          bool failed = false;
+          try {
+            jcvm::FlashMemory_Handler::setPersistentField_Reference(
+                root, reference, heap);
+          } catch (jcvm::Exceptions) {
+            failed = true;
+          }
+          const auto failed_tag =
+              persistent_transaction_test::failed_write_tag();
+          bool failure_stage_matches = false;
+          if (expected_failure_stage == 0) {
+            failure_stage_matches =
+                failed_tag.size() == static_cast<std::size_t>(root.len) + 6 &&
+                failed_tag[root.len] == 0xff &&
+                failed_tag[root.len + 1] == 0xfe;
+          } else if (expected_failure_stage == 1) {
+            failure_stage_matches =
+                failed_tag.size() == static_cast<std::size_t>(root.len) + 8 &&
+                failed_tag[failed_tag.size() - 2] == 1 &&
+                failed_tag[failed_tag.size() - 1] == 1;
+          } else {
+            failure_stage_matches =
+                failed_tag.size() == root.len &&
+                std::memcmp(failed_tag.data(), root.value, root.len) == 0;
+          }
+          const bool unpublished_and_retryable =
+              failed && failure_stage_matches &&
+              persistent_transaction_test::read(root.value, root.len).empty() &&
+              !instance->hasPersistentTag() &&
+              instance->getField_Short(0) == 0x31 &&
+              instance->getField_Short(1) == 0x42;
+
+          bool retry_restored = false;
+          try {
+            jcvm::FlashMemory_Handler::setPersistentField_Reference(
+                root, reference, heap);
+            const auto live_body_tag = instance->getPersistentTag();
+            const auto root_record = persistent_transaction_test::read(
+                root.value, root.len);
+            const bool root_targets_live_body =
+                root_record.size() ==
+                    static_cast<std::size_t>(live_body_tag.len) + 2 &&
+                root_record[0] == 0xfe &&
+                root_record[1] == live_body_tag.len &&
+                std::memcmp(root_record.data() + 2, live_body_tag.value,
+                            live_body_tag.len) == 0;
+            jcvm::Heap restored_heap(7);
+            const auto restored_reference =
+                jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                    root, restored_heap);
+            const auto restored_reference_again =
+                jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                    root, restored_heap);
+            const auto restored = restored_heap.getInstance(restored_reference);
+            retry_restored = restored->getField_Short(0) == 0x31 &&
+                             restored->getField_Short(1) == 0x42 &&
+                             root_targets_live_body &&
+                             restored_reference.compact() ==
+                                 restored_reference_again.compact() &&
+                             restored->getPersistentTag().len ==
+                                 live_body_tag.len &&
+                             std::memcmp(restored->getPersistentTag().value,
+                                         live_body_tag.value,
+                                         live_body_tag.len) == 0;
+          } catch (...) {
+            retry_restored = false;
+          }
+          expect(unpublished_and_retryable && retry_restored, test_name);
+        };
+
+    verify_failed_first_publication(
+        0xe8, 1, 0,
+        "first_object_publication_header_failure_retries_same_live_object");
+    verify_failed_first_publication(
+        0xe9, 3, 1,
+        "first_object_publication_child_failure_retries_same_live_object");
+    verify_failed_first_publication(
+        0xea, 4, 2,
+        "first_object_publication_root_failure_retries_same_live_object");
+
+    jcvm::Heap heap(7);
+    const auto root = make_tag(0xeb);
+    const auto reference = heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    auto instance = heap.getInstance(reference);
+    instance->setField_Short(0, 0x53);
+    instance->setField_Short(1, 0x64);
+    const bool began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(root, reference,
+                                                            heap);
+    const auto staged_root =
+        persistent_transaction_test::read(root.value, root.len);
+    const bool rolled_back =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool root_rolled_back =
+        persistent_transaction_test::read(root.value, root.len).empty();
+    const auto rolled_back_body_tag = instance->getPersistentTag();
+    const bool body_rolled_back =
+        persistent_transaction_test::read(rolled_back_body_tag.value,
+                                          rolled_back_body_tag.len)
+            .empty();
+    bool abort_retry_restored = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(root, reference,
+                                                              heap);
+      const auto live_body_tag = instance->getPersistentTag();
+      const auto root_record =
+          persistent_transaction_test::read(root.value, root.len);
+      const bool root_targets_live_body =
+          root_record.size() ==
+              static_cast<std::size_t>(live_body_tag.len) + 2 &&
+          root_record[0] == 0xfe &&
+          root_record[1] == live_body_tag.len &&
+          std::memcmp(root_record.data() + 2, live_body_tag.value,
+                      live_body_tag.len) == 0;
+      jcvm::Heap restored_heap(7);
+      const auto restored_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root, restored_heap);
+      const auto restored_reference_again =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root, restored_heap);
+      const auto restored = restored_heap.getInstance(restored_reference);
+      abort_retry_restored = restored->getField_Short(0) == 0x53 &&
+                             restored->getField_Short(1) == 0x64 &&
+                             root_targets_live_body &&
+                             restored_reference.compact() ==
+                                 restored_reference_again.compact() &&
+                             restored->getPersistentTag().len ==
+                                 live_body_tag.len &&
+                             std::memcmp(restored->getPersistentTag().value,
+                                         live_body_tag.value,
+                                         live_body_tag.len) == 0;
+    } catch (...) {
+      abort_retry_restored = false;
+    }
+    expect(began && staged_root.size() > 0 && staged_root[0] == 0xfe &&
+               rolled_back && root_rolled_back && body_rolled_back &&
+               abort_retry_restored,
+           "first_object_promotion_abort_retries_same_preexisting_object");
     persistent_transaction_test::instance_field_count = 0;
   }
 

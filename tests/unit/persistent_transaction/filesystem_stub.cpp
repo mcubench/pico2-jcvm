@@ -100,6 +100,8 @@ extern "C" const uint8_t *choupi_cap_store_data_for_package(
 namespace {
 std::map<std::string, std::vector<uint8_t>> files;
 bool fail_next_write = false;
+int fail_write_after_count = -1;
+std::vector<uint8_t> last_failed_write_tag;
 bool fail_next_read = false;
 bool fail_next_sync = false;
 bool stall_after_one_cursor_result = false;
@@ -113,6 +115,23 @@ unsigned int array_deallocation_start = 0;
 
 std::string key_for(const uint8_t *tag, const uint8_t length) {
   return std::string(reinterpret_cast<const char *>(tag), length);
+}
+
+bool should_fail_write(const uint8_t *tag, uint8_t tag_length) {
+  bool should_fail = false;
+  if (fail_next_write) {
+    fail_next_write = false;
+    should_fail = true;
+  } else if (fail_write_after_count == 0) {
+    fail_write_after_count = -1;
+    should_fail = true;
+  } else if (fail_write_after_count > 0) {
+    --fail_write_after_count;
+  }
+  if (should_fail && tag != nullptr && tag_length != 0) {
+    last_failed_write_tag.assign(tag, tag + tag_length);
+  }
+  return should_fail;
 }
 } // namespace
 
@@ -163,10 +182,7 @@ extern "C" uint8_t fs_read_inplace(const uint8_t *tag,
 
 extern "C" uint8_t fs_write(const uint8_t *tag, const uint8_t tag_length,
                             const uint8_t *data, const uint32_t length) {
-  if (fail_next_write) {
-    fail_next_write = false;
-    return 1;
-  }
+  if (should_fail_write(tag, tag_length)) return 1;
   if (tag == nullptr || tag_length == 0 || data == nullptr) return 3;
   files[key_for(tag, tag_length)] = std::vector<uint8_t>(data, data + length);
   return 0;
@@ -231,10 +247,7 @@ extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
                                    const uint8_t tag_length,
                                    const uint32_t offset,
                                    const uint8_t value) {
-  if (fail_next_write) {
-    fail_next_write = false;
-    return 1;
-  }
+  if (should_fail_write(tag, tag_length)) return 1;
   const auto found = files.find(key_for(tag, tag_length));
   if (found == files.end() || offset >= found->second.size()) return 2;
   found->second[offset] = value;
@@ -305,7 +318,17 @@ void seed(const uint8_t *tag, const uint8_t tag_length,
   files[key_for(tag, tag_length)] = std::move(value);
 }
 
-void fail_one_write() { fail_next_write = true; }
+void fail_one_write() {
+  fail_write_after_count = -1;
+  last_failed_write_tag.clear();
+  fail_next_write = true;
+}
+void fail_write_after(unsigned int successful_writes) {
+  fail_next_write = false;
+  last_failed_write_tag.clear();
+  fail_write_after_count = static_cast<int>(successful_writes);
+}
+std::vector<uint8_t> failed_write_tag() { return last_failed_write_tag; }
 void fail_one_read() { fail_next_read = true; }
 void fail_one_sync() { fail_next_sync = true; }
 unsigned int sync_count_value() { return sync_count; }
