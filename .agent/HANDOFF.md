@@ -21,6 +21,9 @@ is `0x100EDDF8`, leaving 74,248 bytes. This artifact is ignored by Git and was
 built from HEAD `a77dd3fe` plus preserved dirty worktree changes (dirty marker
 `FF`). No token was flashed.
 
+The REL-01 revalidation and external image record are committed as `6f68396a`.
+The image itself remains outside Git per the artifact ignore rules.
+
 Next: when a physical Pico is available in CCID mode, query GPPro `--info` and
 verify CPLC release/source ID. Continue with the next actionable implementation
 item meanwhile; preserve the unrelated dirty worktree files.
