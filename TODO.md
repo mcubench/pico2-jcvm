@@ -383,6 +383,9 @@ review.
   Remaining: physical multi-owner inventory and actual per-record power-loss /
   interrupted-reclaimer acceptance, including restart and retry. Retain stable
   Java Card handles and extend root audits if contexts/native owners change.
+  The current-worktree `./tools/test-rp2350-fs-overlay` rerun passed on
+  2026-11-07, including `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`.
+  This remains a host-model test, not a physical flash power-cut experiment.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.

@@ -23859,6 +23859,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `efeb94c9`.
 - Artifacts/logs: Commands emitted output directly; no separate log was captured.
 
+## 2026-11-07 Rerun RP2350 overlay power-cut and reclamation recovery tests 2 minutes
+
+- Step/experiment: `persist-01-20261107-rp2350-overlay-reclaimer-cuts`
+- When: '2026-11-07 03:47 CET' - '2026-11-07 03:49 CET'
+- Change: Built and ran the production-filesystem RP2350 overlay host-model suite to revalidate persistent reclamation recovery after staged power cuts.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The named `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry` case passed, as did lifecycle recovery and filesystem snapshot suites. The output includes expected injected `FAULT FS snapshot unavailable; preserve flash for recovery` during a negative test, followed by its `TEST:PASS` assertion.
+- Result: Simulated 1,000-cut reclaimer recovery leaves either the old candidate set or a clean state while preserving the live root, then retry completes. This is host-model evidence only.
+- Decision: Retain physical multi-owner/reclaimer power-loss acceptance; do not enable automatic object reclamation yet.
+- Commit: pending.
+- Artifacts/logs: Test output was emitted on stdout; no separate log captured.
+
 ## 2026-11-07 Record PERSIST-01 offline validation commit resolution 1 minute
 
 - Step/experiment: `persist-01-20261107-offline-inventory-reclaimer-rerun-commit`

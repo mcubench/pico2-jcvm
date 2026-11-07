@@ -39,6 +39,11 @@ three USB nodes but no Pico PC/SC reader; keep object deletion disabled.
 The evidence update is committed as `efeb94c9`; its progress SHA-resolution
 record follows separately.
 
+The current-worktree RP2350 filesystem overlay suite also passes. Its named
+`persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
+case models 1,000 snapshot cuts and succeeds. This strengthens simulated
+recovery evidence but does not replace physical flash interruption testing.
+
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
 Cold-start VPCD now exercises persistent package-static aliases, a direct
