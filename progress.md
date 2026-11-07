@@ -25023,3 +25023,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the guard; continue with the next actionable offline priority.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261107T211937Z.log`.
+
+## 2026-11-07 Cover deselect-transient allocation during same-CAP SIO 2 minutes
+
+- Step/experiment: `JCSystem-CLEAR_ON_DESELECT-same-CAP-SIO-allowance`
+- When: '2026-11-07 22:20 CET' - '2026-11-07 22:22 CET'
+- Change: Strengthened the same-CAP test writer so its shareable SIO method allocates and validates a CLEAR_ON_DESELECT byte array; updated CTX-03 and the handoff to state this exact coverage.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=6 fail=0`). The reader's SIO call succeeded with the new transient allocation, and shared static values remained visible. Fixture conversion emitted only the existing int-support warning; no firmware source changed, so architecture builds were not repeated.
+- Result: Confirms the guard permits a sibling SIO service in the same CAP context. Runtime performance was not measured; no physical test was run.
+- Decision: Keep both the cross-CAP rejection and same-CAP allowance regressions.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261107T212140Z.log`.

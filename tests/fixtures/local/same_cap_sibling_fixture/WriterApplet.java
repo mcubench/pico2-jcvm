@@ -4,7 +4,9 @@ import javacard.framework.APDU;
 import javacard.framework.AID;
 import javacard.framework.Applet;
 import javacard.framework.ISOException;
+import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
+import javacard.framework.SystemException;
 
 public final class WriterApplet extends Applet implements Probe {
   private static final byte[] READER_AID = {
@@ -29,7 +31,14 @@ public final class WriterApplet extends Applet implements Probe {
   }
 
   public boolean isShared(byte[] candidate) {
-    return candidate == SharedState.bytes;
+    try {
+      byte[] transientBytes = JCSystem.makeTransientByteArray(
+          (short) 1, JCSystem.CLEAR_ON_DESELECT);
+      return candidate == SharedState.bytes && transientBytes != null &&
+          JCSystem.isTransient(transientBytes) == JCSystem.CLEAR_ON_DESELECT;
+    } catch (SystemException rejected) {
+      return false;
+    }
   }
 
   public void process(APDU apdu) {
