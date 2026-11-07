@@ -145,15 +145,22 @@ Class_Handler::docheckcast(const std::pair<Package, const uint8_t *> jtype_in,
         return TRUE;
       }
 
-      while (!jclass_in.second->isObjectClass()) {
+      for (uint16_t depth = 0; depth < 256; ++depth) {
+        if (jclass_in.second == nullptr) return FALSE;
+        // ROM-mask package aliases may refer to the same canonical class
+        // record through different package IDs; class identity is the record
+        // address, matching the existing catch/cast semantics.
         if (jclass_in.second == jclass_out) {
           return TRUE;
         }
+        if (jclass_in.second->isObjectClass()) return FALSE;
 
         jclass_in = ConstantPool_Handler(jclass_in.first)
                         .classref2class(jclass_in.second->super_class_ref);
       }
-
+      // A cyclic or excessively deep hierarchy is not assignable through a
+      // cast; never let hostile class metadata keep the interpreter in one
+      // handler indefinitely.
       return FALSE;
     }
     // case 1.2: type_out is an interface type
@@ -388,19 +395,18 @@ jbool_t Class_Handler::checkInterfaceCast(
  */
 std::pair<Package, const jc_cap_class_info *>
 Class_Handler::getObjectClassFromAnObjectRef(const jc_cap_class_ref classref)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
 {
   ConstantPool_Handler cp_handler(this->package);
   auto token = cp_handler.classref2class(classref);
 
-  while (!(token.second->isObjectClass())) {
+  for (uint16_t depth = 0; depth < 256; ++depth) {
+    if (token.second == nullptr) throw Exceptions::SecurityException;
+    if (token.second->isObjectClass()) return token;
     cp_handler.setPackage(token.first);
     token = cp_handler.classref2class(token.second->super_class_ref);
   }
 
-  return token;
+  throw Exceptions::SecurityException;
 }
 
 /**
@@ -700,9 +706,6 @@ Class_Handler::getImplementedInterfaceMethodOffset(
  */
 const uint16_t
 Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
 {
 #ifndef PC_VERSION
   choupi_install_stage(5);
@@ -710,13 +713,15 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
   auto package = this->package;
   auto claz = ConstantPool_Handler(package).getClassFromClassIndex(claz_index);
 
-  uint16_t instance_size = 0;
+  uint32_t instance_size = 0;
 
-  while (true) {
+  for (uint16_t depth = 0; depth < 256; ++depth) {
+    if (claz == nullptr) throw Exceptions::SecurityException;
     ConstantPool_Handler cp_handler(package);
     instance_size += (claz->declared_instance_size & 0x00FF);
+    if (instance_size > UINT16_MAX) throw Exceptions::SecurityException;
     if (claz->isObjectClass()) {
-      break;
+      return static_cast<uint16_t>(instance_size);
     }
 #ifndef PC_VERSION
     choupi_install_stage(6);
@@ -730,7 +735,7 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
     claz = pair.second;
   }
 
-  return instance_size;
+  throw Exceptions::SecurityException;
 }
 
 } // namespace jcvm

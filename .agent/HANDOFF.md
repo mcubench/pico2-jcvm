@@ -1,3 +1,28 @@
+# Current handoff — bound superclass traversal in VM runtime — 2026-11-07 05:57 CET
+
+RV-20261106-07 has a partial runtime hardening change in
+`choupi/src/jc_handlers/jc_class.cpp`, `jc_class.hpp`,
+`choupi/src/jc_bytecodes/bc_object_field.cpp`, and `bc_invoke.cpp`. The
+class-to-class cast, Object-class lookup, instance-field sizing, inherited
+field-token flattening and shareable-interface superclass walk now stop after
+256 links and fail closed. Field-size accumulation and flattened tokens are
+checked against `UINT16_MAX`.
+
+Validation passed: PC `max_crypto` build; isolated SIO Signature test; full
+cross-AID VPCD suite (`TEST:SUMMARY pass=35 fail=0`); ARM current build; RISC-V
+current build; and scoped whitespace check. The first Signature run failed
+because `build/choupi-pc/choupi` was stale; rebuilding through
+`./tools/build-pc --profile max_crypto` made the isolated case and complete
+suite pass. Build output still has existing packed-CAP-member alignment
+warnings. No Pico was flashed, and no malformed superclass-cycle CAP test was
+run.
+
+RV-20261106-07 remains open: there is no load-time superclass-cycle validation,
+and no hostile self/two-class-cycle or deep-chain regression proving bounded
+recovery for allocation, casts, fields, method resolution and manager use.
+Implementation commit SHA is pending; see the newest `progress.md` record.
+Next: continue remaining P1 findings while preserving unrelated changes.
+
 # Current handoff — validate instance field receiver classes — 2026-11-07 05:06 CET
 
 RV-20261106-06 now has a native runtime assignability guard in

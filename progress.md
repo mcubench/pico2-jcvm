@@ -24056,3 +24056,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue P1 fixes; retain RV-20261106-06 as open until negative CAP and access-control cases are covered.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Bound superclass traversals in runtime handlers 40 minutes
+
+- Step/experiment: `rv-20261107-bounded-superclass-traversals`
+- When: '2026-11-07 05:07 CET' - '2026-11-07 05:57 CET'
+- Change: Replaced unbounded superclass walks in class casting, Object-class lookup, instance field sizing and inherited-field token flattening with 256-level fail-closed traversal. Instance field sizing and token adjustment now detect 16-bit overflow. Also bounded the shareable-interface superclass walk so all audited runtime paths terminate on cyclic/deep metadata.
+- Validation: `./tools/build-pc --profile max_crypto`, `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_SIGNATURE=1 CHOUPI_VM_TRACE_EXCEPTIONS=1 ./tools/test-sio-cross-aid-vpcd` (pass), full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` (`TEST:SUMMARY pass=35 fail=0`), `./tools/build arm` and `./tools/build riscv` passed. Scoped `git diff --check` passed. An early SIO failure was traced to stale `build/choupi-pc/choupi`; rebuilding with `./tools/build-pc --profile max_crypto` made the isolated signature test and full suite pass. Both firmware builds still emit existing packed-CAP-member alignment warnings. No physical hardware test or malformed-cycle CAP regression was run.
+- Result: Normal multi-package/interface execution continues to pass, and audited superclass paths now terminate within bounded work. Load-time cycle rejection and hostile cyclic/deep CAP recovery remain unverified.
+- Decision: RV-20261106-07 remains open pending cycle/depth regression coverage through allocation, casts, fields, method resolution, and card-manager recovery. Continue the next P1 review finding after recording this bounded-runtime step.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Full VPCD run `artifacts/logs/sio-cross-aid-vpcd-20261107T045015Z.log`; isolated signature run `artifacts/logs/sio-cross-aid-vpcd-20261107T044906Z.log`.

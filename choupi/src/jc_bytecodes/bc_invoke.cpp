@@ -278,9 +278,10 @@ ShareableSignatureStatus getShareableMethodSignature(
 bool classImplementsShareableInterface(const Package &package,
                                        const jclass_index_t class_index) {
   Package current_package = package;
-  const auto *current_class =
+  auto *current_class =
       ConstantPool_Handler(current_package).getClassFromClassIndex(class_index);
-  while (!current_class->isObjectClass()) {
+  for (uint16_t depth = 0; depth < 256 && current_class != nullptr; ++depth) {
+    if (current_class->isObjectClass()) return false;
     ConstantPool_Handler class_cp(current_package);
     for (uint8_t index = 0; index < current_class->interface_count; ++index) {
       try {
@@ -299,6 +300,8 @@ bool classImplementsShareableInterface(const Package &package,
     current_package = superclass.first;
     current_class = superclass.second;
   }
+  // Cyclic or over-deep metadata cannot establish that the class is
+  // shareable. Fail closed without keeping an invocation handler in a loop.
   return false;
 }
 

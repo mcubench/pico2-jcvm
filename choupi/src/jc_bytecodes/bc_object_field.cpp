@@ -177,14 +177,18 @@ uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index,
   ConstantPool_Handler declaring_cp(declaring_class.first);
   auto superclass = declaring_cp.classref2class(
       declaring_class.second->super_class_ref);
-  while (!superclass.second->isObjectClass()) {
-    token = static_cast<uint16_t>(
-        token + superclass.second->declared_instance_size);
+  for (uint16_t depth = 0; depth < 256; ++depth) {
+    if (superclass.second == nullptr) throw Exceptions::SecurityException;
+    if (superclass.second->isObjectClass()) return token;
+    const uint32_t adjusted_token = static_cast<uint32_t>(token) +
+        superclass.second->declared_instance_size;
+    if (adjusted_token > UINT16_MAX) throw Exceptions::SecurityException;
+    token = static_cast<uint16_t>(adjusted_token);
     ConstantPool_Handler superclass_cp(superclass.first);
     superclass = superclass_cp.classref2class(
         superclass.second->super_class_ref);
   }
-  return token;
+  throw Exceptions::SecurityException;
 }
 } // namespace
 

@@ -83,11 +83,7 @@ public:
 
   /// Get the reference to the Object class from an objectref.
   std::pair<Package, const jc_cap_class_info *>
-  getObjectClassFromAnObjectRef(const jc_cap_class_ref classref)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  getObjectClassFromAnObjectRef(const jc_cap_class_ref classref);
 
   /// Get public or package method offset  from a class' package method token.
   std::pair<Package, const uint16_t>
@@ -107,11 +103,7 @@ public:
       const bool isArray, const Package &interface_package);
 
   /// Get the instance field size for an instantiated class.
-  const uint16_t getInstanceFieldsSize(const jclass_index_t claz_index) const
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  const uint16_t getInstanceFieldsSize(const jclass_index_t claz_index) const;
 };
 
 } // namespace jcvm
