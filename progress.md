@@ -23991,6 +23991,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
 
+## 2026-11-07 Reclaim transient global arrays after APDU completion 39 minutes
+
+- Step/experiment: `RV-20261106-11-global-array-lifetime`
+- When: '2026-11-07 10:56 CET' - '2026-11-07 11:35 CET'
+- Change: Added reclamation of transient global-array handles after the APDU/interpreter stack has unwound. Persistent global AID objects are unaffected. Added local CAP case 93, which creates 256 arrays while retaining one live array and then checks a further allocation is distinct. Extended local GC tracing and pressure-run count validation.
+- Validation: `./tools/build arm --profile max_crypto` PASS; `./tools/build riscv --profile max_crypto` PASS; local probe CAP build PASS; Python test syntax PASS; `PICO2_HEAP_GC=1 ./tools/test-jcsystem-transaction-applet --case 93 --gc-pressure-rounds 80 --light-install --log artifacts/logs/global-array-gc-vpcd-20261107-final.log` PASS (`TEST:SUMMARY pass=643 fail=0 elapsed_s=100.884`; telemetry `batches=81 arrays_per_batch=257 reclaimed_total=20817`). CPLC unit validation is recorded separately. No physical test.
+- Result: The 80-round stress run created/reclaimed 20,817 transient global-array handles without exhausting the global slot table; each batch preserved its live array. Reset and global AID cache/package deletion coverage remain outstanding; this is a partial R11 closeout. Log SHA-256 `95007353b93ebcb39d7c08bf98cfcbfcc97134633434eb3cc0e5f90953b908ff`.
+- Decision: Keep R11 open for reset and global AID lifecycle coverage and physical acceptance. Continue with REL-01 and then the next priority.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/global-array-gc-vpcd-20261107-final.log`.
+
+
 ## 2026-11-07 Validate stack local ranges before access 11 minutes
 
 - Step/experiment: `rv-20261107-stack-local-bounds`

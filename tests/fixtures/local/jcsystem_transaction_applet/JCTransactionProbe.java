@@ -776,6 +776,32 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 93: {
+        length = 0;
+        byte[] retained = null;
+        for (short i = 0; i < 256; i++) {
+          byte[] global = (byte[])JCSystem.makeGlobalArray(
+              JCSystem.ARRAY_TYPE_BYTE, (short)1);
+          global[0] = (byte)i;
+          if (i == 0) {
+            retained = global;
+            retained[0] = 0x5a;
+          } else if (retained[0] != 0x5a) {
+            buffer[0] = 0;
+            length = 1;
+            break;
+          }
+        }
+        if (length == 0) {
+          byte[] distinct = (byte[])JCSystem.makeGlobalArray(
+              JCSystem.ARRAY_TYPE_BYTE, (short)1);
+          distinct[0] = 0x33;
+          buffer[0] = retained != distinct && retained[0] == 0x5a
+              ? (byte)1 : (byte)0;
+          length = 1;
+        }
+        break;
+      }
       case 52:
       case 53:
       case 54: {

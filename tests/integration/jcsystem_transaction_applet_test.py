@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import signal
 import socket
 import subprocess
@@ -50,7 +51,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 93),
+        "--case", type=int, action="append", choices=range(1, 94),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -236,6 +237,7 @@ def main() -> int:
                     (34, b"\x01", "unsupported object deletion throws SystemException.ILLEGAL_USE"),
                     (35, b"\x01", "isAppletActive recognizes the current applet and rejects an unknown AID"),
                     (36, b"\x01", "global byte array access and CLEAR_ON_RESET classification"),
+                    (93, b"\x01", "global array batch preserves a live array and does not alias new arrays"),
                     (37, b"\x03", "global array invalid type and negative size exceptions"),
                     (38, b"\x01", "global array references cannot be stored in instance fields"),
                     (39, b"\x01", "global array references cannot be stored in static fields"),
@@ -607,6 +609,7 @@ def main() -> int:
                 for round_number in range(args.gc_pressure_rounds):
                     for p1, label in (
                         (49, "GC pressure transient-array batch"),
+                        (93, "GC pressure global-array batch"),
                         (52, "GC pressure unreferenced-instance batch"),
                         (14, "GC pressure static root identity"),
                         (15, "GC pressure persistent array child identity"),
@@ -625,7 +628,7 @@ def main() -> int:
                                 f"expected 01, got {observed.hex().upper()}"
                             )
                     print(f"TEST:PASS GC pressure round={round_number + 1}")
-                total_passes = len(selected_cases) + 2 + args.gc_pressure_rounds * 7
+                total_passes = len(selected_cases) + 2 + args.gc_pressure_rounds * 8
                 print(f"TEST:SUMMARY pass={total_passes} fail=0 elapsed_s={time.monotonic() - started:.3f}")
             finally:
                 if connection is not None:
@@ -642,6 +645,25 @@ def main() -> int:
                         except subprocess.TimeoutExpired:
                             process.kill()
                             process.wait(timeout=2)
+    if os.environ.get("PICO2_HEAP_GC") == "1" and args.gc_pressure_rounds:
+        log_contents = log_path.read_text(errors="replace")
+        reclaimed_batches = log_contents.count(
+            "HEAP_TRACE_GLOBAL_ARRAY_GC reclaimed=257"
+        )
+        expected_batches = args.gc_pressure_rounds + sum(
+            1 for p1, _, _ in selected_cases if p1 == 93
+        )
+        if reclaimed_batches < expected_batches:
+            raise RuntimeError(
+                "global array reclamation telemetry mismatch: "
+                f"expected at least {expected_batches} batches of 257, "
+                f"observed {reclaimed_batches}"
+            )
+        print(
+            "TEST:GLOBAL_ARRAY_GC "
+            f"batches={reclaimed_batches} arrays_per_batch=257 "
+            f"reclaimed_total={reclaimed_batches * 257}"
+        )
     return 0
 
 

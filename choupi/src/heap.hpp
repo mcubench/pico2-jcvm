@@ -149,6 +149,7 @@ public:
                                        jc_array_type type);
   static std::shared_ptr<JC_Array> getGlobalArray(jref_t reference);
   static void releaseGlobalArray(jref_t reference) noexcept;
+  static uint32_t reclaimTransientGlobalArrays() noexcept;
   static void clearGlobalArrays(ClearEvent event);
   static void visitGlobalArrayReferencesForPackage(
       jpackage_ID_t package_id, ReferenceVisitor visitor,

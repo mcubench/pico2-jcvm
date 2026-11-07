@@ -485,6 +485,11 @@ void trace_heap_after_apdu_if_enabled() {
   for (auto &context : inactive_applet_contexts) {
     if (context) trace_context(*context);
   }
+  if (collect_enabled) {
+    const uint32_t reclaimed = jcvm::Heap::reclaimTransientGlobalArrays();
+    std::fprintf(stderr, "HEAP_TRACE_GLOBAL_ARRAY_GC reclaimed=%u\n",
+                 static_cast<unsigned>(reclaimed));
+  }
 }
 #else
 void collect_heap_after_apdu() {
@@ -661,6 +666,7 @@ void collect_heap_after_apdu() {
       break;
     }
   }
+  (void)jcvm::Heap::reclaimTransientGlobalArrays();
 }
 #endif
 

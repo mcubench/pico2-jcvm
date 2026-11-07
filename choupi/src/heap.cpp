@@ -212,6 +212,17 @@ void Heap::clearGlobalArrays(const ClearEvent event) {
   }
 }
 
+uint32_t Heap::reclaimTransientGlobalArrays() noexcept {
+  uint32_t reclaimed = 0;
+  for (auto &array : globalArrayHeap().shared_storage->arrays) {
+    if (array && array->isTransientArray()) {
+      array.reset();
+      ++reclaimed;
+    }
+  }
+  return reclaimed;
+}
+
 void Heap::visitGlobalArrayReferencesForPackage(
     const jpackage_ID_t package_id, const ReferenceVisitor visitor,
     void *visitor_context) {

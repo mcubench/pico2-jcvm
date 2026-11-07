@@ -1,3 +1,17 @@
+# Current handoff — global-array reclamation stress complete — 2026-11-07 11:35 CET
+
+RV-20261106-11 transient global-array reclamation now passes the 80-round
+VPCD stress test: 643/643 APDU checks and 20,817 reclaimed handles across 81
+batches. ARM/RISC-V max-profile builds pass. Remaining R11 coverage is reset
+behavior and the older global AID cache / package deletion lifetime audit;
+no physical test was performed. Stress log:
+`artifacts/logs/global-array-gc-vpcd-20261107-final.log` (SHA-256
+`95007353b93ebcb39d7c08bf98cfcbfcc97134633434eb3cc0e5f90953b908ff`).
+
+Next: commit R11, then resume REL-01 and continue with the next priority from
+`todo.md`. Preserve other dirty changes; prior concurrent edits remain in the
+worktree.
+
 # Current handoff — constrain ISO9797 method-2 unpadding — 2026-11-07 10:55 CET
 
 RV-20261106-10 is implemented in `choupi/src/native_cipher.cpp`. Method-2
