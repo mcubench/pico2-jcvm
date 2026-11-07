@@ -1,25 +1,33 @@
-# Current handoff — RV-20261106-54 transient allocation reasons — 2026-11-07 17:44 CET
+# Current handoff — RV-54 and refreshed max_crypto image — 2026-11-07 17:50 CET
 
-RV-20261106-54 implementation is committed as `b3bc3f37`. Transient
-backing overflow and local/global array handle-table exhaustion now produce
-`SystemException.NO_TRANSIENT_SPACE` (reason 2); negative lengths retain
-`NegativeArraySizeException`, and persistent `NO_RESOURCE` paths are unchanged.
-The ROM-mask generator uses `Heap::addTransientArrayResult()` for all five
-`makeTransient*Array` return paths. Generator submodule commit is `79e18fd`.
+RV-20261106-54 is committed as `b3bc3f37`; the commit-reference follow-up is
+`08acd740`. Transient backing overflow and local/global handle-table exhaustion
+map to `SystemException.NO_TRANSIENT_SPACE` (reason 2), with negative lengths
+and persistent `NO_RESOURCE` unchanged. The ROM-mask generator routes all five
+`makeTransient*Array` results through `Heap::addTransientArrayResult()`;
+generator commit: `79e18fd`.
 
 `./tools/test-transient-allocation-failures` passes in int-disabled and
-int-enabled builds, including local/global handle exhaustion and retained
-handles. PC ROM-mask generation, ARM max_crypto firmware, and RISC-V VM-core /
-smoke builds passed. The legacy broad `jcarray_transient_test` aborted earlier
-before reaching these assertions; it is not counted as passed. No hardware test
-or flash was performed.
+enabled builds, including negative lengths, int backing boundaries, and local
+and global handle exhaustion. After commit, `./tools/build arm --profile
+max_crypto` passed and regenerated the PC ROM mask. Earlier in this step the
+RISC-V max_crypto VM-core/smoke build passed. The broad legacy
+`jcarray_transient_test` aborts before reaching its assertions and is not counted
+as passed. No hardware flash was performed.
 
-Next: rerun
-`./tools/build arm --profile max_crypto` and `./tools/build riscv --profile
-max_crypto` after the generator-source hash update, package the ARM UF2 with
-`./tools/package-empty-card-uf2`, and record image size/hash for external
-testing. Preserve all unrelated dirty changes, especially the existing heap
-AID-release and JCSystem context changes.
+Fresh max_crypto empty-card ARM image for external testing:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,047,360
+bytes, SHA-256
+`23f1977f6ee2328ec94722e75da3ac8a1b9748fb54c081e8262c37763d238834`. It is
+RP2350 ARM Secure, release 0.1.1, profile max_crypto (147/150), source ID
+`FF08ACD7`, firmware end `0x100EDFC0` (73,792 bytes remain), 3,808 firmware
+blocks, and 4,096 erased storage blocks. It has an empty card (no CAP/app applet
+preinstalled). It has not been flashed or tested on hardware. Source ID has the
+dirty-tree marker; preserve unrelated working-tree edits.
+
+Next: continue with the next unchecked high-priority item in `todo.md`; refresh
+PC/SC access before any physical test and do not flash until both architecture
+builds pass.
 
 ---
 

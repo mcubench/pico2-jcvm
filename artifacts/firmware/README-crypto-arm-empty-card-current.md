@@ -9,19 +9,20 @@ the selected UF2 to the Pico 2 `RPI-RP2` drive.
 
 | Profile | Capabilities enabled | File | Size | SHA-256 |
 | --- | ---: | --- | ---: | --- |
-| `max_crypto` | 147 / 150 | `pico2-jcvm-max_crypto-arm-empty-card-current.uf2` | 4,025,856 bytes | `09d0a1ee76b3512314795eea796148141fc2e22fb7d7a28d21c97045aee61d15` |
+| `max_crypto` | 147 / 150 | `pico2-jcvm-max_crypto-arm-empty-card-current.uf2` | 4,047,360 bytes | `23f1977f6ee2328ec94722e75da3ac8a1b9748fb54c081e8262c37763d238834` |
 | `symm_crypto` | 46 / 150 | `pico2-jcvm-symm_crypto-arm-empty-card-current.uf2` | 3,837,440 bytes | `40032e23306d73d4c095659b41ecb9b90441c447accaf870a88048b2bc501571` |
 
-Both images passed `picotool info -a` as RP2350 ARM Secure UF2s. A block-map
-check confirmed unique addresses, consistent block numbering, and 4,096
-storage blocks filled with `0xFF` at `0x10100000`–`0x101FFFFF`. Firmware-only
-ends are `0x100EB518` (`max_crypto`) and `0x100D45A8` (`symm_crypto`). The current `max_crypto` image was rebuilt with HOST-02 normal startup, passed
-ARM and RISC-V wrapper builds, and passed a physical ARM runtime cycle plus
-read-only GPPro SELECT/CPLC/Card Data checks on Pico 2
-`D92E743D5F640C0F`. The packaged UF2 was validated as an RP2350 ARM Secure
-image with all 4,096 storage blocks erased. `symm_crypto` remains the earlier
-artifact and was not revalidated in this step. Files are local release assets
-and have not been uploaded to GitHub.
+Both images are RP2350 ARM Secure UF2s. A block-map check confirmed unique
+addresses, consistent block numbering, and 4,096 storage blocks filled with
+`0xFF` at `0x10100000`–`0x101FFFFF`. The current `max_crypto` firmware ends
+at `0x100EDFC0` (73,792 bytes remain before the storage partition); its UF2
+contains 3,808 firmware blocks plus the 4,096 erased storage blocks. `picotool
+info -a` verified the freshly built image. It has not been flashed or tested on
+hardware; the older max_crypto image had passed a physical runtime cycle and
+read-only GPPro checks on Pico 2 `D92E743D5F640C0F`, which does not establish
+physical validation for this image. `symm_crypto` remains the earlier artifact
+and was not revalidated in this step. Files are local release assets and have
+not been uploaded to GitHub.
 
 Rebuild with:
 
