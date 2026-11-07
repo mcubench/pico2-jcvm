@@ -38,6 +38,8 @@ Physical check on 2026-11-07: `sudo -n /usr/local/sbin/pico2-pcsc-reader`
 granted access to USB nodes `001/054`, `001/055`, and `001/056`, but bounded
 `pcsc_scan -r` returned no reader listing within 12 seconds. No physical CAP
 test was possible; retry only after PC/SC publishes a Pico reader.
+This hardware-availability record is committed as `0359b647`; the progress
+SHA-resolution record follows separately.
 
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 

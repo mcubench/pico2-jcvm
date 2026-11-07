@@ -23801,5 +23801,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to three nodes (`001/054`, `001/055`, `001/056`). `timeout 12s pcsc_scan -r` produced no reader listing. No physical CAP test could be run.
 - Result: Physical DELETE acceptance remains pending because PC/SC does not currently expose a Pico reader, despite USB nodes being present.
 - Decision: Continue emulator-side work; retry physical coverage after the reader reappears in PC/SC.
-- Commit: pending.
+- Commit: `0359b647`.
 - Artifacts/logs: No capture; exact command output was the helper's `PCSC:ACCESS_GRANTED count=3` line and empty bounded scan output.
+
+## 2026-11-07 Record physical reader check commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-persistent-alias-physical-reader-availability-commit`
+- When: '2026-11-07 03:26 CET' - '2026-11-07 03:27 CET'
+- Change: Recorded the physical reader availability note's commit SHA in progress.
+- Validation: No new hardware attempt; this is a SHA-resolution record.
+- Result: The reader check and QKB/handoff updates are committed as `0359b647`.
+- Decision: Continue emulator work and retry physical validation when a Pico PC/SC reader is published.
+- Commit: `0359b647` — hardware-availability record; this SHA-resolution record is separate.
+- Artifacts/logs: No log file was captured; the bounded PC/SC output was empty.
