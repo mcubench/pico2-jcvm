@@ -23593,3 +23593,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open. Next add a persistence-backed lifecycle regression (or safely restore sibling state before the check), then exercise same-package card-manager DELETE over VPCD.
 - Commit: pending.
 - Artifacts/logs: Registry test output in the command transcript; ARM/RISC-V build wrappers passed. No isolated logs or physical report.
+
+## 2026-11-07 Record retained-reference scan commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-persistent-root-scan-commit`
+- When: '2026-11-07 01:17 CET' - '2026-11-07 01:18 CET'
+- Change: Replaced the pending marker with the retained-reference scan implementation SHA and refreshed the active handoff.
+- Validation: No new run; registry regression and ARM/RISC-V builds passed in the preceding step.
+- Result: The source/test/docs step is committed as `9282315a`.
+- Decision: Continue CTX-01 with materialization of unselected persisted sibling roots and same-package DELETE APDU coverage.
+- Commit: `9282315a` — implementation/test/status; this resolution record is separate.
+- Artifacts/logs: See the preceding progress entry.

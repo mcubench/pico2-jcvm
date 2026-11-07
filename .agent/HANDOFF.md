@@ -1,11 +1,12 @@
-# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:17 CET
+# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:18 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
 by scanning the target package's shared heap. Arrays owned by the target applet
 are excluded from the local scan so its own object graph does not block its
 removal. It now also scans sibling-owned object reference fields, persistent
-reference arrays, and cached package static roots. Native unit coverage
+reference arrays, and cached package static roots. Commit `9282315a` contains
+this scan extension and its regression. Native unit coverage
 verifies sibling-array rejection, target-owned-array exemption, slot-clear
 release, and cached static-root rejection/release. Commit `cc7a8b7d` contains
 the previous slice. The focused cross-package DELETE APDU regression still
