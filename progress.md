@@ -24667,3 +24667,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The observed 6F00 was caused by malformed generated ROM bytecode for the native int-array return, rather than an int-array allocator failure. Keep R52 open until remaining contract cases pass. Current max image is ready for external testing but includes other dirty worktree changes. REL-01 physical GPPro verification remains open.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log` (SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`); `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (ignored by Git); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-07 Resolve R52/max_crypto record commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-52-native-int-array-return-sha`
+- When: '2026-11-07 16:21 CET' - '2026-11-07 16:22 CET'
+- Change: Recorded the repository commit for the validated ROM-mask generator fix, handoff, and external image report.
+- Validation: `git show --stat --oneline 22228e9a` confirms commit `22228e9a` contains only the ROM-mask submodule pointer, `.agent/HANDOFF.md`, and `progress.md`.
+- Result: The root repository record is committed as `22228e9a`; generator implementation is separately committed in its submodule as `45acedf`.
+- Decision: Continue the remaining R52 context-contract coverage; keep REL-01 physical acceptance open until a Pico PC/SC reader is available.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
