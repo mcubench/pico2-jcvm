@@ -24689,3 +24689,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close R52 and continue with RV-20261106-36 reset/power callback semantics, preserving the current firmware image and all unrelated worktree changes.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log` (SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`); `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261107T152758Z.log`.
+
+## 2026-11-07 Resolve R52 acceptance commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-52-select-context-acceptance-sha`
+- When: '2026-11-07 16:32 CET' - '2026-11-07 16:33 CET'
+- Change: Resolved the commit reference for the R52 fixture, integration assertion, TODO and handoff update.
+- Validation: `git show --stat --oneline 2d225342` confirms commit `2d225342` contains only the five R52 acceptance files.
+- Result: R52 test and backlog update is committed as `2d225342`.
+- Decision: Continue to the next actionable finding, RV-20261106-36, while preserving unrelated worktree changes.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
