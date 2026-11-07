@@ -23,7 +23,7 @@ JCAlgTest 1.8.4, 48 API CAPs). Build wrappers emitted existing upstream
 compiler/converter warnings. No physical test: PC/SC publication remains
 unavailable per the QKB entry; do not claim hardware acceptance.
 
-Implementation commit: `<resolve in next progress entry>`.
+Implementation commit: `a873e6d5`.
 
 Next: continue with RV-20261106-10, strict ISO9797 method-2 final-block
 padding validation. Keep R08's legacy persistent-workspace orphan-tag audit
