@@ -31,6 +31,8 @@ or whether the inventory guard sees an orphan because normal persistent
 reclamation is disabled. Keep the guard fail-closed until persistent root
 enumeration and interrupted cleanup are proven complete and safe. This finding
 is tracked in CTX-01/TODO and QKB; no runtime change has been made.
+The follow-up note is committed as `d8d9cef0`; its progress SHA resolution is
+recorded in `progress.md`.
 
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 

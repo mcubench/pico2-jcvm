@@ -23779,5 +23779,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Source inspection confirmed the guard enumerates serialized alias tags in namespaces `0x02` and `0x03` and follows alias targets, while root tracing/reclamation is a separate path not enabled for normal collection. No code or runtime behavior changed; no additional test run.
 - Result: Fail-closed behavior remains in place; relaxing the guard requires complete persistent-root enumeration and interruption-safe cleanup evidence.
 - Decision: Audit persistent root completeness and reclaimer safety before changing alias admission semantics.
-- Commit: pending.
+- Commit: `d8d9cef0`.
 - Artifacts/logs: Array alias evidence `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`, SHA-256 `15b1aebe5c66f13a89494450c33d2bb674bac6a09ce629b87b76bccfb53bd423`.
+
+## 2026-11-07 Record alias reachability follow-up commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-persistent-alias-root-reachability-followup-commit`
+- When: '2026-11-07 03:23 CET' - '2026-11-07 03:24 CET'
+- Change: Recorded the follow-up documentation commit SHA in the progress history.
+- Validation: No new run; this is a SHA-resolution record for the prior evidence-backed documentation update.
+- Result: The persistent alias reachability follow-up is committed as `d8d9cef0`.
+- Decision: Continue auditing root-complete reclamation and applet DELETE behavior.
+- Commit: `d8d9cef0` — TODO/QKB/handoff; this SHA-resolution record is separate.
+- Artifacts/logs: Array alias evidence is listed in the preceding progress entry.
