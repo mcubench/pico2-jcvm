@@ -8980,8 +8980,9 @@ first run exposed three fixture tag collisions, fixed by assigning unique tags.
 The final progress entry records the build warnings and sanitizer limitation.
 No physical test was performed.
 
-Implementation and progress are pending their own commit SHA record. Next:
-commit R26, then build a fresh max-crypto ARM empty-card UF2 for external
-testing, recording its path, size, and SHA-256. Preserve unrelated dirty files.
+R26 code/tests/TODO/progress are committed as `a811c6f3`. The SHA follow-up
+record is pending its own commit SHA entry. Next build a fresh max-crypto ARM
+empty-card UF2 for external testing, recording its path, size, and SHA-256.
+Preserve unrelated dirty files.
 
 # Previous current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET

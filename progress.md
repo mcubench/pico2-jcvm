@@ -24426,3 +24426,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark R26's offline implementation and acceptance complete; hardware acceptance was not requested for this item. Next build the max-crypto ARM empty-card image for external testing.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Unit output was not archived; generated builds are under `build/`.
+
+## 2026-11-07 Record persistent boolean restore commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-26-persistent-boolean-reads-sha`
+- When: '2026-11-07 12:06 CET' - '2026-11-07 12:07 CET'
+- Change: Recorded the implementation commit SHA and confirmed the commit contains only the R26 code, unit tests, TODO, progress and handoff updates.
+- Validation: `git show --stat --oneline a811c6f3` confirms the scoped R26 commit.
+- Result: Persistent boolean restore implementation is committed as `a811c6f3`.
+- Decision: Build the max-crypto ARM firmware image for external testing, then record the artifact hash and empty-card packaging result.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
