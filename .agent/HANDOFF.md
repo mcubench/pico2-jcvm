@@ -36,6 +36,8 @@ including preserved other-owner records, fail-closed incomplete/corrupt roots,
 transaction guards and reclaimer interruption/retry. These do not satisfy
 physical multi-owner or actual power-loss validation. Current host access sees
 three USB nodes but no Pico PC/SC reader; keep object deletion disabled.
+The evidence update is committed as `efeb94c9`; its progress SHA-resolution
+record follows separately.
 
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 

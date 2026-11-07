@@ -23856,8 +23856,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-inventory` passed 22/22. `./tools/test-persistent-transaction` passed all reported cases, including cross-owner record preservation, malformed/incomplete root fail-closed behavior, refusal during transactions, interrupted erase state, and restart/retry completion. No firmware or hardware action.
 - Result: Offline safety checks remain green in the current worktree; physical multi-owner and actual power-loss acceptance remain unverified.
 - Decision: Keep normal persistent object deletion disabled pending physical gates; proceed with remaining offline lifecycle work.
-- Commit: pending.
+- Commit: `efeb94c9`.
 - Artifacts/logs: Commands emitted output directly; no separate log was captured.
+
+## 2026-11-07 Record PERSIST-01 offline validation commit resolution 1 minute
+
+- Step/experiment: `persist-01-20261107-offline-inventory-reclaimer-rerun-commit`
+- When: '2026-11-07 03:47 CET' - '2026-11-07 03:48 CET'
+- Change: Recorded the offline PERSIST-01 validation commit SHA in progress and handoff.
+- Validation: No additional tests; the preceding inventory and reclaimer suites passed.
+- Result: Current-worktree offline PERSIST-01 validation record is committed as `efeb94c9`.
+- Decision: Keep physical reclaimer/power-loss acceptance open.
+- Commit: `efeb94c9` — validation/status; this SHA-resolution record is separate.
+- Artifacts/logs: No external logs; test output was emitted on stdout.
 
 ## 2026-11-07 Record Java Card DELETE spec-check commit resolution 1 minute
 
