@@ -7918,3 +7918,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   a daemon running without a client. A terminal-attached scan activates it;
   refreshing helper ACLs and scanning with the daemon active still produced
   no reader. This confirms auto-exit is not by itself the reader cause.
+
+
+## Three attached JCVM boards pass finite runtime monitor; PC/SC reader list still empty — 2026-11-07
+
+- **Observation:** The authorized access helper granted three USB nodes and
+  `lsusb -d 2e8a:0009` showed runtime JCVM devices with serials
+  `D92E743D5F640C0F`, `2BED26ED20556535`, and `8E464F4E2BBC0A19`. Finite
+  `tools/monitor --serial ... --seconds 8` returned `TEST:PASS choupi_runtime`
+  on each. D92 showed APDU `84F220020A` -> `9000`; 8E46 showed
+  `80CA00E000` -> `6A88`; 2BED telemetry had zero transfers and no fresh APDU.
+  `timeout 8s pcsc_scan -r` exited 124 without listing a Pico reader.
+- **Interpretation:** USB enumeration and monitor runtime checks work across the
+  pool; PC/SC publication is still a separate blocker. The 2BED monitor PASS
+  did not establish an APDU exchange. No board was flashed and no card command
+  was issued via PC/SC.
+- **Next:** Continue offline. Retry card APDUs only after `pcsc_scan -r` lists
+  a Pico reader; preserve the per-board serial distinction when retrying.

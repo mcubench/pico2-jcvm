@@ -25111,3 +25111,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with CTX-01 owner-aware field retention and persistent reference work.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `STATUS.md`; supporting evidence in `.agent/HANDOFF.md` and `.agent/QKB.md`.
+
+
+## 2026-11-07 three-board finite runtime recheck 6
+
+- Step/experiment: `HW-CCID-20261107-03`
+- When: '2026-11-07 22:48 CET' - '2026-11-07 22:54 CET'
+- Change: Recorded current USB, serial-monitor, and PC/SC observations for the three attached boards; no firmware source changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`; elevated `lsusb -d 2e8a:0009`; `timeout 8s pcsc_scan -r`; and finite `./tools/monitor --serial ... --seconds 8` on D92, 2BED, and 8E46. All monitors returned `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`; PC/SC scan exited 124 with no Pico reader.
+- Result: Three runtime USB boards were present. D92 telemetry showed `84F220020A` -> `9000`; 8E46 showed `80CA00E000` -> `6A88`; 2BED showed zero transfers/no fresh APDU despite monitor PASS. No firmware flash or PC/SC APDU was performed.
+- Decision: Hardware runtime visibility is confirmed across the pool, but card-protocol acceptance remains blocked by PC/SC registration. Continue CTX-01 offline, preserving persistent foreign-reference fail-closed behavior.
+- Commit: `<pending>`
+- Artifacts/logs: Monitor output in session transcript only; no separate log files.

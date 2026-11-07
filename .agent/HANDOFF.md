@@ -1,3 +1,29 @@
+# Current handoff — three-board monitor check and PC/SC state — 2026-11-07 22:54 CET
+
+The user confirmed all three Pico 2 tokens are connected. The authorized
+host-access helper granted nodes `/dev/bus/usb/001/066`, `/001/062`, and
+`/001/064`; elevated `lsusb` identifies all three as runtime `2e8a:0009`
+Pico2 JCVM CCID devices. Bounded `pcsc_scan -r` still exits 124 without listing
+a Pico reader, so no SmartcardIO/GPPro APDUs can be sent through PC/SC.
+
+Finite serial monitor checks were run against each known board identity via
+`PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial <serial> --seconds 8`.
+All three returned `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+D92 reported CCID APDU `84F220020A` -> `9000`; 8E46 reported a prior
+`80CA00E000` -> `6A88` with runtime status `9000`; 2BED showed zero transfer
+count and no fresh APDU in telemetry despite the monitor's runtime PASS. No
+firmware was flashed. The monitor output was not archived separately.
+
+Next: continue CTX-01 reference-consumer and foreign-owner lifecycle work. In
+particular, ordinary foreign object/static field retention and owner-aware GC
+roots remain fail-closed/unimplemented; persistent foreign reference formats
+must remain fail-closed. Before hardware APDUs, refresh PC/SC and use a reader
+that is actually published. Preserve the unrelated dirty worktree edits listed
+by `git status`; do not build/flash a newly modified image until both required
+architecture builds pass.
+
+---
+
 # Current handoff — selected-context transient guard and reader state — 2026-11-07 22:11 CET
 
 The native JCSystem `CLEAR_ON_DESELECT` guard and regression are committed as
