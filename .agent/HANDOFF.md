@@ -25,7 +25,9 @@ firmware blocks and 4,096 verified erased storage blocks, and reports source
 ID `FF455432`; CPLC release level is `0101`. Firmware ends at `0x100EDDF8`,
 leaving 74,248 bytes. No token was flashed. The image reflects the current
 dirty worktree; preserve unrelated worktree changes, including the separate
-HMAC TODO edit.
+HMAC TODO edit. The image record is committed as `8c07a4fb`; a UF2 byte scan
+confirms the CPLC release sequence is `0101` and the source marker is
+`FF455432`.
 
 # Current handoff — REL-01 reader check blocked; max-crypto image built — 2026-11-07 12:46 CET
 

@@ -24498,8 +24498,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Step/experiment: `max-crypto-empty-card-post-r22`
 - When: '2026-11-07 13:05 CET' - '2026-11-07 13:09 CET'
 - Change: Rebuilt and repackaged the ARM max-crypto image after committing R22, so external testing uses the committed persistent-object identity fix and an accurate dirty-tree CPLC source marker.
-- Validation: `./tools/build arm --profile max_crypto` PASS; `./tools/build riscv --profile max_crypto` passed on the same R22 source before commit. Empty-card packaging PASS; UF2 inspection confirms RP2350 ARM Secure and exactly 4,096 storage blocks filled with `0xFF`. Build profile enables 147/150 capabilities.
+- Validation: `./tools/build arm --profile max_crypto` PASS; `./tools/build riscv --profile max_crypto` passed on the same R22 source before commit. Empty-card packaging PASS; UF2 inspection confirms RP2350 ARM Secure and exactly 4,096 storage blocks filled with `0xFF`. Binary scan confirms CPLC release bytes `0101` and source ID `FF455432`. Build profile enables 147/150 capabilities.
 - Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`, 4,046,336 bytes, SHA-256 `f95c9bf99ee8d6094cc3eab67acd87da73aa978bbf5dba66dce3c423fee0eda2`. Firmware ends at `0x100EDDF8`, leaving 74,248 bytes. CPLC source ID is `FF455432`; release remains `0101`. No token was flashed.
 - Decision: This is the current max-crypto empty-card UF2 for external testing. REL-01 physical GPPro confirmation remains open because no PC/SC reader is published.
-- Commit: `<resolve in next progress entry>`
+- Commit: `8c07a4fb`
 - Artifacts/logs: `build/arm/build-provenance.txt`; UF2 path and hash above.
+
+## 2026-11-07 Record refreshed max-crypto image commit SHA 1 minute
+
+- Step/experiment: `max-crypto-empty-card-post-r22-sha`
+- When: '2026-11-07 13:09 CET' - '2026-11-07 13:11 CET'
+- Change: Recorded the artifact-record commit SHA and checked the committed handoff/progress scope.
+- Validation: `git show --stat --oneline 8c07a4fb` confirms the commit contains only image metadata and handoff/progress updates. UF2 byte scan confirms the CPLC sequence embeds release `0101` and source marker `FF455432`.
+- Result: The refreshed empty-card image details are committed as `8c07a4fb`.
+- Decision: Use this image for external testing; physical REL-01 GPPro confirmation is still pending reader availability.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`.
