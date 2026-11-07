@@ -24512,5 +24512,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `git show --stat --oneline 8c07a4fb` confirms the commit contains only image metadata and handoff/progress updates. UF2 byte scan confirms the CPLC sequence embeds release `0101` and source marker `FF455432`.
 - Result: The refreshed empty-card image details are committed as `8c07a4fb`.
 - Decision: Use this image for external testing; physical REL-01 GPPro confirmation is still pending reader availability.
-- Commit: `<resolve in next progress entry>`
+- Commit: `2b45ff9b`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`.
+
+## 2026-11-07 Resolve refreshed image record SHA 1 minute
+
+- Step/experiment: `max-crypto-empty-card-post-r22-sha-resolution`
+- When: '2026-11-07 13:11 CET' - '2026-11-07 13:12 CET'
+- Change: Recorded the SHA-resolution commit for the max-crypto artifact metadata.
+- Validation: `git show --stat --oneline 2b45ff9b` confirms the scoped image-record and handoff follow-up.
+- Result: The image metadata and binary CPLC scan record are fully committed.
+- Decision: External-test image remains ready; REL-01 physical GPPro check remains blocked by PC/SC reader publication.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
