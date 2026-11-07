@@ -24868,3 +24868,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Hand off the current UF2 path and continue with the outstanding JCAlgTest HMAC acceptance diagnosis.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+
+## 2026-11-07 Firmware architecture review 6 minutes
+
+- Step/experiment: `ARCH-REVIEW-20261107`
+- When: '2026-11-07 21:04 CET' - '2026-11-07 21:10 CET'
+- Change: Replaced the architecture report with a 1,722-word evidence-based review, seven requested sections, component diagram, flows, decisions, risks, and open questions. Preserved the prior report byte-for-byte in docs/backups/.
+- Validation: Inspected implementation, build definitions, test layout, documentation and Git history; automated section/word-limit/source-path/backup checks passed; scoped git diff --check passed. Builds and hardware tests intentionally skipped for this documentation-only change; no runtime metrics measured.
+- Result: Verified ARM-only full firmware target, shared interpreter/native API boundary, cooperative execution, cross-store recovery, and host/Pico durability differences. Existing unrelated changes preserved.
+- Decision: Review complete; unresolved acceptance and architecture questions are stated in the report.
+- Commit: `this ARCH-REVIEW-20261107 commit; resolve with git log --grep=ARCH-REVIEW-20261107`
+- Artifacts/logs: `docs/backups/FIRMWARE_JCVM_ARCHITECTURE.20261107-before-review.md`; SHA-256 `f6afad25f4d8977a4c28fa30ea031d5d75001c6a2aa9f6fdc1eeaaefe1a080da`

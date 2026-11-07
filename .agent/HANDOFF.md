@@ -9437,3 +9437,11 @@ this REL-01 partial acceptance. Do not mark REL-01 complete until GPPro reads
 from a physical reader.
 
 ---
+
+## Architecture review completed — 2026-11-07 21:10 CET
+
+Documentation-only ARCH-REVIEW-20261107 replaces docs/FIRMWARE_JCVM_ARCHITECTURE.md
+with the requested concise review. Exact prior report is in docs/backups/.
+Source references, section/word limits and backup identity passed inspection.
+No build, flash, USB, or runtime acceptance was performed. Existing technical
+handoff priorities and all unrelated uncommitted changes remain applicable.
