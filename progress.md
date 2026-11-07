@@ -23704,3 +23704,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open for that instance-namespace APDU case and complete lifecycle coverage; retain package and applet-instance DELETE as distinct paths.
 - Commit: pending.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261107T015250Z.log`, SHA-256 `836425861b6b8632245c41d663062faccb79b883b8e6b4da9007e3f63135a6f9`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261107T015414Z.log`, SHA-256 `5f41fc9206ff9fee85b79c99501c4ebfe72c29718ac4ebb86bb3865b97d76eff`.
+
+## 2026-11-07 Record cold-start DELETE regression commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-static-alias-apdu-commit`
+- When: '2026-11-07 02:58 CET' - '2026-11-07 02:59 CET'
+- Change: Recorded the cold-start persistent-alias APDU regression commit SHA in the handoff and progress history.
+- Validation: No new run; focused cold-start VPCD passed 2/2 and the full `symm_crypto` cross-AID suite passed 35/35 immediately before commit.
+- Result: Regression, fixture commands and status updates are committed as `766b572e`.
+- Decision: Continue with direct APDU coverage for an alias persisted in an unselected sibling's own instance namespace.
+- Commit: `766b572e` — regression/test/status; this SHA-resolution record is separate.
+- Artifacts/logs: Focused and full-suite paths and hashes are in the preceding progress entry.

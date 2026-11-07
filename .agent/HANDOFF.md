@@ -14,8 +14,9 @@ passes 2/2 and the full `symm_crypto` cross-AID suite passes 35/35. Logs:
 first attempt to use a foreign service-array reference failed to reproduce a
 persisted alias because cross-package foreign references serialize as null.
 An unselected sibling instance-field alias still needs a dedicated APDU case.
-No physical device was accessed. Test-fixture, TODO, QKB and continuity updates
-are pending commit; preserve all unrelated worktree changes.
+No physical device was accessed. Test-fixture, TODO, QKB and continuity updates are committed as
+`766b572e`; its progress SHA-resolution record follows separately. Preserve all
+unrelated worktree changes.
 
 # Current handoff — persistent alias protection for applet DELETE — 2026-11-07 02:40 CET
 
