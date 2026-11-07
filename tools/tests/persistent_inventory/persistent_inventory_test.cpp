@@ -4,11 +4,13 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 namespace {
 struct CursorEntry {
   std::vector<uint8_t> tag;
+  std::vector<uint8_t> data{0};
 };
 std::vector<CursorEntry> entries;
 bool stall_cursor = false;
@@ -86,6 +88,19 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_len,
   return 1;
 }
 
+extern "C" uint8_t fs_read_inplace(const uint8_t *tag, uint8_t tag_length,
+                                    const uint8_t **data, uint32_t *length) {
+  for (const auto &entry : entries) {
+    if (entry.tag.size() == tag_length &&
+        std::memcmp(entry.tag.data(), tag, tag_length) == 0) {
+      *data = entry.data.data();
+      *length = static_cast<uint32_t>(entry.data.size());
+      return 0;
+    }
+  }
+  return 1;
+}
+
 extern "C" void path_static(uint8_t package_id, uint8_t offset,
                              uint8_t (*tag)[128], uint8_t *length) {
   (*tag)[0] = 0x02;
@@ -113,6 +128,8 @@ int main() {
              {{0x02, 9, 1}},
              {{0x02, 9, 2, 0xff, 0xff}},
              {max_length_package_tag}};
+  entries[3].data = {0xfe, 5, 0x03, 7, 0x38, 1, 0xff};
+  entries[4].data = {0xfd, 5, 0x03, 8, 0x38, 1, 0xff};
   Result result;
   bool ok = expect(jcvm::PersistentInventory::visitApplet(7, collect,
                                                            &result) ==
@@ -127,6 +144,46 @@ int main() {
                        jcvm::PersistentInventory::VisitResult::Complete &&
                    package_result.count == 3 && package_result.saw_long_tag,
                "enumerates_package_statics_including_maximum_tag");
+
+  bool alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   7, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::Stopped &&
+                   alias_found,
+               "finds_object_alias_into_deleted_applet_namespace");
+  alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   8, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::Stopped &&
+                   alias_found,
+               "finds_array_alias_into_deleted_applet_namespace");
+  entries[3].data = {0};
+  entries[4].data = {0};
+  entries[2].data = {0xfe, 5, 0x03, 8, 0x38, 1, 0xff};
+  alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   8, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::Complete &&
+                   !alias_found,
+               "ignores_aliases_owned_by_target_applet_itself");
+  entries[2].data = {0};
+  entries[3].data = {0xfe, 5, 0x02, 9, 2, 0xff, 0xff};
+  entries[4].data = {0xfd, 5, 0x03, 7, 0x38, 1, 0xff};
+  alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   7, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::Stopped &&
+                   alias_found,
+               "follows_alias_chain_to_applet_owned_record");
+  entries[3].data = {0xfe, 20, 0x03};
+  alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   7, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::InvalidTag &&
+                   !alias_found,
+               "rejects_malformed_persistent_alias");
+  entries[3].data = {0};
+  entries[4].data = {0};
 
   jcvm::PersistentInventory::AppletRootTag applet_root{};
   const jcvm::PersistentInventory::Tag short_applet_root{
@@ -216,6 +273,46 @@ int main() {
   ok &= expect(jcvm::PersistentInventory::visitApplet(7, collect, &result) ==
                    jcvm::PersistentInventory::VisitResult::InvalidTag,
                "rejects_tag_that_does_not_match_requested_prefix");
+  malformed_tag = false;
+
+  entries.resize(5);
+  const std::vector<uint8_t> deleted_target{0x03, 7, 0x38, 1, 0xff};
+  constexpr uint8_t chain_length = 32;
+  for (uint8_t index = 0; index < chain_length; ++index) {
+    std::vector<uint8_t> tag{0x02, 9, static_cast<uint8_t>(0x10 + index)};
+    std::vector<uint8_t> target{0x02, 9,
+                                static_cast<uint8_t>(0x11 + index)};
+    if (index + 1 == chain_length) target = deleted_target;
+    std::vector<uint8_t> alias{0xfe, static_cast<uint8_t>(target.size())};
+    alias.insert(alias.end(), target.begin(), target.end());
+    entries.push_back(CursorEntry{std::move(tag), std::move(alias)});
+  }
+  alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   7, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::Stopped &&
+                   alias_found,
+               "accepts_maximum_supported_persistent_alias_depth");
+
+  std::vector<uint8_t> extra_tag{0x02, 9,
+                                 static_cast<uint8_t>(0x10 + chain_length)};
+  std::vector<uint8_t> extra_target{0x03, 7, 0x39, 1, 0xff};
+  std::vector<uint8_t> extra_alias{0xfd,
+                                   static_cast<uint8_t>(extra_target.size())};
+  extra_alias.insert(extra_alias.end(), extra_target.begin(), extra_target.end());
+  std::vector<uint8_t> last_target{0x02, 9,
+                                   static_cast<uint8_t>(0x10 + chain_length)};
+  std::vector<uint8_t> last_alias{0xfd,
+                                  static_cast<uint8_t>(last_target.size())};
+  last_alias.insert(last_alias.end(), last_target.begin(), last_target.end());
+  entries.back().data = std::move(last_alias);
+  entries.push_back(CursorEntry{std::move(extra_tag), std::move(extra_alias)});
+  alias_found = false;
+  ok &= expect(jcvm::PersistentInventory::findAliasesToAppletOwner(
+                   7, alias_found) ==
+                       jcvm::PersistentInventory::VisitResult::InvalidTag &&
+                   !alias_found,
+               "rejects_persistent_alias_chain_beyond_supported_depth");
 
   std::printf("TEST:SUMMARY fail=%u\n", ok ? 0u : 1u);
   return ok ? 0 : 1;

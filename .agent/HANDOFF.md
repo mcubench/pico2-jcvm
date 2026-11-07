@@ -1,3 +1,29 @@
+# Current handoff — persistent alias protection for applet DELETE — 2026-11-07 02:40 CET
+
+Applet-instance DELETE now runs a persistent inventory scan at the top-level
+retained-reference API before checking materialized Context heaps. This catches
+object (`0xFE`) and array (`0xFD`) aliases in persistent package/app instance
+namespaces even when their sibling owner has never been selected since boot.
+Alias chains of up to 32 records are followed; a 33-record chain, malformed
+or unreadable inventory blocks DELETE fail-closed. Inventory unit tests cover
+both depth boundaries. The helper is covered by `./tools/test-persistent-inventory`.
+A dedicated APDU fixture for an unselected sibling's persisted alias remains
+open. Keep CTX-01 open along with same-package DELETE APDU coverage.
+
+Validation this step: all 22 `./tools/test-persistent-inventory` cases and
+`./tools/test-rmi-registry` pass; final `./tools/build arm` and
+`./tools/build riscv` pass after depth-boundary coverage was added. ARM image ends at `0x100d54e0`, leaving 174,880 bytes in the reserved
+firmware region. Focused retained-reference VPCD DELETE passes 2/2, and the
+full `symm_crypto` cross-AID suite passes 35/35. Log:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T012537Z.log` (SHA-256
+`df320b6ada9ef9f404af3743faed2de056dd61377b38e80ddaf5a2ebee521a30`). No
+physical test was run. The first full-suite attempt used the `current` profile
+and stopped at the fixture's Signature expectation; after rebuilding with
+`symm_crypto`, the full suite passed.
+
+Implementation and this handoff update are pending commit. Preserve the
+unrelated source/review changes in the worktree. Prior handoffs remain below.
+
 # Current handoff — applet DELETE retained-root scan — 2026-11-07 02:02 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges

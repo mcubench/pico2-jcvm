@@ -53,6 +53,11 @@ using AppletRootVisitor = bool (*)(uint8_t owner, uint8_t package_id,
 VisitResult visitPrefix(const Tag &prefix, TagVisitor visitor,
                         void *context);
 
+/// Find aliases outside one applet's own namespace that ultimately target
+/// persistent records owned by that applet. `Stopped` with `found=true` means
+/// an alias was found; malformed or unreadable inventory fails closed.
+VisitResult findAliasesToAppletOwner(uint8_t applet_owner, bool &found);
+
 /// Visit the serialized instance/array namespace belonging to one applet.
 /// Package static fields use a different namespace and are not included.
 VisitResult visitApplet(uint8_t applet_owner, TagVisitor visitor,

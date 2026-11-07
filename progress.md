@@ -23670,3 +23670,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the CTX-01 persistent-root audit.
 - Commit: `d0698e85` — validation record; this SHA-resolution record is separate.
 - Artifacts/logs: See the preceding progress entry.
+
+## 2026-11-07 Guard applet DELETE against unmaterialized persistent aliases 26 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-persistent-alias-guard`
+- When: '2026-11-07 02:13 CET' - '2026-11-07 02:40 CET'
+- Change: Added a persistent inventory scanner for serialized object (`0xFE`) and array (`0xFD`) aliases in namespaces `0x02` and `0x03`. It skips source aliases in the target applet's own namespace, follows alias chains up to 32 records, and identifies targets owned by the applet being deleted. The top-level retained-reference API now runs this check before looking at Context heaps, covering siblings that have never been selected. Malformed or unreadable inventory fails closed. Added unit cases for direct aliases, alias chains, self-owned aliases, and malformed alias records.
+- Validation: `./tools/test-persistent-inventory` passed all 22 cases with `TEST:SUMMARY fail=0`, including 32- and 33-record alias-chain bounds; `./tools/test-rmi-registry` passed all registry cases. `./tools/build arm` passed with firmware end `0x100d54e0` and 174,880 bytes remaining; `./tools/build riscv` passed. Focused retained-reference VPCD DELETE passed 2/2. Full `symm_crypto` cross-AID VPCD passed 35/35. The first full VPCD attempt under `current` failed at the Signature fixture expectation (`6F00`, expected `6A50` before `9000`); rebuilding PC with `symm_crypto` made the intended suite pass. `git diff --check` passed. No physical hardware was accessed.
+- Result: Persistent aliases can block applet-instance DELETE even when no Context has materialized their source object. An end-to-end VPCD case for an unselected sibling's persistent alias is not yet present; malformed unrelated inventory can conservatively block DELETE.
+- Decision: Keep CTX-01 open; next add the dedicated persisted-alias APDU case and same-package DELETE APDU coverage.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T012537Z.log`, SHA-256 `df320b6ada9ef9f404af3743faed2de056dd61377b38e80ddaf5a2ebee521a30`; focused log `artifacts/logs/sio-cross-aid-vpcd-20261107T011931Z.log`.

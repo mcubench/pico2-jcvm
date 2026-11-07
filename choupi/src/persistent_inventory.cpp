@@ -78,6 +78,87 @@ VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
   }
 }
 
+namespace {
+constexpr uint8_t kPersistentObjectAlias = 0xfe;
+constexpr uint8_t kPersistentArrayAlias = 0xfd;
+constexpr uint8_t kMaximumAliasDepth = 32;
+
+struct AliasSearch {
+  uint8_t owner;
+  bool found = false;
+  VisitResult failure = VisitResult::Complete;
+};
+
+bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
+  auto &search = *static_cast<AliasSearch *>(opaque);
+  if (source_tag.value[0] == 0x03 && source_tag.len >= 2 &&
+      source_tag.value[1] == search.owner) {
+    return true;
+  }
+
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  if (fs_read_inplace(source_tag.value, source_tag.len, &data, &length) != 0 ||
+      data == nullptr || length == 0) {
+    search.failure = VisitResult::ReadFailure;
+    return false;
+  }
+  for (uint8_t depth = 0;; ++depth) {
+    if (data[0] != kPersistentObjectAlias &&
+        data[0] != kPersistentArrayAlias) {
+      return true;
+    }
+    if (depth >= kMaximumAliasDepth) {
+      search.failure = VisitResult::InvalidTag;
+      return false;
+    }
+    if (length < 2 || data[1] == 0 || data[1] > kTagCapacity ||
+        length != 2u + data[1]) {
+      search.failure = VisitResult::InvalidTag;
+      return false;
+    }
+    Tag target{};
+    target.len = data[1];
+    std::memcpy(target.value, data + 2, target.len);
+    if (target.len >= 2 && target.value[0] == 0x03 &&
+        target.value[1] == search.owner) {
+      search.found = true;
+      return false;
+    }
+
+    if (fs_read_inplace(target.value, target.len, &data, &length) != 0 ||
+        data == nullptr || length == 0) {
+      search.failure = VisitResult::ReadFailure;
+      return false;
+    }
+    if (data[0] != kPersistentObjectAlias &&
+        data[0] != kPersistentArrayAlias) {
+      return true;
+    }
+  }
+}
+} // namespace
+
+VisitResult findAliasesToAppletOwner(const uint8_t applet_owner,
+                                     bool &found) {
+  found = false;
+  AliasSearch search{applet_owner};
+  const uint8_t namespaces[] = {0x02, 0x03};
+  for (const uint8_t name_space : namespaces) {
+    Tag prefix{};
+    prefix.len = 1;
+    prefix.value[0] = name_space;
+    const VisitResult result = visitPrefix(prefix, inspect_alias_tag, &search);
+    if (search.failure != VisitResult::Complete) return search.failure;
+    if (search.found) {
+      found = true;
+      return VisitResult::Stopped;
+    }
+    if (result != VisitResult::Complete) return result;
+  }
+  return VisitResult::Complete;
+}
+
 VisitResult visitApplet(const uint8_t applet_owner, const TagVisitor visitor,
                         void *context) {
   Tag prefix{};

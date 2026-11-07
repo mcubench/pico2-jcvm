@@ -105,6 +105,16 @@ extern "C" bool choupi_vm_applet_owner_in_use(const uint8_t owner_id) noexcept {
 
 extern "C" uint8_t choupi_vm_has_foreign_reference_to_applet(
     const uint8_t package_id, const uint8_t applet_owner) {
+  // Persistent aliases may belong to sibling applets that have not been
+  // selected since boot, so no Context heap is available to inspect them.
+  // Run the inventory scan before consulting materialized runtime heaps.
+  bool persistent_alias_found = false;
+  const auto alias_scan = jcvm::PersistentInventory::findAliasesToAppletOwner(
+      applet_owner, persistent_alias_found);
+  if (persistent_alias_found ||
+      alias_scan != jcvm::PersistentInventory::VisitResult::Complete) {
+    return 1;
+  }
   for (auto &context : inactive_applet_contexts) {
     if (context && context->getAppletPackageID() == package_id &&
         context->isAppletOwnerRetained(applet_owner)) {
