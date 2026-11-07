@@ -23715,3 +23715,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with direct APDU coverage for an alias persisted in an unselected sibling's own instance namespace.
 - Commit: `766b572e` — regression/test/status; this SHA-resolution record is separate.
 - Artifacts/logs: Focused and full-suite paths and hashes are in the preceding progress entry.
+
+## 2026-11-07 Test unselected sibling instance alias blocks DELETE 5 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-sibling-instance-alias-apdu`
+- When: '2026-11-07 03:00 CET' - '2026-11-07 03:05 CET'
+- Change: Extended the CAP test fixture to move the target applet reference from a package static into a sibling applet's instance field and clear it there. The cold-start APDU test now restarts with only that sibling-owned persistent alias, attempts target applet DELETE before selecting either client applet, clears the field, retries DELETE, and verifies the sibling remains usable. Updated CTX-01, QKB and session handoff.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` passed; scoped `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_UNMATERIALIZED_STATIC_ALIAS_DELETE=1 ./tools/test-sio-cross-aid-vpcd` passed 2/2. The test observed `6985` while the unselected sibling instance field retained the target and `9000` after clearing it. Fixture converter emitted its existing int-support warning; service compilation noted deprecated API use. No firmware source changed, so builds were not rerun; no physical device was accessed.
+- Result: Persistent alias scanning is now covered end to end for an unselected sibling's own `0x03` instance namespace after emulator restart, in addition to the earlier package-static case.
+- Decision: Keep CTX-01 open for broader Java Card deletion semantics; continue with the remaining lifecycle audit and regressions.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.

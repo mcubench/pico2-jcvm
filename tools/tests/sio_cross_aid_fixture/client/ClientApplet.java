@@ -19,6 +19,7 @@ public final class ClientApplet extends Applet {
   private Shareable retainedShareable;
   private static Object[] retainedGlobalStatic;
   private static Object retainedPersistentAlias;
+  private Object retainedSiblingAlias;
   private Object[] retainedGlobalInstance;
 
   private ClientApplet() {
@@ -230,6 +231,21 @@ public final class ClientApplet extends Applet {
       retainedPersistentAlias = null;
       buffer[0] = (byte) 0x6A;
       buffer[1] = (byte) 0x73;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
+    if (buffer[1] == 0x44) {
+      retainedSiblingAlias = retainedPersistentAlias;
+      retainedPersistentAlias = null;
+      buffer[0] = (byte) 0x6A;
+      buffer[1] = (byte) 0x74;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
+    if (buffer[1] == 0x45) {
+      retainedSiblingAlias = null;
+      buffer[0] = (byte) 0x6A;
+      buffer[1] = (byte) 0x75;
       apdu.setOutgoingAndSend((short) 0, (short) 2);
       return;
     }

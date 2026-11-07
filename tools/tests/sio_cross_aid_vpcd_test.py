@@ -1021,6 +1021,23 @@ def main() -> int:
                         "static alias setup returned "
                         f"{response.hex().upper()}, expected 6A729000"
                     )
+                select_sibling = bytes((0x00, 0xA4, 0x04, 0x00,
+                                        len(CLIENT_SIBLING_APPLET))) + CLIENT_SIBLING_APPLET
+                response = vpcd.exchange(
+                    connection, select_sibling,
+                    "SELECT sibling to move alias into its instance field",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("sibling SELECT before alias transfer failed")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8044000000"),
+                    "move target reference from static into sibling instance field",
+                )
+                if response != bytes.fromhex("6A749000"):
+                    raise RuntimeError(
+                        "sibling alias transfer returned "
+                        f"{response.hex().upper()}, expected 6A749000"
+                    )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("00A4040000"),
                     "SELECT ISD before cold static-alias check",
@@ -1031,7 +1048,8 @@ def main() -> int:
                     connection, process, listener, command, emulator_env,
                     log_path, "unmaterialized static-alias DELETE restart",
                 )
-                print("TEST:PASS emulator restarted with package-static alias")
+                print("TEST:PASS emulator restarted with an unselected sibling "
+                      "instance-field alias")
                 response = vpcd.exchange(
                     connection, bytes.fromhex("00A4040000"),
                     "SELECT ISD after cold static-alias restart",
@@ -1042,7 +1060,7 @@ def main() -> int:
                 delete_scp.authenticate()
                 response = vpcd.delete_object(
                     delete_scp, CLIENT_APPLET, False,
-                    "DELETE target with an unmaterialized static alias",
+                    "DELETE target with an unmaterialized sibling instance alias",
                     expected_statuses=(0x6985,),
                 )
                 if response[-2:] != b"\x69\x85":
@@ -1050,10 +1068,8 @@ def main() -> int:
                         "DELETE with unmaterialized static alias returned "
                         f"{response[-2:].hex().upper()}, expected 6985"
                     )
-                print("TEST:PASS package-static alias blocks applet DELETE "
-                      "before either applet has been selected")
-                select_sibling = bytes((0x00, 0xA4, 0x04, 0x00,
-                                        len(CLIENT_SIBLING_APPLET))) + CLIENT_SIBLING_APPLET
+                print("TEST:PASS unselected sibling instance alias blocks applet "
+                      "DELETE before either applet has been selected")
                 response = vpcd.exchange(
                     connection, select_sibling,
                     "SELECT sibling to clear package-static alias",
@@ -1061,13 +1077,13 @@ def main() -> int:
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError("sibling SELECT after rejected DELETE failed")
                 response = vpcd.exchange(
-                    connection, bytes.fromhex("8043000000"),
-                    "clear package-static alias through sibling applet",
+                    connection, bytes.fromhex("8045000000"),
+                    "clear sibling instance alias",
                 )
-                if response != bytes.fromhex("6A739000"):
+                if response != bytes.fromhex("6A759000"):
                     raise RuntimeError(
-                        "clearing static alias returned "
-                        f"{response.hex().upper()}, expected 6A739000"
+                        "clearing sibling instance alias returned "
+                        f"{response.hex().upper()}, expected 6A759000"
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("00A4040000"),
@@ -1077,12 +1093,12 @@ def main() -> int:
                 delete_scp.authenticate()
                 response = vpcd.delete_object(
                     delete_scp, CLIENT_APPLET, False,
-                    "DELETE target after clearing static alias",
+                    "DELETE target after clearing sibling instance alias",
                     expected_statuses=(0x9000,),
                 )
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError(
-                        "DELETE after clearing static alias returned "
+                        "DELETE after clearing sibling instance alias returned "
                         f"{response[-2:].hex().upper()}, expected 9000"
                     )
                 response = vpcd.exchange(
@@ -1100,7 +1116,7 @@ def main() -> int:
                         "sibling check after DELETE returned "
                         f"{response.hex().upper()}, expected 6A6E9000"
                     )
-                print("TEST:PASS clearing static alias permits DELETE and "
+                print("TEST:PASS clearing sibling instance alias permits DELETE and "
                       "leaves the sibling usable")
                 print("TEST:SUMMARY pass=2 fail=0")
                 return 0

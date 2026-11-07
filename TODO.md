@@ -864,8 +864,11 @@ review.
   applet is selected; clearing the alias through the same-package sibling
   permits DELETE `9000`, and the sibling remains usable. The inventory also
   follows aliases from unselected `0x03` sibling records. Keep CTX-01 open for a
-  direct APDU case with an alias in an unselected sibling instance namespace
-  and remaining Java Card deletion semantics.
+  broader Java Card deletion semantics. A cold-start VPCD APDU test now stores
+  the target reference in an unselected sibling's instance field, restarts the
+  emulator, verifies DELETE returns `6985` before selecting either client
+  applet, clears the field, then verifies DELETE returns `9000` and the sibling
+  remains usable.
 
 ### CTX-02
 
