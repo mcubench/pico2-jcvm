@@ -1,3 +1,28 @@
+# Current handoff — REL-01 reader check blocked; max-crypto image built — 2026-11-07 12:46 CET
+
+REL-01 CPLC source remains committed as `971272f3`. The release level is
+hard-coded as `0.1.1` (`0101`). Two consecutive ARM max-profile builds produced
+the same dirty-tree source marker `FF8611E9`; the RISC-V shared-core build also
+passed. The authorized USB helper granted three device nodes, but
+`pcsc_scan -r` returned no readers (exit 124 after the bounded 8-second scan).
+The VPCD GET DATA wrapper built its fixtures but did not reach reader-ready;
+it was stopped after making no progress. No GPPro `--info` query or physical
+flash was performed, so the REL-01 hardware acceptance remains open.
+
+Max-crypto ARM empty-card image for external testing:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF8611E9.uf2`
+(4,045,824 bytes, SHA-256
+`8ade169f6785319993182045c8e46e84d1c8bb398b74da24a406b3bdcc3ae932`). It is
+RP2350 ARM Secure, enables 147/150 profile capabilities, and has all 4,096
+storage blocks erased. Firmware ends at `0x100EDCAC`, leaving 74,580 bytes.
+Build provenance records `0xFF8611E9`; this was built from the current dirty
+worktree, so review its uncommitted source changes before treating it as a
+release artifact. No token was flashed.
+
+Next: when a Pico is published by `pcsc_scan -r`, use GPPro `--info` to verify
+CPLC release `0101` and the source ID. Preserve the currently dirty source
+changes; do not stage them as part of this acceptance record.
+
 # Current handoff — R26 and max-crypto external image — 2026-11-07 12:14 CET
 
 RV-20261106-26 is implemented and committed as `a811c6f3`; its SHA follow-up

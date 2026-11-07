@@ -24459,3 +24459,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Build the max-crypto ARM firmware image for external testing, then record the artifact hash and empty-card packaging result.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Verify REL-01 stability and package max-crypto external image 10 minutes
+
+- Step/experiment: `REL-01-build-stability-and-max-empty-card-image`
+- When: '2026-11-07 12:36 CET' - '2026-11-07 12:46 CET'
+- Change: Rechecked the committed CPLC release encoding and built an empty-card max-crypto ARM UF2 for external testing. Updated the handoff; TODO already states the outstanding hardware-acceptance gate.
+- Validation: `./tools/build arm --profile max_crypto` PASS twice; both builds reported source marker `0xFF8611E9` and profile 147/150. `./tools/build riscv --profile max_crypto` PASS. `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF8611E9.uf2` PASS (3,805 firmware blocks, 4,096 erased storage blocks). `./tools/env picotool info -a` confirms RP2350 ARM Secure. Authorized helper granted three USB nodes, but `timeout 8s pcsc_scan -r` returned 124 with no readers. VPCD probe did not reach reader-ready and was interrupted; GPPro and physical flash were not run.
+- Result: Release source is encoded `0.1.1` (`0101`); repeated builds retained source marker `FF8611E9`. Image size 4,045,824 bytes; SHA-256 `8ade169f6785319993182045c8e46e84d1c8bb398b74da24a406b3bdcc3ae932`; firmware end `0x100EDCAC`, 74,580 bytes remaining. The image reflects a dirty worktree and is intended for external testing, not claimed as a clean release artifact.
+- Decision: Build and packaging work is complete. REL-01 remains open until a physical PC/SC reader is available and GPPro `--info` confirms the release and source ID.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF8611E9.uf2`; build provenance `build/arm/build-provenance.txt`; interrupted VPCD run directory `artifacts/results/gp-get-data-vpcd-20261107T114051Z/`.
