@@ -24775,8 +24775,8 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Step/experiment: `RV-54-max-crypto-empty-card-image`
 - When: '2026-11-07 17:45 CET' - '2026-11-07 17:50 CET'
 - Change: Rebuilt the max_crypto ARM firmware after the transient-space fix was committed and packaged a fresh full-size empty-card UF2 for external testing. Updated the local artifact README and session handoff.
-- Validation: `./tools/build arm --profile max_crypto` passed after ROM-mask regeneration; `./tools/build riscv --profile max_crypto` passed the VM-core/smoke build earlier in the same source step. `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` passed. `picotool info -a` identified RP2350 ARM Secure; package checks reported 3,808 firmware blocks and 4,096 erased storage blocks. No hardware flash or runtime check was performed.
+- Validation: `./tools/build arm --profile max_crypto` passed after ROM-mask regeneration; `./tools/build riscv --profile max_crypto` passed the VM-core/smoke build again after commit `872740b1`. `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` passed. `picotool info -a` identified RP2350 ARM Secure; package checks reported 3,808 firmware blocks and 4,096 erased storage blocks. No hardware flash or runtime check was performed.
 - Result: Image is 4,047,360 bytes, SHA-256 `23f1977f6ee2328ec94722e75da3ac8a1b9748fb54c081e8262c37763d238834`; firmware end `0x100EDFC0`, remaining flash 73,792 bytes, release 0.1.1, source ID `FF08ACD7`. The source ID marks a dirty worktree.
 - Decision: This is the current max_crypto empty-card ARM image for external testing. Its on-device behavior remains unverified.
-- Commit: `pending`
+- Commit: `872740b1`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; SHA-256 above.
