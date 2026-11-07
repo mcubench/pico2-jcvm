@@ -179,6 +179,118 @@ int main() {
            "restored_int_field_preserves_and_checks_low_word_marker");
     persistent_transaction_test::instance_field_count = 0;
   }
+  {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(0x77, 2, 3);
+    const auto field_tag =
+        jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
+    persistent_transaction_test::seed(
+        field_tag.value, field_tag.len, byte_record(0x42));
+    jcvm::JC_Instance instance(heap, 2, 3, instance_tag);
+    const bool original_loaded = instance.getField_Byte(0) == 0x42;
+    const bool began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    persistent_transaction_test::fail_one_write();
+    bool failed_write = false;
+    try {
+      instance.setField_Byte(0, 0x7f);
+    } catch (jcvm::Exceptions) {
+      failed_write = true;
+    }
+    const bool cache_unchanged_before_abort =
+        instance.getField_Byte(0) == 0x42;
+    const bool aborted =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool storage_unchanged =
+        persistent_transaction_test::read(field_tag.value, field_tag.len) ==
+        byte_record(0x42);
+    expect(original_loaded && began && failed_write &&
+               cache_unchanged_before_abort && aborted && storage_unchanged,
+           "failed_persistent_byte_write_keeps_cache_and_storage_canonical");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+  {
+    persistent_transaction_test::instance_field_count = 2;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(0x78, 2, 3);
+    const auto field_tag =
+        jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
+    const jcvm::jint_t original_value =
+        static_cast<jcvm::jint_t>(0x12345678);
+    persistent_transaction_test::seed(
+        field_tag.value, field_tag.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_INT), 0x12, 0x34,
+         0x56, 0x78});
+    const auto original_record =
+        persistent_transaction_test::read(field_tag.value, field_tag.len);
+    jcvm::JC_Instance instance(heap, 2, 3, instance_tag);
+    const bool loaded = instance.getField_Int(0) == original_value;
+    const bool began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    persistent_transaction_test::fail_one_write();
+    bool failed_write = false;
+    try {
+      instance.setField_Int(0, static_cast<jcvm::jint_t>(0x76543210));
+    } catch (jcvm::Exceptions) {
+      failed_write = true;
+    }
+    const bool cache_unchanged_before_abort =
+        instance.getField_Int(0) == original_value;
+    const bool aborted =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool storage_unchanged =
+        persistent_transaction_test::read(field_tag.value, field_tag.len) ==
+        original_record;
+    expect(loaded && began && failed_write && cache_unchanged_before_abort &&
+               aborted && storage_unchanged,
+           "failed_persistent_int_write_keeps_both_words_canonical");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+  {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(0x79, 2, 3);
+    const auto field_tag =
+        jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
+    const auto original_array =
+        heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(original_array)->setByteEntry(0, 0x31);
+    heap.getArray(original_array)->setByteEntry(1, 0x32);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        field_tag, original_array, heap);
+    const auto original_record =
+        persistent_transaction_test::read(field_tag.value, field_tag.len);
+    jcvm::JC_Instance instance(heap, 2, 3, instance_tag);
+    const auto original_reference = instance.getField_Reference(0);
+    const auto replacement_array =
+        heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(replacement_array)->setByteEntry(0, 0x41);
+    heap.getArray(replacement_array)->setByteEntry(1, 0x42);
+    const bool began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    persistent_transaction_test::fail_one_write();
+    bool failed_write = false;
+    try {
+      instance.setField_Reference(0, replacement_array);
+    } catch (jcvm::Exceptions) {
+      failed_write = true;
+    }
+    const bool cache_unchanged_before_abort =
+        instance.getField_Reference(0) == original_reference;
+    const bool aborted =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool storage_unchanged =
+        persistent_transaction_test::read(field_tag.value, field_tag.len) ==
+        original_record;
+    expect(began && failed_write && cache_unchanged_before_abort && aborted &&
+               storage_unchanged,
+           "failed_persistent_reference_write_keeps_old_root_canonical");
+    persistent_transaction_test::instance_field_count = 0;
+  }
   using jcvm::FlashMemory_Handler;
   using persistent_transaction_test::read;
   using persistent_transaction_test::seed;

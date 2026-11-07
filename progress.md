@@ -24001,3 +24001,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue to the next P1 review item while preserving unrelated worktree changes.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Resolve stack bounds SHA-record commit 1 minute
+
+- Step/experiment: `rv-20261107-stack-local-bounds-sha-record`
+- When: '2026-11-07 04:33 CET' - '2026-11-07 04:34 CET'
+- Change: Resolved the progress SHA-record commit for RV-20261106-03.
+- Validation: No new run; sanitizer and architecture-build outcomes are in the preceding entries.
+- Result: Stack local-bounds implementation commit is `b36e9cf1`; its SHA-resolution commit is `81eb4d21`.
+- Decision: Continue with P1 persistent field-cache consistency.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
+
+## 2026-11-07 Keep persistent instance caches canonical after failed writes 10 minutes
+
+- Step/experiment: `rv-20261107-persistent-instance-cache`
+- When: '2026-11-07 04:34 CET' - '2026-11-07 04:44 CET'
+- Change: Moved cache publication in persistent byte, short, int and reference setters until after persistent storage succeeds. Reference setters now resolve and validate the new reference type locally before touching the cached field. Added fault-injected persistent-instance tests for byte, two-word int and object-array reference writes; they compare cache state before abort and serialized storage after abort.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `failed_persistent_byte_write_keeps_cache_and_storage_canonical`, `failed_persistent_int_write_keeps_both_words_canonical`, and `failed_persistent_reference_write_keeps_old_root_canonical`; `./tools/build arm` passed (firmware end `0x100d5690`, 174,448 bytes remaining); `./tools/build riscv` passed. `git diff --check` passed. No physical hardware test was performed.
+- Result: Injected storage failures no longer expose uncommitted field values through the in-memory cache; int pairs and reference roots remain consistent with the old persistent records.
+- Decision: RV-20261106-05 remains open for caught failure followed by applet commit, GC and cold-restore cases; proceed to OwnerPIN lifecycle finding RV-20261106-04.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Test output emitted by `./tools/test-persistent-transaction`; no separate log.

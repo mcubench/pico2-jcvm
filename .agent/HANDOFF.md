@@ -1,3 +1,23 @@
+# Current handoff — persistent field cache remains canonical on write failure — 2026-11-07 04:44 CET
+
+Persistent `JC_Instance` setters for byte, short, int and reference fields now
+update the in-memory cache only after the persistent storage helper returns
+successfully. Reference assignment resolves the incoming array/object type
+before changing the cached value. Fault-injected tests cover byte, two-word
+integer and array-reference failures inside an applet transaction; the old
+cache is visible before abort and the original serialized record remains after
+abort. `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`.
+ARM and RISC-V wrapper builds pass; ARM firmware ends at `0x100d5690` with
+174,448 bytes remaining. No hardware test was run.
+
+RV-20261106-05 remains open for caught failure followed by applet commit, GC and
+cold restore. The stack-bounds SHA-resolution commit is recorded as
+`81eb4d21`. This persistent-cache step awaits its commit SHA resolution.
+
+Next: examine RV-20261106-04 OwnerPIN reset and transaction-exempt state. Keep
+implementation in native C++ VM paths; do not modify ROM API Java sources or
+CAP fixtures. Preserve remaining concurrent worktree changes.
+
 # Current handoff — validate stack local ranges before access — 2026-11-07 04:33 CET
 
 `Stack` now validates physical stack indices, local-variable count and complete

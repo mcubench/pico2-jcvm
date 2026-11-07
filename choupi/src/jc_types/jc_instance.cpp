@@ -535,14 +535,15 @@ void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
   }
   jc_field_t &field = this->fields->at(index);
   require_field_type(field.type, FieldType::FIELD_TYPE_BYTE);
-  field.type = FieldType::FIELD_TYPE_BYTE;
-  field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
 
     FlashMemory_Handler::setPersistentField_Byte(tag, value);
-  } else {
+  }
+  field.type = FieldType::FIELD_TYPE_BYTE;
+  field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
+  if (!this->isPersistent()) {
 
 #ifdef JCVM_TYPED_HEAP
     // TODO: the instance data value type should be saved.
@@ -563,14 +564,15 @@ void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
   }
   jc_field_t &field = this->fields->at(index);
   require_field_type(field.type, FieldType::FIELD_TYPE_SHORT);
-  field.type = FieldType::FIELD_TYPE_SHORT;
-  field.value = static_cast<jword_t>(value);
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
 
     FlashMemory_Handler::setPersistentField_Short(tag, value);
-  } else {
+  }
+  field.type = FieldType::FIELD_TYPE_SHORT;
+  field.value = static_cast<jword_t>(value);
+  if (!this->isPersistent()) {
 
 #ifdef JCVM_TYPED_HEAP
     // TODO: the instance data value type should be saved.
@@ -600,16 +602,17 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
       low.type != FieldType::FIELD_TYPE_INT_LOW) {
     throw Exceptions::SecurityException;
   }
-  field.type = FieldType::FIELD_TYPE_INT;
-  field.value = static_cast<jword_t>(INT_2_MSSHORTS(value));
-  low.type = FieldType::FIELD_TYPE_INT_LOW;
-  low.value = static_cast<jword_t>(INT_2_LSSHORTS(value));
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
 
     FlashMemory_Handler::setPersistentField_Int(tag, value);
-  } else {
+  }
+  field.type = FieldType::FIELD_TYPE_INT;
+  field.value = static_cast<jword_t>(INT_2_MSSHORTS(value));
+  low.type = FieldType::FIELD_TYPE_INT_LOW;
+  low.value = static_cast<jword_t>(INT_2_LSSHORTS(value));
+  if (!this->isPersistent()) {
 
 #ifdef JCVM_TYPED_HEAP
     // TODO: the instance data value type should be saved.
@@ -665,9 +668,9 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   jc_field_t &field = this->fields->at(index);
   require_field_type(field.type, FieldType::FIELD_TYPE_OBJECT);
   record_field_write(3, 0);
-  field.value = static_cast<jword_t>(ref.compact());
+  FieldType new_type = FieldType::FIELD_TYPE_OBJECT;
   if (ref.isNullPointer()) {
-    field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
+    new_type = FieldType::FIELD_TYPE_UNINITIALIZED;
   } else if (ref.isArray()) {
     std::shared_ptr<JC_Array> array;
     try {
@@ -678,31 +681,31 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
     }
     switch (array->getType()) {
     case JAVA_ARRAY_T_BYTE:
-      field.type = array->isTransientArray()
-                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE
-                       : FieldType::FIELD_TYPE_ARRAY_BYTE;
+      new_type = array->isTransientArray()
+                     ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE
+                     : FieldType::FIELD_TYPE_ARRAY_BYTE;
       break;
     case JAVA_ARRAY_T_BOOLEAN:
-      field.type = array->isTransientArray()
-                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN
-                       : FieldType::FIELD_TYPE_ARRAY_BOOLEAN;
+      new_type = array->isTransientArray()
+                     ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN
+                     : FieldType::FIELD_TYPE_ARRAY_BOOLEAN;
       break;
     case JAVA_ARRAY_T_SHORT:
-      field.type = array->isTransientArray()
-                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT
-                       : FieldType::FIELD_TYPE_ARRAY_SHORT;
+      new_type = array->isTransientArray()
+                     ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT
+                     : FieldType::FIELD_TYPE_ARRAY_SHORT;
       break;
 #ifdef JCVM_INT_SUPPORTED
     case JAVA_ARRAY_T_INT:
-      field.type = array->isTransientArray()
-                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT
-                       : FieldType::FIELD_TYPE_ARRAY_INT;
+      new_type = array->isTransientArray()
+                     ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT
+                     : FieldType::FIELD_TYPE_ARRAY_INT;
       break;
 #endif /* JCVM_INT_SUPPORTED */
     case JAVA_ARRAY_T_REFERENCE:
-      field.type = array->isTransientArray()
-                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT
-                       : FieldType::FIELD_TYPE_ARRAY_OBJECT;
+      new_type = array->isTransientArray()
+                     ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT
+                     : FieldType::FIELD_TYPE_ARRAY_OBJECT;
       break;
     default:
       std::printf("CHOUPI:PERSIST_INVALID loaded-field-type=%u index=%u package=%u class=%u\r\n",
@@ -712,8 +715,6 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
                   static_cast<unsigned>(this->claz));
       throw Exceptions::SecurityException;
     }
-  } else {
-    field.type = FieldType::FIELD_TYPE_OBJECT;
   }
   if (this->isPersistent()) {
     fs::Tag tag =
@@ -726,7 +727,11 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
       record_field_write(12, static_cast<uint8_t>(exception));
       throw;
     }
-  } else {
+  }
+
+  field.value = static_cast<jword_t>(ref.compact());
+  field.type = new_type;
+  if (!this->isPersistent()) {
 
 #ifdef JCVM_TYPED_HEAP
     // TODO: the instance data value type should be saved.
