@@ -23867,8 +23867,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The named `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry` case passed, as did lifecycle recovery and filesystem snapshot suites. The output includes expected injected `FAULT FS snapshot unavailable; preserve flash for recovery` during a negative test, followed by its `TEST:PASS` assertion.
 - Result: Simulated 1,000-cut reclaimer recovery leaves either the old candidate set or a clean state while preserving the live root, then retry completes. This is host-model evidence only.
 - Decision: Retain physical multi-owner/reclaimer power-loss acceptance; do not enable automatic object reclamation yet.
-- Commit: pending.
+- Commit: `b75f057c`.
 - Artifacts/logs: Test output was emitted on stdout; no separate log captured.
+
+## 2026-11-07 Record RP2350 reclaimer cut-model commit resolution 1 minute
+
+- Step/experiment: `persist-01-20261107-rp2350-overlay-reclaimer-cuts-commit`
+- When: '2026-11-07 03:49 CET' - '2026-11-07 03:50 CET'
+- Change: Recorded the RP2350 reclaimer cut-model validation commit SHA.
+- Validation: No new run; the host-model overlay suite passed in the preceding step.
+- Result: The current-worktree cut-model validation record is committed as `b75f057c`.
+- Decision: Continue offline lifecycle/reclaimer work; physical gates remain open.
+- Commit: `b75f057c` — validation/status; this SHA-resolution record is separate.
+- Artifacts/logs: No file log; stdout contained the named power-cut test PASS.
 
 ## 2026-11-07 Record PERSIST-01 offline validation commit resolution 1 minute
 

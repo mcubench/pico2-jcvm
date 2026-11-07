@@ -43,6 +43,8 @@ The current-worktree RP2350 filesystem overlay suite also passes. Its named
 `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
 case models 1,000 snapshot cuts and succeeds. This strengthens simulated
 recovery evidence but does not replace physical flash interruption testing.
+The update is committed as `b75f057c`; its progress SHA-resolution record
+follows separately.
 
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
