@@ -24781,7 +24781,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `872740b1`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; SHA-256 above.
 
-
 ## 2026-11-07 Revalidate REL-01 and rebuild external max_crypto image 4 minutes
 
 - Step/experiment: `REL-01-current-tree-revalidation-and-max-empty-card`
@@ -24792,3 +24791,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Offline REL-01 stability acceptance passes; keep physical GPPro display acceptance open. The image is ready for external Windows testing with an empty card.
 - Commit: `1d176d71`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` (SHA-256 `03472e1be05e37c70b078e3f9afea9e6f9fbf3a300c3bbbcb131a1e8166b8c2e`); `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (SHA-256 above); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-07 Refresh max_crypto empty-card image for external testing 15 minutes
+
+- Step/experiment: `HMAC-01-max-crypto-external-image`
+- When: '2026-11-07 18:44 CET' - '2026-11-07 19:00 CET'
+- Change: Rebuilt and repackaged the ARM `max_crypto` profile as a full empty-card UF2 for external testing. Added the current image hash and layout to the firmware artifact README and handoff. Kept the in-progress HMAC implementation out of the advertised support set until its native runtime validation passes.
+- Validation: `./tools/build arm --profile max_crypto` passed with 147/162 capabilities, image end `0x100EE230`, and 73,168 bytes before the storage partition. `./tools/build riscv --profile max_crypto` passed the VM-core/smoke build with 147/162 capabilities. `./tools/package-empty-card-uf2` passed and reported 3,811 firmware blocks plus 4,096 erased storage blocks. No physical flash, PC/SC check, or applet installation was run.
+- Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,048,896 bytes, SHA-256 `988a148d72f624ba8727f99ae4bd2308a2b03c8ae8065bf95951adbd2bfc51c0`, RP2350 ARM Secure, release 0.1.1, with empty card storage. HMAC KAT still fails with `6F00` / `CryptoException.INVALID_INIT`; the HMAC support flags remain disabled in this image.
+- Decision: Provide this as the current external-test image, and continue HMAC-01 diagnosis before enabling HMAC in the profile.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; SHA-256 above; failing HMAC trace `artifacts/logs/hmac-kat-vpcd-20261107T174839Z.log`.

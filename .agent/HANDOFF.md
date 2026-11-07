@@ -1,3 +1,30 @@
+# Current handoff — max_crypto empty-card image refreshed — 2026-11-07 19:00 CET
+
+The requested ARM external-test binary has been rebuilt after both profile
+wrapper builds passed. File:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
+(4,048,896 bytes, SHA-256
+`988a148d72f624ba8727f99ae4bd2308a2b03c8ae8065bf95951adbd2bfc51c0`). It is
+RP2350 ARM Secure, release 0.1.1, profile `max_crypto` with 147/162
+capabilities, firmware end `0x100EE230` (73,168 bytes before the storage
+partition), 3,811 firmware blocks, and 4,096 erased storage blocks. The card
+is empty: no CAP or applet is installed. Do not treat this as flashed or
+hardware-tested.
+
+HMAC-01 is in progress. Native HMAC plumbing and a CAP-only KAT fixture are
+present in the worktree, but the first APDU still returns `6F00`; exception
+tracing shows `CryptoException.INVALID_INIT` on a Signature operation. HMAC
+capabilities are therefore disabled in `config/javacard-support.json` for the
+external max_crypto image until its runtime path passes. Continue debugging
+Signature initialization and then rerun HMAC KAT plus JCAlgTest 1.8.4 support
+checks. No physical Pico was flashed or queried in this step.
+
+The ARM and RISC-V wrappers both passed with the HMAC flags disabled. Preserve
+all pre-existing dirty changes; only the artifact README, this handoff and
+progress evidence were intended for the external-image documentation commit.
+
+---
+
 # Current handoff — RV-54 and refreshed max_crypto image — 2026-11-07 17:50 CET
 
 RV-20261106-54 is committed as `b3bc3f37`; the commit-reference follow-up is
