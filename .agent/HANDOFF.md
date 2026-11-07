@@ -29,7 +29,7 @@ was attempted. The repeated symmetric suite initially found a stale hardcoded
 input snapshot path; creating its expected empty generated input image allowed
 the unchanged test to pass. Do not stage unrelated concurrent edits.
 
-Step commit: `resolve in the following progress record`.
+Step commit: `ff86c5b6`.
 
 Next: keep R08 open; review overlapping input/output buffer behavior for the
 chunked update path, inspect remaining workspace serialization cases, and
