@@ -23946,3 +23946,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with RV-20261106-02, preserving the remaining dirty worktree changes.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: No new artifacts.
+
+## 2026-11-07 Preserve callers during frame unwind 6 minutes
+
+- Step/experiment: `rv-20261107-nested-frame-unwind`
+- When: '2026-11-07 04:14 CET' - '2026-11-07 04:20 CET'
+- Change: Corrected `Stack::unwindToDepth()` to discard newest frames from the front of the list, matching `push_Frame()` and normal `pop_Frame()` ordering. Added a three-frame regression that unwinds to depth two and one and verifies retained caller PCs and local values.
+- Validation: `./tools/test-rmi-registry` passed, including `unwind_callers=1`; `./tools/build arm` passed (firmware end `0x100d5514`, 174,828 bytes remaining); `./tools/build riscv` passed. No physical hardware test was performed.
+- Result: Unwinding to a nonzero depth retains the original caller and intermediate caller rather than leaving the failed callee active. Exception-type integration, allocation failure and timeout tests remain open.
+- Decision: Keep RV-20261106-02 open for deeper APDU/runtime error-path acceptance; continue with remaining interpreter/runtime P1 findings after checking these cases.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `./tools/test-rmi-registry` output reported `RMI_REGISTRY:PASS ... unwind_callers=1`; no separate log.

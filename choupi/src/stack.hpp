@@ -153,7 +153,7 @@ public:
   /// Discard only frames above an existing interpreter caller.
   void unwindToDepth(const uint16_t depth) noexcept {
     while (this->frames.size() > depth) {
-      this->frames.pop_back();
+      this->frames.pop_front();
     }
     if (depth == 0) {
       this->root_return_value_available = false;

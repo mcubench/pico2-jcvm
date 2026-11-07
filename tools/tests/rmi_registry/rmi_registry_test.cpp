@@ -216,6 +216,36 @@ void verify_dup_x_positive_depth() {
 #endif
 }
 
+void verify_unwind_to_depth_preserves_callers() {
+  const uint8_t root_code[] = {0x00};
+  const uint8_t caller_code[] = {0x00};
+  const uint8_t callee_code[] = {0x00};
+  jcvm::Stack stack;
+  stack.push_Frame(0, 1, 2, root_code, root_code,
+                   root_code + sizeof(root_code));
+  stack.writeLocal_Short(0, 0x1234);
+
+  stack.push_Frame(0, 1, 2, caller_code, caller_code,
+                   caller_code + sizeof(caller_code));
+  stack.writeLocal_Short(0, 0x2345);
+  stack.push_Frame(0, 1, 2, callee_code, callee_code,
+                   callee_code + sizeof(callee_code));
+
+  assert(stack.frameDepth() == 3);
+  stack.unwindToDepth(2);
+  assert(stack.frameDepth() == 2);
+  assert(stack.getPC().getValue() == caller_code);
+  assert(stack.readLocal_Short(0) == 0x2345);
+
+  stack.unwindToDepth(1);
+  assert(stack.frameDepth() == 1);
+  assert(stack.getPC().getValue() == root_code);
+  assert(stack.readLocal_Short(0) == 0x1234);
+
+  stack.unwindToDepth(0);
+  assert(stack.empty());
+}
+
 void verify_sensitive_result_cross_context(jcvm::Context &producer,
                                            jcvm::Context &consumer) {
   const auto previous = jcvm::Context::setActiveContext(&producer);
@@ -1329,6 +1359,7 @@ void verify_typed_operand_pops() {
 
 int main() {
   verify_dup_x_positive_depth();
+  verify_unwind_to_depth_preserves_callers();
   jcvm::Stack argument_stack;
   push_test_frame(argument_stack, 0, 0, 3);
   const auto proxy_receiver = make_reference(20);
@@ -1464,6 +1495,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 sensitive_result_gc_root=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1 stack_dup_x=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 sensitive_result_gc_root=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1 stack_dup_x=1 unwind_callers=1");
   return 0;
 }

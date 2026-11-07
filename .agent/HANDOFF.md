@@ -1,3 +1,19 @@
+# Current handoff — nested frame unwind direction — 2026-11-07 04:20 CET
+
+`Stack::unwindToDepth()` now removes frames from the front of the frame list,
+which matches `push_Frame()` (`emplace_front`) and normal `pop_Frame()`
+(`pop_front`). A three-frame regression unwinds to depth two and then one and
+checks that each retained caller's PC and local value remain intact. The
+`./tools/test-rmi-registry` wrapper passes with `unwind_callers=1`; ARM and
+RISC-V wrapper builds also pass. No physical device was used.
+
+RV-20261106-02 remains open for end-to-end nested Java/ISO exception,
+allocation-failure and timeout coverage. This first correction is committed as
+`<commit SHA follows>`; its progress SHA-resolution record follows.
+
+Next: continue through the P1 runtime findings, keeping all pre-existing
+uncommitted review and implementation changes isolated from commits.
+
 # Current handoff — interpreter opcode fetch recovery — 2026-11-07 04:13 CET
 
 `Interpretor::run() noexcept` now contains exceptions from current-frame lookup
