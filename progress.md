@@ -23737,3 +23737,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 lifecycle coverage and keep broader DELETE semantics open.
 - Commit: `07979923` — regression/test/status; this SHA-resolution record is separate.
 - Artifacts/logs: Focused VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
+
+## 2026-11-07 Revalidate full cross-AID suite after sibling alias fixture 4 minutes
+
+- Step/experiment: `ctx-20261107-sio-cross-aid-suite-after-alias-fixture`
+- When: '2026-11-07 03:06 CET' - '2026-11-07 03:10 CET'
+- Change: Reran the full `symm_crypto` SIO cross-AID VPCD suite after adding the new instance-field alias commands to the client fixture.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0`. Fixture CAPs converted with zero errors; the converter's existing int-support warning and deprecated-API compiler note remained. No physical device was accessed.
+- Result: Existing 35 SIO, SensitiveResult, lifecycle, stale-proxy, and reinstall cases remain green with the fixture update. New opt-in cold-start alias case separately passes 2/2.
+- Decision: The fixture change is integrated; proceed with remaining CTX-01 lifecycle work.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T020718Z.log`, SHA-256 `aecca8167aaf44ddd64c08ff6a92a19d4d76893557dee0862720684eb87b4d6c`.

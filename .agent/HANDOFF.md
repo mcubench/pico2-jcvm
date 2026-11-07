@@ -6,14 +6,15 @@ moves the target applet reference from a package static into the sibling's
 instance field, clears the static, restarts the emulator, and issues DELETE
 before selecting either client applet. DELETE returns `6985`; clearing the
 sibling field permits DELETE `9000`, and the surviving sibling remains usable.
-Focused VPCD passes 2/2. Log:
+Focused VPCD passes 2/2. The full `symm_crypto` cross-AID suite also passes
+35/35 after the fixture change. Full-suite log:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T020718Z.log`, SHA-256
+`aecca8167aaf44ddd64c08ff6a92a19d4d76893557dee0862720684eb87b4d6c`. Focused log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256
 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
-The preceding package-static case and full `symm_crypto` VPCD suite passed
-35/35. No physical device was accessed; no firmware implementation changed.
-The fixture, TODO, QKB and continuity update are committed as `07979923`; its
-progress SHA-resolution record follows separately. Preserve unrelated worktree
-changes.
+No physical device was accessed; no firmware implementation changed. The
+fixture, TODO, QKB and continuity update are committed as `07979923`, with SHA
+resolution in `0f9d4ffc`. Preserve unrelated worktree changes.
 
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 
