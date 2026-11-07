@@ -212,13 +212,16 @@ int main() {
   (void)session.handle_message(message.data(), message.size(), response);
   check(session.applet_selected(), "known applet is active before power off");
   const unsigned int deselects_before_power_off = card.deselect_count;
+  const unsigned int manager_resets_before_power_off =
+      card.card_manager_reset_count;
   message = control(0x00);
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::NoResponse &&
             !session.powered() && !session.applet_selected() &&
             card.deselect_count == deselects_before_power_off &&
-            card.clear_count >= 1,
-        "power off clears selected state without applet deselect");
+            card.clear_count >= 1 &&
+            card.card_manager_reset_count == manager_resets_before_power_off + 1,
+        "power off clears VM and card-manager session without applet deselect");
   result = session.handle_message(command.data(), command.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
             response == std::vector<uint8_t>({0x69, 0x85}),
@@ -230,13 +233,16 @@ int main() {
   (void)session.handle_message(message.data(), message.size(), response);
   check(session.applet_selected(), "known applet is active before reader reset");
   const unsigned int deselects_before_reset = card.deselect_count;
+  const unsigned int manager_resets_before_reset =
+      card.card_manager_reset_count;
   message = control(0x02);
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::NoResponse &&
             session.powered() && !session.applet_selected() &&
             card.deselect_count == deselects_before_reset &&
-            card.clear_count >= 2,
-        "reset clears VM state without invoking applet deselect");
+            card.clear_count >= 2 &&
+            card.card_manager_reset_count == manager_resets_before_reset + 1,
+        "reset clears VM and card-manager session without applet deselect");
   message = applet_select();
   (void)session.handle_message(message.data(), message.size(), response);
   const std::vector<uint8_t> isd_select{0x00, 0xa4, 0x04, 0x00, 0x08,

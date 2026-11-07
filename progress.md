@@ -24722,3 +24722,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Provide the named max_crypto empty-card UF2 for external testing with its dirty-tree source marker disclosed.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Align CCID and VPCD logical power/reset behavior 25 minutes
+
+- Step/experiment: `RV-20261106-36-power-reset-callback-semantics`
+- When: '2026-11-07 16:47 CET' - '2026-11-07 17:12 CET'
+- Change: Changed physical CCID `PC_to_RDR_IccPowerOff` to call `choupi_vm_clear_selected_applet()` rather than executing `deselect()` during power loss. Expanded JCSystem case 57 to test callback counts and both transient clear classes after logical power-off/on and reader reset. Strengthened the VPCD session unit check to assert card-manager session reset on both boundaries. Updated the review TODO, QKB and handoff. No CAP files or firmware Java providers were changed.
+- Validation: `./tools/build-pc --profile max_crypto` passed (ROM mask reports 147 native methods; existing Rust/C++ warnings remain; a restricted attempt logged a nonfatal local-hostname socket denial, and the elevated wrapper rerun passed). `./tools/test-vpcd-session` passed 29/29. `./tools/test-jcsystem-transaction-applet --case 57 --light-install --timeout 45 --log artifacts/logs/jcsystem-reset-power-focused-20261107.log` passed `TEST:SUMMARY pass=3 fail=0 elapsed_s=23.272`, with unchanged deselect count and transient checks returning `03` after both boundaries. `PICO2_HOST_USB_ACCESS=1 ./tools/build arm --profile max_crypto` and the RISC-V wrapper passed; ARM image end `0x100EDE9C`, 74,084 bytes free. A full `--light-install` suite failed at case 83 as expected because that mode replaces the 32,767-byte capacity array. The normal full suite was bounded at 240 s and exited 124 with no summary; CPU stayed below one core, and no new run was started. PC/SC helper granted three USB nodes, but bounded `pcsc_scan -r` listed no readers; no physical flash, CCID APDU test, or supply-loss test occurred.
+- Result: Offline VPCD callback/transient/session cleanup is verified and the physical CCID implementation compiles on ARM. R36 physical CCID acceptance and supply-loss semantics remain open. Full JCSystem suite duration remains unresolved; its timeout is not counted as a pass or attributed to R36.
+- Decision: Keep R36 unchecked pending physical CCID testing; continue offline project priorities while no Pico reader is published.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/jcsystem-reset-power-focused-20261107.log` (SHA-256 `66fab3b5d5bcb3352c12f14ded4e5bdf1e58b2b7e0b9439c9a82bd1dec00e7db`); `artifacts/logs/jcsystem-transaction-apdu-vpcd-r36-20261107.log` (SHA-256 `94257254a4447093bb7481872d1b90e86df2257e2a3313d537455b02b970e969`); full bounded log `artifacts/logs/jcsystem-transaction-apdu-vpcd-r36-full-20261107.log`.

@@ -9296,3 +9296,39 @@ record. No physical flash/runtime test is claimed.
 
 Next: when a Pico CCID reader becomes visible, query CPLC with GPPro `--info`
 and verify release `0101` and the source marker. Preserve unrelated dirty files.
+
+# Current handoff — R36 logical power/reset semantics validated offline — 2026-11-07 17:12 CET
+
+Physical CCID `PC_to_RDR_IccPowerOff` now follows the reset cleanup path via
+`choupi_vm_clear_selected_applet()` instead of invoking Java `deselect()`. This
+keeps CCID aligned with VPCD and clears applet transaction state, both transient
+classes, applet/shareable session state, secure-channel state, pending APDU
+response, and card-manager transfers without applet bytecode. The VPCD unit
+suite passes 29/29. Focused JCSystem APDU case 57 passes power-off/on and reader
+reset checks: deselect callback count stays unchanged, select count advances,
+and both `CLEAR_ON_RESET` and `CLEAR_ON_DESELECT` arrays clear after each
+boundary. Focused log:
+`artifacts/logs/jcsystem-reset-power-focused-20261107.log`.
+
+`./tools/build-pc --profile max_crypto`, `PICO2_HOST_USB_ACCESS=1 ./tools/build
+arm --profile max_crypto`, and the corresponding RISC-V wrapper pass. The
+RISC-V wrapper remains VM-core/smoke only. No board was flashed. The authorized
+PC/SC helper again granted nodes `001/054`, `001/055`, `001/056`, but bounded
+`pcsc_scan -r` published no readers, so physical CCID behavior and actual
+supply loss remain unverified.
+
+A light-install full JCSystem run is not valid for the capacity assertion at
+case 83 (it substitutes a one-byte array). The normal-parameter full run
+exceeded a 240-second external timeout without final test summary; emulator CPU
+peaked at about 73% of one core and its log stopped after the exception
+trace/write sequence. Logs:
+`artifacts/logs/jcsystem-transaction-apdu-vpcd-r36-20261107.log` and
+`artifacts/logs/jcsystem-transaction-apdu-vpcd-r36-full-20261107.log`. Do not
+call the full JCSystem suite passed; its duration/last-case diagnosis remains
+open independently from the focused R36 pass.
+
+Next: when a Pico reader and board in BOOTSEL are actually enumerated, flash
+only after confirming both architecture wrappers, then run physical POWER_OFF,
+power-on/ATR, reader reset, SELECT/process and persistent deselect-counter
+checks. Continue other offline priorities meanwhile. Preserve unrelated
+worktree changes.

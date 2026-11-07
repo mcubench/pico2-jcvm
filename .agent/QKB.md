@@ -7803,3 +7803,31 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   and cycle case, including a nested uninitialized field, as well as legacy
   alias migration, abort/retry, alias mutation, and GC. ASan/UBSan and both
   architecture builds pass.
+
+## CCID logical power-off is a reset boundary — 2026-11-07
+
+- **Finding:** The physical CCID `PC_to_RDR_IccPowerOff` handler previously
+  called `choupi_vm_deselect_applet(0)`, executing Java applet lifecycle code
+  while the card was losing power. VPCD power-off/reset already discarded
+  selection and called reset cleanup without `deselect()`, so backend behavior
+  diverged.
+- **Viable fix:** Route physical POWER_OFF through
+  `choupi_vm_clear_selected_applet()`, matching POWER_ON/reader-reset cleanup.
+  This aborts an applet transaction, clears both transient event classes,
+  shareable-session and pending-response state, and never invokes applet code;
+  the physical handler also resets SCP03 and aborts any card-manager transfer.
+- **Validation:** `./tools/test-vpcd-session` passes 29/29 and now asserts that
+  off/reset clear VM and card-manager session state without invoking the
+  callback. The focused `jcsystem_transaction_applet_test.py --case 57`
+  VPCD acceptance passes 3/3, including unchanged persistent deselect count
+  and clearing both `CLEAR_ON_RESET` and `CLEAR_ON_DESELECT` arrays after
+  power-off/on and after reader reset. ARM and RISC-V max_crypto wrapper builds
+  pass. Physical CCID runtime and actual supply loss were not tested because
+  PC/SC has no published Pico reader.
+- **Suite caveat:** A full suite with `--light-install` is invalid for capacity
+  case 83 because that mode replaces the 32,767-byte array with a one-byte
+  array. A full run with normal install settings exceeded a 240 s external
+  bound; emulator CPU stayed below one full core but was active, output was
+  buffered, and no final APDU summary was produced. Use focused APDU cases for
+  reset semantics; treat the full-suite duration as unresolved rather than
+  calling it a reset regression.

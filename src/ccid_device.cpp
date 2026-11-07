@@ -514,7 +514,10 @@ void process_message(uint8_t rhport) {
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
   case 0x63: // PC_to_RDR_IccPowerOff
-    (void)choupi_vm_deselect_applet(0);
+    // Power-off is a reset boundary, not an applet lifecycle transition.
+    // Drop the selected context and clear transient/session state without
+    // executing applet deselect() code while the card is losing power.
+    choupi_vm_clear_selected_applet();
     slot_state = 1;
     secure_channel.reset();
     get_status_first_seen = false;

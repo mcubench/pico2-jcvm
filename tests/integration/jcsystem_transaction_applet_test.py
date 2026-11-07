@@ -259,7 +259,7 @@ def main() -> int:
                     (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
                     (94, b"\x01", "CLEAR_ON_DESELECT byte-array allocation is allowed during the select callback"),
                     (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
-                    (57, b"", "card reset deselects the active applet before reselection"),
+                    (57, b"", "power-off/on and reader reset skip applet deselect callbacks"),
                     (58, b"\x33", "committed persistent applet field survives emulator process restart"),
                     (59, b"\x01", "APDU.getCurrentAPDU returns the active process APDU object"),
                     (60, b"\x01", "APDU.getCurrentAPDU is unavailable during applet select callback"),
@@ -476,32 +476,95 @@ def main() -> int:
                         print(f"TEST:PASS {label}")
                         continue
                     if p1 == 57:
+                        transient_setup = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 30, 0x00, 0x00)),
+                            "prepare both transient clear classes before power-off",
+                        )
+                        if transient_setup != b"\x01":
+                            raise RuntimeError(
+                                "could not initialize reset and deselect transient arrays"
+                            )
                         before = exchange(
                             connection,
                             bytes((0x80, 0x00, 55, 0x00, 0x00)),
-                            "read applet lifecycle callback counts before reset",
+                            "read applet lifecycle callback counts before power-off",
                         )
                         if len(before) != 4:
                             raise RuntimeError(
-                                f"callback state before reset: expected 4 bytes, got {before.hex().upper()}"
+                                f"callback state before power-off: expected 4 bytes, got {before.hex().upper()}"
                             )
-                        send_message(connection, b"\x02")
-                        exchange(connection, select, "select applet after card reset")
-                        after = exchange(
+                        send_message(connection, b"\x00")
+                        send_message(connection, b"\x01")
+                        send_message(connection, b"\x04")
+                        atr = receive_message(connection)
+                        if atr != bytes.fromhex("3B800181"):
+                            raise RuntimeError(
+                                f"ATR after power-off/on {atr.hex().upper()}"
+                            )
+                        exchange(connection, select, "select applet after power-on")
+                        after_power_on = exchange(
                             connection,
                             bytes((0x80, 0x00, 55, 0x00, 0x00)),
-                            "read applet lifecycle callback counts after reset",
+                            "read callback counts after power-off/on",
                         )
-                        expected_counts = bytes(((before[0] + 1) & 0xff,
-                                                 (before[1] + 1) & 0xff))
                         if (
-                            len(after) != 4
-                            or after[:2] != expected_counts
-                            or after[2] != 0
-                            or after[3] != 0
+                            len(after_power_on) != 4
+                            or after_power_on[0] != (before[0] + 1) & 0xff
+                            or after_power_on[1] != before[1]
+                            or after_power_on[2:] != b"\x00\x00"
                         ):
                             raise RuntimeError(
-                                f"{label}: expected callback state {expected_counts.hex().upper()}0000, got {after.hex().upper()}"
+                                f"power-off/on invoked an applet lifecycle callback: "
+                                f"before={before.hex().upper()} "
+                                f"after={after_power_on.hex().upper()}"
+                            )
+                        after_power_on_transients = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 33, 0x00, 0x00)),
+                            "verify both transient clear classes after power-off/on",
+                        )
+                        if after_power_on_transients != b"\x03":
+                            raise RuntimeError(
+                                "power-off/on did not clear both transient classes: "
+                                f"{after_power_on_transients.hex().upper()}"
+                            )
+                        transient_setup = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 30, 0x00, 0x00)),
+                            "prepare both transient clear classes before reader reset",
+                        )
+                        if transient_setup != b"\x01":
+                            raise RuntimeError(
+                                "could not reinitialize transient arrays before reset"
+                            )
+                        send_message(connection, b"\x02")
+                        exchange(connection, select, "select applet after reader reset")
+                        after_reset = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 55, 0x00, 0x00)),
+                            "read callback counts after reader reset",
+                        )
+                        if (
+                            len(after_reset) != 4
+                            or after_reset[0] != (after_power_on[0] + 1) & 0xff
+                            or after_reset[1] != after_power_on[1]
+                            or after_reset[2:] != b"\x00\x00"
+                        ):
+                            raise RuntimeError(
+                                f"reader reset invoked applet deselect(): "
+                                f"after-power-on={after_power_on.hex().upper()} "
+                                f"after-reset={after_reset.hex().upper()}"
+                            )
+                        after_reset_transients = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 33, 0x00, 0x00)),
+                            "verify both transient clear classes after reader reset",
+                        )
+                        if after_reset_transients != b"\x03":
+                            raise RuntimeError(
+                                "reader reset did not clear both transient classes: "
+                                f"{after_reset_transients.hex().upper()}"
                             )
                         print(f"TEST:PASS {label}")
                         continue
