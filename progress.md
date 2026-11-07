@@ -24272,3 +24272,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue R08 by reviewing aliasing and broader persistence cases; physical validation awaits PC/SC reader publication.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Scan transient Cipher key and CTR state from saved flash 12 minutes
+
+- Step/experiment: `RV-20261106-08-cipher-sensitive-payload-scan`
+- When: '2026-11-07 09:48 CET' - '2026-11-07 10:00 CET'
+- Change: Added a local test-app APDU that leaves AES-CTR active with a reset-cleared transient key, unique IV, input, and residual keystream. Extended the lifecycle wrapper to reject any of those byte patterns in both test CAP code and the full saved emulator flash image. Reviewed the upstream Java Card API overlap contract against the chunked implementation; no overlap code change was needed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` PASS (`TEST:SUMMARY pass=11 fail=0`); five sentinel patterns were each absent from the 524,288-byte saved image. `git diff --check` passed for the two changed files. No ARM/RISC-V rebuild was needed because only local test-app and wrapper sources changed. No physical test was run because `pcsc_scan -r` exposed only VPCD readers despite three runtime Pico USB nodes.
+- Result: Pending CBC plaintext, transient AES key bytes, CTR IV, full AES-CTR keystream block, and CTR input bytes are absent from the persisted emulator image after shutdown. Log `artifacts/logs/cipher-workspace-vpcd-20261107T085829Z.log`, SHA-256 `781838b36bf1695d30d088b6ce817607eaa3a43b9f88a23c190f80e589c6f35e`. This expands payload-specific evidence but is not a full tag-level inventory.
+- Decision: Keep R08 open for tag-level audit and physical validation.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T085829Z.log`.

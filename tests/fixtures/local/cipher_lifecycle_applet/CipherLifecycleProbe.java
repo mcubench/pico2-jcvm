@@ -18,6 +18,8 @@ public final class CipherLifecycleProbe extends Applet {
   private static Cipher retainedCipher;
   private static RSAPrivateKey retainedRsaKey;
   private static Cipher retainedRsaCipher;
+  private static AESKey retainedSensitiveKey;
+  private static Cipher retainedSensitiveCipher;
 
   private static byte testCipherBufferSurvivesAbort() {
     AESKey key = (AESKey)KeyBuilder.buildKey(
@@ -243,6 +245,35 @@ public final class CipherLifecycleProbe extends Applet {
     }
   }
 
+  private static byte testSensitiveWorkspaceNotPersisted(byte[] apduBuffer,
+                                                          short inputLength) {
+    if (inputLength != 13) return (byte)0x6d;
+    try {
+      byte[] keyBytes = JCSystem.makeTransientByteArray(
+          (short)16, JCSystem.CLEAR_ON_RESET);
+      byte[] iv = JCSystem.makeTransientByteArray(
+          (short)16, JCSystem.CLEAR_ON_RESET);
+      byte[] output = JCSystem.makeTransientByteArray(
+          (short)16, JCSystem.CLEAR_ON_RESET);
+      for (short i = 0; i < 16; i++) {
+        keyBytes[i] = (byte)(0xb0 + i);
+        iv[i] = (byte)(0x60 + i);
+      }
+      retainedSensitiveKey = (AESKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_AES_TRANSIENT_RESET,
+          KeyBuilder.LENGTH_AES_128, false);
+      retainedSensitiveKey.setKey(keyBytes, (short)0);
+      retainedSensitiveCipher = Cipher.getInstance(Cipher.ALG_AES_CTR, false);
+      retainedSensitiveCipher.init(retainedSensitiveKey, Cipher.MODE_ENCRYPT,
+                                   iv, (short)0, (short)iv.length);
+      short produced = retainedSensitiveCipher.update(
+          apduBuffer, ISO7816.OFFSET_CDATA, inputLength, output, (short)0);
+      return produced == inputLength ? (byte)1 : (byte)0x6c;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
   public static void install(byte[] data, short offset, byte length) {
     new CipherLifecycleProbe();
   }
@@ -289,6 +320,9 @@ public final class CipherLifecycleProbe extends Applet {
       result = testGrownCbcBufferSurvivesAbort();
     } else if (instruction == (byte)0x13) {
       result = testCtrBufferSurvivesAbort();
+    } else if (instruction == (byte)0x14) {
+      result = testSensitiveWorkspaceNotPersisted(
+          buffer, apdu.setIncomingAndReceive());
     } else if (instruction == (byte)0x09) {
       try {
         AESKey temporaryKey = (AESKey)KeyBuilder.buildKey(

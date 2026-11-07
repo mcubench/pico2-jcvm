@@ -1,3 +1,33 @@
+# Current handoff — scan all Cipher sensitive workspace payloads — 2026-11-07 10:00 CET
+
+The chunked symmetric update fix is committed as `ff86c5b6`; SHA-resolution
+records are `7deb776d` and `c2f0e350`. A further focused VPCD extension now
+tests that transient AES-CTR operational bytes are not serialized: it leaves a
+CTR Cipher active after 13 bytes with a transient reset-cleared AES key, a
+distinct IV, buffered input and a live keystream block. The wrapper scans the
+complete saved 512 KiB emulator image for those four patterns plus the
+existing pending-CBC-plaintext sentinel. Its two-process run passes 11/11 and
+all five patterns are absent. Log
+`artifacts/logs/cipher-workspace-vpcd-20261107T085829Z.log`, SHA-256
+`781838b36bf1695d30d088b6ce817607eaa3a43b9f88a23c190f80e589c6f35e`.
+
+The Java Card API Cipher documentation was checked for same-array overlap:
+the caller must avoid output overwriting unconsumed input. The current chunked
+path consumes each chunk into its workspace before writing that chunk, so the
+documented caller contract still applies; no separate overlap implementation
+or test was added.
+
+Physical PC/SC remains unavailable despite three runtime USB devices; see the
+QKB entry “Runtime Pico USB nodes are present but PC/SC publishes no readers.”
+No board commands or flash were attempted. R08 remains open for a complete
+tag-level persistence audit and physical acceptance.
+
+Step commit: `resolve in the next progress record`.
+
+Next: inspect the tag-level serialization and restore paths for transient
+Cipher fields, then resume physical validation when PC/SC publishes a Pico
+reader.
+
 # Current handoff — chunk symmetric Cipher updates without transactional buffer replacement — 2026-11-07 09:46 CET
 
 R08 coverage now includes the transaction-abort case where symmetric

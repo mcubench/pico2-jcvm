@@ -20,6 +20,8 @@ flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${ti
   --apdu 800E000000 --expect-apdu-response 019000 \
   --apdu 8012000000 --expect-apdu-response 019000 \
   --apdu 8013000000 --expect-apdu-response 019000 \
+  --apdu 801400000D202122232425262728292A2B2C00 \
+  --expect-apdu-response 019000 \
   --apdu 801100000F000102030405060708090A0B0C0D0E00 \
   --expect-apdu-response 019000 \
   --resume-apdu 800F000000 --expect-resume-apdu-response 449000 \
@@ -32,15 +34,20 @@ import sys
 from pathlib import Path
 
 flash_path, cap_code_path = map(Path, sys.argv[1:])
-pending_plaintext = bytes(range(15))
-if pending_plaintext in cap_code_path.read_bytes():
-    raise SystemExit("TEST:FAIL pending-input sentinel occurs in test CAP code")
-if pending_plaintext in flash_path.read_bytes():
-    raise SystemExit(
-        "TEST:FAIL buffered Cipher plaintext found in persisted flash image"
-    )
-print(
-    "TEST:PASS buffered Cipher plaintext absent from persisted flash "
-    f"image={flash_path.stat().st_size} sentinel_bytes={len(pending_plaintext)}"
-)
+sentinels = {
+    "pending CBC plaintext": bytes(range(15)),
+    "transient AES key": bytes(range(0xB0, 0xC0)),
+    "transient AES-CTR IV": bytes(range(0x60, 0x70)),
+    "AES-CTR stream block": bytes.fromhex("ee83c1aeec49823d985bef0e2d400811"),
+    "transient CTR input": bytes(range(0x20, 0x2D)),
+}
+cap_code = cap_code_path.read_bytes()
+flash_image = flash_path.read_bytes()
+for name, sentinel in sentinels.items():
+    if sentinel in cap_code:
+        raise SystemExit(f"TEST:FAIL {name} sentinel occurs in test CAP code")
+    if sentinel in flash_image:
+        raise SystemExit(f"TEST:FAIL {name} found in persisted flash image")
+    print(f"TEST:PASS {name} absent from persisted flash sentinel_bytes={len(sentinel)}")
+print(f"TEST:PASS persisted flash payload scan image_bytes={len(flash_image)} sentinels={len(sentinels)}")
 PY
