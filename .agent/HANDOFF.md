@@ -18,8 +18,8 @@ Validation: `./tools/build-pc --profile current`, both malformed VPCD cases,
 was possible: attached runtime USB devices still did not appear in PC/SC. VPCD
 logs and hashes, plus full validation results, are in the newest `progress.md`
 entry. RV-20261106-01 remains open for additional caller-state and malformed
-entry coverage. The implementation and regression are awaiting their commit
-SHA resolution in the next progress record.
+entry coverage. The implementation and regression are committed as `a5a400c4`; the
+commit SHA-resolution record follows in progress.md.
 
 Next: inspect RV-20261106-02 (`Stack::unwindToDepth()` removes the wrong end of
 the frame list) and build focused multi-level caller-state tests. Preserve all

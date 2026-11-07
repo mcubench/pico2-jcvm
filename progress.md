@@ -23935,3 +23935,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-20261106-01 open for nested caller-state and malformed-entry acceptance beyond this fetch-boundary regression; proceed to RV-20261106-02 nested-frame unwind analysis.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/rv28-malformed-fall-through-vpcd-20261106.log` SHA-256 `32efcd27ed4b0b09163893b2841c75895053263337d883973c8a09a5c6cb46f6`; `artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log` SHA-256 `d58f979581d26c36e95b7481573d2645b353626cd1f63bea141cf3ada97fa4e7`.
+
+## 2026-11-07 Resolve interpreter recovery commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-interpreter-fetch-recovery-sha`
+- When: '2026-11-07 04:13 CET' - '2026-11-07 04:14 CET'
+- Change: Resolved the commit SHA for the validated opcode-fetch recovery step in the progress record and handoff.
+- Validation: No new runtime/build run; the prior record contains the completed regression and ARM/RISC-V build results.
+- Result: The fetch containment and malformed-CAP regression are committed as `a5a400c4`.
+- Decision: Continue with RV-20261106-02, preserving the remaining dirty worktree changes.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: No new artifacts.
