@@ -23823,5 +23823,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Static Python consistency checks passed for APDU bytes, expected WinSCard calls, PnP event field, CSV timing fields and PowerShell here-string boundaries. `git diff --check` passed. No `pwsh` or Windows PowerShell executable exists in this VM, so PowerShell/C# compilation and Windows execution remain unverified. No firmware build or hardware operation was needed for this script/docs-only step.
 - Result: The Windows timing method records PnP-event-to-reader and reader-to-APDU latency, with the USB event as the timing origin (operator reaction excluded). HOST-02 remains open pending external Windows runs on current and original images.
 - Decision: Run the script on Windows for at least three cycles per image, then compare and record the resulting CSV evidence.
-- Commit: pending.
+- Commit: `f65c9f8e`.
 - Artifacts/logs: `tools/measure-windows-reconnect.ps1`; no measurement CSV exists yet.
+
+## 2026-11-07 Record HOST-02 harness commit resolution 1 minute
+
+- Step/experiment: `host-02-20261107-windows-reconnect-harness-commit`
+- When: '2026-11-07 03:40 CET' - '2026-11-07 03:41 CET'
+- Change: Recorded the Windows reconnect harness commit SHA in the handoff and progress history.
+- Validation: No new validation; the script remains unexecuted on Windows because this VM has no PowerShell runtime.
+- Result: Harness, usage instructions and backlog update are committed as `f65c9f8e`.
+- Decision: Collect external Windows timing rows for normal and original images before closing HOST-02.
+- Commit: `f65c9f8e` — harness/docs/status; this SHA-resolution record is separate.
+- Artifacts/logs: No Windows measurement CSV exists yet.

@@ -1,4 +1,4 @@
-# Current handoff — HOST-02 Windows reconnect timing harness — 2026-11-07 03:37 CET
+# Current handoff — HOST-02 Windows reconnect timing harness — 2026-11-07 03:40 CET
 
 Added `tools/measure-windows-reconnect.ps1` and documented its Windows
 workflow. With serial/COM clients closed, it waits for physical unplug, listens
@@ -15,7 +15,8 @@ the embedded C# and PowerShell script still require execution on Windows.
 Normal/diagnostic firmware behavior and the no-DTR physical deadline test are
 already recorded in TODO/progress. Do not close HOST-02 until Windows CSV
 measurements and image comparison are reviewed. No firmware was rebuilt or
-flashed for this documentation/harness step.
+flashed for this documentation/harness step. Harness and workflow are committed
+as `f65c9f8e`; the progress SHA-resolution record follows separately.
 
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
