@@ -24196,3 +24196,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the reinitialization regression; next enumerate the saved records and verify which transient-reference metadata is stored without operational bytes.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T080444Z.log`, SHA-256 `d2d17cdd8d7df374a180121025ea3b66e6757af8c2369ce281c74f3cd5010280`.
+
+## 2026-11-07 Resolve Cipher restore test commit SHAs 1 minute
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-restore-reinit-sha`
+- When: '2026-11-07 09:06 CET' - '2026-11-07 09:07 CET'
+- Change: Resolved the fresh-process wrapper commit attribution and recorded the post-restore reinitialization test commit in the progress history and handoff.
+- Validation: No new test; the preceding entry records fixture-manifest verification and the complete VPCD 7/7 pass.
+- Result: The fresh-process wrapper update is `ab63e21be3a6e8e6259bd2c52f0ce91f63f761c2`; the post-restore RSA reinitialization regression is `c647f11c`.
+- Decision: Continue R08 with persistent-record inspection; physical acceptance also remains open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
