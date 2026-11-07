@@ -23848,6 +23848,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `6c7721cd`.
 - Artifacts/logs: Official reference: [Oracle Java Card 3.0.5 Programming Notes](https://docs.oracle.com/javacard/3.0.5/prognotes/JCPCL.pdf); APDU evidence in `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`.
 
+## 2026-11-07 Revalidate offline PERSIST-01 inventory and reclaimer suite 2 minutes
+
+- Step/experiment: `persist-01-20261107-offline-inventory-reclaimer-rerun`
+- When: '2026-11-07 03:45 CET' - '2026-11-07 03:47 CET'
+- Change: Rebuilt and reran the current-worktree persistent inventory and persistent transaction/reclaimer native test wrappers; updated PERSIST-01 evidence and handoff.
+- Validation: `./tools/test-persistent-inventory` passed 22/22. `./tools/test-persistent-transaction` passed all reported cases, including cross-owner record preservation, malformed/incomplete root fail-closed behavior, refusal during transactions, interrupted erase state, and restart/retry completion. No firmware or hardware action.
+- Result: Offline safety checks remain green in the current worktree; physical multi-owner and actual power-loss acceptance remain unverified.
+- Decision: Keep normal persistent object deletion disabled pending physical gates; proceed with remaining offline lifecycle work.
+- Commit: pending.
+- Artifacts/logs: Commands emitted output directly; no separate log was captured.
+
 ## 2026-11-07 Record Java Card DELETE spec-check commit resolution 1 minute
 
 - Step/experiment: `ctx-20261107-applet-delete-persistent-alias-spec-check-commit`

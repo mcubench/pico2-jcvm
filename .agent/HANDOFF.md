@@ -30,6 +30,13 @@ on other offline PERSIST-01 gates.
 This spec-alignment update is committed as `6c7721cd`; its progress SHA
 resolution follows separately.
 
+PERSIST-01 offline revalidation on the current worktree: `./tools/test-persistent-inventory`
+passes 22/22 and `./tools/test-persistent-transaction` passes all cases,
+including preserved other-owner records, fail-closed incomplete/corrupt roots,
+transaction guards and reclaimer interruption/retry. These do not satisfy
+physical multi-owner or actual power-loss validation. Current host access sees
+three USB nodes but no Pico PC/SC reader; keep object deletion disabled.
+
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
 Cold-start VPCD now exercises persistent package-static aliases, a direct

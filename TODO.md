@@ -373,7 +373,11 @@ review.
   serial telemetry alongside the APDUs: after releasing the persistent array,
   `PersistentReclaimer` returned `Complete` (`result=0`) with exactly one
   unreachable owner tag erased (`candidates=1 erased=1`); subsequent root
-  creation/read and package cleanup passed. The physical harness now requires
+  creation/read and package cleanup passed. Current-worktree reruns on
+  2026-11-07 of `./tools/test-persistent-inventory` (22 cases) and
+  `./tools/test-persistent-transaction` passed, including other-owner record
+  preservation, incomplete-root fail-closed behavior, transaction refusal,
+  and interruption/retry. The physical harness now requires
   matching erase telemetry, preventing a non-hook image from yielding a false
   reclaimer PASS. This closes the single-owner live erase check only.
   Remaining: physical multi-owner inventory and actual per-record power-loss /
