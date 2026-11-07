@@ -1,23 +1,27 @@
-# Current handoff — R53 cross-AID isAppletActive verified — 2026-11-07 14:14 CET
+# Current handoff — R53 and max_crypto external image — 2026-11-07 14:24 CET
 
-RV-20261106-53 is implemented in native context/JNI code and marked complete
-in `todo.md`. `JCSystem.isAppletActive(AID)` now searches matching registered
-active/installing instance state by full AID. It checks the executing Context
-first because install interpreters can own a short-lived Context not present
-in the retained-context registry, then checks all retained contexts.
+RV-20261106-53 is implemented and committed as `bf686b03`. Native
+`JCSystem.isAppletActive(AID)` searches matching registered active/installing
+instance state by full AID, checking the executing Context first because
+installation can run in a short-lived Context outside the retained registry.
+Focused VPCD SIO passes 4/4 across client/sibling calls before and after reset;
+JCSystem callback cases 76/77 pass. The broad JCSystem suite passes through
+case 56 but fails at the separately tracked RV-20261106-36 reset/deselect
+expectation at case 57. No physical hardware was flashed.
 
-The focused cross-AID SIO VPCD run passes 4/4 across client and same-package
-sibling calls, before and after reset. Targeted JCSystem cases 76/77 pass,
-including registration/install and install/select/deselect/process callbacks.
-The broad `./tools/test-jcsystem-transaction-applet` run passed through case 56
-and then failed its already tracked RV-20261106-36 reset/deselect expectation
-at case 57; this unrelated behavior remains open. Its earlier case 35
-`isAppletActive` check passed. PC `symm_crypto`, ARM `max_crypto`, and RISC-V
-`max_crypto` builds pass. No physical hardware was flashed.
+Current external-testing firmware:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBF686B.uf2`
+(4,046,848 bytes; SHA-256
+`e814c8f9b23b617f300ded3c0068cad552c9fec7b7d4f44d9dc96b1b5cebcae8`). It is
+RP2350 ARM Secure, profile `max_crypto` (147/150 capabilities), release 0.1.1,
+source ID `FFBF686B`, and empty-card storage (4,096 erased blocks; no applet
+installed). Firmware ends at `0x100EDE30`, leaving 74,192 bytes. The dirty
+source-ID prefix reflects unrelated preserved worktree changes. No token was
+flashed. The image is ignored by Git.
 
-Next: refresh hardware/PCSC before any device test, otherwise continue with
-RV-20261106-52 or RV-20261106-54. HOST-02 no-console reconnect timing still
-requires the external Windows host. Preserve unrelated worktree edits,
+Next: continue with RV-20261106-52 or RV-20261106-54; HOST-02 reconnect timing
+still needs the external Windows host. Before physical testing, refresh the
+authorized USB/PCSC helper and reader state. Preserve unrelated dirty edits,
 including the pending HMAC TODO addition.
 
 # Current handoff — R24 persistence retry regression verified — 2026-11-07 13:41 CET

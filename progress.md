@@ -24588,5 +24588,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build-pc --profile symm_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` PASS. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_IS_APPLET_ACTIVE=1 ./tools/test-sio-cross-aid-vpcd` PASS (`TEST:SUMMARY pass=4 fail=0`), with client and sibling calls before and after reset. `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 76 --case 77 --light-install` PASS (`TEST:SUMMARY pass=4 fail=0`), including registration/install and install/select/deselect/process callbacks. The broad `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet` ran through case 56 but FAILed at existing case 57/RV-20261106-36: reset callback state was `07030000`, expected `07040000`; earlier case 35 for `isAppletActive` passed. No physical board was flashed.
 - Result: Cross-AID activity queries, registration and callback visibility, siblings and reset pass in VPCD. The broad transaction suite remains red only at the separately tracked reset/deselect behavior observed in case 57. An initial targeted case exposed that install interpreter Contexts are not retained; checking the executing Context fixed it.
 - Decision: Close R53. Keep RV-20261106-36 open; continue with next actionable context/API backlog item after preparing the requested current max_crypto external image.
-- Commit: `<resolve in next progress entry>`
+- Commit: `bf686b03`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T131247Z.log`; broad JCSystem run: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261107T130017Z.log`.
+
+## 2026-11-07 Build max_crypto empty-card ARM image for external testing 10 minutes
+
+- Step/experiment: `max_crypto-arm-empty-card-external-image-after-r53`
+- When: '2026-11-07 14:14 CET' - '2026-11-07 14:24 CET'
+- Change: Rebuilt ARM `max_crypto` after the R53 commit and packaged an empty-card UF2 for external testing. The image has no preinstalled applet; all 4,096 storage blocks are erased. The requested firmware release remains 0.1.1 and the build source ID is `FFBF686B` (dirty marker retained because unrelated worktree edits remain).
+- Validation: `./tools/build arm --profile max_crypto` PASS (147/150 capabilities; firmware ends at `0x100EDE30`, leaving 74,192 bytes). `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBF686B.uf2` PASS (3,807 firmware blocks, 4,096 storage blocks). `./tools/env picotool info -a artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBF686B.uf2` identifies RP2350 ARM Secure. UF2 structural inspection verifies erased storage and embedded CPLC release `0101` / source `FFBF686B`. No hardware was flashed.
+- Result: External-testing image is 4,046,848 bytes; SHA-256 `e814c8f9b23b617f300ded3c0068cad552c9fec7b7d4f44d9dc96b1b5cebcae8`. It leaves 74,192 bytes in the firmware window; this image's UF2 includes the full 1 MiB card-storage region initialized to erased bytes.
+- Decision: Deliver this image for external testing. Continue with the next actionable implementation task; HOST-02 timing still needs the external Windows host.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBF686B.uf2` (ignored by Git); `build/arm/build-provenance.txt`.
