@@ -458,19 +458,21 @@ review.
 
 ### HMAC-01
 
-- [ ] **Implement the `ALG_HMAC_*` algorithms in native crypto support.**
-  Status: the JCAlgTest 1.8.4 reference advertises `ALG_HMAC_SHA1`,
-  `ALG_HMAC_SHA_256`, `ALG_HMAC_SHA_384`, `ALG_HMAC_SHA_512`,
-  `ALG_HMAC_MD5`, and `ALG_HMAC_RIPEMD160`; current native support and
-  acceptance coverage must be inventoried before implementation. Add the
-  algorithms through the native C++ VM/API dispatch path, preserving Java Card
-  API behavior and error mapping. Do not add Java providers/adapters to
-  firmware or modify supplied CAPs. Include known-answer and lifecycle
-  coverage, then run the pinned JCAlgTest 1.8.4 / jc305 support checks and
-  record any explicitly unsupported identities.
-  Acceptance: supported identities return correct results across required
-  update/final and reset/deselect semantics, focused tests pass, and both
-  architecture builds pass; hardware validation follows repository gates.
+- [ ] **Complete `ALG_HMAC_*` acceptance in native crypto support.**
+  Status: native HMAC-SHA1, SHA-256, SHA-384, SHA-512, MD5, and RIPEMD160
+  signatures and HMAC key variants are implemented through the C++ VM/API
+  dispatch path. All six RFC known-answer vectors pass in the CAP-only VPCD
+  fixture, including split update, verify, tamper rejection, and key readback;
+  ARM and RISC-V max_crypto builds pass with 159/162 capabilities. The pinned
+  JCAlgTest 1.8.4 CAP was installed on a clean VPCD card using GPPro, but the
+  support sweep stalls during its DES section: the emulator reports
+  `APPLET_PROCESS status=F206 exception=16` and no complete support CSV is
+  produced. Diagnose and resolve this sweep failure before checking this item.
+  No physical HMAC test has run. Preserve the unchanged upstream CAP and keep
+  all firmware implementation native; do not add Java providers/adapters or
+  modify supplied CAPs. Acceptance: focused known-answer and lifecycle tests,
+  complete pinned JCAlgTest 1.8.4 support comparison, both architecture builds,
+  then physical validation when a reader is actually available.
 
 ### JC-RESET-01
 

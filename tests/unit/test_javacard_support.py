@@ -254,7 +254,16 @@ class JavaCardSupportTests(unittest.TestCase):
             result = self.run_named_profile("max_crypto", out)
             self.assertEqual(result.returncode, 0, result.stderr)
             profile = json.loads((out / "javacard-support.json").read_text())
-            self.assertEqual(sum(profile.values()), 147)
+            self.assertEqual(sum(profile.values()), 159)
+            for key in (
+                "signature_hmac_sha1", "signature_hmac_sha_256",
+                "signature_hmac_sha_384", "signature_hmac_sha_512",
+                "signature_hmac_md5", "signature_hmac_ripemd160",
+                "key_hmac_transient_reset", "key_hmac_transient_deselect",
+                "key_hmac_sha1_block_64", "key_hmac_sha256_block_64",
+                "key_hmac_sha384_block_64", "key_hmac_sha512_block_64",
+            ):
+                self.assertTrue(profile[key])
             self.assertTrue(profile["cipher_aes_ctr"])
             self.assertTrue(profile["cipher_getinstance_aes_ctr"])
             self.assertTrue(profile["signature_ecdsa_sha_512"])

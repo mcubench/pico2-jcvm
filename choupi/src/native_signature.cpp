@@ -38,6 +38,14 @@ std::vector<unsigned char> computeSymmetricMac(
     const std::vector<unsigned char> &message);
 #endif
 
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA1 || JC_SUPPORT_SIGNATURE_HMAC_SHA_256 || \
+    JC_SUPPORT_SIGNATURE_HMAC_SHA_384 || JC_SUPPORT_SIGNATURE_HMAC_SHA_512 || \
+    JC_SUPPORT_SIGNATURE_HMAC_MD5 || JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160
+std::vector<unsigned char> computeHmac(
+    uint8_t algorithm, const std::vector<unsigned char> &key,
+    const std::vector<unsigned char> &message);
+#endif
+
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
@@ -112,6 +120,7 @@ constexpr uint8_t kSignatureCipherDesMac8 = 2;
 constexpr uint8_t kSignatureCipherAesMac128 = 6;
 constexpr uint8_t kSignatureCipherAesCmac128 = 10;
 constexpr uint8_t kSignatureCipherRsa = 3;
+constexpr uint8_t kSignatureCipherHmac = 7;
 constexpr uint8_t kPaddingNoPad = 1;
 constexpr uint8_t kPaddingIso9797M1 = 2;
 constexpr uint8_t kPaddingIso9797M2 = 3;
@@ -348,6 +357,24 @@ void appendBytes(JC_Instance &signature, const unsigned char *bytes,
 
 uint16_t resultLength(const uint8_t algorithm) {
   switch (algorithm) {
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA1
+  case 24: return 20;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_256
+  case 25: return 32;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_384
+  case 26: return 48;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_512
+  case 27: return 64;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_MD5
+  case 28: return 16;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160
+  case 29: return 20;
+#endif
   case 1:
   case 3:
   case 5:
@@ -424,6 +451,24 @@ uint16_t resultLength(const uint8_t algorithm) {
 
 bool supportedAlgorithm(const uint8_t algorithm) {
   switch (algorithm) {
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA1
+  case 24: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_256
+  case 25: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_384
+  case 26: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_512
+  case 27: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_MD5
+  case 28: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160
+  case 29: return true;
+#endif
 #if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD
   case 2: return true;
 #endif
@@ -522,6 +567,24 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
                        uint8_t &padding) {
   digest = 0;
   switch (algorithm) {
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA1
+  case 24: digest = 1; cipher = kSignatureCipherHmac; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_256
+  case 25: digest = 4; cipher = kSignatureCipherHmac; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_384
+  case 26: digest = 5; cipher = kSignatureCipherHmac; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA_512
+  case 27: digest = 6; cipher = kSignatureCipherHmac; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_MD5
+  case 28: digest = 2; cipher = kSignatureCipherHmac; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160
+  case 29: digest = 3; cipher = kSignatureCipherHmac; padding = 0; break;
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
   case 9: digest = 1; cipher = kSignatureCipherRsa; padding = kPaddingIso9796; break;
 #endif
@@ -605,7 +668,9 @@ uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
                             uint8_t(43), uint8_t(44), uint8_t(45),
                             uint8_t(46), uint8_t(9), uint8_t(30),
                             uint8_t(17), uint8_t(37), uint8_t(33),
-                            uint8_t(34), uint8_t(38)}) {
+                            uint8_t(34), uint8_t(38), uint8_t(24),
+                            uint8_t(25), uint8_t(26), uint8_t(27),
+                            uint8_t(28), uint8_t(29)}) {
     uint8_t candidateDigest = 0, candidateCipher = 0, candidatePadding = 0;
     if (tupleForAlgorithm(algorithm, candidateDigest, candidateCipher,
                           candidatePadding) &&
@@ -724,6 +789,8 @@ void initializeMac(JC_Instance &signature, jref_t keyReference, uint8_t mode) {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
   const uint8_t algorithm = static_cast<uint8_t>(signature.getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
+  const bool hmac = algorithm >= 24 && algorithm <= 29;
+  const bool hmacType = keyType == 19 || keyType == 20 || keyType == 21;
   const bool aes = algorithm == 18 || algorithm == 49;
   const bool aesType = keyType == kAesKeyTransientReset ||
                        keyType == kAesKeyTransientDeselect ||
@@ -731,8 +798,11 @@ void initializeMac(JC_Instance &signature, jref_t keyReference, uint8_t mode) {
   const bool desType = keyType == kDesKeyTransientReset ||
                        keyType == kDesKeyTransientDeselect ||
                        keyType == kDesKeyPersistent;
-  if ((aes && (!aesType || bits != 128)) ||
-      (!aes && (!desType || (bits != 64 && bits != 128 && bits != 192))))
+  const bool validKey = hmac
+      ? hmacType && bits != 0 && (bits & 7) == 0
+      : (aes ? aesType && bits == 128
+             : desType && (bits == 64 || bits == 128 || bits == 192));
+  if (!validKey)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   if ((algorithm == 19 || algorithm == 20 || algorithm == 47 ||
        algorithm == 48) && bits != 128)
@@ -839,12 +909,13 @@ std::vector<unsigned char> runMac(
   if (combinedLength > 32767)
     throw Exceptions::ArrayIndexOutOfBoundsException;
   std::vector<unsigned char> keyBytes(key->size());
+  const bool hmac = algorithm >= 24 && algorithm <= 29;
   const bool aes = algorithm == 18 || algorithm == 49;
-  const size_t blockSize = aes ? 16 : 8;
+  const size_t blockSize = hmac ? 0 : (aes ? 16 : 8);
   std::vector<unsigned char> ivBytes(blockSize, 0);
   auto initialVector = byteArray(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
-  if (!initialVector || initialVector->size() < blockSize)
+  if (!initialVector || (!hmac && initialVector->size() < blockSize))
     throw Exceptions::ArrayStoreException;
   for (size_t i = 0; i < blockSize; ++i)
     ivBytes[i] = static_cast<uint8_t>(initialVector->getByteEntry(
@@ -858,6 +929,12 @@ std::vector<unsigned char> runMac(
   for (jshort_t i = 0; i < inputLength; ++i)
     input[static_cast<size_t>(bufferedLength + i)] = static_cast<uint8_t>(
         inputArray->getByteEntry(static_cast<uint16_t>(inputOffset + i)));
+#if JC_SUPPORT_SIGNATURE_HMAC_SHA1 || JC_SUPPORT_SIGNATURE_HMAC_SHA_256 || \
+    JC_SUPPORT_SIGNATURE_HMAC_SHA_384 || JC_SUPPORT_SIGNATURE_HMAC_SHA_512 || \
+    JC_SUPPORT_SIGNATURE_HMAC_MD5 || JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160
+  if (algorithm >= 24 && algorithm <= 29)
+    return computeHmac(algorithm, keyBytes, input);
+#endif
 #if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || \
     JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M1 || \
     JC_SUPPORT_SIGNATURE_DES_MAC8_ISO9797_M1 || \
@@ -976,6 +1053,8 @@ void javacard_security_Signature_init(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
   if (isMessageRecoverySignature(*signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
+  if (algorithm >= 24 && algorithm <= 29)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512

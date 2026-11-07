@@ -24813,3 +24813,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the HMAC-01 runtime diagnosis with the image worktree state recorded.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Revalidate HMAC and build external max_crypto image 14 minutes
+
+- Step/experiment: `HMAC-01-vpcd-acceptance-and-max-empty-card`
+- When: '2026-11-07 19:40 CET' - '2026-11-07 19:54 CET'
+- Change: Completed native HMAC support in the current worktree and updated its acceptance status. Corrected the JCAlgTest VPCD harness to use the standard blank-card GPPro LOAD/INSTALL sequence. Rebuilt and repackaged the ARM `max_crypto` firmware as a full empty-card external-test UF2; refreshed its artifact README and session handoff. No supplied CAP/JAR was modified.
+- Validation: Prior focused VPCD HMAC test passed all six RFC algorithms and 12 vector/lifecycle checks; prior ARM and RISC-V `max_crypto` wrapper builds passed. In this step, the standard `./tools/test-gppro-empty-install-vpcd` path passed. The pinned JCAlgTest 1.8.4 support harness successfully GPPro-installed and selected the CAP, but the client stalled during the DES section; emulator logged `APPLET_PROCESS status=F206 exception=16`, and no complete comparison was produced. The corrected harness attempt was stopped after the trace established the stall, rather than waiting for its 900-second deadline. Fresh `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto`, empty-card packaging, and `picotool info -a` all passed. No Pico was flashed or physically tested.
+- Result: HMAC is enabled in `max_crypto` (159/162 capabilities). The image is RP2350 ARM Secure, release 0.1.1, CPLC source ID `FF038002`, firmware end `0x100F0D4C` with 62,132 bytes before storage, 3,854 firmware blocks and 4,096 erased storage blocks. UF2 size is 4,070,912 bytes, SHA-256 `a042b3baaa6ff822882ef8a097823f1061c7a0404e4adb89c85968623d671297`. JCAlgTest complete support acceptance and physical HMAC validation remain open.
+- Decision: Provide this empty-card image for external testing with the HMAC and JCAlgTest acceptance limits disclosed. Diagnose the VPCD `F206` stall before treating HMAC-01 as complete.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/results/jcalgtest-support-vpcd-20261107T184531Z/`; `artifacts/results/gppro-empty-install-vpcd-20261107T184325Z/`.

@@ -166,6 +166,21 @@ for _name in (
         "javacard.security.Signature", f"ALG_{_name}"
     )
 
+for _name in ("SHA1", "SHA_256", "SHA_384", "SHA_512", "MD5", "RIPEMD160"):
+    CAPABILITIES[f"signature_hmac_{_name.lower()}"] = (
+        "javacard.security.Signature", f"ALG_HMAC_{_name}"
+    )
+
+for _key, _row in (
+    ("key_hmac_transient_reset", "TYPE_HMAC_TRANSIENT_RESET"),
+    ("key_hmac_transient_deselect", "TYPE_HMAC_TRANSIENT_DESELECT"),
+    ("key_hmac_sha1_block_64", "TYPE_HMAC LENGTH_HMAC_SHA_1_BLOCK_64"),
+    ("key_hmac_sha256_block_64", "TYPE_HMAC LENGTH_HMAC_SHA_256_BLOCK_64"),
+    ("key_hmac_sha384_block_64", "TYPE_HMAC LENGTH_HMAC_SHA_384_BLOCK_64"),
+    ("key_hmac_sha512_block_64", "TYPE_HMAC LENGTH_HMAC_SHA_512_BLOCK_64"),
+):
+    CAPABILITIES[_key] = ("javacard.security.KeyBuilder", _row)
+
 _rsa_lengths = (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072, 4096)
 for _key_type, _row_type in (
     ("public", "RSA_PUBLIC"),
@@ -242,10 +257,16 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
                   for key, enabled in value.items())
     des_mac = any(key.startswith("signature_des_") and enabled
                   for key, enabled in value.items())
+    hmac = any(key.startswith("signature_hmac_") and enabled
+               for key, enabled in value.items())
+    hmac_key = any(key.startswith("key_hmac_") and enabled
+                   for key, enabled in value.items())
     if not aes_key and (aes_cipher or aes_mac):
         raise ValueError(f"{path}: AES CBC requires at least one enabled AES key capability")
     if not des_key and (des_cipher or des_mac):
         raise ValueError(f"{path}: DES CBC requires at least one enabled DES key capability")
+    if hmac and not hmac_key:
+        raise ValueError(f"{path}: HMAC signatures require at least one enabled HMAC key capability")
     rsa_cipher = any(value[key] for key in (
         "cipher_rsa_pkcs1", "cipher_rsa_nopad", "cipher_rsa_oaep"))
     rsa_public = any(value[f"key_rsa_public_{bits}"] for bits in _rsa_lengths)
@@ -451,6 +472,7 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|NativeKey|NativeKey/getType()B|instance",
             "javacard/security|NativeKey|NativeKey/getSize()S|instance",
             "javacard/security|NativeKey|NativeKey/setKey([BS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setKey([BSS)V|instance",
             "javacard/security|NativeKey|NativeKey/getKey([BS)B|instance",
             "javacard/security|NativeKey|NativeKey/setModulus([BSS)V|instance",
             "javacard/security|NativeKey|NativeKey/getModulus([BS)S|instance",

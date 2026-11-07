@@ -112,6 +112,9 @@ std::optional<bool> nativeKeyInterfaceMatch(
   constexpr uint8_t kAesTransientReset = 13;
   constexpr uint8_t kAesTransientDeselect = 14;
   constexpr uint8_t kAesPersistent = 15;
+  constexpr uint8_t kHmacTransientReset = 19;
+  constexpr uint8_t kHmacTransientDeselect = 20;
+  constexpr uint8_t kHmacPersistent = 21;
   constexpr uint8_t kRsaPrivateTransientReset = 22;
   constexpr uint8_t kRsaPrivateTransientDeselect = 23;
   constexpr uint8_t kRsaCrtTransientReset = 24;
@@ -137,7 +140,10 @@ std::optional<bool> nativeKeyInterfaceMatch(
     return key_type == kDesTransientReset ||
            key_type == kDesTransientDeselect || key_type == kDesPersistent ||
            key_type == kAesTransientReset || key_type == kAesTransientDeselect ||
-           key_type == kAesPersistent;
+           key_type == kAesPersistent ||
+           key_type == kHmacTransientReset ||
+           key_type == kHmacTransientDeselect ||
+           key_type == kHmacPersistent;
   case jc305_source_javacard_security_interface_PrivateKey:
     return key_type == kRsaPrivate || key_type == kRsaCrtPrivate ||
            key_type == kRsaPrivateTransientReset ||
@@ -154,6 +160,9 @@ std::optional<bool> nativeKeyInterfaceMatch(
   case jc305_source_javacard_security_interface_DESKey:
     return key_type == kDesTransientReset ||
            key_type == kDesTransientDeselect || key_type == kDesPersistent;
+  case jc305_source_javacard_security_interface_HMACKey:
+    return key_type == kHmacTransientReset ||
+           key_type == kHmacTransientDeselect || key_type == kHmacPersistent;
   case jc305_source_javacard_security_interface_RSAPublicKey:
     return key_type == kRsaPublic;
   case jc305_source_javacard_security_interface_RSAPrivateKey:

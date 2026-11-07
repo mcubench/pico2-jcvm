@@ -33,6 +33,7 @@ SECURITY_KEY_INTERFACES = (
     "PublicKey",
     "AESKey",
     "DESKey",
+    "HMACKey",
     "RSAPublicKey",
     "RSAPrivateKey",
     "RSAPrivateCrtKey",

@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_host_usb_access
+require_command timeout
+require_command grep
+require_command stdbuf
+require_command pcsc_scan
+"${repo_root}/tools/build-jcalgtest-load-code" >/dev/null
+
+reader="${JCALGTEST_VPCD_READER:-Virtual PCD 00 00}"
+endpoint="${JCALGTEST_VPCD_ENDPOINT:-127.0.0.1:35963}"
+applet_aid="4A43416C675465737431"
+emulator="${repo_root}/build/choupi-pc/choupi"
+rom_mask="${repo_root}/build/choupi-pc/flash"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+client="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
+cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
+reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv"
+expected="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
+
+for input in "${emulator}" "${rom_mask}" "${gp_jar}" "${client}" "${cap}" \
+    "${reference}" "${expected}"; do
+  [[ -s "${input}" ]] || die "required input is missing: ${input}"
+done
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+out_dir="${repo_root}/artifacts/results/jcalgtest-support-vpcd-${timestamp}"
+mkdir -p "${out_dir}"
+memory="${out_dir}/empty-card.bin"
+: > "${memory}"
+cp "${expected}" "${out_dir}/expected-support.csv"
+
+reader_found=false
+for attempt in 1 2 3; do
+  inventory="${out_dir}/reader-inventory-${attempt}.log"
+  timeout --signal=TERM --kill-after=2s 20s \
+    stdbuf -oL -eL "${repo_root}/tools/env" pcsc_scan -r \
+    > "${inventory}" 2>&1 || true
+  if grep -Fq "${reader}" "${inventory}"; then
+    reader_found=true
+    break
+  fi
+  sleep 1
+done
+[[ "${reader_found}" == true ]] || {
+  cat "${out_dir}"/reader-inventory-*.log >&2
+  die "VPCD PC/SC reader was not published: ${reader}"
+}
+
+"${repo_root}/tools/env" "${emulator}" -m "${memory}" -s \
+  --vpcd "${endpoint}" --vpcd-idle-timeout 900 \
+  --applet-aid "${applet_aid}" --package-id 63 \
+  --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin" \
+  --rom-mask "${rom_mask}" > "${out_dir}/emulator.log" 2>&1 &
+emulator_pid=$!
+cleanup() {
+  if kill -0 "${emulator_pid}" 2>/dev/null; then
+    kill -TERM "${emulator_pid}" 2>/dev/null || true
+    wait "${emulator_pid}" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+# Let the emulator attach before the PC/SC presence probe starts polling.
+sleep 1
+if ! timeout --signal=TERM --kill-after=2s 12s \
+    "${repo_root}/tools/env" java \
+    "${repo_root}/tests/hardware/VpcdPresenceProbe.java" "${reader}" 8000 \
+    --require-present > "${out_dir}/reader-ready.log" 2>&1; then
+  cat "${out_dir}/emulator.log" >&2
+  cat "${out_dir}/reader-ready.log" >&2
+  die "VPCD card did not become present"
+fi
+
+gp_timeout() {
+  timeout --signal=TERM --kill-after=5s 120s \
+    "${repo_root}/tools/env" java -jar "${gp_jar}" \
+    --reader "${reader}" "$@"
+}
+gp_timeout --list > "${out_dir}/list-before.log" 2>&1 || {
+  cat "${out_dir}/list-before.log" >&2
+  die "GPPro could not list the empty VPCD card"
+}
+if grep -Fq 'PKG: 4A43416C6754657374 ' "${out_dir}/list-before.log" ||
+   grep -Fq 'APP: 4A43416C675465737431 ' "${out_dir}/list-before.log"; then
+  cat "${out_dir}/list-before.log" >&2
+  die "fresh VPCD card unexpectedly contains JCAlgTest"
+fi
+gp_timeout --install "${cap}" > "${out_dir}/install.log" 2>&1 || {
+  cat "${out_dir}/install.log" >&2
+  die "GPPro LOAD/INSTALL of upstream JCAlgTest failed"
+}
+gp_timeout --list > "${out_dir}/list-after.log" 2>&1 || {
+  cat "${out_dir}/list-after.log" >&2
+  die "GPPro could not list the card after installation"
+}
+grep -Fq 'PKG: 4A43416C6754657374 (LOADED)' "${out_dir}/list-after.log" || {
+  cat "${out_dir}/list-after.log" >&2
+  die "JCAlgTest package is not listed as loaded"
+}
+grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" || {
+  cat "${out_dir}/list-after.log" >&2
+  die "JCAlgTest applet is not listed as selectable"
+}
+
+if ! timeout --signal=TERM --kill-after=5s 900s \
+    "${repo_root}/tools/run-jcalgtest" --reader-name "${reader}" \
+    -op ALG_SUPPORT_EXTENDED -fresh -outpath "${out_dir}" \
+    > "${out_dir}/client.log" 2>&1; then
+  cat "${out_dir}/client.log" >&2
+  cat "${out_dir}/emulator.log" >&2
+  die "JCAlgTest 1.8.4 support run failed; see ${out_dir}"
+fi
+
+mapfile -t reports < <(find "${out_dir}" -maxdepth 1 -type f \
+  -iname '*ALGSUPPORT*.csv' -print | sort)
+[[ "${#reports[@]}" -eq 1 ]] || {
+  find "${out_dir}" -maxdepth 1 -type f -printf '%f\n' >&2
+  die "expected one JCAlgTest support CSV, found ${#reports[@]}"
+}
+
+"${repo_root}/tools/compare-jcalgtest-support.py" "${reports[0]}" \
+  "${reference}" --expected-support "${out_dir}/expected-support.csv" \
+  > "${out_dir}/comparison.log" 2>&1 || {
+  cat "${out_dir}/comparison.log" >&2
+  die "JCAlgTest support comparison failed; see ${out_dir}"
+}
+cat "${out_dir}/comparison.log"
+printf 'JCALGTEST_SUPPORT_VPCD:PASS reader=%s report=%s artifacts=%s\n' \
+  "${reader}" "${reports[0]}" "${out_dir#${repo_root}/}"

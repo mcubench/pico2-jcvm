@@ -151,7 +151,19 @@
       "keypair_rsa_3072": false,
       "keypair_rsa_crt_3072": false,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "base": {
       "owner_pin": true,
@@ -303,7 +315,19 @@
       "keypair_rsa_3072": false,
       "keypair_rsa_crt_3072": false,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -455,7 +479,19 @@
       "keypair_rsa_3072": false,
       "keypair_rsa_crt_3072": false,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "minimal": {
       "owner_pin": false,
@@ -607,7 +643,19 @@
       "keypair_rsa_3072": false,
       "keypair_rsa_crt_3072": false,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -759,7 +807,19 @@
       "keypair_rsa_3072": false,
       "keypair_rsa_crt_3072": false,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -911,7 +971,19 @@
       "keypair_rsa_3072": true,
       "keypair_rsa_crt_3072": true,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "symm_crypto_ctr": {
       "owner_pin": true,
@@ -1063,7 +1135,19 @@
       "keypair_rsa_3072": false,
       "keypair_rsa_crt_3072": false,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": false,
+      "signature_hmac_sha_256": false,
+      "signature_hmac_sha_384": false,
+      "signature_hmac_sha_512": false,
+      "signature_hmac_md5": false,
+      "signature_hmac_ripemd160": false,
+      "key_hmac_transient_reset": false,
+      "key_hmac_transient_deselect": false,
+      "key_hmac_sha1_block_64": false,
+      "key_hmac_sha256_block_64": false,
+      "key_hmac_sha384_block_64": false,
+      "key_hmac_sha512_block_64": false
     },
     "max_crypto": {
       "owner_pin": true,
@@ -1215,7 +1299,19 @@
       "keypair_rsa_3072": true,
       "keypair_rsa_crt_3072": true,
       "keypair_rsa_4096": false,
-      "keypair_rsa_crt_4096": false
+      "keypair_rsa_crt_4096": false,
+      "signature_hmac_sha1": true,
+      "signature_hmac_sha_256": true,
+      "signature_hmac_sha_384": true,
+      "signature_hmac_sha_512": true,
+      "signature_hmac_md5": true,
+      "signature_hmac_ripemd160": true,
+      "key_hmac_transient_reset": true,
+      "key_hmac_transient_deselect": true,
+      "key_hmac_sha1_block_64": true,
+      "key_hmac_sha256_block_64": true,
+      "key_hmac_sha384_block_64": true,
+      "key_hmac_sha512_block_64": true
     }
   }
 }

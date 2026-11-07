@@ -26,6 +26,9 @@ constexpr uint8_t kRsaCrtPrivate = 6;
 constexpr uint8_t kAesTransientReset = 13;
 constexpr uint8_t kAesTransientDeselect = 14;
 constexpr uint8_t kAesPersistent = 15;
+constexpr uint8_t kHmacTransientReset = 19;
+constexpr uint8_t kHmacTransientDeselect = 20;
+constexpr uint8_t kHmacPersistent = 21;
 constexpr uint8_t kRsaPrivateTransientReset = 22;
 constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kRsaCrtTransientReset = 24;
@@ -112,12 +115,14 @@ bool ecFpType(uint8_t type) { return ecPrivate(type) || type == kEcFpPublic; }
 bool transientType(uint8_t type) {
   return type == kDesTransientReset || type == kDesTransientDeselect ||
          type == kAesTransientReset || type == kAesTransientDeselect ||
+         type == kHmacTransientReset || type == kHmacTransientDeselect ||
          type == kRsaPrivateTransientReset || type == kRsaPrivateTransientDeselect ||
          type == kRsaCrtTransientReset || type == kRsaCrtTransientDeselect ||
          type == kEcFpPrivateTransientReset || type == kEcFpPrivateTransientDeselect;
 }
 ClearEvent clearEvent(uint8_t type) {
   return type == kDesTransientDeselect || type == kAesTransientDeselect ||
+                 type == kHmacTransientDeselect ||
                  type == kRsaPrivateTransientDeselect ||
                  type == kRsaCrtTransientDeselect ||
                  type == kEcFpPrivateTransientDeselect
@@ -197,6 +202,18 @@ bool supportedEc(uint8_t type, uint16_t bits) {
 }
 
 bool supportedSymmetric(uint8_t type, uint16_t bits) {
+  if (type == kHmacPersistent || type == kHmacTransientReset ||
+      type == kHmacTransientDeselect) {
+    const bool validSize = bits != 0 && bits <= 32760 && (bits & 7) == 0;
+    const bool persistent = JC_SUPPORT_KEY_HMAC_SHA1_BLOCK_64 ||
+        JC_SUPPORT_KEY_HMAC_SHA256_BLOCK_64 ||
+        JC_SUPPORT_KEY_HMAC_SHA384_BLOCK_64 ||
+        JC_SUPPORT_KEY_HMAC_SHA512_BLOCK_64;
+    const bool lifetime = type == kHmacPersistent ? persistent :
+        type == kHmacTransientReset ? JC_SUPPORT_KEY_HMAC_TRANSIENT_RESET :
+        JC_SUPPORT_KEY_HMAC_TRANSIENT_DESELECT;
+    return validSize && lifetime;
+  }
   switch (type) {
   case kAesPersistent:
   case kAesTransientReset:
@@ -237,6 +254,10 @@ uint8_t typeForAlgorithm(uint8_t algorithm, uint8_t memory) {
     if (memory == kMemoryPersistent) return algorithm == 1 ? kDesPersistent : kAesPersistent;
     if (memory == kMemoryTransientReset) return algorithm == 1 ? kDesTransientReset : kAesTransientReset;
     if (memory == kMemoryTransientDeselect) return algorithm == 1 ? kDesTransientDeselect : kAesTransientDeselect;
+  } else if (algorithm == 9) {
+    if (memory == kMemoryPersistent) return kHmacPersistent;
+    if (memory == kMemoryTransientReset) return kHmacTransientReset;
+    if (memory == kMemoryTransientDeselect) return kHmacTransientDeselect;
   } else if (algorithm == 11 && memory == kMemoryPersistent) return kRsaPublic;
   else if (algorithm == 12 && memory == kMemoryPersistent) return kRsaPrivate;
   else if (algorithm == 13 && memory == kMemoryPersistent) return kRsaCrtPrivate;
@@ -545,6 +566,39 @@ void javacard_security_NativeKey_setKey(jref_t receiver,
     flag->setByteEntry(0, 1);
   } else {
     key->setField_Byte(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PERSISTENTINITIALIZED, 1);
+  }
+}
+void javacard_security_NativeKey_setKey(jref_t receiver,
+    std::shared_ptr<JC_Array> source, jshort_t offset, jshort_t length) {
+  auto key = nativeKey(receiver);
+  const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
+  if (type != kHmacPersistent && type != kHmacTransientReset &&
+      type != kHmacTransientDeselect)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  if (!source) throw Exceptions::NullPointerException;
+  if (length <= 0)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  auto target = arrayField(*key,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+      JAVA_ARRAY_T_BYTE);
+  if (static_cast<uint16_t>(length) != target->size())
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  checkInput(source, offset, length);
+  for (uint16_t i = 0; i < target->size(); ++i)
+    target->setByteEntry(i,
+        source->getByteEntry(static_cast<uint16_t>(offset + i)));
+  const jref_t transientRef = key->getField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TRANSIENTINITIALIZED);
+  if (!transientRef.isNullPointer()) {
+    auto flag = Context::getActiveContext().getHeap().getArray(transientRef);
+    if (!flag || flag->getType() != JAVA_ARRAY_T_BYTE || flag->size() < 1)
+      throw Exceptions::ArrayStoreException;
+    flag->setByteEntry(0, 1);
+  } else {
+    key->setField_Byte(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PERSISTENTINITIALIZED,
+        1);
   }
 }
 jbyte_t javacard_security_NativeKey_getKey(jref_t receiver,
