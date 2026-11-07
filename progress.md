@@ -24111,3 +24111,26 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue R08 restore and persistent-record acceptance; do not claim the review item closed yet.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+
+## 2026-11-07 Review summary and current-source reconciliation 6 minutes active work
+
+- Step/experiment: `review-20261106-pass12`
+- When: '2026-11-06 22:52:40 CET' - '2026-11-07 07:21:44 CET' (pause between dates excluded from active work)
+- Change: Added R60 historical dup_x finding/TODO, bringing totals to 60. After user returned, reconciled concurrent source corrections for R01/R02/R03/R05/R06/R07/R08/R60 and added explicit current-status tables/notes. Documentation/evidence only; no implementation, test or CAP changes by this review.
+- Validation: Compared original dup_x code with Oracle JCVM 3.0.5 §7.5.18; checked old registry assertion flags. Initial source-hash check failed after repository advanced, so inspected current corrections and implementing-session commit/progress evidence instead of claiming stale findings remained current. Preserved original hashes and refreshed current hashes; 60 finding/task mappings, links/anchors and JSON passed. Other session's new VPCD/build results are attributed, not independently rerun here. No hardware operations.
+- Result: Source now corrects/partly corrects eight recorded findings; remaining acceptance differs. R60 software closure reported by implementing session. Report distinguishes 60 historical findings from unchanged open defects. No new performance/device metrics measured.
+- Decision: Summarize problem groups and priorities for the user; continue review-only under the active goal. Do not duplicate source fixes or claim full physical acceptance.
+- Commit: pending review commit; exact SHA will be appended after creation.
+- Artifacts/logs: `artifacts/reviews/review_20261106/pass12/` historical/current SHA-256 manifests and status JSON; Oracle primary URL in report; no new runtime log.
+
+## 2026-11-07 Exercise Cipher state after fresh emulator restore 9 minutes
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-restore`
+- When: '2026-11-07 07:12 CET' - '2026-11-07 07:21 CET'
+- Change: Extended `tools/test-cipher-workspace-vpcd` to run two emulator processes against the same persisted flash image. Pass one installs the test CAP and exercises Cipher transaction-abort behavior; pass two resumes the applet from flash and calls the retained Cipher after native session state has reset.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` passed with `TEST:SUMMARY pass=6 fail=0`. First process returned expected AES/RSA success (`019000`); fresh-process restore selected the applet and returned `449000` (`InvalidInit`) for the stale Cipher. `git diff --check -- tools/test-cipher-workspace-vpcd` passed.
+- Result: Emulator process restart and applet restore preserve the expected reset semantics without a stale Cipher operation. This does not enumerate flash records or constitute physical validation; RV-20261106-08 remains open.
+- Decision: Keep the fresh-process regression in the repeatable wrapper; next inspect saved persistent records and legacy-workspace migration implications.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T061911Z.log`, SHA-256 `7622fb838721a67fd7bd3f706975a078f23a7f568802de0ffc1234208134992c`.

@@ -17,8 +17,7 @@ flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${ti
   --cap-code "${repo_root}/build/cipher-lifecycle-probe/load-code.bin" \
   --rom-mask "${repo_root}/build/choupi-pc/flash" \
   --apdu-timeout 120 --applet-aid A00000015100020301 \
-  --package-id 56 --passes 1 \
+  --package-id 56 --passes 2 \
   --apdu 800E000000 --expect-apdu-response 019000 \
-  --reset-after-custom-apdu 1 \
-  --apdu 800F000000 --expect-apdu-response 449000 \
+  --resume-apdu 800F000000 --expect-resume-apdu-response 449000 \
   --flash-copy "${flash_copy}" --log "${log_file}"

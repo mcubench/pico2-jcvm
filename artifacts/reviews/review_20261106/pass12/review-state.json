@@ -1,0 +1,29 @@
+{
+  "head": "fbeeadde8b7c1811ea74c7e6c1b39264c1cfcf54",
+  "scope": "Review-only interpreter/stack semantic audit",
+  "finding": {
+    "R60": "Positive-depth dup_x copies m+n words rather than inserting m words at depth n; wrong input/output bounds and upper n rejection"
+  },
+  "revalidated": [
+    "R01 opcode fetch remains outside try in noexcept interpreter",
+    "R02 unwindToDepth still pop_back against front-pushed frames",
+    "R03 local metadata still checked before local bounds"
+  ],
+  "excluded_candidate": "RMI fixture assertions are enabled: target -UNDEBUG follows Release -DNDEBUG in inspected flags",
+  "specification": {
+    "url": "https://docs.oracle.com/cd/E59935_01/JCVMS.pdf",
+    "edition": "Java Card Classic 3.0.5",
+    "section": "7.5.18 dup_x",
+    "checked": "Oracle primary-source search result and repository instruction comments agree on insertion semantics and inclusive n range"
+  },
+  "validation": "Static instruction traces and source/spec comparison; no new runtime case, build, implementation/test/CAP changes or hardware operation",
+  "test_scope": "Existing rmi_registry tests exercise dup(1,0), not positive-depth dup_x; no test rerun this pass",
+  "status_update_2026_11_07": {
+    "head": "fdbd0d42",
+    "reason": "User returned after concurrent implementation work advanced the repository; original source snapshot no longer matches current files",
+    "R60": "Corrected by other session in 6fb521d5; follow-up operand and interpreter coverage reported in 7141905d/c41e89f7/c5d16e53; current source inspected, tests not independently rerun during this summary",
+    "R01_R02_R03": "Current source has corrections in a5a400c4/5e7dcb00/b36e9cf1; old revalidation refers to the earlier snapshot",
+    "other_partial_changes": "R05 a343db91, R06 f0fc469b, R07 bcfa97ae, R08 c7458354",
+    "provenance": "Original hashes preserved in source-before-update-sha256.txt; source-sha256.txt records refreshed current files"
+  }
+}

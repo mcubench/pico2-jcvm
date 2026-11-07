@@ -1,4 +1,22 @@
-# Current handoff — Cipher operational workspace lifetime — 2026-11-07 07:12 CET
+# Current handoff — review summary and concurrent-source reconciliation — 2026-11-07 07:21:44 CET
+
+User requested a summary. Report/todo now contain 60 historical findings/tasks,
+including R60 dup_x analysis checked against Oracle JCVM 3.0.5. After a pause,
+HEAD advanced through concurrent fixes. Added prominent 7 November status
+reconciliation for R01/R02/R03/R05/R06/R07/R08/R60; do not describe all 60 as
+unchanged open defects or reimplement corrected paths. R60 software closure
+is reported by the implementing session; this review inspected corrected
+source but did not independently rerun its new test suite. Other acceptance
+scope remains open as recorded in the status table.
+
+Pass12 preserves pre-update hashes and refreshed current hashes. Initial hash
+verification failed because source changed during the pause; this correctly
+triggered reconciliation rather than a false validation claim. All 60 mapping,
+link/anchor checks and refreshed hashes now pass. No implementation, test or
+CAP changed by this review session. Continue review-only under active goal;
+stage only own continuity hunks and preserve all concurrent work.
+
+# Current handoff — Cipher workspace fresh-restore test — 2026-11-07 07:21 CET
 
 RV-20261106-08 has a partial native change in `choupi/src/native_cipher.cpp`
 and `choupi/src/native_rsa_cipher.cpp`. Cipher workspaces (key snapshots,
@@ -11,20 +29,24 @@ transient key-workspace behavior.
 
 The focused CAP lifecycle probe and `./tools/test-cipher-workspace-vpcd`
 pass: AES CBC update/abort/final after partial and full block inputs; RSA
-no-padding update/abort/final; then reset invalidates the retained Cipher
-(`449000`). VPCD summary: `TEST:SUMMARY pass=4 fail=0`; log
-`artifacts/logs/cipher-workspace-vpcd-20261107T060429Z.log`, SHA-256
-`00d0512759c9371a805db4568838d7a603c120d59da7956c57ef1f3515965f70`.
+no-padding update/abort/final; then a second emulator process resumes the
+flash image and confirms the retained Cipher is uninitialized (`449000`). The
+two-process VPCD summary is `TEST:SUMMARY pass=6 fail=0`; log
+`artifacts/logs/cipher-workspace-vpcd-20261107T061911Z.log`, SHA-256
+`7622fb838721a67fd7bd3f706975a078f23a7f568802de0ffc1234208134992c`.
 `./tools/build arm` and `./tools/build riscv` pass. ARM image ends at
 `0x100d58ac`, leaving 173,908 bytes. Builds emit existing Rust/CAP warnings.
-This was simulator-only: no physical board test, cold-restore test, or
-persistent-record inventory was run. R08 remains open for those checks and
-for confirming no pre-existing persistent workspace records need migration or
-cleanup. Implementation is committed as `c7458354`; the SHA-resolution
-progress record follows.
+This was simulator-only: process-restart restore passed, but no physical board
+test or persistent-record inventory was run. Source inspection confirms the
+current workspace allocations use transient-array constructors; inspect the
+saved flash records to independently establish that no Cipher workspace
+records are written and assess whether pre-existing persistent records need
+migration or cleanup. R08 remains open for those checks. Native implementation
+is committed as `c7458354`; the process-restart acceptance wrapper is being
+committed separately.
 
-Next: continue R08 acceptance offline with record inspection/cold restore if
-the harness supports it; keep this issue open until those gates are addressed.
+Next: continue R08 acceptance offline with persistent-record inspection; keep
+this issue open until that gate and physical validation are addressed.
 
 # Current handoff — bound superclass traversal in VM runtime — 2026-11-07 05:57 CET
 
