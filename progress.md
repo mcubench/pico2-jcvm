@@ -25001,3 +25001,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Image is available for external testing with its dirty-tree provenance disclosed. Hardware acceptance remains pending until PC/SC publishes a reader.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; build provenance under `build/`.
+
+## 2026-11-07 Record external image handoff commit 1 minute
+
+- Step/experiment: `JCSystem-CLEAR_ON_DESELECT-context-guard-image-commit-reference`
+- When: '2026-11-07 22:17 CET' - '2026-11-07 22:18 CET'
+- Change: Recorded the image refresh handoff commit reference.
+- Validation: `git show --stat --oneline c0013832` confirms the scoped handoff and progress update.
+- Result: The refreshed image record is committed as `c0013832`.
+- Decision: Continue with unblocked TODO work; physical PC/SC testing remains pending.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
