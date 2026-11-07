@@ -24733,3 +24733,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R36 unchecked pending physical CCID testing; continue offline project priorities while no Pico reader is published.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/jcsystem-reset-power-focused-20261107.log` (SHA-256 `66fab3b5d5bcb3352c12f14ded4e5bdf1e58b2b7e0b9439c9a82bd1dec00e7db`); `artifacts/logs/jcsystem-transaction-apdu-vpcd-r36-20261107.log` (SHA-256 `94257254a4447093bb7481872d1b90e86df2257e2a3313d537455b02b970e969`); full bounded log `artifacts/logs/jcsystem-transaction-apdu-vpcd-r36-full-20261107.log`.
+
+## 2026-11-07 Resolve R36 progress commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-36-reset-callback-commit-sha`
+- When: '2026-11-07 17:12 CET' - '2026-11-07 17:13 CET'
+- Change: Resolved the commit reference for the R36 CCID/VPCD logical power/reset behavior step.
+- Validation: `git show --stat --oneline 97fc4ab0` confirms the implementation commit contains the physical CCID change, focused VPCD tests, TODO/QKB updates, handoff and progress record only.
+- Result: R36 offline implementation and validation are committed as `97fc4ab0`; hardware CCID and supply-loss acceptance remain open.
+- Decision: Continue with the next actionable offline project priority while keeping physical acceptance pending.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
