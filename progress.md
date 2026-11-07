@@ -24536,3 +24536,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close R23. Continue with R24: inject first-object persistence failures and transaction aborts, then verify retry of the same live object.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Unit output was not archived; generated sanitizer build is under `build/tests/unit/persistent-transaction-asan/`.
+
+## 2026-11-07 Commit executable R23 regression 1 minute
+
+- Step/experiment: `RV-20261106-23-same-object-assignment-test-commit`
+- When: '2026-11-07 13:19 CET' - '2026-11-07 13:20 CET'
+- Change: Committed the R23 production-handler regression covering stable body separation for same-value instance/static assignments, transaction commit/abort, fresh restore, and subsequent mutation. The initial status-only commit `a3b2c2ef` is retained; this follow-up adds the executable test code.
+- Validation: `./tools/test-persistent-transaction` PASS (`TEST:SUMMARY fail=0`); rebuilt and ran the persistent transaction test under ASan/UBSan with `ASAN_OPTIONS=detect_leaks=0`, PASS.
+- Result: The R23 acceptance claims are now backed by committed executable coverage.
+- Decision: Continue with R24 failure/abort retry tests.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Test output was not archived.

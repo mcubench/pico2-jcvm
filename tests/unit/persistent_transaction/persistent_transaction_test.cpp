@@ -601,6 +601,148 @@ int main() {
   }
 
   {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto parent_root = make_tag(0xe6);
+    const auto child_root = make_tag(0xe7);
+    const auto static_root =
+        jcvm::FlashMemory_Handler::getStaticFieldTag(2, 0x1234);
+    const auto child_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    const auto parent_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 4));
+    auto child = heap.getInstance(child_reference);
+    auto parent = heap.getInstance(parent_reference);
+    child->setField_Short(0, 0x55);
+    parent->setField_Reference(0, child_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        child_root, child_reference, heap);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        parent_root, parent_reference, heap);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        static_root, child_reference, heap);
+
+    const auto alias_target = [](const std::vector<uint8_t> &record,
+                                 jcvm::fs::Tag &target) {
+      if (record.size() < 3 || record[0] != 0xfe || record[1] == 0 ||
+          record.size() != static_cast<std::size_t>(record[1]) + 2 ||
+          record[1] > sizeof(target.value)) {
+        return false;
+      }
+      target.len = record[1];
+      std::memcpy(target.value, record.data() + 2, target.len);
+      return true;
+    };
+    jcvm::fs::Tag parent_body{};
+    jcvm::fs::Tag child_body{};
+    jcvm::fs::Tag parent_field_target{};
+    const auto parent_record = persistent_transaction_test::read(
+        parent_root.value, parent_root.len);
+    const auto child_record = persistent_transaction_test::read(
+        child_root.value, child_root.len);
+    const bool initial_aliases_valid =
+        alias_target(parent_record, parent_body) &&
+        alias_target(child_record, child_body) &&
+        alias_target(persistent_transaction_test::read(
+                         static_root.value, static_root.len),
+                     parent_field_target);
+    const auto parent_field =
+        jcvm::FlashMemory_Handler::computeTag(parent_body, 0);
+    jcvm::fs::Tag instance_child_body{};
+    jcvm::fs::Tag static_child_body{};
+    const bool initial_targets_are_distinct =
+        initial_aliases_valid &&
+        alias_target(persistent_transaction_test::read(
+                         parent_field.value, parent_field.len),
+                     instance_child_body) &&
+        alias_target(persistent_transaction_test::read(
+                         static_root.value, static_root.len),
+                     static_child_body) &&
+        instance_child_body.len == child_body.len &&
+        std::memcmp(instance_child_body.value, child_body.value,
+                    child_body.len) == 0 &&
+        static_child_body.len == child_body.len &&
+        std::memcmp(static_child_body.value, child_body.value,
+                    child_body.len) == 0 &&
+        !(instance_child_body.len == parent_field.len &&
+          std::memcmp(instance_child_body.value, parent_field.value,
+                      parent_field.len) == 0) &&
+        !(static_child_body.len == static_root.len &&
+          std::memcmp(static_child_body.value, static_root.value,
+                      static_root.len) == 0);
+
+    parent->setField_Reference(0, child_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        static_root, child_reference, heap);
+    const bool began_commit =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    parent->setField_Reference(0, child_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        static_root, child_reference, heap);
+    const bool committed =
+        jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+    const bool began_abort =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    parent->setField_Reference(0, child_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        static_root, child_reference, heap);
+    const bool aborted =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+
+    bool same_identity_after_restore = false;
+    bool mutation_after_restore = false;
+    try {
+      jcvm::Heap restored_heap(7);
+      const auto restored_parent =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              parent_root, restored_heap);
+      const auto restored_child_from_parent =
+          restored_heap.getInstance(restored_parent)->getField_Reference(0);
+      const auto restored_child_from_static =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              static_root, restored_heap);
+      const auto restored_child_from_root =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              child_root, restored_heap);
+      same_identity_after_restore =
+          restored_child_from_parent == restored_child_from_static &&
+          restored_child_from_parent == restored_child_from_root &&
+          restored_heap.getInstance(restored_child_from_parent)
+                  ->getField_Short(0) == 0x55;
+      restored_heap.getInstance(restored_child_from_parent)
+          ->setField_Short(0, 0x66);
+
+      jcvm::Heap final_heap(7);
+      const auto final_parent =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              parent_root, final_heap);
+      const auto final_child_from_parent =
+          final_heap.getInstance(final_parent)->getField_Reference(0);
+      const auto final_child_from_static =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              static_root, final_heap);
+      mutation_after_restore =
+          final_child_from_parent == final_child_from_static &&
+          final_heap.getInstance(final_child_from_parent)->getField_Short(0) ==
+              0x66;
+    } catch (jcvm::Exceptions exception) {
+      std::printf("OBJECT_ID_SELF_ASSIGN_EXCEPTION id=%u\n",
+                  static_cast<unsigned>(exception));
+    } catch (...) {
+      std::printf("OBJECT_ID_SELF_ASSIGN_EXCEPTION unknown\n");
+    }
+    expect(initial_targets_are_distinct,
+           "same_value_assignment_initial_aliases_target_distinct_bodies");
+    expect(began_commit && committed && began_abort && aborted,
+           "same_value_instance_and_static_assignments_survive_transactions");
+    expect(same_identity_after_restore,
+           "same_value_instance_and_static_assignments_preserve_identity_after_restore");
+    expect(mutation_after_restore,
+           "same_value_assignment_allows_mutation_after_fresh_restore");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+
+  {
     persistent_transaction_test::instance_field_count = 4;
     jcvm::Heap heap(7);
     const auto instance_tag =

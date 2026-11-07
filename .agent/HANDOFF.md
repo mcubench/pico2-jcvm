@@ -21,8 +21,9 @@ assignment to persistent instance and static references preserves the
 separate object body during normal writes and transaction commit/abort. Fresh
 restore returns the same canonical reference through the parent field, static
 root, and direct root; subsequent child mutation persists. The persistent
-transaction unit and ASan/UBSan suites pass. This test/documentation step is
-not yet committed.
+transaction unit and ASan/UBSan suites pass. The TODO/progress status record is
+committed as `a3b2c2ef`; the R23 test source is in a separate scoped
+follow-up commit.
 
 Fresh max-crypto ARM empty-card image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`
