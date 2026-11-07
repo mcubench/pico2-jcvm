@@ -26,6 +26,12 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
    user-requested 0.1.1 release and tags each firmware build with its source
    identity. The release field must never change automatically; see REL-01
    below for encoding and the pending physical check.
+6. Implement and validate native support for the `ALG_HMAC_*` algorithms;
+   acceptance must use the unchanged JCAlgTest 1.8.4 / jc305 fixture and
+   matching client. See HMAC-01.
+7. Diagnose the reported physical-reader disappearance during the max_crypto
+   JCAlgTest Signature factory matrix without using real tokens. See
+   JC-RESET-01.
 
 Physical availability is volatile. Most recent host check (2026-11-07
 03:51-03:53 CET): the authorized helper granted access to USB nodes
@@ -449,6 +455,71 @@ review.
   original atomic-recovery and failed-install entries. Coordinate PERSIST-01/02.
 
 ## Priority 1 — current-image API acceptance
+
+### HMAC-01
+
+- [ ] **Implement the `ALG_HMAC_*` algorithms in native crypto support.**
+  Status: the JCAlgTest 1.8.4 reference advertises `ALG_HMAC_SHA1`,
+  `ALG_HMAC_SHA_256`, `ALG_HMAC_SHA_384`, `ALG_HMAC_SHA_512`,
+  `ALG_HMAC_MD5`, and `ALG_HMAC_RIPEMD160`; current native support and
+  acceptance coverage must be inventoried before implementation. Add the
+  algorithms through the native C++ VM/API dispatch path, preserving Java Card
+  API behavior and error mapping. Do not add Java providers/adapters to
+  firmware or modify supplied CAPs. Include known-answer and lifecycle
+  coverage, then run the pinned JCAlgTest 1.8.4 / jc305 support checks and
+  record any explicitly unsupported identities.
+  Acceptance: supported identities return correct results across required
+  update/final and reset/deselect semantics, focused tests pass, and both
+  architecture builds pass; hardware validation follows repository gates.
+
+### JC-RESET-01
+
+- [ ] **Diagnose reader loss during JCAlgTest Signature factory combinations.**
+  Source-analysis refinement: `native_signature.cpp::algorithmForTuple()`
+  rejects the reported RSA/OAEP/SHA3 tuple before `createSignature()` allocates
+  an instance or buffers. `bc_object.cpp::dispatchJavaException()` routes this
+  through `Heap::addRuntimeCryptoException()`, which caches the exception.
+  Thus a fresh Signature/exception allocation for every unsupported tuple is
+  not supported by current source. Verify these paths against the exact 0.1.1
+  build commit before attributing them to the failing image. Earlier successful
+  constructors, exception field writes, GC, storage and transport remain in
+  scope. The 1.8.4 reference's next tuple is RSA / OAEP-SHA3-512 / ALG_NULL;
+  reference CSV order alone does not establish the next actual APDU. Inspect
+  client buffering and applet batching: the last saved row is a completion
+  boundary, not proof that the very next individual tuple caused the failure.
+  Evidence (user report): firmware release `0.1.1` with the `max_crypto`
+  profile was being exercised using JCAlgTest `ALG_SUPPORT_EXTENDED` on
+  Windows PC/SC. During calls to
+  `javacard.crypto.Signature.getInstance(byte messageDigestAlgorithm, byte
+  cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)`, the reader
+  stopped appearing to Windows PC/SC. The last saved CSV row was reported as
+  line 5627: `SIG_CIPHER_RSA PAD_PKCS1_OAEP_SHA3_384 ALG_SHA3_512;no;
+  0.212000;0;0;0`. Unplug/replug restored reader visibility and use without
+  reflashing. The exact run CSV and host/device logs are not currently present
+  in the repository; preserve this as reported evidence until obtained.
+  Hypotheses to discriminate, not established causes: Signature factory or
+  native crypto allocation leak/exhaustion across the large combination sweep;
+  persistent/transient heap or registry pressure; a VM exception/fault, deadlock
+  or watchdog/reset; and CCID/USB or Windows PC/SC transport/driver loss. The
+  preceding `no` result is a normal algorithm support outcome and does not by
+  itself establish a firmware defect. Replug recovery without reflashing makes
+  transport recovery or reset plausible, but does not rule out firmware state
+  failure.
+  Worker: first obtain and preserve the exact CSV, client/JAR and CAP hashes,
+  host logs, image hash/build profile, and device identity if available. Map
+  the reported row to the matching client’s actual execution order (including
+  whether row numbering includes a header), then inspect the corresponding
+  native `Signature.getInstance` dispatch and allocation/lifecycle paths.
+  Reproduce offline with the unchanged pinned JCAlgTest 1.8.4 / jc305 fixture
+  and matching client on a fresh VPCD image; add focused repeated factory-call
+  and resource-accounting probes if needed. Capture APDU progress, SW/VM fault,
+  allocator/persistent capacity, USB/CCID reset and host reader state to
+  distinguish causes. **Do not test with real tokens or perform physical
+  reproduction under this task.**
+  Acceptance: provide a cause or a bounded set of remaining hypotheses with
+  evidence; an offline reproducer or explicit non-reproduction bound; any
+  required code fix and VPCD regression; and build results. Physical validation,
+  if still warranted, requires a separate authorized task.
 
 ### API-01
 
@@ -1284,9 +1355,13 @@ review.
   clean tree, `FF` means dirty, followed by the first six hex digits of HEAD.
   The dirty marker prevents the ID from implying that an uncommitted image is
   exactly the named commit. The CPLC unit and hardware probe expectations are
-  aligned. Remaining acceptance: verify the value remains stable across
-  ordinary builds and use authorized hardware/GPPro `--info` to confirm the
-  release and source ID display.
+  aligned. Two consecutive 2026-11-07 ARM max_crypto builds both emitted
+  `0xFFDCFCC7`; ARM and RISC-V builds, CPLC unit checks (25/25), and flash
+  boundary checks passed. Physical acceptance remains open: the authorized
+  helper granted three USB nodes, but they enumerated as runtime CCID devices
+  and `pcsc_scan -r` listed no readers, so GPPro `--info` could not be run.
+  Next, use an enumerated reader to confirm release `0101` and source ID
+  `FFDCFCC7` in the CPLC display.
 
 ### PROFILE-02
 

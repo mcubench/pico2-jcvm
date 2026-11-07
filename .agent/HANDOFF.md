@@ -9365,3 +9365,35 @@ only after confirming both architecture wrappers, then run physical POWER_OFF,
 power-on/ATR, reader reset, SELECT/process and persistent deselect-counter
 checks. Continue other offline priorities meanwhile. Preserve unrelated
 worktree changes.
+
+# Current handoff — REL-01 rebuild stability and external max_crypto image — 2026-11-07 18:01 CET
+
+REL-01 ordinary-build stability is verified: `./tools/build arm --profile
+max_crypto` ran twice consecutively and both reported CPLC source ID
+`0xFFDCFCC7`. The CPLC/GP GET DATA unit suite passed 25/25 and
+`./tools/test-firmware-flash-boundary` passed. ARM and RISC-V max_crypto
+wrappers both passed; RISC-V remains the shared VM-core/smoke target only.
+
+Fresh empty-card external-test image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, size
+4,047,360 bytes, SHA-256
+`9c40b757b67eb8dbada757edcf4355fd43e7c917f93a65b52e70a17bf6941505`.
+Picotool identifies RP2350 ARM Secure, binary end `0x100EDFC0` (73,792 bytes
+remain). Package validation matched all 3,808 firmware payloads against the
+ARM build and confirmed 4,096 erased storage blocks (`0x10100000–0x101FFFFF`),
+so the card has no installed applets or persistent data. Build source ID is
+`FFDCFCC7`; profile is max_crypto (147/150); release is 0.1.1 (`0101`).
+
+Physical GPPro acceptance remains open. Host helper granted USB access to
+nodes `001/054`, `001/055`, and `001/056`, but `lsusb` reported all three as
+`2e8a:0009` runtime CCID devices and `pcsc_scan -r` did not list a reader. No
+physical query or flash was attempted. `.agent/EXT_REQUESTS.md` records the
+Windows GPPro CPLC check needed to close REL-01. Preserve the user's unrelated
+dirty worktree; the UF2 is ignored by Git.
+
+Next: continue with the highest-priority unblocked TODO item after recording
+this REL-01 partial acceptance. Do not mark REL-01 complete until GPPro reads
+`OperatingSystemReleaseLevel=0101` and `ICPersonalizationEquipmentID=FFDCFCC7`
+from a physical reader.
+
+---

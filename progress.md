@@ -24780,3 +24780,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: This is the current max_crypto empty-card ARM image for external testing. Its on-device behavior remains unverified.
 - Commit: `872740b1`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; SHA-256 above.
+
+
+## 2026-11-07 Revalidate REL-01 and rebuild external max_crypto image 4 minutes
+
+- Step/experiment: `REL-01-current-tree-revalidation-and-max-empty-card`
+- When: '2026-11-07 17:57 CET' - '2026-11-07 18:01 CET'
+- Change: Revalidated the committed CPLC release/source identity behavior and packaged the current max_crypto ARM build as an empty-card external-test UF2. No firmware source or CAP changes were needed.
+- Validation: `./tools/test-gp-get-data` passed 25/25, including CPLC release level `0101`; `./tools/test-firmware-flash-boundary` passed. `./tools/build riscv --profile max_crypto` and two consecutive `./tools/build arm --profile max_crypto` runs passed. Both ARM builds emitted source ID `0xFFDCFCC7`, 147/150 capabilities, firmware end `0x100EDFC0`, and 73,792 bytes free. Authorized reader helper granted three nodes; escalated `lsusb` showed all were runtime `2e8a:0009` CCID devices and `timeout 8s pcsc_scan -r` published no readers. GPPro hardware query was therefore unavailable; no board was flashed.
+- Result: Fresh image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,047,360 bytes, SHA-256 `9c40b757b67eb8dbada757edcf4355fd43e7c917f93a65b52e70a17bf6941505`. Picotool identifies RP2350 ARM Secure, release 0.1.1. UF2 package inspection confirmed its 3,808 firmware payloads match the just-built image and all 4,096 storage blocks are erased. Firmware source ID is `FFDCFCC7` (dirty tree, base commit prefix `DCFCC7`).
+- Decision: Offline REL-01 stability acceptance passes; keep physical GPPro display acceptance open. The image is ready for external Windows testing with an empty card.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` (SHA-256 `03472e1be05e37c70b078e3f9afea9e6f9fbf3a300c3bbbcb131a1e8166b8c2e`); `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (SHA-256 above); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
