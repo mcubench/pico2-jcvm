@@ -1,3 +1,32 @@
+# Current handoff — validate instance field receiver classes — 2026-11-07 05:06 CET
+
+RV-20261106-06 now has a native runtime assignability guard in
+`choupi/src/jc_bytecodes/bc_object_field.cpp`. The shared field-token resolver
+checks that the receiver's concrete class is the field's declaring class or a
+subclass before using its flattened field offset. The guard is wired through
+all 24 byte/short/int/reference get/put opcode forms, including wide and
+`_this` variants. Hierarchy inspection is bounded to 256 links and rejects
+when assignability cannot be established.
+
+Validation passed: PC `max_crypto` build; ARM and RISC-V wrapper builds under
+the `current` support profile; and full `./tools/test-symm-crypto-vpcd`
+acceptance, `TEST:SUMMARY pass=99 fail=0` (38 cipher vectors, 47 MAC vectors,
+and 16 transient lifecycle vectors; two emulator resets). Log:
+`artifacts/logs/symm-crypto-kat-vpcd-20261107T040241Z.log`, SHA-256
+`c93d49f54d982f152a197c3889e9f762853189667c021e737381e91909ccd796`.
+An initial direct invocation used pre-existing generated probe artifacts and
+failed APDU 3; rerunning through the full wrapper regenerated the matching
+probe and passed. No physical test was attempted.
+
+R06 remains open for a targeted negative CAP regression proving unrelated
+same-layout receiver rejection, explicit imported/inherited/API receiver
+coverage, and Java Card access-control semantics beyond class assignability.
+The review source also cites access checks; this change only establishes
+receiver-class compatibility. Next: add the focused negative runtime test or
+advance another independently reproducible P1 while keeping R06 acceptance
+open. Implementation/progress commit SHA will be recorded in the next progress
+entry.
+
 # Current handoff — persistent field cache remains canonical on write failure — 2026-11-07 04:44 CET
 
 Persistent `JC_Instance` setters for byte, short, int and reference fields now

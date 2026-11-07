@@ -24034,3 +24034,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue to RV-20261106-04 OwnerPIN lifecycle analysis.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Validate field receiver class before field access 20 minutes
+
+- Step/experiment: `rv-20261107-field-receiver-assignability`
+- When: '2026-11-07 04:46 CET' - '2026-11-07 05:06 CET'
+- Change: The shared native instance-field resolver now checks that the receiver's concrete CAP class is the field's declaring class or a subclass before applying the flattened field offset. Wired this guard into all 24 get/put field opcode variants (reference, byte, short, int, wide and `_this`). The hierarchy walk is capped at 256 links and fails closed if assignability is not found.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. The ARM and RISC-V wrappers used the current profile. `./tools/test-symm-crypto-vpcd` passed with `TEST:SUMMARY pass=99 fail=0` (38 cipher vectors, 47 MAC vectors, 16 transient lifecycle vectors, and two emulator resets). A direct invocation against pre-existing generated artifacts initially failed APDU 3; the full wrapper regenerated matching artifacts and passed. Scoped `git diff --check -- choupi/src/jc_bytecodes/bc_object_field.cpp` passed. The repository-wide whitespace check flags unrelated pre-existing trailing whitespace in `AGENTS.md`. No physical hardware test was run.
+- Result: Existing same-class applet field accesses, including broad API/native object use in the symmetric crypto probe, continue to pass. A malformed/dishonest receiver's rejection is not yet directly asserted by a negative CAP test.
+- Decision: RV-20261106-06 remains open for negative unrelated same-layout receiver coverage, imported/inherited/API-specific cases, and field access-control semantics beyond assignability. Do not claim the full finding closed.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261107T040241Z.log`, SHA-256 `c93d49f54d982f152a197c3889e9f762853189667c021e737381e91909ccd796`.
