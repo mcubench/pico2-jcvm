@@ -13109,6 +13109,17 @@
 - Commit: `1c2028bc`
 - Artifacts/logs: None.
 
+## 2026-11-07 Isolate physical Cipher probe after GPPro install 15 minutes
+
+- Step/experiment: `RV11-physical-cipher-lifecycle-setup-20261107`
+- When: '2026-11-07 21:39 CET' - '2026-11-07 21:54 CET'
+- Change: Re-ran the current Cipher lifecycle suite, attempted physical acceptance, and added an explicit PC/SC card reset/reconnect after GPPro installs the disposable CAP so prior SCP03 session state cannot contaminate the first open-channel probe. Refreshed TODO, QKB and handoff with the unresolved response and reader state.
+- Validation: `./tools/test-cipher-lifecycle-vpcd` passed 31/31; the modified physical Java probe compiles; `./tools/test-ccid-apdu-route` passed 15/15; scoped `git diff --check` passed. Physical GPPro install and applet/default-ISD/explicit-ISD SELECT passed, but GET DATA returned `6982` before any Cipher APDU; package cleanup passed. Firmware-only max_crypto flash to failover board 2BED verified successfully and its finite serial monitor passed. Subsequent helper/USB checks saw three devices, while bounded `pcsc_scan -r` produced no readers. No firmware source changed, so architecture builds were not rerun.
+- Result: RV-11 hardware acceptance remains open. `6982` is consistent with the production route rejecting unauthenticated commands while SCP03 is active, but active-channel state was not instrumented; the new explicit reset setup is not yet physically verified. PCSC reader registration disappeared while all three USB CCID devices remained enumerated. Board storage was preserved.
+- Decision: Keep RV-11 open and do not relax production secure-channel checks. When PC/SC enumeration returns, rerun the corrected probe on D92 or fail over to a currently listed Pico. Continue offline project work meanwhile.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-lifecycle-pcsc-20261107T204148Z.log` (SHA-256 `191b9f6ffc693f2bc6e664bc45a678a270ac51b4572fd29e388296606cde30f2`); `artifacts/logs/cipher-lifecycle-vpcd-20261107T204652Z.log` (SHA-256 `a82b5ab80132e6cb8c9e5dd6e742d56b0bf697e94d6c58186e975022b0e9b7e2`).
+
 ## 2026-11-07 REL-01 offline acceptance and max-crypto external image 10 minutes
 
 - Step/experiment: `REL-01-offline-gp-info-and-max-crypto-empty-card-build`

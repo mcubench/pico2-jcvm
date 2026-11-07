@@ -7854,3 +7854,29 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   buffered, and no final APDU summary was produced. Use focused APDU cases for
   reset semantics; treat the full-suite duration as unresolved rather than
   calling it a reset regression.
+## GP GET DATA can fail before lifecycle probe after GPPro install — observed 2026-11-07
+
+- **Observation:** The physical `test-cipher-lifecycle-pcsc` setup successfully
+  listed the ISD, installed its disposable probe package, and selected the
+  applet. Its public card-manager GET DATA (`80CA006600`) then returned `6982`
+  instead of Card Recognition Data, so the Cipher lifecycle APDUs were not
+  reached. Cleanup succeeded and removed the package. A previous run of this
+  same probe passed 36/36 on D92 (2026-11-05).
+- **Likely explanation, not yet confirmed:** In `authorize_ccid_apdu_route`,
+  an active unauthenticated SCP03 session maps any non-SELECT command to
+  `6982`. GPPro installation may leave session state active across its PC/SC
+  disconnect, while the next SmartCardIO connection was not resetting the
+  card. The physical probe now requests `Card.disconnect(true)` and reconnects
+  before its first APDU. It compiles, but has not been re-run on hardware.
+  Do not weaken secure-channel authorization until the reset-isolated probe is
+  tested.
+- **Reader state:** After the failed test, the helper continued granting the
+  three USB nodes and `lsusb` still showed all three `2e8a:0009` devices, but
+  repeated bounded `pcsc_scan -r` calls showed no physical readers while
+  `pcscd.service` remained active. Firmware-only reflashes of D92 and 2BED
+  passed finite serial checks but did not restore PC/SC listing. This separates
+  USB enumeration from PC/SC availability; do not infer a firmware APDU limit.
+- **Next:** When a physical reader is listed, rerun the corrected probe on D92
+  or fail over to another listed board. If GET DATA still returns `6982` after
+  the explicit reset, instrument SCP03 active/authenticated state and trace the
+  route decision. Continue the already-passing VPCD lifecycle test meanwhile.

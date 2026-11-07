@@ -1,33 +1,36 @@
-# Current handoff — REL-01 complete and max_crypto external image — 2026-11-07 21:33 CET
+# Current handoff — RV-11 physical rerun and device state — 2026-11-07 21:54 CET
 
-The refreshed image and records are committed as `de960d02`.
-REL-01 physical acceptance and TODO closure are recorded in `1c2028bc`.
+REL-01 is complete (`1c2028bc`): physical board D92 reports release `0101`,
+CPLC date `2026-11-07`, and equipment ID `FF1DC424` in GPPro 26.06.04; its
+finite monitor passed. External image refresh commit: `de960d02`.
 
-REL-01 is complete. Source implementation remains committed as `971272f3`;
-`./tools/test-gp-get-data` passes 25/25. Physical board `D92E743D5F640C0F` was
-flashed with the firmware-only ARM image (card storage was preserved); its
-finite serial monitor passed `TEST:PASS choupi_runtime` and
-`TEST:SUMMARY pass=1 fail=0`. Physical GPPro 26.06.04 `--info -d` returned
-`OperatingSystemReleaseLevel=0101`, CPLC dates `2026-11-07`, and
-`ICPersonalizationEquipmentID=FF1DC424`, with CPLC GET DATA status `9000`.
-Logs: `artifacts/logs/rel-01-monitor-D92-20261107.log` and
-`artifacts/logs/rel-01-gppro-physical-D92-20261107.log`.
+The current max_crypto empty-card external image is
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
+(4,070,912 bytes, SHA-256
+`93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`). It is
+RP2350 ARM Secure, profile max_crypto (159/162), CPLC release `0101`, source ID
+`FF1DC424` (dirty-tree marker plus HEAD prefix), firmware end `0x100F0D4C`,
+with 62,132 bytes before storage. It contains 3,854 firmware blocks and 4,096
+erased storage blocks. It has not been flashed; it includes current
+uncommitted worktree content.
 
-Both required wrappers pass on the current worktree:
-`PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` and the
-corresponding RISC-V command. RISC-V is the VM-core/smoke target. Fresh ARM
-max_crypto empty-card image for external testing:
-`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,
-4,070,912 bytes, SHA-256
-`93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`.
-Picotool identifies RP2350 ARM Secure. The profile enables 159/162
-capabilities; CPLC release is 0.1.1 (`0101`), source ID is `FF1DC424` (dirty
-tree marker plus HEAD prefix), and firmware ends at `0x100F0D4C`, leaving
-62,132 bytes before storage. The UF2 has 3,854 firmware blocks and 4,096
-erased storage blocks (empty card, no applet preinstalled). It has not been
-flashed or runtime-tested; only the firmware-only UF2 was flashed to D92, so
-that token's applet/storage area was preserved. The empty-card image includes
-current uncommitted worktree changes; preserve them all.
+RV-11 remains open for physical acceptance. The VPCD Cipher lifecycle suite
+passes 31/31. The physical test installed its disposable CAP and passed applet,
+default-ISD, and explicit-ISD SELECT, then public GP GET DATA unexpectedly
+returned `6982`; Cipher APDUs were not reached and cleanup succeeded. A first
+attempt used a stale reader suffix and sent no APDUs. The physical probe now
+requests `Card.disconnect(true)` and reconnects after GPPro installation to
+clear any preceding SCP03 state; it compiles but is unverified on hardware.
+Do not change production secure-channel policy until the reset-isolated run
+establishes whether this is a probe setup issue.
+
+The authorized helper granted all three USB nodes and `lsusb` still shows
+three `2e8a:0009` devices, but subsequent bounded PC/SC scans publish no Pico
+readers. Firmware-only image `build/arm/pico2_choupi.uf2` was flashed to D92
+and failover board 2BED; both passed finite serial monitors and their card
+storage areas were preserved. Board 8E46 was not reflashed. Logs:
+`artifacts/logs/cipher-lifecycle-pcsc-20261107T204148Z.log` (GET DATA `6982`)
+and `artifacts/logs/cipher-lifecycle-vpcd-20261107T204652Z.log` (31/31 pass).
 
 The full JCAlgTest 1.8.4 support sweep remains incomplete. The first
 900-second attempt timed out during RSA CRT 3072-bit probing. The extended run
@@ -43,9 +46,9 @@ and timing are not physical evidence. Partial output is under
 `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/`. Trace the
 storage-tag accumulation and defragmentation cost before resuming the long
 sweep; do not enable production persistent reclamation before PERSIST-01
-acceptance. The latest authorized reader refresh again granted USB nodes
-`001/054`–`001/056`, but `pcsc_scan -r` timed out without publishing a Pico
-reader. HMAC-01 native code is committed as `558d0ccf`; its six RFC KAT vectors
+acceptance. The latest authorized helper granted all three USB nodes, but
+bounded `pcsc_scan -r` timed out without publishing a Pico reader. HMAC-01
+native code is committed as `558d0ccf`; its six RFC KAT vectors
 pass. Preserve the pending and unrelated dirty changes. No physical hardware
 test was run in this step.
 

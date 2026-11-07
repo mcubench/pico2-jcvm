@@ -68,6 +68,13 @@ public final class CipherLifecyclePcscProbe {
 
     Card card = target.connect("*");
     try {
+      // GPPro --install may leave its SCP03 session active when its PC/SC
+      // connection closes. Start the lifecycle probes from a card reset so
+      // the first open-channel manager checks are independent of that prior
+      // host session's secure-channel state.
+      card.disconnect(true);
+      card = target.connect("*");
+      System.out.println("PCSC:RESET complete");
       CardChannel channel = selectApplet(card.getBasicChannel());
       transmit(channel, "default ISD SELECT while applet selected",
           new CommandAPDU(0x00, 0xA4, 0x04, 0x00, new byte[0], 256), ISD_FCI);

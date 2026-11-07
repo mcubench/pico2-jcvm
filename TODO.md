@@ -22,25 +22,22 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
    live storage limits, reclaimable records, API results, and power-loss safety.
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
-5. Complete **REL-01 (P1)** hardware/GPPro acceptance: source now reports the
-   user-requested 0.1.1 release and tags each firmware build with its source
-   identity. The release field must never change automatically; see REL-01
-   below for encoding and the pending physical check.
-6. Implement and validate native support for the `ALG_HMAC_*` algorithms;
+5. Implement and validate native support for the `ALG_HMAC_*` algorithms;
    acceptance must use the unchanged JCAlgTest 1.8.4 / jc305 fixture and
    matching client. See HMAC-01.
-7. Diagnose the reported physical-reader disappearance during the max_crypto
+6. Diagnose the reported physical-reader disappearance during the max_crypto
    JCAlgTest Signature factory matrix without using real tokens. See
    JC-RESET-01.
 
-Physical availability is volatile. Most recent host check (2026-11-07
-03:51-03:53 CET): the authorized helper granted access to USB nodes
-`001/054`, `001/055`, and `001/056`; elevated `lsusb` identified all three as
-runtime `2e8a:0009 Pico2 JCVM CCID`. `pcscd.service` is active, but bounded
-`pcsc_scan -r` lists no readers. Board serials were not refreshed and BOOTSEL
-was not observed. Do not treat these as PC/SC-available cards. Refresh USB and
-PC/SC immediately before hardware work; see `.agent/HANDOFF.md` and
-`.agent/QKB.md` for the current observation and history.
+Physical availability is volatile. On 2026-11-07 the helper granted access
+to all three Pico USB nodes and `lsusb -d 2e8a:0009` saw three runtime CCID
+devices. After physical GPPro/Cipher-lifecycle attempts, `pcscd.service` was
+active but bounded `pcsc_scan -r` published no physical readers. Firmware-only
+max_crypto images were flashed to identified boards D92 and 2BED; both passed
+finite serial runtime checks, but neither is currently PC/SC-visible. Board
+8E46 was not changed. Refresh USB and PC/SC immediately before hardware work;
+do not treat USB enumeration alone as a PC/SC-available reader. See
+`.agent/HANDOFF.md` and `.agent/QKB.md` for the current observation and history.
 
 ## How to use this backlog
 
@@ -160,7 +157,7 @@ during the review.
 - [ ] **P1: Cipher key copies survive original transient-key clearing.**
   Owner: PROFILE-01, HARD-01. Evidence: Source; [review R11](docs/review_20261103.md#r11--cipher-copies-outlive-transient-key-clear-events).
   Acceptance: retain checked key identity and appropriate lifetime metadata, or use workspace that clears with the key. Test retained Cipher objects across deselect, reader reset and fresh restore for symmetric and RSA transient keys. Modification of a key after `init()` is separately unspecified; this finding concerns defined lifecycle clear events.
-  Progress: AES and RSA private Cipher workspaces now allocate sensitive copies as transient arrays with the source key's clear event and validate a transient marker before use. The repeatable `./tools/test-cipher-lifecycle-vpcd` regression passes 29/29 across deselect, reader reset and fresh emulator-process restore; deselect returns `UNINITIALIZED_KEY` (`42`), while reset and fresh restore return `INVALID_INIT` (`44`) because reset clears the Cipher's native initialized state first. Physical D92 testing previously observed AES `44` after reader reset, but the corrected full physical rerun is pending: the latest host refresh exposed only the two VPCD readers despite three USB nodes receiving access.
+  Progress: AES and RSA private Cipher workspaces now allocate sensitive copies as transient arrays with the source key's clear event and validate a transient marker before use. The current `./tools/test-cipher-lifecycle-vpcd` run passes 31/31 across deselect, reader reset and fresh emulator-process restore; deselect returns `UNINITIALIZED_KEY` (`42`), while reset and fresh restore return `INVALID_INIT` (`44`). Physical runs on 2026-11-07 did not reach the Cipher cases: after GPPro installed the probe CAP, SELECT checks passed but open-channel card-manager GET DATA returned `6982` instead of `9000`. The physical probe now explicitly resets the card after GPPro installation to clear any prior SCP03 session before testing; this setup change compiled but could not be reverified because `pcsc_scan -r` no longer published readers. D92 and failover board 2BED were firmware-only reflashed and both passed finite serial checks; card storage was preserved. Keep RV-11 open for the corrected physical AES/RSA lifecycle run.
 
 ### RV-20261103-12
 
