@@ -23968,3 +23968,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with P1 recovery work; preserve unrelated dirty files.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: No new artifacts.
+
+## 2026-11-07 Resolve frame unwind SHA-record commit 1 minute
+
+- Step/experiment: `rv-20261107-nested-frame-unwind-sha-record`
+- When: '2026-11-07 04:21 CET' - '2026-11-07 04:22 CET'
+- Change: Resolved the progress SHA-record commit in the append-only log.
+- Validation: No new test; `5e7dcb00` implementation and test evidence remain recorded above.
+- Result: Frame unwind implementation commit is `5e7dcb00`; SHA resolution commit is `b98ef42f`.
+- Decision: Continue to RV-20261106-03 local metadata and stack bounds audit.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
