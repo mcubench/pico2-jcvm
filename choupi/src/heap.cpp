@@ -280,6 +280,26 @@ void Heap::unregisterForeignReferenceArray(JC_Array *array) noexcept {
   arrays.erase(std::remove(arrays.begin(), arrays.end(), array), arrays.end());
 }
 
+bool Heap::registerForeignReferenceInstance() noexcept {
+  if (this->global_heap) return false;
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    if (storage.get() == this->shared_storage.get()) return true;
+    ++it;
+  }
+  try {
+    registry.push_back(this->shared_storage);
+  } catch (...) {
+    return false;
+  }
+  return true;
+}
+
 void Heap::visitForeignArrayReferencesForPackage(
     const jpackage_ID_t package_id, const ReferenceVisitor visitor,
     void *visitor_context) {
@@ -302,7 +322,12 @@ void Heap::visitForeignArrayReferencesForPackage(
                                               visitor_context);
       ++array_it;
     }
-    if (arrays.empty()) {
+    const bool has_foreign_instances = std::any_of(
+        storage->instances.begin(), storage->instances.end(),
+        [](const auto &instance) {
+          return instance && instance->hasForeignReferenceFields();
+        });
+    if (arrays.empty() && !has_foreign_instances) {
       it = registry.erase(it);
     } else {
       ++it;
@@ -333,7 +358,75 @@ void Heap::clearForeignArrayReferencesForPackage(
         ++array_it;
       }
     }
-    if (arrays.empty()) {
+    const bool has_foreign_instances = std::any_of(
+        storage->instances.begin(), storage->instances.end(),
+        [](const auto &instance) {
+          return instance && instance->hasForeignReferenceFields();
+        });
+    if (arrays.empty() && !has_foreign_instances) {
+      it = registry.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
+void Heap::visitForeignInstanceReferencesForPackage(
+    const jpackage_ID_t package_id, const ReferenceVisitor visitor,
+    void *visitor_context) {
+  if (visitor == nullptr) return;
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    for (const auto &instance : storage->instances) {
+      if (instance) {
+        instance->visitForeignReferencesForPackage(package_id, visitor,
+                                                   visitor_context);
+      }
+    }
+    const bool has_foreign_arrays = std::any_of(
+        storage->arrays.begin(), storage->arrays.end(), [](const auto &array) {
+          return array && array->hasForeignReferenceEntries();
+        });
+    const bool has_foreign_instances = std::any_of(
+        storage->instances.begin(), storage->instances.end(),
+        [](const auto &instance) {
+          return instance && instance->hasForeignReferenceFields();
+        });
+    if (!has_foreign_arrays && !has_foreign_instances) {
+      it = registry.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
+void Heap::clearForeignInstanceReferencesForPackage(
+    const jpackage_ID_t package_id) noexcept {
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    for (const auto &instance : storage->instances) {
+      if (instance) instance->clearForeignReferencesForPackage(package_id);
+    }
+    const bool has_foreign_arrays = std::any_of(
+        storage->arrays.begin(), storage->arrays.end(), [](const auto &array) {
+          return array && array->hasForeignReferenceEntries();
+        });
+    const bool has_foreign_instances = std::any_of(
+        storage->instances.begin(), storage->instances.end(),
+        [](const auto &instance) {
+          return instance && instance->hasForeignReferenceFields();
+        });
+    if (!has_foreign_arrays && !has_foreign_instances) {
       it = registry.erase(it);
     } else {
       ++it;
@@ -403,6 +496,10 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
       const auto fields = instance->getFields();
       for (uint16_t index = 0; index < fields->size(); ++index) {
         const jc_field_t &field = fields->at(index);
+        if (field.reference_owner != 0xff &&
+            field.reference_owner != 0xfe) {
+          continue;
+        }
         switch (field.type) {
         case FieldType::FIELD_TYPE_OBJECT:
         case FieldType::FIELD_TYPE_ARRAY_BYTE:
@@ -439,6 +536,7 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
     }
   }
   visitForeignArrayReferencesForPackage(package_id, inspect_target, &query);
+  visitForeignInstanceReferencesForPackage(package_id, inspect_target, &query);
   return query.found;
 }
 
@@ -1182,6 +1280,9 @@ void Heap::visitChildReferences(const JC_Instance &instance,
   const auto fields = instance.getFields();
   for (uint16_t index = 0; index < fields->size(); ++index) {
     const jc_field_t &field = fields->at(index);
+    if (field.reference_owner != 0xff && field.reference_owner != 0xfe) {
+      continue;
+    }
     switch (field.type) {
     case FieldType::FIELD_TYPE_OBJECT: {
       const jref_t child(field.value);

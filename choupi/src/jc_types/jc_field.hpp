@@ -72,8 +72,14 @@ enum FieldType : uint8_t {
 
 struct jc_field_t {
   FieldType type;
+  // Package provenance for volatile reference-valued instance fields. The
+  // current-package marker keeps the common case compact and compatible with
+  // existing field initializers; foreign package IDs are retained explicitly.
+  uint8_t reference_owner = 0xff;
   jword_t value;
 };
+static_assert(sizeof(jc_field_t) == sizeof(jword_t) + 2,
+              "reference ownership metadata must not enlarge field slots");
 
 } // namespace jcvm
 

@@ -31,6 +31,7 @@
 #include "../jc_handlers/jc_cp.hpp"
 #include "../jc_utils.hpp"
 #include "jc_array.hpp"
+#include "../context.hpp"
 #include "ffi.h"
 #include "../../../src/vm_diagnostics.h"
 
@@ -46,6 +47,7 @@ void initialize_field_slots(JCVMArray<jc_field_t> *fields) noexcept {
   if (fields == nullptr) return;
   for (uint16_t index = 0; index < fields->size(); ++index) {
     fields->at(index).type = FieldType::FIELD_TYPE_UNINITIALIZED;
+    fields->at(index).reference_owner = 0xff;
     fields->at(index).value = 0;
   }
 }
@@ -546,6 +548,19 @@ const jint_t JC_Instance::getField_Int(const uint16_t index) {
  * @return The fetched instance field value.
  */
 const jref_t JC_Instance::getField_Reference(const uint16_t index) {
+  const auto value = this->getField_ReferenceWithOwner(index);
+  if (value.second == 0xff || value.second == this->packageID ||
+      value.second == 0xfe) {
+    return value.first;
+  }
+  // Native API implementations use this legacy accessor and have no owner
+  // side channel. Keep them fail-closed if an applet field holds an opaque
+  // reference from another package.
+  throw Exceptions::SecurityException;
+}
+
+std::pair<jref_t, uint8_t> JC_Instance::getField_ReferenceWithOwner(
+    const uint16_t index) {
   if (this->isPersistent()) {
     // Persistent references are restored into the instance's field cache on
     // first access. Re-reading them from flash on every GETFIELD_A allocates a
@@ -554,11 +569,11 @@ const jref_t JC_Instance::getField_Reference(const uint16_t index) {
     const auto fields = this->getFields();
     const jc_field_t &field = fields->at(index);
     require_field_type(field.type, FieldType::FIELD_TYPE_OBJECT);
-    return jref_t(field.value);
+    return {jref_t(field.value), field.reference_owner};
   } else {
     const jc_field_t &field = this->fields->at(index);
     require_field_type(field.type, FieldType::FIELD_TYPE_OBJECT);
-    return jref_t(field.value);
+    return {jref_t(field.value), field.reference_owner};
   }
 }
 
@@ -668,8 +683,30 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  * @param[index] index of the instance field to set.
  * @param[value] new value.
  */
-void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
+void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref,
+                                     uint8_t reference_owner) {
   if (ref.isGlobalArray() && !this->getOwner().isGlobalHeap()) {
+    throw Exceptions::SecurityException;
+  }
+  if (ref.isNullPointer()) {
+    reference_owner = 0xff;
+  } else if (ref.isGlobalArray() || ref.isGlobalInstance()) {
+    if (reference_owner != 0xff && reference_owner != 0xfe) {
+      throw Exceptions::SecurityException;
+    }
+    reference_owner = 0xfe;
+  } else if (reference_owner == 0xfe) {
+    throw Exceptions::SecurityException;
+  }
+  const jpackage_ID_t effective_owner =
+      reference_owner == 0xff ? this->packageID : reference_owner;
+  const bool foreign_reference =
+      !ref.isNullPointer() && !ref.isGlobalArray() &&
+      !ref.isGlobalInstance() && effective_owner != this->packageID;
+  if (foreign_reference && this->isPersistent()) {
+    // The durable field encoding has no package provenance. Preserve the
+    // existing fail-closed behavior until cross-package serialization and
+    // restore have a stable identity format.
     throw Exceptions::SecurityException;
   }
   const auto record_field_write = [&](uint8_t stage, uint8_t exception_id) {
@@ -713,7 +750,16 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   } else if (ref.isArray()) {
     std::shared_ptr<JC_Array> array;
     try {
-      array = this->getOwner().getArray(ref);
+      if (foreign_reference) {
+        Context *owner_context =
+            Context::findRetainedPackageContext(effective_owner);
+        if (owner_context == nullptr) throw Exceptions::SecurityException;
+        array = owner_context->getHeap().getArray(ref);
+      } else if (ref.isGlobalArray()) {
+        array = Heap::getGlobalArray(ref);
+      } else {
+        array = this->getOwner().getArray(ref);
+      }
     } catch (Exceptions exception) {
       record_field_write(11, static_cast<uint8_t>(exception));
       throw;
@@ -754,6 +800,26 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
                   static_cast<unsigned>(this->claz));
       throw Exceptions::SecurityException;
     }
+  } else if (!ref.isGlobalInstance()) {
+    try {
+      if (foreign_reference) {
+        Context *owner_context =
+            Context::findRetainedPackageContext(effective_owner);
+        if (owner_context == nullptr) throw Exceptions::SecurityException;
+        (void)owner_context->getHeap().getInstance(ref);
+      } else {
+        (void)this->getOwner().getInstance(ref);
+      }
+    } catch (Exceptions exception) {
+      record_field_write(11, static_cast<uint8_t>(exception));
+      throw;
+    }
+  } else {
+    (void)Heap::getGlobalInstance(ref);
+  }
+  if (foreign_reference &&
+      !this->getOwner().registerForeignReferenceInstance()) {
+    throw Exceptions::SecurityException;
   }
   if (this->isPersistent()) {
     fs::Tag tag =
@@ -770,6 +836,9 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
 
   field.value = static_cast<jword_t>(ref.compact());
   field.type = new_type;
+  field.reference_owner = foreign_reference
+                              ? static_cast<uint8_t>(effective_owner)
+                              : (reference_owner == 0xfe ? 0xfe : 0xff);
   if (!this->isPersistent()) {
 
 #ifdef JCVM_TYPED_HEAP
@@ -801,6 +870,44 @@ bool JC_Instance::hasLoadedFields() const noexcept {
   return this->persistent_fields_loaded &&
          this->persistent_rollback_generation ==
              FlashMemory_Handler::persistentWriteRollbackGeneration();
+}
+
+bool JC_Instance::hasForeignReferenceFields() const noexcept {
+  if (this->isPersistent() || this->fields == nullptr) return false;
+  for (uint16_t index = 0; index < this->fields->size(); ++index) {
+    const jc_field_t &field = this->fields->at(index);
+    if (field.reference_owner != 0xff && field.reference_owner != 0xfe &&
+        !jref_t(field.value).isNullPointer()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void JC_Instance::visitForeignReferencesForPackage(
+    const jpackage_ID_t package_id,
+    void (*visitor)(jref_t, void *), void *visitor_context) {
+  if (visitor == nullptr || this->isPersistent() || this->fields == nullptr) {
+    return;
+  }
+  for (uint16_t index = 0; index < this->fields->size(); ++index) {
+    const jc_field_t &field = this->fields->at(index);
+    if (field.reference_owner != package_id) continue;
+    const jref_t reference(field.value);
+    if (!reference.isNullPointer()) visitor(reference, visitor_context);
+  }
+}
+
+void JC_Instance::clearForeignReferencesForPackage(
+    const jpackage_ID_t package_id) noexcept {
+  if (this->isPersistent() || this->fields == nullptr) return;
+  for (uint16_t index = 0; index < this->fields->size(); ++index) {
+    jc_field_t &field = this->fields->at(index);
+    if (field.reference_owner != package_id) continue;
+    field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
+    field.value = 0;
+    field.reference_owner = 0xff;
+  }
 }
 
 ///  Get fields arrays

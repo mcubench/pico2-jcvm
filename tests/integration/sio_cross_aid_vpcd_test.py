@@ -1305,10 +1305,10 @@ def main() -> int:
                     connection, bytes.fromhex("8020000000"),
                     "retain source-owned object in service array",
                 )
-                if response != bytes.fromhex("6B439000"):
+                if response != bytes.fromhex("6B419000"):
                     raise RuntimeError(
                         "source object retention returned "
-                        f"{response.hex().upper()}, expected 6B439000"
+                        f"{response.hex().upper()}, expected 6B419000"
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("00A4040000"),
@@ -2202,23 +2202,24 @@ def main() -> int:
                 connection, bytes.fromhex("8020000000"),
                 "retain ordinary foreign object reference in applet state"
             )
-            if response != bytes.fromhex("6B439000"):
+            if response != bytes.fromhex("6B419000"):
                 raise RuntimeError(
                     f"foreign object retention result {response.hex().upper()}, "
-                    "expected applet-owned wildcard Object[] retention to "
-                    "succeed while static/instance stores fail (6B439000)"
+                    "expected volatile instance and Object[] retention to "
+                    "succeed while static storage remains fail-closed "
+                    "(6B419000)"
                 )
             response = vpcd.exchange(
                 connection, bytes.fromhex("802E000000"),
-                "read foreign byte array after source APDU and GC"
+                "read foreign byte array after field-access denial and GC"
             )
             if response != bytes.fromhex("6A2E9000"):
                 raise RuntimeError(
                     f"foreign array after GC {response.hex().upper()}, "
                     "expected retained data and identity 6A2E9000"
                 )
-            print("TEST:PASS foreign array stored in service Object[] survives "
-                  "client local/global roots clearing and GC")
+            print("TEST:PASS instance-field owner provenance rejects service "
+                  "array access and the foreign array survives GC")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

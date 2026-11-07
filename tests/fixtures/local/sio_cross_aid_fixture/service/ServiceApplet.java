@@ -38,12 +38,11 @@ public final class ServiceApplet extends Applet implements Probe {
   private static byte descriptorByte;
   private static short descriptorShort;
   private static int descriptorInt;
-  private Object retainedForeignInstance;
+  private ForeignReferenceHolder retainedForeignInstance;
   private Object[] retainedForeignArray;
   private static boolean installDeselectTransientAllowed;
 
   private ServiceApplet() {
-    retainedForeignInstance = this;
     try {
       byte[] transientBytes = JCSystem.makeTransientByteArray(
           (short) 1, JCSystem.CLEAR_ON_DESELECT);
@@ -697,8 +696,8 @@ public final class ServiceApplet extends Applet implements Probe {
       // A normal applet object is not a temporary JCRE object.
     }
     try {
-      retainedForeignInstance = foreign;
-      instanceStored = retainedForeignInstance == foreign;
+      retainedForeignInstance = new ForeignReferenceHolder(foreign);
+      instanceStored = retainedForeignInstance.value == foreign;
     } catch (SecurityException denied) {
       // The receiver is owned here; only the stored value is foreign.
     }
@@ -727,7 +726,13 @@ public final class ServiceApplet extends Applet implements Probe {
   }
 
   public Object getRetainedForeignArray() {
-    return retainedForeignArray[0];
+    try {
+      byte[] foreign = (byte[])retainedForeignInstance.value;
+      if (foreign.length == 1) return null;
+      return null;
+    } catch (SecurityException expected) {
+      return retainedForeignArray[0];
+    }
   }
 
   public boolean retainedForeignArrayIsNull() {
@@ -795,4 +800,12 @@ public final class ServiceApplet extends Applet implements Probe {
   }
 
   public void process(APDU apdu) {}
+}
+
+final class ForeignReferenceHolder {
+  Object value;
+
+  ForeignReferenceHolder(Object value) {
+    this.value = value;
+  }
 }

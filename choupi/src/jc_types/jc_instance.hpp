@@ -38,6 +38,7 @@
 #include "jref_t.hpp"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace jcvm {
@@ -115,6 +116,9 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// Fetch reference from object.
   const jref_t getField_Reference(const uint16_t index);
+  /// Fetch reference and its package provenance for interpreter bytecodes.
+  std::pair<jref_t, uint8_t> getField_ReferenceWithOwner(
+      const uint16_t index);
 
   /// set byte or boolean field from object.
   void setField_Byte(const uint16_t index, const jbyte_t value);
@@ -125,7 +129,14 @@ public:
   void setField_Int(const uint16_t index, const jint_t value);
 #endif /* JCVM_INT_SUPPORTED */
   /// set reference field from object.
-  void setField_Reference(uint16_t index, jref_t ref);
+  void setField_Reference(uint16_t index, jref_t ref,
+                          uint8_t reference_owner = 0xff);
+  /// Foreign volatile field edges are routed through package root walks.
+  bool hasForeignReferenceFields() const noexcept;
+  void visitForeignReferencesForPackage(
+      jpackage_ID_t package_id, void (*visitor)(jref_t, void *),
+      void *visitor_context);
+  void clearForeignReferencesForPackage(jpackage_ID_t package_id) noexcept;
 
   /// Read/write native-only operational state without persistent journaling.
   jbyte_t getNativeSessionField_Byte(uint16_t index) const noexcept;

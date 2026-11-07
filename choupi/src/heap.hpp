@@ -240,6 +240,11 @@ public:
   /// Clear foreign edges before a package owner ID can be reused.
   static void clearForeignArrayReferencesForPackage(
       jpackage_ID_t package_id) noexcept;
+  static void visitForeignInstanceReferencesForPackage(
+      jpackage_ID_t package_id, ReferenceVisitor visitor,
+      void *visitor_context);
+  static void clearForeignInstanceReferencesForPackage(
+      jpackage_ID_t package_id) noexcept;
   /// Whether a foreign reference array points to an object allocated by the
   /// given applet instance. Handles are resolved in the target package heap.
   static bool hasForeignArrayReferenceToAppletOwner(

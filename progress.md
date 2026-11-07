@@ -25123,3 +25123,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Hardware runtime visibility is confirmed across the pool, but card-protocol acceptance remains blocked by PC/SC registration. Continue CTX-01 offline, preserving persistent foreign-reference fail-closed behavior.
 - Commit: `<pending>`
 - Artifacts/logs: Monitor output in session transcript only; no separate log files.
+
+## 2026-11-07 Support volatile foreign references in instance fields 18 minutes
+
+- Step/experiment: `CTX-01-volatile-instance-field-owner-roots`
+- When: '2026-11-07 23:26 CET' - '2026-11-07 23:44 CET'
+- Change: Added package provenance to volatile instance reference fields without increasing field-slot size. Field bytecodes now preserve provenance; foreign edges are rooted by the referenced package, rejected by legacy native field reads, and cleared on package deletion. Added cross-AID regression coverage and updated CTX-01, QKB, and session handoff.
+- Validation: `./tools/build arm` passed (current profile; firmware end `0x100d6878`, 169,864 bytes remaining); `./tools/build riscv` passed (current profile); `./tools/build-pc --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0`. Refreshed USB access helper and confirmed three runtime Pico USB devices, but `timeout 8s pcsc_scan -r` exited 124 without readers; physical APDUs and flashing were skipped. `git -c core.whitespace=cr-at-eol diff --cached --check` passed for the staged implementation and records.
+- Result: The new regression confirms a foreign array held in a runtime-created volatile instance survives GC, while service-side dereference remains denied. Static and persistent foreign reference fields remain unsupported and fail-closed. Runtime performance was not measured.
+- Decision: Continue CTX-01 with static-field ownership/lifecycle work and persistent owner encoding/restoration; retry physical acceptance when PC/SC publishes a reader.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T223831Z.log`; no physical test log.

@@ -771,12 +771,15 @@ review.
   generated from the API exports; a typed `Shareable[]` SIO regression exposed
   that constant-pool classrefs otherwise resolve interface tokens through the
   class map. Class/interface token overlaps are rejected by generation. The
-  typed store passes with and without Descriptor data, and the complete
-  cross-AID VPCD suite passes 34/34. Persistent foreign references and
-  static/instance field stores remain fail-closed pending stable owner
-  serialization and owner-aware restoration.
-  Field and persistent-array stores still need to retain/serialize the package
-  owner and add owner-aware GC roots.
+  typed store passes with and without Descriptor data. Volatile ordinary
+  instance fields now preserve foreign package provenance, route their edges
+  into the owning package's GC roots, reject dereference in the receiving
+  package, and clear edges before package-ID reuse. The focused regression
+  confirms the foreign array survives GC; the complete cross-AID VPCD suite
+  passes 35/35. Static foreign references and persistent foreign references
+  remain fail-closed pending owner-aware roots and stable owner serialization.
+  Static fields and persistent-array stores still need provenance and
+  owner-aware GC/restoration support.
   Every later access must still apply firewall rules; never resolve a foreign
   compact handle in the receiving package's heap. See `.agent/QKB.md`.
   Global `Object[]` support is partially implemented for volatile JCRE global

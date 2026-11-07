@@ -282,10 +282,11 @@ void Bytecodes::bc_getfield_a() {
   }
   auto instance = heap.getInstance(objectref);
   const auto field_token = resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance);
-  ref = instance->getField_Reference(field_token);
+  const auto value = instance->getField_ReferenceWithOwner(field_token);
+  ref = value.first;
   TRACE_JCVM_DEBUG("GETFIELD_A value=0x%04X",
                    static_cast<unsigned>(ref.compact()));
-  stack.push_Reference(ref);
+  stack.push_Reference(ref, value.second);
 
   return;
 }
@@ -580,13 +581,14 @@ void Bytecodes::bc_putfield_a() {
 
   TRACE_JCVM_DEBUG("PUTFIELD_A 0x%02X", index);
 
-  value = stack.pop_Reference();
+  const Stack::ReferenceValue stored_value = stack.pop_ReferenceValue();
+  value = stored_value.reference;
   objectref = stack.pop_Reference();
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance),
-                               value);
+                               value, stored_value.owner);
 
   return;
 }
@@ -904,9 +906,12 @@ void Bytecodes::bc_getfield_a_w() {
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  ref = instance->getField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance));
+  const auto value = instance->getField_ReferenceWithOwner(
+      resolveInstanceFieldToken(this->context, index,
+                                FieldType::FIELD_TYPE_OBJECT, *instance));
+  ref = value.first;
 
-  stack.push_Reference(ref);
+  stack.push_Reference(ref, value.second);
 
   return;
 }
@@ -1238,10 +1243,11 @@ void Bytecodes::bc_getfield_a_this() {
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
   const auto field_token = resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance);
-  ref = instance->getField_Reference(field_token);
+  const auto value = instance->getField_ReferenceWithOwner(field_token);
+  ref = value.first;
   TRACE_JCVM_DEBUG("GETFIELD_A_THIS value=0x%04X",
                    static_cast<unsigned>(ref.compact()));
-  stack.push_Reference(ref);
+  stack.push_Reference(ref, value.second);
 
   return;
 }
@@ -1567,12 +1573,16 @@ void Bytecodes::bc_putfield_a_w() {
 
   TRACE_JCVM_DEBUG("PUFIELD_A_W 0x%04X", index);
 
-  value = stack.pop_Reference();
+  const Stack::ReferenceValue stored_value = stack.pop_ReferenceValue();
+  value = stored_value.reference;
   objectref = stack.pop_Reference();
   rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
-  instance->setField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance), value);
+  instance->setField_Reference(
+      resolveInstanceFieldToken(this->context, index,
+                                FieldType::FIELD_TYPE_OBJECT, *instance),
+      value, stored_value.owner);
 
   return;
 }
@@ -1899,9 +1909,13 @@ void Bytecodes::bc_putfield_a_this() {
    */
   objectref = stack.readLocal_Reference(0);
   rejectShareableProxyFieldAccess(this->context, objectref);
-  value = stack.pop_Reference();
+  const Stack::ReferenceValue stored_value = stack.pop_ReferenceValue();
+  value = stored_value.reference;
   auto instance = heap.getInstance(objectref);
-  instance->setField_Reference(resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance), value);
+  instance->setField_Reference(
+      resolveInstanceFieldToken(this->context, index,
+                                FieldType::FIELD_TYPE_OBJECT, *instance),
+      value, stored_value.owner);
 
   return;
 }

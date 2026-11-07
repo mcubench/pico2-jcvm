@@ -7920,6 +7920,30 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   no reader. This confirms auto-exit is not by itself the reader cause.
 
 
+## Volatile foreign references in ordinary instance fields — 2026-11-07
+
+- **Observed issue:** Bytecode `getfield`/`putfield` used only the compact
+  reference handle. A foreign object could therefore be looked up in the
+  receiver's heap, and local GC walks could either mistake an equal handle for
+  a local object or drop the actual foreign object. Cross-AID storage in the
+  persistent applet object is invalid for this implementation because the
+  persistent field format has no owner identity.
+- **Viable fix:** Store a one-byte package owner beside each instance field's
+  value (with a static size assertion preserving the current slot size), carry
+  it through field bytecodes, reject a foreign field read through legacy native
+  accessors, and route volatile foreign field edges through the retained owner
+  package's GC roots. Clear matching edges on package deletion before owner-ID
+  reuse. Keep persistent and static foreign field stores fail-closed until
+  their owner lifecycle is supported.
+- **Validation:** ARM and RISC-V current-profile firmware builds and PC
+  `max_crypto` build pass. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-sio-cross-aid-vpcd` passes 35/35, including foreign-array
+  retention in a runtime-created holder, denied dereference, GC survival,
+  package deletion, and equal-handle collision coverage. Log:
+  `artifacts/logs/sio-cross-aid-vpcd-20261107T223831Z.log`. Physical APDUs
+  remain untested because PC/SC publishes no Pico readers despite three USB
+  runtime devices enumerating.
+
 ## Three attached JCVM boards pass finite runtime monitor; PC/SC reader list still empty — 2026-11-07
 
 - **Observation:** The authorized access helper granted three USB nodes and

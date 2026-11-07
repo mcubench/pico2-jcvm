@@ -1113,6 +1113,7 @@ void choupi_vm_forget_deleted_applet_contexts(
   if (deleting_package != 0) {
     jcvm::Heap::clearGlobalArrayReferencesForPackage(package_id);
     jcvm::Heap::clearForeignArrayReferencesForPackage(package_id);
+    jcvm::Heap::clearForeignInstanceReferencesForPackage(package_id);
     if (selected_applet_context) {
       selected_applet_context->forgetShareableProxiesForPackage(package_id);
     }

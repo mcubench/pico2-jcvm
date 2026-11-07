@@ -1,3 +1,34 @@
+# Current handoff — volatile foreign instance-field owner roots — 2026-11-07 23:44 CET
+
+CTX-01 now supports storing an ordinary foreign applet reference in a volatile
+instance field. Each reference field carries package provenance without
+increasing `jc_field_t` size; bytecodes preserve the owner tag. Local heap walks
+skip foreign edges, while retained package contexts root the referenced object
+in its actual owner heap. Package deletion clears these edges before owner IDs
+can be reused. Persistent foreign fields and static foreign references remain
+fail-closed.
+
+Validation on the latest source: `./tools/build arm` and `./tools/build riscv`
+pass with the current support profile; the ARM firmware ends at `0x100d6878`
+with 169,864 bytes remaining. `./tools/build-pc --profile max_crypto` passes.
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passes 35/35; log:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T223831Z.log`. The new regression
+stores a foreign array reference in a runtime-created volatile holder, verifies
+that service-side access is denied, then confirms the reference survives GC.
+
+The three connected boards enumerate as runtime `2e8a:0009` devices after the
+authorized helper grants nodes `/dev/bus/usb/001/062`, `/001/064`, and
+`/001/066`. A fresh `timeout 8s pcsc_scan -r` still lists no readers (exit 124),
+so no physical applet APDU test or flash was performed. Resume with static-field
+owner handling and then persistent owner encoding/restoration; retry physical
+acceptance only when PC/SC publishes a Pico reader. Preserve unrelated dirty
+worktree edits in `AGENTS.md`, review probes, `bc_invoke.cpp`, `cap_load.cpp`,
+crypto tests, and the RMI registry test. `heap.cpp`/`heap.hpp` also contain
+pre-existing unstaged `releaseGlobalAIDObject` deletions; do not include them
+in this implementation commit.
+
+---
+
 # Current handoff — three-board monitor check and PC/SC state — 2026-11-07 22:54 CET
 
 The user confirmed all three Pico 2 tokens are connected. The authorized
