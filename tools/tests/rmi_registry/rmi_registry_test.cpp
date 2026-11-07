@@ -803,7 +803,17 @@ void verify_same_package_sibling_array_blocks_instance_delete() {
   sibling_array_object->setReferenceEntry(0, jcvm::jref_t{}, package_context);
   assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
       package_id, 7, package_context.getHeap()));
+
+  package_context.getHeap().setStaticReferenceRoot(package_id, 0,
+                                                    target_object);
+  assert(jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
+  package_context.getHeap().setStaticReferenceRoot(package_id, 0,
+                                                    jcvm::jref_t{});
+  assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
   std::puts("RMI_REGISTRY:PASS same_package_sibling_array_delete_guard=1");
+  std::puts("RMI_REGISTRY:PASS applet_delete_static_reference_guard=1");
 }
 
 void verify_shareable_proxy_registry() {

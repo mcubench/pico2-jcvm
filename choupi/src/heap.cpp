@@ -351,14 +351,59 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
     }
   };
   // Same-package sibling applets share one handle table, so their references
-  // are not tagged as foreign-package edges. Inspect every volatile array in
-  // that table except arrays owned by the applet being deleted.
+  // are not tagged as foreign-package edges. Inspect their arrays, object
+  // fields, and cached package static roots. Persistent getters resolve their
+  // values from flash; malformed records fail closed below.
   for (const auto &array : target_heap.shared_storage->arrays) {
-    if (!array || array->isPersistent() ||
-        array->getType() != JAVA_ARRAY_T_REFERENCE ||
+    if (!array || array->getType() != JAVA_ARRAY_T_REFERENCE ||
         array->getOwner().getOwner() == applet_owner) continue;
-    for (uint16_t index = 0; index < array->size(); ++index) {
-      inspect_target(array->getReferenceEntry(index), &query);
+    try {
+      for (uint16_t index = 0; index < array->size(); ++index) {
+        inspect_target(array->getReferenceEntry(index), &query);
+        if (query.found) return true;
+      }
+    } catch (...) {
+      return true;
+    }
+  }
+  for (const auto &instance : target_heap.shared_storage->instances) {
+    if (!instance || instance->getOwner().getOwner() == applet_owner) continue;
+    try {
+      const auto fields = instance->getFields();
+      for (uint16_t index = 0; index < fields->size(); ++index) {
+        const jc_field_t &field = fields->at(index);
+        switch (field.type) {
+        case FieldType::FIELD_TYPE_OBJECT:
+        case FieldType::FIELD_TYPE_ARRAY_BYTE:
+        case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+        case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+        case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+        case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
+          inspect_target(jref_t(field.value), &query);
+          if (query.found) return true;
+          break;
+        default:
+          break;
+        }
+      }
+    } catch (...) {
+      return true;
+    }
+  }
+  for (const StaticReferenceRoot &root :
+       target_heap.shared_storage->static_reference_roots) {
+    if (root.rollback_generation ==
+        FlashMemory_Handler::persistentWriteRollbackGeneration()) {
+      inspect_target(root.reference, &query);
       if (query.found) return true;
     }
   }

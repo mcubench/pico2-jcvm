@@ -7713,5 +7713,14 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   proves a sibling-owned array blocks deletion until its element is cleared,
   while a target-owned array referencing its own object does not block. The
   full `symm_crypto` cross-AID VPCD suite still passes 35/35.
-- **Remaining scope:** Persistent and static reference roots are unaudited and
-  block a complete Java Card applet-deletion semantics claim.
+- **Reference-source extension:** The DELETE query now checks reference fields
+  on sibling-owned loaded instances, persistent reference arrays, and cached
+  package static roots in the shared heap. A native regression verifies that
+  a cached static root blocks deletion until cleared. Enumeration is limited to
+  heap objects and roots already materialized in this runtime; persistent
+  sibling applet roots or package statics that have not yet been restored into
+  a context are still not discovered.
+- **Remaining scope:** Add an end-to-end same-package DELETE APDU test and a
+  persistence-backed case that proves unselected sibling instance/static
+  roots are loaded or safely covered before claiming complete applet-deletion
+  semantics.

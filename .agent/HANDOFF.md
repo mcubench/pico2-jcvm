@@ -1,13 +1,15 @@
-# Current handoff — same-package applet DELETE array guard — 2026-11-07 01:09 CET
+# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:17 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
 by scanning the target package's shared heap. Arrays owned by the target applet
 are excluded from the local scan so its own object graph does not block its
-removal. Native unit coverage verifies the target-owned case, sibling rejection,
-and slot-clear release. Commit `cc7a8b7d` contains the implementation, test,
-and progress record. The focused cross-package DELETE APDU regression still
-passes; full `symm_crypto` cross-AID VPCD passes 35/35 after this change.
+removal. It now also scans sibling-owned object reference fields, persistent
+reference arrays, and cached package static roots. Native unit coverage
+verifies sibling-array rejection, target-owned-array exemption, slot-clear
+release, and cached static-root rejection/release. Commit `cc7a8b7d` contains
+the previous slice. The focused cross-package DELETE APDU regression still
+passes; full `symm_crypto` cross-AID VPCD passes 35/35 after the array change.
 
 ARM and RISC-V builds pass. ARM image ends at `0x100d525c` with 175,524 bytes
 remaining in the reserved firmware region. No physical run completed: the
@@ -16,10 +18,11 @@ listing readers. Full VPCD log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T000029Z.log` (SHA-256
 `ef75708c9d200aa09107912c03ad3029738dd113ac9f0ccb422117bbd83645bd`).
 
-Remaining acceptance: persistent arrays, object instance fields, package static
-roots, and a same-package card-manager DELETE APDU case. Keep CTX-01 open until
-these paths are covered. The previous foreign-array handoff remains below as
-historical context.
+The scan only sees heap objects and roots materialized in the current runtime;
+persisted state for an unselected sibling applet may not be loaded. Remaining
+acceptance: persistence-backed coverage proving how such roots are loaded or
+covered, plus a same-package card-manager DELETE APDU case. Keep CTX-01 open.
+The previous handoffs remain below as historical context.
 
 # Current handoff — applet DELETE retained-reference guard — 2026-11-07 00:41 CET
 

@@ -854,9 +854,12 @@ review.
   object owned by the target instance returns `6985`; after the retaining applet
   clears the slot, DELETE returns `9000` and a sibling instance remains usable.
   The focused three-package VPCD regression and full `symm_crypto` cross-AID
-  suite pass. A same-package sibling-array unit regression also passes. Keep
-  CTX-01 open: persistent and static reference roots need separate coverage
-  before claiming complete Java Card deletion semantics.
+  suite pass. Native coverage also confirms same-package sibling arrays and
+  cached static roots block DELETE until cleared; the guard now inspects loaded
+  sibling object fields and persistent reference arrays. Keep CTX-01 open:
+  uncached persisted applet roots/static state and end-to-end same-package
+  DELETE APDU coverage remain before claiming complete Java Card deletion
+  semantics.
 
 ### CTX-02
 

@@ -23582,3 +23582,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 by tracing persistent object fields and package static reference roots; retain the scope limits in the handoff.
 - Commit: `cc7a8b7d` — implementation/test/progress; this commit-resolution record follows separately.
 - Artifacts/logs: See the prior progress record for VPCD log path/hash and native test marker.
+
+## 2026-11-07 Scan loaded persistent and static references before applet DELETE 8 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-persistent-root-scan`
+- When: '2026-11-07 01:09 CET' - '2026-11-07 01:17 CET'
+- Change: Extended the applet DELETE retained-reference preflight to inspect all sibling-owned reference arrays (including persistent arrays), reference fields of sibling-owned loaded instances, and cached package static reference roots. Read failures fail closed. Added a registry assertion that a cached static root to a target-owned object blocks deletion until the root is cleared. Updated CTX-01 continuity notes with the remaining limitation.
+- Validation: `./tools/test-rmi-registry` passed and printed `applet_delete_static_reference_guard=1`. `./tools/build arm` passed; image end `0x100d52d4`, reserved-region remaining `175404` bytes. `./tools/build riscv` passed. ARM build output included existing packed-member address warnings in CAP headers; generated ROM-mask tooling also emitted dependency-resolution and sandbox hostname warnings, but completed successfully. No VPCD APDU suite or physical device test was run for this scan extension.
+- Result: Currently materialized same-package arrays, object fields, and cached static references are checked, and persistent array reads use the persisted getter. Persisted state for an unselected sibling applet or an uncached package static root may not yet be materialized, so coverage remains partial.
+- Decision: Keep CTX-01 open. Next add a persistence-backed lifecycle regression (or safely restore sibling state before the check), then exercise same-package card-manager DELETE over VPCD.
+- Commit: pending.
+- Artifacts/logs: Registry test output in the command transcript; ARM/RISC-V build wrappers passed. No isolated logs or physical report.
