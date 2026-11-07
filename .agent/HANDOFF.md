@@ -1,6 +1,9 @@
 # Current handoff — testing-data migration complete — 2026-11-07 08:32:21 CET
 
-User authorized full migration and final checks/commit. Test code is under
+User authorized full migration and final checks/commit.
+Committed migration: `54174a489e648bd4495a1300122f909727bb7cb7`;
+fixture catalog input commit: `21415dc6`. Final closeout preserves the
+fixture-check wrapper executable permission; direct catalog tests pass (2/2). Test code is under
 `tests/unit`, `tests/integration`, `tests/hardware`; local fixture sources under
 `tests/fixtures/local`. Active baseline is supplied JCAlgTest 1.8.4/jc305,
 with its versioned client and adjacent libraries; independent API suite retains

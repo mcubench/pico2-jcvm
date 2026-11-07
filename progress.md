@@ -24161,3 +24161,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Migration complete; follow-up runtime/test-semantic fixes remain separate. Preserve all unrelated uncommitted work.
 - Commit: this step is committed as `Complete testing data and test layout migration`; exact SHA is reported on completion (prior input step: `21415dc6`).
 - Artifacts/logs: `artifacts/results/testing-data-migration-20261107/`; `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`; fixture manifest; `docs/testing-data-migration.md`.
+
+- Commit: `54174a489e648bd4495a1300122f909727bb7cb7` — completes the preceding migration-consumers record.
+
+## 2026-11-07 Preserve fixture wrapper executable permission 1 minute active work
+
+- Step/experiment: `test-data-migration-wrapper-mode`
+- When: '2026-11-07 08:33 CET' - '2026-11-07 08:33:47 CET'
+- Change: Final index inspection found tools/test-fixtures was recorded as non-executable by the migration-only staging helper, although its working mode remained executable. Stage the executable permission; no content or runtime changes. Record completed migration commit in continuity notes.
+- Validation: Repository index/worktree mode audit found this single mismatch. Direct tools/test-fixtures execution passes 2 tests; prior migration checks remain valid. No further emulator, firmware or hardware runs required.
+- Result: Fresh checkouts retain an executable fixture-check wrapper. All other remaining worktree changes belong to pre-existing edits preserved during migration.
+- Decision: Migration and checks complete; keep the two accepted host-test failures as separate todo.md follow-ups.
+- Commit: permission/continuity closeout follows migration commit `54174a489e648bd4495a1300122f909727bb7cb7`; final SHA reported to user.
+- Artifacts/logs: `build/testing-migration/test-fixtures-mode-final.log`; archived migration results remain under `artifacts/results/testing-data-migration-20261107/`.
