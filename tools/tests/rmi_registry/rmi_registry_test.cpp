@@ -812,8 +812,24 @@ void verify_same_package_sibling_array_blocks_instance_delete() {
                                                     jcvm::jref_t{});
   assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
       package_id, 7, package_context.getHeap()));
+  const jcvm::jref_t sibling_instance_ref = package_context.getHeap().addInstance(
+      package_id, static_cast<jcvm::jclass_index_t>(1));
+  const auto sibling_instance =
+      package_context.getHeap().getInstance(sibling_instance_ref);
+  assert(sibling_instance->getNumberOfFields() != 0);
+  const auto sibling_fields = sibling_instance->getFields();
+  sibling_fields->at(0).type = jcvm::FieldType::FIELD_TYPE_OBJECT;
+  sibling_fields->at(0).value = target_object.compact();
+  assert(jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
+  sibling_fields->at(0).type =
+      jcvm::FieldType::FIELD_TYPE_UNINITIALIZED;
+  sibling_fields->at(0).value = 0;
+  assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
   std::puts("RMI_REGISTRY:PASS same_package_sibling_array_delete_guard=1");
   std::puts("RMI_REGISTRY:PASS applet_delete_static_reference_guard=1");
+  std::puts("RMI_REGISTRY:PASS applet_delete_instance_field_guard=1");
 }
 
 void verify_shareable_proxy_registry() {

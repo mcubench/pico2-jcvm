@@ -23604,3 +23604,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 with materialization of unselected persisted sibling roots and same-package DELETE APDU coverage.
 - Commit: `9282315a` — implementation/test/status; this resolution record is separate.
 - Artifacts/logs: See the preceding progress entry.
+
+## 2026-11-07 Add applet DELETE sibling-field regression 5 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-field-root-test`
+- When: '2026-11-07 01:18 CET' - '2026-11-07 01:23 CET'
+- Change: Extended the native retained-root regression with a sibling-owned object instance whose reference field points to the target applet's object. The check blocks deletion while set and allows it after the field is cleared.
+- Validation: `./tools/test-rmi-registry` passed and printed `applet_delete_instance_field_guard=1`, `applet_delete_static_reference_guard=1`, and `same_package_sibling_array_delete_guard=1`. No new ARM/RISC-V build was needed because only native test coverage changed; both builds passed in the preceding implementation step.
+- Result: Static-root and loaded sibling instance-field scans have direct native regression coverage in addition to sibling arrays.
+- Decision: Continue with persistence-backed tests and an end-to-end same-package DELETE APDU fixture; persistent array reading itself remains untested.
+- Commit: pending.
+- Artifacts/logs: Test output in the command transcript; no separate log file.
