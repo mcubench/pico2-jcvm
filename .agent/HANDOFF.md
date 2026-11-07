@@ -28,6 +28,7 @@ separate body tag after buffer growth. Rebinding its Cipher field writes a new
 transient reference but does not obviously erase that former body tag. This
 legacy-upgrade residue is a source-level risk, not yet reproduced; add a
 legacy-seeded regression before deciding whether targeted cleanup is needed.
+The audit/QKB/TODO update is committed as `93b2c7e0`.
 
 Step commit: `91c20d2c`.
 

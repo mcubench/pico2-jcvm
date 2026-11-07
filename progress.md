@@ -24303,5 +24303,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Source inspection of `FlashMemory_Handler::writeArray()`, `FlashMemory_Handler::getPersistentField_Array()`, `JC_Array` restored-array construction, `FlashMemory_Handler::setPersistentField_Reference()`, and pre-`c7458354` `native_cipher.cpp`. Existing focused VPCD results remain recorded above. No new test or build was run; the legacy orphan-tag concern is unverified and requires a seeded reproducer.
 - Result: Current transient serialization excludes operational payload data; cleanup of detached legacy workspace bodies is not established.
 - Decision: Keep R08 open and implement a legacy-seeded tag-inventory test before attempting cleanup. Physical test remains blocked by PC/SC publication.
+- Commit: `93b2c7e0`
+- Artifacts/logs: None.
+
+## 2026-11-07 Resolve legacy Cipher audit commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-08-transient-record-restore-audit-sha`
+- When: '2026-11-07 10:07 CET' - '2026-11-07 10:08 CET'
+- Change: Recorded the audit/QKB/TODO commit SHA in progress history and handoff.
+- Validation: Confirmed commit `93b2c7e0` contains only the Cipher audit, continuity, QKB, TODO and progress records.
+- Result: The legacy workspace migration risk is documented in `93b2c7e0`.
+- Decision: Next, build a controlled legacy tag fixture before modifying cleanup behavior.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
