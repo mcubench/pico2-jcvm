@@ -7895,3 +7895,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   ./tools/test-sio-cross-aid-vpcd` passes 2/2, including a selected sibling
   applet and a foreign SIO target. ARM and RISC-V max_crypto wrappers pass.
   No physical APDU was possible because PC/SC published no Pico readers.
+
+## Three runtime Pico CCID devices enumerate while pcscd publishes no readers — 2026-11-07 22:34 CET
+
+- **Observation:** The authorized helper granted USB access to nodes
+  `/dev/bus/usb/001/062`, `/001/064`, and `/001/066`. Elevated `lsusb -d
+  2e8a:` identified all three as `2e8a:0009 Pico2 JCVM CCID` runtime devices,
+  not BOOTSEL. A terminal-attached bounded `pcsc_scan -r` printed its version
+  and remained waiting without enumerating readers. No smartcard APDUs were
+  attempted.
+- **Diagnostics:** `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` reports required
+  host/build prerequisites present but explicitly skips hardware. `journalctl`
+  can see no system entries in this guest because the account lacks journal
+  visibility; no driver-level cause is established.
+- **Decision:** USB presence and ACL grant do not establish PC/SC readiness.
+  No viable local repair has been identified; continue offline until a Pico
+  appears in `pcsc_scan -r`. Do not flash or attribute this state to APDU or
+  firmware behavior.

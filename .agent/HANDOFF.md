@@ -25,6 +25,9 @@ The latest authorized helper grants access to three USB nodes. Elevated
 not BOOTSEL. Bounded `pcsc_scan -r` publishes no reader, so no smartcard APDUs
 were attempted. Retry physical work when a Pico reader is listed; preserve the
 other dirty worktree edits.
+`tools/doctor` confirms required host/build tools. System `pcscd` journal
+entries are not visible to this account, so the reader-registration cause is
+unknown.
 
 PERSIST-01 host-model recheck after `4492a973`: persistent inventory passes 22
 cases; persistent transaction/reclaimer and RP2350 filesystem-overlay suites

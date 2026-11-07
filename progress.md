@@ -25056,3 +25056,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep persistent deletion disabled pending the remaining physical acceptance.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Test output from the three wrappers; no separate logs.
+
+## 2026-11-07 Diagnose reader publication after USB enumeration 2 minutes
+
+- Step/experiment: `PCSC-three-runtime-devices-no-reader-publication`
+- When: '2026-11-07 22:32 CET' - '2026-11-07 22:34 CET'
+- Change: Added the latest authorized USB/PCSC observations and access limitation to QKB and handoff.
+- Validation: The authorized helper granted `/dev/bus/usb/001/062`, `/001/064`, `/001/066`; elevated `lsusb -d 2e8a:` identifies three runtime `2e8a:0009 Pico2 JCVM CCID` devices. Terminal-attached `timeout 8s pcsc_scan -r` printed the scanner version and waited without listing a reader. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` reports required host/build prerequisites present. `journalctl -u pcscd.service` reports no visible entries due to journal permissions. No APDU was sent.
+- Result: Hardware is enumerated at USB level but unavailable as a PC/SC reader; the guest logs do not reveal the cause. No code/runtime metrics were measured.
+- Decision: Continue offline; retry physical testing after a reader is published. Do not infer firmware behavior from this host state.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None; observations are recorded in `.agent/QKB.md`.
