@@ -1,27 +1,27 @@
-# Current handoff — REL-01 offline acceptance and external image — 2026-11-07 21:06 CET
+# Current handoff — REL-01 physical check and max_crypto external image — 2026-11-07 21:29 CET
 
-REL-01 source implementation remains committed as `971272f3`. The latest
-VPCD GPPro `--info` run decodes `OperatingSystemReleaseLevel=0101` and CPLC
-dates as `2026-11-07`; direct GET DATA returns `9000`, and the CPLC unit suite
-passes 25/25. Physical acceptance is still open: the authorized access helper
-granted nodes `001/054`–`001/056`, but bounded `pcsc_scan -r` returned 124 with
-no readers. Do not claim the physical check passed. VPCD logs are under
-`artifacts/results/rel-01-gppro-vpcd-20261107T200125Z/` and
-`artifacts/results/gp-get-data-vpcd-20261107T195606Z/`.
+REL-01 source implementation remains committed as `971272f3`. Offline GPPro
+VPCD `--info` decodes `OperatingSystemReleaseLevel=0101` and CPLC dates as
+`2026-11-07`; direct GET DATA returns `9000`; `./tools/test-gp-get-data` passes
+25/25. The physical acceptance check remains open: the authorized PC/SC helper
+granted nodes `001/054`–`001/056`, but an 8-second `pcsc_scan -r` timed out
+(exit 124) without publishing a reader. No physical GPPro check or flash was
+performed.
 
-Both required wrappers pass for the current worktree:
-`./tools/build arm --profile max_crypto` and
-`./tools/build riscv --profile max_crypto`. The RISC-V wrapper builds the
-VM-core/smoke target. Fresh ARM max_crypto empty-card image:
+Both required wrappers pass on the current worktree:
+`PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` and the
+corresponding RISC-V command. RISC-V is the VM-core/smoke target. Fresh ARM
+max_crypto empty-card image for external testing:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,
 4,070,912 bytes, SHA-256
-`917315f3e10b9a8888ef839a69ddf6f9f0cff804dedc136f145dbb44729a7197`.
-Picotool identifies RP2350 ARM Secure. Profile enables 159/162 capabilities;
-release is 0.1.1; source ID is `FF23C6E8` (dirty-tree marker); firmware end is
-`0x100F0D4C`, leaving 62,132 bytes before storage. The UF2 contains 3,854
-firmware blocks and 4,096 verified erased storage blocks, with no CAP/applet
-preinstalled. It was not flashed or runtime-tested. It includes the current
-dirty worktree; preserve all unrelated edits.
+`93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`.
+Picotool identifies RP2350 ARM Secure. The profile enables 159/162
+capabilities; CPLC release is 0.1.1 (`0101`), source ID is `FF1DC424` (dirty
+tree marker plus HEAD prefix), and firmware ends at `0x100F0D4C`, leaving
+62,132 bytes before storage. The UF2 has 3,854 firmware blocks and 4,096
+erased storage blocks (empty card, no applet preinstalled). It has not been
+flashed or runtime-tested. The image includes current uncommitted worktree
+changes; preserve them all.
 
 The full JCAlgTest 1.8.4 support sweep remains incomplete. The first
 900-second attempt timed out during RSA CRT 3072-bit probing. The extended run

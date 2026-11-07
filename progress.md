@@ -24891,3 +24891,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Measure per-owner persistent tag bytes and unreachable tags at the failure boundary; pursue PERSIST-01 recovery only within its owner-safety and interruption/power-loss acceptance gates. Keep HMAC-01 open until support comparison is complete.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/client.log`; `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/emulator.log`; `.agent/QKB.md`; no new test log.
+
+## 2026-11-07 Refresh REL-01 external max_crypto image 3 minutes
+
+- Step/experiment: `REL-01-refreshed-max_crypto-empty-card-image`
+- When: '2026-11-07 21:27 CET' - '2026-11-07 21:30 CET'
+- Change: Rebuilt both architectures, reran the CPLC/GP GET DATA unit suite, and repackaged the current ARM max_crypto image with erased applet and persistent-storage area for external testing.
+- Validation: `./tools/test-gp-get-data` passed 25/25; `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` and the RISC-V equivalent passed; empty-card packaging passed (3,854 firmware blocks, 4,096 erased storage blocks); picotool identified RP2350 ARM Secure. Authorized PC/SC helper granted three USB nodes, but bounded `pcsc_scan -r` exited 124 without a reader. No physical GPPro check or flash was performed.
+- Result: Image is 4,070,912 bytes, SHA-256 `93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`; release `0.1.1` (`0101`); CPLC source ID `FF1DC424`; profile max_crypto (159/162 capabilities). Runtime metrics were not measured.
+- Decision: REL-01 source and offline validation are complete; physical GPPro acceptance remains open. The image is ready for external testing, with source ID identifying the current dirty build.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`; no physical log.
