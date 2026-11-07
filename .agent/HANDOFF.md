@@ -1,6 +1,6 @@
 # Current handoff — RV-20261106-54 transient allocation reasons — 2026-11-07 17:44 CET
 
-RV-20261106-54 implementation is ready in the current working step. Transient
+RV-20261106-54 implementation is committed as `b3bc3f37`. Transient
 backing overflow and local/global array handle-table exhaustion now produce
 `SystemException.NO_TRANSIENT_SPACE` (reason 2); negative lengths retain
 `NegativeArraySizeException`, and persistent `NO_RESOURCE` paths are unchanged.
@@ -14,7 +14,7 @@ smoke builds passed. The legacy broad `jcarray_transient_test` aborted earlier
 before reaching these assertions; it is not counted as passed. No hardware test
 or flash was performed.
 
-Next: commit the scoped RV-54 implementation and its progress entry. Then rerun
+Next: rerun
 `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile
 max_crypto` after the generator-source hash update, package the ARM UF2 with
 `./tools/package-empty-card-uf2`, and record image size/hash for external
