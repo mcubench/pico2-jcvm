@@ -24089,3 +24089,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue remaining P1 work with the hierarchy cycle/deep-chain regression still open.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Keep Cipher operational workspaces transient across aborts 63 minutes
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-lifetime`
+- When: '2026-11-07 05:57 CET' - '2026-11-07 07:10 CET'
+- Change: Cipher key snapshots, IVs, saved IVs, buffered input and AES-CTR stream arrays now use transient storage cleared on reset. Symmetric initialization rebinds persisted/undersized workspaces. RSA initialization allocates a full modulus-sized transient input buffer up front, avoiding transactional reference replacement during update while its native buffer-length sidecar remains nontransactional. Added a focused CAP probe for AES and RSA update/abort/final and reader reset.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` passed with `TEST:SUMMARY pass=4 fail=0`; AES partial/full block abort cases returned expected ciphertext, RSA no-padding survived abort, and final post-reset APDU returned `449000` (`InvalidInit`). `./tools/build arm` and `./tools/build riscv` passed. Scoped `git diff --check` passed. No physical hardware, cold-restore test, or persistent-record inventory was run.
+- Result: VPCD confirms current Cipher operation state survives transaction abort consistently and reset invalidates the retained Cipher. ARM image ends at `0x100d58ac` with 173,908 bytes remaining. Existing Rust/ROM-mask packed-member warnings remain. RV-20261106-08 remains open for cold restore, persisted-record inspection and legacy-workspace migration assessment.
+- Decision: Keep Cipher workspaces transient; complete record and restore acceptance before closing R08, then continue the remaining prioritized review items.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T060429Z.log`, SHA-256 `00d0512759c9371a805db4568838d7a603c120d59da7956c57ef1f3515965f70`; ARM UF2 SHA-256 `7c77f00379927e790e715683e86afeb974b37f43708c31dfdc4b06bb5c59e823`; RISC-V smoke UF2 SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.

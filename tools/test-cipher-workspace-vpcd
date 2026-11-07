@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+
+"${repo_root}/tools/build-pc" --profile max_crypto
+"${repo_root}/tools/build-cipher-lifecycle-probe"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log_file="${repo_root}/artifacts/logs/cipher-workspace-vpcd-${timestamp}.log"
+flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${timestamp}.bin"
+"${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/tests/pc_vpcd_applet_test.py" \
+  --emulator "${repo_root}/build/choupi-pc/choupi" \
+  --memory "${repo_root}/build/algtest-v182-current-empty-flash.bin" \
+  --cap-code "${repo_root}/build/cipher-lifecycle-probe/load-code.bin" \
+  --rom-mask "${repo_root}/build/choupi-pc/flash" \
+  --apdu-timeout 120 --applet-aid A00000015100020301 \
+  --package-id 56 --passes 1 \
+  --apdu 800E000000 --expect-apdu-response 019000 \
+  --reset-after-custom-apdu 1 \
+  --apdu 800F000000 --expect-apdu-response 449000 \
+  --flash-copy "${flash_copy}" --log "${log_file}"

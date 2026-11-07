@@ -105,11 +105,28 @@ std::shared_ptr<JC_Array> byteArray(JC_Instance &instance, uint16_t field) {
 }
 
 jref_t allocateByteArray(uint16_t length) {
-  return Context::getActiveContext().getHeap().addArray(length, JAVA_ARRAY_T_BYTE);
+  // Cipher's mutable workspaces share the native-session lifetime of its
+  // counters: transaction rollback must not restore bytes independently of
+  // those counters, and reset must wipe any buffered plaintext/ciphertext.
+  return Context::getActiveContext().getHeap().addTransientArray(
+      length, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET);
 }
 
 void setByteArray(JC_Instance &instance, uint16_t field, uint16_t length) {
   instance.setField_Reference(field, allocateByteArray(length));
+}
+
+void ensureTransientByteArray(JC_Instance &instance, const uint16_t field,
+                              const uint16_t minimumLength) {
+  const jref_t reference = instance.getField_Reference(field);
+  if (!reference.isNullPointer()) {
+    auto array = Context::getActiveContext().getHeap().getArray(reference);
+    if (array && array->getType() == JAVA_ARRAY_T_BYTE &&
+        array->isTransientArray() && array->size() >= minimumLength) {
+      return;
+    }
+  }
+  setByteArray(instance, field, minimumLength);
 }
 
 void ensureCapacity(JC_Instance &cipher, uint16_t wanted) {
@@ -545,6 +562,21 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
   auto keyData = Context::getActiveContext().getHeap().getArray(keyDataRef);
   if (!keyData || keyData->getType() != JAVA_ARRAY_T_BYTE || keyData->size() != bytes)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  const bool ctr = algorithm == 0xF0;
+  // Rebind persisted objects from earlier firmware versions and retained
+  // Cipher instances to transient workspaces before processing new input.
+  cipher.setNativeSessionField_Short(
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
+  ensureTransientByteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_IV, 16);
+  ensureTransientByteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIV, 16);
+  ensureTransientByteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED, 32);
+  if (ctr) {
+    ensureTransientByteArray(cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, 16);
+  }
   auto cipherKey = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
   for (uint16_t i = 0; i < cipherKey->size(); ++i)
@@ -568,7 +600,6 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIV);
   const bool cbc = (algorithm >= 1 && algorithm <= 4) ||
                    algorithm == 13 || (algorithm >= 22 && algorithm <= 24);
-  const bool ctr = algorithm == 0xF0;
   if (withParameters) {
     if ((!cbc && !ctr) || !parameters || offset < 0 || length != blockSize)
       throwCryptoException(CryptoExceptionReason::IllegalValue);

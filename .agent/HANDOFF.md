@@ -1,3 +1,30 @@
+# Current handoff — Cipher operational workspace lifetime — 2026-11-07 07:10 CET
+
+RV-20261106-08 has a partial native change in `choupi/src/native_cipher.cpp`
+and `choupi/src/native_rsa_cipher.cpp`. Cipher workspaces (key snapshots,
+IVs, buffered bytes, AES-CTR stream state and RSA input) use reset-cleared
+transient arrays. Symmetric init rebinds old/persistent or undersized
+workspaces; RSA init reserves one full modulus-sized input buffer so a
+transactional object-reference rollback cannot desynchronize its
+nontransactional native length sidecar. This preserves the established
+transient key-workspace behavior.
+
+The focused CAP lifecycle probe and `./tools/test-cipher-workspace-vpcd`
+pass: AES CBC update/abort/final after partial and full block inputs; RSA
+no-padding update/abort/final; then reset invalidates the retained Cipher
+(`449000`). VPCD summary: `TEST:SUMMARY pass=4 fail=0`; log
+`artifacts/logs/cipher-workspace-vpcd-20261107T060429Z.log`, SHA-256
+`00d0512759c9371a805db4568838d7a603c120d59da7956c57ef1f3515965f70`.
+`./tools/build arm` and `./tools/build riscv` pass. ARM image ends at
+`0x100d58ac`, leaving 173,908 bytes. Builds emit existing Rust/CAP warnings.
+This was simulator-only: no physical board test, cold-restore test, or
+persistent-record inventory was run. R08 remains open for those checks and
+for confirming no pre-existing persistent workspace records need migration or
+cleanup. Implementation commit SHA is recorded in the next progress entry.
+
+Next: continue R08 acceptance offline with record inspection/cold restore if
+the harness supports it; keep this issue open until those gates are addressed.
+
 # Current handoff — bound superclass traversal in VM runtime — 2026-11-07 05:57 CET
 
 RV-20261106-07 has a partial runtime hardening change in

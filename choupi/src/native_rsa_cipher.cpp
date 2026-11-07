@@ -408,9 +408,11 @@ void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
   if (wanted < 0 || wanted > maxLength)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (wanted > static_cast<int32_t>(current->size())) {
-    allocateCipherArray(cipher,
+    // Buffer bytes are nontransactional native-session state, just like the
+    // buffered-length sidecar; keep the replacement buffer transient too.
+    allocateTransientCipherArray(cipher,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED,
-        static_cast<uint16_t>(wanted));
+        static_cast<uint16_t>(wanted), ClearEvent::CLEAR_ON_RESET);
     auto expanded = getByteArray(cipher,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
     for (jshort_t i = 0; i < oldLength; ++i)
@@ -508,8 +510,12 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
   getByteArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA)
       ->setByteEntry(0, kCipherKeyWorkspaceMarker);
-  allocateCipherArray(*cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED, 0);
+  allocateTransientCipherArray(*cipher,
+      // Allocate the complete RSA block up front. Replacing this reference
+      // during update() would be rolled back by JCSystem transactions while
+      // the native buffered-length sidecar is intentionally not transactional.
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED, keyLength,
+      ClearEvent::CLEAR_ON_RESET);
   auto modulus = getByteArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
   auto exponent = getByteArray(*cipher,
