@@ -23990,3 +23990,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: RV-20261106-03 remains open for additional sanitizer and local/operand boundary combinations; continue with the remaining P1 review findings.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Sanitized test output emitted by `./tools/test-rmi-registry`; no separate log.
+
+## 2026-11-07 Resolve stack bounds commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-stack-local-bounds-sha`
+- When: '2026-11-07 04:33 CET' - '2026-11-07 04:34 CET'
+- Change: Recorded the stack-bounds implementation SHA in the handoff and progress history.
+- Validation: No new run; the preceding entry records the passing sanitizer fixture and both architecture builds.
+- Result: Stack local/frame bounds are committed as `b36e9cf1`.
+- Decision: Continue to the next P1 review item while preserving unrelated worktree changes.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.

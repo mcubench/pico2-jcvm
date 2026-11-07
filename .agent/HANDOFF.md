@@ -15,7 +15,7 @@ run in this VM under ptrace, so the wrapper turns off leak detection while
 keeping ASan and UBSan active. ARM and RISC-V wrappers pass. ARM image ends at
 `0x100d5658` with 174,504 bytes left in the reserved region. No physical test
 was performed. RV-20261106-03 remains open for additional local/operand
-boundary combinations. This step awaits its commit SHA resolution.
+boundary combinations. This implementation and test step is committed as `b36e9cf1`; its SHA-resolution record follows in progress.md.
 
 Next: continue with the remaining P1 review findings. Keep the provided dirty
 CAP/API review and crypto-probe changes unstaged unless their owner requests
