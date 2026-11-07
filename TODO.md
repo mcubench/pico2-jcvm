@@ -1134,7 +1134,9 @@ review.
   caller/sibling-context VPCD check passes 2/2. The same-CAP sibling fixture
   now allocates CLEAR_ON_DESELECT from the SIO-invoked writer and passes 6/6,
   directly confirming the shared package context permits it. Physical
-  confirmation remains part of API-03 acceptance.
+  confirmation remains part of API-03 acceptance. The full cross-AID VPCD
+  suite passes 35/35 after the guard, including owner-tagged references,
+  native array-copy enforcement, proxy deletion/reinstall, and reset behavior.
   A same-CAP restart VPCD test passes 7/7: both applet registrations restore,
   sibling static scalar/array state survives emulator restart, and SIO resolves
   the same restored array identity. The multi-package restart suite passes

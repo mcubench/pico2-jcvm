@@ -8,7 +8,9 @@ while CLEAR_ON_RESET remains allowed. ARM and RISC-V max_crypto wrapper builds
 pass; ARM has 62,132 bytes remaining in the firmware window.
 The same-CAP sibling VPCD regression passes 6/6 after the change; its
 SIO-invoked writer now allocates CLEAR_ON_DESELECT successfully in the shared
-package context, while preserving shared-static behavior.
+package context, while preserving shared-static behavior. Full cross-AID VPCD
+regression passes 35/35, including foreign-reference, native array-copy,
+proxy deletion/reinstall, and reset cases.
 
 Refreshed empty-card max_crypto ARM external-test image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,

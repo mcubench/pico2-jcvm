@@ -25034,3 +25034,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep both the cross-CAP rejection and same-CAP allowance regressions.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261107T212140Z.log`.
+
+## 2026-11-07 Revalidate full cross-AID SIO suite 3 minutes
+
+- Step/experiment: `CTX-01-cross-AID-firewall-after-transient-guard`
+- When: '2026-11-07 22:20 CET' - '2026-11-07 22:23 CET'
+- Change: Recorded full cross-AID VPCD regression evidence in CTX-01 and the session handoff after the JCSystem guard commit.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed (`TEST:SUMMARY pass=35 fail=0`), including foreign-reference owner checks, native `Util.arrayCopyNonAtomic` enforcement, stale proxy behavior through DELETE/reinstall/reset, and exception/context restoration. No physical device or firmware source was used.
+- Result: No regression surfaced in the broader cross-context firewall and proxy paths. Runtime performance was not measured.
+- Decision: Continue the remaining CTX-01 reference-consumer audit; physical acceptance is still separate.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T212344Z.log`.
