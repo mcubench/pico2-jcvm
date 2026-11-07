@@ -160,6 +160,7 @@ const jshort_t FlashMemory_Handler::getPersistentField_Array_Short(
 void FlashMemory_Handler::setPersistentField_Array_Short(
     const fs::Tag &, const uint16_t, const jshort_t, Heap &) {}
 
+#ifdef JCVM_INT_SUPPORTED
 const jint_t FlashMemory_Handler::getPersistentField_Array_Int(
     const fs::Tag &, const uint16_t, Heap &) {
   return 0;
@@ -167,6 +168,7 @@ const jint_t FlashMemory_Handler::getPersistentField_Array_Int(
 
 void FlashMemory_Handler::setPersistentField_Array_Int(
     const fs::Tag &, const uint16_t, const jint_t, Heap &) {}
+#endif
 
 const jref_t FlashMemory_Handler::getPersistentField_Array_Reference(
     const fs::Tag &, const uint16_t, Heap &) {

@@ -190,6 +190,8 @@ public:
                            const ClearEvent event);
   /// Adding an array in in the transient heap.
   jref_t addArray(JC_Array array);
+  /// Register an already-created JCSystem transient array with Java exception mapping.
+  jref_t addTransientArrayResult(const JC_Array &array);
   /// Clear transient arrays associated with a lifecycle event.
   void clearTransientArrays(ClearEvent event);
   /// Adding new instance in the transient heap.

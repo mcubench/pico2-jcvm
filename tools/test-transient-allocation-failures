@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="${repo_root}/build/tests/unit/jcarray"
+
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/jcarray" \
+  -B "${build_dir}"
+"${repo_root}/tools/env" cmake --build "${build_dir}" \
+  --target transient_allocation_failure_test transient_allocation_failure_test_int
+ASAN_OPTIONS=detect_leaks=0 "${build_dir}/transient_allocation_failure_test"
+ASAN_OPTIONS=detect_leaks=0 "${build_dir}/transient_allocation_failure_test_int"

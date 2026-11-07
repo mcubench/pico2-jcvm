@@ -38,6 +38,7 @@
 #endif
 
 #include <algorithm>
+#include <new>
 #include <utility>
 
 namespace jcvm {
@@ -704,6 +705,36 @@ jref_t Heap::addArray(JC_Array array) {
   ref.setOffset(this->shared_storage->arrays.size());
 
   return ref;
+}
+
+jref_t Heap::addTransientArrayResult(const JC_Array &array) {
+  jref_t ref;
+  try {
+    uint16_t offset = 0;
+    for (auto &slot : this->shared_storage->arrays) {
+      ++offset;
+      if (!slot) {
+        slot = std::make_shared<JC_Array>(array);
+        ref.setAsArray(true);
+        ref.setOffset(offset);
+        return ref;
+      }
+    }
+    if (this->shared_storage->arrays.size() >= kMaximumLocalArrayHandles) {
+      throw Exceptions::RuntimeException;
+    }
+    this->shared_storage->arrays.push_back(std::make_shared<JC_Array>(array));
+    ref.setAsArray(true);
+    ref.setOffset(this->shared_storage->arrays.size());
+    return ref;
+  } catch (const Exceptions exception) {
+    if (exception != Exceptions::RuntimeException) throw;
+    Context::getActiveContext().setPendingSystemExceptionReason(2);
+    throw Exceptions::SystemException;
+  } catch (const std::bad_alloc &) {
+    Context::getActiveContext().setPendingSystemExceptionReason(2);
+    throw Exceptions::SystemException;
+  }
 }
 
 /**

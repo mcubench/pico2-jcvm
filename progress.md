@@ -24744,3 +24744,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with the next actionable offline project priority while keeping physical acceptance pending.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+
+## 2026-11-07 Map JCSystem transient allocation failures 28 minutes
+
+- Step/experiment: `RV-20261106-54-transient-space-reason`
+- When: '2026-11-07 17:16 CET' - '2026-11-07 17:44 CET'
+- Change: Mapped transient backing overflow and local/global transient handle-table or allocator failures to `SystemException.NO_TRANSIENT_SPACE` (reason 2), preserving negative-length exceptions and persistent `NO_RESOURCE`. Generated native wrappers now use a registration helper that catches local transient handle exhaustion. Added a compile switch for int-disabled VM builds and dedicated enabled/disabled test targets. Updated the lowercase `todo.md` item.
+- Validation: `./tools/test-transient-allocation-failures` passed in both int-disabled and int-enabled configurations (five checks each). `./tools/build-pc --profile max_crypto` passed and regenerated `jni.hpp`; inspection confirmed all five transient-array native return wrappers use `addTransientArrayResult`. `./tools/build arm --profile max_crypto` passed (firmware end `0x100EDFC0`, 73,792 bytes remaining). `./tools/build riscv --profile max_crypto` passed its VM-core and smoke build. Physical testing was skipped; no board was flashed. The broader legacy `jcarray_transient_test` was observed aborting before reaching this change's assertions, so it is not counted as a pass.
+- Result: Backing-limit and local/global registration exhaustion map to reason 2; disabled int remains rejected, while int-enabled arrays report the correct transient-space reason. Existing handles survive rejected registrations.
+- Decision: Close RV-20261106-54 offline. Refresh wrapper builds after the generator commit, then package a fresh max_crypto empty-card ARM UF2 for external testing.
+- Commit: `pending`
+- Artifacts/logs: `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; unit output from `./tools/test-transient-allocation-failures`.

@@ -1,3 +1,28 @@
+# Current handoff — RV-20261106-54 transient allocation reasons — 2026-11-07 17:44 CET
+
+RV-20261106-54 implementation is ready in the current working step. Transient
+backing overflow and local/global array handle-table exhaustion now produce
+`SystemException.NO_TRANSIENT_SPACE` (reason 2); negative lengths retain
+`NegativeArraySizeException`, and persistent `NO_RESOURCE` paths are unchanged.
+The ROM-mask generator uses `Heap::addTransientArrayResult()` for all five
+`makeTransient*Array` return paths. Generator submodule commit is `79e18fd`.
+
+`./tools/test-transient-allocation-failures` passes in int-disabled and
+int-enabled builds, including local/global handle exhaustion and retained
+handles. PC ROM-mask generation, ARM max_crypto firmware, and RISC-V VM-core /
+smoke builds passed. The legacy broad `jcarray_transient_test` aborted earlier
+before reaching these assertions; it is not counted as passed. No hardware test
+or flash was performed.
+
+Next: commit the scoped RV-54 implementation and its progress entry. Then rerun
+`./tools/build arm --profile max_crypto` and `./tools/build riscv --profile
+max_crypto` after the generator-source hash update, package the ARM UF2 with
+`./tools/package-empty-card-uf2`, and record image size/hash for external
+testing. Preserve all unrelated dirty changes, especially the existing heap
+AID-release and JCSystem context changes.
+
+---
+
 # Current handoff — R52 native int-array return fix and max_crypto build — 2026-11-07 16:21 CET
 
 The focused R52 failure is fixed at its source in the ROM-mask generator.

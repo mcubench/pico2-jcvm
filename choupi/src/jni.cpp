@@ -380,7 +380,7 @@ std::shared_ptr<JC_Array> makeTransientArray(const jshort_t length,
   } catch (const Exceptions exception) {
     if (exception != Exceptions::FullMemoryException) throw;
     Context::getActiveContext().setPendingSystemExceptionReason(
-        5); // SystemException.NO_RESOURCE
+        2); // SystemException.NO_TRANSIENT_SPACE
     throw Exceptions::SystemException;
   } catch (const std::bad_alloc &) {
     Context::getActiveContext().setPendingSystemExceptionReason(2);
@@ -1598,7 +1598,7 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
   } catch (const Exceptions exception) {
     if (exception != Exceptions::FullMemoryException) throw;
     Context::getActiveContext().setPendingSystemExceptionReason(
-        5); // SystemException.NO_RESOURCE
+        2); // SystemException.NO_TRANSIENT_SPACE
     throw Exceptions::SystemException;
   } catch (const std::bad_alloc &) {
     Context::getActiveContext().setPendingSystemExceptionReason(2);
@@ -1647,8 +1647,11 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
     context.setSensitiveResultObject(result);
     return result;
   } catch (const Exceptions exception) {
-    if (exception != Exceptions::FullMemoryException) throw;
-    context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE
+    if (exception != Exceptions::FullMemoryException &&
+        exception != Exceptions::RuntimeException) {
+      throw;
+    }
+    context.setPendingSystemExceptionReason(2); // SystemException.NO_TRANSIENT_SPACE
     throw Exceptions::SystemException;
   } catch (const std::bad_alloc &) {
     context.setPendingSystemExceptionReason(2);
@@ -2009,10 +2012,12 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_clearArray(
   throw Exceptions::SystemException;
 }
 
+#ifdef JCVM_INT_SUPPORTED
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(
     const jshort_t length, const jbyte_t event) {
   return makeTransientArray(length, event, JAVA_ARRAY_T_INT);
 }
+#endif
 
 } // namespace jcvm
