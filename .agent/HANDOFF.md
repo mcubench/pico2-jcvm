@@ -1,4 +1,4 @@
-# Current handoff — verify Cipher reinitialization after process restore — 2026-11-07 09:07 CET
+# Current handoff — scan persisted Cipher workspace payload — 2026-11-07 09:18 CET
 
 RV-20261106-08 now has an end-to-end two-process VPCD regression under the
 migrated `tests/fixtures/local/cipher_lifecycle_applet` source layout. The
@@ -14,16 +14,22 @@ The additional reinitialization probe and wrapper APDU are committed as
 `c647f11c`; the SHA-resolution progress record follows. Earlier native
 implementation is `c7458354`; the first process-resume wrapper was included in
 concurrent commit `ab63e21b` and its attribution is documented in progress.md.
-Source inspection shows
-transient array data is cleared and only transient type/size/clear-event
-metadata is represented when a persistent object references it. The exact
-flash-record inventory has not yet been independently enumerated. No physical
-board was tested. Keep R08 open for exact persistent-record inspection and
-physical acceptance.
+Source inspection shows transient array data is cleared and only transient
+type/size/clear-event metadata is represented when a persistent object
+references it. The expanded regression additionally leaves a unique 15-byte
+CBC plaintext tail pending in the Cipher at emulator shutdown. A raw scan of
+the saved 512 KiB persistent flash image finds no copy of those bytes, and the
+sentinel is absent from the loaded test CAP. The complete run passes 8/8; log
+`artifacts/logs/cipher-workspace-vpcd-20261107T081658Z.log`, SHA-256
+`94b11c3f18c289f26024f6a807123fa2705a8589f2028c42982cbc4e4165af37`.
 
-Next: inspect serialized records produced by this regression and distinguish
-transient reference metadata from operational byte payloads; then continue the
-remaining prioritized implementation and acceptance work.
+This is a targeted payload check, not a full tag-by-tag flash inventory. It
+does not exercise AES-CTR or all buffer-growth boundaries. No physical board
+was tested. Keep R08 open for those cases and physical acceptance.
+
+Next: add transaction/reset coverage for CTR and symmetric buffer-growth
+boundaries, then continue the remaining prioritized implementation and
+acceptance work.
 
 # Current handoff — testing-data migration complete — 2026-11-07 08:32:21 CET
 

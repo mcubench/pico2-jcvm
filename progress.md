@@ -24207,3 +24207,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue R08 with persistent-record inspection; physical acceptance also remains open.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Resolve Cipher restore reinitialization SHA 1 minute
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-restore-reinit-sha-record`
+- When: '2026-11-07 09:07 CET' - '2026-11-07 09:18 CET'
+- Change: Recorded the SHA-resolution commit for the fresh-restore reinitialization test.
+- Validation: No new run; see the preceding reinitialization test and VPCD result.
+- Result: The post-restore reinitialization regression is committed as `c647f11c`; its SHA-resolution record is `15a7cd93`.
+- Decision: Continue with a targeted persisted-payload scan; keep the full R08 acceptance open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
+
+## 2026-11-07 Scan saved image for pending Cipher plaintext 12 minutes
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-payload-scan`
+- When: '2026-11-07 09:07 CET' - '2026-11-07 09:18 CET'
+- Change: Made the AES key distinct from test plaintext, added a CAP command that leaves a unique 15-byte CBC plaintext tail buffered at shutdown, and extended the stable wrapper to scan the persisted image. The scanner first verifies that the sentinel is absent from the CAP load code, then checks the complete saved flash image.
+- Validation: `./tools/fixture-path --verify` passed (`files=81`, `jcalgtest=1.8.4`, `api_caps=48`). `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` passed with `TEST:SUMMARY pass=8 fail=0`; fresh-process invalid-init/reinitialization checks passed and the 512 KiB saved flash image contained zero occurrences of the 15-byte pending-plaintext sentinel. An initial run omitted the expected APDU Le byte and failed with `6F00`; corrected case-4 framing passed. `git diff --check` passed for the changed probe/wrapper. No ARM/RISC-V rebuild was needed because this step changed only test fixture and integration wrapper files; no physical hardware test was run.
+- Result: The tested pending operational plaintext is not present in the persisted flash image, while a new process restores the applet and resets native Cipher state. This is a targeted raw payload search, not a full persistent-tag inventory and not proof for every algorithm/workspace. R08 remains open.
+- Decision: Continue with CTR stream, reset and grown-buffer lifecycle cases; retain the physical hardware gate.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T081658Z.log`, SHA-256 `94b11c3f18c289f26024f6a807123fa2705a8589f2028c42982cbc4e4165af37`; saved image `build/cipher-lifecycle-probe/cipher-workspace-vpcd-20261107T081658Z.bin` (524,288 bytes).

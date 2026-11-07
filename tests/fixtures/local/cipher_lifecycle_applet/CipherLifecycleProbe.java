@@ -22,13 +22,13 @@ public final class CipherLifecycleProbe extends Applet {
   private static byte testCipherBufferSurvivesAbort() {
     AESKey key = (AESKey)KeyBuilder.buildKey(
         KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
-    byte[] keyBytes = {0, 1, 2, 3, 4, 5, 6, 7,
-                       8, 9, 10, 11, 12, 13, 14, 15};
+    byte[] keyBytes = new byte[16];
+    for (short i = 0; i < 16; i++) keyBytes[i] = (byte)(0xf0 + i);
     byte[] plaintext = {0, 1, 2, 3, 4, 5, 6, 7,
                         8, 9, 10, 11, 12, 13, 14, 15};
-    byte[] expected = {(byte)0x0a, (byte)0x94, (byte)0x0b, (byte)0xb5,
-        0x41, 0x6e, (byte)0xf0, 0x45, (byte)0xf1, (byte)0xc3,
-        (byte)0x94, 0x58, (byte)0xc6, 0x53, (byte)0xea, 0x5a};
+    byte[] expected = {(byte)0xf7, (byte)0xcb, (byte)0x9d, (byte)0xf8,
+        (byte)0xa5, 0x7d, (byte)0x8c, 0x78, 0x47, 0x58, (byte)0xaa,
+        (byte)0xe0, (byte)0x8d, (byte)0xd9, (byte)0x99, 0x68};
     byte[] output = new byte[16];
     byte[] iv = new byte[16];
     key.setKey(keyBytes, (short)0);
@@ -53,9 +53,9 @@ public final class CipherLifecycleProbe extends Applet {
         16, 17, 18, 19, 20, 21, 22, 23,
         24, 25, 26, 27, 28, 29, 30, 31};
     byte[] expectedSecondBlock = {
-        0x3c, (byte)0xf4, 0x56, (byte)0xb4, (byte)0xca, 0x48, (byte)0x8a,
-        (byte)0xa3, (byte)0x83, (byte)0xc7, (byte)0x9c, (byte)0x98,
-        (byte)0xb3, 0x47, (byte)0x97, (byte)0xcb};
+        (byte)0xa7, (byte)0x8f, (byte)0xf1, (byte)0xbe, 0x46, 0x34,
+        0x40, (byte)0xc0, (byte)0x9a, 0x59, (byte)0xbd, (byte)0xf7,
+        (byte)0x97, (byte)0x98, (byte)0xf6, 0x7b};
     cipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
     cipher.init(key, Cipher.MODE_ENCRYPT, iv, (short)0, (short)iv.length);
     retainedCipher = cipher;
@@ -147,6 +147,24 @@ public final class CipherLifecycleProbe extends Applet {
     }
   }
 
+  private static byte testBufferedCipherInput(byte[] apduBuffer,
+                                               short inputLength) {
+    if (inputLength != 15) return (byte)0x79;
+    try {
+      retainedCipher = Cipher.getInstance(
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+      byte[] iv = new byte[16];
+      retainedCipher.init(retainedKey, Cipher.MODE_ENCRYPT,
+                          iv, (short)0, (short)iv.length);
+      short produced = retainedCipher.update(
+          apduBuffer, ISO7816.OFFSET_CDATA, inputLength,
+          new byte[16], (short)0);
+      return produced == 0 ? (byte)1 : (byte)0x7a;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
   public static void install(byte[] data, short offset, byte length) {
     new CipherLifecycleProbe();
   }
@@ -187,6 +205,8 @@ public final class CipherLifecycleProbe extends Applet {
       }
     } else if (instruction == (byte)0x10) {
       result = testRsaCipherAfterRestore();
+    } else if (instruction == (byte)0x11) {
+      result = testBufferedCipherInput(buffer, apdu.setIncomingAndReceive());
     } else if (instruction == (byte)0x09) {
       try {
         AESKey temporaryKey = (AESKey)KeyBuilder.buildKey(

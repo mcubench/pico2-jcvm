@@ -18,6 +18,27 @@ flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${ti
   --apdu-timeout 120 --applet-aid A00000015100020301 \
   --package-id 56 --passes 2 \
   --apdu 800E000000 --expect-apdu-response 019000 \
+  --apdu 801100000F000102030405060708090A0B0C0D0E00 \
+  --expect-apdu-response 019000 \
   --resume-apdu 800F000000 --expect-resume-apdu-response 449000 \
   --resume-apdu 8010000000 --expect-resume-apdu-response 019000 \
   --flash-copy "${flash_copy}" --log "${log_file}"
+
+"${repo_root}/tools/env" python3 - "${flash_copy}" \
+  "${repo_root}/build/cipher-lifecycle-probe/load-code.bin" <<'PY'
+import sys
+from pathlib import Path
+
+flash_path, cap_code_path = map(Path, sys.argv[1:])
+pending_plaintext = bytes(range(15))
+if pending_plaintext in cap_code_path.read_bytes():
+    raise SystemExit("TEST:FAIL pending-input sentinel occurs in test CAP code")
+if pending_plaintext in flash_path.read_bytes():
+    raise SystemExit(
+        "TEST:FAIL buffered Cipher plaintext found in persisted flash image"
+    )
+print(
+    "TEST:PASS buffered Cipher plaintext absent from persisted flash "
+    f"image={flash_path.stat().st_size} sentinel_bytes={len(pending_plaintext)}"
+)
+PY
