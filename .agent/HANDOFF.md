@@ -1,6 +1,6 @@
-# Current handoff — stable identity for persistent object graphs — 2026-11-07 13:05 CET
+# Current handoff — R22 committed; refreshed max-crypto image — 2026-11-07 13:09 CET
 
-RV-20261106-22 is implemented in the current worktree. Persistent ordinary
+RV-20261106-22 is implemented and committed as `4554327c`. Persistent ordinary
 objects now store bodies under unique tags independent of the first reference
 field; aliases point to those bodies. Legacy direct-body records migrate to a
 distinct identity marker (`FF FD`) so a transaction abort can recover the
@@ -14,13 +14,18 @@ object abort/retry, shared-alias mutation, GC, and fresh restore. ASan/UBSan
 passes with `ASAN_OPTIONS=detect_leaks=0`. `./tools/build arm --profile
 max_crypto` passes (firmware end `0x100EDDF8`, 74,248 bytes remaining);
 `./tools/build riscv --profile max_crypto` passes. No physical test was
-possible because PC/SC published no Pico reader. Changes are not yet committed.
+possible because PC/SC published no Pico reader.
 
-The prior external-test UF2 at
-`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF8611E9.uf2`
-predates this persistence fix. Rebuild after committing R22 and repackage an
-updated empty-card image before providing the current binary. Preserve all
-other dirty worktree changes, including the separate HMAC TODO edit.
+Fresh max-crypto ARM empty-card image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`
+(4,046,336 bytes, SHA-256
+`f95c9bf99ee8d6094cc3eab67acd87da73aa978bbf5dba66dce3c423fee0eda2`). It is
+RP2350 ARM Secure, enables 147/150 profile capabilities, contains 3,806
+firmware blocks and 4,096 verified erased storage blocks, and reports source
+ID `FF455432`; CPLC release level is `0101`. Firmware ends at `0x100EDDF8`,
+leaving 74,248 bytes. No token was flashed. The image reflects the current
+dirty worktree; preserve unrelated worktree changes, including the separate
+HMAC TODO edit.
 
 # Current handoff — REL-01 reader check blocked; max-crypto image built — 2026-11-07 12:46 CET
 

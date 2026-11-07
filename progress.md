@@ -24490,5 +24490,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` PASS (`TEST:SUMMARY fail=0`); ASan/UBSan build and run PASS (`ASAN_OPTIONS=detect_leaks=0`); `./tools/build arm --profile max_crypto` PASS (firmware end `0x100EDDF8`, 74,248 bytes remaining); `./tools/build riscv --profile max_crypto` PASS. Scoped `git diff --check` pending before commit. Physical testing was not run: PC/SC publishes no Pico reader.
 - Result: Replacing or clearing a first reference no longer destroys an object still referenced elsewhere. Sibling/diamond/cyclic graphs restore identity; migrated objects survive abort and retry, aliases observe shared mutation, and GC keeps live aliases while reclaiming an unreachable instance. Expected injected write-failure tests still emit their controlled persistence exception diagnostics.
 - Decision: Close R22 offline acceptance. Next commit this isolated implementation, then rebuild/package the max-crypto empty-card ARM image from the committed revision. Do not claim physical acceptance.
-- Commit: `<resolve in next progress entry>`
+- Commit: `4554327c`
 - Artifacts/logs: Native unit output was not archived; generated builds are under `build/`.
+
+## 2026-11-07 Rebuild max-crypto empty-card image after R22 4 minutes
+
+- Step/experiment: `max-crypto-empty-card-post-r22`
+- When: '2026-11-07 13:05 CET' - '2026-11-07 13:09 CET'
+- Change: Rebuilt and repackaged the ARM max-crypto image after committing R22, so external testing uses the committed persistent-object identity fix and an accurate dirty-tree CPLC source marker.
+- Validation: `./tools/build arm --profile max_crypto` PASS; `./tools/build riscv --profile max_crypto` passed on the same R22 source before commit. Empty-card packaging PASS; UF2 inspection confirms RP2350 ARM Secure and exactly 4,096 storage blocks filled with `0xFF`. Build profile enables 147/150 capabilities.
+- Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`, 4,046,336 bytes, SHA-256 `f95c9bf99ee8d6094cc3eab67acd87da73aa978bbf5dba66dce3c423fee0eda2`. Firmware ends at `0x100EDDF8`, leaving 74,248 bytes. CPLC source ID is `FF455432`; release remains `0101`. No token was flashed.
+- Decision: This is the current max-crypto empty-card UF2 for external testing. REL-01 physical GPPro confirmation remains open because no PC/SC reader is published.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `build/arm/build-provenance.txt`; UF2 path and hash above.
