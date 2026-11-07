@@ -24010,8 +24010,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Confirmed `7a77d943` stages only transient global-array reclamation, its pressure regression, TODO status, and associated progress/handoff notes. Pre-existing global AID cache changes remain unstaged.
 - Result: R11 transient global-array pressure/lifetime change is committed as `7a77d943`; reset and global AID cache work remain open.
 - Decision: Proceed to REL-01 CPLC version/source identification and external-testing image preparation.
-- Commit: `<resolve in next progress entry>`
+- Commit: `1c141afb`
 - Artifacts/logs: None.
+
+## 2026-11-07 Implement REL-01 CPLC release and source identity 23 minutes
+
+- Step/experiment: `REL-01-cplc-release-and-build-id`
+- When: '2026-11-07 11:22 CET' - '2026-11-07 11:45 CET'
+- Change: Updated CPLC dates to 2026-11-07 and encoded the explicitly requested firmware version 0.1.1 as release level `0101` (major nibble, minor nibble, update byte). Added `tools/cplc-source-id`; each firmware build records a four-byte source ID in `ICPersonalizationEquipmentID`, with leading `00` for clean trees and `FF` for dirty trees, followed by six uppercase hex digits of HEAD. Added strict CMake input validation, restricted the source-ID compile definition to `ccid_device.cpp` to avoid rebuilding the SDK, and aligned unit/hardware CPLC probes.
+- Validation: CPLC unit suite PASS (`25/25`); hardware probe source compiles; `./tools/build arm --profile max_crypto` PASS (firmware end `0x100ED9B0`, 75,344 bytes remaining); `./tools/build riscv --profile max_crypto` PASS (shared core/smoke only); UF2 payload inspection PASS for CPLC version/date/source-ID `0101`/`6311`/`FF1C141A`; `./tools/package-empty-card-uf2` PASS; `./tools/fixture-path --verify` PASS (`81` pinned inputs). `git diff --check` passed for the CPLC files. No physical flash or GPPro check.
+- Result: Prepared empty-card ARM max-crypto image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`, 4,044,288 bytes, SHA-256 `3debd17e37e70ed48dea7cec1c31b16f8b6bec8df9382a5dcfc52166b22e10fe`. Firmware UF2 size 1,947,136 bytes, SHA-256 `c78ea3770cd7f3b515409ac8adebf09a7af37c690066becee54b5be6de0ebfe8`. Current CPLC source ID `FF1C141A` marks a dirty source tree based on HEAD prefix `1c141a`; no exact clean-commit claim.
+- Decision: Keep REL-01 open only for ordinary-rebuild stability and authorized physical GPPro display acceptance. Image is ready for external testing; no physical flash was done.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
 
 
 ## 2026-11-07 Validate stack local ranges before access 11 minutes

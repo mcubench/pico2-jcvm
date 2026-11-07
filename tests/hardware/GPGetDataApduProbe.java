@@ -16,8 +16,21 @@ public final class GPGetDataApduProbe {
   private static final byte[] CARD_DATA =
       fromHex("6618731606072A864886FC6B01640B06092A864886FC6B040310");
   private static final byte[] CPLC_DATA = fromHex(
-      "9F7F2A096E23504A43630400016304000000000000096E6304096E6304" +
-      "096E630400000000096E630400000000");
+      "9F7F2A096E23504A43631101016311000000000000096E6311096E6311" +
+      "096E631100000000096E631100000000");
+
+  private static boolean matchesCplc(byte[] actual) {
+    if (actual.length != CPLC_DATA.length) return false;
+    // Compare all fixed CPLC fields through ICPersonalizationDate. The final
+    // four bytes are generated from the build's source commit: leading 00
+    // marks a clean tree, FF marks a dirty tree, and the remaining three
+    // bytes are a short prefix of the base commit hash.
+    for (int i = 0; i < 41; i++) {
+      if (actual[i] != CPLC_DATA[i]) return false;
+    }
+    int sourceState = actual[41] & 0xff;
+    return sourceState == 0x00 || sourceState == 0xff;
+  }
 
   private static byte[] fromHex(String text) {
     String compact = text.replaceAll("\\s", "");
@@ -232,14 +245,15 @@ public final class GPGetDataApduProbe {
       ResponseAPDU cplc = transmit(channel, "GET_DATA_CPLC",
           new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256));
       if (cplc.getSW() != 0x9000 ||
-          !Arrays.equals(cplc.getData(), CPLC_DATA)) {
+          !matchesCplc(cplc.getData())) {
         throw new IllegalStateException("unexpected CPLC response");
       }
+      System.out.println("CPLC:PERSONALIZATION_EQUIPMENT_ID " +
+          hex(Arrays.copyOfRange(cplc.getData(), 41, 45)));
       ResponseAPDU cplcValue = transmit(channel, "ISO_GET_DATA_CPLC_VALUE",
           new CommandAPDU(0x00, 0xCB, 0x9F, 0x7F, 256));
       if (cplcValue.getSW() != 0x9000 ||
-          !Arrays.equals(cplcValue.getData(),
-                         Arrays.copyOfRange(CPLC_DATA, 3, CPLC_DATA.length))) {
+          !matchesCplc(fromHex("9F7F2A" + hex(cplcValue.getData())))) {
         throw new IllegalStateException("unexpected ISO CPLC value");
       }
       byte[] expectedApplications = fromHex(
@@ -263,7 +277,7 @@ public final class GPGetDataApduProbe {
       transmitProtected(channel, session, "GET_DATA_CARD_RECOGNITION_AUTHENTICATED",
           new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256), CARD_DATA);
       transmitProtected(channel, session, "GET_DATA_CPLC_AUTHENTICATED",
-          new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256), CPLC_DATA);
+          new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256), cplc.getData());
       transmitProtected(channel, session, "GET_DATA_APPLICATIONS_AUTHENTICATED",
           new CommandAPDU(0x80, 0xCA, 0x2F, 0x00,
                           new byte[] {0x5c, 0x00}, 256),

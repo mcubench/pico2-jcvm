@@ -21,6 +21,13 @@ option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
 option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING
   "Bounded CDC DTR startup wait for diagnostic firmware builds (milliseconds)")
+set(CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID "0x00000000" CACHE STRING
+  "Eight-hex-digit CPLC source ID (00=clean, FF=dirty, six-digit commit prefix)")
+string(LENGTH "${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}" CHOUPI_CPLC_ID_LENGTH)
+if(NOT CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID MATCHES "^0x[0-9A-Fa-f]+$" OR
+   NOT CHOUPI_CPLC_ID_LENGTH EQUAL 10)
+  message(FATAL_ERROR "CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID must be 0x plus 8 hex digits")
+endif()
 if(NOT CHOUPI_DEBUG_SERIAL_WAIT_MS MATCHES "^(0|[1-9][0-9]*)$")
   message(FATAL_ERROR "CHOUPI_DEBUG_SERIAL_WAIT_MS must be an integer from 0 to 120000")
 endif()
@@ -195,6 +202,9 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   target_compile_definitions(pico2_choupi PRIVATE
     MBEDTLS_PLATFORM_MS_TIME_ALT
     MBEDTLS_PLATFORM_ZEROIZE_ALT)
+  set_source_files_properties(src/ccid_device.cpp PROPERTIES
+    COMPILE_DEFINITIONS
+      "CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID=${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}")
   set_source_files_properties(src/choupi_pico2.cpp PROPERTIES
     COMPILE_DEFINITIONS
       "CHOUPI_DEBUG_SERIAL_WAIT_MS=${CHOUPI_DEBUG_SERIAL_WAIT_MS}")

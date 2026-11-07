@@ -1,4 +1,35 @@
-# Current handoff — global-array reclamation stress complete — 2026-11-07 11:35 CET
+# Current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:45 CET
+
+REL-01 implementation is ready for commit. CPLC reports release `0101` (the
+requested firmware version 0.1.1), with all synthetic dates updated to 2026-11-07.
+Every wrapper firmware build generates a four-byte
+`ICPersonalizationEquipmentID`: `00` plus six commit hex digits for a clean
+tree, or `FF` plus six digits for a dirty tree. CMake rejects malformed IDs;
+the hardware probe validates the source marker and reports its four bytes.
+The CPLC unit suite passes 25/25. The GPPro hardware check remains pending.
+
+ARM max-crypto build passes, ends at `0x100ED9B0`, and leaves 75,344 bytes in
+the firmware region. RISC-V max-profile shared-core/smoke build passes. The
+empty-card external-testing UF2 is
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2` (4,044,288
+bytes; firmware payload is 1,947,136 bytes). Current source ID is `FF1C141A`,
+marking a dirty source tree based on HEAD prefix `1c141a`. No physical flash
+was done. Rebuild the ARM image after the REL-01 code commit to refresh that
+source prefix and package the final artifact.
+
+RV-20261106-11 transient global-array reclamation is committed as `7a77d943`
+and passes the 80-round
+VPCD stress test: 643/643 APDU checks and 20,817 reclaimed handles across 81
+batches. Remaining R11 coverage is reset behavior and the older global AID
+cache / package deletion lifetime audit; no physical test was performed. Stress
+log `artifacts/logs/global-array-gc-vpcd-20261107-final.log` (SHA-256
+`95007353b93ebcb39d7c08bf98cfcbfcc97134633434eb3cc0e5f90953b908ff`).
+
+Next: commit REL-01, refresh the ARM max-crypto empty-card artifact after that
+commit, then continue with the next priority from `todo.md`. Preserve other
+dirty changes; prior concurrent edits remain in the worktree.
+
+# Previous handoff — global-array reclamation stress complete — 2026-11-07 11:35 CET
 
 RV-20261106-11 transient global-array reclamation is committed as `7a77d943`
 and passes the 80-round

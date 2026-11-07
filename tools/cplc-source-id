@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+commit="$(git -C "${repo_root}" rev-parse --verify HEAD)"
+[[ "${commit}" =~ ^[0-9a-fA-F]{40,64}$ ]] || {
+  printf 'ERROR: cannot determine firmware source commit\n' >&2
+  exit 1
+}
+prefix="${commit:0:6}"
+prefix="${prefix^^}"
+status="$(git -C "${repo_root}" status --porcelain --untracked-files=normal --ignore-submodules=none)" || {
+  printf 'ERROR: cannot determine whether firmware source tree is dirty\n' >&2
+  exit 1
+}
+if [[ -n "${status}" ]]; then
+  # 0xFF explicitly marks that this image includes source not represented by
+  # HEAD; the following 24 bits retain a short prefix of the base commit.
+  printf '0xFF%s\n' "${prefix}"
+else
+  # A zero leading byte marks an image built from a clean committed tree.
+  printf '0x00%s\n' "${prefix}"
+fi

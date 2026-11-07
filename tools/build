@@ -56,6 +56,8 @@ printf 'BUILD:LOCK acquired arch=%s profile=%s\n' "${arch}" "${support_profile}"
 build_jobs="${PICO_BUILD_JOBS:-2}"
 [[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO_BUILD_JOBS must be a positive integer"
+cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
+printf 'BUILD:CPLC_SOURCE_ID value=%s\n' "${cplc_source_id}"
 build_pc_dir="${repo_root}/build/choupi-pc"
 support_dir="${repo_root}/build/javacard-support"
 generation_manifest="${build_pc_dir}/generation.sha256"
@@ -108,6 +110,7 @@ cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -DPICO_PLATFORM="${platform}" \
   -DPICO_FLASH_SIZE_BYTES=2097152 \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${cplc_source_id}" \
   -DCHOUPI_DEBUG_HEAP_GC="${debug_heap_gc}" \
   -DCHOUPI_DEBUG_PERSISTENT_GC="${debug_persistent_gc}" \
   -DCHOUPI_DEBUG_SERIAL_WAIT_MS="${debug_serial_wait_ms}" \
@@ -146,8 +149,9 @@ if [[ "${arch}" == arm ]]; then
 fi
 provenance_file="${build_dir}/build-provenance.txt"
 {
-  printf 'architecture=%s\nprofile=%s\nserial_wait_ms=%s\n' \
-    "${arch}" "${support_profile}" "${debug_serial_wait_ms}"
+  printf 'architecture=%s\nprofile=%s\nserial_wait_ms=%s\ncplc_source_id=%s\n' \
+    "${arch}" "${support_profile}" "${debug_serial_wait_ms}" \
+    "${cplc_source_id}"
   if [[ "${arch}" == arm ]]; then
     if (( debug_serial_wait_ms > 0 )); then
       printf 'mode=diagnostic\nimage=%s\n' \

@@ -19,6 +19,10 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
    live storage limits, reclaimable records, API results, and power-loss safety.
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
+5. Complete **REL-01 (P1)** hardware/GPPro acceptance: source now reports the
+   user-requested 0.1.1 release and tags each firmware build with its source
+   identity. The release field must never change automatically; see REL-01
+   below for encoding and the pending physical check.
 
 Physical availability is volatile. Most recent host check (2026-11-07
 03:51-03:53 CET): the authorized helper granted access to USB nodes
@@ -1266,6 +1270,20 @@ review.
   Build/flash/monitor, card reset, and a partial CSV alone do not close a pass.
 
 ## Deferred and conditional work
+
+### REL-01
+
+- [ ] **P1: Complete REL-01 hardware/GPPro acceptance.** Source implementation:
+  CPLC `OperatingSystemReleaseLevel` uses four hex digits encoded as major
+  nibble, minor nibble, update byte; the explicitly requested 0.1.1 is `0101`.
+  Ordinary builds must not change it. `tools/build` updates the four-byte
+  `ICPersonalizationEquipmentID` on each firmware build: leading `00` means a
+  clean tree, `FF` means dirty, followed by the first six hex digits of HEAD.
+  The dirty marker prevents the ID from implying that an uncommitted image is
+  exactly the named commit. The CPLC unit and hardware probe expectations are
+  aligned. Remaining acceptance: verify the value remains stable across
+  ordinary builds and use authorized hardware/GPPro `--info` to confirm the
+  release and source ID display.
 
 ### PROFILE-02
 
