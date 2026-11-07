@@ -23659,3 +23659,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 by determining how to discover persistent roots of unselected siblings and by adding same-package sibling-reference APDU coverage.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T010001Z.log`, SHA-256 `7a1578d28e3163aa0abc6f7fb9606b0444b3f3a1a93041b2904ee8b7d5e41701`.
+
+## 2026-11-07 Record retained-object DELETE APDU validation commit 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-retained-object-apdu-commit`
+- When: '2026-11-07 02:01 CET' - '2026-11-07 02:02 CET'
+- Change: Added the focused VPCD validation commit SHA to the active handoff.
+- Validation: No new tests; focused DELETE APDU validation passed immediately before the commit.
+- Result: VPCD validation and status record are committed as `d0698e85`.
+- Decision: Continue the CTX-01 persistent-root audit.
+- Commit: `d0698e85` — validation record; this SHA-resolution record is separate.
+- Artifacts/logs: See the preceding progress entry.

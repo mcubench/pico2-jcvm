@@ -1,4 +1,4 @@
-# Current handoff — applet DELETE retained-root scan — 2026-11-07 02:01 CET
+# Current handoff — applet DELETE retained-root scan — 2026-11-07 02:02 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
@@ -25,7 +25,7 @@ the slot is cleared, and the sibling applet remains usable. Log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T010001Z.log` (SHA-256
 `7a1578d28e3163aa0abc6f7fb9606b0444b3f3a1a93041b2904ee8b7d5e41701`). This
 still tests a cross-package retaining array; same-package sibling array APDU
-coverage is not complete.
+coverage is not complete. The validation record is committed as `d0698e85`.
 
 ARM and RISC-V builds pass after this correction. ARM image ends at
 `0x100d5358`, leaving 175,272 bytes in the reserved firmware region. No
