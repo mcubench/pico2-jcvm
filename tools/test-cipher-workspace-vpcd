@@ -19,4 +19,5 @@ flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${ti
   --package-id 56 --passes 2 \
   --apdu 800E000000 --expect-apdu-response 019000 \
   --resume-apdu 800F000000 --expect-resume-apdu-response 449000 \
+  --resume-apdu 8010000000 --expect-resume-apdu-response 019000 \
   --flash-copy "${flash_copy}" --log "${log_file}"

@@ -1,3 +1,29 @@
+# Current handoff — verify Cipher reinitialization after process restore — 2026-11-07 09:06 CET
+
+RV-20261106-08 now has an end-to-end two-process VPCD regression under the
+migrated `tests/fixtures/local/cipher_lifecycle_applet` source layout. The
+first process tests AES CBC and RSA no-padding update/abort/final. The resumed
+process verifies the old RSA Cipher returns `InvalidInit` (`449000`), then
+reinitializes that retained Cipher with its restored key and checks a 64-byte
+RSA no-padding known result (`019000`). `./tools/fixture-path --verify`
+passed (81 fixture files; JCAlgTest 1.8.4; 48 API CAPs). VPCD passed 7/7;
+log `artifacts/logs/cipher-workspace-vpcd-20261107T080444Z.log`, SHA-256
+`d2d17cdd8d7df374a180121025ea3b66e6757af8c2369ce281c74f3cd5010280`.
+
+The additional reinitialization probe and wrapper APDU are being committed
+with their progress entry. Earlier native implementation is `c7458354`; the
+first process-resume wrapper was included in concurrent commit `ab63e21b` and
+its attribution is documented in progress.md. Source inspection shows
+transient array data is cleared and only transient type/size/clear-event
+metadata is represented when a persistent object references it. The exact
+flash-record inventory has not yet been independently enumerated. No physical
+board was tested. Keep R08 open for exact persistent-record inspection and
+physical acceptance.
+
+Next: inspect serialized records produced by this regression and distinguish
+transient reference metadata from operational byte payloads; then continue the
+remaining prioritized implementation and acceptance work.
+
 # Current handoff — testing-data migration complete — 2026-11-07 08:32:21 CET
 
 User authorized full migration and final checks/commit.

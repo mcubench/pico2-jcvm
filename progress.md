@@ -24174,3 +24174,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Migration and checks complete; keep the two accepted host-test failures as separate todo.md follow-ups.
 - Commit: permission/continuity closeout follows migration commit `54174a489e648bd4495a1300122f909727bb7cb7`; final SHA reported to user.
 - Artifacts/logs: `build/testing-migration/test-fixtures-mode-final.log`; archived migration results remain under `artifacts/results/testing-data-migration-20261107/`.
+
+## 2026-11-07 Resolve fresh-restore wrapper commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-restore-sha`
+- When: '2026-11-07 07:21 CET' - '2026-11-07 09:06 CET'
+- Change: Attributed the two-process restore wrapper update, which was staged concurrently with the review reconciliation, to its committed SHA.
+- Validation: No new run; the preceding restore-test record captures the pass-6 VPCD run. This SHA resolution was delayed while the worktree underwent the user-requested test-fixture migration.
+- Result: The first fresh-process restore wrapper update is in `ab63e21be3a6e8e6259bd2c52f0ce91f63f761c2`.
+- Decision: Add a separate restored-Cipher reinitialization check before proceeding to flash-record inspection.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
+
+## 2026-11-07 Reinitialize Cipher after fresh emulator restore 15 minutes
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-restore-reinit`
+- When: '2026-11-07 08:51 CET' - '2026-11-07 09:06 CET'
+- Change: Extended the local Cipher lifecycle CAP to reinitialize the retained RSA Cipher with its restored persistent key after process restart, then check a full-width no-padding result. Extended the stable wrapper with this post-restore APDU. The applet source remains a test fixture and contains no algorithm implementation.
+- Validation: `./tools/fixture-path --verify` passed (`files=81`, `jcalgtest=1.8.4`, `api_caps=48`). `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` passed with `TEST:SUMMARY pass=7 fail=0`: transaction-abort AES/RSA checks returned `019000`, restored Cipher correctly returned `449000` before reinitialization, and reinitialized RSA returned `019000`. Scoped `git diff --check` passed. Firmware architecture builds were not rerun because only the local test applet and test wrapper changed; the preceding R08 record contains both passing target builds.
+- Result: The fresh emulator restore can safely reinitialize the persisted Cipher/key after native session state is reset. This uses a synthetic RSA exponent-one fixture to isolate block-buffer lifecycle; it does not validate RSA key security properties. No physical board or flash-record inventory was run. R08 remains open.
+- Decision: Keep the reinitialization regression; next enumerate the saved records and verify which transient-reference metadata is stored without operational bytes.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T080444Z.log`, SHA-256 `d2d17cdd8d7df374a180121025ea3b66e6757af8c2369ce281c74f3cd5010280`.

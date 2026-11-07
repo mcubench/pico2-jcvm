@@ -129,6 +129,24 @@ public final class CipherLifecycleProbe extends Applet {
     retainedRsaKey.setExponent(exponent, (short)0, (short)exponent.length);
   }
 
+  private static byte testRsaCipherAfterRestore() {
+    try {
+      retainedRsaCipher.init(retainedRsaKey, Cipher.MODE_DECRYPT);
+      byte[] input = new byte[64];
+      byte[] output = new byte[64];
+      for (short i = 0; i < 64; i++) input[i] = (byte)i;
+      short length = retainedRsaCipher.doFinal(input, (short)0, (short)64,
+                                                output, (short)0);
+      if (length != 64) return (byte)0x77;
+      for (short i = 0; i < 64; i++) {
+        if (output[i] != input[i]) return (byte)0x78;
+      }
+      return 1;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
   public static void install(byte[] data, short offset, byte length) {
     new CipherLifecycleProbe();
   }
@@ -167,6 +185,8 @@ public final class CipherLifecycleProbe extends Applet {
       } catch (Exception exception) {
         result = 0x6f;
       }
+    } else if (instruction == (byte)0x10) {
+      result = testRsaCipherAfterRestore();
     } else if (instruction == (byte)0x09) {
       try {
         AESKey temporaryKey = (AESKey)KeyBuilder.buildKey(
