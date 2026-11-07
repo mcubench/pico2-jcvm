@@ -23792,3 +23792,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue auditing root-complete reclamation and applet DELETE behavior.
 - Commit: `d8d9cef0` — TODO/QKB/handoff; this SHA-resolution record is separate.
 - Artifacts/logs: Array alias evidence is listed in the preceding progress entry.
+
+## 2026-11-07 Check physical PCSC availability for DELETE fixture 2 minutes
+
+- Step/experiment: `ctx-20261107-persistent-alias-physical-reader-availability`
+- When: '2026-11-07 03:24 CET' - '2026-11-07 03:26 CET'
+- Change: Refreshed authorized Pico USB access and checked whether a physical PC/SC reader was available for the new CAP-level DELETE cases.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to three nodes (`001/054`, `001/055`, `001/056`). `timeout 12s pcsc_scan -r` produced no reader listing. No physical CAP test could be run.
+- Result: Physical DELETE acceptance remains pending because PC/SC does not currently expose a Pico reader, despite USB nodes being present.
+- Decision: Continue emulator-side work; retry physical coverage after the reader reappears in PC/SC.
+- Commit: pending.
+- Artifacts/logs: No capture; exact command output was the helper's `PCSC:ACCESS_GRANTED count=3` line and empty bounded scan output.

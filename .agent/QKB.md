@@ -7703,9 +7703,10 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   service `Object[]`, verifies DELETE is rejected, clears the exact array slot,
   retries DELETE successfully, and verifies the sibling still calls the
   service. Focused VPCD passes 2/2; full `symm_crypto` SIO VPCD passes 35/35.
-- **Builds:** ARM and RISC-V wrappers pass. No physical test was run: the
-  authorized reader helper found three USB nodes, but bounded `pcsc_scan -r`
-  produced no reader listing before timeout.
+- **Builds:** ARM and RISC-V wrappers pass. No physical test was run: on
+  2026-11-07, the authorized reader helper granted access to three USB nodes
+  (`001/054`, `001/055`, `001/056`), but `timeout 12s pcsc_scan -r` produced no
+  reader listing. The fixture regression remains emulator-only.
 - **Same-package extension:** Sibling applets share a handle table and their
   arrays are not tagged as foreign-package edges. The follow-up scan checks
   volatile arrays in the target package, excluding arrays owned by the target

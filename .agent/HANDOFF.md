@@ -34,6 +34,11 @@ is tracked in CTX-01/TODO and QKB; no runtime change has been made.
 The follow-up note is committed as `d8d9cef0`; its progress SHA resolution is
 recorded in `progress.md`.
 
+Physical check on 2026-11-07: `sudo -n /usr/local/sbin/pico2-pcsc-reader`
+granted access to USB nodes `001/054`, `001/055`, and `001/056`, but bounded
+`pcsc_scan -r` returned no reader listing within 12 seconds. No physical CAP
+test was possible; retry only after PC/SC publishes a Pico reader.
+
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 
 A focused same-package card-manager APDU regression exercised persistent alias
