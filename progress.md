@@ -24623,3 +24623,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the physical GPPro acceptance open; continue with R52 diagnosis.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Rebuild REL-01 max_crypto external image 29 minutes
+
+- Step/experiment: `REL-01-max-crypto-current-empty-card-rebuild`
+- When: '2026-11-07 15:18 CET' - '2026-11-07 15:47 CET'
+- Change: Rebuilt the current ARM max_crypto firmware and packaged it as an empty-card UF2 for Windows/external testing. REL-01 source code was already committed (`971272f3`); this run does not change its implementation. The artifact carries the dirty-tree CPLC source marker `FFF9BE81`.
+- Validation: `./tools/build arm --profile max_crypto` PASS (147/150 capabilities; firmware end `0x100EDEA4`, 74,076 bytes remaining). `./tools/build riscv --profile max_crypto` PASS for the repository's RISC-V VM-core/smoke target. `./build/tests/unit/gp-get-data/gp_get_data_test` PASS (25/25). `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFF9BE81.uf2` PASS (3,807 firmware blocks, 4,096 erased storage blocks). Local picotool inspection identifies RP2350 ARM Secure. No physical board was flashed and no GPPro hardware check was done.
+- Result: Empty-card image is 4,046,848 bytes; SHA-256 `4cf059a39a26abaf94d8776b6f0d5fa1442a6eb0a678025bf020f0e03037ee9a`. CPLC source ID is `FFF9BE81`; the configured release remains 0.1.1 (`0101`). This build includes the dirty R52 context implementation; its focused VPCD transient test still fails when successful CLEAR_ON_RESET int-array allocation is exercised, so the image is available for external testing but is not a clean release candidate.
+- Decision: Deliver the named UF2 for external testing with the worktree and R52 limitation disclosed. Keep REL-01 hardware/GPPro acceptance open until a physical reader is available. Resume R52 diagnosis next.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFF9BE81.uf2` (ignored by Git); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.

@@ -1,3 +1,38 @@
+# Current handoff — REL-01 rebuild / max_crypto external image — 2026-11-07 15:47 CET
+
+REL-01 CPLC source behavior is already committed as `971272f3`; the release
+field is 0.1.1 (`0101`) and each build records a clean/dirty source identity.
+This run revalidated the CPLC GET DATA unit suite (25/25), rebuilt ARM
+max_crypto (147/150 capabilities; firmware end `0x100EDEA4`, 74,076 bytes
+remaining), and passed the repository RISC-V max_crypto VM-core/smoke build.
+No physical board was flashed and no GPPro hardware verification was possible
+or attempted in this run, so the remaining REL-01 hardware acceptance is open.
+
+Fresh ARM max_crypto empty-card UF2 for external testing:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFF9BE81.uf2`
+(4,046,848 bytes; SHA-256
+`4cf059a39a26abaf94d8776b6f0d5fa1442a6eb0a678025bf020f0e03037ee9a`). Local
+picotool inspection identifies RP2350 ARM Secure. The package contains 3,807
+firmware blocks and 4,096 erased storage blocks, with no applet preinstalled.
+The CPLC source ID is `FFF9BE81` (dirty marker plus HEAD prefix `F9BE81`); the
+release is `0101`. This is built from the dirty worktree and includes the
+unfinished R52 transient-context changes; it is an external test image, not a
+clean release candidate.
+
+R52 (`RV-20261106-52`) remains open. The selected-context guard rejects all
+five CLEAR_ON_DESELECT array types in the focused path, but the VPCD case
+returns 6F00 when it then successfully allocates a CLEAR_ON_RESET int array.
+An isolated test without that successful int-array allocation passes. Exact
+root cause is not yet confirmed; preserve the current fixture and production
+changes and continue diagnosis. Latest logs before this rebuild are
+`artifacts/logs/sio-cross-aid-vpcd-20261107T143654Z.log` and
+`artifacts/logs/sio-cross-aid-vpcd-20261107T143258Z.log`.
+
+Next: continue R52 diagnosis without disturbing unrelated dirty worktree
+changes. On completion, rebuild both architectures and repackage the external
+image. For REL-01 hardware acceptance, refresh the authorized reader helper and
+run GPPro `--info` when a physical Pico reader is available.
+
 # Current handoff — REL-01 offline acceptance and max_crypto external image — 2026-11-07 14:51 CET
 
 REL-01 source implementation remains committed as `971272f3`: the CPLC release
