@@ -1,11 +1,12 @@
-# Current handoff — same-package applet DELETE array guard — 2026-11-07 01:05 CET
+# Current handoff — same-package applet DELETE array guard — 2026-11-07 01:09 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
 by scanning the target package's shared heap. Arrays owned by the target applet
 are excluded from the local scan so its own object graph does not block its
 removal. Native unit coverage verifies the target-owned case, sibling rejection,
-and slot-clear release. The focused cross-package DELETE APDU regression still
+and slot-clear release. Commit `cc7a8b7d` contains the implementation, test,
+and progress record. The focused cross-package DELETE APDU regression still
 passes; full `symm_crypto` cross-AID VPCD passes 35/35 after this change.
 
 ARM and RISC-V builds pass. ARM image ends at `0x100d525c` with 175,524 bytes

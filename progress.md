@@ -23571,3 +23571,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open and audit persistent/static roots; add a same-package card-manager DELETE APDU fixture before treating the native unit case as end-to-end lifecycle acceptance.
 - Commit: pending.
 - Artifacts/logs: Full VPCD `artifacts/logs/sio-cross-aid-vpcd-20261107T000029Z.log` SHA-256 `ef75708c9d200aa09107912c03ad3029738dd113ac9f0ccb422117bbd83645bd`; RMI registry unit output emitted `same_package_sibling_array_delete_guard=1`.
+
+## 2026-11-07 Record same-package applet DELETE guard commit 4 minutes
+
+- Step/experiment: `ctx-20261107-same-package-instance-array-root-commit`
+- When: '2026-11-07 01:05 CET' - '2026-11-07 01:09 CET'
+- Change: Recorded the validated same-package sibling-array DELETE guard commit in the active handoff and resolved the implementation record's SHA.
+- Validation: No new tests; `./tools/test-rmi-registry`, ARM/RISC-V builds, and full `symm_crypto` cross-AID VPCD 35/35 passed in the preceding step. Cached diff whitespace check passed before commit.
+- Result: The same-package array guard and its coverage are committed as `cc7a8b7d`.
+- Decision: Continue CTX-01 by tracing persistent object fields and package static reference roots; retain the scope limits in the handoff.
+- Commit: `cc7a8b7d` — implementation/test/progress; this commit-resolution record follows separately.
+- Artifacts/logs: See the prior progress record for VPCD log path/hash and native test marker.
