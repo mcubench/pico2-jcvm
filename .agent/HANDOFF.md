@@ -1,4 +1,4 @@
-# Current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:48 CET
+# Current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET
 
 REL-01 implementation is committed. CPLC reports release `0101` (the
 requested firmware version 0.1.1), with all synthetic dates updated to 2026-11-07.
@@ -26,9 +26,9 @@ cache / package deletion lifetime audit; no physical test was performed. Stress
 log `artifacts/logs/global-array-gc-vpcd-20261107-final.log` (SHA-256
 `95007353b93ebcb39d7c08bf98cfcbfcc97134633434eb3cc0e5f90953b908ff`).
 
-Next: finish the REL-01 SHA record, then continue with the next priority from
-`todo.md`. Preserve other dirty changes; prior concurrent edits remain in the
-worktree.
+Next: continue with the next priority from `todo.md`. Physical GPPro display
+acceptance for REL-01 remains pending. Preserve other dirty changes; prior
+concurrent edits remain in the worktree.
 
 # Previous handoff — global-array reclamation stress complete — 2026-11-07 11:35 CET
 

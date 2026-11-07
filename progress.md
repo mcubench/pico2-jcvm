@@ -24032,8 +24032,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Confirmed commit `971272f3` contains CPLC version/source-ID implementation and tests. Rebuilt ARM and RISC-V max profile after the commit; re-packaged empty-card ARM image and inspected CPLC bytes from the UF2.
 - Result: Final artifact hash is `f9185dd5a32c4525bb1fabf5843c920d07a2371e6faf82ca10d6a69970f88a5a`, size 4,044,288 bytes, source ID `FF971272`.
 - Decision: Deliver the empty-card image for external testing. Physical GPPro visibility acceptance remains open.
-- Commit: `<resolve in next progress entry>`
+- Commit: `f1c394d2`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`.
+
+## 2026-11-07 Record REL-01 validation commit SHA 1 minute
+
+- Step/experiment: `REL-01-max-crypto-image-sha`
+- When: '2026-11-07 11:48 CET' - '2026-11-07 11:49 CET'
+- Change: Recorded the validation-record commit SHA.
+- Validation: Confirmed `f1c394d2` contains only progress and handoff updates for the validated max-crypto firmware artifact.
+- Result: REL-01 implementation is `971272f3`; build and artifact record is `f1c394d2`.
+- Decision: Continue with the next priority from `todo.md`; physical GPPro display acceptance for REL-01 remains pending.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
 
 
 ## 2026-11-07 Validate stack local ranges before access 11 minutes
