@@ -1065,14 +1065,14 @@ def main() -> int:
                 )
                 if response[-2:] != b"\x69\x85":
                     raise RuntimeError(
-                        "DELETE with unmaterialized static alias returned "
+                        "DELETE with unmaterialized instance alias returned "
                         f"{response[-2:].hex().upper()}, expected 6985"
                     )
                 print("TEST:PASS unselected sibling instance alias blocks applet "
                       "DELETE before either applet has been selected")
                 response = vpcd.exchange(
                     connection, select_sibling,
-                    "SELECT sibling to clear package-static alias",
+                      "SELECT sibling to clear persistent instance alias",
                 )
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError("sibling SELECT after rejected DELETE failed")
@@ -1086,19 +1086,91 @@ def main() -> int:
                         f"{response.hex().upper()}, expected 6A759000"
                     )
                 response = vpcd.exchange(
-                    connection, bytes.fromhex("00A4040000"),
-                    "SELECT ISD before retrying static-alias DELETE",
+                    connection, select_target,
+                    "SELECT target to prepare sibling persistent array alias",
                 )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("target SELECT before array alias failed")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8042000000"),
+                    "persist target object for sibling array alias",
+                )
+                if response != bytes.fromhex("6A729000"):
+                    raise RuntimeError("target object setup for array alias failed")
+                response = vpcd.exchange(
+                    connection, select_sibling,
+                    "SELECT sibling to create persistent array alias",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("sibling SELECT before array alias failed")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8046000000"),
+                    "store target reference in sibling persistent array",
+                )
+                if response != bytes.fromhex("6A769000"):
+                    raise RuntimeError(
+                        "persistent array alias setup returned "
+                        f"{response.hex().upper()}, expected 6A769000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before cold persistent-array alias check",
+                )
+                process, connection = restart_vpcd_after_disconnect(
+                    connection, process, listener, command, emulator_env,
+                    log_path, "unmaterialized persistent-array alias restart",
+                )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD after persistent-array alias restart",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("SELECT ISD after array restart failed")
                 delete_scp = vpcd.Scp03(connection)
                 delete_scp.authenticate()
                 response = vpcd.delete_object(
                     delete_scp, CLIENT_APPLET, False,
-                    "DELETE target after clearing sibling instance alias",
+                    "DELETE target retained in unmaterialized sibling array",
+                    expected_statuses=(0x6985,),
+                )
+                if response[-2:] != b"\x69\x85":
+                    raise RuntimeError(
+                        "DELETE with sibling array alias returned "
+                        f"{response[-2:].hex().upper()}, expected 6985"
+                    )
+                print("TEST:PASS unselected sibling persistent array alias blocks "
+                      "applet DELETE after emulator restart")
+                response = vpcd.exchange(
+                    connection, select_sibling,
+                    "SELECT sibling to clear persistent array alias",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("sibling SELECT to clear array failed")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8047000000"),
+                    "clear sibling persistent array alias",
+                )
+                if response != bytes.fromhex("6A779000"):
+                    raise RuntimeError(
+                        "clearing sibling persistent array returned "
+                        f"{response.hex().upper()}, expected 6A779000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before retrying persistent-array DELETE",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError("SELECT ISD before array DELETE failed")
+                delete_scp = vpcd.Scp03(connection)
+                delete_scp.authenticate()
+                response = vpcd.delete_object(
+                    delete_scp, CLIENT_APPLET, False,
+                    "DELETE target after clearing sibling array alias",
                     expected_statuses=(0x9000,),
                 )
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError(
-                        "DELETE after clearing sibling instance alias returned "
+                        "DELETE after clearing sibling array alias returned "
                         f"{response[-2:].hex().upper()}, expected 9000"
                     )
                 response = vpcd.exchange(
@@ -1116,7 +1188,7 @@ def main() -> int:
                         "sibling check after DELETE returned "
                         f"{response.hex().upper()}, expected 6A6E9000"
                     )
-                print("TEST:PASS clearing sibling instance alias permits DELETE and "
+                print("TEST:PASS clearing sibling array alias permits DELETE and "
                       "leaves the sibling usable")
                 print("TEST:SUMMARY pass=2 fail=0")
                 return 0

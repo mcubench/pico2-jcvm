@@ -1,20 +1,28 @@
-# Current handoff — unselected sibling instance alias blocks DELETE — 2026-11-07 03:04 CET
+# Current handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
-The cold-start VPCD APDU test now exercises both persistent package-static and
-unselected sibling applet-instance roots. For the instance case, the fixture
-moves the target applet reference from a package static into the sibling's
-instance field, clears the static, restarts the emulator, and issues DELETE
-before selecting either client applet. DELETE returns `6985`; clearing the
-sibling field permits DELETE `9000`, and the surviving sibling remains usable.
-Focused VPCD passes 2/2. The full `symm_crypto` cross-AID suite also passes
-35/35 after the fixture change. Full-suite log:
+Cold-start VPCD now exercises persistent package-static aliases, a direct
+object reference in an unselected sibling applet's instance field, and a
+sibling-owned persistent `Object[]` containing the target object. The instance
+and array aliases each make DELETE return `6985` before either client applet is
+selected. Clearing the instance field or explicitly nulling the array element
+permits DELETE `9000`; the surviving sibling remains usable. Dropping the
+array field without nulling its element leaves the serialized alias present,
+and DELETE remains blocked. Focused runs pass 2/2. The full `symm_crypto`
+cross-AID suite passes 35/35. Full-suite log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T020718Z.log`, SHA-256
-`aecca8167aaf44ddd64c08ff6a92a19d4d76893557dee0862720684eb87b4d6c`. Focused log:
+`aecca8167aaf44ddd64c08ff6a92a19d4d76893557dee0862720684eb87b4d6c`. Final
+full-suite log after the array case:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T021701Z.log`, SHA-256
+`874e6d6b8e60da3a8542c4193988f19cf3ea8092b07044b1aed8b6e2072f1108`. Focused
+array log:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`, SHA-256
+`15b1aebe5c66f13a89494450c33d2bb674bac6a09ce629b87b76bccfb53bd423`. Focused
+object log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256
 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
 No physical device was accessed; no firmware implementation changed. The
-fixture, TODO, QKB and continuity update are committed as `07979923`, with SHA
-resolution in `0f9d4ffc`. Preserve unrelated worktree changes.
+array-coverage fixture and documentation updates are pending commit. Preserve
+unrelated worktree changes.
 
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 

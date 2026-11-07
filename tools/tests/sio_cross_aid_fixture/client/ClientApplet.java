@@ -20,6 +20,7 @@ public final class ClientApplet extends Applet {
   private static Object[] retainedGlobalStatic;
   private static Object retainedPersistentAlias;
   private Object retainedSiblingAlias;
+  private Object[] retainedSiblingArrayAlias;
   private Object[] retainedGlobalInstance;
 
   private ClientApplet() {
@@ -246,6 +247,25 @@ public final class ClientApplet extends Applet {
       retainedSiblingAlias = null;
       buffer[0] = (byte) 0x6A;
       buffer[1] = (byte) 0x75;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
+    if (buffer[1] == 0x46) {
+      retainedSiblingArrayAlias = new Object[1];
+      retainedSiblingArrayAlias[0] = retainedPersistentAlias;
+      retainedPersistentAlias = null;
+      buffer[0] = (byte) 0x6A;
+      buffer[1] = (byte) 0x76;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
+    if (buffer[1] == 0x47) {
+      if (retainedSiblingArrayAlias != null) {
+        retainedSiblingArrayAlias[0] = null;
+      }
+      retainedSiblingArrayAlias = null;
+      buffer[0] = (byte) 0x6A;
+      buffer[1] = (byte) 0x77;
       apdu.setOutgoingAndSend((short) 0, (short) 2);
       return;
     }

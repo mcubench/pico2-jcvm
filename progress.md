@@ -23748,3 +23748,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The fixture change is integrated; proceed with remaining CTX-01 lifecycle work.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T020718Z.log`, SHA-256 `aecca8167aaf44ddd64c08ff6a92a19d4d76893557dee0862720684eb87b4d6c`.
+
+## 2026-11-07 Test persistent sibling array aliases on cold DELETE 9 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-sibling-array-alias-apdu`
+- When: '2026-11-07 03:11 CET' - '2026-11-07 03:20 CET'
+- Change: Extended the opt-in cold-start DELETE fixture to persist the target applet object in a sibling-owned `Object[]`. The APDU test restarts with the sibling unselected, verifies DELETE fails closed, clears the actual array element, retries DELETE, and verifies the sibling remains usable. Updated TODO, QKB and handoff. No firmware implementation changed.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. Focused run passed 2/2; full `symm_crypto` SIO cross-AID VPCD passed 35/35. Initially dropping the array field without clearing element zero left the serialized alias detectable and DELETE returned `6985`; updated the fixture to set element zero to null, after which DELETE returned `9000`. Fixture converter reports zero errors with its existing int-support warning; compilation reports the existing deprecated API note. No physical device was accessed.
+- Result: Cold-start persistent alias protection now has APDU evidence for package statics, sibling object instance fields, and sibling persistent array elements. A non-null persisted array slot continues to block DELETE even after its containing field is dropped.
+- Decision: Keep CTX-01 open for broader applet-deletion semantics; audit stale persistent aliases and object reclamation policy separately.
+- Commit: pending.
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`, SHA-256 `15b1aebe5c66f13a89494450c33d2bb674bac6a09ce629b87b76bccfb53bd423`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261107T021701Z.log`, SHA-256 `874e6d6b8e60da3a8542c4193988f19cf3ea8092b07044b1aed8b6e2072f1108`.

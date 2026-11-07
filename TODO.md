@@ -868,7 +868,9 @@ review.
   the target reference in an unselected sibling's instance field, restarts the
   emulator, verifies DELETE returns `6985` before selecting either client
   applet, clears the field, then verifies DELETE returns `9000` and the sibling
-  remains usable.
+  remains usable. A second cold-start case stores the target in a sibling-owned
+  persistent `Object[]`; DELETE remains blocked until the array element itself
+  is set to null, after which DELETE succeeds and the sibling remains usable.
 
 ### CTX-02
 
