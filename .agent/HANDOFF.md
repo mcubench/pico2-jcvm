@@ -11,8 +11,9 @@ Focused VPCD passes 2/2. Log:
 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
 The preceding package-static case and full `symm_crypto` VPCD suite passed
 35/35. No physical device was accessed; no firmware implementation changed.
-The fixture, TODO, QKB and continuity update are committed as `<pending>`; add
-the resulting SHA to the progress record. Preserve unrelated worktree changes.
+The fixture, TODO, QKB and continuity update are committed as `07979923`; its
+progress SHA-resolution record follows separately. Preserve unrelated worktree
+changes.
 
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 

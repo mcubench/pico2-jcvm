@@ -23726,3 +23726,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open for broader Java Card deletion semantics; continue with the remaining lifecycle audit and regressions.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
+
+## 2026-11-07 Record sibling-alias regression commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-sibling-instance-alias-apdu-commit`
+- When: '2026-11-07 03:05 CET' - '2026-11-07 03:06 CET'
+- Change: Recorded the focused sibling-instance alias regression commit SHA in the handoff and progress history.
+- Validation: No new run; focused cold-start VPCD passed 2/2 immediately before the implementation/test/status commit.
+- Result: The regression and its documentation are committed as `07979923`.
+- Decision: Continue CTX-01 lifecycle coverage and keep broader DELETE semantics open.
+- Commit: `07979923` — regression/test/status; this SHA-resolution record is separate.
+- Artifacts/logs: Focused VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
