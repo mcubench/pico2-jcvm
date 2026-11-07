@@ -23878,8 +23878,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Through the required escalated host path, `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to nodes `001/054`-`001/056`; `lsusb` identified three runtime `2e8a:0009 Pico2 Pico2 JCVM CCID` devices; `timeout 8s pcsc_scan -r` showed no readers. Escalated `systemctl` confirmed `pcscd.service` active. `journalctl -u pcscd.service --since '5 minutes ago' --no-pager` returned no visible entries. No APDU or flash command was attempted.
 - Result: Devices are in runtime USB mode and attached to the VM, but PC/SC has not published a reader; board serials remain unrefreshed and physical applet tests cannot run.
 - Decision: Continue offline; retry physical testing when PC/SC exposes a Pico reader. Driver-level cause remains unknown.
-- Commit: pending.
+- Commit: `e1639b97`.
 - Artifacts/logs: No log file. Outputs were `PCSC:ACCESS_GRANTED count=3`, three `2e8a:0009` lines, active pcscd status, and an empty bounded reader scan.
+
+## 2026-11-07 Record USB/PCSC diagnostic commit resolution 1 minute
+
+- Step/experiment: `persist-01-20261107-refresh-usb-pcsc-state-commit`
+- When: '2026-11-07 03:53 CET' - '2026-11-07 03:54 CET'
+- Change: Recorded the USB/PC/SC diagnostic commit SHA in progress and handoff.
+- Validation: No further hardware command; this is a SHA-resolution record.
+- Result: Current USB mode and PC/SC publication status are committed as `e1639b97`.
+- Decision: Continue offline until a Pico PC/SC reader appears.
+- Commit: `e1639b97` — hardware-state record; this SHA-resolution record is separate.
+- Artifacts/logs: No file logs; relevant command output is summarized above.
 
 ## 2026-11-07 Record RP2350 reclaimer cut-model commit resolution 1 minute
 

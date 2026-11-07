@@ -52,6 +52,8 @@ Latest USB/PC/SC refresh at 2026-11-07 03:51-03:53 CET: three runtime
 APDU/reclaimer test can run in this state. The driver-level reason is unknown;
 journal entries were not visible. Keep all prior source and review worktree
 changes unstaged.
+This diagnostic record is committed as `e1639b97`; its progress SHA resolution
+follows separately.
 
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
