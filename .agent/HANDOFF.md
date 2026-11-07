@@ -24,8 +24,8 @@ coverage, and Java Card access-control semantics beyond class assignability.
 The review source also cites access checks; this change only establishes
 receiver-class compatibility. Next: add the focused negative runtime test or
 advance another independently reproducible P1 while keeping R06 acceptance
-open. Implementation/progress commit SHA will be recorded in the next progress
-entry.
+open. Implementation commit is `f0fc469b`; its SHA-resolution record follows
+in `progress.md`.
 
 # Current handoff — persistent field cache remains canonical on write failure — 2026-11-07 04:44 CET
 

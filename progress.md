@@ -24045,3 +24045,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: RV-20261106-06 remains open for negative unrelated same-layout receiver coverage, imported/inherited/API-specific cases, and field access-control semantics beyond assignability. Do not claim the full finding closed.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261107T040241Z.log`, SHA-256 `c93d49f54d982f152a197c3889e9f762853189667c021e737381e91909ccd796`.
+
+## 2026-11-07 Resolve field receiver commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-field-receiver-assignability-sha`
+- When: '2026-11-07 05:06 CET' - '2026-11-07 05:07 CET'
+- Change: Recorded the field receiver assignability implementation commit in this progress log and session handoff.
+- Validation: No new build or test; see the preceding implementation record.
+- Result: The native receiver-class guard is committed as `f0fc469b`.
+- Decision: Continue P1 fixes; retain RV-20261106-06 as open until negative CAP and access-control cases are covered.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
