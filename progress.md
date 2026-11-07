@@ -24711,3 +24711,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: REL-01 stability and offline checks are verified; keep its hardware acceptance open until a reader is enumerated. The image is ready for external testing with dirty-tree provenance explicit.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBB1B86.uf2` (SHA-256 above); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-07 Resolve REL-01 refresh record commit SHA 1 minute
+
+- Step/experiment: `REL-01-current-tree-revalidation-commit-sha`
+- When: '2026-11-07 16:45 CET' - '2026-11-07 16:46 CET'
+- Change: Recorded the Git commit for the REL-01 revalidation, current empty-card image handoff, and scoped TODO update.
+- Validation: `git show --stat --oneline 40c0c06e` confirms the commit contains only `.agent/HANDOFF.md`, `TODO.md` (the five newly appended REL-01 evidence lines), and `progress.md`.
+- Result: The revalidation record is committed as `40c0c06e`; physical GPPro acceptance remains open because no PC/SC reader was published.
+- Decision: Provide the named max_crypto empty-card UF2 for external testing with its dirty-tree source marker disclosed.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
