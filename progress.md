@@ -24481,3 +24481,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Retry physical GPPro acceptance when a Pico reader is available; preserve unrelated worktree changes.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Give persistent objects independent identity 19 minutes
+
+- Step/experiment: `RV-20261106-22-durable-ordinary-object-identity`
+- When: '2026-11-07 12:46 CET' - '2026-11-07 13:05 CET'
+- Change: Persisted ordinary object bodies under unique identity tags, with aliases from every reference field. Migrated legacy direct-body objects under a distinct `FF FD` marker and recover their original body tag after transaction rollback; invalidate/reload cached fields before retry. Fixed deep-reference diagnostic logging to skip null handles before heap lookup. Added alias replacement/clear, graph, abort/retry, mutation, GC and fresh-restore regressions.
+- Validation: `./tools/test-persistent-transaction` PASS (`TEST:SUMMARY fail=0`); ASan/UBSan build and run PASS (`ASAN_OPTIONS=detect_leaks=0`); `./tools/build arm --profile max_crypto` PASS (firmware end `0x100EDDF8`, 74,248 bytes remaining); `./tools/build riscv --profile max_crypto` PASS. Scoped `git diff --check` pending before commit. Physical testing was not run: PC/SC publishes no Pico reader.
+- Result: Replacing or clearing a first reference no longer destroys an object still referenced elsewhere. Sibling/diamond/cyclic graphs restore identity; migrated objects survive abort and retry, aliases observe shared mutation, and GC keeps live aliases while reclaiming an unreachable instance. Expected injected write-failure tests still emit their controlled persistence exception diagnostics.
+- Decision: Close R22 offline acceptance. Next commit this isolated implementation, then rebuild/package the max-crypto empty-card ARM image from the committed revision. Do not claim physical acceptance.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Native unit output was not archived; generated builds are under `build/`.

@@ -7788,3 +7788,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   jcvmarray allocation now configures but exposes an existing missing
   persistentWriteRollbackGeneration test dependency; vpcd-protocol fails
   its partial-header send check. Those semantic failures were not patched.
+
+## Deep persistent object serialization must skip null handles in diagnostics — 2026-11-07
+
+- **Failure:** The nested-object persistence regression threw
+  `NullPointerException` while serializing an uninitialized reference field.
+  A diagnostic block in `setPersistentField_Reference()` called
+  `heap.getInstance(value)` whenever the tag was at least 19 bytes long, before
+  checking whether `value` was null. Shallow objects did not trigger the block.
+- **Viable fix:** Guard the diagnostic with `!value.isNullPointer()` before
+  inspecting the handle. This preserves null-field serialization and prevents
+  diagnostic code from changing runtime behavior.
+- **Validation:** The persistent transaction suite now passes its deep diamond
+  and cycle case, including a nested uninitialized field, as well as legacy
+  alias migration, abort/retry, alias mutation, and GC. ASan/UBSan and both
+  architecture builds pass.

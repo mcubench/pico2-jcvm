@@ -340,6 +340,269 @@ int main() {
   {
     persistent_transaction_test::instance_field_count = 1;
     jcvm::Heap heap(7);
+    const auto first_root = make_tag(0xe1);
+    const auto second_root = make_tag(0xe2);
+    const auto first_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    auto first = heap.getInstance(first_reference);
+    first->setField_Short(0, 0x11);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        first_root, first_reference, heap);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        second_root, first_reference, heap);
+
+    const auto first_slot = persistent_transaction_test::read(
+        first_root.value, first_root.len);
+    const auto second_slot = persistent_transaction_test::read(
+        second_root.value, second_root.len);
+    const auto alias_target = [](const std::vector<uint8_t> &record,
+                                 jcvm::fs::Tag &target) {
+      if (record.size() < 3 || record[0] != 0xfe || record[1] == 0 ||
+          record.size() != static_cast<std::size_t>(record[1]) + 2 ||
+          record[1] > sizeof(target.value)) {
+        return false;
+      }
+      target.len = record[1];
+      std::memcpy(target.value, record.data() + 2, target.len);
+      return true;
+    };
+    jcvm::fs::Tag first_target{};
+    jcvm::fs::Tag second_target{};
+    const bool shared_body =
+        alias_target(first_slot, first_target) &&
+        alias_target(second_slot, second_target) &&
+        first_target.len == second_target.len &&
+        std::memcmp(first_target.value, second_target.value,
+                    first_target.len) == 0;
+    expect(shared_body,
+           "ordinary_object_references_use_one_independent_identity_body");
+    const auto replacement_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    auto replacement = heap.getInstance(replacement_reference);
+    replacement->setField_Short(0, 0x22);
+    jcvm::FlashMemory_Handler::setPersistentField_Reference(
+        first_root, replacement_reference, heap);
+
+    bool replacement_preserves_original_alias = false;
+    jcvm::jref_t restored_first_reference;
+    jcvm::jref_t restored_second_reference;
+    try {
+      jcvm::Heap restored_heap(7);
+      restored_first_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              first_root, restored_heap);
+      restored_second_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              second_root, restored_heap);
+      replacement_preserves_original_alias =
+          restored_first_reference != restored_second_reference &&
+          restored_heap.getInstance(restored_first_reference)
+                  ->getField_Short(0) == 0x22 &&
+          restored_heap.getInstance(restored_second_reference)
+                  ->getField_Short(0) == 0x11;
+    } catch (jcvm::Exceptions exception) {
+      std::printf("OBJECT_ID_REPLACE_EXCEPTION id=%u\n",
+                  static_cast<unsigned>(exception));
+    } catch (...) {
+      std::printf("OBJECT_ID_REPLACE_EXCEPTION unknown\n");
+    }
+    expect(replacement_preserves_original_alias,
+           "replacing_first_reference_preserves_other_object_identity_after_restore");
+
+    bool clearing_first_preserves_second = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          first_root, jcvm::jref_t(), heap);
+      jcvm::Heap restored_heap(7);
+      const auto cleared =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              first_root, restored_heap);
+      const auto retained =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              second_root, restored_heap);
+      clearing_first_preserves_second =
+          cleared.isNullPointer() &&
+          restored_heap.getInstance(retained)->getField_Short(0) == 0x11;
+    } catch (jcvm::Exceptions exception) {
+      std::printf("OBJECT_ID_CLEAR_EXCEPTION id=%u\n",
+                  static_cast<unsigned>(exception));
+    } catch (...) {
+      std::printf("OBJECT_ID_CLEAR_EXCEPTION unknown\n");
+    }
+    expect(clearing_first_preserves_second,
+           "clearing_first_reference_keeps_object_reachable_through_other_alias");
+
+    persistent_transaction_test::instance_field_count = 0;
+  }
+
+  {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto legacy_root = make_tag(0xe4);
+    const auto second_root = make_tag(0xe5);
+    persistent_transaction_test::seed(
+        legacy_root.value, legacy_root.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_OBJECT), 2, 0, 3});
+    const auto legacy_field =
+        jcvm::FlashMemory_Handler::computeTag(legacy_root, 0);
+    persistent_transaction_test::seed(
+        legacy_field.value, legacy_field.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_SHORT), 0, 0x31});
+    const auto legacy_reference =
+        jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+            legacy_root, heap);
+
+    const bool began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    bool migration_written = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          second_root, legacy_reference, heap);
+      const auto migrated_root = persistent_transaction_test::read(
+          legacy_root.value, legacy_root.len);
+      const auto migrated_second = persistent_transaction_test::read(
+          second_root.value, second_root.len);
+      migration_written = migrated_root.size() > 0 &&
+                         migrated_root[0] == 0xfe &&
+                         migrated_second.size() > 0 &&
+                         migrated_second[0] == 0xfe;
+    } catch (...) {
+    }
+    const bool aborted =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const auto restored_legacy_record = persistent_transaction_test::read(
+        legacy_root.value, legacy_root.len);
+    const auto absent_second_record = persistent_transaction_test::read(
+        second_root.value, second_root.len);
+    bool retry_preserved_identity = false;
+    bool aliases_mutate_and_survive_gc = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          second_root, legacy_reference, heap);
+      const auto retried_root = persistent_transaction_test::read(
+          legacy_root.value, legacy_root.len);
+      const auto retried_second = persistent_transaction_test::read(
+          second_root.value, second_root.len);
+      jcvm::Heap restored_heap(7);
+      const auto first_alias =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              legacy_root, restored_heap);
+      const auto second_alias =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              second_root, restored_heap);
+      retry_preserved_identity =
+          retried_root.size() > 0 && retried_root[0] == 0xfe &&
+          retried_second.size() > 0 && retried_second[0] == 0xfe &&
+          first_alias == second_alias &&
+          restored_heap.getInstance(first_alias)->getField_Short(0) == 0x31;
+
+      const auto garbage_reference =
+          restored_heap.addInstance(jcvm::JC_Instance(restored_heap, 2, 3));
+      const auto summary = restored_heap.collectUnreachableFrom(
+          {first_alias, second_alias});
+      auto shared_instance = restored_heap.getInstance(first_alias);
+      shared_instance->setField_Short(0, 0x44);
+      bool garbage_handle_invalidated = false;
+      try {
+        (void)restored_heap.getInstance(garbage_reference);
+      } catch (jcvm::Exceptions) {
+        garbage_handle_invalidated = true;
+      }
+      aliases_mutate_and_survive_gc =
+          summary.complete && summary.instances_reclaimed == 1 &&
+          first_alias == second_alias &&
+          garbage_handle_invalidated &&
+          restored_heap.getInstance(second_alias)->getField_Short(0) == 0x44;
+
+      jcvm::Heap final_heap(7);
+      const auto final_first =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              legacy_root, final_heap);
+      const auto final_second =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              second_root, final_heap);
+      aliases_mutate_and_survive_gc = aliases_mutate_and_survive_gc &&
+          final_first == final_second &&
+          final_heap.getInstance(final_first)->getField_Short(0) == 0x44;
+    } catch (jcvm::Exceptions exception) {
+      std::printf("OBJECT_ID_ABORT_RETRY_EXCEPTION id=%u\n",
+                  static_cast<unsigned>(exception));
+    } catch (...) {
+      std::printf("OBJECT_ID_ABORT_RETRY_EXCEPTION unknown\n");
+    }
+    expect(began && migration_written && aborted &&
+               restored_legacy_record.size() == 4 &&
+               restored_legacy_record[0] ==
+                   static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_OBJECT) &&
+               absent_second_record.empty() && retry_preserved_identity,
+           "legacy_object_migration_abort_retries_without_splitting_identity");
+    expect(aliases_mutate_and_survive_gc,
+           "object_alias_mutation_and_gc_preserve_shared_identity");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+
+  {
+    persistent_transaction_test::instance_field_count = 2;
+    jcvm::Heap heap(7);
+    const auto root = make_tag(0xe3);
+    const auto a_ref = heap.addInstance(jcvm::JC_Instance(heap, 2, 4));
+    const auto b_ref = heap.addInstance(jcvm::JC_Instance(heap, 2, 4));
+    const auto c_ref = heap.addInstance(jcvm::JC_Instance(heap, 2, 4));
+    const auto d_ref = heap.addInstance(jcvm::JC_Instance(heap, 2, 4));
+    auto a = heap.getInstance(a_ref);
+    auto b = heap.getInstance(b_ref);
+    auto c = heap.getInstance(c_ref);
+    auto d = heap.getInstance(d_ref);
+    a->setField_Reference(0, b_ref);
+    a->setField_Reference(1, c_ref);
+    b->setField_Reference(0, d_ref);
+    c->setField_Reference(0, d_ref);
+    d->setField_Reference(0, a_ref);
+    bool graph_persisted = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(root, a_ref,
+                                                              heap);
+      graph_persisted = true;
+    } catch (jcvm::Exceptions exception) {
+      std::printf("OBJECT_ID_GRAPH_PERSIST_EXCEPTION id=%u\n",
+                  static_cast<unsigned>(exception));
+    } catch (...) {
+      std::printf("OBJECT_ID_GRAPH_PERSIST_EXCEPTION unknown\n");
+    }
+    bool graph_identity_restored = false;
+    try {
+      if (!graph_persisted) {
+        throw jcvm::Exceptions::SecurityException;
+      }
+      jcvm::Heap restored_heap(7);
+      const auto restored_a =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root, restored_heap);
+      const auto ra = restored_heap.getInstance(restored_a);
+      const auto rb_ref = ra->getField_Reference(0);
+      const auto rc_ref = ra->getField_Reference(1);
+      const auto rb = restored_heap.getInstance(rb_ref);
+      const auto rc = restored_heap.getInstance(rc_ref);
+      const auto rd_from_b = rb->getField_Reference(0);
+      const auto rd_from_c = rc->getField_Reference(0);
+      const auto rd = restored_heap.getInstance(rd_from_b);
+      graph_identity_restored =
+          rd_from_b == rd_from_c &&
+          rd->getField_Reference(0) == restored_a;
+    } catch (jcvm::Exceptions exception) {
+      std::printf("OBJECT_ID_GRAPH_EXCEPTION id=%u\n",
+                  static_cast<unsigned>(exception));
+    } catch (...) {
+      std::printf("OBJECT_ID_GRAPH_EXCEPTION unknown\n");
+    }
+    expect(graph_identity_restored,
+           "persistent_object_graph_preserves_diamond_sharing_and_cycle");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+
+  {
+    persistent_transaction_test::instance_field_count = 4;
+    jcvm::Heap heap(7);
     const auto instance_tag =
         jcvm::FlashMemory_Handler::getAppletInstanceTag(0x77, 2, 3);
     const auto field_tag =
@@ -654,7 +917,7 @@ int main() {
     seed(parent_tag.value, parent_tag.len,
          {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
           0, 1, 0xff, 0xff});
-    const auto malformed_edge = FlashMemory_Handler::computeTag(parent_tag, 0);
+    const auto malformed_edge = jcvm::FlashMemory_Handler::computeTag(parent_tag, 0);
     seed(malformed_edge.value, malformed_edge.len, {0xfe});
     const auto summary = heap.collectUnreachableFrom({parent_reference});
     expect(!summary.complete && summary.edge_load_failures == 1 &&
@@ -678,7 +941,7 @@ int main() {
     seed(parent_tag.value, parent_tag.len,
          {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
           0, 1, 0xff, 0xff});
-    const auto edge_tag = FlashMemory_Handler::computeTag(parent_tag, 0);
+    const auto edge_tag = jcvm::FlashMemory_Handler::computeTag(parent_tag, 0);
     seed(edge_tag.value, edge_tag.len, std::move(record));
     const auto summary = heap.collectUnreachableFrom({parent_reference});
     expect(!summary.complete && summary.edge_load_failures == 1 &&
@@ -691,7 +954,7 @@ int main() {
                           "truncated_serialized_array_alias_blocks_reclamation");
 
   const auto alias_parent_tag = make_tag(0x7b);
-  const auto alias_edge_tag = FlashMemory_Handler::computeTag(alias_parent_tag, 0);
+  const auto alias_edge_tag = jcvm::FlashMemory_Handler::computeTag(alias_parent_tag, 0);
   std::vector<uint8_t> cyclic_alias{0xfd, alias_edge_tag.len};
   cyclic_alias.insert(cyclic_alias.end(), alias_edge_tag.value,
                       alias_edge_tag.value + alias_edge_tag.len);
@@ -712,7 +975,7 @@ int main() {
     seed(parent_tag.value, parent_tag.len,
          {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
           0, 1, 0xff, 0xff});
-    const auto edge_tag = FlashMemory_Handler::computeTag(parent_tag, 0);
+    const auto edge_tag = jcvm::FlashMemory_Handler::computeTag(parent_tag, 0);
     std::vector<uint8_t> edge_alias{0xfd, middle_tag.len};
     edge_alias.insert(edge_alias.end(), middle_tag.value,
                       middle_tag.value + middle_tag.len);
@@ -775,7 +1038,7 @@ int main() {
     const auto unreachable_reference =
         heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
     const auto malformed_field =
-        FlashMemory_Handler::computeTag(instance_tag, 0);
+        jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
     seed(malformed_field.value, malformed_field.len, {0xfe});
     const auto summary = heap.collectUnreachableFrom({instance_reference});
     expect(!summary.complete && summary.edge_load_failures == 1 &&
@@ -824,7 +1087,7 @@ int main() {
     seed(target_tag.value, target_tag.len,
          {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
           0, 1, 0x42});
-    const auto element_tag = FlashMemory_Handler::computeTag(root_tag, 0);
+    const auto element_tag = jcvm::FlashMemory_Handler::computeTag(root_tag, 0);
     std::vector<uint8_t> array_alias{0xfd, target_tag.len};
     array_alias.insert(array_alias.end(), target_tag.value,
                        target_tag.value + target_tag.len);
@@ -1147,7 +1410,7 @@ int main() {
     serialized_root.len = sizeof(root_tag);
     std::memcpy(serialized_root.value, root_tag, sizeof(root_tag));
     const auto element_tag =
-        FlashMemory_Handler::computeTag(serialized_root, 0);
+        jcvm::FlashMemory_Handler::computeTag(serialized_root, 0);
     std::vector<uint8_t> element_alias{0xfd, sizeof(target_tag)};
     element_alias.insert(element_alias.end(), target_tag,
                          target_tag + sizeof(target_tag));
@@ -1204,7 +1467,7 @@ int main() {
     jcvm::fs::Tag serialized_root{};
     serialized_root.len = sizeof(root_tag);
     std::memcpy(serialized_root.value, root_tag, sizeof(root_tag));
-    const auto edge_tag = FlashMemory_Handler::computeTag(serialized_root, 0);
+    const auto edge_tag = jcvm::FlashMemory_Handler::computeTag(serialized_root, 0);
     seed(edge_tag.value, edge_tag.len, {0xfe});
     seed(orphan_tag, sizeof(orphan_tag), byte_record(0x19));
 

@@ -418,6 +418,74 @@ fs::Tag persistent_array_body_tag(const fs::Tag &field_tag,
   return body_tag;
 }
 
+// Ordinary object bodies need the same stable-identity treatment as arrays.
+// Keep the originating field tag as the owner-scoped prefix; 0xfffe is
+// reserved for object bodies while 0xffff identifies array bodies.
+fs::Tag persistent_object_body_tag(const fs::Tag &field_tag,
+                                   uint32_t identity) {
+  if (field_tag.len > TAG_MAX_LENGTH - 6) {
+    throw Exceptions::IOException;
+  }
+  fs::Tag body_tag = field_tag;
+  body_tag.value[body_tag.len++] = 0xff;
+  body_tag.value[body_tag.len++] = 0xfe;
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 24);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 16);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 8);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity);
+  return body_tag;
+}
+
+// Legacy objects promoted to an identity body retain a distinct marker so an
+// aborted migration can recover the original direct-record tag.
+fs::Tag persistent_migrated_object_body_tag(const fs::Tag &field_tag,
+                                            uint32_t identity) {
+  if (field_tag.len > TAG_MAX_LENGTH - 6) {
+    throw Exceptions::IOException;
+  }
+  fs::Tag body_tag = field_tag;
+  body_tag.value[body_tag.len++] = 0xff;
+  body_tag.value[body_tag.len++] = 0xfd;
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 24);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 16);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity >> 8);
+  body_tag.value[body_tag.len++] = static_cast<uint8_t>(identity);
+  return body_tag;
+}
+
+bool is_persistent_object_body_tag(const fs::Tag &tag) noexcept {
+  return tag.len >= 6 && tag.value[tag.len - 6] == 0xff &&
+         (tag.value[tag.len - 5] == 0xfe ||
+          tag.value[tag.len - 5] == 0xfd);
+}
+
+bool is_persistent_migrated_object_body_tag(const fs::Tag &tag) noexcept {
+  return tag.len >= 6 && tag.value[tag.len - 6] == 0xff &&
+         tag.value[tag.len - 5] == 0xfd;
+}
+
+fs::Tag persistent_object_origin_tag(const fs::Tag &body_tag) {
+  fs::Tag origin{};
+  origin.len = static_cast<uint8_t>(body_tag.len - 6);
+  std::memcpy(origin.value, body_tag.value, origin.len);
+  return origin;
+}
+
+bool is_valid_persistent_object_body(const fs::Tag &tag) noexcept {
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  return fs_read_inplace(tag.value, tag.len, &data, &length) == 0 &&
+         data != nullptr && length >= 4 &&
+         (data[0] == FieldType::FIELD_TYPE_OBJECT ||
+          data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT);
+}
+
+void validate_persistent_object_body(const fs::Tag &tag) {
+  if (!is_valid_persistent_object_body(tag)) {
+    throw Exceptions::SecurityException;
+  }
+}
+
 } // namespace
 
 extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
@@ -1277,7 +1345,7 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
                                                        const jref_t value,
                                                        Heap &heap) {
   static uint16_t deep_trace_count = 0;
-  if (tag.len >= 19 && deep_trace_count < 64) {
+  if (!value.isNullPointer() && tag.len >= 19 && deep_trace_count < 64) {
     if (value.isArray()) {
       auto array = heap.getArray(value);
       std::printf("CHOUPI:PERSIST_REF tag_len=%u ref=%04X array_type=%u size=%u\r\n",
@@ -1376,10 +1444,6 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
   }
 
   auto instance = heap.getInstance(value);
-  if (instance->hasPersistentTag()) {
-    write_persistent_object_alias(tag, instance->getPersistentTag());
-    return;
-  }
   FlashMemory_Handler::setPersistentField_Instance(tag, *instance, heap);
   } catch (Exceptions exception) {
     std::printf("CHOUPI:PERSIST_EXCEPTION id=%u tag_len=%u ref=%04X\r\n",
@@ -1472,8 +1536,71 @@ void FlashMemory_Handler::setPersistentField_Instance(
     write_persistent_object_alias(tag, instance.getPersistentTag());
     return;
   }
-  if (!instance.hasPersistentTag()) {
-    const_cast<JC_Instance &>(instance).setPersistentTag(tag);
+  JC_Instance &mutable_instance = const_cast<JC_Instance &>(instance);
+  if (mutable_instance.hasPersistentTag()) {
+    const fs::Tag existing_body = mutable_instance.getPersistentTag();
+    if (!is_persistent_object_body_tag(existing_body)) {
+      // Legacy object records used the first reference field as their body
+      // address. Move the body to an identity tag before rewriting that field.
+      (void)instance.getFields();
+      const fs::Tag stable_body = persistent_migrated_object_body_tag(
+          existing_body, allocate_persistent_array_identity());
+      mutable_instance.retargetPersistentTag(stable_body);
+      try {
+        FlashMemory_Handler::setPersistentField_Instance(stable_body,
+                                                         instance, heap);
+        write_persistent_object_alias(existing_body, stable_body);
+        if (!tags_equal(tag, existing_body)) {
+          write_persistent_object_alias(tag, stable_body);
+        }
+      } catch (...) {
+        mutable_instance.retargetPersistentTag(existing_body);
+        throw;
+      }
+      return;
+    }
+
+    if (fs_exists(existing_body.value, existing_body.len) == 0 &&
+        !tags_equal(tag, existing_body)) {
+      // A transaction rollback can remove an identity published by the
+      // aborted transaction while the live Java object remains reachable.
+      if (is_persistent_migrated_object_body_tag(existing_body)) {
+        const fs::Tag origin = persistent_object_origin_tag(existing_body);
+        if (fs_exists(origin.value, origin.len) != 0 &&
+            is_valid_persistent_object_body(origin)) {
+          // A migrated legacy body's original location survived rollback.
+          // Reattach there and reload the rollback image before retrying the
+          // migration, so aliases continue to resolve to the same object.
+          mutable_instance.retargetPersistentTag(origin);
+          mutable_instance.invalidatePersistentFields();
+          FlashMemory_Handler::setPersistentField_Instance(tag, instance,
+                                                           heap);
+          return;
+        }
+      }
+      mutable_instance.clearPersistentTag();
+    } else {
+      if (!tags_equal(tag, existing_body)) {
+        validate_persistent_object_body(existing_body);
+        write_persistent_object_alias(tag, existing_body);
+        return;
+      }
+    }
+  }
+
+  if (!mutable_instance.hasPersistentTag()) {
+    const fs::Tag stable_body = persistent_object_body_tag(
+        tag, allocate_persistent_array_identity());
+    mutable_instance.setPersistentTag(stable_body);
+    try {
+      FlashMemory_Handler::setPersistentField_Instance(stable_body, instance,
+                                                       heap);
+      write_persistent_object_alias(tag, stable_body);
+    } catch (...) {
+      mutable_instance.clearPersistentTag();
+      throw;
+    }
+    return;
   }
   PersistentObjectFrameGuard frame(&instance);
   if (!frame.isActive()) {
@@ -1497,7 +1624,6 @@ void FlashMemory_Handler::setPersistentField_Instance(
     fs::Tag field_tag = FlashMemory_Handler::computeTag(tag, idx);
 
     jc_field_t field = fields->at(idx);
-
     switch (field.type) {
     case FieldType::FIELD_TYPE_BYTE:
     case FieldType::FIELD_TYPE_BOOLEAN: {

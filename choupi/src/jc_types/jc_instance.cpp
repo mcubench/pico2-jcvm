@@ -345,27 +345,53 @@ void JC_Instance::setPersistentTag(const fs::Tag &tag) {
   if (this->has_persistent_tag) {
     return;
   }
-  this->persistent_tag_length = tag.len;
+  this->storePersistentTag(tag);
+}
+
+void JC_Instance::retargetPersistentTag(const fs::Tag &tag) {
+  this->storePersistentTag(tag);
+}
+
+void JC_Instance::clearPersistentTag() noexcept {
+  delete[] this->persistent_tag_overflow;
+  this->persistent_tag_overflow = nullptr;
+  this->persistent_tag_length = 0;
+  this->persistent_tag_compressed = false;
+  this->has_persistent_tag = false;
+  this->setPersistent(false);
+}
+
+void JC_Instance::invalidatePersistentFields() noexcept {
+  if (this->isPersistent()) {
+    this->persistent_fields_loaded = false;
+  }
+}
+
+void JC_Instance::storePersistentTag(const fs::Tag &tag) {
+  if (tag.len == 0 || tag.len > sizeof(tag.value)) {
+    throw Exceptions::SecurityException;
+  }
   const uint8_t root_length = persistent_tag_root_length(tag.value[0], tag.len);
-  this->persistent_tag_compressed = root_length != 0 &&
-                                    ((tag.len - root_length) & 1) == 0 &&
-                                    tag.len > root_length;
-  for (uint8_t idx = root_length; this->persistent_tag_compressed &&
-                                  idx < tag.len; idx += 2) {
+  bool compressed = root_length != 0 &&
+                    ((tag.len - root_length) & 1) == 0 &&
+                    tag.len > root_length;
+  for (uint8_t idx = root_length; compressed && idx < tag.len; idx += 2) {
     if (tag.value[idx] != tag.value[idx + 1]) {
-      this->persistent_tag_compressed = false;
+      compressed = false;
     }
   }
   const uint8_t stored_length =
-      this->persistent_tag_compressed
+      compressed
           ? static_cast<uint8_t>(root_length + (tag.len - root_length) / 2)
           : tag.len;
-  uint8_t *stored_tag = this->persistent_tag_value;
+  uint8_t inline_tag[sizeof(this->persistent_tag_value)]{};
+  std::unique_ptr<uint8_t[]> overflow_tag;
+  uint8_t *stored_tag = inline_tag;
   if (stored_length > sizeof(this->persistent_tag_value)) {
-    this->persistent_tag_overflow = new uint8_t[stored_length];
-    stored_tag = this->persistent_tag_overflow;
+    overflow_tag = std::make_unique<uint8_t[]>(stored_length);
+    stored_tag = overflow_tag.get();
   }
-  if (this->persistent_tag_compressed) {
+  if (compressed) {
     std::memcpy(stored_tag, tag.value, root_length);
     uint8_t output = root_length;
     for (uint8_t idx = root_length; idx < tag.len; idx += 2) {
@@ -374,7 +400,20 @@ void JC_Instance::setPersistentTag(const fs::Tag &tag) {
   } else {
     std::memcpy(stored_tag, tag.value, tag.len);
   }
+  delete[] this->persistent_tag_overflow;
+  this->persistent_tag_overflow = overflow_tag.release();
+  std::memcpy(this->persistent_tag_value, inline_tag,
+              sizeof(this->persistent_tag_value));
+  if (this->persistent_tag_overflow != nullptr) {
+    std::memcpy(this->persistent_tag_overflow, stored_tag, stored_length);
+  }
+  this->persistent_tag_length = tag.len;
+  this->persistent_tag_compressed = compressed;
   this->has_persistent_tag = true;
+  if (this->persistent_fields_loaded) {
+    this->persistent_rollback_generation =
+        FlashMemory_Handler::persistentWriteRollbackGeneration();
+  }
   this->setPersistent(true);
 }
 

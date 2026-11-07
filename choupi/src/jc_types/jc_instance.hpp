@@ -70,6 +70,7 @@ private:
   std::unique_ptr<std::vector<jc_field_t>> native_session_fields;
 
   fs::Tag recomputeOriginalTag() const noexcept;
+  void storePersistentTag(const fs::Tag &tag);
 
 public:
   JC_Instance(Heap &owner, const Package &package_owner,
@@ -93,6 +94,12 @@ public:
   bool hasPersistentTag() const noexcept;
   fs::Tag getPersistentTag() const noexcept;
   void setPersistentTag(const fs::Tag &tag);
+  /// Replace an existing durable identity after migrating its body.
+  void retargetPersistentTag(const fs::Tag &tag);
+  /// Drop a body identity that was not committed or was rolled back.
+  void clearPersistentTag() noexcept;
+  /// Force the next persistent field access to reload the current body.
+  void invalidatePersistentFields() noexcept;
   /// Set package ID
   void setPackageID(const jpackage_ID_t packageID) noexcept;
   /// Set class index

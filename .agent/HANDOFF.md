@@ -1,3 +1,27 @@
+# Current handoff — stable identity for persistent object graphs — 2026-11-07 13:05 CET
+
+RV-20261106-22 is implemented in the current worktree. Persistent ordinary
+objects now store bodies under unique tags independent of the first reference
+field; aliases point to those bodies. Legacy direct-body records migrate to a
+distinct identity marker (`FF FD`) so a transaction abort can recover the
+original root, invalidate stale cached fields, reload the restored values, and
+retry without splitting aliases. New bodies use `FF FE`. A diagnostic null
+handle dereference that broke deep nested serialization is guarded.
+
+`./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`), including
+first-root replacement/clear, sibling and diamond sharing, cycles, migrated
+object abort/retry, shared-alias mutation, GC, and fresh restore. ASan/UBSan
+passes with `ASAN_OPTIONS=detect_leaks=0`. `./tools/build arm --profile
+max_crypto` passes (firmware end `0x100EDDF8`, 74,248 bytes remaining);
+`./tools/build riscv --profile max_crypto` passes. No physical test was
+possible because PC/SC published no Pico reader. Changes are not yet committed.
+
+The prior external-test UF2 at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF8611E9.uf2`
+predates this persistence fix. Rebuild after committing R22 and repackage an
+updated empty-card image before providing the current binary. Preserve all
+other dirty worktree changes, including the separate HMAC TODO edit.
+
 # Current handoff — REL-01 reader check blocked; max-crypto image built — 2026-11-07 12:46 CET
 
 REL-01 CPLC source remains committed as `971272f3`. The release level is
