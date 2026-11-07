@@ -9265,3 +9265,34 @@ Next: record and commit these image details. Preserve unrelated dirty files.
 
 # Previous current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET
 # Current handoff — R24 persistence retry regression verified — 2026-11-07 13:41 CET
+
+# Current handoff — REL-01 offline checks and external image refreshed — 2026-11-07 16:45 CET
+
+REL-01 source implementation is already committed as `971272f3`. Revalidated
+release/source-ID stability against the current worktree with two consecutive
+`PICO2_HOST_USB_ACCESS=1 ./tools/build arm --profile max_crypto` runs: both
+reported CPLC source ID `0xFFBB1B86`, 147/150 profile capabilities, firmware
+end `0x100EDE9C`, and 74,084 bytes remaining. The RISC-V max_crypto wrapper
+build also passed its VM-core/smoke target. `gp_get_data_test` passes 25/25 and
+the flash-boundary check passes. These builds include the current dirty tree;
+`FF` marks that state and `BB1B86` identifies the first six characters of
+HEAD.
+
+Refreshed the authorized PC/SC access helper; it granted USB nodes
+`001/054`, `001/055`, and `001/056`. Bounded `pcsc_scan -r` produced no reader,
+so no GPPro query or hardware flash was possible. REL-01's physical display
+check remains open.
+
+Fresh empty-card image for external testing:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBB1B86.uf2`,
+4,046,848 bytes, SHA-256
+`30c7a12912f853c157f79ff36424c3e3ceedf2060eb3bae723b6e33f6d40f8f4`. Picotool
+identifies RP2350 ARM Secure; package validation confirms 3,807 firmware blocks
+and 4,096 erased storage blocks. Release is `0.1.1` (`0101`). This image
+includes current uncommitted worktree changes; do not describe it as a clean
+release. `src/ccid_device.cpp` and the JCSystem reset/power test remain dirty
+from the separate RV-20261106-36 investigation and are not part of this REL-01
+record. No physical flash/runtime test is claimed.
+
+Next: when a Pico CCID reader becomes visible, query CPLC with GPPro `--info`
+and verify release `0101` and the source marker. Preserve unrelated dirty files.

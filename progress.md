@@ -24700,3 +24700,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue to the next actionable finding, RV-20261106-36, while preserving unrelated worktree changes.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Revalidate REL-01 and refresh external max_crypto image 5 minutes
+
+- Step/experiment: `REL-01-current-tree-revalidation-and-max-empty-card`
+- When: '2026-11-07 16:40 CET' - '2026-11-07 16:45 CET'
+- Change: Revalidated the already-committed REL-01 CPLC implementation against the current source tree and repackaged the freshly built max_crypto ARM firmware as an empty-card UF2. No algorithm or JavaCard runtime implementation changed in this step.
+- Validation: Two consecutive `PICO2_HOST_USB_ACCESS=1 ./tools/build arm --profile max_crypto` runs passed and both emitted source ID `0xFFBB1B86`, 147/150 enabled capabilities, firmware end `0x100EDE9C`, and 74,084 bytes free. `PICO2_HOST_USB_ACCESS=1 ./tools/build riscv --profile max_crypto` passed the VM-core/smoke wrapper. `./build/tests/unit/gp-get-data/gp_get_data_test` passed 25/25; `./tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed. The authorized PC/SC helper granted three nodes, but `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=2s 8s pcsc_scan -r` published no reader. No GPPro query or hardware flash was performed.
+- Result: Package validation and local picotool inspection passed for `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBB1B86.uf2`; size 4,046,848 bytes, SHA-256 `30c7a12912f853c157f79ff36424c3e3ceedf2060eb3bae723b6e33f6d40f8f4`. It contains 3,807 firmware blocks, 4,096 erased storage blocks, RP2350 ARM Secure image type, and CPLC release `0101`. Physical GPPro verification remains unavailable. Image includes the dirty worktree, identified by source marker `FFBB1B86`.
+- Decision: REL-01 stability and offline checks are verified; keep its hardware acceptance open until a reader is enumerated. The image is ready for external testing with dirty-tree provenance explicit.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFBB1B86.uf2` (SHA-256 above); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.

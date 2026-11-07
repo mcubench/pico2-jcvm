@@ -1366,3 +1366,8 @@ results establish behavior. Keep validation limitations attached to both.
   Update 2026-11-06: Active exception protected ranges now validate their one-based CAP `start_pc` conversion, decoded start boundary, Method-component bounds, and current-frame containment. The start-into-operand fixture fails closed with manager recovery (6/6); out-of-range catch CP and handler destination cases also pass 6/6. The unchanged JCAlgTest positive run passes 15/15 after correcting the one-based offset; ARM/RISC-V/PC builds pass. No physical hostile-CAP recovery test was run.
   Update 2026-11-06: A 32,767-byte active protected range extending beyond the Method image now has a VPCD malformed-CAP regression; it fails with `6F00` and confirms ISD/applet recovery (6/6). Source guard was already built on ARM, RISC-V and PC in the preceding exception-range step. Physical malformed-CAP behavior remains open.
   Update 2026-11-06: An active exception-table `start_pc=0xFFFF` now has a malformed-CAP VPCD case; dispatch fails with `6F00` and manager/app selection recovery passes (6/6). Together with the long-range overflow and operand-start cases, this covers both Method component bounds and instruction alignment. Physical hostile-CAP behavior remains open.
+  Offline revalidation on 2026-11-07: two consecutive ARM `max_crypto` builds
+  produced the same CPLC source ID `FFBB1B86` and unchanged firmware end;
+  `gp_get_data_test` passes 25/25. The authorized USB helper granted three
+  nodes, but bounded `pcsc_scan -r` still published no reader, so physical
+  GPPro confirmation remains pending.
