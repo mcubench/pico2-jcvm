@@ -1357,13 +1357,15 @@ review.
   clean tree, `FF` means dirty, followed by the first six hex digits of HEAD.
   The dirty marker prevents the ID from implying that an uncommitted image is
   exactly the named commit. The CPLC unit and hardware probe expectations are
-  aligned. Two consecutive 2026-11-07 ARM max_crypto builds both emitted
-  `0xFFDCFCC7`; ARM and RISC-V builds, CPLC unit checks (25/25), and flash
-  boundary checks passed. Physical acceptance remains open: the authorized
-  helper granted three USB nodes, but they enumerated as runtime CCID devices
-  and `pcsc_scan -r` listed no readers, so GPPro `--info` could not be run.
-  Next, use an enumerated reader to confirm release `0101` and source ID
-  `FFDCFCC7` in the CPLC display.
+  aligned. Two consecutive 2026-11-07 ARM max_crypto builds previously emitted
+  `0xFFDCFCC7`; the latest ARM and RISC-V max_crypto wrapper builds pass, and
+  ARM embeds source ID `FF23C6E8` for the current dirty tree. CPLC unit checks
+  pass 25/25. GPPro `--info` on VPCD decodes release `0101` and the CPLC date
+  `2026-11-07`; the direct GP GET DATA probe also passes. These checks do not
+  substitute for physical acceptance: the authorized helper granted USB nodes
+  `001/054`–`001/056`, but a bounded `pcsc_scan -r` timed out without publishing
+  a Pico reader. Next, run GPPro `--info` against a physical Pico and confirm
+  release `0101` and source ID `FF23C6E8` in the CPLC display.
 
 ### PROFILE-02
 

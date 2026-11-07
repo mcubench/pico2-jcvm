@@ -13076,6 +13076,17 @@
 - Commit: `9e4c1976be459ceae64fd3ac939da51bd40c5f00` (documentation); `241476e2ea2d916ad3097cb77972a23000c00ece` (progress record); `f8453e0` (commit-id follow-up).
 - Artifacts/logs: None.
 
+## 2026-11-07 REL-01 offline acceptance and max-crypto external image 10 minutes
+
+- Step/experiment: `REL-01-offline-gp-info-and-max-crypto-empty-card-build`
+- When: '2026-11-07 20:56 CET' - '2026-11-07 21:06 CET'
+- Change: Rechecked the already-committed REL-01 CPLC behavior through GPPro and the direct GET DATA probe. Updated TODO and handoff with current offline results and the unresolved physical acceptance. Built and packaged a fresh max_crypto ARM image with erased storage for external testing.
+- Validation: `./tools/test-gp-get-data` PASS (25/25); `PICO2_HOST_USB_ACCESS=1 ./tools/test-gp-get-data-vpcd` PASS; GPPro `--info` on `Virtual PCD 00 00` reports `OperatingSystemReleaseLevel=0101` and CPLC dates `2026-11-07`; ARM and RISC-V max_crypto wrappers PASS; `./tools/package-empty-card-uf2` PASS; `picotool info -a` identifies RP2350 ARM Secure; UF2 inspection confirms 3,854 firmware blocks and 4,096 all-`FF` storage blocks. Authorized physical access helper granted USB nodes `001/054`–`001/056`, but bounded `pcsc_scan -r` exited 124 with no reader. No physical flash or hardware test was performed.
+- Result: Image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,070,912 bytes, SHA-256 `917315f3e10b9a8888ef839a69ddf6f9f0cff804dedc136f145dbb44729a7197`, profile `max_crypto` (159/162), release 0.1.1, CPLC source ID `FF23C6E8`, firmware end `0x100F0D4C` with 62,132 bytes remaining before storage. Card storage is empty and no CAP/applet is preinstalled. Existing packed-member compiler warnings remain; builds succeeded. VPCD GPPro reports source equipment ID `00000000` because PC VPCD does not receive the ARM build's per-image source ID; the ARM UF2 embeds `FF23C6E8`. Physical REL-01 display check remains open.
+- Decision: The software-generated CPLC release and GPPro decoding are verified offline. Keep REL-01 unchecked until physical GPPro confirms release `0101` and source ID `FF23C6E8`. Use the new UF2 for external Windows testing; it has not been flashed or hardware-tested. Next, diagnose the RSA CRT 3072-bit `SystemException_NO_RESOURCE` in the 1.8.4 sweep before resuming that long test.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261107T195606Z/`; `artifacts/results/rel-01-gppro-vpcd-20261107T200125Z/`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
 ## 2026-10-26 — Confirm ROM-mask native reference-return mechanics
 
 - Step/experiment: `asymm-native-reference-return-inspection`

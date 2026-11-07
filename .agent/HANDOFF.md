@@ -1,33 +1,37 @@
-# Current handoff — HMAC KATs and refreshed max_crypto image — 2026-11-07 19:57 CET
+# Current handoff — REL-01 offline acceptance and external image — 2026-11-07 21:06 CET
 
-Fresh external-test ARM image:
-`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
-(4,070,912 bytes, SHA-256
-`7f750ca9f024c470ef9056e8aa38ce37cc83c45ef959f32ea296198f51109bb2`). It is
-RP2350 ARM Secure, release 0.1.1, profile `max_crypto` with 159/162 enabled
-capabilities, CPLC source ID `FF558D0C`, firmware end `0x100F0D4C` (62,132
-bytes before the storage partition), 3,854 firmware blocks, and 4,096 erased
-storage blocks. No CAP or applet is preinstalled. This image was rebuilt from
-the current worktree; it has not been flashed or hardware-tested.
+REL-01 source implementation remains committed as `971272f3`. The latest
+VPCD GPPro `--info` run decodes `OperatingSystemReleaseLevel=0101` and CPLC
+dates as `2026-11-07`; direct GET DATA returns `9000`, and the CPLC unit suite
+passes 25/25. Physical acceptance is still open: the authorized access helper
+granted nodes `001/054`–`001/056`, but bounded `pcsc_scan -r` returned 124 with
+no readers. Do not claim the physical check passed. VPCD logs are under
+`artifacts/results/rel-01-gppro-vpcd-20261107T200125Z/` and
+`artifacts/results/gp-get-data-vpcd-20261107T195606Z/`.
 
-HMAC-01 native C++ work is committed as `558d0ccf` and its focused VPCD fixture passes all
-six RFC known-answer vectors (12 tests across one-shot/split update, sign,
-verify, tamper rejection, and key readback). Both ARM and RISC-V max_crypto
-wrapper builds pass. The full pinned JCAlgTest 1.8.4 acceptance remains open:
-GPPro LOAD/INSTALL and applet selection work on VPCD, but the support run
-stalls during the DES section, with emulator output
-`APPLET_PROCESS status=F206 exception=16`; no full support CSV/comparison is
-available. Logs and CSV are under
-`artifacts/results/jcalgtest-support-vpcd-20261107T184531Z/`. A preceding
-harness attempt that omitted GPPro installation and one attempt using the
-emulator's `--install` option also failed and are preserved in adjacent result
-directories. No physical reader was used for HMAC validation.
+Both required wrappers pass for the current worktree:
+`./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto`. The RISC-V wrapper builds the
+VM-core/smoke target. Fresh ARM max_crypto empty-card image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,
+4,070,912 bytes, SHA-256
+`917315f3e10b9a8888ef839a69ddf6f9f0cff804dedc136f145dbb44729a7197`.
+Picotool identifies RP2350 ARM Secure. Profile enables 159/162 capabilities;
+release is 0.1.1; source ID is `FF23C6E8` (dirty-tree marker); firmware end is
+`0x100F0D4C`, leaving 62,132 bytes before storage. The UF2 contains 3,854
+firmware blocks and 4,096 verified erased storage blocks, with no CAP/applet
+preinstalled. It was not flashed or runtime-tested. It includes the current
+dirty worktree; preserve all unrelated edits.
 
-REL-01 release 0.1.1 source implementation and offline CPLC tests are already
-committed; physical GPPro display acceptance remains pending. Preserve all
-pre-existing dirty worktree changes, especially modifications unrelated to
-HMAC. Continue by diagnosing the VPCD JCAlgTest `F206` failure, then complete
-the support comparison and hardware test when a reader is published.
+The full JCAlgTest 1.8.4 support sweep remains incomplete. The first
+900-second attempt timed out during RSA CRT 3072-bit probing. The extended run
+completed that APDU in 797,682 ms and returned `SystemException_NO_RESOURCE`
+(`F205`); `F206` remains the expected optional `B0 E2` memory-query status.
+Partial output is under
+`artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/`. Trace the
+RSA CRT allocation failure before resuming the long sweep. HMAC-01 native code
+is committed as `558d0ccf`; its six RFC KAT vectors pass. Preserve the pending
+and unrelated dirty changes. No physical hardware test was run in this step.
 
 ---
 
