@@ -9373,6 +9373,7 @@ max_crypto` ran twice consecutively and both reported CPLC source ID
 `0xFFDCFCC7`. The CPLC/GP GET DATA unit suite passed 25/25 and
 `./tools/test-firmware-flash-boundary` passed. ARM and RISC-V max_crypto
 wrappers both passed; RISC-V remains the shared VM-core/smoke target only.
+The verification record is commit `1d176d71`.
 
 Fresh empty-card external-test image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, size
