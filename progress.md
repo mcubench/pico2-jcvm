@@ -23845,5 +23845,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Read the official Oracle guide's “Writing Removable Applets” section (pp. 1-3), which lists cross-applet object references and references from package statics as applet deletion failure conditions. Confirmed current native implementation reports object deletion unsupported and throws `ILLEGAL_USE` from `requestObjectDeletion()`. Documentation diff check remains pending commit; no runtime code or tests changed.
 - Result: The dropped-array-field observation is not evidence of a false-positive guard; the serialized child object still contains the cross-applet edge. Safely reclaiming it depends on PERSIST-01's guarded object-deletion service.
 - Decision: Preserve DELETE fail-closed semantics and proceed with other PERSIST-01 acceptance work.
-- Commit: pending.
+- Commit: `6c7721cd`.
 - Artifacts/logs: Official reference: [Oracle Java Card 3.0.5 Programming Notes](https://docs.oracle.com/javacard/3.0.5/prognotes/JCPCL.pdf); APDU evidence in `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`.
+
+## 2026-11-07 Record Java Card DELETE spec-check commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-applet-delete-persistent-alias-spec-check-commit`
+- When: '2026-11-07 03:44 CET' - '2026-11-07 03:45 CET'
+- Change: Recorded the spec-check documentation commit SHA in the handoff and progress history.
+- Validation: No new run; official-spec review and prior APDU evidence are recorded in the preceding entry.
+- Result: TODO/QKB/handoff interpretation update is committed as `6c7721cd`.
+- Decision: Continue toward PERSIST-01 safety/implementation acceptance and HOST-02 Windows timing.
+- Commit: `6c7721cd` — specification status update; this SHA-resolution record is separate.
+- Artifacts/logs: Official Oracle 3.0.5 guide URL and VPCD APDU log are listed above.

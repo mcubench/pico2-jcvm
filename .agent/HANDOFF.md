@@ -27,6 +27,8 @@ reclamation path is a separate PERSIST-01 task: `requestObjectDeletion()` is
 currently unsupported, and its safety acceptance remains open. This
 specification check is recorded in TODO/QKB; implementation work can continue
 on other offline PERSIST-01 gates.
+This spec-alignment update is committed as `6c7721cd`; its progress SHA
+resolution follows separately.
 
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
