@@ -17,7 +17,7 @@ Focused lifecycle VPCD passes 13/13, and the complete symmetric suite passes
 No physical validation was performed; PC/SC still publishes no physical Pico
 reader. Existing external build warnings remain.
 
-Commit: `<resolve in next progress entry>`.
+Commit: `c354ce69`.
 
 Next: investigate/test RV-20261106-11 global-array lifetime and reclamation.
 R08's legacy persistent-workspace orphan-tag audit also remains open.

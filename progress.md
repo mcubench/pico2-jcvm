@@ -24347,5 +24347,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm` PASS; `./tools/build riscv` PASS; `./tools/build-cipher-lifecycle-probe` PASS; `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` PASS (`TEST:SUMMARY pass=13 fail=0`, five persisted-image sentinels absent); `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` PASS (`TEST:SUMMARY pass=99 fail=0`, vector breakdown cipher=38, MAC=47, IV=6, transient lifecycle=16). Scoped `git diff --check` passed. No physical test; PC/SC reader publication remains unavailable.
 - Result: Malformed method-2 suffixes fail for AES and DES, while valid full-block padding still decrypts to an empty result after cipher reuse. Lifecycle log `artifacts/logs/cipher-workspace-vpcd-20261107T094913Z.log`, SHA-256 `faaaf7ac4c2e6412d1daf557b3a3ab2266afcfcbb45a2bf0d76deab56921c4c6`; symmetric suite log `artifacts/logs/symm-crypto-kat-vpcd-20261107T095429Z.log`, SHA-256 `44da27bbafc34c3534a0756c9930149bdd39d431e6e5805d54061a8c4f2c1b55`. ARM full image remains `0x100d59e4` end, 173,596 bytes remaining. Build outputs include existing upstream warnings; no warning cleanup was attempted.
 - Decision: Close R10 simulator/build acceptance. Continue with RV-20261106-11 global-array lifetime/reclamation analysis and tests; physical hardware acceptance remains pending.
-- Commit: `<resolve in next progress entry>`
+- Commit: `c354ce69`
 - Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T094913Z.log`; `artifacts/logs/symm-crypto-kat-vpcd-20261107T095429Z.log`.
+
+## 2026-11-07 Record method-2 validation commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-10-method2-final-block-bound-sha`
+- When: '2026-11-07 10:55 CET' - '2026-11-07 10:56 CET'
+- Change: Recorded the implementation commit SHA in the R10 validation record and current handoff.
+- Validation: Confirmed `c354ce69` contains only the method-2 native fix, lifecycle CAP regression, wrapper APDU, and TODO/progress/handoff entries.
+- Result: R10 implementation and simulator acceptance are committed as `c354ce69`.
+- Decision: Continue with RV-20261106-11 global-array lifetime/reclamation.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
