@@ -20,7 +20,8 @@ run.
 RV-20261106-07 remains open: there is no load-time superclass-cycle validation,
 and no hostile self/two-class-cycle or deep-chain regression proving bounded
 recovery for allocation, casts, fields, method resolution and manager use.
-Implementation commit SHA is pending; see the newest `progress.md` record.
+Implementation is committed as `bcfa97ae`; see `progress.md` for the full
+validation record.
 Next: continue remaining P1 findings while preserving unrelated changes.
 
 # Current handoff — validate instance field receiver classes — 2026-11-07 05:06 CET

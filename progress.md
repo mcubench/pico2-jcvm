@@ -24065,5 +24065,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build-pc --profile max_crypto`, `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_SIGNATURE=1 CHOUPI_VM_TRACE_EXCEPTIONS=1 ./tools/test-sio-cross-aid-vpcd` (pass), full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` (`TEST:SUMMARY pass=35 fail=0`), `./tools/build arm` and `./tools/build riscv` passed. Scoped `git diff --check` passed. An early SIO failure was traced to stale `build/choupi-pc/choupi`; rebuilding with `./tools/build-pc --profile max_crypto` made the isolated signature test and full suite pass. Both firmware builds still emit existing packed-CAP-member alignment warnings. No physical hardware test or malformed-cycle CAP regression was run.
 - Result: Normal multi-package/interface execution continues to pass, and audited superclass paths now terminate within bounded work. Load-time cycle rejection and hostile cyclic/deep CAP recovery remain unverified.
 - Decision: RV-20261106-07 remains open pending cycle/depth regression coverage through allocation, casts, fields, method resolution, and card-manager recovery. Continue the next P1 review finding after recording this bounded-runtime step.
-- Commit: `<resolve in next progress entry>`
+- Commit: `bcfa97ae`
 - Artifacts/logs: Full VPCD run `artifacts/logs/sio-cross-aid-vpcd-20261107T045015Z.log`; isolated signature run `artifacts/logs/sio-cross-aid-vpcd-20261107T044906Z.log`.
+
+## 2026-11-07 Resolve superclass traversal commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-bounded-superclass-traversals-sha`
+- When: '2026-11-07 05:57 CET' - '2026-11-07 05:58 CET'
+- Change: Resolved the bounded superclass traversal implementation SHA in the progress record and handoff.
+- Validation: No new run; the preceding record captures the VPCD suite and both architecture build results.
+- Result: The bounded traversal implementation is committed as `bcfa97ae`.
+- Decision: Continue remaining runtime review findings; RV-20261106-07 remains open pending hostile hierarchy regression and recovery tests.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
