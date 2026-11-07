@@ -23,6 +23,7 @@ requests `Card.disconnect(true)` and reconnects after GPPro installation to
 clear any preceding SCP03 state; it compiles but is unverified on hardware.
 Do not change production secure-channel policy until the reset-isolated run
 establishes whether this is a probe setup issue.
+The reset-isolated probe and evidence update are committed as `09f2a56d`.
 
 The authorized helper granted all three USB nodes and `lsusb` still shows
 three `2e8a:0009` devices, but subsequent bounded PC/SC scans publish no Pico

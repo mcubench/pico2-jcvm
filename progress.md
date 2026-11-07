@@ -13095,7 +13095,7 @@
 - Validation: ARM and RISC-V max_crypto builds passed earlier in this step; physical monitor returned `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; GPPro 26.06.04 returned CPLC `OperatingSystemReleaseLevel=0101`, dates `2026-11-07`, equipment ID `FF1DC424`, and status `9000`. `./tools/test-gp-get-data` passed 25/25. `git diff --check` passes.
 - Result: REL-01 physical acceptance passes on RP2350 chip ID `D92E743D5F640C0F`. The empty-card external UF2 remains 4,070,912 bytes, SHA-256 `93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`. Firmware-only flashed image SHA-256 is `43e69d4acff6092cd01becd6c2606150984955e1e21c5a2fbe5c025369b7d21a`. Runtime throughput was not measured.
 - Decision: REL-01 is closed. The empty-card image is ready for separate Windows testing; it was not flashed to the token.
-- Commit: `<resolve in next progress entry>`
+- Commit: `09f2a56d`
 - Artifacts/logs: `artifacts/logs/rel-01-monitor-D92-20261107.log` (SHA-256 `50cfca7edef43cabcc2cceed0638e44e2294c1fe044012a6131e660346719dc9`); `artifacts/logs/rel-01-gppro-physical-D92-20261107.log` (SHA-256 `90bbb2a288839f7e2163e627929816dc47e4f066a9a2e87aeb2f97337144a0fe`).
 
 ## 2026-11-07 Record REL-01 acceptance commit reference 1 minute
@@ -13119,6 +13119,17 @@
 - Decision: Keep RV-11 open and do not relax production secure-channel checks. When PC/SC enumeration returns, rerun the corrected probe on D92 or fail over to a currently listed Pico. Continue offline project work meanwhile.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/cipher-lifecycle-pcsc-20261107T204148Z.log` (SHA-256 `191b9f6ffc693f2bc6e664bc45a678a270ac51b4572fd29e388296606cde30f2`); `artifacts/logs/cipher-lifecycle-vpcd-20261107T204652Z.log` (SHA-256 `a82b5ab80132e6cb8c9e5dd6e742d56b0bf697e94d6c58186e975022b0e9b7e2`).
+
+## 2026-11-07 Record RV-11 probe commit reference 1 minute
+
+- Step/experiment: `RV11-probe-commit-reference`
+- When: '2026-11-07 21:54 CET' - '2026-11-07 21:55 CET'
+- Change: Recorded the commit ID for the physical probe setup and evidence update.
+- Validation: `git show --stat --oneline 09f2a56d` confirms the five scoped files.
+- Result: The reset-isolated probe and current test evidence are committed as `09f2a56d`.
+- Decision: Continue with the next open current-code acceptance item; RV-11 waits for PC/SC enumeration.
+- Commit: `09f2a56d`
+- Artifacts/logs: None.
 
 ## 2026-11-07 REL-01 offline acceptance and max-crypto external image 10 minutes
 
