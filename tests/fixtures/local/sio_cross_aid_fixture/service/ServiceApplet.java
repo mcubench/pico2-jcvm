@@ -81,6 +81,34 @@ public final class ServiceApplet extends Applet implements Probe {
     return (short) 0x4567;
   }
 
+  public short isAppletActiveDuringSio() {
+    AID caller = JCSystem.getPreviousContextAID();
+    AID client = JCSystem.lookupAID(CLIENT_AID, (short) 0,
+                                   (byte) CLIENT_AID.length);
+    AID sibling = JCSystem.lookupAID(CLIENT_SIBLING_AID, (short) 0,
+                                     (byte) CLIENT_SIBLING_AID.length);
+    AID service = JCSystem.getAID();
+    byte[] unknownBytes = { (byte) 0xA0, 0, 0, 0, 0x7E };
+    AID unregistered = new AID(unknownBytes, (short) 0,
+                               (byte) unknownBytes.length);
+    boolean clientIsCaller = caller != null && caller.equals(
+        CLIENT_AID, (short) 0, (byte) CLIENT_AID.length);
+    boolean siblingIsCaller = caller != null && caller.equals(
+        CLIENT_SIBLING_AID, (short) 0,
+        (byte) CLIENT_SIBLING_AID.length);
+    boolean activeClientMatchesCaller = client != null && sibling != null &&
+        ((clientIsCaller && JCSystem.isAppletActive(client) &&
+          !JCSystem.isAppletActive(sibling)) ||
+         (siblingIsCaller && JCSystem.isAppletActive(sibling) &&
+          !JCSystem.isAppletActive(client)));
+    return activeClientMatchesCaller && caller != null &&
+                   JCSystem.isAppletActive(caller) && service != null &&
+                   !JCSystem.isAppletActive(service) &&
+                   !JCSystem.isAppletActive(unregistered)
+               ? (short) 0x6A4B
+               : (short) 0x6A4C;
+  }
+
   public int exerciseWide(int value) {
     return value == 0x12345678 ? 0x76543210 : 0x6F010001;
   }

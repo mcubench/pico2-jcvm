@@ -1,3 +1,25 @@
+# Current handoff — R53 cross-AID isAppletActive verified — 2026-11-07 14:14 CET
+
+RV-20261106-53 is implemented in native context/JNI code and marked complete
+in `todo.md`. `JCSystem.isAppletActive(AID)` now searches matching registered
+active/installing instance state by full AID. It checks the executing Context
+first because install interpreters can own a short-lived Context not present
+in the retained-context registry, then checks all retained contexts.
+
+The focused cross-AID SIO VPCD run passes 4/4 across client and same-package
+sibling calls, before and after reset. Targeted JCSystem cases 76/77 pass,
+including registration/install and install/select/deselect/process callbacks.
+The broad `./tools/test-jcsystem-transaction-applet` run passed through case 56
+and then failed its already tracked RV-20261106-36 reset/deselect expectation
+at case 57; this unrelated behavior remains open. Its earlier case 35
+`isAppletActive` check passed. PC `symm_crypto`, ARM `max_crypto`, and RISC-V
+`max_crypto` builds pass. No physical hardware was flashed.
+
+Next: refresh hardware/PCSC before any device test, otherwise continue with
+RV-20261106-52 or RV-20261106-54. HOST-02 no-console reconnect timing still
+requires the external Windows host. Preserve unrelated worktree edits,
+including the pending HMAC TODO addition.
+
 # Current handoff — R24 persistence retry regression verified — 2026-11-07 13:41 CET
 
 RV-20261106-24 is closed with production-handler tests. Fault injection covers
@@ -9131,3 +9153,4 @@ physical flash/runtime test was performed. Build provenance:
 Next: record and commit these image details. Preserve unrelated dirty files.
 
 # Previous current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET
+# Current handoff — R24 persistence retry regression verified — 2026-11-07 13:41 CET

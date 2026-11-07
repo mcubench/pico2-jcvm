@@ -290,6 +290,12 @@ public final class ClientApplet extends Applet {
     short result;
     if (denial_probe) {
       result = shareable == null ? (short) 0x6A01 : (short) 0x6A02;
+    } else if (buffer[1] == 0x4B) {
+      result = shareable != null &&
+                       ((Probe) shareable).isAppletActiveDuringSio() ==
+                           (short) 0x6A4B
+                   ? (short) 0x6A4B
+                   : (short) 0x6A4C;
     } else if (buffer[1] == 0x15) {
       retainedShareable = shareable;
       retainedShareableAlias = shareable;

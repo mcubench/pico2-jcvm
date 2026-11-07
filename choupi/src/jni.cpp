@@ -1913,12 +1913,6 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(
   }
 
   Context &context = Context::getActiveContext();
-  if ((!context.wasAppletRegistered() && !context.hasRestoredAppletInstance()) ||
-      (!context.isAppletActive() &&
-       !context.isAppletInstallationActive())) {
-    return FALSE;
-  }
-
   Heap &heap = context.getHeap();
   const auto aid_object = heap.getInstance(aid_reference);
   if (aid_object->getNumberOfFields() == 0) {
@@ -1934,18 +1928,15 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(
     return FALSE;
   }
 
-  uint8_t active_aid[16]{};
-  uint8_t active_aid_length = 0;
-  if (!context.copyAppletAID(active_aid, active_aid_length) ||
-      active_aid_length != bytes->size()) {
-    return FALSE;
+  uint8_t requested_aid[16]{};
+  const uint8_t requested_aid_length =
+      static_cast<uint8_t>(bytes->size());
+  for (uint8_t index = 0; index < requested_aid_length; ++index) {
+    requested_aid[index] = static_cast<uint8_t>(bytes->getByteEntry(index));
   }
-  for (uint8_t index = 0; index < active_aid_length; ++index) {
-    if (static_cast<uint8_t>(bytes->getByteEntry(index)) != active_aid[index]) {
-      return FALSE;
-    }
-  }
-  return TRUE;
+  return Context::isAppletAIDActive(requested_aid, requested_aid_length)
+             ? TRUE
+             : FALSE;
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_assertIntegrity(

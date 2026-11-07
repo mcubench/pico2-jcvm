@@ -137,6 +137,10 @@ public:
   /// Get the context used by context-free native method implementations.
   static Context &getActiveContext();
 
+  /// Query the active/installation state of an AID across retained contexts.
+  static bool isAppletAIDActive(const uint8_t *aid,
+                                uint8_t aid_length) noexcept;
+
   /// Resolve a retained package context without consulting another heap's
   /// compact handle table. Returns null when the package is unavailable or
   /// has multiple independent retained contexts.

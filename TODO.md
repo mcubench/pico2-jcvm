@@ -15,6 +15,9 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
+   R53 `JCSystem.isAppletActive(AID)` now checks the executing install context
+   and active retained applet instances across AIDs; focused callback and SIO
+   VPCD checks pass.
 3. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
 4. Close the current-image coverage and integration gates in **API-03**,

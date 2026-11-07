@@ -994,6 +994,53 @@ def main() -> int:
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)
             print("TEST:PASS installed cross-AID client applet")
+            if os.environ.get("SIO_CROSS_AID_TEST_IS_APPLET_ACTIVE") == "1":
+                sibling_install = vpcd.install_applet(
+                    scp, client[1], client[2][0], CLIENT_SIBLING_APPLET
+                )
+                if sibling_install[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "isAppletActive sibling INSTALL returned "
+                        f"{sibling_install[-2:].hex().upper()}, expected 9000"
+                    )
+                print("TEST:PASS installed same-package sibling for activity checks")
+
+                def check_activity_from(aid: bytes, label: str) -> None:
+                    select = bytes((0x00, 0xA4, 0x04, 0x00, len(aid))) + aid
+                    selected = vpcd.exchange(
+                        connection, select, f"SELECT {label} for activity check"
+                    )
+                    if selected[-2:] != b"\x90\x00":
+                        raise RuntimeError(
+                            f"SELECT {label} returned {selected.hex().upper()}"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("804B000000"),
+                        f"query active AID, inactive sibling/service, and "
+                        f"unregistered AID during SIO from {label}"
+                    )
+                    if response != bytes.fromhex("6A4B9000"):
+                        raise RuntimeError(
+                            f"isAppletActive SIO query from {label} returned "
+                            f"{response.hex().upper()}, expected 6A4B9000"
+                        )
+                    print(f"TEST:PASS isAppletActive queried across SIO from {label}")
+
+                check_activity_from(CLIENT_APPLET, "client")
+                check_activity_from(CLIENT_SIBLING_APPLET, "sibling")
+                vpcd.send_message(connection, b"\x02")
+                vpcd.send_message(connection, b"\x04")
+                atr = vpcd.receive_message(connection)
+                if atr != bytes.fromhex("3B800181"):
+                    raise RuntimeError(
+                        "isAppletActive reset returned unexpected ATR "
+                        f"{atr.hex().upper()}"
+                    )
+                print("TEST:PASS VPCD reset completed before activity rechecks")
+                check_activity_from(CLIENT_APPLET, "client after reset")
+                check_activity_from(CLIENT_SIBLING_APPLET, "sibling after reset")
+                print("TEST:SUMMARY pass=4 fail=0")
+                return 0
             if os.environ.get(
                     "SIO_CROSS_AID_TEST_UNMATERIALIZED_STATIC_ALIAS_DELETE") == "1":
                 sibling_install = vpcd.install_applet(

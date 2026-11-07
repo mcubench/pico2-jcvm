@@ -24580,3 +24580,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close R24. Continue with the next actionable priority; HOST-02 requires Windows reconnect measurements, then CTX-01/03 SIO context/firewall work.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Unit output not archived; sanitizer executable under `build/tests/unit/persistent-transaction-asan/`.
+# 2026-11-07 Implement cross-AID JCSystem.isAppletActive 17 minutes
+
+- Step/experiment: `RV-20261106-53-cross-aid-is-applet-active`
+- When: '2026-11-07 13:57 CET' - '2026-11-07 14:14 CET'
+- Change: Added a native full-AID lookup over active/installation applet-instance state. The JNI entry point now resolves the requested AID independently of the executing applet. The lookup checks the executing Context first because the install interpreter can own a short-lived context not held in the retained-context registry. Added test-only cross-AID Shareable calls for active caller, inactive sibling/service, unregistered AID, same-package sibling and reset coverage. Marked R53 complete in `todo.md` and updated the high-level backlog and handoff.
+- Validation: `./tools/build-pc --profile symm_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` PASS. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_TEST_IS_APPLET_ACTIVE=1 ./tools/test-sio-cross-aid-vpcd` PASS (`TEST:SUMMARY pass=4 fail=0`), with client and sibling calls before and after reset. `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 76 --case 77 --light-install` PASS (`TEST:SUMMARY pass=4 fail=0`), including registration/install and install/select/deselect/process callbacks. The broad `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet` ran through case 56 but FAILed at existing case 57/RV-20261106-36: reset callback state was `07030000`, expected `07040000`; earlier case 35 for `isAppletActive` passed. No physical board was flashed.
+- Result: Cross-AID activity queries, registration and callback visibility, siblings and reset pass in VPCD. The broad transaction suite remains red only at the separately tracked reset/deselect behavior observed in case 57. An initial targeted case exposed that install interpreter Contexts are not retained; checking the executing Context fixed it.
+- Decision: Close R53. Keep RV-20261106-36 open; continue with next actionable context/API backlog item after preparing the requested current max_crypto external image.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T131247Z.log`; broad JCSystem run: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261107T130017Z.log`.

@@ -81,6 +81,32 @@ Context *Context::findRetainedPackageContext(
   }
   return match;
 }
+
+bool Context::isAppletAIDActive(const uint8_t *aid,
+                                const uint8_t aid_length) noexcept {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return false;
+  const auto has_active_instance = [aid, aid_length](const Context *context) {
+    if (context == nullptr) return false;
+    for (const auto &instance : context->applet_instances) {
+      if (instance.aid_length != aid_length ||
+          !std::equal(aid, aid + aid_length, instance.aid.begin())) {
+        continue;
+      }
+      const bool registered = instance.registered || instance.restored;
+      if (registered && (instance.active || instance.installation_active)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  // Installation can run in a short-lived Context that is not retained.
+  if (has_active_instance(active_context)) return true;
+  for (const Context *context : retained_contexts) {
+    if (context != active_context && has_active_instance(context)) return true;
+  }
+  return false;
+}
+
 Context::AppletInstanceState &Context::activeAppletInstance() noexcept {
   return this->applet_instances[this->active_applet_index];
 }
