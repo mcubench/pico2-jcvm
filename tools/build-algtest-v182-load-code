@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec python3 "${repo_root}/tools/tests/cap_load_code.py" "${repo_root}"
+printf 'COMPAT: build-algtest-v182-load-code now selects the pinned JCAlgTest 1.8.4 baseline; use tools/build-jcalgtest-load-code\n' >&2
+exec "${repo_root}/tools/build-jcalgtest-load-code" "$@"

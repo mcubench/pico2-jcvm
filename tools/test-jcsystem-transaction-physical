@@ -22,7 +22,7 @@ applet_aid="A000000062030101"
 [[ -s "${cap}" ]] || die "transaction probe CAP not found: ${cap}"
 mkdir -p "${java_build}" "${repo_root}/artifacts/logs"
 "${repo_root}/tools/env" javac -d "${java_build}" \
-  "${repo_root}/tools/JCSystemTransactionPhysicalProbe.java"
+  "${repo_root}/tests/hardware/JCSystemTransactionPhysicalProbe.java"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log="${repo_root}/artifacts/logs/jcsystem-transaction-physical-${timestamp}.log"

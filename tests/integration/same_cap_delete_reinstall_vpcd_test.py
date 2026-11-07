@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tools/tests"))
+sys.path.insert(0, str(ROOT / "tests/integration"))
 import pc_vpcd_multipackage_test as vpcd  # noqa: E402
 
 CONNECT_TIMEOUT = 45.0
@@ -52,7 +52,7 @@ def select(connection: socket.socket, aid: bytes, label: str) -> None:
 
 
 def main() -> int:
-    vpcd.ensure_algtest_v182_load_code(ROOT)
+    vpcd.ensure_algtest_load_code(ROOT)
     subprocess.run([str(ROOT / "tools/build-same-cap-sibling-fixture")],
                    cwd=ROOT, check=True, timeout=180)
     cap_path = ROOT / "build/same-cap-sibling-fixture/cap/samecap/javacard/samecap.cap"
@@ -63,7 +63,7 @@ def main() -> int:
 
     emulator = ROOT / "build/choupi-pc/choupi"
     rom_mask = ROOT / "build/choupi-pc/flash"
-    dummy = ROOT / "build/algtest-v182-load-code.bin"
+    dummy = ROOT / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     for required in (emulator, rom_mask, dummy):
         if not required.is_file():
             raise RuntimeError(f"required PC build artifact missing: {required}")

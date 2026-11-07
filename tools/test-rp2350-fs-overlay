@@ -2,10 +2,10 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/rp2350-fs-overlay"
+build_dir="${repo_root}/build/tests/unit/rp2350-fs-overlay"
 
 "${repo_root}/tools/env" cmake \
-  -S "${repo_root}/tools/tests/rp2350_fs_overlay" -B "${build_dir}"
+  -S "${repo_root}/tests/unit/rp2350_fs_overlay" -B "${build_dir}"
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target rp2350_fs_overlay_test
 "${build_dir}/rp2350_fs_overlay_test"

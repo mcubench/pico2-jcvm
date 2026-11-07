@@ -9,7 +9,7 @@ it is not a direct timing of the C++ reset function.
 
 ## Applet and native implementation
 
-`AlgTest_JavaCard/src/algtest/AlgPerformanceTest.java:1549` resets the digest
+`artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/src/algtest/AlgPerformanceTest.java:1549` resets the digest
 once before entering any measurement loop. Its reset branch (line 1566)
 executes `doFinal(m_ram1, 0, chunkDataLen, m_ram2, 0)` followed by `reset()`
 on every iteration. The doFinal branch executes only doFinal in its loop.

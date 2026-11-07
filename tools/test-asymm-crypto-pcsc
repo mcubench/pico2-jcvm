@@ -72,7 +72,7 @@ from pathlib import Path
 
 root, output = Path(sys.argv[1]), Path(sys.argv[2])
 label_filter = sys.argv[3]
-source = root / "tools/tests/test_asymm_crypto_vpcd.py"
+source = root / "tests/integration/test_asymm_crypto_vpcd.py"
 spec = importlib.util.spec_from_file_location("asymm_vectors", source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -125,7 +125,7 @@ timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
   >"${build_dir}/physical-install-${timestamp}.log" 2>&1 || \
   die "GPPro install failed; see ${build_dir}/physical-install-${timestamp}.log"
 "${repo_root}/tools/env" javac -d "${client_build}" \
-  "${repo_root}/tools/tests/SymmCryptoPcscProbe.java"
+  "${repo_root}/tests/hardware/SymmCryptoPcscProbe.java"
 # RSA-3072 key generation can take over two minutes on the RP2350 (RSA-CRT
 # varies by several minutes depending on random prime candidates). CCID time
 # extensions keep a long APDU alive, so keep a finite but generous host bound.

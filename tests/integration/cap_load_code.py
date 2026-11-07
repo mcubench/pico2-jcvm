@@ -1,6 +1,7 @@
 """Helpers for composing complete unchanged CAP component LOAD inputs."""
 
 from pathlib import Path
+from fixture_paths import fixture_path
 from zipfile import ZipFile
 
 
@@ -19,15 +20,15 @@ COMPONENTS = (
 )
 
 
-def build_algtest_v182_load_code(repo_root: Path) -> Path:
-    """Extract the upstream AlgTest 1.8.2 CAP's ordered load components.
+def build_algtest_load_code(repo_root: Path) -> Path:
+    """Extract the upstream AlgTest 1.8.4 CAP's ordered load components.
 
     Preserve the CAP archive unchanged. Descriptor is required because uploaded
     method execution uses its method-body ranges.
     """
     repo_root = repo_root.resolve()
-    source = repo_root / "AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
-    target = repo_root / "build/algtest-v182-load-code.bin"
+    source = fixture_path("jcalgtest.cap", repo_root)
+    target = repo_root / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     target.parent.mkdir(parents=True, exist_ok=True)
 
     with ZipFile(source) as archive:
@@ -61,21 +62,16 @@ def build_algtest_v182_load_code(repo_root: Path) -> Path:
     return target
 
 
-def ensure_algtest_v182_load_code(repo_root: Path) -> Path:
-    """Return the full-component input, rebuilding when the CAP is newer."""
-    root = repo_root.resolve()
-    source = root / "AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
-    target = root / "build/algtest-v182-load-code.bin"
-    if not target.is_file() or source.stat().st_mtime_ns > target.stat().st_mtime_ns:
-        return build_algtest_v182_load_code(repo_root)
-    return target
+def ensure_algtest_load_code(repo_root: Path) -> Path:
+    """Re-extract the small input so stale timestamps cannot select old bytes."""
+    return build_algtest_load_code(repo_root)
 
 
 def main() -> int:
     import sys
 
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
-    target = build_algtest_v182_load_code(root)
+    target = build_algtest_load_code(root)
     import hashlib
 
     data = target.read_bytes()

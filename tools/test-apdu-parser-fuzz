@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/apdu-parser-fuzz"
+build_dir="${repo_root}/build/tests/unit/apdu-parser-fuzz"
 
-"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/apdu_parser_fuzz" \
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/apdu_parser_fuzz" \
   -B "${build_dir}"
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target apdu_parser_fuzz

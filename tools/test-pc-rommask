@@ -8,6 +8,6 @@ trap 'rm -rf "${build_dir}"' EXIT
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
   -DPC_VERSION -I"${repo_root}/choupi/src" \
   "${repo_root}/choupi/src/pc_rommask.cpp" \
-  "${repo_root}/tools/tests/pc_rommask_test.cpp" \
+  "${repo_root}/tests/unit/pc_rommask_test.cpp" \
   -o "${build_dir}/pc_rommask_test"
 "${build_dir}/pc_rommask_test"

@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TARGET = next(
-    ROOT.glob("docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT*.csv"), None
+    ROOT.glob("tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT*.csv"), None
 )
 DEFAULT_EXPECTED = ROOT / "build/javacard-support/jcalgtest-supported.csv"
 SUPPORT_SECTIONS = {

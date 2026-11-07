@@ -18,7 +18,7 @@ host_build="${repo_root}/build/persistent-reclaimer-probe/host"
 "${repo_root}/tools/build-persistent-reclaimer-probe"
 mkdir -p "${host_build}" "${repo_root}/artifacts/logs"
 "${repo_root}/tools/env" javac -d "${host_build}" \
-  "${repo_root}/tools/PersistentReclaimerPhysicalProbe.java"
+  "${repo_root}/tests/hardware/PersistentReclaimerPhysicalProbe.java"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log="${repo_root}/artifacts/logs/persistent-reclaimer-physical-${timestamp}.log"

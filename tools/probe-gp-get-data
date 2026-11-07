@@ -11,6 +11,6 @@ require_host_usb_access
 build_dir="${repo_root}/build/gp-get-data-apdu-probe"
 mkdir -p "${build_dir}"
 "${repo_root}/tools/env" javac -d "${build_dir}" \
-  "${repo_root}/tools/GPGetDataApduProbe.java"
+  "${repo_root}/tests/hardware/GPGetDataApduProbe.java"
 timeout --signal=TERM --kill-after=2s "${timeout_seconds}s" \
   "${repo_root}/tools/env" java -cp "${build_dir}" GPGetDataApduProbe "$@"

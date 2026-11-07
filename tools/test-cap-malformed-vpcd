@@ -2,4 +2,4 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec python3 "${repo_root}/tools/tests/cap_malformed_vpcd_test.py" "$@"
+exec python3 "${repo_root}/tests/integration/cap_malformed_vpcd_test.py" "$@"

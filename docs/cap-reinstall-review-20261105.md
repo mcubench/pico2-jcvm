@@ -36,7 +36,7 @@ still pending because the Pico readers are currently absent from PC/SC.
 - `src/ccid_device.cpp:705` and `choupi/src/main.cpp:1076`: successful DELETE
   invalidates matching runtime contexts; package DELETE discards contexts
   belonging to that package.
-- `tools/tests/cap_upgrade_vpcd_test.py`: test-only V1/V2 CAP fixtures share
+- `tests/integration/cap_upgrade_vpcd_test.py`: test-only V1/V2 CAP fixtures share
   package AID `A000000151000006` and applet/instance AID
   `A00000015100000601`. Their load images are 392 and 479 bytes respectively.
   The VPCD regression checks V1→V2 and V2→V1 replacement, state mutation,
@@ -128,7 +128,7 @@ progress entry; the default SIO suite still passes 34/34.
   and power-cut tests. It deliberately prints `FAULT FS snapshot unavailable;
   preserve flash for recovery` while testing unrecoverable migration; under
   the repository's strict FAULT rule this is not a clean fault-free validation.
-- `tools/tests/same_cap_delete_reinstall_vpcd_test.py` reloads identical CAP
+- `tests/integration/same_cap_delete_reinstall_vpcd_test.py` reloads identical CAP
   code. It verifies owner reuse and shared-state lifetime, not changed bytecode.
 - No physical device operations, target builds, CAP modifications, or new
   runtime reproduction were performed. Firmware source did not change.

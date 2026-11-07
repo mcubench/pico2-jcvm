@@ -8,6 +8,6 @@ trap 'rm -rf "${build_dir}"' EXIT
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
   -DPC_VERSION -I"${repo_root}/choupi/src" \
   "${repo_root}/choupi/src/vpcd_protocol.cpp" \
-  "${repo_root}/tools/tests/vpcd_protocol_test.cpp" \
+  "${repo_root}/tests/unit/vpcd_protocol_test.cpp" \
   -o "${build_dir}/vpcd_protocol_test"
 "${build_dir}/vpcd_protocol_test"

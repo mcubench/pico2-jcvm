@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare JCAlgTest v1.8.2 supported-algorithm CSV exports."""
+"""Compare versioned JCAlgTest supported-algorithm CSV exports."""
 
 from __future__ import annotations
 

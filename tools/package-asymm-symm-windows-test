@@ -10,10 +10,10 @@ require_command sha256sum
 package_root="${repo_root}/build/external-test"
 package_dir="${package_root}/windows-profile-package"
 archive="${package_root}/pico2-jcvm-windows-test.zip"
-cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client_jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
-reference_csv="${repo_root}/reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+client_jar="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
+reference_csv="$("${repo_root}/tools/fixture-path" jcalgtest.reference)"
 
 for input in "${cap}" "${gp_jar}" "${client_jar}" "${reference_csv}" \
              "${repo_root}/tools/compare-jcalgtest-support.py" \
@@ -23,7 +23,7 @@ done
 
 # Keep the upstream exercise CAP and its provenance unchanged.
 cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
-[[ "${cap_hash}" == "b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169" ]] || \
+[[ "${cap_hash}" == "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad" ]] || \
   die "the supplied upstream JCAlgTest CAP hash changed: ${cap_hash}"
 
 rm -rf -- "${package_dir}"
@@ -45,13 +45,14 @@ for profile in symm_crypto asymm_crypto; do
 done
 
 install -m 0644 "${cap}" \
-  "${package_dir}/applet/AlgTest_v1.8.2_jc305.cap"
+  "${package_dir}/applet/AlgTest_v1.8.4_jc305.cap"
 install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
 install -m 0644 "${client_jar}" "${package_dir}/tools/AlgTestJClient.jar"
+cp -R "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
 install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
   "${package_dir}/tools/compare-jcalgtest-support.py"
 install -m 0644 "${reference_csv}" \
-  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv"
 install -m 0644 "${repo_root}/docs/windows-asymm-symm-test.md" \
   "${package_dir}/README.md"
 

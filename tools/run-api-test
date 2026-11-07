@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+offline=0
+for arg in "$@"; do
+  case "$arg" in --list|--help|-h) offline=1 ;; esac
+done
+if (( offline == 0 )); then require_host_usb_access; fi
+mkdir -p "${repo_root}/artifacts/results"
+exec python3 "$("${repo_root}/tools/fixture-path" api.runner)" \
+  --cap-dir "$("${repo_root}/tools/fixture-path" api.caps)" \
+  --gp "$("${repo_root}/tools/fixture-path" api.gp)" \
+  --client "$("${repo_root}/tools/fixture-path" api.client)" \
+  --out "${repo_root}/artifacts/results/api-validation.csv" "$@"

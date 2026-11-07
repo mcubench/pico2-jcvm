@@ -68,3 +68,14 @@ Maven 3.10.0 archive SHA-512:
 `908b1501bfb420bf7c8affb855534a9c407fd6099367bfb9f2f2dcb8e9799102bffb84518cde74c679bd76870247c6528683abdd620581bffa90f95d92d175aa`.
 Temurin JDK 8u504 archive SHA-256:
 `9c70e102f527ac674ac2fe9c7d47b9a04e2d19842ba5ab8e9b33f368bbadfaea`.
+
+## Supplied Java Card converters for test fixtures
+
+Repository-owned applet fixture builders resolve `toolchain.jc305` and
+`toolchain.ant-javacard` through `tools/fixture-path`. This workspace has the
+supplied kit and Ant adapter provisioned under `.local-toolchain/java-card/provided/`.
+They are ignored build dependencies, separate from immutable external CAPs.
+The original kit remains in the migration backup documented in
+`docs/testing-data-migration.md`; restore those two named paths there when
+provisioning a fresh workspace. Neither external suite requires recompiling
+or modifying its supplied CAPs.

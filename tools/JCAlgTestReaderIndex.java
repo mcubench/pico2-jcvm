@@ -4,7 +4,7 @@ import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
 import java.util.List;
 
-/** Resolve a PC/SC reader name to the one-based index used by JCAlgTest 1.8.2. */
+/** Resolve a PC/SC reader name to the one-based index used by JCAlgTest. */
 public final class JCAlgTestReaderIndex {
   private JCAlgTestReaderIndex() {}
 

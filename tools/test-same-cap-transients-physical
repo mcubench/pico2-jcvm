@@ -9,7 +9,7 @@ require_command timeout
 reader="$1"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 cap="${repo_root}/build/same-cap-transient-fixture/cap/samecaptransient/javacard/samecaptransient.cap"
-probe_source="${repo_root}/tools/tests/same_cap_transient_physical_probe/SameCapTransientPhysicalProbe.java"
+probe_source="${repo_root}/tests/hardware/same_cap_transient_physical_probe/SameCapTransientPhysicalProbe.java"
 probe_classes="${repo_root}/build/same-cap-transient-fixture/physical-probe-classes"
 package_aid="A000000151000006"
 writer_aid="A00000015100000601"

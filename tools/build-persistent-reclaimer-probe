@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source_dir="${repo_root}/tools/tests/persistent_reclaimer_applet"
+source_dir="${repo_root}/tests/fixtures/local/persistent_reclaimer_applet"
 build_dir="${repo_root}/build/persistent-reclaimer-probe"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 
@@ -13,7 +13,7 @@ java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 mkdir -p "${build_dir}/classes" "${build_dir}/output"
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
   -source 1.7 -target 1.7 -Xlint:-options \
-  -classpath "${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit/lib/api_classic.jar" \
+  -classpath "$("${repo_root}/tools/fixture-path" toolchain.jc305)/lib/api_classic.jar" \
   -d "${build_dir}/classes" \
   "${source_dir}/PersistentReclaimerProbe.java" \
   > "${build_dir}/compile.log" 2>&1
@@ -23,9 +23,9 @@ cat > "${build_dir}/build.xml" <<EOF_ANT
 <project basedir="." default="build" name="PersistentReclaimerProbe">
   <property name="repo" location="${repo_root}"/>
   <taskdef name="javacard" classname="pro.javacard.ant.JavaCard"
-           classpath="\${repo}/AlgTest_JavaCard/ext/ant-javacard.jar"/>
+           classpath="\${repo}/.local-toolchain/java-card/provided/ant-javacard.jar"/>
   <target name="build">
-    <javacard jckit="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit">
+    <javacard jckit="\${repo}/.local-toolchain/java-card/provided/jc305u3_kit">
       <cap output="\${basedir}/output/PersistentReclaimerProbe.cap"
            classes="\${basedir}/classes" aid="a0000000620302">
         <applet class="algtest.PersistentReclaimerProbe"

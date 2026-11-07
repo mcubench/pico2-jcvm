@@ -273,7 +273,7 @@ static_assert(flash_layout::filesystem_end <= 0x200000);
 ```
 The current layout uses 4 KiB sector alignment and 160 KiB snapshot slots; its writer rounds programmed payload and erase size independently. The host flash model checks 4 KiB erases, 256-byte program counts/offsets, and buffer alignment.
 
-Source: [src/flash_layout.hpp:41](../src/flash_layout.hpp#L41); [src/choupi_pico2.cpp:400](../src/choupi_pico2.cpp#L400); [tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp:105](../tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp#L105).
+Source: [src/flash_layout.hpp:41](../src/flash_layout.hpp#L41); [src/choupi_pico2.cpp:400](../src/choupi_pico2.cpp#L400); [tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp:105](../tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp#L105).
 
 ### 14. Batch related writes with an explicit transaction owner
 
@@ -621,7 +621,7 @@ Model flash constraints and inject failures between mutations before relying on 
 ```
 These wrappers cover distinct layers; choose the tests relevant to a change. The overlay model injects simulated cuts, but actual USB power interruption and recovery of the persistent reclaimer remain separate physical acceptance work; no tests were rerun to author this guide.
 
-Source: [tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp:66](../tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp#L66); [.agent/HANDOFF.md:146](../.agent/HANDOFF.md#L146); [.agent/QKB.md:11](../.agent/QKB.md#L11).
+Source: [tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp:66](../tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp#L66); [.agent/HANDOFF.md:146](../.agent/HANDOFF.md#L146); [.agent/QKB.md:11](../.agent/QKB.md#L11).
 
 ### 40. Flash the intended image and require finite runtime evidence
 

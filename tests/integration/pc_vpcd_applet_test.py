@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from cap_load_code import ensure_algtest_v182_load_code
+from cap_load_code import ensure_algtest_load_code
 
 
 DEFAULT_APPLET_AID = bytes.fromhex("4A43416C675465737431")
@@ -296,9 +296,9 @@ def run_emulator(
                     bytes.fromhex("B0E1000000"),
                     "JCAlgTest GETVERSION APDU",
                 )
-                if version[:-2] != b"1.8.2_jc305":
+                if version[:-2] != b"1.8.4_jc305":
                     raise RuntimeError(
-                        "GETVERSION response is not exactly 1.8.2_jc305: "
+                        "GETVERSION response is not exactly 1.8.4_jc305: "
                         f"{version.hex().upper()}"
                     )
 
@@ -500,14 +500,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--emulator", type=Path, default=repo / "build/choupi-pc/choupi"
     )
-    default_memory = repo / "build/algtest-v182-vpcd-empty-input.bin"
+    default_memory = repo / "build/tests/jcalgtest/algtest-v184-vpcd-empty-input.bin"
     parser.add_argument(
         "--memory", type=Path, default=None,
         help=("input flash image; by default the test creates a fresh blank "
               "image at " + str(default_memory)),
     )
     parser.add_argument(
-        "--cap-code", type=Path, default=repo / "build/algtest-v182-load-code.bin"
+        "--cap-code", type=Path, default=repo / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     )
     parser.add_argument(
         "--rom-mask", type=Path, default=repo / "build/choupi-pc/flash"
@@ -696,9 +696,9 @@ def parse_args() -> argparse.Namespace:
             len(args.expect_resume_apdu_response) != len(args.resume_apdu):
         parser.error("--expect-resume-apdu-response must be repeated once for each --resume-apdu")
     args.repo = args.repo.resolve()
-    default_cap_code = repo / "build/algtest-v182-load-code.bin"
+    default_cap_code = repo / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     if args.cap_code == default_cap_code:
-        ensure_algtest_v182_load_code(args.repo)
+        ensure_algtest_load_code(args.repo)
     for name in ("emulator", "memory", "cap_code", "rom_mask"):
         setattr(args, name, getattr(args, name).resolve())
         if name == "memory" and args.uses_generated_empty_memory:
@@ -708,7 +708,7 @@ def parse_args() -> argparse.Namespace:
             parser.error(f"--{name.replace('_', '-')} not found: {getattr(args, name)}")
     if args.flash_copy is None:
         if args.memory == default_memory.resolve():
-            args.flash_copy = repo / "build/algtest-v182-vpcd-flash.bin"
+            args.flash_copy = repo / "build/tests/jcalgtest/algtest-v184-vpcd-flash.bin"
         else:
             args.flash_copy = args.memory.with_name(args.memory.stem + "-vpcd-copy.bin")
     args.flash_copy = args.flash_copy.resolve()

@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source_root="${repo_root}/tools/tests/unrelated_client_fixture"
+source_root="${repo_root}/tests/fixtures/local/unrelated_client_fixture"
 build_dir="${repo_root}/build/unrelated-client-fixture"
-kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+kit="$("${repo_root}/tools/fixture-path" toolchain.jc305)"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 package_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x07'
 applet_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x07:0x01'

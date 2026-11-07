@@ -7,8 +7,8 @@ profile's enabled capabilities plus the current asymmetric selections.
 ## Files
 
 The generated archive `build/external-test/pico2-jcvm-windows-test.zip`
-contains both UF2 images, the upstream AlgTest 1.8.2 CAP, GPPro, the official
-JCAlgTest 1.8.2 client, expected support CSVs, a CSV comparator, and this
+contains both UF2 images, the upstream AlgTest 1.8.4 CAP, GPPro, the official
+JCAlgTest 1.8.4 client, expected support CSVs, a CSV comparator, and this
 run sheet. Check `SHA256SUMS.txt` before use.
 
 ## Flash and check PC/SC
@@ -57,7 +57,7 @@ if ($listing -match '(?m)^(APP|PKG):') {
 }
 
 # Upload the unchanged upstream CAP only after the empty-card check.
-java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.2_jc305.cap
+java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.4_jc305.cap
 if ($LASTEXITCODE -ne 0) { throw 'GPPro LOAD/INSTALL failed' }
 java -jar .\tools\AlgTestJClient.jar -op ALG_SUPPORT_EXTENDED -fresh -cardname "CHOUPI_symm_crypto" -outpath .\results\symm_crypto
 if ($LASTEXITCODE -ne 0) { throw 'JCAlgTest client failed' }
@@ -74,7 +74,7 @@ the actual CSV under `results\symm_crypto`, then run this command (the
 jCardSim reference is a required second positional argument):
 
 ```powershell
-py .\tools\compare-jcalgtest-support.py .\results\symm_crypto\<actual-file>.csv .\reference\jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv --expected-support .\expected\expected-support-symm_crypto.csv
+py .\tools\compare-jcalgtest-support.py .\results\symm_crypto\<actual-file>.csv .\reference\jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv --expected-support .\expected\expected-support-symm_crypto.csv
 ```
 
 For the second profile, repeat BOOTSEL flashing with
@@ -83,7 +83,7 @@ with `asymm_crypto` in the output path and card name, and use
 `expected-support-asymm_crypto.csv`.
 
 The current asymmetric profile has 145 declared positive entries. With the
-unchanged upstream 1.8.2 CAP, the physical comparison is expected to show
+unchanged upstream 1.8.4 CAP, the physical comparison is expected to show
 143/145: the CAP labels two RSA/RSA-CRT 3072 key-pair probes as 3072 but sends
 4096. Preserve the upstream CAP and record these two known query mismatches;
 independent 3072-bit generation checks passed on hardware. Do not treat this
@@ -98,3 +98,8 @@ known comparator result as a failed package or alter the CAP to hide it.
   the VM core only; it does not produce a full CHOUPI firmware image.
 - This test checks Windows PC/SC enumeration and the standard client flow. It
   does not establish Windows driver behavior for other host configurations.
+
+This package selects applet 1.8.4_jc305. The supplied versioned client
+identifies itself internally as 1.8.3 and needs the adjacent tools/lib directory.
+Historical profile outcomes require a fresh run against this baseline; the
+migration alone does not establish the expected firmware support results.

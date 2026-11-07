@@ -7,6 +7,6 @@ trap 'rm -rf "${build_dir}"' EXIT
 
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
   -I"${repo_root}/src" \
-  "${repo_root}/tools/tests/ccid_rx_framing_test.cpp" \
+  "${repo_root}/tests/unit/ccid_rx_framing_test.cpp" \
   -o "${build_dir}/ccid_rx_framing_test"
 "${build_dir}/ccid_rx_framing_test"

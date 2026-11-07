@@ -5,8 +5,8 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log_dir="${repo_root}/artifacts/logs"
 client_jar="${repo_root}/choupi/javacard-sdk/rommask/capmap-free/javacard/jcdk/2.2.1/libs/jcrmiclientframework.jar"
-api_jar="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit/lib/api_classic.jar"
-fixture_classes="${repo_root}/build/rmi-array-fixture/classes"
+api_jar="$("${repo_root}/tools/fixture-path" toolchain.jc305)/lib/api_classic.jar"
+fixture_classes="${repo_root}/build/tests/fixtures/rmi-array-fixture/classes"
 memory_dir="${repo_root}/build/rmi-client-vpcd"
 memory="${memory_dir}/flash-${timestamp}.bin"
 client_log="${log_dir}/rmi-client-official-vpcd-client-${timestamp}.log"
@@ -26,10 +26,10 @@ PY
 
 java \
   --class-path "${client_jar}:${api_jar}:${fixture_classes}" \
-  "${repo_root}/tools/tests/rmi_client_probe/RmiClientProbe.java" \
+  "${repo_root}/tests/integration/rmi_client_probe/RmiClientProbe.java" \
   "${repo_root}/build/choupi-pc/choupi" \
   "${memory}" \
-  "${repo_root}/build/rmi-array-fixture/rmi-fixture-load-code.bin" \
+  "${repo_root}/build/tests/fixtures/rmi-array-fixture/rmi-fixture-load-code.bin" \
   "${repo_root}/build/choupi-pc/flash" \
   "${log_dir}/rmi-client-official-vpcd-emulator-${timestamp}.log" \
   | tee "${client_log}"

@@ -24148,3 +24148,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue full user-authorized migration of test code, consumers and instructions; earlier review-only restriction is superseded for this migration. Preserve unrelated dirty runtime and test edits.
 - Commit: pending fixture catalog commit.
 - Artifacts/logs: `tests/fixtures/manifest.json`; migration snapshots under ignored `build/testing-migration/`. Performance and physical metrics not measured.
+
+- Commit: `21415dc6` — fixture catalog ingestion completed; resolves the preceding pending catalog commit reference.
+
+## 2026-11-07 Complete testing data and test layout migration 15 minutes active work
+
+- Step/experiment: `test-data-migration-consumers`
+- When: '2026-11-07 08:17:41 CET' - '2026-11-07 08:32:21 CET'
+- Change: Relocated test implementations and repository-owned fixtures under tests; switched active suite defaults/instructions to supplied JCAlgTest 1.8.4 and independent API corpus. Preserved client libraries, centralized paths/hashes, generated a version-correct simulator reference, moved loose card reference CSVs and archived the original distribution. Preserved seven pre-existing edited test/instruction files through migration-only index content; unrelated runtime work remains unstaged.
+- Validation: Fixture hashes pass 81 files / 48 API CAPs; original-tree archive comparison passes 388 files. Catalog tests 2/2; support tests 14/14; parser 4208 checks and 100000 fuzz inputs; JC305 method corpus 11 CAPs/978 methods with zero clamps or bad branches. Native wrappers 26/28 pass; accepted failures are standalone allocation linking and VPCD partial-header send. RMI builder, Python compilation (24), Bash syntax (107), Java probe compilation and PC build pass. JCAlgTest 1.8.4 install/restart passes 30 checks; API Core/Multi smoke installs three instances; API extended Crypto retry passes 3 checks with 000020019000. Early emulator timeouts retained in logs. No runtime correction, firmware build, flash or physical USB/PCSC validation performed.
+- Result: Both supplied validation suites run from canonical fixtures with distinct clients; no active tool depends on the old AlgTest_JavaCard or tools/tests locations. External CAP/JAR/runner bytes unchanged. Two host-test failures explicitly accepted by the user as todo.md follow-ups MIG-20261107-01/02. PC build emitted existing upstream warnings; performance not measured.
+- Decision: Migration complete; follow-up runtime/test-semantic fixes remain separate. Preserve all unrelated uncommitted work.
+- Commit: this step is committed as `Complete testing data and test layout migration`; exact SHA is reported on completion (prior input step: `21415dc6`).
+- Artifacts/logs: `artifacts/results/testing-data-migration-20261107/`; `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`; fixture manifest; `docs/testing-data-migration.md`.

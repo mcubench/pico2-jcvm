@@ -23,15 +23,26 @@ fi
 
 cd "${repo_root}"
 "${repo_root}/tools/build-pc" > "${out_dir}/build-pc.log" 2>&1
-"${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
+"${repo_root}/tools/env" java "${repo_root}/tests/hardware/VpcdPresenceProbe.java" \
   "Virtual PCD 00 00" 2000 | tee "${out_dir}/presence-query.log"
 
 flash_copy="${out_dir}/flash.bin"
-cp "${repo_root}/build/algtest-v182-empty-flash.bin" "${flash_copy}"
+: > "${flash_copy}"
+load_code="${out_dir}/javacardxsec-305-load-code.bin"
+python3 - "${repo_root}" "${load_code}" <<'PY_EXTRACT'
+import sys
+from pathlib import Path
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root / 'tests/integration'))
+from fixture_paths import fixture_path
+from pc_vpcd_multipackage_test import load_code
+code, _, _ = load_code(fixture_path('api.caps') / 'AlgTestApiJavacardxSec_305.cap')
+Path(sys.argv[2]).write_bytes(code)
+PY_EXTRACT
 "${repo_root}/tools/env" "${repo_root}/build/choupi-pc/choupi" \
   -m "${flash_copy}" -s --vpcd 127.0.0.1:35963 \
   --applet-aid 4A43416C67546573744170694A787331 --package-id 63 \
-  --cap-code "${repo_root}/build/deploy-javacardxsec-305-load-code.bin" \
+  --cap-code "${load_code}" \
   --rom-mask "${repo_root}/build/choupi-pc/flash" --install -s \
   > "${out_dir}/emulator.log" 2>&1 &
 vm_pid=$!
@@ -48,15 +59,15 @@ if ! kill -0 "${vm_pid}" 2>/dev/null; then
   cat "${out_dir}/emulator.log" >&2
   exit 1
 fi
-"${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
+"${repo_root}/tools/env" java "${repo_root}/tests/hardware/VpcdPresenceProbe.java" \
   "Virtual PCD 00 00" 5000 --require-present \
   | tee "${out_dir}/card-ready-query.log"
 
 set +e
 PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 200s \
-  python3 "${repo_root}/AlgTest_JavaCard/deploy/api_card_runner.py" \
-    --test-only --api 305 --areas JavacardxSec --reader-index 1 \
-    --client "${repo_root}/AlgTest_JavaCard/deploy/client/AlgTestJClient.jar" \
+  python3 "$("${repo_root}/tools/fixture-path" api.runner)" \
+    --test-only --cap-dir "$("${repo_root}/tools/fixture-path" api.caps)" --api 305 --areas JavacardxSec --reader-index 1 \
+    --client "$("${repo_root}/tools/fixture-path" api.client)" \
     --cardname current-source-vpcd --out "${out_dir}/javacardxsec.csv" \
     --test-timeout 180 > "${out_dir}/client.log" 2>&1
 client_status=$?

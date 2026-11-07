@@ -273,7 +273,7 @@ def main():
         require_sw(selected, b"\x90\x00", "SELECT_JCALGTEST_AFTER_POWER_CYCLE")
         version = transport.command(bytes.fromhex("B0E1000000"))
         require_sw(version, b"\x90\x00", "GETVERSION")
-        if version[:-2] != b"1.8.2_jc305":
+        if version[:-2] != b"1.8.4_jc305":
             raise RuntimeError("unexpected JCAlgTest version: " + version[:-2].decode("ascii", "replace"))
         print("TEST:PASS JCALGTEST_VERSION " + version[:-2].decode("ascii"))
 

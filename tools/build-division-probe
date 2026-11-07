@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source_dir="${repo_root}/tools/tests/division_applet"
+source_dir="${repo_root}/tests/fixtures/local/division_applet"
 build_dir="${repo_root}/build/division-probe"
-kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+kit="$("${repo_root}/tools/fixture-path" toolchain.jc305)"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 package_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x02:0x04'
 applet_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x02:0x04:0x01'
@@ -24,7 +24,7 @@ cat > "${build_dir}/build.xml" <<EOF_ANT
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="build" name="DivisionProbe">
   <property name="repo" location="${repo_root}"/>
-  <property name="kit" location="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit"/>
+  <property name="kit" location="\${repo}/.local-toolchain/java-card/provided/jc305u3_kit"/>
   <target name="build">
     <java classname="com.sun.javacard.converter.Main" fork="true"
           dir="\${basedir}/output" failonerror="true">

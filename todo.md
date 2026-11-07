@@ -158,3 +158,20 @@ Extend RV-20261106-17's GC measurements to incoming foreign-array registry trave
 The report and additional task list now contain 60 matching entries. R01/R02/R03 were rechecked on the original snapshot; the 7 November source corrections now supersede those descriptions. Existing registry assertions are enabled, but their zero-depth dup tests do not cover this new positive-depth finding.
 
 - [ ] **RV-20261106-60 — Audit acceptance of the corrected positive-depth dup_x implementation.** P1; owner: HARD-01 / PROFILE-01 / CTX-01. Duplicate only the top M words at depth N, with correct input/output bounds and inclusive N limits. Cover every legal/invalid M/N form, exact values/depth, capacity boundaries, owner-tagged references and int pairs through helper and full interpreter execution. Preserve metadata and failure recovery; use integer-range checks before pointer arithmetic as in R03. [R60](docs/review_20261106.md#r60--p1-positive-depth-dup_x-duplicates-the-wrong-stack-segment)
+
+## Testing-data migration follow-ups — 7 November 2026
+
+The user accepted these two host-test failures as documented follow-ups.
+They were observed while validating relocated tests; no runtime correction
+is included in the migration. See [migration evidence](docs/testing-data-migration.md).
+
+- [ ] **MIG-20261107-01 — Restore the standalone allocation test link dependency.**
+  `tools/test-jcvmarray-allocation` configures in its new directory, then fails
+  to link `FlashMemory_Handler::persistentWriteRollbackGeneration()` from the
+  existing heap implementation. Supply the appropriate test dependency and
+  rerun this focused test; preserve unrelated in-progress heap changes.
+- [ ] **MIG-20261107-02 — Reconcile the VPCD partial-header regression.**
+  `tools/test-vpcd-protocol` fails `send partial frame header`. Inspect socket
+  state after its preceding idle-read timeout and the intended transport
+  shutdown behavior, then correct the regression or implementation in its
+  own change. Preserve the existing timeout/partial-frame acceptance intent.

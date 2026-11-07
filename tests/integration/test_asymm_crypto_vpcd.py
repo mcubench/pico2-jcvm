@@ -355,9 +355,9 @@ def main() -> int:
     log = ROOT / "artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log"
     command = [
         str(ROOT / "tools/env"), "python3",
-        str(ROOT / "tools/tests/pc_vpcd_applet_test.py"),
+        str(ROOT / "tests/integration/pc_vpcd_applet_test.py"),
         "--emulator", str(ROOT / "build/choupi-pc/choupi"),
-        "--memory", str(ROOT / "build/algtest-v182-current-empty-flash.bin"),
+        "--memory", str(ROOT / "build/tests/jcalgtest/algtest-v184-current-empty-flash.bin"),
         "--cap-code", str(ROOT / "build/symm-crypto-probe/load-code.bin"),
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "2",

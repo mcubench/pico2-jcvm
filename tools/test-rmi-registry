@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/rmi-registry"
+build_dir="${repo_root}/build/tests/unit/rmi-registry"
 
-"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/rmi_registry" \
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/rmi_registry" \
   -B "${build_dir}" -DCMAKE_BUILD_TYPE=Release
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target rmi_registry_test --parallel 2

@@ -23,7 +23,7 @@ timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-60}"
 
 mkdir -p "${java_build}" "${log_dir}"
 "${repo_root}/tools/env" javac -d "${java_build}" \
-  "${repo_root}/tools/tests/CipherLifecyclePcscProbe.java"
+  "${repo_root}/tests/hardware/CipherLifecyclePcscProbe.java"
 PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"

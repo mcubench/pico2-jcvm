@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/short-apdu"
+build_dir="${repo_root}/build/tests/unit/short-apdu"
 
-"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/short_apdu" \
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/short_apdu" \
   -B "${build_dir}"
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target short_apdu_test apdu_context_test

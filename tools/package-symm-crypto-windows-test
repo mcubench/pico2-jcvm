@@ -15,11 +15,11 @@ require_command sha256sum
 package_dir="${repo_root}/build/external-test/symm-only-package"
 archive="${repo_root}/build/external-test/symm-crypto-windows-test.zip"
 firmware="${repo_root}/build/arm/pico2_choupi.uf2"
-cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client_jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
+client_jar="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
 expected_csv="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
-reference_csv="${repo_root}/reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+reference_csv="$("${repo_root}/tools/fixture-path" jcalgtest.reference)"
 
 for input in "${firmware}" "${cap}" "${gp_jar}" "${client_jar}" \
              "${expected_csv}" "${reference_csv}" \
@@ -30,7 +30,7 @@ done
 
 # Never edit the upstream CAP; verify its pinned identity before copying it.
 cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
-[[ "${cap_hash}" == "b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169" ]] || \
+[[ "${cap_hash}" == "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad" ]] || \
   die "the supplied upstream JCAlgTest CAP hash changed: ${cap_hash}"
 
 rm -rf -- "${package_dir}"
@@ -40,16 +40,17 @@ mkdir -p "${package_dir}/firmware" "${package_dir}/applet" \
 install -m 0644 "${firmware}" \
   "${package_dir}/firmware/pico2_choupi_symm_crypto.uf2"
 install -m 0644 "${cap}" \
-  "${package_dir}/applet/AlgTest_v1.8.2_jc305.cap"
+  "${package_dir}/applet/AlgTest_v1.8.4_jc305.cap"
 install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
 install -m 0644 "${client_jar}" \
   "${package_dir}/tools/AlgTestJClient.jar"
+cp -R "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
 install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
   "${package_dir}/tools/compare-jcalgtest-support.py"
 install -m 0644 "${expected_csv}" \
   "${package_dir}/expected/expected-support-symm_crypto.csv"
 install -m 0644 "${reference_csv}" \
-  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv"
 install -m 0644 "${repo_root}/docs/symm-crypto-windows-test.md" \
   "${package_dir}/README.md"
 

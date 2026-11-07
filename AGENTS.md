@@ -97,3 +97,12 @@ created by another session.
 ## Issues knowledge base
 
 Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible token, failures to run lsusb, sudo related issues...). When robust fix for the issue is found, mark it as viable solution and try to use it later when issue is encountered again. 
+
+## Validation suites and test layout
+
+- The active JCAlgTest acceptance baseline is the unchanged supplied **1.8.4 / jc305** CAP and its matching versioned client. Resolve them using `./tools/fixture-path jcalgtest.cap` and `./tools/fixture-path jcalgtest.client`. Do not fall back to 1.8.2.
+- The separate supplied Java Card API validation suite is under `tests/fixtures/external/javacard-api/provided-20261107/`; retain all version variants and use its own client.
+- `tests/fixtures/manifest.json` pins inputs and hashes. Run `./tools/fixture-path --verify` before acceptance. Keep supplied CAP/JAR bytes unchanged; no Java algorithm providers or modified algorithm CAPs.
+- Test code belongs in `tests/unit`, `tests/integration`, or `tests/hardware`; repository-owned test applet sources belong in `tests/fixtures/local`. Keep stable entrypoints in `tools/`.
+- Generated tests/CAPs/images go under `build/`; logs/results go under `artifacts/`. SDKs/converters belong in `.local-toolchain/`, not external fixture directories.
+- Legacy 1.8.2 inputs/results remain explicitly versioned historical evidence. Recheck imports, client compatibility, expected responses and support baselines for 1.8.4; never relabel old results as 1.8.4. See `tests/README.md` and `docs/testing-data-migration.md`.

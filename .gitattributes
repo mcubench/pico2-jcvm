@@ -1,3 +1,9 @@
 
 # Preserve the upstream reference CSV bytes, including CRLF and data whitespace.
-/reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv -text -whitespace
+
+# Keep supplied fixtures and generated reference evidence byte-identical.
+tests/fixtures/external/** -text -diff -whitespace
+tests/fixtures/reference/** -text -diff -whitespace
+
+# Existing planning document uses CRLF.
+plan.md whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -3,4 +3,4 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "${repo_root}/tools/build-jcsystem-transaction-probe"
-exec python3 "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" "$@"
+exec python3 "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" "$@"

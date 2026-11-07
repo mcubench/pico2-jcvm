@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source_dir="${repo_root}/tools/tests/rmi_array_fixture"
-build_dir="${repo_root}/build/rmi-array-fixture"
-kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+source_dir="${repo_root}/tests/fixtures/local/rmi_array_fixture"
+build_dir="${repo_root}/build/tests/fixtures/rmi-array-fixture"
+kit="$("${repo_root}/tools/fixture-path" toolchain.jc305)"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 
 [[ -x "${java8_home}/bin/javac" ]] || {
@@ -23,7 +23,7 @@ cat > "${build_dir}/build.xml" <<EOF_ANT
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="build" name="RmiArrayFixture">
   <property name="repo" location="${repo_root}"/>
-  <property name="kit" location="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit"/>
+  <property name="kit" location="\${repo}/.local-toolchain/java-card/provided/jc305u3_kit"/>
   <target name="build">
     <java classname="com.sun.javacard.converter.Main" fork="true"
           dir="\${basedir}/output" failonerror="true">
@@ -77,7 +77,7 @@ with open(load_target, "wb") as output:
         output.write(content)
 PY
 
-inspect_dir="${repo_root}/build/tests/rmi-array-fixture"
+inspect_dir="${repo_root}/build/tests/fixtures/rmi-array-fixture/inspect"
 "${repo_root}/tools/env" cmake -S "${source_dir}" -B "${inspect_dir}" \
   -DCMAKE_BUILD_TYPE=Release > "${build_dir}/inspect-configure.log"
 "${repo_root}/tools/env" cmake --build "${inspect_dir}" \

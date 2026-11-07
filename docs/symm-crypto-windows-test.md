@@ -1,7 +1,7 @@
 # Windows test package: `symm_crypto`
 
 This package tests only the `symm_crypto` ARM firmware profile. It contains no
-asymmetric-profile firmware. The CAP is the unchanged upstream JCAlgTest 1.8.2
+asymmetric-profile firmware. The CAP is the unchanged upstream JCAlgTest 1.8.4
 JC305 artifact.
 
 ## Flash and check PC/SC
@@ -61,7 +61,7 @@ if ($listing -match '(?m)^(APP|PKG):') {
 }
 
 # Upload the unchanged upstream CAP only after the empty-card check.
-java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.2_jc305.cap
+java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.4_jc305.cap
 if ($LASTEXITCODE -ne 0) { throw 'GPPro LOAD/INSTALL failed' }
 java -jar .\tools\AlgTestJClient.jar -op ALG_SUPPORT_EXTENDED -fresh -cardname CHOUPI_symm_crypto -outpath .\results\symm_crypto
 if ($LASTEXITCODE -ne 0) { throw 'JCAlgTest client failed' }
@@ -73,10 +73,15 @@ result CSV against the generated support list:
 
 ```powershell
 $csv = Get-ChildItem .\results\symm_crypto\*ALGSUPPORT*.csv | Select-Object -First 1
-$reference = '.\reference\jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv'
+$reference = '.\reference\jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv'
 py .\tools\compare-jcalgtest-support.py $csv.FullName $reference --expected-support .\expected\expected-support-symm_crypto.csv
 ```
 
 The expected CSV lists the 46 capabilities selected for this profile. A
 complete Windows enumeration and client run must be performed on the target
 Windows system; this package itself does not claim that result.
+
+This package selects applet 1.8.4_jc305. The supplied versioned client
+identifies itself internally as 1.8.3 and needs the adjacent tools/lib directory.
+Historical profile outcomes require a fresh run against this baseline; the
+migration alone does not establish the expected firmware support results.

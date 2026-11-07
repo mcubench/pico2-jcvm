@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Validate Descriptor-derived method body bounds in deployed JC305 CAPs."""
+
+import sys
+from pathlib import Path
+from zipfile import ZipFile
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "tests/integration"))
+from fixture_paths import fixture_path
+CAP_DIR = fixture_path("api.caps")
+EXPECTED_CAPS = 11
+EXPECTED_METHODS = 978
+EXPECTED_CLAMPS = 0
+
+
+def component(archive: ZipFile, suffix: str, expected_tag: int) -> bytes:
+    matches = [name for name in archive.namelist() if name.endswith(suffix)]
+    if len(matches) != 1:
+        raise ValueError(f"expected one {suffix}, found {len(matches)}")
+    data = archive.read(matches[0])
+    if len(data) < 4 or data[0] != expected_tag:
+        raise ValueError(f"invalid {suffix} component header")
+    declared_size = int.from_bytes(data[1:3], "big")
+    if declared_size + 3 != len(data):
+        raise ValueError(
+            f"{suffix} component size mismatch: declared={declared_size} "
+            f"actual={len(data) - 3}"
+        )
+    return data
+
+
+def read_be16(data: bytes, offset: int) -> int:
+    return int.from_bytes(data[offset : offset + 2], "big")
+
+
+def instruction_info(code: bytes, offset: int) -> tuple[int, list[int]]:
+    opcode = code[offset]
+    size = len(code)
+    if 0x98 <= opcode <= 0xA8:
+        displacement = int.from_bytes(code[offset + 1 : offset + 3], "big", signed=True)
+        return 3, [offset + displacement]
+    if 0x60 <= opcode <= 0x71:
+        displacement = int.from_bytes(code[offset + 1 : offset + 2], "big", signed=True)
+        return 2, [offset + displacement]
+    if (
+        opcode <= 0x0F
+        or 0x18 <= opcode <= 0x27
+        or 0x2B <= opcode <= 0x3E
+        or 0x41 <= opcode <= 0x58
+        or 0x5B <= opcode <= 0x5F
+        or 0x77 <= opcode <= 0x7A
+        or opcode in (0x92, 0x93)
+    ):
+        return 1, []
+    if (
+        opcode in (0x10, 0x12, 0x90, 0x3F, 0x40)
+        or 0x15 <= opcode <= 0x17
+        or 0x28 <= opcode <= 0x2A
+        or 0x60 <= opcode <= 0x72
+        or 0xAD <= opcode <= 0xB0
+        or 0xB5 <= opcode <= 0xB8
+    ):
+        return 2, []
+    if opcode in (0x11, 0x13):
+        return 3, []
+    if opcode in (0x59, 0x5A):
+        return 3, []
+    if 0x7B <= opcode <= 0x8D:
+        return (2 if 0x83 <= opcode <= 0x8A else 3), []
+    if opcode in (0x8F, 0x91, 0xA9, 0xAA, 0xAB, 0xAC,
+                  0xB1, 0xB2, 0xB3, 0xB4):
+        return 3, []
+    if opcode in (0x94, 0x95):
+        return 4, []
+    if opcode in (0x14, 0x8E):
+        return (5 if opcode == 0x14 else 5), []
+    if opcode in (0x96, 0x97):
+        return 4, []
+    def s16(at: int) -> int:
+        return int.from_bytes(code[at : at + 2], "big", signed=True)
+
+    if opcode == 0x73:
+        if offset + 7 > size:
+            raise ValueError(f"truncated stableswitch at {offset}")
+        low, high = s16(offset + 3), s16(offset + 5)
+        if low > high:
+            raise ValueError(f"invalid stableswitch range at {offset}")
+        count = high - low + 1
+        width = 7 + count * 2
+        if offset + width > size:
+            raise ValueError(f"truncated stableswitch table at {offset}")
+        targets = [offset + s16(offset + 1)]
+        targets.extend(offset + s16(offset + 7 + i * 2) for i in range(count))
+        return width, targets
+    if opcode == 0x74:
+        if offset + 11 > size:
+            raise ValueError(f"truncated itableswitch at {offset}")
+        low = int.from_bytes(code[offset + 3 : offset + 7], "big", signed=True)
+        high = int.from_bytes(code[offset + 7 : offset + 11], "big", signed=True)
+        if low > high:
+            raise ValueError(f"invalid itableswitch range at {offset}")
+        count = high - low + 1
+        width = 11 + count * 2
+        if offset + width > size:
+            raise ValueError(f"truncated itableswitch table at {offset}")
+        targets = [offset + s16(offset + 1)]
+        targets.extend(offset + s16(offset + 11 + i * 2) for i in range(count))
+        return width, targets
+    if opcode in (0x75, 0x76):
+        if offset + 5 > size:
+            raise ValueError(f"truncated lookup switch at {offset}")
+        pairs = int.from_bytes(code[offset + 3 : offset + 5], "big")
+        pair_width = 4 if opcode == 0x75 else 6
+        width = 5 + pairs * pair_width
+        if offset + width > size:
+            raise ValueError(f"truncated lookup switch pairs at {offset}")
+        targets = [offset + s16(offset + 1)]
+        targets.extend(
+            offset + s16(offset + 5 + i * pair_width + pair_width - 2)
+            for i in range(pairs)
+        )
+        return width, targets
+    raise ValueError(f"unsupported opcode 0x{opcode:02x} at {offset}")
+
+
+def validate_instruction_boundaries(code: bytes) -> tuple[int, int, int]:
+    starts: set[int] = set()
+    branches: list[tuple[int, int]] = []
+    offset = 0
+    while offset < len(code):
+        starts.add(offset)
+        width, targets = instruction_info(code, offset)
+        branches.extend((offset, target) for target in targets)
+        if width <= 0 or width > len(code) - offset:
+            raise ValueError(f"truncated instruction at {offset}")
+        offset += width
+    if offset != len(code):
+        raise ValueError("instruction stream does not end on a boundary")
+    out_of_range = misaligned = 0
+    for origin, target in branches:
+        if target < 0 or target >= len(code):
+            out_of_range += 1
+            continue  # Runtime method-body bounds reject a taken branch.
+        if target not in starts:
+            misaligned += 1
+    return len(branches), out_of_range, misaligned
+
+
+def validate_cap(path: Path) -> tuple[int, int, int, int]:
+    with ZipFile(path) as archive:
+        method_component = component(archive, "/Method.cap", 7)
+        descriptor_component = component(archive, "/Descriptor.cap", 11)
+
+    handler_count = method_component[3]
+    handler_bytes = handler_count * 8
+    method_stream_start = 4 + handler_bytes
+    method_stream_end = len(method_component)
+    if method_stream_start > method_stream_end:
+        raise ValueError("exception handler table exceeds Method component")
+    methods = method_component[method_stream_start:method_stream_end]
+
+    descriptor_size = int.from_bytes(descriptor_component[1:3], "big")
+    payload = descriptor_component[3 : 3 + descriptor_size]
+    class_count = payload[0]
+    offset = 1
+    method_entries: list[tuple[int, int, int]] = []
+
+    for class_index in range(class_count):
+        if offset > len(payload) or len(payload) - offset < 9:
+            raise ValueError(f"short class descriptor at index {class_index}")
+        interfaces = payload[offset + 4]
+        field_count = read_be16(payload, offset + 5)
+        method_count = read_be16(payload, offset + 7)
+        method_records = offset + 9 + interfaces * 2 + field_count * 7
+        records_end = method_records + method_count * 12
+        if records_end > len(payload):
+            raise ValueError(f"short method descriptor table at class {class_index}")
+
+        for method_index in range(method_count):
+            record = method_records + method_index * 12
+            component_offset = read_be16(payload, record + 2)
+            bytecode_count = read_be16(payload, record + 6)
+            if component_offset <= handler_bytes:
+                continue  # Interface/abstract declaration without code.
+            stream_offset = component_offset - handler_bytes - 1
+            if stream_offset >= len(methods):
+                raise ValueError(f"method offset outside Method stream: {stream_offset}")
+            method_entries.append((stream_offset, bytecode_count, methods[stream_offset]))
+        offset = records_end
+
+    method_entries.sort(key=lambda entry: entry[0])
+    offsets = [entry[0] for entry in method_entries]
+    if len(set(offsets)) != len(offsets):
+        raise ValueError("duplicate concrete method offsets")
+
+    clamped = 0
+    branch_targets = out_of_range_targets = misaligned_targets = 0
+    for index, (stream_offset, bytecode_count, header) in enumerate(method_entries):
+        header_size = 4 if header & 0x80 else 2
+        body_start = stream_offset + header_size
+        body_end = body_start + bytecode_count
+        next_method = (
+            offsets[index + 1] if index + 1 < len(offsets) else len(methods)
+        )
+        if bytecode_count == 0 or body_start > len(methods):
+            raise ValueError(f"invalid bytecode length at Method offset {stream_offset}")
+        if bytecode_count > len(methods) - body_start:
+            raise ValueError(f"bytecode count exceeds Method stream at {stream_offset}")
+        if body_start >= next_method:
+            raise ValueError(f"empty/overlapping method body at {stream_offset}")
+        if body_end < next_method:
+            raise ValueError(
+                f"descriptor body leaves a gap before next method at {stream_offset}"
+            )
+        if body_end > next_method:
+            clamped += 1
+
+        code = methods[body_start : min(body_end, next_method)]
+        method_branches, method_out_of_range, method_misaligned = (
+            validate_instruction_boundaries(code)
+        )
+        branch_targets += method_branches
+        out_of_range_targets += method_out_of_range
+        misaligned_targets += method_misaligned
+
+    print(
+        f"CAP:PASS {path.name} concrete_methods={len(method_entries)} "
+        f"clamps={clamped} branch_targets={branch_targets} "
+        f"out_of_range={out_of_range_targets} misaligned={misaligned_targets}"
+    )
+    return len(method_entries), clamped, out_of_range_targets, misaligned_targets
+
+
+def main() -> int:
+    caps = sorted(CAP_DIR.glob("*_305.cap"))
+    if len(caps) != EXPECTED_CAPS:
+        raise SystemExit(f"CAP:FAIL expected {EXPECTED_CAPS} packages, found {len(caps)}")
+
+    methods = clamps = out_of_range_targets = misaligned_targets = 0
+    for cap in caps:
+        try:
+            cap_methods, cap_clamps, cap_out_of_range, cap_misaligned = validate_cap(cap)
+        except (OSError, ValueError) as error:
+            raise SystemExit(f"CAP:FAIL {cap.name}: {error}") from error
+        methods += cap_methods
+        clamps += cap_clamps
+        out_of_range_targets += cap_out_of_range
+        misaligned_targets += cap_misaligned
+
+    if methods != EXPECTED_METHODS or clamps != EXPECTED_CLAMPS:
+        raise SystemExit(
+            "CAP:FAIL unexpected suite totals "
+            f"methods={methods} clamps={clamps}"
+        )
+    print(
+        f"CAP:SUMMARY checked={len(caps)} concrete_methods={methods} "
+        f"clamps={clamps} out_of_range_targets={out_of_range_targets} "
+        f"misaligned_targets={misaligned_targets}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

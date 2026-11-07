@@ -12,7 +12,7 @@ timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-30}"
 build_dir="${repo_root}/build/jcsystem-live-memory-probe"
 mkdir -p "${build_dir}"
 "${repo_root}/tools/env" javac -d "${build_dir}" \
-  "${repo_root}/tools/JCSystemLiveMemoryProbe.java"
+  "${repo_root}/tests/hardware/JCSystemLiveMemoryProbe.java"
 probe_args=()
 if [[ $# -eq 1 ]]; then
   probe_args=(--reader "$1")

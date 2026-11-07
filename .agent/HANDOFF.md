@@ -1,3 +1,29 @@
+# Current handoff — testing-data migration complete — 2026-11-07 08:32:21 CET
+
+User authorized full migration and final checks/commit. Test code is under
+`tests/unit`, `tests/integration`, `tests/hardware`; local fixture sources under
+`tests/fixtures/local`. Active baseline is supplied JCAlgTest 1.8.4/jc305,
+with its versioned client and adjacent libraries; independent API suite retains
+48 CAPs and its distinct client. Resolve paths using tools/fixture-path.
+Manifest verifies 81 files; original 388-file tree is preserved/hash-checked
+under artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard.
+Fresh simulator reference and loose historical card CSVs live under
+ tests/fixtures/reference. Legacy 1.8.2 evidence is explicitly historical.
+
+Migration validation completed: JCAlgTest emulator/restart 30 checks; API
+Core/Multi smoke (three installed applets) and extended Crypto 3 checks pass.
+Early emulator timeouts remain in logs. Native batch 26/28 passed; the user
+explicitly accepted allocation-test missing rollback-generation link dependency
+and VPCD partial-header send failure as documented follow-ups MIG-20261107-01/02
+in todo.md. No runtime correction or physical acceptance claimed. See
+ docs/testing-data-migration.md and artifacts/results/testing-data-migration-20261107.
+
+Pre-existing runtime, review-probe and test edits remain unstaged. Migration-only
+index content preserved seven unrelated edited files; do not discard their
+working changes at their new paths. Current source submodule dirtiness also
+predates this migration. No further implementation authorized by migration
+closeout; address semantic follow-ups separately.
+
 # Current handoff — full testing data migration in progress — 2026-11-07 08:17:41 CET
 
 User explicitly authorized the full migration, superseding review-only scope

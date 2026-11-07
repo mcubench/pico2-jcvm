@@ -2,10 +2,10 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/cap-instruction-boundaries"
+build_dir="${repo_root}/build/tests/unit/cap-instruction-boundaries"
 
 "${repo_root}/tools/env" cmake \
-  -S "${repo_root}/tools/tests/cap_instruction_boundaries" \
+  -S "${repo_root}/tests/unit/cap_instruction_boundaries" \
   -B "${build_dir}"
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target cap_instruction_boundaries_test

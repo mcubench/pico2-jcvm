@@ -5,7 +5,7 @@
 - Pico 2 CHOUPI ARM, official `ALG_SUPPORT_EXTENDED` CSV:
   `jcalgtest-supported-arm-randomdata-oneshot-fix-20261017/`
 - Official jCardSim `ALG_SUPPORT_EXTENDED` reference:
-  `jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv`
+  `../../tests/fixtures/external/jcalgtest/legacy/1.8.2/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv`
 - Both files contain 4,525 algorithm result rows from JCAlgTest 1.8.2 / applet
   1.8.2_jc305.
 

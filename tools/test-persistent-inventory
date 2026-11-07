@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/persistent-inventory"
+build_dir="${repo_root}/build/tests/unit/persistent-inventory"
 
-"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/persistent_inventory" \
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/persistent_inventory" \
   -B "${build_dir}"
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target persistent_inventory_test

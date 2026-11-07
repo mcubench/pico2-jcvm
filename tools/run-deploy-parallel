@@ -11,10 +11,12 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tests/integration"))
+from fixture_paths import fixture_path
 HELPER = ROOT / "tools" / "JCAlgTestReaderIndex.java"
 BUILD = ROOT / "build" / "api-reader-index"
-RUNNER = ROOT / "AlgTest_JavaCard" / "deploy" / "api_card_runner.py"
-DEPLOY = ROOT / "AlgTest_JavaCard" / "deploy"
+RUNNER = fixture_path("api.runner")
+DEPLOY = fixture_path("api.caps").parent
 DEFAULT_AREAS = [
     "Core", "Security", "Crypto", "Javacardx", "JavacardxExt",
     "JavacardxSec", "JavacardxInt", "Service", "Biometry",
@@ -144,7 +146,7 @@ def main():
                    "--reader-index", str(reader_index),
                    "--gp-args", shlex.join(["-d", "-r", reader]), "--api", args.api,
                    "--cap-dir", str(DEPLOY / "caps"),
-                   "--gp", str(DEPLOY / "gp.jar"),
+                   "--gp", str(fixture_path("api.gp")),
                    "--client", str(DEPLOY / "client" / "AlgTestJClient.jar"),
                    "--areas", ",".join(assigned), "--out", str(csv_path),
                    "--exclude", args.exclude,

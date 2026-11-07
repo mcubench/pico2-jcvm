@@ -39,7 +39,7 @@ by Java Card.
 - Optional API packages absent from the ROM mask, including
   `javacardx.external`, are rejected when CAP imports are resolved.
 - The optional `max_crypto` profile does not enable RSA or RSA-CRT 4096-bit
-  key-pair generation. The upstream JCAlgTest 1.8.2 CAP mislabels its 3072-bit
+  key-pair generation. The historical JCAlgTest 1.8.2 CAP mislabels its 3072-bit
   generation probes as 4096-bit requests; this profile does not alter the CAP
   or claim those requests as supported.
 - `MessageDigest.update()` currently retains the complete message in a
@@ -51,10 +51,14 @@ by Java Card.
 
 ## Evidence and remaining work
 
-Current-source VPCD runs cover the JCAlgTest 1.8.2 applet path and the
+Historical VPCD runs covered the JCAlgTest 1.8.2 applet path and the
 unchanged Java Card 3.0.5 Core, Security, Crypto, Service, and
 `JavacardxSec` deploy CAPs. Physical Pico 2 results are recorded in
 `TODO.md`, `.agent/QKB.md`, and `progress.md`; they are not interchangeable
 with VPCD results. The full API contract still needs broader per-method tests,
 and acceptance still needs repeatable clean-flash runs, Windows PC/SC
 validation, and actual USB power-cycle recovery.
+
+The selected acceptance baseline is now JCAlgTest 1.8.4 / jc305. Earlier
+1.8.2 results and exclusions above require revalidation against that CAP;
+this migration does not establish firmware acceptance for 1.8.4.

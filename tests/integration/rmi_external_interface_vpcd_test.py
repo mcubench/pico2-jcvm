@@ -13,7 +13,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tools/tests"))
+sys.path.insert(0, str(ROOT / "tests/integration"))
 import pc_vpcd_multipackage_test as vpcd  # noqa: E402
 
 
@@ -150,7 +150,7 @@ def start_case(label: str, root: Path, emulator: Path, rom_mask: Path,
 
 
 def main() -> int:
-    vpcd.ensure_algtest_v182_load_code(ROOT)
+    vpcd.ensure_algtest_load_code(ROOT)
     root = ROOT
     subprocess.run([str(root / "tools/build-rmi-external-fixture")],
                    cwd=root, check=True)
@@ -186,7 +186,7 @@ def main() -> int:
         start_case(
             label, root, root / "build/choupi-pc/choupi",
             root / "build/choupi-pc/flash",
-            root / "build/algtest-v182-load-code.bin", contract_code,
+            root / "build/tests/jcalgtest/algtest-v184-load-code.bin", contract_code,
             contract_aid, service_code, service_aid, service_applets[0],
             expected, datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         )

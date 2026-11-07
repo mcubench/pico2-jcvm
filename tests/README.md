@@ -29,3 +29,10 @@ Supplied converters/SDKs are toolchain dependencies, provisioned at
 fixtures. The original provided tree is archived during migration so no
 source, older artifact, or result is discarded. See
 `docs/testing-data-migration.md` for the inventory and migration evidence.
+
+Simulator/card comparison input lives under `fixtures/reference/`. It retains
+its recorded applet version and provenance. The supplied versioned client
+reports an internal version of 1.8.3; its simulator applet is 1.8.4_jc305.
+The original distribution is preserved at
+`artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
+See `docs/testing-data-migration.md` for checks and accepted follow-ups.

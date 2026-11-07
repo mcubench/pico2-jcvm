@@ -45,3 +45,7 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
 - The pinned CHOUPI OS and Java Card SDK dependencies are submodules declared
   in `choupi/.gitmodules`; verify that they are populated before attempting a
   full build.
+
+## Active validation inputs
+
+The user authorized full testing-data migration on 7 November 2026. JCAlgTest 1.8.4 / jc305 is now the selected baseline, superseding historical 1.8.2 instructions. Use `tools/fixture-path` and `tests/fixtures/manifest.json`. Test code is under `tests/`; the supplied original tree is archived, not discarded. Preserve legacy results as historical evidence and require new version-specific acceptance.

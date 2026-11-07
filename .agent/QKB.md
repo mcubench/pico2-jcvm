@@ -7758,3 +7758,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   no physical card command was possible.
 - No viable fix established. Retry after PC/SC reader publication returns; the
   permitted helper refreshes USB access but does not restart the daemon.
+
+## Test source relocation and cached CMake paths — 2026-11-07
+
+- Finding: CMake caches contain absolute source paths; moving tests from
+  tools/tests causes a source-directory mismatch when a wrapper reuses its cache.
+- Viable solution: give relocated native tests a new build/tests/unit directory
+  and relocated RMI fixture inspection a new build/tests directory. Preserve
+  old caches as generated data rather than altering their source identity.
+- Validation: relocated CAP parser passes; 26 of 28 native wrapper checks pass.
+  jcvmarray allocation now configures but exposes an existing missing
+  persistentWriteRollbackGeneration test dependency; vpcd-protocol fails
+  its partial-header send check. Those semantic failures were not patched.

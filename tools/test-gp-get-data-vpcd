@@ -10,14 +10,14 @@ require_command pcsc_scan
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out_dir="${repo_root}/artifacts/results/gp-get-data-vpcd-${timestamp}"
 mkdir -p "${out_dir}"
-"${repo_root}/tools/build-algtest-v182-load-code" > "${out_dir}/cap-load-code.log"
+"${repo_root}/tools/build-jcalgtest-load-code" > "${out_dir}/cap-load-code.log"
 "${repo_root}/tools/build-pc" > "${out_dir}/build-pc.log" 2>&1
 
 reader="Virtual PCD 00 00"
 endpoint="127.0.0.1:35963"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
-load_code="${repo_root}/build/algtest-v182-load-code.bin"
+load_code="${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin"
 for input in "${emulator}" "${rom_mask}" "${load_code}"; do
   [[ -s "${input}" ]] || die "required input is missing: ${input}"
 done
@@ -53,7 +53,7 @@ trap cleanup EXIT INT TERM
 
 sleep 1
 if ! timeout --signal=TERM --kill-after=2s 15s \
-    "${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
+    "${repo_root}/tools/env" java "${repo_root}/tests/hardware/VpcdPresenceProbe.java" \
     "${reader}" 10000 --require-present > "${out_dir}/reader-ready.log" 2>&1; then
   cat "${out_dir}/emulator.log" >&2
   cat "${out_dir}/reader-ready.log" >&2

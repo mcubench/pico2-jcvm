@@ -8,7 +8,7 @@ trap 'rm -rf "${build_dir}"' EXIT
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
   -fsanitize=address,undefined -fno-omit-frame-pointer \
   -I"${repo_root}/choupi/src" \
-  "${repo_root}/tools/tests/cap_bytecode_pc_bounds_test.cpp" \
+  "${repo_root}/tests/unit/cap_bytecode_pc_bounds_test.cpp" \
   -o "${build_dir}/cap_bytecode_pc_bounds_test"
 ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \

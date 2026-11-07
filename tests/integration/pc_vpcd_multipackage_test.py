@@ -12,12 +12,13 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from fixture_paths import fixture_path
 from zipfile import ZipFile
 
 from cryptography.hazmat.primitives import cmac
 from cryptography.hazmat.primitives.ciphers import algorithms
 
-from cap_load_code import ensure_algtest_v182_load_code
+from cap_load_code import ensure_algtest_load_code
 
 
 COMPONENTS = (
@@ -338,8 +339,8 @@ def main() -> int:
     )
     args = parser.parse_args()
     root = args.root.resolve()
-    ensure_algtest_v182_load_code(root)
-    cap_dir = root / "AlgTest_JavaCard/deploy/caps"
+    ensure_algtest_load_code(root)
+    cap_dir = fixture_path("api.caps", root)
     core_cap = cap_dir / "AlgTestApiCore_305.cap"
     multi_cap = cap_dir / "AlgTestApiMulti_305.cap"
     lookup_fixture = root / "tools/build-lookup-aid-fixture"
@@ -350,7 +351,7 @@ def main() -> int:
     transaction_cap = root / "build/jcsystem-transaction-probe/output/JCTransactionProbe.cap"
     rom_mask = root / "build/choupi-pc/flash"
     emulator = root / "build/choupi-pc/choupi"
-    dummy_code = root / "build/algtest-v182-load-code.bin"
+    dummy_code = root / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     for required in (core_cap, multi_cap, lookup_cap, transaction_cap,
                     rom_mask, emulator, dummy_code):
         if not required.is_file():

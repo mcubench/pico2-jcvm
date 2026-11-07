@@ -6,6 +6,6 @@ require_host_usb_access
 [[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-get-status-le-physical 'exact reader name'"
 mkdir -p "${repo_root}/artifacts/logs"
 log_file="${repo_root}/artifacts/logs/physical-get-status-le-$(date -u +%Y%m%dT%H%M%SZ).log"
-"${repo_root}/tools/env" python3 "${repo_root}/tools/tests/physical_get_status_le.py" \
+"${repo_root}/tools/env" python3 "${repo_root}/tests/hardware/physical_get_status_le.py" \
   --reader "$1" 2>&1 | tee "$log_file"
 printf 'PHYSICAL_TEST:LOG %s\n' "${log_file#${repo_root}/}"

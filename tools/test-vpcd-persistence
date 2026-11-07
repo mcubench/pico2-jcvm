@@ -34,7 +34,7 @@ CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" 2>&1 | tee "${build_log}"
 "${repo_root}/tools/build-jcsystem-transaction-probe" 2>&1 | tee -a "${build_log}"
 
 "${repo_root}/tools/env" python3 \
-  "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" \
+  "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" \
   --case 6 --timeout "${timeout_seconds}" --memory "${memory_image}" \
   --log "${install_emulator_log}" 2>&1 | tee "${install_log}"
 
@@ -52,7 +52,7 @@ PY
 echo "VPCD:PERSISTENCE_PACKAGE_ID package=${package_id}"
 
 PICO2_HEAP_GC=1 "${repo_root}/tools/env" python3 \
-  "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" \
+  "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" \
   --case 14 --case 15 --case 16 --case 17 --case 58 --case 80 --case 81 --case 82 \
   --gc-pressure-rounds "${gc_pressure_rounds}" \
   --package-id "${package_id}" \

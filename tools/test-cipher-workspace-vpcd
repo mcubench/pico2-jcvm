@@ -11,9 +11,8 @@ timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log_file="${repo_root}/artifacts/logs/cipher-workspace-vpcd-${timestamp}.log"
 flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${timestamp}.bin"
 "${repo_root}/tools/env" python3 \
-  "${repo_root}/tools/tests/pc_vpcd_applet_test.py" \
+  "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
   --emulator "${repo_root}/build/choupi-pc/choupi" \
-  --memory "${repo_root}/build/algtest-v182-current-empty-flash.bin" \
   --cap-code "${repo_root}/build/cipher-lifecycle-probe/load-code.bin" \
   --rom-mask "${repo_root}/build/choupi-pc/flash" \
   --apdu-timeout 120 --applet-aid A00000015100020301 \

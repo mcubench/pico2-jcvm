@@ -14,7 +14,7 @@ CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" \
 
 PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --passes 1 \
-  --cap-code "${repo_root}/build/rmi-array-fixture/rmi-fixture-load-code.bin" \
+  --cap-code "${repo_root}/build/tests/fixtures/rmi-array-fixture/rmi-fixture-load-code.bin" \
   --applet-aid A00000015100000101 \
   --package-id 63 \
   --apdu 803802020600017C38000300 \
@@ -102,7 +102,7 @@ PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
 PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --passes 1 \
   --select-p2 16 \
-  --cap-code "${repo_root}/build/rmi-array-fixture/rmi-fixture-load-code.bin" \
+  --cap-code "${repo_root}/build/tests/fixtures/rmi-array-fixture/rmi-fixture-load-code.bin" \
   --applet-aid A00000015100000101 \
   --package-id 63 \
   --apdu 80380202040001967E00 \

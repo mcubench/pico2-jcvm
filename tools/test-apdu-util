@@ -8,5 +8,5 @@ trap 'rm -rf "${build_dir}"' EXIT
 
 javac -d "${build_dir}" \
   "${source_file}" \
-  "${repo_root}/tools/tests/apdu_util/APDUUtilTest.java"
+  "${repo_root}/tests/unit/apdu_util/APDUUtilTest.java"
 java -cp "${build_dir}" APDUUtilTest

@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tools/tests"))
+sys.path.insert(0, str(ROOT / "tests/integration"))
 import pc_vpcd_multipackage_test as vpcd  # noqa: E402
 
 PACKAGE_AID = bytes.fromhex("A000000151000006")
@@ -100,7 +100,7 @@ def main() -> int:
 
     emulator = ROOT / "build/choupi-pc/choupi"
     rom_mask = ROOT / "build/choupi-pc/flash"
-    dummy = ROOT / "build/algtest-v182-load-code.bin"
+    dummy = ROOT / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     for required in (emulator, rom_mask, dummy):
         if not required.is_file():
             raise RuntimeError(f"required PC build artifact missing: {required}")

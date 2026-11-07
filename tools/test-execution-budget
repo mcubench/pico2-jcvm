@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-build_dir="${repo_root}/build/tests/execution-budget"
+build_dir="${repo_root}/build/tests/unit/execution-budget"
 
-"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/execution_budget" \
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/execution_budget" \
   -B "${build_dir}" -DCMAKE_BUILD_TYPE=Release
 "${repo_root}/tools/env" cmake --build "${build_dir}" \
   --target execution_budget_test --parallel 2

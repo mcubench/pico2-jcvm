@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 root, output = Path(sys.argv[1]), Path(sys.argv[2])
-source = root / "tools/tests/test_symm_crypto_vpcd.py"
+source = root / "tests/integration/test_symm_crypto_vpcd.py"
 spec = importlib.util.spec_from_file_location("symm_crypto_vectors", source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -52,7 +52,7 @@ print(f"VECTORS:PASS count={len(vectors)} file={output}")
 PY
 
 "${repo_root}/tools/env" javac -d "${build_dir}" \
-  "${repo_root}/tools/tests/SymmCryptoPcscProbe.java"
+  "${repo_root}/tests/hardware/SymmCryptoPcscProbe.java"
 mkdir -p "${log_dir}"
 printf 'PCSC:LOG %s\n' "${log_file}"
 timeout --signal=TERM --kill-after=3s "${timeout_seconds}s" \

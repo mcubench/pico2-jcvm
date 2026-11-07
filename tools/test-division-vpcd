@@ -3,7 +3,6 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 profile="${JCVM_PROFILE:-max_crypto}"
-memory="${repo_root}/build/algtest-v182-current-empty-flash.bin"
 flash_copy="${repo_root}/build/division-probe/vpcd-flash.bin"
 log="${repo_root}/artifacts/logs/division-vpcd-$(date -u +%Y%m%dT%H%M%SZ).log"
 
@@ -12,7 +11,6 @@ log="${repo_root}/artifacts/logs/division-vpcd-$(date -u +%Y%m%dT%H%M%SZ).log"
 
 args=(
   --emulator "${repo_root}/build/choupi-pc/choupi"
-  --memory "${memory}"
   --flash-copy "${flash_copy}"
   --cap-code "${repo_root}/build/division-probe/load-code.bin"
   --rom-mask "${repo_root}/build/choupi-pc/flash"
@@ -32,4 +30,4 @@ args=(
 
 printf 'VPCD:LOG %s\n' "${log}"
 CHOUPI_VM_TRACE_EXCEPTIONS=1 "${repo_root}/tools/env" python3 \
-  "${repo_root}/tools/tests/pc_vpcd_applet_test.py" "${args[@]}"
+  "${repo_root}/tests/integration/pc_vpcd_applet_test.py" "${args[@]}"

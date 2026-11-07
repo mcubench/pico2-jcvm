@@ -10,17 +10,14 @@ wrapper builds both architectures before flashing the ARM CHOUPI image.
 Replace the example serials and reader names below with the identities from
 that authorized discovery. Keep per-board results separate.
 
-`tools/run-jcalgtest` defaults to the extracted 1.8.2 client for the 1.8.2 CAP
-examples below. For an upstream 1.8.4 CAP test, select the supplied matching
-client explicitly with
-`--client-jar AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar` on the
-test command.
+`tools/run-jcalgtest` selects the supplied versioned JCAlgTest client and
+JCAlgTest 1.8.4 / jc305 baseline through `tests/fixtures/manifest.json`.
+The independent API suite client must not be substituted. The versioned client
+reports its internal client version as 1.8.3; the applet reports 1.8.4_jc305.
 
 ```sh
-# One-time: extract the official JCAlgTest 1.8.2 client (archive already downloaded).
-mkdir -p build/algtest-client-1.8.2
-unzip -o build/downloads/AlgTest_dist_1.8.2.zip AlgTestJClient.jar \
-  -d build/algtest-client-1.8.2
+# Verify the pinned CAP, clients, API corpus and simulator reference.
+./tools/fixture-path --verify
 
 # Build and flash CHOUPI with the `base` profile to a Pico 2. It enables the
 # minimum crypto needed by JCAlgTest's eager startup allocations, plus all
@@ -46,10 +43,10 @@ reader_name='REPLACE_WITH_EXACT_BASE_PCSC_READER_NAME'
 # power removal; its output explicitly leaves that check unverified.
 PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
 
-# Install the supplied JCAlgTest 1.8.2 JC305 CAP (skip if already installed).
+# Install the supplied JCAlgTest 1.8.4 JC305 CAP (skip if already installed).
 PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
   --reader "$reader_name" \
-  --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap
+  --install tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap
 
 # Retrieve the extended algorithm support report.
 PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \
@@ -72,11 +69,11 @@ PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name_curren
 # set captured from the matching firmware build.
 ./tools/compare-jcalgtest-support.py \
   artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
-  artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv \
+  tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv \
   --expected-support artifacts/results/base-alg-support/expected.csv
 ./tools/compare-jcalgtest-support.py \
   artifacts/results/current-alg-support/*ALGSUPPORT*.csv \
-  artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv \
+  tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv \
   --expected-support artifacts/results/current-alg-support/expected.csv
 
 # Each comparison should end with COMPARE:PASS and no status other than yes/no.

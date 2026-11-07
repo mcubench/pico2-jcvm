@@ -67,7 +67,7 @@ public final class JCSystemLiveMemoryProbe {
       ResponseAPDU version = transmit(channel, "GETVERSION",
           new CommandAPDU(0xB0, 0xE1, 0x00, 0x00, 256));
       String versionText = new String(version.getData(), "US-ASCII");
-      if (!"1.8.2_jc305".equals(versionText)) {
+      if (!"1.8.4_jc305".equals(versionText)) {
         throw new IllegalStateException("unexpected applet version: " +
             versionText);
       }

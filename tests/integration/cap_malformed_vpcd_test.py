@@ -8,13 +8,14 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
+from fixture_paths import fixture_path
 from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CAP_PATH = ROOT / "AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+CAP_PATH = fixture_path("jcalgtest.cap", ROOT)
 EXPECTED_CAP_SHA256 = (
-    "b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169"
+    "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad"
 )
 APPLET_AID = bytes.fromhex("4A43416C675465737431")
 PROCESS_METHOD_OFFSET = 0x3E63

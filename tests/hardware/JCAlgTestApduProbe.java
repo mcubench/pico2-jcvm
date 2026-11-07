@@ -55,11 +55,11 @@ public final class JCAlgTestApduProbe {
     String requestedReader = null;
     String expectedVersion = System.getenv("JCALGTEST_EXPECTED_VERSION");
     if (expectedVersion == null || expectedVersion.isEmpty()) {
-      expectedVersion = "1.8.2_jc305";
+      expectedVersion = "1.8.4_jc305";
     }
     if (!expectedVersion.matches("[0-9]+\\.[0-9]+\\.[0-9]+_jc305")) {
       throw new IllegalArgumentException(
-          "JCALGTEST_EXPECTED_VERSION must look like 1.8.2_jc305");
+          "JCALGTEST_EXPECTED_VERSION must look like 1.8.4_jc305");
     }
     boolean skipJcSystemInfo = false;
     int jcSystemInfoP1 = 0x01;

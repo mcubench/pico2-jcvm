@@ -11,6 +11,6 @@ require_host_usb_access
 build_dir="${repo_root}/build/jc-algtest-apdu-probe"
 mkdir -p "${build_dir}"
 "${repo_root}/tools/env" javac -d "${build_dir}" \
-  "${repo_root}/tools/JCAlgTestApduProbe.java"
+  "${repo_root}/tests/hardware/JCAlgTestApduProbe.java"
 timeout --signal=TERM --kill-after=2s "${timeout_seconds}s" \
   "${repo_root}/tools/env" java -cp "${build_dir}" JCAlgTestApduProbe "$@"

@@ -28,7 +28,10 @@
     "api.gp": "tests/fixtures/external/javacard-api/provided-20261107/tools/gp.jar",
     "toolchain.jc305": ".local-toolchain/java-card/provided/jc305u3_kit",
     "toolchain.ant-javacard": ".local-toolchain/java-card/provided/ant-javacard.jar",
-    "jcalgtest.legacy.reference": "tests/fixtures/external/jcalgtest/legacy/1.8.2/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+    "jcalgtest.legacy.reference": "tests/fixtures/external/jcalgtest/legacy/1.8.2/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv",
+    "jcalgtest.reference": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
+    "reference.card.noecc": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv",
+    "reference.card.j3r180": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv"
   },
   "files": [
     {
@@ -492,6 +495,34 @@
       "sha256": "67d9feebf9756da69db034bab05cddd9acb38d31aa980888fa7b5db22ef1757b",
       "size": 306208,
       "provided_path": "reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+    },
+    {
+      "path": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
+      "size": 597551,
+      "sha256": "347f462a97be3d1af76f78b8a130ff4b96570b137d232ab7be43fdd8362be7aa",
+      "generated_by": "tools/run-jcalgtest --simulator -op ALG_SUPPORT_EXTENDED -fresh; 2026-11-07; supplied versioned client and bundled jCardSim",
+      "note": "Applet reports 1.8.4_jc305; supplied versioned client internally reports 1.8.3. This is simulator reference data, not Pico acceptance."
+    },
+    {
+      "path": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv",
+      "provided_path": "docs/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv",
+      "size": 10068,
+      "sha256": "8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943",
+      "note": "Historical reference input; unchanged, not JCAlgTest 1.8.4 acceptance."
+    },
+    {
+      "path": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv",
+      "provided_path": "docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv",
+      "size": 10450,
+      "sha256": "a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb",
+      "note": "Historical reference input; unchanged, not JCAlgTest 1.8.4 acceptance."
+    },
+    {
+      "path": "tests/fixtures/reference/jcalgtest/legacy/1.8.2/jcalgtest-supported-v1.8.2.csv",
+      "provided_path": "tools/jcalgtest-supported-v1.8.2.csv",
+      "size": 943,
+      "sha256": "024fa70c6869061f113ce4d40e04bf1c6f165555b349c48ab45439d6037a0e34",
+      "note": "Historical reference input; unchanged, not JCAlgTest 1.8.4 acceptance."
     }
   ]
 }

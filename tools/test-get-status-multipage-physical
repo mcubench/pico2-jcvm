@@ -8,7 +8,7 @@ require_command timeout
 reader="$1"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-multi_cap="${repo_root}/AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_305.cap"
+multi_cap="$("${repo_root}/tools/fixture-path" api.caps)/AlgTestApiMulti_305.cap"
 package_aid="4A43416C675465737441706D"
 multi_a="${package_aid}41"
 multi_b="${package_aid}42"
@@ -118,6 +118,6 @@ done
 rm -f "${installed_list}"
 
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" python3 \
-  "${repo_root}/tools/tests/physical_get_status_le.py" --reader "${reader}" \
+  "${repo_root}/tests/hardware/physical_get_status_le.py" --reader "${reader}" \
   --le 40 --expected-aid "${jcalgtest}" --expected-aid "${multi_a}" \
   --expected-aid "${multi_b}" --expected-aid "${multi_c}"

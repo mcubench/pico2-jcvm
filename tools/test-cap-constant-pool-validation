@@ -11,6 +11,6 @@ export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}"
 
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
   -fsanitize=address,undefined -fno-omit-frame-pointer \
-  "${repo_root}/tools/tests/cap_constant_pool_validation_test.cpp" \
+  "${repo_root}/tests/unit/cap_constant_pool_validation_test.cpp" \
   -o "${build_dir}/cap_constant_pool_validation_test"
 "${build_dir}/cap_constant_pool_validation_test"
