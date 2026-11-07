@@ -23,6 +23,7 @@ flash_copy="${repo_root}/build/cipher-lifecycle-probe/cipher-workspace-vpcd-${ti
   --apdu 801400000D202122232425262728292A2B2C00 \
   --expect-apdu-response 019000 \
   --apdu 8015000000 --expect-apdu-response 019000 \
+  --apdu 8016000000 --expect-apdu-response 019000 \
   --apdu 801100000F000102030405060708090A0B0C0D0E00 \
   --expect-apdu-response 019000 \
   --resume-apdu 800F000000 --expect-resume-apdu-response 449000 \

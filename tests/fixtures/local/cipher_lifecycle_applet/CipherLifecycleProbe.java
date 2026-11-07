@@ -339,6 +339,95 @@ public final class CipherLifecycleProbe extends Applet {
     }
   }
 
+  private static byte verifyInvalidMethod2Tail(Key key, byte noPadAlgorithm,
+                                                byte method2Algorithm,
+                                                short blockSize,
+                                                byte[] plaintext) {
+    byte[] iv = new byte[blockSize];
+    byte[] ciphertext = new byte[(short)(blockSize * 2)];
+    Cipher noPadding = Cipher.getInstance(noPadAlgorithm, false);
+    noPadding.init(key, Cipher.MODE_ENCRYPT, iv, (short)0, blockSize);
+    short ciphertextLength = noPadding.doFinal(
+        plaintext, (short)0, (short)plaintext.length, ciphertext, (short)0);
+    if (ciphertextLength != plaintext.length) return (byte)0x69;
+
+    Cipher method2 = Cipher.getInstance(method2Algorithm, false);
+    method2.init(key, Cipher.MODE_DECRYPT, iv, (short)0, blockSize);
+    try {
+      method2.doFinal(ciphertext, (short)0, ciphertextLength,
+                      new byte[(short)(blockSize * 2)], (short)0);
+      return (byte)0x6a;
+    } catch (CryptoException exception) {
+      if (exception.getReason() != CryptoException.ILLEGAL_USE)
+        return (byte)(0x40 | exception.getReason());
+    }
+
+    Cipher paddedEncrypt = Cipher.getInstance(method2Algorithm, false);
+    paddedEncrypt.init(key, Cipher.MODE_ENCRYPT, iv, (short)0, blockSize);
+    byte[] validCiphertext = new byte[blockSize];
+    short validLength = paddedEncrypt.doFinal(
+        new byte[0], (short)0, (short)0, validCiphertext, (short)0);
+    if (validLength != blockSize) return (byte)0x6b;
+    method2.init(key, Cipher.MODE_DECRYPT, iv, (short)0, blockSize);
+    short resultLength = method2.doFinal(validCiphertext, (short)0,
+        validLength, new byte[blockSize], (short)0);
+    return resultLength == 0 ? (byte)1 : (byte)0x6c;
+  }
+
+  private static byte testMethod2PaddingBounds() {
+    try {
+      AESKey aesKey = (AESKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+      byte[] aesKeyBytes = new byte[16];
+      for (short i = 0; i < 16; i++) aesKeyBytes[i] = (byte)(0x10 + i);
+      aesKey.setKey(aesKeyBytes, (short)0);
+      DESKey desKey = (DESKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_DES, KeyBuilder.LENGTH_DES, false);
+      byte[] desKeyBytes = {0x13, 0x34, 0x57, 0x79, (byte)0x9b, (byte)0xbc,
+                            (byte)0xdf, (byte)0xf1};
+      desKey.setKey(desKeyBytes, (short)0);
+
+      byte[] aesEarlyMarker = new byte[32];
+      aesEarlyMarker[0] = (byte)0x80;
+      byte[] aesMissingMarker = new byte[32];
+      aesMissingMarker[31] = 1;
+      byte[] aesAllZero = new byte[32];
+      byte[] desEarlyMarker = new byte[16];
+      desEarlyMarker[0] = (byte)0x80;
+      byte[] desMissingMarker = new byte[16];
+      desMissingMarker[15] = 1;
+      byte[] desAllZero = new byte[16];
+
+      byte result = verifyInvalidMethod2Tail(aesKey,
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD,
+          Cipher.ALG_AES_CBC_ISO9797_M2, (short)16, aesEarlyMarker);
+      if (result != 1) return (byte)(0x70 | (result & 0x0f));
+      result = verifyInvalidMethod2Tail(aesKey,
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD,
+          Cipher.ALG_AES_CBC_ISO9797_M2, (short)16, aesMissingMarker);
+      if (result != 1) return (byte)(0x71 | (result & 0x0f));
+      result = verifyInvalidMethod2Tail(aesKey,
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD,
+          Cipher.ALG_AES_CBC_ISO9797_M2, (short)16, aesAllZero);
+      if (result != 1) return (byte)(0x72 | (result & 0x0f));
+      result = verifyInvalidMethod2Tail(desKey,
+          Cipher.ALG_DES_CBC_NOPAD, Cipher.ALG_DES_CBC_ISO9797_M2,
+          (short)8, desEarlyMarker);
+      if (result != 1) return (byte)(0x73 | (result & 0x0f));
+      result = verifyInvalidMethod2Tail(desKey,
+          Cipher.ALG_DES_CBC_NOPAD, Cipher.ALG_DES_CBC_ISO9797_M2,
+          (short)8, desMissingMarker);
+      if (result != 1) return (byte)(0x74 | (result & 0x0f));
+      result = verifyInvalidMethod2Tail(desKey,
+          Cipher.ALG_DES_CBC_NOPAD, Cipher.ALG_DES_CBC_ISO9797_M2,
+          (short)8, desAllZero);
+      if (result != 1) return (byte)(0x75 | (result & 0x0f));
+      return 1;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
   public static void install(byte[] data, short offset, byte length) {
     new CipherLifecycleProbe();
   }
@@ -390,6 +479,8 @@ public final class CipherLifecycleProbe extends Applet {
           buffer, apdu.setIncomingAndReceive());
     } else if (instruction == (byte)0x15) {
       result = testEmptyFinalAfterAlignedUpdate();
+    } else if (instruction == (byte)0x16) {
+      result = testMethod2PaddingBounds();
     } else if (instruction == (byte)0x09) {
       try {
         AESKey temporaryKey = (AESKey)KeyBuilder.buildKey(

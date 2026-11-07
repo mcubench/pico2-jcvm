@@ -1,3 +1,27 @@
+# Current handoff — constrain ISO9797 method-2 unpadding — 2026-11-07 10:55 CET
+
+RV-20261106-10 is implemented in `choupi/src/native_cipher.cpp`. Method-2
+unpadding now searches only the final cipher block for its `0x80` marker, so a
+marker in an earlier block, a missing marker, or an all-zero tail raises
+`CryptoException.ILLEGAL_USE`. AES and DES VPCD lifecycle vectors cover those
+malformed inputs, then reinitialize the same method-2 Cipher and verify valid
+full-block padding still decrypts to zero bytes.
+
+Focused lifecycle VPCD passes 13/13, and the complete symmetric suite passes
+99/99 (38 Cipher, 47 MAC, 6 IV, 16 transient lifecycle vectors). Both
+`./tools/build arm` and `./tools/build riscv` pass. Logs:
+`artifacts/logs/cipher-workspace-vpcd-20261107T094913Z.log` (SHA-256
+`faaaf7ac4c2e6412d1daf557b3a3ab2266afcfcbb45a2bf0d76deab56921c4c6`) and
+`artifacts/logs/symm-crypto-kat-vpcd-20261107T095429Z.log` (SHA-256
+`44da27bbafc34c3534a0756c9930149bdd39d431e6e5805d54061a8c4f2c1b55`).
+No physical validation was performed; PC/SC still publishes no physical Pico
+reader. Existing external build warnings remain.
+
+Commit: `<resolve in next progress entry>`.
+
+Next: investigate/test RV-20261106-11 global-array lifetime and reclamation.
+R08's legacy persistent-workspace orphan-tag audit also remains open.
+
 # Current handoff — accept empty final after aligned Cipher updates — 2026-11-07 10:40 CET
 
 RV-20261106-09 is implemented in `choupi/src/native_cipher.cpp`: after

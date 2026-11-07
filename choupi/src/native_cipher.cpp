@@ -731,8 +731,10 @@ uint16_t unpad(std::vector<unsigned char> &data, uint16_t length,
     return static_cast<uint16_t>(length - count);
   }
   if (padding == 3) {
+    if (length == 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
+    const int32_t blockStart = static_cast<int32_t>(length - blockSize);
     int32_t i = static_cast<int32_t>(length) - 1;
-    while (i >= 0 && data[static_cast<size_t>(i)] == 0) --i;
+    while (i >= blockStart && data[static_cast<size_t>(i)] == 0) --i;
     if (i < 0 || data[static_cast<size_t>(i)] != 0x80)
       throwCryptoException(CryptoExceptionReason::IllegalUse);
     return static_cast<uint16_t>(i);
