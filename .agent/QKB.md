@@ -7912,3 +7912,9 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   No viable local repair has been identified; continue offline until a Pico
   appears in `pcsc_scan -r`. Do not flash or attribute this state to APDU or
   firmware behavior.
+- **Follow-up:** `pcscd.service` is configured `--auto-exit` and socket-activated:
+  `pcscd.socket` is active while the service may be inactive between clients.
+  A direct `systemctl start pcscd.service` exits successfully but does not keep
+  a daemon running without a client. A terminal-attached scan activates it;
+  refreshing helper ACLs and scanning with the daemon active still produced
+  no reader. This confirms auto-exit is not by itself the reader cause.

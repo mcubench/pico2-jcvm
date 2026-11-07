@@ -25067,3 +25067,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline; retry physical testing after a reader is published. Do not infer firmware behavior from this host state.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None; observations are recorded in `.agent/QKB.md`.
+
+## 2026-11-07 Check socket-activated pcscd discovery 4 minutes
+
+- Step/experiment: `PCSC-pcscd-socket-activation-reader-diagnostic`
+- When: '2026-11-07 22:34 CET' - '2026-11-07 22:38 CET'
+- Change: Added the socket-activation/auto-exit behavior and latest failed discovery check to QKB and handoff.
+- Validation: `systemctl status` shows `pcscd.socket` active and `pcscd.service` configured `--foreground --auto-exit`; direct service start exited successfully but was inactive when no client remained. A terminal-attached scan activated the service. Refreshing ACLs with `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` again granted three nodes, but `timeout 12s pcsc_scan -r` still listed no readers. No APDUs were sent.
+- Result: Socket activation explains the idle service state but does not explain missing reader publication. System journal details remain inaccessible due permissions; firmware and driver cause are undetermined.
+- Decision: Do not make system configuration or firmware changes without evidence; continue offline and retry discovery later.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None; exact observations are recorded in `.agent/QKB.md`.
