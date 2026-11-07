@@ -1,6 +1,7 @@
 # Current handoff — REL-01 complete and max_crypto external image — 2026-11-07 21:33 CET
 
 The refreshed image and records are committed as `de960d02`.
+REL-01 physical acceptance and TODO closure are recorded in `1c2028bc`.
 
 REL-01 is complete. Source implementation remains committed as `971272f3`;
 `./tools/test-gp-get-data` passes 25/25. Physical board `D92E743D5F640C0F` was
