@@ -1,3 +1,25 @@
+# Current handoff — same-package applet DELETE array guard — 2026-11-07 01:05 CET
+
+The DELETE preflight now covers two volatile-array cases: cross-package edges
+routed through the foreign-array registry, and same-package sibling edges found
+by scanning the target package's shared heap. Arrays owned by the target applet
+are excluded from the local scan so its own object graph does not block its
+removal. Native unit coverage verifies the target-owned case, sibling rejection,
+and slot-clear release. The focused cross-package DELETE APDU regression still
+passes; full `symm_crypto` cross-AID VPCD passes 35/35 after this change.
+
+ARM and RISC-V builds pass. ARM image ends at `0x100d525c` with 175,524 bytes
+remaining in the reserved firmware region. No physical run completed: the
+reader helper found three USB nodes, but `pcsc_scan -r` timed out without
+listing readers. Full VPCD log:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T000029Z.log` (SHA-256
+`ef75708c9d200aa09107912c03ad3029738dd113ac9f0ccb422117bbd83645bd`).
+
+Remaining acceptance: persistent arrays, object instance fields, package static
+roots, and a same-package card-manager DELETE APDU case. Keep CTX-01 open until
+these paths are covered. The previous foreign-array handoff remains below as
+historical context.
+
 # Current handoff — applet DELETE retained-reference guard — 2026-11-07 00:41 CET
 
 Implemented a DELETE preflight for volatile cross-package reference arrays. It

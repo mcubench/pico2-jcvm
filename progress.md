@@ -23560,3 +23560,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 by auditing same-package references and persistent roots; retry hardware validation after PC/SC enumeration recovers.
 - Commit: `10d428ec` — handoff and progress resolution.
 - Artifacts/logs: See the implementation entry above.
+
+## 2026-11-07 Include same-package sibling arrays in applet DELETE guard 17 minutes
+
+- Step/experiment: `ctx-20261107-same-package-instance-array-root`
+- When: '2026-11-07 00:48 CET' - '2026-11-07 01:05 CET'
+- Change: Extended the applet DELETE preflight to inspect volatile reference arrays in the target package's shared heap, excluding arrays owned by the target applet. This detects same-package sibling references that carry no foreign-package owner tag. Added a native registry regression proving target-owned self references do not block, sibling-owned references do block, and clearing the slot permits progress. Updated CTX-01 and QKB scope.
+- Validation: `./tools/test-rmi-registry` passed and printed `same_package_sibling_array_delete_guard=1`. `./tools/build arm` passed; image end `0x100d525c`, reserved-region remaining `175524` bytes. `./tools/build riscv` passed. Full `symm_crypto` cross-AID VPCD suite passed 35/35 against the rebuilt PC emulator. The cross-package DELETE APDU regression passed in the preceding step; no separate APDU fixture currently exercises same-package DELETE. No physical test: PC/SC enumeration timed out in the preceding step.
+- Result: The DELETE query detects volatile array references across both same-package sibling applets and cross-package arrays. Persistent arrays, instance/static fields, and package static roots remain outside the scan.
+- Decision: Keep CTX-01 open and audit persistent/static roots; add a same-package card-manager DELETE APDU fixture before treating the native unit case as end-to-end lifecycle acceptance.
+- Commit: pending.
+- Artifacts/logs: Full VPCD `artifacts/logs/sio-cross-aid-vpcd-20261107T000029Z.log` SHA-256 `ef75708c9d200aa09107912c03ad3029738dd113ac9f0ccb422117bbd83645bd`; RMI registry unit output emitted `same_package_sibling_array_delete_guard=1`.

@@ -7706,7 +7706,12 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Builds:** ARM and RISC-V wrappers pass. No physical test was run: the
   authorized reader helper found three USB nodes, but bounded `pcsc_scan -r`
   produced no reader listing before timeout.
-- **Scope limit:** This fix proves volatile cross-package array references.
-  Same-package cross-instance references and persistent roots (including
-  static/reference fields) are not covered and must be audited before marking
-  Java Card applet deletion semantics complete.
+- **Same-package extension:** Sibling applets share a handle table and their
+  arrays are not tagged as foreign-package edges. The follow-up scan checks
+  volatile arrays in the target package, excluding arrays owned by the target
+  applet, then checks registered cross-package edges. `./tools/test-rmi-registry`
+  proves a sibling-owned array blocks deletion until its element is cleared,
+  while a target-owned array referencing its own object does not block. The
+  full `symm_crypto` cross-AID VPCD suite still passes 35/35.
+- **Remaining scope:** Persistent and static reference roots are unaudited and
+  block a complete Java Card applet-deletion semantics claim.

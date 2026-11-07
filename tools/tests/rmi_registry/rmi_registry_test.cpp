@@ -770,6 +770,42 @@ void verify_local_array_routes_foreign_references_through_gc() {
             "package_delete_root_cleared=1 owner_slot_reuse_safe=1");
 }
 
+void verify_same_package_sibling_array_blocks_instance_delete() {
+  constexpr jcvm::jpackage_ID_t package_id = 30;
+  jcvm::Context package_context(7, package_id);
+  constexpr uint8_t first_aid[] = {0xa0, 0x00, 0x00, 0x1e, 0x01};
+  constexpr uint8_t second_aid[] = {0xa0, 0x00, 0x00, 0x1e, 0x02};
+  assert(package_context.setAppletAID(first_aid, sizeof(first_aid)));
+
+  const jcvm::jref_t target_object = package_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  const jcvm::jref_t target_owned_array = package_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  package_context.getHeap().getArray(target_owned_array)->setReferenceEntry(
+      0, target_object, package_context, package_id);
+  assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
+
+  assert(package_context.activateAppletInstance(8, second_aid,
+                                                 sizeof(second_aid)));
+  const jcvm::jref_t sibling_array = package_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto sibling_array_object =
+      package_context.getHeap().getArray(sibling_array);
+  sibling_array_object->setReferenceEntry(0, target_object, package_context,
+                                          package_id);
+  assert(!sibling_array_object->hasForeignReferenceEntries());
+  assert(jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
+
+  sibling_array_object->setReferenceEntry(0, jcvm::jref_t{}, package_context);
+  assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
+  std::puts("RMI_REGISTRY:PASS same_package_sibling_array_delete_guard=1");
+}
+
 void verify_shareable_proxy_registry() {
   jcvm::Context client(4, 1);
   jcvm::Context server(5, 1);
@@ -1281,6 +1317,7 @@ int main() {
   verify_heap_owner_facades_share_package_roots();
   verify_global_object_array_package_ownership();
   verify_local_array_routes_foreign_references_through_gc();
+  verify_same_package_sibling_array_blocks_instance_delete();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();

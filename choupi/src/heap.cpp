@@ -337,7 +337,7 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
     japplet_ID_t owner;
     bool found = false;
   } query{&target_heap, applet_owner};
-  const auto inspect = [](const jref_t reference, void *opaque) {
+  const auto inspect_target = [](const jref_t reference, void *opaque) {
     auto &state = *static_cast<Query *>(opaque);
     if (state.found || reference.isNullPointer() ||
         reference.isGlobalArray() || reference.isGlobalInstance()) return;
@@ -347,11 +347,22 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
           : static_cast<JC_Object &>(*state.heap->getInstance(reference));
       state.found = object.getOwner().getOwner() == state.owner;
     } catch (...) {
-      // Fail closed if a registered edge cannot be resolved safely.
       state.found = true;
     }
   };
-  visitForeignArrayReferencesForPackage(package_id, inspect, &query);
+  // Same-package sibling applets share one handle table, so their references
+  // are not tagged as foreign-package edges. Inspect every volatile array in
+  // that table except arrays owned by the applet being deleted.
+  for (const auto &array : target_heap.shared_storage->arrays) {
+    if (!array || array->isPersistent() ||
+        array->getType() != JAVA_ARRAY_T_REFERENCE ||
+        array->getOwner().getOwner() == applet_owner) continue;
+    for (uint16_t index = 0; index < array->size(); ++index) {
+      inspect_target(array->getReferenceEntry(index), &query);
+      if (query.found) return true;
+    }
+  }
+  visitForeignArrayReferencesForPackage(package_id, inspect_target, &query);
   return query.found;
 }
 
