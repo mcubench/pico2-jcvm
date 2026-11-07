@@ -46,6 +46,13 @@ recovery evidence but does not replace physical flash interruption testing.
 The update is committed as `b75f057c`; its progress SHA-resolution record
 follows separately.
 
+Latest USB/PC/SC refresh at 2026-11-07 03:51-03:53 CET: three runtime
+`2e8a:0009` Pico devices are visible on USB (`001/054`-`001/056`), and
+`pcscd.service` is active, but `pcsc_scan -r` returns no reader. No physical
+APDU/reclaimer test can run in this state. The driver-level reason is unknown;
+journal entries were not visible. Keep all prior source and review worktree
+changes unstaged.
+
 # Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
 Cold-start VPCD now exercises persistent package-static aliases, a direct

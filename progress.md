@@ -23870,6 +23870,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `b75f057c`.
 - Artifacts/logs: Test output was emitted on stdout; no separate log captured.
 
+## 2026-11-07 Refresh physical USB and PCSC state for reclaimer gates 2 minutes
+
+- Step/experiment: `persist-01-20261107-refresh-usb-pcsc-state`
+- When: '2026-11-07 03:51 CET' - '2026-11-07 03:53 CET'
+- Change: Rechecked host-visible device mode and PC/SC publication before any further physical PERSIST-01 work; updated the current TODO hardware state, QKB, and handoff.
+- Validation: Through the required escalated host path, `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to nodes `001/054`-`001/056`; `lsusb` identified three runtime `2e8a:0009 Pico2 Pico2 JCVM CCID` devices; `timeout 8s pcsc_scan -r` showed no readers. Escalated `systemctl` confirmed `pcscd.service` active. `journalctl -u pcscd.service --since '5 minutes ago' --no-pager` returned no visible entries. No APDU or flash command was attempted.
+- Result: Devices are in runtime USB mode and attached to the VM, but PC/SC has not published a reader; board serials remain unrefreshed and physical applet tests cannot run.
+- Decision: Continue offline; retry physical testing when PC/SC exposes a Pico reader. Driver-level cause remains unknown.
+- Commit: pending.
+- Artifacts/logs: No log file. Outputs were `PCSC:ACCESS_GRANTED count=3`, three `2e8a:0009` lines, active pcscd status, and an empty bounded reader scan.
+
 ## 2026-11-07 Record RP2350 reclaimer cut-model commit resolution 1 minute
 
 - Step/experiment: `persist-01-20261107-rp2350-overlay-reclaimer-cuts-commit`

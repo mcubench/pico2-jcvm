@@ -20,14 +20,14 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. On 2026-11-06 12:49 CET, elevated
-enumeration found three runtime `2e8a:0009` JCVM boards:
-`8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. The authorized
-helper granted access to all three, but a bounded `pcsc_scan -r` timed out
-without listing a reader. Eight-second finite serial monitors passed on all
-three boards; D92 also reported an APDU status `9000`. No board was in BOOTSEL.
-Refresh USB/PC/SC immediately before hardware work; see `.agent/HANDOFF.md`
-and `.agent/QKB.md` for the current observation and diagnostic history.
+Physical availability is volatile. Most recent host check (2026-11-07
+03:51-03:53 CET): the authorized helper granted access to USB nodes
+`001/054`, `001/055`, and `001/056`; elevated `lsusb` identified all three as
+runtime `2e8a:0009 Pico2 JCVM CCID`. `pcscd.service` is active, but bounded
+`pcsc_scan -r` lists no readers. Board serials were not refreshed and BOOTSEL
+was not observed. Do not treat these as PC/SC-available cards. Refresh USB and
+PC/SC immediately before hardware work; see `.agent/HANDOFF.md` and
+`.agent/QKB.md` for the current observation and history.
 
 ## How to use this backlog
 

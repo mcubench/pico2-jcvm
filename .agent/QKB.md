@@ -7746,3 +7746,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Full integration:** The final fixture passes the full `symm_crypto` SIO cross-AID suite 35/35; log `artifacts/logs/sio-cross-aid-vpcd-20261107T021701Z.log`, SHA-256 `874e6d6b8e60da3a8542c4193988f19cf3ea8092b07044b1aed8b6e2072f1108`.
 - **Spec check:** Oracle's Java Card 3.0.5 Programming Notes, “Writing Removable Applets,” state applet deletion fails if an object owned by the target applet is referenced by an object owned by another applet, or from a static field in any package. The APDU regression's sibling-owned persistent array element is such a reference. Clearing the containing field while leaving the element non-null does not clear the serialized edge; this alone does not prove the child array was reclaimed or that the alias scan is too broad. Keep the fail-closed guard. See [Oracle Java Card 3.0.5 Programming Notes, pp. 1-3](https://docs.oracle.com/javacard/3.0.5/prognotes/JCPCL.pdf).
 - **Remaining scope:** Broader applet-deletion acceptance remains open, including object-deletion behavior. The implementation explicitly reports `JCSystem.isObjectDeletionSupported() == false`, and `requestObjectDeletion()` throws `SystemException.ILLEGAL_USE`. Do not relax DELETE alias checks before the separate PERSIST-01 reclaimer reachability and interruption-safety gates pass. Unreadable or malformed persistent inventory continues to block DELETE fail-closed.
+
+## Runtime Pico USB nodes are present but PC/SC publishes no readers — 2026-11-07
+
+- `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to USB nodes
+  `001/054`, `001/055`, and `001/056`. Elevated `lsusb` identified all three as
+  runtime `2e8a:0009 Pico2 Pico2 JCVM CCID` devices; they are not BOOTSEL.
+- `pcscd.service` is active, but bounded `pcsc_scan -r` produced no reader
+  listing. The journal query returned no visible entries in this guest, so the
+  driver-level reason is unknown. Do not attribute this to firmware APDU logic;
+  no physical card command was possible.
+- No viable fix established. Retry after PC/SC reader publication returns; the
+  permitted helper refreshes USB access but does not restart the daemon.
