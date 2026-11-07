@@ -1,4 +1,4 @@
-# Current handoff — R22 committed; refreshed max-crypto image — 2026-11-07 13:09 CET
+# Current handoff — R22/R23 persistence identity verified — 2026-11-07 13:19 CET
 
 RV-20261106-22 is implemented and committed as `4554327c`. Persistent ordinary
 objects now store bodies under unique tags independent of the first reference
@@ -15,6 +15,14 @@ passes with `ASAN_OPTIONS=detect_leaks=0`. `./tools/build arm --profile
 max_crypto` passes (firmware end `0x100EDDF8`, 74,248 bytes remaining);
 `./tools/build riscv --profile max_crypto` passes. No physical test was
 possible because PC/SC published no Pico reader.
+
+RV-20261106-23 is also verified against the R22 implementation. Same-value
+assignment to persistent instance and static references preserves the
+separate object body during normal writes and transaction commit/abort. Fresh
+restore returns the same canonical reference through the parent field, static
+root, and direct root; subsequent child mutation persists. The persistent
+transaction unit and ASan/UBSan suites pass. This test/documentation step is
+not yet committed.
 
 Fresh max-crypto ARM empty-card image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF455432.uf2`

@@ -24525,3 +24525,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: External-test image remains ready; REL-01 physical GPPro check remains blocked by PC/SC reader publication.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Verify same-value persistent object assignment 7 minutes
+
+- Step/experiment: `RV-20261106-23-same-object-assignment`
+- When: '2026-11-07 13:12 CET' - '2026-11-07 13:19 CET'
+- Change: Added production-handler coverage proving same-value writes through persistent instance and static reference fields preserve stable object bodies. Updated R23 status and handoff; R22's stable identity implementation supplies the runtime fix.
+- Validation: `./tools/test-persistent-transaction` PASS (`TEST:SUMMARY fail=0`); ASan/UBSan persistent transaction build/run PASS with `ASAN_OPTIONS=detect_leaks=0`. Cases cover alias/body separation, writes outside transactions, commit/abort, fresh canonical reference equality through parent/static/direct roots, and mutation followed by fresh restore. No new firmware source changed; no architecture rebuild or physical test was needed for this test/documentation-only step.
+- Result: Same-value assignment does not publish a self-alias for either reference source, including transaction commit/abort. Fresh restore remains usable and later child writes persist.
+- Decision: Close R23. Continue with R24: inject first-object persistence failures and transaction aborts, then verify retry of the same live object.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Unit output was not archived; generated sanitizer build is under `build/tests/unit/persistent-transaction-asan/`.
