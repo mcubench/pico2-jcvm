@@ -39,6 +39,35 @@
 
 namespace jcvm {
 
+size_t Stack::validatedLocalIndex(const Frame &frame,
+                                  const uint8_t local_number,
+                                  const size_t width) const {
+  const uintptr_t stack_begin = reinterpret_cast<uintptr_t>(this->jc_stack);
+  const uintptr_t stack_end =
+      stack_begin + sizeof(this->jc_stack);
+  const uintptr_t frame_begin = reinterpret_cast<uintptr_t>(frame.getFP());
+  const uintptr_t locals_end = reinterpret_cast<uintptr_t>(frame.getOP());
+  if (frame_begin < stack_begin || frame_begin >= stack_end ||
+      locals_end < frame_begin || locals_end > stack_end ||
+      (frame_begin - stack_begin) % sizeof(jword_t) != 0 ||
+      (locals_end - stack_begin) % sizeof(jword_t) != 0) {
+    throw Exceptions::StackOverflowException;
+  }
+
+  const size_t frame_index =
+      static_cast<size_t>((frame_begin - stack_begin) / sizeof(jword_t));
+  const size_t local_count =
+      static_cast<size_t>((locals_end - frame_begin) / sizeof(jword_t));
+  const size_t local_offset = local_number;
+  if (local_offset > local_count || width > local_count - local_offset ||
+      frame_index > JCVM_STACK_SIZE ||
+      local_offset > JCVM_STACK_SIZE - frame_index ||
+      width > JCVM_STACK_SIZE - frame_index - local_offset) {
+    throw Exceptions::StackOverflowException;
+  }
+  return frame_index + local_offset;
+}
+
 /**
  * Pushing a new frame regarding the invoked method header.
  *
@@ -55,55 +84,53 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
                        const uint8_t *method_end,
                        const bool arguments_on_caller_stack) {
   jword_t *new_fp, *new_op, *new_tos, *new_eos;
+  Frame *previous_frame = nullptr;
+  size_t new_fp_index = 0;
+  bool adjust_previous_tos = false;
 
-  if (this->frames.empty()) { // the first frame is pushing.
-    this->root_return_value_available = false;
-    this->root_return_value_is_reference = false;
-    this->root_return_value = 0;
-    this->root_reference_return_owner = kCurrentReferenceOwner;
-    this->root_return_kind = ReturnKind::None;
-    this->last_method_return_kind = ReturnKind::None;
-    new_fp = &(this->jc_stack[0]);
-  } else {
-
-    Frame &previous_frame = this->getCurrentFrame();
+  if (!this->frames.empty()) {
+    previous_frame = &this->getCurrentFrame();
+    const uintptr_t stack_begin = reinterpret_cast<uintptr_t>(this->jc_stack);
+    const uintptr_t stack_end = stack_begin + sizeof(this->jc_stack);
+    const auto checked_stack_index = [&](jword_t *pointer) -> size_t {
+      const uintptr_t address = reinterpret_cast<uintptr_t>(pointer);
+      if (address < stack_begin || address > stack_end ||
+          (address - stack_begin) % sizeof(jword_t) != 0) {
+        throw Exceptions::StackOverflowException;
+      }
+      return static_cast<size_t>((address - stack_begin) / sizeof(jword_t));
+    };
+    const size_t op_index = checked_stack_index(previous_frame->getOP());
+    const size_t tos_index = checked_stack_index(previous_frame->getTOS());
 
     if (arguments_on_caller_stack) {
-#ifdef JCRE_STACK_OVERFLOW_PROTECTION
-      TRACE_JCVM_DEBUG("PUSH_FRAME nargs=%u available=%d",
-                       static_cast<unsigned>(nargs),
-                       static_cast<int>(previous_frame.getTOS() -
-                                        previous_frame.getOP()));
-      if ((previous_frame.getTOS() - nargs) < previous_frame.getOP()) {
-        // Stack underflow detected!!!!
+      if (tos_index < op_index || nargs > tos_index - op_index) {
         throw Exceptions::StackUnderflowException;
       }
-#endif /* JCRE_STACK_OVERFLOW_PROTECTION */
-      previous_frame.setTOS(previous_frame.getTOS() - nargs);
-    } else if (previous_frame.getTOS() < previous_frame.getOP()) {
-      // Native entry may start after its Java operands have been consumed,
-      // leaving TOS below the operand-stack base. Place the nested frame at
-      // the base so its locals cannot alias the caller's locals.
-      previous_frame.setTOS(previous_frame.getOP());
+      new_fp_index = tos_index - nargs;
+      adjust_previous_tos = true;
+    } else if (tos_index < op_index) {
+      // Native entry may start after its Java operands were consumed.
+      new_fp_index = op_index;
+      adjust_previous_tos = true;
+    } else {
+      new_fp_index = tos_index;
     }
-    new_fp = previous_frame.getTOS();
   }
 
-  pc_t new_pc(pc, method_begin, method_end);
-
-#ifdef JCRE_STACK_OVERFLOW_PROTECTION
-
-  if ((new_fp + nargs + max_locals + max_operand_stack) >
-      &(this->jc_stack[JCVM_STACK_SIZE - 1])) {
-    // Stack overflow detected!!!!
+  const size_t frame_words = static_cast<size_t>(nargs) + max_locals +
+                             max_operand_stack;
+  if (new_fp_index > JCVM_STACK_SIZE ||
+      frame_words > JCVM_STACK_SIZE - new_fp_index) {
     throw Exceptions::StackOverflowException;
   }
 
-#endif /* JCRE_STACK_OVERFLOW_PROTECTION */
-
+  new_fp = this->jc_stack + new_fp_index;
   new_op = new_fp + nargs + max_locals;
   new_tos = new_op;
   new_eos = new_tos + max_operand_stack;
+
+  pc_t new_pc(pc, method_begin, method_end);
 
   if (nargs > 0) {
     TRACE_JCVM_DEBUG("FRAME arg0=0x%04X arg1=0x%04X arg2=0x%04X arg3=0x%04X",
@@ -114,6 +141,17 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
   }
 
   this->frames.emplace_front(new_fp, new_op, new_tos, new_eos, new_pc);
+
+  if (previous_frame != nullptr && adjust_previous_tos) {
+    previous_frame->setTOS(this->jc_stack + new_fp_index);
+  } else if (previous_frame == nullptr) { // the first frame is pushing.
+    this->root_return_value_available = false;
+    this->root_return_value_is_reference = false;
+    this->root_return_value = 0;
+    this->root_reference_return_owner = kCurrentReferenceOwner;
+    this->root_return_kind = ReturnKind::None;
+    this->last_method_return_kind = ReturnKind::None;
+  }
 
   // cleaning the local variables area
   for (auto word = (new_fp + nargs); word < new_op; word++) {
@@ -566,7 +604,9 @@ Stack::ValueKind Stack::get_Pushed_ValueKind(const uint16_t n)
  */
 jshort_t Stack::readLocal_Short(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
-  if (this->getValueKind(current_frame.getFP() + local_number) !=
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 1);
+  if (this->getValueKind(this->jc_stack + local_index) !=
       ValueKind::Primitive) {
     throw Exceptions::SecurityException;
   }
@@ -581,9 +621,11 @@ jshort_t Stack::readLocal_Short(const uint8_t local_number) {
  */
 jint_t Stack::readLocal_Int(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
-  if (this->getValueKind(current_frame.getFP() + local_number) !=
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 2);
+  if (this->getValueKind(this->jc_stack + local_index) !=
           ValueKind::IntLowWord ||
-      this->getValueKind(current_frame.getFP() + local_number + 1) !=
+      this->getValueKind(this->jc_stack + local_index + 1) !=
           ValueKind::IntHighWord) {
     throw Exceptions::SecurityException;
   }
@@ -610,7 +652,9 @@ jref_t Stack::readLocal_Reference(const uint8_t local_number) {
 Stack::ReferenceValue
 Stack::readLocal_ReferenceValue(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
-  jword_t *local = current_frame.getFP() + local_number;
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 1);
+  jword_t *local = this->jc_stack + local_index;
   if (this->getValueKind(local) != ValueKind::Reference) {
     throw Exceptions::SecurityException;
   }
@@ -625,7 +669,9 @@ Stack::readLocal_ReferenceValue(const uint8_t local_number) {
  */
 jreturnaddress_t Stack::readLocal_ReturnAddress(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
-  if (this->getValueKind(current_frame.getFP() + local_number) !=
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 1);
+  if (this->getValueKind(this->jc_stack + local_index) !=
       ValueKind::ReturnAddress) {
     throw Exceptions::SecurityException;
   }
@@ -640,7 +686,9 @@ jreturnaddress_t Stack::readLocal_ReturnAddress(const uint8_t local_number) {
  */
 void Stack::writeLocal_Short(const uint8_t local_number, const jshort_t value) {
   Frame &current_frame = this->getCurrentFrame();
-  jword_t *local = current_frame.getFP() + local_number;
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 1);
+  jword_t *local = this->jc_stack + local_index;
   current_frame.writeLocal_Value(local_number, value);
   this->setValueKind(local, ValueKind::Primitive);
 }
@@ -654,7 +702,9 @@ void Stack::writeLocal_Short(const uint8_t local_number, const jshort_t value) {
  */
 void Stack::writeLocal_Int(const uint8_t local_number, const jint_t value) {
   Frame &current_frame = this->getCurrentFrame();
-  jword_t *local = current_frame.getFP() + local_number;
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 2);
+  jword_t *local = this->jc_stack + local_index;
   current_frame.writeLocal_Value(local_number, INT_2_LSSHORTS(value));
   current_frame.writeLocal_Value((uint8_t)(local_number + 1),
                                  INT_2_MSSHORTS(value));
@@ -672,7 +722,9 @@ void Stack::writeLocal_Int(const uint8_t local_number, const jint_t value) {
 void Stack::writeLocal_Reference(const uint8_t local_number,
                                  const jref_t value, const uint8_t owner) {
   Frame &current_frame = this->getCurrentFrame();
-  jword_t *local = current_frame.getFP() + local_number;
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 1);
+  jword_t *local = this->jc_stack + local_index;
   current_frame.writeLocal_Value(local_number, value.compact());
   this->setValueKind(local, ValueKind::Reference);
   const uint8_t effective_owner =
@@ -693,7 +745,9 @@ void Stack::writeLocal_Reference(const uint8_t local_number,
 void Stack::writeLocal_ReturnAddress(const uint8_t local_number,
                                      const jreturnaddress_t value) {
   Frame &current_frame = this->getCurrentFrame();
-  jword_t *local = current_frame.getFP() + local_number;
+  const size_t local_index =
+      this->validatedLocalIndex(current_frame, local_number, 1);
+  jword_t *local = this->jc_stack + local_index;
   current_frame.writeLocal_Value(local_number, value);
   this->setValueKind(local, ValueKind::ReturnAddress);
 }

@@ -23979,3 +23979,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue to RV-20261106-03 local metadata and stack bounds audit.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Validate stack local ranges before access 11 minutes
+
+- Step/experiment: `rv-20261107-stack-local-bounds`
+- When: '2026-11-07 04:22 CET' - '2026-11-07 04:33 CET'
+- Change: Added checked integer-offset validation for local slots and complete two-word ranges before pointer or packed metadata access. Hardened the packed value-kind accessors, made frame-local reads/writes validate before pointer formation, and moved nested frame capacity/argument validation before caller-stack mutation and frame pointer construction. Extended the RMI registry test with invalid local indices near the physical stack end, atomic two-word write rejection and frame-capacity failure; enabled ASan/UBSan for this full Stack fixture.
+- Validation: `./tools/test-rmi-registry` passed with ASan/UBSan, including `local_bounds=1`; wrapper syntax and `git diff --check` passed; `./tools/build arm` passed (firmware end `0x100d5658`, 174,504 bytes remaining); `./tools/build riscv` passed. Default LeakSanitizer startup failed because it is unsupported under this VM's ptrace execution; the wrapper disables only leak detection, while address and undefined-behavior instrumentation remain enabled. No physical test was run.
+- Result: High local indices and incomplete wide locals now fail with `StackOverflowException` before metadata access or mutation; rejected nested frame allocation leaves caller operands intact. No sanitizer finding occurred.
+- Decision: RV-20261106-03 remains open for additional sanitizer and local/operand boundary combinations; continue with the remaining P1 review findings.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Sanitized test output emitted by `./tools/test-rmi-registry`; no separate log.

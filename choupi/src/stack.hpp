@@ -98,8 +98,17 @@ private:
   ReturnKind root_return_kind = ReturnKind::None;
   ReturnKind last_method_return_kind = ReturnKind::None;
 
+  size_t validatedLocalIndex(const Frame &frame, uint8_t local_number,
+                             size_t width) const;
+
   ValueKind getValueKind(const jword_t *word) const noexcept {
-    const size_t index = static_cast<size_t>(word - jc_stack);
+    const uintptr_t base = reinterpret_cast<uintptr_t>(jc_stack);
+    const uintptr_t address = reinterpret_cast<uintptr_t>(word);
+    if (address < base || (address - base) % sizeof(jword_t) != 0) {
+      return ValueKind::Unknown;
+    }
+    const size_t index = static_cast<size_t>((address - base) / sizeof(jword_t));
+    if (index >= JCVM_STACK_SIZE) return ValueKind::Unknown;
     const size_t bit_index = index * value_kind_bits;
     const size_t byte_index = bit_index / 8u;
     const uint8_t shift = static_cast<uint8_t>(bit_index & 7u);
@@ -111,7 +120,11 @@ private:
     return static_cast<ValueKind>((packed >> shift) & 0x07u);
   }
   void setValueKind(jword_t *word, const ValueKind kind) noexcept {
-    const size_t index = static_cast<size_t>(word - jc_stack);
+    const uintptr_t base = reinterpret_cast<uintptr_t>(jc_stack);
+    const uintptr_t address = reinterpret_cast<uintptr_t>(word);
+    if (address < base || (address - base) % sizeof(jword_t) != 0) return;
+    const size_t index = static_cast<size_t>((address - base) / sizeof(jword_t));
+    if (index >= JCVM_STACK_SIZE) return;
     const size_t bit_index = index * value_kind_bits;
     const size_t byte_index = bit_index / 8u;
     const uint8_t shift = static_cast<uint8_t>(bit_index & 7u);

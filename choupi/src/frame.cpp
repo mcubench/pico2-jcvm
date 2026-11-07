@@ -80,20 +80,15 @@ jword_t Frame::pop_Value()
  *
  * @return the local variable value at 'local_number' position.
  */
-jword_t Frame::readLocal_Value(const uint8_t local_number)
-#ifndef JCRE_STACK_OVERFLOW_PROTECTION
-    noexcept
-#endif
-{
-  jword_t *local = (jword_t *)(this->fp + local_number);
-#ifdef JCRE_STACK_OVERFLOW_PROTECTION
-
-  if (local >= this->op) {
-    // Stack overflow detected!!!!
+jword_t Frame::readLocal_Value(const uint8_t local_number) {
+  const uintptr_t fp_address = reinterpret_cast<uintptr_t>(this->fp);
+  const uintptr_t op_address = reinterpret_cast<uintptr_t>(this->op);
+  if (op_address < fp_address ||
+      (op_address - fp_address) % sizeof(jword_t) != 0 ||
+      local_number >= (op_address - fp_address) / sizeof(jword_t)) {
     throw Exceptions::StackOverflowException;
   }
-
-#endif /* JCRE_STACK_OVERFLOW_PROTECTION */
+  jword_t *local = this->fp + local_number;
 
   return *local;
 }
@@ -104,21 +99,15 @@ jword_t Frame::readLocal_Value(const uint8_t local_number)
  * @param [value] value to save.
  * @param [local_number] the local variable position.
  */
-void Frame::writeLocal_Value(const uint8_t local_number, const int16_t value)
-#ifndef JCRE_STACK_OVERFLOW_PROTECTION
-    noexcept
-#endif
-{
-  jword_t *local = this->fp + local_number;
-
-#ifdef JCRE_STACK_OVERFLOW_PROTECTION
-
-  if (local >= this->op) {
-    // Stack overflow detected!!!!
+void Frame::writeLocal_Value(const uint8_t local_number, const int16_t value) {
+  const uintptr_t fp_address = reinterpret_cast<uintptr_t>(this->fp);
+  const uintptr_t op_address = reinterpret_cast<uintptr_t>(this->op);
+  if (op_address < fp_address ||
+      (op_address - fp_address) % sizeof(jword_t) != 0 ||
+      local_number >= (op_address - fp_address) / sizeof(jword_t)) {
     throw Exceptions::StackOverflowException;
   }
-
-#endif /* JCRE_STACK_OVERFLOW_PROTECTION */
+  jword_t *local = this->fp + local_number;
 
   *(local) = (jword_t)value;
 }

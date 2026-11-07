@@ -116,17 +116,9 @@ public:
 #endif
       ;
   /// Reading a Local Variable
-  jword_t readLocal_Value(const uint8_t local_number)
-#ifndef JCRE_STACK_OVERFLOW_PROTECTION
-      noexcept
-#endif
-      ;
+  jword_t readLocal_Value(const uint8_t local_number);
   /// Writing to Local Variable
-  void writeLocal_Value(const uint8_t local_number, const int16_t value)
-#ifndef JCRE_STACK_OVERFLOW_PROTECTION
-      noexcept
-#endif
-      ;
+  void writeLocal_Value(const uint8_t local_number, const int16_t value);
 };
 
 } // namespace jcvm

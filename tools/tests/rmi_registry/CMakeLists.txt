@@ -17,9 +17,10 @@ add_executable(
 target_compile_features(rmi_registry_test PRIVATE cxx_std_17)
 target_compile_definitions(rmi_registry_test PRIVATE PC_VERSION=1)
 target_compile_options(rmi_registry_test PRIVATE
-  -Wall -Wextra -ffunction-sections -fdata-sections -UNDEBUG
+  -Wall -Wextra -ffunction-sections -fdata-sections -fsanitize=address,undefined -UNDEBUG
   -Wno-ignored-qualifiers -Wno-address-of-packed-member)
 target_include_directories(rmi_registry_test PRIVATE
   "${CHOUPI_SOURCE_DIR}"
   "${CMAKE_SOURCE_DIR}/../../../choupi/os/src")
-target_link_options(rmi_registry_test PRIVATE -Wl,--gc-sections)
+target_link_options(rmi_registry_test PRIVATE
+  -Wl,--gc-sections -fsanitize=address,undefined)

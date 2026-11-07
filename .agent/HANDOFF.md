@@ -1,3 +1,26 @@
+# Current handoff — validate stack local ranges before access — 2026-11-07 04:33 CET
+
+`Stack` now validates physical stack indices, local-variable count and complete
+slot width before forming local pointers or touching packed `ValueKind`
+metadata. `Frame` local reads/writes also validate before pointer formation.
+Nested `push_Frame()` checks caller argument availability and total frame
+capacity before shifting the caller TOS or forming the new frame pointers; it
+updates caller/root state only after frame insertion succeeds. The ASan/UBSan
+RMI registry fixture covers high invalid local indices at a near-end frame,
+rejects a two-word write across a one-word local without changing that local,
+and verifies failed frame capacity leaves the caller operand intact.
+
+`./tools/test-rmi-registry` passes with `local_bounds=1`. LeakSanitizer cannot
+run in this VM under ptrace, so the wrapper turns off leak detection while
+keeping ASan and UBSan active. ARM and RISC-V wrappers pass. ARM image ends at
+`0x100d5658` with 174,504 bytes left in the reserved region. No physical test
+was performed. RV-20261106-03 remains open for additional local/operand
+boundary combinations. This step awaits its commit SHA resolution.
+
+Next: continue with the remaining P1 review findings. Keep the provided dirty
+CAP/API review and crypto-probe changes unstaged unless their owner requests
+otherwise.
+
 # Current handoff — nested frame unwind direction — 2026-11-07 04:20 CET
 
 `Stack::unwindToDepth()` now removes frames from the front of the frame list,
