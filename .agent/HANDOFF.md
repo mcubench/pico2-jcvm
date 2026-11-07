@@ -14,7 +14,8 @@ preinstalled. Firmware ends at `0x100ED9E8`, with 75,288 bytes remaining.
 CPLC source ID `FFCD9796` reflects the preserved unrelated worktree edits. No
 device was flashed. Build provenance is `build/arm/build-provenance.txt`.
 
-Next: commit this image record. Preserve unrelated dirty files.
+Image details are recorded in commit `40f7729e`. Preserve unrelated dirty
+files; the external-testing image is ready at the path above.
 
 # Current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET
 

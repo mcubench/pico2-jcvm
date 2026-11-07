@@ -24002,6 +24002,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-cd9796ab.uf2`; build provenance `build/arm/build-provenance.txt`.
 
+## 2026-11-07 Record max-crypto image record commit SHA 1 minute
+
+- Step/experiment: `max_crypto-arm-empty-card-external-test-sha`
+- When: '2026-11-07 12:14 CET' - '2026-11-07 12:15 CET'
+- Change: Recorded the commit containing the verified max-crypto external-testing image details.
+- Validation: Confirmed `40f7729e` changes only the progress log and handoff; image validation and hashes are recorded immediately above.
+- Result: The max-crypto external image record is committed as `40f7729e`.
+- Decision: Provide the image to the user for external testing; no card was flashed here.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
+
 ## 2026-11-07 Reclaim transient global arrays after APDU completion 39 minutes
 
 - Step/experiment: `RV-20261106-11-global-array-lifetime`
