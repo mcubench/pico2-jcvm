@@ -25045,3 +25045,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the remaining CTX-01 reference-consumer audit; physical acceptance is still separate.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T212344Z.log`.
+
+## 2026-11-07 Recheck persistent inventory and fault recovery 9 minutes
+
+- Step/experiment: `PERSIST-01-host-model-acceptance-rerun`
+- When: '2026-11-07 22:23 CET' - '2026-11-07 22:32 CET'
+- Change: Updated PERSIST-01 and the handoff with current-worktree rerun evidence for owner inventory, transactional object recovery, reclamation, and the RP2350 filesystem overlay.
+- Validation: `./tools/test-persistent-inventory` passed all 22 cases. `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including fail-closed malformed aliases, owner preservation, abort/retry, reclaimer interruption, and restart retry. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`, including 1,000 simulated power cuts for persistent reclaimer retry. The expected simulated `FAULT`/capacity rejection diagnostics were asserted by passing tests. No physical flash experiment was performed; runtime benchmarking was not measured.
+- Result: Host-model inventory, transaction, and overlay recovery remain passing; physical multi-owner and actual flash power-loss gates remain unresolved.
+- Decision: Keep persistent deletion disabled pending the remaining physical acceptance.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Test output from the three wrappers; no separate logs.

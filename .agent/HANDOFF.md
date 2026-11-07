@@ -26,6 +26,11 @@ not BOOTSEL. Bounded `pcsc_scan -r` publishes no reader, so no smartcard APDUs
 were attempted. Retry physical work when a Pico reader is listed; preserve the
 other dirty worktree edits.
 
+PERSIST-01 host-model recheck after `4492a973`: persistent inventory passes 22
+cases; persistent transaction/reclaimer and RP2350 filesystem-overlay suites
+finish with `fail=0`, including 1,000-cut simulated reclaimer recovery. This
+does not prove physical flash interruption or multi-owner reclaimer safety.
+
 # Previous current handoff — RV-11 physical rerun and device state — 2026-11-07 21:54 CET
 
 REL-01 is complete (`1c2028bc`): physical board D92 reports release `0101`,

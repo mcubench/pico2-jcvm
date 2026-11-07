@@ -396,6 +396,9 @@ review.
   The current-worktree `./tools/test-rp2350-fs-overlay` rerun passed on
   2026-11-07, including `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`.
   This remains a host-model test, not a physical flash power-cut experiment.
+  Rechecking after the JCSystem guard commit, persistent inventory passed all
+  22 cases and both transaction/reclaimer and filesystem-overlay suites passed
+  with `fail=0`. Physical multi-owner and power-loss gates remain open.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.
