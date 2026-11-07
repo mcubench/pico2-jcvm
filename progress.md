@@ -24547,3 +24547,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with R24 failure/abort retry tests.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Test output was not archived.
+
+## 2026-11-07 Revalidate REL-01 and package max-crypto image 10 minutes
+
+- Step/experiment: `REL-01-current-build-and-max-empty-card`
+- When: '2026-11-07 13:23 CET' - '2026-11-07 13:33 CET'
+- Change: Revalidated the existing 0.1.1 CPLC release/source-ID implementation and built a fresh empty-card ARM max_crypto image for external testing. Updated the handoff with the physical-reader limitation and artifact details; source/TODO implementation was already committed and the hardware gate remains open.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/build arm --profile max_crypto` PASS; a second `./tools/build arm --profile max_crypto` PASS with the same CPLC source marker `0xFFA77DD3`; `./tools/build riscv --profile max_crypto` PASS (147/150 capabilities). `./build/tests/unit/gp-get-data/gp_get_data_test` PASS (25/25). `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted three nodes, but `pcsc_scan -r` listed only Virtual PCD 00/00 and 00/01; GPPro and physical flash were not run. `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFA77DD3.uf2` PASS; `picotool info -a` reports RP2350 ARM Secure. UF2 inspection confirms CPLC `0101`, source ID `FFA77DD3`, and 4,096 erased storage blocks.
+- Result: Current external-testing image is 4,046,336 bytes, SHA-256 `b12cb6a2ea51927b2bfdefbbe6199d7bb1fb5502c066e95c5490c9173e49e543`; firmware end `0x100EDDF8`, remaining firmware space 74,248 bytes. No physical hardware result is claimed.
+- Decision: Deliver this empty-card image for external testing. Keep REL-01 open until a physical Pico is available to GPPro for `--info` verification.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFA77DD3.uf2` (ignored by Git); `build/arm/build-provenance.txt`.

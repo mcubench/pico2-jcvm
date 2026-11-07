@@ -1,3 +1,30 @@
+# Current handoff — REL-01 build check and max-crypto image — 2026-11-07 13:33 CET
+
+REL-01 source behavior is already committed as `971272f3`: CPLC release level
+is `0101` (0.1.1), and the build wrapper embeds a source identity. This turn
+revalidated two consecutive ARM max_crypto builds with the same source marker
+`0xFFA77DD3`; the RISC-V max_crypto build also passed. The CPLC GET DATA unit
+suite passes 25/25.
+
+Physical GPPro acceptance remains open. The authorized PC/SC helper granted
+three USB nodes, but `pcsc_scan -r` listed only `Virtual PCD 00 00` and
+`Virtual PCD 00 01`; no physical Pico reader was available. No flash or
+physical test was performed.
+
+Current external-testing ARM image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFA77DD3.uf2`
+(4,046,336 bytes; SHA-256
+`b12cb6a2ea51927b2bfdefbbe6199d7bb1fb5502c066e95c5490c9173e49e543`). It is
+RP2350 ARM Secure, max_crypto enables 147/150 capabilities, release is `0101`,
+source ID is `FFA77DD3`, and all 4,096 storage blocks are erased. Firmware end
+is `0x100EDDF8`, leaving 74,248 bytes. This artifact is ignored by Git and was
+built from HEAD `a77dd3fe` plus preserved dirty worktree changes (dirty marker
+`FF`). No token was flashed.
+
+Next: when a physical Pico is available in CCID mode, query GPPro `--info` and
+verify CPLC release/source ID. Continue with the next actionable implementation
+item meanwhile; preserve the unrelated dirty worktree files.
+
 # Current handoff — R22/R23 persistence identity verified — 2026-11-07 13:19 CET
 
 RV-20261106-22 is implemented and committed as `4554327c`. Persistent ordinary
