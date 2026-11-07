@@ -1140,6 +1140,9 @@ review.
   confirmation remains part of API-03 acceptance. The full cross-AID VPCD
   suite passes 35/35 after the guard, including owner-tagged references,
   native array-copy enforcement, proxy deletion/reinstall, and reset behavior.
+  The transient-allocation failure suite also passes in int-disabled and
+  int-enabled builds, covering negative lengths, exact exception reasons,
+  backing limits, and local/global handle exhaustion.
   A same-CAP restart VPCD test passes 7/7: both applet registrations restore,
   sibling static scalar/array state survives emulator restart, and SIO resolves
   the same restored array identity. The multi-package restart suite passes

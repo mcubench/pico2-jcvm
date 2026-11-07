@@ -25078,3 +25078,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Do not make system configuration or firmware changes without evidence; continue offline and retry discovery later.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None; exact observations are recorded in `.agent/QKB.md`.
+
+## 2026-11-07 Recheck transient allocation failure boundaries 3 minutes
+
+- Step/experiment: `JCSystem-transient-allocation-failure-regression`
+- When: '2026-11-07 22:39 CET' - '2026-11-07 22:42 CET'
+- Change: Recorded the focused transient-array failure suite in CTX-03 and the handoff.
+- Validation: `./tools/test-transient-allocation-failures` passed in int-disabled and int-enabled variants (five cases each), including negative lengths, exact exception reasons, backing limits, and local/global handle exhaustion. Compilation emitted existing `-Wignored-qualifiers` and packed-member alignment warnings from shared headers; no new warning was isolated to the guard. No hardware was used.
+- Result: Transient allocation failure mappings remain correct in both configurations. Runtime performance was not measured.
+- Decision: Keep the JCSystem context guard and its VPCD positive/negative cases.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: Test output from the wrapper; no separate log.
