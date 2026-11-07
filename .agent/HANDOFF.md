@@ -1,3 +1,40 @@
+# Current handoff — chunk symmetric Cipher updates without transactional buffer replacement — 2026-11-07 09:46 CET
+
+R08 coverage now includes the transaction-abort case where symmetric
+`update()` input exceeds the original Cipher workspace capacity. In
+`choupi/src/native_cipher.cpp`, `updateSymmetric()` processes input in chunks
+bounded by the current buffer capacity, so CBC/CTR update calls do not replace
+the persistent Cipher object's buffer reference mid-transaction. The buffered
+length sidecar and transient buffer then remain aligned after abort.
+
+The lifecycle VPCD test adds CBC and CTR update/abort vectors and passed
+10/10, including the earlier two-process RSA/Cipher restore checks and the
+persisted-flash plaintext sentinel scan. Log
+`artifacts/logs/cipher-workspace-vpcd-20261107T083715Z.log`, SHA-256
+`1b1695eada42d38a9709e25517a42a0ea387b30b73b4c4786fdbfebe212fe919`.
+The broad symmetric VPCD suite passed 99/99 (38 Cipher, 47 MAC, 6 IV, 16
+transient lifecycle vectors); log
+`artifacts/logs/symm-crypto-kat-vpcd-20261107T084258Z.log`, SHA-256
+`a25aefb211442fce20b01e89164350867e29affc1c849c567f798c23b1f53337`.
+Both `./tools/build arm` and `./tools/build riscv` passed. The ARM full image
+ends at `0x100d59b4`, leaving 173,644 bytes in its configured flash range.
+`./tools/fixture-path --verify` passed (81 files, JCAlgTest 1.8.4, 48 API
+CAPs).
+
+Physical validation is blocked at PC/SC publication, not USB enumeration:
+`lsusb -d 2e8a:` shows three runtime `2e8a:0009 Pico2 JCVM CCID` devices and
+the permitted helper grants pcscd node access, but `pcsc_scan -r` lists only
+`Virtual PCD 00 00` and `Virtual PCD 00 01`. No physical card command or flash
+was attempted. The repeated symmetric suite initially found a stale hardcoded
+input snapshot path; creating its expected empty generated input image allowed
+the unchanged test to pass. Do not stage unrelated concurrent edits.
+
+Step commit: `resolve in the following progress record`.
+
+Next: keep R08 open; review overlapping input/output buffer behavior for the
+chunked update path, inspect remaining workspace serialization cases, and
+retry hardware validation when a physical PC/SC reader is published.
+
 # Current handoff — scan persisted Cipher workspace payload — 2026-11-07 09:20 CET
 
 RV-20261106-08 now has an end-to-end two-process VPCD regression under the

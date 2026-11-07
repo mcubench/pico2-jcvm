@@ -646,27 +646,77 @@ jshort_t updateSymmetric(JC_Instance &cipher,
   checkKeyWorkspace(cipher);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
-  appendToVector(cipher, input, inputOffset, inputLength);
   const uint8_t algorithm = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
   const uint16_t blockSize = isAesAlgorithm(algorithm) ? 16 : 8;
-  const uint16_t bufferedLength = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
-  uint16_t processLength = static_cast<uint16_t>(bufferedLength - bufferedLength % blockSize);
-  if (algorithm == 0xF0) processLength = bufferedLength;
+  const uint16_t oldLength = static_cast<uint16_t>(
+      cipher.getNativeSessionField_Short(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
+  const uint32_t totalLength = static_cast<uint32_t>(oldLength) +
+                               static_cast<uint16_t>(inputLength);
+  if (totalLength > 32767)
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  const bool ctr = algorithm == 0xF0;
   const uint8_t padding = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM));
   const bool encrypt = cipher.getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
-  if (!encrypt && padding != 1 && processLength != 0)
-    processLength = static_cast<uint16_t>(processLength - blockSize);
-  checkRangeForOutput(output, outputOffset, processLength);
-  if (processLength != 0) {
-    const auto result = transformSymmetric(cipher, processLength);
-    writeArray(output, static_cast<uint16_t>(outputOffset), result, processLength);
+  uint16_t expectedOutput = ctr
+      ? static_cast<uint16_t>(totalLength)
+      : static_cast<uint16_t>(totalLength - totalLength % blockSize);
+  if (!ctr && !encrypt && padding != 1 && expectedOutput != 0)
+    expectedOutput = static_cast<uint16_t>(expectedOutput - blockSize);
+  checkRangeForOutput(output, outputOffset, expectedOutput);
+
+  uint16_t consumed = 0;
+  uint16_t produced = 0;
+  bool firstPass = true;
+  while (firstPass || consumed < static_cast<uint16_t>(inputLength)) {
+    firstPass = false;
+    auto buffer = byteArray(cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
+    const uint16_t bufferedLength = static_cast<uint16_t>(
+        cipher.getNativeSessionField_Short(
+            ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
+    if (bufferedLength > buffer->size())
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+    const uint16_t available = static_cast<uint16_t>(
+        buffer->size() - bufferedLength);
+    const uint16_t remaining = static_cast<uint16_t>(
+        static_cast<uint16_t>(inputLength) - consumed);
+    const uint16_t chunk = std::min(available, remaining);
+    if (remaining != 0 && chunk == 0)
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+    if (chunk != 0) {
+      appendToVector(cipher, input,
+          static_cast<jshort_t>(inputOffset + consumed),
+          static_cast<jshort_t>(chunk));
+      consumed = static_cast<uint16_t>(consumed + chunk);
+    }
+
+    const uint16_t currentLength = static_cast<uint16_t>(
+        cipher.getNativeSessionField_Short(
+            ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
+    uint16_t processLength = ctr
+        ? currentLength
+        : static_cast<uint16_t>(currentLength - currentLength % blockSize);
+    if (!ctr && !encrypt && padding != 1 && processLength != 0)
+      processLength = static_cast<uint16_t>(processLength - blockSize);
+    if (processLength != 0) {
+      if (static_cast<uint32_t>(produced) + processLength > expectedOutput)
+        throwCryptoException(CryptoExceptionReason::IllegalUse);
+      const auto result = transformSymmetric(cipher, processLength);
+      writeArray(output,
+          static_cast<uint16_t>(static_cast<uint16_t>(outputOffset) + produced),
+          result, processLength);
+      discardBuffered(cipher, processLength);
+      produced = static_cast<uint16_t>(produced + processLength);
+    }
+    if (consumed == static_cast<uint16_t>(inputLength)) break;
   }
-  discardBuffered(cipher, processLength);
-  return static_cast<jshort_t>(processLength);
+  if (produced != expectedOutput)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  return static_cast<jshort_t>(produced);
 }
 
 uint16_t unpad(std::vector<unsigned char> &data, uint16_t length,

@@ -24240,3 +24240,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue R08 lifecycle coverage for AES-CTR and grown buffers; full record inventory and physical acceptance remain open.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+## 2026-11-07 Chunk symmetric Cipher updates within retained workspace 17 minutes
+
+- Step/experiment: `RV-20261106-08-symmetric-update-growth-abort`
+- When: '2026-11-07 09:29 CET' - '2026-11-07 09:46 CET'
+- Change: Processed symmetric Cipher update input in chunks bounded by the current transient workspace, preventing a transaction-time field-array replacement from desynchronizing the nontransactional buffered-length sidecar. Added CBC and CTR update/abort lifecycle APDUs.
+- Validation: `./tools/build arm` PASS; `./tools/build riscv` PASS; `./tools/fixture-path --verify` PASS (`files=81 jcalgtest=1.8.4 api_caps=48`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` PASS (`10/10`, persisted-flash sentinel absent); `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` initially failed before tests because of a missing hardcoded generated input snapshot; after creating an empty generated snapshot, `PICO2_HOST_USB_ACCESS=1 ./tools/env python3 tests/integration/test_symm_crypto_vpcd.py` PASS (`99/99`). Scoped `git diff --check` passed for this step's source, test and wrapper files. Physical check: three runtime USB devices enumerated and helper granted access, but `pcsc_scan -r` showed only the two Virtual PCD readers; no physical card command or flash was performed.
+- Result: ARM full image ends at `0x100d59b4` with 173,644 bytes left in its configured flash range. Focused log `artifacts/logs/cipher-workspace-vpcd-20261107T083715Z.log`, SHA-256 `1b1695eada42d38a9709e25517a42a0ea387b30b73b4c4786fdbfebe212fe919`; broad symmetric log `artifacts/logs/symm-crypto-kat-vpcd-20261107T084258Z.log`, SHA-256 `a25aefb211442fce20b01e89164350867e29affc1c849c567f798c23b1f53337`. Full physical validation remains unverified because PC/SC did not publish the three USB devices.
+- Decision: Keep R08 open pending overlapping input/output review, broader persistence inventory and physical validation. RISC-V produced its supported core/smoke targets; no full RISC-V CHOUPI firmware image is provided by the current wrapper.
+- Commit: `<resolve in follow-up progress record>`
+- Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T083715Z.log`; `artifacts/logs/symm-crypto-kat-vpcd-20261107T084258Z.log`.

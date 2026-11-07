@@ -165,6 +165,84 @@ public final class CipherLifecycleProbe extends Applet {
     }
   }
 
+  private static byte testGrownCbcBufferSurvivesAbort() {
+    byte[] input = new byte[49];
+    byte[] output = new byte[64];
+    byte[] expectedLastBlock = {
+        0x48, 0x33, 0x6b, 0x3b, (byte)0xe2, 0x63, (byte)0xe5, (byte)0x96,
+        (byte)0x89, (byte)0x84, 0x6c, (byte)0xad, 0x1e, (byte)0xaf,
+        0x5d, 0x21};
+    byte[] iv = new byte[16];
+    for (short i = 0; i < 49; i++) input[i] = (byte)i;
+    try {
+      retainedCipher = Cipher.getInstance(
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+      retainedCipher.init(retainedKey, Cipher.MODE_ENCRYPT,
+                          iv, (short)0, (short)iv.length);
+      JCSystem.beginTransaction();
+      short updateLength;
+      try {
+        updateLength = retainedCipher.update(input, (short)0, (short)49,
+                                             output, (short)0);
+      } catch (CryptoException exception) {
+        JCSystem.abortTransaction();
+        return (byte)0x7b;
+      }
+      JCSystem.abortTransaction();
+      byte[] finalInput = new byte[15];
+      for (short i = 0; i < 15; i++) finalInput[i] = (byte)(49 + i);
+      short finalLength = retainedCipher.doFinal(
+          finalInput, (short)0, (short)15, output, (short)0);
+      if (updateLength != 48 || finalLength != 16) return (byte)0x7c;
+      for (short i = 0; i < 16; i++) {
+        if (output[i] != expectedLastBlock[i]) return (byte)0x7d;
+      }
+      return 1;
+    } catch (CryptoException exception) {
+      if (JCSystem.getTransactionDepth() != 0) JCSystem.abortTransaction();
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
+  private static byte testCtrBufferSurvivesAbort() {
+    byte[] input = new byte[32];
+    byte[] output = new byte[32];
+    byte[] iv = new byte[16];
+    byte[] expected = {
+        (byte)0xf7, (byte)0xca, (byte)0x9f, (byte)0xfb, (byte)0xa1, 0x78,
+        (byte)0x8a, 0x7f, 0x4f, 0x51, (byte)0xa0, (byte)0xeb,
+        (byte)0x81, (byte)0xd4, (byte)0x97, 0x67, 0x7b, 0x6a, 0x4d,
+        0x7c, 0x3b, (byte)0x88, 0x25, (byte)0xee, (byte)0x81, (byte)0x8d,
+        0x0c, (byte)0xae, (byte)0x4c, (byte)0xf0, 0x2c, 0x5b};
+    for (short i = 0; i < 16; i++) iv[i] = (byte)i;
+    for (short i = 0; i < 32; i++) input[i] = (byte)i;
+    try {
+      retainedCipher = Cipher.getInstance(Cipher.ALG_AES_CTR, false);
+      retainedCipher.init(retainedKey, Cipher.MODE_ENCRYPT,
+                          iv, (short)0, (short)iv.length);
+      JCSystem.beginTransaction();
+      short firstLength;
+      try {
+        firstLength = retainedCipher.update(input, (short)0, (short)13,
+                                            output, (short)0);
+      } catch (CryptoException exception) {
+        JCSystem.abortTransaction();
+        return (byte)0x7e;
+      }
+      JCSystem.abortTransaction();
+      short finalLength = retainedCipher.doFinal(input, (short)13, (short)19,
+                                                  output, (short)0);
+      if (firstLength != 13 || finalLength != 19) return (byte)0x7f;
+      for (short i = 0; i < 19; i++) {
+        if (output[i] != expected[(short)(13 + i)]) return (byte)0x7a;
+      }
+      return 1;
+    } catch (CryptoException exception) {
+      if (JCSystem.getTransactionDepth() != 0) JCSystem.abortTransaction();
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
   public static void install(byte[] data, short offset, byte length) {
     new CipherLifecycleProbe();
   }
@@ -207,6 +285,10 @@ public final class CipherLifecycleProbe extends Applet {
       result = testRsaCipherAfterRestore();
     } else if (instruction == (byte)0x11) {
       result = testBufferedCipherInput(buffer, apdu.setIncomingAndReceive());
+    } else if (instruction == (byte)0x12) {
+      result = testGrownCbcBufferSurvivesAbort();
+    } else if (instruction == (byte)0x13) {
+      result = testCtrBufferSurvivesAbort();
     } else if (instruction == (byte)0x09) {
       try {
         AESKey temporaryKey = (AESKey)KeyBuilder.buildKey(
