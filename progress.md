@@ -24013,16 +24013,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `1c141afb`
 - Artifacts/logs: None.
 
-## 2026-11-07 Implement REL-01 CPLC release and source identity 23 minutes
+## 2026-11-07 Implement REL-01 CPLC release and source identity 26 minutes
 
 - Step/experiment: `REL-01-cplc-release-and-build-id`
-- When: '2026-11-07 11:22 CET' - '2026-11-07 11:45 CET'
+- When: '2026-11-07 11:22 CET' - '2026-11-07 11:48 CET'
 - Change: Updated CPLC dates to 2026-11-07 and encoded the explicitly requested firmware version 0.1.1 as release level `0101` (major nibble, minor nibble, update byte). Added `tools/cplc-source-id`; each firmware build records a four-byte source ID in `ICPersonalizationEquipmentID`, with leading `00` for clean trees and `FF` for dirty trees, followed by six uppercase hex digits of HEAD. Added strict CMake input validation, restricted the source-ID compile definition to `ccid_device.cpp` to avoid rebuilding the SDK, and aligned unit/hardware CPLC probes.
-- Validation: CPLC unit suite PASS (`25/25`); hardware probe source compiles; `./tools/build arm --profile max_crypto` PASS (firmware end `0x100ED9B0`, 75,344 bytes remaining); `./tools/build riscv --profile max_crypto` PASS (shared core/smoke only); UF2 payload inspection PASS for CPLC version/date/source-ID `0101`/`6311`/`FF1C141A`; `./tools/package-empty-card-uf2` PASS; `./tools/fixture-path --verify` PASS (`81` pinned inputs). `git diff --check` passed for the CPLC files. No physical flash or GPPro check.
-- Result: Prepared empty-card ARM max-crypto image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`, 4,044,288 bytes, SHA-256 `3debd17e37e70ed48dea7cec1c31b16f8b6bec8df9382a5dcfc52166b22e10fe`. Firmware UF2 size 1,947,136 bytes, SHA-256 `c78ea3770cd7f3b515409ac8adebf09a7af37c690066becee54b5be6de0ebfe8`. Current CPLC source ID `FF1C141A` marks a dirty source tree based on HEAD prefix `1c141a`; no exact clean-commit claim.
+- Validation: CPLC unit suite PASS (`25/25`); hardware probe source compiles; post-commit `./tools/build arm --profile max_crypto` PASS (firmware end `0x100ED9B0`, 75,344 bytes remaining); post-commit `./tools/build riscv --profile max_crypto` PASS (shared core/smoke only); final UF2 payload inspection PASS for CPLC version/date/source-ID `0101`/`6311`/`FF971272`; `./tools/package-empty-card-uf2` PASS; `./tools/fixture-path --verify` PASS (`81` pinned inputs). `git diff --check` passed for the CPLC files. No physical flash or GPPro check.
+- Result: Prepared empty-card ARM max-crypto image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`, 4,044,288 bytes, SHA-256 `f9185dd5a32c4525bb1fabf5843c920d07a2371e6faf82ca10d6a69970f88a5a`. Firmware UF2 size 1,947,136 bytes, SHA-256 `a34281da931723befd4bbb8f9c5a1758afe2dbe0307cc3440edcd947c3a4eb2c`. The post-commit CPLC source ID is `FF971272`, marking a dirty source tree based on HEAD prefix `971272`; payload inspection confirms release `0101` and dates `6311`.
 - Decision: Keep REL-01 open only for ordinary-rebuild stability and authorized physical GPPro display acceptance. Image is ready for external testing; no physical flash was done.
-- Commit: `<resolve in next progress entry>`
+- Commit: `971272f3`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-07 Record post-commit max-crypto image and REL-01 SHA 1 minute
+
+- Step/experiment: `REL-01-max-crypto-image-sha`
+- When: '2026-11-07 11:47 CET' - '2026-11-07 11:48 CET'
+- Change: Recorded REL-01 implementation SHA and final post-commit max-crypto build details in the progress log and handoff.
+- Validation: Confirmed commit `971272f3` contains CPLC version/source-ID implementation and tests. Rebuilt ARM and RISC-V max profile after the commit; re-packaged empty-card ARM image and inspected CPLC bytes from the UF2.
+- Result: Final artifact hash is `f9185dd5a32c4525bb1fabf5843c920d07a2371e6faf82ca10d6a69970f88a5a`, size 4,044,288 bytes, source ID `FF971272`.
+- Decision: Deliver the empty-card image for external testing. Physical GPPro visibility acceptance remains open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1.uf2`.
 
 
 ## 2026-11-07 Validate stack local ranges before access 11 minutes
