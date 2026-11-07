@@ -25,13 +25,23 @@ dirty worktree; preserve all unrelated edits.
 
 The full JCAlgTest 1.8.4 support sweep remains incomplete. The first
 900-second attempt timed out during RSA CRT 3072-bit probing. The extended run
-completed that APDU in 797,682 ms and returned `SystemException_NO_RESOURCE`
-(`F205`); `F206` remains the expected optional `B0 E2` memory-query status.
-Partial output is under
+completed APDU `B0 75 20 00 03 06 0C 00 00` in 797,682 ms and returned
+`SystemException_NO_RESOURCE` (`F205`) while serializing a persistent
+reference. Source maps the filesystem `OutOfFlash` status to this exception;
+`F206` remains the expected optional `B0 E2` memory-query status. This confirms
+persistent-storage exhaustion in the VPCD run. The exact reason it takes so
+long, and whether the same allocation sequence exhausts physical storage,
+remain open. VPCD uses the host Rust FS and a 512 KiB simulated flash; RP2350
+uses the separate C++ COW FS with a 96 KiB data arena, so simulator capacity
+and timing are not physical evidence. Partial output is under
 `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/`. Trace the
-RSA CRT allocation failure before resuming the long sweep. HMAC-01 native code
-is committed as `558d0ccf`; its six RFC KAT vectors pass. Preserve the pending
-and unrelated dirty changes. No physical hardware test was run in this step.
+storage-tag accumulation and defragmentation cost before resuming the long
+sweep; do not enable production persistent reclamation before PERSIST-01
+acceptance. The latest authorized reader refresh again granted USB nodes
+`001/054`–`001/056`, but `pcsc_scan -r` timed out without publishing a Pico
+reader. HMAC-01 native code is committed as `558d0ccf`; its six RFC KAT vectors
+pass. Preserve the pending and unrelated dirty changes. No physical hardware
+test was run in this step.
 
 ---
 

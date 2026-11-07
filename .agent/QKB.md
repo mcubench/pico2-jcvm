@@ -7759,6 +7759,29 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - No viable fix established. Retry after PC/SC reader publication returns; the
   permitted helper refreshes USB access but does not restart the daemon.
 
+## JCAlgTest RSA CRT 3072 KeyBuilder exhausts persistent FS in VPCD — 2026-11-07
+
+- **Finding:** The pinned 1.8.4 `ALG_SUPPORT_EXTENDED` VPCD run spent 797,682 ms
+  in APDU `B0 75 20 00 03 06 0C 00 00` (RSA CRT private key, 3072 bits), then
+  returned `F205` / `SystemException.NO_RESOURCE`. The emulator logged
+  `PERSIST_EXCEPTION id=20` while serializing a persistent reference. In
+  `write_persistent_tag_or_throw()`, filesystem status 1 maps to reason 5
+  (`NO_RESOURCE`); the CHOUPI OS maps `fs::Error::OutOfFlash` to that status.
+  Therefore this is persistent-storage exhaustion during object persistence,
+  not a missing RSA algorithm or PC/SC transport failure. `F206` rows are
+  separate expected replies to optional `B0 E2` queries.
+- **Backend caveat:** The VPCD emulator uses the CHOUPI host Rust filesystem
+  and its 512 KiB simulated flash (`choupi/os/src/arch/host/constants.rs`). The
+  RP2350 runtime uses the separate C++ copy-on-write filesystem in
+  `src/pico_filesystem.cpp`, with a 96 KiB data arena. Simulator timings and
+  capacities are not physical-card evidence.
+- **Next investigation:** Measure persistent tag counts/bytes and unreachable
+  owner tags at the KeyBuilder boundary, then determine why the nearly full
+  host FS spends so long defragmenting. The 1.8.4 CAP stays unchanged. Do not
+  enable production persistent reclamation until PERSIST-01 multi-owner and
+  interruption/power-loss acceptance passes. The latest reader refresh again
+  granted nodes `001/054`–`001/056` but PC/SC published no Pico reader.
+
 ## Legacy Cipher workspace data may survive transient rebind — 2026-11-07
 
 - **Source observation:** current Cipher initialization replaces old

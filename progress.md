@@ -24880,3 +24880,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Review complete; unresolved acceptance and architecture questions are stated in the report.
 - Commit: `this ARCH-REVIEW-20261107 commit; resolve with git log --grep=ARCH-REVIEW-20261107`
 - Artifacts/logs: `docs/backups/FIRMWARE_JCVM_ARCHITECTURE.20261107-before-review.md`; SHA-256 `f6afad25f4d8977a4c28fa30ea031d5d75001c6a2aa9f6fdc1eeaaefe1a080da`
+
+## 2026-11-07 Trace JCAlgTest persistent-storage failure 13 minutes
+
+- Step/experiment: `HMAC-01-jcalgtest-rsa-crt-3072-out-of-flash-diagnosis`
+- When: '2026-11-07 21:10 CET' - '2026-11-07 21:23 CET'
+- Change: Traced the long 1.8.4 RSA CRT 3072-bit KeyBuilder failure from its APDU response through persistent reference serialization and filesystem status mapping. Updated HMAC TODO, QKB and handoff with the confirmed exception path and simulator/physical filesystem distinction.
+- Validation: Inspected `client.log`, `emulator.log`, and the partial CSV in `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/`; source inspection confirms `PERSIST_EXCEPTION id=20`, status `F205`, `fs::Error::OutOfFlash -> status 1 -> SystemException.NO_RESOURCE`. The separate `F206` is from optional `B0 E2` queries. The PC simulator uses host Rust FS with 512 KiB simulated flash; the RP2350 backend uses the C++ COW FS with a 96 KiB data arena. `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` granted nodes `001/054`–`001/056`; bounded `pcsc_scan -r` exited 124 with no reader. No code test/build or physical APDU was run in this documentation/diagnosis step.
+- Result: The 3072-bit APDU completed after 797,682 ms with persistent-storage exhaustion. Why defragmentation consumed that time and how many persistent tags were unreachable remain unmeasured; PC VPCD capacity/timing cannot establish physical behavior.
+- Decision: Measure per-owner persistent tag bytes and unreachable tags at the failure boundary; pursue PERSIST-01 recovery only within its owner-safety and interruption/power-loss acceptance gates. Keep HMAC-01 open until support comparison is complete.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/client.log`; `artifacts/results/jcalgtest-support-vpcd-20261107T191819Z/emulator.log`; `.agent/QKB.md`; no new test log.

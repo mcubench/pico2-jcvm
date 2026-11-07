@@ -464,10 +464,20 @@ review.
   dispatch path. All six RFC known-answer vectors pass in the CAP-only VPCD
   fixture, including split update, verify, tamper rejection, and key readback;
   ARM and RISC-V max_crypto builds pass with 159/162 capabilities. The pinned
-  JCAlgTest 1.8.4 CAP was installed on a clean VPCD card using GPPro, but the
-  support sweep stalls during its DES section: the emulator reports
-  `APPLET_PROCESS status=F206 exception=16` and no complete support CSV is
-  produced. Diagnose and resolve this sweep failure before checking this item.
+  JCAlgTest 1.8.4 CAP installs and runs on a clean VPCD card using GPPro. The
+  first full support sweep exceeded the harness's 900-second timeout during
+  RSA CRT key-size probes. A 3,600-second rerun completed the RSA CRT 3072-bit
+  KeyBuilder APDU in 797,682 ms, then returned `SystemException_NO_RESOURCE`
+  (`F205`). The emulator logged `PERSIST_EXCEPTION id=20` while serializing a
+  persistent reference. The only reason-5 `NO_RESOURCE` mapping in that write
+  path is filesystem status 1 (`OutOfFlash`), so the measured failure is
+  persistent-storage exhaustion, not an unsupported algorithm or PC/SC
+  transport error. `F206` is the separate expected status from optional
+  `B0 E2` memory probes. The exact source of the long defragmentation time and
+  accumulation of persistent records remain to be measured. Do not equate the
+  PC VPCD FS layout (host OS filesystem with 512 KiB simulated flash) to the
+  Pico backend (C++ copy-on-write overlay with a 96 KiB data arena); verify
+  reclamation and capacity on the intended backend before claiming a fix.
   No physical HMAC test has run. Preserve the unchanged upstream CAP and keep
   all firmware implementation native; do not add Java providers/adapters or
   modify supplied CAPs. Acceptance: focused known-answer and lifecycle tests,
