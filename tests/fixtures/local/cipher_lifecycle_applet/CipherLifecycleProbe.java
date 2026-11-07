@@ -7,6 +7,7 @@ import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
 import javacard.security.AESKey;
 import javacard.security.CryptoException;
+import javacard.security.DESKey;
 import javacard.security.KeyBuilder;
 import javacard.security.Key;
 import javacard.security.RSAPrivateKey;
@@ -274,6 +275,70 @@ public final class CipherLifecycleProbe extends Applet {
     }
   }
 
+  private static byte testEmptyFinalAfterAlignedUpdate() {
+    byte[] aesExpected = {
+        (byte)0xf7, (byte)0xcb, (byte)0x9d, (byte)0xf8, (byte)0xa5, 0x7d,
+        (byte)0x8c, 0x78, 0x47, 0x58, (byte)0xaa, (byte)0xe0, (byte)0x8d,
+        (byte)0xd9, (byte)0x99, 0x68};
+    byte[] aesExpectedSecond = {
+        (byte)0xa7, (byte)0x8f, (byte)0xf1, (byte)0xbe, 0x46, 0x34,
+        0x40, (byte)0xc0, (byte)0x9a, 0x59, (byte)0xbd, (byte)0xf7,
+        (byte)0x97, (byte)0x98, (byte)0xf6, 0x7b};
+    byte[] desExpected = {
+        (byte)0xde, 0x60, 0x5c, (byte)0xc9, (byte)0xf0, (byte)0x8f,
+        0x67, 0x6f, (byte)0xc5, 0x32, 0x62, 0x15, (byte)0xd1, 0x4a,
+        (byte)0xa9, 0x30};
+    byte[] desExpectedSecond = {
+        (byte)0xc5, 0x32, 0x62, 0x15, (byte)0xd1, 0x4a, (byte)0xa9, 0x30};
+    byte[] keyBytes = {
+        0x13, 0x34, 0x57, 0x79, (byte)0x9b, (byte)0xbc,
+        (byte)0xdf, (byte)0xf1};
+    try {
+      DESKey desKey = (DESKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_DES, KeyBuilder.LENGTH_DES, false);
+      desKey.setKey(keyBytes, (short)0);
+      byte[] algorithms = {
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, Cipher.ALG_AES_CBC_ISO9797_M1,
+          Cipher.ALG_DES_CBC_NOPAD, Cipher.ALG_DES_CBC_ISO9797_M1};
+      for (short algorithmIndex = 0; algorithmIndex < 4; algorithmIndex++) {
+        boolean aes = algorithmIndex < 2;
+        short blockSize = (short)(aes ? 16 : 8);
+        Key key = aes ? retainedKey : desKey;
+        byte[] plaintext = new byte[(short)(blockSize * 2)];
+        byte[] iv = new byte[blockSize];
+        byte[] output = new byte[(short)(blockSize * 3)];
+        for (short i = 0; i < plaintext.length; i++) plaintext[i] = (byte)i;
+        Cipher cipher = Cipher.getInstance(algorithms[algorithmIndex], false);
+        cipher.init(key, Cipher.MODE_ENCRYPT, iv, (short)0, blockSize);
+        short firstUpdate = cipher.update(plaintext, (short)0, blockSize,
+                                          output, (short)0);
+        short secondUpdate = cipher.update(plaintext, blockSize, blockSize,
+                                           output, blockSize);
+        short finalLength = cipher.doFinal(
+            new byte[0], (short)0, (short)0, output,
+            (short)(blockSize * 2));
+        if (firstUpdate != blockSize || secondUpdate != blockSize ||
+            finalLength != 0) return (byte)0x65;
+        byte[] firstExpected = aes ? aesExpected : desExpected;
+        byte[] secondExpected = aes ? aesExpectedSecond : desExpectedSecond;
+        for (short i = 0; i < blockSize; i++) {
+          if (output[i] != firstExpected[i])
+            return (byte)(0x70 + algorithmIndex);
+          if (output[(short)(blockSize + i)] != secondExpected[i])
+            return (byte)(0x74 + algorithmIndex);
+        }
+        short reusedLength = cipher.doFinal(plaintext, (short)0, blockSize,
+                                             output, (short)0);
+        if (reusedLength != blockSize) return (byte)0x67;
+        for (short i = 0; i < blockSize; i++)
+          if (output[i] != firstExpected[i]) return (byte)0x68;
+      }
+      return 1;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    }
+  }
+
   public static void install(byte[] data, short offset, byte length) {
     new CipherLifecycleProbe();
   }
@@ -323,6 +388,8 @@ public final class CipherLifecycleProbe extends Applet {
     } else if (instruction == (byte)0x14) {
       result = testSensitiveWorkspaceNotPersisted(
           buffer, apdu.setIncomingAndReceive());
+    } else if (instruction == (byte)0x15) {
+      result = testEmptyFinalAfterAlignedUpdate();
     } else if (instruction == (byte)0x09) {
       try {
         AESKey temporaryKey = (AESKey)KeyBuilder.buildKey(

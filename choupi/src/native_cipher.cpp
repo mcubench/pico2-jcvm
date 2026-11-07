@@ -789,6 +789,15 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH,
         static_cast<jshort_t>(dataLength));
   }
+  // update() may already have emitted every complete block. NOPAD and ISO9797
+  // method 1 add no final bytes for a block-aligned message, so an empty
+  // doFinal() must complete the operation instead of rejecting the empty
+  // workspace as an invalid block-cipher input.
+  if (dataLength == 0 && (padding == 1 || (encrypt && padding == 2))) {
+    clearBuffer(cipher);
+    restoreInitialIv(cipher);
+    return 0;
+  }
   if (dataLength == 0 || dataLength % blockSize != 0)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (encrypt || padding == 1)

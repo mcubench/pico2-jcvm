@@ -24314,5 +24314,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Confirmed commit `93b2c7e0` contains only the Cipher audit, continuity, QKB, TODO and progress records.
 - Result: The legacy workspace migration risk is documented in `93b2c7e0`.
 - Decision: Next, build a controlled legacy tag fixture before modifying cleanup behavior.
-- Commit: `<resolve in next progress entry>`
+- Commit: `aab993d8`
 - Artifacts/logs: None.
+
+## 2026-11-07 Accept empty final after block-aligned Cipher updates 32 minutes
+
+- Step/experiment: `RV-20261106-09-empty-final-after-aligned-update`
+- When: '2026-11-07 10:08 CET' - '2026-11-07 10:40 CET'
+- Change: Made empty `doFinal()` complete successfully when NOPAD or encrypt-side ISO9797 method 1 has no buffered tail after full blocks were emitted by `update()`. Added lifecycle APDU coverage for AES/DES NOPAD and M1, two-block multipart chaining, empty final, and reuse/IV reset. Corrected fixture DES key and second CBC block expectations discovered during diagnosis.
+- Validation: `./tools/build-cipher-lifecycle-probe` PASS; focused two-process VPCD lifecycle suite PASS (`TEST:SUMMARY pass=12 fail=0`); saved 524,288-byte image scan PASS for all five sensitive-state sentinels; `./tools/build arm` PASS; `./tools/build riscv` PASS; `./tools/fixture-path --verify` PASS (`files=81 jcalgtest=1.8.4 api_caps=48`). Build wrappers emitted existing SDK/compiler/converter warnings. `git diff --check` on owned files not yet run at record creation. No physical test: only VPCD readers are published by PC/SC. The expanded run's measured work took 32 minutes; no separate build/test wall-time metric was collected.
+- Result: Multipart AES/DES NOPAD and M1 produce expected two-block CBC output, empty final returns zero, and cipher reuse restarts with the initial IV. ARM full image ends at `0x100d59e4`, leaving 173,596 bytes. VPCD log `artifacts/logs/cipher-empty-final-fixed.log`, SHA-256 `caabfd6209e897d7d18e59dad287025378816b927be2248dc637996d2852eb29`; saved image SHA-256 `70f8caf48422e59e61814d7b33b156bf58c9bc755827bc461602c3231012a9f3`.
+- Decision: Close R09 implementation/simulator acceptance; physical acceptance remains pending reader publication. Continue with R10 method-2 padding validation; retain R08 legacy-record cleanup audit as open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/cipher-empty-final-fixed.log`; `build/cipher-lifecycle-probe/cipher-empty-final-fixed.bin`.

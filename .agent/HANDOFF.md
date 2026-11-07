@@ -1,3 +1,34 @@
+# Current handoff — accept empty final after aligned Cipher updates — 2026-11-07 10:40 CET
+
+RV-20261106-09 is implemented in `choupi/src/native_cipher.cpp`: after
+block-aligned updates emit all data, an empty `doFinal()` now succeeds for
+NOPAD and encrypt-side ISO9797 method 1, clears the workspace and restores the
+initial IV. Other padding modes retain their existing final-block behavior.
+
+The local lifecycle applet tests AES/DES CBC NOPAD and ISO9797 M1, two full
+blocks across separate updates, empty finalization, chained ciphertext against
+known answers, and reuse/reset behavior. VPCD passes 12/12. During test
+construction, two DES fixture expectations were corrected: key bytes now match
+`133457799BBCDFF1`, and CBC's second block uses the chained ciphertext vector.
+These were test-data defects; native DES one-shot vectors also passed in the
+99/99 symmetric suite. Saved 512 KiB emulator image scan finds all five
+sensitive workspace sentinels absent. Log
+`artifacts/logs/cipher-empty-final-fixed.log`, SHA-256
+`caabfd6209e897d7d18e59dad287025378816b927be2248dc637996d2852eb29`; image
+SHA-256 `70f8caf48422e59e61814d7b33b156bf58c9bc755827bc461602c3231012a9f3`.
+
+`./tools/build arm` and `./tools/build riscv` pass. ARM image ends at
+`0x100d59e4`, leaving 173,596 bytes. Fixture verification passes (81 files,
+JCAlgTest 1.8.4, 48 API CAPs). Build wrappers emitted existing upstream
+compiler/converter warnings. No physical test: PC/SC publication remains
+unavailable per the QKB entry; do not claim hardware acceptance.
+
+Implementation commit: `<resolve in next progress entry>`.
+
+Next: continue with RV-20261106-10, strict ISO9797 method-2 final-block
+padding validation. Keep R08's legacy persistent-workspace orphan-tag audit
+open; its source-level risk remains unreproduced.
+
 # Current handoff — scan all Cipher sensitive workspace payloads — 2026-11-07 10:00 CET
 
 The chunked symmetric update fix is committed as `ff86c5b6`; SHA-resolution
