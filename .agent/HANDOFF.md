@@ -1,12 +1,14 @@
-# Current handoff — REL-01 rebuild / max_crypto external image — 2026-11-07 15:47 CET
+# Current handoff — REL-01 image and latest reader check — 2026-11-07 15:48 CET
 
 REL-01 CPLC source behavior is already committed as `971272f3`; the release
 field is 0.1.1 (`0101`) and each build records a clean/dirty source identity.
 This run revalidated the CPLC GET DATA unit suite (25/25), rebuilt ARM
 max_crypto (147/150 capabilities; firmware end `0x100EDEA4`, 74,076 bytes
 remaining), and passed the repository RISC-V max_crypto VM-core/smoke build.
-No physical board was flashed and no GPPro hardware verification was possible
-or attempted in this run, so the remaining REL-01 hardware acceptance is open.
+The authorized PC/SC helper granted USB nodes `001/054`–`001/056`, but a
+bounded 8-second `pcsc_scan -r` published no readers (exit 124). No board was
+flashed and GPPro hardware verification could not run, so REL-01 hardware
+acceptance remains open.
 
 Fresh ARM max_crypto empty-card UF2 for external testing:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FFF9BE81.uf2`

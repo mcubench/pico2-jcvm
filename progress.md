@@ -24645,3 +24645,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep REL-01 hardware acceptance open and resume R52 diagnosis.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Refresh PCSC state for REL-01 hardware check 1 minute
+
+- Step/experiment: `REL-01-refresh-reader-state`
+- When: '2026-11-07 15:47 CET' - '2026-11-07 15:48 CET'
+- Change: Refreshed authorized USB access and checked whether a physical Pico reader had become available for GPPro CPLC acceptance.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted nodes `/dev/bus/usb/001/054`, `/dev/bus/usb/001/055`, and `/dev/bus/usb/001/056`. `timeout --signal=TERM --kill-after=2s 8s pcsc_scan -r` exited 124 without output or a reader.
+- Result: No physical PC/SC reader is available; no GPPro query or board flash was performed. REL-01 hardware acceptance remains open.
+- Decision: Continue offline until a Pico reader is published.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
