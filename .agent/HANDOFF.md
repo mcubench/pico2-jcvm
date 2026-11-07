@@ -22,7 +22,7 @@ QKB entry â€œRuntime Pico USB nodes are present but PC/SC publishes no readers.â
 No board commands or flash were attempted. R08 remains open for a complete
 tag-level persistence audit and physical acceptance.
 
-Step commit: `resolve in the next progress record`.
+Step commit: `91c20d2c`.
 
 Next: inspect the tag-level serialization and restore paths for transient
 Cipher fields, then resume physical validation when PC/SC publishes a Pico

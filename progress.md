@@ -24281,5 +24281,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-cipher-workspace-vpcd` PASS (`TEST:SUMMARY pass=11 fail=0`); five sentinel patterns were each absent from the 524,288-byte saved image. `git diff --check` passed for the two changed files. No ARM/RISC-V rebuild was needed because only local test-app and wrapper sources changed. No physical test was run because `pcsc_scan -r` exposed only VPCD readers despite three runtime Pico USB nodes.
 - Result: Pending CBC plaintext, transient AES key bytes, CTR IV, full AES-CTR keystream block, and CTR input bytes are absent from the persisted emulator image after shutdown. Log `artifacts/logs/cipher-workspace-vpcd-20261107T085829Z.log`, SHA-256 `781838b36bf1695d30d088b6ce817607eaa3a43b9f88a23c190f80e589c6f35e`. This expands payload-specific evidence but is not a full tag-level inventory.
 - Decision: Keep R08 open for tag-level audit and physical validation.
-- Commit: `<resolve in next progress entry>`
+- Commit: `91c20d2c`
 - Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T085829Z.log`.
+
+## 2026-11-07 Resolve Cipher payload-scan commit SHA 1 minute
+
+- Step/experiment: `RV-20261106-08-cipher-sensitive-payload-scan-sha`
+- When: '2026-11-07 10:00 CET' - '2026-11-07 10:01 CET'
+- Change: Recorded the payload-scan commit SHA in progress history and handoff.
+- Validation: Confirmed commit `91c20d2c` contains the expanded local lifecycle probe, flash scan wrapper and continuity records.
+- Result: Cipher sensitive-payload scan is committed as `91c20d2c`.
+- Decision: Continue R08 with source-level tag serialization/restore audit; physical testing remains pending PC/SC reader publication.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
