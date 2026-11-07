@@ -23924,3 +23924,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue toward PERSIST-01 safety/implementation acceptance and HOST-02 Windows timing.
 - Commit: `6c7721cd` — specification status update; this SHA-resolution record is separate.
 - Artifacts/logs: Official Oracle 3.0.5 guide URL and VPCD APDU log are listed above.
+
+## 2026-11-07 Contain opcode fetch failures 15 minutes
+
+- Step/experiment: `rv-20261107-interpreter-fetch-recovery`
+- When: '2026-11-07 03:58 CET' - '2026-11-07 04:13 CET'
+- Change: Caught failures from current-frame lookup and opcode fetch inside `Interpretor::run() noexcept`; malformed/fall-through bytecode now returns `6F00` and unwinds the active interpreter frames. Added a VPCD CAP mutation that exhausts the applet `process()` body and expanded the malformed-CAP APDU timeout to a bounded 60 seconds to accommodate cold emulator restore variance.
+- Validation: `./tools/build-pc --profile current` passed; `./tools/test-cap-malformed-vpcd --mutation fall-through` passed 6/6; `./tools/test-cap-malformed-vpcd --mutation truncated-sipush` passed 6/6; `./tools/build arm` passed (firmware end `0x100d5514`, 174,828 bytes remaining); `./tools/build riscv` passed. The initial restricted VPCD attempt was denied socket access; the authorized host execution path was used for the actual VPCD tests. Physical testing was unavailable because PC/SC did not enumerate the attached Pico devices.
+- Result: Fall-through now returns `6F00` rather than terminating the emulator; the following manager SELECT, applet SELECT and manager SELECT succeed. Truncated operand recovery also passes with a 60-second bound. Existing PC build warnings from packed-member access and Java source-level configuration remain; ARM/RISC-V wrappers passed.
+- Decision: Keep RV-20261106-01 open for nested caller-state and malformed-entry acceptance beyond this fetch-boundary regression; proceed to RV-20261106-02 nested-frame unwind analysis.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/rv28-malformed-fall-through-vpcd-20261106.log` SHA-256 `32efcd27ed4b0b09163893b2841c75895053263337d883973c8a09a5c6cb46f6`; `artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log` SHA-256 `d58f979581d26c36e95b7481573d2645b353626cd1f63bea141cf3ada97fa4e7`.

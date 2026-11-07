@@ -394,11 +394,33 @@ uint16_t Interpretor::run() noexcept {
 #ifndef PC_VERSION
     choupi_watchdog_update();
 #endif
-    stack.getCurrentFrame().setInstructionPC(stack.getPC().getValue());
-
-    // fetch: reading byte code value
-    const auto instruction_pc = stack.getPC().getValue();
-    uint8_t bytecode = stack.getPC().getNextByte();
+    const uint8_t *instruction_pc = nullptr;
+    uint8_t bytecode = 0;
+    // The PC checks method-body bounds and throws SecurityException at
+    // fall-through. Keep both frame lookup and opcode fetch inside run()'s
+    // recovery boundary: run() is noexcept, so letting this escape would
+    // terminate the process/device instead of returning an APDU error.
+    try {
+      instruction_pc = stack.getPC().getValue();
+      stack.getCurrentFrame().setInstructionPC(instruction_pc);
+      bytecode = stack.getPC().getNextByte();
+    } catch (Exceptions exception) {
+      this->last_exception_id = exception;
+      this->last_exception_opcode = bytecode;
+      this->last_exception_pc = static_cast<uint32_t>(
+          reinterpret_cast<uintptr_t>(instruction_pc));
+      this->status_word = 0x6f00;
+      stack.unwindToDepth(this->entryFrameDepth);
+      return this->status_word;
+    } catch (...) {
+      this->last_exception_id = Exceptions::SecurityException;
+      this->last_exception_opcode = bytecode;
+      this->last_exception_pc = static_cast<uint32_t>(
+          reinterpret_cast<uintptr_t>(instruction_pc));
+      this->status_word = 0x6f00;
+      stack.unwindToDepth(this->entryFrameDepth);
+      return this->status_word;
+    }
     ++instruction_count;
 #ifndef PC_VERSION
     // Keep CCID control traffic and reader time extensions alive during long

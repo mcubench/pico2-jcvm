@@ -199,6 +199,11 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0x13,))  # SIPUSH requires two operand bytes.
         if mutable[mutation_index] != 0x7A:
             raise ValueError("expected process method to end with BC_RETURN")
+    elif mutation == "fall-through":
+        mutation_index = method_start + body_end - 1
+        replacement = bytes((0x00,))  # NOP at the final byte exhausts the body.
+        if mutable[mutation_index] != 0x7A:
+            raise ValueError("expected process method to end with BC_RETURN")
     elif mutation == "branch-into-operand":
         mutation_index = code_index
         replacement = bytes((0x70, 0x01))  # GOTO +1 targets its operand byte.
@@ -512,6 +517,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mutation", choices=("impdep1", "impdep2", "truncated-sipush",
+                                "fall-through",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
                                 "wide-conditional-branch-into-operand",
@@ -535,14 +541,14 @@ def main() -> int:
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
     select_status = "9000" if args.mutation in (
-        "truncated-sipush", "exception-catch-cp-out-of-range",
+        "truncated-sipush", "fall-through", "exception-catch-cp-out-of-range",
         "exception-handler-target-into-operand",
         "exception-handler-range-into-operand",
         "exception-handler-range-out-of-bounds",
         "exception-handler-range-start-out-of-bounds",
     ) else "6F00"
     process_status = "6F00" if args.mutation in (
-        "truncated-sipush", "exception-catch-cp-out-of-range",
+        "truncated-sipush", "fall-through", "exception-catch-cp-out-of-range",
         "exception-handler-target-into-operand",
         "exception-handler-range-into-operand",
         "exception-handler-range-out-of-bounds",
@@ -550,6 +556,10 @@ def main() -> int:
     ) else "6999"
     commands = [
         "--passes", "1",
+        # First faulting APDUs include a cold restore and package context
+        # setup. Keep the bound generous enough to distinguish slow recovery
+        # from an interpreter that never answers.
+        "--apdu-timeout", "60",
         "--cap-code", str(code),
         "--expect-select-status", select_status,
         "--apdu", "B0E1000000", "--expect-apdu-response", process_status,

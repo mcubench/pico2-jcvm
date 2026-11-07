@@ -1,3 +1,30 @@
+# Current handoff — interpreter opcode fetch recovery — 2026-11-07 04:13 CET
+
+`Interpretor::run() noexcept` now contains exceptions from current-frame lookup
+and opcode fetch. A method falling through its validated body returns `6F00`
+and unwinds its active interpreter frames instead of allowing the C++ exception
+to terminate the process. `tools/tests/cap_malformed_vpcd_test.py` adds a
+fall-through mutation that changes the final `BC_RETURN` in the upstream
+JCAlgTest `process()` method to `NOP`. The end-to-end VPCD test passes 6/6 and
+then successfully selects the card manager, reselects the applet, and selects
+the manager again. The neighboring truncated-`SIPUSH` case also passes 6/6.
+The malformed-CAP test now uses a bounded 60-second APDU timeout because the
+first cold faulting APDU took 19.5 seconds and exceeded the old 20-second bound
+under variable emulator startup load.
+
+Validation: `./tools/build-pc --profile current`, both malformed VPCD cases,
+`./tools/build arm`, and `./tools/build riscv` passed. ARM firmware ends at
+`0x100d5514` with 174,828 bytes left in the reserved region. No physical test
+was possible: attached runtime USB devices still did not appear in PC/SC. VPCD
+logs and hashes, plus full validation results, are in the newest `progress.md`
+entry. RV-20261106-01 remains open for additional caller-state and malformed
+entry coverage. The implementation and regression are awaiting their commit
+SHA resolution in the next progress record.
+
+Next: inspect RV-20261106-02 (`Stack::unwindToDepth()` removes the wrong end of
+the frame list) and build focused multi-level caller-state tests. Preserve all
+other uncommitted source, review, fixture and test changes in the worktree.
+
 # Current handoff — HOST-02 Windows reconnect timing harness — 2026-11-07 03:40 CET
 
 Added `tools/measure-windows-reconnect.ps1` and documented its Windows
