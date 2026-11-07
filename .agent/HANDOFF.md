@@ -21,8 +21,9 @@ object log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T020312Z.log`, SHA-256
 `32fd54335cd25bde61db7c067723ea0650438e12ec3204d3ae5880def3032cfd`.
 No physical device was accessed; no firmware implementation changed. The
-array-coverage fixture and documentation updates are pending commit. Preserve
-unrelated worktree changes.
+array-coverage fixture and documentation updates are committed as `91b934c8`;
+its progress SHA-resolution record follows separately. Preserve unrelated
+worktree changes.
 
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 

@@ -23759,3 +23759,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open for broader applet-deletion semantics; audit stale persistent aliases and object reclamation policy separately.
 - Commit: pending.
 - Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`, SHA-256 `15b1aebe5c66f13a89494450c33d2bb674bac6a09ce629b87b76bccfb53bd423`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261107T021701Z.log`, SHA-256 `874e6d6b8e60da3a8542c4193988f19cf3ea8092b07044b1aed8b6e2072f1108`.
+
+## 2026-11-07 Record persistent-array DELETE regression commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-sibling-array-alias-apdu-commit`
+- When: '2026-11-07 03:20 CET' - '2026-11-07 03:21 CET'
+- Change: Recorded the persistent-array regression commit SHA in the handoff and progress history.
+- Validation: No new run; focused alias APDU passed 2/2 and full cross-AID VPCD passed 35/35 before the commit.
+- Result: Array alias APDU fixture and status documentation are committed as `91b934c8`.
+- Decision: Continue the CTX-01 persistent-deletion audit.
+- Commit: `91b934c8` — regression/test/status; this SHA-resolution record is separate.
+- Artifacts/logs: Focused and full-suite paths and hashes are recorded above.
