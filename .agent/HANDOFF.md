@@ -1,4 +1,23 @@
-# Current handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
+# Current handoff — HOST-02 Windows reconnect timing harness — 2026-11-07 03:37 CET
+
+Added `tools/measure-windows-reconnect.ps1` and documented its Windows
+workflow. With serial/COM clients closed, it waits for physical unplug, listens
+for Windows `Win32_DeviceChangeEvent` arrival, polls `SCardListReaders`, then
+uses WinSCard to connect and send a read-only ISD SELECT. CSV rows include the
+image SHA-256, reader, driver-install state, OS, PnP event timestamp, reader
+latency, APDU latency and response. Run it on the Windows host for at least
+three cycles each with the current and original images. The PnP event is a
+host-side timing origin and does not include operator replug reaction time.
+
+This Linux VM has no `pwsh`/Windows PowerShell runtime, and Windows timing has
+not been collected. Static consistency assertions and `git diff --check` pass;
+the embedded C# and PowerShell script still require execution on Windows.
+Normal/diagnostic firmware behavior and the no-DTR physical deadline test are
+already recorded in TODO/progress. Do not close HOST-02 until Windows CSV
+measurements and image comparison are reviewed. No firmware was rebuilt or
+flashed for this documentation/harness step.
+
+# Previous handoff — persistent sibling object and array aliases block DELETE — 2026-11-07 03:20 CET
 
 Cold-start VPCD now exercises persistent package-static aliases, a direct
 object reference in an unselected sibling applet's instance field, and a

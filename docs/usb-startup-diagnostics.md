@@ -98,6 +98,40 @@ DTR ends the diagnostic wait; this is intentional for early-log capture.
 5. Record results and remaining limitations in progress/handoff. Keep HOST-02
    open until normal startup and diagnostic behavior pass their own gates.
 
+### Windows no-console reconnect measurement
+
+Use `tools/measure-windows-reconnect.ps1` on the Windows host. It listens for a
+Windows PnP arrival event, measures until the configured Pico reader appears
+in `SCardListReaders`, then connects and sends the read-only ISD SELECT APDU
+`00 A4 04 00 08 A0 00 00 01 51 00 00 00 00`. It writes one CSV row per run with
+the image hash, reader, PnP-to-reader time, reader-to-APDU time, response, OS,
+and driver-install state. Timing begins at the Windows PnP arrival event, not
+at the physical connector, so it excludes the operator's replug reaction time.
+Do not connect any other USB device during a timed run; the WMI arrival event
+is system-wide.
+
+Close serial terminals, monitors, and COM-port auto-connect tools first. Use
+an already-installed CCID driver and run three unplug/replug cycles:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+$image = 'C:\path\to\pico2-jcvm-max_crypto-arm-empty-card-current.uf2'
+$hash = (Get-FileHash -Algorithm SHA256 $image).Hash
+.\tools\measure-windows-reconnect.ps1 `
+  -BuildLabel normal `
+  -ImageSha256 $hash `
+  -DriverPreinstalled yes `
+  -ReaderPrefix 'Pico2 JCVM CCID' `
+  -Runs 3 `
+  -OutputPath '.\artifacts\windows-reconnect-normal.csv'
+```
+
+Repeat with `-BuildLabel original`, the original image path/hash, and a separate
+CSV before comparing timings. Keep first-driver-install results separate from
+the preinstalled-driver runs. The script uses Windows PowerShell 5.1 APIs and
+must be run on the Windows host; this Linux VM cannot execute or independently
+validate that Windows measurement.
+
 This implementation removes the 30-second wait and 500 ms sleep from normal
 startup. This document does not establish a particular build, physical
 hardware result, or measured Windows startup time; check `progress.md` and

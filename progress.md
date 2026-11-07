@@ -23814,3 +23814,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue emulator work and retry physical validation when a Pico PC/SC reader is published.
 - Commit: `0359b647` — hardware-availability record; this SHA-resolution record is separate.
 - Artifacts/logs: No log file was captured; the bounded PC/SC output was empty.
+
+## 2026-11-07 Prepare Windows HOST-02 reconnect measurement harness 10 minutes
+
+- Step/experiment: `host-02-20261107-windows-reconnect-harness`
+- When: '2026-11-07 03:27 CET' - '2026-11-07 03:37 CET'
+- Change: Added `tools/measure-windows-reconnect.ps1` to collect three no-console reconnect samples on Windows. It records the Windows PnP arrival event, PC/SC reader-list latency, a read-only ISD SELECT APDU result, reader name, image SHA-256, OS and driver state. Documented command usage and comparison against the original image; updated HOST-02 and handoff.
+- Validation: Static Python consistency checks passed for APDU bytes, expected WinSCard calls, PnP event field, CSV timing fields and PowerShell here-string boundaries. `git diff --check` passed. No `pwsh` or Windows PowerShell executable exists in this VM, so PowerShell/C# compilation and Windows execution remain unverified. No firmware build or hardware operation was needed for this script/docs-only step.
+- Result: The Windows timing method records PnP-event-to-reader and reader-to-APDU latency, with the USB event as the timing origin (operator reaction excluded). HOST-02 remains open pending external Windows runs on current and original images.
+- Decision: Run the script on Windows for at least three cycles per image, then compare and record the resulting CSV evidence.
+- Commit: pending.
+- Artifacts/logs: `tools/measure-windows-reconnect.ps1`; no measurement CSV exists yet.

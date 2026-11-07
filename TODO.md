@@ -7,10 +7,11 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. Close **HOST-02 (P1)** acceptance: collect exact no-console Windows
-   reconnect timings and exercise the diagnostic deadline without DTR. Normal
-   startup wait removal is implemented; the user reports near-instant Windows
-   visibility. See the [diagnostic workflow](docs/usb-startup-diagnostics.md).
+1. Close **HOST-02 (P1)** acceptance: collect no-console Windows reconnect
+   timings for the current and original images. Normal startup wait removal
+   and the no-DTR diagnostic deadline are implemented and hardware-tested; the
+   timing harness is ready for Windows execution. See the
+   [diagnostic workflow](docs/usb-startup-diagnostics.md).
 2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
@@ -1179,8 +1180,12 @@ review.
   capture. The user reports the no-delay image became visible under Windows
   certutil almost instantly after replug. Exact timings, image hash used for
   that Windows run, and reader-list measurement method were not supplied.
-  Remaining: record at least three Windows cold reconnect timings without a
-  serial client.
+  Remaining: run `tools/measure-windows-reconnect.ps1` on Windows for at least
+  three cold reconnects on the current image and the original image, with all
+  serial/COM clients closed. The script records the Windows PnP-arrival event,
+  PC/SC reader-list latency, read-only ISD SELECT latency, image hash, reader,
+  OS and driver state to CSV. Script execution and timing remain unverified on
+  Windows; this Linux VM has no PowerShell runtime.
   Current rebuild: ARM and RISC-V max_crypto normal builds passed with
   `PICO2_DEBUG_SERIAL_WAIT_MS=0`. Fresh ARM UF2 SHA-256 is
   `fca53590c3631c8c69f529a8b4a861d63d621c85dab1dfcefb46963fed177654`;
