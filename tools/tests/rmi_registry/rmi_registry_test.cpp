@@ -812,6 +812,20 @@ void verify_same_package_sibling_array_blocks_instance_delete() {
                                                     jcvm::jref_t{});
   assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
       package_id, 7, package_context.getHeap()));
+  const jcvm::jref_t package_static_array = package_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  jcvm::fs::Tag package_static_tag{};
+  package_static_tag.len = 3;
+  package_static_tag.value[0] = 0x02;
+  package_static_tag.value[1] = package_id;
+  package_context.getHeap().getArray(package_static_array)->setPersistentTag(
+      package_static_tag);
+  package_context.getHeap().setStaticReferenceRoot(
+      package_id, 0, package_static_array);
+  assert(!jcvm::Heap::hasForeignArrayReferenceToAppletOwner(
+      package_id, 7, package_context.getHeap()));
+  package_context.getHeap().setStaticReferenceRoot(package_id, 0,
+                                                    jcvm::jref_t{});
   const jcvm::jref_t sibling_instance_ref = package_context.getHeap().addInstance(
       package_id, static_cast<jcvm::jclass_index_t>(1));
   const auto sibling_instance =

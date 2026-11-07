@@ -23626,3 +23626,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Resume CTX-01 persistence-backed lifecycle coverage.
 - Commit: `f4f6195b` — regression and status; this commit-resolution record is separate.
 - Artifacts/logs: Test output is in the preceding command transcript.
+
+## 2026-11-07 Exclude package-static objects from applet DELETE blockers 30 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-package-static-tag`
+- When: '2026-11-07 01:24 CET' - '2026-11-07 01:54 CET'
+- Change: Fixed a false-positive DELETE rejection for persistent objects held in package static storage. The retained-root scan now considers the persistent tag namespace as well as runtime owner: an object stored under package-static namespace `0x02` survives applet DELETE and does not count as applet-owned deletion state. Added synthetic native coverage for this exemption while preserving the blocking cases for volatile sibling arrays, cached roots to target-owned objects, and sibling instance fields. Updated CTX-01 and QKB notes with the regression cause and remaining materialization limitation.
+- Validation: `./tools/test-rmi-registry` passed with array, static-root, and instance-field guard markers. `./tools/build arm` passed; image end `0x100d5358`, remaining `175272` bytes. `./tools/build riscv` passed. Full `symm_crypto` VPCD cross-AID suite passed 35/35, including service applet DELETE, stale proxy rejection, and same-AID reinstall. A prior run under the wrong `current` PC profile failed at the suite's Signature case; the corrected `symm_crypto` run reproduced DELETE `6985`, identified the `0x02` package-static blocker, and passed after the fix. No physical USB/PCSC test was run.
+- Result: Applet-owned state still blocks DELETE when retained by sibling arrays, loaded object fields, or cached roots. Package-static state survives the applet operation and no longer causes a false rejection. Unselected sibling persistent roots may still be absent from the active heap scan.
+- Decision: Keep CTX-01 open; audit/restore unselected sibling roots and add same-package card-manager DELETE APDU coverage.
+- Commit: pending.
+- Artifacts/logs: Passing VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T004502Z.log`, SHA-256 `7a06e0358e9f147a0a28942672fc8cfaa789c68527fe939d3afa21bf07c5f113`. Prior failing VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T003648Z.log` shows `VPCD:DELETE_REF_BLOCK source=3 ref=0003 owner=1`; earlier wrong-profile run `artifacts/logs/sio-cross-aid-vpcd-20261107T002553Z.log`.

@@ -1,4 +1,4 @@
-# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:24 CET
+# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:54 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
@@ -12,12 +12,16 @@ release, cached static-root rejection/release, and a sibling instance-field
 reference blocking until cleared. The latest field/static tests pass in the
 native registry fixture. Source/build scan extension is committed as
 `9282315a`; its SHA resolution is `7e85cd39`. The sibling-field regression
-follow-up is `f4f6195b`. The focused cross-package DELETE
-APDU regression still passes; full `symm_crypto` cross-AID VPCD passes 35/35
-after the array change.
+follow-up is `f4f6195b`. Package-static objects tagged `0x02` are excluded
+from applet-owned persistent blockers; a synthetic native case checks this.
+The expanded `symm_crypto` cross-AID VPCD suite passes 35/35, including service
+applet DELETE, stale proxy rejection, and same-AID reinstall. The log is
+`artifacts/logs/sio-cross-aid-vpcd-20261107T004502Z.log` (SHA-256
+`7a06e0358e9f147a0a28942672fc8cfaa789c68527fe939d3afa21bf07c5f113`).
 
-ARM and RISC-V builds pass. ARM image ends at `0x100d525c` with 175,524 bytes
-remaining in the reserved firmware region. No physical run completed: the
+ARM and RISC-V builds pass after this correction. ARM image ends at
+`0x100d5358`, leaving 175,272 bytes in the reserved firmware region. No
+physical run completed: the
 reader helper found three USB nodes, but `pcsc_scan -r` timed out without
 listing readers. Full VPCD log:
 `artifacts/logs/sio-cross-aid-vpcd-20261107T000029Z.log` (SHA-256

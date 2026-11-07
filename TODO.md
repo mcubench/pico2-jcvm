@@ -855,11 +855,12 @@ review.
   clears the slot, DELETE returns `9000` and a sibling instance remains usable.
   The focused three-package VPCD regression and full `symm_crypto` cross-AID
   suite pass. Native coverage also confirms same-package sibling arrays and
-  cached static roots block DELETE until cleared; the guard now inspects loaded
-  sibling object fields and persistent reference arrays. Keep CTX-01 open:
-  uncached persisted applet roots/static state and end-to-end same-package
-  DELETE APDU coverage remain before claiming complete Java Card deletion
-  semantics.
+  cached static roots to applet-owned state block DELETE until cleared; the
+  guard inspects loaded sibling object fields and persistent reference arrays.
+  Package-static objects tagged in namespace `0x02` do not block applet DELETE
+  because that state survives deletion. Keep CTX-01 open: uncached persisted
+  applet roots/static state and end-to-end same-package DELETE APDU coverage
+  remain before claiming complete Java Card deletion semantics.
 
 ### CTX-02
 

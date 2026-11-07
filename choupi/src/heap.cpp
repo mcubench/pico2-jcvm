@@ -345,7 +345,26 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
       JC_Object &object = reference.isArray()
           ? static_cast<JC_Object &>(*state.heap->getArray(reference))
           : static_cast<JC_Object &>(*state.heap->getInstance(reference));
-      state.found = object.getOwner().getOwner() == state.owner;
+      bool removed_with_applet = true;
+      if (reference.isArray()) {
+        const auto array = state.heap->getArray(reference);
+        if (array->hasPersistentTag()) {
+          const fs::Tag tag = array->getPersistentTag();
+          if (tag.len >= 2 && tag.value[0] == 0x02) {
+            removed_with_applet = false;
+          }
+        }
+      } else {
+        const auto instance = state.heap->getInstance(reference);
+        if (instance->hasPersistentTag()) {
+          const fs::Tag tag = instance->getPersistentTag();
+          if (tag.len >= 2 && tag.value[0] == 0x02) {
+            removed_with_applet = false;
+          }
+        }
+      }
+      state.found = object.getOwner().getOwner() == state.owner &&
+                    removed_with_applet;
     } catch (...) {
       state.found = true;
     }

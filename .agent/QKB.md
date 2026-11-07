@@ -7720,6 +7720,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   heap objects and roots already materialized in this runtime; persistent
   sibling applet roots or package statics that have not yet been restored into
   a context are still not discovered.
+- **Viable correction — package-static false positive:** The full cross-AID
+  VPCD suite initially regressed at service applet DELETE with `6985`. The
+  blocker was a package static array whose runtime heap owner matched the
+  applet but whose persistent tag was in namespace `0x02`; applet DELETE only
+  erases applet-owned `0x03` records. Classify persistent references by their
+  storage tag as well as runtime owner: package-static (`0x02`) objects survive
+  applet deletion and must not be treated as applet-owned deletion state.
+  Native coverage checks this exemption; the full VPCD suite now passes 35/35,
+  including applet DELETE and same-AID reinstall.
 - **Remaining scope:** Add an end-to-end same-package DELETE APDU test and a
   persistence-backed case that proves unselected sibling instance/static
   roots are loaded or safely covered before claiming complete applet-deletion
