@@ -24023,3 +24023,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: RV-20261106-05 remains open for caught failure followed by applet commit, GC and cold-restore cases; proceed to OwnerPIN lifecycle finding RV-20261106-04.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Test output emitted by `./tools/test-persistent-transaction`; no separate log.
+
+## 2026-11-07 Resolve persistent cache commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-persistent-instance-cache-sha`
+- When: '2026-11-07 04:44 CET' - '2026-11-07 04:45 CET'
+- Change: Resolved the stack-bounds SHA-record commit and persistent-cache implementation SHA in the handoff and append-only progress history.
+- Validation: No new runtime/build run; see the preceding records.
+- Result: Stack-bounds SHA-resolution commit is `81eb4d21`; persistent field-cache implementation commit is `a343db91`.
+- Decision: Continue to RV-20261106-04 OwnerPIN lifecycle analysis.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.

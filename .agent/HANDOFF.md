@@ -12,7 +12,7 @@ ARM and RISC-V wrapper builds pass; ARM firmware ends at `0x100d5690` with
 
 RV-20261106-05 remains open for caught failure followed by applet commit, GC and
 cold restore. The stack-bounds SHA-resolution commit is recorded as
-`81eb4d21`. This persistent-cache step awaits its commit SHA resolution.
+`81eb4d21`. This persistent-cache step is committed as `a343db91`; the SHA-resolution record follows in progress.md.
 
 Next: examine RV-20261106-04 OwnerPIN reset and transaction-exempt state. Keep
 implementation in native C++ VM paths; do not modify ROM API Java sources or
