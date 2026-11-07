@@ -1,5 +1,7 @@
 # Current handoff — REL-01 physical check and max_crypto external image — 2026-11-07 21:29 CET
 
+The refreshed image and records are committed as `de960d02`.
+
 REL-01 source implementation remains committed as `971272f3`. Offline GPPro
 VPCD `--info` decodes `OperatingSystemReleaseLevel=0101` and CPLC dates as
 `2026-11-07`; direct GET DATA returns `9000`; `./tools/test-gp-get-data` passes

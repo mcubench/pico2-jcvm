@@ -19,5 +19,5 @@
 - Validation: `./tools/test-gp-get-data` passed 25/25; ARM and RISC-V max_crypto wrappers passed; packaging passed with 3,854 firmware blocks and 4,096 erased storage blocks; picotool identifies RP2350 ARM Secure. A refreshed authorized PC/SC scan timed out after 8 seconds without a reader, so physical GPPro validation remains open.
 - Result: Image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,070,912 bytes, SHA-256 `93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`; release `0.1.1` (`0101`); CPLC source ID `FF1DC424`; empty card.
 - Decision: Flash this image via BOOTSEL for external testing, then run `gp --info -d`. Confirm release level `0101` and equipment ID `FF1DC424`; report the output to close physical REL-01 acceptance. The empty-card image erases installed applets and persistent data.
-- Commit: `<resolve in next progress entry>`
+- Commit: `de960d02`
 - Artifacts/logs: Firmware path and SHA-256 above; no physical log.
