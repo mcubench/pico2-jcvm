@@ -13087,6 +13087,17 @@
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261107T195606Z/`; `artifacts/results/rel-01-gppro-vpcd-20261107T200125Z/`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
 
+## 2026-11-07 Resolve REL-01 image-record commit reference 1 minute
+
+- Step/experiment: `REL-01-max-crypto-image-record-commit-sha`
+- When: '2026-11-07 21:06 CET' - '2026-11-07 21:07 CET'
+- Change: Resolved the preceding progress entry's documentation commit reference.
+- Validation: `git show --stat --oneline 1ddbc70a` confirms the scoped REL-01 TODO, handoff, and progress update.
+- Result: The REL-01 offline validation and max_crypto image record is commit `1ddbc70a`.
+- Decision: Keep physical GPPro validation open until a Pico is published as a reader.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
+
 ## 2026-10-26 — Confirm ROM-mask native reference-return mechanics
 
 - Step/experiment: `asymm-native-reference-return-inspection`
