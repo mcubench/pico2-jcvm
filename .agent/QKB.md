@@ -7880,3 +7880,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   or fail over to another listed board. If GET DATA still returns `6982` after
   the explicit reset, instrument SCP03 active/authenticated state and trace the
   route decision. Continue the already-passing VPCD lifecycle test meanwhile.
+
+## CLEAR_ON_DESELECT allocation requires an active or installing CAP context — 2026-11-07
+
+- **Observed behavior:** JCSystem transient-array native dispatch accepted
+  CLEAR_ON_DESELECT allocations in a non-selected package Context while that
+  applet was invoked by another package through SIO.
+- **Viable fix:** Before allocating any of the five supported transient array
+  types with CLEAR_ON_DESELECT, require the package Context to have a selected
+  applet instance or be in CAP installation. Otherwise raise
+  `SystemException.ILLEGAL_TRANSIENT` (reason 3). CLEAR_ON_RESET remains valid
+  for non-selected contexts.
+- **Validation:** `SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1
+  ./tools/test-sio-cross-aid-vpcd` passes 2/2, including a selected sibling
+  applet and a foreign SIO target. ARM and RISC-V max_crypto wrappers pass.
+  No physical APDU was possible because PC/SC published no Pico readers.

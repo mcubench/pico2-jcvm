@@ -1127,6 +1127,12 @@ review.
   clears `CLEAR_ON_DESELECT` while preserving `CLEAR_ON_RESET`, and card reset
   clears both; the same behavior has now passed on physical hardware. The owner
   lifecycle suite passes 9/9 and transient suite 5/5.
+  A focused cross-AID regression additionally verifies that a selected caller
+  can allocate CLEAR_ON_DESELECT arrays and that an SIO-invoked applet in a
+  different, non-selected CAP context receives ILLEGAL_TRANSIENT for all five
+  array types; CLEAR_ON_RESET allocation remains permitted. The selected
+  caller/sibling-context VPCD check passes 2/2. Physical confirmation remains
+  part of API-03 acceptance.
   A same-CAP restart VPCD test passes 7/7: both applet registrations restore,
   sibling static scalar/array state survives emulator restart, and SIO resolves
   the same restored array identity. The multi-package restart suite passes

@@ -994,6 +994,52 @@ def main() -> int:
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)
             print("TEST:PASS installed cross-AID client applet")
+            if os.environ.get(
+                    "SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT") == "1":
+                sibling_install = vpcd.install_applet(
+                    scp, client[1], client[2][0], CLIENT_SIBLING_APPLET
+                )
+                if sibling_install[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "transient-context sibling INSTALL returned "
+                        f"{sibling_install[-2:].hex().upper()}, expected 9000"
+                    )
+                print("TEST:PASS installed sibling for transient-context check")
+
+                def check_selected_allocation(aid: bytes) -> None:
+                    select = bytes((0x00, 0xA4, 0x04, 0x00, len(aid))) + aid
+                    selected = vpcd.exchange(
+                        connection, select, "SELECT caller for transient check"
+                    )
+                    if selected[-2:] != b"\x90\x00":
+                        raise RuntimeError(
+                            f"transient-check SELECT failed: "
+                            f"{selected.hex().upper()}"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("8053000000"),
+                        "selected client CLEAR_ON_DESELECT allocation"
+                    )
+                    if response != bytes.fromhex("6A549000"):
+                        raise RuntimeError(
+                            "selected caller transient allocation returned "
+                            f"{response.hex().upper()}, expected 6A549000"
+                        )
+                    response = vpcd.exchange(
+                        connection, bytes.fromhex("8052000000"),
+                        "unselected foreign service transient allocation"
+                    )
+                    if response != bytes.fromhex("6A529000"):
+                        raise RuntimeError(
+                            "SIO transient allocation check returned "
+                            f"{response.hex().upper()}, expected 6A529000"
+                        )
+                    print("TEST:PASS selected allocation and SIO transient guards")
+
+                check_selected_allocation(CLIENT_APPLET)
+                check_selected_allocation(CLIENT_SIBLING_APPLET)
+                print("TEST:SUMMARY pass=2 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_TEST_IS_APPLET_ACTIVE") == "1":
                 sibling_install = vpcd.install_applet(
                     scp, client[1], client[2][0], CLIENT_SIBLING_APPLET

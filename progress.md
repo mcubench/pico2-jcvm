@@ -24979,3 +24979,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Requested documentation change complete.
 - Commit: `this README-architecture-picture commit; resolve with git log --grep="docs: add architecture picture to README"`
 - Artifacts/logs: `docs/pico2_jcvm_firmware_architecture_flat.png`
+
+## 2026-11-07 Guard deselect-transient allocation by active CAP context 6 minutes
+
+- Step/experiment: `JCSystem-CLEAR_ON_DESELECT-context-guard`
+- When: '2026-11-07 22:05 CET' - '2026-11-07 22:11 CET'
+- Change: Native JCSystem transient allocation now permits CLEAR_ON_DESELECT only when the CAP context has a selected applet instance or is installing. Added all-five-array-type rejection coverage for a foreign SIO target while preserving CLEAR_ON_RESET allocation; documented the API evidence.
+- Validation: `PICO2_DEBUG_SERIAL_WAIT_MS=0 PICO2_HOST_USB_ACCESS=1 CHOUPI_VM_TRACE_EXCEPTIONS=1 SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1 ./tools/test-sio-cross-aid-vpcd` passed (`TEST:SUMMARY pass=2 fail=0`). `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` passed (159/162 enabled; firmware end `0x100F0D4C`, 62,132 bytes remaining). The corresponding RISC-V wrapper passed VM-core/smoke. The authorized helper granted three USB nodes, but bounded `pcsc_scan -r` published no Pico reader; no physical APDUs were attempted. Runtime performance metrics were not measured.
+- Result: Selected caller and same-package sibling can allocate deselect-cleared arrays; foreign SIO target receives `ILLEGAL_TRANSIENT` for boolean, byte, short, object, and int arrays. Reset-cleared allocations remain available.
+- Decision: Keep this native guard; physical PC/SC acceptance remains open. Refresh the empty-card max_crypto UF2 after the commit so its source identity matches the committed image.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T210823Z.log`; ARM/RISC-V build provenance under `build/`.

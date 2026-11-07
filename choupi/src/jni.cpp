@@ -347,13 +347,18 @@ bool getRemoteJavaExceptionInfo(Context &context,
 }
 
 ClearEvent getTransientClearEvent(const jbyte_t event) {
+  Context &context = Context::getActiveContext();
   switch (event) {
   case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_RESET):
     return ClearEvent::CLEAR_ON_RESET;
   case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_DESELECT):
+    if (!context.canAllocateDeselectTransientArray()) {
+      context.setPendingSystemExceptionReason(3); // ILLEGAL_TRANSIENT
+      throw Exceptions::SystemException;
+    }
     return ClearEvent::CLEAR_ON_DESELECT;
   default:
-    Context::getActiveContext().setPendingSystemExceptionReason(1);
+    context.setPendingSystemExceptionReason(1);
     throw Exceptions::SystemException;
   }
 }

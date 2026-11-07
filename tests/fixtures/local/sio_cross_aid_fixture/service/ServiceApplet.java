@@ -11,6 +11,7 @@ import javacard.framework.OwnerPINxWithPredecrement;
 import javacard.framework.PIN;
 import javacard.framework.SensitiveArrays;
 import javacard.framework.Shareable;
+import javacard.framework.SystemException;
 import javacard.framework.Util;
 import javacard.security.CryptoException;
 import javacard.security.RandomData;
@@ -39,9 +40,18 @@ public final class ServiceApplet extends Applet implements Probe {
   private static int descriptorInt;
   private Object retainedForeignInstance;
   private Object[] retainedForeignArray;
+  private static boolean installDeselectTransientAllowed;
 
   private ServiceApplet() {
     retainedForeignInstance = this;
+    try {
+      byte[] transientBytes = JCSystem.makeTransientByteArray(
+          (short) 1, JCSystem.CLEAR_ON_DESELECT);
+      installDeselectTransientAllowed = transientBytes != null &&
+          JCSystem.isTransient(transientBytes) == JCSystem.CLEAR_ON_DESELECT;
+    } catch (SystemException rejected) {
+      installDeselectTransientAllowed = false;
+    }
     register();
   }
 
@@ -107,6 +117,65 @@ public final class ServiceApplet extends Applet implements Probe {
                    !JCSystem.isAppletActive(unregistered)
                ? (short) 0x6A4B
                : (short) 0x6A4C;
+  }
+
+  public short probeTransientAllocationDuringSio() {
+    if (!installDeselectTransientAllowed) return (short) 0x6A51;
+    byte result = 0;
+    try {
+      JCSystem.makeTransientBooleanArray((short) 1,
+                                         JCSystem.CLEAR_ON_DESELECT);
+    } catch (SystemException expected) {
+      if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 1;
+    }
+    try {
+      JCSystem.makeTransientByteArray((short) 1,
+                                      JCSystem.CLEAR_ON_DESELECT);
+    } catch (SystemException expected) {
+      if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 2;
+    }
+    try {
+      JCSystem.makeTransientShortArray((short) 1,
+                                       JCSystem.CLEAR_ON_DESELECT);
+    } catch (SystemException expected) {
+      if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 4;
+    }
+    try {
+      JCSystem.makeTransientObjectArray((short) 1,
+                                        JCSystem.CLEAR_ON_DESELECT);
+    } catch (SystemException expected) {
+      if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 8;
+    }
+    try {
+      NativeImplementation.makeTransientIntArray(
+          (short) 1, JCSystem.CLEAR_ON_DESELECT);
+    } catch (SystemException expected) {
+      if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 16;
+    }
+    byte[] resetBytes;
+    try {
+      resetBytes = JCSystem.makeTransientByteArray(
+          (short) 1, JCSystem.CLEAR_ON_RESET);
+    } catch (SystemException unexpected) {
+      return (short) 0x6A61;
+    }
+    Object[] resetObjects;
+    try {
+      resetObjects = JCSystem.makeTransientObjectArray(
+          (short) 1, JCSystem.CLEAR_ON_RESET);
+    } catch (SystemException unexpected) {
+      return (short) 0x6A62;
+    }
+    int[] resetInts;
+    try {
+      resetInts = NativeImplementation.makeTransientIntArray(
+          (short) 1, JCSystem.CLEAR_ON_RESET);
+    } catch (SystemException unexpected) {
+      return (short) 0x6A63;
+    }
+    if (resetBytes != null && resetObjects != null && resetInts != null)
+      result |= 32;
+    return result == 63 ? (short) 0x6A52 : (short) 0x6A53;
   }
 
   public int exerciseWide(int value) {

@@ -183,6 +183,8 @@ public:
   jref_t getRestoredAppletRef() const noexcept;
   void setAppletActive(bool active) noexcept;
   bool isAppletActive() const noexcept;
+  /// Check if this CAP context is selected or currently installing an applet.
+  bool canAllocateDeselectTransientArray() const noexcept;
   /// Invalidate runtime Shareable routes and server roots on card reset.
   void clearShareableSessionState() noexcept;
   /// Track exported Java Card RMI objects in the applet context and as GC roots.

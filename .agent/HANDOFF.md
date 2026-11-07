@@ -1,4 +1,21 @@
-# Current handoff — RV-11 physical rerun and device state — 2026-11-07 21:54 CET
+# Current handoff — selected-context transient guard and reader state — 2026-11-07 22:11 CET
+
+The JCSystem `CLEAR_ON_DESELECT` allocation guard is implemented in native
+dispatch and covered by `SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1
+./tools/test-sio-cross-aid-vpcd` (`pass=2, fail=0`). It verifies all five
+array types reject allocation from a foreign, non-selected SIO target with
+`ILLEGAL_TRANSIENT`, while CLEAR_ON_RESET remains allowed. ARM and RISC-V
+max_crypto wrapper builds pass; ARM has 62,132 bytes remaining in the firmware
+window. The focused implementation and documentation are being committed as
+their own logical step.
+
+The latest authorized helper grants access to three USB nodes, but bounded
+`pcsc_scan -r` publishes no physical Pico reader. No physical command was
+sent. Retry physical work when a Pico reader is listed; preserve the other
+dirty worktree edits. After committing the guard, refresh the empty-card
+max_crypto UF2 and record its new hash/source ID.
+
+# Previous current handoff — RV-11 physical rerun and device state — 2026-11-07 21:54 CET
 
 REL-01 is complete (`1c2028bc`): physical board D92 reports release `0101`,
 CPLC date `2026-11-07`, and equipment ID `FF1DC424` in GPPro 26.06.04; its

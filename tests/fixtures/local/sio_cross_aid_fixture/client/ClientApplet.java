@@ -5,6 +5,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
+import javacard.framework.SystemException;
 import javacard.security.CryptoException;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
@@ -290,12 +291,30 @@ public final class ClientApplet extends Applet {
     short result;
     if (denial_probe) {
       result = shareable == null ? (short) 0x6A01 : (short) 0x6A02;
+    } else if (buffer[1] == 0x52) {
+      result = shareable != null &&
+                       ((Probe) shareable).probeTransientAllocationDuringSio() ==
+                           (short) 0x6A52
+                   ? (short) 0x6A52
+                   : (short) 0x6A53;
     } else if (buffer[1] == 0x4B) {
       result = shareable != null &&
                        ((Probe) shareable).isAppletActiveDuringSio() ==
                            (short) 0x6A4B
                    ? (short) 0x6A4B
                    : (short) 0x6A4C;
+    } else if (buffer[1] == 0x53) {
+      try {
+        byte[] local = JCSystem.makeTransientByteArray(
+            (short) 1, JCSystem.CLEAR_ON_DESELECT);
+        result = local != null &&
+                         JCSystem.isTransient(local) ==
+                             JCSystem.CLEAR_ON_DESELECT
+                     ? (short) 0x6A54
+                     : (short) 0x6A55;
+      } catch (SystemException unexpected) {
+        result = (short) 0x6A56;
+      }
     } else if (buffer[1] == 0x15) {
       retainedShareable = shareable;
       retainedShareableAlias = shareable;

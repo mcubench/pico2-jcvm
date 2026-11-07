@@ -444,6 +444,13 @@ bool Context::isAppletActive() const noexcept {
   return this->activeAppletInstance().active;
 }
 
+bool Context::canAllocateDeselectTransientArray() const noexcept {
+  for (const auto &instance : this->applet_instances) {
+    if (instance.active || instance.installation_active) return true;
+  }
+  return false;
+}
+
 void Context::clearShareableSessionState() noexcept {
   for (auto &instance : this->applet_instances) {
     instance.shareable_proxies = {};
