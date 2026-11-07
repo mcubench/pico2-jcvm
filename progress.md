@@ -23615,3 +23615,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with persistence-backed tests and an end-to-end same-package DELETE APDU fixture; persistent array reading itself remains untested.
 - Commit: pending.
 - Artifacts/logs: Test output in the command transcript; no separate log file.
+
+## 2026-11-07 Record sibling-field test commit resolution 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-field-root-test-commit`
+- When: '2026-11-07 01:23 CET' - '2026-11-07 01:24 CET'
+- Change: Recorded the test-only sibling-field regression commit SHA in the active handoff.
+- Validation: No new test run; `./tools/test-rmi-registry` passed immediately before the commit.
+- Result: Regression coverage is committed as `f4f6195b`.
+- Decision: Resume CTX-01 persistence-backed lifecycle coverage.
+- Commit: `f4f6195b` — regression and status; this commit-resolution record is separate.
+- Artifacts/logs: Test output is in the preceding command transcript.

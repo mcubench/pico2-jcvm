@@ -1,4 +1,4 @@
-# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:23 CET
+# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:24 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
@@ -11,7 +11,8 @@ verifies sibling-array rejection, target-owned-array exemption, slot-clear
 release, cached static-root rejection/release, and a sibling instance-field
 reference blocking until cleared. The latest field/static tests pass in the
 native registry fixture. Source/build scan extension is committed as
-`9282315a`; its SHA resolution is `7e85cd39`. The focused cross-package DELETE
+`9282315a`; its SHA resolution is `7e85cd39`. The sibling-field regression
+follow-up is `f4f6195b`. The focused cross-package DELETE
 APDU regression still passes; full `symm_crypto` cross-AID VPCD passes 35/35
 after the array change.
 
