@@ -1,19 +1,25 @@
 # Current handoff — selected-context transient guard and reader state — 2026-11-07 22:11 CET
 
-The JCSystem `CLEAR_ON_DESELECT` allocation guard is implemented in native
-dispatch and covered by `SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1
-./tools/test-sio-cross-aid-vpcd` (`pass=2, fail=0`). It verifies all five
-array types reject allocation from a foreign, non-selected SIO target with
-`ILLEGAL_TRANSIENT`, while CLEAR_ON_RESET remains allowed. ARM and RISC-V
-max_crypto wrapper builds pass; ARM has 62,132 bytes remaining in the firmware
-window. The focused implementation and documentation are being committed as
-their own logical step.
+The native JCSystem `CLEAR_ON_DESELECT` guard and regression are committed as
+`4492a973`. `SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1
+./tools/test-sio-cross-aid-vpcd` passes 2/2. All five array types reject
+allocation from a foreign, non-selected SIO target with `ILLEGAL_TRANSIENT`,
+while CLEAR_ON_RESET remains allowed. ARM and RISC-V max_crypto wrapper builds
+pass; ARM has 62,132 bytes remaining in the firmware window.
 
-The latest authorized helper grants access to three USB nodes, but bounded
-`pcsc_scan -r` publishes no physical Pico reader. No physical command was
-sent. Retry physical work when a Pico reader is listed; preserve the other
-dirty worktree edits. After committing the guard, refresh the empty-card
-max_crypto UF2 and record its new hash/source ID.
+Refreshed empty-card max_crypto ARM external-test image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,
+4,070,912 bytes, SHA-256
+`51509530b150d5c5f04dcaa23fa82becf16a0e0f2f661c0eb2f9ca165789d564`. It
+contains 3,854 firmware blocks and 4,096 erased storage blocks. Build source
+ID is `FF4492A9`; `FF` marks the other uncommitted worktree edits, so this is
+not a clean-tree release candidate.
+
+The latest authorized helper grants access to three USB nodes. Elevated
+`lsusb -d 2e8a:` identifies all three as runtime `2e8a:0009 Pico2 JCVM CCID`,
+not BOOTSEL. Bounded `pcsc_scan -r` publishes no reader, so no smartcard APDUs
+were attempted. Retry physical work when a Pico reader is listed; preserve the
+other dirty worktree edits.
 
 # Previous current handoff — RV-11 physical rerun and device state — 2026-11-07 21:54 CET
 

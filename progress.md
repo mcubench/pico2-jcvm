@@ -24990,3 +24990,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep this native guard; physical PC/SC acceptance remains open. Refresh the empty-card max_crypto UF2 after the commit so its source identity matches the committed image.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T210823Z.log`; ARM/RISC-V build provenance under `build/`.
+
+## 2026-11-07 Refresh committed max_crypto external image 6 minutes
+
+- Step/experiment: `JCSystem-CLEAR_ON_DESELECT-context-guard-image-refresh`
+- When: '2026-11-07 22:11 CET' - '2026-11-07 22:17 CET'
+- Change: Recorded commit `4492a973` for the native transient-allocation guard, rebuilt both architectures from that committed source, and refreshed the empty-card max_crypto ARM image and handoff.
+- Validation: `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` and the RISC-V equivalent passed. ARM reports 159/162 enabled and 62,132 bytes remaining. `./tools/package-empty-card-uf2` passed with 3,854 firmware blocks and 4,096 erased storage blocks. The helper grants three nodes; elevated `lsusb -d 2e8a:` sees three runtime CCID devices, while bounded `pcsc_scan -r` publishes no reader. No physical card APDUs were attempted.
+- Result: Current UF2 is 4,070,912 bytes, SHA-256 `51509530b150d5c5f04dcaa23fa82becf16a0e0f2f661c0eb2f9ca165789d564`, release 0.1.1, CPLC source ID `FF4492A9`. `FF` indicates unrelated dirty source edits were included; runtime performance was not measured.
+- Decision: Image is available for external testing with its dirty-tree provenance disclosed. Hardware acceptance remains pending until PC/SC publishes a reader.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; build provenance under `build/`.
