@@ -23637,3 +23637,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 open; audit/restore unselected sibling roots and add same-package card-manager DELETE APDU coverage.
 - Commit: pending.
 - Artifacts/logs: Passing VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T004502Z.log`, SHA-256 `7a06e0358e9f147a0a28942672fc8cfaa789c68527fe939d3afa21bf07c5f113`. Prior failing VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T003648Z.log` shows `VPCD:DELETE_REF_BLOCK source=3 ref=0003 owner=1`; earlier wrong-profile run `artifacts/logs/sio-cross-aid-vpcd-20261107T002553Z.log`.
+
+## 2026-11-07 Record package-static DELETE correction commit 1 minute
+
+- Step/experiment: `ctx-20261107-instance-delete-package-static-tag-commit`
+- When: '2026-11-07 01:54 CET' - '2026-11-07 01:55 CET'
+- Change: Recorded the package-static namespace false-positive correction SHA in the handoff and progress history.
+- Validation: No new run; native registry, ARM/RISC-V builds, and corrected-profile VPCD suite passed in the preceding implementation step.
+- Result: The behavior correction and regression are committed as `13c2848c`.
+- Decision: Continue CTX-01 with persistent roots for unselected sibling applets and same-package DELETE APDU coverage.
+- Commit: `13c2848c` — implementation/test/status; this SHA-resolution record is separate.
+- Artifacts/logs: See the preceding progress entry.

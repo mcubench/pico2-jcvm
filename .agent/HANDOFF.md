@@ -14,6 +14,7 @@ native registry fixture. Source/build scan extension is committed as
 `9282315a`; its SHA resolution is `7e85cd39`. The sibling-field regression
 follow-up is `f4f6195b`. Package-static objects tagged `0x02` are excluded
 from applet-owned persistent blockers; a synthetic native case checks this.
+The correction is committed as `13c2848c`.
 The expanded `symm_crypto` cross-AID VPCD suite passes 35/35, including service
 applet DELETE, stale proxy rejection, and same-AID reinstall. The log is
 `artifacts/logs/sio-cross-aid-vpcd-20261107T004502Z.log` (SHA-256
