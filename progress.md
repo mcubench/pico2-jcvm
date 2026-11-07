@@ -24656,3 +24656,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline until a Pico reader is published.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Fix native int-array return in ROM-mask generation and rebuild max_crypto 33 minutes
+
+- Step/experiment: `RV-20261106-52-native-int-array-return`
+- When: '2026-11-07 15:48 CET' - '2026-11-07 16:21 CET'
+- Change: Corrected `MethodComponentFromJCA` in the ROM-mask generator to choose `ARETURN` for any array return type before dispatching by its base type. This fixes the generated `NativeImplementation.makeTransientIntArray(SB)[I` ROM stub, which previously emitted `IRETURN` for `[I` and failed when a successful CLEAR_ON_RESET int array was returned. The ROM-mask source is committed in submodule as `45acedf`.
+- Validation: `./tools/build-pc --profile symm_crypto` passed and regenerated ROM mask (20 API JCA inputs, 147 native methods). `PICO2_HOST_USB_ACCESS=1 CHOUPI_VM_TRACE_EXCEPTIONS=1 SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1 ./tools/test-sio-cross-aid-vpcd` passed (`TEST:SUMMARY pass=2 fail=0`), including selected-context CLEAR_ON_DESELECT rejection and successful reset int-array allocation. `./tools/build arm --profile max_crypto` passed (147/150 capabilities; firmware end `0x100EDEa4`, 74,076 bytes free). `./tools/build riscv --profile max_crypto` passed the VM-core/RISC-V smoke target. `./tools/package-empty-card-uf2` passed; local picotool identifies RP2350 ARM Secure. No physical board was flashed. Existing upstream converter/compiler warnings remain; no new warning was attributed to this change.
+- Result: Max-crypto empty-card UF2 is 4,046,848 bytes, SHA-256 `a37bfddd3308243f74513d267029932b96051d593809d535d995541c4ce92202`; 3,807 firmware blocks and 4,096 erased storage blocks. CPLC release is 0.1.1 and source ID is `FFD12B61`. Firmware leaves 74,076 bytes. R52 remains open for broader same-context, callback, and invalid-event acceptance coverage.
+- Decision: The observed 6F00 was caused by malformed generated ROM bytecode for the native int-array return, rather than an int-array allocator failure. Keep R52 open until remaining contract cases pass. Current max image is ready for external testing but includes other dirty worktree changes. REL-01 physical GPPro verification remains open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log` (SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`); `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (ignored by Git); `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.

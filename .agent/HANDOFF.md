@@ -1,3 +1,40 @@
+# Current handoff — R52 native int-array return fix and max_crypto build — 2026-11-07 16:21 CET
+
+The focused R52 failure is fixed at its source in the ROM-mask generator.
+`MethodComponentFromJCA` previously checked the base return type `INT` before
+checking `isArray()`, so a native `[I` method ended with `IRETURN` even though
+the generated JNI dispatcher pushes an array reference. The VM trace mapped
+the failing PC to ROM package `A0000000600001`, method
+`NativeImplementation.makeTransientIntArray(SB)[I`, at the return following
+native method `0x0091`. The generator now selects `ARETURN` for array types
+first. Submodule commit: `45acedf`.
+
+`PICO2_HOST_USB_ACCESS=1 CHOUPI_VM_TRACE_EXCEPTIONS=1
+SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1 ./tools/test-sio-cross-aid-vpcd` passes
+(`TEST:SUMMARY pass=2 fail=0`), including all five rejected
+CLEAR_ON_DESELECT types, successful CLEAR_ON_RESET int-array allocation, and
+recovery. Log: `artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log`
+(SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`).
+The R52 TODO remains open pending its remaining callback/same-context/invalid
+event coverage.
+
+After the generator change, ARM max_crypto and the RISC-V max_crypto VM-core
+and smoke builds pass. Fresh empty-card ARM image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
+(4,046,848 bytes; SHA-256
+`a37bfddd3308243f74513d267029932b96051d593809d535d995541c4ce92202`). It is
+RP2350 ARM Secure, profile `max_crypto` (147/150 capabilities), release 0.1.1,
+source ID `FFD12B61`, firmware end `0x100EDEA4` with 74,076 bytes remaining,
+and 4,096 erased storage blocks (empty card). No board was flashed. This image
+is built from the dirty worktree, so it is for external testing rather than a
+clean release.
+
+REL-01 CPLC implementation remains committed as `971272f3`. Physical GPPro
+`--info` acceptance remains open because the last PC/SC reader scan found no
+Pico reader. Continue remaining R52 coverage; preserve all other dirty edits.
+
+---
+
 # Current handoff — REL-01 image and latest reader check — 2026-11-07 15:48 CET
 
 REL-01 CPLC source behavior is already committed as `971272f3`; the release
