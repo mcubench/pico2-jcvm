@@ -18,6 +18,7 @@ public final class ClientApplet extends Applet {
   private Shareable retainedShareableAlias;
   private Shareable retainedShareable;
   private static Object[] retainedGlobalStatic;
+  private static Object retainedPersistentAlias;
   private Object[] retainedGlobalInstance;
 
   private ClientApplet() {
@@ -218,6 +219,20 @@ public final class ClientApplet extends Applet {
       return;
     }
     byte[] buffer = apdu.getBuffer();
+    if (buffer[1] == 0x42) {
+      retainedPersistentAlias = this;
+      buffer[0] = (byte) 0x6A;
+      buffer[1] = (byte) 0x72;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
+    if (buffer[1] == 0x43) {
+      retainedPersistentAlias = null;
+      buffer[0] = (byte) 0x6A;
+      buffer[1] = (byte) 0x73;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
     if (buffer[1] == 0x3C) {
       short result = checkSensitiveJCSystemResults();
       buffer[0] = (byte) (result >> 8);

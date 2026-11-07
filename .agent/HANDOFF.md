@@ -1,3 +1,22 @@
+# Current handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
+
+A focused same-package card-manager APDU regression now exercises persistent
+alias protection with no applet Context materialized at DELETE time. The client
+fixture stores its applet object in a package static (namespace `0x02`), the
+emulator restarts, and DELETE of that object’s applet returns `6985` before
+selecting either client instance. Clearing the static reference through the
+sibling applet permits DELETE `9000`; the sibling remains usable. Focused VPCD
+passes 2/2 and the full `symm_crypto` cross-AID suite passes 35/35. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T015250Z.log` (SHA-256
+`836425861b6b8632245c41d663062faccb79b883b8e6b4da9007e3f63135a6f9`) and
+`artifacts/logs/sio-cross-aid-vpcd-20261107T015414Z.log` (SHA-256
+`5f41fc9206ff9fee85b79c99501c4ebfe72c29718ac4ebb86bb3865b97d76eff`). A
+first attempt to use a foreign service-array reference failed to reproduce a
+persisted alias because cross-package foreign references serialize as null.
+An unselected sibling instance-field alias still needs a dedicated APDU case.
+No physical device was accessed. Test-fixture, TODO, QKB and continuity updates
+are pending commit; preserve all unrelated worktree changes.
+
 # Current handoff — persistent alias protection for applet DELETE — 2026-11-07 02:40 CET
 
 Applet-instance DELETE now runs a persistent inventory scan at the top-level

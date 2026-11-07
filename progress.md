@@ -23692,3 +23692,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 with a dedicated VPCD case for an unselected sibling's persistent alias and same-package DELETE APDU coverage.
 - Commit: `722cf6d7` — implementation/test/status; this SHA-resolution record is separate.
 - Artifacts/logs: Full VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261107T012537Z.log`, SHA-256 `df320b6ada9ef9f404af3743faed2de056dd61377b38e80ddaf5a2ebee521a30`.
+
+
+## 2026-11-07 Validate cold-start persistent-alias applet DELETE 17 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-static-alias-apdu`
+- When: '2026-11-07 02:41 CET' - '2026-11-07 02:58 CET'
+- Change: Added test-only APDU commands that store the target applet object in a package static and clear it through a sibling instance. Extended the VPCD harness to install the sibling, persist the alias, restart the emulator, issue DELETE before either applet is selected, clear the alias via the sibling, retry DELETE, and verify the sibling remains usable. Updated TODO, QKB and handoff with the measured behavior and the remaining unselected sibling-instance namespace case.
+- Validation: `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and scoped `git diff --check` passed. Focused VPCD cold-start case passed 2/2: DELETE returned `6985` before applet selection, then `9000` after static alias clearing. Full `symm_crypto` cross-AID VPCD passed 35/35. An initial service-to-client persistent-array experiment returned `9000` after restart because cross-package foreign array elements intentionally serialize as null; replaced it with a package-static alias within the target package. No firmware source changed and no physical device was accessed.
+- Result: The persistent alias scanner is exercised end to end from APDU DELETE with no Context heaps loaded. Same-package sibling DELETE APDU and package-static alias persistence are covered. An alias stored in an unselected sibling's own instance namespace remains without direct APDU evidence.
+- Decision: Keep CTX-01 open for that instance-namespace APDU case and complete lifecycle coverage; retain package and applet-instance DELETE as distinct paths.
+- Commit: pending.
+- Artifacts/logs: Focused `artifacts/logs/sio-cross-aid-vpcd-20261107T015250Z.log`, SHA-256 `836425861b6b8632245c41d663062faccb79b883b8e6b4da9007e3f63135a6f9`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261107T015414Z.log`, SHA-256 `5f41fc9206ff9fee85b79c99501c4ebfe72c29718ac4ebb86bb3865b97d76eff`.

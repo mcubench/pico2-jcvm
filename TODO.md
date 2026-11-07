@@ -857,10 +857,15 @@ review.
   suite pass. Native coverage also confirms same-package sibling arrays and
   cached static roots to applet-owned state block DELETE until cleared; the
   guard inspects loaded sibling object fields and persistent reference arrays.
-  Package-static objects tagged in namespace `0x02` do not block applet DELETE
-  because that state survives deletion. Keep CTX-01 open: uncached persisted
-  applet roots/static state and end-to-end same-package DELETE APDU coverage
-  remain before claiming complete Java Card deletion semantics.
+  Package-static objects tagged in namespace `0x02` do not block DELETE by
+  allocation owner alone because that state survives deletion. Persistent
+  aliases in that namespace which point into a target applet's `0x03` records
+  now block DELETE. A cold-start VPCD case returns `6985` before either client
+  applet is selected; clearing the alias through the same-package sibling
+  permits DELETE `9000`, and the sibling remains usable. The inventory also
+  follows aliases from unselected `0x03` sibling records. Keep CTX-01 open for a
+  direct APDU case with an alias in an unselected sibling instance namespace
+  and remaining Java Card deletion semantics.
 
 ### CTX-02
 
