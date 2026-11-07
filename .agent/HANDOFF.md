@@ -1,4 +1,4 @@
-# Current handoff — scan persisted Cipher workspace payload — 2026-11-07 09:18 CET
+# Current handoff — scan persisted Cipher workspace payload — 2026-11-07 09:20 CET
 
 RV-20261106-08 now has an end-to-end two-process VPCD regression under the
 migrated `tests/fixtures/local/cipher_lifecycle_applet` source layout. The
@@ -11,7 +11,8 @@ log `artifacts/logs/cipher-workspace-vpcd-20261107T080444Z.log`, SHA-256
 `d2d17cdd8d7df374a180121025ea3b66e6757af8c2369ce281c74f3cd5010280`.
 
 The additional reinitialization probe and wrapper APDU are committed as
-`c647f11c`; the SHA-resolution progress record follows. Earlier native
+`c647f11c`; the targeted payload scan/test update is committed as `c38dcc5d`.
+The SHA-resolution progress record follows. Earlier native
 implementation is `c7458354`; the first process-resume wrapper was included in
 concurrent commit `ab63e21b` and its attribution is documented in progress.md.
 Source inspection shows transient array data is cleared and only transient

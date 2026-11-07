@@ -24229,3 +24229,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with CTR stream, reset and grown-buffer lifecycle cases; retain the physical hardware gate.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T081658Z.log`, SHA-256 `94b11c3f18c289f26024f6a807123fa2705a8589f2028c42982cbc4e4165af37`; saved image `build/cipher-lifecycle-probe/cipher-workspace-vpcd-20261107T081658Z.bin` (524,288 bytes).
+
+## 2026-11-07 Resolve Cipher payload-scan commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-payload-scan-sha`
+- When: '2026-11-07 09:18 CET' - '2026-11-07 09:20 CET'
+- Change: Recorded the saved-image payload-scan commit SHA in progress history and handoff.
+- Validation: No new test; the preceding entry records the 8/8 VPCD run and zero sentinel occurrences in the saved image.
+- Result: The pending-Cipher-plaintext scan regression is committed as `c38dcc5d`.
+- Decision: Continue R08 lifecycle coverage for AES-CTR and grown buffers; full record inventory and physical acceptance remain open.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
