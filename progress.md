@@ -24822,5 +24822,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Prior focused VPCD HMAC test passed all six RFC algorithms and 12 vector/lifecycle checks; prior ARM and RISC-V `max_crypto` wrapper builds passed. In this step, the standard `./tools/test-gppro-empty-install-vpcd` path passed. The pinned JCAlgTest 1.8.4 support harness successfully GPPro-installed and selected the CAP, but the client stalled during the DES section; emulator logged `APPLET_PROCESS status=F206 exception=16`, and no complete comparison was produced. The corrected harness attempt was stopped after the trace established the stall, rather than waiting for its 900-second deadline. Fresh `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto`, empty-card packaging, and `picotool info -a` all passed. No Pico was flashed or physically tested.
 - Result: HMAC is enabled in `max_crypto` (159/162 capabilities). The image is RP2350 ARM Secure, release 0.1.1, CPLC source ID `FF038002`, firmware end `0x100F0D4C` with 62,132 bytes before storage, 3,854 firmware blocks and 4,096 erased storage blocks. UF2 size is 4,070,912 bytes, SHA-256 `a042b3baaa6ff822882ef8a097823f1061c7a0404e4adb89c85968623d671297`. JCAlgTest complete support acceptance and physical HMAC validation remain open.
 - Decision: Provide this empty-card image for external testing with the HMAC and JCAlgTest acceptance limits disclosed. Diagnose the VPCD `F206` stall before treating HMAC-01 as complete.
-- Commit: `<resolve in next progress entry>`
+- Commit: `558d0ccf`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/results/jcalgtest-support-vpcd-20261107T184531Z/`; `artifacts/results/gppro-empty-install-vpcd-20261107T184325Z/`.
+
+## 2026-11-07 Rebuild external image from committed HMAC source 3 minutes
+
+- Step/experiment: `HMAC-01-post-commit-max-empty-card-refresh`
+- When: '2026-11-07 19:54 CET' - '2026-11-07 19:57 CET'
+- Change: Rebuilt both wrapper targets after committing HMAC support, then refreshed the max_crypto ARM empty-card external-test UF2 and its README/handoff identifiers.
+- Validation: `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build riscv --profile max_crypto` passed the VM-core/smoke target; the ARM wrapper passed and reported profile max_crypto with 159/162 capabilities and 62,132 bytes before storage. Empty-card packaging reported 3,854 firmware blocks and 4,096 erased storage blocks; `picotool info -a` identified RP2350 ARM Secure. No hardware flash or runtime serial test was performed.
+- Result: Current UF2 is 4,070,912 bytes, SHA-256 `7f750ca9f024c470ef9056e8aa38ce37cc83c45ef959f32ea296198f51109bb2`; release 0.1.1; CPLC source ID `FF558D0C`; firmware end `0x100F0D4C`.
+- Decision: This post-commit image supersedes the just-built pre-commit image in the prior record and is the current max_crypto external-test binary.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.

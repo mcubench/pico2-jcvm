@@ -9,7 +9,7 @@ the selected UF2 to the Pico 2 `RPI-RP2` drive.
 
 | Profile | Capabilities enabled | File | Size | SHA-256 |
 | --- | ---: | --- | ---: | --- |
-| `max_crypto` | 159 / 162 | `pico2-jcvm-max_crypto-arm-empty-card-current.uf2` | 4,070,912 bytes | `a042b3baaa6ff822882ef8a097823f1061c7a0404e4adb89c85968623d671297` |
+| `max_crypto` | 159 / 162 | `pico2-jcvm-max_crypto-arm-empty-card-current.uf2` | 4,070,912 bytes | `7f750ca9f024c470ef9056e8aa38ce37cc83c45ef959f32ea296198f51109bb2` |
 | `symm_crypto` | 46 / 150 | `pico2-jcvm-symm_crypto-arm-empty-card-current.uf2` | 3,837,440 bytes | `40032e23306d73d4c095659b41ecb9b90441c447accaf870a88048b2bc501571` |
 
 Both images are RP2350 ARM Secure UF2s. The current `max_crypto` image has

@@ -1,16 +1,16 @@
-# Current handoff — HMAC KATs and refreshed max_crypto image — 2026-11-07 19:50 CET
+# Current handoff — HMAC KATs and refreshed max_crypto image — 2026-11-07 19:57 CET
 
 Fresh external-test ARM image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
 (4,070,912 bytes, SHA-256
-`a042b3baaa6ff822882ef8a097823f1061c7a0404e4adb89c85968623d671297`). It is
+`7f750ca9f024c470ef9056e8aa38ce37cc83c45ef959f32ea296198f51109bb2`). It is
 RP2350 ARM Secure, release 0.1.1, profile `max_crypto` with 159/162 enabled
-capabilities, CPLC source ID `FF038002`, firmware end `0x100F0D4C` (62,132
+capabilities, CPLC source ID `FF558D0C`, firmware end `0x100F0D4C` (62,132
 bytes before the storage partition), 3,854 firmware blocks, and 4,096 erased
 storage blocks. No CAP or applet is preinstalled. This image was rebuilt from
 the current worktree; it has not been flashed or hardware-tested.
 
-HMAC-01 native C++ work is implemented and its focused VPCD fixture passes all
+HMAC-01 native C++ work is committed as `558d0ccf` and its focused VPCD fixture passes all
 six RFC known-answer vectors (12 tests across one-shot/split update, sign,
 verify, tamper rejection, and key readback). Both ARM and RISC-V max_crypto
 wrapper builds pass. The full pinned JCAlgTest 1.8.4 acceptance remains open:
