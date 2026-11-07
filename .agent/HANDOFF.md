@@ -20,13 +20,19 @@ or test was added.
 Physical PC/SC remains unavailable despite three runtime USB devices; see the
 QKB entry “Runtime Pico USB nodes are present but PC/SC publishes no readers.”
 No board commands or flash were attempted. R08 remains open for a complete
-tag-level persistence audit and physical acceptance.
+tag-level persistence audit and physical acceptance. Source inspection shows
+`FlashMemory_Handler::writeArray()` writes only type, size, and clear-event
+metadata for transient arrays, and restored transient arrays get zero-filled
+backing storage. However, an older persistent Cipher workspace may have a
+separate body tag after buffer growth. Rebinding its Cipher field writes a new
+transient reference but does not obviously erase that former body tag. This
+legacy-upgrade residue is a source-level risk, not yet reproduced; add a
+legacy-seeded regression before deciding whether targeted cleanup is needed.
 
 Step commit: `91c20d2c`.
 
-Next: inspect the tag-level serialization and restore paths for transient
-Cipher fields, then resume physical validation when PC/SC publishes a Pico
-reader.
+Next: build a legacy-seeded regression for any orphaned Cipher body records;
+then resume physical validation when PC/SC publishes a Pico reader.
 
 # Current handoff — chunk symmetric Cipher updates without transactional buffer replacement — 2026-11-07 09:46 CET
 

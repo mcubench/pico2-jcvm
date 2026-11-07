@@ -7759,6 +7759,24 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - No viable fix established. Retry after PC/SC reader publication returns; the
   permitted helper refreshes USB access but does not restart the daemon.
 
+## Legacy Cipher workspace data may survive transient rebind — 2026-11-07
+
+- **Source observation:** current Cipher initialization replaces old
+  non-transient workspace arrays with reset-cleared transient arrays. The
+  generic persistent-reference writer stores a transient array's type, length,
+  and clear-event in its new body record, without operational contents.
+- **Unverified migration risk:** earlier firmware stored Cipher workspaces as
+  persistent arrays. Grown persistent arrays are stored under separate body
+  tags and the Cipher field stores an alias. Rebinding the field replaces that
+  alias but does not visibly erase the old body tag. This may leave an orphaned
+  legacy record containing a buffered tail; no legacy-flash reproducer or full
+  tag inventory has confirmed it. Avoid claiming upgrade cleanup.
+- **Next check:** seed a persistent Cipher workspace with the old write path,
+  grow it so the body tag differs from its field tag, switch to the current
+  transient initializer, and inventory both tags across commit, abort and cold
+  restore. Only add cleanup after proving the old tag has no remaining aliases
+  and that transaction rollback restores it safely.
+
 ## Test source relocation and cached CMake paths — 2026-11-07
 
 - Finding: CMake caches contain absolute source paths; moving tests from

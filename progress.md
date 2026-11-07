@@ -24294,3 +24294,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue R08 with source-level tag serialization/restore audit; physical testing remains pending PC/SC reader publication.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Audit Cipher transient record restore and legacy references 6 minutes
+
+- Step/experiment: `RV-20261106-08-transient-record-restore-audit`
+- When: '2026-11-07 10:01 CET' - '2026-11-07 10:07 CET'
+- Change: Inspected persistent transient-array serialization/restoration and the old Cipher allocator. Documented that transient array records omit payload bytes and restore with zeroed backing storage. Added an explicit R08 migration follow-up: a pre-transient grown workspace may have a separate persistent body tag that is not obviously removed when the Cipher field is rebound.
+- Validation: Source inspection of `FlashMemory_Handler::writeArray()`, `FlashMemory_Handler::getPersistentField_Array()`, `JC_Array` restored-array construction, `FlashMemory_Handler::setPersistentField_Reference()`, and pre-`c7458354` `native_cipher.cpp`. Existing focused VPCD results remain recorded above. No new test or build was run; the legacy orphan-tag concern is unverified and requires a seeded reproducer.
+- Result: Current transient serialization excludes operational payload data; cleanup of detached legacy workspace bodies is not established.
+- Decision: Keep R08 open and implement a legacy-seeded tag-inventory test before attempting cleanup. Physical test remains blocked by PC/SC publication.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
