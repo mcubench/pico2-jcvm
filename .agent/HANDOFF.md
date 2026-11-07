@@ -9,7 +9,7 @@ RISC-V wrapper builds also pass. No physical device was used.
 
 RV-20261106-02 remains open for end-to-end nested Java/ISO exception,
 allocation-failure and timeout coverage. This first correction is committed as
-`<commit SHA follows>`; its progress SHA-resolution record follows.
+`5e7dcb00`; its progress SHA-resolution record follows.
 
 Next: continue through the P1 runtime findings, keeping all pre-existing
 uncommitted review and implementation changes isolated from commits.

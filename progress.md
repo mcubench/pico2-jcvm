@@ -23957,3 +23957,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-20261106-02 open for deeper APDU/runtime error-path acceptance; continue with remaining interpreter/runtime P1 findings after checking these cases.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `./tools/test-rmi-registry` output reported `RMI_REGISTRY:PASS ... unwind_callers=1`; no separate log.
+
+## 2026-11-07 Resolve frame unwind commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-nested-frame-unwind-sha`
+- When: '2026-11-07 04:20 CET' - '2026-11-07 04:21 CET'
+- Change: Recorded the frame-unwind implementation commit SHA in the handoff and progress history.
+- Validation: No new run; the preceding record contains the regression and both architecture build results.
+- Result: The nonzero-depth unwind correction is committed as `5e7dcb00`.
+- Decision: Continue with P1 recovery work; preserve unrelated dirty files.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: No new artifacts.
