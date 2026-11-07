@@ -1,4 +1,4 @@
-# Current handoff — applet DELETE retained-root scan — 2026-11-07 01:54 CET
+# Current handoff — applet DELETE retained-root scan — 2026-11-07 02:01 CET
 
 The DELETE preflight now covers two volatile-array cases: cross-package edges
 routed through the foreign-array registry, and same-package sibling edges found
@@ -19,6 +19,13 @@ The expanded `symm_crypto` cross-AID VPCD suite passes 35/35, including service
 applet DELETE, stale proxy rejection, and same-AID reinstall. The log is
 `artifacts/logs/sio-cross-aid-vpcd-20261107T004502Z.log` (SHA-256
 `7a06e0358e9f147a0a28942672fc8cfaa789c68527fe939d3afa21bf07c5f113`).
+The focused retained-object lifecycle APDU case also passes 2/2: DELETE returns
+`6985` while the service array holds the target object, returns `9000` after
+the slot is cleared, and the sibling applet remains usable. Log:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T010001Z.log` (SHA-256
+`7a1578d28e3163aa0abc6f7fb9606b0444b3f3a1a93041b2904ee8b7d5e41701`). This
+still tests a cross-package retaining array; same-package sibling array APDU
+coverage is not complete.
 
 ARM and RISC-V builds pass after this correction. ARM image ends at
 `0x100d5358`, leaving 175,272 bytes in the reserved firmware region. No

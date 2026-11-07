@@ -23648,3 +23648,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 with persistent roots for unselected sibling applets and same-package DELETE APDU coverage.
 - Commit: `13c2848c` — implementation/test/status; this SHA-resolution record is separate.
 - Artifacts/logs: See the preceding progress entry.
+
+## 2026-11-07 Revalidate retained-object applet DELETE over VPCD 5 minutes
+
+- Step/experiment: `ctx-20261107-instance-delete-retained-object-apdu`
+- When: '2026-11-07 01:55 CET' - '2026-11-07 02:01 CET'
+- Change: Rebuilt the PC VM with `symm_crypto` and reran the focused card-manager applet DELETE scenario after the package-static blocker fix. Updated the handoff with the APDU result and precise coverage limit.
+- Validation: `./tools/build-pc --profile symm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_REUSE_FIXTURE=1 SIO_CROSS_AID_TEST_INSTANCE_DELETE_FOREIGN_ROOT=1 ./tools/test-sio-cross-aid-vpcd` passed 2/2: DELETE with a service-retained object returned `6985`; clearing the service array slot allowed retry with `9000`; the sibling applet remained usable.
+- Result: The end-to-end card-manager preflight, reject, clear, retry, and sibling-survival path remains correct after package-static exclusion. The retaining array is cross-package; a same-package sibling array APDU case remains open.
+- Decision: Continue CTX-01 by determining how to discover persistent roots of unselected siblings and by adding same-package sibling-reference APDU coverage.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T010001Z.log`, SHA-256 `7a1578d28e3163aa0abc6f7fb9606b0444b3f3a1a93041b2904ee8b7d5e41701`.
