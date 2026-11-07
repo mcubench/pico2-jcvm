@@ -6,6 +6,8 @@ The native JCSystem `CLEAR_ON_DESELECT` guard and regression are committed as
 allocation from a foreign, non-selected SIO target with `ILLEGAL_TRANSIENT`,
 while CLEAR_ON_RESET remains allowed. ARM and RISC-V max_crypto wrapper builds
 pass; ARM has 62,132 bytes remaining in the firmware window.
+The same-CAP sibling VPCD regression passes 6/6 after the change, preserving
+package-shared static values and sibling SIO behavior.
 
 Refreshed empty-card max_crypto ARM external-test image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`,

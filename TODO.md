@@ -1132,7 +1132,8 @@ review.
   different, non-selected CAP context receives ILLEGAL_TRANSIENT for all five
   array types; CLEAR_ON_RESET allocation remains permitted. The selected
   caller/sibling-context VPCD check passes 2/2. Physical confirmation remains
-  part of API-03 acceptance.
+  part of API-03 acceptance. After the guard, the same-CAP sibling VPCD test
+  still passes 6/6, including shared static array visibility and sibling SIO.
   A same-CAP restart VPCD test passes 7/7: both applet registrations restore,
   sibling static scalar/array state survives emulator restart, and SIO resolves
   the same restored array identity. The multi-package restart suite passes

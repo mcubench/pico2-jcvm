@@ -25012,3 +25012,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with unblocked TODO work; physical PC/SC testing remains pending.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Recheck same-CAP SIO after transient guard 2 minutes
+
+- Step/experiment: `JCSystem-CLEAR_ON_DESELECT-same-CAP-regression`
+- When: '2026-11-07 22:18 CET' - '2026-11-07 22:20 CET'
+- Change: Added post-guard same-CAP sibling validation evidence to CTX-03 and the handoff.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=6 fail=0`), including one CAP with writer/reader siblings, shared static-array visibility, and sibling SIO. No hardware was used.
+- Result: The JCSystem eligibility change preserves same-CAP shared-state and SIO behavior. Runtime performance was not measured.
+- Decision: Keep the guard; continue with the next actionable offline priority.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261107T211937Z.log`.
