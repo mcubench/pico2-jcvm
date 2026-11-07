@@ -1,0 +1,497 @@
+{
+  "schema": 1,
+  "active": {
+    "jcalgtest": {
+      "version": "1.8.4",
+      "java_card": "3.0.5",
+      "expected_version": "1.8.4_jc305"
+    },
+    "javacard-api": {
+      "snapshot": "provided-20261107",
+      "cap_count": 48,
+      "java_card_variants": [
+        "221",
+        "222",
+        "303",
+        "304",
+        "305"
+      ]
+    }
+  },
+  "provenance": "User-supplied local distribution; bytes preserved, no download or CAP modification. Upstream notices retained where supplied; no new license assertion. The API client differs from the JCAlgTest 1.8.4 client.",
+  "assets": {
+    "jcalgtest.cap": "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap",
+    "jcalgtest.client": "tests/fixtures/external/jcalgtest/1.8.4/client/AlgTestJClient_v1.8.4.jar",
+    "api.caps": "tests/fixtures/external/javacard-api/provided-20261107/caps",
+    "api.client": "tests/fixtures/external/javacard-api/provided-20261107/client/AlgTestJClient.jar",
+    "api.runner": "tests/fixtures/external/javacard-api/provided-20261107/runner/api_card_runner.py",
+    "api.gp": "tests/fixtures/external/javacard-api/provided-20261107/tools/gp.jar",
+    "toolchain.jc305": ".local-toolchain/java-card/provided/jc305u3_kit",
+    "toolchain.ant-javacard": ".local-toolchain/java-card/provided/ant-javacard.jar",
+    "jcalgtest.legacy.reference": "tests/fixtures/external/jcalgtest/legacy/1.8.2/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+  },
+  "files": [
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap",
+      "sha256": "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad",
+      "size": 131595,
+      "provided_path": "AlgTest_JavaCard/AlgTest_v1.8.4_jc305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/AlgTestJClient_v1.8.4.jar",
+      "sha256": "fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025",
+      "size": 152911,
+      "provided_path": "AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/apduio.jar",
+      "sha256": "eeb8ee7f33768a41f05cdb60fe52ebd6c39ab16244f654c09427f5bbde024621",
+      "size": 48313,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/apduio.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/is-native-c.jar",
+      "sha256": "9f0ce8cd940a669186206ccb84728ab0b9cb6195ffd27238c0de9e68c8861057",
+      "size": 49265,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/is-native-c.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/is-runtime.jar",
+      "sha256": "cdb3a96be84e135c60ec3e6eed3786c30a3b04ce0754a999a865c6d35d22037b",
+      "size": 885265,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/is-runtime.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/jcardsim-3.0.6.0.jar",
+      "sha256": "db6de7ffde71651c45d00df7e160771685cec3e14e444bf36b796658d289942f",
+      "size": 1202576,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jcardsim-3.0.6.0.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/jcommander-1.81.jar",
+      "sha256": "9d8b42979c99f3daa99102fe9ba1fb25f52226cb48cf58bc18acb93132e41a05",
+      "size": 85816,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jcommander-1.81.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/jctasks.jar",
+      "sha256": "5162a26deb080b87297b35bf8c41542f64ab0c2b3e808c4852e083bce3642381",
+      "size": 23306,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jctasks.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/jna-4.1.0.jar",
+      "sha256": "1aa37e9ea6baa0ee152d89509f758f0847eac66ec179b955cafe0919e540a92e",
+      "size": 914597,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jna-4.1.0.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/jna-platform-4.1.0.jar",
+      "sha256": "f91ba7c0f26c34f04bf57d2ae30d4b19f906e7bb1de90eb3e1f4fdbf45d0c541",
+      "size": 1464423,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jna-platform-4.1.0.jar"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.4/client/lib/jna.jar",
+      "sha256": "79b12cf8941fda2cb66a541e019fb548063e37df4aa4d7e2196a244c9474e54a",
+      "size": 692070,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jna.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiBiometry_221.cap",
+      "sha256": "8cf1009506db2638eabd9d00afe1db6a3a6028e194ce26a0649e052eb2c72bca",
+      "size": 5185,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiBiometry_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiBiometry_222.cap",
+      "sha256": "29a0d6523a1a22f68e2840494cf101fd9ef07827676395c76d3e966c6354681c",
+      "size": 10211,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiBiometry_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiBiometry_303.cap",
+      "sha256": "277825445483f03eec402d48e0d20c64f01d678c2d3074b2d513f207fd21b8ac",
+      "size": 57535,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiBiometry_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiBiometry_304.cap",
+      "sha256": "5c604e1f9e56d62cf25a7fa30fec149a66e5243fb56ea72b8bfd7c299d407771",
+      "size": 57655,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiBiometry_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiBiometry_305.cap",
+      "sha256": "715e1162cfcac872dc1a1c94a0d7dddd3d733e58d238a65f386ef7c5681647f0",
+      "size": 79613,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiBiometry_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCore_221.cap",
+      "sha256": "9a874768ec1fb7b2f16f662d1beaa5dd713c378d2c7ae7a4731bf980f35cc2ea",
+      "size": 12748,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCore_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCore_222.cap",
+      "sha256": "d2bc9b8edb5bbd0bfb2fab0da10cf2cc4687dfe6eee448516d00503f6ec594a1",
+      "size": 12929,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCore_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCore_303.cap",
+      "sha256": "72558502e4d6438094b98abc54a51e84f2cf840921a9ef24de5768dcdc030b4e",
+      "size": 65879,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCore_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCore_304.cap",
+      "sha256": "b1d32e2c54acf5183df7581b094810fc88a5aa8dc8f68c7444cbc739ea74c77c",
+      "size": 66391,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCore_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCore_305.cap",
+      "sha256": "9c6b348ef1206c45459bfe0899fcc74f755f7a946fc71f65508dd94dfb13026e",
+      "size": 70253,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCore_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCrypto_221.cap",
+      "sha256": "ed976585ce9555d046e4d06c2564945352bf1718c16fd9e935eb2c0ee209efb9",
+      "size": 25013,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCrypto_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCrypto_222.cap",
+      "sha256": "9e743e0497db87be0fd8ceb4a7a1481d2eea11b99211cc2a493a6ebcd23fa72d",
+      "size": 26124,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCrypto_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCrypto_303.cap",
+      "sha256": "d2bfeeee4ab3b27c23b82f0a5e975aa69d66b15f5730ff6ed9feaea31a50e79b",
+      "size": 125877,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCrypto_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCrypto_304.cap",
+      "sha256": "7b8db723756693c089d7136e3e5a1a933b93acb42e7354b821ea0a62fb203eec",
+      "size": 130381,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCrypto_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiCrypto_305.cap",
+      "sha256": "f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899",
+      "size": 140021,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiCrypto_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiExt_222.cap",
+      "sha256": "f96e613794215c6256861d41b072095b701b22a540d068d5166160138e7080f9",
+      "size": 2720,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiExt_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiExt_303.cap",
+      "sha256": "c2fa5807709c82fae358f4c788052f2c3fa3d91ec69048a55fbb461a9db30116",
+      "size": 5213,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiExt_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiExt_304.cap",
+      "sha256": "73fe1fe07a1fbe67684cba16d7eba61f512fd65d368dc2b19956c8cbdb6334d9",
+      "size": 5214,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiExt_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiExt_305.cap",
+      "sha256": "1aa2ffed6d6123e66758c2cf4899ccc53f54e168d09a1cdd52c8f2e8cc6b4b6d",
+      "size": 5213,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiExt_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxExt_222.cap",
+      "sha256": "ccb9e4e998785a7c43f6d9e72e256bf5e2f373203e13c7e0c0dbac9b724fc999",
+      "size": 6346,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxExt_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxExt_303.cap",
+      "sha256": "f570ba24e4e0be0f0299e5650082d1ad83a9103d176102e371bd990cd8441547",
+      "size": 45559,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxExt_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxExt_304.cap",
+      "sha256": "985cf81da71460d714200063e142680feb49d3571c7e38e3de5b25fa475aa0ec",
+      "size": 45678,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxExt_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxExt_305.cap",
+      "sha256": "d85ab10d59b7cf9b64575c42e12fd7dfd738ce584d4c9ae74cf3da142e35ff85",
+      "size": 45664,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxExt_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxInt_222.cap",
+      "sha256": "47f6d39f8bf8aecb944c68916423ab0977124a75f638ee8fe75d72264441f737",
+      "size": 27896,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxInt_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxInt_303.cap",
+      "sha256": "6fb7c4e114a2e37757fcd8303f38f32212dc79bbc41971ca1db74711db663855",
+      "size": 126679,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxInt_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxInt_304.cap",
+      "sha256": "a57e89bc42eab415a1ebe553d904ec72956a361b349d1f7aa2e7599e03419a17",
+      "size": 153589,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxInt_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxInt_305.cap",
+      "sha256": "ecef50958be67fb5e473ddeee600bf3e213815bd8febb1a4b12fc3efc6e5b865",
+      "size": 162669,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxInt_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardxSec_305.cap",
+      "sha256": "9415869fef2b03fe92553f3a5d878fa9de905a3cd00e0e8d682e9f8223492012",
+      "size": 48511,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardxSec_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardx_221.cap",
+      "sha256": "f2382dc6f2416b3db8abb94917aa2cf3087fa9dce6a0932edcfd5f1735325cfe",
+      "size": 5307,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardx_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardx_222.cap",
+      "sha256": "7edc0a6b15c37f8b3b93000e9cd5d99f25df541669a8f7b6172929755be26c85",
+      "size": 26589,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardx_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardx_303.cap",
+      "sha256": "ea2d8f7e5bb0bb4acbbba65ee0ba1c39a4c355332df73463ab6fab2652da7bf8",
+      "size": 97473,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardx_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardx_304.cap",
+      "sha256": "c87e33ab8b7d8573dd80d60e300838cd0716b339fc52bb3268f0a6da855b326a",
+      "size": 118755,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardx_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiJavacardx_305.cap",
+      "sha256": "814ad054d07bdb65e554af93aac01d6ed9fc0e49b5f306dac33ddadc4c34917b",
+      "size": 125393,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiJavacardx_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiMulti_221.cap",
+      "sha256": "d10d8b1d7cb77d16fa2f74035bf72156df055d8c5cb8888134aa1c79861fc33e",
+      "size": 2751,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiMulti_222.cap",
+      "sha256": "b377de1da03a6bdb65518337e7c7799bf5cf51930b2efda702092253e6bb5a6e",
+      "size": 2745,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiMulti_303.cap",
+      "sha256": "6203803700b00e1b3b1a80b9bbeeecd8efa7b6ebce6295457b58349238d4e530",
+      "size": 6505,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiMulti_304.cap",
+      "sha256": "4582ce08e0e69389aa619654596799b84c28778eb03065f592bcccb835c7b1c4",
+      "size": 6506,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiMulti_305.cap",
+      "sha256": "be6becdf769bab0119fb583bbc825ac6d855427f869651ea60fe2ec4ec0a1067",
+      "size": 6505,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiSecurity_221.cap",
+      "sha256": "8b15874616d028afff0931f18f52d30220b04390ea78ef234e0a67f3605844a4",
+      "size": 23753,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiSecurity_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiSecurity_222.cap",
+      "sha256": "e1bdaf6134c8c5098f2ac92d759d5e410c56cd297f5b3ae08bed2a3e21a32805",
+      "size": 24879,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiSecurity_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiSecurity_303.cap",
+      "sha256": "a2cafe2b9eab7cb316a456d5c3adf20f663713a117dbdfa62a0791144f91a126",
+      "size": 113701,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiSecurity_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiSecurity_304.cap",
+      "sha256": "3ea66e59f83656f250bf4cc56e26c730be9886c7654fe3e3a89ceb914a25eaff",
+      "size": 114310,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiSecurity_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiSecurity_305.cap",
+      "sha256": "bf9fb13fa342aa6c7739eb5750897011d25801d1db50ee9a75e7a714d11fef70",
+      "size": 121824,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiSecurity_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiService_221.cap",
+      "sha256": "6f7f6b25deecd1840e26c3396520541662c6180c2d21d423c29e5b0a7c91e397",
+      "size": 13113,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiService_221.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiService_222.cap",
+      "sha256": "d8cf167f42fee310e949bb5b13900963e28c17149f4a4790e68a88b09706c247",
+      "size": 13109,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiService_222.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiService_303.cap",
+      "sha256": "f82de0385930a55dd4b5c62878035840c62194f66e1c571f6e3f0dffd6cab774",
+      "size": 67724,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiService_303.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiService_304.cap",
+      "sha256": "6f31ac12dedae0102a2c04e46693b9ff45a3b88decf23aa8dff5eeda7c1c6645",
+      "size": 67844,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiService_304.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/caps/AlgTestApiService_305.cap",
+      "sha256": "cc40c2553b0f0d333390d4f08f3d984a1044bca8c0df57624bc25be2324e6d50",
+      "size": 67812,
+      "provided_path": "AlgTest_JavaCard/deploy/caps/AlgTestApiService_305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/AlgTestJClient.jar",
+      "sha256": "468debc3d1eaca75548d16fe3200af0a68d9ae0cb9767b06ff97aa73c986a78e",
+      "size": 454846,
+      "provided_path": "AlgTest_JavaCard/deploy/client/AlgTestJClient.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/apduio.jar",
+      "sha256": "eeb8ee7f33768a41f05cdb60fe52ebd6c39ab16244f654c09427f5bbde024621",
+      "size": 48313,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/apduio.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/is-native-c.jar",
+      "sha256": "9f0ce8cd940a669186206ccb84728ab0b9cb6195ffd27238c0de9e68c8861057",
+      "size": 49265,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/is-native-c.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/is-runtime.jar",
+      "sha256": "cdb3a96be84e135c60ec3e6eed3786c30a3b04ce0754a999a865c6d35d22037b",
+      "size": 885265,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/is-runtime.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/jcardsim-3.0.6.0.jar",
+      "sha256": "db6de7ffde71651c45d00df7e160771685cec3e14e444bf36b796658d289942f",
+      "size": 1202576,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jcardsim-3.0.6.0.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/jcommander-1.81.jar",
+      "sha256": "9d8b42979c99f3daa99102fe9ba1fb25f52226cb48cf58bc18acb93132e41a05",
+      "size": 85816,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jcommander-1.81.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/jctasks.jar",
+      "sha256": "5162a26deb080b87297b35bf8c41542f64ab0c2b3e808c4852e083bce3642381",
+      "size": 23306,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jctasks.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/jna-4.1.0.jar",
+      "sha256": "1aa37e9ea6baa0ee152d89509f758f0847eac66ec179b955cafe0919e540a92e",
+      "size": 914597,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jna-4.1.0.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/jna-platform-4.1.0.jar",
+      "sha256": "f91ba7c0f26c34f04bf57d2ae30d4b19f906e7bb1de90eb3e1f4fdbf45d0c541",
+      "size": 1464423,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jna-platform-4.1.0.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/client/lib/jna.jar",
+      "sha256": "79b12cf8941fda2cb66a541e019fb548063e37df4aa4d7e2196a244c9474e54a",
+      "size": 692070,
+      "provided_path": "AlgTest_JavaCard/deploy/client/lib/jna.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/tools/gp.jar",
+      "sha256": "1e22bd641ec72e81b221704d67d351b07b268805b2bebd3a9ef5b93352fea8f7",
+      "size": 7838483,
+      "provided_path": "AlgTest_JavaCard/deploy/gp.jar"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/runner/api_card_runner.py",
+      "sha256": "aca4f17acf90fa629c26f177c9f4a466c3dcf3f4bfe2abc2510a16e60308092e",
+      "size": 27554,
+      "provided_path": "AlgTest_JavaCard/deploy/api_card_runner.py"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/UPSTREAM_README.md",
+      "sha256": "8f7357e369564604ac3e7dca56c1976f9768c3a1780aa396c695285b95ca754e",
+      "size": 11189,
+      "provided_path": "AlgTest_JavaCard/deploy/README.md"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/runner/tools/api_atr_names.py",
+      "sha256": "f5938dc3fcd8c5212d9d0dcac8738fc8a3568e2ffbcfad28d272e7f83b6532c0",
+      "size": 2529,
+      "provided_path": "AlgTest_JavaCard/deploy/tools/api_atr_names.py"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/runner/tools/api_exception_codes.py",
+      "sha256": "24f76001bd786e76aef3de2cfc483e68e87ed5af3a356a80575abd8b02d39d46",
+      "size": 6283,
+      "provided_path": "AlgTest_JavaCard/deploy/tools/api_exception_codes.py"
+    },
+    {
+      "path": "tests/fixtures/external/javacard-api/provided-20261107/runner/tools/api_results_html.py",
+      "sha256": "c13d181a43b72b73af3e3e18986448d69091df020166d1985e5d8596ed8917e6",
+      "size": 26566,
+      "provided_path": "AlgTest_JavaCard/deploy/tools/api_results_html.py"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/legacy/1.8.2/AlgTest_v1.8.2_jc305.cap",
+      "sha256": "b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169",
+      "size": 131538,
+      "provided_path": "AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/legacy/1.8.2/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv",
+      "sha256": "67d9feebf9756da69db034bab05cddd9acb38d31aa980888fa7b5db22ef1757b",
+      "size": 306208,
+      "provided_path": "reference/jcalgtest/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+    }
+  ]
+}

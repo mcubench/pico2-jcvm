@@ -1,3 +1,16 @@
+# Current handoff — full testing data migration in progress — 2026-11-07 08:17:41 CET
+
+User explicitly authorized the full migration, superseding review-only scope
+for this task. Fixture catalog/resolver now pin provided JCAlgTest 1.8.4 and
+separate API suite (48 CAPs, distinct client). Hash verification and 2 integrity
+tests passed. Test files have been relocated in the working tree and consumers
+are being updated/validated; migration is not complete. Preserve all prior
+dirty source/test changes. Baseline current/HEAD bytes and migration-only index
+content are under build/testing-migration/; do not stage pre-existing edits.
+Do not run hardware operations for this filesystem/test migration. Next:
+validate moved native wrappers, v1.8.4 emulator/client and final instructions,
+then archive original supplied tree only after dependency scans pass.
+
 # Current handoff — review summary and concurrent-source reconciliation — 2026-11-07 07:21:44 CET
 
 User requested a summary. Report/todo now contain 60 historical findings/tasks,

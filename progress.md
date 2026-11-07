@@ -24136,3 +24136,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T061911Z.log`, SHA-256 `7622fb838721a67fd7bd3f706975a078f23a7f568802de0ffc1234208134992c`.
 
 - Commit: `ab63e21be3a6e8e6259bd2c52f0ce91f63f761c2` — completed review summary reconciliation. Concurrent staging also included the other session's `tools/test-cipher-workspace-vpcd` cold-resume test update and its continuity notes. Those changes were authored/validated by that session, not this review, and were preserved without rewriting history. Review-authored changes remain documentation/provenance only.
+
+
+## 2026-11-07 Pin external validation fixture catalog 8 minutes active work
+
+- Step/experiment: `test-data-migration-inputs`
+- When: '2026-11-07 migration start' - '2026-11-07 08:17:41 CET'
+- Change: Added versioned JCAlgTest 1.8.4 and independent API suite inputs, manifest/provenance, path resolver, integrity tests and test-layout documentation. Original files preserved; supplied SDK dependencies copied to ignored toolchain storage.
+- Validation: `./tools/fixture-path --verify` passed 77 files including 48 API CAPs. `./tools/test-fixtures` passed 2 tests including corruption/path-escape rejection and distinct client identities. Every copied input compared byte-for-byte. No hardware operations.
+- Result: Active fixture catalog selects JCAlgTest 1.8.4; API suite retains its own different client. No downloaded/rebuilt/modified external CAP or JAR. Current source/test relocation remains in progress and is not claimed complete.
+- Decision: Continue full user-authorized migration of test code, consumers and instructions; earlier review-only restriction is superseded for this migration. Preserve unrelated dirty runtime and test edits.
+- Commit: pending fixture catalog commit.
+- Artifacts/logs: `tests/fixtures/manifest.json`; migration snapshots under ignored `build/testing-migration/`. Performance and physical metrics not measured.

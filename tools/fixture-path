@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""Print a pinned fixture path, or verify all supplied fixture hashes."""
+from pathlib import Path
+import argparse
+import importlib.util
+
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location("fixture_paths", ROOT / "tests/fixtures/paths.py")
+paths = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(paths)
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("key", nargs="?")
+parser.add_argument("--verify", action="store_true")
+args = parser.parse_args()
+if args.verify:
+    print(f"FIXTURES:PASS files={paths.verify()} jcalgtest=1.8.4 api_caps=48")
+elif args.key:
+    print(paths.fixture_path(args.key))
+else:
+    parser.error("provide an asset key or --verify")
