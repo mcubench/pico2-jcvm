@@ -34,6 +34,7 @@ public final class JCTransactionProbe extends Applet {
   private byte lastSelectWasReselect;
   private byte lastSelectProcessWasReselect;
   private byte selectingAppletProbeFlags;
+  private byte selectDeselectTransientResult;
   private byte rejectNextSelect;
   private byte beginTransactionOnNextSelect;
   private byte beginTransactionOnNextDeselect;
@@ -102,6 +103,20 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    selectDeselectTransientResult = 0;
+    try {
+      byte[] transientDuringSelect = JCSystem.makeTransientByteArray(
+          (short)1, JCSystem.CLEAR_ON_DESELECT);
+      selectDeselectTransientResult =
+          transientDuringSelect != null &&
+                  JCSystem.isTransient(transientDuringSelect) ==
+                      JCSystem.CLEAR_ON_DESELECT
+              ? (byte)1 : (byte)2;
+    } catch (SystemException expected) {
+      selectDeselectTransientResult =
+          expected.getReason() == SystemException.ILLEGAL_TRANSIENT
+              ? (byte)3 : (byte)4;
+    }
     selectSawAppletActive =
         JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
     if (selectingApplet()) selectingAppletProbeFlags |= 1;
@@ -1033,6 +1048,11 @@ public final class JCTransactionProbe extends Applet {
             ? (byte)1 : (byte)0;
         buffer[1] = transactionCapacityArray[0];
         length = 2;
+        break;
+      }
+      case 94: {
+        buffer[0] = selectDeselectTransientResult;
+        length = 1;
         break;
       }
       case 90: {

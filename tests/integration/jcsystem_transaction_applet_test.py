@@ -257,6 +257,7 @@ def main() -> int:
                     (53, b"\x01", "unreferenced object batch 2 reuses instance slots"),
                     (54, b"\x01", "unreferenced object batch 3 keeps instance heap bounded"),
                     (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
+                    (94, b"\x01", "CLEAR_ON_DESELECT byte-array allocation is allowed during the select callback"),
                     (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
                     (57, b"", "card reset deselects the active applet before reselection"),
                     (58, b"\x33", "committed persistent applet field survives emulator process restart"),

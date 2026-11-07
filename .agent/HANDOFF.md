@@ -13,10 +13,14 @@ first. Submodule commit: `45acedf`.
 SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT=1 ./tools/test-sio-cross-aid-vpcd` passes
 (`TEST:SUMMARY pass=2 fail=0`), including all five rejected
 CLEAR_ON_DESELECT types, successful CLEAR_ON_RESET int-array allocation, and
-recovery. Log: `artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log`
-(SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`).
-The R52 TODO remains open pending its remaining callback/same-context/invalid
-event coverage.
+recovery. The JCSystem APDU fixture now also verifies selected-context
+allocation during `select()` (case 94), installation-time allocation,
+same-context allocation and invalid event `ILLEGAL_VALUE`. Its run passed all
+cases through 56, including case 94, then stopped at known separate R36 case
+57 (reset/deselect callback count). R52 is complete offline. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log`
+(SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`)
+and `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261107T152758Z.log`.
 
 After the generator change, ARM max_crypto and the RISC-V max_crypto VM-core
 and smoke builds pass. Fresh empty-card ARM image:
@@ -31,7 +35,8 @@ clean release.
 
 REL-01 CPLC implementation remains committed as `971272f3`. Physical GPPro
 `--info` acceptance remains open because the last PC/SC reader scan found no
-Pico reader. Continue remaining R52 coverage; preserve all other dirty edits.
+Pico reader. Continue RV-20261106-36 reset/power callback semantics, beginning
+with the case-57 mismatch. Preserve all other dirty edits.
 
 ---
 

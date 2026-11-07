@@ -24678,3 +24678,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the remaining R52 context-contract coverage; keep REL-01 physical acceptance open until a Pico PC/SC reader is available.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
+
+## 2026-11-07 Complete R52 callback and transient contract coverage 9 minutes
+
+- Step/experiment: `RV-20261106-52-select-context-acceptance`
+- When: '2026-11-07 16:21 CET' - '2026-11-07 16:30 CET'
+- Change: Added a JCSystem fixture check that allocates a CLEAR_ON_DESELECT array inside the applet `select()` callback, and asserted the result after reselection. Updated the lowercase review backlog with complete R52 evidence. Existing cases cover installation callback allocation, selected same-context/sibling allocation, unselected cross-AID service rejection for all five array types, successful CLEAR_ON_RESET allocation and recovery, and invalid-event ILLEGAL_VALUE.
+- Validation: `./tools/test-sio-cross-aid-vpcd` with the required host-access environment passed (`TEST:SUMMARY pass=2 fail=0`). `./tools/test-jcsystem-transaction-applet` compiled the fixture CAP, then the full APDU suite passed through case 56; added case 94 passed (`CLEAR_ON_DESELECT byte-array allocation is allowed during the select callback`). The suite then failed at existing case 57, the separately tracked RV-20261106-36 reset/deselect callback expectation (`expected callback state 07040000, got 07030000`). The same command first failed under restricted localhost networking and passed CAP generation when rerun with host networking; no hardware was accessed.
+- Result: R52 implementation and acceptance coverage are complete offline. The broad suite's remaining failure is isolated to RV-20261106-36 and does not falsify the R52 cases. No ARM/RISC-V firmware rebuild was needed because this step changed only test fixture and review documentation.
+- Decision: Close R52 and continue with RV-20261106-36 reset/power callback semantics, preserving the current firmware image and all unrelated worktree changes.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T151333Z.log` (SHA-256 `bbbb0c17db436c4b397a22939fdfe7b7e308262a71306ebea960dc3a5efaf997`); `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261107T152758Z.log`.
