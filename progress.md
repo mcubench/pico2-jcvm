@@ -25100,3 +25100,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the pinned 1.8.4 CAP/client for future support acceptance.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: Fixture manifest verification output; no separate log.
+
+## 2026-11-07 Refresh high-level project status 5 minutes
+
+- Step/experiment: `STATUS-current-hardware-and-acceptance-state`
+- When: '2026-11-07 22:42 CET' - '2026-11-07 22:47 CET'
+- Change: Updated STATUS.md from the stale 2026-11-05 snapshot to the current three-device USB/PCSC observation, refreshed empty-card image identity, latest VPCD acceptance, and remaining implementation priorities.
+- Validation: Cross-checked the image SHA/size and profile against the packaged artifact/build output; checked board IDs against elevated USB descriptor inspection; checked test counts against current VPCD/unit results and the detailed TODO/handoff. `git diff --check -- STATUS.md` passes. No build or hardware APDU was performed for this documentation step; runtime metrics were not measured.
+- Result: High-level status no longer claims an active PC/SC reader and explicitly records outstanding acceptance gates.
+- Decision: Continue with CTX-01 owner-aware field retention and persistent reference work.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `STATUS.md`; supporting evidence in `.agent/HANDOFF.md` and `.agent/QKB.md`.
