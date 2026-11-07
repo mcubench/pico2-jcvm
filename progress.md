@@ -24100,3 +24100,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep Cipher workspaces transient; complete record and restore acceptance before closing R08, then continue the remaining prioritized review items.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/cipher-workspace-vpcd-20261107T060429Z.log`, SHA-256 `00d0512759c9371a805db4568838d7a603c120d59da7956c57ef1f3515965f70`; ARM UF2 SHA-256 `7c77f00379927e790e715683e86afeb974b37f43708c31dfdc4b06bb5c59e823`; RISC-V smoke UF2 SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+
+## 2026-11-07 Resolve Cipher workspace commit SHA 1 minute
+
+- Step/experiment: `rv-20261107-cipher-operational-workspace-lifetime-sha`
+- When: '2026-11-07 07:10 CET' - '2026-11-07 07:12 CET'
+- Change: Resolved the implementation commit SHA in the Cipher workspace progress record and handoff.
+- Validation: No new build or test; see the preceding implementation record.
+- Result: The implementation and VPCD probe are committed as `c7458354`.
+- Decision: Continue R08 restore and persistent-record acceptance; do not claim the review item closed yet.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.

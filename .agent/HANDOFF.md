@@ -1,4 +1,4 @@
-# Current handoff — Cipher operational workspace lifetime — 2026-11-07 07:10 CET
+# Current handoff — Cipher operational workspace lifetime — 2026-11-07 07:12 CET
 
 RV-20261106-08 has a partial native change in `choupi/src/native_cipher.cpp`
 and `choupi/src/native_rsa_cipher.cpp`. Cipher workspaces (key snapshots,
@@ -20,7 +20,8 @@ no-padding update/abort/final; then reset invalidates the retained Cipher
 This was simulator-only: no physical board test, cold-restore test, or
 persistent-record inventory was run. R08 remains open for those checks and
 for confirming no pre-existing persistent workspace records need migration or
-cleanup. Implementation commit SHA is recorded in the next progress entry.
+cleanup. Implementation is committed as `c7458354`; the SHA-resolution
+progress record follows.
 
 Next: continue R08 acceptance offline with record inspection/cold restore if
 the harness supports it; keep this issue open until those gates are addressed.
