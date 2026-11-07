@@ -1,3 +1,31 @@
+# Current handoff — REL-01 offline acceptance and max_crypto external image — 2026-11-07 14:51 CET
+
+REL-01 source implementation remains committed as `971272f3`: the CPLC release
+field is 0.1.1 (`0101`), and builds embed a clean/dirty source identity. The
+CPLC unit suite passes 25/25. Two consecutive ARM max_crypto builds used the
+same source identity `FF7391D8` and the same firmware end `0x100EDE5C` (74,148
+bytes remaining), establishing that ordinary builds preserve the selected
+release field. RISC-V max_crypto VM-core/smoke build also passes. No hardware
+reader was published: the authorized helper granted three USB nodes, but the
+bounded `pcsc_scan -r` returned no readers. GPPro physical CPLC acceptance is
+still open; do not claim it passed.
+
+Fresh ARM max_crypto empty-card image for external testing:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF7391D8.uf2`
+(4,046,848 bytes, SHA-256
+`035b0373419ee90991af6d8ef60706ed4c10f3b8559854a8887118ef6d46fc22`). It is
+RP2350 ARM Secure, profile max_crypto (147/150), firmware end
+`0x100EDE5C`, and includes 4,096 erased storage blocks with no applet
+preinstalled. Embedded CPLC bytes confirm release `0101` and source `FF7391D8`.
+The image was built from the dirty worktree and includes uncommitted R52
+transient-context changes; that focused VPCD test is currently failing and
+must be resolved before treating this image as fully validated. No board was
+flashed.
+
+Next: complete R52 diagnosis without discarding its worktree changes. When a
+physical Pico is published by PC/SC, query GPPro `--info` and verify release
+and source ID for REL-01. Preserve unrelated modifications.
+
 # Current handoff — R53 and max_crypto external image — 2026-11-07 14:24 CET
 
 RV-20261106-53 is implemented and committed as `bf686b03`. Native
