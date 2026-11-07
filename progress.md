@@ -24610,5 +24610,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/build arm --profile max_crypto` passed twice; both builds reported source ID `0xFF7391D8`, profile `max_crypto` with 147/150 capabilities, identical firmware end `0x100EDE5C`, and 74,148 bytes remaining. `PICO2_HOST_USB_ACCESS=1 ./tools/build riscv --profile max_crypto` passed the VM-core/RISC-V smoke build. `./build/tests/unit/gp-get-data/gp_get_data_test` passed 25/25. `./tools/package-empty-card-uf2 ...` passed; `./tools/env picotool info -a` identified RP2350 ARM Secure; UF2 payload inspection confirmed CPLC release `0101`, source `FF7391D8`, 3,807 firmware blocks, and 4,096 storage blocks all `FF`. `./tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed. Authorized reader refresh granted three USB nodes, but bounded `PICO2_HOST_USB_ACCESS=1 timeout 8s pcsc_scan -r` exited 124 without publishing any reader, so GPPro hardware acceptance was unavailable. No board was flashed. An initial flash-boundary inspection mistakenly passed the ELF instead of its map and was immediately rerun with the correct `.elf.map` input.
 - Result: Image `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF7391D8.uf2`, 4,046,848 bytes, SHA-256 `035b0373419ee90991af6d8ef60706ed4c10f3b8559854a8887118ef6d46fc22`. REL-01 release stability is verified offline; physical GPPro display of the release/source ID remains open. This image contains the current dirty worktree, including the unfinished R52 transient-context implementation whose focused VPCD test is failing; image build success is not full runtime acceptance.
 - Decision: Deliver this image only as a current build for external inspection with the dirty-source marker and R52 limitation explicit. Keep REL-01 hardware acceptance open until a physical reader is available. Continue R52 diagnosis while preserving unrelated worktree changes.
-- Commit: `<resolve in next progress entry>`
+- Commit: `42b25dba`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-FF7391D8.uf2` (ignored by Git); `build/arm/build-provenance.txt`.
+
+## 2026-11-07 Resolve REL-01/image progress commit SHA 1 minute
+
+- Step/experiment: `REL-01-ordinary-build-stability-and-max-empty-card-sha`
+- When: '2026-11-07 14:51 CET' - '2026-11-07 14:52 CET'
+- Change: Resolved the commit hash for the REL-01 validation and external max_crypto image record.
+- Validation: `git show --stat --oneline 42b25dba` confirms the commit contains only `.agent/HANDOFF.md` and `progress.md`.
+- Result: The REL-01 offline validation and image metadata record is committed as `42b25dba`.
+- Decision: Keep the physical GPPro acceptance open; continue with R52 diagnosis.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
