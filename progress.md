@@ -23991,6 +23991,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: None.
 
+## 2026-11-07 Build max-crypto empty-card ARM image 7 minutes
+
+- Step/experiment: `max_crypto-arm-empty-card-external-test`
+- When: '2026-11-07 12:07 CET' - '2026-11-07 12:14 CET'
+- Change: Built ARM firmware with profile `max_crypto` and packaged the UF2 with erased (`0xFF`) card storage for external testing. No CAP/applet is preinstalled.
+- Validation: `./tools/build arm --profile max_crypto` PASS (`capabilities=150 enabled=147`, firmware end `0x100ED9E8`, 75,288 bytes remaining); `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-cd9796ab.uf2` PASS; `./tools/env picotool info -a ...` confirms RP2350 ARM Secure; a UF2 block scan confirms all 4,096 storage blocks at `0x10100000-0x101FFFFF` are `0xFF`. No hardware flash or runtime test was performed. Build includes existing toolchain/ROM-mask and packed-member warnings.
+- Result: External-testing image is `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-cd9796ab.uf2`, 4,044,288 bytes, SHA-256 `3a0cdf63a310d369768e372b06dc0ddff3c053a5dc45a1bbe4a2fc3e5d795c02`. Underlying firmware UF2 is 1,947,136 bytes, SHA-256 `5ea811c4dd924987c59326f8cabac017a40c1cfb90744c528e40b72f2c8d1cbd`. Build provenance identifies profile `max_crypto`, CPLC source ID `FFCD9796`, and firmware release `0.1.1`.
+- Decision: The empty-card max-crypto binary is ready to copy to the Pico 2 `RPI-RP2` drive for external testing; upload the desired CAP explicitly afterward. The dirty source marker is expected because unrelated worktree edits were preserved.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-cd9796ab.uf2`; build provenance `build/arm/build-provenance.txt`.
+
 ## 2026-11-07 Reclaim transient global arrays after APDU completion 39 minutes
 
 - Step/experiment: `RV-20261106-11-global-array-lifetime`

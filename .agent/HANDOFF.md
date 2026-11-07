@@ -1,3 +1,21 @@
+# Current handoff — R26 and max-crypto external image — 2026-11-07 12:14 CET
+
+RV-20261106-26 is implemented and committed as `a811c6f3`; its SHA follow-up
+record is `cd9796ab`. Production-handler persistent boolean tests, ASan/UBSan,
+and ARM/RISC-V builds pass. No physical test was performed.
+
+Fresh max-crypto ARM empty-card image for external testing:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-cd9796ab.uf2`
+(4,044,288 bytes, SHA-256
+`3a0cdf63a310d369768e372b06dc0ddff3c053a5dc45a1bbe4a2fc3e5d795c02`). It
+targets RP2350 ARM Secure, enables 147/150 profile capabilities, reports
+release 0.1.1, and has 4,096 verified erased storage blocks, so no applet is
+preinstalled. Firmware ends at `0x100ED9E8`, with 75,288 bytes remaining.
+CPLC source ID `FFCD9796` reflects the preserved unrelated worktree edits. No
+device was flashed. Build provenance is `build/arm/build-provenance.txt`.
+
+Next: commit this image record. Preserve unrelated dirty files.
+
 # Current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET
 
 REL-01 implementation is committed. CPLC reports release `0101` (the
@@ -8980,9 +8998,20 @@ first run exposed three fixture tag collisions, fixed by assigning unique tags.
 The final progress entry records the build warnings and sanitizer limitation.
 No physical test was performed.
 
-R26 code/tests/TODO/progress are committed as `a811c6f3`. The SHA follow-up
-record is pending its own commit SHA entry. Next build a fresh max-crypto ARM
-empty-card UF2 for external testing, recording its path, size, and SHA-256.
-Preserve unrelated dirty files.
+R26 code/tests/TODO/progress are committed as `a811c6f3`; the SHA follow-up
+record is commit `cd9796ab`.
+
+The requested fresh max-crypto ARM image is built and packaged for external
+testing. Path: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-0.1.1-cd9796ab.uf2`;
+size 4,044,288 bytes; SHA-256
+`3a0cdf63a310d369768e372b06dc0ddff3c053a5dc45a1bbe4a2fc3e5d795c02`. It is
+RP2350 ARM Secure, profile `max_crypto` (147/150 capabilities enabled), release
+0.1.1. All 4,096 storage blocks were verified erased (`0xFF`), with no applet
+preinstalled. The firmware end is `0x100ED9E8`, leaving 75,288 bytes. The CPLC
+source ID is `FFCD9796` because unrelated edits remain in the worktree. No
+physical flash/runtime test was performed. Build provenance:
+`build/arm/build-provenance.txt`.
+
+Next: record and commit these image details. Preserve unrelated dirty files.
 
 # Previous current handoff — REL-01 CPLC and max-crypto image — 2026-11-07 11:49 CET
