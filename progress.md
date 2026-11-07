@@ -24802,3 +24802,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Provide this as the current external-test image, and continue HMAC-01 diagnosis before enabling HMAC in the profile.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; SHA-256 above; failing HMAC trace `artifacts/logs/hmac-kat-vpcd-20261107T174839Z.log`.
+
+## 2026-11-07 Resolve max_crypto image handoff commit SHA 1 minute
+
+- Step/experiment: `HMAC-01-max-crypto-external-image-commit-sha`
+- When: '2026-11-07 19:00 CET' - '2026-11-07 19:01 CET'
+- Change: Recorded the commit SHA for the external-image README and handoff update.
+- Validation: `git show --stat --oneline caf9d241` confirms only the artifact README, handoff and progress record were committed.
+- Result: Image documentation commit is `caf9d241`.
+- Decision: Continue the HMAC-01 runtime diagnosis with the image worktree state recorded.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: None.
