@@ -1,14 +1,16 @@
-# Current handoff — REL-01 physical check and max_crypto external image — 2026-11-07 21:29 CET
+# Current handoff — REL-01 complete and max_crypto external image — 2026-11-07 21:33 CET
 
 The refreshed image and records are committed as `de960d02`.
 
-REL-01 source implementation remains committed as `971272f3`. Offline GPPro
-VPCD `--info` decodes `OperatingSystemReleaseLevel=0101` and CPLC dates as
-`2026-11-07`; direct GET DATA returns `9000`; `./tools/test-gp-get-data` passes
-25/25. The physical acceptance check remains open: the authorized PC/SC helper
-granted nodes `001/054`–`001/056`, but an 8-second `pcsc_scan -r` timed out
-(exit 124) without publishing a reader. No physical GPPro check or flash was
-performed.
+REL-01 is complete. Source implementation remains committed as `971272f3`;
+`./tools/test-gp-get-data` passes 25/25. Physical board `D92E743D5F640C0F` was
+flashed with the firmware-only ARM image (card storage was preserved); its
+finite serial monitor passed `TEST:PASS choupi_runtime` and
+`TEST:SUMMARY pass=1 fail=0`. Physical GPPro 26.06.04 `--info -d` returned
+`OperatingSystemReleaseLevel=0101`, CPLC dates `2026-11-07`, and
+`ICPersonalizationEquipmentID=FF1DC424`, with CPLC GET DATA status `9000`.
+Logs: `artifacts/logs/rel-01-monitor-D92-20261107.log` and
+`artifacts/logs/rel-01-gppro-physical-D92-20261107.log`.
 
 Both required wrappers pass on the current worktree:
 `PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` and the
@@ -22,8 +24,9 @@ capabilities; CPLC release is 0.1.1 (`0101`), source ID is `FF1DC424` (dirty
 tree marker plus HEAD prefix), and firmware ends at `0x100F0D4C`, leaving
 62,132 bytes before storage. The UF2 has 3,854 firmware blocks and 4,096
 erased storage blocks (empty card, no applet preinstalled). It has not been
-flashed or runtime-tested. The image includes current uncommitted worktree
-changes; preserve them all.
+flashed or runtime-tested; only the firmware-only UF2 was flashed to D92, so
+that token's applet/storage area was preserved. The empty-card image includes
+current uncommitted worktree changes; preserve them all.
 
 The full JCAlgTest 1.8.4 support sweep remains incomplete. The first
 900-second attempt timed out during RSA CRT 3072-bit probing. The extended run

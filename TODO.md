@@ -1359,7 +1359,7 @@ review.
 
 ### REL-01
 
-- [ ] **P1: Complete REL-01 hardware/GPPro acceptance.** Source implementation:
+- [x] **P1: Complete REL-01 hardware/GPPro acceptance.** Source implementation:
   CPLC `OperatingSystemReleaseLevel` uses four hex digits encoded as major
   nibble, minor nibble, update byte; the explicitly requested 0.1.1 is `0101`.
   Ordinary builds must not change it. `tools/build` updates the four-byte
@@ -1369,13 +1369,21 @@ review.
   exactly the named commit. The CPLC unit and hardware probe expectations are
   aligned. Two consecutive 2026-11-07 ARM max_crypto builds previously emitted
   `0xFFDCFCC7`; the latest ARM and RISC-V max_crypto wrapper builds pass, and
-  ARM embeds source ID `FF23C6E8` for the current dirty tree. CPLC unit checks
-  pass 25/25. GPPro `--info` on VPCD decodes release `0101` and the CPLC date
-  `2026-11-07`; the direct GP GET DATA probe also passes. These checks do not
-  substitute for physical acceptance: the authorized helper granted USB nodes
-  `001/054`–`001/056`, but a bounded `pcsc_scan -r` timed out without publishing
-  a Pico reader. Next, run GPPro `--info` against a physical Pico and confirm
-  release `0101` and source ID `FF23C6E8` in the CPLC display.
+  ARM embeds source ID `FF1DC424` for the current dirty tree. Physical board
+  `D92E743D5F640C0F` was flashed with the firmware-only ARM image, passed the
+  finite serial runtime check, and physical GPPro `--info -d` returned release
+  `0101`, CPLC date `2026-11-07`, and equipment ID `FF1DC424` (`9000`). The
+  refreshed
+  empty-card external image is
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
+  (4,070,912 bytes; SHA-256
+  `93f020578c53fae98c78233f5f511ee566c603f21548cd05742bc28e19fda618`).
+  CPLC unit checks pass 25/25. GPPro `--info` on VPCD decodes release `0101` and the CPLC date
+  `2026-11-07`; the direct GP GET DATA probe also passes. The helper granted
+  USB nodes `001/060`–`001/062` and published three readers. Logs:
+  `artifacts/logs/rel-01-monitor-D92-20261107.log` and
+  `artifacts/logs/rel-01-gppro-physical-D92-20261107.log`. No applet or storage
+  erase was performed.
 
 ### PROFILE-02
 
