@@ -23770,3 +23770,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the CTX-01 persistent-deletion audit.
 - Commit: `91b934c8` — regression/test/status; this SHA-resolution record is separate.
 - Artifacts/logs: Focused and full-suite paths and hashes are recorded above.
+
+## 2026-11-07 Record persistent alias reachability follow-up 2 minutes
+
+- Step/experiment: `ctx-20261107-persistent-alias-root-reachability-followup`
+- When: '2026-11-07 03:21 CET' - '2026-11-07 03:23 CET'
+- Change: Recorded a follow-up after the array APDU regression showed DELETE remains blocked when the array's containing field is cleared but its persisted element still aliases the target. The guard scans persistent alias records broadly; reachability through a live persistent root versus orphan data retained without normal persistent reclamation has not yet been distinguished. Added the question to CTX-01/TODO, QKB and handoff.
+- Validation: Source inspection confirmed the guard enumerates serialized alias tags in namespaces `0x02` and `0x03` and follows alias targets, while root tracing/reclamation is a separate path not enabled for normal collection. No code or runtime behavior changed; no additional test run.
+- Result: Fail-closed behavior remains in place; relaxing the guard requires complete persistent-root enumeration and interruption-safe cleanup evidence.
+- Decision: Audit persistent root completeness and reclaimer safety before changing alias admission semantics.
+- Commit: pending.
+- Artifacts/logs: Array alias evidence `artifacts/logs/sio-cross-aid-vpcd-20261107T021545Z.log`, SHA-256 `15b1aebe5c66f13a89494450c33d2bb674bac6a09ce629b87b76bccfb53bd423`.

@@ -25,6 +25,13 @@ array-coverage fixture and documentation updates are committed as `91b934c8`;
 its progress SHA-resolution record follows separately. Preserve unrelated
 worktree changes.
 
+Next follow-up: determine whether a sibling persistent array with a non-null
+target element remains reachable after its containing applet field is cleared,
+or whether the inventory guard sees an orphan because normal persistent
+reclamation is disabled. Keep the guard fail-closed until persistent root
+enumeration and interrupted cleanup are proven complete and safe. This finding
+is tracked in CTX-01/TODO and QKB; no runtime change has been made.
+
 # Previous handoff — cold-start persistent alias DELETE regression — 2026-11-07 02:58 CET
 
 A focused same-package card-manager APDU regression exercised persistent alias

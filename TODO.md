@@ -871,6 +871,12 @@ review.
   remains usable. A second cold-start case stores the target in a sibling-owned
   persistent `Object[]`; DELETE remains blocked until the array element itself
   is set to null, after which DELETE succeeds and the sibling remains usable.
+  Follow-up: the inventory currently scans serialized aliases in all active
+  sibling namespaces, including records whose containing persistent object may
+  no longer be reachable after its field is cleared. Determine whether DELETE
+  should block on such orphan records or whether a complete persistent-root
+  trace can safely distinguish live aliases. Keep fail-closed behavior until
+  root completeness and interrupted-reclamation safety are established.
 
 ### CTX-02
 
