@@ -25,7 +25,7 @@ cross-AID VPCD regression passes `TEST:SUMMARY pass=35 fail=0` at
 known profile mismatch (`current` PC artifacts omitted AES-MAC Signature and
 returned `6F00`); this was corrected by rebuilding PC with `max_crypto`.
 Implementation and focused inventory regression are committed as `51624281`;
-the validation follow-up is committed separately.
+the validation follow-up is committed as `5535eb8f`.
 
 Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle coverage.
 Keep normal persistent reclamation disabled. Retry physical APDUs when PC/SC

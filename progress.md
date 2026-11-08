@@ -25175,5 +25175,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: The first `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` run failed at the known PC profile mismatch: `current` PC ROM mask returned `6F00` for the AES-MAC Signature case, expected `6A50`. After `./tools/build-pc --profile max_crypto`, the same suite passed `TEST:SUMMARY pass=35 fail=0`.
 - Result: The complete existing cross-AID SIO, firewall, reference identity, persistent lifecycle, delete/reinstall, and cleanup regression remains green with the new inventory filter. No physical APDUs were sent because bounded PC/SC scan still found no readers. Runtime performance was not measured.
 - Decision: Keep the implementation commit and preserve max_crypto as the required PC profile for this suite. Continue CTX-01 audit; physical API validation remains open.
-- Commit: `<pending>`
+- Commit: `5535eb8f`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T012703Z.log`; initial profile-mismatch log `artifacts/logs/sio-cross-aid-vpcd-20261108T012216Z.log`.
