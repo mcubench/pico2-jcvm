@@ -10457,3 +10457,16 @@ out; the installed helper differs from the repository's Pico-only filter, so
 no physical operation was attempted. Next: use the new logs on the unchanged
 JCAlgTest workload when safe physical/PC access is restored, and continue the
 key-reuse/resource-lifecycle audit offline. Keep the unexpected device excluded.
+
+# Current handoff — max_crypto artifact refreshed after write diagnostics — 2026-11-08 20:21 CET
+
+The external-test ARM `max_crypto` empty-card UF2 was regenerated after the
+persistent-write diagnostic change. Current file:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,079,616
+bytes, SHA-256 `b8e6829d8d102d57eba95e0af912e7e452afcf859510bc3023a84abe6f177d3c`.
+Underlying firmware UF2 is 1,982,464 bytes with SHA-256
+`a308b2f24bcc41d590a455991990dff014f45cd5c07de5d661cc859b0468b634`. Marker is
+`FF2EB31F` (dirty tree based on HEAD `2EB31F`), release 0.1.1, profile
+159/162, end `0x100F1EEC`, 57,620 bytes free. ARM and RISC-V wrappers passed;
+package verification passed. The artifact is empty-card, has not been flashed,
+and has no physical validation.

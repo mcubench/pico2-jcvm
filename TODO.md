@@ -1646,12 +1646,12 @@ review.
   `0101`, CPLC date `2026-11-07`, and equipment ID `FF1DC424` (`9000`). The
   latest refreshed empty-card external image was rebuilt on 2026-11-08 as
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
-  (4,079,104 bytes; SHA-256
-  `d5837c6fc890c4298b18cbc028e2a8a5448cf3f7ccbdff01e8ee1153da7320dd`). It
+  (4,079,616 bytes; SHA-256
+  `b8e6829d8d102d57eba95e0af912e7e452afcf859510bc3023a84abe6f177d3c`). It
   enables 159/162 capabilities, embeds release `0101` and build marker
-  `FF735A76`, ends at `0x100F1D60` with 58,016 bytes remaining, and contains
-  4,096 erased storage blocks. Its firmware payload UF2 is 1,930,240 bytes,
-  SHA-256 `b2dac6fff57280c25e0b2bb118d2815f52adc0d8f64063e80e5a67bf4a69690c`.
+  `FF2EB31F`, ends at `0x100F1EEC` with 57,620 bytes remaining, and contains
+  4,096 erased storage blocks. Its firmware payload UF2 is 1,982,464 bytes,
+  SHA-256 `a308b2f24bcc41d590a455991990dff014f45cd5c07de5d661cc859b0468b634`.
   This refreshed image has not been flashed; the physical REL-01 proof above
   applies to the earlier firmware-only build.
   CPLC unit checks pass 25/25. GPPro `--info` on VPCD decodes release `0101` and the CPLC date

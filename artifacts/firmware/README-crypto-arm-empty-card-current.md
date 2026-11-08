@@ -9,16 +9,16 @@ the selected UF2 to the Pico 2 `RPI-RP2` drive.
 
 | Profile | Capabilities enabled | File | Size | SHA-256 |
 | --- | ---: | --- | ---: | --- |
-| `max_crypto` | 159 / 162 | `pico2-jcvm-max_crypto-arm-empty-card-current.uf2` | 4,079,616 bytes | `02a879b36038b55c6c67f409969aab28574034b1e624bfcc06726c86f7584b1c` |
+| `max_crypto` | 159 / 162 | `pico2-jcvm-max_crypto-arm-empty-card-current.uf2` | 4,079,616 bytes | `b8e6829d8d102d57eba95e0af912e7e452afcf859510bc3023a84abe6f177d3c` |
 | `symm_crypto` | 46 / 150 | `pico2-jcvm-symm_crypto-arm-empty-card-current.uf2` | 3,837,440 bytes | `40032e23306d73d4c095659b41ecb9b90441c447accaf870a88048b2bc501571` |
 
 Both images are RP2350 ARM Secure UF2s. The current `max_crypto` image has
 4,096 erased storage blocks at `0x10100000`–`0x101FFFFF`; no CAP or applet is
-preinstalled. It contains 3,871 firmware blocks, ends at `0x100F1E24`, and
-leaves 57,820 bytes before the storage partition. It embeds release `0.1.1`
-(`0101`) and CPLC build marker `FFEAFFDB` (dirty worktree, based on HEAD
-`EAFFDB`). Its underlying firmware UF2 SHA-256 is
-`4b70d55ce83f5330ed6b305f0d9a3af8eefd0c3a71c9ab0f7235a53e604c1b26`; the
+preinstalled. It contains 3,871 firmware blocks, ends at `0x100F1EEC`, and
+leaves 57,620 bytes before the storage partition. It embeds release `0.1.1`
+(`0101`) and CPLC build marker `FF2EB31F` (dirty worktree, based on HEAD
+`2EB31F`). Its underlying firmware UF2 SHA-256 is
+`a308b2f24bcc41d590a455991990dff014f45cd5c07de5d661cc859b0468b634`; the
 empty-card package SHA-256 is shown in the table. Its 159/162 enabled
 capabilities include six native HMAC algorithms. The ARM and RISC-V wrapper
 builds passed for this source revision. All six HMAC RFC known-answer tests pass

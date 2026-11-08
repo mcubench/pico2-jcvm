@@ -26027,3 +26027,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Re-run the unchanged workload with these diagnostics when PC/SC access is safe; continue the native key-reuse audit offline in the meantime.
 - Commit: `e8edb6d5`
 - Artifacts/logs: Persistent-transaction unit output; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-08 Refresh external max_crypto image after diagnostics 5 minutes
+
+- Step/experiment: `RESOURCE-01-CURRENT-EMPTY-IMAGE-REFRESH`
+- When: '2026-11-08 20:16 CET' - '2026-11-08 20:21 CET'
+- Change: Rebuilt both architecture wrappers after the persistent-write diagnostic change, repackaged the ARM max_crypto firmware with erased 1 MiB card storage and no preinstalled CAP/applet, and refreshed the README/TODO artifact provenance.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed (159/162). `./tools/package-empty-card-uf2` passed with 3,871 firmware blocks and 4,096 storage blocks. `picotool info -a` identified RP2350 ARM Secure.
+- Result: Current artifact `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,079,616 bytes, SHA-256 `b8e6829d8d102d57eba95e0af912e7e452afcf859510bc3023a84abe6f177d3c`. Firmware UF2 is 1,982,464 bytes, SHA-256 `a308b2f24bcc41d590a455991990dff014f45cd5c07de5d661cc859b0468b634`; marker `FF2EB31F`, release 0.1.1, firmware end `0x100F1EEC`, free 57,620 bytes. No physical validation was run.
+- Decision: This is the current empty-card external-test image. Keep the dirty-tree provenance explicit and do not claim physical validation.
+- Commit: `<pending>`
+- Artifacts/logs: UF2 and `artifacts/firmware/README-crypto-arm-empty-card-current.md`; build provenance under `build/arm` and `build/riscv`.
