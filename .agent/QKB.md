@@ -8456,7 +8456,10 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Deployment: The currently installed `/usr/local/sbin/pico2-pcsc-reader`
   still has the old VID:PID-only code. After reviewing this repository change,
   rerun `sudo ./tools/install-pcsc-sudoers` to install the updated allowlisted
-  helper, then recheck `pcsc_scan -r`. No PacketRF access was attempted.
+  helper, then recheck `pcsc_scan -r`. The physical reclaimer wrapper now
+  compares the installed helper byte-for-byte against the repository helper
+  and refuses USB access on mismatch. The current helper still mismatches, so
+  the wrapper will stop before invoking it. No PacketRF access was attempted.
 
 # 2026-11-08 RAM collection versus persistent key records
 

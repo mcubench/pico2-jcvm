@@ -26452,3 +26452,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: VPCD log
   `artifacts/logs/object-deletion-vpcd-20261108T233722Z.log`; expected physical
   serial/APDU logs are generated under `artifacts/logs/` by the wrapper.
+
+## 2026-11-09 Fail closed on stale PCSC helper 6 minutes
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-HELPER-PREFLIGHT`
+- When: '2026-11-09 00:42 CET' - '2026-11-09 00:48 CET'
+- Change: Updated the physical reclaimer harness to byte-compare the installed
+  privileged PC/SC helper against the repository Pico-only helper and stop
+  before USB access if they differ. Updated TODO, QKB and handoff.
+- Validation: `bash -n tools/test-persistent-reclaimer-physical` and
+  `git diff --check` passed. Read-only `cmp` confirms the installed helper
+  currently differs. On this worktree, `./tools/test-persistent-transaction`
+  and `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), as did
+  `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto`.
+- Result: The physical wrapper now refuses the known-stale helper before it
+  can grant broad USB access. No USB, PC/SC, token or PacketRF operation ran.
+- Decision: Keep production persistent deletion disabled. The user must refresh
+  the helper before the prepared physical test can proceed; continue offline
+  with RESOURCE-01 safety and resource-accounting work meanwhile.
+- Commit: `<pending>`
+- Artifacts/logs: No new logs; previous filesystem and transaction tests ran
+  through their repository wrappers.

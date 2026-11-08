@@ -17,6 +17,12 @@ probe_timeout=$((100 + rsa_cycles * 15))
 [[ "${reader_name}" =~ \(([[:xdigit:]]{16})\) ]] || \
   die "reader name must contain a 16-digit Pico chip ID"
 chip_id="${BASH_REMATCH[1]}"
+reader_helper="/usr/local/sbin/pico2-pcsc-reader"
+repo_reader_helper="${repo_root}/tools/pico2-pcsc-reader-root"
+[[ -f "${reader_helper}" && ! -L "${reader_helper}" ]] || \
+  die "installed PC/SC helper is missing or a symlink: ${reader_helper}"
+cmp -s -- "${repo_reader_helper}" "${reader_helper}" || \
+  die "installed PC/SC helper does not match the Pico-only repository helper; run 'sudo ./tools/install-pcsc-sudoers' before physical testing"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 cap="${repo_root}/build/persistent-reclaimer-probe/output/PersistentReclaimerProbe.cap"
 package_aid="A0000000620302"
@@ -96,7 +102,7 @@ trap cleanup EXIT
 exec > >(tee -a "${log}") 2>&1
 printf 'PERSISTENT_RECLAIMER:START reader=%s rsa_cycles=%s rsa_bits=%s\n' \
   "${reader_name}" "${rsa_cycles}" "${rsa_bits}"
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+PICO2_HOST_USB_ACCESS=1 sudo -n "${reader_helper}"
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
   >"${list_log}" 2>&1 || die "GPPro list failed; see ${list_log}"
 if grep -Fq "APP: ${applet_aid} " "${list_log}" || \

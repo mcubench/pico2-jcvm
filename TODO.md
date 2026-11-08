@@ -119,6 +119,9 @@ Archive text is historical evidence, not current device state or priorities.
   by default. It checks that the instance field clears and at least one
   nonempty physical persistent-reclaimer callback occurs per replacement; the
   host CAP build, SmartCardIO client compile and 4-cycle VPCD control pass.
+  The physical wrapper now refuses to call the privileged helper unless its
+  installed bytes match the repository Pico-only allowlist; the current helper
+  still mismatches and must be refreshed before hardware testing.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

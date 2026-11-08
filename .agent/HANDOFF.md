@@ -10754,6 +10754,16 @@ identified Pico2 reader name and chip ID, flash only the prepared diagnostic
 image, and run `tools/test-persistent-reclaimer-physical '<reader>' 8 4096`.
 The harness and progress records are committed as `bb3cb62c`.
 
+# Current handoff — reject stale physical-access helper — 2026-11-09 00:47 CET
+
+`tools/test-persistent-reclaimer-physical` now compares the installed
+`/usr/local/sbin/pico2-pcsc-reader` with `tools/pico2-pcsc-reader-root` before
+calling it. The files currently differ; the harness will fail closed with an
+instruction to run `sudo ./tools/install-pcsc-sudoers`. This prevents this test
+from invoking the stale helper that may include the unrelated PacketRF device.
+`bash -n` and `git diff --check` pass. No USB access was attempted. RESOURCE-01
+still has no physical reclaimer evidence and remains unresolved.
+
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
 `./tools/test-rp2350-fs-overlay` now passes the complete suite with
