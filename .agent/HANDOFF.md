@@ -10692,3 +10692,20 @@ Logs: `artifacts/logs/object-deletion-vpcd-20261108T225648Z.log` and
 `artifacts/logs/object-deletion-vpcd-20261108T225803Z.log` (SHA-256
 `ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`). The
 fixture, wrapper and records are committed as `63f7cd17`.
+
+# Current handoff — extend request-gated stress to RSA-4096 — 2026-11-09 00:11 CET
+
+The local fixture and VPCD wrapper now select RSA public key sizes 512, 1024,
+2048, or 4096 bits. Four 4096-bit create/request cycles passed 11/11 VPCD
+checks, reclaiming exactly 10 applet-owner records per cycle (40 total). This
+adds large key-material coverage to the focused test; it remains PC-only and
+single-context evidence. Production deletion support remains false and the
+normal persistent reclaimer remains disabled. RESOURCE-01 is not fixed or
+accepted.
+
+Validation command:
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 4 rsa-public 4096`
+Log: `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`, SHA-256
+`0ebf558764dc3d8c95ea3757e62856362fb404774bd36a25c315d04d6cd21cf1`.
+Next continue full-run-safe diagnosis and PERSIST-01 root/recovery gates; do not
+access the unexpected PacketRF device.

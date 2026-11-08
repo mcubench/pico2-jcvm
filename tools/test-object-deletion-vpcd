@@ -5,13 +5,26 @@ require_host_usb_access
 
 iterations="${1:-8}"
 mode="${2:-byte-array}"
+key_bits="${3:-512}"
 if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
   ((iterations < 1 || iterations > 512)); then
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch]"
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
 fi
 [[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" || \
    "${mode}" == "rsa-live-static" || "${mode}" == "rsa-batch" ]] || \
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch]"
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
+[[ "${key_bits}" == 512 || "${key_bits}" == 1024 || \
+   "${key_bits}" == 2048 || "${key_bits}" == 4096 ]] || \
+  die "RSA key size must be 512, 1024, 2048, or 4096 bits"
+if [[ "${mode}" != "rsa-public" && "${key_bits}" != 512 ]]; then
+  die "RSA key size selection is available only in rsa-public mode"
+fi
+rsa_size_code=0
+case "${key_bits}" in
+  1024) rsa_size_code=1 ;;
+  2048) rsa_size_code=2 ;;
+  4096) rsa_size_code=3 ;;
+esac
 
 "${repo_root}/tools/build-pc" --profile max_crypto
 "${repo_root}/tools/build-persistent-reclaimer-probe"
@@ -42,7 +55,7 @@ else
   for ((iteration = 0; iteration < iterations; ++iteration)); do
     if [[ "${mode}" == "rsa-public" ]]; then
       probe_args+=(
-        --apdu 0000070000 --expect-apdu-response 379000
+        --apdu "0000070${rsa_size_code}00" --expect-apdu-response 379000
         --apdu 0000080000 --expect-apdu-response 019000
       )
     elif [[ "${mode}" == "rsa-live-static" ]]; then
@@ -135,5 +148,10 @@ else
     }
   ' "${log}" || die "live RSA static root was not consistently preserved then reclaimed; see ${log}"
 fi
-printf 'OBJECT_DELETION_VPCD:PASS mode=%s requests=%s erased_applet_tags=%s log=%s\n' \
-  "${mode}" "${call_count}" "${erased_total}" "${log#${repo_root}/}"
+size_label=""
+if [[ "${mode}" == "rsa-public" ]]; then
+  size_label=" rsa_bits=${key_bits}"
+fi
+printf 'OBJECT_DELETION_VPCD:PASS mode=%s%s requests=%s erased_applet_tags=%s log=%s\n' \
+  "${mode}" "${size_label}" "${call_count}" "${erased_total}" \
+  "${log#${repo_root}/}"

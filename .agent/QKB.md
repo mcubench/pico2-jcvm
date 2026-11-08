@@ -8790,3 +8790,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Next:** Continue PERSIST-01 root and interruption gates before wiring any
   production collection. Then rerun the full unchanged 1.8.4 workload and
   physical acceptance on an identified Pico 2, excluding PacketRF.
+
+## RESOURCE-01: exercise 4096-bit RSA object cleanup — 2026-11-09
+
+- **Change:** The local fixture now supports 512, 1024, 2048 and 4096-bit RSA
+  public key creation. The VPCD wrapper selects the size without modifying any
+  supplied CAP or firmware API implementation.
+- **Result:** Four 4096-bit build/request cycles passed `TEST:SUMMARY pass=11
+  fail=0`. Each graph produced 10 reclaimable applet-owner records; the four
+  requests erased 40 total. Log:
+  `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`, SHA-256
+  `0ebf558764dc3d8c95ea3757e62856362fb404774bd36a25c315d04d6cd21cf1`.
+- **Limit:** The fixture verifies largest supported key material in one PC
+  VPCD context, but it does not model full JCAlgTest reset/cache sequencing,
+  firmware production behavior, physical flash capacity, or interrupted flash
+  erase. RESOURCE-01 remains open.
+- **Next:** Keep production deletion unsupported until all-root and durable
+  recovery evidence is complete; continue integration toward the original
+  F205 long-run workload.

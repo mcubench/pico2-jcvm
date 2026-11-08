@@ -26336,3 +26336,26 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T225648Z.log`
   (2-key control) and `artifacts/logs/object-deletion-vpcd-20261108T225803Z.log`,
   SHA-256 `ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`.
+
+## 2026-11-09 Exercise request-gated cleanup with RSA-4096 11 minutes
+
+- Step/experiment: `RESOURCE-01-RSA4096-RECLAIM`
+- When: '2026-11-09 00:00 CET' - '2026-11-09 00:11 CET'
+- Change: Extended the local reclaimer fixture and wrapper to select RSA public
+  key sizes 512, 1024, 2048 or 4096 bits. Added the 4096-bit result and limits
+  to TODO, QKB and HANDOFF. No production firmware behavior changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-object-deletion-vpcd 4 rsa-public 4096` passed
+  `TEST:SUMMARY pass=11 fail=0`; four 4096-bit graph build/request cycles each
+  reclaimed 10 applet-owned records (40 total). CAP and PC max_crypto builds
+  passed. `bash -n tools/test-object-deletion-vpcd` and scoped `git diff
+  --check` passed after the diagnostic output update. PC VPCD only; no hardware
+  access.
+- Result: Larger RSA object material is handled by the gated collector in the
+  isolated single-context fixture. This is not a production, full JCAlgTest,
+  physical flash, or power-interruption acceptance result.
+- Decision: Keep production deletion unsupported; RESOURCE-01 remains open.
+  Continue the root and durable recovery acceptance gates before enabling it.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`,
+  SHA-256 `0ebf558764dc3d8c95ea3757e62856362fb404774bd36a25c315d04d6cd21cf1`.

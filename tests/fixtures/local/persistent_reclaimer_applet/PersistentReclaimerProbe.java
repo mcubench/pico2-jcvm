@@ -54,12 +54,35 @@ public final class PersistentReclaimerProbe extends Applet {
         JCSystem.requestObjectDeletion();
         break;
       case 7: {
-        byte[] modulus = new byte[64];
-        for (short i = 0; i < 64; i++) modulus[i] = (byte)(i + 1);
-        modulus[0] = 0x7f;
+        short keyLength;
+        short modulusLength;
+        switch (buffer[ISO7816.OFFSET_P2]) {
+          case 0:
+            keyLength = KeyBuilder.LENGTH_RSA_512;
+            modulusLength = 64;
+            break;
+          case 1:
+            keyLength = KeyBuilder.LENGTH_RSA_1024;
+            modulusLength = 128;
+            break;
+          case 2:
+            keyLength = KeyBuilder.LENGTH_RSA_2048;
+            modulusLength = 256;
+            break;
+          case 3:
+            keyLength = KeyBuilder.LENGTH_RSA_4096;
+            modulusLength = 512;
+            break;
+          default:
+            ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
+            return;
+        }
+        byte[] modulus = new byte[modulusLength];
+        for (short i = 0; i < modulusLength; i++) modulus[i] = (byte)(i + 1);
+        modulus[0] = (byte)0x80;
         byte[] exponent = {0x01, 0x00, 0x01};
         retainedRsaKey = (RSAPublicKey)KeyBuilder.buildKey(
-            KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+            KeyBuilder.TYPE_RSA_PUBLIC, keyLength, false);
         retainedRsaKey.setModulus(modulus, (short)0, (short)modulus.length);
         retainedRsaKey.setExponent(exponent, (short)0, (short)exponent.length);
         buffer[0] = retainedRsaKey.isInitialized() ? (byte)0x37 : 0;

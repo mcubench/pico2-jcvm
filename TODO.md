@@ -99,6 +99,10 @@ Archive text is historical evidence, not current device state or priorities.
   single-context fixture only. It does not enable or validate production
   collection, complete all-root safety, physical flash recovery, or prove that
   long JCAlgTest runs no longer exhaust storage.
+  A separate 4096-bit RSA workload passed four create/request cycles (11/11
+  VPCD checks), reclaiming 10 applet-owned records per cycle. This increases
+  key-material pressure coverage but remains one PC VPCD context and does not
+  establish production or physical recovery.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.
