@@ -25298,3 +25298,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Stop cycling the same old runtime image; wait for any one board to be in BOOTSEL, then use its USB topology path and verify the new reset hook.
 - Commit: `139a921e`
 - Artifacts/logs: The monitor tool output is summarized above; no serial bytes were available to save as per-board logs.
+
+## 2026-11-08 Refresh max_crypto external-test image 7 minutes
+
+- Step/experiment: `REL-01-max-crypto-empty-card-refresh`
+- When: '2026-11-08 05:35 CET' - '2026-11-08 05:42 CET'
+- Change: Rebuilt ARM and RISC-V with `max_crypto`, packaged the ARM image with 1 MiB erased card storage, and refreshed the firmware artifact README. The image includes the current firmware build and no preinstalled CAP or applet.
+- Validation: `./tools/build arm --profile max_crypto` passed with 159/162 capabilities, CPLC marker `FF735A76`, image end `0x100F1D60`, and 58,016 bytes remaining. `./tools/build riscv --profile max_crypto` passed its shared VM-core/smoke target. `./tools/package-empty-card-uf2` passed with 3,870 firmware blocks and 4,096 erased storage blocks. `./tools/env picotool info -a` identifies RP2350 ARM Secure; package SHA-256 and underlying firmware SHA-256 were computed. Existing Java Card converter, old Maven metadata/DNS, Rust lint, Logback hostname, and packed-member warnings appeared; all required build commands returned zero.
+- Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,079,104 bytes, SHA-256 `d5837c6fc890c4298b18cbc028e2a8a5448cf3f7ccbdff01e8ee1153da7320dd`; underlying firmware UF2 is 1,930,240 bytes, SHA-256 `b2dac6fff57280c25e0b2bb118d2815f52adc0d8f64063e80e5a67bf4a69690c`. It embeds release `0.1.1` (`0101`), build marker `FF735A76`, and erased storage range `0x10100000`–`0x101FFFFF`. It was not flashed; all connected boards were runtime-mode and unavailable for BOOTSEL, and PC/SC listed no physical readers.
+- Decision: This is the current max_crypto empty-card image for external testing. Do not describe it as physically revalidated; its source tree included unrelated pre-existing dirty edits.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (ignored by Git); artifact manifest `artifacts/firmware/README-crypto-arm-empty-card-current.md`; `build/arm/build-provenance.txt` and `build/riscv/build-provenance.txt`.

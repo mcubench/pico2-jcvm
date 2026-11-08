@@ -1,4 +1,4 @@
-# Current handoff — SIO rollback committed; three-board recovery status — 2026-11-08 05:30 CET
+# Current handoff — SIO rollback and refreshed max_crypto image — 2026-11-08 05:42 CET
 
 The CTX-01 proxy root rollback is implemented and committed as `104d1845`
 (`Fix SIO root rollback on proxy failure`); progress SHA reference follow-up is
@@ -6,6 +6,19 @@ The CTX-01 proxy root rollback is implemented and committed as `104d1845`
 `shareable_root_lease_rollback=1 owner=1 existing=1`. ARM and RISC-V builds
 pass, and the max_crypto VPCD cross-AID suite passed 35/35 at
 `artifacts/logs/sio-cross-aid-vpcd-20261108T034906Z.log`.
+
+Refreshed the external-test ARM `max_crypto` empty-card image after the USB
+recovery firmware change. Path:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, size
+4,079,104 bytes, SHA-256
+`d5837c6fc890c4298b18cbc028e2a8a5448cf3f7ccbdff01e8ee1153da7320dd`. It is
+RP2350 ARM Secure, release `0.1.1` (`0101`), profile `max_crypto` (159/162),
+with all 4,096 storage blocks erased and no CAP/app installed. Firmware ends
+at `0x100F1D60`, leaving 58,016 bytes; build marker is `FF735A76` from a dirty
+worktree based on HEAD `735A76`. ARM/RISC-V max_crypto builds and packaging
+pass. The image is not physically tested or flashed. Details are in
+`artifacts/firmware/README-crypto-arm-empty-card-current.md` and the REL-01
+entry in `TODO.md`.
 
 Three Pico 2 boards currently enumerate as runtime `2e8a:0009` at stable USB
 paths `1-3`, `1-4`, `1-5`, but their sysfs `serial` files are absent and
