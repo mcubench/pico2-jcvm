@@ -25740,3 +25740,38 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<pending>`
 - Artifacts/logs:
   `artifacts/logs/jcalgtest-resource-accumulation-heapgc-5x-rsa1024.log`.
+
+## 2026-11-08 Match PC VPCD heap collection to firmware 52 minutes
+
+- Step/experiment: `RESOURCE-01-PC-VPCD-RAM-GC-PARITY`
+- When: '2026-11-08 11:29 CET' - '2026-11-08 12:21 CET'
+- Change: Made PC VPCD collect the selected applet heap after each APDU, rotate
+  one inactive heap every 32 APDUs, and reclaim transient global arrays after
+  each APDU, matching Pico runtime cadence. `PICO2_HEAP_GC=1` now controls the
+  extra all-retained-context diagnostic and telemetry only. Corrected two
+  stale multipackage inventory regex expectations for the actual field name and
+  output order. Updated RESOURCE-01, QKB and handoff.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm
+  --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 2
+  --apdu-timeout 120` passed `TEST:SUMMARY pass=30 fail=0` with inventory
+  diagnostics. The clean one-pass test passed `pass=15 fail=0` in 83.084 s;
+  connect 11.884 s, SELECT 9.249 s, GETVERSION 36.636 s, SHA-256 APDUs
+  3.024–4.284 s. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage
+  --timeout 300` passed `TEST:SUMMARY pass=47 fail=0`. Its default 90-second
+  deadline had timed out on the 18-instance package cascade; at 300 s it passed.
+  No physical device was touched.
+- Result: PC VPCD and embedded firmware now collect RAM handles on the same
+  cadence, reducing a major source of host-versus-hardware divergence. Neither
+  run resolves the full 1.8.4 official client's earlier empty APDU. Persistent
+  orphan records remain unreclaimed and PERSIST-01 production gates remain
+  open.
+- Decision: Keep persistent reclamation disabled; continue RESOURCE-01 with
+  deferred JCSystem deletion and the isolated full-run failure. Maintain the
+  300-second timeout for this large virtual install/delete scenario.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/pc-vpcd-applet-default-gc-20261108.log`,
+  `artifacts/logs/pc-vpcd-applet-default-gc-no-inventory-20261108.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T110407Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-restart-20261108T110407Z.log`.

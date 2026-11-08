@@ -462,12 +462,17 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                static_cast<unsigned>(context_roots));
 }
 
-void trace_heap_after_apdu_if_enabled() {
+void collect_heap_after_apdu() {
   const char *trace_setting = std::getenv("PICO2_HEAP_TRACE");
   const char *collect_setting = std::getenv("PICO2_HEAP_GC");
   const char *inventory_setting = std::getenv("PICO2_PERSISTENT_INVENTORY");
-  const bool collect_enabled = collect_setting != nullptr &&
-                               std::strcmp(collect_setting, "1") == 0;
+  // Match the Pico runtime: collect the selected applet's RAM heap after every
+  // APDU, rotate one inactive heap every 32 APDUs, and reclaim transient global
+  // arrays each time. PICO2_HEAP_GC retains its diagnostic role (extra
+  // collection of all retained contexts plus telemetry), not the switch that
+  // turns the normal PC VM collector on.
+  const bool collect_all_contexts = collect_setting != nullptr &&
+                                    std::strcmp(collect_setting, "1") == 0;
   const bool trace_enabled = trace_setting != nullptr;
   const bool inventory_enabled = inventory_setting != nullptr &&
                                  (std::strcmp(inventory_setting, "1") == 0 ||
@@ -477,10 +482,7 @@ void trace_heap_after_apdu_if_enabled() {
   const bool inventory_once = inventory_setting != nullptr &&
                               std::strcmp(inventory_setting, "once") == 0;
   static std::array<bool, 256> inventory_reported{};
-  if ((!trace_enabled && !collect_enabled && !inventory_enabled) ||
-      !selected_applet_context) {
-    return;
-  }
+  if (!selected_applet_context) return;
 
   unsigned long repeat_count = 1;
   if (trace_enabled) {
@@ -494,67 +496,109 @@ void trace_heap_after_apdu_if_enabled() {
     repeat_count = 4;
   }
 
-  const auto trace_context = [&](jcvm::Context &context) {
+  const auto process_context = [&](jcvm::Context &context,
+                                   const bool collect_heap) {
     const unsigned owner = static_cast<unsigned>(context.getAppletID());
-    if (inventory_once && owner < inventory_reported.size() &&
-        inventory_reported[owner]) {
-      return;
-    }
     if (!context.getStack().empty()) {
-      if (trace_enabled || collect_enabled) {
+      if (trace_enabled || collect_all_contexts) {
         std::fprintf(stderr,
                      "HEAP_TRACE:SKIP owner=%u reason=active_java_frames\n",
                      static_cast<unsigned>(context.getAppletID()));
       }
       return;
     }
-    try {
-      inventory_persistent_roots_if_enabled(context);
-    } catch (...) {
-      std::fprintf(stderr,
-                   "PERSISTENT_INVENTORY:ERROR owner=%u root_walk_failed\n",
-                   static_cast<unsigned>(context.getAppletID()));
+    const bool already_reported =
+        inventory_once && owner < inventory_reported.size() &&
+        inventory_reported[owner];
+    if (inventory_enabled && !already_reported) {
+      try {
+        inventory_persistent_roots_if_enabled(context);
+      } catch (...) {
+        std::fprintf(stderr,
+                     "PERSISTENT_INVENTORY:ERROR owner=%u root_walk_failed\n",
+                     static_cast<unsigned>(context.getAppletID()));
+      }
+      if (inventory_once && owner < inventory_reported.size()) {
+        inventory_reported[owner] = true;
+      }
     }
 
-    for (unsigned long pass = 1; pass <= repeat_count; ++pass) {
-    try {
-      std::vector<jcvm::jref_t> roots;
-      context.appendRootReferences(roots);
-      const auto summary = collect_enabled
-                               ? context.getHeap().collectUnreachableFrom(roots)
-                               : context.getHeap().traceReachableFrom(roots);
-      std::fprintf(stderr,
-                   "HEAP_TRACE: owner=%u pass=%lu roots=%u arrays=%u/%u "
-                   "instances=%u/%u reclaimed_arrays=%u "
-                   "reclaimed_instances=%u invalid=%u edge_failures=%u "
-                   "complete=%u\n",
-                   static_cast<unsigned>(context.getAppletID()), pass,
-                   static_cast<unsigned>(roots.size()),
-                   static_cast<unsigned>(summary.arrays_reachable),
-                   static_cast<unsigned>(summary.arrays_total),
-                   static_cast<unsigned>(summary.instances_reachable),
-                   static_cast<unsigned>(summary.instances_total),
-                   static_cast<unsigned>(summary.arrays_reclaimed),
-                   static_cast<unsigned>(summary.instances_reclaimed),
-                   static_cast<unsigned>(summary.invalid_references),
-                   static_cast<unsigned>(summary.edge_load_failures),
-                   summary.complete ? 1u : 0u);
-    } catch (...) {
-      std::fprintf(stderr, "HEAP_TRACE:ERROR pass=%lu root_enumeration_failed\n",
-                   pass);
-      break;
-    }
-    }
-    if (inventory_once && owner < inventory_reported.size()) {
-      inventory_reported[owner] = true;
+    const unsigned long passes = trace_enabled ? repeat_count : 1;
+    for (unsigned long pass = 1; pass <= passes; ++pass) {
+      try {
+        std::vector<jcvm::jref_t> roots;
+        context.appendRootReferences(roots);
+        const bool collect_this_pass = collect_heap && pass == 1;
+        const auto summary = collect_this_pass
+                                 ? context.getHeap().collectUnreachableFrom(roots)
+                                 : context.getHeap().traceReachableFrom(roots);
+        if (!summary.complete) {
+          std::fprintf(stderr,
+                       "HEAP_GC_SKIP owner=%u invalid=%u edge_failures=%u "
+                       "root_failures=%u\n",
+                       static_cast<unsigned>(context.getAppletID()),
+                       static_cast<unsigned>(summary.invalid_references),
+                       static_cast<unsigned>(summary.edge_load_failures),
+                       static_cast<unsigned>(summary.root_enumeration_failures));
+        }
+        if (collect_all_contexts || trace_enabled) {
+          std::fprintf(stderr,
+                       "HEAP_TRACE: owner=%u pass=%lu roots=%u arrays=%u/%u "
+                       "instances=%u/%u reclaimed_arrays=%u "
+                       "reclaimed_instances=%u invalid=%u edge_failures=%u "
+                       "complete=%u\n",
+                       static_cast<unsigned>(context.getAppletID()), pass,
+                       static_cast<unsigned>(roots.size()),
+                       static_cast<unsigned>(summary.arrays_reachable),
+                       static_cast<unsigned>(summary.arrays_total),
+                       static_cast<unsigned>(summary.instances_reachable),
+                       static_cast<unsigned>(summary.instances_total),
+                       static_cast<unsigned>(summary.arrays_reclaimed),
+                       static_cast<unsigned>(summary.instances_reclaimed),
+                       static_cast<unsigned>(summary.invalid_references),
+                       static_cast<unsigned>(summary.edge_load_failures),
+                       summary.complete ? 1u : 0u);
+        }
+      } catch (...) {
+        std::fprintf(stderr,
+                     "HEAP_GC_SKIP owner=%u pass=%lu "
+                     "reason=root_enumeration_failed\n",
+                     static_cast<unsigned>(context.getAppletID()), pass);
+        break;
+      }
     }
   };
-  trace_context(*selected_applet_context);
-  for (auto &context : inactive_applet_contexts) {
-    if (context) trace_context(*context);
+
+  process_context(*selected_applet_context, true);
+
+  static uint32_t inactive_gc_sequence = 0;
+  static std::size_t inactive_gc_cursor = 0;
+  const bool collect_one_inactive = ++inactive_gc_sequence % 32 == 0;
+  std::size_t scheduled_inactive = inactive_applet_contexts.size();
+  if (collect_all_contexts || collect_one_inactive) {
+    for (std::size_t visited = 0; visited < inactive_applet_contexts.size();
+         ++visited) {
+      const std::size_t index = inactive_gc_cursor++ %
+                                inactive_applet_contexts.size();
+      auto &context = inactive_applet_contexts[index];
+      if (!context || !context->getStack().empty()) continue;
+      scheduled_inactive = index;
+      process_context(*context, true);
+      if (!collect_all_contexts) break;
+    }
   }
-  if (collect_enabled) {
-    const uint32_t reclaimed = jcvm::Heap::reclaimTransientGlobalArrays();
+  if (trace_enabled || inventory_enabled) {
+    for (std::size_t index = 0; index < inactive_applet_contexts.size();
+         ++index) {
+      auto &context = inactive_applet_contexts[index];
+      if (context && index != scheduled_inactive) {
+        process_context(*context, false);
+      }
+    }
+  }
+
+  const uint32_t reclaimed = jcvm::Heap::reclaimTransientGlobalArrays();
+  if (collect_all_contexts) {
     std::fprintf(stderr, "HEAP_TRACE_GLOBAL_ARRAY_GC reclaimed=%u\n",
                  static_cast<unsigned>(reclaimed));
   }
@@ -1889,7 +1933,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
 #ifdef PC_VERSION
   // The try scope above owns the interpreter and temporary native references.
   // Run diagnostics only after those objects have been destroyed.
-  trace_heap_after_apdu_if_enabled();
+  collect_heap_after_apdu();
 #else
   // Keep Java handles stable by collecting only after interpreter/native call
   // scopes have returned and the complete typed root walk has succeeded.

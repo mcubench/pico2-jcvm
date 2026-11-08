@@ -32,6 +32,30 @@ The latest helper source fix is committed (`f552b6e8`), and the user must run
 The RAM/persistent-resource diagnosis and this handoff update are recorded in
 commit `0bf69acd`.
 
+# Current handoff — PC VPCD matches Pico RAM collection cadence — 2026-11-08 12:21 CET
+
+PC VPCD now performs RAM collection after each APDU for the selected applet,
+rotates one inactive context every 32 APDUs, and reclaims transient global
+arrays each APDU, matching the Pico runtime. `PICO2_HEAP_GC=1` remains an
+additional all-context diagnostic with telemetry. Persistent record deletion
+is still disabled. The earlier 5-call RSA Builder run (when PC collection was
+opt-in) remains evidence that RAM GC does not reclaim serialized persistent
+records.
+
+Validation: PC, ARM max_crypto, and RISC-V max_crypto repository builds pass.
+The unchanged JCAlgTest 1.8.4 VPCD smoke passes 30/30 across two passes; a
+clean no-inventory pass passes 15/15 in 83.084 s. The VPCD multipackage suite
+passes 47/47 with a 300-second APDU deadline. The default 90-second run timed
+out only while deleting the 18-instance package; it passed with more time. The
+suite also exposed stale inventory regex assertions, corrected in its test.
+No hardware was accessed, and PacketRF remains excluded. Changes are committed
+as recorded in the latest `progress.md` entry.
+
+Next: continue RESOURCE-01 from deferred JCSystem deletion and full
+1.8.4 KeyPair failure diagnosis. Keep PERSIST-01 physical multi-owner and
+interruption-safety gates open. Hardware reader validation remains pending the
+user running `sudo ./tools/install-pcsc-sudoers` to install the Pico-only helper.
+
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
 
 The latest full unchanged JCAlgTest 1.8.4 VPCD run passed the algorithm and

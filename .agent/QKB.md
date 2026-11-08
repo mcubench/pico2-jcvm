@@ -8301,11 +8301,11 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 # 2026-11-08 RAM collection versus persistent key records
 
 - Code path: RP2350 invokes `collect_heap_after_apdu()` after each completed
-  APDU, once interpreter/native scopes have unwound. That collects unreachable
-  in-memory heap handles. The production persistent reclaimer is compiled only
-  under its debug gate and remains disabled in normal runtime. PC VPCD's
-  `PICO2_HEAP_GC=1` is an opt-in diagnostic that mirrors RAM collection after
-  each APDU; it does not enable persistent record deletion.
+  APDU, once interpreter/native scopes have unwound. PC VPCD now follows the
+  same cadence: selected heap each APDU, one inactive heap every 32 APDUs, and
+  transient global arrays each APDU. `PICO2_HEAP_GC=1` additionally collects
+  every retained context and logs telemetry. The production persistent
+  reclaimer remains disabled in normal runtime.
 - Evidence: with this PC diagnostic enabled, five RSA-1024 public KeyBuilder
   APDUs each reclaimed 3 arrays and 1 instance. After the fifth, inventory was
   345 global records / 8,889 payload bytes, including 41 unreachable tags /
@@ -8322,3 +8322,14 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `requestObjectDeletion()` semantics and instrument the exact failing
   full-suite boundary. Do not enable persistent reclamation by default based
   on this diagnostic.
+
+- Parity implementation and validation: PC VPCD now collects after every APDU
+  with the Pico cadence. Both ARM and RISC-V max_crypto builds and the PC build
+  pass. JCAlgTest's unchanged 1.8.4 VPCD smoke passes 30/30 across two emulator
+  passes, and the clean one-pass smoke passes 15/15 (83.084 s total, including
+  11.884 s connect, 9.249 s initial SELECT, 36.636 s GETVERSION, and 3.024–4.284
+  s SHA-256 APDUs). The multipackage VPCD suite passes 47/47 with a 300 s APDU
+  timeout. Its default 90 s timeout failed only on the 18-instance cascade
+  deletion; the same test completed at the larger timeout. The run also
+  exposed and fixed stale inventory regex assertions (`owner_scans` and field
+  ordering) in the integration test. Exact logs are recorded in `progress.md`.

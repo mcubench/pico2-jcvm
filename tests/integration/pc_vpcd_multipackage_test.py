@@ -724,7 +724,7 @@ def main() -> int:
             inventory_logs = log_path.read_text(errors="replace")
             if not re.search(
                     r"PERSISTENT_INVENTORY: owner=\d+.*applet_roots=1 "
-                    r"trace_complete=1 owner_scans=1 "
+                    r"trace_complete=1 owner_scan=1 .*"
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     inventory_logs):
                 raise RuntimeError(
@@ -942,7 +942,7 @@ def main() -> int:
             restart_inventory_logs = restart_log_path.read_text(errors="replace")
             if not re.search(
                     r"PERSISTENT_INVENTORY: owner=\d+.*applet_roots=1 "
-                    r"trace_complete=1 owner_scans=1 "
+                    r"trace_complete=1 owner_scan=1 .*"
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     restart_inventory_logs):
                 raise RuntimeError(

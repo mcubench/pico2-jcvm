@@ -92,15 +92,14 @@ Archive text is historical evidence, not current device state or priorities.
   - Diagnose resets independently using reset cause, watchdog state, last APDU
     and filesystem recovery evidence; distinguish firmware faults from USB/
     PCSC reader disappearance. Coordinate JC-RESET-01.
-  - Confirmed diagnostic distinction (2026-11-08): RP2350 runs RAM heap
-    collection after each completed APDU; persistent reclamation is separately
-    disabled. PC VPCD runs RAM collection only with `PICO2_HEAP_GC=1`. With
-    that diagnostic enabled, five repeated 1024-bit RSA public KeyBuilder
-    APDUs reclaimed 3 arrays and 1 instance per call while persistent inventory
-    grew to 345 records / 8,889 payload bytes (41 unreachable tags / 1,617
-    bytes); a following RSA 1024 KeyPair APDU passed. This confirms RAM-handle
-    collection does not reclaim serialized persistent records, but does not
-    reproduce or explain the full-suite empty response. Keep diagnosis open.
+  - PC VPCD now mirrors the normal Pico RAM-GC cadence: collect the selected
+    heap after every APDU, one inactive heap every 32 APDUs, and transient
+    global arrays each APDU. `PICO2_HEAP_GC=1` adds all-retained-context
+    collection and telemetry. Persistent reclamation remains disabled. The
+    earlier five-call diagnostic still confirms RAM-handle collection does not
+    reclaim serialized persistent records; it did not reproduce or explain the
+    full-suite empty response. New parity run: JCAlgTest smoke 30/30 and
+    multipackage VPCD 47/47. Resource-exhaustion acceptance remains open.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that
