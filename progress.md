@@ -26064,3 +26064,36 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   transaction, and interruption safety before wiring collection into APDUs.
 - Commit: `8ffba182`
 - Artifacts/logs: `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
+
+
+## 2026-11-08 Add package-static persistent reclamation primitive 24 minutes
+
+- Step/experiment: `RESOURCE-01-PACKAGE-STATIC-RECLAIMER-PRIMITIVE`
+- When: '2026-11-08 20:44 CET' - '2026-11-08 21:08 CET'
+- Change: Added read-only inventory and an explicit low-level reclaimer for
+  package-static object graphs, including external alias scanning, direct static
+  slot protection, active-transaction refusal, full preflight and bounded
+  idempotent erase batches. Added unit regressions for alias lifetime, malformed
+  alias fail-closed behavior, transaction guards and fresh-heap retry after an
+  interrupted erase. Added PC-only telemetry for package-static candidates.
+  Updated TODO, QKB and HANDOFF. The primitive remains disconnected from APDU
+  processing.
+- Validation: `./tools/test-persistent-inventory` passed 22/22;
+  `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`.
+  `./tools/build arm --profile max_crypto`,
+  `./tools/build riscv --profile max_crypto`, and
+  `./tools/build-pc --profile max_crypto` passed. The VPCD eight-replacement
+  sequence passed `TEST:SUMMARY pass=10 fail=0`; package inventory found 70
+  candidate records / 1,533 payload bytes, growing +10 / +219 per replacement
+  after the first. `git diff --check` passed. No physical device was accessed.
+- Result: Stale package-static key graphs are now discoverable and the primitive
+  removes only unreachable candidates in the filesystem-stub model, preserving
+  explicit static roots and external aliases and retrying after partial deletion.
+  Existence of this primitive does not establish complete runtime root coverage
+  or solve the long JCAlgTest resource failure.
+- Decision: Keep production collection and `isObjectDeletionSupported()`
+  disabled until retained-context/global roots, hardware power-cut recovery and
+  full JCAlgTest plateau acceptance are verified.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/resource-package-static-candidates-vpcd-20261108.log`;
+  `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.

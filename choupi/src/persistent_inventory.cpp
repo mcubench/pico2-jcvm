@@ -381,6 +381,170 @@ VisitResult visitUnreachableAppletTags(
       candidate_visitor, candidate_context);
 }
 
+namespace {
+struct PackageAliasTargetSearch {
+  uint8_t package_id;
+  TagVisitor visitor;
+  void *visitor_context;
+  VisitResult failure = VisitResult::Complete;
+};
+
+bool collect_package_static_alias_target(const Tag &source_tag,
+                                         void *opaque) {
+  auto &search = *static_cast<PackageAliasTargetSearch *>(opaque);
+  // Aliases rooted in the package being inventoried are accounted for by the
+  // supplied package-static roots and heap trace. Only external namespaces
+  // can add an additional lifetime root.
+  if (source_tag.value[0] == 0x02 && source_tag.len >= 2 &&
+      source_tag.value[1] == search.package_id) {
+    return true;
+  }
+
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  if (fs_read_inplace(source_tag.value, source_tag.len, &data, &length) != 0 ||
+      data == nullptr || length == 0) {
+    search.failure = VisitResult::ReadFailure;
+    return false;
+  }
+
+  if (data[0] == kPersistentForeignReference) {
+    Tag target{};
+    if (!decodeForeignStaticTarget(source_tag, data, length, target)) {
+      search.failure = VisitResult::InvalidTag;
+      return false;
+    }
+    return true;
+  }
+
+  for (uint8_t depth = 0;; ++depth) {
+    if (data[0] != kPersistentObjectAlias &&
+        data[0] != kPersistentArrayAlias) {
+      return true;
+    }
+    if (depth >= kMaximumAliasDepth || length < 2 || data[1] == 0 ||
+        data[1] > kTagCapacity || length != 2u + data[1]) {
+      search.failure = VisitResult::InvalidTag;
+      return false;
+    }
+
+    Tag target{};
+    target.len = data[1];
+    std::memcpy(target.value, data + 2, target.len);
+    if (target.len >= 2 && target.value[0] == 0x02 &&
+        target.value[1] == search.package_id) {
+      if (!search.visitor(target, search.visitor_context)) {
+        search.failure = VisitResult::Stopped;
+        return false;
+      }
+      return true;
+    }
+
+    if (fs_read_inplace(target.value, target.len, &data, &length) != 0 ||
+        data == nullptr || length == 0) {
+      search.failure = VisitResult::ReadFailure;
+      return false;
+    }
+  }
+}
+
+VisitResult visitForeignAliasTargetsToPackageStatics(
+    const uint8_t package_id, const TagVisitor visitor, void *context) {
+  if (visitor == nullptr) return VisitResult::InvalidArgument;
+  PackageAliasTargetSearch search{package_id, visitor, context};
+  const uint8_t namespaces[] = {0x02, 0x03};
+  for (const uint8_t name_space : namespaces) {
+    Tag prefix{};
+    prefix.len = 1;
+    prefix.value[0] = name_space;
+    const VisitResult result =
+        visitPrefix(prefix, collect_package_static_alias_target, &search);
+    if (search.failure != VisitResult::Complete) return search.failure;
+    if (result != VisitResult::Complete) return result;
+  }
+  return VisitResult::Complete;
+}
+
+struct PackageStaticCandidateContext {
+  Heap *heap;
+  TagVisitor visitor;
+  void *visitor_context;
+  const std::vector<Tag> *foreign_alias_targets;
+};
+
+bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
+  auto &context = *static_cast<PackageStaticCandidateContext *>(opaque);
+  // Three- and four-byte records are direct package static slots. Preserve
+  // them even when null or primitive; only their object graphs are candidates.
+  if (tag.len <= 4) return true;
+  fs::Tag heap_tag{};
+  heap_tag.len = tag.len;
+  std::memcpy(heap_tag.value, tag.value, tag.len);
+  if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
+      hasForeignAliasRoot(tag, *context.foreign_alias_targets)) {
+    return true;
+  }
+  return context.visitor(tag, context.visitor_context);
+}
+
+VisitResult visitUnreachablePackageStaticTagsWithAliasTargets(
+    const uint8_t package_id, Heap &heap,
+    const RootReferenceEnumerator enumerate_roots, void *root_context,
+    const std::vector<Tag> &foreign_alias_targets,
+    const TagVisitor candidate_visitor, void *candidate_context) {
+  if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
+    return VisitResult::InvalidArgument;
+  }
+  const Heap::ReachabilitySummary summary =
+      heap.traceReachableFrom(enumerate_roots, root_context);
+  if (!summary.complete) return VisitResult::IncompleteReachability;
+
+  PackageStaticCandidateContext context{
+      &heap, candidate_visitor, candidate_context, &foreign_alias_targets};
+  return visitPackageStatics(package_id, visitUnreachablePackageStaticTag,
+                             &context);
+}
+} // namespace
+
+static VisitResult collectForeignAliasTargetsToPackageStatics(
+    const uint8_t package_id, std::vector<Tag> &targets) {
+  try {
+    return visitForeignAliasTargetsToPackageStatics(
+        package_id,
+        [](const Tag &target, void *opaque) {
+          static_cast<std::vector<Tag> *>(opaque)->push_back(target);
+          return true;
+        },
+        &targets);
+  } catch (...) {
+    return VisitResult::IncompleteReachability;
+  }
+}
+
+VisitResult visitUnreachablePackageStaticTags(
+    const uint8_t package_id, Heap &heap,
+    const std::vector<jref_t> &roots, const TagVisitor candidate_visitor,
+    void *context) {
+  VectorRoots root_context{&roots};
+  return visitUnreachablePackageStaticTags(
+      package_id, heap, enumerateVectorRoots, &root_context,
+      candidate_visitor, context);
+}
+
+VisitResult visitUnreachablePackageStaticTags(
+    const uint8_t package_id, Heap &heap,
+    const RootReferenceEnumerator enumerate_roots, void *root_context,
+    const TagVisitor candidate_visitor, void *candidate_context) {
+  std::vector<Tag> foreign_alias_targets;
+  const VisitResult alias_scan =
+      collectForeignAliasTargetsToPackageStatics(package_id,
+                                                foreign_alias_targets);
+  if (alias_scan != VisitResult::Complete) return alias_scan;
+  return visitUnreachablePackageStaticTagsWithAliasTargets(
+      package_id, heap, enumerate_roots, root_context, foreign_alias_targets,
+      candidate_visitor, candidate_context);
+}
+
 } // namespace PersistentInventory
 
 namespace PersistentReclaimer {
@@ -461,6 +625,76 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
       const auto &candidate = batch.tags[index];
       if (candidate.len < 2 || candidate.value[0] != 0x03 ||
           candidate.value[1] != applet_owner ||
+          fs_exists(candidate.value, candidate.len) == 0) {
+        if (erased_count != nullptr) *erased_count = erased;
+        return VisitResult::ReadFailure;
+      }
+      fs::Tag tag{};
+      tag.len = candidate.len;
+      std::memcpy(tag.value, candidate.value, candidate.len);
+      if (!FlashMemory_Handler::erasePersistentTag(tag) ||
+          fs_exists(candidate.value, candidate.len) != 0) {
+        if (erased_count != nullptr) *erased_count = erased;
+        return VisitResult::EraseFailure;
+      }
+      ++erased;
+    }
+  }
+}
+
+PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
+    const uint8_t package_id, Heap &heap,
+    const PersistentInventory::RootReferenceEnumerator enumerate_roots,
+    void *root_context, uint32_t *erased_count) {
+  using PersistentInventory::VisitResult;
+  if (erased_count != nullptr) *erased_count = 0;
+  if (enumerate_roots == nullptr) return VisitResult::InvalidArgument;
+  if (FlashMemory_Handler::persistentWriteTransactionActive()) {
+    return VisitResult::TransactionActive;
+  }
+
+  std::vector<PersistentInventory::Tag> foreign_alias_targets;
+  const VisitResult alias_scan =
+      PersistentInventory::collectForeignAliasTargetsToPackageStatics(
+          package_id, foreign_alias_targets);
+  if (alias_scan != VisitResult::Complete) return alias_scan;
+
+  const VisitResult preflight =
+      PersistentInventory::visitUnreachablePackageStaticTagsWithAliasTargets(
+          package_id, heap, enumerate_roots, root_context,
+          foreign_alias_targets, acceptAllCandidates, nullptr);
+  if (preflight != VisitResult::Complete) return preflight;
+
+  uint32_t erased = 0;
+  while (true) {
+    if (FlashMemory_Handler::persistentWriteTransactionActive()) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::TransactionActive;
+    }
+
+    CandidateBatch batch;
+    const VisitResult scan =
+        PersistentInventory::visitUnreachablePackageStaticTagsWithAliasTargets(
+            package_id, heap, enumerate_roots, root_context,
+            foreign_alias_targets, collectCandidateBatch, &batch);
+    if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return scan;
+    }
+    if (scan == VisitResult::Stopped &&
+        batch.count != kTagBatchCapacity) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::InvalidCursor;
+    }
+    if (batch.count == 0) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::Complete;
+    }
+
+    for (uint8_t index = 0; index < batch.count; ++index) {
+      const auto &candidate = batch.tags[index];
+      if (candidate.len <= 4 || candidate.value[0] != 0x02 ||
+          candidate.value[1] != package_id ||
           fs_exists(candidate.value, candidate.len) == 0) {
         if (erased_count != nullptr) *erased_count = erased;
         return VisitResult::ReadFailure;

@@ -125,6 +125,18 @@ VisitResult visitUnreachableAppletTags(
     RootReferenceEnumerator enumerate_roots, void *root_context,
     TagVisitor candidate_visitor, void *candidate_context);
 
+/// Visit unreachable records in one package-static namespace after a complete
+/// heap-root trace and external-alias scan. Direct static-slot records are
+/// never candidates. This is inventory only; callers must not erase records
+/// until package/context-wide deletion safety is established.
+VisitResult visitUnreachablePackageStaticTags(
+    uint8_t package_id, Heap &heap, const std::vector<jref_t> &roots,
+    TagVisitor candidate_visitor, void *context);
+VisitResult visitUnreachablePackageStaticTags(
+    uint8_t package_id, Heap &heap,
+    RootReferenceEnumerator enumerate_roots, void *root_context,
+    TagVisitor candidate_visitor, void *candidate_context);
+
 } // namespace PersistentInventory
 
 namespace PersistentReclaimer {
@@ -139,6 +151,14 @@ namespace PersistentReclaimer {
 /// is safe, and only Complete means the entire owner inventory was reclaimed.
 PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     uint8_t applet_owner, Heap &heap,
+    PersistentInventory::RootReferenceEnumerator enumerate_roots,
+    void *root_context, uint32_t *erased_count = nullptr);
+
+/// Remove unreachable records in one package-static namespace after a strict
+/// root trace and external-alias scan. Direct static slots are preserved.
+/// This low-level primitive is not connected to normal APDU processing.
+PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
+    uint8_t package_id, Heap &heap,
     PersistentInventory::RootReferenceEnumerator enumerate_roots,
     void *root_context, uint32_t *erased_count = nullptr);
 

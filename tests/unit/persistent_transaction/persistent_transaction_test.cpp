@@ -2557,6 +2557,209 @@ int main() {
   expect(applet_transaction_aborted,
          "applet_transaction_guard_rolls_back_owned_transaction");
 
+  {
+    persistent_transaction_test::instance_field_count = 2;
+    constexpr uint8_t package_id = 0xf0;
+    const jcvm::fs::Tag static_root{3, {0x02, package_id, 0x08}};
+    const jcvm::fs::Tag old_external_alias{3, {0x02, 0xf1, 0x09}};
+    const jcvm::fs::Tag middle_external_alias{3, {0x02, 0xf1, 0x0a}};
+    bool package_static_reclaimer_recovers_after_interruption = false;
+    try {
+      jcvm::Heap heap(0x40);
+      const auto old_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+      auto old_instance = heap.getInstance(old_reference);
+      old_instance->setField_Short(0, 0x1234);
+      old_instance->setField_Short(1, 0x5678);
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          static_root, old_reference, heap);
+      const jcvm::fs::Tag old_body = old_instance->getPersistentTag();
+
+      const auto middle_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+      auto middle_instance = heap.getInstance(middle_reference);
+      middle_instance->setField_Short(0, 0x3456);
+      middle_instance->setField_Short(1, 0x789a);
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          static_root, middle_reference, heap);
+      const jcvm::fs::Tag middle_body = middle_instance->getPersistentTag();
+
+      const auto current_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+      auto current_instance = heap.getInstance(current_reference);
+      current_instance->setField_Short(0, 0x2345);
+      current_instance->setField_Short(1, 0x6789);
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          static_root, current_reference, heap);
+      const jcvm::fs::Tag current_body = current_instance->getPersistentTag();
+
+      std::vector<uint8_t> old_alias_record{0xfe, old_body.len};
+      old_alias_record.insert(old_alias_record.end(), old_body.value,
+                              old_body.value + old_body.len);
+      seed(old_external_alias.value, old_external_alias.len,
+           std::move(old_alias_record));
+      std::vector<uint8_t> middle_alias_record{0xfe, middle_body.len};
+      middle_alias_record.insert(middle_alias_record.end(), middle_body.value,
+                                 middle_body.value + middle_body.len);
+      seed(middle_external_alias.value, middle_external_alias.len,
+           std::move(middle_alias_record));
+
+      CandidateTags protected_candidates;
+      const auto protected_result =
+          jcvm::PersistentInventory::visitUnreachablePackageStaticTags(
+              package_id, heap, std::vector<jcvm::jref_t>{current_reference},
+              collect_candidate, &protected_candidates);
+      const bool alias_protected =
+          protected_result ==
+              jcvm::PersistentInventory::VisitResult::Complete &&
+          protected_candidates.tags.empty();
+
+      const bool aliases_removed =
+          jcvm::FlashMemory_Handler::erasePersistentTag(old_external_alias) &&
+          jcvm::FlashMemory_Handler::erasePersistentTag(
+              middle_external_alias);
+      CandidateTags orphan_candidates;
+      const auto orphan_result =
+          jcvm::PersistentInventory::visitUnreachablePackageStaticTags(
+              package_id, heap, std::vector<jcvm::jref_t>{current_reference},
+              collect_candidate, &orphan_candidates);
+      const std::vector<jcvm::jref_t> current_roots{current_reference};
+      RootVectorContext root_context{&current_roots};
+      persistent_transaction_test::fail_erase_after(1);
+      uint32_t erased = 0;
+      const auto interrupted_result =
+          jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+              package_id, heap, enumerate_root_vector, &root_context, &erased);
+      CandidateTags remaining_candidates;
+      const auto remaining_result =
+          jcvm::PersistentInventory::visitUnreachablePackageStaticTags(
+              package_id, heap, current_roots, collect_candidate,
+              &remaining_candidates);
+
+      jcvm::Heap recovered_heap(0x40);
+      const auto recovered_current =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              static_root, recovered_heap);
+      const std::vector<jcvm::jref_t> recovered_roots{recovered_current};
+      RootVectorContext recovered_root_context{&recovered_roots};
+      uint32_t recovered_erased = 0;
+      const auto recovered_result =
+          jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+              package_id, recovered_heap, enumerate_root_vector,
+              &recovered_root_context, &recovered_erased);
+      const auto has_prefix = [&orphan_candidates](const jcvm::fs::Tag &prefix) {
+        return std::any_of(
+            orphan_candidates.tags.begin(), orphan_candidates.tags.end(),
+            [&prefix](const std::vector<uint8_t> &candidate) {
+              return candidate.size() >= prefix.len &&
+                     std::memcmp(candidate.data(), prefix.value,
+                                 prefix.len) == 0;
+            });
+      };
+      const std::vector<uint8_t> static_root_bytes(
+          static_root.value, static_root.value + static_root.len);
+      package_static_reclaimer_recovers_after_interruption =
+          alias_protected && aliases_removed &&
+          orphan_result ==
+              jcvm::PersistentInventory::VisitResult::Complete &&
+          orphan_candidates.tags.size() == 6 &&
+          has_prefix(old_body) && has_prefix(middle_body) &&
+          !has_prefix(current_body) &&
+          std::find(orphan_candidates.tags.begin(), orphan_candidates.tags.end(),
+                    static_root_bytes) == orphan_candidates.tags.end() &&
+          interrupted_result ==
+              jcvm::PersistentInventory::VisitResult::EraseFailure &&
+          erased == 1 &&
+          remaining_result ==
+              jcvm::PersistentInventory::VisitResult::Complete &&
+          remaining_candidates.tags.size() == 5 &&
+          recovered_result ==
+              jcvm::PersistentInventory::VisitResult::Complete &&
+          recovered_erased == 5 &&
+          persistent_transaction_test::read(old_body.value, old_body.len)
+              .empty() &&
+          persistent_transaction_test::read(middle_body.value,
+                                             middle_body.len).empty() &&
+          !persistent_transaction_test::read(current_body.value,
+                                               current_body.len).empty() &&
+          !persistent_transaction_test::read(static_root.value,
+                                               static_root.len).empty();
+    } catch (...) {
+      package_static_reclaimer_recovers_after_interruption = false;
+    }
+    persistent_transaction_test::instance_field_count = 0;
+    expect(package_static_reclaimer_recovers_after_interruption,
+           "package_static_reclaimer_preserves_aliases_and_recovers_after_interruption");
+  }
+
+  {
+    constexpr uint8_t package_id = 0xf2;
+    const uint8_t target_tag[] = {0x02, package_id, 0x20, 0xff, 0xfe};
+    const uint8_t orphan_tag[] = {0x02, package_id, 0x21, 0xff, 0xfe};
+    const uint8_t malformed_alias_tag[] = {0x02, 0xf3, 0x20};
+    seed(target_tag, sizeof(target_tag), byte_record(0x31));
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x32));
+    seed(malformed_alias_tag, sizeof(malformed_alias_tag),
+         {0xfe, 0x05, 0x02, package_id, 0x20});
+
+    jcvm::Heap heap(0x41);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    uint32_t erased = 99;
+    const auto blocked =
+        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            package_id, heap, enumerate_root_vector, &roots, &erased);
+    const bool blocked_without_mutation =
+        blocked == jcvm::PersistentInventory::VisitResult::InvalidTag &&
+        erased == 0 &&
+        read(target_tag, sizeof(target_tag)) == byte_record(0x31) &&
+        read(orphan_tag, sizeof(orphan_tag)) == byte_record(0x32);
+
+    jcvm::fs::Tag malformed_alias_fs_tag{};
+    malformed_alias_fs_tag.len = sizeof(malformed_alias_tag);
+    std::memcpy(malformed_alias_fs_tag.value, malformed_alias_tag,
+                sizeof(malformed_alias_tag));
+    const bool malformed_alias_removed =
+        jcvm::FlashMemory_Handler::erasePersistentTag(malformed_alias_fs_tag);
+    erased = 0;
+    const auto retried =
+        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            package_id, heap, enumerate_root_vector, &roots, &erased);
+    expect(blocked_without_mutation && malformed_alias_removed &&
+               retried == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 2 && read(target_tag, sizeof(target_tag)).empty() &&
+               read(orphan_tag, sizeof(orphan_tag)).empty(),
+           "package_static_reclaimer_fails_closed_on_malformed_alias");
+  }
+
+  {
+    constexpr uint8_t package_id = 0xf4;
+    const uint8_t orphan_tag[] = {0x02, package_id, 0x20, 0xff, 0xfe};
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x41));
+    jcvm::Heap heap(0x42);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
+           "package_static_reclaimer_guard_begin_transaction");
+    uint32_t erased = 99;
+    const auto blocked =
+        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            package_id, heap, enumerate_root_vector, &roots, &erased);
+    const bool no_mutation =
+        blocked == jcvm::PersistentInventory::VisitResult::TransactionActive &&
+        erased == 0 && read(orphan_tag, sizeof(orphan_tag)) == byte_record(0x41);
+    const bool rolled_back =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    erased = 0;
+    const auto retried =
+        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            package_id, heap, enumerate_root_vector, &roots, &erased);
+    expect(no_mutation && rolled_back &&
+               retried == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 1 && read(orphan_tag, sizeof(orphan_tag)).empty(),
+           "package_static_reclaimer_refuses_active_transaction");
+  }
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

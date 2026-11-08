@@ -202,6 +202,21 @@ Archive text is historical evidence, not current device state or priorities.
   static-root aware inventory/reclamation with cross-context and interruption
   safety tests; keep production deletion disabled.
 
+- Progress (2026-11-08): Added read-only package-static unreachable-tag inventory
+  and a separate low-level, requestable package-static reclaimer. Inventory
+  protects all direct static slots and follows foreign object/array aliases;
+  reclaimer refuses active transactions, preflights the complete namespace,
+  erases bounded batches and can safely retry after partial interruption. It is
+  deliberately not connected to normal APDU handling. A VPCD replacement run
+  found 70 stale records / 1,533 payload bytes after eight key replacements
+  (10 / 219 per replacement after the first); applet-owner inventory reported
+  zero candidates. Unit coverage passes alias protection/removal, malformed
+  alias fail-closed, transaction refusal, and interrupted erase followed by
+  fresh-heap retry. ARM, RISC-V and PC max_crypto builds pass. No physical
+  hardware or full JCAlgTest acceptance was run. Next prove complete roots across
+  retained applet/package contexts and run flash power-cut recovery before any
+  runtime wiring or `isObjectDeletionSupported()` change.
+
 ## Functionality review — 2026-11-03
 
 ### RV-20261105-01

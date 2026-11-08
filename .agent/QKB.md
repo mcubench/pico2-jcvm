@@ -8583,3 +8583,30 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Evidence/log:** `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`;
   PC-only opt-in `PICO2_PERSISTENT_INVENTORY_TAGS=1` lists tags without record
   payload contents. The VPCD sequence passed 10/10.
+
+
+## RESOURCE-01: package-static key orphans identified and collector primitive added — 2026-11-08
+
+- **Measurement:** On PC VPCD, eight repeated RSA public-key replacement
+  APDUs passed. Package-static inventory identified 70 unreachable records /
+  1,533 serialized payload bytes after the sequence, increasing by 10 records /
+  219 bytes per replacement after the first. Applet-owner inventory remained at
+  zero unreachable candidates. Tags use package-static root prefix `023808`
+  (package 56, slot 8).
+- **Change:** Added `visitUnreachablePackageStaticTags` and a separate
+  `reclaimUnreachablePackageStaticTags` primitive. It protects direct static
+  slots and external aliases, fails closed on malformed alias metadata, refuses
+  active transactions, preflights before mutation and retries after partial
+  erase. It is not wired to APDU processing.
+- **Validation:** Persistent-inventory suite passes 22/22; persistent-transaction
+  suite passes `TEST:SUMMARY fail=0`, including preserved external alias targets,
+  malformed-alias no-mutation, active-transaction refusal, and injected erase
+  interruption after one record followed by fresh-heap cleanup of the remaining
+  five. ARM/RISC-V/PC `max_crypto` wrapper builds pass.
+- **Limit:** This tests the primitive with explicit roots in PC/unit models. It
+  does not prove exhaustive roots across retained contexts, hardware filesystem
+  power-cut recovery, or full JCAlgTest `F205` causality. Do not enable it or
+  report object deletion supported until those gates and physical acceptance
+  pass.
+- **Artifacts:** `artifacts/logs/resource-package-static-candidates-vpcd-20261108.log`;
+  earlier exact-tag log `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.

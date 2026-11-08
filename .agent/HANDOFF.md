@@ -10490,3 +10490,31 @@ inventory/reclamation, accounting for retained contexts, aliases, transactions,
 and interruption before wiring it into APDU processing. Keep the unexpected
 PacketRF device excluded; do not claim RESOURCE-01 fixed.
 Log: `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
+
+
+# Current handoff — package-static inventory and reclaimer primitive — 2026-11-08 21:08 CET
+
+The read-only package-static inventory and a separate low-level package-static
+reclaimer primitive are implemented. They are not called by normal APDU
+processing, and object deletion is still unsupported. VPCD measurements show
+why this matters: repeated RSA key replacement grows the static package graph
+by 10 records / 219 serialized payload bytes per replacement after the first;
+after eight replacements, the new package-static inventory reports 70 orphan
+records / 1,533 payload bytes while the applet-owner inventory reports zero.
+The full JCAlgTest `F205` relationship remains plausible but unproven.
+
+The new collector preserves direct static slots and external alias chains,
+fails closed for malformed aliases, refuses active transactions, preflights
+before mutation, erases bounded batches and permits a fresh-heap retry after an
+injected partial erase. `./tools/test-persistent-inventory` passes 22/22 and
+`./tools/test-persistent-transaction` passes `fail=0`. ARM/RISC-V/PC max_crypto
+wrapper builds pass. VPCD logs: `artifacts/logs/resource-package-static-
+candidates-vpcd-20261108.log`. No physical device was accessed; the unexpected
+PacketRF device remains excluded.
+
+Next: audit roots across every retained applet/package context and durable
+shareable/global roots; test filesystem recovery at power-cut boundaries on
+hardware; then connect deferred `requestObjectDeletion()` only if those checks
+pass. Re-run unchanged JCAlgTest 1.8.4/jc305 and verify a long-run plateau, no
+`F205`, reset, FAULT or transport loss. Until then RESOURCE-01 is open and the
+production reclaimer stays disabled.

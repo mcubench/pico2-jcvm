@@ -414,9 +414,11 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   PersistentTagStats owner_records;
   PersistentTagStats unreachable_records;
   PersistentTagStats global_records;
+  PersistentTagStats package_unreachable_records;
   owner_records.source = "owner";
   unreachable_records.source = "unreachable";
   global_records.source = "global";
+  package_unreachable_records.source = "package-unreachable";
   const char *tag_dump_setting =
       std::getenv("PICO2_PERSISTENT_INVENTORY_TAGS");
   global_records.dump_tags = tag_dump_setting != nullptr &&
@@ -448,6 +450,14 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
     reachability.complete = false;
     reachability.root_enumeration_failures = 1;
   }
+  auto package_unreachable_result =
+      jcvm::PersistentInventory::VisitResult::IncompleteReachability;
+  if (reachability.complete) {
+    package_unreachable_result =
+        jcvm::PersistentInventory::visitUnreachablePackageStaticTags(
+            context.getAppletPackageID(), context.getHeap(), counts.references,
+            accumulate_persistent_tag, &package_unreachable_records);
+  }
   std::fprintf(stderr,
                "PERSISTENT_INVENTORY: owner=%u static_result=%u static_roots=%u "
                "applet_result=%u applet_roots=%u trace_complete=%u "
@@ -459,7 +469,9 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                "unreachable_tags=%u unreachable_payload_bytes=%llu "
                "reachable_arrays=%u/%u reachable_instances=%u/%u "
                "invalid_refs=%u edge_failures=%u root_failures=%u "
-               "context_roots=%u\n",
+               "context_roots=%u package_unreachable_result=%u "
+               "package_unreachable_complete=%u package_unreachable_tags=%u "
+               "package_unreachable_payload_bytes=%llu\n",
                static_cast<unsigned>(context.getAppletID()),
                static_cast<unsigned>(static_result), counts.static_roots,
                static_cast<unsigned>(applet_result), counts.applet_roots,
@@ -477,7 +489,16 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                reachability.instances_total, reachability.invalid_references,
                reachability.edge_load_failures,
                reachability.root_enumeration_failures,
-               static_cast<unsigned>(context_roots));
+               static_cast<unsigned>(context_roots),
+               static_cast<unsigned>(package_unreachable_result),
+               package_unreachable_result ==
+                       jcvm::PersistentInventory::VisitResult::Complete &&
+                       package_unreachable_records.complete
+                   ? 1u
+                   : 0u,
+               package_unreachable_records.tags,
+               static_cast<unsigned long long>(
+                   package_unreachable_records.payload_bytes));
 }
 
 void collect_heap_after_apdu() {
