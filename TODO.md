@@ -100,6 +100,12 @@ Archive text is historical evidence, not current device state or priorities.
     reclaim serialized persistent records; it did not reproduce or explain the
     full-suite empty response. New parity run: JCAlgTest smoke 30/30 and
     multipackage VPCD 47/47. Resource-exhaustion acceptance remains open.
+  - Fresh unchanged 1.8.4/jc305 full sweep after PC RAM-GC parity still fails:
+    RSA-768 key-pair generation returns `F205` / `SystemException_NO_RESOURCE`
+    after 442,532 ms. Emulator logs `PERSIST_EXCEPTION id=20` (OutOfFlash) on
+    persistent writes; the following key-pair APDU gets an empty response and
+    the client aborts. RAM-GC parity did not fix the long-run resource failure.
+    This is VPCD evidence, not a physical-token result.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

@@ -25775,3 +25775,28 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `artifacts/logs/pc-vpcd-applet-default-gc-no-inventory-20261108.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T110407Z.log`,
   `artifacts/logs/host-vpcd-multipackage-restart-20261108T110407Z.log`.
+
+## 2026-11-08 Recheck JCAlgTest long-run resources after RAM GC parity 31 minutes
+
+- Step/experiment: `RESOURCE-01-JCALGTEST-RAM-GC-PARITY-FULL-RERUN`
+- When: '2026-11-08 12:23 CET' - '2026-11-08 12:55 CET'
+- Change: Recorded a fresh unchanged JCAlgTest 1.8.4/jc305 full support run
+  after PC VPCD RAM-GC cadence was aligned with firmware. Updated RESOURCE-01,
+  QKB and HANDOFF with the observed persistent-storage failure.
+- Validation: `PICO2_HOST_USB_ACCESS=1
+  JCALGTEST_SUPPORT_TIMEOUT_SECONDS=1800 ./tools/test-jcalgtest-support-vpcd`
+  failed at RSA key-pair generation. RSA-768 returned `F205` /
+  `SystemException_NO_RESOURCE` after 442,532 ms. Emulator output logged
+  `PERSIST_EXCEPTION id=20`; the next APDU got an empty response and SmartcardIO
+  aborted. The report had advanced through RSA-512 and RSA-736 key-pair
+  generation (`yes`) before the failure. No physical device was used.
+- Result: RAM-GC parity does not resolve persistent storage exhaustion. This
+  run failed at RSA-768, earlier than the prior full run's RSA CRT-3072 failure.
+  It does not prove a physical reset or persistent token hang.
+- Decision: Continue RESOURCE-01 at persistent-record accounting and deferred
+  deletion/reclamation. Keep production persistent reclamation disabled
+  pending PERSIST-01 safety acceptance.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/client.log`,
+  `emulator.log`, and partial `Virtual_PCD_00_00_ALGSUPPORT__3b_80_01_81.csv`.

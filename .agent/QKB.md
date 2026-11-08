@@ -1,5 +1,22 @@
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
+- **Follow-up full-run result (2026-11-08):** After making PC VPCD use the
+  firmware RAM-GC cadence, the unchanged 1.8.4/jc305 support sweep still
+  exhausts persistent storage. RSA key-pair generation at 768 bits returned
+  `F205` / `SystemException_NO_RESOURCE` after 442,532 ms. Emulator output
+  contains `PERSIST_EXCEPTION id=20` while writing persistent references,
+  matching the filesystem `OutOfFlash` mapping. A subsequent KeyPair APDU
+  yielded an empty response, after which SmartcardIO aborted the client with
+  `IllegalArgumentException: apdu must be at least 2 bytes long`. This was a
+  PC VPCD run; it is not evidence of a physical reader disconnect or token
+  reset.
+- **Conclusion:** Matching RAM collection cadence did not fix RESOURCE-01;
+  persistent records/storage remain the limiting resource. The failure moved
+  to an earlier RSA size in this run than the prior long run. Keep production
+  reclamation disabled until PERSIST-01 safety gates pass.
+- **Evidence:** `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/`
+  (`client.log`, `emulator.log`, and partial support CSV).
+
 - Issue: `buildNativeKey()` allocated all seven RSA component arrays for every
   RSA type. Public and plain private keys use only modulus/exponent; CRT private
   keys use only P, Q, DP1, DQ1 and PQ. The extra arrays each consumed a

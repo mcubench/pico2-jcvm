@@ -59,6 +59,27 @@ Collector-parity implementation and validation are committed as `a01808de`.
 
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
 
+# Current handoff — RAM-GC parity did not fix persistent exhaustion — 2026-11-08 12:55 CET
+
+The unchanged JCAlgTest 1.8.4/jc305 full support run was repeated after PC VPCD
+was changed to match firmware RAM-GC cadence. It still failed while generating
+an RSA-768 key pair: APDU `B0 75 19 00 03 01 03 00 00` returned
+`F205` / `SystemException_NO_RESOURCE` after 442,532 ms. The emulator logged
+`PERSIST_EXCEPTION id=20` on persistent writes (the filesystem OutOfFlash
+mapping). A following KeyPair APDU received an empty response and the client
+terminated with `IllegalArgumentException: apdu must be at least 2 bytes long`.
+Artifacts:
+`artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/`.
+
+This was VPCD only. It does not establish physical token behavior or a physical
+reset cause. RAM-GC parity did not fix the long-run resource failure. Persistent
+object reclamation is still disabled; do not enable it until the PERSIST-01
+multi-owner, transaction, alias and interruption-safety gates pass. Next inspect
+the GC/reclaimer roots and existing interruption tests, then implement a
+context-scoped deferred `requestObjectDeletion()` service at the safe post-APDU
+boundary, starting with focused tests and keeping production reclamation
+disabled until all safety gates pass. Preserve unrelated dirty worktree files.
+
 The latest full unchanged JCAlgTest 1.8.4 VPCD run passed the algorithm and
 KeyBuilder checks through EC transient reset/deselect, then entered KeyPair.
 RSA 512/736 passed; RSA 1024 returned an empty APDU. The CSV has only 196 rows
