@@ -25442,6 +25442,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<pending>`
 - Artifacts/logs: `/tmp/rp2350-fs-overlay-root-graph.log`; metric `orphan_tags=10 cuts=1000`.
 
+## 2026-11-08 Resolve rooted-graph reclaimer test commit reference 1 minute
+
+- Step/experiment: `PERSIST-01-ROOT-GRAPH-COMMIT-REFERENCE`
+- When: '2026-11-08 06:57 CET' - '2026-11-08 06:58 CET'
+- Change: Resolved the commit reference for the rooted-object-graph 1,000-cut regression and its PERSIST-01 evidence update.
+- Validation: Confirmed commit `4a1cc450` contains the test, tracking updates and preceding progress record; no tests rerun.
+- Result: The PERSIST-01 root-graph test record maps to `4a1cc450`.
+- Decision: Continue RESOURCE-01/PERSIST-01 work while physical reader access remains unavailable.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
+
 ## 2026-11-08 Refresh reported Pico board availability 3 minutes
 
 - Step/experiment: `PCSC-01-THREE-BOARD-AVAILABILITY-RECHECK`

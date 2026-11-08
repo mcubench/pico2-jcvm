@@ -16,6 +16,7 @@ acceptance remain open. Keep normal persistent reclamation disabled. The test
 target now supplies inert CAP metadata stubs for its wildcard `Object[]` type
 check; firmware sources were not changed, so ARM/RISC-V builds and hardware
 tests were not run. Commit reference will be added in the progress follow-up.
+Implementation and progress record: commit `4a1cc450`.
 
 # Current handoff — three USB boards still absent from PC/SC — 2026-11-08 06:44 CET
 
