@@ -25417,7 +25417,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rp2350-fs-overlay` passed, `TEST:SUMMARY fail=0`; `git diff --check` passed. No compiler warnings/errors in the final captured run. ARM/RISC-V builds and physical validation were intentionally skipped because only the host test and documentation changed.
 - Result: Host fake-flash model recovered all 1,000 injected COW commit cuts as either the old snapshot or fully committed deletion; retry through the production reclaimer removed all ten unreachable tags when needed, preserving the restored root and other owner. This is not physical flash durability or USB power-loss evidence.
 - Decision: Keep PERSIST-01 open and normal persistent reclamation disabled until physical multi-owner and interrupted-erase/power-loss gates pass.
-- Commit: `<pending>`
+- Commit: `0bf69acd`
 - Artifacts/logs: `/tmp/rp2350-fs-overlay-persist01.log`; final `TEST:SUMMARY fail=0`.
 
 ## 2026-11-08 Resolve PERSIST-01 overlay test commit reference 1 minute

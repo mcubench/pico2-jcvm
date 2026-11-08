@@ -29,6 +29,8 @@ deletion only behind the existing safety requirements. Physical testing remains
 blocked until the updated Pico-only helper is installed; do not access PacketRF.
 The latest helper source fix is committed (`f552b6e8`), and the user must run
 `sudo ./tools/install-pcsc-sudoers` before another physical reader check.
+The RAM/persistent-resource diagnosis and this handoff update are recorded in
+commit `0bf69acd`.
 
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
 
