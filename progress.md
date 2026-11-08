@@ -26117,5 +26117,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   root domain and does not establish the cause of full-run `F205`.
 - Decision: Keep production persistent reclamation disabled; audit all retained
   contexts and package-to-heap mapping before considering runtime wiring.
-- Commit: `<pending>`
+- Commit: `e3e01b89`
 - Artifacts/logs: `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.
