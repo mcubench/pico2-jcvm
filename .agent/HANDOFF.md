@@ -1,4 +1,36 @@
-# Current handoff — physical cross-AID suite and reader drop — 2026-11-08 04:07 CET
+# Current handoff — CTX-01 revalidation and PC/SC reader discovery — 2026-11-08 04:28 CET
+
+The offline reference-consumer audit found no new unchecked bytecode/native
+reference path: typed stack pops and local reads enforce owner metadata, array
+access uses package-checked pops, and JNI reference arguments use the checked
+stack path. It did identify a failure-cleanup edge in SIO proxy creation: the
+server reference root is retained before client proxy allocation/registration.
+If a later step fails, that root may remain until reset or deletion. This is
+listed in CTX-01 in `TODO.md`; implement rollback that only releases a newly
+inserted root and test exhausted proxy capacity/allocation failure.
+
+The full cross-AID VPCD suite passes 35/35 after rebuilding the PC VM explicitly
+with `./tools/build-pc --profile max_crypto`. A first run against the stale PC
+binary failed Signature SIO with `6F00`; the focused Signature run passed after
+the rebuild, and the full passing log is
+`artifacts/logs/sio-cross-aid-vpcd-20261108T032140Z.log`. The suite wrapper does
+not rebuild the PC VM, so always build its profile after source/profile changes.
+
+All three USB nodes are visible as Pico `2e8a:0009` devices (USB devices 098,
+099, 100), and their descriptors include CCID interfaces. The authorized helper
+granted access, but `pcsc_scan -r` still lists only the two VPCD readers.
+`pcscd.socket` is active; `pcscd.service` is configured to auto-exit and was
+inactive between scans. The session cannot read system journal logs, so the
+driver-level cause remains unknown. No physical APDU or flash was attempted in
+this validation pass. Physical cross-AID cleanup/registry checks remain open;
+the three cards may still have temporary test AIDs from prior runs.
+
+Next: implement safe SIO retained-root rollback for proxy creation, then run
+unit and full profile tests/build gates. Resume physical validation only when a
+Pico is listed by `pcsc_scan -r`; use another board if one drops out. Preserve
+all unrelated uncommitted worktree changes.
+
+# Previous handoff — physical cross-AID suite and reader drop — 2026-11-08 04:07 CET
 
 Persistent applet-delete alias scanning now uses the same strict decoder as
 unreachable-tag inventory for foreign-reference wrappers in package-static

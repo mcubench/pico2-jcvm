@@ -1050,6 +1050,12 @@ review.
   readers also stopped publishing afterward. The physical suite's final cleanup
   and a clean registry are still unverified; retry when PC/SC readers return.
 
+  Audit follow-up: proxy creation retains a server object root before allocating
+  and registering the client proxy. If a later step fails, a newly inserted
+  root may remain until reset or applet deletion. Implement rollback that only
+  removes a root newly added by that attempt, and test proxy-table exhaustion
+  plus allocation failure.
+
 ### CTX-02
 
 - [ ] **Complete Java-level SensitiveResult coverage across SIO calls.**

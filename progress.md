@@ -25254,3 +25254,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep physical CTX-01 acceptance open until a Pico reader returns, finish GPPro cleanup/registry verification then, and continue offline otherwise. Use another board if one reader drops. Keep persistent reclamation disabled pending PERSIST-01 multi-owner and power-loss gates.
 - Commit: `<pending>`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T022447Z.log`, `...T024440Z.log`, `...T024555Z.log`; `artifacts/logs/sio-cross-aid-physical-20261108T024827Z.log`, `...T025342Z.log`, `...T025924Z.log`, `...T030435Z.log`. D92 UF2 size 1,762,816 bytes, SHA-256 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d` (CPLC source `FF1E8418`); later 2BED/8E46 UF2 size 1,762,816 bytes, SHA-256 `924f019205924fcce1924c72d02db0c6c24cc0626231238e1db11587e4b5ccd3` (CPLC source `FFA7938E`).
+
+## 2026-11-08 Revalidate SIO after explicit PC profile rebuild 20 minutes
+
+- Step/experiment: `CTX-01-profile-correct-vpcd-revalidation`
+- When: '2026-11-08 03:08 UTC' - '2026-11-08 03:28 UTC'
+- Change: Audited CTX-01 reference consumers and reran the full VPCD SIO suite using its required explicit `max_crypto` PC build. Added a follow-up item for rollback of a newly retained server GC root when SIO proxy allocation/registration fails. Updated QKB and handoff with current PC/SC enumeration state.
+- Validation: Reference-consumer inspection found no new unchecked bytecode/native path. Initial `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` against a stale PC executable failed Signature SIO with `6F00`/`SecurityException`; `./tools/build-pc --profile max_crypto` succeeded, the isolated Signature test passed, and the complete suite passed `TEST:SUMMARY pass=35 fail=0`. Authorized helper granted three USB nodes, but elevated `pcsc_scan -r` showed only the two virtual readers; `lsusb -d 2e8a:0009` identified three runtime Pico devices. No physical APDU or flash was attempted. `systemctl status pcscd.service` showed the socket-activated daemon inactive between scans; journal output is inaccessible to this account.
+- Result: Emulator acceptance is green after a profile-correct rebuild. Physical PC/SC acceptance remains blocked by reader discovery; USB/CCID descriptors alone are not sufficient. The source-owner rollback edge remains unimplemented and is tracked in TODO.
+- Decision: Fix proxy-root rollback next. Resume physical APDU checks once a Pico appears in `pcsc_scan -r`; do not mark the cards clean.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T031522Z.log` (stale-binary failure), `artifacts/logs/sio-cross-aid-vpcd-20261108T032038Z.log` (focused Signature pass), `artifacts/logs/sio-cross-aid-vpcd-20261108T032140Z.log` (full 35/35 pass). No firmware image was built or flashed.

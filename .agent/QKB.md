@@ -8076,3 +8076,27 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   removal; D92 and 2BED were also no longer published afterward. Thus final
   cleanup and an empty fixture registry have not yet been verified. Retry after
   PC/SC readers return, and continue with another board if one disappears.
+
+## 2026-11-08 Revalidate VPCD only after rebuilding its selected profile
+
+- Issue: `tools/test-sio-cross-aid-vpcd` does not build the PC VM. Running it
+  against an old `build/choupi-pc/choupi` gave a misleading Signature SIO
+  failure (`6F00`, `SecurityException` at invokeinterface), even though the
+  source and current max_crypto profile were correct.
+- Viable workflow: explicitly run `./tools/build-pc --profile max_crypto`
+  before the suite. The focused Signature check then passed, followed by the
+  full suite at `TEST:SUMMARY pass=35 fail=0`.
+- Current physical observation: the authorized helper granted access to three
+  Pico nodes, and `lsusb -d 2e8a:0009` identified devices 098-100. Their USB
+  descriptors include a CCID interface, but `pcsc_scan -r` still lists only
+  the two Virtual PCD readers. `pcscd.socket` is active and the service is
+  auto-exited between scans; no driver log was available to the session. Do
+  not treat these units as PC/SC readers or run physical APDUs until they appear
+  in the reader list.
+- Follow-up audit: SIO proxy creation retains the server root before the
+  client proxy allocation and registration. A failure in those later steps
+  can leave an unnecessary root until reset/deletion; add rollback coverage.
+- Artifacts: `artifacts/logs/sio-cross-aid-vpcd-20261108T031522Z.log` (stale
+  PC VM failure), `artifacts/logs/sio-cross-aid-vpcd-20261108T032038Z.log`
+  (focused pass), and `artifacts/logs/sio-cross-aid-vpcd-20261108T032140Z.log`
+  (full 35/35 pass).
