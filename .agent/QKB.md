@@ -50,6 +50,25 @@
 - **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`
   (SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`).
 
+## RESOURCE-01: fail closed with retained or sibling applet contexts
+
+- **Change:** Added `Context::isSoleRetainedAppletContext()` and made the
+  PC-only request-latch collector skip without clearing the request if any
+  other `Context` or sibling applet state is retained. This deliberately
+  narrows the test probe until it can enumerate typed roots across those
+  contexts.
+- **Validation:** `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`; its new check covers a single context, a second
+  retained context, destruction restoring exclusivity, and an added sibling
+  applet. ARM/RISC-V max_crypto wrapper builds passed. The guarded VPCD fixture
+  passed 19/19 with eight completed requests and one applet-owned tag erased
+  per request.
+- **Limit:** This is a fail-closed condition, not an all-context root visitor.
+  It does not prove safety around global/native roots or storage interruption;
+  production reclamation stays disabled.
+- **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`
+  (SHA-256 `678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`).
+
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
 ## Persistent reclaimer must include references beyond the selected context — 2026-11-08

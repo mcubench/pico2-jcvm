@@ -1,5 +1,6 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "heap.hpp"
+#include "context.hpp"
 #include "persistent_inventory.hpp"
 #include "jc_types/jc_array.hpp"
 
@@ -107,6 +108,28 @@ bool enumerate_root_vector(jcvm::Heap::ReferenceVisitor visitor,
 } // namespace
 
 int main() {
+  {
+    constexpr uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62};
+    jcvm::Context first_context(0x71, 0x31);
+    const bool first_context_is_exclusive =
+        first_context.isSoleRetainedAppletContext();
+    bool second_context_blocks_collection = false;
+    {
+      jcvm::Context second_context(0x72, 0x32);
+      second_context_blocks_collection =
+          !first_context.isSoleRetainedAppletContext() &&
+          !second_context.isSoleRetainedAppletContext();
+    }
+    const bool exclusivity_restored =
+        first_context.isSoleRetainedAppletContext();
+    const bool sibling_applet_blocks_collection =
+        first_context.activateAppletInstance(0x73, aid, sizeof(aid)) &&
+        !first_context.isSoleRetainedAppletContext();
+    expect(first_context_is_exclusive && second_context_blocks_collection &&
+               exclusivity_restored && sibling_applet_blocks_collection,
+           "persistent_deletion_probe_requires_exclusive_context");
+  }
+
   {
     using jcvm::FlashMemory_Handler;
     jcvm::Heap heap(7);

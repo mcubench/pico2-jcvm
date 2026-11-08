@@ -26206,3 +26206,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `2623829e`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`,
   SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`.
+
+## 2026-11-08 Fail closed on retained deletion contexts 12 minutes
+
+- Step/experiment: `RESOURCE-01-EXCLUSIVE-CONTEXT-GUARD`
+- When: '2026-11-08 23:09 CET' - '2026-11-08 23:21 CET'
+- Change: Added a conservative eligibility check that allows the PC-only
+  request-latch reclaimer to run only when this is the sole retained `Context`
+  and it has one applet instance. Requests remain pending when other contexts
+  or sibling applets may hold references. Added context-lifecycle unit coverage
+  and updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`, including sole/second/destroyed/sibling context cases.
+  ARM and RISC-V max_crypto wrapper builds passed. The guarded
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd` passed 19/19 and
+  erased one applet tag on each of eight requests. No physical device was
+  accessed. Source whitespace check is required before commit.
+- Result: The diagnostic no longer mutates persistent storage when another
+  retained applet context might contain roots. This is a coarse fail-closed
+  gate; it does not trace other root domains, prove flash interruption safety,
+  or resolve full-run resource exhaustion.
+- Decision: Keep production deletion unsupported. Next implement typed root
+  provenance or continue root-domain audit before relaxing the exclusive
+  context gate.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`,
+  SHA-256 `678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`.

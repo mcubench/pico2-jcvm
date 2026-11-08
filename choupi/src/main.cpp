@@ -534,6 +534,18 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
     return;
   }
 
+  // This probe only knows how to collect roots for the currently selected
+  // owner. Retained peer contexts or sibling applets may hold additional roots;
+  // do not mutate persistent storage until those domains are enumerated.
+  if (!context.isSoleRetainedAppletContext()) {
+    std::fprintf(stderr,
+                 "OBJECT_DELETION:SKIP package=%u owner=%u "
+                 "reason=nonexclusive_context request_retained=1\n",
+                 static_cast<unsigned>(context.getAppletPackageID()),
+                 static_cast<unsigned>(context.getAppletID()));
+    return;
+  }
+
   try {
     PersistentInventoryCounts roots;
     const auto static_result =

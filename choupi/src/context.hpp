@@ -149,6 +149,8 @@ public:
   /// Find a retained applet owner's Heap facade in a package context.
   static Heap *findRetainedAppletHeap(jpackage_ID_t package_id,
                                       japplet_ID_t owner) noexcept;
+  /// Fail-closed precondition for the single-context persistent deletion probe.
+  bool isSoleRetainedAppletContext() const noexcept;
   /// Default constructor
   Context(const uint8_t appletID, const jpackage_ID_t packageID);
   ~Context() noexcept;

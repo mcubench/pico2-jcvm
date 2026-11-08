@@ -10407,6 +10407,25 @@ interruption-safety tests before considering production enablement.
 Evidence log: `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`,
 SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`.
 
+# Current handoff — fail closed on retained applet contexts — 2026-11-08 23:21 CET
+
+The PC-only request-latch collector now checks
+`Context::isSoleRetainedAppletContext()` before scanning or erasing. It skips
+and retains the deletion request whenever another retained Context or sibling
+applet instance exists. The persistent-transaction suite passes with the new
+single/second/destroyed/sibling context cases (`TEST:SUMMARY fail=0`); ARM and
+RISC-V max_crypto builds pass; the exclusive VPCD fixture passes 19/19 and
+reclaims one applet-owned tag on each of eight requests.
+
+This is a conservative eligibility check, not full root enumeration. It does
+not close PERSIST-01 for global/native roots or interruption recovery. Normal
+firmware continues to report object deletion unsupported. Continue with typed
+root provenance and complete root-domain auditing before broadening this test
+path. The unexpected PacketRF device remains excluded and was not accessed.
+
+Evidence: `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`, SHA-256
+`678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`.
+
 # Current handoff — protect foreign alias chains during reclamation — 2026-11-08 19:50 CET
 
 Uncommitted PERSIST-01 inventory changes now scan external package-static and

@@ -143,6 +143,11 @@ Archive text is historical evidence, not current device state or priorities.
     pass. This is a scoped regression fixture, not production wiring or proof
     that the earlier full-run improvement is reproducible. It still needs
     broader retained-context/native-root and persistent interruption tests.
+  - The focused probe now fails closed when another retained Context or sibling
+    applet instance exists. A unit check covers one-context eligibility,
+    another Context, destruction/recovery, and sibling-applet exclusion; the
+    exclusive VPCD fixture still passes 19/19. This is only a coarse safety
+    gate; it does not enumerate roots from those skipped contexts.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that
