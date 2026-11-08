@@ -8011,3 +8011,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T003758Z.log`,
   `artifacts/logs/sio-cross-aid-vpcd-20261108T005034Z.log`, and
   `artifacts/logs/cycle-choupi-20261108T004356Z.log`.
+# 2026-11-08 VPCD runner can reuse a stale PC emulator
+
+- Issue: `tools/test-sio-cross-aid-vpcd` runs the existing
+  `build/choupi-pc/choupi`; it does not rebuild that executable from current
+  source. After editing VM code, the suite can therefore exercise stale
+  behavior and produce a misleading failure or pass.
+- Viable workflow: run `./tools/build-pc --profile max_crypto` after source
+  changes, then run `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-sio-cross-aid-vpcd`. Rebuild PC with the profile required by the
+  test because ARM/RISC-V wrappers regenerate shared ROM-mask files for
+  `current`. In this run the stale binary failed the new `athrow` regression;
+  rebuilding PC then passed all 35 cases.

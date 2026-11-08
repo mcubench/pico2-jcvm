@@ -185,6 +185,17 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
     throw Exceptions::SecurityException;
   }
 
+  const auto current_package =
+      static_cast<uint8_t>(this->context.getCurrentPackageID());
+  if (reference_owner != Stack::kCurrentReferenceOwner &&
+      reference_owner != Stack::kGlobalReferenceOwner &&
+      reference_owner != current_package) {
+    if (this->dispatchJavaException(Exceptions::SecurityException)) {
+      return;
+    }
+    throw Exceptions::SecurityException;
+  }
+
   Stack &stack = this->context.getStack();
   Heap &heap = this->context.getHeap();
   auto exception = heap.getInstance(objectref);

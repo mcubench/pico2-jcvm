@@ -623,6 +623,16 @@ public final class ServiceApplet extends Applet implements Probe {
     throw new SecurityException();
   }
 
+  public short rejectForeignException(RuntimeException exception) {
+    try {
+      throw exception;
+    } catch (SecurityException expected) {
+      return (short) 0x6A6D;
+    } catch (RuntimeException wronglyAccepted) {
+      return (short) 0x6A6E;
+    }
+  }
+
   public short throwCryptoException() {
     CryptoException.throwIt((short) 0x1234);
     return (short) 0;

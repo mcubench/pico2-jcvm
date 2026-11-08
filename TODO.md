@@ -750,6 +750,13 @@ review.
   reproduce after rebuilding all fixture CAPs and using a distinct two-argument
   interface method; both Descriptor modes pass. Keep this path in regression
   coverage.
+  `athrow` now checks reference provenance before resolving the object handle;
+  otherwise a foreign caller exception could collide with a service-local
+  compact handle and have its class read from the wrong heap. An owner mismatch
+  dispatches a Java `SecurityException` through the normal catchable exception
+  path. The cross-AID VPCD fixture verifies that a service catches this denial
+  when asked to throw a caller-owned `RuntimeException`. Continue auditing
+  every other reference-consuming bytecode/native entry and owner lifecycle.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.

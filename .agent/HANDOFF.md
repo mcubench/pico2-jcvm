@@ -1,5 +1,36 @@
 # Current handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:31 CET
 
+## Latest update — enforce owner checks in `athrow` — 2026-11-08 03:01 CET
+
+CTX-01's reference-consumer audit found that `athrow` preserved an owner tag
+but `doThrow` resolved the compact object handle in the active heap before
+checking that owner. It now rejects non-local, non-global owners before heap
+lookup and dispatches a catchable Java `SecurityException`. The cross-AID
+fixture creates a `RuntimeException` in the caller and verifies that the
+service catches the denial. Full VPCD suite passes `TEST:SUMMARY pass=35
+fail=0` at `artifacts/logs/sio-cross-aid-vpcd-20261108T015026Z.log`.
+
+Both `./tools/build arm` and `./tools/build riscv` pass. The current ARM image
+was flashed to Pico 2 `D92E743D5F640C0F`; finite monitor log
+`artifacts/logs/cycle-choupi-20261108T015917Z.log` reports
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The authorized
+reader helper grants USB access to three nodes, but `timeout 8s pcsc_scan -r`
+exits 124 without publishing a reader; the new exception case has emulator
+coverage only. One initial VPCD attempt used a stale `build/choupi-pc/choupi`
+binary and failed the new regression; explicitly rebuilding with
+`./tools/build-pc --profile max_crypto` before rerunning made all 35 cases
+pass. The ARM UF2 is 1,762,816 bytes, SHA-256
+`8f219752eaa501691fb741d8c0883db561968be91cb29cf8a325f92942aaec0a`.
+
+Next: continue the CTX-01 reference-consumer audit and persistent lifecycle
+coverage. Re-run physical APDU coverage when PC/SC publishes a reader. Preserve
+all unrelated worktree changes, including `bc_invoke.cpp`, `heap.cpp` and
+`heap.hpp` edits noted below.
+
+---
+
+## Previous handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:31 CET
+
 Persistent inventory now scans package-static records for the foreign-reference
 wrapper format and protects the wrapper's owner-applet target tag and all
 nested records beneath it from the unreachable-tag candidate set. Clearing the

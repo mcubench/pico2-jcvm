@@ -2190,6 +2190,17 @@ def main() -> int:
                   "ArrayIndexOutOfBoundsException identity, then allows a "
                   "successful follow-up call")
             response = vpcd.exchange(
+                connection, bytes.fromhex("8034000000"),
+                "reject a caller-owned exception thrown inside service context"
+            )
+            if response != bytes.fromhex("6A6D9000"):
+                raise RuntimeError(
+                    "foreign exception athrow returned "
+                    f"{response.hex().upper()}, expected caught SecurityException "
+                    "marker 6A6D9000"
+                )
+            print("TEST:PASS athrow rejects caller-owned exception in service context")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("802C000000"),
                 "check implemented interfaces inherited through local and imported superclasses"
             )
