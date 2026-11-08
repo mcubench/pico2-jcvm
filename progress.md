@@ -25342,3 +25342,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep physical acceptance open. Continue with other offline CTX-01/03 or persistence gaps; do not equate VPCD with Pico hardware acceptance.
 - Commit: `pending documentation commit`.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T050858Z.log`.
+
+## 2026-11-08 Resolve cross-AID validation commit reference 1 minute
+
+- Step/experiment: `CTX-01-CROSS-AID-VPCD-COMMIT-REFERENCE`
+- When: '2026-11-08 06:13 CET' - '2026-11-08 06:14 CET'
+- Change: Resolved the commit reference for the immediately preceding cross-AID validation record, which was written before the commit object existed.
+- Validation: Confirmed commit `2a0d452a` contains the preceding progress and handoff record; no tests rerun.
+- Result: The cross-AID validation record maps to commit `2a0d452a`.
+- Decision: Continue to the next open TODO item.
+- Commit: `pending progress-reference commit`.
+- Artifacts/logs: none.
