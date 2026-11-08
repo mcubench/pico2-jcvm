@@ -25606,10 +25606,10 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
 
-## 2026-11-08 Avoid redundant zero writes for EC keys 8 minutes
+## 2026-11-08 Avoid redundant zero writes for EC keys 12 minutes
 
 - Step/experiment: `RESOURCE-01-EC-KEY-INITIALIZATION-WRITES`
-- When: '2026-11-08 08:33 CET' - '2026-11-08 08:41 CET'
+- When: '2026-11-08 08:33 CET' - '2026-11-08 08:45 CET'
 - Change: Removed per-byte zeroing loops from native EC key construction;
   `JCVMArray` allocates value-initialized backing, so those writes repeated
   work and caused unnecessary per-byte persistent updates for durable EC keys.
@@ -25635,7 +25635,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RESOURCE-01 by tracing native/FS work in the slow first
   EC KeyBuilder call and reproduce `SCARD_F_COMM_ERROR`; retry hardware only
   when a physical Pico reader is PC/SC-visible.
-- Commit: `<pending>`
+- Commit: `54eb08c2`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T071233Z/`,
   `artifacts/logs/jcalgtest-1e-apdu-postfix-50s.log`,
   `artifacts/logs/jcalgtest-ecfp384-apdu-postfix.log`.
+
+## 2026-11-08 Resolve EC key initialization commit reference 1 minute
+
+- Step/experiment: `RESOURCE-01-EC-KEY-INITIALIZATION-WRITES-COMMIT-REFERENCE`
+- When: '2026-11-08 08:45 CET' - '2026-11-08 08:46 CET'
+- Change: Replaced the pending implementation SHA with `54eb08c2`.
+- Validation: Confirmed that commit `54eb08c2` contains the EC key zero-write
+  removal, RESOURCE-01 progress, QKB and current handoff; no tests rerun.
+- Result: The EC key initialization optimization is committed as `54eb08c2`.
+- Decision: Continue diagnosing the slow first-use EC call and full-suite
+  `SCARD_F_COMM_ERROR`.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
