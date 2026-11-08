@@ -26003,5 +26003,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `git diff --check` passed for changed files. No hardware or USB operation was used in this step.
 - Result: Corrupt foreign-alias metadata is rejected before any owner tag is erased; a subsequent valid retry completes. This strengthens the fail-closed safety gate but does not enable production collection or resolve RESOURCE-01.
 - Decision: Keep object deletion unsupported and the normal persistent reclaimer disabled. Continue PERSIST-01 offline while the stale helper and PC/SC reader enumeration blocker remain.
-- Commit: `<pending>`
+- Commit: `e7742cb4`
 - Artifacts/logs: Unit test output; no archived hardware log.
