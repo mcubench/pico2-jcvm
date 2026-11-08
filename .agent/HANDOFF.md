@@ -30,15 +30,17 @@ new firmware BOOTSEL hook, and the updated `cycle choupi --usb-path 1-3` build
 completed.
 
 Failover checks then mapped `1-4` to `/dev/ttyACM2` and `1-5` to
-`/dev/ttyACM0`; 8-second captures on both produced no serial payload. A fresh
-`pcsc_scan -r` still listed only VPCD. Runtime USB enumeration is present, but
-there is no serial or CCID response from any of the three boards in this VM.
-Whether the firmware loop is stalled is not established. This failover check is
-recorded in commit `139a921e`.
+`/dev/ttyACM0`; 8-second captures on both produced no serial payload. Direct
+1200-baud CDC reset requests on those two paths returned `Input/output error`.
+A fresh `pcsc_scan -r` still listed only VPCD. The authorized refresh now sees
+USB nodes 117-119, all runtime `2e8a:0009`; none entered BOOTSEL. Runtime USB
+enumeration is present, but there is no serial or CCID response from any board
+in this VM. Whether the firmware loop is stalled is not established. This
+failover check is recorded in commit `139a921e`.
 
 Physical flash is still blocked: the deployed runtime rejects picotool reset
 (`Unable to locate reset interface`), and the old firmware did not enter
-BOOTSEL after CDC 1200 baud. The uncommitted new firmware now requests
+BOOTSEL after CDC 1200 baud. The new firmware now requests
 `reset_usb_boot(0, 0)` from a deferred CDC line-coding callback on 1200 baud,
 but cannot be installed until a board is already in BOOTSEL. No physical flash
 or runtime log is claimed. Failed attempt log:

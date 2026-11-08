@@ -28,6 +28,12 @@
   devices are not servicing the runtime loop, but that is an inference; the
   observed fact is USB/CDC enumeration with no serial bytes and no PC/SC
   readers. Avoid repeating the long flash wait against this same runtime image.
+- **Reset failover:** Direct CDC 1200-baud requests on the second and third
+  ports (`/dev/ttyACM2` and `/dev/ttyACM0`) returned `stty: Input/output
+  error`. A subsequent authorized refresh still showed all three devices as
+  runtime `2e8a:0009` at USB nodes 117-119; none entered BOOTSEL. The new
+  firmware callback is not installed on these old images, so this does not
+  test the new hook.
 
 ---
 
