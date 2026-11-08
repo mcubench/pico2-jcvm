@@ -9,8 +9,9 @@ if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
   ((iterations < 1 || iterations > 512)); then
   die "usage: $0 [iterations 1..512] [byte-array|rsa-public]"
 fi
-[[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" ]] || \
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public]"
+[[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" || \
+   "${mode}" == "rsa-live-static" ]] || \
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static]"
 
 "${repo_root}/tools/build-pc" --profile max_crypto
 "${repo_root}/tools/build-persistent-reclaimer-probe"
@@ -32,6 +33,13 @@ for ((iteration = 0; iteration < iterations; ++iteration)); do
     probe_args+=(
       --apdu 0000070000 --expect-apdu-response 379000
       --apdu 0000080000 --expect-apdu-response 019000
+    )
+  elif [[ "${mode}" == "rsa-live-static" ]]; then
+    probe_args+=(
+      --apdu 0000090000 --expect-apdu-response 379000
+      --apdu 00000A0000 --expect-apdu-response 019000
+      --apdu 00000C0000 --expect-apdu-response 379000
+      --apdu 00000B0000 --expect-apdu-response 019000
     )
   else
     probe_args+=(
@@ -56,17 +64,22 @@ call_count="$(grep -c '^OBJECT_DELETION:' "${log}" || true)"
 reclaim_count="$(grep -Ec \
   '^OBJECT_DELETION: package=.*applet_result=0 package_result=0 erased_applet=[1-9][0-9]* ' \
   "${log}" || true)"
-[[ "${call_count}" -eq "${iterations}" ]] || \
-  die "expected ${iterations} collector calls, got ${call_count}; see ${log}"
-[[ "${reclaim_count}" -eq "${iterations}" ]] || \
-  die "expected ${iterations} completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
+expected_calls="${iterations}"
+if [[ "${mode}" == "rsa-live-static" ]]; then
+  expected_calls=$((iterations * 2))
+fi
+[[ "${call_count}" -eq "${expected_calls}" ]] || \
+  die "expected ${expected_calls} collector calls, got ${call_count}; see ${log}"
+expected_reclaims="${iterations}"
+[[ "${reclaim_count}" -eq "${expected_reclaims}" ]] || \
+  die "expected ${expected_reclaims} completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
 erased_total="$(grep '^OBJECT_DELETION: package=' "${log}" | \
   sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \
   awk '{ total += $1 } END { print total + 0 }')"
 if [[ "${mode}" == "byte-array" ]]; then
   [[ "${erased_total}" -eq "${iterations}" ]] || \
     die "expected exactly one applet-owned tag erased per byte-array cycle (${iterations}), got ${erased_total}; see ${log}"
-else
+elif [[ "${mode}" == "rsa-public" ]]; then
   min_erased="$(grep '^OBJECT_DELETION: package=' "${log}" | \
     sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \
     sort -n | head -n 1)"
@@ -75,6 +88,31 @@ else
     sort -n | tail -n 1)"
   [[ -n "${min_erased}" && "${min_erased}" -eq "${max_erased}" ]] || \
     die "RSA-key reclamation count varied across cycles (min=${min_erased:-none} max=${max_erased:-none}); see ${log}"
+else
+  awk -v expected="${iterations}" '
+    /^OBJECT_DELETION: package=/ {
+      match($0, /erased_applet=[0-9]+/)
+      value = substr($0, RSTART + 14, RLENGTH - 14) + 0
+      match($0, /static_roots=[0-9]+/)
+      static_value = substr($0, RSTART + 13, RLENGTH - 13) + 0
+      calls++
+      if (calls % 2 == 1) {
+        if (value != 0 || static_value != 1) failed = 1
+      } else {
+        if (value == 0 || static_value != 0) failed = 1
+        if (min == 0 || value < min) min = value
+        if (value > max) max = value
+        pairs++
+      }
+      match($0, /erased_package=[0-9]+/)
+      package_value = substr($0, RSTART + 15, RLENGTH - 15) + 0
+      if (package_value != 0) failed = 1
+    }
+    END {
+      if (calls != expected * 2 || pairs != expected || min == 0 || min != max || failed) exit 1
+      printf "OBJECT_DELETION_LIVE_STATIC:PASS protected_calls=%d cleanup_calls=%d erased_per_cleanup=%d\n", expected, pairs, min
+    }
+  ' "${log}" || die "live RSA static root was not consistently preserved then reclaimed; see ${log}"
 fi
 printf 'OBJECT_DELETION_VPCD:PASS mode=%s requests=%s erased_applet_tags=%s log=%s\n' \
-  "${mode}" "${reclaim_count}" "${erased_total}" "${log#${repo_root}/}"
+  "${mode}" "${call_count}" "${erased_total}" "${log#${repo_root}/}"

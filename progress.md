@@ -26284,3 +26284,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `artifacts/logs/object-deletion-vpcd-20261108T223404Z.log`; 32-cycle run
   `artifacts/logs/object-deletion-vpcd-20261108T223514Z.log`, SHA-256
   `cf07453c1b55ce59cdd50c17b01338330c5c8e93437677aa3ee8cb371a0323f5`.
+
+## 2026-11-08 Verify live RSA package-static root preservation 7 minutes
+
+- Step/experiment: `RESOURCE-01-RSA-STATIC-ROOT-PRESERVATION`
+- When: '2026-11-08 23:37 CET' - '2026-11-08 23:44 CET'
+- Change: Extended the repository-owned probe CAP with a static RSA key root.
+  The scenario requests deletion after clearing the instance field, checks the
+  key remains initialized, then clears the static root and requests deletion
+  again. Added strict static-root and erase-count assertions to the VPCD
+  wrapper. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/build-persistent-reclaimer-probe` passed. A guarded
+  two-cycle VPCD run passed 11/11: each still-rooted pass had `static_roots=1`
+  and erased zero tags; each post-clear pass had `static_roots=0` and erased 10
+  applet tags. A follow-up with strict assertions passed 7/7. `bash -n` and
+  changed-file `git diff --check` passed. No physical device was accessed.
+- Result: The focused collector preserves and later deletes the RSA graph as
+  package-static root state changes. It does not prove foreign-context/native
+  root coverage or power-loss safety on physical flash.
+- Decision: Keep production deletion unsupported. Continue with cross-owner
+  alias retention and partial-erasure/retry checks before broader JCAlgTest
+  traffic.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T224233Z.log`
+  (SHA-256 `83af7ec4f4860482eb4117879db6e7b678edd31738625bc2764e399887b078c8`)
+  and `artifacts/logs/object-deletion-vpcd-20261108T224427Z.log` (SHA-256
+  `5e8f5f0b4d1b02872526990d4bf27bd338e0f91716f551a11112a64e34c92331`).

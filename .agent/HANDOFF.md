@@ -10653,3 +10653,21 @@ post-APDU boundary after the applet can clear cache references. Keep support
 reported false in production and do not wire deletion to firmware until every
 context/root and power-loss gate passes. No physical device was accessed; the
 unexpected PacketRF remains excluded.
+
+# Current handoff — preserve a live RSA graph through a static root — 2026-11-08 23:44 CET
+
+The local VPCD fixture now roots a 512-bit RSA public key in both an applet
+instance field and a package-static field. After clearing the instance field,
+collection reports `static_roots=1` and erases zero tags; an APDU confirms the
+static RSA key remains initialized. Clearing the static root then reports
+`static_roots=0` and erases 10 applet tags. Two cycles passed 11/11; the stricter
+one-cycle assertion rerun passed 7/7.
+
+This validates the active package's static-root path in one Context only. It
+does not cover foreign package roots, retained sibling contexts, native
+registries or interrupted physical erasure. Keep production reclamation
+disabled and continue those safety gates. The unexpected device remains
+excluded and was not accessed.
+
+Evidence: `artifacts/logs/object-deletion-vpcd-20261108T224233Z.log` and
+`artifacts/logs/object-deletion-vpcd-20261108T224427Z.log`.

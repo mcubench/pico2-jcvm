@@ -12,6 +12,7 @@ import javacard.security.RSAPublicKey;
 public final class PersistentReclaimerProbe extends Applet {
   private byte[] retained;
   private RSAPublicKey retainedRsaKey;
+  private static RSAPublicKey retainedStaticRsaKey;
 
   private PersistentReclaimerProbe() {
     register();
@@ -68,6 +69,35 @@ public final class PersistentReclaimerProbe extends Applet {
         retainedRsaKey = null;
         buffer[0] = JCSystem.isObjectDeletionSupported() ? (byte) 1 : 0;
         JCSystem.requestObjectDeletion();
+        break;
+      case 9: {
+        byte[] modulus = new byte[64];
+        for (short i = 0; i < 64; i++) modulus[i] = (byte)(i + 1);
+        modulus[0] = 0x7f;
+        byte[] exponent = {0x01, 0x00, 0x01};
+        retainedRsaKey = (RSAPublicKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+        retainedRsaKey.setModulus(modulus, (short)0, (short)modulus.length);
+        retainedRsaKey.setExponent(exponent, (short)0, (short)exponent.length);
+        retainedStaticRsaKey = retainedRsaKey;
+        buffer[0] = retainedRsaKey.isInitialized() ? (byte)0x37 : 0;
+        break;
+      }
+      case 10:
+        retainedRsaKey = null;
+        buffer[0] = JCSystem.isObjectDeletionSupported() ? (byte) 1 : 0;
+        JCSystem.requestObjectDeletion();
+        break;
+      case 11:
+        retainedStaticRsaKey = null;
+        buffer[0] = JCSystem.isObjectDeletionSupported() ? (byte) 1 : 0;
+        JCSystem.requestObjectDeletion();
+        break;
+      case 12:
+        buffer[0] = retainedStaticRsaKey != null &&
+                            retainedStaticRsaKey.isInitialized()
+                        ? (byte)0x37
+                        : 0;
         break;
       default:
         ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);

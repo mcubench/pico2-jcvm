@@ -159,6 +159,11 @@ Archive text is historical evidence, not current device state or priorities.
     exactly 10 applet tags per cycle (320 total), with no package-static erases.
     This exercises realistic RSA object graphs on PC VPCD only; it still does
     not establish retained-context or physical-flash safety.
+  - A static RSA-key root regression verifies the object remains initialized
+    after an instance-root deletion request (`static_roots=1`, zero tags
+    erased), then clears the static root and reclaims the 10-tag graph. The
+    two-cycle VPCD run passed 11/11, and the follow-up strict-assertion run
+    passed 7/7. Foreign-context roots and physical interruption remain open.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

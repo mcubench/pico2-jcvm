@@ -103,6 +103,25 @@
 - **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T223514Z.log`
   (SHA-256 `cf07453c1b55ce59cdd50c17b01338330c5c8e93437677aa3ee8cb371a0323f5`).
 
+## RESOURCE-01: preserve a live RSA object through a package-static root
+
+- **Change:** The local fixture now roots the same 512-bit RSA key in an
+  instance field and a package-static field. It clears the instance root and
+  requests collection, verifies the static key is still initialized, then
+  clears the package-static reference and requests collection again. The
+  wrapper asserts `static_roots` and zero/positive erase counts.
+- **Result:** Two cycles passed 11/11: the first request in each cycle saw one
+  static root and erased zero tags; the second saw zero static roots and erased
+  10 applet tags. A strict-assertion one-cycle rerun passed 7/7. No
+  package-static records were erased.
+- **Limit:** This covers the active package static root in one Context. It does
+  not cover foreign package references, retained peer contexts, native roots,
+  or power loss during physical erasure.
+- **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T224233Z.log`
+  (SHA-256 `83af7ec4f4860482eb4117879db6e7b678edd31738625bc2764e399887b078c8`)
+  and `artifacts/logs/object-deletion-vpcd-20261108T224427Z.log` (SHA-256
+  `5e8f5f0b4d1b02872526990d4bf27bd338e0f91716f551a11112a64e34c92331`).
+
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
 ## Persistent reclaimer must include references beyond the selected context — 2026-11-08
