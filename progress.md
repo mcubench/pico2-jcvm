@@ -22128,7 +22128,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. ARM image ends at `0x100eb154` with 85,676 bytes left in the firmware window. `PICO2_HOST_USB_ACCESS=1 ... ./tools/test-sio-cross-aid-vpcd` passed 34/34 and `PICO2_HOST_USB_ACCESS=1 ... ./tools/test-vpcd-multipackage --timeout 180` passed 47/47. After build, elevated `PICO2_HOST_USB_ACCESS=1 ./tools/env lsusb` found only root hubs and the VirtualBox Tablet; physical testing was unavailable.
 - Result: Existing CAP applet, crypto, SIO, persistence, restart and multipackage lifecycle cases remain compatible. Runtime field-kind mismatches are rejected once a non-default runtime kind is established. A first store is not yet checked against the CAP-declared kind; static fields and hostile-CAP interpreter coverage also remain open.
 - Decision: Continue HARD-01 by mapping CAP-declared field kinds to field tokens and applying the same checks to static accessors, then add hostile-CAP regressions. Do not claim physical acceptance or mark HARD-01 complete.
-- Commit: `pending`
+- Commit: `104d1845`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T025643Z.log` (SHA-256 `b45cfa3e00081346f5761a3ce0baa1fb0eeb83f1be95a1e8aff3b44521bef1a4`); `artifacts/logs/host-vpcd-multipackage-apdu-20261105T030724Z.log` (SHA-256 `fcafe09257f3470b87cce147815e1f2e8e92ac002bba7fcd986a8376c3b2fea0`); restart log `artifacts/logs/host-vpcd-multipackage-restart-20261105T030724Z.log` (SHA-256 `be6875ba56c24b620e5c7d80c73dd014f280643d75d7e18cac1abbba9150dcbc`).
 
 ## 2026-11-05 Static field slot consistency checks 41 minutes
