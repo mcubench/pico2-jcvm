@@ -26036,5 +26036,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed (159/162). `./tools/package-empty-card-uf2` passed with 3,871 firmware blocks and 4,096 storage blocks. `picotool info -a` identified RP2350 ARM Secure.
 - Result: Current artifact `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,079,616 bytes, SHA-256 `b8e6829d8d102d57eba95e0af912e7e452afcf859510bc3023a84abe6f177d3c`. Firmware UF2 is 1,982,464 bytes, SHA-256 `a308b2f24bcc41d590a455991990dff014f45cd5c07de5d661cc859b0468b634`; marker `FF2EB31F`, release 0.1.1, firmware end `0x100F1EEC`, free 57,620 bytes. No physical validation was run.
 - Decision: This is the current empty-card external-test image. Keep the dirty-tree provenance explicit and do not claim physical validation.
-- Commit: `<pending>`
+- Commit: `369f5de6`
 - Artifacts/logs: UF2 and `artifacts/firmware/README-crypto-arm-empty-card-current.md`; build provenance under `build/arm` and `build/riscv`.
