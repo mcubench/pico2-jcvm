@@ -9,6 +9,7 @@ second owner's record. If the old snapshot wins, retry also uses the production
 reclaimer and confirms all ten candidates are removed. The
 `./tools/test-rp2350-fs-overlay` run passes with `TEST:SUMMARY fail=0`; full log:
 `/tmp/rp2350-fs-overlay-persist01.log`.
+Implementation and progress record: commit `426d6030`.
 
 This is host fake-flash evidence only. Physical multi-owner/interrupted erase
 and actual USB power-loss acceptance remain open; keep normal persistent

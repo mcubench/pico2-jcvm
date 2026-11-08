@@ -25419,3 +25419,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep PERSIST-01 open and normal persistent reclamation disabled until physical multi-owner and interrupted-erase/power-loss gates pass.
 - Commit: `<pending>`
 - Artifacts/logs: `/tmp/rp2350-fs-overlay-persist01.log`; final `TEST:SUMMARY fail=0`.
+
+## 2026-11-08 Resolve PERSIST-01 overlay test commit reference 1 minute
+
+- Step/experiment: `PERSIST-01-OVERLAY-RECLAIMER-COMMIT-REFERENCE`
+- When: '2026-11-08 06:40 CET' - '2026-11-08 06:41 CET'
+- Change: Resolved the implementation commit for the preceding production-reclaimer overlay power-cut test record.
+- Validation: Confirmed commit `426d6030` contains the test, TODO/QKB/HANDOFF updates and preceding progress record; no tests rerun.
+- Result: The RP2350 host-overlay production-reclaimer test step maps to `426d6030`.
+- Decision: Keep physical PERSIST-01 power-loss and multi-owner acceptance open.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
