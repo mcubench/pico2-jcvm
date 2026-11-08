@@ -1,3 +1,13 @@
+# Current handoff — user prioritizes long-run resource lifecycle — 2026-11-08 06:29 CET
+
+The user explicitly made long-run NO_RESOURCE/resource reclamation and reset
+investigation the highest priority. TODO.md now starts with RESOURCE-01 and
+contains the findings, proposed native changes and measurable acceptance gates.
+It coordinates existing PERSIST, STORE, API and JC-RESET tasks. The user asked
+for analysis and backlog prioritization only; no runtime implementation was
+made or authorized by this update. Preserve PERSIST-01 safety gates and the
+unchanged 1.8.4 CAP. Prior handoff and all unrelated worktree changes remain.
+
 # Current handoff — reclaimer batch interruption regression — 2026-11-08 06:24 CET
 
 Extended `./tools/test-persistent-transaction` to inject erase failures after

@@ -25397,3 +25397,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue PERSIST-01.
 - Commit: `pending progress-reference commit`.
 - Artifacts/logs: none.
+
+## 2026-11-08 Prioritize long-run resource reclamation 2 minutes
+
+- Step/experiment: `RESOURCE-01-PRIORITY`
+- When: '2026-11-08 06:27 CET' - '2026-11-08 06:29 CET'
+- Change: Added RESOURCE-01 as the highest TODO priority at the user's request, with source/evidence findings, implementation recommendations and long-run acceptance; updated session handoff.
+- Validation: Inspected TODO ordering, cross-links and scoped git diff --check. Builds and hardware tests intentionally skipped because this is documentation only.
+- Result: Persistent exhaustion and unsupported deletion are distinguished from unproven physical reset causes; no new runtime metric measured or implementation changed.
+- Decision: Subsequent implementation should prioritize RESOURCE-01 while retaining PERSIST-01 safety gates and unchanged fixtures.
+- Commit: See the Git commit containing this RESOURCE-01-PRIORITY record.
+- Artifacts/logs: none; existing 2026-11-07 run evidence referenced in TODO.md and .agent/QKB.md.

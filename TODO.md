@@ -7,25 +7,30 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. Close **HOST-02 (P1)** acceptance: collect no-console Windows reconnect
+1. **Top priority: RESOURCE-01 — stop long-run resource exhaustion and
+   investigate resets.** Complete safe object reclamation and verify bounded
+   allocation during key reuse and JCAlgTest cache clearing. Coordinate
+   PERSIST-01/02/03, STORE-01, API-01/03 and JC-RESET-01; see the acceptance
+   task below. This takes precedence over the other backlog items.
+2. Close **HOST-02 (P1)** acceptance: collect no-console Windows reconnect
    timings for the current and original images. Normal startup wait removal
    and the no-DTR diagnostic deadline are implemented and hardware-tested; the
    timing harness is ready for Windows execution. See the
    [diagnostic workflow](docs/usb-startup-diagnostics.md).
-2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
+3. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
    R53 `JCSystem.isAppletActive(AID)` now checks the executing install context
    and active retained applet instances across AIDs; focused callback and SIO
    VPCD checks pass.
-3. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
+4. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
-4. Close the current-image coverage and integration gates in **API-03**,
+5. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
-5. Implement and validate native support for the `ALG_HMAC_*` algorithms;
+6. Implement and validate native support for the `ALG_HMAC_*` algorithms;
    acceptance must use the unchanged JCAlgTest 1.8.4 / jc305 fixture and
    matching client. See HMAC-01.
-6. Diagnose the reported physical-reader disappearance during the max_crypto
+7. Diagnose the reported physical-reader disappearance during the max_crypto
    JCAlgTest Signature factory matrix without using real tokens. See
    JC-RESET-01.
 
@@ -50,6 +55,54 @@ The [original TODO](.agent/archive/2026-11-01-todo-pre-compaction/TODO.md) is
 preserved byte-for-byte with a SHA-256 manifest. The [migration map](.agent/archive/2026-11-01-todo-pre-compaction/MIGRATION.md)
 accounts for every original unchecked item, including historical entries.
 Archive text is historical evidence, not current device state or priorities.
+
+## Top-priority resource lifecycle investigation
+
+### RESOURCE-01
+
+- [ ] **Stop long-run NO_RESOURCE failures and establish the cause of resets.**
+  Priority: highest, explicitly requested by the user on 2026-11-08.
+  Evidence: current JCSystem native dispatch reports object deletion unsupported
+  and requestObjectDeletion() throws ILLEGAL_USE (reason 6), preventing the
+  subsequent RSA-cache cleanup in the supplied JCAlgTest reset handler.
+  The 2026-11-07 unchanged 1.8.4 VPCD support run returned F205 / NO_RESOURCE
+  after 797,682 ms in RSA CRT 3072 probing, with persistent-reference
+  serialization failing from filesystem OutOfFlash. Physical reset causality
+  remains unproven; VPCD and RP2350 use different storage backends/capacities.
+  RAM heap collection does not reclaim persistent body records; the production
+  persistent reclaimer remains disabled pending PERSIST-01 safety acceptance.
+- Remaining work:
+  - Account separately for persistent live/orphan tags and bytes, filesystem
+    obsolete versions/compaction, RAM backing, handles and native crypto state.
+    Instrument the failing allocation, reset request and post-APDU boundaries.
+  - Complete PERSIST-01 multi-owner, alias/root, transaction and physical
+    interruption-safety gates before enabling normal persistent reclamation.
+    Then implement context-scoped deferred JCSystem deletion requests and
+    advertise support only when the required reclamation guarantees hold.
+    Preserve the unchanged supplied CAP; do not replace deletion with a no-op.
+  - Verify persistent versus transient allocation: durable applet/key state
+    survives power loss; transient contents and crypto scratch stay in RAM.
+    Audit key replacement, partial-construction failure, stale native roots,
+    obsolete body tags, and resource release on every error path.
+  - Verify same-key setters reuse bounded backing; clearKey clears material and
+    initialized state while retaining reusable capacity. Audit RSA allocation
+    of unused components and per-byte persistent writes for avoidable storage
+    pressure and write amplification, preserving transaction semantics.
+  - Diagnose resets independently using reset cause, watchdog state, last APDU
+    and filesystem recovery evidence; distinguish firmware faults from USB/
+    PCSC reader disappearance. Coordinate JC-RESET-01.
+- Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
+  unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
+  plateau in retained RAM, handles and persistent records. Demonstrate that
+  deletion requested before clearing cache references reclaims the resulting
+  unreachable persistent graph before the next process() call, preserves live
+  aliases/other owners, and safely recovers from interrupted reclamation.
+  Complete long-run physical validation without NO_RESOURCE, FAULT, unexpected
+  reset or transport loss; record duration, iteration count and resource
+  high-water marks. Follow both-architecture build and hardware gates.
+- Ownership: this task coordinates the outcome; PERSIST-01/02/03, STORE-01,
+  API-01/03 and JC-RESET-01 retain their existing implementation/safety scope.
+  No implementation is authorized by this planning update.
 
 ## Functionality review — 2026-11-03
 
