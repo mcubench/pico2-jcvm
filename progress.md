@@ -25331,3 +25331,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Static foreign-reference clear/replace inventory behavior is covered. Keep the support boundary and disabled automatic reclaimer until PERSIST-01 gates pass; continue other CTX-01 checks.
 - Commit: `d3887cc7` (test/docs); progress record committed separately immediately after.
 - Artifacts/logs: Unit-test console output; no physical log.
+
+## 2026-11-08 Rebuild and rerun cross-AID VPCD 6 minutes
+
+- Step/experiment: `CTX-01-CROSS-AID-VPCD-REVALIDATION`
+- When: '2026-11-08 06:04 CET' - '2026-11-08 06:10 CET'
+- Change: Rebuilt the PC VM with the current worktree and `max_crypto`, then reran the complete three-package cross-AID SIO regression. The first pass was intentionally treated as provisional because the wrapper consumes an existing PC binary and does not build it itself.
+- Validation: `./tools/build-pc --profile max_crypto` passed (`159/162` profile capabilities); `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0`. Existing Java Card converter deprecation/int warnings, Rust warnings, packed-member warnings, and a Logback hostname socket warning were present; the build returned zero. Physical validation was not attempted after the access refresh showed runtime-only boards and PC/SC listed only VPCD.
+- Result: Current-worktree SIO owner/proxy behavior passes the full VPCD test, including stale proxy rejection after reset/restart/DELETE/reinstall and fresh dispatch after reinstall.
+- Decision: Keep physical acceptance open. Continue with other offline CTX-01/03 or persistence gaps; do not equate VPCD with Pico hardware acceptance.
+- Commit: `pending documentation commit`.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T050858Z.log`.

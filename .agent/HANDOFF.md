@@ -1,3 +1,20 @@
+# Current handoff — rebuilt cross-AID VPCD acceptance — 2026-11-08 06:13 CET
+
+Rebuilt the PC VM from the current worktree with `./tools/build-pc --profile
+max_crypto`, then ran `PICO2_HOST_USB_ACCESS=1
+./tools/test-sio-cross-aid-vpcd`. The complete three-package SIO suite passed
+35/35, including owner-tagged argument/reference checks, stale proxy behavior
+after reset/restart/DELETE/same-AID reinstall, and fresh proxy dispatch. Log:
+`artifacts/logs/sio-cross-aid-vpcd-20261108T050858Z.log`. The PC build returned
+zero; it emitted the known Logback hostname socket warning and existing C++ /
+Rust warnings. No source changes from the unrelated dirty worktree were staged.
+
+Physical status is unchanged: the authorized helper granted three USB nodes,
+which enumerate in runtime mode rather than BOOTSEL; `pcsc_scan -r` lists only
+the two VPCD readers. Do not claim this VPCD pass as physical acceptance.
+Continue CTX-01/03 and storage priorities offline until a Pico CCID reader or
+BOOTSEL device becomes available.
+
 # Current handoff — foreign-static replacement inventory regression — 2026-11-08 05:55 CET
 
 Extended the persistent transaction/inventory unit test for foreign static
