@@ -25320,3 +25320,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the new reset hook and external image build-validated only. Do not repeat the same long reset/flash wait unless a board enters BOOTSEL or provides a working CDC/PCSC interface.
 - Commit: `6ad6b969`
 - Artifacts/logs: Commands and status recorded here; `artifacts/logs/cycle-choupi-20261108T041557Z.log` is the first-board reset failure log.
+
+## 2026-11-08 Foreign-static replacement inventory 9 minutes
+
+- Step/experiment: `CTX-01-FOREIGN-STATIC-REPLACE`
+- When: '2026-11-08 05:47 CET' - '2026-11-08 05:56 CET'
+- Change: Added regression coverage proving that replacing a persistent foreign-static wrapper with a different applet owner's reference exposes only the old owner target and nested records as unreachable candidates, while the replacement subtree remains rooted. Clearing the replacement wrapper exposes its subtree. Updated TODO, QKB and HANDOFF. This validates inventory; assignment does not eagerly erase records and normal reclamation remains disabled.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `replacing_foreign_static_wrapper_orphans_old_owner_only`; `./tools/test-persistent-inventory` passed with `TEST:SUMMARY fail=0`; scoped `git diff --check` passed. No ARM/RISC-V rebuild was needed because only a host unit test and documentation changed. Physical validation was not possible: the authorized refresh found runtime `2e8a:0009` devices, no BOOTSEL device, and PC/SC listed only the virtual readers.
+- Result: Old owner-scoped records are discoverable for the existing reclaimer after overwrite, without falsely reclaiming the replacement target. No persistent record was erased by this test.
+- Decision: Static foreign-reference clear/replace inventory behavior is covered. Keep the support boundary and disabled automatic reclaimer until PERSIST-01 gates pass; continue other CTX-01 checks.
+- Commit: `d3887cc7` (test/docs); progress record committed separately immediately after.
+- Artifacts/logs: Unit-test console output; no physical log.
