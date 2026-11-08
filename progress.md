@@ -25992,5 +25992,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passed 22/22; `./tools/test-rp2350-fs-overlay` passed 1,000 cut points with `TEST:SUMMARY fail=0`; `git diff --check` passed for changed source/test/docs. ARM, RISC-V and PC builds passed for the same source state in the immediately preceding max_crypto image refresh. No physical device was accessed.
 - Result: While foreign alias tags remain, their target and nested body are excluded from reclamation; an unrelated orphan is erased. Removing the foreign alias chain allows the target subtree to be reclaimed. This closes an inventory safety gap only; production persistent reclamation remains disabled, and physical multi-owner/interruption acceptance remains open.
 - Decision: Keep object deletion unsupported and the production collector disconnected until remaining PERSIST-01 gates pass. Continue with identified Pico2 JCVM devices only; exclude the unexpected device.
-- Commit: `<pending>`
+- Commit: `240ef2e5`
 - Artifacts/logs: Unit and filesystem-overlay command output; no archived hardware logs.
