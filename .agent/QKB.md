@@ -8369,3 +8369,35 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   deletion; the same test completed at the larger timeout. The run also
   exposed and fixed stale inventory regex assertions (`owner_scans` and field
   ordering) in the integration test. Exact logs are recorded in `progress.md`.
+
+# 2026-11-08 Applet-instance roots must protect longer backing tags
+
+- Reproduction: Temporary per-APDU persistent reclaimer erased registered
+  applet root records such as `03043A00FF` and `03053A00FF`. Their reachable
+  backing records use longer tags beginning with the applet-root tag; the heap
+  reachability guard previously only recognized exact tags or direct children
+  whose tag was shorter than the candidate.
+- Viable source fix: `Heap::hasReachablePersistentTagPrefix()` now treats valid
+  applet-instance root tags (namespace `03`, 5 or 6 bytes, non-reserved owner,
+  final byte `FF`) as prefixes of reachable persistent object tags. A focused
+  persistent-transaction regression covers `03043A00FF` protecting
+  `03043A00FF0000`, without protecting the adjacent class root. This is a
+  narrow root-coverage fix; it does not authorize production reclamation.
+- Experimental caveat: After the prefix guard, the temporary collector logged
+  `erased=0` on every APDU but the multipackage suite failed transient
+  cross-AID lifecycle (`6999`). Rebuilt normal PC VPCD without the hook passed
+  47/47, including transient lifecycle and card-reset applet lookup. Thus
+  invoking the collector at every APDU is unsafe even when it erases no tags;
+  likely heap mark/lifecycle interaction remains to be isolated. The temporary
+  hook and tag telemetry were removed.
+- RESOURCE-01 remains unresolved: unchanged JCAlgTest 1.8.4 still reaches
+  persistent OutOfFlash and `F205` at RSA-768 after 442,532 ms in VPCD. No
+  physical token was used in this step, and no firmware was flashed. Keep
+  object deletion support and production persistent reclamation disabled until
+  the broader PERSIST-01 safety gates pass.
+- Validation: `./tools/test-persistent-transaction` passes (`fail=0`), PC,
+  ARM max_crypto and RISC-V max_crypto wrappers pass, and the rebuilt-source
+  multipackage VPCD suite passes `47/47`. Logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T125947Z.log` (temporary
+  hook failure), `...T130906Z.log` (normal control), and
+  `...T131844Z.log` (rebuilt normal control).

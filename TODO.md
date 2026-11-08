@@ -72,6 +72,14 @@ Archive text is historical evidence, not current device state or priorities.
   remains unproven; VPCD and RP2350 use different storage backends/capacities.
   RAM heap collection does not reclaim persistent body records; the production
   persistent reclaimer remains disabled pending PERSIST-01 safety acceptance.
+  On 2026-11-08, a rerun after RAM-GC parity failed earlier at RSA-768 after
+  442,532 ms with `PERSIST_EXCEPTION id=20` and `F205 / NO_RESOURCE`. The
+  temporary per-APDU reclaimer experiment exposed missing protection for
+  reachable applet-instance root records (`03 owner package class FF`) when
+  their backing tags extend the root prefix. A prefix guard and regression now
+  protect this case. The experimental per-APDU path still fails transient
+  lifecycle behavior even with zero records erased; the normal 47/47 control
+  passes. No long-run fix is established.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

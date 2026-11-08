@@ -1874,6 +1874,41 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x04;
+    const auto applet_root =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(owner, 0x3a, 0x00);
+    const uint8_t backing_record_tag_bytes[] = {
+        0x03, owner, 0x3a, 0x00, 0xff, 0x00, 0x00};
+    const uint8_t other_applet_record_tag_bytes[] = {
+        0x03, owner, 0x3a, 0x01, 0xff, 0x00, 0x00};
+    jcvm::Heap heap(owner);
+    const auto backing_record =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    auto backing_array = heap.getArray(backing_record);
+    jcvm::fs::Tag backing_tag{};
+    backing_tag.len = sizeof(backing_record_tag_bytes);
+    std::memcpy(backing_tag.value, backing_record_tag_bytes,
+                sizeof(backing_record_tag_bytes));
+    backing_array->setPersistentTag(backing_tag);
+    const auto other_applet_record =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    auto other_applet_array = heap.getArray(other_applet_record);
+    jcvm::fs::Tag other_applet_tag{};
+    other_applet_tag.len = sizeof(other_applet_record_tag_bytes);
+    std::memcpy(other_applet_tag.value, other_applet_record_tag_bytes,
+                sizeof(other_applet_record_tag_bytes));
+    other_applet_array->setPersistentTag(other_applet_tag);
+    const auto other_applet_root =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(owner, 0x3a, 0x02);
+    const auto reachability =
+        heap.traceReachableFrom({backing_record, other_applet_record});
+    expect(applet_root.len == 5 && reachability.complete &&
+               heap.hasReachablePersistentTagPrefix(applet_root) &&
+               !heap.hasReachablePersistentTagPrefix(other_applet_root),
+           "reachable_applet_root_prefix_protects_nested_backing_record");
+  }
+
+  {
     constexpr uint8_t owner = 0x45;
     constexpr uint8_t source_package = 0x61;
     const uint8_t source_static_tag[] = {0x02, source_package, 0x01};

@@ -1585,14 +1585,22 @@ bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
   }
 
   const auto owns_tag_or_direct_record = [&tag](const fs::Tag &object_tag) {
-    if (object_tag.len == 0 || object_tag.len > sizeof(object_tag.value) ||
-        object_tag.len > tag.len) {
+    if (object_tag.len == 0 || object_tag.len > sizeof(object_tag.value)) {
       return false;
     }
     const bool exact_object_tag = object_tag.len == tag.len;
     const bool direct_field_or_element =
+        object_tag.len < tag.len &&
         tag.len == static_cast<uint16_t>(object_tag.len + sizeof(uint16_t));
-    return (exact_object_tag || direct_field_or_element) &&
+    const bool applet_instance_root_prefix =
+        (tag.len == 5 || tag.len == 6) && tag.value[0] == 0x03 &&
+        tag.value[1] != 0xfe && tag.value[1] != 0xff &&
+        tag.value[tag.len - 1] == 0xff && object_tag.len > tag.len;
+    if (object_tag.len >= tag.len) {
+      return (exact_object_tag || applet_instance_root_prefix) &&
+             std::memcmp(tag.value, object_tag.value, tag.len) == 0;
+    }
+    return direct_field_or_element &&
            std::memcmp(tag.value, object_tag.value, object_tag.len) == 0;
   };
 

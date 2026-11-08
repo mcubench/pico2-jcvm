@@ -10244,3 +10244,32 @@ No build, flash, USB, or runtime acceptance was performed. Existing technical
 handoff priorities and all unrelated uncommitted changes remain applicable.
 # Current handoff — persistent resource accounting diagnostics — 2026-11-08 08:05 CET
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
+
+# Current handoff — persistent-root prefix regression; RESOURCE-01 open — 2026-11-08 14:27 CET
+
+A focused safety fix now protects applet-instance root records when reachable
+persistent objects have longer backing tags. Example: root `03043A00FF` must be
+recognized as the prefix for a reachable backing record such as
+`03043A00FF0000`. This corrected a reclaimer safety gap seen during temporary
+VPCD testing. `./tools/test-persistent-transaction` passes with the new
+`reachable_applet_root_prefix_protects_nested_backing_record` regression.
+
+Temporary per-APDU collector diagnostics are removed. The experiment after the
+prefix fix still failed transient cross-AID lifecycle with `6999` while logging
+zero erasures for every APDU. The rebuilt-source normal VPCD multipackage suite
+passes 47/47, including reset lookup and transient lifecycle. This means the
+collector invocation itself can disrupt lifecycle state, and it is not ready
+for production. Do not enable persistent reclamation or report object deletion
+support.
+
+RESOURCE-01 remains open: unchanged JCAlgTest 1.8.4 VPCD run failed on RSA-768
+with `F205 / SystemException_NO_RESOURCE` after 442,532 ms and persistent
+OutOfFlash (`PERSIST_EXCEPTION id=20`). This source fix only closes one
+reclaimer root-coverage hole; it does not fix the long-run exhaustion. PC, ARM
+max_crypto and RISC-V max_crypto builds pass. No device was accessed or flashed;
+PacketRF remains excluded.
+
+Next: investigate why invoking reachability collection changes transient
+lifecycle even when no tags are erased; add regression coverage around mark-bit
+state and transient global-array cleanup. Then continue resource accounting and
+PERSIST-01 gates before retrying any persistent cleanup experiment.

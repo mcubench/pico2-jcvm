@@ -25830,3 +25830,36 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs:
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T122812Z.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T123244Z.log`.
+
+## 2026-11-08 Protect persistent applet root prefixes 42 minutes
+
+- Step/experiment: `RESOURCE-01-APPLET-ROOT-PREFIX-SAFETY`
+- When: '2026-11-08 13:45 CET' - '2026-11-08 14:27 CET'
+- Change: Added a heap reachability prefix rule for valid applet-instance roots
+  and a focused regression for a root tag protecting a longer backing-object
+  tag. Removed the temporary per-APDU reclaimer hook and exact-tag telemetry
+  after the experiment demonstrated lifecycle interference. Updated TODO,
+  QKB, and handoff with the scope and remaining RESOURCE-01 failure.
+- Validation: `./tools/test-persistent-transaction` passes with
+  `TEST:SUMMARY fail=0`, including the root-prefix regression. `./tools/build-pc
+  --profile max_crypto`, `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` pass. The rebuilt-source
+  `tests/integration/pc_vpcd_multipackage_test.py --timeout 300` passes
+  `TEST:SUMMARY pass=47 fail=0`. An experimental run after the prefix guard
+  still failed the transient cross-AID lifecycle check (`6999`) with zero
+  persistent erasures, while the normal control passes. No hardware test or
+  flash was performed.
+- Result: The reclaimer now recognizes reachable applet-instance root prefixes
+  in unit coverage, but the invocation itself can interfere with transient
+  lifecycle even when no records are deleted. This does not fix the earlier
+  JCAlgTest persistent OutOfFlash / `F205` at RSA-768 after 442,532 ms. Keep
+  production reclamation disabled.
+- Decision: Investigate the interaction between reachability marks, transient
+  global-array cleanup and cross-AID lifecycle before attempting persistent
+  reclaim again. RESOURCE-01 remains open.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T125947Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T130906Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T131844Z.log`,
+  `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/`.
