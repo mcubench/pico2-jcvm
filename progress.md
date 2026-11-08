@@ -25560,8 +25560,23 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   reclaimer safety.
 - Decision: Use this metric for matched VPCD long-run comparisons; instrument
   physical storage separately after a Pico PC/SC reader is available.
-- Commit: `<pending>`
+- Commit: `04c862a9`
 - Artifacts/logs: `artifacts/logs/resource-accounting-rsa-vpcd-newdiag.log`.
+
+## 2026-11-08 Resolve global inventory commit reference 1 minute
+
+- Step/experiment: `RESOURCE-01-GLOBAL-PERSISTENT-INVENTORY-COMMIT-REFERENCE`
+- When: '2026-11-08 08:05 CET' - '2026-11-08 08:06 CET'
+- Change: Recorded the commit reference for the global persistent accounting
+  diagnostic.
+- Validation: Confirmed commit `04c862a9` contains the PC-only diagnostic,
+  retained-key VPCD fixture setup, TODO/QKB/HANDOFF updates and progress entry;
+  no tests rerun.
+- Result: The global persistent accounting stage resolves to `04c862a9`.
+- Decision: Continue RESOURCE-01 with matched long-run VPCD metrics and pursue
+  hardware measurements when PC/SC access returns.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
 
 ## 2026-11-08 Resolve RSA allocation commit reference 1 minute
 

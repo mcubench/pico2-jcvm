@@ -9,7 +9,7 @@ after public `17/264`, after plain private `27/483`, and after CRT private
 `43/800`. Each checkpoint includes test/CAP/APDU records and is not an isolated
 per-key or physical flash delta. The focused three-key VPCD run passes 5/5;
 ARM, RISC-V and PC max_crypto builds pass. Log:
-`artifacts/logs/resource-accounting-rsa-vpcd-newdiag.log`.
+`artifacts/logs/resource-accounting-rsa-vpcd-newdiag.log`. Commit: `04c862a9`.
 
 No physical reader is PC/SC-visible: the helper grants three USB nodes, but
 current `pcsc_scan -r` output exposes only Virtual PCD. Continue offline.
