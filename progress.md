@@ -25678,7 +25678,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with bounded persistent inventory/key-reuse diagnosis,
   then implement deferred deletion only with the existing PERSIST-01 safety
   gates intact. Repair host-helper device filtering before physical testing.
-- Commit: `<pending>`
+- Commit: `63f7cd17`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T074658Z/`,
   `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`,
   `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.

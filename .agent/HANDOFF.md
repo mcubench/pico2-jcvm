@@ -10690,4 +10690,5 @@ reclamation change. Unexpected PacketRF remains excluded and was not accessed.
 
 Logs: `artifacts/logs/object-deletion-vpcd-20261108T225648Z.log` and
 `artifacts/logs/object-deletion-vpcd-20261108T225803Z.log` (SHA-256
-`ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`).
+`ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`). The
+fixture, wrapper and records are committed as `63f7cd17`.
