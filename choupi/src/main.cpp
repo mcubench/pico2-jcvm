@@ -527,41 +527,65 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                    package_unreachable_records.payload_bytes));
 }
 
-void reclaim_package_statics_if_requested(jcvm::Context &context) {
-  const char *setting = std::getenv("PICO2_RECLAIM_PACKAGE_STATIC");
-  if (setting == nullptr || std::strcmp(setting, "1") != 0) return;
-
-  PersistentInventoryCounts roots;
-  const auto static_result =
-      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
-          context.getAppletPackageID(), context.getHeap(),
-          count_package_static_inventory_root, &roots);
-  context.appendRootReferences(roots.references);
-  const bool applet_root = enumerate_applet_context_root(
-      context, count_applet_inventory_root, &roots);
-  if (static_result != jcvm::PersistentInventory::VisitResult::Complete ||
-      !applet_root) {
-    std::fprintf(stderr,
-                 "PACKAGE_STATIC_RECLAIMER:SKIP package=%u static_result=%u "
-                 "applet_roots_complete=%u\n",
-                 static_cast<unsigned>(context.getAppletPackageID()),
-                 static_cast<unsigned>(static_result),
-                 applet_root ? 1u : 0u);
+void service_object_deletion_request_if_enabled(jcvm::Context &context) {
+  const char *setting = std::getenv("PICO2_TEST_OBJECT_DELETION");
+  if (setting == nullptr || std::strcmp(setting, "1") != 0 ||
+      !context.isObjectDeletionRequested()) {
     return;
   }
 
-  PersistentRootVector root_vector{std::move(roots.references)};
-  uint32_t erased = 0;
-  const auto result =
-      jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
-          context.getAppletPackageID(), context.getHeap(),
-          enumerate_persistent_root_vector, &root_vector, &erased);
-  std::fprintf(stderr,
-               "PACKAGE_STATIC_RECLAIMER: package=%u result=%u erased=%u "
-               "static_roots=%u applet_roots=%u\n",
-               static_cast<unsigned>(context.getAppletPackageID()),
-               static_cast<unsigned>(result), static_cast<unsigned>(erased),
-               roots.static_roots, roots.applet_roots);
+  try {
+    PersistentInventoryCounts roots;
+    const auto static_result =
+        jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+            context.getAppletPackageID(), context.getHeap(),
+            count_package_static_inventory_root, &roots);
+    context.appendRootReferences(roots.references);
+    const bool applet_root = enumerate_applet_context_root(
+        context, count_applet_inventory_root, &roots);
+    if (static_result != jcvm::PersistentInventory::VisitResult::Complete ||
+        !applet_root) {
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:SKIP package=%u static_result=%u "
+                   "applet_roots_complete=%u\n",
+                   static_cast<unsigned>(context.getAppletPackageID()),
+                   static_cast<unsigned>(static_result),
+                   applet_root ? 1u : 0u);
+      return;
+    }
+
+    PersistentRootVector root_vector{std::move(roots.references)};
+    uint32_t erased_applet = 0;
+    uint32_t erased_package = 0;
+    const auto applet_result =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            static_cast<uint8_t>(context.getAppletID()), context.getHeap(),
+            enumerate_persistent_root_vector, &root_vector, &erased_applet);
+    const auto package_result =
+        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            context.getAppletPackageID(), context.getHeap(),
+            enumerate_persistent_root_vector, &root_vector, &erased_package);
+    const bool complete =
+        applet_result == jcvm::PersistentInventory::VisitResult::Complete &&
+        package_result == jcvm::PersistentInventory::VisitResult::Complete;
+    std::fprintf(stderr,
+                 "OBJECT_DELETION: package=%u owner=%u applet_result=%u "
+                 "package_result=%u erased_applet=%u erased_package=%u "
+                 "static_roots=%u applet_roots=%u\n",
+                 static_cast<unsigned>(context.getAppletPackageID()),
+                 static_cast<unsigned>(context.getAppletID()),
+                 static_cast<unsigned>(applet_result),
+                 static_cast<unsigned>(package_result),
+                 static_cast<unsigned>(erased_applet),
+                 static_cast<unsigned>(erased_package),
+                 roots.static_roots, roots.applet_roots);
+    if (complete) context.clearObjectDeletionRequest();
+  } catch (...) {
+    std::fprintf(stderr,
+                 "OBJECT_DELETION:ERROR package=%u owner=%u request_retained=1\n",
+                 static_cast<unsigned>(context.getAppletPackageID()),
+                 static_cast<unsigned>(context.getAppletID()));
+  }
 }
 
 void collect_heap_after_apdu() {
@@ -625,7 +649,7 @@ void collect_heap_after_apdu() {
       }
     }
 #ifdef PC_VERSION
-    reclaim_package_statics_if_requested(context);
+    service_object_deletion_request_if_enabled(context);
 #endif
 
     const unsigned long passes = trace_enabled ? repeat_count : 1;

@@ -31,6 +31,25 @@
   `artifacts/results/jcalgtest-support-vpcd-20261108T162853Z/`; clean control
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T173555Z.log`.
 
+## RESOURCE-01: focused request-latch regression after the long VPCD run
+
+- **Change:** Reintroduced a narrowly scoped PC_VERSION-only test gate,
+  `PICO2_TEST_OBJECT_DELETION=1`, for a local fixture. Requests are latched per
+  active applet and serviced after its APDU, after the fixture clears its
+  retained persistent-array reference. The path collects applet-owner and
+  package-static candidates and clears the request only when both scans finish.
+- **Validation:** `./tools/test-object-deletion-vpcd` rebuilt PC max_crypto and
+  passed 19/19. Eight allocate/clear/request cycles each erased one applet tag;
+  none erased a package-static tag. ARM and RISC-V max_crypto wrapper builds
+  passed. `./tools/test-jcsystem-transaction-applet --case 34` passed 3/3 and
+  confirmed default support=false / `ILLEGAL_USE` behavior.
+- **Limit:** This focused single-owner VPCD test does not substantiate the
+  earlier full-run 1,580-tag result, does not cover all retained contexts or
+  native roots, and does not test persistent flash interruption or hardware.
+  Firmware behavior remains unchanged; RESOURCE-01 stays open.
+- **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`
+  (SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`).
+
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
 ## Persistent reclaimer must include references beyond the selected context — 2026-11-08

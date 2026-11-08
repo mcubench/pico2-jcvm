@@ -48,6 +48,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <new>
 #include <vector>
@@ -1900,10 +1901,23 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_getCurrentAppletInstance() {
 
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isObjectDeletionSupported() {
+#ifdef PC_VERSION
+  const char *test_setting = std::getenv("PICO2_TEST_OBJECT_DELETION");
+  if (test_setting != nullptr && std::strcmp(test_setting, "1") == 0) {
+    return TRUE;
+  }
+#endif
   return FALSE;
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_requestObjectDeletion() {
+#ifdef PC_VERSION
+  const char *test_setting = std::getenv("PICO2_TEST_OBJECT_DELETION");
+  if (test_setting != nullptr && std::strcmp(test_setting, "1") == 0) {
+    Context::getActiveContext().requestObjectDeletion();
+    return;
+  }
+#endif
   // The runtime reports deletion unsupported, so the API requires ILLEGAL_USE.
   Context::getActiveContext().setPendingSystemExceptionReason(6);
   throw Exceptions::SystemException;

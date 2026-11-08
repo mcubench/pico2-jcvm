@@ -456,6 +456,18 @@ bool Context::isAppletActive() const noexcept {
   return this->activeAppletInstance().active;
 }
 
+void Context::requestObjectDeletion() noexcept {
+  this->activeAppletInstance().object_deletion_requested = true;
+}
+
+bool Context::isObjectDeletionRequested() const noexcept {
+  return this->activeAppletInstance().object_deletion_requested;
+}
+
+void Context::clearObjectDeletionRequest() noexcept {
+  this->activeAppletInstance().object_deletion_requested = false;
+}
+
 bool Context::canAllocateDeselectTransientArray() const noexcept {
   for (const auto &instance : this->applet_instances) {
     if (instance.active || instance.installation_active) return true;

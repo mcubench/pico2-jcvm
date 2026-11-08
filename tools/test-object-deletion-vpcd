@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_host_usb_access
+
+"${repo_root}/tools/build-pc" --profile max_crypto
+"${repo_root}/tools/build-persistent-reclaimer-probe"
+
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+flash_copy="${repo_root}/build/persistent-reclaimer-probe/vpcd-object-deletion-${stamp}.bin"
+log="${repo_root}/artifacts/logs/object-deletion-vpcd-${stamp}.log"
+mkdir -p "${repo_root}/artifacts/logs"
+
+probe_args=(
+  --emulator "${repo_root}/build/choupi-pc/choupi"
+  --cap-code "${repo_root}/build/persistent-reclaimer-probe/load-code.bin"
+  --rom-mask "${repo_root}/build/choupi-pc/flash"
+  --applet-aid A000000062030201 --package-id 57 --passes 1
+  --flash-copy "${flash_copy}" --log "${log}"
+)
+for ((iteration = 0; iteration < 8; ++iteration)); do
+  probe_args+=(
+    --apdu 0000010000 --expect-apdu-response 2A9000
+    --apdu 0000060000 --expect-apdu-response 019000
+  )
+done
+probe_args+=(--apdu 0000050000 --expect-apdu-response 009000)
+
+PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 \
+  "${repo_root}/tools/env" python3 \
+  "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
+  "${probe_args[@]}"
+
+grep -Eq \
+  '^OBJECT_DELETION: package=[0-9]+ owner=[0-9]+ applet_result=0 package_result=0 erased_applet=[1-9][0-9]* ' \
+  "${log}" || die "deferred request did not complete an applet-tag erase; see ${log}"
+grep -Eq '^OBJECT_DELETION: .*erased_package=0 ' "${log}" || \
+  die "unexpected package-static erase in this owner-only fixture; see ${log}"
+call_count="$(grep -c '^OBJECT_DELETION:' "${log}" || true)"
+[[ "${call_count}" -eq 8 ]] || \
+  die "expected the pending request to clear after each of eight cycles; got ${call_count} collector calls; see ${log}"
+reclaim_count="$(grep -Ec \
+  '^OBJECT_DELETION: package=.*applet_result=0 package_result=0 erased_applet=[1-9][0-9]* ' \
+  "${log}" || true)"
+[[ "${reclaim_count}" -eq 8 ]] || \
+  die "expected eight completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
+printf 'OBJECT_DELETION_VPCD:PASS requests=%s log=%s\n' \
+  "${reclaim_count}" "${log#${repo_root}/}"

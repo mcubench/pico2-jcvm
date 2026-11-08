@@ -136,6 +136,13 @@ Archive text is historical evidence, not current device state or priorities.
     evidence, not a completed support run or production fix. The PC-only hooks
     were removed. PERSIST-01 still needs full multi-owner, active and inactive
     context, transaction, interruption, and physical acceptance.
+  - A subsequent focused PC_VERSION probe reintroduced a test-only request
+    latch behind `PICO2_TEST_OBJECT_DELETION=1`. Eight VPCD allocate/clear/
+    request cycles each erased one applet-owned tag (19/19 harness checks).
+    Default JCSystem behavior remains unsupported (3/3); ARM/RISC-V builds
+    pass. This is a scoped regression fixture, not production wiring or proof
+    that the earlier full-run improvement is reproducible. It still needs
+    broader retained-context/native-root and persistent interruption tests.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

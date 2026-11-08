@@ -10388,6 +10388,25 @@ connected device was explicitly excluded; no physical-device command was run.
 The artifact manifest and progress record were refreshed. Full JCAlgTest
 acceptance remains open.
 
+# Current handoff — focused request-latch regression — 2026-11-08 23:09 CET
+
+A PC_VERSION-only `PICO2_TEST_OBJECT_DELETION=1` request-latch mode has been
+added for a local disposable VPCD fixture. Eight persistent-array
+allocate/clear/request cycles passed, with one applet-owned tag erased per
+request and zero package-static tags erased. The harness passed 19/19. ARM and
+RISC-V max_crypto wrapper builds passed; the default JCSystem behavior test
+passed 3/3 and still reports deletion unsupported / `ILLEGAL_USE`.
+
+This is a new focused host regression only. It does not reproduce the earlier
+full JCAlgTest run that reclaimed 1,580 tags, cover all retained contexts/native
+roots, or prove interruption recovery. Production firmware remains unchanged
+and RESOURCE-01 remains open. The unexpected PacketRF device is excluded and
+was not accessed. Continue offline with complete root coverage and
+interruption-safety tests before considering production enablement.
+
+Evidence log: `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`,
+SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`.
+
 # Current handoff — protect foreign alias chains during reclamation — 2026-11-08 19:50 CET
 
 Uncommitted PERSIST-01 inventory changes now scan external package-static and

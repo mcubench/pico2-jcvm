@@ -75,6 +75,7 @@ private:
     bool restored = false;
     jref_t restored_applet_ref;
     bool active = false;
+    bool object_deletion_requested = false;
     std::shared_ptr<Heap> owner_heap;
     // RMI identities and SIO routing belong to the applet instance. Siblings
     // share a firewall Context and Heap storage, not these registries.
@@ -186,6 +187,10 @@ public:
   jref_t getRestoredAppletRef() const noexcept;
   void setAppletActive(bool active) noexcept;
   bool isAppletActive() const noexcept;
+  /// Queue a persistent-object collection request for the active applet.
+  void requestObjectDeletion() noexcept;
+  bool isObjectDeletionRequested() const noexcept;
+  void clearObjectDeletionRequest() noexcept;
   /// Check if this CAP context is selected or currently installing an applet.
   bool canAllocateDeselectTransientArray() const noexcept;
   /// Invalidate runtime Shareable routes and server roots on card reset.

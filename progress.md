@@ -26175,3 +26175,34 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `2493dff3`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T204110Z/`;
   partial CSV SHA-256 `a8393515ddafec3e215ce70e9d0e56b6c2c22f3599b1047292ac56a05bde7e20`.
+
+## 2026-11-08 Add focused request-latch VPCD regression 71 minutes
+
+- Step/experiment: `RESOURCE-01-REQUEST-LATCH-VPCD-PROBE`
+- When: '2026-11-08 21:58 CET' - '2026-11-08 23:09 CET'
+- Change: Added a PC_VERSION-only `PICO2_TEST_OBJECT_DELETION=1` mode that
+  latches `requestObjectDeletion()` per active applet and services it at the
+  post-APDU boundary. The disposable probe CAP clears its retained persistent
+  byte-array reference before requesting collection. Updated TODO, QKB and
+  HANDOFF with scope and safety limits.
+- Validation: `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. Guarded
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd` rebuilt PC
+  max_crypto and passed 19/19: eight requests each erased one applet-owned tag,
+  with zero package-static tags erased. Guarded
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 34`
+  passed 3/3 and confirmed default support=false / `ILLEGAL_USE`. Source
+  `diff --check` and `bash -n tools/test-object-deletion-vpcd` passed. No
+  physical device was accessed.
+- Result: The request latch and single-owner VPCD cleanup path work in this
+  focused fixture. This does not reproduce the earlier full JCAlgTest 1,580-tag
+  partial run, prove all retained/native roots or interruption recovery, or
+  establish hardware behavior. Firmware continues to report deletion
+  unsupported; RESOURCE-01 remains unresolved. The unexpected PacketRF device
+  stayed excluded.
+- Decision: Keep production reclamation disabled. Extend multi-context and
+  native-root coverage plus persistent interruption testing before any
+  production wiring or full-suite retry.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`,
+  SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`.
