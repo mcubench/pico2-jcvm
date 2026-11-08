@@ -10441,3 +10441,19 @@ Physical checks remain pending: the installed permission helper is stale, and
 matches the approved Pico2 JCVM USB identity; it was not run with sudo because
 only the stale installed helper is currently permitted. Do not interact with
 the unexpected device. Continue offline resource lifecycle work.
+
+# Current handoff — persistent write failure now logs exact tag — 2026-11-08 20:16 CET
+
+Added failure-only telemetry in `FlashMemory_Handler`: failed persistent writes
+emit status, payload length and the complete tag, and reference-serialization
+exceptions emit the complete parent tag. This adds allocation-site evidence
+without changing resource semantics. The persistent-transaction failure-injection
+suite passes with `TEST:SUMMARY fail=0`; ARM and RISC-V max_crypto wrappers pass.
+The current ARM image ends at `0x100F1EEC`, with 57,620 bytes before storage.
+
+RESOURCE-01 remains unresolved: object deletion is still unsupported and the
+production reclaimer remains disconnected. The current PC/SC enumeration timed
+out; the installed helper differs from the repository's Pico-only filter, so
+no physical operation was attempted. Next: use the new logs on the unchanged
+JCAlgTest workload when safe physical/PC access is restored, and continue the
+key-reuse/resource-lifecycle audit offline. Keep the unexpected device excluded.

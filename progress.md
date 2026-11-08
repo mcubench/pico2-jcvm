@@ -26016,3 +26016,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep PERSIST-01 production gates open and continue offline while physical reader access remains unavailable.
 - Commit: `efb5cbd3`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261108T190022Z.log`.
+
+## 2026-11-08 Add exact persistent-write failure tags 8 minutes
+
+- Step/experiment: `RESOURCE-01-WRITE-FAILURE-TAG-DIAGNOSTICS`
+- When: '2026-11-08 20:08 CET' - '2026-11-08 20:16 CET'
+- Change: Persistent write failures now report filesystem status, requested payload size, and the complete persistent tag. Reference serialization exceptions also report the complete parent tag. Updated TODO, QKB, and HANDOFF. No allocation policy or object-deletion behavior changed.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; failure injection emitted exact tag telemetry. `./tools/build arm --profile max_crypto` passed (159/162; image end `0x100F1EEC`, 57,620 bytes remaining); `./tools/build riscv --profile max_crypto` passed its VM-core/smoke target. No physical token or JCAlgTest workload was run.
+- Result: Future persistent-storage exhaustion logs can identify the precise record tag and requested payload size, alongside the existing emulator filesystem-capacity diagnostics. RESOURCE-01 remains unresolved; persistent deletion remains unsupported and disabled.
+- Decision: Re-run the unchanged workload with these diagnostics when PC/SC access is safe; continue the native key-reuse audit offline in the meantime.
+- Commit: `<pending>`
+- Artifacts/logs: Persistent-transaction unit output; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.

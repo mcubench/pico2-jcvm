@@ -95,7 +95,10 @@ Archive text is historical evidence, not current device state or priorities.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.
-    Instrument the failing allocation, reset request and post-APDU boundaries.
+    Persistent write failures now emit status, requested size, and the full tag;
+    reference serialization failures also emit the full parent tag. Rerun the
+    failing workload on the current build to capture the exact write site and
+    relate it to reset/request/post-APDU boundaries.
   - Complete PERSIST-01 multi-owner, alias/root, transaction and physical
     interruption-safety gates before enabling normal persistent reclamation.
     Then implement context-scoped deferred JCSystem deletion requests and

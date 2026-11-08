@@ -8544,3 +8544,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   exercise persistent reclamation or establish physical-flash safety.
 - Log: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T190022Z.log`, with
   matching restart and invalid-sidecar logs in the same directory.
+
+## Full persistent-write tag on resource failure — 2026-11-08
+
+- **Finding:** The earlier `PERSIST_EXCEPTION` reported a compact reference and
+  tag length but not the full tag. The PC filesystem reports capacity counts
+  and a truncated tag; long serialized object/array tags were ambiguous in
+  failure evidence.
+- **Diagnostic change:** Failed `write_persistent_tag_or_throw` calls now emit
+  `CHOUPI:PERSIST_WRITE_FAIL` with filesystem status, requested payload size and
+  the complete tag. Reference serialization failures retain the existing
+  exception line and also emit `CHOUPI:PERSIST_EXCEPTION_TAG` with the complete
+  parent tag. This is diagnostic only and does not change allocation behavior.
+- **Validation:** Persistent-transaction failure injection passes with
+  `TEST:SUMMARY fail=0` and emits expected exact tags (for example status 1,
+  size 2, tag `A00103`). ARM and RISC-V `max_crypto` wrapper builds pass. The
+  JCAlgTest workload and physical token were not rerun because current PC/SC
+  reader enumeration is unavailable; production deletion remains disabled.

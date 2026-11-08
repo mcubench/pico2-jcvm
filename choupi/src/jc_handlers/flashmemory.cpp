@@ -234,6 +234,14 @@ void write_persistent_tag_or_throw(const fs::Tag &tag, const uint8_t *data,
   if (status == 0) {
     return;
   }
+  std::printf("CHOUPI:PERSIST_WRITE_FAIL status=%u size=%lu tag=",
+              static_cast<unsigned>(status),
+              static_cast<unsigned long>(length));
+  for (uint8_t index = 0; index < tag.len; ++index) {
+    std::printf("%02X", tag.value[index]);
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
   // The filesystem ABI maps OutOfFlash to status 1. Java Card persistent
   // storage exhaustion is a resource limit, not an I/O device failure.
   if (status == 1) {
@@ -1486,6 +1494,11 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
   } catch (Exceptions exception) {
     std::printf("CHOUPI:PERSIST_EXCEPTION id=%u tag_len=%u ref=%04X\r\n",
                 static_cast<unsigned>(exception), tag.len, value.compact());
+    std::printf("CHOUPI:PERSIST_EXCEPTION_TAG tag=");
+    for (uint8_t index = 0; index < tag.len; ++index) {
+      std::printf("%02X", tag.value[index]);
+    }
+    std::printf("\r\n");
     std::fflush(stdout);
     throw;
   }
