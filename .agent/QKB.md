@@ -8770,3 +8770,23 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   gates. This partial run does not demonstrate a fix.
 - **Evidence:** `artifacts/results/jcalgtest-support-vpcd-20261108T204110Z/`
   (partial CSV, client log and emulator log).
+
+## RESOURCE-01: reclaim one accumulated RSA batch in the gated VPCD fixture — 2026-11-09
+
+- **Probe:** Extended the local persistent-reclaimer applet with a post-cleanup
+  check that its retained RSA field is null. The `rsa-batch` mode builds 512-bit
+  RSA key graphs repeatedly, then makes one request after all replacements.
+- **Result:** The 2-key control passed 7/7 and erased 20 owner records in one
+  collection. The 32-key run passed `TEST:SUMMARY pass=37 fail=0`; a single
+  request erased exactly 320 applet-owned tags and the final APDU confirmed the
+  retained key field was null. The emulator run log is
+  `artifacts/logs/object-deletion-vpcd-20261108T225803Z.log`, SHA-256
+  `ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`.
+- **Limit:** This is PC VPCD test-only behavior for one applet/context. It does
+  not enable normal persistent collection, prove safety for all roots/aliases
+  or interrupted flash erasure, establish an on-card capacity plateau, or
+  demonstrate that the full unchanged JCAlgTest run now completes. Production
+  RESOURCE-01 remains unresolved; do not infer a hardware fix.
+- **Next:** Continue PERSIST-01 root and interruption gates before wiring any
+  production collection. Then rerun the full unchanged 1.8.4 workload and
+  physical acceptance on an identified Pico 2, excluding PacketRF.

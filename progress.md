@@ -26310,3 +26310,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   (SHA-256 `83af7ec4f4860482eb4117879db6e7b678edd31738625bc2764e399887b078c8`)
   and `artifacts/logs/object-deletion-vpcd-20261108T224427Z.log` (SHA-256
   `5e8f5f0b4d1b02872526990d4bf27bd338e0f91716f551a11112a64e34c92331`).
+
+## 2026-11-09 Stress one deferred RSA batch 15 minutes
+
+- Step/experiment: `RESOURCE-01-RSA-BATCH-RECLAIM`
+- When: '2026-11-08 23:45 CET' - '2026-11-09 00:00 CET'
+- Change: Added a local-fixture APDU assertion that the retained RSA key field
+  is cleared after a batch cleanup. Added `rsa-batch` mode to build repeated
+  RSA graphs and issue one deletion request after the batch. Updated TODO, QKB
+  and HANDOFF. Production behavior remains unchanged.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 2
+  rsa-batch` passed 7/7 and reclaimed 20 owner tags in one call.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 32 rsa-batch`
+  passed `TEST:SUMMARY pass=37 fail=0`; 32 repeated 512-bit RSA graph builds
+  were followed by one request reclaiming exactly 320 applet-owned tags. The
+  fixture's final retained-key null check passed. `bash -n` and `git diff
+  --check` passed. PC VPCD only; no hardware was accessed.
+- Result: The gated collector handled this isolated single-context RSA batch.
+  This does not demonstrate production firmware recovery, exhaustive roots,
+  physical flash interruption safety, or full JCAlgTest completion.
+- Decision: Keep production deletion unsupported and RESOURCE-01 open. Continue
+  PERSIST-01 root/interruption acceptance before reconnecting reclamation to
+  normal runtime; then require full unchanged 1.8.4 and physical plateau tests.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T225648Z.log`
+  (2-key control) and `artifacts/logs/object-deletion-vpcd-20261108T225803Z.log`,
+  SHA-256 `ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`.

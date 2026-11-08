@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-08. This is the active backlog for `plan.md`.
+Updated: 2026-11-09. This is the active backlog for `plan.md`.
 Implementation and validation are separate: an implemented task stays open when
 its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 `AGENTS.md` for native API boundaries, build gates, hardware access and commits.
@@ -92,6 +92,13 @@ Archive text is historical evidence, not current device state or priorities.
   suite passes 47/47 after this change, including restart, cross-AID lifecycle,
   and DELETE cleanup. This is a compatibility control; ordinary persistent
   reclamation remains disabled, and no physical hardware result is implied.
+  A request-gated, PC-only RSA batch probe then built 32 512-bit RSA key graphs
+  before a single deletion request. It passed 37/37 VPCD checks and reclaimed
+  exactly 320 applet-owned records; the fixture confirmed the retained field
+  was null afterward. This establishes bounded cleanup for that isolated
+  single-context fixture only. It does not enable or validate production
+  collection, complete all-root safety, physical flash recovery, or prove that
+  long JCAlgTest runs no longer exhaust storage.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

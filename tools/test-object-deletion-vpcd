@@ -7,11 +7,11 @@ iterations="${1:-8}"
 mode="${2:-byte-array}"
 if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
   ((iterations < 1 || iterations > 512)); then
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public]"
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch]"
 fi
 [[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" || \
-   "${mode}" == "rsa-live-static" ]] || \
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static]"
+   "${mode}" == "rsa-live-static" || "${mode}" == "rsa-batch" ]] || \
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch]"
 
 "${repo_root}/tools/build-pc" --profile max_crypto
 "${repo_root}/tools/build-persistent-reclaimer-probe"
@@ -28,26 +28,38 @@ probe_args=(
   --applet-aid A000000062030201 --package-id 57 --passes 1
   --flash-copy "${flash_copy}" --log "${log}"
 )
-for ((iteration = 0; iteration < iterations; ++iteration)); do
-  if [[ "${mode}" == "rsa-public" ]]; then
+if [[ "${mode}" == "rsa-batch" ]]; then
+  for ((iteration = 0; iteration < iterations; ++iteration)); do
     probe_args+=(
       --apdu 0000070000 --expect-apdu-response 379000
-      --apdu 0000080000 --expect-apdu-response 019000
     )
-  elif [[ "${mode}" == "rsa-live-static" ]]; then
-    probe_args+=(
-      --apdu 0000090000 --expect-apdu-response 379000
-      --apdu 00000A0000 --expect-apdu-response 019000
-      --apdu 00000C0000 --expect-apdu-response 379000
-      --apdu 00000B0000 --expect-apdu-response 019000
-    )
-  else
-    probe_args+=(
-      --apdu 0000010000 --expect-apdu-response 2A9000
-      --apdu 0000060000 --expect-apdu-response 019000
-    )
-  fi
-done
+  done
+  probe_args+=(
+    --apdu 0000080000 --expect-apdu-response 019000
+    --apdu 00000D0000 --expect-apdu-response 009000
+  )
+else
+  for ((iteration = 0; iteration < iterations; ++iteration)); do
+    if [[ "${mode}" == "rsa-public" ]]; then
+      probe_args+=(
+        --apdu 0000070000 --expect-apdu-response 379000
+        --apdu 0000080000 --expect-apdu-response 019000
+      )
+    elif [[ "${mode}" == "rsa-live-static" ]]; then
+      probe_args+=(
+        --apdu 0000090000 --expect-apdu-response 379000
+        --apdu 00000A0000 --expect-apdu-response 019000
+        --apdu 00000C0000 --expect-apdu-response 379000
+        --apdu 00000B0000 --expect-apdu-response 019000
+      )
+    else
+      probe_args+=(
+        --apdu 0000010000 --expect-apdu-response 2A9000
+        --apdu 0000060000 --expect-apdu-response 019000
+      )
+    fi
+  done
+fi
 probe_args+=(--apdu 0000050000 --expect-apdu-response 009000)
 
 PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 \
@@ -67,10 +79,15 @@ reclaim_count="$(grep -Ec \
 expected_calls="${iterations}"
 if [[ "${mode}" == "rsa-live-static" ]]; then
   expected_calls=$((iterations * 2))
+elif [[ "${mode}" == "rsa-batch" ]]; then
+  expected_calls=1
 fi
 [[ "${call_count}" -eq "${expected_calls}" ]] || \
   die "expected ${expected_calls} collector calls, got ${call_count}; see ${log}"
 expected_reclaims="${iterations}"
+if [[ "${mode}" == "rsa-batch" ]]; then
+  expected_reclaims=1
+fi
 [[ "${reclaim_count}" -eq "${expected_reclaims}" ]] || \
   die "expected ${expected_reclaims} completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
 erased_total="$(grep '^OBJECT_DELETION: package=' "${log}" | \
@@ -79,6 +96,10 @@ erased_total="$(grep '^OBJECT_DELETION: package=' "${log}" | \
 if [[ "${mode}" == "byte-array" ]]; then
   [[ "${erased_total}" -eq "${iterations}" ]] || \
     die "expected exactly one applet-owned tag erased per byte-array cycle (${iterations}), got ${erased_total}; see ${log}"
+elif [[ "${mode}" == "rsa-batch" ]]; then
+  expected_erased=$((iterations * 10))
+  [[ "${erased_total}" -eq "${expected_erased}" ]] || \
+    die "expected ${expected_erased} applet-owned tags erased after ${iterations} RSA replacements, got ${erased_total}; see ${log}"
 elif [[ "${mode}" == "rsa-public" ]]; then
   min_erased="$(grep '^OBJECT_DELETION: package=' "${log}" | \
     sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \

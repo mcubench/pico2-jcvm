@@ -10671,3 +10671,23 @@ excluded and was not accessed.
 
 Evidence: `artifacts/logs/object-deletion-vpcd-20261108T224233Z.log` and
 `artifacts/logs/object-deletion-vpcd-20261108T224427Z.log`.
+
+# Current handoff — single-request RSA batch reclamation probe — 2026-11-09 00:00 CET
+
+The local request-gated VPCD probe now supports `rsa-batch`: build repeated
+512-bit RSA key graphs, then issue one deletion request after the batch. A
+2-key run passed 7/7 and reclaimed 20 applet-owner records. A 32-key run passed
+37/37 and reclaimed exactly 320 applet-owner records; the final APDU confirmed
+the fixture's retained key field was null. The probe now verifies deferred
+cleanup after a larger sequence rather than one request per graph.
+
+This is PC-only test-gate evidence in one fixture/context. Normal firmware still
+has object deletion unsupported and persistent reclamation disabled. It does
+not prove full JCAlgTest recovery, all-root safety, physical flash interruption
+recovery, or an on-card capacity plateau. RESOURCE-01 remains unresolved.
+Continue PERSIST-01 root and interruption-safety gates before any production
+reclamation change. Unexpected PacketRF remains excluded and was not accessed.
+
+Logs: `artifacts/logs/object-deletion-vpcd-20261108T225648Z.log` and
+`artifacts/logs/object-deletion-vpcd-20261108T225803Z.log` (SHA-256
+`ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`).
