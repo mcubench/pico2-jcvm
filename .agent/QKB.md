@@ -1,3 +1,29 @@
+## Multi-board runtime-to-BOOTSEL selection — observed 2026-11-08
+
+- **Observation:** The three connected Pico devices enumerate as runtime
+  `2e8a:0009`, but this VM exposes no `/sys/bus/usb/devices/.../serial` files
+  and only generic CDC identity (`usb-2e8a_0009-if00`). `--serial` therefore
+  cannot resolve one board, while an unqualified flash is ambiguous. Each
+  device does have a stable USB topology path (`1-3`, `1-4`, `1-5`) and a CDC
+  tty that can be resolved through `/sys/class/tty`.
+- **Viable targeting path:** `tools/flash`, `tools/monitor`, and `tools/cycle`
+  now accept `--usb-path PATH`. This pins picotool bus/address refresh and the
+  CDC reset/monitor to one physical USB port, even when several boards are
+  attached and iSerial is unavailable. `./tools/monitor --usb-path 1-3
+  --seconds 2` mapped to `/dev/ttyACM1` successfully.
+- **Reset finding:** `picotool load -f` cannot reset this composite firmware
+  (`Unable to locate reset interface`). The existing runtime did not enter
+  BOOTSEL after a CDC 1200-baud request during the 2026-11-08 cycle attempt.
+  Firmware now has a deferred TinyUSB CDC line-coding callback that requests
+  `reset_usb_boot(0, 0)` at 1200 baud; ARM/RISC-V builds pass, but this change
+  has not yet been flashed and verified because no board is currently in
+  BOOTSEL. Do not claim the new recovery hook works until that physical test.
+- **PC/SC state:** The authorized helper granted three USB nodes, but
+  `pcsc_scan -r` showed only VPCD readers. USB presence is not evidence that
+  CCID or APDU access is available.
+
+---
+
 ## Independent applet package remains usable through service package DELETE recovery — 2026-11-06
 
 - **Finding:** The existing stale-proxy regression's only surviving applet

@@ -10,6 +10,7 @@
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
 #include "hardware/structs/watchdog.h"
+#include "pico/bootrom.h"
 #include "tusb.h"
 #include "reader_led.hpp"
 #include "vm_lifecycle.h"
@@ -66,8 +67,20 @@ uint32_t watchdog_recovery_info = 0;
 uint32_t watchdog_recovery_stage = 0;
 uint32_t watchdog_recovery_context = 0;
 uint32_t watchdog_recovery_origin = 0;
+volatile bool usb_bootsel_requested = false;
 
 } // namespace
+
+// Support the standard 1200-baud CDC reset used by host flashing tools.
+// Defer the ROM call until the main loop so it never runs inside TinyUSB's
+// control-transfer callback.
+extern "C" void tud_cdc_line_coding_cb(
+    uint8_t interface, cdc_line_coding_t const *line_coding) {
+  if (interface == 0 && line_coding != nullptr &&
+      line_coding->bit_rate == 1200) {
+    usb_bootsel_requested = true;
+  }
+}
 
 extern "C" uint32_t choupi_available_transient_memory_bytes(void) {
 #if defined(__GLIBC__) && \
@@ -173,6 +186,9 @@ int main_arm(void) {
     // the main-loop CCID handler must queue responses from the same context
     // that owns usbd endpoint state.
     choupi::service_usb_task();
+    if (usb_bootsel_requested) {
+      reset_usb_boot(0, 0);
+    }
     choupi_ccid_task();
     choupi_ccid_native_progress_stats_t native_progress_stats{};
     if (choupi_ccid_debug_take_native_progress_stats(

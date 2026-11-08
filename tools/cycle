@@ -2,12 +2,13 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL | --chipid CHIPID]"
+[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL | --chipid CHIPID | --usb-path PATH]"
 arch="$1"
 [[ "$arch" == arm || "$arch" == riscv || "$arch" == choupi ]] || die "choose arm, riscv, or choupi"
 shift
 serial=""
 chipid=""
+usb_path=""
 support_profile=current
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -26,10 +27,19 @@ while [[ $# -gt 0 ]]; do
       chipid="$2"
       shift 2
       ;;
-    *) die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL | --chipid CHIPID]" ;;
+    --usb-path)
+      [[ $# -ge 2 && -z "$usb_path" && "$2" =~ ^[0-9]+-[0-9]+([.][0-9]+)*$ ]] || die "--usb-path requires a USB topology path such as 1-3 or 1-3.2"
+      usb_path="$2"
+      shift 2
+      ;;
+    *) die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL | --chipid CHIPID | --usb-path PATH]" ;;
   esac
 done
-[[ -z "$serial" || -z "$chipid" ]] || die "choose either --serial or --chipid"
+selector_count=0
+[[ -z "$serial" ]] || ((selector_count += 1))
+[[ -z "$chipid" ]] || ((selector_count += 1))
+[[ -z "$usb_path" ]] || ((selector_count += 1))
+((selector_count <= 1)) || die "choose only one of --serial, --chipid, or --usb-path"
 require_host_usb_access
 "${repo_root}/tools/build" arm --profile "${support_profile}"
 "${repo_root}/tools/build" riscv --profile "${support_profile}"
@@ -50,6 +60,9 @@ if [[ -n "$serial" ]]; then
 elif [[ -n "$chipid" ]]; then
   flash_args=(--chipid "$chipid")
   monitor_args=(--serial "$chipid")
+elif [[ -n "$usb_path" ]]; then
+  flash_args=(--usb-path "$usb_path")
+  monitor_args=(--usb-path "$usb_path")
 fi
 "${repo_root}/tools/flash" "${flash_args[@]}" "$image" 2>&1 | tee -a "$log_file"
 capture_seconds=8

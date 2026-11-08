@@ -25276,3 +25276,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CTX-01 physical acceptance open; continue addressing deterministic multi-board flash selection and runtime-to-BOOTSEL recovery.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T034906Z.log` (35/35); latest ARM firmware build end `0x100D72BC`, 167,236 bytes remaining. The attempted physical cycle log is recorded separately in the USB recovery step.
+
+## 2026-11-08 Add USB-port targeting and CDC BOOTSEL recovery 24 minutes
+
+- Step/experiment: `HOST-USB-path-select-and-CDC-BOOTSEL`
+- When: '2026-11-08 05:00 CET' - '2026-11-08 05:24 CET'
+- Change: Added `--usb-path` selection to flash, cycle and monitor wrappers so runtime devices without exposed USB serial strings can be targeted by stable sysfs topology. Added firmware handling for CDC 1200-baud reset, deferred to the main loop before calling `reset_usb_boot`, and made flash recovery try CDC immediately after a runtime-image rejection or missing picotool reset interface.
+- Validation: `bash -n tools/flash tools/cycle tools/monitor` passes. `./tools/test-rmi-registry` passes. `./tools/cycle choupi --usb-path 1-3` builds ARM and RISC-V successfully; ARM image end `0x100D72BC`, 167,236 bytes remaining. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --usb-path 1-3 --seconds 2` resolves `/dev/ttyACM1` and exits 0, but produced no serial payload in its bounded window. The physical cycle on the currently deployed firmware did not enter BOOTSEL: picotool reports `Unable to locate reset interface`; CDC 1200 also timed out. The new CDC reset hook is therefore build-validated but not flash- or hardware-validated. `pcsc_scan -r` still lists only VPCD readers.
+- Result: Explicit USB-path targeting works for enumeration and console selection. A board running the new reset callback is needed to validate automatic runtime-to-BOOTSEL recovery; no board was flashed in this step.
+- Decision: Keep the reset hook provisional and hardware acceptance open. Retry the cycle as soon as any board is already in BOOTSEL; use another USB path if the selected port is unavailable.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T041138Z.log` and `artifacts/logs/cycle-choupi-20261108T041557Z.log`; both end in a BOOTSEL recovery failure against existing firmware.
