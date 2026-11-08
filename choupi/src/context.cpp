@@ -685,7 +685,9 @@ bool Context::getShareableProxy(const jref_t proxy_reference,
   return false;
 }
 
-bool Context::retainShareableObjectRoot(const jref_t reference) noexcept {
+bool Context::retainShareableObjectRoot(const jref_t reference,
+                                        bool *newly_retained) noexcept {
+  if (newly_retained != nullptr) *newly_retained = false;
   if (reference.isNullPointer() || reference.isArray() ||
       reference.isGlobalInstance()) {
     return false;
@@ -694,10 +696,26 @@ bool Context::retainShareableObjectRoot(const jref_t reference) noexcept {
     if (existing == reference) return true;
     if (existing.isNullPointer()) {
       existing = reference;
+      if (newly_retained != nullptr) *newly_retained = true;
       return true;
     }
   }
   return false;
+}
+
+void Context::releaseShareableObjectRoot(const jref_t reference,
+                                          const japplet_ID_t owner) noexcept {
+  if (reference.isNullPointer()) return;
+  for (auto &instance : this->applet_instances) {
+    if (instance.owner != owner) continue;
+    for (auto &root : instance.shareable_object_roots) {
+      if (root == reference) {
+        root = jref_t{};
+        return;
+      }
+    }
+    return;
+  }
 }
 
 void Context::setAPDUBufferRef(const jref_t reference,

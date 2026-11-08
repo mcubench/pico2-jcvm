@@ -213,7 +213,10 @@ public:
   bool getShareableProxy(jref_t proxy_reference, uint8_t server_aid[16],
                          uint8_t &server_aid_length,
                          jref_t &server_reference) const noexcept;
-  bool retainShareableObjectRoot(jref_t reference) noexcept;
+  bool retainShareableObjectRoot(jref_t reference,
+                                 bool *newly_retained = nullptr) noexcept;
+  void releaseShareableObjectRoot(jref_t reference,
+                                  japplet_ID_t owner) noexcept;
   /// Set and query the APDU buffer and response window for the current command.
   void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
                         uint16_t expected_response_length,
@@ -274,6 +277,39 @@ public:
   void changePackageID(const uint8_t packageID) noexcept;
   /// Back to the previous package ID.
   void backToPreviousPackageID() noexcept;
+};
+
+/// Retain a server object during proxy creation and roll back only a root
+/// inserted by this attempt if allocation or proxy registration fails.
+class ShareableObjectRootLease {
+private:
+  Context &context;
+  jref_t reference;
+  japplet_ID_t owner;
+  bool retained = false;
+  bool newly_retained = false;
+  bool committed = false;
+
+public:
+  ShareableObjectRootLease(Context &context, const jref_t reference) noexcept
+      : context(context), reference(reference), owner(context.getAppletID()) {}
+  ShareableObjectRootLease(const ShareableObjectRootLease &) = delete;
+  ShareableObjectRootLease &operator=(const ShareableObjectRootLease &) = delete;
+
+  ~ShareableObjectRootLease() {
+    if (this->retained && this->newly_retained && !this->committed) {
+      this->context.releaseShareableObjectRoot(this->reference, this->owner);
+    }
+  }
+
+  bool retain() noexcept {
+    if (this->retained) return true;
+    this->retained = this->context.retainShareableObjectRoot(
+        this->reference, &this->newly_retained);
+    return this->retained;
+  }
+
+  void commit() noexcept { this->committed = true; }
 };
 
 } // namespace jcvm

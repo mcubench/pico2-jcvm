@@ -941,6 +941,40 @@ void verify_same_package_sibling_array_blocks_instance_delete() {
   std::puts("RMI_REGISTRY:PASS applet_delete_instance_field_guard=1");
 }
 
+void verify_shareable_object_root_lease() {
+  jcvm::Context server(7, 4);
+  constexpr uint8_t first_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x31};
+  constexpr uint8_t second_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x32};
+  assert(server.setAppletAID(first_aid, sizeof(first_aid)));
+  const jcvm::jref_t server_object(0x0042);
+
+  {
+    jcvm::ShareableObjectRootLease lease(server, server_object);
+    assert(lease.retain());
+    assert(server.activateAppletInstance(8, second_aid, sizeof(second_aid)));
+  }
+  assert(server.activateAppletInstance(7, first_aid, sizeof(first_aid)));
+  VisitedReferences roots;
+  server.visitRootReferences(record_reference, &roots);
+  assert(!contains(roots, server_object));
+
+  assert(server.retainShareableObjectRoot(server_object));
+  {
+    jcvm::ShareableObjectRootLease lease(server, server_object);
+    assert(lease.retain());
+  }
+  roots.count = 0;
+  server.visitRootReferences(record_reference, &roots);
+  assert(contains(roots, server_object));
+
+  server.releaseShareableObjectRoot(server_object, 7);
+  roots.count = 0;
+  server.visitRootReferences(record_reference, &roots);
+  assert(!contains(roots, server_object));
+  std::puts("RMI_REGISTRY:PASS shareable_root_lease_rollback=1 "
+            "owner=1 existing=1");
+}
+
 void verify_shareable_proxy_registry() {
   jcvm::Context client(4, 1);
   jcvm::Context server(5, 1);
@@ -1455,6 +1489,7 @@ int main() {
   verify_global_object_array_package_ownership();
   verify_local_array_routes_foreign_references_through_gc();
   verify_same_package_sibling_array_blocks_instance_delete();
+  verify_shareable_object_root_lease();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();
@@ -1507,8 +1542,8 @@ int main() {
   context.getStack().setRootReferenceReturnValue(root_return);
   assert(context.getStack().getRootReturnKind() ==
          jcvm::Stack::ReturnKind::Reference);
-  context.getHeap().reserveStaticReferenceRoot(2, 9);
-  context.getHeap().setStaticReferenceRoot(2, 9, static_reference);
+  context.getHeap().reserveStaticReferenceRoot(1, 9);
+  context.getHeap().setStaticReferenceRoot(1, 9, static_reference);
 
   VisitedReferences lifecycle_roots;
   context.visitRootReferences(record_reference, &lifecycle_roots);

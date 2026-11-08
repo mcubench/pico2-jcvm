@@ -116,10 +116,46 @@ bool JC_Instance::hasLoadedFields() const noexcept {
   return !this->isPersistent();
 }
 
-void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
+void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref,
+                                    const uint8_t reference_owner) {
   this->fields->at(index).type = ref.isArray() ? FIELD_TYPE_ARRAY_OBJECT
                                                 : FIELD_TYPE_OBJECT;
   this->fields->at(index).value = ref.compact();
+  this->fields->at(index).reference_owner = reference_owner;
+}
+
+bool JC_Instance::hasForeignReferenceFields() const noexcept {
+  for (uint16_t index = 0; index < this->fields->size(); ++index) {
+    const jc_field_t &field = this->fields->at(index);
+    if (field.reference_owner != 0xff && field.reference_owner != 0xfe &&
+        !jref_t(field.value).isNullPointer()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void JC_Instance::visitForeignReferencesForPackage(
+    const jpackage_ID_t package_id, void (*visitor)(jref_t, void *),
+    void *visitor_context) {
+  if (visitor == nullptr) return;
+  for (uint16_t index = 0; index < this->fields->size(); ++index) {
+    const jc_field_t &field = this->fields->at(index);
+    if (field.reference_owner != package_id) continue;
+    const jref_t reference(field.value);
+    if (!reference.isNullPointer()) visitor(reference, visitor_context);
+  }
+}
+
+void JC_Instance::clearForeignReferencesForPackage(
+    const jpackage_ID_t package_id) noexcept {
+  for (uint16_t index = 0; index < this->fields->size(); ++index) {
+    jc_field_t &field = this->fields->at(index);
+    if (field.reference_owner != package_id) continue;
+    field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
+    field.value = 0;
+    field.reference_owner = 0xff;
+  }
 }
 
 #pragma GCC diagnostic push

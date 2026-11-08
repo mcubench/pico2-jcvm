@@ -1430,7 +1430,9 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
                                                server_aid_length)) {
     throw jcvm::Exceptions::SecurityException;
   }
-  if (!server_context->retainShareableObjectRoot(server_reference)) {
+  jcvm::ShareableObjectRootLease server_root(*server_context,
+                                              server_reference);
+  if (!server_root.retain()) {
     restore_client_state();
     throw jcvm::Exceptions::SecurityException;
   }
@@ -1442,6 +1444,7 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
           server_object->getPackageID())) {
     throw jcvm::Exceptions::SecurityException;
   }
+  server_root.commit();
   TRACE_JCVM_DEBUG("SIO_LOOKUP created proxy=%04X server_ref=%04X",
                    static_cast<unsigned>(proxy.compact()),
                    static_cast<unsigned>(server_reference.compact()));

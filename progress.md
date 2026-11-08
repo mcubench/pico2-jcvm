@@ -25265,3 +25265,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Fix proxy-root rollback next. Resume physical APDU checks once a Pico appears in `pcsc_scan -r`; do not mark the cards clean.
 - Commit: `1ff5aa45`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T031522Z.log` (stale-binary failure), `artifacts/logs/sio-cross-aid-vpcd-20261108T032038Z.log` (focused Signature pass), `artifacts/logs/sio-cross-aid-vpcd-20261108T032140Z.log` (full 35/35 pass). No firmware image was built or flashed.
+
+## 2026-11-08 Roll back uncommitted SIO object roots 50 minutes
+
+- Step/experiment: `CTX-01-sio-root-lease-rollback`
+- When: '2026-11-08 04:28 CET' - '2026-11-08 05:18 CET'
+- Change: Added an owner-aware RAII lease around server shareable-object root retention in both proxy-creation paths. Failed allocation or registration releases only a root newly inserted by that attempt; pre-existing roots remain. Corrected the lifecycle-root unit fixture's package ID and synchronized the filesystem test stub with the current heap interface.
+- Validation: `./tools/test-rmi-registry` passes, including `shareable_root_lease_rollback=1 owner=1 existing=1`. `./tools/build arm` and `./tools/build riscv` pass through `./tools/cycle choupi --usb-path 1-3`; `./tools/build-pc --profile max_crypto` and the 35/35 VPCD SIO suite passed earlier in this work step. Physical SIO was not run because `pcsc_scan -r` listed only VPCD readers and the connected boards were runtime-mode, not BOOTSEL.
+- Result: Root retention rollback is covered on proxy-creation failure and existing retained roots are preserved. Hardware acceptance remains unverified.
+- Decision: Keep CTX-01 physical acceptance open; continue addressing deterministic multi-board flash selection and runtime-to-BOOTSEL recovery.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T034906Z.log` (35/35); latest ARM firmware build end `0x100D72BC`, 167,236 bytes remaining. The attempted physical cycle log is recorded separately in the USB recovery step.

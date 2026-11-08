@@ -332,7 +332,8 @@ jref_t wrapShareableReference(Context &client_context,
   if (!existing.isNullPointer()) {
     return existing;
   }
-  if (!server_context.retainShareableObjectRoot(server_reference)) {
+  ShareableObjectRootLease server_root(server_context, server_reference);
+  if (!server_root.retain()) {
     throw Exceptions::SecurityException;
   }
   const jref_t proxy = client_context.getHeap().addInstance(
@@ -342,6 +343,7 @@ jref_t wrapShareableReference(Context &client_context,
           server_object->getPackageID())) {
     throw Exceptions::SecurityException;
   }
+  server_root.commit();
   return proxy;
 }
 } // namespace
