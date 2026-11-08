@@ -62,6 +62,7 @@ Archive text is historical evidence, not current device state or priorities.
 
 - [ ] **Stop long-run NO_RESOURCE failures and establish the cause of resets.**
   Priority: highest, explicitly requested by the user on 2026-11-08.
+  Implementation plan: [staged RESOURCE-01 plan](docs/resource-01-implementation-plan.md).
   Evidence: current JCSystem native dispatch reports object deletion unsupported
   and requestObjectDeletion() throws ILLEGAL_USE (reason 6), preventing the
   subsequent RSA-cache cleanup in the supplied JCAlgTest reset handler.

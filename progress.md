@@ -25474,3 +25474,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: PC/SC-visible reader remains the precondition for physical acceptance.
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
+
+## 2026-11-08 Save RESOURCE-01 implementation plan 2 minutes
+
+- Step/experiment: `RESOURCE-01-SAVE-PLAN`
+- When: '2026-11-08 07:07 CET' - '2026-11-08 07:09 CET'
+- Change: Saved the discussed six-stage resource lifecycle plan under docs/, linked it from RESOURCE-01 in TODO.md, and updated HANDOFF.
+- Validation: Checked the local plan/backlog links, six-stage coverage and scoped git diff --check; all passed. Builds and hardware validation intentionally skipped for documentation-only changes.
+- Result: The highest-priority backlog task now points to a standalone implementation plan. No implementation changed and no runtime metric measured.
+- Decision: Implement in separately validated stages, preserving PERSIST-01 safety gates and unchanged supplied fixtures.
+- Commit: See the Git commit containing this RESOURCE-01-SAVE-PLAN record.
+- Artifacts/logs: `docs/resource-01-implementation-plan.md`.

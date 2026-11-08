@@ -1,3 +1,12 @@
+# Current handoff — saved RESOURCE-01 implementation plan — 2026-11-08 07:09 CET
+
+Saved the proposed six-stage plan in docs/resource-01-implementation-plan.md
+and linked it from RESOURCE-01 in TODO.md at the user's request. It covers
+resource accounting, safe persistent reclamation, deferred JCSystem deletion,
+replacement/failure cleanup, bounded key reuse and long-run/reset acceptance.
+This is documentation only; implementation remains a separate task. Existing
+PERSIST-01 physical safety gates and all prior handoff evidence remain in force.
+
 # Current handoff — PERSIST-01 graph roots across overlay cuts — 2026-11-08 06:57 CET
 
 Expanded the RP2350 overlay fake-flash power-cut scenario. It now constructs
