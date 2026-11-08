@@ -757,6 +757,11 @@ review.
   path. The cross-AID VPCD fixture verifies that a service catches this denial
   when asked to throw a caller-owned `RuntimeException`. Continue auditing
   every other reference-consuming bytecode/native entry and owner lifecycle.
+  Persistent DELETE alias inventory now validates the complete deterministic
+  foreign-static wrapper target encoding, matching the reclaimer inventory;
+  malformed wrappers fail closed. Persistent-transaction and inventory unit
+  suites pass. Physical DELETE/APDU validation remains open while PC/SC has no
+  Pico readers.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.

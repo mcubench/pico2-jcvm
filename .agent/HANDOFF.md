@@ -1,6 +1,35 @@
-# Current handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:31 CET
+# Current handoff — fail closed on malformed foreign-static aliases — 2026-11-08 03:16 CET
 
-## Latest update — enforce owner checks in `athrow` — 2026-11-08 03:01 CET
+Persistent applet-delete alias scanning now uses the same strict decoder as
+unreachable-tag inventory for foreign-reference wrappers in package-static
+records. It verifies wrapper size, owner/package fields, the deterministic
+target tag length and the complete embedded source-static tag. A malformed
+wrapper therefore blocks DELETE through an `InvalidTag` result instead of
+being mistaken for a valid or unrelated reference. Valid aliases still block
+deletion of their target applet owner.
+
+`./tools/test-persistent-transaction` passes with new valid-alias and malformed
+wrapper cases; `./tools/test-persistent-inventory` passes 22/22. `./tools/build
+arm` and `./tools/build riscv` pass. The updated ARM image was flashed to Pico 2
+`D92E743D5F640C0F`; finite monitor log
+`artifacts/logs/cycle-choupi-20261108T021446Z.log` reports
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The helper grants
+USB access to three nodes, but `timeout 6s pcsc_scan -r` exits 124 without
+readers, so physical DELETE/APDU validation remains open. The UF2 is 1,762,816
+bytes, SHA-256
+`bbface7f7640d49290eee1815b36fcf219eba56a669a533041cadef517763a98`.
+
+Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle audits. Keep
+normal persistent reclamation disabled until multi-owner and physical
+interruption/power-loss gates pass. Preserve unrelated worktree edits.
+
+---
+
+## Previous handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:31 CET
+
+The preceding entry's latest CTX update remains below.
+
+### Enforce owner checks in `athrow` — 2026-11-08 03:01 CET
 
 CTX-01's reference-consumer audit found that `athrow` preserved an owner tag
 but `doThrow` resolved the compact object handle in the active heap before

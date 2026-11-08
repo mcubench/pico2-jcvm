@@ -1890,7 +1890,7 @@ int main() {
     std::vector<uint8_t> wrapper{8, source_package,
                                  static_cast<uint8_t>(target_tag.size())};
     wrapper.insert(wrapper.end(), target_tag.begin(), target_tag.end());
-    seed(source_static_tag, sizeof(source_static_tag), std::move(wrapper));
+    seed(source_static_tag, sizeof(source_static_tag), wrapper);
 
     jcvm::Heap heap(owner);
     const std::vector<jcvm::jref_t> no_roots;
@@ -1908,6 +1908,24 @@ int main() {
         std::find(retained_candidates.tags.begin(), retained_candidates.tags.end(),
                   child_bytes) == retained_candidates.tags.end();
 
+    bool alias_found = false;
+    const auto valid_alias_result =
+        jcvm::PersistentInventory::findAliasesToAppletOwner(owner, alias_found);
+    const bool valid_alias_detected =
+        valid_alias_result == jcvm::PersistentInventory::VisitResult::Stopped &&
+        alias_found;
+
+    std::vector<uint8_t> malformed_wrapper = wrapper;
+    malformed_wrapper.back() ^= 1;
+    seed(source_static_tag, sizeof(source_static_tag), malformed_wrapper);
+    alias_found = false;
+    const auto malformed_alias_result =
+        jcvm::PersistentInventory::findAliasesToAppletOwner(owner, alias_found);
+    const bool malformed_alias_fails_closed =
+        malformed_alias_result ==
+            jcvm::PersistentInventory::VisitResult::InvalidTag &&
+        !alias_found;
+
     seed(source_static_tag, sizeof(source_static_tag), {0});
     CandidateTags orphan_candidates;
     const auto after_clear =
@@ -1922,6 +1940,10 @@ int main() {
                   child_bytes) != orphan_candidates.tags.end();
     expect(target_retained,
            "foreign_static_wrapper_roots_target_and_nested_records");
+    expect(valid_alias_detected,
+           "foreign_static_wrapper_blocks_delete_of_its_target_owner");
+    expect(malformed_alias_fails_closed,
+           "malformed_foreign_static_wrapper_fails_delete_alias_scan_closed");
     expect(orphan_reclaimed_as_candidate,
            "cleared_foreign_static_wrapper_releases_target_records");
   }

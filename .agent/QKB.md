@@ -8023,3 +8023,16 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   test because ARM/RISC-V wrappers regenerate shared ROM-mask files for
   `current`. In this run the stale binary failed the new `athrow` regression;
   rebuilding PC then passed all 35 cases.
+
+# 2026-11-08 DELETE alias scan must decode full foreign-static wrappers
+
+- Issue: `findAliasesToAppletOwner` recognized foreign-reference wrappers by
+  checking only their initial target-tag fields. A truncated or altered
+  deterministic source-static tag could pass that check, weakening the
+  fail-closed guarantee used before applet DELETE.
+- Viable solution: share a strict decoder between DELETE alias inventory and
+  unreachable-tag inventory. Validate exact wrapper length, target length,
+  owner/package fields, deterministic prefix bytes, and the full embedded
+  source-static tag. Malformed wrappers return `InvalidTag`, which blocks
+  deletion. Unit regressions cover both valid-delete blocking and malformed
+  fail-closed behavior.

@@ -26,6 +26,27 @@ bool enumerateVectorRoots(const Heap::ReferenceVisitor visitor,
   return true;
 }
 
+bool decodeForeignStaticTarget(const Tag &source_tag, const uint8_t *data,
+                               const uint32_t length, Tag &target_tag) {
+  if (data == nullptr || length < 3 || data[1] == 0xfe || data[1] == 0xff ||
+      data[2] < 6 || data[2] > kTagCapacity ||
+      length != 3u + data[2] ||
+      data[2] != static_cast<uint32_t>(6u + source_tag.len)) {
+    return false;
+  }
+  const uint8_t *target = data + 3;
+  if (target[0] != 0x03 || target[2] != data[1] || target[3] != 0xff ||
+      target[4] != 0xfc || target[5] != source_tag.len ||
+      std::memcmp(target + 6, source_tag.value, source_tag.len) != 0) {
+    return false;
+  }
+
+  target_tag = Tag{};
+  target_tag.len = data[2];
+  std::memcpy(target_tag.value, target, target_tag.len);
+  return true;
+}
+
 struct CandidateContext {
   Heap *heap;
   TagVisitor visitor;
@@ -42,21 +63,10 @@ bool collectForeignStaticTarget(const Tag &source_tag, void *opaque) {
     return false;
   }
   if (data[0] != kPersistentForeignReference) return true;
-  if (length < 3 || data[1] == 0xfe || data[1] == 0xff || data[2] < 6 ||
-      data[2] > kTagCapacity || length != 3u + data[2] ||
-      data[2] != static_cast<uint32_t>(6u + source_tag.len)) {
-    return false;
-  }
-  const uint8_t *target = data + 3;
-  if (target[0] != 0x03 || target[2] != data[1] || target[3] != 0xff ||
-      target[4] != 0xfc || target[5] != source_tag.len ||
-      std::memcmp(target + 6, source_tag.value, source_tag.len) != 0) {
-    return false;
-  }
-
   Tag target_tag{};
-  target_tag.len = data[2];
-  std::memcpy(target_tag.value, target, target_tag.len);
+  if (!decodeForeignStaticTarget(source_tag, data, length, target_tag)) {
+    return false;
+  }
   targets.push_back(target_tag);
   return true;
 }
@@ -148,18 +158,12 @@ bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
     return false;
   }
   if (data[0] == kPersistentForeignReference) {
-    if (length < 3 || data[1] == 0xfe || data[1] == 0xff || data[2] < 6 ||
-        data[2] > kTagCapacity || length != 3u + data[2]) {
+    Tag target{};
+    if (!decodeForeignStaticTarget(source_tag, data, length, target)) {
       search.failure = VisitResult::InvalidTag;
       return false;
     }
-    const uint8_t *target = data + 3;
-    if (target[0] != 0x03 || target[2] != data[1] || target[3] != 0xff ||
-        target[4] != 0xfc) {
-      search.failure = VisitResult::InvalidTag;
-      return false;
-    }
-    if (target[1] == search.owner) {
+    if (target.value[1] == search.owner) {
       search.found = true;
       return false;
     }

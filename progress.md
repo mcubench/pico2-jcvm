@@ -25199,3 +25199,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with the next CTX-01 reference-consumer gap.
 - Commit: `88d31347`
 - Artifacts/logs: `.agent/HANDOFF.md`; `progress.md`.
+
+## 2026-11-08 Validate foreign-static wrappers during DELETE alias scan 13 minutes
+
+- Step/experiment: `PERSIST-01-strict-foreign-static-alias-decode`
+- When: '2026-11-08 03:03 CET' - '2026-11-08 03:16 CET'
+- Change: Extracted a strict decoder for deterministic foreign-static target wrappers and reused it in both unreachable-tag inventory and `findAliasesToAppletOwner`. Applet-delete preflight now rejects malformed wrappers before deciding whether the target owner has aliases. Added unit cases proving valid aliases block deletion and malformed wrappers fail closed. Updated TODO, QKB and handoff.
+- Validation: `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passes `TEST:SUMMARY fail=0` (22 cases). `./tools/build arm` and `./tools/build riscv` pass. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashed the ARM image; finite monitor reports `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Refreshed helper access granted three nodes; elevated `timeout 6s pcsc_scan -r` exited 124 without readers, so physical DELETE/APDU testing was unavailable. `git -c core.whitespace=cr-at-eol diff --check` passes. Runtime: 13 minutes. Performance was not measured.
+- Result: Valid foreign-static aliases remain visible to applet DELETE checks, and malformed wrappers now fail closed. Startup image validation passed on Pico 2 `D92E743D5F640C0F`; alias behavior was validated in host unit suites only.
+- Decision: Continue CTX-01 reference-consumer and PERSIST-01 lifecycle audits. Keep normal persistent reclamation disabled until multi-owner and physical interruption/power-loss acceptance is complete.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T021446Z.log`; `build/arm/pico2_choupi.uf2` size 1,762,816 bytes, SHA-256 `bbface7f7640d49290eee1815b36fcf219eba56a669a533041cadef517763a98`.
