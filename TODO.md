@@ -463,6 +463,10 @@ review.
   signatures and HMAC key variants are implemented through the C++ VM/API
   dispatch path. All six RFC known-answer vectors pass in the CAP-only VPCD
   fixture, including split update, verify, tamper rejection, and key readback;
+  a fresh current-worktree run on 2026-11-08 also passed the six HMAC algorithms
+  in one-shot and split-update mode (12 vectors, 14/14 VPCD checks).
+  Full JCAlgTest acceptance remains blocked by persistent-storage exhaustion
+  during RSA CRT KeyBuilder probes; it is not a physical HMAC result.
   ARM and RISC-V max_crypto builds pass with 159/162 capabilities. The pinned
   JCAlgTest 1.8.4 CAP installs and runs on a clean VPCD card using GPPro. The
   first full support sweep exceeded the harness's 900-second timeout during

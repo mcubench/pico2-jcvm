@@ -1,3 +1,18 @@
+# Current handoff — current-worktree native HMAC KAT — 2026-11-08 06:21 CET
+
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-hmac-vpcd` rebuilt the PC `max_crypto`
+VM and HMAC fixture, then passed all 14 checks: ATR/SELECT plus 12 one-shot and
+split-update known-answer vectors across HMAC-SHA1, SHA-256, SHA-384, SHA-512,
+MD5 and RIPEMD160. Log: `artifacts/logs/hmac-kat-vpcd-20261108T051915Z.log`.
+The pinned 1.8.4 fixtures still verify (`tools/fixture-path --verify` passed
+81 files). Full JCAlgTest support acceptance remains open: the prior complete
+client attempt exhausted persistent storage during RSA CRT KeyBuilder probes.
+
+The authorized USB refresh still found runtime boards only; PC/SC lists VPCD
+but no Pico reader. No physical HMAC test or flash was performed. Next, continue
+PERSIST-01 work offline; do not enable automatic persistent reclamation until
+the multi-owner and power-loss gates pass.
+
 # Current handoff — rebuilt cross-AID VPCD acceptance — 2026-11-08 06:13 CET
 
 Rebuilt the PC VM from the current worktree with `./tools/build-pc --profile

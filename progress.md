@@ -25353,3 +25353,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue to the next open TODO item.
 - Commit: `pending progress-reference commit`.
 - Artifacts/logs: none.
+
+## 2026-11-08 Revalidate native HMAC VPCD vectors 4 minutes
+
+- Step/experiment: `HMAC-01-KAT-CURRENT-WORKTREE`
+- When: '2026-11-08 06:15 CET' - '2026-11-08 06:19 CET'
+- Change: Rebuilt the PC `max_crypto` VM and repository HMAC test CAP, then reran native HMAC known-answer coverage against the current worktree.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-hmac-vpcd` passed with `TEST:SUMMARY pass=14 fail=0` and `TEST:SUMMARY hmac_algorithms=6 vectors=12 fail=0`; `./tools/fixture-path --verify` passed for 81 pinned fixtures. The PC build returned zero. Existing converter, Maven metadata/network, Rust and packed-member warnings were logged. No physical token was used.
+- Result: One-shot and split-update RFC vectors pass for SHA-1, SHA-256, SHA-384, SHA-512, MD5 and RIPEMD160 through the native API dispatch. The full JCAlgTest support sweep remains incomplete because the earlier run exhausted persistent storage during RSA CRT KeyBuilder probes.
+- Decision: Keep HMAC-01 open for full pinned-client support comparison and eventual physical validation. Continue PERSIST-01 capacity/reclamation safety work before retrying the expensive full sweep.
+- Commit: `pending documentation commit`.
+- Artifacts/logs: `artifacts/logs/hmac-kat-vpcd-20261108T051915Z.log`.
