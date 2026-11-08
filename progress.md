@@ -25296,5 +25296,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --usb-path 1-4 --seconds 8` selected `/dev/ttyACM2` and exited 0 without serial bytes. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --usb-path 1-5 --seconds 8` selected `/dev/ttyACM0` and exited 0 without serial bytes. A fresh `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only VPCD readers. The access helper reported three Pico USB nodes (108, 109, 111) as runtime `2e8a:0009`.
 - Result: All three ports enumerate and map to distinct CDC devices, but none produced the finite runtime log and none appears as a PC/SC reader. No board was flashed.
 - Decision: Stop cycling the same old runtime image; wait for any one board to be in BOOTSEL, then use its USB topology path and verify the new reset hook.
-- Commit: `pending`
+- Commit: `139a921e`
 - Artifacts/logs: The monitor tool output is summarized above; no serial bytes were available to save as per-board logs.

@@ -1,4 +1,4 @@
-# Current handoff — SIO rollback committed; USB port targeting and reset hook — 2026-11-08 05:24 CET
+# Current handoff — SIO rollback committed; three-board recovery status — 2026-11-08 05:30 CET
 
 The CTX-01 proxy root rollback is implemented and committed as `104d1845`
 (`Fix SIO root rollback on proxy failure`); progress SHA reference follow-up is
@@ -20,7 +20,8 @@ Failover checks then mapped `1-4` to `/dev/ttyACM2` and `1-5` to
 `/dev/ttyACM0`; 8-second captures on both produced no serial payload. A fresh
 `pcsc_scan -r` still listed only VPCD. Runtime USB enumeration is present, but
 there is no serial or CCID response from any of the three boards in this VM.
-Whether the firmware loop is stalled is not established.
+Whether the firmware loop is stalled is not established. This failover check is
+recorded in commit `139a921e`.
 
 Physical flash is still blocked: the deployed runtime rejects picotool reset
 (`Unable to locate reset interface`), and the old firmware did not enter
