@@ -1,3 +1,14 @@
+# Current handoff — filter unrelated PacketRF from the PC/SC helper — 2026-11-08 11:18 CET
+
+The user confirmed the fourth connected `2e8a:0009` device is an unexpected
+PacketRF device and must not be used. Updated `tools/pico2-pcsc-reader-root`
+to require VID/PID plus sysfs manufacturer `Pico2` and product
+`Pico2 JCVM CCID`; `bash -n` passes. Host inspection finds three matching Pico2
+boards at paths 1-2, 1-3, 1-4, and PacketRF at 1-5. The installed
+`/usr/local/sbin/pico2-pcsc-reader` remains old and still counts all four, so it
+must be refreshed by running `sudo ./tools/install-pcsc-sudoers` before the
+next reader check. This is a repository helper fix; PacketRF was not accessed.
+
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
 
 The latest full unchanged JCAlgTest 1.8.4 VPCD run passed the algorithm and
@@ -10138,3 +10149,4 @@ Source references, section/word limits and backup identity passed inspection.
 No build, flash, USB, or runtime acceptance was performed. Existing technical
 handoff priorities and all unrelated uncommitted changes remain applicable.
 # Current handoff — persistent resource accounting diagnostics — 2026-11-08 08:05 CET
+# Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET

@@ -25682,3 +25682,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T074658Z/`,
   `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`,
   `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.
+
+## 2026-11-08 Identify Pico readers by USB product 5 minutes
+
+- Step/experiment: `HOST-PCSC-FILTER-PICO-IDENTITY`
+- When: '2026-11-08 11:13 CET' - '2026-11-08 11:18 CET'
+- Change: Tightened `tools/pico2-pcsc-reader-root` to require VID:PID
+  `2e8a:0009`, manufacturer `Pico2`, and product `Pico2 JCVM CCID`, so a
+  PacketRF unit that shares the VID:PID is excluded from the PC/SC allowlist.
+  Updated QKB and HANDOFF.
+- Validation: `bash -n tools/pico2-pcsc-reader-root
+  tools/install-pcsc-sudoers` passed. Authorized sysfs inspection showed Pico2
+  JCVM devices at USB paths 1-2, 1-3, 1-4 and unrelated PacketRF at 1-5. The
+  installed helper is still the old copy, so its attempted run correctly
+  rejected four VID:PID matches; no PCSC grant or PacketRF access occurred.
+- Result: Repository helper now selects only the three Pico2 JCVM descriptors.
+  PC/SC visibility remains to be rechecked after the updated helper is
+  installed.
+- Decision: Ask the user to run the existing installer once, then refresh
+  helper access and check `pcsc_scan -r`; continue offline until a Pico reader
+  is listed.
+- Commit: `<pending>`
+- Artifacts/logs: host sysfs USB identity inspection; no file log.

@@ -8282,3 +8282,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Artifacts: `artifacts/results/jcalgtest-support-vpcd-20261108T074658Z/`;
   `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`;
   `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.
+
+# 2026-11-08 PC/SC helper must identify the Pico product string
+
+- Issue: `tools/pico2-pcsc-reader-root` counted every device with VID:PID
+  `2e8a:0009`. An unexpected PacketRF device shares that ID, making the helper
+  reject four matches even though only three are Pico2 JCVM boards. The user
+  confirmed PacketRF is an unrelated connection and must not be used.
+- Viable source fix: Require sysfs manufacturer `Pico2` and product
+  `Pico2 JCVM CCID` in addition to VID:PID. Current host inspection confirms
+  three Pico matches at USB paths 1-2/1-3/1-4 and the unrelated PacketRF at
+  1-5. `bash -n` passes for the helper and installer.
+- Deployment: The currently installed `/usr/local/sbin/pico2-pcsc-reader`
+  still has the old VID:PID-only code. After reviewing this repository change,
+  rerun `sudo ./tools/install-pcsc-sudoers` to install the updated allowlisted
+  helper, then recheck `pcsc_scan -r`. No PacketRF access was attempted.

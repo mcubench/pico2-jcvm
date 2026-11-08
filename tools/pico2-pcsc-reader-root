@@ -15,14 +15,17 @@ fi
 matches=()
 for device in /sys/bus/usb/devices/*; do
   [[ -r "${device}/idVendor" && -r "${device}/idProduct" &&
+     -r "${device}/manufacturer" && -r "${device}/product" &&
      -r "${device}/busnum" && -r "${device}/devnum" ]] || continue
   [[ "$(<"${device}/idVendor")" == 2e8a &&
-     "$(<"${device}/idProduct")" == 0009 ]] || continue
+     "$(<"${device}/idProduct")" == 0009 &&
+     "$(<"${device}/manufacturer")" == Pico2 &&
+     "$(<"${device}/product")" == 'Pico2 JCVM CCID' ]] || continue
   matches+=("${device}")
 done
 
 if (( ${#matches[@]} == 0 || ${#matches[@]} > 3 )); then
-  printf 'Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009); found %s.\n' \
+  printf 'Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009, matching USB strings); found %s.\n' \
     "${#matches[@]}" >&2
   exit 1
 fi
