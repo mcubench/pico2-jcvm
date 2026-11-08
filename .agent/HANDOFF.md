@@ -10708,4 +10708,5 @@ Validation command:
 Log: `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`, SHA-256
 `0ebf558764dc3d8c95ea3757e62856362fb404774bd36a25c315d04d6cd21cf1`.
 Next continue full-run-safe diagnosis and PERSIST-01 root/recovery gates; do not
-access the unexpected PacketRF device.
+access the unexpected PacketRF device. The fixture extension and records are
+committed as `a0023fea`.

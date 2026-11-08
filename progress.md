@@ -26356,6 +26356,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   physical flash, or power-interruption acceptance result.
 - Decision: Keep production deletion unsupported; RESOURCE-01 remains open.
   Continue the root and durable recovery acceptance gates before enabling it.
-- Commit: `<pending>`
+- Commit: `a0023fea`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`,
   SHA-256 `0ebf558764dc3d8c95ea3757e62856362fb404774bd36a25c315d04d6cd21cf1`.
