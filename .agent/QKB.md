@@ -1,3 +1,18 @@
+# 2026-11-08 PC/SC refresh after reported three-token availability
+
+- Issue: The user reported all tokens present. The authorized helper granted
+  three USB nodes (`001/014`, `001/015`, `001/016`); a separate follow-up
+  refresh granted `001/014`, `001/015`, `001/017`. `lsusb -d 2e8a:0009`
+  observed two runtime Pico 2 devices (`014`, `015`) at that point, and
+  `pcsc_scan -r` listed only the two Virtual PCD readers.
+- Viable action: Refresh `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` through the authorized host-access path,
+  then check `pcsc_scan -r`. Do not infer PC/SC availability from helper node
+  count or USB descriptors alone.
+- Current outcome: No physical PC/SC reader is available to this process;
+  cause unknown. No physical APDU or flash was attempted. Continue offline and
+  retry when a Pico appears in the reader list.
+
 ## Multi-board runtime-to-BOOTSEL selection — observed 2026-11-08
 
 - **Observation:** The three connected Pico devices enumerate as runtime

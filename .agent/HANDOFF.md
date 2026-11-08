@@ -1,3 +1,22 @@
+# Current handoff — VPCD crypto lifecycle regression — 2026-11-08 07:35 CET
+
+Added VPCD lifecycle vectors for applet-static AES and RSA `Cipher` instances
+backed by `CLEAR_ON_DESELECT` keys. The tests initialize a transient key and
+Cipher, deselect to the card manager, reselect, verify use fails after the key
+and native workspace clear, then repeat across a VPCD reset. AES and RSA
+variants pass within the existing symmetric crypto VPCD suite. The test harness
+now builds `max_crypto` because the RSA transient-key variant needs RSA support.
+Validation log: `artifacts/logs/symm-crypto-kat-vpcd-20261108T062536Z.log`;
+the run reported `TEST:SUMMARY pass=99 fail=0` and
+`transient_lifecycle=16 reset_after=2 total=97 fail=0`.
+
+This is VPCD evidence only; the physical PC/SC check after the user's latest
+"tokens present" update refreshed the helper to three USB nodes, while a
+separate `lsusb` snapshot showed two runtime `2e8a:0009` devices and
+`pcsc_scan -r` listed only the two Virtual PCD readers. No physical APDU or
+flash was attempted. Continue with the highest-priority RESOURCE-01 work and
+retry physical tests when a Pico reader is actually published.
+
 # Current handoff — saved RESOURCE-01 implementation plan — 2026-11-08 07:09 CET
 
 Saved the proposed six-stage plan in docs/resource-01-implementation-plan.md

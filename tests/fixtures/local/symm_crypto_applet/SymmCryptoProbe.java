@@ -24,9 +24,11 @@ import javacardx.crypto.Cipher;
 
 /** Test applet that exposes one deterministic cipher or MAC operation per APDU. */
 public final class SymmCryptoProbe extends Applet {
-  private static MessageDigest retainedDigest;
+  private static Cipher retainedCipher;
   private static Cipher retainedCbcCipher;
   private static Key retainedCbcKey;
+  private static AESKey stagedAesKey;
+  private static MessageDigest retainedDigest;
   private SymmCryptoProbe() { register(); }
 
   public static void install(byte[] data, short offset, byte length) {
@@ -45,7 +47,53 @@ public final class SymmCryptoProbe extends Applet {
     byte[] output;
     short outputLength;
     byte instruction = buffer[ISO7816.OFFSET_INS];
-    if (instruction == (byte)0x2a) {
+    if (instruction == (byte)0x1d) {
+      output = new byte[(short)1];
+      output[0] = stageTransientAes(algorithm, (byte)1);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x21) {
+      output = new byte[(short)1];
+      try {
+        byte[] transientBuffer = JCSystem.makeTransientByteArray(
+            (short)16, JCSystem.CLEAR_ON_DESELECT);
+        output[0] = transientBuffer.length == 16 ? (byte)1 : (byte)0x7c;
+      } catch (Exception exception) {
+        output[0] = (byte)0x61;
+      }
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x22) {
+      output = new byte[(short)1];
+      try {
+        KeyBuilder.buildKey(KeyBuilder.TYPE_AES_TRANSIENT_DESELECT,
+            KeyBuilder.LENGTH_AES_128, false);
+        output[0] = 1;
+      } catch (CryptoException exception) {
+        output[0] = (byte)(0x40 | exception.getReason());
+      } catch (Exception exception) {
+        output[0] = (byte)0x62;
+      }
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x1e) {
+      output = new byte[(short)1];
+      output[0] = stageTransientAes(algorithm, (byte)2);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x1f) {
+      output = new byte[(short)1];
+      output[0] = stageTransientAes(algorithm, (byte)3);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x20) {
+      output = new byte[(short)1];
+      output[0] = stageTransientAes(algorithm, (byte)4);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x1b) {
+      output = new byte[(short)1];
+      output[0] = initializeRetainedCipher(algorithm);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x1c) {
+      output = new byte[(short)1];
+      output[0] = useRetainedCipherAfterClear(algorithm);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x2a) {
       output = new byte[(short)1];
       try {
         retainedDigest = MessageDigest.getInstance(algorithm, false);
@@ -123,6 +171,90 @@ public final class SymmCryptoProbe extends Applet {
     apdu.setOutgoing();
     apdu.setOutgoingLength(outputLength);
     apdu.sendBytesLong(output, (short)0, outputLength);
+  }
+
+  private static byte stageTransientAes(byte selector, byte stage) {
+    try {
+      if (selector != 0) return (byte)0x7e;
+      if (stage == 1) {
+        stagedAesKey = (AESKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_AES_TRANSIENT_DESELECT,
+            KeyBuilder.LENGTH_AES_128, false);
+      } else if (stage == 2) {
+        if (stagedAesKey == null) return (byte)0x7d;
+        stagedAesKey.setKey(new byte[16], (short)0);
+      } else if (stage == 3) {
+        if (stagedAesKey == null) return (byte)0x7d;
+        retainedCipher = Cipher.getInstance(
+            Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+      } else {
+        if (stagedAesKey == null || retainedCipher == null) return (byte)0x7d;
+        retainedCipher.init(stagedAesKey, Cipher.MODE_ENCRYPT);
+      }
+      return 1;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)(0x60 | stage);
+    }
+  }
+
+  private static byte initializeRetainedCipher(byte selector) {
+    byte stage = 1;
+    try {
+      if (selector == 0) {
+        AESKey key = (AESKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_AES_TRANSIENT_DESELECT,
+            KeyBuilder.LENGTH_AES_128, false);
+        key.setKey(new byte[16], (short)0);
+        retainedCipher = Cipher.getInstance(
+            Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+        retainedCipher.init(key, Cipher.MODE_ENCRYPT);
+      } else {
+        RSAPrivateKey key = (RSAPrivateKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_PRIVATE_TRANSIENT_DESELECT,
+            KeyBuilder.LENGTH_RSA_512, false);
+        stage = 2;
+        byte[] modulus = new byte[64];
+        modulus[0] = (byte)0x80;
+        modulus[63] = 1;
+        key.setModulus(modulus, (short)0, (short)modulus.length);
+        stage = 3;
+        key.setExponent(new byte[] {1}, (short)0, (short)1);
+        stage = 4;
+        retainedCipher = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);
+        stage = 5;
+        retainedCipher.init(key, Cipher.MODE_DECRYPT);
+      }
+      return 1;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    } catch (NullPointerException exception) {
+      return (byte)0x71;
+    } catch (ArrayIndexOutOfBoundsException exception) {
+      return (byte)0x72;
+    } catch (SecurityException exception) {
+      return (byte)0x73;
+    } catch (RuntimeException exception) {
+      return (byte)0x74;
+    } catch (Exception exception) {
+      return (byte)(0x60 | stage);
+    }
+  }
+
+  private static byte useRetainedCipherAfterClear(byte selector) {
+    if (retainedCipher == null) return (byte)0x7e;
+    try {
+      byte[] input = selector == 0 ? new byte[16] : new byte[64];
+      byte[] output = new byte[64];
+      retainedCipher.doFinal(input, (short)0, (short)input.length,
+          output, (short)0);
+      return (byte)0x7f;
+    } catch (CryptoException exception) {
+      return exception.getReason() == CryptoException.UNINITIALIZED_KEY ||
+          exception.getReason() == CryptoException.INVALID_INIT
+          ? (byte)1 : (byte)(0x40 | exception.getReason());
+    }
   }
 
   private static byte runEcKey(byte selector) {

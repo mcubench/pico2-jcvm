@@ -25485,3 +25485,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Implement in separately validated stages, preserving PERSIST-01 safety gates and unchanged supplied fixtures.
 - Commit: See the Git commit containing this RESOURCE-01-SAVE-PLAN record.
 - Artifacts/logs: `docs/resource-01-implementation-plan.md`.
+
+## 2026-11-08 VPCD crypto transient lifecycle regression 10 minutes
+
+- Step/experiment: `RESOURCE-01-CRYPTO-TRANSIENT-VPCD`
+- When: '2026-11-08 07:25 CET' - '2026-11-08 07:35 CET'
+- Change: Added VPCD regression vectors that retain AES/RSA Cipher instances
+  backed by `CLEAR_ON_DESELECT` keys, then verify the native Cipher is unusable
+  after applet deselection and VPCD reset. The harness builds `max_crypto` to
+  include RSA for this lifecycle check.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` passed:
+  38 cipher vectors, 47 MAC vectors, 6 IV vectors, 16 transient lifecycle
+  checks; 97 custom APDUs over two reset cycles; nested summary
+  `TEST:SUMMARY pass=99 fail=0`. Log:
+  `artifacts/logs/symm-crypto-kat-vpcd-20261108T062536Z.log`. A post-update
+  authorized physical refresh granted three USB nodes, but `pcsc_scan -r`
+  exposed only Virtual PCD readers; no physical APDU/flash validation ran.
+- Result: VPCD confirms transient key and Cipher cleanup for AES/RSA across
+  deselection/reset. Physical lifecycle acceptance remains open.
+- Decision: Commit the VPCD regression independently; continue RESOURCE-01
+  with physical reader access still unavailable.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261108T062536Z.log`.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -92,7 +93,6 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
         results.append((lifecycle_apdu(2, iv + second),
                         expected_supplied_iv + b"\x90\x00",
                         f"CBC {algorithm} explicit init restores supplied IV"))
-
     return results
 
 
@@ -186,11 +186,42 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
     return results
 
 
+def transient_cipher_lifecycle_vectors() -> list[tuple[bytes, bytes, str]]:
+    # Keep Cipher in an applet static field, then deselect by selecting the
+    # card manager. The transient AES/RSA key and its native Cipher workspace
+    # must both clear before the applet is selected and used again.
+    results = []
+    applet = bytes.fromhex(APPLET_AID)
+    manager = bytes.fromhex("A000000151000000")
+    for selector, label in ((0, "AES"), (1, "RSA")):
+        results.append((bytes((0x80, 0x1B, selector, 0, 0)),
+                        b"\x01\x90\x00", f"{label} transient Cipher init"))
+        results.append((bytes((0x00, 0xA4, 0x04, 0, len(manager))) +
+                        manager + b"\x00",
+                        bytes.fromhex("6F0A8408A0000001510000009000"),
+                        f"{label} deselect transient Cipher"))
+        results.append((bytes((0x00, 0xA4, 0x04, 0, len(applet))) +
+                        applet + b"\x00", b"\x90\x00",
+                        f"{label} reselect transient Cipher applet"))
+        results.append((bytes((0x80, 0x1C, selector, 0, 0)),
+                        b"\x01\x90\x00",
+                        f"{label} Cipher rejects cleared workspace"))
+        results.append((bytes((0x80, 0x1B, selector, 0, 0)),
+                        b"\x01\x90\x00",
+                        f"{label} transient Cipher init before reset"))
+        results.append((bytes((0x80, 0x1C, selector, 0, 0)),
+                        b"\x01\x90\x00",
+                        f"{label} Cipher rejects cleared workspace after reset"))
+    return results
+
+
 def main() -> int:
     cipher_count = len(cipher_vectors())
     mac_count = len(mac_vectors())
-    vectors = cipher_vectors() + mac_vectors()
-    log = ROOT / "artifacts/logs/symm-crypto-kat-vpcd-20261026.log"
+    vectors = (cipher_vectors() + mac_vectors() +
+               transient_cipher_lifecycle_vectors())
+    timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    log = ROOT / f"artifacts/logs/symm-crypto-kat-vpcd-{timestamp}.log"
     command = [
         sys.executable, str(ROOT / "tests/integration/pc_vpcd_applet_test.py"),
         "--emulator", str(ROOT / "build/choupi-pc/choupi"),
@@ -198,17 +229,24 @@ def main() -> int:
         "--cap-code", str(ROOT / "build/symm-crypto-probe/load-code.bin"),
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
+        "--connect-timeout", "300", "--apdu-timeout", "600",
         "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-vpcd-current.bin"),
         "--log", str(log),
     ]
-    for apdu, expected, _label in vectors:
+    reset_after_indices = []
+    for index, (apdu, expected, label) in enumerate(vectors, start=1):
         command.extend(("--apdu", apdu.hex(), "--expect-apdu-response", expected.hex()))
+        if label.endswith("init before reset"):
+            reset_after_indices.append(index)
+    for index in reset_after_indices:
+        command.extend(("--reset-after-custom-apdu", str(index)))
     import subprocess
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode
     print(f"TEST:SUMMARY cipher_vectors={cipher_count} mac_vectors={mac_count} "
-          f"iv_vectors=6 total={len(vectors)} fail=0")
+          f"iv_vectors=6 transient_lifecycle=16 reset_after={len(reset_after_indices)} "
+          f"total={len(vectors)} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 
