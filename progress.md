@@ -25120,7 +25120,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`; elevated `lsusb -d 2e8a:0009`; `timeout 8s pcsc_scan -r`; and finite `./tools/monitor --serial ... --seconds 8` on D92, 2BED, and 8E46. All monitors returned `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`; PC/SC scan exited 124 with no Pico reader.
 - Result: Three runtime USB boards were present. D92 telemetry showed `84F220020A` -> `9000`; 8E46 showed `80CA00E000` -> `6A88`; 2BED showed zero transfers/no fresh APDU despite monitor PASS. No firmware flash or PC/SC APDU was performed.
 - Decision: Hardware runtime visibility is confirmed across the pool, but card-protocol acceptance remains blocked by PC/SC registration. Continue CTX-01 offline, preserving persistent foreign-reference fail-closed behavior.
-- Commit: `<pending>`
+- Commit: `7802769d`
 - Artifacts/logs: Monitor output in session transcript only; no separate log files.
 
 ## 2026-11-07 Support volatile foreign references in instance fields 18 minutes

@@ -33,6 +33,7 @@ three USB nodes, but bounded `pcsc_scan -r` still lists no Pico readers, so
 physical alias/APDU validation remains open. The built UF2 SHA/size are recorded
 in `progress.md`: 1,762,816 bytes, SHA-256
 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d`.
+Implementation commit: `7802769d`.
 
 The previous handoff-resolution commit is `1e8418ba`. Continue the CTX-01
 reference-consumer audit offline while PC/SC has no readers; keep normal
