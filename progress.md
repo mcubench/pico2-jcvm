@@ -26397,3 +26397,32 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   production deletion disabled until those pass.
 - Commit: `a2f9e0ac`
 - Artifacts/logs: command output only; no archived log.
+
+## 2026-11-09 Build physical reclaimer diagnostic image 8 minutes
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-RECLAIMER-PREP`
+- When: '2026-11-09 00:21 CET' - '2026-11-09 00:29 CET'
+- Change: Built current max_crypto on both architecture wrappers and built an
+  ARM diagnostic image with `CHOUPI_DEBUG_PERSISTENT_GC` enabled. Copied it to
+  a separate test filename and added an external request to refresh the stale
+  root PC/SC helper before any USB access. Updated HANDOFF.
+- Validation: `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed on the current worktree.
+  `PICO2_DEBUG_PERSISTENT_GC=1 ./tools/build arm --profile max_crypto` passed
+  and produced the diagnostic full ARM firmware; the same RISC-V wrapper
+  passed (RISC-V remains a core/smoke build). The ARM ELF contains persistent
+  GC telemetry strings. `build/arm/pico2_choupi_persistent_gc_test.uf2` is
+  1,986,560 bytes with SHA-256
+  `b1098c8e0ad7e07761e0d42bce24f65bc3bc451b42a07d42f0037cce4d27ebc8`.
+  No USB/PCSC command or physical-device operation was run.
+- Result: A reproducible physical diagnostic image is ready. The installed
+  root helper differs from the Pico-only repository helper and could include
+  the unexpected PacketRF device, so physical work is intentionally held until
+  the user updates the helper.
+- Decision: After the user runs `sudo ./tools/install-pcsc-sudoers`, refresh
+  the allowlisted PCSC path, choose one identified Pico2 by chip ID, and run
+  `tools/test-persistent-reclaimer-physical`. Do not touch PacketRF.
+- Commit: `<pending>`
+- Artifacts/logs: `build/arm/pico2_choupi_persistent_gc_test.uf2` (ignored
+  build artifact), SHA-256 above; `.agent/EXT_REQUESTS.md` contains the exact
+  host-side action.

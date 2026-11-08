@@ -10716,6 +10716,25 @@ Current-tree revalidation: `./tools/test-persistent-transaction` passes
 transaction refusal and interrupted cleanup/retry. This is unit-model evidence;
 physical flash recovery remains open.
 
+# Current handoff — physical reclaimer test image ready; helper refresh required — 2026-11-09 00:29 CET
+
+Both current max_crypto architecture wrappers pass. An ARM diagnostic build
+with `PICO2_DEBUG_PERSISTENT_GC=1` also passes; RISC-V wrapper passes its core
+and smoke targets. Diagnostic image:
+`build/arm/pico2_choupi_persistent_gc_test.uf2` (1,986,560 bytes,
+SHA-256 `b1098c8e0ad7e07761e0d42bce24f65bc3bc451b42a07d42f0037cce4d27ebc8`).
+The ELF includes the persistent-GC telemetry marker and is for focused
+reclaimer validation, not release.
+
+The checked-in `tools/pico2-pcsc-reader-root` uses exact Pico2 USB strings, but
+the installed `/usr/local/sbin/pico2-pcsc-reader` has a different hash and is
+stale. Do not execute it: it may grant access to the unexpected PacketRF device.
+The user must run `sudo ./tools/install-pcsc-sudoers` from the repository root.
+After that, use the safe host-access path and the existing
+`tools/test-persistent-reclaimer-physical` on an identified Pico2 reader only.
+No USB operation, physical flash, or token APDU was attempted during this
+preparation. The full external request is in `.agent/EXT_REQUESTS.md`.
+
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
 `./tools/test-rp2350-fs-overlay` now passes the complete suite with
@@ -10728,3 +10747,22 @@ not physical Pico power-cut evidence. Production object deletion remains
 unsupported/disabled. Continue with a physical safe-boundary restart test and
 the unchanged full JCAlgTest long-run plateau before declaring RESOURCE-01
 fixed. The evidence record is committed as `a2f9e0ac`.
+
+# Current handoff — physical reclaimer test image ready; helper refresh required — 2026-11-09 00:29 CET
+
+Both current max_crypto architecture wrappers pass. An ARM diagnostic build
+with `PICO2_DEBUG_PERSISTENT_GC=1` also passes; RISC-V wrapper passes its core
+and smoke targets. Diagnostic image:
+`build/arm/pico2_choupi_persistent_gc_test.uf2` (1,986,560 bytes,
+SHA-256 `b1098c8e0ad7e07761e0d42bce24f65bc3bc451b42a07d42f0037cce4d27ebc8`).
+The ELF contains the persistent-GC telemetry marker and is for focused
+reclaimer validation, not release.
+
+The checked-in `tools/pico2-pcsc-reader-root` uses exact Pico2 USB strings, but
+the installed `/usr/local/sbin/pico2-pcsc-reader` has a different hash and is
+stale. Do not execute it: it may grant access to the unexpected PacketRF device.
+The user must run `sudo ./tools/install-pcsc-sudoers` from the repository root.
+After that, use the safe host-access path and the existing
+`tools/test-persistent-reclaimer-physical` on an identified Pico2 reader only.
+No USB operation, physical flash, or token APDU was attempted during this
+preparation. The full external request is in `.agent/EXT_REQUESTS.md`.

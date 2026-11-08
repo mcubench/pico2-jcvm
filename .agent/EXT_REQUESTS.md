@@ -21,3 +21,29 @@
 - Decision: Physical REL-01 acceptance is now confirmed on Linux with reader D92; release level `0101` and equipment ID `FF1DC424` match. This image remains available for separate Windows external testing. It is an empty-card image and erases installed applets and persistent data when flashed.
 - Commit: `de960d02`
 - Artifacts/logs: Firmware path and SHA-256 above; physical logs `artifacts/logs/rel-01-monitor-D92-20261107.log` and `artifacts/logs/rel-01-gppro-physical-D92-20261107.log`.
+
+## 2026-11-09 Refresh Pico-only PC/SC access helper for RESOURCE-01 physical test 8 minutes
+
+- Step/experiment: `RESOURCE-01-refresh-pcsc-helper`
+- When: '2026-11-09 00:21 CET' - '2026-11-09 00:29 CET'
+- Change: Prepare the host access path for physical reclaimer validation. The
+  repository helper filters by USB VID/PID and exact Pico2 manufacturer/product
+  strings; the installed `/usr/local/sbin/pico2-pcsc-reader` has a different
+  SHA-256 and is stale. Do not execute the stale helper because it may include
+  the user's unexpected PacketRF device.
+- Validation: Current worktree `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. Diagnostic builds with
+  `PICO2_DEBUG_PERSISTENT_GC=1` also passed for both wrappers. Prepared ARM
+  test image: `build/arm/pico2_choupi_persistent_gc_test.uf2`, 1,986,560 bytes,
+  SHA-256 `b1098c8e0ad7e07761e0d42bce24f65bc3bc451b42a07d42f0037cce4d27ebc8`;
+  ELF contains the `CHOUPI:PERSISTENT_GC` telemetry marker. `visudo` is present
+  at the installer's expected `/usr/sbin/visudo` path.
+- Result: Safe physical access is not ready until the installed helper is
+  replaced. No USB/PCSC scan or physical device operation was attempted.
+- Decision: From repository root, run `sudo ./tools/install-pcsc-sudoers`, then
+  report completion. After that I can invoke the refreshed allowlisted helper,
+  select an identified Pico2 reader by chip ID, flash only that board with the
+  diagnostic image, and run `tools/test-persistent-reclaimer-physical`. The
+  unexpected PacketRF device is excluded.
+- Commit: `<pending>`
+- Artifacts/logs: Diagnostic image path/hash above; no hardware log yet.

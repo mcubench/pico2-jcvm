@@ -110,6 +110,11 @@ Archive text is historical evidence, not current device state or priorities.
   with retry completing cleanup. The whole overlay suite reports
   `TEST:SUMMARY fail=0`. This is fake-flash simulation of the RP2350 filesystem
   code, not physical flash-cut evidence.
+  A separate ARM diagnostic image with per-APDU persistent-reclaimer telemetry
+  is prepared at `build/arm/pico2_choupi_persistent_gc_test.uf2` (SHA-256
+  `b1098c8e0ad7e07761e0d42bce24f65bc3bc451b42a07d42f0037cce4d27ebc8`). The
+  installed PC/SC helper is stale and may include PacketRF; do not use it until
+  the user refreshes it with the command in `.agent/EXT_REQUESTS.md`.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.
