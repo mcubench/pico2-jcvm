@@ -3,8 +3,17 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_host_usb_access
-[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical 'exact reader name'"
+[[ $# -ge 1 && $# -le 3 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical 'exact reader name' [RSA cycles 1..16] [RSA bits 512|1024|2048|4096]"
 reader_name="$1"
+rsa_cycles="${2:-8}"
+rsa_bits="${3:-4096}"
+[[ "${rsa_cycles}" =~ ^([1-9]|1[0-6])$ ]] || \
+  die "RSA cycles must be an integer in 1..16"
+[[ "${rsa_bits}" == 512 || "${rsa_bits}" == 1024 || \
+   "${rsa_bits}" == 2048 || "${rsa_bits}" == 4096 ]] || \
+  die "RSA bits must be 512, 1024, 2048, or 4096"
+monitor_seconds=$((120 + rsa_cycles * 15))
+probe_timeout=$((100 + rsa_cycles * 15))
 [[ "${reader_name}" =~ \(([[:xdigit:]]{16})\) ]] || \
   die "reader name must contain a 16-digit Pico chip ID"
 chip_id="${BASH_REMATCH[1]}"
@@ -69,6 +78,9 @@ cleanup() {
   fi
   if [[ -n "${monitor_pid}" ]]; then
     local monitor_status=0
+    if (( status != 0 )); then
+      kill -TERM "${monitor_pid}" 2>/dev/null || true
+    fi
     wait "${monitor_pid}" || monitor_status=$?
     monitor_pid=""
     if (( monitor_status != 0 )); then
@@ -82,7 +94,8 @@ cleanup() {
 trap cleanup EXIT
 
 exec > >(tee -a "${log}") 2>&1
-printf 'PERSISTENT_RECLAIMER:START reader=%s\n' "${reader_name}"
+printf 'PERSISTENT_RECLAIMER:START reader=%s rsa_cycles=%s rsa_bits=%s\n' \
+  "${reader_name}" "${rsa_cycles}" "${rsa_bits}"
 PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
   >"${list_log}" 2>&1 || die "GPPro list failed; see ${list_log}"
@@ -96,7 +109,7 @@ timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
   >"${install_log}" 2>&1 || die "probe install failed; see ${install_log}"
 cat "${install_log}"
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/monitor" \
-  --serial "${chip_id}" --seconds 60 >"${serial_log}" 2>&1 &
+  --serial "${chip_id}" --seconds "${monitor_seconds}" >"${serial_log}" 2>&1 &
 monitor_pid=$!
 monitor_ready=0
 for _ in $(seq 1 140); do
@@ -110,8 +123,9 @@ for _ in $(seq 1 140); do
   sleep 0.25
 done
 (( monitor_ready == 1 )) || die "serial monitor did not attach; see ${serial_log}"
-PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java -cp "${host_build}" \
-  PersistentReclaimerPhysicalProbe "${reader_name}"
+PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s \
+  "${probe_timeout}s" "${repo_root}/tools/env" java -cp "${host_build}" \
+  PersistentReclaimerPhysicalProbe "${reader_name}" "${rsa_cycles}" "${rsa_bits}"
 monitor_status=0
 wait "${monitor_pid}" || monitor_status=$?
 monitor_pid=""
@@ -123,6 +137,15 @@ if ! grep -Eq \
     'CHOUPI:PERSISTENT_GC .*result=0 erased=[1-9][0-9]* .*candidates=[1-9][0-9]*' \
     "${serial_log}"; then
   die "no completed persistent-tag erase was reported; ensure the board runs a PERSISTENT_GC-hook image; see ${serial_log}"
+fi
+positive_reclaims="$(grep -Ec \
+  '^CHOUPI:PERSISTENT_GC .*result=0 erased=[1-9][0-9]* ' \
+  "${serial_log}" || true)"
+(( positive_reclaims >= rsa_cycles )) || \
+  die "expected at least ${rsa_cycles} nonempty reclamation callbacks for RSA replacements, got ${positive_reclaims}; see ${serial_log}"
+if ! grep -Fq "TEST:METRIC rsa_builds=${rsa_cycles} rsa_bits=${rsa_bits}" \
+    "${log}"; then
+  die "physical APDU probe did not record the requested RSA workload; see ${log}"
 fi
 printf 'PERSISTENT_RECLAIMER:TELEMETRY_PASS log=%s\n' \
   "${serial_log#${repo_root}/}"

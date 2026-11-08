@@ -115,6 +115,10 @@ Archive text is historical evidence, not current device state or priorities.
   `b1098c8e0ad7e07761e0d42bce24f65bc3bc451b42a07d42f0037cce4d27ebc8`). The
   installed PC/SC helper is stale and may include PacketRF; do not use it until
   the user refreshes it with the command in `.agent/EXT_REQUESTS.md`.
+  The physical harness is prepared for 8 repeated 4096-bit RSA replacements
+  by default. It checks that the instance field clears and at least one
+  nonempty physical persistent-reclaimer callback occurs per replacement; the
+  host CAP build, SmartCardIO client compile and 4-cycle VPCD control pass.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

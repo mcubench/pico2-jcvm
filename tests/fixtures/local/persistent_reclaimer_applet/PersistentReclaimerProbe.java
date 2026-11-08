@@ -125,6 +125,10 @@ public final class PersistentReclaimerProbe extends Applet {
       case 13:
         buffer[0] = retainedRsaKey == null ? (byte)0 : (byte)1;
         break;
+      case 14:
+        retainedRsaKey = null;
+        buffer[0] = 0;
+        break;
       default:
         ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
     }

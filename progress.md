@@ -26426,3 +26426,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `build/arm/pico2_choupi_persistent_gc_test.uf2` (ignored
   build artifact), SHA-256 above; `.agent/EXT_REQUESTS.md` contains the exact
   host-side action.
+
+## 2026-11-09 Extend physical reclaimer test to RSA replacements 9 minutes
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-RSA-RECLAIMER-PROBE`
+- When: '2026-11-09 00:29 CET' - '2026-11-09 00:38 CET'
+- Change: Added a CAP command to clear its RSA reference without invoking the
+  unsupported JCSystem deletion API. Extended the physical SmartCardIO client
+  and wrapper for 1..16 RSA replacements at 512..4096 bits, with 8 x 4096 as
+  default, a finite APDU timeout and duration-scaled serial monitor. The wrapper
+  requires at least one nonempty persistent-reclaimer callback per RSA cycle.
+  Updated TODO and EXT_REQUESTS.
+- Validation: `./tools/build-persistent-reclaimer-probe` passed; Java 8 host
+  client compiled; `bash -n tools/test-persistent-reclaimer-physical` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 4 rsa-public
+  4096` passed `TEST:SUMMARY pass=11 fail=0`, reclaiming 40 tags. The physical
+  Java client is host-side only; no USB or board was accessed.
+- Result: The full diagnostic path is prepared for physical high-key-size
+  replacement pressure, but no physical result exists until the Pico-only PCSC
+  helper is refreshed by the user.
+- Decision: After the requested helper refresh, run the physical test against
+  one identified Pico2 by exact reader and chip ID. Keep the unexpected
+  PacketRF device excluded and production deletion disabled.
+- Commit: `<pending>`
+- Artifacts/logs: VPCD log
+  `artifacts/logs/object-deletion-vpcd-20261108T233722Z.log`; expected physical
+  serial/APDU logs are generated under `artifacts/logs/` by the wrapper.

@@ -10736,6 +10736,23 @@ No USB operation, physical flash, or token APDU was attempted during this
 preparation. The full external request is in `.agent/EXT_REQUESTS.md`.
 This preparation and its records are committed as `662aff8c`.
 
+# Current handoff — RSA-4096 physical stress harness ready — 2026-11-09 00:38 CET
+
+The physical reclaimer test now accepts 1..16 key-replacement cycles and RSA
+sizes 512/1024/2048/4096 bits. Default is 8 x 4096. The local CAP fixture can
+clear its RSA reference without calling unsupported JCSystem deletion; the
+ARM diagnostic image's per-APDU reclaimer should collect orphaned graphs. The
+wrapper bounds the host run and requires at least one successful nonempty
+reclamation callback per replacement cycle.
+
+CAP generation, host Java compile and shell syntax checks pass. A 4 x 4096-bit
+request-gated VPCD control passes 11/11 and reclaims 40 owner tags. This is not
+physical evidence. Do not use the stale installed helper: it differs from the
+Pico-only repository helper and may include the unexpected PacketRF device.
+Await the user running `sudo ./tools/install-pcsc-sudoers`; then use an exact
+identified Pico2 reader name and chip ID, flash only the prepared diagnostic
+image, and run `tools/test-persistent-reclaimer-physical '<reader>' 8 4096`.
+
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
 `./tools/test-rp2350-fs-overlay` now passes the complete suite with

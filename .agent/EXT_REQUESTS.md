@@ -45,5 +45,33 @@
   select an identified Pico2 reader by chip ID, flash only that board with the
   diagnostic image, and run `tools/test-persistent-reclaimer-physical`. The
   unexpected PacketRF device is excluded.
-- Commit: `<pending>`
+- Commit: `662aff8c`
 - Artifacts/logs: Diagnostic image path/hash above; no hardware log yet.
+
+## 2026-11-09 Extend the physical reclaimer probe to RSA-4096 replacements 9 minutes
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-RSA-RECLAIMER-PROBE`
+- When: '2026-11-09 00:29 CET' - '2026-11-09 00:38 CET'
+- Change: Extended the local validation applet with a reference-clear command
+  that does not call the unsupported deletion API. Extended the host-side
+  SmartCardIO probe and physical wrapper to run 1..16 repeated RSA key
+  replacements at 512/1024/2048/4096 bits. The diagnostic firmware's post-APDU
+  reclaimer should clear the previous graph after each replacement. The
+  wrapper now requires at least one nonempty reclaim callback per replacement
+  cycle and bounds the serial monitor and APDU test.
+- Validation: `./tools/build-persistent-reclaimer-probe` and host `javac`
+  passed; `bash -n tools/test-persistent-reclaimer-physical` passed. Guarded
+  VPCD `./tools/test-object-deletion-vpcd 4 rsa-public 4096` passed 11/11 and
+  erased 40 owner tags. This host probe uses the separate request-gated PC
+  harness; no USB or physical device was accessed.
+- Result: The physical harness is ready to test repeated 4096-bit RSA
+  replacement on an identified Pico2, but still awaits refresh of the
+  Pico-only sudo helper described above.
+- Decision: Once the helper is refreshed, use
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical '<exact Pico2 reader name with chip ID>' 8 4096`.
+  Flash only `build/arm/pico2_choupi_persistent_gc_test.uf2`; never select the
+  unexpected PacketRF device.
+- Commit: `<pending>`
+- Artifacts/logs: VPCD control
+  `artifacts/logs/object-deletion-vpcd-20261108T233722Z.log`; physical result
+  pending.
