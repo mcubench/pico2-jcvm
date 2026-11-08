@@ -25430,3 +25430,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep physical PERSIST-01 power-loss and multi-owner acceptance open.
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
+
+## 2026-11-08 Refresh reported Pico board availability 3 minutes
+
+- Step/experiment: `PCSC-01-THREE-BOARD-AVAILABILITY-RECHECK`
+- When: '2026-11-08 06:41 CET' - '2026-11-08 06:44 CET'
+- Change: Recorded the latest user-reported three-board availability and authorized host USB/PCSC inventory in `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: The approved `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` helper granted three USB nodes. `lsusb -d 2e8a:` showed three runtime `2e8a:0009` devices with CDC and CCID interfaces. A bounded `pcsc_scan -r`, including immediately after helper refresh, listed only two VPCD readers and no Pico. No APDU or flash operation was attempted.
+- Result: USB enumeration and CCID descriptors are present, but no physical PC/SC reader is available inside this VM. USB node numbers shift between refreshes; immediate helper+scan also did not restore PC/SC visibility. Cause is unknown.
+- Decision: Continue offline; retry physical access only after PC/SC lists a Pico reader. This is an access observation, not firmware/card acceptance.
+- Commit: `<pending>`
+- Artifacts/logs: console output only; no external log artifact.

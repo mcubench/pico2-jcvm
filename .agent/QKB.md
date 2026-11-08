@@ -7966,6 +7966,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   refreshing helper ACLs and scanning with the daemon active still produced
   no reader. This confirms auto-exit is not by itself the reader cause.
 
+## Three reported Pico tokens still lack PC/SC readers — 2026-11-08 06:42 CET
+
+- **Observation:** After the user reported all three tokens present, the
+  authorized `pico2-pcsc-reader` helper granted access to three USB nodes.
+  `lsusb -d 2e8a:` then showed three `2e8a:0009` devices; their configuration
+  descriptors include CDC and CCID interfaces. A bounded `pcsc_scan -r` after
+  the refresh listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`, with no
+  Pico reader. USB device numbers changed across refreshes, so the final scan
+  was run immediately after the helper as well; it still found no Pico reader.
+- **Decision:** No physical APDU or flash test was attempted. Keep the reported
+  boards available for a later retry, but require PC/SC enumeration before
+  treating any as a usable smartcard reader. This repeats the known USB-visible
+  / PCSC-absent state; it does not identify the cause.
+
 
 ## Volatile foreign references in ordinary instance fields — 2026-11-07
 

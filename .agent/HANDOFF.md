@@ -1,3 +1,15 @@
+# Current handoff — three USB boards still absent from PC/SC — 2026-11-08 06:44 CET
+
+The user reports all three tokens connected. I refreshed the authorized
+`pico2-pcsc-reader` helper, which granted three USB nodes. `lsusb -d 2e8a:`
+showed three runtime `2e8a:0009` devices with CDC and CCID interfaces. A bounded
+`pcsc_scan -r`, including one run immediately after refreshing the helper,
+listed only VPCD readers and no Pico reader. Device numbers changed between
+separate helper/scan operations. No physical APDU, flash, or other card access
+was attempted; do not infer a PCSC-usable reader from USB presence. Continue
+offline or retry after reader enumeration returns. Details are in the
+2026-11-08 QKB entry.
+
 # Current handoff — user prioritizes long-run resource lifecycle — 2026-11-08 06:29 CET
 
 Latest PERSIST-01 host validation: `tests/unit/rp2350_fs_overlay` links the
