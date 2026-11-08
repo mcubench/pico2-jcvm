@@ -25386,3 +25386,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep PERSIST-01 open; do not enable normal persistent reclamation until physical interrupted-erase and multi-owner gates pass.
 - Commit: `pending implementation commit`.
 - Artifacts/logs: `./tools/test-persistent-transaction` console output; no physical logs.
+
+## 2026-11-08 Resolve reclaimer regression commit reference 1 minute
+
+- Step/experiment: `PERSIST-01-RECLAIMER-COMMIT-REFERENCE`
+- When: '2026-11-08 06:25 CET' - '2026-11-08 06:26 CET'
+- Change: Resolved the commit reference for the immediately preceding reclaimer regression record.
+- Validation: Confirmed commit `ae2fda81` contains the regression, TODO/QKB/HANDOFF updates and preceding progress record; no tests rerun.
+- Result: The reclaimer batch-boundary regression maps to commit `ae2fda81`.
+- Decision: Continue PERSIST-01.
+- Commit: `pending progress-reference commit`.
+- Artifacts/logs: none.
