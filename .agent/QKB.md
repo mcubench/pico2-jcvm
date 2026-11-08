@@ -8422,3 +8422,23 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   The attempted case-specific diagnostic log is
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T133615Z.log`; it contains
   no case-specific collector marker.
+
+# 2026-11-08 Stronger assertions locate experimental VPCD failure at SELECT
+
+- Added checks for both AID SELECT responses around the cross-AID transient
+  fixture. The clean PC VPCD control still passes 47/47.
+- With the temporary full per-APDU collector enabled, the strengthened test
+  fails earlier and more precisely: `transaction probe SELECT during transient
+  switch returned 6A82`. The applet is not selected, so the next transient
+  APDU never runs. This corrects the earlier diagnosis that transient data was
+  lost. The emulator log records `PERSISTENT_GC_EXPERIMENT` results with
+  `erased=0`; no `PERSISTENT_RECLAIMER:ERASE` occurred in this run.
+- `6A82` is generated when the PCSC session cannot resolve the requested
+  instance AID through `choupi_vm_find_applet` / `cap_store_find_instance`.
+  Why this lookup fails only during the experiment is not established. The
+  inventory scan itself does not mutate the CAP-store cache by design, so
+  inspect applet-instance metadata and package/context transitions before
+  claiming collector causality.
+- Temporary collector code has been removed and `./tools/build-pc --profile
+  max_crypto` passed afterward. The cross-AID test now reports selection
+  failures separately from transient payload failures.

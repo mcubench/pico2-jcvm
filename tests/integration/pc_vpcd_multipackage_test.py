@@ -1036,9 +1036,23 @@ def main() -> int:
                 bytes((0x00, 0xA4, 0x04, 0x00, len(core_applets[0]))) +
                 core_applets[0] + b"\x00"
             )
-            exchange(connection, core_select, "switch to Core applet context")
-            exchange(connection, transaction_select,
-                     "switch back to transaction applet context")
+            core_after_switch = exchange(
+                connection, core_select, "switch to Core applet context"
+            )
+            if core_after_switch[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    "Core SELECT during transient switch returned "
+                    + core_after_switch.hex().upper()
+                )
+            transaction_after_switch = exchange(
+                connection, transaction_select,
+                "switch back to transaction applet context",
+            )
+            if transaction_after_switch[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    "transaction probe SELECT during transient switch returned "
+                    + transaction_after_switch.hex().upper()
+                )
             transient_after_switch = exchange(
                 connection, bytes((0x80, 0x00, 31, 0x00, 0x00)),
                 "check transient lifecycle after cross-AID switch",

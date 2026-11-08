@@ -80,6 +80,10 @@ Archive text is historical evidence, not current device state or priorities.
   protect this case. The experimental per-APDU path still fails transient
   lifecycle behavior even with zero records erased; the normal 47/47 control
   passes. No long-run fix is established.
+  A later strengthened assertion found the first failing experimental event was
+  the transaction-probe SELECT after switching to Core (`6A82`), before the
+  transient-state APDU ran. The reclaimer logged zero erased tags. Why the test
+  AID is no longer found in that experimental run remains open.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

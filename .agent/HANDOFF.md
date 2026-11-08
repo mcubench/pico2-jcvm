@@ -10299,3 +10299,27 @@ Next: improve the transient lifecycle fixture to report which transient value
 was lost and capture reset/deselect boundaries; then isolate full reclaimer
 root tracing from tag enumeration/deletion. Continue persistent resource
 accounting and defer production reclamation until PERSIST-01 gates pass.
+
+# Current handoff — identify experimental cross-AID failure stage — 2026-11-08 15:15 CET
+
+The cross-AID fixture previously allowed failed SELECTs to pass silently, then
+reported the next `6999` as transient-state loss. The integration test now
+asserts both SELECT responses. Clean normal PC VPCD passes 47/47 with the
+stronger assertions (`artifacts/logs/host-vpcd-multipackage-apdu-20261108T135501Z.log`).
+
+With the temporary per-APDU reclaimer enabled, the actual failure is
+`transaction probe SELECT during transient switch returned 6A82`; the transient
+APDU is never sent. The emulator logged zero persistent erasures. This is an
+applet AID lookup failure at the SELECT/restore boundary, not proven transient
+corruption. Log: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T140352Z.log`.
+The case-specific hook experiment was invalid and must not be used as evidence.
+
+The temporary reclaimer hook has been removed; the PC emulator was rebuilt
+without it. RESOURCE-01 remains open at persistent OutOfFlash / RSA-768 `F205`
+after 442,532 ms. Root-prefix guard is committed as `80e1f6f7`. No physical
+token was accessed or flashed; PacketRF remains excluded.
+
+Next: inspect why `cap_store_find_instance` returns false after Core selection
+only under the full collector experiment. Instrument CAP-store instance count
+and AID comparison at SELECT restore, and keep SELECT failures separate from
+transient payload assertions. Do not enable production reclamation.

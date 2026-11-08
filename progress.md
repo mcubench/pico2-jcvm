@@ -25890,3 +25890,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs:
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T133615Z.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T134445Z.log`.
+
+## 2026-11-08 Pinpoint cross-AID experimental failure stage 23 minutes
+
+- Step/experiment: `RESOURCE-01-SELECT-RESTORE-DIAGNOSTICS`
+- When: '2026-11-08 14:52 CET' - '2026-11-08 15:15 CET'
+- Change: Strengthened the multipackage transient fixture to assert that the
+  Core and transaction-probe SELECTs both succeed before checking transient
+  values. Removed temporary per-APDU collector code after the experiment.
+  Updated TODO, QKB, and HANDOFF with corrected failure attribution.
+- Validation: `python3 -m py_compile
+  tests/integration/pc_vpcd_multipackage_test.py` passed. Clean normal
+  `tests/integration/pc_vpcd_multipackage_test.py --timeout 300` passed 47/47
+  with the added assertions. The full-hook experiment failed earlier and
+  precisely at transaction-probe SELECT with `6A82`; no transient APDU was
+  issued. Its emulator log shows zero erased persistent tags. After removing
+  the hook, `./tools/build-pc --profile max_crypto` passed. No hardware run.
+- Result: The previous `6999` was a downstream symptom of an unchecked failed
+  SELECT, not evidence of a transient value mismatch. Under the experiment,
+  instance AID lookup fails after switching to Core. The cause remains unknown.
+- Decision: Instrument and fix the package instance lookup/context transition
+  if reproducible; keep persistent reclamation disabled. RESOURCE-01 remains
+  unresolved.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T140352Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T135501Z.log`.
