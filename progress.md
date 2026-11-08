@@ -26062,5 +26062,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production persistent deletion disabled. Next design and test
   package-static-root-aware inventory/reclamation with cross-context, alias,
   transaction, and interruption safety before wiring collection into APDUs.
-- Commit: `<pending>`
+- Commit: `8ffba182`
 - Artifacts/logs: `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
