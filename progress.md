@@ -26025,5 +26025,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; failure injection emitted exact tag telemetry. `./tools/build arm --profile max_crypto` passed (159/162; image end `0x100F1EEC`, 57,620 bytes remaining); `./tools/build riscv --profile max_crypto` passed its VM-core/smoke target. No physical token or JCAlgTest workload was run.
 - Result: Future persistent-storage exhaustion logs can identify the precise record tag and requested payload size, alongside the existing emulator filesystem-capacity diagnostics. RESOURCE-01 remains unresolved; persistent deletion remains unsupported and disabled.
 - Decision: Re-run the unchanged workload with these diagnostics when PC/SC access is safe; continue the native key-reuse audit offline in the meantime.
-- Commit: `<pending>`
+- Commit: `e8edb6d5`
 - Artifacts/logs: Persistent-transaction unit output; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
