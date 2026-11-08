@@ -1,3 +1,22 @@
+# Current handoff — PERSIST-01 graph roots across overlay cuts — 2026-11-08 06:57 CET
+
+Expanded the RP2350 overlay fake-flash power-cut scenario. It now constructs
+and serializes a persistent `Object[]` root with a byte-array child, serializes
+ten orphan byte arrays, and captures the candidate list from production
+`PersistentInventory`. The production `PersistentReclaimer` deletes exactly
+ten inventory tags. Across 1,000 injected COW snapshot cuts, each reboot
+restores a fresh Heap and verifies the root graph and a neighboring owner's
+record; old-snapshot outcomes are retried through the production reclaimer.
+`./tools/test-rp2350-fs-overlay` passes:
+`TEST:METRIC persistent_reclamation_orphan_tags=10 cuts=1000` and
+`TEST:SUMMARY fail=0`. Log: `/tmp/rp2350-fs-overlay-root-graph.log`.
+
+Host fake-flash only: physical multi-owner/interrupted erase and USB power-loss
+acceptance remain open. Keep normal persistent reclamation disabled. The test
+target now supplies inert CAP metadata stubs for its wildcard `Object[]` type
+check; firmware sources were not changed, so ARM/RISC-V builds and hardware
+tests were not run. Commit reference will be added in the progress follow-up.
+
 # Current handoff — three USB boards still absent from PC/SC — 2026-11-08 06:44 CET
 
 The user reports all three tokens connected. I refreshed the authorized

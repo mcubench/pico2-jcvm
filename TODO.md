@@ -460,10 +460,13 @@ review.
   The RP2350 overlay power-cut harness now calls the production
   `PersistentReclaimer` for its staged deletion and retry. Across 1,000 COW
   snapshot cuts it reconstructs a fresh Heap from each recovered snapshot and
-  checks the rooted array and a neighboring owner's record, then retries any
-  old-snapshot outcome through the reclaimer. `./tools/test-rp2350-fs-overlay`
-  passes with `TEST:SUMMARY fail=0`. This remains host fake-flash evidence; it
-  does not establish physical-flash or USB power-loss safety.
+  checks a rooted `Object[]` plus its byte-array child and a neighboring owner's
+  record, then retries any old-snapshot outcome through the reclaimer. The test
+  uses the production inventory's ten serialized orphan-array tags.
+  `./tools/test-rp2350-fs-overlay` passes with
+  `TEST:METRIC persistent_reclamation_orphan_tags=10 cuts=1000` and
+  `TEST:SUMMARY fail=0`. This remains host fake-flash evidence; it does not
+  establish physical-flash or USB power-loss safety.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.

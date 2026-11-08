@@ -9,6 +9,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_handlers/package.hpp"
 #include "jc_handlers/jc_class.hpp"
+#include "jc_handlers/jc_cp.hpp"
 
 #include <algorithm>
 #include <array>
@@ -54,6 +55,33 @@ bool enumerate_reclaimer_roots(jcvm::Heap::ReferenceVisitor visitor,
   return true;
 }
 
+bool persistent_root_graph_matches(
+    jcvm::Heap &heap, const jcvm::jref_t root_reference,
+    const std::array<uint8_t, 3> &expected_bytes) {
+  const auto root = heap.getArray(root_reference);
+  if (!root || root->getType() != jcvm::JAVA_ARRAY_T_REFERENCE ||
+      root->size() != 1) {
+    return false;
+  }
+  const auto child = heap.getArray(root->getReferenceEntry(0));
+  if (!child || child->getType() != jcvm::JAVA_ARRAY_T_BYTE ||
+      child->size() != expected_bytes.size()) {
+    return false;
+  }
+  for (uint16_t index = 0; index < expected_bytes.size(); ++index) {
+    if (child->getByteEntry(index) != expected_bytes[index]) return false;
+  }
+  return true;
+}
+
+bool collect_reclaimer_candidate(
+    const jcvm::PersistentInventory::Tag &tag, void *candidate_context) {
+  if (candidate_context == nullptr) return false;
+  static_cast<std::vector<jcvm::PersistentInventory::Tag> *>(
+      candidate_context)->push_back(tag);
+  return true;
+}
+
 } // namespace
 
 // The overlay host test links selected production Heap/JC_Instance code but
@@ -76,6 +104,27 @@ Package::Package(jpackage_ID_t package_id) noexcept : ID(package_id) {}
 const uint16_t
 Class_Handler::getInstanceFieldsSize(const jclass_index_t) const {
   return 0;
+}
+const jc_cap_class_ref
+ConstantPool_Handler::getClassRef(const jc_cp_offset_t) {
+  return {};
+}
+std::pair<Package, const uint8_t *>
+ConstantPool_Handler::resolveClassref(const jc_cap_class_ref, const bool) {
+  return {Package(0), nullptr};
+}
+const jc_cap_class_info *
+ConstantPool_Handler::getClassFromClassIndex(const jclass_index_t) {
+  return nullptr;
+}
+std::pair<Package, const jc_cap_class_info *>
+ConstantPool_Handler::classref2class(const jc_cap_class_ref) {
+  return {Package(0), nullptr};
+}
+jbool_t Class_Handler::docheckcast(
+    const std::pair<Package, const uint8_t *>,
+    const std::pair<Package, const uint8_t *>) {
+  return TRUE;
 }
 } // namespace jcvm
 
@@ -1109,64 +1158,96 @@ int main() {
       0x51, 0x52, 0x53};
   std::array<std::array<uint8_t, 4>, 10> reclamation_candidates{};
   std::array<uint8_t, 2> reclamation_candidate_value{};
+  std::vector<jcvm::PersistentInventory::Tag> reclamation_candidate_records;
+  size_t reclamation_snapshot_mutations = 0;
   fake_flash.fill(0xff);
   reset_flash_failure();
   bool reclamation_baseline = fs_init() == 0;
-  jcvm::Heap reclamation_baseline_heap(reclamation_owner);
   jcvm::jref_t reclamation_root_reference;
   try {
+    jcvm::Context reclamation_context(reclamation_owner, reclamation_owner);
+    const auto previous_context =
+        jcvm::Context::setActiveContext(&reclamation_context);
+    auto &reclamation_baseline_heap = reclamation_context.getHeap();
     reclamation_root_reference = reclamation_baseline_heap.addArray(
+        1, jcvm::JAVA_ARRAY_T_REFERENCE, 0xffff);
+    const auto child_reference = reclamation_baseline_heap.addArray(
         reclamation_root_value.size(), jcvm::JAVA_ARRAY_T_BYTE);
-    auto root_array = reclamation_baseline_heap.getArray(
-        reclamation_root_reference);
+    auto root_array =
+        reclamation_baseline_heap.getArray(reclamation_root_reference);
+    root_array->setReferenceEntry(0, child_reference, reclamation_context,
+                                  reclamation_owner);
+    auto child_array = reclamation_baseline_heap.getArray(child_reference);
     for (uint16_t index = 0; index < reclamation_root_value.size(); ++index) {
-      root_array->setByteEntry(index, reclamation_root_value[index]);
+      child_array->setByteEntry(index, reclamation_root_value[index]);
     }
     jcvm::fs::Tag root_tag{};
     root_tag.len = sizeof(reclamation_root_tag);
     std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
     jcvm::FlashMemory_Handler::setPersistentField_Array(
         root_tag, *root_array, reclamation_baseline_heap);
-  } catch (...) {
-    reclamation_baseline = false;
-  }
-  for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
-    reclamation_candidates[index] = {
-        0x03, reclamation_owner, 0x30, index};
-    reclamation_candidate_value = {index, static_cast<uint8_t>(~index)};
     reclamation_baseline = reclamation_baseline &&
-        fs_write(reclamation_candidates[index].data(),
-                 reclamation_candidates[index].size(),
-                 reclamation_candidate_value.data(),
-                 reclamation_candidate_value.size()) == 0;
-  }
-  reclamation_baseline = reclamation_baseline &&
-      fs_write(reclamation_other_owner_tag.data(),
-               reclamation_other_owner_tag.size(),
-               reclamation_other_owner_value,
-               sizeof(reclamation_other_owner_value)) == 0 &&
-      fs_sync() == 0;
-  committed_flash = fake_flash;
+        persistent_root_graph_matches(reclamation_baseline_heap,
+                                      reclamation_root_reference,
+                                      reclamation_root_value);
 
-  reset_flash_failure();
-  bool reclamation_stage = reclamation_baseline;
-  const std::vector<jcvm::jref_t> baseline_roots{
-      reclamation_root_reference};
-  ReclaimerRootContext baseline_root_context{&baseline_roots};
-  uint32_t staged_reclamation_erased = 0;
-  if (reclamation_stage) {
-    reclamation_stage =
+    for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
+      reclamation_candidates[index] = {
+          0x03, reclamation_owner, 0x30, index};
+      auto orphan_reference = reclamation_baseline_heap.addArray(
+          reclamation_candidate_value.size(), jcvm::JAVA_ARRAY_T_BYTE);
+      auto orphan = reclamation_baseline_heap.getArray(orphan_reference);
+      reclamation_candidate_value = {index, static_cast<uint8_t>(~index)};
+      orphan->setByteEntry(0, reclamation_candidate_value[0]);
+      orphan->setByteEntry(1, reclamation_candidate_value[1]);
+      jcvm::fs::Tag orphan_tag{};
+      orphan_tag.len = reclamation_candidates[index].size();
+      std::memcpy(orphan_tag.value, reclamation_candidates[index].data(),
+                  orphan_tag.len);
+      jcvm::FlashMemory_Handler::setPersistentField_Array(
+          orphan_tag, *orphan, reclamation_baseline_heap);
+    }
+    reclamation_baseline = reclamation_baseline &&
+        fs_write(reclamation_other_owner_tag.data(),
+                 reclamation_other_owner_tag.size(),
+                 reclamation_other_owner_value,
+                 sizeof(reclamation_other_owner_value)) == 0;
+    reclamation_baseline = reclamation_baseline && fs_sync() == 0;
+    committed_flash = fake_flash;
+    reset_flash_failure();
+
+    const std::vector<jcvm::jref_t> baseline_roots{
+        reclamation_root_reference};
+    ReclaimerRootContext baseline_root_context{&baseline_roots};
+    const auto inventory_result =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            reclamation_owner, reclamation_baseline_heap, baseline_roots,
+            collect_reclaimer_candidate, &reclamation_candidate_records);
+    uint32_t staged_reclamation_erased = 0;
+    bool reclamation_stage = reclamation_baseline &&
+        inventory_result ==
+            jcvm::PersistentInventory::VisitResult::Complete &&
+        reclamation_candidate_records.size() >= reclamation_candidates.size() &&
         jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
             reclamation_owner, reclamation_baseline_heap,
             enumerate_reclaimer_roots, &baseline_root_context,
             &staged_reclamation_erased) ==
             jcvm::PersistentInventory::VisitResult::Complete &&
-        staged_reclamation_erased == reclamation_candidates.size();
+        staged_reclamation_erased == reclamation_candidate_records.size() &&
+        persistent_root_graph_matches(reclamation_baseline_heap,
+                                      reclamation_root_reference,
+                                      reclamation_root_value) &&
+        fs_sync() == 0;
+    reclamation_snapshot_mutations = flash_mutation_count;
+    reclamation_baseline = reclamation_baseline && reclamation_stage;
+    // Keep committed_flash at the pre-reclamation snapshot so every trial
+    // replays the full owner inventory before cutting the reclaimer commit.
+    jcvm::Context::setActiveContext(previous_context);
+  } catch (...) {
+    reclamation_baseline = false;
   }
-  reclamation_stage = reclamation_stage && fs_sync() == 0;
-  const size_t reclamation_snapshot_mutations = flash_mutation_count;
 
-  bool reclamation_cut_recovery = reclamation_stage &&
+  bool reclamation_cut_recovery = reclamation_baseline &&
                                   reclamation_snapshot_mutations > 0;
   uint32_t reclamation_cut_state = 0x45a23550;
   for (size_t trial = 0; trial < 1000 && reclamation_cut_recovery; ++trial) {
@@ -1185,10 +1266,9 @@ int main() {
       std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
       attempt_root = jcvm::FlashMemory_Handler::
           getPersistentField_ReferenceStrict(root_tag, attempt_heap);
-      restored_root = !attempt_root.isNullPointer() &&
-                      attempt_root.isArray() &&
-                      attempt_heap.getArray(attempt_root)->size() ==
-                          reclamation_root_value.size();
+      restored_root = !attempt_root.isNullPointer() && attempt_root.isArray() &&
+          persistent_root_graph_matches(attempt_heap, attempt_root,
+                                        reclamation_root_value);
     } catch (...) {
       restored_root = false;
     }
@@ -1201,7 +1281,7 @@ int main() {
               &attempt_root_context, &attempt_erased)
         : jcvm::PersistentInventory::VisitResult::IncompleteReachability;
     if (attempt_result != jcvm::PersistentInventory::VisitResult::Complete ||
-        attempt_erased != reclamation_candidates.size()) {
+        attempt_erased != reclamation_candidate_records.size()) {
       reclamation_cut_recovery = false;
       break;
     }
@@ -1221,17 +1301,10 @@ int main() {
     }
     bool old_candidates = true;
     bool no_candidates = true;
-    for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
-      uint8_t recovered_value[sizeof(reclamation_candidate_value)]{};
+    for (const auto &tag : reclamation_candidate_records) {
       const bool exists =
-          fs_exists(reclamation_candidates[index].data(),
-                    reclamation_candidates[index].size()) != 0;
-      old_candidates = old_candidates && exists &&
-          fs_read(reclamation_candidates[index].data(),
-                  reclamation_candidates[index].size(), recovered_value,
-                  sizeof(recovered_value)) == 0 &&
-          recovered_value[0] == index &&
-          recovered_value[1] == static_cast<uint8_t>(~index);
+          fs_exists(tag.value, tag.len) != 0;
+      old_candidates = old_candidates && exists;
       no_candidates = no_candidates && !exists;
     }
     bool live_root_intact = false;
@@ -1243,15 +1316,8 @@ int main() {
       const auto recovered_reference =
           jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
               root_tag, recovered_heap);
-      const auto recovered_array = recovered_heap.getArray(recovered_reference);
-      live_root_intact = recovered_array->size() ==
-                             reclamation_root_value.size() &&
-                         recovered_array->getByteEntry(0) ==
-                             reclamation_root_value[0] &&
-                         recovered_array->getByteEntry(1) ==
-                             reclamation_root_value[1] &&
-                         recovered_array->getByteEntry(2) ==
-                             reclamation_root_value[2];
+      live_root_intact = persistent_root_graph_matches(
+          recovered_heap, recovered_reference, reclamation_root_value);
     } catch (...) {
       live_root_intact = false;
     }
@@ -1281,7 +1347,9 @@ int main() {
         retry_root = jcvm::FlashMemory_Handler::
             getPersistentField_ReferenceStrict(root_tag, retry_heap);
         retry_root_restored = !retry_root.isNullPointer() &&
-                              retry_root.isArray();
+            retry_root.isArray() &&
+            persistent_root_graph_matches(retry_heap, retry_root,
+                                          reclamation_root_value);
       } catch (...) {
         retry_root_restored = false;
       }
@@ -1295,15 +1363,16 @@ int main() {
           : jcvm::PersistentInventory::VisitResult::IncompleteReachability;
       bool retry_staged =
           retry_result == jcvm::PersistentInventory::VisitResult::Complete &&
-          retry_erased == reclamation_candidates.size() && fs_sync() == 0 &&
+          retry_erased == reclamation_candidate_records.size() &&
+          fs_sync() == 0 &&
           fs_init() == 0;
       if (!retry_staged) {
         reclamation_cut_recovery = false;
         break;
       }
-      for (const auto &tag : reclamation_candidates) {
+      for (const auto &tag : reclamation_candidate_records) {
         reclamation_cut_recovery = reclamation_cut_recovery &&
-            fs_exists(tag.data(), tag.size()) == 0;
+            fs_exists(tag.value, tag.len) == 0;
       }
       uint8_t retry_other_owner_bytes[sizeof(reclamation_other_owner_value)]{};
       uint32_t retry_root_length = 0;
@@ -1316,15 +1385,8 @@ int main() {
         const auto final_root =
             jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
                 root_tag, final_heap);
-        const auto final_array = final_heap.getArray(final_root);
-        retry_root_intact = final_array->size() ==
-                                reclamation_root_value.size() &&
-                            final_array->getByteEntry(0) ==
-                                reclamation_root_value[0] &&
-                            final_array->getByteEntry(1) ==
-                                reclamation_root_value[1] &&
-                            final_array->getByteEntry(2) ==
-                                reclamation_root_value[2];
+        retry_root_intact = persistent_root_graph_matches(
+            final_heap, final_root, reclamation_root_value);
       } catch (...) {
         retry_root_intact = false;
       }
@@ -1344,6 +1406,8 @@ int main() {
   }
   expect(reclamation_cut_recovery,
          "persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry");
+  std::printf("TEST:METRIC persistent_reclamation_orphan_tags=%zu cuts=1000\n",
+              reclamation_candidate_records.size());
 
   constexpr uint8_t cross_store_journal_tag[] = {0x02, 0xff, 56, 3};
   constexpr uint8_t cross_store_journal_value[] = {

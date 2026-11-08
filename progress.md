@@ -25431,6 +25431,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
 
+## 2026-11-08 Reclaim unreachable serialized arrays with a live graph rooted 9 minutes
+
+- Step/experiment: `PERSIST-01-OVERLAY-LIVE-GRAPH-CUTS`
+- When: '2026-11-08 06:48 CET' - '2026-11-08 06:57 CET'
+- Change: Strengthened the RP2350 overlay fake-flash cut test to serialize an `Object[]` root and a reachable byte-array child, plus ten orphan byte arrays and a record owned by another applet. Candidate tags are captured from production `PersistentInventory`; production `PersistentReclaimer` stages deletion and retries. Reboot validation now creates a fresh Heap and restores the graph from the selected snapshot. Added an exact cut/candidate metric. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:METRIC persistent_reclamation_orphan_tags=10 cuts=1000` and `TEST:SUMMARY fail=0`; scoped `git diff --check` passed. ARM/RISC-V and physical tests were intentionally skipped because firmware code did not change and PC/SC has no Pico reader.
+- Result: All 1,000 randomized COW snapshot cuts recovered the pre-delete tags or the committed deletion state; the rooted two-array graph and second owner's record survived; retries through the production reclaimer removed all ten inventory candidates. The target links inert class-metadata stubs only for its native wildcard `Object[]` type check. This is host fake-flash evidence, not a physical power-loss guarantee.
+- Decision: Keep normal persistent reclamation disabled until physical interrupted-erase/power-loss and multi-owner acceptance pass.
+- Commit: `<pending>`
+- Artifacts/logs: `/tmp/rp2350-fs-overlay-root-graph.log`; metric `orphan_tags=10 cuts=1000`.
+
 ## 2026-11-08 Refresh reported Pico board availability 3 minutes
 
 - Step/experiment: `PCSC-01-THREE-BOARD-AVAILABILITY-RECHECK`
