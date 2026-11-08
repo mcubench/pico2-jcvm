@@ -50,7 +50,8 @@ BOOTSEL, run
 required elevated host-access path, verify finite serial `TEST:PASS` output,
 then verify 1200-baud reset/reflash using that new image. If one board is
 unavailable, use another USB path. Refresh the authorized PC/SC helper before
-APDU tests and do not treat USB presence as reader availability.
+APDU tests and do not treat USB presence as reader availability. The refreshed
+max_crypto image metadata and handoff are committed as `a8a94dbf`.
 
 ---
 
