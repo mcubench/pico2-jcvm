@@ -18,6 +18,7 @@ USB access to three nodes, but `timeout 6s pcsc_scan -r` exits 124 without
 readers, so physical DELETE/APDU validation remains open. The UF2 is 1,762,816
 bytes, SHA-256
 `bbface7f7640d49290eee1815b36fcf219eba56a669a533041cadef517763a98`.
+Implementation commit: `0daec692`.
 
 Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle audits. Keep
 normal persistent reclamation disabled until multi-owner and physical

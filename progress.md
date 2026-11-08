@@ -25208,5 +25208,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passes `TEST:SUMMARY fail=0` (22 cases). `./tools/build arm` and `./tools/build riscv` pass. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashed the ARM image; finite monitor reports `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Refreshed helper access granted three nodes; elevated `timeout 6s pcsc_scan -r` exited 124 without readers, so physical DELETE/APDU testing was unavailable. `git -c core.whitespace=cr-at-eol diff --check` passes. Runtime: 13 minutes. Performance was not measured.
 - Result: Valid foreign-static aliases remain visible to applet DELETE checks, and malformed wrappers now fail closed. Startup image validation passed on Pico 2 `D92E743D5F640C0F`; alias behavior was validated in host unit suites only.
 - Decision: Continue CTX-01 reference-consumer and PERSIST-01 lifecycle audits. Keep normal persistent reclamation disabled until multi-owner and physical interruption/power-loss acceptance is complete.
-- Commit: `<pending>`
+- Commit: `0daec692`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T021446Z.log`; `build/arm/pico2_choupi.uf2` size 1,762,816 bytes, SHA-256 `bbface7f7640d49290eee1815b36fcf219eba56a669a533041cadef517763a98`.
+
+## 2026-11-08 Resolve foreign-static alias commit record 2 minutes
+
+- Step/experiment: `PERSIST-01-strict-foreign-static-alias-doc-resolution`
+- When: '2026-11-08 03:16 CET' - '2026-11-08 03:18 CET'
+- Change: Resolved implementation SHA `0daec692` in the preceding progress record and current handoff.
+- Validation: Confirmed commit `0daec692` contains the strict wrapper decoder, persistence regressions, and initial progress entry. `git -c core.whitespace=cr-at-eol diff --check` passes. Runtime performance was not measured.
+- Result: Current handoff and progress log point to the implementation commit.
+- Decision: Continue CTX-01/PERSIST-01 acceptance; physical APDU validation remains open until PC/SC exposes a reader.
+- Commit: `<pending>`
+- Artifacts/logs: `.agent/HANDOFF.md`; `progress.md`.
