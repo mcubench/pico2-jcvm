@@ -26232,3 +26232,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `376334a1`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`,
   SHA-256 `678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`.
+
+## 2026-11-08 Stress request-gated reclamation for 64 cycles 7 minutes
+
+- Step/experiment: `RESOURCE-01-REQUEST-LATCH-STRESS-64`
+- When: '2026-11-08 23:21 CET' - '2026-11-08 23:29 CET'
+- Change: Parameterized `tools/test-object-deletion-vpcd` to accept 1–512
+  allocate/clear/request cycles (default 8), assert exact request/collector
+  counts, and require exactly one applet-tag erase per cycle. Updated TODO,
+  QKB and HANDOFF with the bounded stress result.
+- Validation: `bash -n tools/test-object-deletion-vpcd` and source
+  `git diff --check` passed. Guarded `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-object-deletion-vpcd 64` passed VPCD `TEST:SUMMARY pass=131
+  fail=0`; all 64 request callbacks completed, total erased applet tags was
+  64, and package-static erasures were zero. No physical device was accessed.
+- Result: Repeated request handling stayed successful through 64 replacements
+  in the isolated single-owner byte-array fixture. This does not establish an
+  inventory plateau for RSA graphs, multi-owner safety, flash interruption
+  behavior, or full JCAlgTest/hardware acceptance.
+- Decision: Use this stress harness as a focused control while extending it to
+  realistic crypto-key graphs and live alias/context preservation cases.
+  Production reclamation remains disabled.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`,
+  SHA-256 `13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`.

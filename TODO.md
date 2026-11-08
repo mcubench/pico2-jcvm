@@ -148,6 +148,11 @@ Archive text is historical evidence, not current device state or priorities.
     another Context, destruction/recovery, and sibling-applet exclusion; the
     exclusive VPCD fixture still passes 19/19. This is only a coarse safety
     gate; it does not enumerate roots from those skipped contexts.
+  - The focused probe supports a bounded cycle count and its 64-cycle VPCD
+    stress run passed 131/131 APDU checks. All 64 requests completed, each
+    erasing exactly one applet tag (64 total), with zero package-static tags
+    erased. This establishes repeated cleanup for the one-array fixture only;
+    it is not full-suite or physical acceptance.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

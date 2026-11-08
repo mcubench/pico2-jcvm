@@ -3,6 +3,12 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_host_usb_access
 
+iterations="${1:-8}"
+if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
+  ((iterations < 1 || iterations > 512)); then
+  die "usage: $0 [iterations 1..512]"
+fi
+
 "${repo_root}/tools/build-pc" --profile max_crypto
 "${repo_root}/tools/build-persistent-reclaimer-probe"
 
@@ -18,7 +24,7 @@ probe_args=(
   --applet-aid A000000062030201 --package-id 57 --passes 1
   --flash-copy "${flash_copy}" --log "${log}"
 )
-for ((iteration = 0; iteration < 8; ++iteration)); do
+for ((iteration = 0; iteration < iterations; ++iteration)); do
   probe_args+=(
     --apdu 0000010000 --expect-apdu-response 2A9000
     --apdu 0000060000 --expect-apdu-response 019000
@@ -37,12 +43,17 @@ grep -Eq \
 grep -Eq '^OBJECT_DELETION: .*erased_package=0 ' "${log}" || \
   die "unexpected package-static erase in this owner-only fixture; see ${log}"
 call_count="$(grep -c '^OBJECT_DELETION:' "${log}" || true)"
-[[ "${call_count}" -eq 8 ]] || \
-  die "expected the pending request to clear after each of eight cycles; got ${call_count} collector calls; see ${log}"
 reclaim_count="$(grep -Ec \
   '^OBJECT_DELETION: package=.*applet_result=0 package_result=0 erased_applet=[1-9][0-9]* ' \
   "${log}" || true)"
-[[ "${reclaim_count}" -eq 8 ]] || \
-  die "expected eight completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
+[[ "${call_count}" -eq "${iterations}" ]] || \
+  die "expected ${iterations} collector calls, got ${call_count}; see ${log}"
+[[ "${reclaim_count}" -eq "${iterations}" ]] || \
+  die "expected ${iterations} completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
+erased_total="$(grep '^OBJECT_DELETION: package=' "${log}" | \
+  sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \
+  awk '{ total += $1 } END { print total + 0 }')"
+[[ "${erased_total}" -eq "${iterations}" ]] || \
+  die "expected exactly one applet-owned tag erased per cycle (${iterations}), got ${erased_total}; see ${log}"
 printf 'OBJECT_DELETION_VPCD:PASS requests=%s log=%s\n' \
   "${reclaim_count}" "${log#${repo_root}/}"

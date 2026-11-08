@@ -10426,6 +10426,24 @@ path. The unexpected PacketRF device remains excluded and was not accessed.
 Evidence: `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`, SHA-256
 `678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`.
 
+# Current handoff — 64-cycle VPCD deletion stress — 2026-11-08 23:29 CET
+
+The request-latch test wrapper now accepts 1–512 iterations (default 8) and
+checks exact cleanup counts. A guarded 64-cycle VPCD run passed 131/131 APDU
+checks. Each of 64 requests erased exactly one applet-owned tag; package-static
+erasures were zero and there were no skipped requests. This is a repeated
+single-owner byte-array fixture, not RSA/full JCAlgTest or physical-card
+evidence.
+
+Production firmware remains deletion-unsupported. Multi-context deletion still
+fails closed; broader roots and persistent interruption/power-loss acceptance
+remain. The unexpected device was not accessed. Next extend stress coverage to
+key-object graphs and run alias/context-preservation controls before any full
+JCAlgTest retry.
+
+Log: `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`, SHA-256
+`13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`.
+
 # Current handoff — protect foreign alias chains during reclamation — 2026-11-08 19:50 CET
 
 Uncommitted PERSIST-01 inventory changes now scan external package-static and

@@ -69,6 +69,21 @@
 - **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`
   (SHA-256 `678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`).
 
+## RESOURCE-01: 64-cycle request-gated VPCD stress run
+
+- **Change:** `tools/test-object-deletion-vpcd` now accepts a bounded cycle
+  count (1–512), defaults to eight, and verifies one owner-tag deletion per
+  requested cycle. This makes repeated resource-lifecycle probes reproducible.
+- **Result:** A 64-cycle run passed the VPCD harness `TEST:SUMMARY pass=131
+  fail=0`. All 64 collector calls completed, erased exactly one applet tag
+  each (64 total), and erased zero package-static tags. No request was skipped.
+- **Limit:** The fixture replaces and clears one 16-byte persistent array in a
+  single owner/context. It does not represent RSA key graphs, multiple owners,
+  all retained roots, filesystem interruption, physical flash, or full JCAlgTest
+  behavior. RESOURCE-01 remains open.
+- **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`
+  (SHA-256 `13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`).
+
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
 ## Persistent reclaimer must include references beyond the selected context — 2026-11-08
