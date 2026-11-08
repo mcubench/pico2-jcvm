@@ -25534,9 +25534,23 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep persistent reclamation disabled pending PERSIST-01 safety
   gates. Investigate the separate CRT KeyPair sign/verify probe failure and
   continue RESOURCE-01 long-run resource measurement.
-- Commit: `<pending>`
+- Commit: `508a043c`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261108T064804Z.log`;
   focused failing probe: `artifacts/logs/rsa-crt-keypair-isolation.log`.
+
+## 2026-11-08 Resolve RSA allocation commit reference 1 minute
+
+- Step/experiment: `RESOURCE-01-RSA-KEY-COMPONENT-ALLOCATION-COMMIT-REFERENCE`
+- When: '2026-11-08 07:52 CET' - '2026-11-08 07:53 CET'
+- Change: Recorded the RSA component allocation implementation commit SHA.
+- Validation: Confirmed commit `508a043c` contains the native allocator,
+  three-form VPCD regression, backlog update and this implementation record;
+  no tests rerun.
+- Result: RESOURCE-01 RSA allocation step resolves to `508a043c`.
+- Decision: Continue resource accounting and investigate the isolated CRT
+  KeyPair sign/verify probe before adding it to acceptance coverage.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
 
 ## 2026-11-08 Resolve transient lifecycle commit reference 1 minute
 

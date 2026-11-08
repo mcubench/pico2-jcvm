@@ -19,6 +19,7 @@ The authorized USB helper still grants three nodes, but the latest refresh
 observed only two runtime Pico USB devices and `pcsc_scan -r` listed only the
 two Virtual PCD readers. No physical APDU or flash was performed. Continue
 RESOURCE-01 and retry hardware when a Pico reader appears.
+Implementation commit: `508a043c`.
 
 # Current handoff — VPCD crypto transient lifecycle regression — 2026-11-08 07:35 CET
 
