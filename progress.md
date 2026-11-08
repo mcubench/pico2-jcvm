@@ -25863,3 +25863,30 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T130906Z.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T131844Z.log`,
   `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/`.
+
+## 2026-11-08 Recheck persistent collector transient failure attribution 25 minutes
+
+- Step/experiment: `RESOURCE-01-RECLAIMER-TRANSIENT-ISOLATION`
+- When: '2026-11-08 14:27 CET' - '2026-11-08 14:52 CET'
+- Change: Attempted a one-shot VPCD collector gate after transient preparation
+  to separate collector effects from the intermittent cross-AID failure. The
+  gate marker was absent from the emulator log; removed the temporary
+  instrumentation and rebuilt the normal PC emulator. Updated QKB and HANDOFF
+  to correct causal claims and retain the run evidence.
+- Validation: `./tools/build-pc --profile max_crypto` passed. The targeted test
+  run failed the cross-AID transient check with `6999`, but log
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T133615Z.log` contains no
+  `PERSISTENT_GC_CASE30` marker, so the one-shot collector was not exercised.
+  Fresh clean control `python3 tests/integration/pc_vpcd_multipackage_test.py
+  --timeout 300` passed `TEST:SUMMARY pass=47 fail=0`. It was VPCD only.
+- Result: The failure is intermittent or dependent on test state; this run does
+  not establish that persistent collection causes it. Previous full-hook
+  evidence remains a safety concern but needs better isolation. RESOURCE-01
+  remains unresolved; the RSA-768 persistent OutOfFlash / `F205` remains the
+  strongest long-run failure evidence.
+- Decision: Keep persistent reclamation disabled; improve transient failure
+  diagnostics before repeating collector isolation. Continue resource accounting.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T133615Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T134445Z.log`.

@@ -10273,3 +10273,29 @@ Next: investigate why invoking reachability collection changes transient
 lifecycle even when no tags are erased; add regression coverage around mark-bit
 state and transient global-array cleanup. Then continue resource accounting and
 PERSIST-01 gates before retrying any persistent cleanup experiment.
+
+# Current handoff — clarify transient VPCD failure attribution — 2026-11-08 14:52 CET
+
+The targeted one-shot after-case-30 collector experiment did not actually reach
+its gate: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T133615Z.log` has
+no `PERSISTENT_GC_CASE30` marker. Its `6999` cannot be attributed to the
+reclaimer. Temporary source instrumentation was removed and the PC emulator was
+rebuilt without it.
+
+A fresh no-experiment VPCD multipackage control passed 47/47, including transient
+lifecycle (`artifacts/logs/host-vpcd-multipackage-apdu-20261108T134445Z.log`).
+One ordinary non-experimental run also failed transient lifecycle, so that check
+is intermittent or test-state dependent. The earlier full per-APDU reclaimer
+experiment did fail at the same assertion with zero logged erasures, but its
+causality is not established. Keep production persistent reclamation disabled
+because the broader PERSIST-01 proof is still incomplete.
+
+RESOURCE-01 remains open: the unchanged 1.8.4 JCAlgTest VPCD run exhausted
+persistent storage at RSA-768 (`F205`, 442,532 ms). Root-prefix guard commit is
+`80e1f6f7`; unit regression and PC/ARM/RISC-V builds passed. No physical board
+was accessed or flashed. PacketRF remains excluded.
+
+Next: improve the transient lifecycle fixture to report which transient value
+was lost and capture reset/deselect boundaries; then isolate full reclaimer
+root tracing from tag enumeration/deletion. Continue persistent resource
+accounting and defer production reclamation until PERSIST-01 gates pass.

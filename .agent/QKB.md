@@ -8401,3 +8401,24 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T125947Z.log` (temporary
   hook failure), `...T130906Z.log` (normal control), and
   `...T131844Z.log` (rebuilt normal control).
+
+# 2026-11-08 Transient lifecycle result is intermittent; case-specific hook was not reached
+
+- A later targeted VPCD run returned only `6999` from the cross-AID transient
+  check. Its emulator log had no `PERSISTENT_GC_CASE30` marker, so the intended
+  one-shot after-case-30 collector did not execute. Do not attribute that run to
+  persistent reclamation. The temporary instrumentation was removed and the PC
+  emulator rebuilt without it.
+- A fresh no-experiment multipackage run passed `TEST:SUMMARY pass=47 fail=0`,
+  including transient lifecycle. Earlier normal controls also passed; one
+  ordinary run without the collector failed the same assertion, indicating the
+  current VPCD transient failure is intermittent or test-state dependent.
+- This supersedes the stronger wording that the temporary collector itself was
+  proven to cause the 6999. The prior full-hook run did fail with 6999 and logged
+  zero erasures, but more isolation is required to establish causality. Keep the
+  reclaimer disabled because root/interrupt safety gates remain incomplete,
+  independent of this intermittent test result.
+- Latest clean control log: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T134445Z.log`.
+  The attempted case-specific diagnostic log is
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T133615Z.log`; it contains
+  no case-specific collector marker.
