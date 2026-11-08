@@ -25364,3 +25364,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep HMAC-01 open for full pinned-client support comparison and eventual physical validation. Continue PERSIST-01 capacity/reclamation safety work before retrying the expensive full sweep.
 - Commit: `pending documentation commit`.
 - Artifacts/logs: `artifacts/logs/hmac-kat-vpcd-20261108T051915Z.log`.
+
+## 2026-11-08 Resolve HMAC validation commit reference 1 minute
+
+- Step/experiment: `HMAC-01-KAT-COMMIT-REFERENCE`
+- When: '2026-11-08 06:21 CET' - '2026-11-08 06:22 CET'
+- Change: Resolved the commit reference for the immediately preceding HMAC validation record.
+- Validation: Confirmed commit `431beec9` contains that progress record, TODO update and handoff update; no tests rerun.
+- Result: HMAC VPCD validation record maps to `431beec9`.
+- Decision: Continue PERSIST-01 work.
+- Commit: `pending progress-reference commit`.
+- Artifacts/logs: none.
