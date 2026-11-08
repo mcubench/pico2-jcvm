@@ -58,6 +58,12 @@ VisitResult visitPrefix(const Tag &prefix, TagVisitor visitor,
 /// an alias was found; malformed or unreadable inventory fails closed.
 VisitResult findAliasesToAppletOwner(uint8_t applet_owner, bool &found);
 
+/// Visit persistent targets owned by one applet that are aliased from another
+/// applet owner or package static. A complete scan is required before callers
+/// use the targets to reclaim persistent records.
+VisitResult visitForeignAliasTargetsToAppletOwner(
+    uint8_t applet_owner, TagVisitor visitor, void *context);
+
 /// Visit the serialized instance/array namespace belonging to one applet.
 /// Package static fields use a different namespace and are not included.
 VisitResult visitApplet(uint8_t applet_owner, TagVisitor visitor,

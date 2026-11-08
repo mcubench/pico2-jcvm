@@ -10387,3 +10387,27 @@ region. It has not been flashed or tested on a physical board. An unexpected
 connected device was explicitly excluded; no physical-device command was run.
 The artifact manifest and progress record were refreshed. Full JCAlgTest
 acceptance remains open.
+
+# Current handoff — protect foreign alias chains during reclamation — 2026-11-08 19:50 CET
+
+Uncommitted PERSIST-01 inventory changes now scan external package-static and
+applet namespaces (`0x02`/`0x03`) for foreign object/array alias chains and
+protect their target subtrees from owner-tag reclamation. The scan fails closed
+on malformed/unreadable chains and is performed once per reclaimer call; each
+erase batch still traces heap roots freshly. A regression proves that an
+external array-to-object alias chain preserves the target and its nested body,
+while an unrelated orphan is reclaimed; removing the chain makes the target
+subtree reclaimable.
+
+Validation in this turn: `./tools/test-persistent-transaction` (`fail=0`),
+`./tools/test-persistent-inventory` (22/22), and `./tools/test-rp2350-fs-overlay`
+(1,000 cuts, `fail=0`) pass. ARM, RISC-V, and PC builds already passed for this
+source state during the current max_crypto image refresh. No physical board was
+accessed; the unexpected device remains excluded. The normal persistent
+reclaimer is still disabled and RESOURCE-01 remains open.
+
+Next: commit the alias-root safety step, then continue PERSIST-01 by exercising
+identified Pico2 JCVM devices only for multi-owner and interrupted-reclaimer
+checks, refreshing the authorized reader helper first. Do not flash or use any
+unidentified device. If physical safety acceptance cannot be completed, retain
+the disabled production reclaimer and continue offline implementation/testing.

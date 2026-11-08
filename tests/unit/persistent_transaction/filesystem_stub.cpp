@@ -104,6 +104,7 @@ bool fail_next_read = false;
 bool fail_next_sync = false;
 bool stall_after_one_cursor_result = false;
 bool cursor_result_returned = false;
+uint8_t cursor_stall_owner = 0;
 bool fail_prefix_after_one = false;
 bool fail_package_state_after_one = false;
 int erase_fail_after = -1;
@@ -266,7 +267,8 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix,
                                 fs_tag_next_request_t *request) {
   if (request == nullptr || (prefix_length != 0 && prefix == nullptr)) return 2;
   const bool stall_this_scan = stall_after_one_cursor_result &&
-      prefix_length != 0 && prefix[0] == 0x03;
+      prefix_length == 2 && prefix[0] == 0x03 &&
+      prefix[1] == cursor_stall_owner;
   if (stall_this_scan && cursor_result_returned) {
     stall_after_one_cursor_result = false;
     cursor_result_returned = false;
@@ -294,9 +296,10 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix,
 }
 
 namespace persistent_transaction_test {
-void force_cursor_stall_after_one_result() {
+void force_cursor_stall_after_one_result(const uint8_t applet_owner) {
   stall_after_one_cursor_result = true;
   cursor_result_returned = false;
+  cursor_stall_owner = applet_owner;
 }
 
 void fail_prefix_erase_after_one() { fail_prefix_after_one = true; }

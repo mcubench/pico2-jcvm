@@ -14,7 +14,7 @@
 #include <vector>
 
 namespace persistent_transaction_test {
-void force_cursor_stall_after_one_result();
+void force_cursor_stall_after_one_result(uint8_t applet_owner);
 void fail_erase_after(unsigned int successful_erases);
 void fail_prefix_erase_after_one();
 void fail_package_state_erase_after_one();
@@ -1347,6 +1347,12 @@ int main() {
                heap.getInstance(instance_reference) != nullptr &&
                heap.getArray(unreachable_reference) != nullptr,
            "malformed_serialized_object_field_blocks_heap_reclamation");
+    jcvm::fs::Tag malformed_field_tag{};
+    malformed_field_tag.len = malformed_field.len;
+    std::memcpy(malformed_field_tag.value, malformed_field.value,
+                malformed_field.len);
+    expect(jcvm::FlashMemory_Handler::erasePersistentTag(malformed_field_tag),
+           "malformed_serialized_object_field_fixture_cleanup");
     persistent_transaction_test::instance_field_count = 0;
   }
 
@@ -1808,6 +1814,10 @@ int main() {
     }
     expect(failed_closed,
            "incomplete_reachability_reports_no_persistent_inventory_candidates");
+    const auto malformed_root_edge =
+        jcvm::FlashMemory_Handler::computeTag(serialized_root, 0);
+    expect(jcvm::FlashMemory_Handler::erasePersistentTag(malformed_root_edge),
+           "incomplete_reachability_fixture_cleanup");
   }
 
   {
@@ -1854,7 +1864,7 @@ int main() {
     const uint8_t second_tag[] = {0x03, owner, 0x10, 0x02};
     seed(first_tag, sizeof(first_tag), byte_record(0x11));
     seed(second_tag, sizeof(second_tag), byte_record(0x22));
-    persistent_transaction_test::force_cursor_stall_after_one_result();
+    persistent_transaction_test::force_cursor_stall_after_one_result(owner);
 
     jcvm::Heap heap(owner);
     CandidateTags candidates;
@@ -2100,12 +2110,97 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x55;
+    constexpr uint8_t array_alias_owner = 0x56;
+    constexpr uint8_t object_alias_owner = 0x57;
+    const uint8_t target_tag[] = {0x03, owner, 0x22, 0x01};
+    const uint8_t target_child_tag[] = {0x03, owner, 0x22, 0x01, 0x00, 0x01};
+    const uint8_t orphan_tag[] = {0x03, owner, 0x44, 0x01};
+    const uint8_t array_alias_tag[] = {0x03, array_alias_owner, 0x30, 0x01};
+    const uint8_t object_alias_tag[] = {0x03, object_alias_owner, 0x30, 0x02};
+    seed(target_tag, sizeof(target_tag), byte_record(0x61));
+    seed(target_child_tag, sizeof(target_child_tag), byte_record(0x62));
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x63));
+
+    std::vector<uint8_t> object_alias{0xfe,
+                                      static_cast<uint8_t>(sizeof(target_tag))};
+    object_alias.insert(object_alias.end(), target_tag,
+                        target_tag + sizeof(target_tag));
+    seed(object_alias_tag, sizeof(object_alias_tag), object_alias);
+    std::vector<uint8_t> array_alias{0xfd,
+                                     static_cast<uint8_t>(sizeof(object_alias_tag))};
+    array_alias.insert(array_alias.end(), object_alias_tag,
+                       object_alias_tag + sizeof(object_alias_tag));
+    seed(array_alias_tag, sizeof(array_alias_tag), array_alias);
+
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    CandidateTags candidates;
+    const auto inventory_result =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            owner, heap, no_roots, collect_candidate, &candidates);
+    const std::vector<uint8_t> target_bytes(
+        target_tag, target_tag + sizeof(target_tag));
+    const std::vector<uint8_t> child_bytes(
+        target_child_tag, target_child_tag + sizeof(target_child_tag));
+    const bool inventory_protects_alias_subtree =
+        inventory_result == jcvm::PersistentInventory::VisitResult::Complete &&
+        std::find(candidates.tags.begin(), candidates.tags.end(), target_bytes) ==
+            candidates.tags.end() &&
+        std::find(candidates.tags.begin(), candidates.tags.end(), child_bytes) ==
+            candidates.tags.end() &&
+        std::find(candidates.tags.begin(), candidates.tags.end(),
+                  std::vector<uint8_t>(orphan_tag,
+                                       orphan_tag + sizeof(orphan_tag))) !=
+            candidates.tags.end();
+
+    RootVectorContext roots{&no_roots};
+    uint32_t erased = 0;
+    const auto first_reclaim =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    const bool aliases_preserved =
+        first_reclaim == jcvm::PersistentInventory::VisitResult::Complete &&
+        erased == 1 &&
+        !persistent_transaction_test::read(target_tag, sizeof(target_tag)).empty() &&
+        !persistent_transaction_test::read(target_child_tag,
+                                           sizeof(target_child_tag)).empty() &&
+        persistent_transaction_test::read(orphan_tag, sizeof(orphan_tag)).empty();
+
+    jcvm::fs::Tag array_alias_fs_tag{};
+    array_alias_fs_tag.len = sizeof(array_alias_tag);
+    std::memcpy(array_alias_fs_tag.value, array_alias_tag,
+                sizeof(array_alias_tag));
+    jcvm::fs::Tag object_alias_fs_tag{};
+    object_alias_fs_tag.len = sizeof(object_alias_tag);
+    std::memcpy(object_alias_fs_tag.value, object_alias_tag,
+                sizeof(object_alias_tag));
+    const bool aliases_erased =
+        jcvm::FlashMemory_Handler::erasePersistentTag(array_alias_fs_tag) &&
+        jcvm::FlashMemory_Handler::erasePersistentTag(object_alias_fs_tag);
+    erased = 0;
+    const auto second_reclaim =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(inventory_protects_alias_subtree && aliases_preserved &&
+               aliases_erased &&
+               second_reclaim ==
+                   jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 2 &&
+               persistent_transaction_test::read(target_tag,
+                                                  sizeof(target_tag)).empty() &&
+               persistent_transaction_test::read(target_child_tag,
+                                                  sizeof(target_child_tag)).empty(),
+           "reclaimer_preserves_foreign_object_and_array_alias_chains");
+  }
+
+  {
     constexpr uint8_t owner = 0x42;
     const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
     const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};
     seed(first_tag, sizeof(first_tag), byte_record(0x21));
     seed(second_tag, sizeof(second_tag), byte_record(0x22));
-    persistent_transaction_test::force_cursor_stall_after_one_result();
+    persistent_transaction_test::force_cursor_stall_after_one_result(owner);
     const std::vector<jcvm::jref_t> no_roots;
     RootVectorContext roots{&no_roots};
     jcvm::Heap heap(owner);

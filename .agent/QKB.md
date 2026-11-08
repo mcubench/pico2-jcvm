@@ -8498,3 +8498,23 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   RSA-768 with `F205` / persistent OutOfFlash. Re-run the multipackage suite
   with any future isolated collector experiment only after confirming this
   guard is present; keep PERSIST-01 multi-owner and interruption gates open.
+
+# 2026-11-08 Cross-owner persistent alias roots
+
+- **Issue:** The persistent reclaimer protected heap-reachable owner tags and
+  package-static foreign-reference wrappers, but missed object/array alias
+  chains stored under another applet or package owner. A target object's bytes
+  could therefore be reclaimed while an external alias still named it.
+- **Viable fix:** Before candidate enumeration, scan persistent namespaces
+  `0x02` and `0x03`, follow external object (`0xFE`) and array (`0xFD`) alias
+  chains using the deserializer's bounded depth, and collect any target tags
+  owned by the applet being reclaimed. Protect each target's tag subtree.
+  Malformed/unreadable inventory fails closed. The collector scans these
+  immutable foreign sources once per call and re-traces heap roots on each
+  bounded erase batch.
+- **Validation:** Persistent-inventory passes 22/22; persistent-transaction
+  passes with `TEST:SUMMARY fail=0`, including target/nested-body preservation
+  and orphan removal; RP2350 filesystem overlay passes 1,000 cut points with
+  `TEST:SUMMARY fail=0`. ARM and RISC-V max_crypto wrappers pass; the wrapper's
+  PC build passes. No physical alias test was run. Production reclaimer remains
+  disabled pending PERSIST-01 physical multi-owner and interruption acceptance.

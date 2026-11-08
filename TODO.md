@@ -545,6 +545,17 @@ review.
   `TEST:METRIC persistent_reclamation_orphan_tags=10 cuts=1000` and
   `TEST:SUMMARY fail=0`. This remains host fake-flash evidence; it does not
   establish physical-flash or USB power-loss safety.
+  On 2026-11-08, foreign-root protection was extended from package-static
+  foreign-reference wrappers to object and array alias chains stored under
+  other owners. The inventory scans namespaces `0x02` and `0x03`, follows
+  external `0xFE`/`0xFD` aliases, and protects the target tag subtree; malformed
+  or unreadable chains fail closed. A regression verifies that only an
+  unrelated orphan is reclaimed while a target and nested body remain aliased,
+  then both target records become reclaimable after removing the alias chain.
+  Persistent-inventory (22 cases), persistent-transaction (`fail=0`), and the
+  1,000-cut filesystem overlay suite pass; ARM, RISC-V, and PC builds passed.
+  No physical alias/reclamation test was run. This closes another inventory
+  gap, not the outstanding physical multi-owner/interruption acceptance.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.

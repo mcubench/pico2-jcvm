@@ -25983,3 +25983,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: This is the current max_crypto ARM empty-card image for external testing. Preserve its dirty-tree provenance; do not describe it as physically validated.
 - Commit: `<pending>`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-crypto-arm-empty-card-current.md`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
+
+## 2026-11-08 Protect cross-owner alias chains during reclamation 4 minutes
+
+- Step/experiment: `PERSIST-01-FOREIGN-ALIAS-ROOTS`
+- When: '2026-11-08 19:46 CET' - '2026-11-08 19:50 CET'
+- Change: Extended the persistent inventory/reclaimer to find external object and array alias chains in package-static and applet namespaces, protect target tag subtrees, and fail closed on malformed/unreadable sources. Alias targets are collected once per reclaimer call; each deletion batch still re-traces heap roots. Added a regression for a foreign array-to-object alias chain, a nested target body and an unrelated orphan. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passed 22/22; `./tools/test-rp2350-fs-overlay` passed 1,000 cut points with `TEST:SUMMARY fail=0`; `git diff --check` passed for changed source/test/docs. ARM, RISC-V and PC builds passed for the same source state in the immediately preceding max_crypto image refresh. No physical device was accessed.
+- Result: While foreign alias tags remain, their target and nested body are excluded from reclamation; an unrelated orphan is erased. Removing the foreign alias chain allows the target subtree to be reclaimed. This closes an inventory safety gap only; production persistent reclamation remains disabled, and physical multi-owner/interruption acceptance remains open.
+- Decision: Keep object deletion unsupported and the production collector disconnected until remaining PERSIST-01 gates pass. Continue with identified Pico2 JCVM devices only; exclude the unexpected device.
+- Commit: `<pending>`
+- Artifacts/logs: Unit and filesystem-overlay command output; no archived hardware logs.

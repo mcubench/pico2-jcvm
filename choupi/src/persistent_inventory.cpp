@@ -53,28 +53,11 @@ struct CandidateContext {
   uint8_t applet_owner;
   TagVisitor visitor;
   void *visitor_context;
-  std::vector<Tag> foreign_static_targets;
+  const std::vector<Tag> *foreign_alias_targets;
 };
 
-bool collectForeignStaticTarget(const Tag &source_tag, void *opaque) {
-  auto &targets = *static_cast<std::vector<Tag> *>(opaque);
-  const uint8_t *data = nullptr;
-  uint32_t length = 0;
-  if (fs_read_inplace(source_tag.value, source_tag.len, &data, &length) != 0 ||
-      data == nullptr || length == 0) {
-    return false;
-  }
-  if (data[0] != kPersistentForeignReference) return true;
-  Tag target_tag{};
-  if (!decodeForeignStaticTarget(source_tag, data, length, target_tag)) {
-    return false;
-  }
-  targets.push_back(target_tag);
-  return true;
-}
-
-bool hasForeignStaticRoot(const Tag &candidate,
-                          const std::vector<Tag> &targets) {
+bool hasForeignAliasRoot(const Tag &candidate,
+                         const std::vector<Tag> &targets) {
   for (const Tag &target : targets) {
     if (candidate.len >= target.len &&
         std::memcmp(candidate.value, target.value, target.len) == 0) {
@@ -93,7 +76,7 @@ bool visitUnreachableTag(const Tag &tag, void *opaque) {
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
   if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
-      hasForeignStaticRoot(tag, context.foreign_static_targets)) return true;
+      hasForeignAliasRoot(tag, *context.foreign_alias_targets)) return true;
   return context.visitor(tag, context.visitor_context);
 }
 } // namespace
@@ -142,14 +125,15 @@ constexpr uint8_t kPersistentObjectAlias = 0xfe;
 constexpr uint8_t kPersistentArrayAlias = 0xfd;
 constexpr uint8_t kMaximumAliasDepth = 32;
 
-struct AliasSearch {
+struct AliasTargetSearch {
   uint8_t owner;
-  bool found = false;
+  TagVisitor visitor;
+  void *visitor_context;
   VisitResult failure = VisitResult::Complete;
 };
 
-bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
-  auto &search = *static_cast<AliasSearch *>(opaque);
+bool collect_foreign_alias_target(const Tag &source_tag, void *opaque) {
+  auto &search = *static_cast<AliasTargetSearch *>(opaque);
   if (source_tag.value[0] == 0x03 && source_tag.len >= 2 &&
       source_tag.value[1] == search.owner) {
     return true;
@@ -162,18 +146,21 @@ bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
     search.failure = VisitResult::ReadFailure;
     return false;
   }
+
   if (data[0] == kPersistentForeignReference) {
     Tag target{};
     if (!decodeForeignStaticTarget(source_tag, data, length, target)) {
       search.failure = VisitResult::InvalidTag;
       return false;
     }
-    if (target.value[1] == search.owner) {
-      search.found = true;
+    if (target.value[1] == search.owner &&
+        !search.visitor(target, search.visitor_context)) {
+      search.failure = VisitResult::Stopped;
       return false;
     }
     return true;
   }
+
   for (uint8_t depth = 0;; ++depth) {
     if (data[0] != kPersistentObjectAlias &&
         data[0] != kPersistentArrayAlias) {
@@ -188,23 +175,23 @@ bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
       search.failure = VisitResult::InvalidTag;
       return false;
     }
+
     Tag target{};
     target.len = data[1];
     std::memcpy(target.value, data + 2, target.len);
     if (target.len >= 2 && target.value[0] == 0x03 &&
         target.value[1] == search.owner) {
-      search.found = true;
-      return false;
+      if (!search.visitor(target, search.visitor_context)) {
+        search.failure = VisitResult::Stopped;
+        return false;
+      }
+      return true;
     }
 
     if (fs_read_inplace(target.value, target.len, &data, &length) != 0 ||
         data == nullptr || length == 0) {
       search.failure = VisitResult::ReadFailure;
       return false;
-    }
-    if (data[0] != kPersistentObjectAlias &&
-        data[0] != kPersistentArrayAlias) {
-      return true;
     }
   }
 }
@@ -213,21 +200,47 @@ bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
 VisitResult findAliasesToAppletOwner(const uint8_t applet_owner,
                                      bool &found) {
   found = false;
-  AliasSearch search{applet_owner};
+  const VisitResult result = visitForeignAliasTargetsToAppletOwner(
+      applet_owner,
+      [](const Tag &, void *opaque) {
+        *static_cast<bool *>(opaque) = true;
+        return false;
+      },
+      &found);
+  return result == VisitResult::Stopped && found ? VisitResult::Stopped
+                                                 : result;
+}
+
+VisitResult visitForeignAliasTargetsToAppletOwner(
+    const uint8_t applet_owner, const TagVisitor visitor, void *context) {
+  if (visitor == nullptr) return VisitResult::InvalidArgument;
+  AliasTargetSearch search{applet_owner, visitor, context};
   const uint8_t namespaces[] = {0x02, 0x03};
   for (const uint8_t name_space : namespaces) {
     Tag prefix{};
     prefix.len = 1;
     prefix.value[0] = name_space;
-    const VisitResult result = visitPrefix(prefix, inspect_alias_tag, &search);
+    const VisitResult result =
+        visitPrefix(prefix, collect_foreign_alias_target, &search);
     if (search.failure != VisitResult::Complete) return search.failure;
-    if (search.found) {
-      found = true;
-      return VisitResult::Stopped;
-    }
     if (result != VisitResult::Complete) return result;
   }
   return VisitResult::Complete;
+}
+
+static VisitResult collectForeignAliasTargets(
+    const uint8_t applet_owner, std::vector<Tag> &targets) {
+  try {
+    return visitForeignAliasTargetsToAppletOwner(
+        applet_owner,
+        [](const Tag &target, void *opaque) {
+          static_cast<std::vector<Tag> *>(opaque)->push_back(target);
+          return true;
+        },
+        &targets);
+  } catch (...) {
+    return VisitResult::IncompleteReachability;
+  }
 }
 
 VisitResult visitApplet(const uint8_t applet_owner, const TagVisitor visitor,
@@ -329,6 +342,23 @@ VisitResult visitPackageStaticRoots(
   return VisitResult::Complete;
 }
 
+static VisitResult visitUnreachableAppletTagsWithAliasTargets(
+    const uint8_t applet_owner, Heap &heap,
+    const RootReferenceEnumerator enumerate_roots, void *root_context,
+    const std::vector<Tag> &foreign_alias_targets,
+    const TagVisitor candidate_visitor, void *candidate_context) {
+  if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
+    return VisitResult::InvalidArgument;
+  }
+  const Heap::ReachabilitySummary summary =
+      heap.traceReachableFrom(enumerate_roots, root_context);
+  if (!summary.complete) return VisitResult::IncompleteReachability;
+
+  CandidateContext context{&heap, applet_owner, candidate_visitor,
+                           candidate_context, &foreign_alias_targets};
+  return visitApplet(applet_owner, visitUnreachableTag, &context);
+}
+
 VisitResult visitUnreachableAppletTags(
     const uint8_t applet_owner, Heap &heap,
     const std::vector<jref_t> &roots, const TagVisitor candidate_visitor,
@@ -342,30 +372,13 @@ VisitResult visitUnreachableAppletTags(
     const uint8_t applet_owner, Heap &heap,
     const RootReferenceEnumerator enumerate_roots, void *root_context,
     const TagVisitor candidate_visitor, void *candidate_context) {
-  if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
-    return VisitResult::InvalidArgument;
-  }
-  const Heap::ReachabilitySummary summary =
-      heap.traceReachableFrom(enumerate_roots, root_context);
-  if (!summary.complete) return VisitResult::IncompleteReachability;
-
-  std::vector<Tag> foreign_static_targets;
-  try {
-    Tag static_prefix{};
-    static_prefix.len = 1;
-    static_prefix.value[0] = 0x02;
-    const VisitResult static_scan =
-        visitPrefix(static_prefix, collectForeignStaticTarget,
-                    &foreign_static_targets);
-    if (static_scan != VisitResult::Complete) return static_scan;
-  } catch (...) {
-    return VisitResult::IncompleteReachability;
-  }
-
-  CandidateContext context{&heap, applet_owner, candidate_visitor,
-                           candidate_context,
-                           std::move(foreign_static_targets)};
-  return visitApplet(applet_owner, visitUnreachableTag, &context);
+  std::vector<Tag> foreign_alias_targets;
+  const VisitResult alias_scan =
+      collectForeignAliasTargets(applet_owner, foreign_alias_targets);
+  if (alias_scan != VisitResult::Complete) return alias_scan;
+  return visitUnreachableAppletTagsWithAliasTargets(
+      applet_owner, heap, enumerate_roots, root_context, foreign_alias_targets,
+      candidate_visitor, candidate_context);
 }
 
 } // namespace PersistentInventory
@@ -403,12 +416,19 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     return VisitResult::TransactionActive;
   }
 
+  std::vector<PersistentInventory::Tag> foreign_alias_targets;
+  const VisitResult alias_scan =
+      PersistentInventory::collectForeignAliasTargets(
+          applet_owner, foreign_alias_targets);
+  if (alias_scan != VisitResult::Complete) return alias_scan;
+
   // Validate the complete tag cursor before any mutation. Later passes may
-  // stop after a bounded batch, but each restart gets a fresh cursor and a
-  // fresh strict root trace.
-  const VisitResult preflight = PersistentInventory::visitUnreachableAppletTags(
-      applet_owner, heap, enumerate_roots, root_context, acceptAllCandidates,
-      nullptr);
+  // stop after a bounded batch. Alias roots are immutable during this call;
+  // each pass still performs a fresh strict heap-root trace.
+  const VisitResult preflight =
+      PersistentInventory::visitUnreachableAppletTagsWithAliasTargets(
+          applet_owner, heap, enumerate_roots, root_context,
+          foreign_alias_targets, acceptAllCandidates, nullptr);
   if (preflight != VisitResult::Complete) return preflight;
 
   uint32_t erased = 0;
@@ -420,9 +440,9 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
 
     CandidateBatch batch;
     const VisitResult scan =
-        PersistentInventory::visitUnreachableAppletTags(
+        PersistentInventory::visitUnreachableAppletTagsWithAliasTargets(
             applet_owner, heap, enumerate_roots, root_context,
-            collectCandidateBatch, &batch);
+            foreign_alias_targets, collectCandidateBatch, &batch);
     if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
       if (erased_count != nullptr) *erased_count = erased;
       return scan;
