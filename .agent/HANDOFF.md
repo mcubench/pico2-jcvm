@@ -35,6 +35,13 @@ in `progress.md`: 1,762,816 bytes, SHA-256
 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d`.
 Implementation commit: `7802769d`.
 
+After rebuilding the PC emulator with `./tools/build-pc --profile max_crypto`,
+the complete `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` suite
+passes 35/35 at `artifacts/logs/sio-cross-aid-vpcd-20261108T023459Z.log`.
+This adds broad CTX-01 interaction evidence after the decoder change, but does
+not replace physical APDU validation. The PC build reported existing Java
+converter and packed-member compiler warnings; it completed successfully.
+
 The previous handoff-resolution commit is `1e8418ba`. Continue the CTX-01
 reference-consumer audit offline while PC/SC has no readers; keep normal
 persistent reclamation disabled until PERSIST-01 multi-owner and physical

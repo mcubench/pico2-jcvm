@@ -25232,3 +25232,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep reclamation disabled; continue the CTX-01 reference-consumer audit offline and retry physical APDU tests after PC/SC publishes a Pico reader.
 - Commit: `<pending>`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T022447Z.log`; `build/arm/pico2_choupi.uf2` size 1,762,816 bytes, SHA-256 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d`.
+
+## 2026-11-08 Revalidate cross-AID runtime after strict alias decoding 8 minutes
+
+- Step/experiment: `CTX-01-vpcd-revalidation-after-foreign-static-decode`
+- When: '2026-11-08 03:31 CET' - '2026-11-08 03:39 CET'
+- Change: Rebuilt the PC emulator from the current max_crypto sources and reran the full cross-AID SIO acceptance suite after the foreign-static decoder hardening.
+- Validation: `./tools/build-pc --profile max_crypto` succeeds. It emitted existing Java SDK bootstrap/converter warnings and C++ packed-member alignment warnings; Logback also logged a sandbox-denied local-hostname lookup but the ROM mask and PC executable completed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passes all 35 checks (`TEST:SUMMARY pass=35 fail=0`), including private reference denial, equal-handle ownership, exception transport, GC, and DELETE/reinstall.
+- Result: The full cross-context regression remains green with the strict foreign-static owner decoder. This is emulator validation only; physical APDUs remain unavailable because PC/SC lists no Pico readers.
+- Decision: Continue CTX-01 reference-consumer and lifecycle audits; keep normal persistent reclamation disabled pending PERSIST-01 multi-owner and power-loss gates.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T023459Z.log`; PC image is a host executable, firmware size/hash unchanged from the preceding record.
