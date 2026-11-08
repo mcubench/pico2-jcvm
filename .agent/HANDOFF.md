@@ -10557,3 +10557,26 @@ retained-context/native-root accounting, interruption safety on physical flash,
 and the full unchanged JCAlgTest 1.8.4 long run before considering firmware
 wiring. Do not enable persistent collection in production. The unexpected
 PacketRF device remains excluded and was not accessed.
+
+# Current handoff — JCAlgTest with per-APDU package scan stopped early — 2026-11-08 22:00 CET
+
+The full unchanged JCAlgTest 1.8.4/jc305 VPCD wrapper was run with the
+PC_VERSION-only `PICO2_RECLAIM_PACKAGE_STATIC=1` hook. It was intentionally
+interrupted after 76 support CSV result rows because of the slow per-APDU scan.
+Before interruption, all 59 package-static reclaimer calls returned
+`result=0 erased=0`; the applet logged 28 `F206` unsupported
+`requestObjectDeletion` exceptions. No `F205` occurred before stopping.
+
+SIGINT made the host emulator's ptrace wrapper panic on signal 2, so the harness
+exited 1 and the client log ends with a short-APDU error. This is a cancelled
+partial run, not proof of the original empty-response/NO_RESOURCE issue. Partial
+results are in `artifacts/results/jcalgtest-support-vpcd-20261108T204110Z/`;
+the CSV SHA-256 is
+`a8393515ddafec3e215ce70e9d0e56b6c2c22f3599b1047292ac56a05bde7e20`.
+
+Next, replace the all-APDU diagnostic approach with a request-gated host test
+path: make `requestObjectDeletion` record intent, then service it at the safe
+post-APDU boundary after the applet can clear cache references. Keep support
+reported false in production and do not wire deletion to firmware until every
+context/root and power-loss gate passes. No physical device was accessed; the
+unexpected PacketRF remains excluded.

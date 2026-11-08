@@ -8657,3 +8657,25 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Evidence:** `artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T202615Z.log`, and
   `artifacts/logs/host-vpcd-multipackage-restart-20261108T202615Z.log`.
+
+## RESOURCE-01: full JCAlgTest sweep with per-APDU package reclaim was too costly
+
+- **Run:** Unchanged fixture/client acceptance wrapper, VPCD empty image, with
+  PC-only `PICO2_RECLAIM_PACKAGE_STATIC=1`.
+- **Partial result:** Stopped after 76 support CSV rows to avoid an excessively
+  long diagnostic run. The file SHA-256 is
+  `a8393515ddafec3e215ce70e9d0e56b6c2c22f3599b1047292ac56a05bde7e20`.
+  Before stop, the emulator logged 59 package-static reclaim calls; all returned
+  complete with `erased=0`. It also logged 28 `F206` exceptions at opcode `93`
+  for unsupported `requestObjectDeletion`. No `F205` was observed before stop.
+- **Termination:** A deliberate SIGINT interrupted the client; the emulator
+  host ptrace wrapper panicked on signal 2 and the harness exited 1. The empty
+  APDU/client exception in the tail is from this interruption and is not
+  evidence of the resource-exhaustion failure.
+- **Decision:** Do not repeat the full suite with a collector scan after every
+  APDU. This mode adds substantial work without collecting anything in the
+  first 76 rows. Implement/test a deferred request flag and service only after
+  `requestObjectDeletion`, while retaining all root-coverage and fail-closed
+  gates. This partial run does not demonstrate a fix.
+- **Evidence:** `artifacts/results/jcalgtest-support-vpcd-20261108T204110Z/`
+  (partial CSV, client log and emulator log).

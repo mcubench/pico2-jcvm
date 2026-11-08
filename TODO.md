@@ -1787,3 +1787,11 @@ results establish behavior. Keep validation limitations attached to both.
     hook enabled and reported no reclaimer failures (it erased no static tags
     in that scenario). This is PC emulator evidence only. It does not audit all
     retained package contexts or justify firmware enablement.
+  - The PC-only per-APDU experiment was tried on unchanged 1.8.4/jc305 but
+    stopped early after 76 CSV result rows because of its high runtime cost. In
+    59 collector calls it reported complete with zero package-static records
+    erased; 28 APDUs still logged `F206` for unsupported `requestObjectDeletion`.
+    No `F205` occurred before interruption. SIGINT caused the emulator's host
+    ptrace wrapper to panic, so the wrapper exited 1; this is an interrupted
+    experiment, not a JCAlgTest failure/pass. Do not run this all-APDU mode on
+    the full suite again; make deletion request-gated before further sweeps.

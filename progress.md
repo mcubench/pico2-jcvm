@@ -26151,3 +26151,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T202615Z.log`,
   `artifacts/logs/host-vpcd-multipackage-restart-20261108T202615Z.log`.
+
+## 2026-11-08 Stop early JCAlgTest per-APDU reclaim experiment 17 minutes
+
+- Step/experiment: `RESOURCE-01-JCALGTEST-ALL-APDU-RECLAIM-PARTIAL`
+- When: '2026-11-08 21:41 CET' - '2026-11-08 21:58 CET'
+- Change: Ran the unchanged 1.8.4/jc305 support wrapper against a fresh VPCD
+  image with the PC-only package-static reclaimer enabled after every APDU.
+  Updated TODO, QKB and HANDOFF with the partial result and decision to use a
+  request-gated experiment instead.
+- Validation: The client generated 76 support CSV data rows before deliberate
+  SIGINT. The emulator logged 59 package-static collection calls, all
+  `result=0 erased=0`, and 28 `F206` unsupported `requestObjectDeletion`
+  exceptions. There was no `F205` before cancellation. SIGINT caused the host
+  ptrace emulator wrapper to panic and the harness to exit 1. This is not an
+  algorithm-run failure or acceptance pass. No physical hardware was accessed.
+- Result: Full-suite all-APDU package-static scanning did not collect any
+  package-static tags in the first 76 rows and added enough runtime to stop the
+  experiment early. The original resource failure was not reached or disproved.
+- Decision: Do not rerun the suite in this mode. Implement/test servicing only
+  explicit deletion requests, preserving the complete-root and power-loss
+  acceptance gates before considering firmware enablement.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T204110Z/`;
+  partial CSV SHA-256 `a8393515ddafec3e215ce70e9d0e56b6c2c22f3599b1047292ac56a05bde7e20`.
