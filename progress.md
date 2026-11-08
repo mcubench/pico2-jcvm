@@ -25678,7 +25678,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with bounded persistent inventory/key-reuse diagnosis,
   then implement deferred deletion only with the existing PERSIST-01 safety
   gates intact. Repair host-helper device filtering before physical testing.
-- Commit: `63f7cd17`
+- Commit: `<pending>`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T074658Z/`,
   `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`,
   `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.
@@ -26332,7 +26332,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production deletion unsupported and RESOURCE-01 open. Continue
   PERSIST-01 root/interruption acceptance before reconnecting reclamation to
   normal runtime; then require full unchanged 1.8.4 and physical plateau tests.
-- Commit: `<pending>`
+- Commit: `63f7cd17`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T225648Z.log`
   (2-key control) and `artifacts/logs/object-deletion-vpcd-20261108T225803Z.log`,
   SHA-256 `ca1fc3ace73d2a73ebf9070054ddf453e270a24d9d29b0aa95e9dc08af459b2b`.
