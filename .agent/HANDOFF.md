@@ -9,6 +9,7 @@ lookup and dispatches a catchable Java `SecurityException`. The cross-AID
 fixture creates a `RuntimeException` in the caller and verifies that the
 service catches the denial. Full VPCD suite passes `TEST:SUMMARY pass=35
 fail=0` at `artifacts/logs/sio-cross-aid-vpcd-20261108T015026Z.log`.
+Implementation commit: `b93fb66a`.
 
 Both `./tools/build arm` and `./tools/build riscv` pass. The current ARM image
 was flashed to Pico 2 `D92E743D5F640C0F`; finite monitor log

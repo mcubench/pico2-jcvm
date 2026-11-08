@@ -25186,5 +25186,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: A first VPCD attempt failed because its existing PC executable was stale. After `./tools/build-pc --profile max_crypto`, `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_REUSE_FIXTURE=1 CHOUPI_VM_TRACE_EXCEPTIONS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0`. `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashed the ARM image; finite serial monitor passed `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The USB helper granted three nodes; elevated `timeout 8s pcsc_scan -r` exited 124 without readers, so no physical APDU test was possible. `git diff --check` was run; the modified bytecode source retains its existing CRLF line endings. Runtime duration: 30 minutes. Performance was not measured.
 - Result: VPCD confirms that a foreign exception cannot be resolved through a colliding service-heap handle and that Java code can catch the resulting `SecurityException`. Startup firmware validation passed on Pico 2 `D92E743D5F640C0F`; physical APDU behavior remains unverified.
 - Decision: Continue CTX-01 reference-consumer and persistent lifecycle audits; repeat physical APDU acceptance once PC/SC exposes a reader. Always rebuild PC artifacts with the test's required profile before VPCD validation.
-- Commit: `<pending>`
+- Commit: `b93fb66a`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T015026Z.log`; stale-binary failure `artifacts/logs/sio-cross-aid-vpcd-20261108T014324Z.log`; `artifacts/logs/cycle-choupi-20261108T015917Z.log`; ARM UF2 size 1,762,816 bytes, SHA-256 `8f219752eaa501691fb741d8c0883db561968be91cb29cf8a325f92942aaec0a`.
+
+## 2026-11-08 Resolve `athrow` implementation commit record 2 minutes
+
+- Step/experiment: `CTX-01-athrow-foreign-owner-firewall-doc-resolution`
+- When: '2026-11-08 03:01 CET' - '2026-11-08 03:03 CET'
+- Change: Resolved the implementation SHA in the preceding progress entry and recorded it in the current session handoff.
+- Validation: Confirmed commit `b93fb66a` contains the owner check, fixture regression, test, and initial progress record. Documentation diff passes `git -c core.whitespace=cr-at-eol diff --check`. Runtime performance was not measured.
+- Result: The session handoff and progress log link the implementation to commit `b93fb66a`.
+- Decision: Continue with the next CTX-01 reference-consumer gap.
+- Commit: `<pending>`
+- Artifacts/logs: `.agent/HANDOFF.md`; `progress.md`.
