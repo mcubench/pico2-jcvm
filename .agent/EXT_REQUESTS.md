@@ -71,7 +71,7 @@
   `PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical '<exact Pico2 reader name with chip ID>' 8 4096`.
   Flash only `build/arm/pico2_choupi_persistent_gc_test.uf2`; never select the
   unexpected PacketRF device.
-- Commit: `<pending>`
+- Commit: `bb3cb62c`
 - Artifacts/logs: VPCD control
   `artifacts/logs/object-deletion-vpcd-20261108T233722Z.log`; physical result
   pending.

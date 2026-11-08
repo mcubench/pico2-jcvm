@@ -26448,7 +26448,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: After the requested helper refresh, run the physical test against
   one identified Pico2 by exact reader and chip ID. Keep the unexpected
   PacketRF device excluded and production deletion disabled.
-- Commit: `<pending>`
+- Commit: `bb3cb62c`
 - Artifacts/logs: VPCD log
   `artifacts/logs/object-deletion-vpcd-20261108T233722Z.log`; expected physical
   serial/APDU logs are generated under `artifacts/logs/` by the wrapper.
