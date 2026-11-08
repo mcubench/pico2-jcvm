@@ -25508,6 +25508,36 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `7525b67b`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261108T062536Z.log`.
 
+## 2026-11-08 Allocate RSA key components by type 17 minutes
+
+- Step/experiment: `RESOURCE-01-RSA-KEY-COMPONENT-ALLOCATION`
+- When: '2026-11-08 07:35 CET' - '2026-11-08 07:52 CET'
+- Change: Updated native `KeyBuilder` allocation so public/plain private RSA
+  keys allocate modulus and exponent arrays, while CRT private keys allocate
+  only P/Q/DP1/DQ1/PQ. The length array remains unchanged. `clearKey()` safely
+  clears only allocated component arrays. Added VPCD CAP vectors for all three
+  key forms, including clear, initialize, set and get operations.
+- Validation: `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. The prior focused suite
+  run containing speculative CRT KeyPair vectors failed on a test-only
+  sign/verify path (`3F9000`); narrowed type-specific allocation cases then
+  passed in `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd`:
+  `TEST:SUMMARY pass=102 fail=0`, `rsa_component_cases=3`,
+  `transient_lifecycle=16`, `total=100`. Latest PC/SC refresh granted three
+  USB nodes, but `pcsc_scan -r` listed only Virtual PCD readers. No physical
+  APDU/flash test ran.
+- Result: The type-specific layouts preserve tested public/private/CRT
+  component operations. At 3072 bits, structural capacity arithmetic predicts
+  960 bytes saved per public/plain private key and 768 bytes per CRT key; a
+  public+CRT pair saves 1,728 payload bytes plus seven persistent array
+  records before metadata. No physical or exact backend delta was measured.
+- Decision: Keep persistent reclamation disabled pending PERSIST-01 safety
+  gates. Investigate the separate CRT KeyPair sign/verify probe failure and
+  continue RESOURCE-01 long-run resource measurement.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261108T064804Z.log`;
+  focused failing probe: `artifacts/logs/rsa-crt-keypair-isolation.log`.
+
 ## 2026-11-08 Resolve transient lifecycle commit reference 1 minute
 
 - Step/experiment: `RESOURCE-01-CRYPTO-TRANSIENT-VPCD-COMMIT-REFERENCE`

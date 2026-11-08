@@ -1,4 +1,26 @@
-# Current handoff — VPCD crypto lifecycle regression — 2026-11-08 07:35 CET
+# Current handoff — RSA key component allocation optimization — 2026-11-08 07:52 CET
+
+RESOURCE-01 implementation stage: `buildNativeKey()` now allocates only
+components required by the RSA type. Public/plain private RSA allocate
+modulus/exponent; CRT private RSA allocates P/Q/DP1/DQ1/PQ. `clearKey()` skips
+the absent fields. Both ARM and RISC-V max_crypto builds passed. The rebuilt
+max_crypto VPCD suite passed 102 checks, including 3 new public/private/CRT
+component cases and 16 transient AES/RSA lifecycle cases. Log:
+`artifacts/logs/symm-crypto-kat-vpcd-20261108T064804Z.log`.
+
+At 3072 bits, the structure saves 960 array payload bytes per public/plain
+private key and 768 bytes per CRT key; a public+CRT pair avoids 1,728 bytes and
+seven persistent array records before metadata. This is a capacity calculation,
+not a measured physical flash/resource delta. A separate local 512-bit CRT
+KeyPair sign/verify diagnostic returned a generic test failure after key
+generation and component checks; its cause is unknown and remains open.
+
+The authorized USB helper still grants three nodes, but the latest refresh
+observed only two runtime Pico USB devices and `pcsc_scan -r` listed only the
+two Virtual PCD readers. No physical APDU or flash was performed. Continue
+RESOURCE-01 and retry hardware when a Pico reader appears.
+
+# Current handoff — VPCD crypto transient lifecycle regression — 2026-11-08 07:35 CET
 
 Added VPCD lifecycle vectors for applet-static AES and RSA `Cipher` instances
 backed by `CLEAR_ON_DESELECT` keys. The tests initialize a transient key and

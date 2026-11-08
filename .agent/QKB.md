@@ -1,3 +1,26 @@
+# 2026-11-08 RSA key allocation waste and type-specific layout
+
+- Issue: `buildNativeKey()` allocated all seven RSA component arrays for every
+  RSA type. Public and plain private keys use only modulus/exponent; CRT private
+  keys use only P, Q, DP1, DQ1 and PQ. The extra arrays each consumed a
+  persistent record as well as payload capacity, increasing flash snapshot
+  writes and the chance of `OutOfFlash` during key probes.
+- Viable fix: Allocate components 0-1 for public/plain private RSA and 2-6 for
+  CRT private RSA. Keep the seven-entry length array, and have `clearKey()` skip
+  the absent component references. Do not treat an absent component as
+  initialized. The max_crypto VPCD suite now checks construction, clearing,
+  setting and reading the appropriate components for all three forms.
+- Capacity estimate for 3072-bit keys: public/plain private omit five 192-byte
+  arrays (960 bytes); CRT private omits two 384-byte arrays (768 bytes). An
+  RSA public+CRT pair saves 1,728 bytes of array payload and seven active array
+  records, excluding serialized headers and filesystem snapshot overhead.
+  No physical flash delta or plateau has yet been measured.
+- Separate unresolved probe: the local test-only 512-bit CRT KeyPair plus
+  signature/cipher check generated the key and read its components, then
+  returned a generic test failure during sign/verify. The exact exception and
+  whether it predates type-specific allocation are unknown; isolate before
+  attributing it to the allocator.
+
 # 2026-11-08 PC/SC refresh after reported three-token availability
 
 - Issue: The user reported all tokens present. The authorized helper granted

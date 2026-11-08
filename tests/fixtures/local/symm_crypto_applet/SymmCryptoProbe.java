@@ -17,6 +17,7 @@ import javacard.security.KeyPair;
 import javacard.security.MessageDigest;
 import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RSAPrivateKey;
+import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RSAPublicKey;
 import javacard.security.Signature;
 import javacard.security.SignatureMessageRecovery;
@@ -92,6 +93,10 @@ public final class SymmCryptoProbe extends Applet {
     } else if (instruction == (byte)0x1c) {
       output = new byte[(short)1];
       output[0] = useRetainedCipherAfterClear(algorithm);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x23) {
+      output = new byte[(short)1];
+      output[0] = runRsaComponentAllocation(algorithm);
       outputLength = (short)1;
     } else if (instruction == (byte)0x2a) {
       output = new byte[(short)1];
@@ -254,6 +259,52 @@ public final class SymmCryptoProbe extends Applet {
       return exception.getReason() == CryptoException.UNINITIALIZED_KEY ||
           exception.getReason() == CryptoException.INVALID_INIT
           ? (byte)1 : (byte)(0x40 | exception.getReason());
+    }
+  }
+
+  private static byte runRsaComponentAllocation(byte selector) {
+    try {
+      if (selector == 0) {
+        RSAPublicKey key = (RSAPublicKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+        key.clearKey();
+        byte[] value = new byte[64];
+        value[0] = (byte)0x80;
+        key.setModulus(value, (short)0, (short)value.length);
+        key.setExponent(new byte[] {1}, (short)0, (short)1);
+        return key.isInitialized() && key.getModulus(value, (short)0) == 64
+            ? (byte)1 : (byte)0x21;
+      }
+      if (selector == 1) {
+        RSAPrivateKey key = (RSAPrivateKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_512, false);
+        key.clearKey();
+        byte[] value = new byte[64];
+        value[0] = (byte)0x80;
+        key.setModulus(value, (short)0, (short)value.length);
+        key.setExponent(new byte[] {1}, (short)0, (short)1);
+        return key.isInitialized() && key.getModulus(value, (short)0) == 64
+            ? (byte)1 : (byte)0x22;
+      }
+      if (selector == 2) {
+        RSAPrivateCrtKey key = (RSAPrivateCrtKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_CRT_PRIVATE, KeyBuilder.LENGTH_RSA_512, false);
+        key.clearKey();
+        byte[] value = new byte[32];
+        value[0] = 1;
+        key.setP(value, (short)0, (short)value.length);
+        key.setQ(value, (short)0, (short)value.length);
+        key.setDP1(value, (short)0, (short)value.length);
+        key.setDQ1(value, (short)0, (short)value.length);
+        key.setPQ(value, (short)0, (short)value.length);
+        return key.isInitialized() && key.getPQ(value, (short)0) == 32
+            ? (byte)1 : (byte)0x23;
+      }
+      return (byte)0xff;
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x3f;
     }
   }
 

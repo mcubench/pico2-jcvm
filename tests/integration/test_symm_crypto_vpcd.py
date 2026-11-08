@@ -215,11 +215,24 @@ def transient_cipher_lifecycle_vectors() -> list[tuple[bytes, bytes, str]]:
     return results
 
 
+def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
+    # Exercise only the components valid for each RSA key type, including
+    # clearKey() on keys whose unrelated component arrays are not allocated.
+    return [
+        (bytes((0x80, 0x23, selector, 0, 0)), b"\x01\x90\x00", label)
+        for selector, label in ((0, "RSA public key components"),
+                                (1, "RSA private key components"),
+                                (2, "RSA-CRT key components"))
+    ]
+
+
 def main() -> int:
     cipher_count = len(cipher_vectors())
     mac_count = len(mac_vectors())
+    rsa_component_count = len(rsa_key_component_vectors())
     vectors = (cipher_vectors() + mac_vectors() +
-               transient_cipher_lifecycle_vectors())
+               transient_cipher_lifecycle_vectors() +
+               rsa_key_component_vectors())
     timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     log = ROOT / f"artifacts/logs/symm-crypto-kat-vpcd-{timestamp}.log"
     command = [
@@ -246,6 +259,7 @@ def main() -> int:
         return completed.returncode
     print(f"TEST:SUMMARY cipher_vectors={cipher_count} mac_vectors={mac_count} "
           f"iv_vectors=6 transient_lifecycle=16 reset_after={len(reset_after_indices)} "
+          f"rsa_component_cases={rsa_component_count} "
           f"total={len(vectors)} fail=0")
     print(f"TEST:LOG {log}")
     return 0

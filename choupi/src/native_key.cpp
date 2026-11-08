@@ -107,6 +107,11 @@ bool rsaPrivate(uint8_t type) {
 bool rsaType(uint8_t type) {
   return type == kRsaPublic || rsaPrivate(type);
 }
+bool rsaComponentRequired(uint8_t type, uint16_t component) {
+  // RSA public/private keys store modulus and exponent. CRT private keys store
+  // only their five CRT components; their modulus is derived from P and Q.
+  return rsaCrt(type) ? component >= 2 : component < 2;
+}
 bool ecPrivate(uint8_t type) {
   return type == kEcFpPrivate || type == kEcFpPrivateTransientReset ||
          type == kEcFpPrivateTransientDeselect;
@@ -318,6 +323,7 @@ jref_t buildNativeKey(uint8_t type, uint16_t bits, bool encrypted) {
     const uint16_t bytes = static_cast<uint16_t>((bits + 7) / 8);
     const uint16_t half = static_cast<uint16_t>((bytes + 1) / 2);
     for (uint16_t i = 0; i < kComponentCount; ++i) {
+      if (!rsaComponentRequired(type, i)) continue;
       const uint16_t capacity = i < 2 ? bytes : half;
       instance->setField_Reference(kComponentFields[i],
           allocateArray(heap, capacity, JAVA_ARRAY_T_BYTE, transient, event));
@@ -513,8 +519,11 @@ void javacard_security_NativeKey_clearKey(jref_t receiver) {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
   if (rsaType(type)) {
     for (uint16_t i = 0; i < kComponentCount; ++i) {
-      auto component = componentArray(*key, i);
-      clearKeyBytes(component);
+      const jref_t componentRef = key->getField_Reference(kComponentFields[i]);
+      if (!componentRef.isNullPointer()) {
+        clearKeyBytes(Context::getActiveContext().getHeap().getArray(
+            componentRef));
+      }
     }
     auto lengths = lengthsArray(*key);
     for (uint16_t i = 0; i < kComponentCount; ++i) lengths->setShortEntry(i, 0);

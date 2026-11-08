@@ -103,7 +103,19 @@ Archive text is historical evidence, not current device state or priorities.
   high-water marks. Follow both-architecture build and hardware gates.
 - Ownership: this task coordinates the outcome; PERSIST-01/02/03, STORE-01,
   API-01/03 and JC-RESET-01 retain their existing implementation/safety scope.
-  No implementation is authorized by this planning update.
+  Implementation proceeds in independently validated stages; do not enable
+  persistent reclamation before its existing safety gates pass.
+- Progress (2026-11-08): Native `KeyBuilder` now allocates only the component
+  arrays used by each RSA key form. A 3072-bit public/plain key omits five
+  192-byte arrays (960 payload bytes); a CRT private key omits two 384-byte
+  arrays (768 payload bytes). An RSA public+CRT pair therefore avoids 1,728
+  component payload bytes and seven persistent array records, before record
+  metadata. These are capacity-derived values, not measured flash deltas.
+  VPCD exercises public, plain private and CRT private `clearKey()`, setters
+  and getters; all pass. Full JCAlgTest plateau/resource acceptance remains
+  open. A separate test-only RSA CRT KeyPair/signature probe returned generic
+  `3F` during its sign/verify phase after key generation/component checks; its
+  cause and relation to persistent resource pressure are unconfirmed.
 
 ## Functionality review — 2026-11-03
 
