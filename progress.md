@@ -26279,7 +26279,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Before increasing workload scope, verify collector preservation of
   live aliases and safe retry after partial erase for this key graph.
   Production persistent deletion stays disabled.
-- Commit: `<pending>`
+- Commit: `bc6d3042`
 - Artifacts/logs: 2-cycle control
   `artifacts/logs/object-deletion-vpcd-20261108T223404Z.log`; 32-cycle run
   `artifacts/logs/object-deletion-vpcd-20261108T223514Z.log`, SHA-256
