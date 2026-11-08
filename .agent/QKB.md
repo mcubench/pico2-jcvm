@@ -8297,3 +8297,28 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   still has the old VID:PID-only code. After reviewing this repository change,
   rerun `sudo ./tools/install-pcsc-sudoers` to install the updated allowlisted
   helper, then recheck `pcsc_scan -r`. No PacketRF access was attempted.
+
+# 2026-11-08 RAM collection versus persistent key records
+
+- Code path: RP2350 invokes `collect_heap_after_apdu()` after each completed
+  APDU, once interpreter/native scopes have unwound. That collects unreachable
+  in-memory heap handles. The production persistent reclaimer is compiled only
+  under its debug gate and remains disabled in normal runtime. PC VPCD's
+  `PICO2_HEAP_GC=1` is an opt-in diagnostic that mirrors RAM collection after
+  each APDU; it does not enable persistent record deletion.
+- Evidence: with this PC diagnostic enabled, five RSA-1024 public KeyBuilder
+  APDUs each reclaimed 3 arrays and 1 instance. After the fifth, inventory was
+  345 global records / 8,889 payload bytes, including 41 unreachable tags /
+  1,617 bytes. A following RSA-1024 KeyPair APDU passed. Log:
+  `artifacts/logs/jcalgtest-resource-accumulation-heapgc-5x-rsa1024.log`.
+- Interpretation: RAM collection is active on the Pico and is distinct from
+  persistent reclamation. This confirms persistent orphan growth is not fixed
+  by collecting RAM handles. The five-call sequence did not reproduce the
+  full 1.8.4 run's empty response; that failure remains unexplained. Repeated
+  `F206 exception=16 opcode=93` output in the full-run emulator log is
+  consistent with the already documented unsupported object-deletion request,
+  but causality to the transport failure is unproven.
+- Next: preserve the PERSIST-01 safety gate, continue with deferred
+  `requestObjectDeletion()` semantics and instrument the exact failing
+  full-suite boundary. Do not enable persistent reclamation by default based
+  on this diagnostic.

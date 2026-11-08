@@ -9,6 +9,27 @@ boards at paths 1-2, 1-3, 1-4, and PacketRF at 1-5. The installed
 must be refreshed by running `sudo ./tools/install-pcsc-sudoers` before the
 next reader check. This is a repository helper fix; PacketRF was not accessed.
 
+# Current handoff — distinguish RAM GC from persistent-resource growth — 2026-11-08 11:28 CET
+
+Confirmed the runtime path: Pico invokes RAM heap collection after every
+completed APDU; the production persistent reclaimer remains disabled. On PC
+VPCD, `PICO2_HEAP_GC=1` enables equivalent per-APDU RAM collection only. Five
+repeated RSA-1024 public KeyBuilder APDUs under this diagnostic reclaimed 3
+arrays and 1 instance per request, while inventory reached 345 global records /
+8,889 payload bytes, including 41 unreachable tags / 1,617 bytes. A subsequent
+RSA-1024 KeyPair APDU passed. Thus RAM handle reclamation does not address the
+persistent orphan records. This short sequence does not reproduce the full
+1.8.4 client's empty-response failure. Repeated `F206 exception=16 opcode=93`
+is consistent with the known unsupported `requestObjectDeletion()` behavior,
+but its connection to the empty response is unproven.
+
+Next: continue RESOURCE-01 and PERSIST-01 without enabling persistent deletion
+by default. Instrument the failing full-run boundary and implement deferred
+deletion only behind the existing safety requirements. Physical testing remains
+blocked until the updated Pico-only helper is installed; do not access PacketRF.
+The latest helper source fix is committed (`f552b6e8`), and the user must run
+`sudo ./tools/install-pcsc-sudoers` before another physical reader check.
+
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
 
 The latest full unchanged JCAlgTest 1.8.4 VPCD run passed the algorithm and

@@ -25717,3 +25717,26 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   readers become visible through PC/SC.
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
+
+## 2026-11-08 Separate RAM GC from persistent-resource growth 6 minutes
+
+- Step/experiment: `RESOURCE-01-RAM-GC-PERSISTENT-RECORD-DISTINCTION`
+- When: '2026-11-08 11:22 CET' - '2026-11-08 11:28 CET'
+- Change: Inspected the production post-APDU collection path and recorded the
+  distinction between RAM heap collection and the disabled persistent
+  reclaimer in TODO, QKB and HANDOFF. No runtime code changed.
+- Validation: Reviewed `choupi/src/main.cpp`, `choupi/src/heap.cpp`, and the
+  existing diagnostic log. Pico code collects RAM heap handles after completed
+  APDUs; PC VPCD requires `PICO2_HEAP_GC=1`. Existing five-call run reclaimed 3
+  arrays and 1 instance per RSA public KeyBuilder APDU. After five calls,
+  inventory was 345 records / 8,889 payload bytes, with 41 unreachable tags /
+  1,617 bytes; following RSA 1024 KeyPair APDU passed. No tests or builds were
+  rerun for this documentation/inspection step.
+- Result: RAM GC does not reclaim persistent orphan records. This does not
+  explain the full JCAlgTest run's empty APDU; repeated F206 object-deletion
+  exceptions are not proven causal.
+- Decision: Keep persistent reclamation disabled pending PERSIST-01 acceptance;
+  continue instrumenting the full-run failure and deferred deletion behavior.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/jcalgtest-resource-accumulation-heapgc-5x-rsa1024.log`.
