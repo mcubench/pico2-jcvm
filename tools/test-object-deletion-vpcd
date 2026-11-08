@@ -4,10 +4,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_host_usb_access
 
 iterations="${1:-8}"
+mode="${2:-byte-array}"
 if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
   ((iterations < 1 || iterations > 512)); then
-  die "usage: $0 [iterations 1..512]"
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public]"
 fi
+[[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" ]] || \
+  die "usage: $0 [iterations 1..512] [byte-array|rsa-public]"
 
 "${repo_root}/tools/build-pc" --profile max_crypto
 "${repo_root}/tools/build-persistent-reclaimer-probe"
@@ -25,10 +28,17 @@ probe_args=(
   --flash-copy "${flash_copy}" --log "${log}"
 )
 for ((iteration = 0; iteration < iterations; ++iteration)); do
-  probe_args+=(
-    --apdu 0000010000 --expect-apdu-response 2A9000
-    --apdu 0000060000 --expect-apdu-response 019000
-  )
+  if [[ "${mode}" == "rsa-public" ]]; then
+    probe_args+=(
+      --apdu 0000070000 --expect-apdu-response 379000
+      --apdu 0000080000 --expect-apdu-response 019000
+    )
+  else
+    probe_args+=(
+      --apdu 0000010000 --expect-apdu-response 2A9000
+      --apdu 0000060000 --expect-apdu-response 019000
+    )
+  fi
 done
 probe_args+=(--apdu 0000050000 --expect-apdu-response 009000)
 
@@ -53,7 +63,18 @@ reclaim_count="$(grep -Ec \
 erased_total="$(grep '^OBJECT_DELETION: package=' "${log}" | \
   sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \
   awk '{ total += $1 } END { print total + 0 }')"
-[[ "${erased_total}" -eq "${iterations}" ]] || \
-  die "expected exactly one applet-owned tag erased per cycle (${iterations}), got ${erased_total}; see ${log}"
-printf 'OBJECT_DELETION_VPCD:PASS requests=%s log=%s\n' \
-  "${reclaim_count}" "${log#${repo_root}/}"
+if [[ "${mode}" == "byte-array" ]]; then
+  [[ "${erased_total}" -eq "${iterations}" ]] || \
+    die "expected exactly one applet-owned tag erased per byte-array cycle (${iterations}), got ${erased_total}; see ${log}"
+else
+  min_erased="$(grep '^OBJECT_DELETION: package=' "${log}" | \
+    sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \
+    sort -n | head -n 1)"
+  max_erased="$(grep '^OBJECT_DELETION: package=' "${log}" | \
+    sed -n 's/.* erased_applet=\([0-9][0-9]*\) .*/\1/p' | \
+    sort -n | tail -n 1)"
+  [[ -n "${min_erased}" && "${min_erased}" -eq "${max_erased}" ]] || \
+    die "RSA-key reclamation count varied across cycles (min=${min_erased:-none} max=${max_erased:-none}); see ${log}"
+fi
+printf 'OBJECT_DELETION_VPCD:PASS mode=%s requests=%s erased_applet_tags=%s log=%s\n' \
+  "${mode}" "${reclaim_count}" "${erased_total}" "${log#${repo_root}/}"

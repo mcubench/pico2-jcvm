@@ -5,10 +5,13 @@ import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
+import javacard.security.KeyBuilder;
+import javacard.security.RSAPublicKey;
 
 /** Small card-side fixture for the native persistent-tag reclaimer. */
 public final class PersistentReclaimerProbe extends Applet {
   private byte[] retained;
+  private RSAPublicKey retainedRsaKey;
 
   private PersistentReclaimerProbe() {
     register();
@@ -46,6 +49,23 @@ public final class PersistentReclaimerProbe extends Applet {
         break;
       case 6:
         retained = null;
+        buffer[0] = JCSystem.isObjectDeletionSupported() ? (byte) 1 : 0;
+        JCSystem.requestObjectDeletion();
+        break;
+      case 7: {
+        byte[] modulus = new byte[64];
+        for (short i = 0; i < 64; i++) modulus[i] = (byte)(i + 1);
+        modulus[0] = 0x7f;
+        byte[] exponent = {0x01, 0x00, 0x01};
+        retainedRsaKey = (RSAPublicKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+        retainedRsaKey.setModulus(modulus, (short)0, (short)modulus.length);
+        retainedRsaKey.setExponent(exponent, (short)0, (short)exponent.length);
+        buffer[0] = retainedRsaKey.isInitialized() ? (byte)0x37 : 0;
+        break;
+      }
+      case 8:
+        retainedRsaKey = null;
         buffer[0] = JCSystem.isObjectDeletionSupported() ? (byte) 1 : 0;
         JCSystem.requestObjectDeletion();
         break;

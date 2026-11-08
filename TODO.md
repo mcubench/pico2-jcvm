@@ -153,6 +153,12 @@ Archive text is historical evidence, not current device state or priorities.
     erasing exactly one applet tag (64 total), with zero package-static tags
     erased. This establishes repeated cleanup for the one-array fixture only;
     it is not full-suite or physical acceptance.
+  - The local probe now also creates 512-bit RSA public keys and populates
+    modulus/exponent fields before clearing the instance reference and
+    requesting deletion. A 32-cycle VPCD run passed 67/67 checks and reclaimed
+    exactly 10 applet tags per cycle (320 total), with no package-static erases.
+    This exercises realistic RSA object graphs on PC VPCD only; it still does
+    not establish retained-context or physical-flash safety.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

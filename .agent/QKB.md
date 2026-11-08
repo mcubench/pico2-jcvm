@@ -84,6 +84,25 @@
 - **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`
   (SHA-256 `13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`).
 
+## RESOURCE-01: repeated RSA key graph collection in VPCD
+
+- **Change:** Extended the repository-owned probe applet with a 512-bit RSA
+  public-key build that sets modulus and exponent, then clears the instance
+  field and requests object deletion. The stress wrapper supports this fixture
+  mode without changing any supplied CAP or firmware algorithm code.
+- **Control:** Two RSA cycles passed 7/7 and reclaimed 10 applet-owned tags
+  each. This established the stable per-cycle candidate count used by the
+  longer run.
+- **Stress result:** Thirty-two cycles passed `TEST:SUMMARY pass=67 fail=0`.
+  All 32 request calls completed; each erased exactly 10 applet tags (320
+  total), with zero package-static tags erased.
+- **Limit:** This remains PC VPCD, a single applet/context, one public key
+  shape, and no interrupted erase or full JCAlgTest traffic. It is evidence
+  that this specific repeated RSA-key graph remains reclaimable, not proof of
+  the complete JCVM root model or a firmware fix.
+- **Evidence:** `artifacts/logs/object-deletion-vpcd-20261108T223514Z.log`
+  (SHA-256 `cf07453c1b55ce59cdd50c17b01338330c5c8e93437677aa3ee8cb371a0323f5`).
+
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
 ## Persistent reclaimer must include references beyond the selected context — 2026-11-08

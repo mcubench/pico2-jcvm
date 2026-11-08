@@ -26256,3 +26256,31 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `87f30150`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`,
   SHA-256 `13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`.
+
+## 2026-11-08 Stress reclamation of RSA key graphs 8 minutes
+
+- Step/experiment: `RESOURCE-01-RSA-GRAPH-RECLAIM-STRESS`
+- When: '2026-11-08 23:29 CET' - '2026-11-08 23:37 CET'
+- Change: Extended the local persistent-reclaimer CAP fixture to build a
+  512-bit RSA public key, set modulus/exponent, clear the applet instance
+  reference and request deletion. Added `rsa-public` mode to the bounded VPCD
+  stress wrapper. Updated TODO, QKB and HANDOFF.
+- Validation: Fixture CAP built with `./tools/build-persistent-reclaimer-probe`.
+  The guarded two-cycle VPCD control passed 7/7 and reclaimed 10 owner tags per
+  cycle. The 32-cycle run passed `TEST:SUMMARY pass=67 fail=0`; all 32 deletion
+  calls completed with exactly 10 applet tags erased per call (320 total) and
+  zero package-static tags erased. `bash -n` and changed-file whitespace
+  checks passed. The fixture-only change does not alter ARM/RISC-V firmware;
+  no physical device was accessed.
+- Result: Repeated 512-bit RSA public-key object graphs were reclaimed at a
+  stable count in this isolated single-owner VPCD workload. This does not prove
+  general RSA sizes/types, all root domains, interrupted deletion safety, or
+  full JCAlgTest/physical behavior.
+- Decision: Before increasing workload scope, verify collector preservation of
+  live aliases and safe retry after partial erase for this key graph.
+  Production persistent deletion stays disabled.
+- Commit: `<pending>`
+- Artifacts/logs: 2-cycle control
+  `artifacts/logs/object-deletion-vpcd-20261108T223404Z.log`; 32-cycle run
+  `artifacts/logs/object-deletion-vpcd-20261108T223514Z.log`, SHA-256
+  `cf07453c1b55ce59cdd50c17b01338330c5c8e93437677aa3ee8cb371a0323f5`.

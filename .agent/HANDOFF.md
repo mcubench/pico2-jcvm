@@ -10444,6 +10444,23 @@ JCAlgTest retry.
 Log: `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`, SHA-256
 `13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`.
 
+# Current handoff — repeated RSA key graph deletion in VPCD — 2026-11-08 23:37 CET
+
+The local persistent-reclaimer probe now creates a 512-bit RSA public key,
+sets modulus and exponent, clears the key's applet-instance reference, and
+requests deletion. Two cycles passed 7/7 and each removed 10 owner tags. The
+32-cycle stress run passed 67/67; every cycle erased exactly 10 applet tags
+(320 total), and package-static erases were zero. VPCD logs are
+`artifacts/logs/object-deletion-vpcd-20261108T223404Z.log` (2-cycle control) and
+`artifacts/logs/object-deletion-vpcd-20261108T223514Z.log` (32-cycle stress).
+
+This improves evidence over the byte-array fixture, but remains single-context
+PC VPCD with no interrupted deletion, multi-owner roots, full JCAlgTest run, or
+physical flash. Production firmware still reports deletion unsupported. Next
+add live-alias preservation and erase-interruption coverage around this RSA
+graph before expanding traffic or considering firmware wiring. Unexpected
+PacketRF remains excluded.
+
 # Current handoff — protect foreign alias chains during reclamation — 2026-11-08 19:50 CET
 
 Uncommitted PERSIST-01 inventory changes now scan external package-static and
