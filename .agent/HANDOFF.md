@@ -10373,3 +10373,17 @@ transaction` passes `TEST:SUMMARY fail=0`. Continue with PERSIST-01 coverage of
 all durable roots/aliases, retained applet contexts and cross-owner references,
 then transaction/interruption recovery and physical acceptance before wiring
 deferred per-context deletion into normal APDU processing. Do not use PacketRF.
+
+# Current handoff — refreshed external max_crypto image — 2026-11-08 19:45 CET
+
+The current ARM max_crypto empty-card artifact was rebuilt from the dirty
+checkout and packaged without a CAP/applet:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (4,079,616
+bytes, SHA-256 `02a879b36038b55c6c67f409969aab28574034b1e624bfcc06726c86f7584b1c`).
+The build passed ARM max_crypto and RISC-V max_crypto wrapper validation; the
+image parses as RP2350 ARM Secure, has 159/162 capabilities, release 0.1.1,
+CPLC marker `FFEAFFDB` based on HEAD `EAFFDB`, and an empty 1 MiB card-storage
+region. It has not been flashed or tested on a physical board. An unexpected
+connected device was explicitly excluded; no physical-device command was run.
+The artifact manifest and progress record were refreshed. Full JCAlgTest
+acceptance remains open.

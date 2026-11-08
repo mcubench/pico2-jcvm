@@ -25972,3 +25972,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `artifacts/results/jcalgtest-support-vpcd-20261108T162853Z/`;
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T173555Z.log`;
   `artifacts/logs/host-vpcd-multipackage-restart-20261108T173555Z.log`.
+
+## 2026-11-08 Refresh max_crypto empty-card external image 9 minutes
+
+- Step/experiment: `REL-01-MAX-CRYPTO-EMPTY-CARD-CURRENT-REFRESH`
+- When: '2026-11-08 19:36 CET' - '2026-11-08 19:45 CET'
+- Change: Rebuilt the ARM `max_crypto` image from the current checkout, packaged it with erased card storage and no installed CAP/applet, and refreshed the local artifact manifest with exact image and source provenance. The user identified an unexpected attached device; it was excluded and no USB hardware operation was performed.
+- Validation: `./tools/build arm --profile max_crypto` passed with 159/162 capabilities; `./tools/build riscv --profile max_crypto` passed its VM-core/smoke build; `./tools/package-empty-card-uf2` passed with 3,871 firmware blocks and 4,096 erased storage blocks. `picotool info -a` identified RP2350 ARM Secure, and `git diff --check` passed. No flash, PC/SC, or physical validation was run.
+- Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` is 4,079,616 bytes, SHA-256 `02a879b36038b55c6c67f409969aab28574034b1e624bfcc06726c86f7584b1c`. Firmware UF2 SHA-256 is `4b70d55ce83f5330ed6b305f0d9a3af8eefd0c3a71c9ab0f7235a53e604c1b26`; CPLC source marker is `FFEAFFDB` (dirty tree based on `EAFFDB`), release is `0.1.1`, firmware end `0x100F1E24`, remaining space 57,820 bytes. Artifact is empty-card and has not been flashed. Full JCAlgTest acceptance remains incomplete.
+- Decision: This is the current max_crypto ARM empty-card image for external testing. Preserve its dirty-tree provenance; do not describe it as physically validated.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `artifacts/firmware/README-crypto-arm-empty-card-current.md`; `build/arm/build-provenance.txt`; `build/riscv/build-provenance.txt`.
