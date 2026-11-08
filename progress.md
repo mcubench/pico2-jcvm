@@ -26253,6 +26253,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use this stress harness as a focused control while extending it to
   realistic crypto-key graphs and live alias/context preservation cases.
   Production reclamation remains disabled.
-- Commit: `<pending>`
+- Commit: `87f30150`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T222700Z.log`,
   SHA-256 `13b0053ed0e18a186759b65ec94c095f0bd86ba14be59898732bc19663847929`.
