@@ -729,6 +729,13 @@ public final class ServiceApplet extends Applet implements Probe {
     return (short)(0x6B40 | failures);
   }
 
+  public short clearRetainedForeignReferences() {
+    retainedForeignStatic = null;
+    retainedForeignInstance = null;
+    retainedForeignArray = null;
+    return (short)0x6B60;
+  }
+
   public Object getRetainedForeignArray() {
     return retainedForeignArray[0];
   }

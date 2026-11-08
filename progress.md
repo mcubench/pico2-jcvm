@@ -25145,3 +25145,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with orphan-target cleanup/lifecycle audit for clearing or replacing a foreign static, then retry physical APDU acceptance when PC/SC exposes a reader.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T234807Z.log`; `artifacts/logs/cycle-choupi-20261108T000027Z.log`; UF2 SHA-256 `3ea91142d76f8c1443701f48bc5431a92f96bf418cc740d1b585a2d8723e3056` (1,761,280 bytes).
+
+## 2026-11-08 Collect retained heaps before applet DELETE 46 minutes
+
+- Step/experiment: `CTX-01-gc-before-foreign-reference-delete-check`
+- When: '2026-11-08 01:08 CET' - '2026-11-08 01:54 CET'
+- Change: Added a root-based collection pass across selected and inactive applet contexts before applet DELETE checks. This removes dead volatile foreign-array entries from shared registries while preserving persistent-alias checks and conservative behavior if root collection fails. Added a focused SIO fixture that clears foreign static, instance, and array fields, then deletes their former owner.
+- Validation: Focused `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_ONLY_FOREIGN_STATIC_CLEANUP=1 ./tools/test-sio-cross-aid-vpcd` passes 1/1 with DELETE `9000`; full `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passes `TEST:SUMMARY pass=35 fail=0` under `max_crypto`. `./tools/build arm` and `./tools/build riscv` pass current profile. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashes and monitors successfully, with `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Access helper enumerated three runtime boards; `timeout 8s pcsc_scan -r` exited 124 without readers, so physical APDU testing was unavailable. One full-suite attempt under regenerated `current` PC artifacts failed at AES-MAC Signature with `6F00`; rebuilding PC with required `max_crypto` passed. Runtime duration: 46 minutes. Benchmark performance was not measured.
+- Result: DELETE was falsely blocked by an unrooted volatile array entry (`source=foreign-array-registry`) after SIO had cleared the last applet references. Collecting all retained heaps before the guard removes that dead edge; real persistent aliases still block before deletion.
+- Decision: Keep physical APDU acceptance open until PC/SC publishes a reader; continue auditing foreign-reference consumers and owner-scoped persistent lifecycle.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: focused `artifacts/logs/sio-cross-aid-vpcd-20261108T003758Z.log`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261108T005034Z.log`; hardware cycle `artifacts/logs/cycle-choupi-20261108T004356Z.log`; UF2 SHA-256 `e182e1fc014e753b3f831c180646affefb3ceeca3da9f729518bc1f975e97fe0` (1,761,280 bytes).

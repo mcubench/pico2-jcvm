@@ -1682,6 +1682,63 @@ def main() -> int:
                       "instance fields; foreign array edge remains supported")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
+            if os.environ.get(
+                "SIO_CROSS_AID_ONLY_FOREIGN_STATIC_CLEANUP"
+            ) == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8020000000"),
+                    "retain foreign reference in static, instance and array fields"
+                )
+                if response != bytes.fromhex("6B409000"):
+                    raise RuntimeError(
+                        "foreign reference setup returned "
+                        f"{response.hex().upper()}, expected 6B409000"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("804A000000"),
+                    "clear static and volatile foreign references"
+                )
+                if response != bytes.fromhex("6B609000"):
+                    raise RuntimeError(
+                        "foreign reference clear returned "
+                        f"{response.hex().upper()}, expected 6B609000"
+                    )
+                response = vpcd.exchange(
+                    connection,
+                    bytes((0x00, 0xA4, 0x04, 0x00, len(SERVICE_APPLET))) +
+                    SERVICE_APPLET,
+                    "reselect service to collect cleared reference holders",
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "service SELECT after clearing references returned "
+                        f"{response.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("00A4040000"),
+                    "SELECT ISD before deleting former reference owner"
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "SELECT ISD before source DELETE returned "
+                        f"{response.hex().upper()}"
+                    )
+                cleanup_scp = vpcd.Scp03(connection)
+                cleanup_scp.authenticate()
+                response = vpcd.delete_object(
+                    cleanup_scp, CLIENT_APPLET, False,
+                    "DELETE former foreign-reference owner applet",
+                    expected_statuses=(0x9000, 0x6985),
+                )
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "cleared foreign references still block source applet "
+                        f"DELETE: {response[-2:].hex().upper()}"
+                    )
+                print("TEST:PASS clearing the foreign static and volatile edges "
+                      "allows deletion of their former owner applet")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_SIGNATURE") == "1":
                 response = vpcd.exchange(
                     connection, bytes.fromhex("8028000000"),

@@ -1000,6 +1000,18 @@ review.
   acceptance open, and audit clearing/replacing static foreign references for
   orphaned owner-scoped records before broadening this support.
 
+  Update 2026-11-08: clearing the foreign static, instance, and array fields
+  exposed a deletion false positive: an unrooted volatile array remained in
+  the shared foreign-array registry because its owning retained context had
+  not run GC. The DELETE preflight now traces and collects every selected and
+  inactive applet context before checking live cross-applet edges; persistent
+  alias inventory still runs and blocks real persistent references. A focused
+  VPCD regression clears the edges and deletes the former owner applet with
+  `9000`; the full max_crypto cross-AID suite passes 35/35. ARM/RISC-V builds
+  pass and the current ARM image was flashed to D92 with a passing finite
+  runtime monitor. PC/SC still publishes no readers, so physical APDU
+  acceptance remains open.
+
 ### CTX-02
 
 - [ ] **Complete Java-level SensitiveResult coverage across SIO calls.**

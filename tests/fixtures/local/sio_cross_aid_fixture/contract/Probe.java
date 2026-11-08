@@ -48,4 +48,5 @@ public interface Probe extends Shareable {
   short inspectForeignInstanceof(Object value);
   short retainShareableReference(Shareable value);
   short rejectIncompatibleShareableReference(Object value);
+  short clearRetainedForeignReferences();
 }

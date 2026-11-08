@@ -7986,3 +7986,28 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   a foreign static field is cleared/replaced before expanding this format.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T234807Z.log` and
   `artifacts/logs/cycle-choupi-20261108T000027Z.log`.
+
+## Collect retained heaps before cross-applet DELETE checks — 2026-11-08
+
+- **Observed issue:** After an SIO method cleared all references to a foreign
+  applet, DELETE still returned `6985`. The persistent alias scan found no
+  reference; the live-heap scan found a foreign `Object[]` entry left in the
+  shared foreign-array registry. The owning retained context had not run GC
+  since its field was cleared, so the dead array was still conservatively
+  treated as a live edge.
+- **Viable fix:** Before checking foreign references for applet DELETE, collect
+  unreachable objects in all selected and inactive applet contexts using each
+  context's registered roots. If root collection fails, continue with the
+  conservative reference scan. Keep persistent alias inventory before the
+  deletion decision so durable references still block deletion.
+- **Validation:** A focused three-package VPCD test retains the foreign object
+  in static/instance/array fields, clears all three through SIO, and confirms
+  DELETE of the source applet returns `9000`. Full max_crypto cross-AID suite
+  passes 35/35. ARM and RISC-V builds pass; current ARM image flashed to
+  `D92E743D5F640C0F` and finite monitor reports `TEST:PASS choupi_runtime`,
+  `TEST:SUMMARY pass=1 fail=0`. After access refresh, `timeout 8s
+  pcsc_scan -r` exits 124 with no readers; physical APDU behavior was not
+  tested.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T003758Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261108T005034Z.log`, and
+  `artifacts/logs/cycle-choupi-20261108T004356Z.log`.

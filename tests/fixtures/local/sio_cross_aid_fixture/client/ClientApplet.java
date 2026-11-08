@@ -394,6 +394,8 @@ public final class ClientApplet extends Applet {
       result = probe.retainForeignReference(global);
       global[0] = null;
       global[1] = null;
+    } else if (buffer[1] == 0x4A) {
+      result = ((Probe) shareable).clearRetainedForeignReferences();
     } else if (buffer[1] == 0x2E) {
       byte[] retained = (byte[])
           ((Probe) shareable).getRetainedForeignArray();

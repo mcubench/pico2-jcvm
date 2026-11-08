@@ -1,3 +1,40 @@
+# Current handoff — collect inactive heaps before applet DELETE — 2026-11-08 01:54 CET
+
+CTX-01 static foreign object references are committed in `d91ed195`. A
+follow-up lifecycle regression found that clearing all foreign references
+could still leave an unrooted volatile reference array in the shared registry,
+causing a false-positive `6985` on DELETE. The DELETE preflight now collects
+unreachable objects using roots from every selected and inactive context before
+checking live foreign edges. Persistent alias inventory remains fail-closed.
+
+Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and
+`./tools/build riscv` pass. Focused static cleanup VPCD test passes, and the
+full cross-AID suite passes `TEST:SUMMARY pass=35 fail=0` at
+`artifacts/logs/sio-cross-aid-vpcd-20261108T005034Z.log`. An initial full-suite
+attempt used PC artifacts regenerated for the `current` profile by the ARM
+wrapper and failed only when AES-MAC Signature support was absent; rebuilding
+PC with max_crypto fixed this profile mismatch.
+
+Current ARM image was flashed to identified Pico 2 `D92E743D5F640C0F`; cycle
+log `artifacts/logs/cycle-choupi-20261108T004356Z.log` records
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. UF2 is 1,761,280
+bytes, SHA-256
+`e182e1fc014e753b3f831c180646affefb3ceeca3da9f729518bc1f975e97fe0`.
+After access refresh, three runtime `2e8a:0009` devices were enumerated:
+`8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. `timeout 8s
+pcsc_scan -r` exits 124 with no readers, so physical applet/APDU validation
+remains open.
+
+Next: commit this GC-before-DELETE fix and its focused regression, preserving
+unrelated dirty worktree changes. Then continue CTX-01 reference-consumer and
+persistent owner-lifecycle acceptance; retry physical APDUs when PC/SC lists a
+reader. `heap.cpp`/`heap.hpp` still include unrelated uncommitted
+`releaseGlobalAIDObject` removal; do not stage that deletion. Other unrelated
+edits remain in `AGENTS.md`, review probes, `bc_invoke.cpp`, `cap_load.cpp`,
+crypto tests/scripts, and the RMI registry test.
+
+---
+
 # Current handoff — persistent foreign static object roots — 2026-11-08 01:08 CET
 
 CTX-01 now supports an ordinary foreign applet object reference in a package
