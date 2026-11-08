@@ -26014,5 +26014,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 python3 tests/integration/pc_vpcd_multipackage_test.py --timeout 300` passed `TEST:SUMMARY pass=47 fail=0`. Generated APDU, restart and invalid-sidecar logs are listed below. A bounded physical `pcsc_scan -r` had previously timed out; no physical reader/APDU/flash was used in this step.
 - Result: No multipackage regression was observed after foreign-alias inventory changes. The suite covers duplicate INSTALL, package/AID registry, restarts, cross-AID transient lifecycle and DELETE cleanup; it does not invoke the disabled normal persistent reclaimer.
 - Decision: Keep PERSIST-01 production gates open and continue offline while physical reader access remains unavailable.
-- Commit: `<pending>`
+- Commit: `efb5cbd3`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261108T190022Z.log`.
