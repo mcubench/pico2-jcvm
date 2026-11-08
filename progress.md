@@ -26119,3 +26119,35 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   contexts and package-to-heap mapping before considering runtime wiring.
 - Commit: `e3e01b89`
 - Artifacts/logs: `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.
+
+## 2026-11-08 Exercise package-static reclaimer after APDUs in VPCD 23 minutes
+
+- Step/experiment: `RESOURCE-01-VPCD-STATIC-RECLAIMER-EXPERIMENT`
+- When: '2026-11-08 21:15 CET' - '2026-11-08 21:38 CET'
+- Change: Added a PC_VERSION-only `PICO2_RECLAIM_PACKAGE_STATIC=1` diagnostic
+  path that hydrates package statics and applet roots, then calls the existing
+  package-static reclaimer after the APDU. It is opt-in and cannot run in ARM/
+  RISC-V firmware. Updated TODO, QKB and HANDOFF with scope and limitations.
+- Validation: `./tools/build-pc --profile max_crypto` passed. Eight RSA public
+  key replacement APDUs passed VPCD 10/10 with seven 10-record reclaim passes.
+  Pre-reclaim inventory stayed at 27 records / 483 payload bytes (10 candidate
+  tags / 219 bytes); the no-reclaimer control reached 87 / 1,797. With the hook
+  enabled, `./tools/test-vpcd-multipackage --timeout 300` passed 47/47; all 44
+  logged collector calls returned complete and erased zero tags in that test.
+  `./tools/test-persistent-inventory` passed 22/22 and
+  `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`.
+  `git diff --check -- choupi/src/main.cpp` passed. No physical device was
+  accessed; ARM/RISC-V builds were skipped because the new code is guarded by
+  `PC_VERSION`.
+- Result: The existing package-static primitive bounded persistent record
+  growth in this one-package VPCD probe without disrupting the current
+  multipackage suite. The latter generated no package-static candidates; neither
+  result verifies every retained-context root, power-loss recovery on flash, or
+  the full JCAlgTest `F205` failure cause.
+- Decision: Keep production reclamation disabled. Next enumerate/trace every
+  retained package context and native root, add focused multi-context static
+  graph tests, then repeat long-run JCAlgTest and physical power-loss acceptance.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T202615Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-restart-20261108T202615Z.log`.

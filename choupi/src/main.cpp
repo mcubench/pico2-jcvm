@@ -335,6 +335,20 @@ struct PersistentTagStats {
   const char *source = "unknown";
 };
 
+struct PersistentRootVector {
+  std::vector<jcvm::jref_t> references;
+};
+
+bool enumerate_persistent_root_vector(
+    jcvm::Heap::ReferenceVisitor visitor, void *visitor_context,
+    void *root_context) {
+  if (visitor == nullptr || root_context == nullptr) return false;
+  const auto &roots =
+      static_cast<PersistentRootVector *>(root_context)->references;
+  for (const auto &reference : roots) visitor(reference, visitor_context);
+  return true;
+}
+
 void count_applet_inventory_root(const jcvm::jref_t reference,
                                  void *opaque) {
   auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
@@ -513,6 +527,43 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                    package_unreachable_records.payload_bytes));
 }
 
+void reclaim_package_statics_if_requested(jcvm::Context &context) {
+  const char *setting = std::getenv("PICO2_RECLAIM_PACKAGE_STATIC");
+  if (setting == nullptr || std::strcmp(setting, "1") != 0) return;
+
+  PersistentInventoryCounts roots;
+  const auto static_result =
+      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+          context.getAppletPackageID(), context.getHeap(),
+          count_package_static_inventory_root, &roots);
+  context.appendRootReferences(roots.references);
+  const bool applet_root = enumerate_applet_context_root(
+      context, count_applet_inventory_root, &roots);
+  if (static_result != jcvm::PersistentInventory::VisitResult::Complete ||
+      !applet_root) {
+    std::fprintf(stderr,
+                 "PACKAGE_STATIC_RECLAIMER:SKIP package=%u static_result=%u "
+                 "applet_roots_complete=%u\n",
+                 static_cast<unsigned>(context.getAppletPackageID()),
+                 static_cast<unsigned>(static_result),
+                 applet_root ? 1u : 0u);
+    return;
+  }
+
+  PersistentRootVector root_vector{std::move(roots.references)};
+  uint32_t erased = 0;
+  const auto result =
+      jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+          context.getAppletPackageID(), context.getHeap(),
+          enumerate_persistent_root_vector, &root_vector, &erased);
+  std::fprintf(stderr,
+               "PACKAGE_STATIC_RECLAIMER: package=%u result=%u erased=%u "
+               "static_roots=%u applet_roots=%u\n",
+               static_cast<unsigned>(context.getAppletPackageID()),
+               static_cast<unsigned>(result), static_cast<unsigned>(erased),
+               roots.static_roots, roots.applet_roots);
+}
+
 void collect_heap_after_apdu() {
   const char *trace_setting = std::getenv("PICO2_HEAP_TRACE");
   const char *collect_setting = std::getenv("PICO2_HEAP_GC");
@@ -573,6 +624,9 @@ void collect_heap_after_apdu() {
         inventory_reported[owner] = true;
       }
     }
+#ifdef PC_VERSION
+    reclaim_package_statics_if_requested(context);
+#endif
 
     const unsigned long passes = trace_enabled ? repeat_count : 1;
     for (unsigned long pass = 1; pass <= passes; ++pass) {

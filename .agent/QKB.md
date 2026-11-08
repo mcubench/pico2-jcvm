@@ -8627,3 +8627,33 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   authorize wiring reclamation into APDU processing or prove the full JCAlgTest
   `F205` cause.
 - **Evidence:** `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.
+
+## RESOURCE-01: package-static reclaim experiment reaches a bounded VPCD inventory
+
+- **Change:** Added a PC_VERSION-only opt-in `PICO2_RECLAIM_PACKAGE_STATIC=1`
+  diagnostic path. After an APDU, it hydrates installed static references,
+  appends Context and registered applet roots, then invokes the existing
+  bounded package-static reclaimer. It is not compiled into firmware and is
+  disabled unless explicitly requested.
+- **Focused result:** Eight repeated RSA public-key replacement APDUs passed
+  `TEST:SUMMARY pass=10 fail=0` including ATR/SELECT. Seven post-APDU passes
+  erased 10 obsolete package-static records apiece. The first package-key
+  initialization produced 17 global records / 264 payload bytes; after the
+  next replacement, pre-reclaim snapshots reached 27 / 483 with 10 candidates
+  / 219 bytes. Those pre-reclaim counts stayed at 27 / 483 on subsequent
+  replacements, rather than growing to the no-reclaimer control's 87 / 1,797.
+  Seven exact deletion counts match seven 10-record candidate sets.
+- **Compatibility result:** With the opt-in hook enabled,
+  `tools/test-vpcd-multipackage --timeout 300` passed 47/47, including restart,
+  cross-AID and DELETE lifecycle checks. Across the captured APDU/restart logs,
+  all 44 reclaimer calls returned `result=0` and erased zero tags in those
+  scenarios. Persistent-inventory unit tests pass 22/22 and transaction tests
+  finish `TEST:SUMMARY fail=0`.
+- **Limit:** This is a host emulator experiment, not physical flash evidence.
+  The multipackage fixture did not generate package-static candidates, and the
+  focused RSA fixture exercises one package/context. All retained contexts,
+  native roots, reset/power-loss recovery and full unchanged JCAlgTest 1.8.4
+  acceptance remain open. Keep production firmware reclamation disabled.
+- **Evidence:** `artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T202615Z.log`, and
+  `artifacts/logs/host-vpcd-multipackage-restart-20261108T202615Z.log`.

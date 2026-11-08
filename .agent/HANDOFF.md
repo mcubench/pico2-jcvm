@@ -10534,3 +10534,26 @@ auditing the package-context/heap mapping and all durable roots before changing
 runtime collection. The PC max_crypto build and VPCD probe passed; no physical
 hardware was accessed. Unexpected PacketRF remains excluded.
 Log: `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.
+
+# Current handoff — opt-in VPCD package-static reclaimer experiment — 2026-11-08 21:38 CET
+
+Added a PC_VERSION-only `PICO2_RECLAIM_PACKAGE_STATIC=1` path. It hydrates
+installed static references, adds the active Context roots and registered
+applet root, then calls the bounded package-static reclaimer after an APDU. The
+flag is off by default and not compiled into ARM/RISC-V firmware.
+
+A disposable eight-replacement RSA public-key VPCD run passed 10/10 including
+ATR/SELECT. Seven APDU passes erased 10 package-static records each. Pre-reclaim
+inventory peaked at 27 records / 483 payload bytes, with 10 candidate records /
+219 bytes; those counts stayed bounded. The no-reclaimer control reached 87 /
+1,797. With the hook enabled, the multipackage VPCD suite passed 47/47 and all
+44 observed reclaimer invocations returned `result=0`, `erased=0`; the fixture
+did not create package-static orphans. Persistent inventory unit tests pass
+22/22 and transaction tests report `fail=0`. PC max_crypto build passed.
+
+This is host-model evidence only. The focused probe uses one package/context;
+the multipackage fixture does not exercise package-static collection. Complete
+retained-context/native-root accounting, interruption safety on physical flash,
+and the full unchanged JCAlgTest 1.8.4 long run before considering firmware
+wiring. Do not enable persistent collection in production. The unexpected
+PacketRF device remains excluded and was not accessed.

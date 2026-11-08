@@ -1778,3 +1778,12 @@ results establish behavior. Keep validation limitations attached to both.
     70 orphan tags / 1,533 payload bytes; this removes one undercount concern,
     but does not cover every retained package/context or establish safe runtime
     reclamation. See `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.
+  - A PC-only opt-in `PICO2_RECLAIM_PACKAGE_STATIC=1` experiment now invokes
+    the existing package-static reclaimer after APDU root hydration. Eight RSA
+    key-replacement APDUs passed 10/10 including ATR/SELECT; seven invocations
+    erased 10 records each. Pre-reclaim inventory peaked at 27 records / 483
+    payload bytes with 10 candidates / 219 bytes, versus 87 / 1,797 without
+    reclamation. The full multipackage VPCD regression passed 47/47 with the
+    hook enabled and reported no reclaimer failures (it erased no static tags
+    in that scenario). This is PC emulator evidence only. It does not audit all
+    retained package contexts or justify firmware enablement.
