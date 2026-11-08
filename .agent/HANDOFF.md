@@ -1,3 +1,31 @@
+# Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
+
+The latest full unchanged JCAlgTest 1.8.4 VPCD run passed the algorithm and
+KeyBuilder checks through EC transient reset/deselect, then entered KeyPair.
+RSA 512/736 passed; RSA 1024 returned an empty APDU. The CSV has only 196 rows
+(134 yes, 62 no); 25 of 159 expected capability identities were not emitted
+before the client failed. This is not a complete support acceptance.
+
+Fresh-card isolation: RSA 1024 KeyPair APDU
+`B0 75 19 00 03 01 03 00 00` passes in 49.281 s with a 120 s timeout. A
+separate ten-call sequence of RSA 1024 public KeyBuilder APDUs also passed, but
+left 91 unreachable persistent tags / 3,622 payload bytes; global inventory
+was 395 active records / 10,894 serialized bytes. No persistent records were
+reclaimed. This confirms orphan accumulation and supports the RESOURCE-01
+lead, but the full-run empty APDU cause is not yet proven. Keep reclaimer
+disabled pending PERSIST-01 safety acceptance.
+
+The EC redundant-zero-write optimization is committed as `54eb08c2`; PC, ARM
+and RISC-V max_crypto builds passed. Its full-suite validation remains
+incomplete. Logs and more exact observations are in `.agent/QKB.md` and the
+latest progress entry.
+
+Physical status: the access helper now refuses because it counts four devices
+with VID:PID `2e8a:0009`, one of which enumerates as PacketRF; `lsusb` shows
+three Pico2 JCVM devices plus that PacketRF device. `pcsc_scan -r` sees only
+Virtual PCD 00 00/01. No physical test/flash was performed. Continue offline;
+resolve VID:PID filtering in the host helper before retrying board access.
+
 # Current handoff — JCAlgTest EC KeyBuilder latency investigation — 2026-11-08 08:41 CET
 
 The active priority remains RESOURCE-01. A full unchanged JCAlgTest 1.8.4

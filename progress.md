@@ -25652,3 +25652,33 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `SCARD_F_COMM_ERROR`.
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
+
+## 2026-11-08 Reproduce persistent key orphan growth and KeyPair failure 147 minutes
+
+- Step/experiment: `RESOURCE-01-JCALGTEST-CUMULATIVE-KEY-RESOURCES`
+- When: '2026-11-08 08:46 CET' - '2026-11-08 11:13 CET'
+- Change: Recorded the complete 1.8.4 VPCD retry, isolated the later RSA 1024
+  KeyPair APDU on a fresh card, and ran ten repeated RSA 1024 public KeyBuilder
+  APDUs with persistent inventory enabled. Updated RESOURCE-01, QKB and HANDOFF.
+- Validation: `./tools/fixture-path --verify` passed (81 pinned files). The
+  full VPCD client passed the support matrix through RSA KeyPair 512/736, then
+  failed with an empty APDU at RSA KeyPair 1024; CSV: 196 rows, 134 yes, 62 no,
+  0 other. Expected-support audit found 25 of 159 expected identities not
+  emitted; comparator did not pass because the client report was incomplete.
+  On a fresh VPCD card the same RSA 1024 KeyPair APDU passed in 49.281 s with a
+  120 s timeout. Ten repeated RSA 1024 public KeyBuilder APDUs passed; inventory
+  after the sequence showed 395 global records / 10,894 payload bytes, of which
+  91 tags / 3,622 bytes were unreachable. The following RSA KeyPair APDU passed.
+  The host helper then rejected access because it enumerated four `2e8a:0009`
+  devices; `lsusb` identified three Pico2 JCVM devices and one PacketRF device.
+  `pcsc_scan -r` listed only two Virtual PCD readers. No physical test/flash ran.
+- Result: Repeated persistent key construction leaves unreachable records and
+  the runtime does not reclaim them. This is consistent with RESOURCE-01 but
+  does not yet prove that orphan growth caused the full-suite empty APDU.
+- Decision: Continue with bounded persistent inventory/key-reuse diagnosis,
+  then implement deferred deletion only with the existing PERSIST-01 safety
+  gates intact. Repair host-helper device filtering before physical testing.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T074658Z/`,
+  `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`,
+  `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.

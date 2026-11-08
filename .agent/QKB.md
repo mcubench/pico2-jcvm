@@ -8251,3 +8251,34 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `artifacts/logs/jcalgtest-1e-apdu-trace.log`;
   `artifacts/logs/jcalgtest-1e-apdu-postfix-50s.log`;
   `artifacts/logs/jcalgtest-ecfp384-apdu-postfix.log`.
+
+# 2026-11-08 KeyBuilder accumulation and later RSA KeyPair failure
+
+- Observation: After the EC initialization-write change, the unchanged 1.8.4
+  VPCD client reached its KeyPair section. RSA KeyPair 512 and 736 passed, then
+  the 1024-bit APDU (`B0 75 19 00 03 01 03 00 00`) yielded an empty response.
+  The completed CSV held 196 rows (134 `yes`, 62 `no`, no other status); 25 of
+  159 expected support identities had not been emitted because the client
+  failed before later KeyPair/OwnerPINBuilder rows. Exact reference comparison
+  therefore fails and is not a completed acceptance result.
+- Isolation: The same RSA 1024 KeyPair APDU passes on a fresh VPCD card in
+  49.281 s with a 120 s harness timeout; the default 20 s timeout fails. The
+  failing full-run request happened after the full key-builder matrix. This
+  points toward accumulated resources or latency but does not isolate the
+  cause of the empty response.
+- Resource reproduction: Ten sequential RSA 1024 public `KeyBuilder` APDUs
+  (`B0 75 20 00 03 04 04 00 00`) all passed. With opt-in
+  `PICO2_PERSISTENT_INVENTORY=1`, inventory rose to 395 active records and
+  10,894 serialized payload bytes; 91 tags / 3,622 bytes were unreachable and
+  no persistent records were reclaimed. The following fresh RSA 1024 KeyPair
+  APDU also passed. This proves repeated persistent key construction leaves
+  orphan records; it does not prove ten such requests alone cause KeyPair
+  failure. Do not enable production reclamation until PERSIST-01 safety gates
+  pass.
+- Physical access: Three Pico2 `2e8a:0009` USB devices are present, but
+  `pcsc_scan -r` exposes only the two Virtual PCD readers. The authorized helper
+  now refuses access because it counted a fourth device with the same VID:PID
+  (`PacketRF`), beyond its expected maximum of three; no physical APDUs ran.
+- Artifacts: `artifacts/results/jcalgtest-support-vpcd-20261108T074658Z/`;
+  `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`;
+  `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.

@@ -134,6 +134,18 @@ Archive text is historical evidence, not current device state or priorities.
   APDU still takes 41.289 s (repeat 4.349 s), longer than the focused harness's
   default 20 s APDU timeout. The full 1.8.4 suite failed later with
   `SCARD_F_COMM_ERROR`; causes are still under investigation. See `.agent/QKB.md`.
+- Progress (2026-11-08): Retried the complete 1.8.4 run after the EC init-write
+  optimization. Its support/key-builder portion reached the RSA KeyPair section;
+  RSA 512/736 passed, but the 1024-bit request returned an empty APDU. The
+  generated CSV had 196 rows, 134 yes, 62 no, and 0 other statuses; 25 of 159
+  expected support identities were not emitted because the client failed before
+  the remaining KeyPair/OwnerPINBuilder rows. A clean VPCD card completed that
+  same 1024-bit KeyPair APDU in 49.281 s. Separately, ten repeated 1024-bit
+  public KeyBuilder APDUs all passed and left 91 unreachable persistent tags
+  (3,622 payload bytes); total inventory was 395 records / 10,894 bytes, with
+  no reclamation. This confirms persistent orphan growth under repeated key
+  construction, but does not yet prove that it caused the full-run empty APDU.
+  See `.agent/QKB.md` and logs listed in the handoff.
 
 ## Functionality review — 2026-11-03
 
