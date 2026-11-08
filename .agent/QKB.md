@@ -8518,3 +8518,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `TEST:SUMMARY fail=0`. ARM and RISC-V max_crypto wrappers pass; the wrapper's
   PC build passes. No physical alias test was run. Production reclaimer remains
   disabled pending PERSIST-01 physical multi-owner and interruption acceptance.
+
+## Malformed external aliases must stop the reclaimer before mutation — 2026-11-08
+
+- **Risk:** The foreign-alias pre-scan is global and intentionally fails closed.
+  A malformed alias record under another owner must not be silently skipped,
+  because a partially decoded chain could hide a root into the target owner.
+- **Regression:** `malformed_foreign_alias_blocks_reclamation_then_retry_succeeds`
+  seeds a malformed external array alias alongside a target and orphan. The
+  reclaimer returns `InvalidTag`, reports zero erases, and preserves both owner
+  records. After removing the malformed source, a retry completes and reclaims
+  the two now-unreachable owner records.
+- **Validation:** `./tools/test-persistent-transaction` passes with
+  `TEST:SUMMARY fail=0`. The added test uses the filesystem stub; no hardware
+  access was performed. Keep production collection disabled pending the open
+  PERSIST-01 acceptance gates.

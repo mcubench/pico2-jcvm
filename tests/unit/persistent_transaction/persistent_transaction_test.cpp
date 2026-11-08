@@ -2215,6 +2215,48 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x58;
+    constexpr uint8_t foreign_owner = 0x59;
+    const uint8_t target_tag[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t orphan_tag[] = {0x03, owner, 0x30, 0x01};
+    const uint8_t malformed_alias_tag[] = {0x03, foreign_owner, 0x40, 0x01};
+    seed(target_tag, sizeof(target_tag), byte_record(0x71));
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x72));
+    // Claims a five-byte alias target but stores only three target bytes.
+    seed(malformed_alias_tag, sizeof(malformed_alias_tag),
+         {0xfd, 0x05, 0x03, owner, 0x20});
+
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    uint32_t erased = 99;
+    const auto blocked =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    const bool blocked_without_mutation =
+        blocked == jcvm::PersistentInventory::VisitResult::InvalidTag &&
+        erased == 0 &&
+        read(target_tag, sizeof(target_tag)) == byte_record(0x71) &&
+        read(orphan_tag, sizeof(orphan_tag)) == byte_record(0x72);
+
+    jcvm::fs::Tag malformed_alias_fs_tag{};
+    malformed_alias_fs_tag.len = sizeof(malformed_alias_tag);
+    std::memcpy(malformed_alias_fs_tag.value, malformed_alias_tag,
+                sizeof(malformed_alias_tag));
+    const bool malformed_alias_erased =
+        jcvm::FlashMemory_Handler::erasePersistentTag(malformed_alias_fs_tag);
+    erased = 0;
+    const auto retried =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(blocked_without_mutation && malformed_alias_erased &&
+               retried == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 2 && read(target_tag, sizeof(target_tag)).empty() &&
+               read(orphan_tag, sizeof(orphan_tag)).empty(),
+           "malformed_foreign_alias_blocks_reclamation_then_retry_succeeds");
+  }
+
+  {
     constexpr uint8_t owner = 0x43;
     const uint8_t orphan_tag[] = {0x03, owner, 0x20, 0x01};
     seed(orphan_tag, sizeof(orphan_tag), byte_record(0x11));

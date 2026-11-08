@@ -10411,3 +10411,17 @@ identified Pico2 JCVM devices only for multi-owner and interrupted-reclaimer
 checks, refreshing the authorized reader helper first. Do not flash or use any
 unidentified device. If physical safety acceptance cannot be completed, retain
 the disabled production reclaimer and continue offline implementation/testing.
+
+# Current handoff — malformed alias scan fails closed — 2026-11-08 19:57 CET
+
+Added a transaction-suite regression for corrupt external alias metadata. It
+proves the foreign-alias scan returns `InvalidTag` before erasing any records,
+then reclaims the target and unrelated orphan after the malformed alias source
+is explicitly removed. `./tools/test-persistent-transaction` passes with
+`TEST:SUMMARY fail=0`. This is filesystem-stub evidence; no board was accessed.
+
+Physical inspection is not ready: the installed PC/SC helper differs from the
+repository's Pico-only filtered helper, and bounded `pcsc_scan -r` timed out
+without output even though `pcscd.service` is active. Do not invoke the stale
+helper or access the unexpected device. Continue offline until the approved
+helper is installed and identified Pico2 JCVM readers are enumerated.

@@ -25994,3 +25994,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep object deletion unsupported and the production collector disconnected until remaining PERSIST-01 gates pass. Continue with identified Pico2 JCVM devices only; exclude the unexpected device.
 - Commit: `240ef2e5`
 - Artifacts/logs: Unit and filesystem-overlay command output; no archived hardware logs.
+
+## 2026-11-08 Fail closed on malformed foreign alias records 4 minutes
+
+- Step/experiment: `PERSIST-01-MALFORMED-FOREIGN-ALIAS-FAIL-CLOSED`
+- When: '2026-11-08 19:53 CET' - '2026-11-08 19:57 CET'
+- Change: Added a reclaimer-level malformed foreign-alias regression. The test seeds an invalid external array-alias record alongside target and orphan records, checks the scan blocks reclamation without mutation, removes the malformed source, then checks retry safely reclaims both records. Updated QKB and HANDOFF with the evidence and current physical-access blocker.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `git diff --check` passed for changed files. No hardware or USB operation was used in this step.
+- Result: Corrupt foreign-alias metadata is rejected before any owner tag is erased; a subsequent valid retry completes. This strengthens the fail-closed safety gate but does not enable production collection or resolve RESOURCE-01.
+- Decision: Keep object deletion unsupported and the normal persistent reclaimer disabled. Continue PERSIST-01 offline while the stale helper and PC/SC reader enumeration blocker remain.
+- Commit: `<pending>`
+- Artifacts/logs: Unit test output; no archived hardware log.
