@@ -25287,3 +25287,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the reset hook provisional and hardware acceptance open. Retry the cycle as soon as any board is already in BOOTSEL; use another USB path if the selected port is unavailable.
 - Commit: `971887e4`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T041138Z.log` and `artifacts/logs/cycle-choupi-20261108T041557Z.log`; both end in a BOOTSEL recovery failure against existing firmware.
+
+## 2026-11-08 Fail over serial checks across three Pico ports 6 minutes
+
+- Step/experiment: `HOST-USB-three-board-runtime-state`
+- When: '2026-11-08 05:24 CET' - '2026-11-08 05:30 CET'
+- Change: Checked the other two enumerated Pico ports after the first board produced no serial output; recorded the resulting three-board runtime and PC/SC state in QKB and handoff.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --usb-path 1-4 --seconds 8` selected `/dev/ttyACM2` and exited 0 without serial bytes. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --usb-path 1-5 --seconds 8` selected `/dev/ttyACM0` and exited 0 without serial bytes. A fresh `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only VPCD readers. The access helper reported three Pico USB nodes (108, 109, 111) as runtime `2e8a:0009`.
+- Result: All three ports enumerate and map to distinct CDC devices, but none produced the finite runtime log and none appears as a PC/SC reader. No board was flashed.
+- Decision: Stop cycling the same old runtime image; wait for any one board to be in BOOTSEL, then use its USB topology path and verify the new reset hook.
+- Commit: `pending`
+- Artifacts/logs: The monitor tool output is summarized above; no serial bytes were available to save as per-board logs.

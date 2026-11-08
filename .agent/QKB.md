@@ -21,6 +21,13 @@
 - **PC/SC state:** The authorized helper granted three USB nodes, but
   `pcsc_scan -r` showed only VPCD readers. USB presence is not evidence that
   CCID or APDU access is available.
+- **Pool failover check:** `tools/monitor --usb-path` resolved paths 1-3,
+  1-4, and 1-5 to `/dev/ttyACM1`, `/dev/ttyACM2`, and `/dev/ttyACM0`;
+  bounded 2-second/8-second captures completed without any firmware serial
+  payload. A fresh `pcsc_scan -r` still listed only VPCD. This may indicate the
+  devices are not servicing the runtime loop, but that is an inference; the
+  observed fact is USB/CDC enumeration with no serial bytes and no PC/SC
+  readers. Avoid repeating the long flash wait against this same runtime image.
 
 ---
 

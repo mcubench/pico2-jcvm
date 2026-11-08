@@ -16,6 +16,12 @@ mapped path `1-3` to `/dev/ttyACM1`. Both architecture builds passed with the
 new firmware BOOTSEL hook, and the updated `cycle choupi --usb-path 1-3` build
 completed.
 
+Failover checks then mapped `1-4` to `/dev/ttyACM2` and `1-5` to
+`/dev/ttyACM0`; 8-second captures on both produced no serial payload. A fresh
+`pcsc_scan -r` still listed only VPCD. Runtime USB enumeration is present, but
+there is no serial or CCID response from any of the three boards in this VM.
+Whether the firmware loop is stalled is not established.
+
 Physical flash is still blocked: the deployed runtime rejects picotool reset
 (`Unable to locate reset interface`), and the old firmware did not enter
 BOOTSEL after CDC 1200 baud. The uncommitted new firmware now requests
