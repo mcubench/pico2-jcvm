@@ -8,7 +8,7 @@ listed only VPCD readers and no Pico reader. Device numbers changed between
 separate helper/scan operations. No physical APDU, flash, or other card access
 was attempted; do not infer a PCSC-usable reader from USB presence. Continue
 offline or retry after reader enumeration returns. Details are in the
-2026-11-08 QKB entry.
+2026-11-08 QKB entry. Observation record commit: `2bb4f9cc`.
 
 # Current handoff — user prioritizes long-run resource lifecycle — 2026-11-08 06:29 CET
 

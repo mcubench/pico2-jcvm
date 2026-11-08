@@ -25441,3 +25441,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline; retry physical access only after PC/SC lists a Pico reader. This is an access observation, not firmware/card acceptance.
 - Commit: `<pending>`
 - Artifacts/logs: console output only; no external log artifact.
+
+## 2026-11-08 Resolve three-board PCSC observation commit reference 1 minute
+
+- Step/experiment: `PCSC-01-BOARD-STATE-COMMIT-REFERENCE`
+- When: '2026-11-08 06:44 CET' - '2026-11-08 06:45 CET'
+- Change: Resolved the commit reference for the current three-board PC/SC visibility observation.
+- Validation: Confirmed commit `2bb4f9cc` contains the QKB/HANDOFF update and preceding progress record; no hardware command rerun.
+- Result: The 2026-11-08 access observation maps to `2bb4f9cc`.
+- Decision: PC/SC-visible reader remains the precondition for physical acceptance.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
