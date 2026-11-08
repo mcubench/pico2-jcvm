@@ -50,6 +50,7 @@ bool decodeForeignStaticTarget(const Tag &source_tag, const uint8_t *data,
 
 struct CandidateContext {
   Heap *heap;
+  uint8_t applet_owner;
   TagVisitor visitor;
   void *visitor_context;
   std::vector<Tag> foreign_static_targets;
@@ -85,6 +86,9 @@ bool hasForeignStaticRoot(const Tag &candidate,
 
 bool visitUnreachableTag(const Tag &tag, void *opaque) {
   auto &context = *static_cast<CandidateContext *>(opaque);
+  // Applet instance roots are registration records, not collectible object
+  // payload. Their lifetime is controlled by applet uninstall/recovery.
+  if (isAppletInstanceRootTag(tag, context.applet_owner)) return true;
   fs::Tag heap_tag{};
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
@@ -358,7 +362,8 @@ VisitResult visitUnreachableAppletTags(
     return VisitResult::IncompleteReachability;
   }
 
-  CandidateContext context{&heap, candidate_visitor, candidate_context,
+  CandidateContext context{&heap, applet_owner, candidate_visitor,
+                           candidate_context,
                            std::move(foreign_static_targets)};
   return visitApplet(applet_owner, visitUnreachableTag, &context);
 }

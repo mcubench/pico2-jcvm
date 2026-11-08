@@ -8442,3 +8442,26 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Temporary collector code has been removed and `./tools/build-pc --profile
   max_crypto` passed afterward. The cross-AID test now reports selection
   failures separately from transient payload failures.
+
+# 2026-11-08 Persistent reclaimer must never select applet root records
+
+- Exact trace from the temporary per-APDU VPCD experiment:
+  `PERSISTENT_RECLAIMER:ERASE owner=2 tag=03023900FF`. The restart log showed
+  this as package 57, class 0, applet instance AID `A000000062030101`; the
+  subsequent instance lookup count became zero and SELECT returned `6A82`.
+  Log: `artifacts/logs/host-vpcd-multipackage-restart-20261108T144059Z.log`.
+- The previous prefix guard only works when a longer reachable backing-object
+  tag is present in the current heap. The instance registration root itself
+  can be absent from that heap representation and must be excluded from
+  reclaim candidates by tag format and owner. `visitUnreachableTag` now skips
+  valid applet-instance roots. A focused test verifies the root stays stored
+  while an orphan sibling tag is erased.
+- `./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`), and
+  `./tools/build arm` plus `./tools/build riscv` pass. No physical board or
+  flash was used. The experimental hook and diagnostics were removed; normal
+  persistent reclamation remains disabled.
+- This closes the exact root-deletion safety defect found in the experiment,
+  not RESOURCE-01. The unchanged JCAlgTest 1.8.4 VPCD full run still failed at
+  RSA-768 with `F205` / persistent OutOfFlash. Re-run the multipackage suite
+  with any future isolated collector experiment only after confirming this
+  guard is present; keep PERSIST-01 multi-owner and interruption gates open.

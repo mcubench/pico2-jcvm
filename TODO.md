@@ -80,6 +80,12 @@ Archive text is historical evidence, not current device state or priorities.
   protect this case. The experimental per-APDU path still fails transient
   lifecycle behavior even with zero records erased; the normal 47/47 control
   passes. No long-run fix is established.
+  Follow-up diagnostic on 2026-11-08 found the exact erased record was
+  `03023900FF`, the registered instance root for owner 2/package 57/class 0.
+  The root was not represented by a currently reachable heap object, so prefix
+  reachability alone could not protect it. The inventory now excludes valid
+  applet-instance root records directly; focused regression and architecture
+  builds pass. This safety change does not solve persistent OutOfFlash.
   A later strengthened assertion found the first failing experimental event was
   the transaction-probe SELECT after switching to Core (`6A82`), before the
   transient-state APDU ran. The reclaimer logged zero erased tags. Why the test

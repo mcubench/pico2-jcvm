@@ -1811,6 +1811,44 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x39;
+    const uint8_t applet_instance_root[] = {0x03, owner, 0x00, 0x00, 0xff};
+    const uint8_t orphan_object[] = {0x03, owner, 0x44, 0x55};
+    seed(applet_instance_root, sizeof(applet_instance_root), byte_record(0x31));
+    seed(orphan_object, sizeof(orphan_object), byte_record(0x32));
+
+    jcvm::Heap heap(owner);
+    std::vector<jcvm::jref_t> no_roots;
+    CandidateTags candidates;
+    const auto inventory_result =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            owner, heap, no_roots, collect_candidate, &candidates);
+    const bool root_excluded =
+        inventory_result == jcvm::PersistentInventory::VisitResult::Complete &&
+        std::find(candidates.tags.begin(), candidates.tags.end(),
+                  std::vector<uint8_t>(applet_instance_root,
+                                      applet_instance_root +
+                                          sizeof(applet_instance_root))) ==
+            candidates.tags.end();
+    uint32_t erased = 0;
+    RootVectorContext roots{&no_roots};
+    const auto reclaim_result =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(root_excluded &&
+               reclaim_result ==
+                   jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 1 &&
+               !persistent_transaction_test::read(applet_instance_root,
+                                                    sizeof(applet_instance_root))
+                    .empty() &&
+               persistent_transaction_test::read(orphan_object,
+                                                  sizeof(orphan_object))
+                   .empty(),
+           "reclaimer_preserves_registered_applet_instance_root");
+  }
+
+  {
     constexpr uint8_t owner = 0x31;
     const uint8_t first_tag[] = {0x03, owner, 0x10, 0x01};
     const uint8_t second_tag[] = {0x03, owner, 0x10, 0x02};

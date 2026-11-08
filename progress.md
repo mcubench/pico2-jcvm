@@ -25916,3 +25916,30 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs:
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T140352Z.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T135501Z.log`.
+
+## 2026-11-08 Preserve registered applet instance roots 16 minutes
+
+- Step/experiment: `RESOURCE-01-RECLAIMER-ROOT-TAG-SAFETY`
+- When: '2026-11-08 15:40 CET' - '2026-11-08 15:56 CET'
+- Change: The per-APDU VPCD diagnostic had erased registered instance root
+  `03023900FF` for owner 2/package 57/class 0. Heap prefix reachability did not
+  protect a root absent from the current heap object graph. Persistent inventory
+  now excludes valid applet-instance root tags by format and owner. Added a
+  regression proving that the registered root stays present while an orphan
+  sibling record is reclaimed. Updated TODO, QKB and handoff with exact evidence.
+- Validation: `./tools/test-persistent-transaction` passed
+  `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed.
+  Initial test attempts caught a fixture callback-context error and were
+  corrected before the passing run. `git diff --check` was blocked by existing
+  unrelated whitespace in AGENTS.md and pre-existing source changes; changed
+  files were visually checked. No physical hardware or flash was used.
+- Result: The specific registration-root deletion bug is guarded. This does
+  not fix RESOURCE-01 persistent OutOfFlash / `F205`; the full client failure
+  remains. Production persistent reclamation remains disabled.
+- Decision: Keep PERSIST-01 multi-owner and interruption safety gates open;
+  continue investigating persistent allocation/high-water behavior.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/host-vpcd-multipackage-restart-20261108T144059Z.log`;
+  existing JCAlgTest failure evidence remains under
+  `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/`.

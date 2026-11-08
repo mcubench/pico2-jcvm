@@ -10323,3 +10323,28 @@ Next: inspect why `cap_store_find_instance` returns false after Core selection
 only under the full collector experiment. Instrument CAP-store instance count
 and AID comparison at SELECT restore, and keep SELECT failures separate from
 transient payload assertions. Do not enable production reclamation.
+
+# Current handoff — preserve applet root tags in reclaimer inventory — 2026-11-08 15:56 CET
+
+The full temporary per-APDU VPCD reclaimer experiment produced exact evidence:
+`PERSISTENT_RECLAIMER:ERASE owner=2 tag=03023900FF`. This is package 57,
+class 0, registered applet instance AID `A000000062030101`. On restart, its
+instance record count was zero and SELECT returned `6A82`. The earlier heap
+prefix guard did not cover this root because the root itself was not loaded as
+a reachable heap object.
+
+`PersistentInventory::visitUnreachableTag` now excludes valid applet-instance
+root tags directly. A focused regression confirms a root remains present while
+an orphan record for the same owner is reclaimed. `./tools/test-persistent-transaction`
+passes (`TEST:SUMMARY fail=0`), and `./tools/build arm` and `./tools/build riscv`
+pass. No physical board access or flash was performed. The temporary VPCD
+collector and tracing hooks have been removed; production persistent
+reclamation remains disabled.
+
+RESOURCE-01 is still unresolved: full JCAlgTest 1.8.4 VPCD previously failed
+at RSA-768 with `F205` / persistent OutOfFlash after 442,532 ms. This step
+closes a collector safety defect only. Continue resource accounting and PERSIST-01
+multi-owner/transaction/interruption safety gates. Keep PacketRF excluded.
+
+Artifacts: `artifacts/logs/host-vpcd-multipackage-restart-20261108T144059Z.log`.
+Code/docs commit is pending at handoff creation.
