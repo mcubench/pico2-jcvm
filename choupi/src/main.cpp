@@ -331,6 +331,8 @@ struct PersistentTagStats {
   unsigned tags = 0;
   std::uint64_t payload_bytes = 0;
   bool complete = true;
+  bool dump_tags = false;
+  const char *source = "unknown";
 };
 
 void count_applet_inventory_root(const jcvm::jref_t reference,
@@ -355,6 +357,15 @@ bool accumulate_persistent_tag(
         jcvm::FlashMemory_Handler::readPersistentRecord(fs_tag);
     ++stats.tags;
     stats.payload_bytes += record.first;
+    if (stats.dump_tags) {
+      std::fprintf(stderr, "PERSISTENT_TAG: source=%s len=%u payload=%u tag=",
+                   stats.source, static_cast<unsigned>(tag.len),
+                   static_cast<unsigned>(record.first));
+      for (uint8_t i = 0; i < tag.len; ++i) {
+        std::fprintf(stderr, "%02X", tag.value[i]);
+      }
+      std::fputc('\n', stderr);
+    }
   } catch (...) {
     stats.complete = false;
     return false;
@@ -403,6 +414,13 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   PersistentTagStats owner_records;
   PersistentTagStats unreachable_records;
   PersistentTagStats global_records;
+  owner_records.source = "owner";
+  unreachable_records.source = "unreachable";
+  global_records.source = "global";
+  const char *tag_dump_setting =
+      std::getenv("PICO2_PERSISTENT_INVENTORY_TAGS");
+  global_records.dump_tags = tag_dump_setting != nullptr &&
+                             std::strcmp(tag_dump_setting, "1") == 0;
   const auto owner_inventory_result = jcvm::PersistentInventory::visitApplet(
       context.getAppletID(), accumulate_persistent_tag, &owner_records);
   const jcvm::PersistentInventory::Tag all_tags_prefix{};

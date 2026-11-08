@@ -10470,3 +10470,23 @@ Underlying firmware UF2 is 1,982,464 bytes with SHA-256
 159/162, end `0x100F1EEC`, 57,620 bytes free. ARM and RISC-V wrappers passed;
 package verification passed. The artifact is empty-card, has not been flashed,
 and has no physical validation.
+
+
+# Current handoff — RESOURCE-01 package-static key graph growth — 2026-11-08 20:43 CET
+
+Added an opt-in PC VPCD inventory flag `PICO2_PERSISTENT_INVENTORY_TAGS=1`
+that logs persistent tag and payload length (never record contents). PC max_crypto
+build passed. Repeated the focused RSA public-key replacement probe for eight
+APDUs; the VPCD probe passed 10/10 including ATR and SELECT. Each key replacement
+added 10 records / 219 serialized payload bytes. Exact tag deltas are all under
+`023808` (`path_static(package=56, offset=8)`). The applet-owner view remains
+2 records / 17 bytes and reports zero unreachable records. This proves the
+current applet-owner collector does not cover the package-static root graph.
+
+This is a local probe diagnosis, not proof that the full JCAlgTest `F205` has the
+same cause, and not physical flash evidence. Production persistent deletion
+remains disabled. Next implement/test package-static-root-aware candidate
+inventory/reclamation, accounting for retained contexts, aliases, transactions,
+and interruption before wiring it into APDU processing. Keep the unexpected
+PacketRF device excluded; do not claim RESOURCE-01 fixed.
+Log: `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.

@@ -191,6 +191,17 @@ Archive text is historical evidence, not current device state or priorities.
   construction, but does not yet prove that it caused the full-run empty APDU.
   See `.agent/QKB.md` and logs listed in the handoff.
 
+- Progress (2026-11-08): Added opt-in PC-only full-tag inventory output and
+  reran eight RSA public-key replacement APDUs on VPCD. Each replacement adds
+  10 active records and 219 payload bytes; deltas are rooted below package
+  static tag `023808` (package 56, static slot 8), while the applet-owner scan
+  remains 2 records / 17 bytes and reports zero unreachable tags. This proves
+  the existing applet-owner reclaimer does not cover this package-static key
+  graph. A full JCAlgTest `F205` causal link is not yet established. Probe passed
+  10/10 including ATR/SELECT; no physical device was used. Next add package
+  static-root aware inventory/reclamation with cross-context and interruption
+  safety tests; keep production deletion disabled.
+
 ## Functionality review — 2026-11-03
 
 ### RV-20261105-01

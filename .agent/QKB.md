@@ -8561,3 +8561,25 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   size 2, tag `A00103`). ARM and RISC-V `max_crypto` wrapper builds pass. The
   JCAlgTest workload and physical token were not rerun because current PC/SC
   reader enumeration is unavailable; production deletion remains disabled.
+
+
+## RESOURCE-01: repeated KeyBuilder replacement grows a package-static graph — 2026-11-08
+
+- **Reproduction:** Eight repeated RSA-512 public `KeyBuilder` replacement
+  APDUs pass on PC VPCD. Global inventory grows from 6 records / 34 payload
+  bytes to 87 / 1,797. Each replacement adds exactly 10 records / 219 payload
+  bytes.
+- **Tag evidence:** Growth tags share prefix `02 38 08` (`path_static` for
+  package ID 56, static offset 8). The applet-owner namespace remains at 2
+  records / 17 bytes and its reachability scan reports zero unreachable tags.
+  The current owner-scoped reclaimer therefore cannot collect this graph.
+- **Scope:** This establishes the package-static key-replacement growth path
+  in the local fixture. It does not by itself prove the full JCAlgTest F205 is
+  caused by the same path or establish physical flash usage.
+- **Viable solution:** None yet. Extend persistent inventory/reclamation to
+  package statics only after enumerating roots across retained contexts and
+  foreign aliases, plus transaction and interrupted-reclamation safety. Keep
+  production deletion disabled.
+- **Evidence/log:** `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`;
+  PC-only opt-in `PICO2_PERSISTENT_INVENTORY_TAGS=1` lists tags without record
+  payload contents. The VPCD sequence passed 10/10.

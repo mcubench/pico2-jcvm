@@ -26038,3 +26038,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: This is the current empty-card external-test image. Keep the dirty-tree provenance explicit and do not claim physical validation.
 - Commit: `369f5de6`
 - Artifacts/logs: UF2 and `artifacts/firmware/README-crypto-arm-empty-card-current.md`; build provenance under `build/arm` and `build/riscv`.
+
+
+## 2026-11-08 Trace package-static key replacement growth 11 minutes
+
+- Step/experiment: `RESOURCE-01-PACKAGE-STATIC-TAG-DIAGNOSTIC`
+- When: '2026-11-08 20:32 CET' - '2026-11-08 20:43 CET'
+- Change: Added opt-in PC-only `PICO2_PERSISTENT_INVENTORY_TAGS=1` output for
+  exact persistent tags and payload lengths. Updated TODO, QKB and HANDOFF with
+  the newly isolated package-static resource-growth path. Record contents are
+  never emitted.
+- Validation: `./tools/build-pc --profile max_crypto` passed. The focused VPCD
+  probe ran eight RSA public-key replacement APDUs and passed `TEST:SUMMARY
+  pass=10 fail=0` including ATR and SELECT. `git diff --check` passed. No ARM/
+  RISC-V source change or hardware access was involved.
+- Result: Global persistent inventory grew from 6 records / 34 payload bytes
+  to 87 / 1,797 after eight replacements, +10 records / 219 payload bytes per
+  replacement. Every delta is below static prefix `023808` (package 56, static
+  offset 8). Applet-owner inventory stayed at 2 / 17 and reported zero
+  unreachable records. This proves a coverage gap in applet-owner-only
+  reclamation; the full JCAlgTest `F205` causal link and physical flash impact
+  remain unverified.
+- Decision: Keep production persistent deletion disabled. Next design and test
+  package-static-root-aware inventory/reclamation with cross-context, alias,
+  transaction, and interruption safety before wiring collection into APDUs.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
