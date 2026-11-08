@@ -26147,7 +26147,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production reclamation disabled. Next enumerate/trace every
   retained package context and native root, add focused multi-context static
   graph tests, then repeat long-run JCAlgTest and physical power-loss acceptance.
-- Commit: `<pending>`
+- Commit: `f0b91c71`
 - Artifacts/logs: `artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261108T202615Z.log`,
   `artifacts/logs/host-vpcd-multipackage-restart-20261108T202615Z.log`.
