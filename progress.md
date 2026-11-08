@@ -26229,6 +26229,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production deletion unsupported. Next implement typed root
   provenance or continue root-domain audit before relaxing the exclusive
   context gate.
-- Commit: `<pending>`
+- Commit: `376334a1`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T222047Z.log`,
   SHA-256 `678d0beb88222bebb5f988dcd7d3fb4f6acba55fdd6dea2dc49320fe31c5b1f9`.
