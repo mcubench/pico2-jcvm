@@ -26378,3 +26378,22 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   not justify enabling persistent deletion in production.
 - Commit: `4139f174`
 - Artifacts/logs: command output only; no archived log.
+
+## 2026-11-09 Run integrated RP2350 reclamation cut-point suite 6 minutes
+
+- Step/experiment: `PERSIST-01-RP2350-RECLAIM-POWER-CUTS`
+- When: '2026-11-09 00:15 CET' - '2026-11-09 00:21 CET'
+- Change: Ran the existing RP2350 filesystem fault-injection suite and recorded
+  its reclamation-specific evidence and scope in TODO, QKB and HANDOFF. No test
+  implementation or firmware source changed in this verification step.
+- Validation: `./tools/test-rp2350-fs-overlay` passed the complete suite with
+  `TEST:SUMMARY fail=0`. The persistent reclamation case passed 1,000 simulated
+  cut points with 10 orphan records; live root and other-owner data were
+  preserved, restart recovered old-or-clean state, and retry completed cleanup.
+- Result: RP2350 filesystem copy-on-write recovery and the reclaimer are
+  compatible in the fake-flash model. This is not physical interruption
+  evidence and does not prove full JCAlgTest stability.
+- Decision: Retain the physical restart/cut and long-run JCAlgTest gates; keep
+  production deletion disabled until those pass.
+- Commit: `<pending>`
+- Artifacts/logs: command output only; no archived log.

@@ -8808,3 +8808,21 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Next:** Keep production deletion unsupported until all-root and durable
   recovery evidence is complete; continue integration toward the original
   F205 long-run workload.
+
+## PERSIST-01: RP2350 filesystem reclamation cut-point simulation — 2026-11-09
+
+- **Validation:** `./tools/test-rp2350-fs-overlay` passes the integrated
+  `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
+  case. It injects 1,000 cut points while committing reclamation of 10 orphan
+  records; after each simulated reboot the test requires the live root graph
+  and another owner's record to remain intact. Recovery must expose either the
+  complete old candidate set or no candidates, then retry to clear any old set.
+  The output records `TEST:METRIC persistent_reclamation_orphan_tags=10 cuts=1000`
+  and the whole suite finishes `TEST:SUMMARY fail=0`.
+- **Scope:** This compiles the RP2350 filesystem implementation against a fake
+  flash model and exercises its copy-on-write snapshot/power-cut behavior. It
+  is materially stronger than the FlashMemory_Handler stub test, but does not
+  replace physical flash interruption/restart tests or establish JCAlgTest
+  long-run stability. Production reclamation stays disabled.
+- **Next:** Preserve this as the host-side gate; complete the physical
+  interruption test and full unchanged JCAlgTest acceptance before enablement.

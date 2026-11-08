@@ -103,6 +103,13 @@ Archive text is historical evidence, not current device state or priorities.
   VPCD checks), reclaiming 10 applet-owned records per cycle. This increases
   key-material pressure coverage but remains one PC VPCD context and does not
   establish production or physical recovery.
+  The RP2350 filesystem suite now passes its integrated
+  `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
+  case: across 1,000 simulated flash-cut points it preserves the live root and
+  other-owner record and either restores the old orphan set or the clean state,
+  with retry completing cleanup. The whole overlay suite reports
+  `TEST:SUMMARY fail=0`. This is fake-flash simulation of the RP2350 filesystem
+  code, not physical flash-cut evidence.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

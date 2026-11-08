@@ -10715,3 +10715,16 @@ Current-tree revalidation: `./tools/test-persistent-transaction` passes
 `TEST:SUMMARY fail=0`, including foreign alias safety, malformed input,
 transaction refusal and interrupted cleanup/retry. This is unit-model evidence;
 physical flash recovery remains open.
+
+# Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
+
+`./tools/test-rp2350-fs-overlay` now passes the complete suite with
+`TEST:SUMMARY fail=0`. Its reclamation case tests 10 orphan records across
+1,000 simulated flash cut points, preserving a live root graph and an unrelated
+owner's record; restart must yield the complete old candidate set or clean
+state, and retry must finish cleanup. This uses the actual RP2350 filesystem
+implementation with fake flash, so it validates the COW recovery logic but is
+not physical Pico power-cut evidence. Production object deletion remains
+unsupported/disabled. Continue with a physical safe-boundary restart test and
+the unchanged full JCAlgTest long-run plateau before declaring RESOURCE-01
+fixed.
