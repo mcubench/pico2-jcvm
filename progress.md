@@ -25112,7 +25112,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `STATUS.md`; supporting evidence in `.agent/HANDOFF.md` and `.agent/QKB.md`.
 
-
 ## 2026-11-07 three-board finite runtime recheck 6
 
 - Step/experiment: `HW-CCID-20261107-03`
@@ -25156,3 +25155,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep physical APDU acceptance open until PC/SC publishes a reader; continue auditing foreign-reference consumers and owner-scoped persistent lifecycle.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: focused `artifacts/logs/sio-cross-aid-vpcd-20261108T003758Z.log`; full suite `artifacts/logs/sio-cross-aid-vpcd-20261108T005034Z.log`; hardware cycle `artifacts/logs/cycle-choupi-20261108T004356Z.log`; UF2 SHA-256 `e182e1fc014e753b3f831c180646affefb3ceeca3da9f729518bc1f975e97fe0` (1,761,280 bytes).
+
+## 2026-11-08 Protect persistent foreign-static targets in inventory 16 minutes
+
+- Step/experiment: `CTX-01-foreign-static-persistent-inventory-roots`
+- When: '2026-11-08 02:00 CET' - '2026-11-08 02:16 CET'
+- Change: Persistent inventory now parses foreign-reference wrappers in the package-static namespace and excludes each referenced applet-owned target subtree from reclamation candidates. Malformed/unreadable wrappers stop inventory. Added retention and clear-wrapper regressions. Updated the persistent-transaction test target to link the retained-context implementation and narrowed its cursor fault injection to applet namespace scans. Normal persistent reclamation remains disabled.
+- Validation: `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` pass. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashes and verifies the final ARM image; finite serial output reports `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Elevated `timeout 8s pcsc_scan -r` exits 124 with no readers, so no physical APDU test was possible.
+- Result: Persistent foreign-static aliases now protect the complete nested target subtree from candidate enumeration; after clearing the wrapper, both root and child records become candidates. Firmware startup was verified on D92, but behavior through a physical CAP/APDU remains unverified. Build output contains pre-existing upstream/toolchain warnings; no warning originated in `persistent_inventory.cpp`.
+- Decision: Keep PERSIST-01 reclamation safety gates and continue owner-aware reference lifecycle work. Retry physical API validation when PC/SC publishes a Pico reader. Runtime benchmark was not measured.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T011442Z.log`; no separate unit-test log.

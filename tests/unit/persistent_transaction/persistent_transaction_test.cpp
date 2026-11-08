@@ -1874,6 +1874,59 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x45;
+    constexpr uint8_t source_package = 0x61;
+    const uint8_t source_static_tag[] = {0x02, source_package, 0x01};
+    std::array<uint8_t, 9> target_tag{
+        0x03, owner, source_package, 0xff, 0xfc,
+        static_cast<uint8_t>(sizeof(source_static_tag)), 0x02,
+        source_package, 0x01};
+    std::array<uint8_t, 11> target_child_tag{};
+    std::copy(target_tag.begin(), target_tag.end(), target_child_tag.begin());
+    target_child_tag[9] = 0;
+    target_child_tag[10] = 1;
+    seed(target_tag.data(), target_tag.size(), byte_record(0x51));
+    seed(target_child_tag.data(), target_child_tag.size(), byte_record(0x52));
+    std::vector<uint8_t> wrapper{8, source_package,
+                                 static_cast<uint8_t>(target_tag.size())};
+    wrapper.insert(wrapper.end(), target_tag.begin(), target_tag.end());
+    seed(source_static_tag, sizeof(source_static_tag), std::move(wrapper));
+
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    CandidateTags retained_candidates;
+    const auto while_referenced =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            owner, heap, no_roots, collect_candidate, &retained_candidates);
+    const std::vector<uint8_t> target_bytes(target_tag.begin(), target_tag.end());
+    const std::vector<uint8_t> child_bytes(target_child_tag.begin(),
+                                          target_child_tag.end());
+    const bool target_retained =
+        while_referenced == jcvm::PersistentInventory::VisitResult::Complete &&
+        std::find(retained_candidates.tags.begin(), retained_candidates.tags.end(),
+                  target_bytes) == retained_candidates.tags.end() &&
+        std::find(retained_candidates.tags.begin(), retained_candidates.tags.end(),
+                  child_bytes) == retained_candidates.tags.end();
+
+    seed(source_static_tag, sizeof(source_static_tag), {0});
+    CandidateTags orphan_candidates;
+    const auto after_clear =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            owner, heap, no_roots, collect_candidate, &orphan_candidates);
+    const bool orphan_reclaimed_as_candidate =
+        after_clear == jcvm::PersistentInventory::VisitResult::Complete &&
+        orphan_candidates.tags.size() == 2 &&
+        std::find(orphan_candidates.tags.begin(), orphan_candidates.tags.end(),
+                  target_bytes) != orphan_candidates.tags.end() &&
+        std::find(orphan_candidates.tags.begin(), orphan_candidates.tags.end(),
+                  child_bytes) != orphan_candidates.tags.end();
+    expect(target_retained,
+           "foreign_static_wrapper_roots_target_and_nested_records");
+    expect(orphan_reclaimed_as_candidate,
+           "cleared_foreign_static_wrapper_releases_target_records");
+  }
+
+  {
     constexpr uint8_t owner = 0x42;
     const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
     const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};

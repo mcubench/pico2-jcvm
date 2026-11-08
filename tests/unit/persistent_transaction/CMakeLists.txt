@@ -9,6 +9,7 @@ add_executable(
   "${CHOUPI_SOURCE_DIR}/jc_handlers/flashmemory.cpp"
   "${CHOUPI_SOURCE_DIR}/persistent_inventory.cpp"
   "${CHOUPI_SOURCE_DIR}/heap.cpp"
+  "${CHOUPI_SOURCE_DIR}/context.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_array.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_object.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_instance.cpp"

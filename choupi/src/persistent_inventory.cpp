@@ -6,11 +6,14 @@
 
 #include <array>
 #include <cstring>
+#include <utility>
 
 namespace jcvm {
 namespace PersistentInventory {
 
 namespace {
+constexpr uint8_t kPersistentForeignReference = 8;
+
 struct VectorRoots {
   const std::vector<jref_t> *references;
 };
@@ -27,14 +30,55 @@ struct CandidateContext {
   Heap *heap;
   TagVisitor visitor;
   void *visitor_context;
+  std::vector<Tag> foreign_static_targets;
 };
+
+bool collectForeignStaticTarget(const Tag &source_tag, void *opaque) {
+  auto &targets = *static_cast<std::vector<Tag> *>(opaque);
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  if (fs_read_inplace(source_tag.value, source_tag.len, &data, &length) != 0 ||
+      data == nullptr || length == 0) {
+    return false;
+  }
+  if (data[0] != kPersistentForeignReference) return true;
+  if (length < 3 || data[1] == 0xfe || data[1] == 0xff || data[2] < 6 ||
+      data[2] > kTagCapacity || length != 3u + data[2] ||
+      data[2] != static_cast<uint32_t>(6u + source_tag.len)) {
+    return false;
+  }
+  const uint8_t *target = data + 3;
+  if (target[0] != 0x03 || target[2] != data[1] || target[3] != 0xff ||
+      target[4] != 0xfc || target[5] != source_tag.len ||
+      std::memcmp(target + 6, source_tag.value, source_tag.len) != 0) {
+    return false;
+  }
+
+  Tag target_tag{};
+  target_tag.len = data[2];
+  std::memcpy(target_tag.value, target, target_tag.len);
+  targets.push_back(target_tag);
+  return true;
+}
+
+bool hasForeignStaticRoot(const Tag &candidate,
+                          const std::vector<Tag> &targets) {
+  for (const Tag &target : targets) {
+    if (candidate.len >= target.len &&
+        std::memcmp(candidate.value, target.value, target.len) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 bool visitUnreachableTag(const Tag &tag, void *opaque) {
   auto &context = *static_cast<CandidateContext *>(opaque);
   fs::Tag heap_tag{};
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
-  if (context.heap->hasReachablePersistentTagPrefix(heap_tag)) return true;
+  if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
+      hasForeignStaticRoot(tag, context.foreign_static_targets)) return true;
   return context.visitor(tag, context.visitor_context);
 }
 } // namespace
@@ -81,7 +125,6 @@ VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
 namespace {
 constexpr uint8_t kPersistentObjectAlias = 0xfe;
 constexpr uint8_t kPersistentArrayAlias = 0xfd;
-constexpr uint8_t kPersistentForeignReference = 8;
 constexpr uint8_t kMaximumAliasDepth = 32;
 
 struct AliasSearch {
@@ -297,7 +340,21 @@ VisitResult visitUnreachableAppletTags(
       heap.traceReachableFrom(enumerate_roots, root_context);
   if (!summary.complete) return VisitResult::IncompleteReachability;
 
-  CandidateContext context{&heap, candidate_visitor, candidate_context};
+  std::vector<Tag> foreign_static_targets;
+  try {
+    Tag static_prefix{};
+    static_prefix.len = 1;
+    static_prefix.value[0] = 0x02;
+    const VisitResult static_scan =
+        visitPrefix(static_prefix, collectForeignStaticTarget,
+                    &foreign_static_targets);
+    if (static_scan != VisitResult::Complete) return static_scan;
+  } catch (...) {
+    return VisitResult::IncompleteReachability;
+  }
+
+  CandidateContext context{&heap, candidate_visitor, candidate_context,
+                           std::move(foreign_static_targets)};
   return visitApplet(applet_owner, visitUnreachableTag, &context);
 }
 

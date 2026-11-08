@@ -1,4 +1,35 @@
-# Current handoff — collect inactive heaps before applet DELETE — 2026-11-08 01:54 CET
+# Current handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:16 CET
+
+Persistent inventory now scans package-static records for the foreign-reference
+wrapper format and protects the wrapper's owner-applet target tag and all
+nested records beneath it from the unreachable-tag candidate set. Clearing the
+wrapper makes the target subtree eligible for the existing reclaimer. This is
+inventory-only: `PersistentReclaimer` remains disabled in normal post-APDU GC
+until the PERSIST-01 recovery and multi-owner safety gates pass. Malformed or
+unreadable wrappers fail the inventory closed.
+
+The persistent-transaction suite passes with two new regressions: a live
+foreign-static wrapper protects its target and nested records, and clearing the
+wrapper exposes both as unreachable candidates. Its test target now links the
+real `context.cpp` required by retained-context references; test cursor fault
+injection is scoped to the applet namespace. ARM and RISC-V current-profile
+builds pass. The final ARM CHOUPI image was flashed to Pico 2
+`D92E743D5F640C0F`; its finite monitor reports `TEST:PASS choupi_runtime` and
+`TEST:SUMMARY pass=1 fail=0` at
+`artifacts/logs/cycle-choupi-20261108T011442Z.log`. The image is a startup
+validation only; no APDU exercised the new inventory path. Refreshed USB helper
+access sees three attached Pico nodes, but `timeout 8s pcsc_scan -r` exits 124
+without readers.
+
+Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle coverage.
+Keep normal persistent reclamation disabled. Retry physical APDUs when PC/SC
+lists a reader. Preserve all unrelated worktree changes; in particular,
+`heap.cpp`/`heap.hpp` still include the unrelated `releaseGlobalAIDObject`
+removal.
+
+---
+
+# Previous handoff — collect inactive heaps before applet DELETE — 2026-11-08 01:54 CET
 
 CTX-01 static foreign object references are committed in `d91ed195`. A
 follow-up lifecycle regression found that clearing all foreign references

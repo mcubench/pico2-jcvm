@@ -981,6 +981,12 @@ review.
   object requires the separate PERSIST-01 object-deletion safety gates; do not
   ignore the alias to make DELETE succeed.
 
+  Persistent-tag inventory now also treats foreign-reference wrappers in any
+  package's static namespace as roots of their owner-applet target subtree. A
+  cleared wrapper makes that target eligible for the existing unreachable-tag
+  reclaimer; the reclaimer remains disabled in normal post-APDU collection
+  until PERSIST-01 power-loss and multi-owner safety gates pass.
+
   Update 2026-11-08: ordinary foreign applet object references in package
   static fields now carry their owner through `getstatic_a`/`putstatic_a` and
   persistent storage. A wrapper record points to an owner-applet-scoped target
