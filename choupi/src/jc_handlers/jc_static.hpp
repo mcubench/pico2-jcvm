@@ -31,6 +31,8 @@
 #include "../jc_config.h"
 #include "../jc_types/jref_t.hpp"
 #include "../types.hpp"
+
+#include <utility>
 #include "jc_component.hpp"
 
 namespace jcvm {
@@ -52,6 +54,8 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// Read static serialized instance or array.
   jref_t getPersistentRef(const uint16_t index, Heap &heap) const;
+  std::pair<jref_t, uint8_t> getPersistentRefWithOwner(
+      uint16_t index, Heap &heap, jpackage_ID_t current_package) const;
 
   /// Set static byte value.
   void setPersistentByte(const uint16_t index, const jbyte_t value);
@@ -62,6 +66,8 @@ public:
   void setPersistentInt(const uint16_t index, const jint_t value);
 #endif /* JCVM_INT_SUPPORTED */
   /// Set static reference value.
+  void setPersistentRef(const uint16_t index, const jref_t value,
+                        uint8_t reference_owner, Heap &heap);
   void setPersistentRef(const uint16_t index, const jref_t value, Heap &heap);
 };
 

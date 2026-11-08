@@ -981,6 +981,25 @@ review.
   object requires the separate PERSIST-01 object-deletion safety gates; do not
   ignore the alias to make DELETE succeed.
 
+  Update 2026-11-08: ordinary foreign applet object references in package
+  static fields now carry their owner through `getstatic_a`/`putstatic_a` and
+  persistent storage. A wrapper record points to an owner-applet-scoped target
+  record; GC roots are routed to the owning package, and persistent DELETE
+  inventory follows the wrapper target. Static foreign arrays, global/private
+  proxy values, and referenced objects that themselves contain foreign field
+  edges remain fail-closed. The three-package VPCD suite passes 35/35,
+  including static object identity after emulator restart, normal deletion of
+  the service applet, and stale proxy rejection. A deletion scan bug found
+  during this work resolved foreign static handles in the referencing heap;
+  owner filtering now prevents equal compact handles from making the wrong
+  applet look referenced. ARM and RISC-V current-profile builds pass. The full
+  ARM firmware was flashed to Pico 2 `D92E743D5F640C0F`; its 18-second monitor
+  repeatedly reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1
+  fail=0`. PC/SC still reports no readers after access refresh, so no physical
+  CAP installation or static-reference APDU was possible. Keep physical
+  acceptance open, and audit clearing/replacing static foreign references for
+  orphaned owner-scoped records before broadening this support.
+
 ### CTX-02
 
 - [ ] **Complete Java-level SensitiveResult coverage across SIO calls.**

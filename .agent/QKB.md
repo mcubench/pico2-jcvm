@@ -7959,3 +7959,30 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   was issued via PC/SC.
 - **Next:** Continue offline. Retry card APDUs only after `pcsc_scan -r` lists
   a Pico reader; preserve the per-board serial distinction when retrying.
+
+## Foreign static roots must keep owner identity through GC and DELETE — 2026-11-08
+
+- **Observed issue:** Adding a cross-package object to a package static field
+  requires persistent owner metadata. The first deletion scan treated every
+  cached static compact handle as local to the Context being checked. If that
+  handle matched an object in the current package, deleting an unrelated
+  service applet incorrectly returned `6985` even though the static value was
+  owned by another package.
+- **Viable fix:** The in-memory static root now stores the reference owner.
+  Context GC roots static values in the owning package, while an applet-owner
+  deletion scan examines only static roots owned by its heap. Persistent
+  foreign-static wrappers use an owner-applet-scoped target tag; inventory
+  follows that target when the referenced applet is being deleted. Do not
+  resolve an opaque cross-package handle in the current package heap.
+- **Validation:** `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-sio-cross-aid-vpcd` passes 35/35, including object identity
+  after emulator process restart and successful deletion of the service
+  applet. ARM and RISC-V builds pass. Full ARM firmware was flashed to serial
+  `D92E743D5F640C0F`; finite monitor output passed. The helper granted three
+  devices, but `timeout 10s pcsc_scan -r` still exited 124 without listing
+  readers, so no physical APDU validation was possible.
+- **Remaining limit:** Foreign static arrays, proxy references, and object
+  graphs containing foreign field edges stay denied. Audit orphan cleanup when
+  a foreign static field is cleared/replaced before expanding this format.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T234807Z.log` and
+  `artifacts/logs/cycle-choupi-20261108T000027Z.log`.

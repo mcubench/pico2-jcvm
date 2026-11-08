@@ -529,7 +529,8 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
   }
   for (const StaticReferenceRoot &root :
        target_heap.shared_storage->static_reference_roots) {
-    if (root.rollback_generation ==
+    if (root.reference_owner == package_id &&
+        root.rollback_generation ==
         FlashMemory_Handler::persistentWriteRollbackGeneration()) {
       inspect_target(root.reference, &query);
       if (query.found) return true;
@@ -988,11 +989,21 @@ bool Heap::isRuntimeExceptionReference(const jref_t reference) const noexcept {
 bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   jref_t &reference) const noexcept {
+  uint8_t reference_owner = 0xff;
+  return this->getStaticReferenceRoot(package_id, field_number, reference,
+                                      reference_owner);
+}
+
+bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
+                                  const uint16_t field_number,
+                                  jref_t &reference,
+                                  uint8_t &reference_owner) const noexcept {
   for (const StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
     if (root.package_id == package_id && root.field_number == field_number &&
         root.rollback_generation ==
             FlashMemory_Handler::persistentWriteRollbackGeneration()) {
       reference = root.reference;
+      reference_owner = root.reference_owner;
       return true;
     }
   }
@@ -1013,9 +1024,21 @@ void Heap::reserveStaticReferenceRoot(const jpackage_ID_t package_id,
 void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   const jref_t reference) {
+  this->setStaticReferenceRoot(
+      package_id, field_number, reference,
+      reference.isGlobalArray() || reference.isGlobalInstance()
+          ? 0xfe
+          : package_id);
+}
+
+void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
+                                  const uint16_t field_number,
+                                  const jref_t reference,
+                                  const uint8_t reference_owner) {
   for (StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
     if (root.package_id == package_id && root.field_number == field_number) {
       root.reference = reference;
+      root.reference_owner = reference_owner;
       root.rollback_generation =
           FlashMemory_Handler::persistentWriteRollbackGeneration();
       return;
@@ -1023,7 +1046,23 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
   }
   this->shared_storage->static_reference_roots.push_back(
       StaticReferenceRoot{package_id, field_number, reference,
+                          reference_owner,
                           FlashMemory_Handler::persistentWriteRollbackGeneration()});
+}
+
+void Heap::visitStaticReferenceRootsForPackage(
+    const jpackage_ID_t owner_package, const ReferenceVisitor visitor,
+    void *visitor_context) const {
+  if (visitor == nullptr) return;
+  for (const StaticReferenceRoot &root :
+       this->shared_storage->static_reference_roots) {
+    if (root.reference_owner == owner_package &&
+        root.rollback_generation ==
+            FlashMemory_Handler::persistentWriteRollbackGeneration() &&
+        !root.reference.isNullPointer()) {
+      visitor(root.reference, visitor_context);
+    }
+  }
 }
 
 void Heap::appendRootReferences(std::vector<jref_t> &references) const {
@@ -1031,7 +1070,8 @@ void Heap::appendRootReferences(std::vector<jref_t> &references) const {
 }
 
 void Heap::visitRootReferences(const ReferenceVisitor visitor,
-                               void *visitor_context) const {
+                               void *visitor_context,
+                               const bool include_static_roots) const {
   const jref_t runtime_roots[] = {this->runtime_crypto_exception_rom,
                                   this->runtime_crypto_exception_imported};
   for (const jref_t &reference : runtime_roots) {
@@ -1044,11 +1084,14 @@ void Heap::visitRootReferences(const ReferenceVisitor visitor,
       visitor(root.reference, visitor_context);
     }
   }
-  for (const StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
-    if (root.rollback_generation ==
-            FlashMemory_Handler::persistentWriteRollbackGeneration() &&
-        !root.reference.isNullPointer()) {
-      visitor(root.reference, visitor_context);
+  if (include_static_roots) {
+    for (const StaticReferenceRoot &root :
+         this->shared_storage->static_reference_roots) {
+      if (root.rollback_generation ==
+              FlashMemory_Handler::persistentWriteRollbackGeneration() &&
+          !root.reference.isNullPointer()) {
+        visitor(root.reference, visitor_context);
+      }
     }
   }
 

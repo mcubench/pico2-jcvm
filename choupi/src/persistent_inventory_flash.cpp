@@ -30,7 +30,11 @@ bool readPersistentStaticReference(const uint8_t package_id,
       reference =
           FlashMemory_Handler::getPersistentField_ReferenceStrict(tag,
                                                                   *context.heap);
-      context.heap->setStaticReferenceRoot(package_id, offset, reference);
+      const uint8_t owner =
+          FlashMemory_Handler::getPersistentField_ReferenceOwner(tag,
+                                                                 package_id);
+      context.heap->setStaticReferenceRoot(package_id, offset, reference,
+                                           owner);
     } catch (...) {
       return false;
     }

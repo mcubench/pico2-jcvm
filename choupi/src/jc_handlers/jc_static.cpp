@@ -26,9 +26,11 @@
 */
 
 #include "jc_static.hpp"
+#include "../context.hpp"
 #include "../exceptions.hpp"
 #include "../jc_cap/jc_cap_static_field.hpp"
 #include "../heap.hpp"
+
 #include "flashmemory.hpp"
 #include "ffi.h"
 
@@ -283,20 +285,43 @@ jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
  */
 jref_t Static_Handler::getPersistentRef(const uint16_t index,
                                         Heap &heap) const {
+  return this->getPersistentRefWithOwner(
+      index, heap, this->package.getPackageID()).first;
+}
+
+std::pair<jref_t, uint8_t> Static_Handler::getPersistentRefWithOwner(
+    const uint16_t index, Heap &heap,
+    const jpackage_ID_t current_package) const {
   validateStaticSlot(this->package, index, 2, true);
   validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_OBJECT);
   jref_t reference;
+  uint8_t reference_owner = this->package.getPackageID();
   const jpackage_ID_t package_id = this->package.getPackageID();
-  if (heap.getStaticReferenceRoot(package_id, index, reference)) {
-    return reference;
+  if (heap.getStaticReferenceRoot(package_id, index, reference,
+                                  reference_owner)) {
+    if (reference.isNullPointer()) return {reference, 0xff};
+    if (reference.isGlobalArray() || reference.isGlobalInstance()) {
+      return {reference, 0xfe};
+    }
+    return {reference, reference_owner == current_package
+                           ? static_cast<uint8_t>(0xff)
+                           : reference_owner};
   }
 
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       package_id, index);
 
   reference = FlashMemory_Handler::getPersistentField_Reference(tag, heap);
-  heap.setStaticReferenceRoot(package_id, index, reference);
-  return reference;
+  reference_owner = FlashMemory_Handler::getPersistentField_ReferenceOwner(
+      tag, package_id);
+  heap.setStaticReferenceRoot(package_id, index, reference, reference_owner);
+  if (reference.isNullPointer()) return {reference, 0xff};
+  if (reference.isGlobalArray() || reference.isGlobalInstance()) {
+    return {reference, 0xfe};
+  }
+  return {reference, reference_owner == current_package
+                         ? static_cast<uint8_t>(0xff)
+                         : reference_owner};
 }
 
 /**
@@ -307,7 +332,9 @@ jref_t Static_Handler::getPersistentRef(const uint16_t index,
  * @param[heap] the current applet heap.
  */
 void Static_Handler::setPersistentRef(const uint16_t index,
-                                      const jref_t value, Heap &heap) {
+                                      const jref_t value,
+                                      const uint8_t reference_owner,
+                                      Heap &heap) {
   validateStaticSlot(this->package, index, 2, true);
   validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_OBJECT);
   if (value.isGlobalArray()) {
@@ -317,8 +344,45 @@ void Static_Handler::setPersistentRef(const uint16_t index,
   heap.reserveStaticReferenceRoot(package_id, index);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       package_id, index);
-  FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);
-  heap.setStaticReferenceRoot(package_id, index, value);
+  if (value.isNullPointer()) {
+    FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);
+    heap.setStaticReferenceRoot(package_id, index, value, package_id);
+    return;
+  }
+  if (value.isGlobalInstance()) {
+    FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);
+    heap.setStaticReferenceRoot(package_id, index, value, 0xfe);
+    return;
+  }
+  if (reference_owner == 0xff || reference_owner == package_id) {
+    FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);
+    heap.setStaticReferenceRoot(package_id, index, value, package_id);
+    return;
+  }
+  if (reference_owner == 0xfe || value.isArray()) {
+    throw Exceptions::SecurityException;
+  }
+  Context *owner_context =
+      Context::findRetainedPackageContext(reference_owner);
+  if (owner_context == nullptr) throw Exceptions::SecurityException;
+  const auto instance = owner_context->getHeap().getInstance(value);
+  Heap *expected_heap = Context::findRetainedAppletHeap(
+      reference_owner, instance->getOwner().getOwner());
+  if (expected_heap != &instance->getOwner()) {
+    throw Exceptions::SecurityException;
+  }
+  FlashMemory_Handler::setPersistentForeignReference(
+      tag, value, reference_owner, instance->getOwner());
+  heap.setStaticReferenceRoot(package_id, index, value, reference_owner);
+}
+
+void Static_Handler::setPersistentRef(const uint16_t index,
+                                      const jref_t value, Heap &heap) {
+  const uint8_t owner =
+      value.isGlobalArray() || value.isGlobalInstance()
+          ? 0xfe
+          : this->package.getPackageID();
+  this->setPersistentRef(index, value, owner, heap);
 }
 
 /**

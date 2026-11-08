@@ -1,3 +1,41 @@
+# Current handoff — persistent foreign static object roots — 2026-11-08 01:08 CET
+
+CTX-01 now supports an ordinary foreign applet object reference in a package
+static field. `getstatic_a`/`putstatic_a` preserve the referenced package
+identity; persistent storage uses a wrapper that points to an owner-applet
+scoped target record. GC roots are routed to the package that owns the object,
+and persistent inventory follows the target when checking applet deletion.
+Foreign static arrays, global/private proxy values, and object graphs that
+contain foreign field edges remain fail-closed. Clearing or replacing a
+foreign static reference may leave an orphan target record; audit that cleanup
+before widening support.
+
+Validation passed: `./tools/build-pc --profile max_crypto`, `./tools/build arm`,
+`./tools/build riscv`, and `PICO2_HOST_USB_ACCESS=1
+./tools/test-sio-cross-aid-vpcd` (`TEST:SUMMARY pass=35 fail=0`). The VPCD
+regression verifies static object identity after process restart and normal
+service-applet deletion. Logs are
+`artifacts/logs/sio-cross-aid-vpcd-20261107T234807Z.log` and
+`artifacts/logs/cycle-choupi-20261108T000027Z.log`.
+
+The ARM image was flashed to serial `D92E743D5F640C0F` using the authorized
+host-access cycle wrapper. The finite monitor reported
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The image is
+1,761,280 bytes, SHA-256
+`3ea91142d76f8c1443701f48bc5431a92f96bf418cc740d1b585a2d8723e3056`.
+Physical applet/APDU validation remains incomplete: after access refresh,
+`timeout 10s pcsc_scan -r` showed no readers. Three runtime boards had been
+enumerated earlier: `2BED26ED20556535`, `8E464F4E2BBC0A19`, and
+`D92E743D5F640C0F`.
+
+Next: append the progress record and commit only this static-reference change,
+then audit persistent alias cleanup when static references are cleared or
+replaced. Preserve unrelated dirty changes, especially review probes,
+`AGENTS.md`, the `bc_invoke.cpp`/`cap_load.cpp` edits, crypto tests, RMI test,
+and the `releaseGlobalAIDObject` removal in `heap.cpp`/`heap.hpp`.
+
+---
+
 # Current handoff — volatile foreign instance-field owner roots — 2026-11-07 23:44 CET
 
 CTX-01 now supports storing an ordinary foreign applet reference in a volatile

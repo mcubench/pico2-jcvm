@@ -1305,10 +1305,10 @@ def main() -> int:
                     connection, bytes.fromhex("8020000000"),
                     "retain source-owned object in service array",
                 )
-                if response != bytes.fromhex("6B419000"):
+                if response != bytes.fromhex("6B409000"):
                     raise RuntimeError(
                         "source object retention returned "
-                        f"{response.hex().upper()}, expected 6B419000"
+                        f"{response.hex().upper()}, expected 6B409000"
                     )
                 response = vpcd.exchange(
                     connection, bytes.fromhex("00A4040000"),
@@ -1666,6 +1666,20 @@ def main() -> int:
                     )
                 print("TEST:PASS interpreted JCSystem.makeGlobalArray result "
                       "is assertable after the SIO context switch")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_ONLY_FOREIGN_REFERENCE") == "1":
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8020000000"),
+                    "retain foreign instance in static/instance fields and array"
+                )
+                if response != bytes.fromhex("6B409000"):
+                    raise RuntimeError(
+                        "foreign reference retention returned "
+                        f"{response.hex().upper()}, expected 6B409000"
+                    )
+                print("TEST:PASS foreign instance retained in static and "
+                      "instance fields; foreign array edge remains supported")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_ONLY_SIGNATURE") == "1":
@@ -2202,12 +2216,11 @@ def main() -> int:
                 connection, bytes.fromhex("8020000000"),
                 "retain ordinary foreign object reference in applet state"
             )
-            if response != bytes.fromhex("6B419000"):
+            if response != bytes.fromhex("6B409000"):
                 raise RuntimeError(
                     f"foreign object retention result {response.hex().upper()}, "
-                    "expected volatile instance and Object[] retention to "
-                    "succeed while static storage remains fail-closed "
-                    "(6B419000)"
+                    "expected volatile instance, static, and Object[] "
+                    "retention to succeed (6B409000)"
                 )
             response = vpcd.exchange(
                 connection, bytes.fromhex("802E000000"),

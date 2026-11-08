@@ -82,6 +82,18 @@ Context *Context::findRetainedPackageContext(
   return match;
 }
 
+Heap *Context::findRetainedAppletHeap(const jpackage_ID_t package_id,
+                                      const japplet_ID_t owner) noexcept {
+  Context *context = findRetainedPackageContext(package_id);
+  if (context == nullptr) return nullptr;
+  for (auto &instance : context->applet_instances) {
+    if (instance.owner == owner && instance.owner_heap) {
+      return instance.owner_heap.get();
+    }
+  }
+  return nullptr;
+}
+
 bool Context::isAppletAIDActive(const uint8_t *aid,
                                 const uint8_t aid_length) noexcept {
   if (aid == nullptr || aid_length < 5 || aid_length > 16) return false;
@@ -947,7 +959,9 @@ void Context::appendRootReferences(
 
 void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
                                   void *visitor_context) const {
-  this->getHeap().visitRootReferences(visitor, visitor_context);
+  this->getHeap().visitRootReferences(visitor, visitor_context, false);
+  this->getHeap().visitStaticReferenceRootsForPackage(
+      this->applet_package_ID, visitor, visitor_context);
   Heap::visitGlobalArrayReferencesForPackage(
       this->applet_package_ID, visitor, visitor_context);
   Heap::visitForeignArrayReferencesForPackage(

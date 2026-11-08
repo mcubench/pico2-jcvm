@@ -81,6 +81,7 @@ VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
 namespace {
 constexpr uint8_t kPersistentObjectAlias = 0xfe;
 constexpr uint8_t kPersistentArrayAlias = 0xfd;
+constexpr uint8_t kPersistentForeignReference = 8;
 constexpr uint8_t kMaximumAliasDepth = 32;
 
 struct AliasSearch {
@@ -102,6 +103,24 @@ bool inspect_alias_tag(const Tag &source_tag, void *opaque) {
       data == nullptr || length == 0) {
     search.failure = VisitResult::ReadFailure;
     return false;
+  }
+  if (data[0] == kPersistentForeignReference) {
+    if (length < 3 || data[1] == 0xfe || data[1] == 0xff || data[2] < 6 ||
+        data[2] > kTagCapacity || length != 3u + data[2]) {
+      search.failure = VisitResult::InvalidTag;
+      return false;
+    }
+    const uint8_t *target = data + 3;
+    if (target[0] != 0x03 || target[2] != data[1] || target[3] != 0xff ||
+        target[4] != 0xfc) {
+      search.failure = VisitResult::InvalidTag;
+      return false;
+    }
+    if (target[1] == search.owner) {
+      search.found = true;
+      return false;
+    }
+    return true;
   }
   for (uint8_t depth = 0;; ++depth) {
     if (data[0] != kPersistentObjectAlias &&

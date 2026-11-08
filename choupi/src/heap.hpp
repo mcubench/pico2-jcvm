@@ -57,6 +57,7 @@ public:
     jpackage_ID_t package_id;
     uint16_t field_number;
     jref_t reference;
+    uint8_t reference_owner;
     uint32_t rollback_generation;
   };
 
@@ -211,16 +212,27 @@ public:
   bool getStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number,
                               jref_t &reference) const noexcept;
+  bool getStaticReferenceRoot(jpackage_ID_t package_id,
+                              uint16_t field_number, jref_t &reference,
+                              uint8_t &reference_owner) const noexcept;
   /// Reserve a root slot before committing the corresponding persistent field.
   void reserveStaticReferenceRoot(jpackage_ID_t package_id,
                                   uint16_t field_number);
   void setStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number, jref_t reference);
+  void setStaticReferenceRoot(jpackage_ID_t package_id,
+                              uint16_t field_number, jref_t reference,
+                              uint8_t reference_owner);
+  /// Visit static references whose values are owned by this package.
+  void visitStaticReferenceRootsForPackage(jpackage_ID_t owner_package,
+                                           ReferenceVisitor visitor,
+                                           void *visitor_context) const;
   /// Append VM-owned roots held by this heap.
   void appendRootReferences(std::vector<jref_t> &references) const;
   /// Visit VM-owned roots without allocating a temporary reference vector.
   void visitRootReferences(ReferenceVisitor visitor,
-                           void *visitor_context) const;
+                           void *visitor_context,
+                           bool include_static_roots = true) const;
   /// Visit typed object/array children without allocating a temporary buffer.
   void visitChildReferences(const jref_t reference,
                             ReferenceVisitor visitor,
@@ -233,6 +245,8 @@ public:
   /// Update or remove a volatile array with cross-package reference edges.
   bool registerForeignReferenceArray(JC_Array *array) noexcept;
   void unregisterForeignReferenceArray(JC_Array *array) noexcept;
+  /// Register shared storage containing volatile foreign instance fields.
+  bool registerForeignReferenceInstance() noexcept;
   /// Route live foreign array entries into the referenced package's GC roots.
   static void visitForeignArrayReferencesForPackage(
       jpackage_ID_t package_id, ReferenceVisitor visitor,

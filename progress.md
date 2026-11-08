@@ -25134,3 +25134,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01 with static-field ownership/lifecycle work and persistent owner encoding/restoration; retry physical acceptance when PC/SC publishes a reader.
 - Commit: `<resolve in next progress entry>`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T223831Z.log`; no physical test log.
+
+## 2026-11-08 Persist foreign object references in package static fields 55 minutes
+
+- Step/experiment: `CTX-01-persistent-foreign-static-object-roots`
+- When: '2026-11-08 00:12 CET' - '2026-11-08 01:07 CET'
+- Change: Added owner-aware static reference roots and persistent wrapper/target tags for ordinary foreign applet objects. Routed GC and deletion inventory through the actual owner package/applet; kept unsupported arrays, proxies, and nested foreign edges fail-closed. Extended the cross-AID fixture to verify static identity after emulator restart and service applet deletion.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=35 fail=0`. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashed the ARM image; its 18-second finite monitor reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC scan timed out after 10 seconds without readers, so no physical applet/APDU test was run. Runtime duration recorded as 55 minutes; benchmark performance was not measured.
+- Result: VPCD confirms foreign static object identity across restart and successful deletion of the service applet. Equal compact handles in separate packages no longer cause false-positive applet deletion protection. Physical firmware startup passes; physical static-reference behavior remains unverified.
+- Decision: Continue with orphan-target cleanup/lifecycle audit for clearing or replacing a foreign static, then retry physical APDU acceptance when PC/SC exposes a reader.
+- Commit: `<resolve in next progress entry>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T234807Z.log`; `artifacts/logs/cycle-choupi-20261108T000027Z.log`; UF2 SHA-256 `3ea91142d76f8c1443701f48bc5431a92f96bf418cc740d1b585a2d8723e3056` (1,761,280 bytes).

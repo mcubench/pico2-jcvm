@@ -115,11 +115,12 @@ void Bytecodes::bc_getstatic_a() {
   const auto location =
       resolve_static_field(context, cp.getStaticFieldRefInfo(index));
 
-  jref_t static_field =
-      Static_Handler(Package(location.package_id))
-          .getPersistentRef(location.field_number, heap);
+  const auto static_field = Static_Handler(Package(location.package_id))
+                                .getPersistentRefWithOwner(
+                                    location.field_number, heap,
+                                    context.getCurrentPackageID());
 
-  stack.push_Reference(static_field);
+  stack.push_Reference(static_field.first, static_field.second);
 
   return;
 }
@@ -332,12 +333,18 @@ void Bytecodes::bc_putstatic_a() {
 
   TRACE_JCVM_DEBUG("PUTSTATIC_A 0x%04X", index);
 
-  value = stack.pop_Reference();
+  const Stack::ReferenceValue stored_value = stack.pop_ReferenceValue();
+  value = stored_value.reference;
 
   const auto location =
       resolve_static_field(context, cp.getStaticFieldRefInfo(index));
   Static_Handler(Package(location.package_id))
-      .setPersistentRef(location.field_number, value, heap);
+      .setPersistentRef(
+          location.field_number, value,
+          stored_value.owner == Stack::kCurrentReferenceOwner
+              ? context.getCurrentPackageID()
+              : stored_value.owner,
+          heap);
 
   return;
 }

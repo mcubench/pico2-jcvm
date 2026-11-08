@@ -388,10 +388,12 @@ public final class ClientApplet extends Applet {
     } else if (buffer[1] == 0x20) {
       Probe probe = (Probe) shareable;
       Object[] global = (Object[])JCSystem.makeGlobalArray(
-          JCSystem.ARRAY_TYPE_OBJECT, (short)1);
-      global[0] = new byte[] { 0x5C };
+          JCSystem.ARRAY_TYPE_OBJECT, (short)2);
+      global[0] = this;
+      global[1] = new byte[] { 0x5C };
       result = probe.retainForeignReference(global);
       global[0] = null;
+      global[1] = null;
     } else if (buffer[1] == 0x2E) {
       byte[] retained = (byte[])
           ((Probe) shareable).getRetainedForeignArray();
@@ -400,8 +402,15 @@ public final class ClientApplet extends Applet {
                    ? (short)0x6A2E
                    : (short)0x6A2F;
     } else if (buffer[1] == 0x2F) {
-      result = ((Probe) shareable).retainedForeignArrayIsNull()
-          ? (short)0x6A6E : (short)0x6A6F;
+      Probe probe = (Probe) shareable;
+      Object[] global = (Object[])JCSystem.makeGlobalArray(
+          JCSystem.ARRAY_TYPE_OBJECT, (short)1);
+      global[0] = this;
+      short staticResult = probe.inspectGlobalReference(global);
+      global[0] = null;
+      result = staticResult == (short)0x6B36 &&
+                       probe.retainedForeignArrayIsNull()
+                   ? (short)0x6A6E : (short)0x6A6F;
     } else if (buffer[1] == 0x40) {
       ((Probe) shareable).clearRetainedForeignArray();
       result = (short) 0x6A70;

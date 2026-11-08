@@ -675,6 +675,9 @@ public final class ServiceApplet extends Applet implements Probe {
       if (value == this) {
         return (short)0x6B30;
       }
+      if (retainedForeignStatic == value) {
+        return (short)0x6B36;
+      }
       value.equals(this);
       return (short)0x6B02;
     } catch (SecurityException expected) {
@@ -684,6 +687,7 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public short retainForeignReference(Object[] values) {
     Object foreign = values[0];
+    Object foreignArray = values[1];
     boolean staticStored = false;
     boolean instanceStored = false;
     boolean arrayStored = false;
@@ -704,7 +708,7 @@ public final class ServiceApplet extends Applet implements Probe {
     try {
       Object[] local = new Object[1];
       try {
-        local[0] = foreign;
+        local[0] = foreignArray;
         arrayStored = local[0] != null;
       } catch (SecurityException denied) {
         failures |= 4;
@@ -726,13 +730,7 @@ public final class ServiceApplet extends Applet implements Probe {
   }
 
   public Object getRetainedForeignArray() {
-    try {
-      byte[] foreign = (byte[])retainedForeignInstance.value;
-      if (foreign.length == 1) return null;
-      return null;
-    } catch (SecurityException expected) {
-      return retainedForeignArray[0];
-    }
+    return retainedForeignArray[0];
   }
 
   public boolean retainedForeignArrayIsNull() {

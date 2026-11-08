@@ -189,11 +189,19 @@ public:
   /// An absent tag is the default null value for a reference slot.
   static jref_t getPersistentField_ReferenceStrict(const fs::Tag &tag,
                                                    Heap &heap);
+  /// Return the owner package encoded by a foreign static-reference wrapper,
+  /// or the caller-supplied owner for legacy/local reference records.
+  static uint8_t getPersistentField_ReferenceOwner(
+      const fs::Tag &tag, uint8_t default_owner);
   /// Read the serialized field type stored at a tag.
   static FieldType getPersistentField_Type(const fs::Tag &tag);
   /// Store a persistent object or array reference under a tag.
   static void setPersistentField_Reference(const fs::Tag &tag,
                                            const jref_t value, Heap &heap);
+  static void setPersistentForeignReference(const fs::Tag &tag,
+                                            const jref_t value,
+                                            uint8_t owner_package,
+                                            Heap &owner_heap);
 
   /// Get array data store value in flash memory at a specific index.
   static const jbyte_t getPersistentField_Array_Byte(const fs::Tag &tag,

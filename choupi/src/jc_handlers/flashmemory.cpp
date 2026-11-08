@@ -1030,6 +1030,22 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceStrict(
                                                                true, 0);
 }
 
+uint8_t FlashMemory_Handler::getPersistentField_ReferenceOwner(
+    const fs::Tag &tag, const uint8_t default_owner) {
+  if (fs_exists(tag.value, tag.len) == 0) return default_owner;
+  auto [length, data] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
+  if (length == 0 || data == nullptr) throw Exceptions::SecurityException;
+  if (data[0] == FieldType::FIELD_TYPE_GLOBAL_AID_OBJECT) return 0xfe;
+  if (data[0] != FieldType::FIELD_TYPE_FOREIGN_REFERENCE) {
+    return default_owner;
+  }
+  if (length < 3 || data[1] == 0xfe || data[1] == 0xff || data[2] == 0 ||
+      data[2] > TAG_MAX_LENGTH || length != 3u + data[2]) {
+    throw Exceptions::SecurityException;
+  }
+  return data[1];
+}
+
 jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     const fs::Tag &tag, Heap &heap, const bool fail_on_read,
     const uint8_t alias_depth) {
@@ -1081,6 +1097,28 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
   }
 
   FieldType type = static_cast<FieldType>(data[0]);
+
+  if (type == FieldType::FIELD_TYPE_FOREIGN_REFERENCE) {
+    if (length < 3 || data[1] == 0xfe || data[1] == 0xff || data[2] < 6 ||
+        data[2] > TAG_MAX_LENGTH || length != 3u + data[2] ||
+        (fail_on_read && alias_depth >= kMaxPersistentAliasDepth)) {
+      throw Exceptions::SecurityException;
+    }
+    const uint8_t *target_data = data + 3;
+    if (target_data[0] != 0x03 || target_data[2] != data[1] ||
+        target_data[3] != 0xff || target_data[4] != 0xfc) {
+      throw Exceptions::SecurityException;
+    }
+    Heap *owner_heap = Context::findRetainedAppletHeap(
+        data[1], static_cast<japplet_ID_t>(target_data[1]));
+    if (owner_heap == nullptr) throw Exceptions::SecurityException;
+    fs::Tag target_tag{};
+    target_tag.len = data[2];
+    std::memcpy(target_tag.value, target_data, target_tag.len);
+    return FlashMemory_Handler::getPersistentField_ReferenceImpl(
+        target_tag, *owner_heap, fail_on_read,
+        static_cast<uint8_t>(alias_depth + 1));
+  }
 
   if (type == FieldType::FIELD_TYPE_GLOBAL_AID_OBJECT) {
     if (length < 10 || data[4] < 5 || data[4] > 16 ||
@@ -1451,6 +1489,52 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
     std::fflush(stdout);
     throw;
   }
+}
+
+void FlashMemory_Handler::setPersistentForeignReference(
+    const fs::Tag &tag, const jref_t value,
+    const jpackage_ID_t owner_package, Heap &owner_heap) {
+  if (tag.len == 0 || tag.len > TAG_MAX_LENGTH - 6 ||
+      value.isNullPointer() || value.isArray() || value.isGlobalArray() ||
+      value.isGlobalInstance() || owner_package == 0xfe ||
+      owner_package == 0xff) {
+    throw Exceptions::SecurityException;
+  }
+  const auto instance = owner_heap.getInstance(value);
+  if (instance->isShareableProxyPlaceholder()) {
+    throw Exceptions::SecurityException;
+  }
+  const auto fields = instance->getFields();
+  for (uint16_t index = 0; index < fields->size(); ++index) {
+    const jc_field_t &field = fields->at(index);
+    if (field.reference_owner != 0xff && field.reference_owner != 0xfe) {
+      throw Exceptions::SecurityException;
+    }
+  }
+
+  fs::Tag target_tag{};
+  target_tag.value[0] = 0x03;
+  target_tag.value[1] = static_cast<uint8_t>(owner_heap.getOwner());
+  target_tag.value[2] = owner_package;
+  target_tag.value[3] = 0xff;
+  target_tag.value[4] = 0xfc;
+  target_tag.value[5] = tag.len;
+  std::memcpy(target_tag.value + 6, tag.value, tag.len);
+  target_tag.len = static_cast<uint8_t>(6 + tag.len);
+  // Keeping this alias in the foreign object's applet/package namespace lets
+  // deletion and persistent inventory find it even though the static root is
+  // owned by another package.
+  FlashMemory_Handler::setPersistentField_Reference(target_tag, value,
+                                                     owner_heap);
+
+  std::vector<uint8_t> wrapper(3 + target_tag.len);
+  wrapper[0] = static_cast<uint8_t>(FieldType::FIELD_TYPE_FOREIGN_REFERENCE);
+  wrapper[1] = owner_package;
+  wrapper[2] = target_tag.len;
+  std::memcpy(wrapper.data() + 3, target_tag.value, target_tag.len);
+  FlashMemory_Handler::setDataFromTag(tag,
+                                      static_cast<uint32_t>(wrapper.size()),
+                                      wrapper.data());
 }
 
 /*
