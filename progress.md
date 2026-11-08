@@ -26203,6 +26203,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production reclamation disabled. Extend multi-context and
   native-root coverage plus persistent interruption testing before any
   production wiring or full-suite retry.
-- Commit: `<pending>`
+- Commit: `2623829e`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T220544Z.log`,
   SHA-256 `9e09d434f15ae31e997eb74f66a1552397a61a7b3faafa16501cd597515cc3f9`.
