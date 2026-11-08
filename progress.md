@@ -26305,7 +26305,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production deletion unsupported. Continue with cross-owner
   alias retention and partial-erasure/retry checks before broader JCAlgTest
   traffic.
-- Commit: `<pending>`
+- Commit: `c60a9d34`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T224233Z.log`
   (SHA-256 `83af7ec4f4860482eb4117879db6e7b678edd31738625bc2764e399887b078c8`)
   and `artifacts/logs/object-deletion-vpcd-20261108T224427Z.log` (SHA-256
