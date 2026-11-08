@@ -25318,5 +25318,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 stty -F /dev/ttyACM2 1200 raw -echo` and the equivalent command for `/dev/ttyACM0` both return `stty: Input/output error`. After refreshing the authorized helper, `lsusb -d 2e8a:` shows three runtime `2e8a:0009` devices (nodes 117-119); no device entered BOOTSEL. This is the previously deployed image, so it does not exercise the newly built reset callback.
 - Result: No attached board can currently be reset or flashed through the exposed CDC path; earlier bounded monitor checks also produced no serial data, and PC/SC listed only VPCD.
 - Decision: Keep the new reset hook and external image build-validated only. Do not repeat the same long reset/flash wait unless a board enters BOOTSEL or provides a working CDC/PCSC interface.
-- Commit: `pending`
+- Commit: `6ad6b969`
 - Artifacts/logs: Commands and status recorded here; `artifacts/logs/cycle-choupi-20261108T041557Z.log` is the first-board reset failure log.
