@@ -166,10 +166,9 @@ public final class SioCrossAidPhysicalProbe {
       response = channel.transmit(new CommandAPDU(hex("8020000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:foreignReferenceRetention response=" + actual);
-      if (!actual.equals("6B439000")) {
-        throw new AssertionError("expected applet-owned volatile wildcard " +
-                                 "Object[] retention with static/instance " +
-                                 "stores denied (6B439000), got " + actual);
+      if (!actual.equals("6B409000")) {
+        throw new AssertionError("expected all foreign-reference retention " +
+                                 "checks to succeed (6B409000), got " + actual);
       }
       response = channel.transmit(new CommandAPDU(hex("802E000000")));
       actual = hex(response.getBytes());
@@ -247,7 +246,10 @@ public final class SioCrossAidPhysicalProbe {
                          "context_restore denied_lookup local_reference_firewall " +
                          "proxy_method_firewall");
     } finally {
-      card.disconnect(false);
+      // Leave the card manager's selection state clean so the GPPro cleanup
+      // phase can delete the temporary applets even when a probe returned
+      // early from the after-delete/reinstall modes.
+      card.disconnect(true);
     }
   }
 }

@@ -1036,6 +1036,20 @@ review.
   runtime monitor. PC/SC still publishes no readers, so physical APDU
   acceptance remains open.
 
+  Physical follow-up on 2026-11-08: all three boards (D92, 2BED, 8E46) were
+  flashed with the current ARM image and passed finite runtime monitors.
+  `tools/test-sio-cross-aid-physical` then passed its APDU assertions on each
+  board, including SIO, owner firewall, SensitiveResult, GC, DELETE and
+  same-AID reinstall. The physical probe's expected `6B43` was stale; the
+  fixture and VPCD suite expect `6B40` when all four retention checks succeed,
+  and the physical probe now matches. Cleanup exposed a real package-static
+  dependency: remove the reinstalled service package before deleting the
+  client applet, because the service static field may retain a client object.
+  Cleanup order was corrected. On 8E46 the reader disappeared during cleanup
+  with `SCARD_E_NOT_TRANSACTED` after the service package removal; D92 and 2BED
+  readers also stopped publishing afterward. The physical suite's final cleanup
+  and a clean registry are still unverified; retry when PC/SC readers return.
+
 ### CTX-02
 
 - [ ] **Complete Java-level SensitiveResult coverage across SIO calls.**

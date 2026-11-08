@@ -50,8 +50,10 @@ cleanup() {
   local cleanup_status=0
   if timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
       >"${gp_list}" 2>&1; then
-    for aid in A00000015100000401 A000000151000004 \
-               A00000015100000301 A000000151000003 A000000151000002; do
+    # The reinstalled service package can retain a foreign client object in a
+    # package-static field. Remove that root before deleting the client applet.
+    for aid in A00000015100000301 A000000151000003 \
+               A00000015100000401 A000000151000004 A000000151000002; do
       if [[ "${service_applet_deleted}" == 1 &&
             "${aid}" == A00000015100000301 ]]; then
         continue

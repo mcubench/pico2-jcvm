@@ -1,4 +1,4 @@
-# Current handoff — reject reserved foreign-static target owners — 2026-11-08 03:26 CET
+# Current handoff — physical cross-AID suite and reader drop — 2026-11-08 04:07 CET
 
 Persistent applet-delete alias scanning now uses the same strict decoder as
 unreachable-tag inventory for foreign-reference wrappers in package-static
@@ -35,21 +35,47 @@ in `progress.md`: 1,762,816 bytes, SHA-256
 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d`.
 Implementation commit: `7802769d`.
 
-After rebuilding the PC emulator with `./tools/build-pc --profile max_crypto`,
-the complete `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` suite
-passes 35/35 at `artifacts/logs/sio-cross-aid-vpcd-20261108T023459Z.log`.
-This adds broad CTX-01 interaction evidence after the decoder change, but does
-not replace physical APDU validation. The PC build reported existing Java
-converter and packed-member compiler warnings; it completed successfully.
+The strict foreign-static wrapper decoder rejects reserved target applet-owner
+IDs `0xFE` and `0xFF`. Unit suites pass, ARM and RISC-V builds pass, and the
+35-case cross-AID VPCD suite passes at
+`artifacts/logs/sio-cross-aid-vpcd-20261108T023459Z.log`. Code commit:
+`7802769d`; its progress reference is resolved in `c6568855`. Three boards
+(D92, 2BED, 8E46) were flashed with the current ARM image and each passed the
+finite runtime monitor:
 
-The previous handoff-resolution commit is `1e8418ba`. Continue the CTX-01
-reference-consumer audit offline while PC/SC has no readers; keep normal
-persistent reclamation disabled until PERSIST-01 multi-owner and physical
-interruption/power-loss gates pass.
+- D92: `artifacts/logs/cycle-choupi-20261108T022447Z.log`
+- 2BED: `artifacts/logs/cycle-choupi-20261108T024440Z.log`
+- 8E46: `artifacts/logs/cycle-choupi-20261108T024555Z.log`
 
-Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle audits. Keep
-normal persistent reclamation disabled until multi-owner and physical
-interruption/power-loss gates pass. Preserve unrelated worktree edits.
+The physical cross-AID suite's APDU assertions pass on all three boards. Its
+old `6B43` expected result was stale; the current all-success result is `6B40`.
+The physical probe is updated and cleanup order now removes the reinstalled
+service package before the client, since its package-static object may retain a
+client object. On 8E46, cleanup lost the PC/SC reader with
+`SCARD_E_NOT_TRANSACTED` after service-package deletion. D92 and 2BED stopped
+publishing as readers afterward; the last scan showed only VPCD readers and one
+unnamed USB device. Final cleanup and empty physical registries remain
+unverified. Do not retry hardware until a Pico reader is published; then use
+another board if the first one drops out.
+
+D92 was flashed before the progress-only handoff commit and has UF2 SHA-256
+`b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d` with CPLC
+source ID `FF1E8418`. Later D92 rebuilds for 2BED and 8E46 use the same firmware
+logic and UF2 SHA-256 `924f019205924fcce1924c72d02db0c6c24cc0626231238e1db11587e4b5ccd3`
+with CPLC source ID `FFA7938E`. Both images are 1,762,816 bytes.
+
+Relevant physical logs:
+`artifacts/logs/sio-cross-aid-physical-20261108T025342Z.log` (D92),
+`artifacts/logs/sio-cross-aid-physical-20261108T025924Z.log` (2BED), and
+`artifacts/logs/sio-cross-aid-physical-20261108T030435Z.log` (8E46). D92's
+temporary client and contract AIDs and 2BED's client/contract AIDs may remain;
+8E46 cleanup likely removed the service but also needs a registry check. These
+are test fixtures `A000000151000002`, `A000000151000004`, and
+`A00000015100000401`; do not treat the boards as clean.
+
+Continue the CTX-01 reference-consumer audit offline and keep persistent
+reclamation disabled until PERSIST-01 multi-owner and physical power-loss gates
+pass. Preserve unrelated worktree edits.
 
 ---
 

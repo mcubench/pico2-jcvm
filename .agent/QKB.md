@@ -8053,3 +8053,26 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   (22 cases); ARM/RISC-V builds pass. D92 finite monitor passes after flash.
   The reader helper grants access to three USB nodes, but bounded
   `pcsc_scan -r` publishes no Pico readers, so no physical APDU test ran.
+
+# 2026-11-08 Physical cross-AID harness: current result and cleanup order
+
+- Issue: The physical SIO probe expected `6B43` for the `retainForeignReference`
+  CAP call even though the current service method returns `6B40` when all four
+  retention checks succeed. The VPCD suite already expects `6B40`; this was a
+  stale host-probe assertion. Also, cleanup tried deleting the client before
+  deleting the reinstalled service package, whose package-static field may
+  retain a client-owned object. That yields `6985` for client DELETE.
+- Viable fix: Align the physical probe with `6B40`; reset the SmartCardIO session
+  in its `finally` block; delete the service applet/package before the client
+  applet/package and the shared contract package. This matches the reference
+  ownership graph and avoids a false expectation.
+- Validation: All physical APDU assertions passed on D92, 2BED and 8E46,
+  including cross-AID SIO, foreign-owner checks, GC, DELETE and reinstall. Logs:
+  `artifacts/logs/sio-cross-aid-physical-20261108T025342Z.log`,
+  `artifacts/logs/sio-cross-aid-physical-20261108T025924Z.log`, and
+  `artifacts/logs/sio-cross-aid-physical-20261108T030435Z.log`. The first D92
+  attempt at `024827Z` stopped on the stale `6B43` assertion. Cleanup on 8E46
+  then lost its PC/SC reader with `SCARD_E_NOT_TRANSACTED` after service package
+  removal; D92 and 2BED were also no longer published afterward. Thus final
+  cleanup and an empty fixture registry have not yet been verified. Retry after
+  PC/SC readers return, and continue with another board if one disappears.
