@@ -25219,7 +25219,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Confirmed commit `0daec692` contains the strict wrapper decoder, persistence regressions, and initial progress entry. `git -c core.whitespace=cr-at-eol diff --check` passes. Runtime performance was not measured.
 - Result: Current handoff and progress log point to the implementation commit.
 - Decision: Continue CTX-01/PERSIST-01 acceptance; physical APDU validation remains open until PC/SC exposes a reader.
-- Commit: `<pending>`
+- Commit: `ac567a94`
 - Artifacts/logs: `.agent/HANDOFF.md`; `progress.md`.
 
 ## 2026-11-08 Reject reserved foreign-static target owners 8 minutes

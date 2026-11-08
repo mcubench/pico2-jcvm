@@ -57,6 +57,7 @@ publishing as readers afterward; the last scan showed only VPCD readers and one
 unnamed USB device. Final cleanup and empty physical registries remain
 unverified. Do not retry hardware until a Pico reader is published; then use
 another board if the first one drops out.
+Harness correction and result record: `ac567a94`.
 
 D92 was flashed before the progress-only handoff commit and has UF2 SHA-256
 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d` with CPLC
