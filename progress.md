@@ -26172,6 +26172,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Do not rerun the suite in this mode. Implement/test servicing only
   explicit deletion requests, preserving the complete-root and power-loss
   acceptance gates before considering firmware enablement.
-- Commit: `<pending>`
+- Commit: `2493dff3`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T204110Z/`;
   partial CSV SHA-256 `a8393515ddafec3e215ce70e9d0e56b6c2c22f3599b1047292ac56a05bde7e20`.
