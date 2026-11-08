@@ -26094,6 +26094,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production collection and `isObjectDeletionSupported()`
   disabled until retained-context/global roots, hardware power-cut recovery and
   full JCAlgTest plateau acceptance are verified.
-- Commit: `<pending>`
+- Commit: `4e6b0b5b`
 - Artifacts/logs: `artifacts/logs/resource-package-static-candidates-vpcd-20261108.log`;
   `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
