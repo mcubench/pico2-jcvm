@@ -1915,6 +1915,25 @@ int main() {
         valid_alias_result == jcvm::PersistentInventory::VisitResult::Stopped &&
         alias_found;
 
+    std::vector<uint8_t> reserved_owner_wrapper = wrapper;
+    reserved_owner_wrapper[4] = 0xfe;
+    seed(source_static_tag, sizeof(source_static_tag), reserved_owner_wrapper);
+    alias_found = false;
+    const auto reserved_owner_alias_result =
+        jcvm::PersistentInventory::findAliasesToAppletOwner(owner, alias_found);
+    CandidateTags reserved_owner_candidates;
+    const auto reserved_owner_inventory_result =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            owner, heap, no_roots, collect_candidate,
+            &reserved_owner_candidates);
+    const bool reserved_owner_fails_closed =
+        reserved_owner_alias_result ==
+            jcvm::PersistentInventory::VisitResult::InvalidTag &&
+        !alias_found &&
+        reserved_owner_inventory_result !=
+            jcvm::PersistentInventory::VisitResult::Complete &&
+        reserved_owner_candidates.tags.empty();
+
     std::vector<uint8_t> malformed_wrapper = wrapper;
     malformed_wrapper.back() ^= 1;
     seed(source_static_tag, sizeof(source_static_tag), malformed_wrapper);
@@ -1942,6 +1961,8 @@ int main() {
            "foreign_static_wrapper_roots_target_and_nested_records");
     expect(valid_alias_detected,
            "foreign_static_wrapper_blocks_delete_of_its_target_owner");
+    expect(reserved_owner_fails_closed,
+           "foreign_static_wrapper_rejects_reserved_target_owner");
     expect(malformed_alias_fails_closed,
            "malformed_foreign_static_wrapper_fails_delete_alias_scan_closed");
     expect(orphan_reclaimed_as_candidate,

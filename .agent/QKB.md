@@ -8036,3 +8036,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   source-static tag. Malformed wrappers return `InvalidTag`, which blocks
   deletion. Unit regressions cover both valid-delete blocking and malformed
   fail-closed behavior.
+
+# 2026-11-08 Foreign-static target tags must reject reserved applet owners
+
+- Issue: The foreign-static wrapper decoder rejected reserved package IDs but
+  did not reject reserved owner IDs (`0xFE`, `0xFF`) in the embedded applet
+  target tag. Such a malformed wrapper could be interpreted as a valid
+  cross-owner root during persistent inventory.
+- Viable solution: Validate both owner fields. The strict decoder now rejects
+  the reserved target owner; DELETE alias scanning and inventory both fail
+  closed. The inventory visitor reports an incomplete/stopped scan rather than
+  the more specific `InvalidTag`, but returns no candidates, so the reclaimer
+  performs no mutation.
+- Validation: `./tools/test-persistent-transaction` passes, including the
+  reserved-owner rejection case; `./tools/test-persistent-inventory` passes
+  (22 cases); ARM/RISC-V builds pass. D92 finite monitor passes after flash.
+  The reader helper grants access to three USB nodes, but bounded
+  `pcsc_scan -r` publishes no Pico readers, so no physical APDU test ran.

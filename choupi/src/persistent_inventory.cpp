@@ -35,7 +35,8 @@ bool decodeForeignStaticTarget(const Tag &source_tag, const uint8_t *data,
     return false;
   }
   const uint8_t *target = data + 3;
-  if (target[0] != 0x03 || target[2] != data[1] || target[3] != 0xff ||
+  if (target[0] != 0x03 || target[1] == 0xfe || target[1] == 0xff ||
+      target[2] != data[1] || target[3] != 0xff ||
       target[4] != 0xfc || target[5] != source_tag.len ||
       std::memcmp(target + 6, source_tag.value, source_tag.len) != 0) {
     return false;

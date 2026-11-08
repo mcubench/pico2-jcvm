@@ -1,4 +1,4 @@
-# Current handoff — fail closed on malformed foreign-static aliases — 2026-11-08 03:16 CET
+# Current handoff — reject reserved foreign-static target owners — 2026-11-08 03:26 CET
 
 Persistent applet-delete alias scanning now uses the same strict decoder as
 unreachable-tag inventory for foreign-reference wrappers in package-static
@@ -19,6 +19,25 @@ readers, so physical DELETE/APDU validation remains open. The UF2 is 1,762,816
 bytes, SHA-256
 `bbface7f7640d49290eee1815b36fcf219eba56a669a533041cadef517763a98`.
 Implementation commit: `0daec692`.
+
+Follow-up audit found that the decoder rejected reserved package IDs in the
+wrapper but accepted reserved applet-owner IDs `0xFE` and `0xFF` in the
+embedded target tag. The shared decoder now rejects those values. A regression
+confirms DELETE alias scanning fails closed and persistent inventory yields no
+reclamation candidates. `./tools/test-persistent-transaction` and
+`./tools/test-persistent-inventory` pass; ARM/RISC-V builds pass. D92 was
+reflashed with the current ARM image and the finite monitor reports
+`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0` at
+`artifacts/logs/cycle-choupi-20261108T022447Z.log`. The helper grants access to
+three USB nodes, but bounded `pcsc_scan -r` still lists no Pico readers, so
+physical alias/APDU validation remains open. The built UF2 SHA/size are recorded
+in `progress.md`: 1,762,816 bytes, SHA-256
+`b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d`.
+
+The previous handoff-resolution commit is `1e8418ba`. Continue the CTX-01
+reference-consumer audit offline while PC/SC has no readers; keep normal
+persistent reclamation disabled until PERSIST-01 multi-owner and physical
+interruption/power-loss gates pass.
 
 Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle audits. Keep
 normal persistent reclamation disabled until multi-owner and physical

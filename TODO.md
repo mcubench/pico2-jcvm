@@ -762,6 +762,12 @@ review.
   malformed wrappers fail closed. Persistent-transaction and inventory unit
   suites pass. Physical DELETE/APDU validation remains open while PC/SC has no
   Pico readers.
+  A follow-up audit found that reserved applet-owner IDs (`0xFE`, `0xFF`) were
+  not rejected inside the deterministic target tag. The shared decoder now
+  rejects them; persistent-transaction coverage confirms both DELETE alias
+  scanning and reclamation inventory fail closed without candidates. ARM and
+  RISC-V builds and a D92 finite runtime cycle pass. PC/SC still lists no Pico
+  readers after the flash, so physical alias/APDU validation remains open.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.

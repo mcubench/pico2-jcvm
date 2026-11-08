@@ -25221,3 +25221,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue CTX-01/PERSIST-01 acceptance; physical APDU validation remains open until PC/SC exposes a reader.
 - Commit: `<pending>`
 - Artifacts/logs: `.agent/HANDOFF.md`; `progress.md`.
+
+## 2026-11-08 Reject reserved foreign-static target owners 8 minutes
+
+- Step/experiment: `PERSIST-01-reserved-foreign-static-owner`
+- When: '2026-11-08 03:18 CET' - '2026-11-08 03:26 CET'
+- Change: Tightened the shared foreign-static target decoder to reject reserved applet-owner IDs `0xFE` and `0xFF`, in addition to reserved package IDs. Added a regression proving DELETE alias scanning rejects the malformed wrapper and inventory fails closed without emitting reclamation candidates. Updated TODO, QKB and handoff.
+- Validation: `./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`); the first run exposed that the test must accept a non-complete/stopped inventory result rather than only `InvalidTag`, then the corrected test passed. `./tools/test-persistent-inventory` passes 22 cases. `./tools/build arm` and `./tools/build riscv` pass. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` flashed and verified the ARM image; finite monitor passes `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`. The reset-interface attempt failed once, then the wrapper's CDC 1200-baud recovery entered BOOTSEL and the verified flash succeeded. Afterward the authorized reader helper granted 3 USB nodes, but `timeout 8s pcsc_scan -r` exited 124 with no readers. Targeted `git diff --check` passes; repository-wide check reports unrelated trailing whitespace in the pre-existing dirty `AGENTS.md` edit.
+- Result: Reserved owner IDs no longer pass foreign-static wrapper validation. The updated firmware runs on Pico 2 `D92E743D5F640C0F`; physical APDU validation remains unavailable because PC/SC lists no Pico readers.
+- Decision: Keep reclamation disabled; continue the CTX-01 reference-consumer audit offline and retry physical APDU tests after PC/SC publishes a Pico reader.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T022447Z.log`; `build/arm/pico2_choupi.uf2` size 1,762,816 bytes, SHA-256 `b454377c522a1ee3a85c8b71122af12b801e1502b0b592f44279d9bb95bfae5d`.
