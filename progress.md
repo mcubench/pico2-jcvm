@@ -25274,7 +25274,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passes, including `shareable_root_lease_rollback=1 owner=1 existing=1`. `./tools/build arm` and `./tools/build riscv` pass through `./tools/cycle choupi --usb-path 1-3`; `./tools/build-pc --profile max_crypto` and the 35/35 VPCD SIO suite passed earlier in this work step. Physical SIO was not run because `pcsc_scan -r` listed only VPCD readers and the connected boards were runtime-mode, not BOOTSEL.
 - Result: Root retention rollback is covered on proxy-creation failure and existing retained roots are preserved. Hardware acceptance remains unverified.
 - Decision: Keep CTX-01 physical acceptance open; continue addressing deterministic multi-board flash selection and runtime-to-BOOTSEL recovery.
-- Commit: `pending`
+- Commit: `104d1845`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T034906Z.log` (35/35); latest ARM firmware build end `0x100D72BC`, 167,236 bytes remaining. The attempted physical cycle log is recorded separately in the USB recovery step.
 
 ## 2026-11-08 Add USB-port targeting and CDC BOOTSEL recovery 24 minutes
@@ -25285,5 +25285,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `bash -n tools/flash tools/cycle tools/monitor` passes. `./tools/test-rmi-registry` passes. `./tools/cycle choupi --usb-path 1-3` builds ARM and RISC-V successfully; ARM image end `0x100D72BC`, 167,236 bytes remaining. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --usb-path 1-3 --seconds 2` resolves `/dev/ttyACM1` and exits 0, but produced no serial payload in its bounded window. The physical cycle on the currently deployed firmware did not enter BOOTSEL: picotool reports `Unable to locate reset interface`; CDC 1200 also timed out. The new CDC reset hook is therefore build-validated but not flash- or hardware-validated. `pcsc_scan -r` still lists only VPCD readers.
 - Result: Explicit USB-path targeting works for enumeration and console selection. A board running the new reset callback is needed to validate automatic runtime-to-BOOTSEL recovery; no board was flashed in this step.
 - Decision: Keep the reset hook provisional and hardware acceptance open. Retry the cycle as soon as any board is already in BOOTSEL; use another USB path if the selected port is unavailable.
-- Commit: `pending`
+- Commit: `971887e4`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T041138Z.log` and `artifacts/logs/cycle-choupi-20261108T041557Z.log`; both end in a BOOTSEL recovery failure against existing firmware.

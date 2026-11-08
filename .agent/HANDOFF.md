@@ -9,7 +9,8 @@ pass, and the max_crypto VPCD cross-AID suite passed 35/35 at
 
 Three Pico 2 boards currently enumerate as runtime `2e8a:0009` at stable USB
 paths `1-3`, `1-4`, `1-5`, but their sysfs `serial` files are absent and
-`pcsc_scan -r` lists only the two VPCD readers. Added `--usb-path` selection to
+`pcsc_scan -r` lists only the two VPCD readers. Commit `971887e4` adds
+`--usb-path` selection to
 `tools/flash`, `tools/cycle`, and `tools/monitor`; a bounded monitor correctly
 mapped path `1-3` to `/dev/ttyACM1`. Both architecture builds passed with the
 new firmware BOOTSEL hook, and the updated `cycle choupi --usb-path 1-3` build
@@ -23,8 +24,8 @@ but cannot be installed until a board is already in BOOTSEL. No physical flash
 or runtime log is claimed. Failed attempt log:
 `artifacts/logs/cycle-choupi-20261108T041557Z.log`.
 
-Next: preserve the uncommitted USB targeting/reset changes and unrelated dirty
-worktree files. When a board is actually in BOOTSEL, run
+Next: preserve unrelated dirty worktree files. When a board is actually in
+BOOTSEL, run
 `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --usb-path 1-3` through the
 required elevated host-access path, verify finite serial `TEST:PASS` output,
 then verify 1200-baud reset/reflash using that new image. If one board is
