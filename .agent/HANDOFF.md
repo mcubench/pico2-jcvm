@@ -10727,4 +10727,4 @@ implementation with fake flash, so it validates the COW recovery logic but is
 not physical Pico power-cut evidence. Production object deletion remains
 unsupported/disabled. Continue with a physical safe-boundary restart test and
 the unchanged full JCAlgTest long-run plateau before declaring RESOURCE-01
-fixed.
+fixed. The evidence record is committed as `a2f9e0ac`.

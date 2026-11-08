@@ -26395,5 +26395,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   evidence and does not prove full JCAlgTest stability.
 - Decision: Retain the physical restart/cut and long-run JCAlgTest gates; keep
   production deletion disabled until those pass.
-- Commit: `<pending>`
+- Commit: `a2f9e0ac`
 - Artifacts/logs: command output only; no archived log.
