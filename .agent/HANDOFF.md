@@ -1,3 +1,21 @@
+# Current handoff — foreign-static replacement inventory regression — 2026-11-08 05:55 CET
+
+Extended the persistent transaction/inventory unit test for foreign static
+references. Replacing a static wrapper with one pointing to a different applet
+owner now verifies that the old owner's deterministic target and nested record
+become unreachable candidates, while the replacement owner's target remains
+rooted. Clearing the replacement wrapper then exposes its subtree. This checks
+inventory only; the reclaimer remains disabled in normal runtime and assignment
+does not eagerly erase old records. `./tools/test-persistent-transaction`
+passes, including the new `replacing_foreign_static_wrapper_orphans_old_owner_only`
+case.
+
+The latest authorized device refresh granted three USB nodes, but `lsusb`
+shows runtime `2e8a:0009` devices, no BOOTSEL device is present, and bounded
+`pcsc_scan -r` lists only VPCD readers. No physical flash or APDU was attempted.
+Continue offline until at least one board is in BOOTSEL or a Pico reader is
+published. Preserve the existing unrelated worktree changes.
+
 # Current handoff — SIO rollback and refreshed max_crypto image — 2026-11-08 05:46 CET
 
 The CTX-01 proxy root rollback is implemented and committed as `104d1845`

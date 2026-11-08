@@ -1945,18 +1945,73 @@ int main() {
             jcvm::PersistentInventory::VisitResult::InvalidTag &&
         !alias_found;
 
+    constexpr uint8_t replacement_owner = 0x46;
+    auto replacement_target_tag = target_tag;
+    replacement_target_tag[1] = replacement_owner;
+    auto replacement_child_tag = target_child_tag;
+    replacement_child_tag[1] = replacement_owner;
+    seed(replacement_target_tag.data(), replacement_target_tag.size(),
+         byte_record(0x53));
+    seed(replacement_child_tag.data(), replacement_child_tag.size(),
+         byte_record(0x54));
+    std::vector<uint8_t> replacement_wrapper{8, source_package,
+        static_cast<uint8_t>(replacement_target_tag.size())};
+    replacement_wrapper.insert(replacement_wrapper.end(),
+                               replacement_target_tag.begin(),
+                               replacement_target_tag.end());
+    seed(source_static_tag, sizeof(source_static_tag), replacement_wrapper);
+
+    CandidateTags replaced_owner_candidates;
+    const auto after_replace_old_owner =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            owner, heap, no_roots, collect_candidate,
+            &replaced_owner_candidates);
+    const std::vector<uint8_t> replacement_target_bytes(
+        replacement_target_tag.begin(), replacement_target_tag.end());
+    const std::vector<uint8_t> replacement_child_bytes(
+        replacement_child_tag.begin(), replacement_child_tag.end());
+    const bool replaced_target_becomes_orphan =
+        after_replace_old_owner ==
+            jcvm::PersistentInventory::VisitResult::Complete &&
+        replaced_owner_candidates.tags.size() == 2 &&
+        std::find(replaced_owner_candidates.tags.begin(),
+                  replaced_owner_candidates.tags.end(), target_bytes) !=
+            replaced_owner_candidates.tags.end() &&
+        std::find(replaced_owner_candidates.tags.begin(),
+                  replaced_owner_candidates.tags.end(), child_bytes) !=
+            replaced_owner_candidates.tags.end();
+
+    jcvm::Heap replacement_heap(replacement_owner);
+    CandidateTags replacement_owner_candidates;
+    const auto after_replace_new_owner =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            replacement_owner, replacement_heap, no_roots, collect_candidate,
+            &replacement_owner_candidates);
+    const bool replacement_target_stays_rooted =
+        after_replace_new_owner ==
+            jcvm::PersistentInventory::VisitResult::Complete &&
+        std::find(replacement_owner_candidates.tags.begin(),
+                  replacement_owner_candidates.tags.end(),
+                  replacement_target_bytes) ==
+            replacement_owner_candidates.tags.end() &&
+        std::find(replacement_owner_candidates.tags.begin(),
+                  replacement_owner_candidates.tags.end(),
+                  replacement_child_bytes) ==
+            replacement_owner_candidates.tags.end();
+
     seed(source_static_tag, sizeof(source_static_tag), {0});
     CandidateTags orphan_candidates;
     const auto after_clear =
         jcvm::PersistentInventory::visitUnreachableAppletTags(
-            owner, heap, no_roots, collect_candidate, &orphan_candidates);
+            replacement_owner, replacement_heap, no_roots, collect_candidate,
+            &orphan_candidates);
     const bool orphan_reclaimed_as_candidate =
         after_clear == jcvm::PersistentInventory::VisitResult::Complete &&
         orphan_candidates.tags.size() == 2 &&
         std::find(orphan_candidates.tags.begin(), orphan_candidates.tags.end(),
-                  target_bytes) != orphan_candidates.tags.end() &&
+                  replacement_target_bytes) != orphan_candidates.tags.end() &&
         std::find(orphan_candidates.tags.begin(), orphan_candidates.tags.end(),
-                  child_bytes) != orphan_candidates.tags.end();
+                  replacement_child_bytes) != orphan_candidates.tags.end();
     expect(target_retained,
            "foreign_static_wrapper_roots_target_and_nested_records");
     expect(valid_alias_detected,
@@ -1965,6 +2020,8 @@ int main() {
            "foreign_static_wrapper_rejects_reserved_target_owner");
     expect(malformed_alias_fails_closed,
            "malformed_foreign_static_wrapper_fails_delete_alias_scan_closed");
+    expect(replaced_target_becomes_orphan && replacement_target_stays_rooted,
+           "replacing_foreign_static_wrapper_orphans_old_owner_only");
     expect(orphan_reclaimed_as_candidate,
            "cleared_foreign_static_wrapper_releases_target_records");
   }

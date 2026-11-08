@@ -8021,8 +8021,12 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   devices, but `timeout 10s pcsc_scan -r` still exited 124 without listing
   readers, so no physical APDU validation was possible.
 - **Remaining limit:** Foreign static arrays, proxy references, and object
-  graphs containing foreign field edges stay denied. Audit orphan cleanup when
-  a foreign static field is cleared/replaced before expanding this format.
+  graphs containing foreign field edges stay denied. The inventory audit now
+  covers clearing and retargeting a foreign static: after replacement by a
+  different applet owner, the old owner-scoped target and child are returned
+  as unreachable candidates, while the replacement target stays rooted. This
+  does not erase records during assignment; normal persistent reclamation stays
+  disabled until its PERSIST-01 safety gates pass.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261107T234807Z.log` and
   `artifacts/logs/cycle-choupi-20261108T000027Z.log`.
 

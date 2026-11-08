@@ -1036,6 +1036,15 @@ review.
   runtime monitor. PC/SC still publishes no readers, so physical APDU
   acceptance remains open.
 
+  Static-reference lifecycle follow-up: replacing a foreign-static wrapper
+  with a reference owned by a different applet leaves the old owner-scoped
+  target and nested records unreachable; inventory offers exactly those old
+  records as reclaim candidates while keeping the replacement target rooted.
+  Clearing the replacement wrapper likewise exposes its target subtree.
+  `./tools/test-persistent-transaction` covers both cases. This is inventory
+  validation only: automatic persistent reclamation remains disabled, so the
+  orphan records are not erased during the static assignment.
+
   Physical follow-up on 2026-11-08: all three boards (D92, 2BED, 8E46) were
   flashed with the current ARM image and passed finite runtime monitors.
   `tools/test-sio-cross-aid-physical` then passed its APDU assertions on each
