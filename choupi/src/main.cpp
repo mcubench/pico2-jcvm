@@ -48,6 +48,7 @@
 #include "../../src/vm_diagnostics.h"
 
 #include <cstdio>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
@@ -326,8 +327,10 @@ struct PersistentInventoryCounts {
   std::vector<jcvm::jref_t> references;
 };
 
-struct UnreachableTagCount {
+struct PersistentTagStats {
   unsigned tags = 0;
+  std::uint64_t payload_bytes = 0;
+  bool complete = true;
 };
 
 void count_applet_inventory_root(const jcvm::jref_t reference,
@@ -337,25 +340,40 @@ void count_applet_inventory_root(const jcvm::jref_t reference,
   counts.references.emplace_back(reference);
 }
 
-bool count_unreachable_applet_tag(
-    const jcvm::PersistentInventory::Tag &, void *opaque) {
-  ++static_cast<UnreachableTagCount *>(opaque)->tags;
+bool accumulate_persistent_tag(
+    const jcvm::PersistentInventory::Tag &tag, void *opaque) {
+  auto &stats = *static_cast<PersistentTagStats *>(opaque);
+  jcvm::fs::Tag fs_tag{};
+  if (tag.len == 0 || tag.len > sizeof(fs_tag.value)) {
+    stats.complete = false;
+    return false;
+  }
+  fs_tag.len = tag.len;
+  std::memcpy(fs_tag.value, tag.value, tag.len);
+  try {
+    const auto record =
+        jcvm::FlashMemory_Handler::readPersistentRecord(fs_tag);
+    ++stats.tags;
+    stats.payload_bytes += record.first;
+  } catch (...) {
+    stats.complete = false;
+    return false;
+  }
   return true;
 }
 
 bool inventory_unreachable_tags_for_owner(
     const uint8_t owner, jcvm::Heap &heap,
     const std::vector<jcvm::jref_t> &roots, unsigned &owner_scans,
-    unsigned &tag_count) {
+    PersistentTagStats &stats) {
   try {
-    UnreachableTagCount count;
     const auto result = jcvm::PersistentInventory::visitUnreachableAppletTags(
-        owner, heap, roots, count_unreachable_applet_tag, &count);
-    if (result != jcvm::PersistentInventory::VisitResult::Complete) {
+        owner, heap, roots, accumulate_persistent_tag, &stats);
+    if (result != jcvm::PersistentInventory::VisitResult::Complete ||
+        !stats.complete) {
       return false;
     }
     owner_scans = 1;
-    tag_count = count.tags;
   } catch (...) {
     return false;
   }
@@ -382,15 +400,31 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
       : jcvm::PersistentInventory::VisitResult::ReadFailure;
   jcvm::Heap::ReachabilitySummary reachability;
   unsigned owner_scans = 0;
-  unsigned unreachable_tags = 0;
+  PersistentTagStats owner_records;
+  PersistentTagStats unreachable_records;
+  PersistentTagStats global_records;
+  const auto owner_inventory_result = jcvm::PersistentInventory::visitApplet(
+      context.getAppletID(), accumulate_persistent_tag, &owner_records);
+  const jcvm::PersistentInventory::Tag all_tags_prefix{};
+  const auto global_inventory_result = jcvm::PersistentInventory::visitPrefix(
+      all_tags_prefix, accumulate_persistent_tag, &global_records);
+  const bool owner_records_complete =
+      owner_inventory_result ==
+          jcvm::PersistentInventory::VisitResult::Complete &&
+      owner_records.complete;
+  const bool global_records_complete =
+      global_inventory_result ==
+          jcvm::PersistentInventory::VisitResult::Complete &&
+      global_records.complete;
   bool unreachable_complete = false;
   if (static_result == jcvm::PersistentInventory::VisitResult::Complete &&
-      applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
+      applet_result == jcvm::PersistentInventory::VisitResult::Complete &&
+      owner_records_complete) {
     reachability = context.getHeap().traceReachableFrom(counts.references);
     if (reachability.complete) {
       unreachable_complete = inventory_unreachable_tags_for_owner(
           context.getAppletID(), context.getHeap(), counts.references,
-          owner_scans, unreachable_tags);
+          owner_scans, unreachable_records);
     }
   } else {
     reachability.complete = false;
@@ -399,7 +433,12 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   std::fprintf(stderr,
                "PERSISTENT_INVENTORY: owner=%u static_result=%u static_roots=%u "
                "applet_result=%u applet_roots=%u trace_complete=%u "
-               "owner_scans=%u unreachable_complete=%u unreachable_tags=%u "
+               "owner_scan=%u owner_result=%u applet_records_complete=%u "
+               "applet_records=%u applet_payload_bytes=%llu "
+               "global_records_complete=%u global_records=%u "
+               "global_payload_bytes=%llu "
+               "unreachable_complete=%u "
+               "unreachable_tags=%u unreachable_payload_bytes=%llu "
                "reachable_arrays=%u/%u reachable_instances=%u/%u "
                "invalid_refs=%u edge_failures=%u root_failures=%u "
                "context_roots=%u\n",
@@ -407,8 +446,14 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                static_cast<unsigned>(static_result), counts.static_roots,
                static_cast<unsigned>(applet_result), counts.applet_roots,
                reachability.complete ? 1u : 0u,
-               owner_scans, unreachable_complete ? 1u : 0u,
-               unreachable_tags,
+               owner_scans, static_cast<unsigned>(owner_inventory_result),
+               owner_records_complete ? 1u : 0u, owner_records.tags,
+               static_cast<unsigned long long>(owner_records.payload_bytes),
+               global_records_complete ? 1u : 0u, global_records.tags,
+               static_cast<unsigned long long>(global_records.payload_bytes),
+               unreachable_complete ? 1u : 0u, unreachable_records.tags,
+               static_cast<unsigned long long>(
+                   unreachable_records.payload_bytes),
                reachability.arrays_reachable, reachability.arrays_total,
                reachability.instances_reachable,
                reachability.instances_total, reachability.invalid_references,

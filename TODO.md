@@ -116,6 +116,14 @@ Archive text is historical evidence, not current device state or priorities.
   open. A separate test-only RSA CRT KeyPair/signature probe returned generic
   `3F` during its sign/verify phase after key generation/component checks; its
   cause and relation to persistent resource pressure are unconfirmed.
+- Progress (2026-11-08): Extended opt-in PC VPCD `PICO2_PERSISTENT_INVENTORY`
+  output with active global persistent record counts and payload-byte totals;
+  the applet-owner-only scan missed key graph records. A three-form retained
+  RSA VPCD probe reported global active records/payload bytes of 6/34 at
+  baseline, 17/264 after public, 27/483 after plain private and 43/800 after
+  CRT private. These values include test/APDU scaffolding and are not isolated
+  per-key costs or physical-flash measurements. ARM, RISC-V and PC max_crypto
+  builds pass; the focused VPCD probe passes 5/5.
 
 ## Functionality review — 2026-11-03
 

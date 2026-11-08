@@ -29,6 +29,7 @@ public final class SymmCryptoProbe extends Applet {
   private static Cipher retainedCbcCipher;
   private static Key retainedCbcKey;
   private static AESKey stagedAesKey;
+  private static Key retainedAllocationKey;
   private static MessageDigest retainedDigest;
   private SymmCryptoProbe() { register(); }
 
@@ -272,6 +273,7 @@ public final class SymmCryptoProbe extends Applet {
         value[0] = (byte)0x80;
         key.setModulus(value, (short)0, (short)value.length);
         key.setExponent(new byte[] {1}, (short)0, (short)1);
+        retainedAllocationKey = key;
         return key.isInitialized() && key.getModulus(value, (short)0) == 64
             ? (byte)1 : (byte)0x21;
       }
@@ -283,6 +285,7 @@ public final class SymmCryptoProbe extends Applet {
         value[0] = (byte)0x80;
         key.setModulus(value, (short)0, (short)value.length);
         key.setExponent(new byte[] {1}, (short)0, (short)1);
+        retainedAllocationKey = key;
         return key.isInitialized() && key.getModulus(value, (short)0) == 64
             ? (byte)1 : (byte)0x22;
       }
@@ -297,6 +300,7 @@ public final class SymmCryptoProbe extends Applet {
         key.setDP1(value, (short)0, (short)value.length);
         key.setDQ1(value, (short)0, (short)value.length);
         key.setPQ(value, (short)0, (short)value.length);
+        retainedAllocationKey = key;
         return key.isInitialized() && key.getPQ(value, (short)0) == 32
             ? (byte)1 : (byte)0x23;
       }

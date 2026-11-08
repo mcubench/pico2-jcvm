@@ -15,6 +15,19 @@
   RSA public+CRT pair saves 1,728 bytes of array payload and seven active array
   records, excluding serialized headers and filesystem snapshot overhead.
   No physical flash delta or plateau has yet been measured.
+- Persistent accounting: The PC-only `PICO2_PERSISTENT_INVENTORY=1` hook now
+  reports global active filesystem tag count and payload bytes in addition to
+  per-applet owner counts. A retained-key VPCD probe reported global
+  records/payload bytes `6/34` at baseline, `17/264` after public RSA,
+  `27/483` after plain private RSA, and `43/800` after CRT private RSA. The
+  whole-APDU deltas include fixture and input-array records and cannot be read
+  as isolated key costs. The applet-only inventory remained `2/17`, showing
+  that ROM/package-owned key records require the global scan for visibility.
+- Viable measurement path: In the PC VPCD emulator, set
+  `PICO2_PERSISTENT_INVENTORY=1` for per-APDU accounting; compare records and
+  payload bytes at matched test checkpoints. This is a host backend metric and
+  does not establish RP2350 physical flash use, obsolete snapshot space, or
+  persistent-reclamation safety.
 - Separate unresolved probe: the local test-only 512-bit CRT KeyPair plus
   signature/cipher check generated the key and read its components, then
   returned a generic test failure during sign/verify. The exact exception and

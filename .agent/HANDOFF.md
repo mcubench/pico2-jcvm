@@ -1,3 +1,19 @@
+# Current handoff — persistent resource accounting diagnostics — 2026-11-08 08:05 CET
+
+Extended the opt-in PC VPCD `PICO2_PERSISTENT_INVENTORY=1` hook to count
+active records and serialized payload bytes across the full filesystem, in
+addition to applet-owner unreachable records and heap handles. The owner scan
+alone missed the RSA key graph; the global scan exposed it. With three retained
+512-bit key types, observed active-record/payload totals were baseline `6/34`,
+after public `17/264`, after plain private `27/483`, and after CRT private
+`43/800`. Each checkpoint includes test/CAP/APDU records and is not an isolated
+per-key or physical flash delta. The focused three-key VPCD run passes 5/5;
+ARM, RISC-V and PC max_crypto builds pass. Log:
+`artifacts/logs/resource-accounting-rsa-vpcd-newdiag.log`.
+
+No physical reader is PC/SC-visible: the helper grants three USB nodes, but
+current `pcsc_scan -r` output exposes only Virtual PCD. Continue offline.
+
 # Current handoff — RSA key component allocation optimization — 2026-11-08 07:52 CET
 
 RESOURCE-01 implementation stage: `buildNativeKey()` now allocates only

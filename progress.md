@@ -25538,6 +25538,31 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261108T064804Z.log`;
   focused failing probe: `artifacts/logs/rsa-crt-keypair-isolation.log`.
 
+## 2026-11-08 Instrument global persistent resource inventory 12 minutes
+
+- Step/experiment: `RESOURCE-01-GLOBAL-PERSISTENT-INVENTORY`
+- When: '2026-11-08 07:53 CET' - '2026-11-08 08:05 CET'
+- Change: Extended the opt-in PC post-APDU persistent inventory to count
+  active filesystem records and serialized payload bytes globally, while
+  preserving per-applet owner/unreachable counts and heap handle reachability.
+  Updated the RSA test fixture to retain each key in an applet static root so
+  its serialized object graph is visible after APDU completion.
+- Validation: `./tools/build-pc --profile max_crypto`,
+  `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` passed. The focused three-key VPCD
+  probe passed 5/5. `PICO2_PERSISTENT_INVENTORY=1` reported global active tag
+  count/payload bytes of `6/34` baseline, `17/264` after public RSA, `27/483`
+  after plain private RSA, and `43/800` after CRT private RSA. These include
+  test/CAP/APDU overhead and are not per-key or physical flash deltas.
+- Result: Global namespace scanning is required; the applet-owner scan alone
+  missed the ROM/package-owned key graph. The diagnostic is read-only and
+  opt-in. It does not measure obsolete snapshot space or prove physical
+  reclaimer safety.
+- Decision: Use this metric for matched VPCD long-run comparisons; instrument
+  physical storage separately after a Pico PC/SC reader is available.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/resource-accounting-rsa-vpcd-newdiag.log`.
+
 ## 2026-11-08 Resolve RSA allocation commit reference 1 minute
 
 - Step/experiment: `RESOURCE-01-RSA-KEY-COMPONENT-ALLOCATION-COMMIT-REFERENCE`
