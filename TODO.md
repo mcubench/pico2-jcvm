@@ -399,6 +399,11 @@ review.
   Rechecking after the JCSystem guard commit, persistent inventory passed all
   22 cases and both transaction/reclaimer and filesystem-overlay suites passed
   with `fail=0`. Physical multi-owner and power-loss gates remain open.
+  A 2026-11-08 regression now injects erase failures after 0, 1, 7, 8, and 9
+  successful deletions from a ten-tag owner set. Each new-Heap retry completed,
+  and a neighboring owner's record survived every case. This covers both sides
+  of the eight-tag batch boundary in the production reclaimer against the host
+  filesystem stub; it is not flash power-cut or persistent-backend evidence.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.

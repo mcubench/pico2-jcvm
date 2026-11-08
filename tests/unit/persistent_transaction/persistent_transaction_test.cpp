@@ -2111,6 +2111,75 @@ int main() {
            "reclaimer_retry_after_restart_finishes_remaining_orphans");
   }
 
+  {
+    constexpr uint8_t candidate_count = 10;
+    constexpr std::array<unsigned int, 5> interruption_points{0, 1, 7, 8, 9};
+    bool every_interruption_recovers = true;
+    bool other_owners_survive = true;
+    for (uint8_t run = 0; run < interruption_points.size(); ++run) {
+      const uint8_t owner = static_cast<uint8_t>(0x80 + run);
+      const uint8_t other_owner = static_cast<uint8_t>(0x90 + run);
+      std::array<std::array<uint8_t, 4>, candidate_count> candidates{};
+      for (uint8_t index = 0; index < candidate_count; ++index) {
+        candidates[index] = {0x03, owner, 0x40, index};
+        seed(candidates[index].data(), candidates[index].size(),
+             byte_record(index));
+      }
+      const std::array<uint8_t, 4> unrelated{
+          0x03, other_owner, 0x40, 0x01};
+      seed(unrelated.data(), unrelated.size(), byte_record(0xee));
+
+      const std::vector<jcvm::jref_t> no_roots;
+      RootVectorContext roots{&no_roots};
+      jcvm::Heap before_reboot(owner);
+      const unsigned int interruption = interruption_points[run];
+      persistent_transaction_test::fail_erase_after(interruption);
+      uint32_t erased_before_reboot = UINT32_MAX;
+      const auto interrupted =
+          jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+              owner, before_reboot, enumerate_root_vector, &roots,
+              &erased_before_reboot);
+      bool valid_interrupted_state =
+          interrupted == jcvm::PersistentInventory::VisitResult::EraseFailure &&
+          erased_before_reboot == interruption;
+      for (uint8_t index = 0; index < candidate_count; ++index) {
+        const auto value = persistent_transaction_test::read(
+            candidates[index].data(), candidates[index].size());
+        valid_interrupted_state &=
+            value.empty() == (index < interruption);
+      }
+      valid_interrupted_state &=
+          !persistent_transaction_test::read(unrelated.data(),
+                                             unrelated.size()).empty();
+
+      // A new Heap models the post-reset VM. Inventory is rebuilt from durable
+      // records and retry must finish without touching another owner.
+      jcvm::Heap after_reboot(owner);
+      uint32_t erased_after_reboot = UINT32_MAX;
+      const auto recovered =
+          jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+              owner, after_reboot, enumerate_root_vector, &roots,
+              &erased_after_reboot);
+      bool valid_recovered_state =
+          recovered == jcvm::PersistentInventory::VisitResult::Complete &&
+          erased_after_reboot == candidate_count - interruption;
+      for (const auto &tag : candidates) {
+        valid_recovered_state &= persistent_transaction_test::read(
+                                     tag.data(), tag.size()).empty();
+      }
+      other_owners_survive &=
+          persistent_transaction_test::read(unrelated.data(),
+                                            unrelated.size()) ==
+          byte_record(0xee);
+      every_interruption_recovers &=
+          valid_interrupted_state && valid_recovered_state;
+    }
+    expect(every_interruption_recovers,
+           "reclaimer_recovers_at_each_batch_boundary_and_neighbor");
+    expect(other_owners_survive,
+           "reclaimer_retries_never_erase_another_owner");
+  }
+
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");
   expect(!FlashMemory_Handler::commitPersistentWriteTransaction(),

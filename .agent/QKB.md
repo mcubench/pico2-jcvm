@@ -2779,6 +2779,11 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   each fixed-size batch, and restarts enumeration after each batch. If an erase
   fails, earlier deletions are restricted to tags proven unreachable; retrying
   can finish the remaining candidates.
+- A 2026-11-08 host-stub regression adds failure points after 0, 1, 7, 8, and 9
+  successful erases across a ten-record reclaim set. Every interrupted state
+  finishes after a fresh-Heap retry; a separate neighboring owner survives all
+  five runs. This tests the actual bounded-batch reclaimer logic and retry
+  contract, but does not simulate flash durability or a physical power cut.
 - `./tools/test-persistent-transaction` passes interrupted-batch retry,
   reachable-subtree/owner preservation, active-transaction refusal, incomplete
   root failure, and cursor-stall failure-closed cases. ARM and RISC-V max-profile

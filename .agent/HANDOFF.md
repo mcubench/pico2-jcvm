@@ -1,3 +1,19 @@
+# Current handoff — reclaimer batch interruption regression — 2026-11-08 06:24 CET
+
+Extended `./tools/test-persistent-transaction` to inject erase failures after
+0, 1, 7, 8, and 9 successful deletions from ten orphan records. Each test
+restarts reclaimer inventory with a fresh Heap, completes the remaining
+deletions, and verifies a neighboring owner's record survives. The suite passes
+with `TEST:SUMMARY fail=0`. This exercises production reclaimer logic with the
+host filesystem stub; it does not establish flash durability or physical
+power-cut behavior. PERSIST-01 remains open and normal persistent reclamation
+remains disabled.
+
+HMAC VPCD KATs pass 14/14; full 1.8.4 JCAlgTest support still previously failed
+on persistent storage exhaustion during RSA CRT key probes. Physical devices
+remain runtime-only and PC/SC lists only VPCD. Continue PERSIST-01 and capacity
+work offline.
+
 # Current handoff — current-worktree native HMAC KAT — 2026-11-08 06:21 CET
 
 `PICO2_HOST_USB_ACCESS=1 ./tools/test-hmac-vpcd` rebuilt the PC `max_crypto`

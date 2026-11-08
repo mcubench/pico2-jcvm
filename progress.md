@@ -25375,3 +25375,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue PERSIST-01 work.
 - Commit: `pending progress-reference commit`.
 - Artifacts/logs: none.
+
+## 2026-11-08 Reclaimer batch-boundary interruption coverage 3 minutes
+
+- Step/experiment: `PERSIST-01-RECLAIMER-BATCH-INTERRUPTION`
+- When: '2026-11-08 06:22 CET' - '2026-11-08 06:25 CET'
+- Change: Added host-stub failure-injection cases for the production persistent reclaimer at erase offsets 0, 1, 7, 8, and 9 across ten orphan tags. Each case retries with a fresh Heap and verifies a neighboring owner's persistent tag is untouched. Updated TODO, QKB and HANDOFF. No runtime reclaimer behavior changed.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `reclaimer_recovers_at_each_batch_boundary_and_neighbor` and `reclaimer_retries_never_erase_another_owner`; scoped `git diff --check` passed. ARM/RISC-V builds and hardware tests were not needed because only a host unit test and documentation changed.
+- Result: Reclaimer retry logic recovers across the start, interior, and eight-tag batch boundary in the host stub. This is not flash power-cut or physical multi-owner validation.
+- Decision: Keep PERSIST-01 open; do not enable normal persistent reclamation until physical interrupted-erase and multi-owner gates pass.
+- Commit: `pending implementation commit`.
+- Artifacts/logs: `./tools/test-persistent-transaction` console output; no physical logs.
