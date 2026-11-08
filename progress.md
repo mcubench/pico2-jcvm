@@ -26471,6 +26471,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production persistent deletion disabled. The user must refresh
   the helper before the prepared physical test can proceed; continue offline
   with RESOURCE-01 safety and resource-accounting work meanwhile.
-- Commit: `<pending>`
+- Commit: `81af6f84`
 - Artifacts/logs: No new logs; previous filesystem and transaction tests ran
   through their repository wrappers.

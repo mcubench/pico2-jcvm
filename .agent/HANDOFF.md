@@ -10752,6 +10752,7 @@ Pico-only repository helper and may include the unexpected PacketRF device.
 Await the user running `sudo ./tools/install-pcsc-sudoers`; then use an exact
 identified Pico2 reader name and chip ID, flash only the prepared diagnostic
 image, and run `tools/test-persistent-reclaimer-physical '<reader>' 8 4096`.
+The preflight and records are committed as `81af6f84`.
 The harness and progress records are committed as `bb3cb62c`.
 
 # Current handoff — reject stale physical-access helper — 2026-11-09 00:47 CET
