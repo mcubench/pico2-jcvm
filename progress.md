@@ -26359,3 +26359,22 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `a0023fea`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`,
   SHA-256 `0ebf558764dc3d8c95ea3757e62856362fb404774bd36a25c315d04d6cd21cf1`.
+
+## 2026-11-09 Revalidate persistent reclaimer interruption gates 3 minutes
+
+- Step/experiment: `PERSIST-01-UNIT-REVALIDATION`
+- When: '2026-11-09 00:11 CET' - '2026-11-09 00:14 CET'
+- Change: Re-ran the persistent transaction and reclaimer unit suite against
+  the current worktree, including independent in-progress heap/loader changes.
+  No source changes were made in this verification step.
+- Validation: `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`. Output includes foreign object/array alias-chain
+  preservation, malformed alias fail-closed behavior, active transaction
+  refusal, interruption/retry through multiple batch boundaries and protection
+  of unrelated owners. PC unit model only; no physical device or flash test.
+- Result: These current-tree unit gates remain green. Physical erase atomicity
+  and recovery are still unverified.
+- Decision: Continue RESOURCE-01/PERSIST-01 acceptance; this revalidation does
+  not justify enabling persistent deletion in production.
+- Commit: `<pending>`
+- Artifacts/logs: command output only; no archived log.

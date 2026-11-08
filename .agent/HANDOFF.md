@@ -10710,3 +10710,8 @@ Log: `artifacts/logs/object-deletion-vpcd-20261108T231016Z.log`, SHA-256
 Next continue full-run-safe diagnosis and PERSIST-01 root/recovery gates; do not
 access the unexpected PacketRF device. The fixture extension and records are
 committed as `a0023fea`.
+
+Current-tree revalidation: `./tools/test-persistent-transaction` passes
+`TEST:SUMMARY fail=0`, including foreign alias safety, malformed input,
+transaction refusal and interrupted cleanup/retry. This is unit-model evidence;
+physical flash recovery remains open.
