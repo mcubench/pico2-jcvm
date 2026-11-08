@@ -25505,5 +25505,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   deselection/reset. Physical lifecycle acceptance remains open.
 - Decision: Commit the VPCD regression independently; continue RESOURCE-01
   with physical reader access still unavailable.
-- Commit: `<pending>`
+- Commit: `7525b67b`
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261108T062536Z.log`.
+
+## 2026-11-08 Resolve transient lifecycle commit reference 1 minute
+
+- Step/experiment: `RESOURCE-01-CRYPTO-TRANSIENT-VPCD-COMMIT-REFERENCE`
+- When: '2026-11-08 07:35 CET' - '2026-11-08 07:36 CET'
+- Change: Replaced the pending commit reference for the VPCD lifecycle test
+  with its commit SHA.
+- Validation: Confirmed commit `7525b67b` contains the three VPCD regression
+  files and the associated progress, QKB and handoff records; no tests rerun.
+- Result: The VPCD regression record resolves to `7525b67b`.
+- Decision: Continue RESOURCE-01; physical lifecycle validation is pending
+  PC/SC visibility.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.

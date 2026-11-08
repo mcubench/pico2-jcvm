@@ -8,7 +8,7 @@ variants pass within the existing symmetric crypto VPCD suite. The test harness
 now builds `max_crypto` because the RSA transient-key variant needs RSA support.
 Validation log: `artifacts/logs/symm-crypto-kat-vpcd-20261108T062536Z.log`;
 the run reported `TEST:SUMMARY pass=99 fail=0` and
-`transient_lifecycle=16 reset_after=2 total=97 fail=0`.
+`transient_lifecycle=16 reset_after=2 total=97 fail=0`. Commit: `7525b67b`.
 
 This is VPCD evidence only; the physical PC/SC check after the user's latest
 "tokens present" update refreshed the helper to three USB nodes, while a
