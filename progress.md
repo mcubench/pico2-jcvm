@@ -25683,10 +25683,10 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `artifacts/logs/jcalgtest-rsa-keypair-1024-fresh-120s.log`,
   `artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log`.
 
-## 2026-11-08 Identify Pico readers by USB product 5 minutes
+## 2026-11-08 Identify Pico readers by USB product 7 minutes
 
 - Step/experiment: `HOST-PCSC-FILTER-PICO-IDENTITY`
-- When: '2026-11-08 11:13 CET' - '2026-11-08 11:18 CET'
+- When: '2026-11-08 11:13 CET' - '2026-11-08 11:20 CET'
 - Change: Tightened `tools/pico2-pcsc-reader-root` to require VID:PID
   `2e8a:0009`, manufacturer `Pico2`, and product `Pico2 JCVM CCID`, so a
   PacketRF unit that shares the VID:PID is excluded from the PC/SC allowlist.
@@ -25702,5 +25702,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Ask the user to run the existing installer once, then refresh
   helper access and check `pcsc_scan -r`; continue offline until a Pico reader
   is listed.
-- Commit: `<pending>`
+- Commit: `f552b6e8`
 - Artifacts/logs: host sysfs USB identity inspection; no file log.
+
+## 2026-11-08 Record Pico PC/SC filter commit reference 1 minute
+
+- Step/experiment: `HOST-PCSC-FILTER-PICO-IDENTITY-COMMIT-REFERENCE`
+- When: '2026-11-08 11:20 CET' - '2026-11-08 11:21 CET'
+- Change: Recorded the implementation commit for the Pico identity filter.
+- Validation: Confirmed `f552b6e8` contains the product/manufacturer filter,
+  QKB/handoff notes and implementation progress; no tests rerun.
+- Result: Repository helper fix is committed as `f552b6e8`.
+- Decision: Request one installer refresh, then check whether the three Pico2
+  readers become visible through PC/SC.
+- Commit: `<pending progress-reference commit>`
+- Artifacts/logs: none.
