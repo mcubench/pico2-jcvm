@@ -77,19 +77,15 @@ Archive text is historical evidence, not current device state or priorities.
   temporary per-APDU reclaimer experiment exposed missing protection for
   reachable applet-instance root records (`03 owner package class FF`) when
   their backing tags extend the root prefix. A prefix guard and regression now
-  protect this case. The experimental per-APDU path still fails transient
-  lifecycle behavior even with zero records erased; the normal 47/47 control
-  passes. No long-run fix is established.
+  protect this case. No long-run production fix is established.
   Follow-up diagnostic on 2026-11-08 found the exact erased record was
   `03023900FF`, the registered instance root for owner 2/package 57/class 0.
   The root was not represented by a currently reachable heap object, so prefix
   reachability alone could not protect it. The inventory now excludes valid
   applet-instance root records directly; focused regression and architecture
   builds pass. This safety change does not solve persistent OutOfFlash.
-  A later strengthened assertion found the first failing experimental event was
-  the transaction-probe SELECT after switching to Core (`6A82`), before the
-  transient-state APDU ran. The reclaimer logged zero erased tags. Why the test
-  AID is no longer found in that experimental run remains open.
+  After this root guard, the collector-enabled multipackage experiment passed
+  47/47; a fresh collector-disabled control also passed 47/47.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.
@@ -124,13 +120,13 @@ Archive text is historical evidence, not current device state or priorities.
     persistent writes; the following key-pair APDU gets an empty response and
     the client aborts. RAM-GC parity did not fix the long-run resource failure.
     This is VPCD evidence, not a physical-token result.
-  - A host-only experiment that invoked the production persistent reclaimer
-    after every VPCD APDU failed the 47-check multipackage suite: lookup-app
-    SELECT after reset returned `6A82` after the reclaimer had erased owner
-    records. The same current-worktree suite without that hook passed 47/47.
-    The diagnostic hook was removed. This confirms the current post-APDU root
-    set is not yet safe for routine persistent reclamation; trace exact erased
-    tags and references held by retained/inactive contexts before wiring it in.
+  - A request-gated host-only collector run on unchanged JCAlgTest 1.8.4
+    reclaimed 1,580 records and reached RSA 4096 without `F205` or
+    `PERSIST_EXCEPTION`, then hit the wrapper's 3,600-second ceiling during
+    KeyAgreement and returned an empty APDU. This is encouraging partial VPCD
+    evidence, not a completed support run or production fix. The PC-only hooks
+    were removed. PERSIST-01 still needs full multi-owner, active and inactive
+    context, transaction, interruption, and physical acceptance.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

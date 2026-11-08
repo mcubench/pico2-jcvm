@@ -10348,3 +10348,28 @@ multi-owner/transaction/interruption safety gates. Keep PacketRF excluded.
 
 Artifacts: `artifacts/logs/host-vpcd-multipackage-restart-20261108T144059Z.log`.
 Code/docs commit is pending at handoff creation.
+
+# Current handoff — RESOURCE-01 collector experiment retested after root fix — 2026-11-08 18:45 CET
+
+The registered applet-instance root guard is committed as `60148e50`. The
+temporary PC-only reclaimer/request/trace hooks used for diagnostics have now
+been removed, and `./tools/build-pc --profile max_crypto` passes on the clean
+runtime path. No physical reader was accessed or flashed; the unexpected
+PacketRF device remains excluded.
+
+Evidence update: the request-gated experimental full JCAlgTest 1.8.4/jc305
+run at `artifacts/results/jcalgtest-support-vpcd-20261108T162853Z/` made 187
+successful collector calls and erased 1,580 tags. It reached RSA CRT private
+4096 without `F205` or `PERSIST_EXCEPTION`, then hit the wrapper's 3,600-second
+limit during KeyAgreement and failed with an empty APDU. It is partial VPCD
+evidence, not full suite acceptance or a production fix. The collector-enabled
+multipackage experiment after the root-tag fix passed 47/47; current clean
+collector-disabled control also passed 47/47 at
+`artifacts/logs/host-vpcd-multipackage-apdu-20261108T173555Z.log`.
+
+Current firmware still reports object deletion unsupported and does not run
+persistent reclamation. RESOURCE-01 is not fixed. `./tools/test-persistent-
+transaction` passes `TEST:SUMMARY fail=0`. Continue with PERSIST-01 coverage of
+all durable roots/aliases, retained applet contexts and cross-owner references,
+then transaction/interruption recovery and physical acceptance before wiring
+deferred per-context deletion into normal APDU processing. Do not use PacketRF.

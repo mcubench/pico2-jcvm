@@ -25943,3 +25943,32 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `artifacts/logs/host-vpcd-multipackage-restart-20261108T144059Z.log`;
   existing JCAlgTest failure evidence remains under
   `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/`.
+
+## 2026-11-08 Reconcile RESOURCE-01 collector evidence 23 minutes
+
+- Step/experiment: `RESOURCE-01-REQUEST-GATED-COLLECTOR-EVIDENCE`
+- When: '2026-11-08 18:22 CET' - '2026-11-08 18:45 CET'
+- Change: Removed temporary PC-only persistent-collection and trace hooks from
+  the runtime sources, rebuilt the normal PC emulator, and corrected TODO,
+  QKB, and HANDOFF with the result of the request-gated long-run experiment
+  after the registered applet-root safety fix.
+- Validation: `./tools/build-pc --profile max_crypto` passed;
+  `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`;
+  `PICO2_HOST_USB_ACCESS=1 python3
+  tests/integration/pc_vpcd_multipackage_test.py --timeout 300` passed
+  `TEST:SUMMARY pass=47 fail=0` through the required host-access path. No
+  physical device was accessed or flashed.
+- Result: The experimental unchanged JCAlgTest 1.8.4/jc305 run made 187
+  successful collection calls, erased 1,580 tags, and reached RSA CRT private
+  4096 without `F205` or `PERSIST_EXCEPTION`. It hit the 3,600-second ceiling
+  during KeyAgreement and returned an empty APDU. Full suite acceptance remains
+  incomplete. Normal firmware still has deletion support disabled and the
+  persistent collector disconnected; RESOURCE-01 is not fixed.
+- Decision: Preserve the registered-root guard, keep production reclamation
+  disabled, and continue PERSIST-01 root/context/alias and interruption-safety
+  acceptance before wiring deferred deletion.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/results/jcalgtest-support-vpcd-20261108T162853Z/`;
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T173555Z.log`;
+  `artifacts/logs/host-vpcd-multipackage-restart-20261108T173555Z.log`.

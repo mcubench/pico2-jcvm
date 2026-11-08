@@ -1,3 +1,36 @@
+# 2026-11-08 RESOURCE-01 request-gated collection progress
+
+## Root-tag protection fixes the observed lookup loss, but full acceptance is open
+
+- The first per-APDU persistent-reclaimer experiment erased registered applet
+  instance root tag `03023900FF` (owner 2, package 57, class 0). The root is not
+  necessarily represented by a heap object, so ordinary heap reachability did
+  not protect it. `PersistentInventory::visitUnreachableTag` now excludes
+  valid applet-instance root tags directly; its focused unit regression passes.
+- After that fix, the temporary request-gated per-APDU collector multipackage
+  experiment passed 47/47. A clean collector-disabled run on the current tree
+  also passes 47/47, including cross-AID transient lifecycle and restart lookup.
+- A separate request-gated run with unchanged JCAlgTest 1.8.4/jc305 reclaimed
+  1,580 tags over 187 successful collection calls. It reached RSA CRT private
+  key support through 4096 bits without `F205` or `PERSIST_EXCEPTION`, then
+  hit the test wrapper's 3,600-second ceiling during KeyAgreement and received
+  an empty APDU. That empty APDU is the run timeout, not a demonstrated
+  resource failure. This is partial PC VPCD evidence only; the full suite did
+  not complete and no physical token was used.
+- The temporary request and logging hooks have been removed; normal firmware
+  still reports object deletion unsupported and persistent collection remains
+  disabled. Do not infer the current firmware is fixed from the experiment.
+- Current verification after hook removal: `./tools/build-pc --profile
+  max_crypto` passed; `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`; clean VPCD multipackage integration passed 47/47.
+  No hardware was accessed, especially not the unexpected PacketRF device.
+- Next: close PERSIST-01 coverage for all owner roots/aliases, retained contexts,
+  active transactions, interruption and physical recovery; then implement
+  per-context deferred deletion and only advertise support after acceptance.
+- Artifacts: long partial run
+  `artifacts/results/jcalgtest-support-vpcd-20261108T162853Z/`; clean control
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T173555Z.log`.
+
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
 ## Persistent reclaimer must include references beyond the selected context — 2026-11-08
