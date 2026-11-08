@@ -106,6 +106,13 @@ Archive text is historical evidence, not current device state or priorities.
     persistent writes; the following key-pair APDU gets an empty response and
     the client aborts. RAM-GC parity did not fix the long-run resource failure.
     This is VPCD evidence, not a physical-token result.
+  - A host-only experiment that invoked the production persistent reclaimer
+    after every VPCD APDU failed the 47-check multipackage suite: lookup-app
+    SELECT after reset returned `6A82` after the reclaimer had erased owner
+    records. The same current-worktree suite without that hook passed 47/47.
+    The diagnostic hook was removed. This confirms the current post-APDU root
+    set is not yet safe for routine persistent reclamation; trace exact erased
+    tags and references held by retained/inactive contexts before wiring it in.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

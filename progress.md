@@ -25800,3 +25800,33 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs:
   `artifacts/results/jcalgtest-support-vpcd-20261108T112336Z/client.log`,
   `emulator.log`, and partial `Virtual_PCD_00_00_ALGSUPPORT__3b_80_01_81.csv`.
+
+## 2026-11-08 Isolate persistent reclaimer root coverage 50 minutes
+
+- Step/experiment: `RESOURCE-01-PERSISTENT-GC-MULTIPACKAGE-ROOT-SAFETY`
+- When: '2026-11-08 12:55 CET' - '2026-11-08 13:45 CET'
+- Change: Temporarily tested the production persistent reclaimer at every
+  VPCD post-APDU boundary, then removed the experimental hook after it exposed
+  a multi-applet failure. Updated RESOURCE-01, QKB and HANDOFF; production
+  reclaimer remains disabled.
+- Validation: Experimental
+  `PICO2_HOST_USB_ACCESS=1 PICO2_EXPERIMENTAL_PERSISTENT_GC=1
+  ./tools/test-vpcd-multipackage --timeout 300` failed when reselecting the
+  lookup applet after card reset (`6A82`), after owner-tag erasures. Exact tag
+  telemetry was absent. Control
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 300`
+  passed `TEST:SUMMARY pass=47 fail=0`. `./tools/test-persistent-transaction`
+  passed `TEST:SUMMARY fail=0` after removing experimental code. The approved
+  Pico USB helper reported zero `2e8a:0009` devices; no physical token was used.
+- Result: Per-APDU persistent reclamation using only the selected applet's
+  current root context is not safe for the multipackage lifecycle. The exact
+  erased record and missing reference path are unmeasured; this is a safety
+  failure, not proof that the reclaimer primitive itself erased the wrong tag.
+- Decision: Keep normal persistent reclamation disabled. Next instrument exact
+  erased tags and extend the root graph to retained/inactive contexts and
+  native/global references, with a regression for the observed reset/SELECT
+  sequence.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T122812Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T123244Z.log`.

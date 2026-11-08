@@ -80,6 +80,31 @@ context-scoped deferred `requestObjectDeletion()` service at the safe post-APDU
 boundary, starting with focused tests and keeping production reclamation
 disabled until all safety gates pass. Preserve unrelated dirty worktree files.
 
+# Current handoff — persistent GC experiment exposed root-coverage gap — 2026-11-08 13:45 CET
+
+RESOURCE-01 remains unresolved. The full unchanged JCAlgTest 1.8.4/jc305 VPCD
+run failed at RSA-768 with `F205` after 442,532 ms and logged persistent
+OutOfFlash (`PERSIST_EXCEPTION id=20`). RAM-GC parity did not fix it.
+
+A temporary, host-only experiment invoked the existing persistent reclaimer
+after each VPCD APDU. It failed the multipackage 47-check suite at
+`SELECT lookup applet after card reset` (`6A82`) after one or more owner records
+had been erased. The exact deleted tag was not logged. The hook and all
+experimental source changes were removed. The same current-worktree suite with
+the hook off passed 47/47, and `./tools/test-persistent-transaction` passed
+with `fail=0`. This is a confirmed safety gap in the current root coverage for
+routine per-APDU reclamation; don't wire the primitive in or report object
+deletion support until exact tags and inactive/native reference roots are
+covered. Logs:
+`artifacts/logs/host-vpcd-multipackage-apdu-20261108T122812Z.log` (failure) and
+`artifacts/logs/host-vpcd-multipackage-apdu-20261108T123244Z.log` (control).
+
+The approved Pico helper found zero `2e8a:0009` devices on refresh, so all
+validation remained on VPCD/host-model. Next add tag-level reclaimer telemetry
+and a regression fixture for retained-context/cross-owner aliases, then fix
+root enumeration before retrying the diagnostic. Preserve all unrelated dirty
+files.
+
 The latest full unchanged JCAlgTest 1.8.4 VPCD run passed the algorithm and
 KeyBuilder checks through EC transient reset/deselect, then entered KeyPair.
 RSA 512/736 passed; RSA 1024 returned an empty APDU. The CSV has only 196 rows

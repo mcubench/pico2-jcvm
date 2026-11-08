@@ -1,5 +1,24 @@
 # 2026-11-08 RSA key allocation waste and type-specific layout
 
+## Persistent reclaimer must include references beyond the selected context — 2026-11-08
+
+- **Experiment:** Temporarily added a host-only opt-in call to the existing
+  persistent reclaimer after every VPCD APDU and ran the 47-check multipackage
+  suite. The run erased persistent owner records, then failed to reselect the
+  lookup applet after reset (`6A82`). The exact erased tag was not logged, so
+  the direct reference path remains to be identified.
+- **Control:** The same current-worktree suite with the experimental hook off
+  passed `TEST:SUMMARY pass=47 fail=0`. `./tools/test-persistent-transaction`
+  also passed after removing the experiment. No physical token was used.
+- **Viable decision:** Keep the production reclaimer disconnected from normal
+  APDU collection and do not advertise object deletion. The experimental hook
+  was removed. Before retrying, instrument exact deleted tags and enumerate
+  aliases/roots held by inactive applet contexts and native/global registries;
+  the selected-context post-APDU root set alone is insufficient evidence.
+- **Logs:** Failing experiment
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261108T122812Z.log`; passing
+  control `artifacts/logs/host-vpcd-multipackage-apdu-20261108T123244Z.log`.
+
 - **Follow-up full-run result (2026-11-08):** After making PC VPCD use the
   firmware RAM-GC cadence, the unchanged 1.8.4/jc305 support sweep still
   exhausts persistent storage. RSA key-pair generation at 768 bits returned
