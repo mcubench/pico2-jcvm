@@ -26422,7 +26422,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: After the user runs `sudo ./tools/install-pcsc-sudoers`, refresh
   the allowlisted PCSC path, choose one identified Pico2 by chip ID, and run
   `tools/test-persistent-reclaimer-physical`. Do not touch PacketRF.
-- Commit: `<pending>`
+- Commit: `662aff8c`
 - Artifacts/logs: `build/arm/pico2_choupi_persistent_gc_test.uf2` (ignored
   build artifact), SHA-256 above; `.agent/EXT_REQUESTS.md` contains the exact
   host-side action.

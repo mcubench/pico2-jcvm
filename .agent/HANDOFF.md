@@ -10734,6 +10734,7 @@ After that, use the safe host-access path and the existing
 `tools/test-persistent-reclaimer-physical` on an identified Pico2 reader only.
 No USB operation, physical flash, or token APDU was attempted during this
 preparation. The full external request is in `.agent/EXT_REQUESTS.md`.
+This preparation and its records are committed as `662aff8c`.
 
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
