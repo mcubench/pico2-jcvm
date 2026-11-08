@@ -26376,5 +26376,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   and recovery are still unverified.
 - Decision: Continue RESOURCE-01/PERSIST-01 acceptance; this revalidation does
   not justify enabling persistent deletion in production.
-- Commit: `<pending>`
+- Commit: `4139f174`
 - Artifacts/logs: command output only; no archived log.
