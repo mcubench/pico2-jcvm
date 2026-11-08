@@ -25166,3 +25166,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep PERSIST-01 reclamation safety gates and continue owner-aware reference lifecycle work. Retry physical API validation when PC/SC publishes a Pico reader. Runtime benchmark was not measured.
 - Commit: `51624281`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261108T011442Z.log`; no separate unit-test log.
+
+## 2026-11-08 Revalidate foreign static lifecycle in cross-AID VPCD 11 minutes
+
+- Step/experiment: `CTX-01-foreign-static-cross-aid-regression`
+- When: '2026-11-08 02:20 CET' - '2026-11-08 02:31 CET'
+- Change: Re-ran the full three-package cross-AID VPCD suite after adding foreign-static wrapper roots to persistent inventory. No runtime source changes were made in this validation follow-up.
+- Validation: The first `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` run failed at the known PC profile mismatch: `current` PC ROM mask returned `6F00` for the AES-MAC Signature case, expected `6A50`. After `./tools/build-pc --profile max_crypto`, the same suite passed `TEST:SUMMARY pass=35 fail=0`.
+- Result: The complete existing cross-AID SIO, firewall, reference identity, persistent lifecycle, delete/reinstall, and cleanup regression remains green with the new inventory filter. No physical APDUs were sent because bounded PC/SC scan still found no readers. Runtime performance was not measured.
+- Decision: Keep the implementation commit and preserve max_crypto as the required PC profile for this suite. Continue CTX-01 audit; physical API validation remains open.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261108T012703Z.log`; initial profile-mismatch log `artifacts/logs/sio-cross-aid-vpcd-20261108T012216Z.log`.

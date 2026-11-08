@@ -1,4 +1,4 @@
-# Current handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:20 CET
+# Current handoff — retain persistent foreign-static targets during inventory — 2026-11-08 02:31 CET
 
 Persistent inventory now scans package-static records for the foreign-reference
 wrapper format and protects the wrapper's owner-applet target tag and all
@@ -19,7 +19,13 @@ builds pass. The final ARM CHOUPI image was flashed to Pico 2
 `artifacts/logs/cycle-choupi-20261108T011442Z.log`. The image is a startup
 validation only; no APDU exercised the new inventory path. Refreshed USB helper
 access sees three attached Pico nodes, but `timeout 8s pcsc_scan -r` exits 124
-without readers. Implementation and regression are committed as `51624281`.
+without readers. After rebuilding PC artifacts with `max_crypto`, the complete
+cross-AID VPCD regression passes `TEST:SUMMARY pass=35 fail=0` at
+`artifacts/logs/sio-cross-aid-vpcd-20261108T012703Z.log`. Its first run had the
+known profile mismatch (`current` PC artifacts omitted AES-MAC Signature and
+returned `6F00`); this was corrected by rebuilding PC with `max_crypto`.
+Implementation and focused inventory regression are committed as `51624281`;
+the validation follow-up is committed separately.
 
 Next: continue CTX-01 reference-consumer and PERSIST-01 lifecycle coverage.
 Keep normal persistent reclamation disabled. Retry physical APDUs when PC/SC
