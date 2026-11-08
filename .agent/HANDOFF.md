@@ -1,4 +1,4 @@
-# Current handoff — SIO rollback and refreshed max_crypto image — 2026-11-08 05:42 CET
+# Current handoff — SIO rollback and refreshed max_crypto image — 2026-11-08 05:46 CET
 
 The CTX-01 proxy root rollback is implemented and committed as `104d1845`
 (`Fix SIO root rollback on proxy failure`); progress SHA reference follow-up is
