@@ -25605,3 +25605,37 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   PC/SC visibility.
 - Commit: `<pending progress-reference commit>`
 - Artifacts/logs: none.
+
+## 2026-11-08 Avoid redundant zero writes for EC keys 8 minutes
+
+- Step/experiment: `RESOURCE-01-EC-KEY-INITIALIZATION-WRITES`
+- When: '2026-11-08 08:33 CET' - '2026-11-08 08:41 CET'
+- Change: Removed per-byte zeroing loops from native EC key construction;
+  `JCVMArray` allocates value-initialized backing, so those writes repeated
+  work and caused unnecessary per-byte persistent updates for durable EC keys.
+  Added RESOURCE-01, QKB and handoff findings for slow JCAlgTest EC KeyBuilder
+  cases and the unresolved PC/SC communication error.
+- Validation: `./tools/build-pc --profile max_crypto`,
+  `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` all passed. The ARM image ends at
+  `0x100F1D6C` with 58,004 bytes remaining. Focused
+  `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 50 --apdu
+  b0752000031e010000 --apdu b0752000031e010000` passed; first APDU took
+  41.289 s, repeat 4.349 s. A 384-bit persistent EC APDU passed under a
+  90-second timeout in 38.020 s. The full unchanged 1.8.4 suite did not
+  complete: client failed with `SCARD_F_COMM_ERROR` at APDU
+  `B0 75 20 00 03 1E 01 00`; no complete comparison was produced. The three
+  USB nodes enumerate but `pcsc_scan -r` lists only the two VPCD readers, so
+  physical validation was skipped.
+- Result: The avoidable persistent EC initialization writes are removed.
+  Host measurements suggest slow EC key construction but are not a matched
+  benchmark; the transient first-call latency and full-suite transport failure
+  remain unresolved. Prior F206 output on deselect/reset is not established as
+  the cause.
+- Decision: Continue RESOURCE-01 by tracing native/FS work in the slow first
+  EC KeyBuilder call and reproduce `SCARD_F_COMM_ERROR`; retry hardware only
+  when a physical Pico reader is PC/SC-visible.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261108T071233Z/`,
+  `artifacts/logs/jcalgtest-1e-apdu-postfix-50s.log`,
+  `artifacts/logs/jcalgtest-ecfp384-apdu-postfix.log`.

@@ -300,8 +300,6 @@ jref_t buildNativeKey(uint8_t type, uint16_t bits, bool encrypted) {
       instance->setField_Reference(kEcComponentFields[i], componentRef);
       auto component = heap.getArray(componentRef);
       if (!component) throw Exceptions::RuntimeException;
-      for (uint16_t j = 0; j < component->size(); ++j)
-        component->setByteEntry(j, 0);
     }
     const jref_t lengthsRef = allocateArray(
         heap, kEcComponentCount, JAVA_ARRAY_T_SHORT, transient, event);
@@ -309,8 +307,6 @@ jref_t buildNativeKey(uint8_t type, uint16_t bits, bool encrypted) {
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS, lengthsRef);
     auto lengths = heap.getArray(lengthsRef);
     if (!lengths) throw Exceptions::RuntimeException;
-    for (uint16_t i = 0; i < kEcComponentCount; ++i)
-      lengths->setShortEntry(i, 0);
   } else if (!rsaType(type)) {
     const uint16_t bytes = bits / 8;
     instance->setField_Reference(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,

@@ -124,6 +124,16 @@ Archive text is historical evidence, not current device state or priorities.
   CRT private. These values include test/APDU scaffolding and are not isolated
   per-key costs or physical-flash measurements. ARM, RISC-V and PC max_crypto
   builds pass; the focused VPCD probe passes 5/5.
+- Progress (2026-11-08): Removed redundant element-by-element zero writes from
+  EC key construction. `JCVMArray` already value-initializes its backing to
+  zero; writing each EC component byte again caused avoidable persistent
+  updates for non-transient keys. ARM, RISC-V and PC max_crypto builds pass.
+  A focused 384-bit persistent EC KeyBuilder APDU completed in 38.020 s on PC
+  VPCD; an earlier full-suite row took 60.564 s, so this is suggestive but not
+  a controlled before/after benchmark. A first EC transient-reset KeyBuilder
+  APDU still takes 41.289 s (repeat 4.349 s), longer than the focused harness's
+  default 20 s APDU timeout. The full 1.8.4 suite failed later with
+  `SCARD_F_COMM_ERROR`; causes are still under investigation. See `.agent/QKB.md`.
 
 ## Functionality review — 2026-11-03
 

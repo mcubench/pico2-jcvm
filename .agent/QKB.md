@@ -8220,3 +8220,34 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   PC VM failure), `artifacts/logs/sio-cross-aid-vpcd-20261108T032038Z.log`
   (focused pass), and `artifacts/logs/sio-cross-aid-vpcd-20261108T032140Z.log`
   (full 35/35 pass).
+
+# 2026-11-08 JCAlgTest EC KeyBuilder latency and transport failure
+
+- Observation: The unchanged 1.8.4 support run installed the upstream CAP and
+  reached `TYPE_EC_FP_PRIVATE LENGTH_EC_FP_640`, then its next key-builder APDU
+  (`B0 75 20 00 03 1E 01 00`) failed with PC/SC `SCARD_F_COMM_ERROR`. The
+  emulator had emitted repeated `APPLET_PROCESS status=F206 exception=16`
+  messages for prior deselect/reset calls; these are not proven to cause the
+  transport failure.
+- Reproduction: On a freshly installed VPCD card, the same APDU completed in
+  31.343 s with a 45 s test timeout. After removing redundant EC component
+  zero writes, it completed in 41.289 s with a 50 s timeout and the repeated
+  APDU completed in 4.349 s. A focused 384-bit persistent EC key-builder APDU
+  completed in 38.020 s. Host load and filesystem state differ between runs;
+  the 60.564 s full-suite result is not a controlled baseline. The 20 s test
+  timeout reproducibly cuts off the first transient EC APDU.
+- Viable code improvement: `JCVMArray` allocates value-initialized storage
+  (`new T[length]{}`). `native_key.cpp` need not write every EC array element
+  to zero again; avoiding those writes prevents unnecessary per-byte persistent
+  updates for persistent EC keys. Builds pass on PC, ARM and RISC-V.
+- Still unresolved: Why EC KeyBuilder APDUs are unusually slow, why first and
+  repeated calls differ, and why the full official client receives
+  `SCARD_F_COMM_ERROR`. Do not equate this error with physical reader loss or
+  with the earlier `F205/NO_RESOURCE` finding without further evidence. The
+  three connected USB devices enumerate as `2e8a:0009`, but current
+  `pcsc_scan -r` shows only the two Virtual PCD readers, so physical APDU
+  validation is unavailable.
+- Artifacts: `artifacts/results/jcalgtest-support-vpcd-20261108T071233Z/`;
+  `artifacts/logs/jcalgtest-1e-apdu-trace.log`;
+  `artifacts/logs/jcalgtest-1e-apdu-postfix-50s.log`;
+  `artifacts/logs/jcalgtest-ecfp384-apdu-postfix.log`.

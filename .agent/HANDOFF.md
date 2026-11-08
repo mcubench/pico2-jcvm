@@ -1,3 +1,35 @@
+# Current handoff — JCAlgTest EC KeyBuilder latency investigation — 2026-11-08 08:41 CET
+
+The active priority remains RESOURCE-01. A full unchanged JCAlgTest 1.8.4
+VPCD support run installed the official CAP, passed RSA key-builder rows through
+4096-bit CRT and EC private rows through 640-bit, then failed on the next APDU
+with `SCARD_F_COMM_ERROR`. The trace files are under
+`artifacts/results/jcalgtest-support-vpcd-20261108T071233Z/`. It is not a
+complete support comparison. The emulator also logged repeated F206 exceptions
+on deselect/reset commands; causality is not established.
+
+The failing next APDU (`B0 75 20 00 03 1E 01 00`, EC-FP private transient-reset
+KeyBuilder) completes on a fresh VPCD card with an extended host-test timeout:
+31.343 s in one run and 41.289 s on a later run; a repeated call in the latter
+run took 4.349 s. It exceeds the focused harness's 20 s default timeout. A
+384-bit persistent EC key builder APDU completed in 38.020 s. These are host
+VPCD timings, not Pico timings, and were not controlled benchmarks.
+
+Removed redundant EC component byte-zero loops in `choupi/src/native_key.cpp`;
+`JCVMArray` already value-initializes backing arrays. This eliminates needless
+per-byte writes for persistent EC keys. PC, ARM and RISC-V max_crypto wrapper
+builds pass, and the 384-bit and 1e transient APDUs complete under 90/50-second
+timeouts. Full JCAlgTest suite still failed with `SCARD_F_COMM_ERROR`; investigate
+slow first-use and filesystem paths before claiming acceptance. The 60.564 s
+earlier full-suite 384-bit row is suggestive only, not a matched baseline.
+
+The user reports all three physical tokens present. The authorized access helper
+granted three USB nodes and `lsusb -d 2e8a:0009` saw three devices, but a fresh
+`pcsc_scan -r` listed only Virtual PCD 00 00/01. Do not run physical APDUs or
+flash until a Pico reader appears; continue offline meanwhile. Preserve other
+pre-existing dirty files. Implementation and test logs from this step are
+recorded in the latest progress entry and QKB section.
+
 # Current handoff — persistent resource accounting diagnostics — 2026-11-08 08:05 CET
 
 Extended the opt-in PC VPCD `PICO2_PERSISTENT_INVENTORY=1` hook to count
@@ -10077,3 +10109,4 @@ with the requested concise review. Exact prior report is in docs/backups/.
 Source references, section/word limits and backup identity passed inspection.
 No build, flash, USB, or runtime acceptance was performed. Existing technical
 handoff priorities and all unrelated uncommitted changes remain applicable.
+# Current handoff — persistent resource accounting diagnostics — 2026-11-08 08:05 CET
