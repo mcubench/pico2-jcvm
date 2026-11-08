@@ -8533,3 +8533,14 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `TEST:SUMMARY fail=0`. The added test uses the filesystem stub; no hardware
   access was performed. Keep production collection disabled pending the open
   PERSIST-01 acceptance gates.
+
+## Multipackage regression after foreign-alias inventory update — 2026-11-08
+
+- The foreign-alias reclaimer change is not wired into normal APDU collection.
+  After that change, the clean current PC VPCD multipackage integration passed
+  `TEST:SUMMARY pass=47 fail=0`, including install/duplicate rejection,
+  registry pagination, restart restore, cross-AID lifecycle, and instance/package
+  DELETE cleanup. This shows no observed integration regression; it does not
+  exercise persistent reclamation or establish physical-flash safety.
+- Log: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T190022Z.log`, with
+  matching restart and invalid-sidecar logs in the same directory.

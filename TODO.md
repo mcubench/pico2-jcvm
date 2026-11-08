@@ -86,6 +86,12 @@ Archive text is historical evidence, not current device state or priorities.
   builds pass. This safety change does not solve persistent OutOfFlash.
   After this root guard, the collector-enabled multipackage experiment passed
   47/47; a fresh collector-disabled control also passed 47/47.
+  On 2026-11-08, foreign object/array alias chains in both package-static and
+  applet namespaces were added to the owner reclaimer's external-root scan, with
+  malformed sources failing closed. The unchanged current multipackage VPCD
+  suite passes 47/47 after this change, including restart, cross-AID lifecycle,
+  and DELETE cleanup. This is a compatibility control; ordinary persistent
+  reclamation remains disabled, and no physical hardware result is implied.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

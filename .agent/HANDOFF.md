@@ -10425,3 +10425,19 @@ repository's Pico-only filtered helper, and bounded `pcsc_scan -r` timed out
 without output even though `pcscd.service` is active. Do not invoke the stale
 helper or access the unexpected device. Continue offline until the approved
 helper is installed and identified Pico2 JCVM readers are enumerated.
+
+# Current handoff — current multipackage control passes after alias changes — 2026-11-08 20:08 CET
+
+The unchanged host multipackage integration was rerun against the current alias
+inventory changes. It passed `TEST:SUMMARY pass=47 fail=0`, covering duplicate
+INSTALL rejection, restart restoration, cross-AID transient lifecycle, and
+applet/package DELETE cleanup. Logs are under
+`artifacts/logs/host-vpcd-multipackage-apdu-20261108T190022Z.log` and matching
+restart/sidecar files. Normal persistent deletion remains disconnected, so this
+is compatibility evidence, not reclaimer activation evidence.
+
+Physical checks remain pending: the installed permission helper is stale, and
+`timeout 8s pcsc_scan -r` produced no reader output. The local filtered helper
+matches the approved Pico2 JCVM USB identity; it was not run with sudo because
+only the stale installed helper is currently permitted. Do not interact with
+the unexpected device. Continue offline resource lifecycle work.

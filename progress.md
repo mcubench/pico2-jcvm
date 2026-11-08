@@ -26005,3 +26005,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep object deletion unsupported and the normal persistent reclaimer disabled. Continue PERSIST-01 offline while the stale helper and PC/SC reader enumeration blocker remain.
 - Commit: `e7742cb4`
 - Artifacts/logs: Unit test output; no archived hardware log.
+
+## 2026-11-08 Recheck multipackage VPCD after alias inventory change 11 minutes
+
+- Step/experiment: `PERSIST-01-ALIAS-MULTIPACKAGE-CONTROL`
+- When: '2026-11-08 19:57 CET' - '2026-11-08 20:08 CET'
+- Change: Re-ran the unchanged multipackage VPCD integration against the current persistent inventory changes and recorded the result in QKB and HANDOFF. Normal persistent reclamation remains disconnected; the integration is a compatibility control.
+- Validation: `PICO2_HOST_USB_ACCESS=1 python3 tests/integration/pc_vpcd_multipackage_test.py --timeout 300` passed `TEST:SUMMARY pass=47 fail=0`. Generated APDU, restart and invalid-sidecar logs are listed below. A bounded physical `pcsc_scan -r` had previously timed out; no physical reader/APDU/flash was used in this step.
+- Result: No multipackage regression was observed after foreign-alias inventory changes. The suite covers duplicate INSTALL, package/AID registry, restarts, cross-AID transient lifecycle and DELETE cleanup; it does not invoke the disabled normal persistent reclaimer.
+- Decision: Keep PERSIST-01 production gates open and continue offline while physical reader access remains unavailable.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261108T190022Z.log`; `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261108T190022Z.log`.
