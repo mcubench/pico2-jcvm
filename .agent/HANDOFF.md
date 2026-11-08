@@ -10518,3 +10518,19 @@ hardware; then connect deferred `requestObjectDeletion()` only if those checks
 pass. Re-run unchanged JCAlgTest 1.8.4/jc305 and verify a long-run plateau, no
 `F205`, reset, FAULT or transport loss. Until then RESOURCE-01 is open and the
 production reclaimer stays disabled.
+
+# Current handoff — include active package static slots in inventory — 2026-11-08 21:15 CET
+
+The PC-only VPCD inventory now loads installed static-reference slots for the
+active package before tracing its roots. In the eight RSA public-key replacement
+sequence, it found one package static root and still reported 70 unreachable
+package-static records / 1,533 serialized payload bytes. The run passed
+`TEST:SUMMARY pass=10 fail=0`. This reduces the chance that the observed orphan
+count is caused by omitted active-package static references.
+
+This remains a diagnostic, not production collection. It does not enumerate all
+retained package contexts or prove the full JCAlgTest `F205` cause. Continue by
+auditing the package-context/heap mapping and all durable roots before changing
+runtime collection. The PC max_crypto build and VPCD probe passed; no physical
+hardware was accessed. Unexpected PacketRF remains excluded.
+Log: `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.

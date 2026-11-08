@@ -26097,3 +26097,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `4e6b0b5b`
 - Artifacts/logs: `artifacts/logs/resource-package-static-candidates-vpcd-20261108.log`;
   `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
+
+## 2026-11-08 Trace active package static roots in inventory 7 minutes
+
+- Step/experiment: `RESOURCE-01-ACTIVE-PACKAGE-STATIC-ROOTS`
+- When: '2026-11-08 21:08 CET' - '2026-11-08 21:15 CET'
+- Change: The PC-only persistent inventory now loads and traces installed
+  static-reference slots for the active applet package before collecting
+  package-static orphan candidates. Updated TODO, QKB and HANDOFF with the
+  observation and remaining retained-context limitation.
+- Validation: `./tools/build-pc --profile max_crypto` passed. The eight-key
+  replacement VPCD sequence passed `TEST:SUMMARY pass=10 fail=0`; focused log
+  inspection showed `static_roots=1`, `package_unreachable_tags=70`, and
+  `package_unreachable_payload_bytes=1533`. Source-specific `git diff --check`
+  passed. No physical hardware was accessed.
+- Result: Hydrating active-package static roots did not change the observed
+  orphan candidate count, supporting that the 70 records are not live through
+  those roots. This does not cover every retained package context or durable
+  root domain and does not establish the cause of full-run `F205`.
+- Decision: Keep production persistent reclamation disabled; audit all retained
+  contexts and package-to-heap mapping before considering runtime wiring.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.

@@ -1771,3 +1771,10 @@ results establish behavior. Keep validation limitations attached to both.
   `gp_get_data_test` passes 25/25. The authorized USB helper granted three
   nodes, but bounded `pcsc_scan -r` still published no reader, so physical
   GPPro confirmation remains pending.
+
+  - 2026-11-08 PC-only diagnostic now hydrates and traces installed static
+    references for the active applet package before inventory. In the eight-key
+    replacement VPCD probe it found one package static root and still reported
+    70 orphan tags / 1,533 payload bytes; this removes one undercount concern,
+    but does not cover every retained package/context or establish safe runtime
+    reclamation. See `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.

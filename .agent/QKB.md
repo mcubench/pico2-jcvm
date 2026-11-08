@@ -8610,3 +8610,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   pass.
 - **Artifacts:** `artifacts/logs/resource-package-static-candidates-vpcd-20261108.log`;
   earlier exact-tag log `artifacts/logs/resource-key-reuse-tags-vpcd-20261108.log`.
+
+## RESOURCE-01: active-package static roots included in VPCD inventory
+
+- **Observation:** The PC-only inventory originally traced cached Context roots
+  but did not first hydrate installed static-reference slots. It now visits
+  installed static roots for the active applet package and adds them to the
+  inventory roots before tracing.
+- **Result:** The eight-replacement RSA public-key VPCD sequence still reports
+  70 unreachable package-static records / 1,533 payload bytes after replacement
+  eight. `static_roots=1`; the diagnostic result remains complete. This confirms
+  that the observed candidate growth is not explained by omitting that active
+  package's installed static references.
+- **Limit:** It remains a PC-only diagnostic and covers the active package, not
+  every retained package context or other durable root domain. It does not
+  authorize wiring reclamation into APDU processing or prove the full JCAlgTest
+  `F205` cause.
+- **Evidence:** `artifacts/logs/resource-package-static-allroots-vpcd-20261108.log`.

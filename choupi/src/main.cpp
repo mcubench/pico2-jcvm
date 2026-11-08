@@ -342,6 +342,15 @@ void count_applet_inventory_root(const jcvm::jref_t reference,
   counts.references.emplace_back(reference);
 }
 
+bool count_package_static_inventory_root(const uint8_t, const uint16_t,
+                                         const uint16_t reference,
+                                         void *opaque) {
+  auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
+  ++counts.static_roots;
+  counts.references.emplace_back(jcvm::jref_t(reference));
+  return true;
+}
+
 bool accumulate_persistent_tag(
     const jcvm::PersistentInventory::Tag &tag, void *opaque) {
   auto &stats = *static_cast<PersistentTagStats *>(opaque);
@@ -399,12 +408,15 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   }
 
   PersistentInventoryCounts counts;
+  // Load every static reference slot belonging to this applet package before
+  // collecting roots. Walking unrelated packages into this heap would confuse
+  // package-global handles with another package context's local handles.
+  const auto static_result =
+      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+          context.getAppletPackageID(), context.getHeap(),
+          count_package_static_inventory_root, &counts);
   context.appendRootReferences(counts.references);
   const std::size_t context_roots = counts.references.size();
-  // Roots cached in this applet context are already included above. Walking
-  // every package's static fields into this heap confuses package-global
-  // reference slots with another applet context's local heap handles.
-  const auto static_result = jcvm::PersistentInventory::VisitResult::Complete;
   const auto applet_result = enumerate_applet_context_root(
       context, count_applet_inventory_root, &counts)
       ? jcvm::PersistentInventory::VisitResult::Complete
