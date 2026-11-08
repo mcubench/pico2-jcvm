@@ -25408,3 +25408,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Subsequent implementation should prioritize RESOURCE-01 while retaining PERSIST-01 safety gates and unchanged fixtures.
 - Commit: See the Git commit containing this RESOURCE-01-PRIORITY record.
 - Artifacts/logs: none; existing 2026-11-07 run evidence referenced in TODO.md and .agent/QKB.md.
+
+## 2026-11-08 Exercise production reclaimer in RP2350 overlay cuts 6 minutes
+
+- Step/experiment: `PERSIST-01-OVERLAY-PRODUCTION-RECLAIMER`
+- When: '2026-11-08 06:34 CET' - '2026-11-08 06:40 CET'
+- Change: Linked the production `PersistentReclaimer`, Heap and persistent restore code into the RP2350 filesystem overlay host harness. Replaced direct tag erases in its 1,000-cut recovery case with real reclaimer calls, and verified the root after reboot by restoring it into a fresh Heap. The cut/retry also checks that a second owner's record survives. Updated TODO, QKB and HANDOFF; normal runtime reclamation remains disabled.
+- Validation: `./tools/test-rp2350-fs-overlay` passed, `TEST:SUMMARY fail=0`; `git diff --check` passed. No compiler warnings/errors in the final captured run. ARM/RISC-V builds and physical validation were intentionally skipped because only the host test and documentation changed.
+- Result: Host fake-flash model recovered all 1,000 injected COW commit cuts as either the old snapshot or fully committed deletion; retry through the production reclaimer removed all ten unreachable tags when needed, preserving the restored root and other owner. This is not physical flash durability or USB power-loss evidence.
+- Decision: Keep PERSIST-01 open and normal persistent reclamation disabled until physical multi-owner and interrupted-erase/power-loss gates pass.
+- Commit: `<pending>`
+- Artifacts/logs: `/tmp/rp2350-fs-overlay-persist01.log`; final `TEST:SUMMARY fail=0`.

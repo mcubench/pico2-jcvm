@@ -1,5 +1,22 @@
 # Current handoff — user prioritizes long-run resource lifecycle — 2026-11-08 06:29 CET
 
+Latest PERSIST-01 host validation: `tests/unit/rp2350_fs_overlay` links the
+production persistent reclaimer, Heap and persistent-reference restore code.
+Its 1,000-cut COW snapshot test stages ten unreachable owner tags through
+`PersistentReclaimer`, recovers the filesystem after each injected cut,
+restores the rooted array through a fresh Heap, and verifies that root plus a
+second owner's record. If the old snapshot wins, retry also uses the production
+reclaimer and confirms all ten candidates are removed. The
+`./tools/test-rp2350-fs-overlay` run passes with `TEST:SUMMARY fail=0`; full log:
+`/tmp/rp2350-fs-overlay-persist01.log`.
+
+This is host fake-flash evidence only. Physical multi-owner/interrupted erase
+and actual USB power-loss acceptance remain open; keep normal persistent
+reclamation disabled. ARM/RISC-V builds and physical tests were not run because
+only host test files and tracking documents changed. Do not infer device
+availability from the user's latest message; refresh the authorized host-access
+helper before any USB operation. Preserve unrelated dirty files.
+
 The user explicitly made long-run NO_RESOURCE/resource reclamation and reset
 investigation the highest priority. TODO.md now starts with RESOURCE-01 and
 contains the findings, proposed native changes and measurable acceptance gates.

@@ -457,12 +457,20 @@ review.
   and a neighboring owner's record survived every case. This covers both sides
   of the eight-tag batch boundary in the production reclaimer against the host
   filesystem stub; it is not flash power-cut or persistent-backend evidence.
+  The RP2350 overlay power-cut harness now calls the production
+  `PersistentReclaimer` for its staged deletion and retry. Across 1,000 COW
+  snapshot cuts it reconstructs a fresh Heap from each recovered snapshot and
+  checks the rooted array and a neighboring owner's record, then retries any
+  old-snapshot outcome through the reclaimer. `./tools/test-rp2350-fs-overlay`
+  passes with `TEST:SUMMARY fail=0`. This remains host fake-flash evidence; it
+  does not establish physical-flash or USB power-loss safety.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.
   Dependencies: PERSIST-02/03. `JCSystem` object deletion stays unsupported.
   Evidence: original reclamation groundwork and primitive records; 1,000-cut
-  fake-flash test covers ten staged erases, not physical VM-reclaimer power loss.
+  fake-flash test invokes the VM reclaimer for ten staged erases, not physical
+  power-loss behavior.
 
 ### PERSIST-02
 

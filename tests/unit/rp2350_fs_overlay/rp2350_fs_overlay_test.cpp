@@ -4,6 +4,11 @@
 #include "vm_filesystem.h"
 #include "gp_lifecycle_recovery.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "persistent_inventory.hpp"
+#include "heap.hpp"
+#include "jc_types/jc_array.hpp"
+#include "jc_handlers/package.hpp"
+#include "jc_handlers/jc_class.hpp"
 
 #include <algorithm>
 #include <array>
@@ -33,6 +38,48 @@ std::array<uint8_t, 0x27000> filesystem_snapshot_scratch;
 size_t flash_mutation_count = 0;
 size_t fail_after_mutations = static_cast<size_t>(-1);
 bool persistent_transaction_active = false;
+
+struct ReclaimerRootContext {
+  const std::vector<jcvm::jref_t> *references;
+};
+
+bool enumerate_reclaimer_roots(jcvm::Heap::ReferenceVisitor visitor,
+                               void *visitor_context, void *root_context) {
+  if (visitor == nullptr || root_context == nullptr) return false;
+  const auto &references =
+      *static_cast<ReclaimerRootContext *>(root_context)->references;
+  for (const auto &reference : references) {
+    visitor(reference, visitor_context);
+  }
+  return true;
+}
+
+} // namespace
+
+// The overlay host test links selected production Heap/JC_Instance code but
+// does not construct CAP classes or run VM diagnostics. Keep those unrelated
+// firmware services inert in this test executable.
+extern "C" void choupi_install_stage(uint8_t) {}
+extern "C" void choupi_install_origin(uint32_t) {}
+extern "C" void choupi_vm_record_array_write_failure(
+    uint8_t, uint16_t, uint16_t, uint16_t, uint8_t, uint8_t) {}
+extern "C" void choupi_vm_record_field_write(
+    uint8_t, uint16_t, uint16_t, uint16_t, uint16_t, uint16_t, uint8_t,
+    uint8_t) {}
+extern "C" void choupi_vm_record_field_bounds(
+    uint16_t, uint16_t, uint16_t, uint16_t, uint16_t) {}
+extern "C" void choupi_vm_record_persistent_restore_failure(
+    uint16_t, uint16_t, uint16_t, uint8_t, uint8_t, uint8_t) {}
+
+namespace jcvm {
+Package::Package(jpackage_ID_t package_id) noexcept : ID(package_id) {}
+const uint16_t
+Class_Handler::getInstanceFieldsSize(const jclass_index_t) const {
+  return 0;
+}
+} // namespace jcvm
+
+namespace {
 
 #pragma pack(push, 1)
 struct FilesystemHeaderTest {
@@ -1055,15 +1102,34 @@ int main() {
   constexpr uint8_t reclamation_owner = 0x45;
   constexpr uint8_t reclamation_root_tag[] = {
       0x03, reclamation_owner, 0x01, 0x23, 0xff};
-  constexpr uint8_t reclamation_root_value[] = {0x51, 0x52, 0x53};
+  constexpr std::array<uint8_t, 4> reclamation_other_owner_tag{
+      0x03, 0x46, 0x30, 0x01};
+  constexpr uint8_t reclamation_other_owner_value[] = {0xa1, 0xb2};
+  constexpr std::array<uint8_t, 3> reclamation_root_value{
+      0x51, 0x52, 0x53};
   std::array<std::array<uint8_t, 4>, 10> reclamation_candidates{};
   std::array<uint8_t, 2> reclamation_candidate_value{};
   fake_flash.fill(0xff);
   reset_flash_failure();
-  bool reclamation_baseline =
-      fs_init() == 0 &&
-      fs_write(reclamation_root_tag, sizeof(reclamation_root_tag),
-               reclamation_root_value, sizeof(reclamation_root_value)) == 0;
+  bool reclamation_baseline = fs_init() == 0;
+  jcvm::Heap reclamation_baseline_heap(reclamation_owner);
+  jcvm::jref_t reclamation_root_reference;
+  try {
+    reclamation_root_reference = reclamation_baseline_heap.addArray(
+        reclamation_root_value.size(), jcvm::JAVA_ARRAY_T_BYTE);
+    auto root_array = reclamation_baseline_heap.getArray(
+        reclamation_root_reference);
+    for (uint16_t index = 0; index < reclamation_root_value.size(); ++index) {
+      root_array->setByteEntry(index, reclamation_root_value[index]);
+    }
+    jcvm::fs::Tag root_tag{};
+    root_tag.len = sizeof(reclamation_root_tag);
+    std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
+    jcvm::FlashMemory_Handler::setPersistentField_Array(
+        root_tag, *root_array, reclamation_baseline_heap);
+  } catch (...) {
+    reclamation_baseline = false;
+  }
   for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
     reclamation_candidates[index] = {
         0x03, reclamation_owner, 0x30, index};
@@ -1074,14 +1140,28 @@ int main() {
                  reclamation_candidate_value.data(),
                  reclamation_candidate_value.size()) == 0;
   }
-  reclamation_baseline = reclamation_baseline && fs_sync() == 0;
+  reclamation_baseline = reclamation_baseline &&
+      fs_write(reclamation_other_owner_tag.data(),
+               reclamation_other_owner_tag.size(),
+               reclamation_other_owner_value,
+               sizeof(reclamation_other_owner_value)) == 0 &&
+      fs_sync() == 0;
   committed_flash = fake_flash;
 
   reset_flash_failure();
   bool reclamation_stage = reclamation_baseline;
-  for (const auto &tag : reclamation_candidates) {
-    reclamation_stage = reclamation_stage &&
-        fs_erase(tag.data(), tag.size()) == 0;
+  const std::vector<jcvm::jref_t> baseline_roots{
+      reclamation_root_reference};
+  ReclaimerRootContext baseline_root_context{&baseline_roots};
+  uint32_t staged_reclamation_erased = 0;
+  if (reclamation_stage) {
+    reclamation_stage =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            reclamation_owner, reclamation_baseline_heap,
+            enumerate_reclaimer_roots, &baseline_root_context,
+            &staged_reclamation_erased) ==
+            jcvm::PersistentInventory::VisitResult::Complete &&
+        staged_reclamation_erased == reclamation_candidates.size();
   }
   reclamation_stage = reclamation_stage && fs_sync() == 0;
   const size_t reclamation_snapshot_mutations = flash_mutation_count;
@@ -1096,11 +1176,32 @@ int main() {
       reclamation_cut_recovery = false;
       break;
     }
-    bool erased_staged = true;
-    for (const auto &tag : reclamation_candidates) {
-      erased_staged = erased_staged && fs_erase(tag.data(), tag.size()) == 0;
+    jcvm::Heap attempt_heap(reclamation_owner);
+    jcvm::jref_t attempt_root;
+    bool restored_root = false;
+    try {
+      jcvm::fs::Tag root_tag{};
+      root_tag.len = sizeof(reclamation_root_tag);
+      std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
+      attempt_root = jcvm::FlashMemory_Handler::
+          getPersistentField_ReferenceStrict(root_tag, attempt_heap);
+      restored_root = !attempt_root.isNullPointer() &&
+                      attempt_root.isArray() &&
+                      attempt_heap.getArray(attempt_root)->size() ==
+                          reclamation_root_value.size();
+    } catch (...) {
+      restored_root = false;
     }
-    if (!erased_staged) {
+    const std::vector<jcvm::jref_t> attempt_roots{attempt_root};
+    ReclaimerRootContext attempt_root_context{&attempt_roots};
+    uint32_t attempt_erased = 0;
+    const auto attempt_result = restored_root
+        ? jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+              reclamation_owner, attempt_heap, enumerate_reclaimer_roots,
+              &attempt_root_context, &attempt_erased)
+        : jcvm::PersistentInventory::VisitResult::IncompleteReachability;
+    if (attempt_result != jcvm::PersistentInventory::VisitResult::Complete ||
+        attempt_erased != reclamation_candidates.size()) {
       reclamation_cut_recovery = false;
       break;
     }
@@ -1118,7 +1219,6 @@ int main() {
       reclamation_cut_recovery = false;
       break;
     }
-    uint8_t recovered_root[sizeof(reclamation_root_value)]{};
     bool old_candidates = true;
     bool no_candidates = true;
     for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
@@ -1134,12 +1234,36 @@ int main() {
           recovered_value[1] == static_cast<uint8_t>(~index);
       no_candidates = no_candidates && !exists;
     }
-    const bool live_root_intact =
-        fs_read(reclamation_root_tag, sizeof(reclamation_root_tag),
-                recovered_root, sizeof(recovered_root)) == 0 &&
-        std::memcmp(recovered_root, reclamation_root_value,
-                    sizeof(recovered_root)) == 0;
-    if ((!old_candidates && !no_candidates) || !live_root_intact) {
+    bool live_root_intact = false;
+    try {
+      jcvm::Heap recovered_heap(reclamation_owner);
+      jcvm::fs::Tag root_tag{};
+      root_tag.len = sizeof(reclamation_root_tag);
+      std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
+      const auto recovered_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root_tag, recovered_heap);
+      const auto recovered_array = recovered_heap.getArray(recovered_reference);
+      live_root_intact = recovered_array->size() ==
+                             reclamation_root_value.size() &&
+                         recovered_array->getByteEntry(0) ==
+                             reclamation_root_value[0] &&
+                         recovered_array->getByteEntry(1) ==
+                             reclamation_root_value[1] &&
+                         recovered_array->getByteEntry(2) ==
+                             reclamation_root_value[2];
+    } catch (...) {
+      live_root_intact = false;
+    }
+    uint8_t recovered_other_owner[sizeof(reclamation_other_owner_value)]{};
+    const bool other_owner_intact =
+        fs_read(reclamation_other_owner_tag.data(),
+                reclamation_other_owner_tag.size(), recovered_other_owner,
+                sizeof(recovered_other_owner)) == 0 &&
+        std::memcmp(recovered_other_owner, reclamation_other_owner_value,
+                    sizeof(recovered_other_owner)) == 0;
+    if ((!old_candidates && !no_candidates) || !live_root_intact ||
+        !other_owner_intact) {
       reclamation_cut_recovery = false;
       break;
     }
@@ -1147,11 +1271,32 @@ int main() {
     // If reboot selected the old snapshot, retry the same bounded deletion
     // work and confirm that the next committed snapshot frees every candidate.
     if (old_candidates) {
-      bool retry_staged = true;
-      for (const auto &tag : reclamation_candidates) {
-        retry_staged = retry_staged && fs_erase(tag.data(), tag.size()) == 0;
+      jcvm::Heap retry_heap(reclamation_owner);
+      jcvm::jref_t retry_root;
+      bool retry_root_restored = false;
+      try {
+        jcvm::fs::Tag root_tag{};
+        root_tag.len = sizeof(reclamation_root_tag);
+        std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
+        retry_root = jcvm::FlashMemory_Handler::
+            getPersistentField_ReferenceStrict(root_tag, retry_heap);
+        retry_root_restored = !retry_root.isNullPointer() &&
+                              retry_root.isArray();
+      } catch (...) {
+        retry_root_restored = false;
       }
-      retry_staged = retry_staged && fs_sync() == 0 && fs_init() == 0;
+      const std::vector<jcvm::jref_t> retry_roots{retry_root};
+      ReclaimerRootContext retry_root_context{&retry_roots};
+      uint32_t retry_erased = 0;
+      const auto retry_result = retry_root_restored
+          ? jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+                reclamation_owner, retry_heap, enumerate_reclaimer_roots,
+                &retry_root_context, &retry_erased)
+          : jcvm::PersistentInventory::VisitResult::IncompleteReachability;
+      bool retry_staged =
+          retry_result == jcvm::PersistentInventory::VisitResult::Complete &&
+          retry_erased == reclamation_candidates.size() && fs_sync() == 0 &&
+          fs_init() == 0;
       if (!retry_staged) {
         reclamation_cut_recovery = false;
         break;
@@ -1160,11 +1305,41 @@ int main() {
         reclamation_cut_recovery = reclamation_cut_recovery &&
             fs_exists(tag.data(), tag.size()) == 0;
       }
+      uint8_t retry_other_owner_bytes[sizeof(reclamation_other_owner_value)]{};
+      uint32_t retry_root_length = 0;
+      bool retry_root_intact = false;
+      try {
+        jcvm::Heap final_heap(reclamation_owner);
+        jcvm::fs::Tag root_tag{};
+        root_tag.len = sizeof(reclamation_root_tag);
+        std::memcpy(root_tag.value, reclamation_root_tag, root_tag.len);
+        const auto final_root =
+            jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                root_tag, final_heap);
+        const auto final_array = final_heap.getArray(final_root);
+        retry_root_intact = final_array->size() ==
+                                reclamation_root_value.size() &&
+                            final_array->getByteEntry(0) ==
+                                reclamation_root_value[0] &&
+                            final_array->getByteEntry(1) ==
+                                reclamation_root_value[1] &&
+                            final_array->getByteEntry(2) ==
+                                reclamation_root_value[2];
+      } catch (...) {
+        retry_root_intact = false;
+      }
+      const bool retry_other_owner_intact =
+          fs_length(reclamation_other_owner_tag.data(),
+                    reclamation_other_owner_tag.size(), &retry_root_length) ==
+              0 &&
+          retry_root_length == sizeof(reclamation_other_owner_value) &&
+          fs_read(reclamation_other_owner_tag.data(),
+                  reclamation_other_owner_tag.size(), retry_other_owner_bytes,
+                  sizeof(reclamation_other_owner_value)) == 0 &&
+          std::memcmp(retry_other_owner_bytes, reclamation_other_owner_value,
+                      sizeof(reclamation_other_owner_value)) == 0;
       reclamation_cut_recovery = reclamation_cut_recovery &&
-          fs_read(reclamation_root_tag, sizeof(reclamation_root_tag),
-                  recovered_root, sizeof(recovered_root)) == 0 &&
-          std::memcmp(recovered_root, reclamation_root_value,
-                      sizeof(recovered_root)) == 0;
+          retry_root_intact && retry_other_owner_intact;
     }
   }
   expect(reclamation_cut_recovery,

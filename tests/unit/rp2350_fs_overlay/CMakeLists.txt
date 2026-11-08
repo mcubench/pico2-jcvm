@@ -8,7 +8,14 @@ add_executable(
   "${REPO_ROOT}/src/cap_store.cpp"
   "${REPO_ROOT}/src/pico_filesystem.cpp"
   "${REPO_ROOT}/src/gp_lifecycle_recovery.cpp"
-  "${REPO_ROOT}/choupi/src/jc_handlers/flashmemory.cpp")
+  "${REPO_ROOT}/choupi/src/jc_handlers/flashmemory.cpp"
+  "${REPO_ROOT}/choupi/src/persistent_inventory.cpp"
+  "${REPO_ROOT}/choupi/src/heap.cpp"
+  "${REPO_ROOT}/choupi/src/context.cpp"
+  "${REPO_ROOT}/choupi/src/jc_types/jc_array.cpp"
+  "${REPO_ROOT}/choupi/src/jc_types/jc_object.cpp"
+  "${REPO_ROOT}/choupi/src/jc_types/jc_instance.cpp"
+  "${REPO_ROOT}/choupi/src/jc_types/jref_t.cpp")
 target_compile_features(rp2350_fs_overlay_test PRIVATE cxx_std_17)
 target_compile_options(rp2350_fs_overlay_test PRIVATE
   -Wall -Wextra -ffunction-sections -fdata-sections

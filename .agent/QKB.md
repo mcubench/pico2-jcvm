@@ -2806,13 +2806,16 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   actual USB power interruption. If a target power cycle interrupts a batch,
   confirm reboot preserves all roots and a subsequent collection safely
   finishes the remaining unreachable tags.
-- The fake-flash RP2350 overlay suite now stages ten owner-tag erases and injects
-  1,000 randomized cuts during the single COW snapshot commit. Every reboot
-  restores either all ten old records or none; the live applet-root record is
-  preserved in both states. When the old snapshot wins, retry removes all ten
-  candidates. `./tools/test-rp2350-fs-overlay` ends with `TEST:SUMMARY fail=0`.
-  This verifies overlay snapshot atomicity, not a physical Pico power loss or
-  the end-to-end VM reclaimer invocation.
+- The fake-flash RP2350 overlay suite stages ten owner-tag erases through the
+  production `PersistentReclaimer` and injects 1,000 randomized cuts during the
+  single COW snapshot commit. After each reboot it restores a fresh Heap from
+  the recovered snapshot and checks the live rooted array and a neighboring
+  owner's record. Every reboot restores either all ten old records or none;
+  when the old snapshot wins, retry through the production reclaimer removes
+  all ten candidates while preserving both owners. The 2026-11-08 rerun of
+  `./tools/test-rp2350-fs-overlay` ends with `TEST:SUMMARY fail=0`. This verifies
+  production reclaimer logic against the host fake-flash overlay, not physical
+  Pico flash durability or USB power-loss behavior.
 - **Hook-enabled physical recheck (2026-11-02):** current-profile ARM and
   RISC-V wrappers passed with `PICO2_DEBUG_PERSISTENT_GC=1`; ARM firmware used
   852,280 bytes and left 196,296 bytes in the firmware window. The debug image
