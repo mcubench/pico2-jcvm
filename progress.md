@@ -25439,7 +25439,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:METRIC persistent_reclamation_orphan_tags=10 cuts=1000` and `TEST:SUMMARY fail=0`; scoped `git diff --check` passed. ARM/RISC-V and physical tests were intentionally skipped because firmware code did not change and PC/SC has no Pico reader.
 - Result: All 1,000 randomized COW snapshot cuts recovered the pre-delete tags or the committed deletion state; the rooted two-array graph and second owner's record survived; retries through the production reclaimer removed all ten inventory candidates. The target links inert class-metadata stubs only for its native wildcard `Object[]` type check. This is host fake-flash evidence, not a physical power-loss guarantee.
 - Decision: Keep normal persistent reclamation disabled until physical interrupted-erase/power-loss and multi-owner acceptance pass.
-- Commit: `<pending>`
+- Commit: `a01808de`
 - Artifacts/logs: `/tmp/rp2350-fs-overlay-root-graph.log`; metric `orphan_tags=10 cuts=1000`.
 
 ## 2026-11-08 Resolve rooted-graph reclaimer test commit reference 1 minute

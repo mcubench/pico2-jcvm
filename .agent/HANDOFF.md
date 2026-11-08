@@ -55,6 +55,7 @@ Next: continue RESOURCE-01 from deferred JCSystem deletion and full
 1.8.4 KeyPair failure diagnosis. Keep PERSIST-01 physical multi-owner and
 interruption-safety gates open. Hardware reader validation remains pending the
 user running `sudo ./tools/install-pcsc-sudoers` to install the Pico-only helper.
+Collector-parity implementation and validation are committed as `a01808de`.
 
 # Current handoff — key resource accumulation confirmed; full run still fails — 2026-11-08 11:13 CET
 
