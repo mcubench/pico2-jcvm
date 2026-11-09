@@ -26814,3 +26814,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   reclamation disabled pending safety acceptance.
 - Commit: pending
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`
+
+## 2026-11-09 Analyze RSA and reclamation results from partial sweep 4 minutes
+
+- Step/experiment: `RESOURCE-01-FULL-SWEEP-RSA-RECLAMATION-ANALYSIS`
+- When: '2026-11-09 19:50 CET' - '2026-11-09 19:54 CET'
+- Change: Reconciled the partial full-suite CSV and emulator log to quantify
+  RSA outcomes, gated deletion, inventory, and the completed compaction. Updated
+  TODO.md, QKB, and HANDOFF with the scope and limits of this evidence.
+- Validation: Parsed the generated CSV and emulator log in
+  `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`. All RSA public,
+  private, and CRT key-size rows returned `yes`; 186 deletion callbacks
+  reclaimed 1,576 applet-owned records; five complete inventories showed
+  193–217 applet-owner records and zero to 16 unreachable tags. One
+  `FS_OUT_OF_FLASH` was followed by completed defrag and successful APDU status.
+  The configured 3,600-second watchdog still ended the full client before suite
+  completion. `git diff --check` passed; no source or firmware changes were
+  made.
+- Result: The request-gated partial run maintained bounded owner storage
+  through its RSA key matrix, unlike the earlier F205 observation. This does
+  not establish production behavior, mixed-suite completion, or physical Pico
+  stability; RESOURCE-01 remains open.
+- Decision: Keep production reclamation disabled until all safety gates pass;
+  next reproduce/complete the mixed workload beyond the EC key tests and compare
+  storage behavior with deletion requests disabled.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`

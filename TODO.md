@@ -146,8 +146,12 @@ Archive text is historical evidence, not current device state or priorities.
   one `FS_OUT_OF_FLASH`; the subsequent compaction completed and its triggering
   APDU returned `9000`. No `F205`, `NO_RESOURCE`, or defrag-abort marker was
   observed. The 3,600-second watchdog expired while the client was testing EC
-  key-agreement cases; this was an incomplete run and did not reach the prior
-  RSA persistent-reference failure. It neither proves nor disproves RESOURCE-01.
+  key-agreement cases; this was an incomplete run and did not complete the
+  suite. All RSA public/private/CRT key-size rows returned `yes`; 186 gated
+  deletion callbacks erased 1,576 applet records, with five inventory samples
+  between 193 and 217 owner records. This suggests bounded storage through
+  those RSA cases in the gated run, but does not verify production behavior or
+  later workloads and does not establish RESOURCE-01 as fixed.
   Log: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`.
   A focused max_crypto VPCD reproduction mapped that APDU to HMAC
   `TYPE_HMAC_TRANSIENT_DESELECT`. Its second repeated KeyBuilder call added 8

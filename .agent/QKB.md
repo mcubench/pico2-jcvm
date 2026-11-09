@@ -9183,6 +9183,12 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   observed RSA persistent-reference failure and is not acceptance evidence for
   a fix. The earlier mixed-workload `F205` remains valid and RESOURCE-01 stays
   unresolved. This run was PC VPCD only; no physical Pico was accessed.
+- All RSA public, private, and CRT key-size rows in this partial CSV returned
+  `yes`. The emulator reported 186 gated deletion callbacks reclaiming 1,576
+  applet-owned records. Five complete inventory samples ranged from 193 to 217
+  applet-owner records and from zero to 16 unreachable tags. This is evidence
+  of bounded storage through the RSA matrix in this test-gated configuration;
+  it does not verify the production configuration or later mixed workloads.
 - The independent RSA stress evidence remains useful: slow host VPCD
   compactions can complete in 55–102 seconds when given a 180-second APDU
   timeout. A successful isolated compaction does not prove safety for the

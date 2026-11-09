@@ -46,7 +46,12 @@ The run used `Virtual PCD 00 01`, request-gated deletion, inventory every 64
 callbacks, 180-second APDU timeout, and 3,600-second suite timeout. It was PC
 VPCD only; no physical device was accessed. The prior RSA stress demonstrates
 that individual host VPCD compactions complete when allowed up to 102 seconds,
-but does not explain the mixed-workload `F205`.
+but does not explain the mixed-workload `F205`. In this partial report, all RSA
+public, private, and CRT key-size rows returned `yes`. The emulator logged 186
+deletion callbacks reclaiming 1,576 applet records; five complete inventory
+samples reported 193–217 owner records and at most 16 unreachable tags. These
+measurements suggest bounded storage through the RSA matrix in this gated run;
+the production configuration and suite completion remain unverified.
 
 Next: construct a smaller replay that preserves the mixed JCAlgTest persistent
 record lifecycle leading to the RSA reference write failure, then inspect the
