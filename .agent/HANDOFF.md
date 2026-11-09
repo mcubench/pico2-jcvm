@@ -10765,6 +10765,22 @@ from invoking the stale helper that may include the unrelated PacketRF device.
 `bash -n` and `git diff --check` pass. No USB access was attempted. RESOURCE-01
 still has no physical reclaimer evidence and remains unresolved.
 
+# Current handoff — periodic inventory sampler validated — 2026-11-09 01:28 CET
+
+The PC emulator supports `PICO2_PERSISTENT_INVENTORY_EVERY=N` for a full
+persistent inventory/reachability sample every N completed APDUs. The strict
+decimal parser rejects malformed intervals. `PICO2_PERSISTENT_INVENTORY=once`
+and `=1` retain their previous behavior. The local 2-cycle RSA-public VPCD
+fixture passed 7/7 at interval 2 and emitted three complete samples; the
+legacy `PERSISTENT_INVENTORY: owner=...` prefix remains intact and sample
+sequence is a trailing field. Multipackage VPCD regression passed 47/47 after
+checking prefix compatibility. ARM and RISC-V max_crypto wrappers pass. No
+physical device was accessed; the unexpected PacketRF device remains excluded.
+This diagnostic does not enable firmware reclamation or prove long-run
+stability; RESOURCE-01 remains open. See the latest progress record and logs
+`artifacts/logs/object-deletion-vpcd-20261109T002617Z.log` and
+`artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`.
+
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
 `./tools/test-rp2350-fs-overlay` now passes the complete suite with

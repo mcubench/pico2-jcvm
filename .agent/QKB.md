@@ -8829,3 +8829,24 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   long-run stability. Production reclamation stays disabled.
 - **Next:** Preserve this as the host-side gate; complete the physical
   interruption test and full unchanged JCAlgTest acceptance before enablement.
+
+## 2026-11-09 Periodic persistent inventory sampling
+
+- The PC VM accepts `PICO2_PERSISTENT_INVENTORY_EVERY=N`, where N is a positive
+  decimal APDU interval. It emits full owner/global record and payload-byte
+  counts, unreachable-tag counts and heap reachability every N completed
+  selected-context APDUs. `PICO2_PERSISTENT_INVENTORY=once` still takes one
+  sample per owner and `=1` still samples every APDU.
+- A 2-cycle RSA-public VPCD run with interval 2 passed 7/7. Its three samples
+  showed owner records/payload of 13/287 bytes twice, then 3/18; global totals
+  were 17/304 twice, then 7/35. Each sample reported complete reachability and
+  zero unreachable tags after the gated collection. This verifies the sampler
+  output/cadence only; it is not a long-run plateau or production reclamation
+  result. Log: `artifacts/logs/object-deletion-vpcd-20261109T000343Z.log`.
+- Re-ran after moving `sample=N` to the end of the log line to preserve the
+  existing prefix consumed by integration tests. The interval-2 VPCD fixture
+  again passed 7/7 with exactly three samples, and the multipackage VPCD suite
+  passed 47/47. ARM and RISC-V max_crypto builds pass. Logs:
+  `artifacts/logs/object-deletion-vpcd-20261109T002617Z.log` and
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`. No physical
+  device was accessed; the unexpected PacketRF unit remains excluded.

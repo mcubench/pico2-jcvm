@@ -26474,3 +26474,33 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `81af6f84`
 - Artifacts/logs: No new logs; previous filesystem and transaction tests ran
   through their repository wrappers.
+
+## 2026-11-09 Add periodic persistent inventory sampling 38 minutes
+
+- Step/experiment: `RESOURCE-01-PERIODIC-INVENTORY-SAMPLING`
+- When: '2026-11-09 00:50 CET' - '2026-11-09 01:28 CET'
+- Change: Added strict positive-decimal
+  `PICO2_PERSISTENT_INVENTORY_EVERY=N` support to the PC VM. It samples full
+  owner/global persistent records and payload bytes, unreachable tags and heap
+  reachability every N completed selected-context APDUs. Existing `once` and
+  every-APDU modes remain available. Updated TODO, QKB and HANDOFF.
+- Validation: PC VM build and
+  `PICO2_HOST_USB_ACCESS=1 PICO2_PERSISTENT_INVENTORY_EVERY=2 ./tools/test-object-deletion-vpcd 2 rsa-public`
+  passed `TEST:SUMMARY pass=7 fail=0`. Its log contains exactly three samples
+  with the legacy `PERSISTENT_INVENTORY: owner=...` prefix and sample sequence
+  suffix. `./tools/test-vpcd-multipackage` passed 47/47 after preserving that
+  prefix. ARM and RISC-V `./tools/build <arch> --profile max_crypto` wrappers
+  both passed. `git diff --check` passed for all files in this step; repository-
+  wide check reports pre-existing whitespace in unrelated files.
+- Result: The simulator can now produce lower-overhead resource time series.
+  The VPCD control showed 13 owner tags / 287 bytes twice, then 3 / 18; global
+  counts were 17 / 304 twice, then 7 / 35. All samples had complete scans and
+  zero unreachable tags after gated cleanup. These are fixture metrics, not a
+  full-run plateau or hardware result.
+- Decision: Use periodic sampling on a bounded JCAlgTest subset next to locate
+  resource growth and correlate it with APDU boundaries. Keep production
+  persistent deletion unsupported until PERSIST-01 acceptance completes. No
+  physical device was accessed; the unexpected PacketRF device remains excluded.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T002617Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`.

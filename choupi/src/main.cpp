@@ -47,6 +47,7 @@
 #include "../../src/vm_applet_context.hpp"
 #include "../../src/vm_diagnostics.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
@@ -339,6 +340,19 @@ struct PersistentRootVector {
   std::vector<jcvm::jref_t> references;
 };
 
+unsigned long persistent_inventory_interval() {
+  const char *setting =
+      std::getenv("PICO2_PERSISTENT_INVENTORY_EVERY");
+  if (setting == nullptr || *setting == '\0') return 0;
+  for (const char *character = setting; *character != '\0'; ++character) {
+    if (*character < '0' || *character > '9') return 0;
+  }
+  errno = 0;
+  char *end = nullptr;
+  const unsigned long interval = std::strtoul(setting, &end, 10);
+  return errno == ERANGE || end == setting || *end != '\0' ? 0 : interval;
+}
+
 bool enumerate_persistent_root_vector(
     jcvm::Heap::ReferenceVisitor visitor, void *visitor_context,
     void *root_context) {
@@ -416,8 +430,12 @@ bool inventory_unreachable_tags_for_owner(
 
 void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   const char *setting = std::getenv("PICO2_PERSISTENT_INVENTORY");
-  if (setting == nullptr ||
-      (std::strcmp(setting, "1") != 0 && std::strcmp(setting, "once") != 0)) {
+  const unsigned long interval = persistent_inventory_interval();
+  const bool explicitly_enabled =
+      setting != nullptr &&
+      (std::strcmp(setting, "1") == 0 ||
+       std::strcmp(setting, "once") == 0);
+  if (!explicitly_enabled && interval == 0) {
     return;
   }
 
@@ -484,8 +502,11 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
             context.getAppletPackageID(), context.getHeap(), counts.references,
             accumulate_persistent_tag, &package_unreachable_records);
   }
+  static unsigned long inventory_sample_sequence = 0;
+  ++inventory_sample_sequence;
   std::fprintf(stderr,
-               "PERSISTENT_INVENTORY: owner=%u static_result=%u static_roots=%u "
+               "PERSISTENT_INVENTORY: owner=%u "
+               "static_result=%u static_roots=%u "
                "applet_result=%u applet_roots=%u trace_complete=%u "
                "owner_scan=%u owner_result=%u applet_records_complete=%u "
                "applet_records=%u applet_payload_bytes=%llu "
@@ -497,7 +518,7 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                "invalid_refs=%u edge_failures=%u root_failures=%u "
                "context_roots=%u package_unreachable_result=%u "
                "package_unreachable_complete=%u package_unreachable_tags=%u "
-               "package_unreachable_payload_bytes=%llu\n",
+               "package_unreachable_payload_bytes=%llu sample=%lu\n",
                static_cast<unsigned>(context.getAppletID()),
                static_cast<unsigned>(static_result), counts.static_roots,
                static_cast<unsigned>(applet_result), counts.applet_roots,
@@ -524,7 +545,8 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                    : 0u,
                package_unreachable_records.tags,
                static_cast<unsigned long long>(
-                   package_unreachable_records.payload_bytes));
+                   package_unreachable_records.payload_bytes),
+               inventory_sample_sequence);
 }
 
 void service_object_deletion_request_if_enabled(jcvm::Context &context) {
@@ -612,9 +634,17 @@ void collect_heap_after_apdu() {
   const bool collect_all_contexts = collect_setting != nullptr &&
                                     std::strcmp(collect_setting, "1") == 0;
   const bool trace_enabled = trace_setting != nullptr;
-  const bool inventory_enabled = inventory_setting != nullptr &&
-                                 (std::strcmp(inventory_setting, "1") == 0 ||
-                                  std::strcmp(inventory_setting, "once") == 0);
+  const bool inventory_always_enabled =
+      inventory_setting != nullptr &&
+      (std::strcmp(inventory_setting, "1") == 0 ||
+       std::strcmp(inventory_setting, "once") == 0);
+  const unsigned long inventory_interval = persistent_inventory_interval();
+  static unsigned long inventory_apdu_sequence = 0;
+  const bool interval_sample =
+      inventory_interval != 0 &&
+      (++inventory_apdu_sequence % inventory_interval) == 0;
+  const bool inventory_enabled =
+      inventory_always_enabled || interval_sample;
   // The "once" mode is for integration tests: preserve one inventory/heap
   // snapshot per owner ID without rescanning every retained context per APDU.
   const bool inventory_once = inventory_setting != nullptr &&
