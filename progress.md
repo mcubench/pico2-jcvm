@@ -25737,7 +25737,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   exceptions are not proven causal.
 - Decision: Keep persistent reclamation disabled pending PERSIST-01 acceptance;
   continue instrumenting the full-run failure and deferred deletion behavior.
-- Commit: `<pending>`
+- Commit: `cbe14dd9`
 - Artifacts/logs:
   `artifacts/logs/jcalgtest-resource-accumulation-heapgc-5x-rsa1024.log`.
 

@@ -10798,6 +10798,7 @@ it uses old `tools/tests` fixture paths and its standalone target does not link
 against current Stack/Context interfaces. Do not use it as an acceptance gate;
 use `tools/test-persistent-transaction`. The recent probe edit is uncommitted
 pre-existing work and was left untouched.
+Implementation commit: `cbe14dd9`.
 
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
