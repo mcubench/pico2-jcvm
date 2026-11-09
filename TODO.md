@@ -119,6 +119,16 @@ Archive text is historical evidence, not current device state or priorities.
   PC backend exhausts persistent storage after enough operations. It does not
   establish the Pico overlay's failure threshold. The unexpected PacketRF
   unit is excluded; no physical token was used.
+  A second clean, unchanged 1.8.4/jc305 extended-support run on the independent
+  VPCD endpoint `Virtual PCD 00 01` completed all 8,607 report rows: 15 `yes`,
+  8,592 `no`, and zero other statuses. It matched all 15 declared supported
+  capabilities and did not log `F205`, `FS_OUT_OF_FLASH`, or a persistent
+  write failure. Cache-clear APDUs still returned `F206` because production
+  object deletion is unsupported. This pass does not establish bounded storage
+  or negate the earlier F205; endpoint-sensitive behavior and periodic resource
+  measurements still need investigation. The run wrapper exited only at
+  comparison because the Python comparator is not executable; invoking it
+  with `python3` passed, and the wrapper now does the same.
   The RP2350 filesystem suite now passes its integrated
   `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
   case: across 1,000 simulated flash-cut points it preserves the live root and

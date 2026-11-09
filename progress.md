@@ -26637,3 +26637,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `58fdf85b`
 - Artifacts/logs: Build outputs in `build/arm/` and `build/riscv/`; tests emitted terminal summaries; no physical logs.
 
+
+## 2026-11-09 Clean JCAlgTest VPCD sweep and comparator invocation 20 minutes
+
+- Step/experiment: `RESOURCE-01-clean-jcalgtest-184-vpcd`
+- When: '2026-11-09 08:11 CET' - '2026-11-09 08:31 CET'
+- Change: Ran unchanged pinned JCAlgTest 1.8.4/jc305 extended support on a zero-byte VPCD card using reader `Virtual PCD 00 01` / endpoint `127.0.0.1:35964`. The runner now supports a bounded configurable suite timeout and a long VPCD idle timeout, and invokes its Python comparator through `python3`; recorded the clean pass alongside the earlier F205 result in TODO.md, QKB.md, and the session handoff.
+- Validation: `./tools/fixture-path --verify` passed (`files=81`, JCAlgTest 1.8.4); the full client produced 8,607 comparison rows. The original wrapper completed installation and the client but exited because the comparator was not executable. After the fix, `bash -n tools/test-jcalgtest-support-vpcd` passed and the exact comparator invocation passed.
+- Result: Comparator reports `yes=15`, `no=8592`, `other=0`, `matched=8607`, with all 15 declared capabilities matching. No `F205`, `FS_OUT_OF_FLASH`, or `PERSIST_WRITE_FAIL` appeared. Cache-clear APDUs returned `F206`; production object deletion remains unsupported. This run does not establish a persistent-storage plateau or negate the earlier F205.
+- Decision: Keep RESOURCE-01 open. Next run with periodic inventory and compare the clean 00 01 trace with the earlier 00 00 F205 trace; investigate the endpoint discrepancy. No physical board was used. Commit: recorded in the follow-on progress metadata commit.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T071131Z/`; the suite report and emulator/client logs are preserved there.

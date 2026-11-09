@@ -8971,3 +8971,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `tools/test-persistent-reclaimer-physical` checks byte-for-byte equality and
   refuses hardware access while they differ. Refresh using the external request
   process before physical tests; continue excluding the unexpected device.
+
+## VPCD slot 00 00 may not provide a clean empty-card session — 2026-11-09
+
+- **Symptom:** On one test attempt, a zero-byte VPCD memory image on reader
+  `Virtual PCD 00 00` listed JCAlgTest as installed before GPPro LOAD/INSTALL.
+  This made the fresh-card guard abort. A separate 00 01 session using endpoint
+  `127.0.0.1:35964` listed only the ISD before installation; GPPro installation
+  and the full unchanged 1.8.4/jc305 support run then completed.
+- **Evidence:** `artifacts/results/jcalgtest-support-vpcd-20261109T070218Z/`
+  shows the unexpected pre-install applet on 00 00;
+  `artifacts/results/jcalgtest-support-vpcd-20261109T071131Z/` contains the
+  clean 00 01 run and report.
+- **Workaround:** For a fresh VPCD test, explicitly set
+  `JCALGTEST_VPCD_READER='Virtual PCD 00 01'` and
+  `JCALGTEST_VPCD_ENDPOINT=127.0.0.1:35964`, then retain the pre-install GPPro
+  listing guard. Do not treat this as a firmware or storage fix. The underlying
+  00 00 state/reader association remains unexplained.

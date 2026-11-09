@@ -10961,3 +10961,27 @@ the installed helper is
 physical test wrapper refuses to proceed until the Pico-only helper is
 refreshed. Continue offline until that external setup is current, and keep the
 unexpected device excluded.
+
+# Current handoff — clean 1.8.4 VPCD sweep passes, RESOURCE-01 still open — 2026-11-09 10:04 CET
+
+A clean unchanged JCAlgTest 1.8.4/jc305 extended-support run on `Virtual PCD
+00 01` completed all 8,607 comparison rows: 15 supported (`yes`), 8,592
+unsupported (`no`), and zero other statuses. The comparator matched all 15
+generated expectations. There were no `F205`, `FS_OUT_OF_FLASH`, or persistent
+write failures. Cache-clear APDUs still return `F206` because production
+object deletion is unsupported; this does not fix RESOURCE-01 or negate the
+earlier F205 result on `Virtual PCD 00 00`. Logs and report:
+`artifacts/results/jcalgtest-support-vpcd-20261109T071131Z/`.
+
+The wrapper initially exited after the suite because it directly executed a
+non-executable Python comparator. It now invokes the comparator with `python3`;
+`bash -n` and the exact comparison command pass. The full run's result passed
+manual comparison; the wrapper has not been rerun end-to-end after this fix.
+The run explicitly selected reader `Virtual PCD 00 01` and endpoint
+`127.0.0.1:35964`. A separate run on 00 00 unexpectedly listed JCAlgTest before
+installation despite starting from a zero-byte memory image.
+
+Next: run the unchanged suite with periodic inventory on 00 01 and compare
+record/payload growth with the earlier 00 00 F205 trace. Investigate endpoint
+differences. Keep production reclamation disabled; no physical board was
+operated in this step.

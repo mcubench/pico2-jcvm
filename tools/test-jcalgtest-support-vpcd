@@ -10,6 +10,11 @@ require_command pcsc_scan
 
 reader="${JCALGTEST_VPCD_READER:-Virtual PCD 00 00}"
 endpoint="${JCALGTEST_VPCD_ENDPOINT:-127.0.0.1:35963}"
+support_timeout="${JCALGTEST_SUPPORT_TIMEOUT_SECONDS:-3600}"
+[[ "${support_timeout}" =~ ^[1-9][0-9]*$ ]] ||
+  die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must be a positive integer"
+(( support_timeout <= 3600 )) ||
+  die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must not exceed 3600"
 applet_aid="4A43416C675465737431"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
@@ -49,7 +54,7 @@ done
 }
 
 "${repo_root}/tools/env" "${emulator}" -m "${memory}" -s \
-  --vpcd "${endpoint}" --vpcd-idle-timeout 900 \
+  --vpcd "${endpoint}" --vpcd-idle-timeout 3600 \
   --applet-aid "${applet_aid}" --package-id 63 \
   --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin" \
   --rom-mask "${rom_mask}" > "${out_dir}/emulator.log" 2>&1 &
@@ -104,7 +109,8 @@ grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" ||
   die "JCAlgTest applet is not listed as selectable"
 }
 
-if ! timeout --signal=TERM --kill-after=5s 900s \
+if ! JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
+    timeout --signal=TERM --kill-after=5s "${support_timeout}s" \
     "${repo_root}/tools/run-jcalgtest" --reader-name "${reader}" \
     -op ALG_SUPPORT_EXTENDED -fresh -outpath "${out_dir}" \
     > "${out_dir}/client.log" 2>&1; then
@@ -120,7 +126,7 @@ mapfile -t reports < <(find "${out_dir}" -maxdepth 1 -type f \
   die "expected one JCAlgTest support CSV, found ${#reports[@]}"
 }
 
-"${repo_root}/tools/compare-jcalgtest-support.py" "${reports[0]}" \
+python3 "${repo_root}/tools/compare-jcalgtest-support.py" "${reports[0]}" \
   "${reference}" --expected-support "${out_dir}/expected-support.csv" \
   > "${out_dir}/comparison.log" 2>&1 || {
   cat "${out_dir}/comparison.log" >&2
