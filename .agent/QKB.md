@@ -9139,3 +9139,20 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Evidence: `artifacts/logs/object-deletion-vpcd-20261109T145927Z.log`,
   SHA-256 `5c7f3fcf74e827d83b8647959665f5e0eb0a0e22c4b2dfd9c52bcaf809c8d9ac`;
   submodule commit `b892e4d`.
+
+## RESOURCE-01: long-watchdog RSA batch completes repeated compactions
+
+- A 64-cycle `rsa-batch` VPCD stress with a 180-second APDU timeout passed
+  `TEST:SUMMARY pass=69 fail=0`, then the wrapper verified one gated cleanup
+  request erased 640 applet-owned tags. It logged six complete cycles of
+  `FS_DEFRAG_START` -> `FS_DEFRAG_SOURCE_ERASED` -> `FS_DEFRAG_DONE`, with no
+  `FS_DEFRAG_ABORT`, `FS_OUT_OF_FLASH`, persistent-write failure, or F205.
+- Defrag-triggering APDUs took 55.068, 74.775, 91.273, 93.014, 102.237, and
+  101.436 seconds in this run. Therefore the prior 60-second probe timeout
+  interrupted a slow but successful compaction and did not prove a copyback
+  hang. Increase APDU timeout for VPCD workloads that trigger compaction.
+- This is a bounded synthetic RSA workload on host VPCD, not proof that the
+  mixed JCAlgTest sweep or physical flash is stable. Full-suite `F205` remains
+  unexplained; RESOURCE-01 is still open and production cleanup remains off.
+- Evidence: `artifacts/logs/object-deletion-vpcd-20261109T173110Z.log`,
+  SHA-256 `fb80e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`.

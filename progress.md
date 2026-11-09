@@ -26750,3 +26750,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Proceed with a bounded workload that exercises the newly instrumented defrag path.
 - Commit: pending
 - Artifacts/logs: none
+
+
+## 2026-11-09 Prove bounded RSA batch compaction completes 162 minutes
+
+- Step/experiment: `RESOURCE-01-rsa-batch-defrag-watchdog-control`
+- When: '2026-11-09 16:04 CET' - '2026-11-09 18:46 CET'
+- Change: Ran progressively larger persistent RSA replacement stress against local PC VPCD using the new host-only filesystem defrag markers. Corrected the prior interpretation that source erase without an immediate completion line meant a stuck copyback. Updated TODO.md, QKB.md, and HANDOFF.md.
+- Validation: The instrumented `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 PICO2_VPCD_APDU_TIMEOUT=180 ./tools/test-object-deletion-vpcd 64 rsa-batch` passed `TEST:SUMMARY pass=69 fail=0`; the wrapper verified one gated cleanup erased 640 applet tags. Six defrag cycles reached `FS_DEFRAG_DONE` with no abort, OutOfFlash, persistent-write failure, or F205. Compaction-triggering APDUs measured 55.068, 74.775, 91.273, 93.014, 102.237, and 101.436 seconds. A separate 128-cycle attempt with the 60-second APDU limit timed out at APDU 45 after 44 successful key replacements and source erase began. The short 8-tag object-deletion regression passed 19/19 but did not defrag. Rust filesystem unit tests were attempted and failed before test execution due vendored `lock_api 0.3.4` using removed `feature(const_fn)` with the installed stable toolchain. No physical device was accessed.
+- Result: The earlier timeout was insufficient for slow VPCD compaction in this synthetic workload. This workload's defrag path completes under a longer timeout; full JCAlgTest `F205` remains unexplained, so RESOURCE-01 is open and this is not a fix.
+- Decision: Compare the full-suite allocation sizes and sector distribution against this bounded batch; create a smaller mixed workload that reproduces the full-suite OutOfFlash state. Keep normal persistent deletion disabled.
+- Commit: pending
+- Artifacts/logs: successful batch `artifacts/logs/object-deletion-vpcd-20261109T173110Z.log`, SHA-256 `fb80e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`; timed-out 128-cycle control `artifacts/logs/object-deletion-vpcd-20261109T150810Z.log`, SHA-256 `2de4e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`.

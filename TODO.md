@@ -305,6 +305,15 @@ Archive text is historical evidence, not current device state or priorities.
     defragmentation. Rust filesystem unit tests remain blocked by the vendored
     `lock_api 0.3.4` `feature(const_fn)` incompatibility with installed stable
     Rust. No RESOURCE-01 fix is established.
+  - A longer-watchdog 64-cycle RSA replacement VPCD stress subsequently
+    completed 69/69 checks, reclaimed 640 persistent tags, and logged six
+    complete defragmentations. The third compaction that had exceeded the
+    earlier 60-second APDU limit also finished under the 180-second limit;
+    measured compaction APDUs ranged from 55 to 102 seconds. This disproves the
+    earlier inference that source erase was followed by a stuck copyback in
+    that bounded stress. It identifies a too-short timeout as the cause of
+    that probe's apparent stall, but does not explain the full JCAlgTest
+    `F205` / `NO_RESOURCE` failure.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

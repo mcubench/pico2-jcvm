@@ -1,3 +1,34 @@
+# Current handoff — bounded RSA stress completes slow VPCD defrags; RESOURCE-01 open — 2026-11-09 16:04 CET
+
+RESOURCE-01 remains **unfixed**: the unchanged full JCAlgTest run still hit
+`F205`/`NO_RESOURCE` despite 237 gated cleanup calls. We instrumented the
+host filesystem defrag phases in OS submodule commit `b892e4d` and confirmed the
+instrumented PC build with `./tools/build-pc --profile max_crypto`.
+
+A 64-cycle RSA key-replacement batch passed on local VPCD with a 180-second
+APDU limit: `TEST:SUMMARY pass=69 fail=0`, then one request reclaimed 640
+applet-owned tags. Six defragmentations all reached `FS_DEFRAG_DONE`; no abort,
+OutOfFlash, persistent-write failure, or F205 was logged. Compaction-triggering
+APDUs took 55–102 seconds. A previous 128-cycle run with a 60-second APDU limit
+timed out at APDU 45 after source erase began; the longer run shows that this
+specific compaction was slow but completes. The earlier suspected copyback stall
+is disproven for this bounded stress.
+
+This validates host VPCD compaction for one synthetic RSA workload only; it
+does not explain the mixed JCAlgTest F205 or prove physical flash stability.
+The short object-deletion regression passed 19/19 but did not exercise defrag.
+The OS Rust unit-test attempt cannot run with the installed stable compiler due
+vendored `lock_api 0.3.4` using removed `feature(const_fn)`.
+
+Next: compare FS telemetry and exact persistent-write history around the first
+full-suite `FS_OUT_OF_FLASH`; build a smaller mixed algorithm/key-type sequence
+that reproduces that sector shape. Keep object deletion test-gated and normal
+production deletion disabled. No physical Pico used. Successful stress log:
+`artifacts/logs/object-deletion-vpcd-20261109T173110Z.log` (SHA-256
+`fb80e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`).
+
+---
+
 # Current handoff — RESOURCE-01 defrag abort telemetry staged for reproduction — 2026-11-09 16:01 CET
 
 RESOURCE-01 is **not fixed**. The previous full unchanged JCAlgTest 1.8.4/jc305
