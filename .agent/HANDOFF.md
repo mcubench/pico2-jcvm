@@ -11202,3 +11202,14 @@ acceptance path still starts from a fresh VPCD card. A test client invocation
 without `-fresh` did not resume the previous partial support report, so that
 experimental resume mode was removed. `tools/jcalgtest-apdu-watchdog.py` passed
 fast-response and timeout checks. Tooling and evidence commit: `771e63c5`.
+
+
+## 2026-11-09 RESOURCE-01 historical summary completed
+
+Documentation-only review through `c3e603c3`: see
+`docs/resource-01-work-summary.md` for five editorial pages relating experiments,
+reported durations, lessons and remaining acceptance. Explicit RESOURCE-01 records
+sum to 1,283 reported minutes; overlaps prevent treating that as audited labor.
+No implementation or hardware work performed. Production deletion remains off;
+RESOURCE-01 remains open. Next technical action remains the mixed-workload
+filesystem reproduction described above. Pre-existing dirty files preserved.

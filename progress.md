@@ -26762,3 +26762,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Compare the full-suite allocation sizes and sector distribution against this bounded batch; create a smaller mixed workload that reproduces the full-suite OutOfFlash state. Keep normal persistent deletion disabled.
 - Commit: pending
 - Artifacts/logs: successful batch `artifacts/logs/object-deletion-vpcd-20261109T173110Z.log`, SHA-256 `fb80e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`; timed-out 128-cycle control `artifacts/logs/object-deletion-vpcd-20261109T150810Z.log`, SHA-256 `2de4e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`.
+
+
+## 2026-11-09 Summarize RESOURCE-01 investigation history approximately 7 minutes
+
+- Step/experiment: `DOC-RESOURCE-HISTORY-REVIEW`
+- When: '2026-11-09 approximately 18:53 CET' - '2026-11-09 19:00 CET'; start estimated, not independently timed.
+- Change: Added five editorial pages under docs/ tracing RESOURCE-01 through Git and progress reports, with logical progression, reported effort, corrected interpretations and remaining acceptance. Updated session continuity note without changing implementation.
+- Validation: Inspected Git history and relevant commit contents; recomputed 53 explicit RESOURCE-01 record durations (1,283 minutes); checked five page sections, four page breaks and all relative document links. Scoped whitespace inspection passed. Builds, runtime tests and hardware intentionally skipped for documentation-only work.
+- Result: Summary distinguishes bounded controls from unresolved full-suite F205, production collection and physical reset causality. Historical runtime measurements were transcribed, not remeasured. Printed page count depends on renderer.
+- Decision: Requested analysis complete; preserve existing implementation changes and continue technical work only under a subsequent request.
+- Commit: This documentation commit; resolve with `git log --grep="docs: summarize RESOURCE-01 investigation and effort"`.
+- Artifacts/logs: `docs/resource-01-work-summary.md`; no new runtime logs.
