@@ -26738,3 +26738,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Requested presentation change complete.
 - Commit: `this README-feature-status-table commit; resolve with git log --grep="docs: show feature support with status badges"`
 - Artifacts/logs: None.
+
+
+## 2026-11-09 Record RESOURCE-01 diagnostic root commit SHA 1 minute
+
+- Step/experiment: `RESOURCE-01-defrag-abort-telemetry-commit-record`
+- When: '2026-11-09 16:03 CET' - '2026-11-09 16:04 CET'
+- Change: Replaced the pending root-commit note in the current handoff with the completed root SHA after the documented elevated Git retry; the OS submodule telemetry remains in its own commit.
+- Validation: Confirmed root commit `07c25870` contains only TODO.md, QKB, HANDOFF, progress, and the choupi/os gitlink; submodule commit is `b892e4d`. No tests rerun for this bookkeeping-only update.
+- Result: Incremental commit record is complete. RESOURCE-01 remains unresolved.
+- Decision: Proceed with a bounded workload that exercises the newly instrumented defrag path.
+- Commit: pending
+- Artifacts/logs: none

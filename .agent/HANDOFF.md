@@ -12,7 +12,8 @@ not yet prove which branch returned.
 Committed host-only defrag phase telemetry in submodule commit `b892e4d`
 (`debug: trace filesystem defragmentation aborts`). It logs start, stage/copyback
 broken-block or write-error exits, source erase, and completion. The root worktree
-still needs its gitlink update and progress commit. `./tools/build-pc --profile
+is recorded in root commit `07c25870` (`debug: instrument persistent filesystem
+defragmentation`). `./tools/build-pc --profile
 max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd`
 passed `TEST:SUMMARY pass=19 fail=0`, but its 8-tag workload did not trigger
 filesystem defragmentation, so the new markers were not exercised. An attempt to
