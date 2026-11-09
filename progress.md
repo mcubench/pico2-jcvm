@@ -26549,5 +26549,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Reproduce the failing persistent-reference write in a bounded
   unchanged-CAP workload and inspect storage/free-space/compaction state.
   Keep production persistent reclamation disabled pending PERSIST-01 gates.
-- Commit: `<pending>`
+- Commit: `7475d43e`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T010939Z/`
