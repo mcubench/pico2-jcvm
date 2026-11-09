@@ -10985,3 +10985,4 @@ Next: run the unchanged suite with periodic inventory on 00 01 and compare
 record/payload growth with the earlier 00 00 F205 trace. Investigate endpoint
 differences. Keep production reclamation disabled; no physical board was
 operated in this step.
+Implementation and initial progress commit: `6d1e4f87`; the progress commit-reference correction follows.
