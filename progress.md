@@ -25737,7 +25737,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   exceptions are not proven causal.
 - Decision: Keep persistent reclamation disabled pending PERSIST-01 acceptance;
   continue instrumenting the full-run failure and deferred deletion behavior.
-- Commit: `cbe14dd9`
+- Commit: `<pending>`
 - Artifacts/logs:
   `artifacts/logs/jcalgtest-resource-accumulation-heapgc-5x-rsa1024.log`.
 
@@ -26501,7 +26501,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   resource growth and correlate it with APDU boundaries. Keep production
   persistent deletion unsupported until PERSIST-01 acceptance completes. No
   physical device was accessed; the unexpected PacketRF device remains excluded.
-- Commit: `<pending>`
+- Commit: `23318302`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T002617Z.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`.
 
@@ -26522,6 +26522,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   filesystem. No physical test or long-run storage plateau was measured.
 - Decision: Keep this as a focused persistence invariant. Continue RESOURCE-01
   and PERSIST-01 multi-owner/recovery gates; do not enable persistent deletion.
-- Commit: `<pending>`
+- Commit: `cbe14dd9`
 - Artifacts/logs: no new repository artifacts; host unit output was captured in
   the command session.
