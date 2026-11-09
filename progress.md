@@ -26840,3 +26840,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   storage behavior with deletion requests disabled.
 - Commit: pending
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`
+
+
+## 2026-11-09 Add actionable RESOURCE-01 investigation priorities 2 minutes
+
+- Step/experiment: `DOC-RESOURCE-ACTION-ORDER`
+- When: '2026-11-09 20:16 CET' - '2026-11-09 20:18 CET'
+- Change: Added six ordered recommendations to RESOURCE-01 in TODO.md, with concrete reproduction, telemetry, controlled comparison, diagnostic-loop and acceptance deliverables. Linked historical summary and acknowledged newer passing partial RSA sweep without treating it as closure. Appended handoff note.
+- Validation: Inspected current TODO, latest progress reports and Git history; scoped diff/whitespace checks and summary-link existence check passed. Builds and hardware intentionally skipped for documentation-only change.
+- Result: RESOURCE-01 now prioritizes a minimal repeatable mixed-workload failure and evidence of its mechanism before further expensive full-suite reruns. No runtime metrics measured or implementation changed.
+- Decision: Requested backlog update complete; existing safety gates and open task status retained.
+- Commit: This documentation commit; resolve with `git log --grep="docs: prioritize actionable RESOURCE-01 diagnosis"`.
+- Artifacts/logs: none.

@@ -11245,3 +11245,13 @@ sum to 1,283 reported minutes; overlaps prevent treating that as audited labor.
 No implementation or hardware work performed. Production deletion remains off;
 RESOURCE-01 remains open. Next technical action remains the mixed-workload
 filesystem reproduction described above. Pre-existing dirty files preserved.
+
+
+## 2026-11-09 RESOURCE-01 actionable investigation order
+
+Updated TODO.md at the user's request with six ordered actions: minimize the
+mixed-workload failure, capture storage transitions, run matched controls, shorten
+diagnostic cycles, validate a targeted fix through full acceptance, and retain
+production/physical safety gates. Accounts for the newer partial sweep passing
+RSA and compaction without closing full-suite acceptance. No implementation or
+hardware work performed; existing source changes preserved.

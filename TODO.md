@@ -195,6 +195,54 @@ Archive text is historical evidence, not current device state or priorities.
   304 bytes, with zero unreachable tags. Normal firmware still reports object
   deletion unsupported; this fixture result is not a production or hardware
   fix. See `.agent/QKB.md` and the 2026-11-09 `progress.md` entry.
+- Immediate action order (2026-11-09 review):
+  1. **Reproduce the remaining failure in a small mixed workload.** Extract
+     the ordered key creation/replacement, cache-clear and deletion APDUs leading
+     to the first terminal persistent-write failure in the archived failing
+     max_crypto run. Replay on a fresh PC VPCD card and minimize the sequence
+     while retaining the failure. Keep supplied CAP/JAR bytes unchanged. Record
+     exact APDUs, seed if relevant, iteration, first failing tag/write site,
+     status and elapsed time; preserve a passing fresh-card control. If it does
+     not reproduce, compare the failing run with the newer partial sweep before
+     assuming a filesystem defect: that sweep passed its RSA matrix and
+     completed compaction but still timed out before full acceptance.
+  2. **Capture the storage transition that causes failure.** Around the minimal
+     sequence, sample applet-owner and package-static live/unreachable records,
+     global payload, obsolete filesystem space, sector append/valid/staging
+     bytes, allocation sizes, and defrag start/exit/completion. Track RAM handles,
+     backing and native state separately. Correlate the first terminal allocation
+     failure with its APDU and deletion boundary; a pre-compaction
+     `FS_OUT_OF_FLASH` notice alone is not a terminal failure.
+  3. **Use matched controls to identify the cause.** Hold build/profile,
+     backend capacity, endpoint, fixtures and APDU order constant; compare
+     deletion disabled with request-gated deletion and fresh-card with accumulated
+     state. Change one factor per experiment. Distinguish remaining orphan/root
+     gaps, legitimate live-capacity limits, write amplification and filesystem
+     compaction/recovery behavior. Make a targeted fix only after evidence
+     identifies the failing mechanism; preserve live references and transactions.
+  4. **Shorten the diagnostic loop.** Prioritize the minimized regression and
+     relevant safety tests over repeated hour-long full suites or further
+     unrelated fixture expansion. Set finite APDU deadlines using measured
+     compaction times (observed 55–102 seconds; a 180-second control passed),
+     retain a suite deadline, and terminate the client cleanly. Record timeouts
+     as incomplete/failed validation, separately from F205 and induced shutdown
+     errors. Before each expensive rerun, state the hypothesis, distinguishing
+     observation and stop condition; archive logs and results.
+  5. **Escalate validation after the focused result.** Add a regression that
+     fails before the targeted fix and passes afterward, then demonstrate a
+     repeated mixed-workload plateau in live/unreachable storage, filesystem
+     occupancy, RAM and handles. Repeat the unchanged pinned 1.8.4/jc305
+     max_crypto suite with its matching client and complete comparison; retain
+     profile/backend provenance. An isolated RSA plateau or a 15-capability
+     current-profile pass does not close this gate.
+  6. **Retain production and hardware safety gates.** Complete PERSIST-01
+     root/alias/retained-context, transaction and interruption acceptance before
+     enabling production deletion. Keep physical reset causality separate from
+     host exhaustion. After the Pico-only helper is refreshed and an allowed
+     board is identified, follow both-architecture build gates and authorized
+     physical tests, collecting reset cause, last APDU and recovery evidence.
+     Prepared images and simulated power cuts do not establish physical success.
+  Review rationale and recorded effort: [five-page investigation summary](docs/resource-01-work-summary.md).
 - Remaining work:
   - A bounded 512-cycle request-gated VPCD RSA-public stress attempt reached
     15 completed cleanup requests (150 owner tags erased, 10 per request), then
