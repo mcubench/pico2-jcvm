@@ -112,22 +112,39 @@ int main() {
     constexpr uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62};
     jcvm::Context first_context(0x71, 0x31);
     const bool first_context_is_exclusive =
-        first_context.isSoleRetainedAppletContext();
+        first_context.isSoleRetainedContext();
     bool second_context_blocks_collection = false;
     {
       jcvm::Context second_context(0x72, 0x32);
       second_context_blocks_collection =
-          !first_context.isSoleRetainedAppletContext() &&
-          !second_context.isSoleRetainedAppletContext();
+          !first_context.isSoleRetainedContext() &&
+          !second_context.isSoleRetainedContext();
     }
     const bool exclusivity_restored =
-        first_context.isSoleRetainedAppletContext();
-    const bool sibling_applet_blocks_collection =
+        first_context.isSoleRetainedContext();
+    const auto original_applet_root = first_context.getHeap().addArray(
+        1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
+    first_context.markAppletRegistered(original_applet_root);
+    const bool sibling_applet_accepted =
         first_context.activateAppletInstance(0x73, aid, sizeof(aid)) &&
-        !first_context.isSoleRetainedAppletContext();
+        first_context.isSoleRetainedContext();
+    const auto sibling_applet_root = first_context.getHeap().addArray(
+        1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
+    first_context.markAppletRegistered(sibling_applet_root);
+    std::vector<jcvm::jref_t> sibling_roots;
+    first_context.appendRootReferences(sibling_roots);
+    const auto contains_root = [&sibling_roots](jcvm::jref_t root) {
+      return std::find_if(sibling_roots.begin(), sibling_roots.end(),
+                          [root](jcvm::jref_t candidate) {
+                            return candidate.compact() == root.compact();
+                          }) != sibling_roots.end();
+    };
+    const bool sibling_applet_roots_are_enumerated =
+        contains_root(original_applet_root) && contains_root(sibling_applet_root);
     expect(first_context_is_exclusive && second_context_blocks_collection &&
-               exclusivity_restored && sibling_applet_blocks_collection,
-           "persistent_deletion_probe_requires_exclusive_context");
+               exclusivity_restored && sibling_applet_accepted &&
+               sibling_applet_roots_are_enumerated,
+           "persistent_deletion_probe_accepts_and_roots_sibling_applets");
   }
 
   {

@@ -13,7 +13,8 @@ add_executable(
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_array.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_object.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_instance.cpp"
-  "${CHOUPI_SOURCE_DIR}/jc_types/jref_t.cpp")
+  "${CHOUPI_SOURCE_DIR}/jc_types/jref_t.cpp"
+  "${CHOUPI_SOURCE_DIR}/stack.cpp")
 target_compile_features(persistent_transaction_test PRIVATE cxx_std_17)
 target_compile_definitions(persistent_transaction_test PRIVATE PC_VERSION=1)
 target_compile_options(persistent_transaction_test PRIVATE

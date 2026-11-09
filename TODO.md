@@ -728,6 +728,15 @@ review.
   1,000-cut filesystem overlay suite pass; ARM, RISC-V, and PC builds passed.
   No physical alias/reclamation test was run. This closes another inventory
   gap, not the outstanding physical multi-owner/interruption acceptance.
+  On 2026-11-09, same-CAP sibling applets were added to the request-gated
+  root-coverage checks. The Context exclusivity predicate now rejects other
+  retained Context objects but allows sibling applets in the same CAP context;
+  `visitRootReferences()` emits both registered applet roots. Unit tests and
+  the gated VPCD CAP probe pass. The probe clears a shared package-static
+  reference, reports `erased_applet=0 erased_package=1`, and confirms the sibling
+  still runs and sees the cleared field. This does not cover separate retained
+  contexts, foreign aliases, RSA stress, or physical flash; normal production
+  deletion remains disabled and PERSIST-01 remains open.
   Acceptance: incomplete reachability never authorizes deletion, all live roots
   and aliases survive, interrupted batches resume safely, and no other owner is
   affected. Do not enable persistent deletion before these gates pass.

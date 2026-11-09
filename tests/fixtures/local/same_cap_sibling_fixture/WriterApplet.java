@@ -44,6 +44,20 @@ public final class WriterApplet extends Applet implements Probe {
   public void process(APDU apdu) {
     if (selectingApplet()) return;
     byte[] buffer = apdu.getBuffer();
+    if (buffer[1] == 0x30) {
+      SharedState.deletionProbe = new byte[16];
+      SharedState.deletionProbe[0] = 0x5a;
+      buffer[0] = 1;
+      apdu.setOutgoingAndSend((short) 0, (short) 1);
+      return;
+    }
+    if (buffer[1] == 0x31) {
+      SharedState.deletionProbe = null;
+      buffer[0] = JCSystem.isObjectDeletionSupported() ? (byte) 1 : 0;
+      if (buffer[0] != 0) JCSystem.requestObjectDeletion();
+      apdu.setOutgoingAndSend((short) 0, (short) 1);
+      return;
+    }
     if (buffer[1] == 0x10) {
       SharedState.counter++;
       SharedState.bytes[0]++;

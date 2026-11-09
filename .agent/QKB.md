@@ -9053,3 +9053,24 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `JCALGTEST_VPCD_ENDPOINT=127.0.0.1:35964`, then retain the pre-install GPPro
   listing guard. Do not treat this as a firmware or storage fix. The underlying
   00 00 state/reader association remains unexplained.
+
+
+## 2026-11-09 Persistent deletion root coverage for same-CAP siblings
+
+- The fail-closed request-gated deletion path previously rejected a Context
+  whenever it retained more than one applet instance. Sibling applets in one CAP
+  share that Context heap, and `Context::visitRootReferences()` enumerates every
+  registered sibling root. Restricting the guard to reject only *other retained
+  Context objects* allows the existing full same-context root walk to protect
+  siblings.
+- Regression: unit test registers roots for two sibling applets and verifies
+  both appear in the Context root walk. The VPCD fixture shares a package-static
+  deletion probe across writer/reader siblings, clears it, requests gated
+  deletion, and verifies the reader remains usable. Final run passes 10/10 and
+  logs `erased_applet=0 erased_package=1`.
+- This only validates sibling roots in one Context. It does not validate foreign
+  aliases, multiple retained Context objects, full JCAlgTest/RSA churn, or
+  physical interruption safety. Keep production object deletion disabled;
+  RESOURCE-01 and PERSIST-01 remain open.
+- Evidence: `artifacts/logs/same-cap-sibling-vpcd-20261109T132007Z.log`;
+  no physical device was accessed.

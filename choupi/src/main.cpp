@@ -559,7 +559,7 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
   // This probe only knows how to collect roots for the currently selected
   // owner. Retained peer contexts or sibling applets may hold additional roots;
   // do not mutate persistent storage until those domains are enumerated.
-  if (!context.isSoleRetainedAppletContext()) {
+  if (!context.isSoleRetainedContext()) {
     std::fprintf(stderr,
                  "OBJECT_DELETION:SKIP package=%u owner=%u "
                  "reason=nonexclusive_context request_retained=1\n",

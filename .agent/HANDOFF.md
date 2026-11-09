@@ -1,3 +1,33 @@
+# Current handoff — same-CAP sibling roots pass gated VPCD deletion probe — 2026-11-09 14:21 CET
+
+The same-CAP sibling deletion-safety probe now passes 10/10 on local VPCD.
+`Context::isSoleRetainedContext()` rejects other retained Context objects, while
+allowing sibling applets in one CAP context because the Context root walk
+includes all registered applet roots. The unit regression verifies both sibling
+roots are visited. The VPCD fixture allocates a package-static byte array,
+observes it from the reader applet, clears it through the writer, requests
+request-gated deletion, then verifies the reader still works and observes null.
+Telemetry is `erased_applet=0 erased_package=1`: the package-owned orphan was
+reclaimed, while no applet-owned tags were erased.
+
+This closes only the same-context sibling-root probe. It does not establish
+separate retained-context or foreign-alias safety, nor solve full JCAlgTest RSA
+resource exhaustion or physical-flash interruption safety. Production deletion
+remains disabled; RESOURCE-01 and PERSIST-01 remain open.
+
+Validation: `./tools/test-persistent-transaction` passes with
+`TEST:SUMMARY fail=0`; gated VPCD test passes `TEST:SUMMARY pass=10 fail=0`;
+PC max_crypto build, ARM build, and RISC-V VM-core build pass. The VPCD test was
+rerun after rebuilding its local CAP fixture. No physical device was accessed.
+Log: `artifacts/logs/same-cap-sibling-vpcd-20261109T132007Z.log`.
+
+Next: add retained-context and cross-owner alias cases to the request-gated
+probe, then resume unchanged JCAlgTest 1.8.4/jc305 under periodic inventory and
+a per-APDU watchdog toward RSA KeyPair. Keep PacketRF excluded and do not enable
+production persistent deletion.
+
+---
+
 # Current handoff — RESOURCE-01 key-replacement churn confirmed on VPCD — 2026-11-09 13:55 CET
 
 The current max_crypto PC build completed successfully. No physical device was

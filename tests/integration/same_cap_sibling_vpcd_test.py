@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -68,9 +69,13 @@ def main() -> int:
             vpcd.EMPTY_CARD_AID.hex(), "--package-id", "63", "--cap-code",
             str(dummy), "--rom-mask", str(rom_mask),
         ]
+        child_env = os.environ.copy()
+        if os.environ.get("SAME_CAP_TEST_OBJECT_DELETION") == "1":
+            child_env["PICO2_TEST_OBJECT_DELETION"] = "1"
         with log_path.open("wb") as log:
             process = subprocess.Popen(command, cwd=ROOT, stdout=log,
-                                       stderr=log, start_new_session=True)
+                                       stderr=log, start_new_session=True,
+                                       env=child_env)
         connection = None
         try:
             connection, _ = vpcd.accept_vpcd(listener, process, CONNECT_TIMEOUT,
@@ -145,7 +150,45 @@ def main() -> int:
                     f"{response.hex().upper()} expected 0000123602581234567A9000"
                 )
             print("TEST:PASS retained sibling contexts observe updated package static state")
-            print("TEST:SUMMARY pass=6 fail=0")
+            checks = 6
+            if os.environ.get("SAME_CAP_TEST_OBJECT_DELETION") == "1":
+                select(connection, WRITER_AID, "select writer for deletion probe")
+                response = vpcd.exchange(connection, bytes.fromhex("8030000000"),
+                                         "create persistent deletion probe object")
+                if response != bytes.fromhex("019000"):
+                    raise RuntimeError(
+                        f"deletion probe creation failed: {response.hex().upper()}"
+                    )
+                select(connection, READER_AID,
+                       "select sibling before deletion request")
+                response = vpcd.exchange(connection, bytes.fromhex("8022000000"),
+                                         "observe live deletion probe object")
+                if response != bytes.fromhex("009000"):
+                    raise RuntimeError(
+                        f"sibling did not observe live object: {response.hex().upper()}"
+                    )
+                select(connection, WRITER_AID,
+                       "select writer for persistent deletion request")
+                response = vpcd.exchange(connection, bytes.fromhex("8031000000"),
+                                         "request persistent object deletion")
+                if response != bytes.fromhex("019000"):
+                    raise RuntimeError(
+                        "object-deletion test gate is unavailable or request failed: "
+                        f"{response.hex().upper()}"
+                    )
+                select(connection, READER_AID,
+                       "reselect sibling after deletion collection")
+                response = vpcd.exchange(connection, bytes.fromhex("8022000000"),
+                                         "verify sibling survives deletion collection")
+                if response != bytes.fromhex("019000"):
+                    raise RuntimeError(
+                        "sibling did not survive deletion collection: "
+                        f"{response.hex().upper()}"
+                    )
+                checks += 4
+                print("TEST:PASS sibling survives request-gated object deletion")
+
+            print(f"TEST:SUMMARY pass={checks} fail=0")
         finally:
             if connection is not None:
                 connection.close()
@@ -157,6 +200,19 @@ def main() -> int:
                     process.kill()
                     process.wait(timeout=5)
     print(f"TEST:LOG {log_path.relative_to(ROOT)}")
+    if os.environ.get("SAME_CAP_TEST_OBJECT_DELETION") == "1":
+        log_text = log_path.read_text(errors="replace")
+        erased_any = re.search(
+            r"^OBJECT_DELETION: package=\d+ owner=\d+ applet_result=0 "
+            r"package_result=0 (?:erased_applet=[1-9]\d* "
+            r"|erased_applet=\d+ erased_package=[1-9]\d* )",
+            log_text, re.MULTILINE,
+        )
+        if erased_any is None:
+            raise RuntimeError(
+                "sibling-context deletion request did not erase persistent tags; "
+                f"see {log_path.relative_to(ROOT)}"
+            )
     return 0
 
 

@@ -26691,3 +26691,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production deletion disabled and RESOURCE-01 open. Next extend request-gated root coverage to retained contexts/foreign aliases and rerun the unchanged JCAlgTest suite through RSA KeyPair with deletion gated.
 - Commit: `72e6d17a306f3ec9fa3b06a180f11d394d3e2085`
 - Artifacts/logs: `artifacts/logs/resource-hmac-td-diff.log` SHA-256 `2f43d1dd6dd662e1e4d64c3db76daebcb95c0af938366918605e1add00cf4a2d`; `artifacts/logs/resource-hmac-delete-gated.log` SHA-256 `8b77a70845a189f78074222a3925ba665b43ec5b1e3d4842de5e881dfb19b8d6`.
+
+
+## 2026-11-09 Allow sibling-root coverage in gated persistent deletion 11 minutes
+
+- Step/experiment: `RESOURCE-01-same-cap-sibling-root-probe`
+- When: '2026-11-09 14:10 CET' - '2026-11-09 14:21 CET'
+- Change: Changed the test-gated deletion precondition to allow sibling applets in one CAP Context while still refusing other retained Context objects. Added a unit regression that checks both sibling roots and a VPCD fixture which clears a shared package-static object, requests gated deletion, and verifies the sibling remains usable.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `SAME_CAP_TEST_OBJECT_DELETION=1 SAME_CAP_REUSE_FIXTURE=1 ./tools/env python3 tests/integration/same_cap_sibling_vpcd_test.py` passed (`TEST:SUMMARY pass=10 fail=0`); `python3 -m py_compile tests/integration/same_cap_sibling_vpcd_test.py` passed. PC max_crypto, ARM and RISC-V builds passed in this step. The log confirms `erased_applet=0 erased_package=1`; no physical hardware was used.
+- Result: The package-static unreachable probe object was erased and sibling applet access survived. This covers siblings sharing one Context only; production deletion remains disabled and RESOURCE-01 remains unresolved.
+- Decision: Continue with other retained Context and foreign-alias coverage before rerunning full JCAlgTest through RSA KeyPair.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261109T132007Z.log`; previous failed assertion logs retained for diagnosis.

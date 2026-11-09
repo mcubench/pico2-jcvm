@@ -33,6 +33,11 @@ public final class ReaderApplet extends Applet {
       apdu.setOutgoingAndSend((short) 0, (short) 1);
       return;
     }
+    if (buffer[1] == 0x22) {
+      buffer[0] = SharedState.deletionProbe == null ? (byte) 1 : 0;
+      apdu.setOutgoingAndSend((short) 0, (short) 1);
+      return;
+    }
     if (buffer[1] == 0x20) {
       buffer[0] = (byte) (SharedState.zero >> 8);
       buffer[1] = (byte) SharedState.zero;

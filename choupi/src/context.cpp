@@ -94,8 +94,7 @@ Heap *Context::findRetainedAppletHeap(const jpackage_ID_t package_id,
   return nullptr;
 }
 
-bool Context::isSoleRetainedAppletContext() const noexcept {
-  if (this->applet_instances.size() != 1) return false;
+bool Context::isSoleRetainedContext() const noexcept {
   for (const Context *context : retained_contexts) {
     if (context != nullptr && context != this) return false;
   }
