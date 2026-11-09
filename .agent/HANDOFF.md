@@ -11032,4 +11032,4 @@ The test runner now has optional `JCALGTEST_APDU_TIMEOUT_SECONDS`; the default
 acceptance path still starts from a fresh VPCD card. A test client invocation
 without `-fresh` did not resume the previous partial support report, so that
 experimental resume mode was removed. `tools/jcalgtest-apdu-watchdog.py` passed
-fast-response and timeout checks. Commit pending in this step.
+fast-response and timeout checks. Tooling and evidence commit: `771e63c5`.
