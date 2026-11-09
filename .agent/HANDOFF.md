@@ -1,4 +1,4 @@
-# Current handoff — RESOURCE-01 persists on unchanged JCAlgTest — 2026-11-09 02:35 CET
+# Current handoff — RESOURCE-01 storage exhaustion and deletion probe — 2026-11-09 02:50 CET
 
 The unexpected `2e8a:0009` PacketRF unit is excluded from all physical tests.
 No hardware was accessed during this latest run.
@@ -11,17 +11,27 @@ global 1,825 / 46,829; 1,485 unreachable tags / 39,293 bytes. RSA-768 reported
 returned `F205` after 44.678 seconds. Persistent serialization failed writing
 45 bytes for tag
 `03013894FFFFFE000000420303FFFE000000470606FFFE000002F30101FFFE000002F80303`.
-The subsequent APDU got an empty response when the host emulator's ptrace
-wrapper panicked. Treat the storage failure as reproduced in PC VPCD and the
-empty response as emulator-process termination; neither demonstrates a Pico
-reset. The official support comparison did not complete.
+Afterward I sent Ctrl-C to the still-running test session; that caused the host
+emulator's ptrace wrapper panic and empty APDU. The F205 preceded the
+interruption and is valid PC-backend exhaustion evidence; the panic is not a
+product failure or Pico reset. The official support comparison did not
+complete.
+
+A second unchanged-client run with the PC-only deletion request probe reached
+DES CBC and was also interrupted by my Ctrl-C. It is incomplete. The bounded
+control `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 8 rsa-public`
+passed 19/19; eight request cycles erased 80 applet-owned records (10 each).
+Log: `artifacts/logs/object-deletion-vpcd-20261109T014621Z.log`, SHA-256
+`47b5265a5f02338d9e5d6e5e1b2c408d5a80ccae58e1ead8f802580bdbd51db5`.
+This remains PC VPCD test-gate evidence, not firmware support or physical
+acceptance.
 
 RESOURCE-01 remains unresolved. Normal persistent reclamation is disabled.
-Next: reproduce the failing 45-byte persistent-reference write in a smaller
-unchanged-CAP workload; inspect the storage status/tag and filesystem free-space
-or compaction accounting immediately before it. Keep PERSIST-01 root/alias,
-multi-owner, transaction, and power-cut gates before any production collector
-enablement. Do not use the PacketRF device. See the newest RESOURCE-01 entry in
+Next: reproduce the 45-byte persistent-reference failure with a bounded client
+workload and inspect backend storage capacity accounting. Then finish
+PERSIST-01 root/alias, multi-owner, transaction and physical power-cut gates
+before enabling any production collector. Allow long client runs to terminate
+without sending Ctrl-C. Do not use PacketRF. See newest RESOURCE-01 entries in
 `.agent/QKB.md` and `progress.md`.
 
 # Current handoff — filter unrelated PacketRF from the PC/SC helper — 2026-11-08 11:18 CET

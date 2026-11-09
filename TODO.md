@@ -113,10 +113,12 @@ Archive text is historical evidence, not current device state or priorities.
   The 1536-bit APDU returned `F205` after 44.678 seconds, with persistent
   reference serialization failing on tag
   `03013894FFFFFE000000420303FFFE000000470606`. The next APDU received no
-  response because the host emulator's ptrace wrapper panicked; this is not
-  evidence of a physical-token reset. The current build is therefore still
-  likely to hit persistent-resource exhaustion after enough operations. The
-  unexpected PacketRF unit is excluded; no physical token was used.
+  response after I sent Ctrl-C to the still-running test session; the resulting
+  host emulator ptrace panic was induced by that interruption, not a product
+  failure or physical-token reset. The `F205` remains valid evidence that the
+  PC backend exhausts persistent storage after enough operations. It does not
+  establish the Pico overlay's failure threshold. The unexpected PacketRF
+  unit is excluded; no physical token was used.
   The RP2350 filesystem suite now passes its integrated
   `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
   case: across 1,000 simulated flash-cut points it preserves the live root and

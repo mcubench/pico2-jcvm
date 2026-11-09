@@ -25,6 +25,26 @@
   with focused reproduction of the write-failure tag and PERSIST-01 safety
   gates; do not enable production reclamation yet.
 
+## RESOURCE-01: bounded deletion regression passes; long run was interrupted — 2026-11-09
+
+- A second unchanged-client run set `PICO2_TEST_OBJECT_DELETION=1` to exercise
+  the PC-only deferred deletion probe. It reported `isObjectDeletionSupported`
+  as yes, completed JCSystem probing and reached DES CBC. I then sent Ctrl-C to
+  its active session; the resulting ptrace panic and empty APDU were caused by
+  that interruption. This run is incomplete, not a product failure or pass.
+- The focused control `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd
+  8 rsa-public` passed `TEST:SUMMARY pass=19 fail=0`. Across eight requests the
+  fixture erased 10 applet-owned tags per cycle (80 total), with both applet
+  and package-static scans complete. Log SHA-256:
+  `47b5265a5f02338d9e5d6e5e1b2c408d5a80ccae58e1ead8f802580bdbd51db5`.
+- Scope: This verifies only the test-gated PC VPCD fixture. It neither enables
+  deletion on Pico firmware nor proves full-suite or physical stability. The
+  earlier PC `F205` persists as evidence; its later ptrace panic was likewise
+  induced when I interrupted that session.
+- Next: do not interrupt a long VPCD process. Continue with hardware-path root
+  coverage and durability review; keep physical testing restricted to
+  identified Pico 2 units and exclude PacketRF.
+
 ## Root-tag protection fixes the observed lookup loss, but full acceptance is open
 
 - The first per-APDU persistent-reclaimer experiment erased registered applet

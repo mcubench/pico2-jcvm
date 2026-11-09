@@ -26551,3 +26551,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   Keep production persistent reclamation disabled pending PERSIST-01 gates.
 - Commit: `7475d43e`
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T010939Z/`
+
+## 2026-11-09 Validate request-gated deletion probe and correct interruption record 15 minutes
+
+- Step/experiment: `RESOURCE-01-BOUNDED-DELETION-REGRESSION`
+- When: '2026-11-09 02:35 CET' - '2026-11-09 02:50 CET'
+- Change: Ran the bounded request-gated persistent deletion fixture and updated
+  RESOURCE-01 continuity notes. Corrected the interpretation of the previous
+  long-run ptrace panics: I sent Ctrl-C to both active client sessions; those
+  panics and empty responses were consequences of interruption.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 8
+  rsa-public` passed `TEST:SUMMARY pass=19 fail=0`; the harness reports 8
+  deletion requests and 80 applet tags erased. The unchanged support client
+  with `PICO2_TEST_OBJECT_DELETION=1` was intentionally stopped before finishing
+  and provides no complete support result. No physical token was accessed.
+- Result: The focused PC VPCD probe confirms its test-only request/reclaim path
+  can repeatedly reclaim the fixture's 10-record key graph. Production Pico
+  deletion remains unsupported; the prior PC F205 occurred before interruption
+  and still shows backend storage exhaustion, but does not quantify the Pico
+  overlay threshold.
+- Decision: Continue PERSIST-01 all-root and durability acceptance, then wire
+  deferred deletion on hardware only when its safety gates pass. Do not send
+  Ctrl-C to active full-suite sessions. PacketRF remains excluded.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T014621Z.log`
+  (SHA-256 `47b5265a5f02338d9e5d6e5e1b2c408d5a80ccae58e1ead8f802580bdbd51db5`);
+  interrupted full run `artifacts/results/jcalgtest-support-vpcd-20261109T014143Z/`.
