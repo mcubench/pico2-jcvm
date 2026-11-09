@@ -141,6 +141,18 @@ Archive text is historical evidence, not current device state or priorities.
   unsupported and unreachable records continue to accumulate. Next identify
   the timed-out operation and continue the long run under the watchdog.
   Logs: `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`.
+  A focused max_crypto VPCD reproduction mapped that APDU to HMAC
+  `TYPE_HMAC_TRANSIENT_DESELECT`. Its second repeated KeyBuilder call added 8
+  unreachable applet-owned records (93 serialized bytes) under the generated
+  key-object tag path. With `PICO2_TEST_OBJECT_DELETION=1`, a following
+  JCAlgTest cache-clear APDU reclaimed those 8 records; the preceding clear
+  reclaimed zero while the key was still reachable. This strongly supports
+  repeated key replacement plus unsupported production object deletion as a
+  persistent-churn mechanism, but does not directly prove that it caused the
+  earlier RSA `F205`, validate multiple retained contexts, or establish Pico
+  behavior. Production deletion remains disabled. VPCD logs:
+  `artifacts/logs/resource-hmac-td-diff.log` and
+  `artifacts/logs/resource-hmac-delete-gated.log`.
   The RP2350 filesystem suite now passes its integrated
   `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
   case: across 1,000 simulated flash-cut points it preserves the live root and

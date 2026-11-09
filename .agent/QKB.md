@@ -1,5 +1,35 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## RESOURCE-01: repeated JCAlgTest transient-key replacement creates persistent orphans — 2026-11-09
+
+- **Reproduction:** Built the PC `max_crypto` profile, then used a blank VPCD
+  card and the unchanged JCAlgTest 1.8.4/jc305 CAP. Repeated APDU
+  `B0 75 20 00 03 14 00 40 00` (KeyBuilder HMAC transient-deselect, 64 bytes).
+- **Observed growth:** After the first-call initialization state (169
+  applet-owned records / 3,845 payload bytes), the next call increased this to
+  177 / 3,938; 8 records / 93 bytes were unreachable. All 8 records are under
+  the generated NativeKey instance path
+  `03013894FFFFFE000000420303FFFE000000470B0BFFFE00000073` and its child
+  fields/arrays. The APDU returned `9000` in 12.565 seconds (the earlier call
+  took 28.007 seconds on this PC VPCD run).
+- **Request-gated control:** With `PICO2_TEST_OBJECT_DELETION=1`, two
+  KeyBuilder/cache-clear pairs passed 6/6 VPCD checks. The first clear erased
+  zero records while its key graph remained reachable. The next KeyBuilder
+  call left the prior graph unreachable; its cache-clear request erased all 8
+  records. No root, edge, or inventory scan failures occurred. Logs:
+  `artifacts/logs/resource-hmac-td-diff.log` (SHA-256
+  `2f43d1dd6dd662e1e4d64c3db76daebcb95c0af938366918605e1add00cf4a2d`) and
+  `artifacts/logs/resource-hmac-delete-gated.log` (SHA-256
+  `8b77a70845a189f78074222a3925ba665b43ec5b1e3d4842de5e881dfb19b8d6`).
+- **Conclusion:** This confirms one persistent-churn mechanism: replacing
+  retained KeyBuilder objects leaves serialized records that only the
+  unsupported deletion request would reclaim. It is strong corroboration for
+  RESOURCE-01, not yet a direct causal proof of the full-run RSA `F205`, and
+  not Pico or multi-context safety evidence. Keep production deletion disabled.
+- **Next:** Extend root enumeration and the request-gated tests to retained
+  contexts and cross-owner/native aliases; then repeat JCAlgTest with gated
+  deletion through RSA KeyPair. Do not advertise RESOURCE-01 as fixed.
+
 ## RESOURCE-01: filesystem churn control passes; production failure remains — 2026-11-09
 
 - **Host OS filesystem control:** Added a Rust filesystem regression that runs

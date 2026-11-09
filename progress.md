@@ -26680,3 +26680,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Requested README clarification complete; preserve existing source changes and ongoing acceptance work.
 - Commit: `this README-concrete-api-coverage commit; resolve with git log --grep="docs: clarify Java Card coverage and limits"`
 - Artifacts/logs: None.
+
+## 2026-11-09 RESOURCE-01 transient-key storage churn reproduction 21 minutes
+
+- Step/experiment: `RESOURCE-01-hmac-transient-key-orphans`
+- When: '2026-11-09 13:34 CET' - '2026-11-09 13:55 CET'
+- Change: Investigated the max_crypto JCAlgTest APDU that exceeded the 120-second watchdog. Mapped it to HMAC `TYPE_HMAC_TRANSIENT_DESELECT`; added the reproduction and request-gated control results to TODO.md, .agent/QKB.md, and .agent/HANDOFF.md. No firmware source or supplied CAP/JAR changed.
+- Validation: `./tools/build-pc --profile max_crypto` passed (`capabilities=162 enabled=159`; existing vendored CHOUPI OS warnings remain). Two repeated HMAC transient-deselect KeyBuilder APDUs on fresh VPCD passed; the second added 8 unreachable owner records / 93 bytes and returned `9000` in 12.565 s. With `PICO2_TEST_OBJECT_DELETION=1`, two KeyBuilder/cache-clear pairs passed `TEST:SUMMARY pass=6 fail=0`; the first clear erased 0 records, and the second erased the 8 unreachable records. No `F205` or root/edge scan failure occurred in these bounded probes. ARM/RISC-V and physical hardware tests were not run because no firmware source changed and the probes were PC VPCD only. `git diff --check` passed before commit.
+- Result: Repeated key replacement plus unsupported production object deletion is a confirmed persistent-churn mechanism and a strong RESOURCE-01 lead. It is not yet proven to directly cause the earlier RSA `F205`; production deletion safety across multiple retained contexts and physical power interruption is still unverified.
+- Decision: Keep production deletion disabled and RESOURCE-01 open. Next extend request-gated root coverage to retained contexts/foreign aliases and rerun the unchanged JCAlgTest suite through RSA KeyPair with deletion gated.
+- Commit: `pending; resolve with git log --grep="RESOURCE-01 transient-key storage churn reproduction"`
+- Artifacts/logs: `artifacts/logs/resource-hmac-td-diff.log` SHA-256 `2f43d1dd6dd662e1e4d64c3db76daebcb95c0af938366918605e1add00cf4a2d`; `artifacts/logs/resource-hmac-delete-gated.log` SHA-256 `8b77a70845a189f78074222a3925ba665b43ec5b1e3d4842de5e881dfb19b8d6`.

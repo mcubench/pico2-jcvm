@@ -1,3 +1,35 @@
+# Current handoff — RESOURCE-01 key-replacement churn confirmed on VPCD — 2026-11-09 13:55 CET
+
+The current max_crypto PC build completed successfully. No physical device was
+used. A fresh VPCD run with two repeated JCAlgTest 1.8.4/jc305 HMAC
+`TYPE_HMAC_TRANSIENT_DESELECT` KeyBuilder APDUs showed the second operation
+adding 8 unreachable applet-owned records / 93 payload bytes, all beneath
+NativeKey tag path
+`03013894FFFFFE000000420303FFFE000000470B0BFFFE00000073`.
+
+The PC-only `PICO2_TEST_OBJECT_DELETION=1` diagnostic then passed two
+KeyBuilder/cache-clear pairs (6/6). Its first clear reclaimed zero records
+while the key was still live; the second, after replacing the previous key,
+reclaimed exactly the 8 orphan records. This strongly supports repeated key
+replacement plus unsupported production `requestObjectDeletion()` as a
+persistent-churn mechanism. It does not yet prove direct causality for RSA
+`F205`, or safety with multiple retained contexts and on physical flash.
+Production deletion remains disabled; RESOURCE-01 remains open.
+
+Artifacts: `artifacts/logs/resource-hmac-td-diff.log` (SHA-256
+`2f43d1dd6dd662e1e4d64c3db76daebcb95c0af938366918605e1add00cf4a2d`) and
+`artifacts/logs/resource-hmac-delete-gated.log` (SHA-256
+`8b77a70845a189f78074222a3925ba665b43ec5b1e3d4842de5e881dfb19b8d6`).
+Both tests ran on the local PC VPCD emulator. `./tools/build-pc --profile
+max_crypto` passed. ARM/RISC-V and hardware tests were not run because no
+firmware source changed and this step was host-only.
+
+Next: extend request-gated root coverage across retained contexts and foreign
+aliases, then repeat the unchanged JCAlgTest run with gated deletion through
+RSA KeyPair. Keep the unexpected PacketRF reader excluded. Preserve the dirty
+files from other work; only TODO.md, QKB.md, HANDOFF.md, and progress.md belong
+to the diagnostic documentation step.
+
 # Current handoff — RESOURCE-01 storage exhaustion and deletion probe — 2026-11-09 02:50 CET
 
 The unexpected `2e8a:0009` PacketRF unit is excluded from all physical tests.
