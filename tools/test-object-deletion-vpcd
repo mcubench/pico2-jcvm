@@ -6,9 +6,13 @@ require_host_usb_access
 iterations="${1:-8}"
 mode="${2:-byte-array}"
 key_bits="${3:-512}"
+apdu_timeout="${PICO2_VPCD_APDU_TIMEOUT:-20}"
 if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
   ((iterations < 1 || iterations > 512)); then
   die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
+fi
+if ! [[ "${apdu_timeout}" =~ ^[1-9][0-9]{0,3}$ ]]; then
+  die "PICO2_VPCD_APDU_TIMEOUT must be an integer from 1 to 9999 seconds"
 fi
 [[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" || \
    "${mode}" == "rsa-live-static" || "${mode}" == "rsa-batch" ]] || \
@@ -35,6 +39,7 @@ log="${repo_root}/artifacts/logs/object-deletion-vpcd-${stamp}.log"
 mkdir -p "${repo_root}/artifacts/logs"
 
 probe_args=(
+  --apdu-timeout "${apdu_timeout}"
   --emulator "${repo_root}/build/choupi-pc/choupi"
   --cap-code "${repo_root}/build/persistent-reclaimer-probe/load-code.bin"
   --rom-mask "${repo_root}/build/choupi-pc/flash"

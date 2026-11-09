@@ -10917,3 +10917,21 @@ time-bounded number of RSA replacement/cleanup cycles. Continue auditing the
 deletion safety gates; do not enable ordinary firmware reclamation based on
 this test-only result. The unexpected `2e8a:0009` PacketRF device remains
 excluded from all hardware work.
+# Current handoff — configurable APDU deadline validates 16 request-gated RSA cycles — 2026-11-09 07:41 CET
+
+`tools/test-object-deletion-vpcd` accepts `PICO2_VPCD_APDU_TIMEOUT` in integer
+seconds (default 20) and passes it to the PC VPCD harness. This was needed
+because the prior 512-cycle attempt hit the 20-second limit on APDU 31 after
+15 successful cleanup requests. With a 60-second deadline,
+`PICO2_HOST_USB_ACCESS=1 PICO2_VPCD_APDU_TIMEOUT=60
+./tools/test-object-deletion-vpcd 16 rsa-public` passed 35/35 checks. All 16
+deletion requests reclaimed 10 applet-owned tags (160 total); APDU 31 took
+30.138 seconds. Log:
+`artifacts/logs/object-deletion-vpcd-20261109T063534Z.log`, SHA-256
+`c95768881b40099006947cdc4bc602089e494d98751223e641d801835a165893`.
+
+This is still a PC-only test gate. It does not establish production
+`requestObjectDeletion()` support, physical-token stability, or a fix for the
+unchanged JCAlgTest `F205` failures. Next continue PERSIST-01 safety acceptance
+and full-suite resource diagnosis. Keep the unexpected `2e8a:0009` PacketRF
+unit excluded.

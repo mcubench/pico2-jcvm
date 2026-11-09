@@ -8951,3 +8951,12 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   production reclamation disabled until PERSIST-01 acceptance is complete.
 - Evidence: `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log`, SHA-256
   `376513760d45615e7760a0b3dca8489533ac96724d4df1c4e92ff4f8f2f0242f`.
+- The VPCD probe wrapper now accepts `PICO2_VPCD_APDU_TIMEOUT` (integer
+  seconds, default 20). Repeating 16 RSA-512 public-key create/clear/deletion
+  cycles with timeout 60 passed 35/35 checks; all 16 requests reclaimed 10
+  applet-owned tags (160 total). APDU 31 took 30.138 s, confirming why the
+  previous 20-second harness deadline ended prematurely. No storage exhaustion
+  appeared in this bounded test. This remains a PC-only, request-gated fixture;
+  production object deletion is still unsupported and RESOURCE-01 is open.
+- Evidence: `artifacts/logs/object-deletion-vpcd-20261109T063534Z.log`, SHA-256
+  `c95768881b40099006947cdc4bc602089e494d98751223e641d801835a165893`.

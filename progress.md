@@ -26615,3 +26615,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `3ffd9063`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log`; SHA-256 `376513760d45615e7760a0b3dca8489533ac96724d4df1c4e92ff4f8f2f0242f`.
 
+## 2026-11-09 Configure VPCD APDU deadline for resource stress 5 minutes
+
+- Step/experiment: `resource01-vpcd-apdu-timeout`
+- When: '2026-11-09 07:35 CET' - '2026-11-09 07:41 CET'
+- Change: Added integer `PICO2_VPCD_APDU_TIMEOUT` support to `tools/test-object-deletion-vpcd`, defaulting to the existing 20-second limit, so slow host-emulator APDUs can be measured without looking like storage failures.
+- Validation: `bash -n tools/test-object-deletion-vpcd` and `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 PICO2_VPCD_APDU_TIMEOUT=60 ./tools/test-object-deletion-vpcd 16 rsa-public` passed `TEST:SUMMARY pass=35 fail=0` and `OBJECT_DELETION_VPCD:PASS`.
+- Result: 16 request-gated cycles erased 160 applet-owned tags (10 per request). APDU 31 took 30.138 seconds. No storage error appeared in this bounded run; it is PC-only, not production or hardware evidence.
+- Decision: The prior 512-cycle timeout was due to the harness deadline; RESOURCE-01 remains unresolved because production deletion is disabled and earlier unchanged-client runs reached `F205`.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T063534Z.log`; SHA-256 `c95768881b40099006947cdc4bc602089e494d98751223e641d801835a165893`.
+
