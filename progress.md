@@ -26701,5 +26701,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `SAME_CAP_TEST_OBJECT_DELETION=1 SAME_CAP_REUSE_FIXTURE=1 ./tools/env python3 tests/integration/same_cap_sibling_vpcd_test.py` passed (`TEST:SUMMARY pass=10 fail=0`); `python3 -m py_compile tests/integration/same_cap_sibling_vpcd_test.py` passed. PC max_crypto, ARM and RISC-V builds passed in this step. The log confirms `erased_applet=0 erased_package=1`; no physical hardware was used.
 - Result: The package-static unreachable probe object was erased and sibling applet access survived. This covers siblings sharing one Context only; production deletion remains disabled and RESOURCE-01 remains unresolved.
 - Decision: Continue with other retained Context and foreign-alias coverage before rerunning full JCAlgTest through RSA KeyPair.
-- Commit: pending
+- Commit: `c23a8a7f`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261109T132007Z.log`; previous failed assertion logs retained for diagnosis.
