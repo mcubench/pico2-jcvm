@@ -9074,3 +9074,68 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   RESOURCE-01 and PERSIST-01 remain open.
 - Evidence: `artifacts/logs/same-cap-sibling-vpcd-20261109T132007Z.log`;
   no physical device was accessed.
+
+
+## 2026-11-09 Gated cleanup passes isolated RSA KeyPairs; full-suite OutOfFlash remains
+
+- An unchanged JCAlgTest 1.8.4/jc305 `max_crypto` VPCD run with
+  `PICO2_TEST_OBJECT_DELETION=1`, interval-64 inventory, and a 120-second
+  per-APDU watchdog ran for the full 3,600-second suite limit, then exited 1
+  with `JCALGTEST_WATCHDOG:TIMEOUT suite exceeded 3600s`. It produced 315 CSV
+  rows, not a full report. The client passed RSA KeyPair 512, 736, and 768, but
+  RSA 896 and larger enabled sizes returned `SystemException_NO_RESOURCE`; all
+  RSA-CRT KeyPair sizes and later EC KeyPair probes failed after the filesystem
+  had become unable to write. The emulator logged 36 `FS_OUT_OF_FLASH` /
+  `PERSIST_EXCEPTION id=20` / `F205` cycles, with 237 successful gated cleanup
+  requests. Root scans remained complete, with zero invalid refs or edge/root
+  failures.
+- At the failure boundary the FS diagnostics show data sectors at append cursors
+  near their ends with small valid-size counts, while the 128-KiB defrag sector
+  had `next_block=131057`, `valid_size=10261`. This is consistent with
+  fragmented/stale sector state, but the exact defect and whether recovery was
+  interrupted remain unproven. Inspect the host FileSystem defrag/recovery path
+  and preserve the existing dirty `choupi/os/src/fs/mod.rs` changes before
+  editing it.
+- Clean-card control: the official JCAlgTest KeyPair APDUs for RSA-768, 896, and
+  1024 each returned `9000` with gated cleanup between sizes. A fresh-card
+  16-cycle RSA-768 KeyPair plus clear request workload passed 34/34 checks,
+  completed 16 deletion callbacks and erased 377 applet-owned tags. Both
+  inventory samples were identical before cleanup: 211 owner records / 5,362
+  payload bytes, 345 global records / 8,494 bytes, and 25 unreachable tags /
+  805 bytes, with complete root walks. No F205, persistent write failure,
+  deletion error, or skipped deletion occurred. This supports an isolated
+  plateau and makes intrinsic RSA-896 capacity an unlikely explanation for the
+  full-suite failure; the full mixed-workload failure remains open.
+- Evidence: full-run directory
+  `artifacts/results/jcalgtest-support-vpcd-20261109T132549Z/` (CSV SHA-256
+  `c6697f1646b53fc7f72f4807bbe788fae173a71d7f2da2fc42c5a875afda9c39`; emulator
+  log `d1d45752d38c3dba005cfe0b57ae806418e1fc4dd467f96dd08ef8d4ef20ab89`);
+  isolated stress `artifacts/logs/resource01-rsa768-16cycle-gated-vpcd.log`
+  (SHA-256 `ca4f8c77cca9c5d1cade6ab9a17f1fab96528b894771ff7e22fba0c8cfa429c0`).
+  All evidence is PC VPCD only; no physical Pico was accessed.
+
+## RESOURCE-01 defragmentation abort telemetry added; not yet reproduced
+
+- Full-suite FS snapshots show the defrag-sector append cursor increasing on
+  successive failed allocations. One source sector's `valid_size` changed from
+  879 to 0 while its `next_block` stayed at 65529, and the defrag sector held
+  3358 bytes. This suggests defragmentation staged or invalidated records but
+  exited before resetting the source cursor; it is a lead, not a proven root
+  cause.
+- Added host-only `FS_DEFRAG_START`, abort-reason (broken block or write error),
+  source-erased, and completion telemetry around the existing defragmentation
+  phases. This does not change target behavior. `./tools/build-pc
+  --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-object-deletion-vpcd` passed 19/19 but did not trigger any FS
+  defragmentation events, so the decisive branch remains unobserved.
+- The OS Rust test attempt `./tools/env cargo test --manifest-path
+  choupi/os/Cargo.toml --features host fs::tests` failed before running tests:
+  vendored `lock_api 0.3.4` enables removed `feature(const_fn)` under the only
+  installed stable toolchain. Do not count this as a code test pass.
+- Current state: RESOURCE-01 remains open; production persistent deletion is
+  still disabled. Next, create/replay a bounded mixed persistent workload that
+  triggers defragmentation, then inspect the new abort markers and fix the
+  underlying transaction/recovery path. No physical Pico was accessed.
+- Evidence: `artifacts/logs/object-deletion-vpcd-20261109T145927Z.log`,
+  SHA-256 `5c7f3fcf74e827d83b8647959665f5e0eb0a0e22c4b2dfd9c52bcaf809c8d9ac`;
+  submodule commit `b892e4d`.

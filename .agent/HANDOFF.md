@@ -1,3 +1,78 @@
+# Current handoff — RESOURCE-01 defrag abort telemetry staged for reproduction — 2026-11-09 16:01 CET
+
+RESOURCE-01 is **not fixed**. The previous full unchanged JCAlgTest 1.8.4/jc305
+VPCD sweep still reached persistent `NO_RESOURCE`/`F205` despite 237 gated
+deletion requests. A new read of its sector snapshots shows the defrag staging
+cursor increasing between failures. At one point source sector 3 retained
+`next_block=65529` while `valid_size` fell from 879 to zero, and the defrag
+sector contained 3358 bytes. This suggests that a defrag attempt staged or
+invalidated records but returned before resetting the source sector; it does
+not yet prove which branch returned.
+
+Committed host-only defrag phase telemetry in submodule commit `b892e4d`
+(`debug: trace filesystem defragmentation aborts`). It logs start, stage/copyback
+broken-block or write-error exits, source erase, and completion. The root worktree
+still needs its gitlink update and progress commit. `./tools/build-pc --profile
+max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd`
+passed `TEST:SUMMARY pass=19 fail=0`, but its 8-tag workload did not trigger
+filesystem defragmentation, so the new markers were not exercised. An attempt to
+run OS Rust unit tests failed before running them because the vendored
+`lock_api 0.3.4` crate enables removed `feature(const_fn)` with the installed
+stable toolchain. Treat that as an environment/test-toolchain limitation.
+
+Next: construct a bounded mixed persistent workload that forces one or more
+filesystem defragmentations; inspect the new phase markers, then fix and test
+the real failure. Keep object deletion test-gated and production deletion
+disabled. No Pico hardware was used. Latest VPCD regression log:
+`artifacts/logs/object-deletion-vpcd-20261109T145927Z.log` (SHA-256
+`5c7f3fcf74e827d83b8647959665f5e0eb0a0e22c4b2dfd9c52bcaf809c8d9ac`).
+
+---
+
+# Current handoff — isolated RSA cleanup plateaus; mixed JCAlgTest still exhausts VPCD FS — 2026-11-09 16:47 CET
+
+A full unchanged JCAlgTest 1.8.4/jc305 max_crypto VPCD sweep was run with
+request-gated cleanup, `PICO2_PERSISTENT_INVENTORY_EVERY=64`, a 120-second
+per-APDU client watchdog, and a 3,600-second suite limit. It stopped at the
+suite watchdog with 315 CSV rows (not a complete report). RSA KeyPair 512, 736,
+and 768 passed; 896, 1024, 1280, 1536, 1984, 2048, and 4096 returned
+`F205/NO_RESOURCE` (3072 was reported unsupported). All RSA-CRT KeyPair sizes
+failed; later EC KeyPair, OwnerPINx, and digest operations also failed. There
+were 36 OutOfFlash / persistent-write F205 events and 237 successful gated
+cleanup calls. Seven inventory samples had 0–16 unreachable tags and complete
+root/edge scans. This is a VPCD failure despite cleanup, not production or Pico
+evidence.
+
+Fresh-card controls passed: RSA-768, 896, and 1024 KeyPair APDUs each returned
+`9000` with cleanup between operations. A 16-cycle RSA-768 plus cleanup stress
+passed 34/34; 16 requests erased 377 owner tags. Two inventory samples both
+reported 211 owner records / 5,362 bytes, 345 global records / 8,494 bytes, and
+25 unreachable tags / 805 bytes immediately before cleanup. The gated isolated
+workload plateaus, but the full mixed suite does not.
+
+At the full-run failure boundary, host FS sectors had append cursors near
+capacity but low valid-byte totals; the 128-KiB defrag sector showed
+`next_block=131057`, `valid_size=10261`. This suggests a host filesystem compaction/recovery defect or fragmentation path, but causality is not proven. The
+submodule `choupi/os/src/fs/mod.rs` is already dirty from previous work; inspect
+its diff before changing it and preserve those edits.
+
+Artifacts: `artifacts/results/jcalgtest-support-vpcd-20261109T132549Z/`
+(full run; CSV SHA-256 `c6697f1646b53fc7f72f4807bbe788fae173a71d7f2da2fc42c5a875afda9c39`;
+emulator log SHA-256 `d1d45752d38c3dba005cfe0b57ae806418e1fc4dd467f96dd08ef8d4ef20ab89`)
+and `artifacts/logs/resource01-rsa768-16cycle-gated-vpcd.log` (SHA-256
+`ca4f8c77cca9c5d1cade6ab9a17f1fab96528b894771ff7e22fba0c8cfa429c0`). The
+separate clean 768/896/1024 log is
+`artifacts/logs/resource01-isolated-keypair-gated-vpcd-2.log`.
+
+Next: investigate how the host FS defrag path gets stuck after mixed key-builder
+and KeyPair churn. Reproduce with a smaller mixed APDU sequence and sector-level
+telemetry; inspect the dirty submodule diff before any edit. Then rerun the same
+sequence with the production collector still disabled. Do not interpret
+`FS_OUT_OF_FLASH` alone as terminal; correlate the final post-defrag status.
+No physical token was used; PacketRF remains excluded.
+
+---
+
 # Current handoff — same-CAP sibling roots pass gated VPCD deletion probe — 2026-11-09 14:21 CET
 
 The same-CAP sibling deletion-safety probe now passes 10/10 on local VPCD.

@@ -273,6 +273,38 @@ Archive text is historical evidence, not current device state or priorities.
     erased), then clears the static root and reclaims the 10-tag graph. The
     two-cycle VPCD run passed 11/11, and the follow-up strict-assertion run
     passed 7/7. Foreign-context roots and physical interruption remain open.
+  - On 2026-11-09, an hour-bounded max_crypto run of unchanged JCAlgTest
+    1.8.4/jc305 with test-gated request cleanup produced only 315 CSV rows and
+    stopped at the 3,600-second suite watchdog. It passed RSA KeyPair 512, 736,
+    and 768; RSA 896, 1024, 1280, 1536, 1984, 2048, and 4096 returned
+    `F205` / `NO_RESOURCE` (3072 was reported unsupported). All RSA-CRT KeyPair
+    sizes failed `NO_RESOURCE`; subsequent EC KeyPair, OwnerPINx, and digest
+    probes also failed. The emulator logged 36 OutOfFlash/F205 persistent writes,
+    despite 237 completed gated deletion requests and seven clean root-inventory
+    samples (0-16 unreachable tags; no invalid references or scan failures).
+    The last failure showed data-sector append cursors near capacity while their
+    valid byte counts were low, and a nearly full 128-KiB defrag sector. This
+    points to a cumulative host-filesystem defragmentation/recovery problem, but
+    exact cause is not yet proven.
+  - Fresh-card controls show the failing key sizes are not intrinsically too
+    large: RSA-768, 896, and 1024 KeyPair each returned `9000` with a gated
+    cleanup between operations. A 16-cycle fresh-card RSA-768/cleanup stress
+    passed 34/34 checks; 16 requests erased 377 owner tags. Two inventories were
+    identical before cleanup (211 applet records / 5,362 bytes; 345 global /
+    8,494 bytes; 25 unreachable tags / 805 bytes), with complete root/edge
+    scans. This demonstrates a bounded plateau in this isolated workload, not
+    across the full JCAlgTest suite, production cleanup, or physical flash.
+    Full-run and focused logs are in `.agent/HANDOFF.md` and `.agent/QKB.md`.
+  - Follow-up host-only diagnostics in `choupi/os/src/fs/mod.rs` now report
+    where defragmentation exits (staging, source erase, copyback, completion).
+    Existing full-run telemetry shows defrag staging bytes accumulating while
+    a source sector remains at a near-full append cursor after its valid-size
+    count falls to zero. That is consistent with a defrag attempt returning
+    before source erase or copyback; exact exit reason is not yet captured.
+    The object-deletion VPCD regression passed 19/19 but did not trigger
+    defragmentation. Rust filesystem unit tests remain blocked by the vendored
+    `lock_api 0.3.4` `feature(const_fn)` incompatibility with installed stable
+    Rust. No RESOURCE-01 fix is established.
 - Acceptance: repeated same-key reuse, new-key replacement plus deletion, and
   unchanged JCAlgTest 1.8.4 / jc305 reset/free-cache cycles reach a measured
   plateau in retained RAM, handles and persistent records. Demonstrate that

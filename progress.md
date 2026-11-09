@@ -26703,3 +26703,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with other retained Context and foreign-alias coverage before rerunning full JCAlgTest through RSA KeyPair.
 - Commit: `c23a8a7f`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261109T132007Z.log`; previous failed assertion logs retained for diagnosis.
+
+
+## 2026-11-09 Isolate gated RSA plateau from full-suite VPCD exhaustion 141 minutes
+
+- Step/experiment: `RESOURCE-01-full-suite-vs-isolated-keypair`
+- When: '2026-11-09 14:25 CET' - '2026-11-09 16:47 CET'
+- Change: Ran the unchanged pinned JCAlgTest 1.8.4/jc305 max_crypto support suite on Virtual PCD 00 01 with test-gated object deletion, interval-64 inventory, and a 120-second per-APDU watchdog. Added fresh-card RSA KeyPair controls (768/896/1024) and a 16-cycle RSA-768 + cleanup stress to distinguish operation-size limits from cumulative mixed-workload exhaustion. Updated RESOURCE-01 TODO/QKB/handoff with current evidence.
+- Validation: Full run reached the 3,600-second suite watchdog and exited 1 with 315 CSV rows, so comparison/full acceptance did not run. It logged 36 `FS_OUT_OF_FLASH`/`PERSIST_EXCEPTION id=20`/`F205` events despite 237 complete request-gated cleanup calls; 7 periodic inventories had complete roots with 0–16 unreachable tags. RSA KeyPair 512/736/768 passed; 896+ enabled sizes failed. Fresh-card 768/896/1024 controls all returned `9000` with cleanup between sizes. The repeated RSA-768 test passed `TEST:SUMMARY pass=34 fail=0`; 16 requests erased 377 owner tags. Both interval inventories were identical before cleanup (211 owner records/5,362 bytes; 345 global/8,494 bytes; 25 unreachable tags/805 bytes). No physical board was accessed.
+- Result: Request-gated cleanup establishes an isolated 16-cycle plateau but does not prevent the mixed full JCAlgTest VPCD run from exhausting the host FS. Full-run sector diagnostics show near-full append pointers with low valid sizes and a nearly full 128-KiB defrag sector; likely compaction/recovery behavior requires targeted reproduction, but cause is unproven. RESOURCE-01 remains open and normal firmware deletion remains disabled.
+- Decision: Next isolate the filesystem compaction/recovery path with a smaller mixed workload and sector telemetry, preserving the dirty OS submodule changes.
+- Commit: pending
+- Artifacts/logs: full run `artifacts/results/jcalgtest-support-vpcd-20261109T132549Z/`; CSV SHA-256 `c6697f1646b53fc7f72f4807bbe788fae173a71d7f2da2fc42c5a875afda9c39`; emulator log SHA-256 `d1d45752d38c3dba005cfe0b57ae806418e1fc4dd467f96dd08ef8d4ef20ab89`; repeated RSA stress `artifacts/logs/resource01-rsa768-16cycle-gated-vpcd.log`, SHA-256 `ca4f8c77cca9c5d1cade6ab9a17f1fab96528b894771ff7e22fba0c8cfa429c0`.
+
+
+## 2026-11-09 Add host filesystem defragmentation exit telemetry 8 minutes
+
+- Step/experiment: `RESOURCE-01-defrag-abort-telemetry`
+- When: '2026-11-09 15:55 CET' - '2026-11-09 16:03 CET'
+- Change: Added host-only filesystem logs for defragmentation start, broken-block/write-error exits in staging and copyback, source-sector erase, and successful completion. Recorded a stronger but still unproven lead from the prior full-suite sector snapshots: staging data grew while a source append cursor stayed near capacity after its valid size fell to zero. Updated TODO.md, QKB.md, and HANDOFF.md.
+- Validation: `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd` passed `TEST:SUMMARY pass=19 fail=0`, but did not trigger defragmentation. `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --features host fs::tests` failed before tests because vendored `lock_api 0.3.4` uses removed `feature(const_fn)`; only stable Rust is installed. `git diff --check` reported existing unrelated trailing whitespace in AGENTS.md and other pre-existing dirty files; no new whitespace issue was observed in the new submodule diagnostics.
+- Result: Diagnostic build is ready, but no new runtime evidence identifies the exact defragmentation exit. RESOURCE-01 remains unresolved; no physical device was accessed.
+- Decision: Force a bounded mixed persistent workload through filesystem defragmentation, inspect its phase marker, and only then change recovery or compaction behavior. Keep production deletion disabled.
+- Commit: `b892e4d` (OS submodule); root commit pending.
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T145927Z.log`, SHA-256 `5c7f3fcf74e827d83b8647959665f5e0eb0a0e22c4b2dfd9c52bcaf809c8d9ac`; no defrag markers occurred in this short regression.
