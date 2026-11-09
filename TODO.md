@@ -150,6 +150,13 @@ Archive text is historical evidence, not current device state or priorities.
   deletion unsupported; this fixture result is not a production or hardware
   fix. See `.agent/QKB.md` and the 2026-11-09 `progress.md` entry.
 - Remaining work:
+  - A bounded 512-cycle request-gated VPCD RSA-public stress attempt reached
+    15 completed cleanup requests (150 owner tags erased, 10 per request), then
+    timed out on custom APDU 31 at 20.026 s. No OutOfFlash/F205 was observed
+    before timeout. This is a test-only PC path and not production or hardware
+    acceptance; increase the harness APDU deadline or use a staged workload to
+    continue the measurement. Log:
+    `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log`.
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.
     Persistent write failures now emit status, requested size, and the full tag;

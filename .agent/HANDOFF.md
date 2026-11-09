@@ -10896,3 +10896,24 @@ gates before considering production reclamation. The installed PC/SC helper
 must still be checked against the Pico-only allowlist before hardware testing.
 
 # Current handoff — RESOURCE-01 storage exhaustion and deletion probe — 2026-11-09 02:50 CET
+# Current handoff — RESOURCE-01 remains open after bounded RSA stress — 2026-11-09 06:14 CET
+
+The answer to whether RESOURCE-01 is fixed remains **no**. Production
+`isObjectDeletionSupported()` returns false, so JCAlgTest’s reset/free-cache
+sequence cannot request collection. Unchanged JCAlgTest 1.8.4 VPCD runs have
+already reached persistent `OutOfFlash` / `F205` after many operations.
+
+This session attempted `PICO2_HOST_USB_ACCESS=1
+./tools/test-object-deletion-vpcd 512 rsa-public`. The test-only PC VPCD gate
+completed 15 deferred cleanup requests and erased 150 applet-owner tags (10 per
+request). It then stopped at custom APDU 31 with the harness’s 20.026-second
+timeout. No persistent-storage failure appeared before the timeout. This does
+not prove production behavior and is not physical-token evidence. Log:
+`artifacts/logs/object-deletion-vpcd-20261109T050753Z.log` (SHA-256
+`376513760d45615e7760a0b3dca8489533ac96724d4df1c4e92ff4f8f2f0242f`).
+
+Next: make the VPCD workload’s APDU deadline configurable and rerun a smaller,
+time-bounded number of RSA replacement/cleanup cycles. Continue auditing the
+deletion safety gates; do not enable ordinary firmware reclamation based on
+this test-only result. The unexpected `2e8a:0009` PacketRF device remains
+excluded from all hardware work.

@@ -26604,3 +26604,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T032208Z.log`
   (SHA-256 `ed6f9427e8565084adfe3a9c1f063a69042f1be9fb5d8b186a9c26f3792d1c89`)
 
+## 2026-11-09 Bound request-gated RSA cleanup stress 11 minutes
+
+- Step/experiment: `resource01-rsa-gated-stress`
+- When: '2026-11-09 06:03 CET' - '2026-11-09 06:14 CET'
+- Change: Attempted a 512-cycle RSA-public stress using the PC-only deferred object-deletion gate; recorded the incomplete outcome and updated RESOURCE-01 status.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 512 rsa-public` exited 1 with `TEST:FAIL timed out`. The unchanged test harness timed out on custom APDU 31 at 20.026 s.
+- Result: 15 deletion requests completed, erasing 150 applet-owned tags (10 per request). No `FS_OUT_OF_FLASH`, `PERSIST_WRITE_FAIL`, or `F205` appeared before timeout. This is test-only VPCD evidence, not production or physical acceptance.
+- Decision: RESOURCE-01 remains unresolved. Keep production deletion unsupported; next make the test APDU deadline configurable and use a bounded smaller workload.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log`; SHA-256 `376513760d45615e7760a0b3dca8489533ac96724d4df1c4e92ff4f8f2f0242f`.
+

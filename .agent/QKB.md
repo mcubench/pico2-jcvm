@@ -8936,3 +8936,18 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   to `tools/tests/...`, and after path correction it also fails to compile/link
   against the current Stack/Context and test-stub interfaces. Prefer the
   maintained `tools/test-persistent-transaction` wrapper for current source.
+# 2026-11-09 RESOURCE-01 bounded 512-cycle test timed out
+
+- A request-gated RSA-public VPCD run requested 512 cleanup cycles. It completed
+  15 requests; each reclaimed 10 applet-owned tags (150 total), with no
+  `FS_OUT_OF_FLASH`, `PERSIST_WRITE_FAIL`, or `F205` before the run stopped.
+- The harness then reported `TEST:FAIL timed out` on custom APDU 31 after
+  20.026 seconds. The log ends before a response for that APDU. This is an
+  incomplete test-only PC VPCD run, not evidence of a Pico hang or a production
+  fix. The production JCSystem implementation still reports object deletion as
+  unsupported.
+- Next: use a longer APDU deadline or a batched workload so test duration is
+  bounded while still covering more completed cleanup cycles. Continue to keep
+  production reclamation disabled until PERSIST-01 acceptance is complete.
+- Evidence: `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log`, SHA-256
+  `376513760d45615e7760a0b3dca8489533ac96724d4df1c4e92ff4f8f2f0242f`.
