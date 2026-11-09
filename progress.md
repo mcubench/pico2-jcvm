@@ -26626,3 +26626,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `8bf085b9`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T063534Z.log`; SHA-256 `c95768881b40099006947cdc4bc602089e494d98751223e641d801835a165893`.
 
+## 2026-11-09 Revalidate persistent safety and architecture gates 14 minutes
+
+- Step/experiment: `resource01-current-safety-revalidation`
+- When: '2026-11-09 07:42 CET' - '2026-11-09 07:56 CET'
+- Change: Revalidated the existing persistence/reclaimer safeguards and current source across repository build wrappers; confirmed physical helper remains stale and therefore did not attempt hardware access.
+- Validation: `./tools/test-persistent-inventory` passed all 22 cases; `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed for profile `current` (15 enabled capabilities).
+- Result: ARM firmware end `0x100d7940`, 165,568 bytes remain. RISC-V wrapper builds VM core only. Inventory, transaction and simulated power-cut gates remain green; they do not prove physical recovery or resolve the JCAlgTest `F205` failure. Repository and installed helper SHA-256 values differ: `c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc` vs `8347b53b931aac5eb6a40242f0346abf6186eefc73ce02ede18da7a333457c61`.
+- Decision: Keep RESOURCE-01 open and production persistent reclamation disabled. Continue offline; physical testing requires the Pico-only helper refresh and an identified, non-excluded board.
+- Commit: pending
+- Artifacts/logs: Build outputs in `build/arm/` and `build/riscv/`; tests emitted terminal summaries; no physical logs.
+

@@ -159,6 +159,12 @@ Archive text is historical evidence, not current device state or priorities.
     test-only PC path and not production or hardware acceptance. Logs:
     `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log` and
     `artifacts/logs/object-deletion-vpcd-20261109T063534Z.log`.
+  - Current-worktree revalidation on 2026-11-09 passed persistent inventory,
+    persistent transaction/reclaimer, and RP2350 filesystem overlay suites;
+    ARM and RISC-V repository wrappers also passed with the `current` profile
+    (15 enabled capabilities). This is build and host-model evidence only. The
+    physical helper checksum still mismatches the Pico-only repository helper,
+    so no physical reclaimer test or flash was attempted.
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.
     Persistent write failures now emit status, requested size, and the full tag;

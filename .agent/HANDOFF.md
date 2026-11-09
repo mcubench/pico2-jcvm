@@ -10935,3 +10935,29 @@ This is still a PC-only test gate. It does not establish production
 unchanged JCAlgTest `F205` failures. Next continue PERSIST-01 safety acceptance
 and full-suite resource diagnosis. Keep the unexpected `2e8a:0009` PacketRF
 unit excluded.
+# Current handoff — revalidate persistent safeguards and both build wrappers — 2026-11-09 07:55 CET
+
+Current-worktree checks passed:
+
+- `./tools/test-persistent-inventory`: 22/22 cases.
+- `./tools/test-persistent-transaction`: `TEST:SUMMARY fail=0`, including
+  root/alias, transaction refusal, interruption/retry and owner-isolation
+  cases.
+- `./tools/test-rp2350-fs-overlay`: `TEST:SUMMARY fail=0`, including the
+  simulated 1,000-cut reclaimer recovery cases.
+- `./tools/build arm`: passed with profile `current` (15 enabled capabilities);
+  firmware end `0x100d7940`, 165,568 bytes remain in the configured flash
+  window.
+- `./tools/build riscv`: passed; this wrapper builds the VM core, not a complete
+  CHOUPI RISC-V firmware image.
+
+These are host-model and build checks, not a fix for RESOURCE-01. Production
+`requestObjectDeletion()` remains unsupported and the unchanged 1.8.4 VPCD
+failure at `F205` is still valid. No physical board was flashed or tested.
+The repository helper SHA-256 is
+`c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`, while
+the installed helper is
+`8347b53b931aac5eb6a40242f0346abf6186eefc73ce02ede18da7a333457c61`; the
+physical test wrapper refuses to proceed until the Pico-only helper is
+refreshed. Continue offline until that external setup is current, and keep the
+unexpected device excluded.

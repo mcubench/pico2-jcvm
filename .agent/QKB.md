@@ -8960,3 +8960,14 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   production object deletion is still unsupported and RESOURCE-01 is open.
 - Evidence: `artifacts/logs/object-deletion-vpcd-20261109T063534Z.log`, SHA-256
   `c95768881b40099006947cdc4bc602089e494d98751223e641d801835a165893`.
+- On 2026-11-09 current-worktree revalidation, persistent inventory,
+  persistent transaction/reclaimer and the RP2350 overlay suites all passed;
+  ARM and RISC-V wrappers passed with profile `current` (15 enabled
+  capabilities). No physical test or flash was performed.
+- The installed helper remains stale: repository helper SHA-256
+  `c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`,
+  installed `/usr/local/sbin/pico2-pcsc-reader` SHA-256
+  `8347b53b931aac5eb6a40242f0346abf6186eefc73ce02ede18da7a333457c61`.
+  `tools/test-persistent-reclaimer-physical` checks byte-for-byte equality and
+  refuses hardware access while they differ. Refresh using the external request
+  process before physical tests; continue excluding the unexpected device.
