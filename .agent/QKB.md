@@ -1,5 +1,30 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## RESOURCE-01: fresh unchanged full-suite run still reaches persistent NO_RESOURCE — 2026-11-09
+
+- **Run:** `PICO2_PERSISTENT_INVENTORY_EVERY=128` with unchanged JCAlgTest
+  1.8.4/jc305 and PC VPCD. The run directory is
+  `artifacts/results/jcalgtest-support-vpcd-20261109T010939Z/`.
+- **Evidence:** Before the RSA-1536 KeyPair request, the latest inventory was
+  owner 1,691 records / 43,697 payload bytes; global 1,825 / 46,829; unreachable
+  1,485 tags / 39,293 bytes. RSA KeyPair 512, 736, 896, 1024 and 1280 returned
+  `yes`; RSA-768 had already returned `SystemException_NO_RESOURCE`. The
+  1536-bit APDU then returned `F205` after 44.678 seconds. Persistent reference
+  serialization failed with `CHOUPI:PERSIST_WRITE_FAIL status=1 size=45` on
+  tag `03013894FFFFFE000000420303FFFE000000470606FFFE000002F30101FFFE000002F80303`,
+  followed by exception 20 on tag `03013894FFFFFE000000420303FFFE000000470606`.
+- **Termination:** The next client APDU got no response because the host
+  emulator's ptrace wrapper panicked (`Unknown ptrace signal ... stopsig 2`);
+  SmartCardIO then reported an empty APDU. This is host process termination,
+  not evidence of a physical Pico reset. The complete support comparison did
+  not run. No physical token was accessed, and the unexpected PacketRF device
+  remains excluded.
+- **Conclusion:** The current build is not fixed: persistent-resource
+  exhaustion recurs on the unchanged suite after enough operations. The PC
+  run does not by itself establish physical-device reset behavior. Continue
+  with focused reproduction of the write-failure tag and PERSIST-01 safety
+  gates; do not enable production reclamation yet.
+
 ## Root-tag protection fixes the observed lookup loss, but full acceptance is open
 
 - The first per-APDU persistent-reclaimer experiment erased registered applet

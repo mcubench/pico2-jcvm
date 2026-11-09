@@ -26525,3 +26525,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `cbe14dd9`
 - Artifacts/logs: no new repository artifacts; host unit output was captured in
   the command session.
+
+## 2026-11-09 Reproduce RESOURCE-01 on unchanged full support run 26 minutes
+
+- Step/experiment: `RESOURCE-01-JCALGTEST-184-PERSISTENT-F205`
+- When: '2026-11-09 02:09 CET' - '2026-11-09 02:35 CET'
+- Change: Ran the unchanged 1.8.4/jc305 full support client on PC VPCD with
+  persistent inventory sampled every 128 APDUs. Updated RESOURCE-01, QKB and
+  handoff with the run outcome. The unexpected PacketRF unit was excluded.
+- Validation: The run installed the upstream CAP with GPPro. The full support
+  comparison did not complete: RSA-768 returned `SystemException_NO_RESOURCE`,
+  RSA-896/1024/1280 passed, and RSA-1536 returned `F205` after 44.678 seconds.
+  The host emulator ptrace wrapper then panicked and the next APDU was empty.
+  No physical token was accessed. No ARM/RISC-V build was needed because source
+  code was unchanged.
+- Result: At the latest sample: owner 1,691 records / 43,697 payload bytes;
+  global 1,825 / 46,829; unreachable 1,485 tags / 39,293 bytes. A 45-byte
+  persistent write failed on tag
+  `03013894FFFFFE000000420303FFFE000000470606FFFE000002F30101FFFE000002F80303`;
+  serialization then failed on the parent
+  reference tag. RESOURCE-01 is not fixed. The client empty-APDU termination
+  is attributed to the host emulator panic, not a confirmed physical reset.
+- Decision: Reproduce the failing persistent-reference write in a bounded
+  unchanged-CAP workload and inspect storage/free-space/compaction state.
+  Keep production persistent reclamation disabled pending PERSIST-01 gates.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T010939Z/`

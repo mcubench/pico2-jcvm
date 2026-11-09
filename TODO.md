@@ -107,6 +107,16 @@ Archive text is historical evidence, not current device state or priorities.
   persistent `short` field write leaves the cached value and durable record
   canonical through rollback. This closes a setter-specific test gap only; it
   does not establish the cause of long-run `NO_RESOURCE` or fix RESOURCE-01.
+  A fresh unchanged JCAlgTest 1.8.4/jc305 VPCD run with periodic inventory
+  reached RSA KeyPair 1536 after 1,691 applet-owner records / 43,697 payload
+  bytes (1,825 global / 46,829 bytes; 1,485 unreachable tags / 39,293 bytes).
+  The 1536-bit APDU returned `F205` after 44.678 seconds, with persistent
+  reference serialization failing on tag
+  `03013894FFFFFE000000420303FFFE000000470606`. The next APDU received no
+  response because the host emulator's ptrace wrapper panicked; this is not
+  evidence of a physical-token reset. The current build is therefore still
+  likely to hit persistent-resource exhaustion after enough operations. The
+  unexpected PacketRF unit is excluded; no physical token was used.
   The RP2350 filesystem suite now passes its integrated
   `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
   case: across 1,000 simulated flash-cut points it preserves the live root and

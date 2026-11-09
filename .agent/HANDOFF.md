@@ -1,3 +1,29 @@
+# Current handoff — RESOURCE-01 persists on unchanged JCAlgTest — 2026-11-09 02:35 CET
+
+The unexpected `2e8a:0009` PacketRF unit is excluded from all physical tests.
+No hardware was accessed during this latest run.
+
+An unchanged JCAlgTest 1.8.4/jc305 PC VPCD run with periodic inventory is at
+`artifacts/results/jcalgtest-support-vpcd-20261109T010939Z/`. It reached RSA
+KeyPair probing with inventory at 1,691 owner records / 43,697 payload bytes;
+global 1,825 / 46,829; 1,485 unreachable tags / 39,293 bytes. RSA-768 reported
+`SystemException_NO_RESOURCE`; RSA-896, 1024 and 1280 succeeded; RSA-1536
+returned `F205` after 44.678 seconds. Persistent serialization failed writing
+45 bytes for tag
+`03013894FFFFFE000000420303FFFE000000470606FFFE000002F30101FFFE000002F80303`.
+The subsequent APDU got an empty response when the host emulator's ptrace
+wrapper panicked. Treat the storage failure as reproduced in PC VPCD and the
+empty response as emulator-process termination; neither demonstrates a Pico
+reset. The official support comparison did not complete.
+
+RESOURCE-01 remains unresolved. Normal persistent reclamation is disabled.
+Next: reproduce the failing 45-byte persistent-reference write in a smaller
+unchanged-CAP workload; inspect the storage status/tag and filesystem free-space
+or compaction accounting immediately before it. Keep PERSIST-01 root/alias,
+multi-owner, transaction, and power-cut gates before any production collector
+enablement. Do not use the PacketRF device. See the newest RESOURCE-01 entry in
+`.agent/QKB.md` and `progress.md`.
+
 # Current handoff — filter unrelated PacketRF from the PC/SC helper — 2026-11-08 11:18 CET
 
 The user confirmed the fourth connected `2e8a:0009` device is an unexpected
