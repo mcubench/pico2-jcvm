@@ -10867,3 +10867,32 @@ After that, use the safe host-access path and the existing
 `tools/test-persistent-reclaimer-physical` on an identified Pico2 reader only.
 No USB operation, physical flash, or token APDU was attempted during this
 preparation. The full external request is in `.agent/EXT_REQUESTS.md`.
+# Current handoff — RESOURCE-01 filesystem and bounded collector controls — 2026-11-09 04:28 CET
+
+The CHOUPI OS host filesystem passed a new 100-cycle test with 16 applet-owned
+512-byte records per batch, erase after each batch, 40 retained package roots,
+and restart every ten cycles. The host FS suite passes 29/29 with two stress
+tests ignored; running those existing 100,000-write/edit tests explicitly also
+passes 2/2.
+
+The PC-only request-gated RSA-512 deletion fixture passed 64 cycles / 131 APDU
+checks, reclaiming 640 owner tags. Four periodic inventories returned to the
+same 13 owner records / 287 bytes and 17 global records / 304 bytes, with zero
+unreachable tags. Log:
+`artifacts/logs/object-deletion-vpcd-20261109T032208Z.log`, SHA-256
+`ed6f9427e8565084adfe3a9c1f063a69042f1be9fb5d8b186a9c26f3792d1c89`.
+
+RESOURCE-01 remains unresolved. These controls do not explain the unchanged
+JCAlgTest 1.8.4 full-suite F205 and do not test production Pico deletion or
+hardware. Normal firmware still returns `ILLEGAL_USE` for
+`requestObjectDeletion()`. PacketRF remains excluded. The host-only filesystem
+regression is committed inside `choupi/os` as `a459209`; update the parent
+submodule pointer with the accompanying root progress commit.
+
+Next: run a denser, bounded JCAlgTest RSA KeyPair sequence with periodic
+inventory around cache reset/free, identify which records remain reachable or
+live at the F205 boundary, and finish retained-context / physical interruption
+gates before considering production reclamation. The installed PC/SC helper
+must still be checked against the Pico-only allowlist before hardware testing.
+
+# Current handoff — RESOURCE-01 storage exhaustion and deletion probe — 2026-11-09 02:50 CET

@@ -26577,3 +26577,30 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T014621Z.log`
   (SHA-256 `47b5265a5f02338d9e5d6e5e1b2c408d5a80ccae58e1ead8f802580bdbd51db5`);
   interrupted full run `artifacts/results/jcalgtest-support-vpcd-20261109T014143Z/`.
+## 2026-11-09 Isolate persistent filesystem churn control 35 minutes
+
+- Step/experiment: `RESOURCE-01-FILESYSTEM-CHURN-CONTROL`
+- When: '2026-11-09 03:54 CET' - '2026-11-09 04:30 CET'
+- Change: Added a 100-cycle multi-record filesystem regression in the CHOUPI OS
+  submodule and documented its scope and the bounded PC collector result in
+  TODO.md, QKB.md, and HANDOFF.md. The upstream JCAlgTest inputs and production
+  deletion behavior remain unchanged.
+- Validation: The host FS suite passed 29 tests with 2 ignored. Both explicitly
+  selected ignored 100,000-write/edit stress tests passed. The focused 100-cycle
+  record/root regression passed. `PICO2_HOST_USB_ACCESS=1
+  PICO2_TEST_OBJECT_DELETION=1 PICO2_PERSISTENT_INVENTORY_EVERY=32
+  ./tools/test-object-deletion-vpcd 64 rsa-public` passed 131/131 checks.
+  Firmware builds were not rerun because this change is test-only; no hardware
+  was accessed.
+- Result: The tested host filesystem churn and isolated test-gated collection
+  workload return to bounded storage states. This does not explain the full
+  JCAlgTest F205 and does not show that production or Pico persistent deletion
+  works. RESOURCE-01 remains open.
+- Decision: Next capture denser live/unreachable inventory around the full
+  JCAlgTest RSA KeyPair failure. Keep production persistent reclamation disabled
+  pending root, alias, transaction, retained-context, and physical interruption
+  gates. Continue excluding PacketRF.
+- Commit: `<pending>` (submodule test `a459209`)
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T032208Z.log`
+  (SHA-256 `ed6f9427e8565084adfe3a9c1f063a69042f1be9fb5d8b186a9c26f3792d1c89`)
+

@@ -138,6 +138,17 @@ Archive text is historical evidence, not current device state or priorities.
   The physical wrapper now refuses to call the privileged helper unless its
   installed bytes match the repository Pico-only allowlist; the current helper
   still mismatches and must be refreshed before hardware testing.
+  On 2026-11-09, the CHOUPI OS host filesystem passed its normal suite (29
+  passed, 2 stress tests ignored), both existing 100,000-operation single-tag
+  edit/write stress tests, and a new 100-cycle multi-record create/erase test
+  that preserves 40 package roots across reinitialization. This rules out that
+  bounded host-filesystem workload, not the JCAlgTest failure or the different
+  RP2350 overlay capacity. A separate PC-only request-gated RSA probe passed
+  64 cycles / 131 checks and reclaimed 640 owner tags. Four inventory samples
+  all returned to 13 applet records / 287 payload bytes and 17 global records /
+  304 bytes, with zero unreachable tags. Normal firmware still reports object
+  deletion unsupported; this fixture result is not a production or hardware
+  fix. See `.agent/QKB.md` and the 2026-11-09 `progress.md` entry.
 - Remaining work:
   - Account separately for persistent live/orphan tags and bytes, filesystem
     obsolete versions/compaction, RAM backing, handles and native crypto state.

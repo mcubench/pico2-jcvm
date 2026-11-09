@@ -1,5 +1,33 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## RESOURCE-01: filesystem churn control passes; production failure remains — 2026-11-09
+
+- **Host OS filesystem control:** Added a Rust filesystem regression that runs
+  100 cycles of 16 unique 512-byte applet records, erases each batch, preserves
+  40 128-byte package-root records, and reinitializes every ten cycles. It
+  passes without OutOfFlash or root loss. The host FS suite passes 29/29 with
+  two existing stress tests ignored; explicitly running those tests also
+  passes both 100,000-operation single-tag write/edit workloads. This narrows
+  the search but does not prove the filesystem is fault-free under JCAlgTest's
+  different object graph or the RP2350 overlay's 96 KiB capacity.
+- **VM-level bounded probe:** With the PC-only
+  `PICO2_TEST_OBJECT_DELETION=1` gate, 64 RSA-512 public-key create/clear/delete
+  cycles pass 131/131 checks and erase 640 applet-owner tags. Four periodic
+  inventories all return to 13 applet records / 287 payload bytes, 17 global
+  records / 304 bytes and zero unreachable tags. Log:
+  `artifacts/logs/object-deletion-vpcd-20261109T032208Z.log`, SHA-256
+  `ed6f9427e8565084adfe3a9c1f063a69042f1be9fb5d8b186a9c26f3792d1c89`.
+- **Conclusion:** Repeated host FS compaction and the isolated single-context
+  request-gated RSA fixture both reach bounded states. This does not explain or
+  fix the unchanged 1.8.4 full-suite F205: the VPCD fixture enables test-only
+  deletion, normal firmware still returns `ILLEGAL_USE`, and no physical Pico
+  was tested. Do not advertise RESOURCE-01 as fixed.
+- **Next:** Capture denser live-versus-unreachable inventories around the full
+  JCAlgTest RSA KeyPair failure, determine which persistent tags remain live
+  after the reset/free-cache sequence, and complete the retained-context,
+  physical interruption and on-device acceptance gates before enabling
+  production reclamation.
+
 ## RESOURCE-01: fresh unchanged full-suite run still reaches persistent NO_RESOURCE — 2026-11-09
 
 - **Run:** `PICO2_PERSISTENT_INVENTORY_EVERY=128` with unchanged JCAlgTest
