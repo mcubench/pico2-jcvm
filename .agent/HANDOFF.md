@@ -10779,7 +10779,8 @@ physical device was accessed; the unexpected PacketRF device remains excluded.
 This diagnostic does not enable firmware reclamation or prove long-run
 stability; RESOURCE-01 remains open. See the latest progress record and logs
 `artifacts/logs/object-deletion-vpcd-20261109T002617Z.log` and
-`artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`.
+`artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`. Commit:
+`23318302`.
 
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
