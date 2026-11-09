@@ -9168,3 +9168,26 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Validation: 29 passed, 0 failed, 2 ignored, 102 filtered out. Existing Rust
   warnings remain. This is filesystem unit coverage, not full JCAlgTest or
   physical acceptance; RESOURCE-01 remains open.
+
+## RESOURCE-01: full VPCD sweep compaction succeeds but suite times out
+
+- A fresh unchanged JCAlgTest 1.8.4/jc305 run on `Virtual PCD 00 01`, with
+  request-gated deletion and inventory every 64 callbacks, reached EC key
+  agreement after passing the earlier RSA cases. It encountered one
+  `FS_OUT_OF_FLASH`; `FS_DEFRAG_START` was followed by
+  `FS_DEFRAG_SOURCE_ERASED` and `FS_DEFRAG_DONE`, and the triggering APDU
+  returned `9000`. No `F205`, `NO_RESOURCE`, persistent-write failure, or
+  defrag abort appeared in the run log.
+- The 3,600-second suite watchdog ended this run with 129 CSV rows while the
+  client was still in EC key-agreement checks. It did not reach the previously
+  observed RSA persistent-reference failure and is not acceptance evidence for
+  a fix. The earlier mixed-workload `F205` remains valid and RESOURCE-01 stays
+  unresolved. This run was PC VPCD only; no physical Pico was accessed.
+- The independent RSA stress evidence remains useful: slow host VPCD
+  compactions can complete in 55–102 seconds when given a 180-second APDU
+  timeout. A successful isolated compaction does not prove safety for the
+  mixed key/reference workload.
+- Evidence: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`;
+  `emulator.log` has one `FS_OUT_OF_FLASH`, one completed defrag, and no abort;
+  report CSV has 129 rows. The process ended via the configured 3,600-second
+  watchdog.

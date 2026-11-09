@@ -26786,3 +26786,31 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the active full-suite run and inspect its defragmentation markers and storage failures.
 - Commit: pending
 - Artifacts/logs: test output was captured in the command session; no persistent test log created.
+
+## 2026-11-09 Full RESOURCE-01 sweep compacts but times out 61 minutes
+
+- Step/experiment: `RESOURCE-01-JCALGTEST-184-FULL-WATCHDOG-3600`
+- When: '2026-11-09 18:48 CET' - '2026-11-09 19:49 CET'
+- Change: Ran the unchanged JCAlgTest 1.8.4/jc305 extended-support client on
+  PC VPCD `Virtual PCD 00 01`, with request-gated object deletion, persistent
+  inventory every 64 callbacks, and a 180-second APDU timeout. No firmware,
+  CAP, client, or source code was changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1
+  PICO2_PERSISTENT_INVENTORY_EVERY=64 JCALGTEST_VPCD_READER='Virtual PCD 00
+  01' JCALGTEST_VPCD_ENDPOINT=127.0.0.1:35964
+  JCALGTEST_SUPPORT_TIMEOUT_SECONDS=3600 JCALGTEST_APDU_TIMEOUT_SECONDS=180
+  ./tools/test-jcalgtest-support-vpcd` ended with exit 1 at the configured
+  3,600-second suite watchdog. It produced 129 CSV rows and reached EC
+  key-agreement tests; it did not complete the support report.
+- Result: One `FS_OUT_OF_FLASH` in the emulator log triggered compaction;
+  `FS_DEFRAG_START`, `FS_DEFRAG_SOURCE_ERASED`, and `FS_DEFRAG_DONE` were
+  logged, and the triggering APDU returned `9000`. No `F205`, `NO_RESOURCE`,
+  persistent-write failure, or defrag abort appeared. The run stopped before
+  the prior mixed-workload RSA persistent-reference failure, so RESOURCE-01
+  remains unresolved. PC VPCD only; no physical token was used.
+- Decision: The observed compaction succeeds in this run, but that does not
+  explain the earlier mixed-workload exhaustion. Reproduce the smaller mixed
+  lifecycle leading to the failing persistent-reference write; keep production
+  reclamation disabled pending safety acceptance.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`

@@ -141,6 +141,14 @@ Archive text is historical evidence, not current device state or priorities.
   unsupported and unreachable records continue to accumulate. Next identify
   the timed-out operation and continue the long run under the watchdog.
   Logs: `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`.
+  A fresh 2026-11-09 full 1.8.4/jc305 VPCD run on `Virtual PCD 00 01` with
+  deletion requests and inventory every 64 callbacks reached 129 CSV rows and
+  one `FS_OUT_OF_FLASH`; the subsequent compaction completed and its triggering
+  APDU returned `9000`. No `F205`, `NO_RESOURCE`, or defrag-abort marker was
+  observed. The 3,600-second watchdog expired while the client was testing EC
+  key-agreement cases; this was an incomplete run and did not reach the prior
+  RSA persistent-reference failure. It neither proves nor disproves RESOURCE-01.
+  Log: `artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/`.
   A focused max_crypto VPCD reproduction mapped that APDU to HMAC
   `TYPE_HMAC_TRANSIENT_DESELECT`. Its second repeated KeyBuilder call added 8
   unreachable applet-owned records (93 serialized bytes) under the generated

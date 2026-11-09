@@ -30,6 +30,30 @@ production deletion disabled. No physical Pico used. Successful stress log:
 `artifacts/logs/object-deletion-vpcd-20261109T173110Z.log` (SHA-256
 `fb80e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`).
 
+# Current handoff — full sweep compaction completed; RESOURCE-01 unresolved — 2026-11-09 19:50 CET
+
+The active full JCAlgTest 1.8.4/jc305 VPCD run finished at its configured
+3,600-second suite watchdog, not at suite completion. It reached 129 CSV rows
+and EC key-agreement checks. Logs in
+`artifacts/results/jcalgtest-support-vpcd-20261109T174809Z/` show one
+`FS_OUT_OF_FLASH`, followed by `FS_DEFRAG_START`,
+`FS_DEFRAG_SOURCE_ERASED`, and `FS_DEFRAG_DONE`; the triggering APDU returned
+`9000`. No `F205`, `NO_RESOURCE`, persistent-write failure, or defrag-abort
+marker appeared. This run did not reach the earlier RSA persistent-reference
+failure, so RESOURCE-01 is not fixed or cleared.
+
+The run used `Virtual PCD 00 01`, request-gated deletion, inventory every 64
+callbacks, 180-second APDU timeout, and 3,600-second suite timeout. It was PC
+VPCD only; no physical device was accessed. The prior RSA stress demonstrates
+that individual host VPCD compactions complete when allowed up to 102 seconds,
+but does not explain the mixed-workload `F205`.
+
+Next: construct a smaller replay that preserves the mixed JCAlgTest persistent
+record lifecycle leading to the RSA reference write failure, then inspect the
+exact write/sector history around compaction. Keep production persistent
+reclamation disabled until its all-root and recovery safety gates pass. Latest
+test outputs are in the directory above.
+
 ---
 
 # Current handoff — RESOURCE-01 defrag abort telemetry staged for reproduction — 2026-11-09 16:01 CET
