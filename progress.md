@@ -26600,7 +26600,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   JCAlgTest RSA KeyPair failure. Keep production persistent reclamation disabled
   pending root, alias, transaction, retained-context, and physical interruption
   gates. Continue excluding PacketRF.
-- Commit: `<pending>` (submodule test `a459209`)
+- Commit: `0bfc69e8` (submodule test `a459209`)
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T032208Z.log`
   (SHA-256 `ed6f9427e8565084adfe3a9c1f063a69042f1be9fb5d8b186a9c26f3792d1c89`)
 
