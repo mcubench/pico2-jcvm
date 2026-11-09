@@ -26727,3 +26727,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Force a bounded mixed persistent workload through filesystem defragmentation, inspect its phase marker, and only then change recovery or compaction behavior. Keep production deletion disabled.
 - Commit: `b892e4d` (OS submodule); root commit pending.
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T145927Z.log`, SHA-256 `5c7f3fcf74e827d83b8647959665f5e0eb0a0e22c4b2dfd9c52bcaf809c8d9ac`; no defrag markers occurred in this short regression.
+
+## 2026-11-09 Add feature support table 2 minutes
+
+- Step/experiment: `README-feature-status-table`
+- When: '2026-11-09 16:04 CET' - '2026-11-09 16:06 CET'
+- Change: Converted README coverage into 15 feature rows with Supported, Unsupported, and Partial Shields.io badges; retained scope and validation caveats.
+- Validation: Table inspection passed for 15 feature rows, consistent columns, and all three badge statuses; README whitespace check passed. Builds and hardware checks intentionally skipped for documentation-only work. Badge images use external Shields.io URLs; remote rendering was not measured.
+- Result: Feature availability and limitations can be scanned individually. Runtime metrics were not measured.
+- Decision: Requested presentation change complete.
+- Commit: `this README-feature-status-table commit; resolve with git log --grep="docs: show feature support with status badges"`
+- Artifacts/logs: None.
