@@ -26647,3 +26647,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Comparator reports `yes=15`, `no=8592`, `other=0`, `matched=8607`, with all 15 declared capabilities matching. No `F205`, `FS_OUT_OF_FLASH`, or `PERSIST_WRITE_FAIL` appeared. Cache-clear APDUs returned `F206`; production object deletion remains unsupported. This run does not establish a persistent-storage plateau or negate the earlier F205.
 - Decision: Keep RESOURCE-01 open. Next run with periodic inventory and compare the clean 00 01 trace with the earlier 00 00 F205 trace; investigate the endpoint discrepancy. No physical board was used. Commit: `6d1e4f87`.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T071131Z/`; the suite report and emulator/client logs are preserved there.
+
+## 2026-11-09 RESOURCE-01 max-profile allocation stall capture 18 minutes
+
+- Step/experiment: `RESOURCE-01-max-profile-vpcd-allocation-stall`
+- When: '2026-11-09 12:41 CET' - '2026-11-09 12:59 CET'
+- Change: Built the PC VM ROM mask for `max_crypto` and ran unchanged upstream JCAlgTest 1.8.4/jc305 on a clean VPCD card to exercise native key construction with cryptographic support enabled.
+- Validation: `./tools/build-pc --profile max_crypto` passed (`capabilities=162 enabled=159`). The VPCD wrapper installed the upstream CAP successfully and reached `TYPE_EC_FP_PRIVATE LENGTH_EC_FP_320;yes` (5.348 s). The following 384-bit request remained unanswered for several minutes. The host filesystem emitted `FS_OUT_OF_FLASH request=34 tag_len=27`; the client run was interrupted. Its induced ptrace signal-2 panic is not treated as a firmware failure. No physical board was accessed.
+- Result: This run did not reach RSA KeyPair generation and had no periodic inventory because interval 512 was too sparse. `FS_OUT_OF_FLASH` is logged on the first failed sector-allocation scan before automatic defragmentation, so the trace does not prove that compaction ultimately failed. Historical RSA-1536 `F205` remains unresolved; RESOURCE-01 is not fixed.
+- Decision: Repeat with inventory interval 64 (or smaller) and a per-APDU watchdog that terminates the Java client without Ctrl-C to the emulator; inspect live versus unreachable persistent objects around EC-384 before proceeding to RSA KeyPair.
+- Commit: pending; recorded by the follow-up commit-reference correction.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`; emulator SHA-256 `6965ec24b0814254609e987f97070fb458fe99cd35f335441f483f1fff3a7992`; client SHA-256 `4997fb73b026345d8a5c66fe8f9fe363778c4f875bdf4fb774735d94796a142c`; max-profile ROM mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.

@@ -129,6 +129,15 @@ Archive text is historical evidence, not current device state or priorities.
   measurements still need investigation. The run wrapper exited only at
   comparison because the Python comparator is not executable; invoking it
   with `python3` passed, and the wrapper now does the same.
+  A 2026-11-09 rerun using the `max_crypto` ROM mask reached EC private-key
+  tests. The host filesystem emitted `FS_OUT_OF_FLASH request=34 tag_len=27`
+  while handling the 384-bit case; the client did not receive an APDU response
+  before the run was interrupted. The diagnostic is emitted on the initial
+  allocation attempt before automatic defragmentation, so it is not by itself
+  proof that defragmentation failed. This run did not reach RSA KeyPair
+  generation and had no inventory sample (interval 512 was too sparse). Keep
+  RESOURCE-01 open; rerun with denser inventory and a bounded APDU watchdog.
+  Log: `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`.
   The RP2350 filesystem suite now passes its integrated
   `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
   case: across 1,000 simulated flash-cut points it preserves the live root and

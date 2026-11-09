@@ -10986,3 +10986,24 @@ record/payload growth with the earlier 00 00 F205 trace. Investigate endpoint
 differences. Keep production reclamation disabled; no physical board was
 operated in this step.
 Implementation and initial progress commit: `6d1e4f87`; the progress commit-reference correction follows.
+
+# Current handoff — max-profile RESOURCE-01 allocation stall captured — 2026-11-09 12:59 CET
+
+`./tools/build-pc --profile max_crypto` passed (159 enabled capabilities). A
+clean unchanged JCAlgTest 1.8.4/jc305 VPCD run on reader `Virtual PCD 00 01`
+installed successfully and progressed through EC key construction. The 320-bit
+EC private key test passed in 5.348 s. The next 384-bit request caused the host
+filesystem to log `FS_OUT_OF_FLASH request=34 tag_len=27`; the client received
+no response for several minutes. This diagnostic precedes automatic filesystem
+defragmentation, so it does not establish that the allocator ultimately failed.
+The test was interrupted; the emulator then panicked on the delivered signal
+inside its ptrace wrapper. Do not attribute that panic to firmware.
+
+The run did not reach RSA KeyPair generation and produced no inventory samples
+because the configured 512-APDU interval was too sparse. Its artifacts are
+`artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`. No physical board
+was used. RESOURCE-01 remains open; historical F205 is not resolved. Next use
+inventory interval 64 or smaller plus a per-APDU watchdog that stops the Java
+client without Ctrl-C to the emulator. Inspect persistent filesystem behavior
+around EC-384 and then continue toward RSA KeyPair reproduction. Unrelated dirty
+worktree changes remain untouched.
