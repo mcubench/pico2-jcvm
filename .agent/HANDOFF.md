@@ -11007,3 +11007,29 @@ inventory interval 64 or smaller plus a per-APDU watchdog that stops the Java
 client without Ctrl-C to the emulator. Inspect persistent filesystem behavior
 around EC-384 and then continue toward RSA KeyPair reproduction. Unrelated dirty
 worktree changes remain untouched.
+
+# Current handoff — watchdog-bound max-profile RESOURCE-01 trace — 2026-11-09 13:34 CET
+
+The VPCD max_crypto rerun with interval-64 inventory and a 120-second APDU
+watchdog produced five complete samples: at the last sample owner records were
+1,418 / 36,358 payload bytes, global records 1,552 / 39,490, and unreachable
+owner tags 1,205 / 31,791 bytes. Invalid references and root/edge scan failures
+were zero. Several `FS_OUT_OF_FLASH` diagnostics were followed by successful
+compaction and APDU results, including EC private-key 384 / 512 (`yes`, 42.420 s
+/ 40.792 s); do not interpret those initial diagnostics alone as terminal FS
+failure.
+
+The watchdog terminated the client after 120 seconds on APDU
+`B0 75 20 00 03 14 00 40 00`. The emulator then shut down without a ptrace
+panic. The incomplete suite stopped before RSA KeyPair and showed no `F205`,
+`PERSIST_WRITE_FAIL` or `PERSIST_EXCEPTION`. No physical device was used.
+RESOURCE-01 remains unresolved: production object deletion is unsupported and
+unreachable persistent records accumulate. Map this APDU and continue toward
+the historical RSA KeyPair failure using the new watchdog. Logs are under
+`artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`.
+
+The test runner now has optional `JCALGTEST_APDU_TIMEOUT_SECONDS`; the default
+acceptance path still starts from a fresh VPCD card. A test client invocation
+without `-fresh` did not resume the previous partial support report, so that
+experimental resume mode was removed. `tools/jcalgtest-apdu-watchdog.py` passed
+fast-response and timeout checks. Commit pending in this step.

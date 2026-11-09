@@ -33,6 +33,8 @@ timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out_dir="${repo_root}/artifacts/results/jcalgtest-support-vpcd-${timestamp}"
 mkdir -p "${out_dir}"
 memory="${out_dir}/empty-card.bin"
+client_log="${out_dir}/client.log"
+emulator_log="${out_dir}/emulator.log"
 : > "${memory}"
 cp "${expected}" "${out_dir}/expected-support.csv"
 
@@ -57,7 +59,7 @@ done
   --vpcd "${endpoint}" --vpcd-idle-timeout 3600 \
   --applet-aid "${applet_aid}" --package-id 63 \
   --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin" \
-  --rom-mask "${rom_mask}" > "${out_dir}/emulator.log" 2>&1 &
+  --rom-mask "${rom_mask}" > "${emulator_log}" 2>&1 &
 emulator_pid=$!
 cleanup() {
   if kill -0 "${emulator_pid}" 2>/dev/null; then
@@ -73,7 +75,7 @@ if ! timeout --signal=TERM --kill-after=2s 12s \
     "${repo_root}/tools/env" java \
     "${repo_root}/tests/hardware/VpcdPresenceProbe.java" "${reader}" 8000 \
     --require-present > "${out_dir}/reader-ready.log" 2>&1; then
-  cat "${out_dir}/emulator.log" >&2
+  cat "${emulator_log}" >&2
   cat "${out_dir}/reader-ready.log" >&2
   die "VPCD card did not become present"
 fi
@@ -109,13 +111,12 @@ grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" ||
   die "JCAlgTest applet is not listed as selectable"
 }
 
+client_args=(-op ALG_SUPPORT_EXTENDED -fresh -outpath "${out_dir}")
 if ! JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
-    timeout --signal=TERM --kill-after=5s "${support_timeout}s" \
     "${repo_root}/tools/run-jcalgtest" --reader-name "${reader}" \
-    -op ALG_SUPPORT_EXTENDED -fresh -outpath "${out_dir}" \
-    > "${out_dir}/client.log" 2>&1; then
-  cat "${out_dir}/client.log" >&2
-  cat "${out_dir}/emulator.log" >&2
+    "${client_args[@]}" > "${client_log}" 2>&1; then
+  cat "${client_log}" >&2
+  cat "${emulator_log}" >&2
   die "JCAlgTest 1.8.4 support run failed; see ${out_dir}"
 fi
 

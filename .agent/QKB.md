@@ -8986,6 +8986,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - **Evidence:** `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`;
   emulator log SHA-256 `6965ec24b0814254609e987f97070fb458fe99cd35f335441f483f1fff3a7992`;
   client log SHA-256 `4997fb73b026345d8a5c66fe8f9fe363778c4f875bdf4fb774735d94796a142c`.
+
+## RESOURCE-01 interval-64 trace clarifies compaction notices; watchdog stops a long APDU — 2026-11-09
+
+- **Setup:** Repeated the max_crypto VPCD suite with `PICO2_PERSISTENT_INVENTORY_EVERY=64` and the repository APDU watchdog set to 120 seconds. Reader `Virtual PCD 00 01`, endpoint `127.0.0.1:35964`; unchanged upstream CAP.
+- **Inventory:** Five complete samples reached owner 1,418 records / 36,358 bytes, global 1,552 / 39,490, and 1,205 unreachable owner tags / 31,791 bytes. No invalid references or root/edge scan failures were reported.
+- **Filesystem behavior:** `FS_OUT_OF_FLASH` was logged on initial allocation scans (requests 34, 56, 69 and 53), but later APDU results succeeded: EC private-key 384 and 512 returned `yes` in 42.420 s and 40.792 s. Treat this log as a pre-defragmentation diagnostic unless a terminal APDU error follows it.
+- **Watchdog outcome:** The client exceeded 120 seconds on APDU `B0 75 20 00 03 14 00 40 00`; the watchdog terminated the client and the wrapper cleaned up the emulator without a ptrace panic. The run stopped before RSA KeyPair and had no `F205`, `PERSIST_WRITE_FAIL` or `PERSIST_EXCEPTION`. It is incomplete and does not resolve historical RSA-1536 `F205` or explain the timed-out operation.
+- **Conclusion / next:** Unreachable persistent records accumulate while `JCSystem.isObjectDeletionSupported()` is false; production deletion remains unsafe to enable until PERSIST-01 gates pass. Map this APDU to the JCAlgTest operation and continue the RSA KeyPair test with bounded per-APDU deadlines.
+- **Evidence:** `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`; emulator log SHA-256 `18fc488bf66a5e7be98dfecc1105283992e9f9e100ab0c2ee7d9f6c01125020e`; client log SHA-256 `e5ab7a15db19dac45a927b9050780e9af6193dd1962fc901e4fc8e72f4bd64f8`.
 - On 2026-11-09 current-worktree revalidation, persistent inventory,
   persistent transaction/reclaimer and the RP2350 overlay suites all passed;
   ARM and RISC-V wrappers passed with profile `current` (15 enabled

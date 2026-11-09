@@ -98,8 +98,16 @@ if [[ "$has_cardname" == false ]]; then
 fi
 
 printf 'JCAlgTest target reader: %s (index %s)\n' "$reader_name" "$reader_index" >&2
+apdu_timeout="${JCALGTEST_APDU_TIMEOUT_SECONDS:-}"
+if [[ -n "$apdu_timeout" ]]; then
+  [[ "$apdu_timeout" =~ ^[1-9][0-9]{0,3}$ ]] || \
+    die "JCALGTEST_APDU_TIMEOUT_SECONDS must be an integer from 1 to 9999"
+  exec python3 "${repo_root}/tools/jcalgtest-apdu-watchdog.py" \
+    --apdu-timeout "$apdu_timeout" --suite-timeout "$timeout_seconds" \
+    --input-line "$reader_index" --input-line "$reader_name" -- \
+    "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
+fi
 {
   printf '%s\n%s\n' "$reader_index" "${reader_name}"
-} | \
-  timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
-    "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
+} | timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+  "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
