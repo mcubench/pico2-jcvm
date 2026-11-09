@@ -9156,3 +9156,15 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   unexplained; RESOURCE-01 is still open and production cleanup remains off.
 - Evidence: `artifacts/logs/object-deletion-vpcd-20261109T173110Z.log`,
   SHA-256 `fb80e32f5bbe377d0d5fe898acf1372e46f117264798461abe492769583d1369`.
+
+## RESOURCE-01: filesystem unit tests run when allocator feature is omitted
+
+- The default-feature test command pulled in `linked_list_allocator` with its
+  `use_spin_nightly` feature, which enabled removed `lock_api 0.3.4`
+  `feature(const_fn)` and failed before executing tests. This is avoidable: the
+  filesystem tests do not need the embedded allocator. Run
+  `./tools/env cargo test --manifest-path choupi/os/Cargo.toml
+  --no-default-features --features host fs::tests` instead.
+- Validation: 29 passed, 0 failed, 2 ignored, 102 filtered out. Existing Rust
+  warnings remain. This is filesystem unit coverage, not full JCAlgTest or
+  physical acceptance; RESOURCE-01 remains open.

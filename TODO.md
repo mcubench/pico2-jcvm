@@ -302,9 +302,11 @@ Archive text is historical evidence, not current device state or priorities.
     count falls to zero. That is consistent with a defrag attempt returning
     before source erase or copyback; exact exit reason is not yet captured.
     The object-deletion VPCD regression passed 19/19 but did not trigger
-    defragmentation. Rust filesystem unit tests remain blocked by the vendored
-    `lock_api 0.3.4` `feature(const_fn)` incompatibility with installed stable
-    Rust. No RESOURCE-01 fix is established.
+    defragmentation. The initial default-feature Rust filesystem test attempt
+    failed because the allocator pulls in `lock_api 0.3.4`'s removed nightly
+    `feature(const_fn)`. Rerunning without default features avoids the allocator
+    and passes the filesystem suite (29 passed, 2 ignored). No RESOURCE-01 fix
+    is established.
   - A longer-watchdog 64-cycle RSA replacement VPCD stress subsequently
     completed 69/69 checks, reclaimed 640 persistent tags, and logged six
     complete defragmentations. The third compaction that had exceeded the

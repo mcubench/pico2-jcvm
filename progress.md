@@ -26774,3 +26774,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Requested analysis complete; preserve existing implementation changes and continue technical work only under a subsequent request.
 - Commit: This documentation commit; resolve with `git log --grep="docs: summarize RESOURCE-01 investigation and effort"`.
 - Artifacts/logs: `docs/resource-01-work-summary.md`; no new runtime logs.
+
+
+## 2026-11-09 Run filesystem unit suite without embedded allocator 5 minutes
+
+- Step/experiment: `RESOURCE-01-filesystem-unit-regression-suite`
+- When: '2026-11-09 19:06 CET' - '2026-11-09 19:11 CET'
+- Change: Reran the OS filesystem Rust unit tests with Cargo default features disabled, avoiding `linked_list_allocator`'s transitive nightly-only `lock_api` feature. Updated TODO.md and current QKB/HANDOFF notes to correct the earlier statement that the filesystem unit tests were unavailable.
+- Validation: `./tools/env cargo tree --manifest-path choupi/os/Cargo.toml --features host -e features -i lock_api` showed that the default test feature graph enables `linked_list_allocator/use_spin_nightly`. `./tools/env cargo tree --manifest-path choupi/os/Cargo.toml --no-default-features --features host -e features -i lock_api` reported no matching lock_api package. `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host fs::tests` passed: 29 passed, 0 failed, 2 ignored, 102 filtered out. Existing compiler warnings remain. The default-feature attempt still fails before test execution; no source fix was made. The traced full JCAlgTest VPCD run remains active and no physical device was accessed.
+- Result: Filesystem unit tests are available with `--no-default-features`; this validates current file-system unit coverage only and does not establish a RESOURCE-01 fix.
+- Decision: Continue the active full-suite run and inspect its defragmentation markers and storage failures.
+- Commit: pending
+- Artifacts/logs: test output was captured in the command session; no persistent test log created.

@@ -17,8 +17,11 @@ is disproven for this bounded stress.
 This validates host VPCD compaction for one synthetic RSA workload only; it
 does not explain the mixed JCAlgTest F205 or prove physical flash stability.
 The short object-deletion regression passed 19/19 but did not exercise defrag.
-The OS Rust unit-test attempt cannot run with the installed stable compiler due
-vendored `lock_api 0.3.4` using removed `feature(const_fn)`.
+Filesystem unit tests now pass with
+`./tools/env cargo test --manifest-path choupi/os/Cargo.toml
+--no-default-features --features host fs::tests`: 29 passed, 2 ignored. The
+default-feature invocation fails because the optional allocator pulls in
+`lock_api 0.3.4` with removed `feature(const_fn)`; do not use that invocation.
 
 Next: compare FS telemetry and exact persistent-write history around the first
 full-suite `FS_OUT_OF_FLASH`; build a smaller mixed algorithm/key-type sequence
