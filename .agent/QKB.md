@@ -8850,3 +8850,16 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `artifacts/logs/object-deletion-vpcd-20261109T002617Z.log` and
   `artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`. No physical
   device was accessed; the unexpected PacketRF unit remains excluded.
+
+## 2026-11-09 Persistent short-field write failure regression
+
+- Persistent instance setters must update the in-memory field only after the
+  durable write succeeds. The transaction unit fixture now injects a failed
+  `short` write and verifies the cached `0x1234` value and serialized record
+  both remain unchanged after rollback. `./tools/test-persistent-transaction`
+  passes with `TEST:SUMMARY fail=0`; this is host filesystem-stub evidence.
+- A separate archival probe under `artifacts/reviews/review_20261103` is not a
+  reliable entrypoint on the current tree: its CMake source paths still point
+  to `tools/tests/...`, and after path correction it also fails to compile/link
+  against the current Stack/Context and test-stub interfaces. Prefer the
+  maintained `tools/test-persistent-transaction` wrapper for current source.

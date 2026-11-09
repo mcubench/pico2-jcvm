@@ -103,6 +103,10 @@ Archive text is historical evidence, not current device state or priorities.
   VPCD checks), reclaiming 10 applet-owned records per cycle. This increases
   key-material pressure coverage but remains one PC VPCD context and does not
   establish production or physical recovery.
+  On 2026-11-09, a failure-injection unit case confirmed that a failed
+  persistent `short` field write leaves the cached value and durable record
+  canonical through rollback. This closes a setter-specific test gap only; it
+  does not establish the cause of long-run `NO_RESOURCE` or fix RESOURCE-01.
   The RP2350 filesystem suite now passes its integrated
   `persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry`
   case: across 1,000 simulated flash-cut points it preserves the live root and

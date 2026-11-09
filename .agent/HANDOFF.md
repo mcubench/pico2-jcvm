@@ -10782,6 +10782,23 @@ stability; RESOURCE-01 remains open. See the latest progress record and logs
 `artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`. Commit:
 `23318302`.
 
+# Current handoff — persistent short-field failure regression — 2026-11-09 01:40 CET
+
+Added `failed_persistent_short_write_keeps_cache_and_storage_canonical` to the
+maintained persistent-transaction unit suite. An injected filesystem failure
+leaves both the live cached short (`0x1234`) and durable record unchanged after
+transaction rollback. `./tools/test-persistent-transaction` passes with zero
+failures; persistent-inventory also passes with zero failures. ARM and RISC-V
+max_crypto builds pass on the current worktree. No physical device was accessed;
+PacketRF remains excluded. RESOURCE-01 remains open: host-only tests and builds
+do not show that long-operation resource exhaustion or resets are fixed.
+
+The archival review probe under `artifacts/reviews/review_20261103` is stale:
+it uses old `tools/tests` fixture paths and its standalone target does not link
+against current Stack/Context interfaces. Do not use it as an acceptance gate;
+use `tools/test-persistent-transaction`. The recent probe edit is uncommitted
+pre-existing work and was left untouched.
+
 # Current handoff — integrated RP2350 filesystem power-cut simulation — 2026-11-09 00:21 CET
 
 `./tools/test-rp2350-fs-overlay` now passes the complete suite with

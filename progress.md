@@ -26504,3 +26504,24 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `<pending>`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T002617Z.log`,
   `artifacts/logs/host-vpcd-multipackage-apdu-20261109T001659Z.log`.
+
+## 2026-11-09 Cover persistent short-field write failure 12 minutes
+
+- Step/experiment: `PERSIST-01-SHORT-WRITE-FAILURE-REGRESSION`
+- When: '2026-11-09 01:28 CET' - '2026-11-09 01:40 CET'
+- Change: Added an injected persistent short-field write failure regression.
+  It asserts the cached value and durable record remain unchanged through
+  rollback. Updated RESOURCE-01, QKB and handoff with the evidence.
+- Validation: `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passed with
+  `TEST:SUMMARY fail=0`. Current ARM and RISC-V max_crypto wrapper builds
+  passed. The archival review probe was also attempted; it is stale and does
+  not configure/build on the current tree due old source paths and interfaces.
+  Its failure did not affect the maintained unit suites.
+- Result: Persistent short-field failure behavior is covered on the host fake
+  filesystem. No physical test or long-run storage plateau was measured.
+- Decision: Keep this as a focused persistence invariant. Continue RESOURCE-01
+  and PERSIST-01 multi-owner/recovery gates; do not enable persistent deletion.
+- Commit: `<pending>`
+- Artifacts/logs: no new repository artifacts; host unit output was captured in
+  the command session.

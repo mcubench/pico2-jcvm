@@ -339,6 +339,40 @@ int main() {
     persistent_transaction_test::instance_field_count = 0;
   }
   {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(0x7a, 2, 3);
+    const auto field_tag =
+        jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
+    const std::vector<uint8_t> original_record = {
+        static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_SHORT), 0x12, 0x34};
+    persistent_transaction_test::seed(field_tag.value, field_tag.len,
+                                      original_record);
+    jcvm::JC_Instance instance(heap, 2, 3, instance_tag);
+    const bool original_loaded = instance.getField_Short(0) == 0x1234;
+    const bool began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    persistent_transaction_test::fail_one_write();
+    bool failed_write = false;
+    try {
+      instance.setField_Short(0, 0x5678);
+    } catch (jcvm::Exceptions) {
+      failed_write = true;
+    }
+    const bool cache_unchanged_before_abort =
+        instance.getField_Short(0) == 0x1234;
+    const bool aborted =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool storage_unchanged =
+        persistent_transaction_test::read(field_tag.value, field_tag.len) ==
+        original_record;
+    expect(original_loaded && began && failed_write &&
+               cache_unchanged_before_abort && aborted && storage_unchanged,
+           "failed_persistent_short_write_keeps_cache_and_storage_canonical");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+  {
     persistent_transaction_test::instance_field_count = 2;
     jcvm::Heap heap(7);
     const auto instance_tag =
