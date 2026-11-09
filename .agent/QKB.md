@@ -1,5 +1,33 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## Reusable method: faults that appear only after long runs — 2026-11-09
+
+- **Trigger:** A late operation fails in a long suite but succeeds on a fresh
+  instance. Treat accumulated state and operation order as test inputs.
+- **Method:** Capture one failure with exact inputs, build/profile/backend,
+  initial state, ordered operations, resource trends and the first terminal
+  error. Replay from clean state and remove blocks of preceding operations to
+  find a short repeatable sequence preserving the failing state transition.
+  Do not assume the last operation alone reproduces the fault.
+- **Controls:** Hold configuration constant; compare fresh versus accumulated
+  state and cleanup enabled versus disabled. Change one factor per experiment.
+  Distinguish live resources, unreachable objects and obsolete storage versions.
+- **Long-run discipline:** State a hypothesis, distinguishing observation and
+  stop condition before each expensive run. Use measured progress/phase markers
+  and finite deadlines; distinguish slow progress, terminal failure, timeout and
+  interruption artifacts. Preserve logs; shorten the reproduction before adding
+  further broad tests. Use the focused reproduction for fixes and the original
+  long suite for final acceptance.
+- **Evidence/limits:** RESOURCE-01 compaction APDUs took 55–102 seconds and
+  completed with a 180-second deadline; shorter deadlines created apparent hangs.
+  A pre-compaction `FS_OUT_OF_FLASH` notice could precede success. Isolated RSA
+  plateaus did not explain mixed-suite F205; induced emulator panics did not
+  prove physical resets. These are validated diagnostic lessons, not a proven
+  fix or a verified minimal reproduction of the remaining RESOURCE-01 failure.
+- **References:** [RESOURCE-01 actions](../TODO.md#resource-01),
+  [investigation summary](../docs/resource-01-work-summary.md), commits
+  `c3e603c3` (compaction control) and `81848b27` (action order).
+
 ## RESOURCE-01: repeated JCAlgTest transient-key replacement creates persistent orphans — 2026-11-09
 
 - **Reproduction:** Built the PC `max_crypto` profile, then used a blank VPCD

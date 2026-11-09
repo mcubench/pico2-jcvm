@@ -26852,3 +26852,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Requested backlog update complete; existing safety gates and open task status retained.
 - Commit: This documentation commit; resolve with `git log --grep="docs: prioritize actionable RESOURCE-01 diagnosis"`.
 - Artifacts/logs: none.
+
+
+## 2026-11-09 Preserve reusable long-run testing lessons 1 minute
+
+- Step/experiment: `DOC-QKB-LONG-RUN-METHOD`
+- When: '2026-11-09 20:22 CET' - '2026-11-09 20:23 CET'
+- Change: Added a concise reusable QKB method for long-run faults and accumulated-state reproductions; appended handoff note.
+- Validation: Scoped whitespace and relative-link checks passed; evidence checked against existing summary and compaction report. Builds and hardware intentionally skipped for documentation only.
+- Result: Lessons preserved independently of RESOURCE-01; no claim that its remaining fault is reproduced or fixed. No runtime metrics measured.
+- Decision: Use focused reproductions for diagnosis and original long suites for acceptance.
+- Commit: This documentation commit; resolve with `git log --grep="docs: preserve long-run failure testing lessons"`.
+- Artifacts/logs: none.

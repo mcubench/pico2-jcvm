@@ -11255,3 +11255,10 @@ diagnostic cycles, validate a targeted fix through full acceptance, and retain
 production/physical safety gates. Accounts for the newer partial sweep passing
 RSA and compaction without closing full-suite acceptance. No implementation or
 hardware work performed; existing source changes preserved.
+
+
+## 2026-11-09 Preserve long-run diagnostic lessons
+
+QKB now contains a reusable method for minimizing accumulated-state failures,
+matched controls, measured deadlines and scoped acceptance. Documentation only;
+RESOURCE-01 remains open and its minimal mixed-suite reproduction unverified.
