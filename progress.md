@@ -26573,7 +26573,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue PERSIST-01 all-root and durability acceptance, then wire
   deferred deletion on hardware only when its safety gates pass. Do not send
   Ctrl-C to active full-suite sessions. PacketRF remains excluded.
-- Commit: `<pending>`
+- Commit: `3418ba9c`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T014621Z.log`
   (SHA-256 `47b5265a5f02338d9e5d6e5e1b2c408d5a80ccae58e1ead8f802580bdbd51db5`);
   interrupted full run `artifacts/results/jcalgtest-support-vpcd-20261109T014143Z/`.
