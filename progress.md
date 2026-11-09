@@ -26658,3 +26658,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Repeat with inventory interval 64 (or smaller) and a per-APDU watchdog that terminates the Java client without Ctrl-C to the emulator; inspect live versus unreachable persistent objects around EC-384 before proceeding to RSA KeyPair.
 - Commit: `646b864f` (commit-reference correction recorded in the following commit).
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261109T114518Z/`; emulator SHA-256 `6965ec24b0814254609e987f97070fb458fe99cd35f335441f483f1fff3a7992`; client SHA-256 `4997fb73b026345d8a5c66fe8f9fe363778c4f875bdf4fb774735d94796a142c`; max-profile ROM mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.
+
+## 2026-11-09 Clarify README Java Card coverage 3 minutes
+
+- Step/experiment: `README-concrete-api-coverage`
+- When: '2026-11-09 13:15 CET' - '2026-11-09 13:18 CET'
+- Change: Replaced the generic experimental-subset sentence with concrete runtime, crypto, and GlobalPlatform coverage; listed missing features, digest and key-generation limits, incomplete isolation validation, and remaining acceptance work.
+- Validation: Compared claims with `docs/supported-profile.md`, `config/javacard-support.json`, native digest input constant, handoff evidence for cross-applet tests, and latest progress records for storage exhaustion. README local-link inspection and `git diff --check -- README.md progress.md` passed. Builds and hardware checks intentionally skipped for documentation-only changes.
+- Result: Readers can distinguish implemented features, profile declarations, explicit exclusions, and unestablished conformance. Runtime metrics were not measured.
+- Decision: Requested README clarification complete; preserve existing source changes and ongoing acceptance work.
+- Commit: `this README-concrete-api-coverage commit; resolve with git log --grep="docs: clarify Java Card coverage and limits"`
+- Artifacts/logs: None.

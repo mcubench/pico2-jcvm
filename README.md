@@ -80,7 +80,14 @@ Host application → PC/SC → USB CCID → Card manager / JCRE
                                                       → Flash storage
 ```
 
-The project implements an experimental subset of Java Card Classic 3.0.5. A host emulator supports development without physical hardware.
+The compatibility target is **Java Card Classic 3.0.5**, with the following coverage and limits:
+
+- **Applet runtime:** CAP loading and bytecode interpretation, applet installation/selection/deletion, short APDUs with response chaining, persistent objects in flash, `Util`, PIN handling, and implemented `JCSystem` transient-memory and transaction operations. CAP imports must resolve to API packages present in the firmware ROM mask.
+- **Cryptography:** native key, digest, random-number, cipher, signature/MAC, and key-agreement implementations. The firmware profile selects the available algorithms and key sizes; `max_crypto` enables AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants. Exact capability flags are in [the profile configuration](config/javacard-support.json); these flags are declarations, not proof that every API method or workload passes.
+- **Card management:** tested GlobalPlatform SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows.
+- **Missing or constrained:** extended-length APDUs, T=1 waiting-time extension, logical channels, and `JCSystem.requestObjectDeletion()` are unsupported. Persistent-object reclamation is disabled. Cross-applet sharing and firewall behavior have targeted tests, but full isolation semantics are not established. Optional packages absent from the ROM mask, such as `javacardx.external`, cannot be imported. Digest input is limited to **2,046 cumulative bytes** across `MessageDigest.update()` and `doFinal()`; `max_crypto` excludes RSA/RSA-CRT **4096-bit key-pair generation**.
+
+Full specification conformance and complete per-method coverage are not established. JCAlgTest **1.8.4 / jc305** is the acceptance baseline; full acceptance remains open, including persistent-storage exhaustion in long runs. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)
