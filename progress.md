@@ -26612,6 +26612,6 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 512 rsa-public` exited 1 with `TEST:FAIL timed out`. The unchanged test harness timed out on custom APDU 31 at 20.026 s.
 - Result: 15 deletion requests completed, erasing 150 applet-owned tags (10 per request). No `FS_OUT_OF_FLASH`, `PERSIST_WRITE_FAIL`, or `F205` appeared before timeout. This is test-only VPCD evidence, not production or physical acceptance.
 - Decision: RESOURCE-01 remains unresolved. Keep production deletion unsupported; next make the test APDU deadline configurable and use a bounded smaller workload.
-- Commit: pending
+- Commit: `3ffd9063`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261109T050753Z.log`; SHA-256 `376513760d45615e7760a0b3dca8489533ac96724d4df1c4e92ff4f8f2f0242f`.
 
