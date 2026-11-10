@@ -1,5 +1,37 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## RESOURCE-01: request-triggered cleanup clears captured RSA exhaustion — 2026-11-10
+
+- **Experiment:** Rebuilt the PC emulator with `./tools/build-pc --profile
+  max_crypto`; replayed the unchanged captured JCAlgTest 1.8.4/jc305 transcript
+  from a clean VPCD card through all 414 APDUs with
+  `PICO2_TEST_OBJECT_DELETION=1`.
+- **Result:** `REPLAY:SUMMARY commands=414 target_seen=1 resource_failure=0
+  changed_statuses=208`, followed by `JCALGTEST_APDU_REPLAY_VPCD:PASS`. The
+  real `requestObjectDeletion` test path returned `9000` on cleanup APDUs,
+  ran 203 complete applet-owner/package-static root scans, and erased 1,660
+  unreachable applet-owned tags. No scan failed, and the emulator logged no
+  persistent-write failure, `F205`, or `6F00`. Two `FS_OUT_OF_FLASH` notices
+  were followed by successful compaction. RSA KeyPair APDUs 402, 408, 410, and
+  412 changed from historical `F205` to `9000`; APDU 414 also returned `9000`.
+- **Scope:** This is a PC-only, environment-gated run against one applet context
+  and the captured 414-APDU prefix. It is not the full 8,607-row JCAlgTest
+  client run, physical-flash or power-loss validation, or production API
+  support. Normal firmware still reports object deletion unsupported; retain
+  the PERSIST-01 multi-owner/interruption gates before enabling it.
+- **Separate restart observation:** Resuming the saved card through
+  `--restore-applet` and starting at APDU 410 returned `6F00` at RSA 1536 both
+  with and without the deletion test flag. This differs from the uninterrupted
+  captured run and needs an isolated restart/restore diagnosis; it does not
+  implicate the cleanup request itself. A plain `--resume` attempt rejected
+  the saved image/registry pair; the documented `--restore-applet` recovery
+  path connected successfully.
+- **Evidence:** `artifacts/results/resource01-apdu-replay-vpcd-20261110T024318Z/`
+  replay SHA-256 `e01031479b24a4d28cdbc1cb4e1bbfd2f9b578838d22fbe652ef1378737892ec`;
+  emulator SHA-256
+  `b9361a2075781e737f59d80c3b6b179d6ba031925c731603f0d4d8cfa968d09c`.
+  No physical board was used.
+
 ## RESOURCE-01: edit relocation held the defragmentation sector locked — 2026-11-10
 
 - **Symptom:** In the captured JCAlgTest 1.8.4/jc305 RSA APDU transcript, a

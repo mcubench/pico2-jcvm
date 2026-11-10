@@ -209,6 +209,20 @@ Archive text is historical evidence, not current device state or priorities.
   Physical readers are USB-enumerated, but PC/SC is currently unavailable
   (`pcscd.service` inactive). Keep RESOURCE-01 open; next isolate the max-profile
   storage-pressure behavior and complete the unchanged full-suite acceptance.
+  A clean `max_crypto` VPCD replay with `PICO2_TEST_OBJECT_DELETION=1` then
+  completed all 414 captured JCAlgTest APDUs. The guarded API request path ran
+  203 complete owner/package-root scans and erased 1,660 unreachable applet
+  tags; no scan failed, and there were no persistent write failures, `F205`, or
+  `6F00`. Two `FS_OUT_OF_FLASH` diagnostics were followed by successful
+  compaction. APDUs 402, 408, 410, and 412 improved from historical `F205` to
+  `9000`; APDU 414 also returned `9000`. This is strong PC-only evidence that
+  the request-gated reclaimer addresses the captured RSA storage failures, not
+  production support, physical-flash safety, or complete 8,607-row suite
+  acceptance. The default production API still reports deletion unsupported.
+  A resumed-card experiment returned `6F00` at RSA 1536 both with and without
+  deletion enabled; isolate that restart/restore behavior separately and do
+  not conflate it with the clean uninterrupted replay. See `.agent/QKB.md` and
+  `.agent/HANDOFF.md` for logs and hashes.
 - Immediate action order (2026-11-09 review):
   1. **Reproduce the remaining failure in a small mixed workload.** Extract
      the ordered key creation/replacement, cache-clear and deletion APDUs leading

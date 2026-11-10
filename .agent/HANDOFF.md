@@ -1,52 +1,48 @@
-# Current handoff — filesystem edit lock fixed; max-profile RSA replay still times out — 2026-11-10 01:27 CET
+# Current handoff — gated cleanup clears captured RSA replay; RESOURCE-01 open — 2026-11-10 04:28 CET
 
-RESOURCE-01 remains open. A review of the captured 414-command JCAlgTest
-1.8.4/jc305 transcript identified a concrete filesystem lock bug in
-`FileSystem::edit_at()`: when an update did not fit in its source sector, it
-inserted a replacement into the reserved defragmentation sector, then tried to
-erase that same sector while the live entry still held read locks. `IO_LOCKED`
-then surfaced as `6F00` on APDU 404 and following writes. The fallback now
-keeps the old record indexed, builds the updated value in owned memory, and
-uses the normal allocator. A regression confirms the edited value survives
-filesystem reinitialization and no file entry points into the staging sector.
+RESOURCE-01 remains open. A clean `max_crypto` PC VPCD replay with
+`PICO2_TEST_OBJECT_DELETION=1` completed the full captured 414-APDU
+JCAlgTest 1.8.4/jc305 transcript. The test path's real `requestObjectDeletion`
+dispatch ran 203 complete owner/package-root scans and reclaimed 1,660
+unreachable applet tags. All scans completed; there were no persistent write
+failures, `F205`, or `6F00`. Two `FS_OUT_OF_FLASH` notices were followed by
+successful compaction. RSA KeyPair APDUs 402, 408, 410, and 412 returned `9000`
+instead of historical `F205`; APDU 414 also returned `9000`.
 
-Validation completed:
+This is PC-only evidence for the captured transcript and the environment-gated
+deletion path. It does not establish production API support, safety with
+multiple owners or interrupted erase/power loss, physical-flash behavior, or
+the unchanged complete 8,607-row client suite. Normal firmware still reports
+object deletion unsupported. Keep the PERSIST-01 safety gates and RESOURCE-01
+open.
 
-- `./tools/env cargo test --manifest-path choupi/os/Cargo.toml
-  --no-default-features --features host fs::tests`: 35 passed, 2 ignored.
-- `./tools/build arm` and `./tools/build riscv`: passed with `current` profile;
-  full ARM image ends at `0x100d7930`, 165,584 bytes below the configured
-  flash limit. RISC-V wrapper builds the VM core, not full CHOUPI firmware.
-- `./tools/fixture-path --verify`: 81 files, JCAlgTest 1.8.4 and 48 API CAPs
-  verified.
-- Full captured 414-command VPCD replay in the current profile passed; it had
-  no `6F00`, `F205`, or persistent-write errors. Two early metadata commands
-  (`80CA9F7F00`, `80CA006600`) returned the known `6982` setup difference and
-  were explicitly classified by the replay harness.
-- A `max_crypto` PC build passed. Its replay returned `9000` on APDU 402 (the
-  source transcript had `F205`) and APDUs 404/405, but APDU 406 timed out after
-  600 seconds while the emulator was still repeatedly compacting nearly full
-  sectors. The replay process then exited; no `F205`/`6F00` was logged for that
-  APDU. Artifacts: `artifacts/results/resource01-apdu-replay-vpcd-20261109T234843Z/`
-  (current profile) and `artifacts/results/resource01-apdu-replay-vpcd-20261109T235553Z/`
-  (max_crypto).
-- Three Pico 2 boards remain USB-enumerated (`2e8a:0009`, devices 047–049) and
-  the authorized ACL helper granted access. PC/SC is unavailable: the bounded
-  scanner produced repeated `SCardEstablishContext: Access denied`, and
-  `systemctl status` showed `pcscd.service` inactive with a pending daemon
-  reload. No hardware was flashed or tested.
+Validation: `./tools/build-pc --profile max_crypto` passed, and
+`python3 -m py_compile tests/integration/jcalgtest_apdu_replay_vpcd_test.py`
+passed. The replay ended with
+`REPLAY:SUMMARY commands=414 target_seen=1 resource_failure=0
+changed_statuses=208` and `JCALGTEST_APDU_REPLAY_VPCD:PASS`. Artifact directory:
+`artifacts/results/resource01-apdu-replay-vpcd-20261110T024318Z/`; replay SHA-256
+`e01031479b24a4d28cdbc1cb4e1bbfd2f9b578838d22fbe652ef1378737892ec`, emulator
+SHA-256 `b9361a2075781e737f59d80c3b6b179d6ba031925c731603f0d4d8cfa968d09c`.
 
-Next: investigate the repeated max-profile compactions and why the 600-second
-APDU deadline expires, then complete the unchanged full 1.8.4/jc305 suite.
-Keep production persistent deletion disabled pending its safety gates. For
-physical work, use an identified Pico only after PC/SC access is restored; do
-not use the unrelated PacketRF device. The latest source edits are in
-`choupi/os/src/fs/mod.rs` and `choupi/os/src/fs/tests.rs`; the new replay gate is
-in `tests/integration/jcalgtest_apdu_replay_vpcd_test.py` and
-`tools/test-jcalgtest-apdu-replay-vpcd`. Root worktree has unrelated dirty
-changes from other tasks; stage only files from this step. The filesystem
-submodule change is committed as `e1b27de`; root implementation and evidence
-are committed as `de04f38b`.
+Three tokens currently enumerate over USB (`2e8a:0009`, devices 047–049), and
+`sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to all three nodes.
+However, `timeout 10s pcsc_scan -r` timed out (124), so no reader is currently
+confirmed usable through PC/SC. No board was flashed or physically tested.
+
+A separate saved-state restart experiment using `--restore-applet` returned
+`6F00` at RSA 1536 / APDU 410 both with and without the deletion test flag. A
+plain `--resume` rejected the memory/registry pair. Isolate restart/restore
+behavior separately; do not conflate it with the uninterrupted pass.
+
+Next actions: (1) diagnose the bounded PC/SC scanner timeout and refresh reader
+availability before any physical work; (2) isolate the restart/restore APDU 410
+failure; (3) run the unchanged full 1.8.4/jc305 client in a test-gated VPCD
+configuration and compare all 8,607 rows; (4) advance production reclamation
+only after PERSIST-01 multi-owner and interruption-recovery tests. Preserve the
+other dirty worktree changes; the step-specific root files are
+`tests/integration/jcalgtest_apdu_replay_vpcd_test.py`, `TODO.md`,
+`.agent/QKB.md`, this handoff, and `progress.md`.
 
 # Current handoff — bounded RSA stress completes slow VPCD defrags; RESOURCE-01 open — 2026-11-09 16:04 CET
 

@@ -63,14 +63,22 @@ def select_isd(connection: socket.socket) -> None:
 
 
 def start_emulator(memory: Path, log_path: Path, cap_code: Path,
-                   rom_mask: Path, listener: socket.socket):
+                   rom_mask: Path, listener: socket.socket,
+                   restore: tuple[int, int, bytes, bytes] | None):
     host, port = listener.getsockname()
     command = [
         str(ROOT / "tools/env"), str(ROOT / "build/choupi-pc/choupi"),
         "-m", str(memory), "-s", "--vpcd", f"{host}:{port}",
-        "--applet-aid", APPLET_AID.hex(), "--package-id", "63",
-        "--cap-code", str(cap_code), "--rom-mask", str(rom_mask),
+        "--applet-aid", APPLET_AID.hex(), "--rom-mask", str(rom_mask),
     ]
+    if restore is not None:
+        package_id, class_index, applet_aid, instance_aid = restore
+        command.extend([
+            "--restore-applet", str(package_id), str(class_index),
+            applet_aid.hex(), instance_aid.hex(), str(cap_code),
+        ])
+    else:
+        command.extend(["--package-id", "63", "--cap-code", str(cap_code)])
     env = os.environ.copy()
     with log_path.open("ab") as log:
         return subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=log,
@@ -112,7 +120,34 @@ def run(args: argparse.Namespace) -> int:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     memory = args.out_dir / "empty-card.bin"
-    memory.write_bytes(b"")
+    if args.resume_card is None:
+        memory.write_bytes(b"")
+        restore_metadata = None
+    else:
+        resume_card = args.resume_card.resolve()
+        resume_registry = Path(f"{resume_card}.cap-registry")
+        metadata_log = resume_card.parent / "emulator.log"
+        if not resume_card.is_file() or not resume_registry.is_file():
+            raise RuntimeError(
+                f"resume requires both {resume_card} and {resume_registry}")
+        if not metadata_log.is_file():
+            raise RuntimeError(f"resume applet metadata log is missing: {metadata_log}")
+        metadata_match = re.search(
+            r"VPCD:APPLET_INSTANCE package-id=(\d+) class-index=(\d+) "
+            r"applet-aid=([0-9A-Fa-f]+) instance-aid=([0-9A-Fa-f]+)",
+            metadata_log.read_text(errors="replace"),
+        )
+        if metadata_match is None:
+            raise RuntimeError(
+                f"resume applet metadata was not found in {metadata_log}")
+        restore_metadata = (
+            int(metadata_match.group(1)), int(metadata_match.group(2)),
+            bytes.fromhex(metadata_match.group(3)),
+            bytes.fromhex(metadata_match.group(4)),
+        )
+        memory.write_bytes(resume_card.read_bytes())
+        Path(f"{memory}.cap-registry").write_bytes(
+            resume_registry.read_bytes())
     emulator_log = args.out_dir / "emulator.log"
     client_log = args.out_dir / "replay.log"
     source_copy = args.out_dir / "source-client.log"
@@ -128,7 +163,8 @@ def run(args: argparse.Namespace) -> int:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
         listener.listen(1)
-        process = start_emulator(memory, emulator_log, load_image, rom_mask, listener)
+        process = start_emulator(memory, emulator_log, load_image, rom_mask,
+                                 listener, restore_metadata)
         connection = None
         target_seen = False
         resource_failure = False
@@ -147,19 +183,38 @@ def run(args: argparse.Namespace) -> int:
             print(f"REPLAY:ATR {atr.hex().upper()}", flush=True)
 
             select_isd(connection)
-            scp = vpcd.Scp03(connection)
-            scp.authenticate()
-            vpcd.load_package(scp, parsed_code, package_aid)
-            vpcd.install_applet(scp, package_aid, APPLET_AID, APPLET_AID)
-            print("REPLAY:INSTALL upstream JCAlgTest 1.8.4/jc305 complete", flush=True)
+            if args.resume_card is None:
+                scp = vpcd.Scp03(connection)
+                scp.authenticate()
+                vpcd.load_package(scp, parsed_code, package_aid)
+                vpcd.install_applet(scp, package_aid, APPLET_AID, APPLET_AID)
+                print("REPLAY:INSTALL upstream JCAlgTest 1.8.4/jc305 complete",
+                      flush=True)
+            else:
+                select_applet = (bytes.fromhex("00A404000A") + APPLET_AID +
+                                 b"\x00")
+                selected = vpcd.exchange(connection, select_applet,
+                                          "resume JCAlgTest applet SELECT")
+                if selected[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        f"resumed applet SELECT failed: {selected.hex().upper()}")
+                print(f"REPLAY:RESUME prior_card={resume_card} "
+                      f"start_apdu={args.start_at_apdu}", flush=True)
 
             for command, original_sw, source_line in parse_apdus(source_log):
-                response = vpcd.exchange(connection, command,
-                                         f"replay APDU {replayed + 1}")
                 replayed += 1
+                if replayed < args.start_at_apdu:
+                    continue
+                response = vpcd.exchange(connection, command,
+                                         f"replay APDU {replayed}")
                 sw = int.from_bytes(response[-2:], "big")
                 difference = original_sw is not None and sw != original_sw
                 changed_statuses += int(difference)
+                deletion_support_improvement = (
+                    os.environ.get("PICO2_TEST_OBJECT_DELETION") == "1"
+                    and command == bytes.fromhex("B0E2000000")
+                    and original_sw == 0xF206 and sw == 0x9000
+                )
                 suffix = (f" original_sw={original_sw:04X} status_changed=1"
                           if difference else
                           (f" original_sw={original_sw:04X} status_changed=0"
@@ -182,7 +237,8 @@ def run(args: argparse.Namespace) -> int:
                 if (sw == 0x6F00 or
                         (original_sw is not None and original_sw != 0xF205
                          and sw != original_sw and
-                         KNOWN_REPLAY_STATUS_DIFFERENCES.get(command) != sw)):
+                         KNOWN_REPLAY_STATUS_DIFFERENCES.get(command) != sw and
+                         not deletion_support_improvement)):
                     unexpected = (
                         f"apdu={replayed:04d} expected="
                         f"{original_sw:04X}" if original_sw is not None
@@ -191,12 +247,13 @@ def run(args: argparse.Namespace) -> int:
                     unexpected_statuses.append(unexpected)
                     print(f"REPLAY:UNEXPECTED_STATUS {unexpected}", flush=True)
                 elif (original_sw is not None and sw != original_sw):
-                    print(
-                        f"REPLAY:KNOWN_STATUS_DIFFERENCE apdu={replayed:04d} "
-                        f"command={command.hex().upper()} expected={original_sw:04X} "
-                        f"actual={sw:04X}",
-                        flush=True,
-                    )
+                    label = ("TEST_ONLY_DELETION_IMPROVEMENT"
+                             if deletion_support_improvement else
+                             "KNOWN_STATUS_DIFFERENCE")
+                    print(f"REPLAY:{label} apdu={replayed:04d} "
+                          f"command={command.hex().upper()} "
+                          f"expected={original_sw:04X} actual={sw:04X}",
+                          flush=True)
                 if target_seen:
                     break
 
@@ -237,9 +294,16 @@ def main() -> int:
     parser.add_argument("--stop-after-apdu", required=True)
     parser.add_argument("--cap", type=Path, default=ROOT / "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap")
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--connect-timeout", type=float, default=30)
+    parser.add_argument("--start-at-apdu", type=int, default=1)
+    parser.add_argument("--resume-card", type=Path,
+                        help="saved VPCD card image, registry, and emulator.log")
+    parser.add_argument("--connect-timeout", type=float, default=120)
     parser.add_argument("--apdu-timeout", type=float, default=600)
     args = parser.parse_args()
+    if args.start_at_apdu < 1:
+        parser.error("--start-at-apdu must be at least 1")
+    if args.resume_card is not None and args.start_at_apdu == 1:
+        parser.error("--resume-card requires --start-at-apdu greater than 1")
     try:
         return run(args)
     except Exception as exc:
