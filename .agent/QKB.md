@@ -9542,3 +9542,26 @@ Check new loader, resolver and bytecode code against these before review.
   128–255 into negative values. Rule: convert APDU lengths from `uint8_t` to
   `jshort_t` directly and grep for `static_cast<int8_t>` on anything that is
   a length.
+
+## PC VPCD compaction/persistent writes ~100x slower than native FS (2026-11-10)
+
+- **Symptom:** One host VPCD FS compaction took 43.7 s (RSA replacement
+  stress); compaction-triggering RSA APDUs took 55–102 s and RSA-1024 with
+  multiple compactions 453.8 s. Fresh-card RSA-1024 KeyPair took 49 s.
+- **Measurement:** The same Rust `FileSystem` run natively (no ptrace
+  emulator; scratch `cargo test --release` bench, patch and log in
+  `artifacts/perf/memory-alloc-analysis-20261110/`) compacted a 64 KiB sector
+  holding ~1,150 live records in at most 169 ms; 2,000 single-byte `edit_at`
+  calls on a 131-byte record, including the compactions they caused, took 1.47 s in total.
+- **Probable cause (static analysis, not yet profiled in the emulator):**
+  host `arch/host/flash_ll.rs` `clear_error`/`write`/`currently_busy`/
+  `has_error`/`lock`/`unlock` each `assert!(privilege::is_privileged())`.
+  In the emulator `is_privileged()` is an `int3` trap handled by the ptrace
+  tracer. `FlashBlockMut::write_block_generic` programs one 32-bit word at a
+  time, and each word costs several traps. Compaction copies tens of KiB, which
+  means 10^4–10^5 tracer round trips. Ordinary `edit_at` also rewrites
+  the entire record for each changed byte.
+- **Candidate fix:** keep a privilege flag in guest memory (updated by the
+  tracer on transitions) or downgrade these host-only asserts to
+  `debug_assert!`, and batch word programming per block. Validate by timing
+  the 128-cycle RSA replacement workload before and after.

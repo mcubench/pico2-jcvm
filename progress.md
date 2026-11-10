@@ -27079,3 +27079,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production deletion disabled and RESOURCE-01 open. Continue with rooted/mixed workloads matching JCAlgTest cache behavior; do not treat isolated PC VPCD latency or gated cleanup as physical acceptance.
 - Commit: This measurement and its progress record are included in the VPCD performance evidence commit; resolve with `git log --grep="docs: record current VPCD compaction latency"`.
 - Artifacts/logs: `artifacts/logs/rsa-replacement-compaction-128-20261110.log` SHA-256 `c897dff29393eeaa8b61fbc1c1d0c9afa19001ebddf01490683851e87cce0a3b`; `artifacts/logs/rsa-replacement-compaction-128-timeline.tsv` SHA-256 `dfb9e9d783a469c76f9d1d470c67a218e1881da43013d368ed63e6fa0c2d9845`. Other measurement logs: `artifacts/logs/crt-compaction-stress-20261110.log`, `artifacts/logs/crt-compaction-stress-128-20261110.log`, and `artifacts/logs/rsa-replacement-compaction-64-20261110.log`.
+
+## 2026-11-10 Memory allocation and persistent-write performance analysis 55
+
+- Step/experiment: `PERF-MEM-ANALYSIS-20261110`
+- When: '2026-11-10 16:25 CET' - '2026-11-10 17:22 CET'
+- Model: `claude-opus-5-5`
+- Change: Analysis only; no source change. Reviewed VM heap handle tables, persistent array access, Pico RAM-overlay FS, host Rust FS/flash, and ptrace emulator paths. Added a QKB entry.
+- Validation: Native (non-emulated) `cargo test --release --no-default-features --features host fs::` bench in a scratch crate copy passed (3 selected tests ok). No hardware, VPCD, or PC/SC was used.
+- Result: Native FS compaction of a 64 KiB sector with ~1,150 live records took at most 169.0 ms; 2,000 one-byte `edit_at` calls on a 131-byte record, including the compactions they caused, took 1.467 s in total. That compares with the 43.7 s VPCD compaction measured earlier, about 100–250x slower. Likely cause: per-word host flash calls that each trap to the ptrace tracer through `privilege::is_privileged()`. Other findings: the VM heap uses `std::list` with O(n) `at()` for each handle dereference; persistent array element access re-parses the record and allocates a temporary `JC_Array` under `JCVM_SECURE_HEAP_ACCESS`; `Util.arrayCopy`/`arrayFill` copy element by element; the PC FS rewrites the whole record for each byte; the Pico `fs_sync` rewrites the entire FS snapshot after each persistent-dirty APDU.
+- Decision: Next, profile the emulator once with elevated ptrace to confirm the trap count. Then remove the per-word privilege traps, and batch persistent array ranges.
+- Commit: resolve with `git log --grep="docs: record memory/persistent-write performance analysis"`.
+- Artifacts/logs: `artifacts/perf/memory-alloc-analysis-20261110/native-defrag-bench.log` SHA-256 `30d8aecdd0f339d2375c69d0a898dfb0a92bb8f6b79b9bc1dde0962171f55935`; `native-defrag-bench.patch` SHA-256 `d947d84e748aff38b94e4a9568ab6aa081ee76133ecae6adda5838e282243959`.

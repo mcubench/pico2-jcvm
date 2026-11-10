@@ -1,0 +1,39 @@
+--- choupi/os/src/fs/tests.rs	2026-11-10 08:48:37.194381633 +0100
++++ /tmp/claude-1000/-home-claude-Projects-pico2-jcvm/9419f2f8-ccaa-4c85-a38e-f5253e5568e9/scratchpad/osbench/src/fs/tests.rs	2026-11-10 17:17:01.346235009 +0100
+@@ -555,6 +555,36 @@
+             }
+         }
+ 
++
++        #[ignore]
++        it "bench_defrag_realistic" {
++            ::debug::DISABLE_DEBUG.store(true, ::std::sync::atomic::Ordering::SeqCst);
++            drop(fs);
++            for sct in fs_sectors.iter() { sct.erase(&flash).unwrap(); }
++            let mut fs = FileSystem::new(&flash, &fs_sectors, SectorID(5), SectorID(4)).unwrap();
++            // Fill general sectors with many small live records (tag ~12B, data ~24B)
++            let mut n = 0usize;
++            loop {
++                let tag = format!("t{:010}", n);
++                let data = [0x5Au8; 24];
++                if fs.write(tag.as_bytes(), &data).is_err() { break; }
++                n += 1;
++                if n >= 2400 { break; }
++            }
++            eprintln!("BENCH live records={}", n);
++            // Now rewrite one 131-byte record repeatedly (like per-byte edit_at) to force defrags
++            let big = [0u8; 131];
++            fs.write(b"bigrecord-key", &big).unwrap();
++            let t0 = ::std::time::Instant::now();
++            let mut worst = ::std::time::Duration::from_secs(0);
++            for i in 0..2000usize {
++                let t = ::std::time::Instant::now();
++                fs.edit_at(b"bigrecord-key", 3 + (i % 128), &[i as u8]).unwrap();
++                let d = t.elapsed();
++                if d > worst { worst = d; }
++            }
++            eprintln!("BENCH 2000 edit_at total={:?} worst_single={:?}", t0.elapsed(), worst);
++        }
+         #[ignore]
+         it "allows spamming reads and edits" {
+             ::debug::DISABLE_DEBUG.store(true, ::std::sync::atomic::Ordering::SeqCst);

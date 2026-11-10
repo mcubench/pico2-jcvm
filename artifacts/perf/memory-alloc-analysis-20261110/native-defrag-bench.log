@@ -1,0 +1,17 @@
+CHOUPI:FS_DEFRAG_COPYBACK source=3 staging_next=42213 staging_valid=42213
+CHOUPI:FS_DEFRAG_DONE source=3
+CHOUPI:FS_OUT_OF_FLASH request=147 tag_len=13 defrag_capacity=131071 sectors=[(0, 16378, 16378, 16384), (1, 16378, 16378, 16384), (2, 16378, 16378, 16384), (3, 65439, 42213, 65536), (4, 0, 0, 131072), (5, 0, 0, 131072)]
+CHOUPI:FS_DEFRAG_START source=3 phase=stage source_next=65439 source_valid=42213 staging_next=0 staging_valid=0
+CHOUPI:FS_DEFRAG_COPYBACK source=3 staging_next=42213 staging_valid=42213
+CHOUPI:FS_DEFRAG_DONE source=3
+CHOUPI:FS_OUT_OF_FLASH request=147 tag_len=13 defrag_capacity=131071 sectors=[(0, 16378, 16378, 16384), (1, 16378, 16378, 16384), (2, 16378, 16378, 16384), (3, 65439, 42213, 65536), (4, 0, 0, 131072), (5, 0, 0, 131072)]
+CHOUPI:FS_DEFRAG_START source=3 phase=stage source_next=65439 source_valid=42213 staging_next=0 staging_valid=0
+CHOUPI:FS_DEFRAG_COPYBACK source=3 staging_next=42213 staging_valid=42213
+CHOUPI:FS_DEFRAG_DONE source=3
+BENCH 2000 edit_at total=1.466870064s worst_single=169.038847ms
+test fs::tests::speculate_2::fs::test_bench_defrag_realistic ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 138 filtered out; finished in 4.39s
+
+
+[exited with code 0]
