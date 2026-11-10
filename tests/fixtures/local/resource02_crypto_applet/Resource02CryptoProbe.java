@@ -4,6 +4,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
+import javacard.framework.JCSystem;
 import javacard.security.AESKey;
 import javacard.security.KeyBuilder;
 import javacard.security.RSAPublicKey;
@@ -15,6 +16,8 @@ public final class Resource02CryptoProbe extends Applet {
   private static final byte INS_INIT_AES = (byte)0x31;
   private static final byte INS_SETUP_RSA = (byte)0x32;
   private static final byte INS_INIT_RSA = (byte)0x33;
+  private static final byte INS_SETUP_ALIAS = (byte)0x34;
+  private static final byte INS_REPEAT_ALIAS = (byte)0x35;
 
   private static final byte[] AES_KEY_BYTES = {
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -26,6 +29,10 @@ public final class Resource02CryptoProbe extends Applet {
   private static Cipher aesCipher;
   private static RSAPublicKey rsaKey;
   private static Cipher rsaCipher;
+
+  private byte[] aliasTarget;
+  private byte[] aliasA;
+  private byte[] aliasB;
 
   private Resource02CryptoProbe() { register(); }
 
@@ -51,6 +58,12 @@ public final class Resource02CryptoProbe extends Applet {
         break;
       case INS_INIT_RSA:
         repeatRsaInit(count);
+        break;
+      case INS_SETUP_ALIAS:
+        setupAliases();
+        break;
+      case INS_REPEAT_ALIAS:
+        repeatAliases(count);
         break;
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
@@ -93,5 +106,21 @@ public final class Resource02CryptoProbe extends Applet {
       ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
     for (short i = 0; i < count; i++)
       rsaCipher.init(rsaKey, Cipher.MODE_ENCRYPT);
+  }
+
+  private void setupAliases() {
+    aliasTarget = JCSystem.makeTransientByteArray((short)16,
+        JCSystem.CLEAR_ON_RESET);
+    aliasA = aliasTarget;
+    aliasB = aliasTarget;
+  }
+
+  private void repeatAliases(byte count) {
+    if (aliasTarget == null || count <= 0)
+      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+    for (short i = 0; i < count; i++) {
+      aliasA = aliasTarget;
+      aliasB = aliasTarget;
+    }
   }
 }

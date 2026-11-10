@@ -9345,3 +9345,23 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   `emulator.log` has one `FS_OUT_OF_FLASH`, one completed defrag, and no abort;
   report CSV has 129 rows. The process ended via the configured 3,600-second
   watchdog.
+## RESOURCE-02: transient array identity must not imply persistent storage
+
+- A transient array needs a stable persistent tag after its first persistent
+  reference is serialized, so later fields can point to that identity rather
+  than allocate another array body. Do not set the object's ordinary
+  `isPersistent` flag when recording this tag: live transient arrays have a
+  raw byte buffer without the serialized tag prefix, while restored transient
+  arrays do have that prefix. Treat `hasPersistentTag()` separately from
+  `isPersistent()` when writing aliases.
+- A regression that marked live transient arrays persistent caused the
+  JCSystem transient lifecycle probe to fail with `6F00` / exception 25 at
+  `bastore`; separating identity from storage state restored the lifecycle
+  and kept repeat alias assignments flat.
+- Viable fix: `JC_Array::setPersistentTag` only sets the persistent-storage
+  flag for non-transient arrays, and reference serialization detects an
+  existing identity tag independently. VPCD multipackage suite passed all 47
+  checks after this correction.
+- Evidence: `artifacts/logs/host-vpcd-multipackage-apdu-20261110T092336Z.log`
+  and `artifacts/logs/resource02-alias-c2-fixed-20261110.log`.
+

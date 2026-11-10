@@ -83,10 +83,12 @@ Archive text is historical evidence, not current device state or priorities.
      `setField_Reference` with a new array on every call. Allocate fixed
      capacity once (or keep the workspace in native RAM session state) and
      overwrite in place. Do not persist RSA public modulus/exponent copies.
+     **Done:** commit `eb59b378`.
   3. **C2 — transient array identity.** Make a transient array keep its body
      tag after first serialization (`FlashMemory_Handler::writeArray`,
      `setPersistentField_Reference`) so re-assignment writes only an alias,
-     and skip rewriting an unchanged reference.
+     and skip rewriting an unchanged reference. **Done:** see the C2 progress
+     record and commit for the VPCD validation.
   4. **C4 — bulk writes.** Replace per-byte `wipeCipherArray` /
      `loadKeyComponent` persistent writes with single record writes, and stop
      rewriting the identity counter record on every allocation.

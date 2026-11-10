@@ -817,11 +817,15 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref,
   } else {
     (void)Heap::getGlobalInstance(ref);
   }
+  const bool unchanged_reference =
+      this->isPersistent() && is_reference_field_type(field.type) &&
+      field.value == static_cast<jword_t>(ref.compact()) &&
+      field.reference_owner == reference_owner;
   if (foreign_reference &&
       !this->getOwner().registerForeignReferenceInstance()) {
     throw Exceptions::SecurityException;
   }
-  if (this->isPersistent()) {
+  if (this->isPersistent() && !unchanged_reference) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
     try {

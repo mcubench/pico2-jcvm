@@ -26941,3 +26941,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-02 open; proceed with transient-array identity handling (C2), then bulk-write and rollback correctness fixes. Physical RESOURCE-01 work remains paused.
 - Commit: This C1 implementation commit (hash available in `git log`).
 - Artifacts/logs: baseline `artifacts/logs/resource02-baseline-20261110T081756Z.log` SHA-256 `b703b1464b14e5130fdfb64a572aa86d35ce12eafc7ad5c73a536e425f84d728`; AES `artifacts/logs/resource02-aes-c1-warm-20261110T084226Z.log` SHA-256 `c712a878193ad79f0af3495bad8261dd58672ea4172b3c9a8a4c17e48fb99c83`; RSA `artifacts/logs/resource02-rsa-c1-warm-20261110T084403Z.log` SHA-256 `c9c10c3d0fbe9beca70b68b659088dce48b2a55fa9a02f9b97760c8ed0c8922c`.
+
+## 2026-11-10 RESOURCE-02 C2 transient array identity 35 minutes
+
+- Step/experiment: `RESOURCE-02-C2-TRANSIENT-ARRAY-IDENTITY`
+- When: '2026-11-10 10:00 CET' - '2026-11-10 10:35 CET'
+- Change: Retained stable persistent tags for transient arrays without setting their live storage state to persistent; alias writes now use `hasPersistentTag()` independently from `isPersistent()`. Persistent instance writes also skip unchanged references. Extended the local RESOURCE-02 probe to assign one transient array through two persistent fields repeatedly.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 300` passed all 47 checks. The direct VPCD alias probe passed 4/4 exchanges; after setup, 64 repeat assignments kept global inventory at 18 records / 433 payload bytes, with zero record, payload, or unreachable-tag delta. Initial C2 behavior made the transient lifecycle test fail with `6F00` / `IndexOutOfBoundsException` at `bastore`; corrected semantics passed. No physical hardware was used.
+- Result: Repeat persistent alias assignments no longer grow storage, and transient arrays retain runtime indexing and lifecycle behavior. ARM image end `0x100d7a08`, leaving 165,368 bytes. Full warmed RSA-2048 64-init plateau remains pending because previous key setup was slow; C4 bulk writes should make that measurement practical. Existing Rust/toolchain, ROM-mask and packed-member warnings remain; no new warning from changed C++ files was identified.
+- Decision: C2 is complete. Continue with C4 bulk writes and identity-counter batching, then C5 correctness work. Keep RESOURCE-01 physical testing paused.
+- Commit: This C2 implementation commit; find with `git log --grep="fix: retain transient array identity without persistent storage state"`.
+- Artifacts/logs: multipackage `artifacts/logs/host-vpcd-multipackage-apdu-20261110T092336Z.log` SHA-256 `ec2f534f993a189cc8ff39fd720a6dde4262f45281aba7eb9c44f174630b685e`; alias `artifacts/logs/resource02-alias-c2-fixed-20261110.log` SHA-256 `caf1c7549bd2b765a1fcf0d11b85686956c052b108936c1af3d008c321ef4289`.

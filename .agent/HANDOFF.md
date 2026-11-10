@@ -11332,3 +11332,33 @@ hardware work performed; existing source changes preserved.
 QKB now contains a reusable method for minimizing accumulated-state failures,
 matched controls, measured deadlines and scoped acceptance. Documentation only;
 RESOURCE-01 remains open and its minimal mixed-suite reproduction unverified.
+# Current handoff — RESOURCE-02 C2 complete; C4 next — 2026-11-10 10:35 CET
+
+RESOURCE-01 physical work remains paused. RESOURCE-02 C1 is committed as
+`eb59b378`; C2 is validated and is being committed now. C2 makes transient
+arrays retain their stable persistent body identity without marking their live
+transient storage persistent, and skips writes for unchanged persistent
+references. The initial implementation incorrectly changed transient arrays'
+storage state and caused `6F00` / `IndexOutOfBoundsException` at `bastore` in
+the JCSystem lifecycle test; that was fixed by separating the identity tag
+from `isPersistent`.
+
+Validation after the correction: `./tools/build-pc --profile max_crypto`,
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 300`
+(`TEST:SUMMARY pass=47 fail=0`), 64 repeat alias assignments (18 records /
+433 payload bytes before and after the repeat phase; zero delta), `./tools/build
+arm` (image end `0x100d7a08`, 165,368 bytes remain), and `./tools/build riscv`
+all passed. No physical hardware was used. Logs:
+`artifacts/logs/host-vpcd-multipackage-apdu-20261110T092336Z.log` and
+`artifacts/logs/resource02-alias-c2-fixed-20261110.log`.
+
+Next implement C4 bulk writes and identity-counter batching, then C5 array
+rollback/missing-body handling. The full RSA 64-init plateau is still pending:
+the measured warmed RSA case so far was two inits, with zero inventory growth;
+its key setup was slow, and C4 should improve it. After C4/C5, run the complete
+RESOURCE-02 plateau wrapper, saved-state APDU 410 replay, and the requested
+VPCD suites. Keep upstream CAPs unchanged. Keep unrelated dirty changes in
+`choupi/os`, diagnostics, and other tests untouched.
+
+## Older session handoffs
+

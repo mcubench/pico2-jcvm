@@ -188,7 +188,12 @@ fs::Tag JC_Array::computeTag() const noexcept {
 void JC_Array::setPersistentTag(const fs::Tag &tag) noexcept {
   this->persistent_tag = tag;
   this->has_persistent_tag = true;
-  this->setPersistent(true);
+  // Transient arrays can have a persistent identity record that aliases
+  // their clear-event metadata, but their contents remain in the transient
+  // allocation and must keep transient indexing/serialization semantics.
+  if (!this->isTransientArray()) {
+    this->setPersistent(true);
+  }
 }
 
 /**

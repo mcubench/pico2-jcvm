@@ -856,9 +856,11 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
 
   write_persistent_tag_or_throw(tag, data, array_size);
 
-  if (!array.isTransientArray()) {
-    array.setPersistentTag(tag);
-  }
+  // Retain the identity for transient arrays too. Their serialized body only
+  // contains clear-event metadata, while their bytes stay in transient RAM;
+  // the stable tag lets later persistent-field writes serialize an alias
+  // instead of allocating another body identity.
+  array.setPersistentTag(tag);
 
 }
 ///
@@ -1492,10 +1494,16 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
 
   if (value.isArray()) {
     auto array = heap.getArray(value);
-    if (array->isPersistent() && !array->isTransientArray()) {
+    if (array->isPersistent() || array->hasPersistentTag()) {
       const fs::Tag array_tag = array->getPersistentTag();
       if (tag.len != array_tag.len ||
           std::memcmp(tag.value, array_tag.value, tag.len) != 0) {
+        write_persistent_array_alias(tag, array_tag);
+        return;
+      }
+      if (!array->isPersistent()) {
+        // A transient array's canonical tag identifies only its persistent
+        // clear-event record; its byte contents remain volatile.
         write_persistent_array_alias(tag, array_tag);
         return;
       }
