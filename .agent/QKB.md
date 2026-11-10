@@ -16,6 +16,28 @@
   failure but does not validate all CRT key sizes or the unchanged full JCAlgTest
   suite.
 
+# VPCD service restart interrupts active Java Card transactions — 2026-11-10
+
+- **Symptom:** An unchanged JCAlgTest VPCD run returned
+  `SCARD_F_COMM_ERROR` during RSA KeyPair 1024. The emulator log stopped with
+  a compaction in progress; this did not establish a firmware or storage
+  failure.
+- **Cause:** The approved `/usr/local/sbin/pico2-pcsc-reader` helper calls
+  `systemctl restart pcscd.service` after granting USB ACLs. Running it while
+  SmartcardIO is using a VPCD reader tears down the live PC/SC connection and
+  interrupts the current APDU.
+- **Viable response:** Run the reader helper before starting any VPCD or
+  physical SmartcardIO session. Do not restart `pcscd` while a suite or APDU is
+  active. If reader access must be refreshed, wait for the session to finish
+  and restart the interrupted test from a clean card.
+- **Evidence and limit:** The interrupted run is
+  `artifacts/results/jcalgtest-support-vpcd-20261110T132850Z/`; the failure
+  coincided with the helper invocation and the subsequent `pcsc_scan -r`.
+  A fresh run at
+  `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/` is underway
+  without further PC/SC restarts. This explains the communication error only;
+  it does not resolve the resource behavior being measured.
+
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
 ## RESOURCE-01: restored JCAlgTest RSA KeyPair reads a missing array — 2026-11-10

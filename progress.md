@@ -27034,5 +27034,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. ARM firmware ends at `0x100f2974` with 54,924 bytes remaining. `./tools/package-empty-card-uf2` passed with 3,882 firmware and 4,096 erased-storage blocks. `./tools/fixture-path --verify` passed (81 files); archive structure, `unzip -t`, and all package SHA-256 entries passed. No USB or physical hardware was used.
 - Result: Empty-card UF2 is 4,085,248 bytes with SHA-256 `5f0b8383261b511c11c23f5cd9f96c93948fd66616527dc5f2fd48e733418502`; Windows package is 18,274,887 bytes with SHA-256 `c872e23383daa298212caefafa24f3c860a3c1ea9c18e0a6b2f8db44124da804`. CPLC source ID is `0xFF393005`.
 - Decision: The fresh image and package are ready for external Windows validation. Continue the active full JCAlgTest VPCD run to assess long-run storage behavior.
-- Commit: Pending.
+- Commit: `16e40bcc` (this record was finalized in a following documentation commit).
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/external-test/pico2-jcvm-max_crypto-windows-test.zip`; instructions and links in `.agent/EXT_REQUESTS.md`.
+
+## 2026-11-10 Diagnose PC/SC restart interruption of active VPCD run 13 minutes
+
+- Step/experiment: `HOST-VPCD-PCSC-RESTART-INTERRUPTION`
+- When: '2026-11-10 14:53 CET' - '2026-11-10 15:06 CET'
+- Change: Recorded in `.agent/QKB.md` that the approved Pico reader helper restarts `pcscd.service` and therefore must only be run before, never during, active VPCD/SmartcardIO sessions. Preserved the interrupted run and restarted the suite from a fresh VPCD card.
+- Validation: Inspected `tools/pico2-pcsc-reader-root` and confirmed it invokes `systemctl restart pcscd.service`. The first client terminated with `SCARD_F_COMM_ERROR` at RSA KeyPair 1024 immediately after that helper was run; a clean rerun is active without further PC/SC service changes, at 188 report rows as of 15:05 CET.
+- Result: The first run is an environment-interrupted partial run (261 rows), not a firmware failure. The clean rerun has complete inventory samples with zero invalid references, edge failures, or root failures; no final RESOURCE-01 conclusion yet.
+- Decision: Keep PC/SC untouched until the clean VPCD run completes; then summarize its storage/failure outcome and continue physical validation only if a real reader is registered.
+- Commit: Pending.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261110T132850Z/` (interrupted); `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/` (active rerun).
