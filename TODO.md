@@ -39,6 +39,11 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 8. Diagnose the reported physical-reader disappearance during the max_crypto
    JCAlgTest Signature factory matrix without using real tokens. See
    JC-RESET-01.
+9. Close the hostile-CAP input-handling gaps from the
+   [2026-11-10 review](docs/review_fable52_20261110.md): start with
+   **CAPIN-01/02** (validate before store, import allow-list), then
+   **CAPIN-03/04**. See the CAPIN tasks below. The position of this item
+   against the resource work above is the user's decision.
 
 Physical availability is volatile. On 2026-11-07 the helper granted access
 to all three Pico USB nodes and `lsusb -d 2e8a:0009` saw three runtime CCID
@@ -553,6 +558,181 @@ Archive text is historical evidence, not current device state or priorities.
   hardware or full JCAlgTest acceptance was run. Next prove complete roots across
   retained applet/package contexts and run flash power-cut recovery before any
   runtime wiring or `isObjectDeletionSupported()` change.
+
+## CAP input-handling review — 2026-11-10
+
+Source: [docs/review_fable52_20261110.md](docs/review_fable52_20261110.md)
+(finding IDs A1–D2). The review was static reading only: no finding was
+reproduced, and several are marked pass-reported there. Rules for every CAPIN
+task:
+
+- Start by writing the failing fixture and recording the observed behaviour in
+  `progress.md`. If the finding does not reproduce, record that and close the
+  item as not reproduced instead of changing code.
+- Hostile CAPs and bytecode are repository-owned test inputs under
+  `tests/fixtures/local` or generated under `build/`. Supplied CAP/JAR bytes
+  stay unchanged; fixes are native C++ VM or loader code.
+- Acceptance for each item: the fixture gets a controlled status word on PC
+  VPCD (under ASan where memory safety is the claim), the next valid APDU
+  succeeds, the multipackage VPCD regression and the unchanged JCAlgTest 1.8.4
+  install still pass, and ARM and RISC-V builds pass. Physical validation is
+  separate and stays open until run.
+- One CAPIN item per commit series; do not combine with RESOURCE work.
+
+### CAPIN-01
+
+- [ ] **P1: Validate a CAP completely before LOAD stores and enables it; add
+  resolver null guards.** Findings B1, B2; extends R55.
+  1. In `CapLoadSession::finishLoad` (`src/cap_load.cpp`), construct
+     `JC_Cap` with payload validation over the RAM load buffer and run the
+     import-independent part of `validate_cap_imports` before
+     `choupi_store_cap_package`. Reject unknown or duplicate components,
+     unsupported CAP versions and lengths above 65,535 on both backends.
+  2. Required-component rules: Class, Method and ConstantPool whenever
+     referenced; Import whenever any class record or ConstantPool entry is
+     external; Export whenever the package can be imported from.
+  3. Run ConstantPool and link validation for library packages too (at LOAD, or
+     over the dependency closure at INSTALL).
+  4. Null guards that throw `SecurityException` at
+     `jc_import.cpp:102-106`, `jc_cp.cpp:613/881/914`, `bc_static.cpp:66` for
+     CAPs stored by older firmware.
+  5. Compare the INSTALL-for-load AID with the Header AID; decide and record
+     what happens to a slot whose enable transaction failed after the store.
+  Fixtures: extra tag-12 component; library with Export but no Class plus an
+  importer; class with external superclass and no Import. Expect `6A80` at
+  LOAD, no slot consumed, and DELETE of an unrelated package still `9000`.
+
+### CAPIN-02
+
+- [ ] **P1: Allow-list the ROM packages an uploaded CAP may import.** Finding
+  A1. Add the list of public Java Card / GlobalPlatform API AIDs and enforce it
+  in `validate_cap_imports` and again at runtime external resolution
+  (`invokestatic`, `new`, static field and classref resolution) when the
+  caller is a dynamic package. The native bridge `A0000000600001` and other
+  internal ROM packages must be refused. Replace the `// TODO: PANIC`
+  reference-argument path in the generated native dispatcher with a throw.
+  First dump the bridge package's Export table and record whether it is
+  importable today (not verified by the review). Fixture: a CAP importing the
+  bridge AID with an external StaticMethodref must fail INSTALL.
+
+### CAPIN-03
+
+- [ ] **P1: Keep the executing-package record in step with frames.** Finding
+  A3. Store the package ID in `Frame` and derive `getCurrentPackageID()` from
+  the top frame, or pop `packagesID` on every frame pop including
+  `Stack::unwindToDepth` and all `doThrow` paths. Add an invariant check that
+  both depths agree at interpreter entry and exit. Fixture: a nested
+  same-context run (RMI `processRemoteInvoke`) whose method overflows its
+  operand stack; afterwards the caller's `impdep1` must raise
+  `SecurityException` and a retained context must not grow per failed APDU.
+  The exploit chain was not traced end to end; record what the fixture shows.
+
+### CAPIN-04
+
+- [ ] **P1: Bound frame depth; no allocation inside `noexcept`.** Finding C4,
+  trigger for R43. Add a hard maximum frame depth in `Stack::push_Frame` that
+  raises a controlled stack-overflow error; remove `noexcept` from
+  `Context::changePackageID` or make it non-allocating (resolved by CAPIN-03 if
+  the package moves into `Frame`). Fixture: static method with
+  `nargs=max_locals=max_stack=0` that invokes itself; expect a status word, not
+  process termination or reset.
+
+### CAPIN-05
+
+- [ ] **P1: Deny dynamic-package access to private state of JCRE-owned
+  objects.** Finding A2.
+  1. `getfield`/`putfield` (all variants) from a dynamic package on a global
+     or JCRE-owned instance throws `SecurityException`.
+  2. Load-time: reject external InstanceFieldrefs into ROM packages unless a
+     ROM metadata table marks the token public or protected.
+  3. `invokespecial`: the receiver must be assignable to the constructor's
+     class and must not be a global instance.
+  4. AID backing arrays are not writable by dynamic code.
+  Fixture: `JCSystem.getAID(); getfield_a <AID token 0>; bastore`, then a
+  Shareable call; expect `SecurityException` and an unchanged
+  `AID.equals` result. Coordinate with CTX-01/03.
+
+### CAPIN-06
+
+- [ ] **P1: Check the receiver in virtual and interface dispatch.** Finding
+  A4 (pass-reported; reproduce first). `invokevirtual`: receiver assignable to
+  the reference's class (arrays only for `Object`); package tokens resolve only
+  while the class's package equals the referencing package.
+  `invokeinterface`: operand `nargs` equals the target header `nargs`; reject
+  array receivers. Mirror the static parts in the loader. Fixtures: package
+  token against a ROM receiver; mismatched `nargs`.
+
+### CAPIN-07
+
+- [ ] **P2: Validate class-record and Export references at LOAD.** Finding B3.
+  Build the class record-start bitmap once; require `super_class_ref`,
+  implemented-interface and superinterface references, and Export
+  `class_offset` to hit a record start of the right kind; require the
+  superclass offset to be lower than the class's own; bound virtual-table
+  method offsets and interface `index[]` values. Give
+  `ConstantPool_Handler::resolveClassref` a full-record bound. Fixture: super
+  reference pointing mid-record, and a self-referencing superclass.
+
+### CAPIN-08
+
+- [ ] **P2: Validate control flow and exception tables once at LOAD.** Finding
+  B4; closes R16. Call `cap_instruction_boundaries::validate_control_flow` for
+  every enumerated method body and validate each exception-handler entry
+  (range inside one method, handler at an instruction start, catch index a
+  Classref). Keep the result so taken branches no longer rescan from the method
+  start. Depends on CAPIN-10 (decoder widths) and CAPIN-01. Record the LOAD
+  time for the JCAlgTest 1.8.4 CAP before and after.
+
+### CAPIN-09
+
+- [ ] **P2: Fix `itableswitch` operand widths.** Finding C1.
+  `bc_branching.cpp` reads `low`/`high` with `getNextShort()`; they are four
+  bytes each. Add a known-answer fixture with negative and large case values
+  and cover `ilookupswitch` in the same test.
+
+### CAPIN-10
+
+- [ ] **P2: Fix `jsr`/`ret` and make decoder and executor agree.** Finding C2.
+  Width 3 for opcode `0x71` in `src/cap_instruction_boundaries.hpp` with a
+  signed 16-bit displacement in `validate_control_flow`; signed offset in
+  `bc_jsr`; save the return address before branching so `ret` continues after
+  the `jsr`. Add a unit test that compares decoder width with the bytes each
+  executor handler consumes for all 256 opcodes.
+
+### CAPIN-11
+
+- [ ] **P2: Correct install-parameter delivery and external static offsets.**
+  Findings C3, C5.
+  1. `interpretor.cpp`: pass `bLength` without the `int8_t` cast (128–255
+     currently become negative).
+  2. Check how the supplied fixtures call `register`; then decide whether
+     `Applet.install` must receive `Li|instance AID|Lc|control info|La|applet
+     data` as the JCRE specifies, and record the decision before changing the
+     layout. Validate the privileges field length.
+  3. `bc_static.cpp:69`: use `Export_Handler::getExportedStaticFieldOffset`
+     (byte-swapped, bounds-checked); deny `putstatic` into ROM package statics
+     from dynamic callers.
+  Fixtures: applet echoing `bArray`/`bOffset`/`bLength` with 0, 127, 128 and
+  255 bytes; library with two exported statics read from an importer.
+
+### CAPIN-12
+
+- [ ] **P3: Consistency, cost and portability follow-ups.** Findings B5, C6,
+  D1, D2. Each bullet is its own commit:
+  - Descriptor↔Class cross-check independent of component order and CAP minor
+    version; StaticField image size equation and `array_init_count` bound;
+    delete the unused wrong `jc_cap_static_field_component` accessors.
+  - `Stack::getCurrentFrame()` on an empty list; `run()` token-entry path
+    outside `try`; `athrow` of a non-Throwable; `Frame::pop_Value` ordering;
+    argument slots cleared and `nargs` matched on non-caller-stack entry.
+  - One AID namespace for instance, package, ROM and ISD AIDs;
+    `runtime_install_method` package check; stray LOAD block must not wipe the
+    session view.
+  - After CAPIN-01: validate once at LOAD and cache one validated `JC_Cap` view
+    per slot keyed by CRC/generation instead of revalidating in every
+    `getCap()`; measure before and after.
+  - Replace `uint16_t&` views over packed CAP tables with byte-wise reads;
+    confirm on the RISC-V build.
 
 ## Functionality review — 2026-11-03
 

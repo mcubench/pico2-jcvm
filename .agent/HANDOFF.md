@@ -11391,3 +11391,15 @@ VPCD suites. Keep upstream CAPs unchanged. Keep unrelated dirty changes in
 
 ## Older session handoffs
 
+
+
+## 2026-11-10 CAP input-handling review recorded (separate reviewer session)
+
+Documentation only, by a reviewer session running beside the RESOURCE-02
+worker: `docs/review_fable52_20261110.md` (static review of LOAD, INSTALL,
+resolvers and bytecode interpretation), new TODO tasks CAPIN-01 … CAPIN-12,
+and a recurring-pattern entry in `.agent/QKB.md`. No runtime source, build,
+VPCD or hardware activity. No finding was reproduced; each CAPIN task starts
+with a failing fixture. The RESOURCE-02 handoff at the top of this file is
+unchanged and still current. Other sessions' uncommitted changes were left
+untouched (only this session's hunks of TODO.md and QKB.md were staged).

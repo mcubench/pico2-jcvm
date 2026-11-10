@@ -9383,3 +9383,44 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Evidence: `artifacts/logs/host-vpcd-multipackage-apdu-20261110T092336Z.log`
   and `artifacts/logs/resource02-alias-c2-fixed-20261110.log`.
 
+
+## Recurring input-handling patterns in CAP load/install/interpretation — 2026-11-10
+
+Source: static review `docs/review_fable52_20261110.md` (not reproduced at
+runtime; status of each rule below is **proposed**, not yet a proven fix).
+Check new loader, resolver and bytecode code against these before review.
+
+- **Validate at the trust boundary, not at first use.** LOAD stored and
+  enabled a CAP after framing checks; INSTALL and the interpreter validated
+  lazily, so libraries, untaken branches and unreferenced class records were
+  never checked, and one bad stored slot broke lookups for other packages.
+  Rule: nothing reaches `choupi_store_cap_package` until the complete
+  validator has passed on the RAM buffer; runtime checks are a second line.
+- **A table that fits is not a table whose contents are valid.** Validators
+  proved component framing, then resolvers trusted offsets and counts stored
+  inside it (class references, Export `class_offset`). Rule: every offset
+  read from a CAP is checked against a record-start set and the owning
+  component's real size, never against a count read from the same record.
+- **Do not skip a security check because the target is ROM, and do not key
+  policy on the executing package.** "Not dynamic → return" left ROM objects
+  and the native bridge unprotected, and the executing package becomes ROM
+  as soon as a ROM trampoline runs. Rule: decide from the *origin* of the
+  request (the package whose ConstantPool supplied the reference) and treat
+  ROM/JCRE state as the asset; imports use an allow-list.
+- **One format, one decoder.** The instruction-width decoder and the executor
+  disagreed (`jsr`, `itableswitch`), and a raw table read sat beside a correct
+  byte-swapping accessor. Rule: read CAP fields through the checked accessor
+  only, and keep a test that compares decoder width with executor consumption
+  for all 256 opcodes.
+- **State that must move together lives together.** Frames and the
+  executing-package list were pushed together but popped on different paths.
+  Rule: put per-frame state in `Frame`; if a parallel structure is unavoidable,
+  assert equal depth at interpreter entry and exit.
+- **Optional CAP components are nullable.** `getImport()`, `getClass()`,
+  `getExport()`, `getDescriptor()` can return null for a structurally valid
+  CAP. Rule: null-check at every resolver entry and throw a controlled VM
+  exception; a C++ `catch (...)` does not catch a null dereference.
+- **Narrowing casts on lengths.** An install length cast to `int8_t` turned
+  128–255 into negative values. Rule: convert APDU lengths from `uint8_t` to
+  `jshort_t` directly and grep for `static_cast<int8_t>` on anything that is
+  a length.

@@ -26970,3 +26970,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep this correction separate from C4 and proceed with C5 persistent-array rollback and missing-body handling.
 - Commit: This implementation and QKB record; resolve with `git log --grep="fix: derive missing CRT signature modulus"`.
 - Artifacts/logs: `artifacts/logs/resource02-asymm-crypto-vpcd-20261110.log` SHA-256 `4a028abf62cc6ac6cdc1cc254f3174b535fedfc8c9a97c41dbf462bb8930098c`.
+
+## 2026-11-10 CAP load/install/bytecode input-handling review recorded (duration not measured)
+
+- Step/experiment: `CAPIN-REVIEW-20261110`
+- When: '2026-11-10, start time not recorded' - '2026-11-10 14:09 CET'
+- Change: Added `docs/review_fable52_20261110.md`, a static review of untrusted-input handling in GP LOAD, INSTALL, CAP resolvers and the bytecode interpreter (findings A1–A4, B1–B5, C1–C6, D1–D2). Added TODO tasks CAPIN-01 … CAPIN-12 and priority item 9, a recurring-pattern entry in `.agent/QKB.md`, and a handoff note. No runtime source changed.
+- Validation: None run. Static reading only; builds, unit tests, VPCD and hardware were intentionally skipped because a worker session was editing and building the tree. The review marks which findings the reviewer re-read (verified) and which come from a single reading pass (pass-reported).
+- Result: No direct memory-corruption path found. Main open items: uploaded CAPs can import the internal native-bridge ROM package; LOAD stores and enables a CAP before full validation; executing-package bookkeeping is not unwound with frames; private fields of JCRE-owned objects are reachable; `itableswitch` and `jsr` operand handling is wrong. None reproduced at runtime.
+- Decision: Each CAPIN task starts with a failing fixture; a finding that does not reproduce is closed as not reproduced. Suggested order CAPIN-01/02, 03/04, 05/06, then 09–11, 07/08, 12. Priority against RESOURCE-02 is the user's decision.
+- Commit: This documentation commit; resolve with `git log --grep="docs: add CAP input-handling review"`.
+- Artifacts/logs: `docs/review_fable52_20261110.md`; none other.
