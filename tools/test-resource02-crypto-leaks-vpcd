@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+passes="${RESOURCE02_PASSES:-64}"
+[[ "${passes}" =~ ^([1-9]|[1-5][0-9]|6[0-4])$ ]] || \
+  die "RESOURCE02_PASSES must be between 1 and 64"
+
+"${repo_root}/tools/build-pc" --profile max_crypto
+"${repo_root}/tools/build-resource02-crypto-probe"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log_dir="${repo_root}/artifacts/logs/resource02-vpcd-${timestamp}"
+mkdir -p "${log_dir}"
+
+run_case() {
+  local name="$1" setup_apdu="$2" repeat_prefix="$3" aid="$4"
+  local repeat_hex log_file
+  printf -v repeat_hex '%02X' "${passes}"
+  log_file="${log_dir}/${name}.log"
+  PICO2_PERSISTENT_INVENTORY_EVERY=1 "${repo_root}/tools/env" python3 \
+    "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
+    --passes 1 \
+    --emulator "${repo_root}/build/choupi-pc/choupi" \
+    --cap-code "${repo_root}/build/resource02-crypto-probe/load-code.bin" \
+    --rom-mask "${repo_root}/build/choupi-pc/flash" \
+    --apdu-timeout 600 --applet-aid "${aid}" --package-id 57 \
+    --apdu "${setup_apdu}" --expect-apdu-response 9000 \
+    --apdu "${repeat_prefix}${repeat_hex}00" \
+    --expect-apdu-response 9000 --log "${log_file}"
+  "${repo_root}/tools/env" python3 - "${name}" "${log_file}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+name, path = sys.argv[1:]
+samples = []
+pattern = re.compile(
+    r"PERSISTENT_INVENTORY:.*?global_records=(\d+) "
+    r"global_payload_bytes=(\d+).*?unreachable_tags=(\d+) "
+    r"unreachable_payload_bytes=(\d+)"
+)
+for line in Path(path).read_text(errors="replace").splitlines():
+    match = pattern.search(line)
+    if match:
+        samples.append(tuple(map(int, match.groups())))
+if len(samples) < 3:
+    raise SystemExit(f"RESOURCE02:FAIL {name} expected 3 inventory samples, got {len(samples)}")
+before, after = samples[-2:]
+delta = tuple(right - left for left, right in zip(before, after))
+print(
+    f"RESOURCE02:INVENTORY case={name} before={before} after={after} delta={delta}"
+)
+if delta != (0, 0, 0, 0):
+    raise SystemExit(f"RESOURCE02:FAIL {name} inventory grew after warm-up")
+print(f"RESOURCE02:PASS {name} repeated init kept persistent inventory flat")
+PY
+}
+
+run_case aes 8030000000 803100 \
+  A00000015100020401
+run_case rsa 8032000000 803300 \
+  A00000015100020401
+printf 'RESOURCE02:ARTIFACTS path=%s\n' "${log_dir}"

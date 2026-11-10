@@ -400,6 +400,15 @@ std::vector<unsigned char> symmetricKey(JC_Instance &cipher) {
 
 void allocateKeyWorkspace(JC_Instance &cipher, uint16_t field,
                           uint16_t length, ClearEvent event) {
+  const jref_t currentReference = cipher.getField_Reference(field);
+  if (!currentReference.isNullPointer()) {
+    auto current = Context::getActiveContext().getHeap().getArray(
+        currentReference);
+    if (current && current->getType() == JAVA_ARRAY_T_BYTE &&
+        current->isTransientArray() && current->size() == length) {
+      return;
+    }
+  }
   Heap &heap = Context::getActiveContext().getHeap();
   cipher.setField_Reference(field, heap.addArray(
       JC_Array(heap, length, JAVA_ARRAY_T_BYTE, true, event)));
@@ -577,17 +586,13 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
     ensureTransientByteArray(cipher,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, 16);
   }
-  auto cipherKey = byteArray(cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
-  for (uint16_t i = 0; i < cipherKey->size(); ++i)
-    cipherKey->setByteEntry(i, 0);
   const ClearEvent keyClearEvent =
       (type == kAesTransientDeselect || type == kDesTransientDeselect)
           ? ClearEvent::CLEAR_ON_DESELECT : ClearEvent::CLEAR_ON_RESET;
   allocateKeyWorkspace(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA,
       static_cast<uint16_t>(bytes + 1), keyClearEvent);
-  cipherKey = byteArray(cipher,
+  auto cipherKey = byteArray(cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
   cipherKey->setByteEntry(0, kCipherKeyWorkspaceMarker);
   for (uint16_t i = 0; i < bytes; ++i)

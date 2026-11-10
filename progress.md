@@ -26930,3 +26930,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Worker agent implements RESOURCE-02 in order, starting with a measuring regression of repeated `Cipher.init` on one persistent cipher.
 - Commit: This documentation commit; resolve with `git log --grep="docs: add RESOURCE-01 code review"`.
 - Artifacts/logs: none
+
+## 2026-11-10 RESOURCE-02 C1 reusable cipher workspaces 47 minutes
+
+- Step/experiment: `RESOURCE-02-C1-CIPHER-WORKSPACES`
+- When: '2026-11-10 09:05 CET' - '2026-11-10 09:52 CET'
+- Change: Added a local PC VPCD probe applet and build/acceptance entrypoints. Symmetric Cipher init now reuses an equal-sized transient key workspace. RSA Cipher init reuses transient component, key and input buffers; RSA public modulus/exponent copies now stay in clear-on-reset transient RAM rather than creating persistent copies. The probe warms each persistent Cipher once before measuring repeated inits.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed. ARM image end `0x100d79f0`, 165,392 bytes below the configured flash limit; RISC-V VM-core build passed. No new warnings were emitted from the changed C++ files; existing ROM-mask/toolchain and packed-member warnings remain. PC VPCD AES: baseline 64 repeated inits grew by 64 records/256 bytes and took 80.863 s; after C1, 64 warmed inits changed global inventory by 0 records/0 bytes and took 47.314 s. RSA: two warmed inits changed inventory by 0 records/0 bytes and completed in 33.571 s; setup of the persistent RSA-2048 test key took 240.810 s. An earlier unwarmed RSA baseline attempt timed out and is retained as a failed measurement. `bash -n tools/test-resource02-crypto-leaks-vpcd` passed. No physical hardware was used.
+- Result: Repeated AES and RSA Cipher.init no longer grow persistent inventory after workspace initialization. AES runtime improved about 42%; RSA throughput remains dominated by per-byte key-component reads/writes and is addressed by C4.
+- Decision: Keep RESOURCE-02 open; proceed with transient-array identity handling (C2), then bulk-write and rollback correctness fixes. Physical RESOURCE-01 work remains paused.
+- Commit: This C1 implementation commit (hash available in `git log`).
+- Artifacts/logs: baseline `artifacts/logs/resource02-baseline-20261110T081756Z.log` SHA-256 `b703b1464b14e5130fdfb64a572aa86d35ce12eafc7ad5c73a536e425f84d728`; AES `artifacts/logs/resource02-aes-c1-warm-20261110T084226Z.log` SHA-256 `c712a878193ad79f0af3495bad8261dd58672ea4172b3c9a8a4c17e48fb99c83`; RSA `artifacts/logs/resource02-rsa-c1-warm-20261110T084403Z.log` SHA-256 `c9c10c3d0fbe9beca70b68b659088dce48b2a55fa9a02f9b97760c8ed0c8922c`.

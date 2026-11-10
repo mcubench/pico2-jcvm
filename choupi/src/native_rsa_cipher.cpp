@@ -345,15 +345,17 @@ void checkArray(const std::shared_ptr<JC_Array> &array, const jshort_t offset,
     throw Exceptions::ArrayIndexOutOfBoundsException;
 }
 
-void allocateCipherArray(JC_Instance &cipher, const uint16_t field,
-                         const uint16_t length) {
-  Heap &heap = Context::getActiveContext().getHeap();
-  cipher.setField_Reference(field,
-      heap.addArray(length, JAVA_ARRAY_T_BYTE));
-}
-
 void allocateTransientCipherArray(JC_Instance &cipher, const uint16_t field,
                                   const uint16_t length, ClearEvent event) {
+  const jref_t currentReference = cipher.getField_Reference(field);
+  if (!currentReference.isNullPointer()) {
+    auto current = Context::getActiveContext().getHeap().getArray(
+        currentReference);
+    if (current && current->getType() == JAVA_ARRAY_T_BYTE &&
+        current->isTransientArray() && current->size() == length) {
+      return;
+    }
+  }
   Heap &heap = Context::getActiveContext().getHeap();
   cipher.setField_Reference(field, heap.addArray(
       JC_Array(heap, length, JAVA_ARRAY_T_BYTE, true, event)));
@@ -364,12 +366,6 @@ void checkKeyWorkspace(JC_Instance &cipher) {
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
   if (marker->size() == 0 || marker->getByteEntry(0) != kCipherKeyWorkspaceMarker)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
-}
-
-void wipeCipherArray(JC_Instance &cipher, uint16_t field) {
-  auto array = getByteArray(cipher, field);
-  for (uint16_t i = 0; i < array->size(); ++i)
-    array->setByteEntry(i, 0);
 }
 
 void loadKeyComponent(const JC_Instance &key, const uint16_t valueField,
@@ -482,28 +478,16 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
   if (keyBits <= 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint16_t keyLength = static_cast<uint16_t>((keyBits + 7) / 8);
   const uint16_t crtPartLength = static_cast<uint16_t>((keyLength + 1U) / 2U);
-  wipeCipherArray(*cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA);
-  wipeCipherArray(*cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
-  wipeCipherArray(*cipher,
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT);
-  if (privateKey) {
-    allocateTransientCipherArray(*cipher,
-        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS,
-        keyLength, keyClearEvent);
-    allocateTransientCipherArray(*cipher,
-        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
-        rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
-                            : keyLength, keyClearEvent);
-  } else {
-    allocateCipherArray(*cipher,
-        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, keyLength);
-    allocateCipherArray(*cipher,
-        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
-        rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
-                            : keyLength);
-  }
+  // Key components are reconstructed from the Key on each init and live only
+  // in clear-on-reset session workspaces. Persisting public-key copies here
+  // both duplicates durable key material and leaks a new body on every init.
+  allocateTransientCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS,
+      keyLength, keyClearEvent);
+  allocateTransientCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
+      rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
+                          : keyLength, keyClearEvent);
   allocateTransientCipherArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA, 1,
       keyClearEvent);
