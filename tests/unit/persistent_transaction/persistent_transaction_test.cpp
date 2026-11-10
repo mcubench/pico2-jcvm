@@ -850,8 +850,10 @@ int main() {
           } else if (expected_failure_stage == 1) {
             failure_stage_matches =
                 failed_tag.size() == static_cast<std::size_t>(root.len) + 8 &&
-                failed_tag[failed_tag.size() - 2] == 1 &&
-                failed_tag[failed_tag.size() - 1] == 1;
+                failed_tag[root.len] == 0xff &&
+                failed_tag[root.len + 1] == 0xfe &&
+                failed_tag[failed_tag.size() - 2] == 0 &&
+                failed_tag[failed_tag.size() - 1] == 0;
           } else {
             failure_stage_matches =
                 failed_tag.size() == root.len &&
@@ -903,13 +905,13 @@ int main() {
         };
 
     verify_failed_first_publication(
-        0xe8, 1, 0,
+        0xe8, 0, 0,
         "first_object_publication_header_failure_retries_same_live_object");
     verify_failed_first_publication(
-        0xe9, 3, 1,
+        0xe9, 1, 1,
         "first_object_publication_child_failure_retries_same_live_object");
     verify_failed_first_publication(
-        0xea, 4, 2,
+        0xea, 3, 2,
         "first_object_publication_root_failure_retries_same_live_object");
 
     jcvm::Heap heap(7);

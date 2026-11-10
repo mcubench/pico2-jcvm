@@ -27014,3 +27014,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Each CAPIN task starts with a failing fixture; a finding that does not reproduce is closed as not reproduced. Suggested order CAPIN-01/02, 03/04, 05/06, then 09–11, 07/08, 12. Priority against RESOURCE-02 is the user's decision.
 - Commit: This documentation commit; resolve with `git log --grep="docs: add CAP input-handling review"`.
 - Artifacts/logs: `docs/review_fable52_20261110.md`; none other.
+
+## 2026-11-10 Repair persistent transaction publication failure-injection cases 12 minutes
+
+- Step/experiment: `PERSIST-TXN-C5-REGRESSION`
+- When: '2026-11-10 14:31 CET' - '2026-11-10 14:43 CET'
+- Change: Updated the first-publication fault-injection cases for the stable object-body tag format introduced by C5. The cases now fail the body header, its first child record, and the root alias at their actual write positions, and verify the corresponding identity-tag shape.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `git diff --check -- tests/unit/persistent_transaction/persistent_transaction_test.cpp` passed. No firmware build or hardware validation was needed for this test-only correction.
+- Result: All three previously failing cases pass, confirming retry after each actual publication failure point for identity-tagged objects.
+- Decision: Keep this as a test-only regression correction; continue the active unchanged JCAlgTest VPCD resource run.
+- Commit: Pending.
+- Artifacts/logs: Unit output was captured in the command session; the concurrent full-suite run is under `artifacts/results/jcalgtest-support-vpcd-20261110T132850Z/`.
