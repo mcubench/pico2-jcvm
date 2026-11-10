@@ -1,4 +1,4 @@
-# Current handoff — gated cleanup clears captured RSA replay; RESOURCE-01 open — 2026-11-10 04:34 CET
+# Current handoff — saved-state RSA failure is intermittent; RESOURCE-01 open — 2026-11-10 05:49 CET
 
 RESOURCE-01 remains open. A clean `max_crypto` PC VPCD replay with
 `PICO2_TEST_OBJECT_DELETION=1` completed the full captured 414-APDU
@@ -33,19 +33,38 @@ The full-suite VPCD wrapper was given an early `--help`/`-h` exit and now limits
 reader-discovery failure output to 40 lines per scan while preserving full logs.
 Its shell syntax and help path pass; this does not repair PC/SC availability.
 
-A separate saved-state restart experiment using `--restore-applet` returned
-`6F00` at RSA 1536 / APDU 410 both with and without the deletion test flag. A
-plain `--resume` rejected the memory/registry pair. Isolate restart/restore
-behavior separately; do not conflate it with the uninterrupted pass.
+The saved-state APDU 410 result is inconsistent. A prior replay from the
+post-APDU-408 image returned `6F00` in `KeyPair.genKeyPair()` (native method
+52, exception 5 / `IOException`) while reading missing persistent array tag
+`03013894FFFFFE000000420303FFFE000000470606FFFE000000010000FFFE000000020909FFFF00000005`
+(`fs_exists=0`, `fs_length status=2`). Two later retries from that same saved
+image and registry returned `9000` and successful RSA KeyPair responses.
+Artifacts: failing replay `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`;
+passing replays `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/`
+and `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`. The
+result is intermittent or build-dependent, not a verified fix. Pin the emulator
+binary hash and repeat before changing code. The earlier plain `--resume`
+rejected the memory/registry pair; `--restore-applet` is required to reconnect.
 
-Next actions: (1) diagnose the bounded PC/SC scanner timeout and refresh reader
-availability before any physical work; (2) isolate the restart/restore APDU 410
-failure; (3) run the unchanged full 1.8.4/jc305 client in a test-gated VPCD
-configuration and compare all 8,607 rows; (4) advance production reclamation
-only after PERSIST-01 multi-owner and interruption-recovery tests. Preserve the
-other dirty worktree changes; the step-specific root files are
-`tests/integration/jcalgtest_apdu_replay_vpcd_test.py`, `TODO.md`,
-`.agent/QKB.md`, this handoff, and `progress.md`.
+Diagnostic-only source changes now report the last native method/package on
+VPCD applet errors, persistent-field restoration failures, persistent-array
+size read status, and copied persistent-record read failures. `./tools/build-pc
+--profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed.
+The ARM wrapper built the `current` profile image ending at `0x100d79b4`, leaving
+165,452 bytes below its configured flash limit. No physical board was flashed.
+
+Next actions: (1) pin the emulator binary and repeated APDU 408 -> restart ->
+410 behavior; if `6F00` recurs, trace the missing array tag through
+`Heap::getPersistentReference`, `getPersistentField_ReferenceImpl`, and
+persistent array identity restoration; add a deterministic regression; (2)
+diagnose the bounded PC/SC scanner timeout and refresh reader availability
+before physical work; (3) run the unchanged full 1.8.4/jc305 client in a
+test-gated VPCD configuration and compare all 8,607 rows; (4) advance production
+reclamation only after PERSIST-01 multi-owner and interruption-recovery tests.
+Preserve the other dirty worktree changes; this step's source files are
+`choupi/src/main.cpp`, `choupi/src/jc_types/jc_instance.cpp`,
+`choupi/src/jc_types/jc_array.cpp`, and `choupi/src/jc_handlers/flashmemory.cpp`,
+along with `TODO.md`, `.agent/QKB.md`, this handoff, and `progress.md`.
 
 # Current handoff — bounded RSA stress completes slow VPCD defrags; RESOURCE-01 open — 2026-11-09 16:04 CET
 

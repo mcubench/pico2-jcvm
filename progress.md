@@ -26897,3 +26897,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the wrapper normally only after a bounded PC/SC scan confirms the VPCD reader. Continue RESOURCE-01 diagnosis offline until then.
 - Commit: This wrapper diagnostics commit; resolve with `git log --grep="fix: bound JCAlgTest VPCD wrapper diagnostics"`.
 - Artifacts/logs: Scanner inventories created by the mistaken pre-fix help call are in the ignored `artifacts/results/jcalgtest-support-vpcd-*` directory; no runtime metrics measured.
+
+## 2026-11-10 Recheck intermittent saved-state RSA failure 19 minutes
+
+- Step/experiment: `RESOURCE-01-SAVED-STATE-APDU410-RECHECK`
+- When: '2026-11-10 05:35 CET' - '2026-11-10 05:54 CET'
+- Change: Repeated the saved post-APDU-408 JCAlgTest image restore and APDU 410 replay. Updated TODO.md, QKB.md, and HANDOFF.md to record the conflicting outcomes and keep RESOURCE-01 open.
+- Validation: Two bounded PC-only invocations of `tools/test-jcalgtest-apdu-replay-vpcd` restored the same source image and registry, selected JCAlgTest, and ran `B07519000301060000` (RSA KeyPair 1536); both returned `9000` and emitted `JCALGTEST_APDU_REPLAY_VPCD:PASS`. This conflicts with the prior same-input APDU 410 `6F00` artifact, whose trace reported native method 52, `IOException`, and a missing 43-byte array body. `./tools/build-pc --profile max_crypto` then passed, including `ROMMASK:PASS`, with pre-existing toolchain/network and packed-member warnings. No firmware flash or physical test was run; ARM and RISC-V builds had passed earlier after diagnostics were added.
+- Result: APDU 410 restart behavior is intermittent or emulator-build-dependent; the success runs do not establish RESOURCE-01 fixed. Full max-profile storage-pressure acceptance and physical testing remain outstanding. PC/SC was not confirmed available.
+- Decision: Keep RESOURCE-01 open. Pin and record the emulator binary hash for each replay, repeat from the saved image, and diagnose the missing persistent array if the failure recurs. Production deletion remains disabled.
+- Commit: This investigation commit; resolve with `git log --grep="debug: trace intermittent saved-state RSA replay"`.
+- Artifacts/logs: failing replay `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`; passing replays `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/` and `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`; emulator SHA-256 at this step `e4a59053a42e3d84ace739c684c4a287cc6d005cf6329a40b575ab61d065e1fe`.

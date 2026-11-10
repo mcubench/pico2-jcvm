@@ -223,6 +223,25 @@ Archive text is historical evidence, not current device state or priorities.
   deletion enabled; isolate that restart/restore behavior separately and do
   not conflate it with the clean uninterrupted replay. See `.agent/QKB.md` and
   `.agent/HANDOFF.md` for logs and hashes.
+  A targeted repeat using the saved image after APDU 408 confirms the failure
+  without cleanup enabled: APDU 410 (`KeyPair.genKeyPair()`, 1536 bits) returns
+  `6F00`. The PC trace identifies native method 52, exception 5 (`IOException`),
+  while reading persistent array length for tag
+  `03013894FFFFFE000000420303FFFE000000470606FFFE000000010000FFFE000000020909FFFF00000005`;
+  `fs_exists=0` and `fs_length status=2`. The ordinary nested-array restore
+  integration case passes, so this remains specific to the restored JCAlgTest
+  RSA KeyPair object graph. Root cause and fix are still unknown; keep RESOURCE-01
+  open. ARM and RISC-V wrappers pass after the diagnostic changes, but hardware
+  validation was not performed.
+  Two subsequent PC-only retries from the same preserved post-APDU-408 card
+  image and registry returned `9000` for APDU 410, with a successful RSA
+  KeyPair response. This conflicts with the reproduced `6F00` from the same
+  saved inputs and makes the restore failure intermittent or build-dependent;
+  it does not establish a fix. The two passing replay artifacts are
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/` and
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`. Keep the
+  failure open and repeat against a recorded, fixed emulator binary before
+  drawing conclusions. Physical hardware was not tested.
 - Immediate action order (2026-11-09 review):
   1. **Reproduce the remaining failure in a small mixed workload.** Extract
      the ordered key creation/replacement, cache-clear and deletion APDUs leading

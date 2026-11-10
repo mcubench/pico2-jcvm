@@ -31,6 +31,10 @@
 #include "jc_array_type.hpp"
 #include "../heap.hpp"
 
+#ifdef PC_VERSION
+#include <cstdio>
+#endif
+
 #ifdef JCVM_FIREWALL_CHECKS
 #include "../context.hpp"
 #include "../heap.hpp"
@@ -272,8 +276,29 @@ uint16_t JC_Array::size() const {
     fs::Tag tag = this->computeTag();
     uint8_t size_high = 0;
     uint8_t size_low = 0;
-    if (fs_read_1b_at(tag.value, tag.len, 1, &size_high) ||
-        fs_read_1b_at(tag.value, tag.len, 2, &size_low)) {
+    uint8_t read_status =
+        fs_read_1b_at(tag.value, tag.len, 1, &size_high);
+    if (read_status == 0) {
+      read_status = fs_read_1b_at(tag.value, tag.len, 2, &size_low);
+    }
+    if (read_status != 0) {
+#ifdef PC_VERSION
+      uint32_t stored_length = 0;
+      const uint8_t length_status =
+          fs_length(tag.value, tag.len, &stored_length);
+      std::fprintf(stderr,
+                   "PERSIST_ARRAY_SIZE_READ_FAIL status=%u exists=%u "
+                   "length_status=%u stored_length=%u tag_len=%u tag=",
+                   static_cast<unsigned>(read_status),
+                   static_cast<unsigned>(fs_exists(tag.value, tag.len)),
+                   static_cast<unsigned>(length_status),
+                   static_cast<unsigned>(stored_length),
+                   static_cast<unsigned>(tag.len));
+      for (uint8_t tag_index = 0; tag_index < tag.len; ++tag_index) {
+        std::fprintf(stderr, "%02X", tag.value[tag_index]);
+      }
+      std::fprintf(stderr, "\n");
+#endif
       throw Exceptions::IOException;
     }
     length = BYTES_TO_SHORT(size_high, size_low);

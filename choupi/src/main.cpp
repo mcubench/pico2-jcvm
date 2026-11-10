@@ -2042,11 +2042,18 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     }
 #endif
     if (status != 0x9000) {
+      const uint8_t exception_opcode = interpretor.lastExceptionOpcode();
+      const uint16_t exception_operand = exception_opcode == 0xFE
+          ? choupi_vm_last_native_method_index()
+          : interpretor.lastExceptionOperand();
       fprintf(stderr,
                    "VPCD:APPLET_PROCESS status=%04X exception=%u opcode=%02X "
-                   "pc=%08X stack=%u op_history=%08X depth_history=%08X\n",
+                   "operand=%u package=%u pc=%08X stack=%u "
+                   "op_history=%08X depth_history=%08X\n",
                    status, static_cast<unsigned>(interpretor.lastExceptionId()),
-                   static_cast<unsigned>(interpretor.lastExceptionOpcode()),
+                   static_cast<unsigned>(exception_opcode),
+                   static_cast<unsigned>(exception_operand),
+                   static_cast<unsigned>(context.getCurrentPackageID()),
                    static_cast<unsigned>(interpretor.lastExceptionPc()),
                    static_cast<unsigned>(interpretor.lastExceptionStackDepth()),
                    static_cast<unsigned>(interpretor.lastExceptionOpcodeHistory()),

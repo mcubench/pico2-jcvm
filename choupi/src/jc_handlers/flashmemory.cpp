@@ -653,20 +653,46 @@ std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
 FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
   fs::Tag read_tag = tag;
   uint32_t data_length = 0;
+#ifdef PC_VERSION
+  const auto log_read_failure = [&](const char *stage, uint8_t status) {
+    std::fprintf(stderr,
+                 "PC_FS:READ_COPY stage=%s status=%u length=%u tag_len=%u tag=",
+                 stage, static_cast<unsigned>(status),
+                 static_cast<unsigned>(data_length),
+                 static_cast<unsigned>(read_tag.len));
+    for (uint8_t index = 0; index < read_tag.len; ++index) {
+      std::fprintf(stderr, "%02X", read_tag.value[index]);
+    }
+    std::fprintf(stderr, "\n");
+  };
+#endif
 
-  if (fs_length(read_tag.value, read_tag.len, &data_length) != 0) {
+  uint8_t read_status =
+      fs_length(read_tag.value, read_tag.len, &data_length);
+  if (read_status != 0) {
     if (!legacy_applet_tag(tag, read_tag) ||
-        fs_length(read_tag.value, read_tag.len, &data_length) != 0) {
+        (read_status = fs_length(read_tag.value, read_tag.len,
+                                 &data_length)) != 0) {
+#ifdef PC_VERSION
+      log_read_failure("length", read_status);
+#endif
       throw Exceptions::IOException;
     }
   }
 
   if (data_length == 0) {
+#ifdef PC_VERSION
+    log_read_failure("empty", 0);
+#endif
     throw Exceptions::IOException;
   }
 
   std::unique_ptr<uint8_t[]> data(new uint8_t[data_length]);
-  if (fs_read(read_tag.value, read_tag.len, data.get(), data_length)) {
+  read_status = fs_read(read_tag.value, read_tag.len, data.get(), data_length);
+  if (read_status != 0) {
+#ifdef PC_VERSION
+    log_read_failure("data", read_status);
+#endif
     throw Exceptions::IOException;
   }
 
@@ -2322,10 +2348,25 @@ void FlashMemory_Handler::setPersistentField_Array_Short(const fs::Tag &tag,
   snapshot_persistent_tag(tag);
   const uint16_t encoded = static_cast<uint16_t>(value);
   const uint32_t byte_offset = 3u + 2u * index;
-  if (fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset,
-                     static_cast<uint8_t>(encoded >> 8)) ||
-      fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset + 1,
-                     static_cast<uint8_t>(encoded))) {
+  uint8_t write_status = fs_write_1b_at(
+      &(tag.value[0]), tag.len, byte_offset,
+      static_cast<uint8_t>(encoded >> 8));
+  if (write_status == 0) {
+    write_status = fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset + 1,
+                                  static_cast<uint8_t>(encoded));
+  }
+  if (write_status != 0) {
+#ifdef PC_VERSION
+    std::fprintf(stderr,
+                 "PERSIST_SHORT_WRITE_FAIL status=%u index=%u tag_len=%u tag=",
+                 static_cast<unsigned>(write_status),
+                 static_cast<unsigned>(index),
+                 static_cast<unsigned>(tag.len));
+    for (uint8_t tag_index = 0; tag_index < tag.len; ++tag_index) {
+      std::fprintf(stderr, "%02X", tag.value[tag_index]);
+    }
+    std::fprintf(stderr, "\n");
+#endif
     throw Exceptions::IOException;
   }
 }

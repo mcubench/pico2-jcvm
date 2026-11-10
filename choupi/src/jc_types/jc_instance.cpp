@@ -959,11 +959,25 @@ auto JC_Instance::getFields() const -> decltype(fields) {
         std::printf("%02X", field_tag.value[tag_index]);
       }
       std::printf(" exception=%u\r\n", static_cast<unsigned>(exception));
+#else
+      std::fprintf(stderr, "CHOUPI:RESTORE_FIELD_TAG package=%u class=%04X "
+                           "field=%u exists=%u tag=",
+                   static_cast<unsigned>(this->packageID),
+                   static_cast<unsigned>(this->claz),
+                   static_cast<unsigned>(index),
+                   static_cast<unsigned>(fs_exists(field_tag.value,
+                                                   field_tag.len)));
+      for (uint8_t tag_index = 0; tag_index < field_tag.len; ++tag_index) {
+        std::fprintf(stderr, "%02X", field_tag.value[tag_index]);
+      }
+      std::fprintf(stderr, " exception=%u\n",
+                   static_cast<unsigned>(exception));
 #endif
       throw;
     }
 
-    switch (field.type) {
+    try {
+      switch (field.type) {
     case FieldType::FIELD_TYPE_BYTE:
     case FieldType::FIELD_TYPE_BOOLEAN:
       field.value = static_cast<jword_t>(
@@ -1017,13 +1031,30 @@ auto JC_Instance::getFields() const -> decltype(fields) {
         throw;
       }
       break;
-    default:
-      std::printf("CHOUPI:PERSIST_INVALID loaded-field-type=%u index=%u package=%u class=%u\r\n",
-                  static_cast<unsigned>(field.type),
-                  static_cast<unsigned>(index),
-                  static_cast<unsigned>(this->packageID),
-                  static_cast<unsigned>(this->claz));
-      throw Exceptions::SecurityException;
+      default:
+        std::printf("CHOUPI:PERSIST_INVALID loaded-field-type=%u index=%u package=%u class=%u\r\n",
+                    static_cast<unsigned>(field.type),
+                    static_cast<unsigned>(index),
+                    static_cast<unsigned>(this->packageID),
+                    static_cast<unsigned>(this->claz));
+        throw Exceptions::SecurityException;
+      }
+    } catch (Exceptions exception) {
+#ifdef PC_VERSION
+      std::fprintf(stderr,
+                   "CHOUPI:RESTORE_FIELD_VALUE package=%u class=%04X "
+                   "field=%u type=%u exception=%u tag=",
+                   static_cast<unsigned>(this->packageID),
+                   static_cast<unsigned>(this->claz),
+                   static_cast<unsigned>(index),
+                   static_cast<unsigned>(field.type),
+                   static_cast<unsigned>(exception));
+      for (uint8_t tag_index = 0; tag_index < field_tag.len; ++tag_index) {
+        std::fprintf(stderr, "%02X", field_tag.value[tag_index]);
+      }
+      std::fprintf(stderr, "\n");
+#endif
+      throw;
     }
   }
   this->persistent_rollback_generation =

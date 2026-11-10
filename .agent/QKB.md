@@ -1,5 +1,45 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## RESOURCE-01: restored JCAlgTest RSA KeyPair reads a missing array — 2026-11-10
+
+- **Reproduction:** Saved the card image after captured APDU 408, restarted the
+  PC VPCD emulator through `--restore-applet`, selected the applet, and sent APDU
+  410 (`B07519000301060000`, RSA KeyPair 1536). The failure reproduces with
+  `PICO2_TEST_OBJECT_DELETION` unset and also when APDU 409 first requests the
+  test-only cleanup. The no-cleanup artifact is
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`; the
+  cleanup-enabled artifact with the erased-tag trace is
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T040952Z/`.
+- **Finding:** The exception log reports opcode `FE`, native method index 52
+  (`javacard.security.KeyPair.genKeyPair()` in the generated `jni.hpp`), package
+  2, exception ID 5 (`IOException`). During RSA key generation,
+  `JC_Array::size()` cannot read this persistent array body:
+  `03013894FFFFFE000000420303FFFE000000470606FFFE000000010000FFFE000000020909FFFF00000005`.
+  The read reports `status=2`, `fs_exists=0`, and `fs_length status=2`. The
+  identical no-cleanup failure rules out request-triggered reclamation as the
+  sole cause. The erased-tag trace does not contain this 43-byte body tag.
+- **Control:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-restart` passed
+  all 7 checks, and `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet
+  --case 82` passed its nested persistent-array restore case. Those controls do
+  not cover the ROM `KeyPair` / `NativeKey` object graph.
+- **Status:** This narrows RESOURCE-01 to a restored JCAlgTest RSA KeyPair
+  persistent-reference graph; it does not identify the point where the body
+  record was lost. Two later retries from the same saved image and registry
+  returned `9000` at APDU 410, so the observed `6F00` is intermittent or
+  build-dependent. The passing artifacts are
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/` and
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`; the
+  original failure remains in
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`. Do not
+  enable production deletion or mark RESOURCE-01 fixed. Next pin the emulator
+  binary hash, repeat the same saved-state replay, and trace the ROM API
+  `KeyPair`/`NativeKey` graph if the failure recurs. The unchanged client
+  transcript and CAP remain untouched.
+- **Builds:** `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and
+  `./tools/build riscv` passed after diagnostic logging was added. Physical
+  validation was not run; last bounded `pcsc_scan -r` timed out and no PC/SC
+  reader was confirmed.
+
 ## HOST-02: full-suite wrapper now handles help without entering PC/SC polling — 2026-11-10
 
 - **Symptom:** Invoking `tools/test-jcalgtest-support-vpcd --help` before this
