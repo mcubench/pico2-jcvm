@@ -177,3 +177,100 @@ is included in the migration. See [migration evidence](docs/testing-data-migrati
   state after its preceding idle-read timeout and the intended transport
   shutdown behavior, then correct the regression or implementation in its
   own change. Preserve the existing timeout/partial-frame acceptance intent.
+
+## Memory allocation and persistent-write performance — 10 November 2026
+
+Source: analysis `PERF-MEM-ANALYSIS-20261110` (`progress.md`, `.agent/QKB.md`
+entry "PC VPCD compaction/persistent writes ~100x slower than native FS",
+commit `6efcd876`). Evidence: native FS bench
+`artifacts/perf/memory-alloc-analysis-20261110/` (64 KiB sector compaction
+with ~1,150 live records ≤169 ms natively) versus 43.7476 s for one VPCD
+compaction (`artifacts/logs/rsa-replacement-compaction-128-20261110.log`).
+Related: RESOURCE-01 in [TODO.md](TODO.md). Do these in order; each item is
+its own logical step with a before/after measurement recorded in
+`progress.md`. Unmeasured items stay hypotheses until profiled.
+
+- [ ] **PERF-20261110-01 — Confirm where emulator compaction time goes.** P1;
+  owner: EMU-01 / RESOURCE-01. With elevated ptrace host access, run the
+  existing 128-cycle rooted RSA replacement workload once under profiling.
+  Count tracer traps per `EmulatorCall` kind during one `FS_DEFRAG_START` to
+  `FS_DEFRAG_DONE` window, for example with a counter in `handle_trap`
+  (`choupi/os/src/arch/host/emulator.rs`) or `perf`. Hypothesis to confirm or
+  reject: the host `flash_ll` `clear_error`/`write`/`currently_busy`/
+  `has_error` calls each assert `privilege::is_privileged()`, which is an
+  `int3` tracer round trip. `FlashBlockMut::write_block_generic` programs one
+  word at a time, so one compaction costs 10^4–10^5 round trips.
+  Acceptance: a trap-count breakdown per compaction and per persistent
+  `edit_at`, recorded with artifact paths. Physical hardware is not involved.
+- [ ] **PERF-20261110-02 — Remove per-word tracer traps from host flash
+  emulation.** P1; owner: EMU-01. Depends on 01 confirming the cause. Options:
+  have the tracer keep a privilege flag in guest memory, update it on
+  privilege transitions, and read it locally; or make the host-only privilege
+  asserts `debug_assert!`. Also program flash a whole block per call instead
+  of once per word. Keep the program/erase AND semantics, the failure-injection
+  tests, and real MPU enforcement for unprivileged guest code.
+  Acceptance: `javacard-os` host FS/flash tests pass (elevated ptrace). The
+  128-cycle RSA replacement workload passes 133/133. Measured compaction time
+  drops from 43.7 s to below 2 s, and APDU 124 time is reported.
+  `./tools/test-asymm-crypto-vpcd` passes. PC-only change, so the ARM/RISC-V
+  builds must still pass but no flashing is needed.
+- [ ] **PERF-20261110-03 — Bulk range operations for persistent arrays.** P1;
+  owner: PERSIST-01 / HARD-01. Native `Util.arrayCopy`/`arrayCopyNonAtomic`/
+  `arrayFill` (`copyArrayRange`/`fillArrayRange` in `choupi/src/jni.cpp`) and
+  RSA/EC key getters copy element by element. With `JCVM_SECURE_HEAP_ACCESS`,
+  each persistent element access re-parses the record and allocates a
+  temporary `JC_Array` (`FlashMemory_Handler::getPersistentField_Array`), and
+  `size()` performs two more FS reads. Add validated range read/write
+  primitives: one bounds and type check, one transaction snapshot, and one
+  record write per call, respecting atomic versus non-atomic semantics. Use
+  them for persistent destinations and sources. Keep per-element paths for
+  transient and volatile arrays.
+  Acceptance: transaction commit/abort/non-atomic tests (existing
+  JCSystem transaction probe), the API validation suite rows for `Util`, and the symmetric/asymmetric
+  VPCD suites pass. Report the FS syscall count for one 128-byte persistent
+  `arrayCopy` before and after. ARM and RISC-V build, flash, and
+  `TEST:SUMMARY` pass.
+- [ ] **PERF-20261110-04 — Cache persistent array metadata.** P2; owner:
+  PERSIST-01. Cache type/length/tag validity on the heap-resident `JC_Array`,
+  keyed by `persistentWriteRollbackGeneration()`, instead of re-reading the
+  length bytes from flash on every `size()` and `checkArrayEntryIndex`. The
+  existing rollback/recovery behaviour (`recoverMissingPersistentBody`)
+  must remain correct. Acceptance: rollback/restore regressions pass, plus
+  a before/after `baload`/`bastore` loop timing on a persistent array (VPCD and
+  physical).
+- [ ] **PERF-20261110-05 — Constant-time heap handle lookup.** P2; owner:
+  HARD-01. `Heap::SharedStorage` uses `List` (`std::list`) whose `at()` walks
+  from the head on every `getArray`/`getInstance`; `addArray`/`addInstance`
+  scan for a free slot. Replace with an indexed container (e.g. `std::vector`
+  plus a free-slot list) while preserving handle stability, the 0x3fff limit,
+  the shared-storage facade semantics, the GC mark bitmaps, and foreign-reference
+  registration. Avoid needless `shared_ptr` copies on hot bytecode paths where
+  lifetime allows. Acceptance: heap/GC/RMI unit tests, VPCD suites, and a measured
+  array-access microbenchmark at 16, 256, and 4,096 live handles on PC and Pico.
+- [ ] **PERF-20261110-06 — Reduce transaction snapshot lookup cost.** P3;
+  owner: PERSIST-01. `snapshot_persistent_tag` and
+  `preserve_non_atomic_array_byte_in_snapshot` scan all snapshots linearly
+  on every persistent write, which is O(n²) per large transaction. Index snapshots by
+  tag (hash or sorted) without changing rollback order or capacity
+  accounting. Acceptance: transaction probe and commit-capacity tests pass;
+  report timing for a transaction touching 256 records.
+- [ ] **PERF-20261110-07 — Make Pico `fs_sync` incremental.** P2; owner:
+  PERSIST-01 / HOST-01. `persist_overlay()` (`src/pico_filesystem.cpp`)
+  erases and reprograms the whole FS snapshot (bitmap + index + up to 96 KiB
+  payload) after every APDU that dirtied persistent state, so a one-byte
+  change costs about 1 s of flash time, assumed rather than measured. Each
+  slot is erased once every two such APDUs, which is an endurance risk. Measure
+  first (timing per `fs_sync`, bytes erased/programmed). Then design an append-only
+  journal or sector-granular dirty write-back that keeps power-loss atomicity
+  across the two slots. `append_overlay` also memmoves up to 96 KiB and loops
+  over 8,192 entries on each record resize; include it in the measurement.
+  Acceptance: power-loss/rollback tests (`RP2350_FS_OVERLAY_TEST`) pass;
+  measured per-APDU sync time and erase count before/after on physical Pico 2
+  (ARM and RISC-V); full CHOUPI cycle `TEST:SUMMARY` passes.
+- [ ] **PERF-20261110-08 — Reduce PC FS write amplification.** P3; owner:
+  EMU-01. `FileSystem::edit_at` (`choupi/os/src/fs/mod.rs`) appends a full copy
+  of the record for every edit, and `Sector::lock` scans every outstanding
+  lock linearly (16-bucket set; FS file set uses 32 buckets). After 02–03
+  land, re-measure; only optimize if compaction or lookups still dominate VPCD
+  APDU time. Acceptance: native FS bench (patch in the artifact folder above)
+  and `fs::` tests pass with before/after numbers.
