@@ -118,9 +118,12 @@ Archive text is historical evidence, not current device state or priorities.
      successful defrag completion but still accumulated 1,513 unreachable
      tags (39,405 payload bytes) by inventory sample 6. RSA key generation
      returned `SystemException_NO_RESOURCE` at 1280–2048 bits; RSA-CRT
-     returned it at 512–1536 bits. The client log ends after issuing CRT-1792,
-     without a response or captured exit status, so this run is incomplete
-     and does not establish a compaction hang or watchdog exit. See
+     returned it at 512–2048 bits; 3072/4096 were `no`. The configured
+     3,600-second suite watchdog stopped the run during DSA-1024; DSA-512/768
+     were `no`. The final DSA-1024 APDU has no response, and the wrapper's
+     exit status was not preserved. The emulator logged 32 defrag starts and
+     31 completions; the last was in staging when the watchdog ended the run,
+     so its outcome is unknown. See
      `.agent/HANDOFF.md` and `.agent/QKB.md` for evidence hashes. Next
      reproduce with a bounded CRT workload and capture each process exit status
      before rerunning the full suite.

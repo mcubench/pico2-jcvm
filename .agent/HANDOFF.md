@@ -1,31 +1,34 @@
-# Current handoff — RESOURCE-01 full-suite rerun reaches storage exhaustion — 2026-11-10 15:54 CET
+# Current handoff — RESOURCE-01 full-suite run reaches 3,600-second watchdog — 2026-11-10 16:01 CET
 
 RESOURCE-02 C1–C5 remain implemented and focused acceptance remains green.
 The current unchanged JCAlgTest 1.8.4/jc305 production-configuration VPCD run
-did **not** complete. It ended while the client was issuing RSA-CRT 1792-bit
-key generation; the final client log contains the APDU but no response or
-terminal exit status. Do not infer a compaction hang or a clean timeout from
-that incomplete tail. The separately measured whole-APDU latency remains
+did **not** complete. The configured 3,600-second suite watchdog ended it
+while the client was issuing DSA-1024 key generation (`B0 75 19 00 03 03 04
+00 00`). The final APDU has no response; the wrapper's terminal exit status
+was not preserved in this session output. The separately measured whole-APDU latency remains
 55–102 seconds for earlier compaction-triggering RSA operations and 453.779
 seconds for RSA-1024 key generation that triggered multiple compactions; an
 isolated compaction duration has not been measured.
 
-This run's partial support CSV has 278 lines. Ordinary RSA key generation
+The final partial support CSV has 286 lines. Ordinary RSA key generation
 returned `yes` through 1024 bits, `SystemException_NO_RESOURCE` at 1280–2048,
 and `no` at 3072/4096. RSA-CRT key generation returned `SystemException_NO_RESOURCE`
-from 512 through 1536 bits before the log stopped mid-1792 APDU. Six inventory
+from 512 through 2048 bits; 3072 and 4096 were reported `no`. DSA 512 and 768
+were reported `no`; the DSA-1024 APDU was outstanding at watchdog termination.
+Six inventory
 samples are complete; at sample 6 the card had 1,687 applet-owner records /
 43,649 bytes, 1,821 global records / 46,781 bytes, and 1,513 unreachable tags /
 39,405 bytes. Every sample reports zero invalid references, edge failures, and
-root failures. Compaction cycles logged `FS_DEFRAG_DONE`, but remaining live
-and unreachable records left no capacity for the next persistent write. This
-supports accumulated applet-record pressure as the current failure mode; it
-does not prove the independent cause of the process ending mid-APDU.
+root failures. The emulator logged 32 `FS_DEFRAG_START` events and 31
+`FS_DEFRAG_DONE` events; its final log ends in the staging phase of the last
+compaction when the suite watchdog fired. Thus 31 cycles completed, while the
+32nd outcome is unknown. This supports accumulated applet-record pressure,
+but does not prove a compaction hang.
 
 Evidence: `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/`;
-client SHA-256 `34f39991d45bd6d6110cd0b568174e3b591b6965b1f35d47a0c2780bea674959`,
-emulator SHA-256 `8ecbffb2c335d92b8f732c693248b8bd397240b74997be571550144c1b7b9ebd`,
-partial report SHA-256 `cb14990a3113758a90e756a713c79edd6d955cc08a4417d404237bf8a2c190de`.
+client SHA-256 `8d3b5a81075e609d969bf2ce2a491855a112d52bca4f84c476c75d5179ff0e91`,
+emulator SHA-256 `cc7ca20083363d893307556e10c2921d79ecb0e276ed494a90a79943fc8c0bdb`,
+partial report SHA-256 `ccee129851dc3df8727e5439a87ae4ef151a9a021993d63faed4b84bf76209f6`.
 The earlier run at `...T132850Z/` was interrupted by restarting PC/SC and is
 not firmware evidence. Physical tokens are not in BOOTSEL and must remain
 untouched; the PC/SC list only exposed the two VPCD readers. No hardware was

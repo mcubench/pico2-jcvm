@@ -9431,6 +9431,22 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
   client SHA-256 `34f39991d45bd6d6110cd0b568174e3b591b6965b1f35d47a0c2780bea674959`,
   emulator SHA-256 `8ecbffb2c335d92b8f732c693248b8bd397240b74997be571550144c1b7b9ebd`.
 
+### Correction — final full-suite tail and timeout (2026-11-10)
+
+The run continued after the initial partial snapshot above. Its final CSV has
+286 lines, including RSA-CRT results through 4096 bits and DSA-512/768. The
+configured 3,600-second suite watchdog ended the run while DSA-1024 APDU
+`B0 75 19 00 03 03 04 00 00` was outstanding; no response was captured and
+the wrapper exit status was not preserved. The emulator logged 32
+`FS_DEFRAG_START` but 31 `FS_DEFRAG_DONE`; the last log ends during staging of
+the 32nd compaction. This leaves its outcome unknown rather than proving a
+compaction hang. The earlier text saying the log
+ended at CRT-1792 and the artifact hashes above are superseded. Final hashes:
+client `8d3b5a81075e609d969bf2ce2a491855a112d52bca4f84c476c75d5179ff0e91`,
+emulator `cc7ca20083363d893307556e10c2921d79ecb0e276ed494a90a79943fc8c0bdb`,
+CSV `ccee129851dc3df8727e5439a87ae4ef151a9a021993d63faed4b84bf76209f6`.
+The run remains incomplete and RESOURCE-01 remains open.
+
 ## RESOURCE-02 C5: indexed persistent array tags and rollback recovery
 
 - Persistent indexed tags must encode the index as high byte then low byte.

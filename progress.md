@@ -27057,3 +27057,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open. Next isolate a bounded CRT workload and capture client, emulator, and wrapper exit statuses before another full-suite run. No hardware was flashed or tested.
 - Commit: This evidence record is included in the RESOURCE-01 handoff commit; resolve with `git log --grep="docs: record RESOURCE-01 VPCD rerun evidence"`.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/`; client SHA-256 `34f39991d45bd6d6110cd0b568174e3b591b6965b1f35d47a0c2780bea674959`, emulator SHA-256 `8ecbffb2c335d92b8f732c693248b8bd397240b74997be571550144c1b7b9ebd`, partial report SHA-256 `cb14990a3113758a90e756a713c79edd6d955cc08a4417d404237bf8a2c190de`.
+
+## 2026-11-10 Correct final RESOURCE-01 VPCD run state 3 minutes
+
+- Step/experiment: `RESOURCE-01-VPCD-PARTIAL-RSA-CRT-CORRECTION-20261110`
+- When: '2026-11-10 15:59 CET' - '2026-11-10 16:02 CET'
+- Change: Corrected the handoff, QKB, and TODO after the VPCD run continued past an earlier partial snapshot. Added this append-only progress correction; the prior record's CRT-1792 statement and artifact hashes are superseded.
+- Validation: Rechecked final client and emulator log tails, CSV row count, process list, file modification times, and SHA-256 hashes. `git diff --check -- TODO.md .agent/HANDOFF.md .agent/QKB.md progress.md` passed. No new test, build, USB operation, or physical access was performed.
+- Result: The configured 3,600-second suite watchdog ended the run during DSA-1024 APDU `B0 75 19 00 03 03 04 00 00`. The report has 286 lines. The emulator logged 32 `FS_DEFRAG_START` and 31 `FS_DEFRAG_DONE`; its last log ends during staging of compaction 32, whose outcome is unknown. Final client, emulator, and CSV hashes are recorded below.
+- Decision: RESOURCE-01 remains open. Isolate a bounded workload that reaches the final compaction path and preserve client/emulator/wrapper exit statuses.
+- Commit: This correction and progress record are included in the follow-up RESOURCE-01 evidence commit; resolve with `git log --grep="docs: correct final RESOURCE-01 VPCD run state"`.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/`; client SHA-256 `8d3b5a81075e609d969bf2ce2a491855a112d52bca4f84c476c75d5179ff0e91`, emulator SHA-256 `cc7ca20083363d893307556e10c2921d79ecb0e276ed494a90a79943fc8c0bdb`, CSV SHA-256 `ccee129851dc3df8727e5439a87ae4ef151a9a021993d63faed4b84bf76209f6`.
