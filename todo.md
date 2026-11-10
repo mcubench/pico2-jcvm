@@ -190,7 +190,7 @@ Related: RESOURCE-01 in [TODO.md](TODO.md). Do these in order; each item is
 its own logical step with a before/after measurement recorded in
 `progress.md`. Unmeasured items stay hypotheses until profiled.
 
-- [ ] **PERF-20261110-01 — Confirm where emulator compaction time goes.** P1;
+- [x] **PERF-20261110-01 — Confirm where emulator compaction time goes.** P1;
   owner: EMU-01 / RESOURCE-01. With elevated ptrace host access, run the
   existing 128-cycle rooted RSA replacement workload once under profiling.
   Count tracer traps per `EmulatorCall` kind during one `FS_DEFRAG_START` to
@@ -202,7 +202,7 @@ its own logical step with a before/after measurement recorded in
   word at a time, so one compaction costs 10^4–10^5 round trips.
   Acceptance: a trap-count breakdown per compaction and per persistent
   `edit_at`, recorded with artifact paths. Physical hardware is not involved.
-- [ ] **PERF-20261110-02 — Remove per-word tracer traps from host flash
+- [x] **PERF-20261110-02 — Remove per-word tracer traps from host flash
   emulation.** P1; owner: EMU-01. Depends on 01 confirming the cause. Options:
   have the tracer keep a privilege flag in guest memory, update it on
   privilege transitions, and read it locally; or make the host-only privilege
@@ -214,6 +214,13 @@ its own logical step with a before/after measurement recorded in
   drops from 43.7 s to below 2 s, and APDU 124 time is reported.
   `./tools/test-asymm-crypto-vpcd` passes. PC-only change, so the ARM/RISC-V
   builds must still pass but no flashing is needed.
+  Completed 2026-11-10: the baseline defrag profile captured 29,590
+  `is_privileged` traps in 40.032402 s; one-byte persistent edits used 94–106
+  traps each. Bulk programming reduced the intermediate defrag to 12.349847 s
+  and 9,766 traps. The final optimized defrag measured 2,731 us with zero
+  privilege traps. The 128-cycle test passed 133/133 and APDU 124 took 0.314 s.
+  Host FS tests passed 36/36; asymmetric VPCD passed 107/107; ARM and RISC-V
+  builds passed. See the matching `progress.md` entry and `.agent/QKB.md`.
 - [ ] **PERF-20261110-03 — Bulk range operations for persistent arrays.** P1;
   owner: PERSIST-01 / HARD-01. Native `Util.arrayCopy`/`arrayCopyNonAtomic`/
   `arrayFill` (`copyArrayRange`/`fillArrayRange` in `choupi/src/jni.cpp`) and

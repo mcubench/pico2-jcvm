@@ -9565,3 +9565,31 @@ Check new loader, resolver and bytecode code against these before review.
   tracer on transitions) or downgrade these host-only asserts to
   `debug_assert!`, and batch word programming per block. Validate by timing
   the 128-cycle RSA replacement workload before and after.
+
+## Resolved: PC VPCD compaction overhead was per-word privilege tracing (2026-11-10)
+
+- **Confirmed cause:** profiling the same 128-cycle rooted RSA replacement
+  workload measured 40.032402 s inside compaction and 29,590
+  `is_privileged` tracer traps. A one-byte `edit_at` commonly incurred 94–106
+  such traps. The Rust flash writer programmed every word separately, and
+  each host privilege assertion trapped to the ptrace emulator.
+- **Fix:** host `FlashBlockMut::write_block_generic` now programs a whole byte
+  range in one call, preserving untouched boundary bytes, flash 1-to-0 AND
+  semantics, and per-word power-cut injection. Host flash privilege assertions
+  are `debug_assert!`; release firmware retains lock-state checks. The guest
+  memory MPU checks remain in the ptrace emulator. Embedded flash paths are
+  unchanged. Optional profiling regions count traps for `edit_at` and defrag.
+- **Measured result:** the intermediate bulk-write build took 12.349847 s and
+  9,766 traps for defrag. After removing release-mode privilege traps, the
+  same workload passed 133/133 and the isolated defrag measured 2,731 us with
+  zero privilege traps; APDU 124 took 0.314 s (baseline 43.898 s). The defrag
+  measurement is from PC VPCD, not physical Pico hardware.
+- **Regression checks:** host FS tests 36 passed / 0 failed / 2 ignored;
+  asymmetric VPCD 107 passed / 0 failed; ARM and RISC-V repository builds
+  passed. No firmware was flashed.
+- **Evidence:** baseline trace `artifacts/logs/object-deletion-vpcd-20261110T164807Z.log`
+  SHA-256 `cc505308724ecea5552a8a90c31ee4e63a2dc9ea17bc3af25e870bf6489b2e7a`;
+  final profile trace `artifacts/logs/object-deletion-finalprofile-20261110.log`
+  SHA-256 `8d9fd7e2d8b2a6fcec64a6807c5525030b1e8ad943d4444006746c1f0e4965c0`;
+  final 128-cycle trace `artifacts/logs/object-deletion-postassert-20261110.log`
+  SHA-256 `42825d0611930d11ff7e52ef022f893aef1874b0d2b599f494f00f98c691e338`.

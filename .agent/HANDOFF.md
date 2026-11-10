@@ -1,3 +1,29 @@
+# Current handoff — host VPCD compaction optimization complete — 2026-11-10 20:17 CET
+
+PERF-20261110-01 and PERF-20261110-02 are implemented and validated. The
+baseline 128-cycle rooted RSA replacement compaction took 40.032402 seconds
+with 29,590 `is_privileged` tracer traps. A one-byte persistent `edit_at`
+typically triggered 94–106 traps. Host flash now writes a whole byte range
+per call while preserving flash AND semantics, partial boundary words, and
+per-word power-cut injection. Release host privilege assertions no longer
+make ptrace round trips; debug assertions remain available. The final profile
+measured one defrag at 2,731 us with zero privilege traps. A separate
+unprofiled 128-cycle run passed 133/133, with APDU 124 at 0.314 s.
+
+Validation: host FS tests passed (36 passed, 0 failed, 2 ignored),
+`./tools/build arm` and `./tools/build riscv` passed, and the elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` passed 107/107.
+One initial VPCD invocation without elevated sandbox access exited with
+`Operation not permitted`; the required elevated rerun passed. This was PC
+VPCD testing only; no physical token was flashed. The tokens being in BOOTSEL
+does not affect this host-only change.
+
+Evidence hashes and root cause are in `.agent/QKB.md`; exact run details and
+runtime are appended to `progress.md`. PERF-01/02 are checked off in
+`todo.md`. Continue with PERF-20261110-03, bulk persistent array range
+operations. Preserve existing unrelated changes in both the root and nested
+`choupi/os` working trees during the selective commits.
+
 # Current handoff — measured current-build VPCD compaction cost — 2026-11-10 16:40 CET
 
 RESOURCE-02 C1–C5 remain implemented and focused acceptance remains green.
