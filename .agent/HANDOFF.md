@@ -1,4 +1,4 @@
-# Current handoff — RESOURCE-02 C4 complete; C5 next — 2026-11-10 12:09 CET
+# Current handoff — RESOURCE-02 C4 and RSA-CRT signature fix complete; C5 next — 2026-11-10 12:13 CET
 
 RESOURCE-01 physical work remains paused. RESOURCE-02 C1, C2, and C4 are
 implemented. C4 adds bounded bulk byte-array access for native cipher/RSA
@@ -13,12 +13,14 @@ the ARM image ended at `0x100f2698`, leaving 55,656 bytes. The RESOURCE-02
 VPCD plateau run passed for AES, aliases, and RSA. Repeated-phase inventory
 deltas were all zero: AES 39 records / 589 bytes, aliases 18 / 433 bytes, RSA
 46 / 1,155 bytes. RSA key setup took 134.211 s and its 64-init repeat phase
-took 28.569 s. `./tools/test-asymm-crypto-vpcd` passed 107/107 after identifying
-and locally fixing a CRT signature issue that is being committed separately.
+took 28.569 s. `./tools/test-asymm-crypto-vpcd` passed 107/107. It exposed an
+RSA-CRT signature bug: the signature path tried to read the optional null
+modulus array before taking the P/Q-derived modulus fallback. The ordering fix
+is validated and being committed separately.
 `./tools/test-vpcd-multipackage --timeout 300` passed 47/47. No physical
 device was used.
 
-Next: commit the isolated RSA-CRT signature correction, implement C5 array
+Next: implement C5 array
 rollback/missing-body behavior, high-byte tag encoding, and rollback-safe
 identity reservations, then rerun the saved-state APDU 410 replay and requested
 VPCD suites. Continue preserving unrelated worktree changes. Latest C4 logs:

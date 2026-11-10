@@ -126,7 +126,6 @@ std::vector<unsigned char> keyComponent(JC_Instance &signature,
                                         uint16_t component) {
   auto key = rsaKeyInstance(signature.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
-  auto storage = keyComponentArray(*key, component);
   const jshort_t length = keyComponentLength(*key, component);
   if (length <= 0) {
     if (component == 0 && length == 0 && rsaCrtKey(*key)) {
@@ -138,6 +137,7 @@ std::vector<unsigned char> keyComponent(JC_Instance &signature,
     }
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   }
+  auto storage = keyComponentArray(*key, component);
   if (static_cast<uint16_t>(length) > storage->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto result = readArray(*storage,

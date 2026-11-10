@@ -1,3 +1,21 @@
+# 2026-11-10 RSA-CRT signature modulus may be absent
+
+- **Symptom:** `Signature.sign()` on a generated RSA CRT private key threw
+  `NullPointerException`; the asymmetric VPCD regression reported RSA-CRT 512
+  failure, while RSA non-CRT passed.
+- **Cause:** `native_rsa_signature.cpp::keyComponent()` resolved the component
+  array before checking its recorded length. CRT private keys may leave the
+  modulus field null and derive the modulus from P and Q, so resolving field
+  `NativeKey.modulus` first threw before that fallback ran.
+- **Viable fix:** Read the component length first. For a zero-length CRT modulus,
+  derive it from P and Q; resolve an array only for initialized components.
+  Verified by `./tools/test-asymm-crypto-vpcd` (107/107), `./tools/build arm
+  --profile max_crypto`, and `./tools/build riscv --profile max_crypto`. Reuse
+  this ordering when adding CRT-aware signature or cipher component paths.
+- **Limit:** PC VPCD only; no physical device was used. The fix corrects this
+  failure but does not validate all CRT key sizes or the unchanged full JCAlgTest
+  suite.
+
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
 ## RESOURCE-01: restored JCAlgTest RSA KeyPair reads a missing array — 2026-11-10
