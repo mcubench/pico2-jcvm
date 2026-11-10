@@ -44,7 +44,9 @@ not use the unrelated PacketRF device. The latest source edits are in
 `choupi/os/src/fs/mod.rs` and `choupi/os/src/fs/tests.rs`; the new replay gate is
 in `tests/integration/jcalgtest_apdu_replay_vpcd_test.py` and
 `tools/test-jcalgtest-apdu-replay-vpcd`. Root worktree has unrelated dirty
-changes from other tasks; stage only files from this step.
+changes from other tasks; stage only files from this step. The filesystem
+submodule change is committed as `e1b27de`; root implementation and evidence
+are committed as `de04f38b`.
 
 # Current handoff — bounded RSA stress completes slow VPCD defrags; RESOURCE-01 open — 2026-11-09 16:04 CET
 
