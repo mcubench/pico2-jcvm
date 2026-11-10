@@ -81,7 +81,9 @@ public final class JCTransactionProbe extends Applet {
         JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
     staticReferenceRoot = this;
     byte[] shared = {0x01};
-    persistentReferenceArray = new Object[] {shared, shared};
+    persistentReferenceArray = new Object[257];
+    persistentReferenceArray[0] = shared;
+    persistentReferenceArray[1] = shared;
     byte[] nestedLeaf = {0x6b};
     persistentNestedReferenceHolder = new NestedArrayHolder(
         new Object[] {nestedLeaf, nestedLeaf});
@@ -1052,6 +1054,54 @@ public final class JCTransactionProbe extends Applet {
       }
       case 94: {
         buffer[0] = selectDeselectTransientResult;
+        length = 1;
+        break;
+      }
+      case 95: {
+        byte[] retained = new byte[1];
+        retained[0] = 0x5a;
+        JCSystem.beginTransaction();
+        for (short i = 0; i < 130; i++) {
+          byte[] discarded = new byte[1];
+          discarded[0] = (byte)i;
+          persistentReferenceArray[0] = discarded;
+        }
+        JCSystem.abortTransaction();
+        boolean bodyRecovered = retained.length == 1 &&
+            retained[0] == 0x5a;
+        persistentReferenceArray[0] = retained;
+        buffer[0] = bodyRecovered ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 96: {
+        byte[] retained = (byte[])persistentReferenceArray[0];
+        byte[] next = new byte[1];
+        next[0] = 0x33;
+        persistentReferenceArray[1] = next;
+        buffer[0] = retained != next && retained.length == 1 &&
+            retained[0] == 0x5a && next[0] == 0x33
+                ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 97: {
+        byte[] low = {0x11};
+        byte[] high = {0x22};
+        persistentReferenceArray[0] = low;
+        persistentReferenceArray[256] = high;
+        buffer[0] = persistentReferenceArray[0] != persistentReferenceArray[256] &&
+            ((byte[])persistentReferenceArray[0])[0] == 0x11 &&
+            ((byte[])persistentReferenceArray[256])[0] == 0x22
+                ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 98: {
+        byte[] low = (byte[])persistentReferenceArray[0];
+        byte[] high = (byte[])persistentReferenceArray[256];
+        buffer[0] = low != high && low[0] == 0x11 && high[0] == 0x22
+                ? (byte)1 : (byte)0;
         length = 1;
         break;
       }

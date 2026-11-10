@@ -70,6 +70,9 @@ private:
   /// Canonical flash identity once this array is serialized persistently.
   fs::Tag persistent_tag;
   bool has_persistent_tag = false;
+  bool has_live_data_for_recovery = true;
+  mutable uint32_t persistent_rollback_generation = 0;
+  mutable bool recovering_after_rollback = false;
   /// When to clear data
   ClearEvent clear;
   /// Applet package owning each non-global reference stored in a JCRE global
@@ -90,6 +93,7 @@ private:
 
   /// Compute tag value
   fs::Tag computeTag() const noexcept;
+  void recoverMissingPersistentBody() const;
 
 public:
   /// Get an entry size from the size type.

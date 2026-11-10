@@ -1191,9 +1191,16 @@ void Heap::visitChildReferences(JC_Array &array,
     for (uint16_t index = 0; index < length; ++index) {
       const fs::Tag element_tag =
           FlashMemory_Handler::computeTag(array_tag, index);
-      const jref_t child =
-          FlashMemory_Handler::getPersistentField_ReferenceStrict(element_tag,
-                                                                  *this);
+      jref_t child = FlashMemory_Handler::getPersistentField_ReferenceStrict(
+          element_tag, *this);
+      if (child.isNullPointer() && HIGH_BYTE_SHORT(index) == 0 &&
+          fs_exists(element_tag.value, element_tag.len) == 0) {
+        fs::Tag legacy_tag = element_tag;
+        legacy_tag.value[array_tag.len] = LOW_BYTE_SHORT(index);
+        legacy_tag.value[array_tag.len + 1] = LOW_BYTE_SHORT(index);
+        child = FlashMemory_Handler::getPersistentField_ReferenceStrict(
+            legacy_tag, *this);
+      }
       if (!child.isNullPointer()) {
         visitor(child, visitor_context);
       }
@@ -1221,11 +1228,10 @@ void Heap::visitChildReferences(const JC_Instance &instance,
       if (instance_tag.len > sizeof(instance_tag.value) - sizeof(uint16_t)) {
         throw Exceptions::SecurityException;
       }
-      const fs::Tag field_tag =
-          FlashMemory_Handler::computeTag(instance_tag, index);
-      if (fs_exists(field_tag.value, field_tag.len) == 0) {
-        continue;
-      }
+      bool field_exists = false;
+      const fs::Tag field_tag = FlashMemory_Handler::computeTagForRead(
+          instance_tag, index, &field_exists);
+      if (!field_exists) continue;
 
       const FieldType type =
           FlashMemory_Handler::getPersistentField_Type(field_tag);

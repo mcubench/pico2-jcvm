@@ -1,31 +1,37 @@
-# Current handoff — RESOURCE-02 C4 and RSA-CRT signature fix complete; C5 next — 2026-11-10 12:13 CET
+# Current handoff — RESOURCE-02 C5 implemented and VPCD validated; external max_crypto test prepared — 2026-11-10 14:10 CET
 
-RESOURCE-01 physical work remains paused. RESOURCE-02 C1, C2, and C4 are
-implemented. C4 adds bounded bulk byte-array access for native cipher/RSA
-paths, fills transient RSA workspaces in one copy, and reserves persistent
-array identity numbers in blocks of 64 rather than writing the counter on each
-allocation. A pending C5 check still needs to prove that reservations cannot
-be reused after a transaction rolls them back.
+RESOURCE-01 physical work remains paused. RESOURCE-02 C5 now restores live
+persistent array bodies after transaction rollback, preserves identity-counter
+reservations across rollback, writes indexed tags high-byte first, retains
+unambiguous reads of old tags for indices below 256, and maps element-write
+storage exhaustion to `NO_RESOURCE`. The reader fallback must remain disabled
+above index 255: the legacy low/low tag aliases slot 256 to slot 0.
 
-Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm
---profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed;
-the ARM image ended at `0x100f2698`, leaving 55,656 bytes. The RESOURCE-02
-VPCD plateau run passed for AES, aliases, and RSA. Repeated-phase inventory
-deltas were all zero: AES 39 records / 589 bytes, aliases 18 / 433 bytes, RSA
-46 / 1,155 bytes. RSA key setup took 134.211 s and its 64-init repeat phase
-took 28.569 s. `./tools/test-asymm-crypto-vpcd` passed 107/107. It exposed an
-RSA-CRT signature bug: the signature path tried to read the optional null
-modulus array before taking the P/Q-derived modulus fallback. The ordering fix
-is validated and being committed separately.
-`./tools/test-vpcd-multipackage --timeout 300` passed 47/47. No physical
-device was used.
+Validation: PC, ARM, and RISC-V wrappers passed for `max_crypto`; ARM firmware
+ends at `0x100f2974`, leaving 54,924 bytes. Transaction cases 95–97 passed
+5/5; restored case 98 passed 3/3 across emulator process restart. Saved-state
+JCAlgTest 1.8.4 APDU 410 returns `9000` versus historical `F205` on the final
+PC build. The replay needed over 120 seconds to restore this large saved card;
+its connect timeout default is now 300 seconds. RESOURCE-02's 64-init VPCD
+plateau passed for AES (39 records / 589 bytes), aliases (18 / 433), and RSA
+(46 / 1,155), all with zero repeat-phase inventory delta. RSA setup/repeats
+took 138.241 / 25.617 seconds, compared with the earlier slow 401.069 /
+94.987-second run. Multipackage passed 47/47; asymmetric crypto passed
+107/107; and the 8-cycle object-deletion regression passed 19/19, erasing
+exactly eight applet-owned tags. No physical Pico was accessed.
 
-Next: implement C5 array
-rollback/missing-body behavior, high-byte tag encoding, and rollback-safe
-identity reservations, then rerun the saved-state APDU 410 replay and requested
-VPCD suites. Continue preserving unrelated worktree changes. Latest C4 logs:
-`artifacts/logs/resource02-vpcd-20261110T104912Z/` and
-`artifacts/logs/host-vpcd-multipackage-apdu-20261110T105338Z.log`.
+A fresh empty-card ARM max_crypto UF2 and Windows test package are ready:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` and
+`build/external-test/pico2-jcvm-max_crypto-windows-test.zip`. Hashes and
+external Windows testing steps are in `.agent/EXT_REQUESTS.md`. The UF2 is
+4,085,248 bytes because it carries the erased 1 MiB persistent region in UF2
+blocks; firmware payload itself is 1,988,096 bytes.
+
+Next: finish the running object-deletion test, review/commit the C5 step, then
+commit the external-test request and its progress record separately. Preserve
+all unrelated worktree changes. Latest logs: `artifacts/logs/resource02-vpcd-20261110T124803Z/`,
+`artifacts/logs/host-vpcd-multipackage-apdu-20261110T125309Z.log`, and
+`artifacts/results/resource01-apdu-replay-vpcd-20261110T130345Z/`.
 
 # Current handoff — pinned replay reproduces saved-state RSA failure; RESOURCE-01 open — 2026-11-10 06:04 CET
 

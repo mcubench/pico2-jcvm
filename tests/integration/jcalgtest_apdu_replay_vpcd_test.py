@@ -320,7 +320,10 @@ def main() -> int:
     parser.add_argument("--start-at-apdu", type=int, default=1)
     parser.add_argument("--resume-card", type=Path,
                         help="saved VPCD card image, registry, and emulator.log")
-    parser.add_argument("--connect-timeout", type=float, default=120)
+    # Restoring a large persistent JCAlgTest state can take over two minutes
+    # before the emulator opens its VPCD connection, even when it later runs
+    # the target APDU successfully.
+    parser.add_argument("--connect-timeout", type=float, default=300)
     parser.add_argument("--apdu-timeout", type=float, default=600)
     args = parser.parse_args()
     if args.start_at_apdu < 1:

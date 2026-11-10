@@ -102,6 +102,11 @@ public:
       noexcept
 #endif /* JCVM_SECURE_HEAP_ACCESS */
       ;
+  /// Compute an indexed tag, accepting the historical duplicated-low-byte
+  /// encoding when reading records created by older firmware.
+  static fs::Tag computeTagForRead(const fs::Tag &tag,
+                                  const uint16_t index,
+                                  bool *record_exists = nullptr);
 
   /// Make tag for a packages list.
   static const fs::Tag getPackagesListTag() noexcept;

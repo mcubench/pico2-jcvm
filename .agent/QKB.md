@@ -9383,6 +9383,34 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Evidence: `artifacts/logs/host-vpcd-multipackage-apdu-20261110T092336Z.log`
   and `artifacts/logs/resource02-alias-c2-fixed-20261110.log`.
 
+## RESOURCE-02 C5: indexed persistent array tags and rollback recovery
+
+- Persistent indexed tags must encode the index as high byte then low byte.
+  The prior low/low encoding caused array slots above 255 to collide with a
+  lower slot (for example, index 256 and index 0). A compatibility read of
+  old low/low records is only unambiguous when the index high byte is zero;
+  never probe the legacy form for indices above 255, because it can return a
+  different slot's value when the corrected tag is absent.
+- `JC_Array::size()` should repair a persistent array body only after a
+  persistent-write rollback generation changes. Keep a live-data marker and a
+  recursion guard: a restored persistent array with no live body must fail
+  rather than serialize uninitialized RAM, and serializer calls to `size()`
+  must not recursively trigger recovery.
+- Persistent array identity reservation counters must be republished after
+  rolling back a transaction that modified the counter, so a reserved ID
+  cannot be reused. Keep counter dirty state visible to both explicit abort
+  and commit-failure rollback paths.
+- Validation: PC VPCD transaction cases 95–98 pass, including abort recovery,
+  unique array IDs after process restart, separate slots 0/256, and slot data
+  after process restart. The PC VPCD RSA-2048 64-init plateau remains at 46
+  records / 1,155 bytes with zero repeat-phase inventory delta.
+- A saved JCAlgTest card can take more than 120 seconds to restore before the
+  emulator opens its VPCD socket. A replay that appeared stuck at `REMOTE
+  CALL` eventually connected and APDU 410 returned `9000` when given a
+  300-second connect timeout. The replay harness default is now 300 seconds;
+  a restore that exceeds it still needs investigation rather than a longer
+  unbounded wait.
+
 
 ## Recurring input-handling patterns in CAP load/install/interpretation — 2026-11-10
 

@@ -84,6 +84,10 @@ bool persistent_write_capacity_enforced = false;
 bool persistent_write_transaction_applet_owned = false;
 uint32_t persistent_write_transaction_used_bytes = 0;
 uint32_t persistent_write_rollback_generation = 0;
+bool persistent_array_identity_initialized = false;
+uint64_t persistent_array_identity_next = 1;
+uint32_t persistent_array_identity_reserved_through = 0;
+bool persistent_array_identity_counter_dirty = false;
 
 bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
   return left.len == right.len &&
@@ -253,6 +257,16 @@ void write_persistent_tag_or_throw(const fs::Tag &tag, const uint8_t *data,
   throw Exceptions::IOException;
 }
 
+void throw_persistent_write_status(const uint8_t status) {
+  if (status == 0) return;
+  if (status == 1) {
+    Context::getActiveContext().setPendingSystemExceptionReason(
+        5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
+  }
+  throw Exceptions::IOException;
+}
+
 bool rollback_persistent_writes() noexcept {
   bool success = true;
   // Erase transaction-created records first so a nearly full filesystem can
@@ -285,6 +299,25 @@ bool rollback_persistent_writes() noexcept {
   }
   persistent_write_snapshots.clear();
   return success;
+}
+
+bool persist_array_identity_reservation() noexcept {
+  fs::Tag counter_tag;
+  counter_tag.len = sizeof(kPersistentArrayIdentityCounterTagBytes);
+  std::memcpy(counter_tag.value, kPersistentArrayIdentityCounterTagBytes,
+              counter_tag.len);
+  const uint8_t encoded_counter[] = {
+      kPersistentArrayIdentityVersion,
+      static_cast<uint8_t>(persistent_array_identity_reserved_through >> 24),
+      static_cast<uint8_t>(persistent_array_identity_reserved_through >> 16),
+      static_cast<uint8_t>(persistent_array_identity_reserved_through >> 8),
+      static_cast<uint8_t>(persistent_array_identity_reserved_through)};
+  if (fs_write(counter_tag.value, counter_tag.len, encoded_counter,
+               sizeof(encoded_counter)) != 0 || fs_sync() != 0) {
+    return false;
+  }
+  persistent_array_identity_counter_dirty = false;
+  return true;
 }
 
 class PersistentObjectFrameGuard {
@@ -368,16 +401,12 @@ bool is_persistent_array_type(const FieldType type) noexcept {
 }
 
 uint32_t allocate_persistent_array_identity() {
-  static bool initialized = false;
-  static uint64_t next_identity = 1;
-  static uint32_t reserved_through = 0;
-
   fs::Tag counter_tag;
   counter_tag.len = sizeof(kPersistentArrayIdentityCounterTagBytes);
   std::memcpy(counter_tag.value, kPersistentArrayIdentityCounterTagBytes,
               counter_tag.len);
 
-  if (!initialized) {
+  if (!persistent_array_identity_initialized) {
     if (fs_exists(counter_tag.value, counter_tag.len) != 0) {
       const uint8_t *stored_counter = nullptr;
       uint32_t stored_length = 0;
@@ -387,23 +416,29 @@ uint32_t allocate_persistent_array_identity() {
           stored_counter[0] != kPersistentArrayIdentityVersion) {
         throw Exceptions::SecurityException;
       }
-      reserved_through = (static_cast<uint32_t>(stored_counter[1]) << 24) |
-                         (static_cast<uint32_t>(stored_counter[2]) << 16) |
-                         (static_cast<uint32_t>(stored_counter[3]) << 8) |
-                         static_cast<uint32_t>(stored_counter[4]);
-      next_identity = static_cast<uint64_t>(reserved_through) + 1u;
+      persistent_array_identity_reserved_through =
+          (static_cast<uint32_t>(stored_counter[1]) << 24) |
+          (static_cast<uint32_t>(stored_counter[2]) << 16) |
+          (static_cast<uint32_t>(stored_counter[3]) << 8) |
+          static_cast<uint32_t>(stored_counter[4]);
+      persistent_array_identity_next =
+          static_cast<uint64_t>(persistent_array_identity_reserved_through) +
+          1u;
     }
-    initialized = true;
+    persistent_array_identity_initialized = true;
   }
 
-  if (next_identity > UINT32_MAX) throw Exceptions::IOException;
-  if (next_identity > reserved_through) {
-    const uint64_t available = UINT32_MAX - next_identity + 1u;
+  if (persistent_array_identity_next > UINT32_MAX) {
+    throw Exceptions::IOException;
+  }
+  if (persistent_array_identity_next >
+      persistent_array_identity_reserved_through) {
+    const uint64_t available =
+        UINT32_MAX - persistent_array_identity_next + 1u;
     const uint32_t reserve_count = static_cast<uint32_t>(
-        std::min<uint64_t>(kPersistentArrayIdentityReservationSize,
-                           available));
-    const uint32_t new_reserved_through =
-        static_cast<uint32_t>(next_identity + reserve_count - 1u);
+        std::min<uint64_t>(kPersistentArrayIdentityReservationSize, available));
+    const uint32_t new_reserved_through = static_cast<uint32_t>(
+        persistent_array_identity_next + reserve_count - 1u);
     const uint8_t encoded_counter[] = {
         kPersistentArrayIdentityVersion,
         static_cast<uint8_t>(new_reserved_through >> 24),
@@ -412,9 +447,11 @@ uint32_t allocate_persistent_array_identity() {
         static_cast<uint8_t>(new_reserved_through)};
     write_persistent_tag_or_throw(counter_tag, encoded_counter,
                                   sizeof(encoded_counter));
-    reserved_through = new_reserved_through;
+    persistent_array_identity_reserved_through = new_reserved_through;
+    persistent_array_identity_counter_dirty =
+        persistent_write_transaction_active;
   }
-  return static_cast<uint32_t>(next_identity++);
+  return static_cast<uint32_t>(persistent_array_identity_next++);
 }
 
 // Persistent array contents need an identity independent of the field's
@@ -542,12 +579,17 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
     if (restored_persistent_records) {
       ++persistent_write_rollback_generation;
     }
+    if (persistent_array_identity_counter_dirty &&
+        !persist_array_identity_reservation()) {
+      return false;
+    }
     return false;
   }
   persistent_write_snapshots.clear();
   persistent_write_capacity_enforced = false;
   persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
+  persistent_array_identity_counter_dirty = false;
   return true;
 }
 
@@ -561,7 +603,10 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
   if (restored_persistent_records) {
     ++persistent_write_rollback_generation;
   }
-  return success;
+  const bool counter_preserved =
+      !persistent_array_identity_counter_dirty ||
+      persist_array_identity_reservation();
+  return success && counter_preserved;
 }
 
 bool FlashMemory_Handler::persistentWriteTransactionActive() noexcept {
@@ -900,10 +945,28 @@ fs::Tag FlashMemory_Handler::computeTag(const fs::Tag &tag,
     new_tag.value[idx] = tag.value[idx];
   }
 
-  new_tag.value[tag.len] = LOW_BYTE_SHORT(index);
+  new_tag.value[tag.len] = HIGH_BYTE_SHORT(index);
   new_tag.value[tag.len + 1] = LOW_BYTE_SHORT(index);
 
   return new_tag;
+}
+
+fs::Tag FlashMemory_Handler::computeTagForRead(const fs::Tag &tag,
+                                               const uint16_t index,
+                                               bool *record_exists) {
+  fs::Tag selected = computeTag(tag, index);
+  bool exists = fs_exists(selected.value, selected.len) != 0;
+  // The historical duplicated-low-byte encoding is only unambiguous while
+  // the high byte is zero. Above index 255 it aliases a different corrected
+  // slot (for example, 256 aliases 0), so never use it as a fallback there.
+  if (!exists && HIGH_BYTE_SHORT(index) == 0) {
+    selected.value[tag.len] = LOW_BYTE_SHORT(index);
+    selected.value[tag.len + 1] = LOW_BYTE_SHORT(index);
+    exists = fs_exists(selected.value, selected.len) != 0;
+    if (!exists) selected = computeTag(tag, index);
+  }
+  if (record_exists != nullptr) *record_exists = exists;
+  return selected;
 }
 
 /**
@@ -2256,9 +2319,8 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
   snapshot_persistent_tag(tag);
-  if (fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value)) {
-    throw Exceptions::IOException;
-  }
+  throw_persistent_write_status(
+      fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value));
 }
 
 void FlashMemory_Handler::setPersistentField_Array_ByteNonAtomic(
@@ -2275,9 +2337,8 @@ void FlashMemory_Handler::setPersistentField_Array_ByteNonAtomic(
   }
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  if (fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value)) {
-    throw Exceptions::IOException;
-  }
+  throw_persistent_write_status(
+      fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value));
   preserve_non_atomic_array_byte_in_snapshot(tag, index, value);
 }
 
@@ -2385,7 +2446,7 @@ void FlashMemory_Handler::setPersistentField_Array_Short(const fs::Tag &tag,
     }
     std::fprintf(stderr, "\n");
 #endif
-    throw Exceptions::IOException;
+    throw_persistent_write_status(write_status);
   }
 }
 
@@ -2463,10 +2524,8 @@ void FlashMemory_Handler::setPersistentField_Array_Int(const fs::Tag &tag,
   for (uint32_t byte_index = 0; byte_index < sizeof(encoded); ++byte_index) {
     const uint8_t byte = static_cast<uint8_t>(
         encoded >> (24u - 8u * byte_index));
-    if (fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset + byte_index,
-                       byte)) {
-      throw Exceptions::IOException;
-    }
+    throw_persistent_write_status(fs_write_1b_at(
+        &(tag.value[0]), tag.len, byte_offset + byte_index, byte));
   }
 }
 #endif /* JCVM_INT_SUPPORTED */
@@ -2505,8 +2564,24 @@ const jref_t FlashMemory_Handler::getPersistentField_Array_Reference(
     throw Exceptions::IOException;
   }
 
-  fs::Tag field_tag = FlashMemory_Handler::computeTag(tag, index);
-  return FlashMemory_Handler::getPersistentField_Reference(field_tag, heap);
+  const fs::Tag field_tag = FlashMemory_Handler::computeTag(tag, index);
+  const jref_t reference =
+      FlashMemory_Handler::getPersistentField_Reference(field_tag, heap);
+  if (!reference.isNullPointer() ||
+      fs_exists(field_tag.value, field_tag.len) != 0) {
+    return reference;
+  }
+
+  // Older card images encoded both index bytes with the low byte. Only probe
+  // that form when the corrected slot is absent, avoiding an extra filesystem
+  // lookup for the common non-null reference path.
+  if (HIGH_BYTE_SHORT(index) == 0) {
+    fs::Tag legacy_tag = field_tag;
+    legacy_tag.value[tag.len] = LOW_BYTE_SHORT(index);
+    legacy_tag.value[tag.len + 1] = LOW_BYTE_SHORT(index);
+    return FlashMemory_Handler::getPersistentField_Reference(legacy_tag, heap);
+  }
+  return reference;
 }
 
 /*

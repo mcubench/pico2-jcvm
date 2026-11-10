@@ -154,6 +154,9 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                              kNoGlobalReferenceOwner) {
   this->persistent_tag = tag;
   this->has_persistent_tag = true;
+  this->has_live_data_for_recovery = isTransientArray;
+  this->persistent_rollback_generation =
+      FlashMemory_Handler::persistentWriteRollbackGeneration();
   this->array[0] = tag.len;
 
   for (uint8_t idx = 0; idx < tag.len; idx++) {
@@ -190,6 +193,8 @@ fs::Tag JC_Array::computeTag() const noexcept {
 void JC_Array::setPersistentTag(const fs::Tag &tag) noexcept {
   this->persistent_tag = tag;
   this->has_persistent_tag = true;
+  this->persistent_rollback_generation =
+      FlashMemory_Handler::persistentWriteRollbackGeneration();
   // Transient arrays can have a persistent identity record that aliases
   // their clear-event metadata, but their contents remain in the transient
   // allocation and must keep transient indexing/serialization semantics.
@@ -272,6 +277,7 @@ jc_cp_offset_t JC_Array::getReferenceType() const
  * @return array size.
  */
 uint16_t JC_Array::size() const {
+  this->recoverMissingPersistentBody();
   if (this->isTransientArray() && this->isPersistent()) {
     return this->logical_length;
   }
@@ -317,6 +323,37 @@ uint16_t JC_Array::size() const {
   // is the number of elements. Persistent headers already store that logical
   // count; divide transient and ordinary backing lengths by the element width.
   return static_cast<uint16_t>(length);
+}
+
+void JC_Array::recoverMissingPersistentBody() const {
+  if (!this->isPersistent() || !this->has_persistent_tag ||
+      this->recovering_after_rollback) {
+    return;
+  }
+  const uint32_t generation =
+      FlashMemory_Handler::persistentWriteRollbackGeneration();
+  if (this->persistent_rollback_generation == generation) return;
+  const fs::Tag tag = this->persistent_tag;
+  if (fs_exists(tag.value, tag.len) != 0) {
+    this->persistent_rollback_generation = generation;
+    return;
+  }
+  if (!this->has_live_data_for_recovery) {
+    this->persistent_rollback_generation = generation;
+    throw Exceptions::IOException;
+  }
+  this->recovering_after_rollback = true;
+  try {
+    auto &array = *const_cast<JC_Array *>(this);
+    FlashMemory_Handler::setPersistentField_Array(tag, array,
+                                                  array.getOwner());
+    this->recovering_after_rollback = false;
+    this->persistent_rollback_generation =
+        FlashMemory_Handler::persistentWriteRollbackGeneration();
+  } catch (...) {
+    this->recovering_after_rollback = false;
+    throw;
+  }
 }
 
 /**

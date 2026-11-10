@@ -932,13 +932,13 @@ auto JC_Instance::getFields() const -> decltype(fields) {
   }
 
   for (uint16_t index = 0; index < this->fields->size(); index++) {
-    const fs::Tag field_tag = FlashMemory_Handler::computeTag(
-        this->recomputeOriginalTag(), index);
+    bool field_exists = false;
+    const fs::Tag field_tag = FlashMemory_Handler::computeTagForRead(
+        this->recomputeOriginalTag(), index, &field_exists);
     jc_field_t &field = this->fields->at(index);
     // Persistent fields with no record have never been assigned. Match the
     // reference getter's missing-tag behavior instead of asking the type
     // reader to turn the expected absence into an IOException.
-    const bool field_exists = fs_exists(field_tag.value, field_tag.len) != 0;
     if (!field_exists) {
       field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
       field.value = 0;

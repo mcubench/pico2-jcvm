@@ -105,6 +105,15 @@ Archive text is historical evidence, not current device state or priorities.
      counter rollback-safe so identities are never reused (explains the
      saved-state APDU 410 `6F00`); fix `computeTag` to encode the index high
      byte; map element-write `OutOfFlash` to `NO_RESOURCE`.
+     Implementation is complete for review: missing-body recovery,
+     rollback-safe identity reservation, high/low index encoding with
+     unambiguous legacy reads, and `NO_RESOURCE` mapping are implemented.
+     PC VPCD cases 95–98 pass, the 64-init AES/alias/RSA inventory plateau
+     passes, and the multipackage regression passes 47/47. The saved-state
+     APDU 410 replay returned `9000` on the final build with a 300-second
+     VPCD connection timeout; the default-timeout rerun also passed. The
+     unchanged full JCAlgTest 1.8.4 suite with inventory sampling remains part
+     of RESOURCE-01 acceptance.
   Acceptance: the step-1 regression shows a flat plateau of records/bytes over
   N inits for both RSA and AES; the saved-state APDU 410 replay returns `9000`
   on the pinned build; ARM and RISC-V builds pass with no new warnings; the

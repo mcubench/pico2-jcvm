@@ -51,7 +51,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 94),
+        "--case", type=int, action="append", choices=range(1, 99),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -81,7 +81,7 @@ def main() -> int:
         help="hex bytes passed as the applet's proprietary install parameters",
     )
     parser.add_argument(
-        "--package-id", type=int, choices=range(56, 64), default=63,
+        "--package-id", type=int, choices=range(56, 64), default=56,
         help="dynamic package ID to use while restoring an installed applet",
     )
     parser.add_argument(
@@ -124,13 +124,17 @@ def main() -> int:
         host, port = listener.getsockname()
         command = [
             str(emulator), "-m", str(memory), "-s", "--vpcd", f"{host}:{port}",
-            "--applet-aid", AID.hex(), "--package-id", "63", "--cap-code",
-            str(cap_code), "--rom-mask", str(rom_mask),
+            "--applet-aid", AID.hex(), "--rom-mask", str(rom_mask),
         ]
         if args.restore_existing:
-            command.extend(("--class-index", "0"))
-            command.extend(("--package-id", str(args.package_id)))
+            command.extend((
+                "--restore-applet", str(args.package_id), "0", AID.hex(),
+                AID.hex(), str(cap_code),
+            ))
         else:
+            command.extend((
+                "--package-id", "63", "--cap-code", str(cap_code),
+            ))
             command.append("--install")
             install_params = "7f" if args.light_install else args.install_params
             if install_params is not None:
@@ -258,6 +262,10 @@ def main() -> int:
                     (54, b"\x01", "unreferenced object batch 3 keeps instance heap bounded"),
                     (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
                     (94, b"\x01", "CLEAR_ON_DESELECT byte-array allocation is allowed during the select callback"),
+                    (95, b"\x01", "rollback restores missing array bodies and reserves array identities"),
+                    (96, b"\x01", "persistent array identities remain unique after emulator restart"),
+                    (97, b"\x01", "persistent array slots above 255 do not alias low slots"),
+                    (98, b"\x01", "high-index persistent array slots survive emulator restart"),
                     (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
                     (57, b"", "power-off/on and reader reset skip applet deselect callbacks"),
                     (58, b"\x33", "committed persistent applet field survives emulator process restart"),
