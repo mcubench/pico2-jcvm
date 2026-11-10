@@ -1,5 +1,32 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## RESOURCE-01: edit relocation held the defragmentation sector locked — 2026-11-10
+
+- **Symptom:** In the captured JCAlgTest 1.8.4/jc305 RSA APDU transcript, a
+  persistent record edit that did not fit in its source sector returned
+  `IO_LOCKED`, surfaced by the VM as `6F00`. The subsequent writes also failed.
+- **Cause:** `FileSystem::edit_at()` wrote the edited record into the reserved
+  defragmentation sector with `write_impl()`, which inserted that record into
+  the live file index. It then called `defragment(current_sector)`, whose first
+  action erases the staging sector. The live index entry still held read locks
+  into that sector, so the erase failed. The error was an actual lock conflict,
+  not OutOfFlash (`FS_STATUS_OUT_OF_FLASH=1`); do not map `IO_LOCKED=129` to
+  `NO_RESOURCE`.
+- **Viable fix:** Keep the old record indexed, construct the patched data in
+  owned memory, and call the normal `write()` allocator. Its existing append,
+  compaction and replacement order retains the durable old record until the new
+  value commits. A filesystem regression forces the source append cursor full,
+  edits the value, checks that no live entry points into the defragmentation
+  sector, then reinitializes and verifies the new value.
+- **Evidence and limit:** Filesystem tests passed 35/35 (2 ignored); ARM and
+  RISC-V wrappers passed. The current-profile 414-command replay now completes
+  with no `6F00`, `F205`, or persistent-write failure. On max_crypto, APDU 402
+  changed from historical `F205` to `9000`, and APDUs 404/405 returned `9000`,
+  but APDU 406 timed out at 600 seconds while repeated sector compactions were
+  still active. This fixes one proven lock failure, not RESOURCE-01 overall.
+- **Next:** Diagnose why APDU 406's persistent writes repeatedly compact nearly
+  full sectors; finish the unchanged full 1.8.4 suite and physical acceptance.
+
 ## Reusable method: faults that appear only after long runs — 2026-11-09
 
 - **Trigger:** A late operation fails in a long suite but succeeds on a fresh

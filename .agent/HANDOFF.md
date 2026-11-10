@@ -1,3 +1,51 @@
+# Current handoff — filesystem edit lock fixed; max-profile RSA replay still times out — 2026-11-10 01:27 CET
+
+RESOURCE-01 remains open. A review of the captured 414-command JCAlgTest
+1.8.4/jc305 transcript identified a concrete filesystem lock bug in
+`FileSystem::edit_at()`: when an update did not fit in its source sector, it
+inserted a replacement into the reserved defragmentation sector, then tried to
+erase that same sector while the live entry still held read locks. `IO_LOCKED`
+then surfaced as `6F00` on APDU 404 and following writes. The fallback now
+keeps the old record indexed, builds the updated value in owned memory, and
+uses the normal allocator. A regression confirms the edited value survives
+filesystem reinitialization and no file entry points into the staging sector.
+
+Validation completed:
+
+- `./tools/env cargo test --manifest-path choupi/os/Cargo.toml
+  --no-default-features --features host fs::tests`: 35 passed, 2 ignored.
+- `./tools/build arm` and `./tools/build riscv`: passed with `current` profile;
+  full ARM image ends at `0x100d7930`, 165,584 bytes below the configured
+  flash limit. RISC-V wrapper builds the VM core, not full CHOUPI firmware.
+- `./tools/fixture-path --verify`: 81 files, JCAlgTest 1.8.4 and 48 API CAPs
+  verified.
+- Full captured 414-command VPCD replay in the current profile passed; it had
+  no `6F00`, `F205`, or persistent-write errors. Two early metadata commands
+  (`80CA9F7F00`, `80CA006600`) returned the known `6982` setup difference and
+  were explicitly classified by the replay harness.
+- A `max_crypto` PC build passed. Its replay returned `9000` on APDU 402 (the
+  source transcript had `F205`) and APDUs 404/405, but APDU 406 timed out after
+  600 seconds while the emulator was still repeatedly compacting nearly full
+  sectors. The replay process then exited; no `F205`/`6F00` was logged for that
+  APDU. Artifacts: `artifacts/results/resource01-apdu-replay-vpcd-20261109T234843Z/`
+  (current profile) and `artifacts/results/resource01-apdu-replay-vpcd-20261109T235553Z/`
+  (max_crypto).
+- Three Pico 2 boards remain USB-enumerated (`2e8a:0009`, devices 047–049) and
+  the authorized ACL helper granted access. PC/SC is unavailable: the bounded
+  scanner produced repeated `SCardEstablishContext: Access denied`, and
+  `systemctl status` showed `pcscd.service` inactive with a pending daemon
+  reload. No hardware was flashed or tested.
+
+Next: investigate the repeated max-profile compactions and why the 600-second
+APDU deadline expires, then complete the unchanged full 1.8.4/jc305 suite.
+Keep production persistent deletion disabled pending its safety gates. For
+physical work, use an identified Pico only after PC/SC access is restored; do
+not use the unrelated PacketRF device. The latest source edits are in
+`choupi/os/src/fs/mod.rs` and `choupi/os/src/fs/tests.rs`; the new replay gate is
+in `tests/integration/jcalgtest_apdu_replay_vpcd_test.py` and
+`tools/test-jcalgtest-apdu-replay-vpcd`. Root worktree has unrelated dirty
+changes from other tasks; stage only files from this step.
+
 # Current handoff — bounded RSA stress completes slow VPCD defrags; RESOURCE-01 open — 2026-11-09 16:04 CET
 
 RESOURCE-01 remains **unfixed**: the unchanged full JCAlgTest run still hit

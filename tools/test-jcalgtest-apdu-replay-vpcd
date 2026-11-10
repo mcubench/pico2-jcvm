@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_command timeout
+
+if (($# == 0)); then
+  cat >&2 <<'EOF'
+Usage:
+  tools/test-jcalgtest-apdu-replay-vpcd \
+    --client-log PATH --stop-after-apdu HEX [--cap PATH]
+
+Replay an unchanged JCAlgTest client APDU transcript over the repository's
+direct VPCD socket integration path. The emulator and upstream CAP are run
+without PC/SC or physical USB access.
+EOF
+  exit 2
+fi
+
+apdu_timeout="${RESOURCE01_REPLAY_APDU_TIMEOUT_SECONDS:-600}"
+suite_timeout="${RESOURCE01_REPLAY_TIMEOUT_SECONDS:-3600}"
+[[ "${apdu_timeout}" =~ ^[1-9][0-9]*$ ]] ||
+  die "RESOURCE01_REPLAY_APDU_TIMEOUT_SECONDS must be a positive integer"
+[[ "${suite_timeout}" =~ ^[1-9][0-9]*$ ]] ||
+  die "RESOURCE01_REPLAY_TIMEOUT_SECONDS must be a positive integer"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+out_dir="${repo_root}/artifacts/results/resource01-apdu-replay-vpcd-${timestamp}"
+mkdir -p "${out_dir}"
+
+timeout --signal=TERM --kill-after=10s "${suite_timeout}s" \
+  "${repo_root}/tools/env" python3 \
+  "${repo_root}/tests/integration/jcalgtest_apdu_replay_vpcd_test.py" \
+  --out-dir "${out_dir}" --apdu-timeout "${apdu_timeout}" "$@" \
+  > "${out_dir}/replay.log" 2>&1 || {
+    cat "${out_dir}/replay.log" >&2
+    cat "${out_dir}/emulator.log" >&2 2>/dev/null || true
+    die "JCAlgTest APDU replay failed; see ${out_dir}"
+  }
+
+cat "${out_dir}/replay.log"
+printf 'JCALGTEST_APDU_REPLAY_VPCD:PASS artifacts=%s\n' \
+  "${out_dir#${repo_root}/}"

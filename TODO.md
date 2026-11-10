@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-09. This is the active backlog for `plan.md`.
+Updated: 2026-11-10. This is the active backlog for `plan.md`.
 Implementation and validation are separate: an implemented task stays open when
 its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 `AGENTS.md` for native API boundaries, build gates, hardware access and commits.
@@ -195,6 +195,20 @@ Archive text is historical evidence, not current device state or priorities.
   304 bytes, with zero unreachable tags. Normal firmware still reports object
   deletion unsupported; this fixture result is not a production or hardware
   fix. See `.agent/QKB.md` and the 2026-11-09 `progress.md` entry.
+- 2026-11-10 focused filesystem regression: the 414-command captured
+  JCAlgTest RSA transcript previously returned `6F00` after APDU 402. Root
+  cause was the `edit_at()` relocation path publishing its replacement into the
+  reserved defragmentation sector, then immediately compacting that sector
+  while the replacement still held read locks. The relocation now keeps the
+  old record indexed and calls the normal allocator with an owned replacement
+  buffer. The regression passes after reinitialization, both ARM and RISC-V
+  wrappers build, and the current-profile replay returns `9000` through APDU
+  414 with no `6F00`, `F205`, or persistent-write error. The max_crypto replay
+  reached APDU 405 but APDU 406 timed out at 600 seconds while repeatedly
+  compacting nearly full sectors; this remains a resource/performance failure.
+  Physical readers are USB-enumerated, but PC/SC is currently unavailable
+  (`pcscd.service` inactive). Keep RESOURCE-01 open; next isolate the max-profile
+  storage-pressure behavior and complete the unchanged full-suite acceptance.
 - Immediate action order (2026-11-09 review):
   1. **Reproduce the remaining failure in a small mixed workload.** Extract
      the ordered key creation/replacement, cache-clear and deletion APDUs leading
