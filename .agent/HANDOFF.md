@@ -1,3 +1,33 @@
+# Current handoff — PERF-20261110-03 persistent array ranges complete — 2026-11-10 23:00 CET
+
+PERF-20261110-03 is implemented. Persistent primitive arrays now use validated
+range reads and writes. `Util.arrayCopy`, `arrayFill`, bytecode-level
+`arrayCopyNonAtomic`/fill, and RSA/EC component copies use the range path where
+arrays are persistent; transient and volatile paths remain element-wise.
+Non-atomic transaction snapshot behavior is covered by probe cases 89–92.
+
+The corrected 128-byte unit measurement is 1,024 filesystem calls for the
+scalar copy and 3 for the range copy. A provisional 1,152 baseline was traced
+to a duplicated counter increment in the unit filesystem stub; the test
+instrumentation was corrected and rerun (`TEST:SUMMARY fail=0`).
+
+Both ARM and RISC-V wrapper builds passed. The current ARM image was flashed
+to Pico 2 boards `8E464F4E2BBC0A19` and `2BED26ED20556535`; each passed the
+finite monitor and physical transaction suite (`TEST:SUMMARY pass=17 fail=0`).
+PC VPCD transaction cases 89–92 passed; focused API `Util` validation passed
+19/19. Symmetric VPCD passed 102/102 and asymmetric VPCD passed 107/107.
+Logs: `artifacts/logs/jcsystem-transaction-physical-20261110T214435Z.log`,
+`artifacts/logs/jcsystem-transaction-physical-20261110T214559Z.log`, and
+`artifacts/logs/perf03-nonatomic-range-vpcd-20261110.log`. No Windows testing
+was performed.
+
+PERF-03 is checked off in `todo.md`; the source, tests, this handoff, QKB, and
+progress record are in the PERF-03 commit. Continue with PERF-20261110-04
+(persistent array metadata caching). Preserve unrelated dirty files, including
+the existing trace-format change at the end of `bc_invoke.cpp`.
+
+---
+
 # Current handoff — host VPCD compaction optimization complete — 2026-11-10 20:17 CET
 
 PERF-20261110-01 and PERF-20261110-02 are implemented and validated. The

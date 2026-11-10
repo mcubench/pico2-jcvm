@@ -11,6 +11,9 @@
 
 namespace persistent_transaction_test {
 uint16_t instance_field_count = 0;
+unsigned int counted_fs_calls = 0;
+void reset_counted_fs_calls() { counted_fs_calls = 0; }
+unsigned int counted_fs_call_count() { return counted_fs_calls; }
 extern bool track_array_allocations;
 extern unsigned int tracked_array_allocations;
 extern unsigned int tracked_array_deallocations;
@@ -136,6 +139,7 @@ bool should_fail_write(const uint8_t *tag, uint8_t tag_length) {
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,
                                   uint32_t offset, uint8_t *value) {
+  ++persistent_transaction_test::counted_fs_calls;
   const auto found = files.find(key_for(tag, tag_length));
   if (found == files.end() || value == nullptr || offset >= found->second.size())
     return 1;
@@ -157,6 +161,7 @@ extern "C" uint8_t fs_length(const uint8_t *tag, const uint8_t tag_length,
 
 extern "C" uint8_t fs_read(const uint8_t *tag, const uint8_t tag_length,
                            uint8_t *data, const uint32_t length) {
+  ++persistent_transaction_test::counted_fs_calls;
   if (fail_next_read) {
     fail_next_read = false;
     return 1;
@@ -172,6 +177,7 @@ extern "C" uint8_t fs_read(const uint8_t *tag, const uint8_t tag_length,
 extern "C" uint8_t fs_read_inplace(const uint8_t *tag,
                                     const uint8_t tag_length,
                                     const uint8_t **data, uint32_t *length) {
+  ++persistent_transaction_test::counted_fs_calls;
   const auto found = files.find(key_for(tag, tag_length));
   if (found == files.end() || data == nullptr || length == nullptr) return 2;
   *data = found->second.data();
@@ -181,6 +187,7 @@ extern "C" uint8_t fs_read_inplace(const uint8_t *tag,
 
 extern "C" uint8_t fs_write(const uint8_t *tag, const uint8_t tag_length,
                             const uint8_t *data, const uint32_t length) {
+  ++persistent_transaction_test::counted_fs_calls;
   if (should_fail_write(tag, tag_length)) return 1;
   if (tag == nullptr || tag_length == 0 || data == nullptr) return 3;
   files[key_for(tag, tag_length)] = std::vector<uint8_t>(data, data + length);
@@ -246,6 +253,7 @@ extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
                                    const uint8_t tag_length,
                                    const uint32_t offset,
                                    const uint8_t value) {
+  ++persistent_transaction_test::counted_fs_calls;
   if (should_fail_write(tag, tag_length)) return 1;
   const auto found = files.find(key_for(tag, tag_length));
   if (found == files.end() || offset >= found->second.size()) return 2;

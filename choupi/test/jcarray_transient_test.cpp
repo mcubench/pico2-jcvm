@@ -108,6 +108,7 @@ int main() {
     std::cerr << "valid applet instance AID could not be restored\n";
     return 1;
   }
+  context.setAppletInstallationActive(true);
   if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet(
           jcvm::jref_t{}) !=
       jcvm::FALSE) {

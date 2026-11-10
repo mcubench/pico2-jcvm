@@ -168,6 +168,28 @@ fs::Tag FlashMemory_Handler::computeTag(const fs::Tag &tag,
   return result;
 }
 
+fs::Tag FlashMemory_Handler::computeTagForRead(const fs::Tag &tag,
+                                                const uint16_t index,
+                                                bool *record_exists) {
+  if (record_exists != nullptr) *record_exists = false;
+  return computeTag(tag, index);
+}
+
+void FlashMemory_Handler::setPersistentField_Array(const fs::Tag &,
+                                                    JC_Array &, Heap &) {}
+
+void FlashMemory_Handler::readPersistentArrayRange(
+    const fs::Tag &, FieldType, uint16_t, uint16_t, uint16_t count,
+    uint8_t element_width, uint8_t *destination) {
+  if (destination != nullptr)
+    std::fill(destination,
+              destination + static_cast<uint32_t>(count) * element_width, 0);
+}
+
+void FlashMemory_Handler::writePersistentArrayRange(
+    const fs::Tag &, FieldType, uint16_t, uint16_t, uint16_t, uint8_t,
+    const uint8_t *, bool) {}
+
 FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &) {
   return FieldType::FIELD_TYPE_UNINITIALIZED;
 }
@@ -186,6 +208,9 @@ const jbyte_t FlashMemory_Handler::getPersistentField_Array_Byte(
 }
 
 void FlashMemory_Handler::setPersistentField_Array_Byte(
+    const fs::Tag &, const uint16_t, const jbyte_t, Heap &) {}
+
+void FlashMemory_Handler::setPersistentField_Array_ByteNonAtomic(
     const fs::Tag &, const uint16_t, const jbyte_t, Heap &) {}
 
 const jshort_t FlashMemory_Handler::getPersistentField_Array_Short(

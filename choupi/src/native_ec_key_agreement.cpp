@@ -117,8 +117,8 @@ std::vector<unsigned char> component(JC_Instance &key, uint16_t slot) {
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   std::vector<unsigned char> result(static_cast<size_t>(length));
   const uint16_t begin = static_cast<uint16_t>(array->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    result[i] = static_cast<uint8_t>(array->getByteEntry(begin + i));
+  array->copyPrimitiveEntriesTo(begin, static_cast<uint16_t>(length),
+                                result.data());
   return result;
 }
 

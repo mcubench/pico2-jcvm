@@ -9593,3 +9593,27 @@ Check new loader, resolver and bytecode code against these before review.
   SHA-256 `8d9fd7e2d8b2a6fcec64a6807c5525030b1e8ad943d4444006746c1f0e4965c0`;
   final 128-cycle trace `artifacts/logs/object-deletion-postassert-20261110.log`
   SHA-256 `42825d0611930d11ff7e52ef022f893aef1874b0d2b599f494f00f98c691e338`.
+
+
+## Persistent primitive array range operations (2026-11-10)
+
+- **Finding:** Scalar copy of a 128-byte persistent byte array performs 1,024
+  filesystem API calls in the unit harness. The batched range implementation
+  performs one read and two validated write calls (3 total), a 99.7% reduction.
+  An earlier provisional count of 1,152 was caused by a duplicated increment in
+  the test filesystem stub; the instrumentation was fixed and the corrected
+  benchmark rerun.
+- **Semantics to preserve:** `Util.arrayCopyNonAtomic` still stages source bytes
+  before writing and preserves the non-atomic transaction snapshot behavior;
+  transaction cases 89–92 cover capacity overflow, same-array overlap/abort,
+  separate arrays, and a later atomic write. For primitive ranges, validate the
+  serialized array type and full record length before copying. Transient and
+  volatile arrays retain element-wise handling.
+- **Validation:** Two physical Pico 2 boards (`8E464F4E2BBC0A19`,
+  `2BED26ED20556535`) passed runtime monitor and 17/17 physical transaction
+  checks. Focused API `Util` checks passed 19/19; symmetric/asymmetric VPCD
+  passed 102/102 and 107/107; ARM and RISC-V builds passed.
+- **Status:** Viable implementation and measured improvement. See PERF-03 in
+  `todo.md`, the corresponding `progress.md` record, and logs named
+  `jcsystem-transaction-physical-20261110T214435Z.log` and
+  `jcsystem-transaction-physical-20261110T214559Z.log`.

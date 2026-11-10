@@ -460,28 +460,6 @@ int32_t readSignedArrayElement(JC_Array &array, const uint16_t index) {
   throw Exceptions::UtilException;
 }
 
-void writeArrayElement(JC_Array &array, const uint16_t index,
-                       const uint32_t value) {
-  switch (array.getType()) {
-  case JAVA_ARRAY_T_BOOLEAN:
-  case JAVA_ARRAY_T_BYTE:
-    array.setByteEntry(index, static_cast<jbyte_t>(value));
-    return;
-  case JAVA_ARRAY_T_SHORT:
-    array.setShortEntry(index, static_cast<jshort_t>(value));
-    return;
-#ifdef JCVM_INT_SUPPORTED
-  case JAVA_ARRAY_T_INT:
-    array.setIntEntry(index, static_cast<jint_t>(value));
-    return;
-#endif
-  case JAVA_ARRAY_T_REFERENCE:
-    throw Exceptions::NotYetImplemented;
-  }
-
-  throw Exceptions::SecurityException;
-}
-
 jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
                         const jshort_t length, const jref_t destinationRef,
                         const jshort_t destinationOffset) {
@@ -494,17 +472,15 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
     throw Exceptions::ArrayStoreException;
   }
 
-  std::vector<uint32_t> elements;
-  elements.reserve(static_cast<size_t>(length));
-  for (jshort_t index = 0; index < length; ++index) {
-    elements.push_back(readArrayElement(
-        *source, static_cast<uint16_t>(sourceOffset + index)));
-  }
-  for (jshort_t index = 0; index < length; ++index) {
-    writeArrayElement(*destination,
-                      static_cast<uint16_t>(destinationOffset + index),
-                      elements[static_cast<size_t>(index)]);
-  }
+  const uint32_t byte_length =
+      static_cast<uint32_t>(length) * source->getEntrySize();
+  std::vector<uint8_t> elements(byte_length);
+  source->copyPrimitiveEntriesTo(static_cast<uint16_t>(sourceOffset),
+                                 static_cast<uint16_t>(length),
+                                 elements.data());
+  destination->copyPrimitiveEntriesFrom(
+      static_cast<uint16_t>(destinationOffset),
+      static_cast<uint16_t>(length), elements.data(), true);
 
   return static_cast<jshort_t>(destinationOffset + length);
 }
@@ -529,12 +505,18 @@ jshort_t fillArrayRange(const jref_t destinationRef,
     throw Exceptions::UtilException;
   }
 
-  const uint32_t value =
-      readArrayElement(*pattern, static_cast<uint16_t>(patternOffset));
+  const uint16_t width = destination->getEntrySize();
+  std::vector<uint8_t> pattern_value(width);
+  pattern->copyPrimitiveEntriesTo(static_cast<uint16_t>(patternOffset), 1,
+                                  pattern_value.data());
+  std::vector<uint8_t> repeated(static_cast<size_t>(length) * width);
   for (jshort_t index = 0; index < length; ++index) {
-    writeArrayElement(*destination,
-                      static_cast<uint16_t>(destinationOffset + index), value);
+    std::copy(pattern_value.begin(), pattern_value.end(),
+              repeated.begin() + static_cast<size_t>(index) * width);
   }
+  destination->copyPrimitiveEntriesFrom(
+      static_cast<uint16_t>(destinationOffset),
+      static_cast<uint16_t>(length), repeated.data(), true);
   return static_cast<jshort_t>(destinationOffset + length);
 }
 } // namespace

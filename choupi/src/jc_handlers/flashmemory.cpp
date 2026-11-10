@@ -168,6 +168,24 @@ void preserve_non_atomic_array_byte_in_snapshot(const fs::Tag &tag,
   }
 }
 
+void preserve_non_atomic_array_range_in_snapshot(
+    const fs::Tag &tag, const uint32_t byte_offset, const uint32_t byte_length,
+    const uint8_t *contents) noexcept {
+  if (!persistent_write_transaction_active || byte_length == 0 ||
+      contents == nullptr) {
+    return;
+  }
+  for (auto &snapshot : persistent_write_snapshots) {
+    if (!tags_equal(snapshot.tag, tag)) continue;
+    if (snapshot.existed && snapshot.data.size() >= 3 &&
+        snapshot.data.size() >= byte_offset + byte_length &&
+        (snapshot.data[0] & 0x80u) != 0) {
+      std::memcpy(snapshot.data.data() + byte_offset, contents, byte_length);
+    }
+    return;
+  }
+}
+
 bool snapshot_matching_persistent_tags(const uint8_t *prefix,
                                        const uint8_t prefix_length,
                                        const int package_filter) noexcept {
@@ -2361,6 +2379,67 @@ void FlashMemory_Handler::writePersistentField_Array_Byte(
   std::vector<uint8_t> updated(stored, stored + length);
   std::copy(contents.begin(), contents.end(), updated.begin() + 3);
   write_persistent_tag_or_throw(tag, updated.data(), length);
+}
+
+void FlashMemory_Handler::readPersistentArrayRange(
+    const fs::Tag &tag, const FieldType expected_type,
+    const uint16_t array_length, const uint16_t offset, const uint16_t count,
+    const uint8_t element_width, uint8_t *destination) {
+  if ((count != 0 && destination == nullptr) || element_width == 0 ||
+      offset > array_length || count > array_length - offset) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (count == 0) return;
+
+  auto [record_length, record] = readPersistentRecord(tag);
+  const uint32_t data_length =
+      static_cast<uint32_t>(array_length) * element_width;
+  const uint32_t expected_length = 3u + data_length;
+  if (!record || record_length != expected_length ||
+      record[0] != static_cast<uint8_t>(expected_type) ||
+      BYTES_TO_SHORT(record[1], record[2]) != array_length) {
+    throw Exceptions::SecurityException;
+  }
+  const uint32_t byte_offset = 3u +
+      static_cast<uint32_t>(offset) * element_width;
+  const uint32_t byte_length = static_cast<uint32_t>(count) * element_width;
+  std::memcpy(destination, record.get() + byte_offset, byte_length);
+}
+
+void FlashMemory_Handler::writePersistentArrayRange(
+    const fs::Tag &tag, const FieldType expected_type,
+    const uint16_t array_length, const uint16_t offset, const uint16_t count,
+    const uint8_t element_width, const uint8_t *source, const bool atomic) {
+  if ((count != 0 && source == nullptr) || element_width == 0 ||
+      offset > array_length || count > array_length - offset) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (count == 0) return;
+
+  auto [record_length, stored] = getDataInPlaceFromTag(tag);
+  const uint32_t data_length =
+      static_cast<uint32_t>(array_length) * element_width;
+  const uint32_t expected_length = 3u + data_length;
+  if (stored == nullptr || record_length != expected_length ||
+      stored[0] != static_cast<uint8_t>(expected_type) ||
+      BYTES_TO_SHORT(stored[1], stored[2]) != array_length) {
+    throw Exceptions::SecurityException;
+  }
+
+  std::vector<uint8_t> updated(stored, stored + record_length);
+  const uint32_t byte_offset = 3u +
+      static_cast<uint32_t>(offset) * element_width;
+  const uint32_t byte_length = static_cast<uint32_t>(count) * element_width;
+  std::memcpy(updated.data() + byte_offset, source, byte_length);
+  if (atomic) {
+    write_persistent_tag_or_throw(tag, updated.data(), record_length);
+  } else {
+    const uint8_t status = fs_write(tag.value, tag.len, updated.data(),
+                                    record_length);
+    throw_persistent_write_status(status);
+    preserve_non_atomic_array_range_in_snapshot(
+        tag, byte_offset, byte_length, source);
+  }
 }
 
 /*

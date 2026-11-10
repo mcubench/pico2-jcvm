@@ -394,9 +394,9 @@ void setComponent(JC_Instance &key, uint16_t component,
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   std::vector<uint8_t> contents(destination->size(), 0);
   const uint16_t start = static_cast<uint16_t>(destination->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    contents[start + i] = static_cast<uint8_t>(
-        source->getByteEntry(static_cast<uint16_t>(offset + i)));
+  source->copyPrimitiveEntriesTo(static_cast<uint16_t>(offset),
+                                 static_cast<uint16_t>(length),
+                                 contents.data() + start);
   writeKeyBytes(destination, contents);
   lengthsArray(key)->setShortEntry(component, length);
 }
@@ -413,9 +413,12 @@ jshort_t getComponent(JC_Instance &key, uint16_t component,
     throw Exceptions::ArrayIndexOutOfBoundsException;
   auto source = componentArray(key, component);
   const uint16_t start = static_cast<uint16_t>(source->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    destination->setByteEntry(static_cast<uint16_t>(offset + i),
-                              source->getByteEntry(static_cast<uint16_t>(start + i)));
+  std::vector<uint8_t> contents(static_cast<size_t>(length));
+  source->copyPrimitiveEntriesTo(start, static_cast<uint16_t>(length),
+                                 contents.data());
+  destination->copyPrimitiveEntriesFrom(static_cast<uint16_t>(offset),
+                                        static_cast<uint16_t>(length),
+                                        contents.data(), true);
   return length;
 }
 void setEcComponent(JC_Instance &key, uint16_t component,
@@ -427,9 +430,9 @@ void setEcComponent(JC_Instance &key, uint16_t component,
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   std::vector<uint8_t> contents(destination->size(), 0);
   const uint16_t start = static_cast<uint16_t>(destination->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    contents[start + i] = static_cast<uint8_t>(
-        source->getByteEntry(static_cast<uint16_t>(offset + i)));
+  source->copyPrimitiveEntriesTo(static_cast<uint16_t>(offset),
+                                 static_cast<uint16_t>(length),
+                                 contents.data() + start);
   writeKeyBytes(destination, contents);
   ecLengthsArray(key)->setShortEntry(component, length);
 }
@@ -446,9 +449,12 @@ jshort_t getEcComponent(JC_Instance &key, uint16_t component,
     throw Exceptions::ArrayIndexOutOfBoundsException;
   auto source = ecComponentArray(key, component);
   const uint16_t start = static_cast<uint16_t>(source->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    destination->setByteEntry(static_cast<uint16_t>(offset + i),
-        source->getByteEntry(static_cast<uint16_t>(start + i)));
+  std::vector<uint8_t> contents(static_cast<size_t>(length));
+  source->copyPrimitiveEntriesTo(start, static_cast<uint16_t>(length),
+                                 contents.data());
+  destination->copyPrimitiveEntriesFrom(static_cast<uint16_t>(offset),
+                                        static_cast<uint16_t>(length),
+                                        contents.data(), true);
   return length;
 }
 } // namespace

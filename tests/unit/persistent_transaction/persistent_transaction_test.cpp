@@ -15,6 +15,8 @@
 #include <vector>
 
 namespace persistent_transaction_test {
+void reset_counted_fs_calls();
+unsigned int counted_fs_call_count();
 void force_cursor_stall_after_one_result(uint8_t applet_owner);
 void fail_erase_after(unsigned int successful_erases);
 void fail_prefix_erase_after_one();
@@ -2834,6 +2836,73 @@ int main() {
                retried == jcvm::PersistentInventory::VisitResult::Complete &&
                erased == 1 && read(orphan_tag, sizeof(orphan_tag)).empty(),
            "package_static_reclaimer_refuses_active_transaction");
+  }
+
+  {
+    constexpr uint16_t array_length = 128;
+    const uint8_t tag[] = {0xa0, 0x01, 0xf5};
+    std::vector<uint8_t> record{
+        static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+        static_cast<uint8_t>(array_length >> 8),
+        static_cast<uint8_t>(array_length)};
+    for (uint16_t index = 0; index < array_length; ++index)
+      record.push_back(static_cast<uint8_t>(index));
+    seed(tag, sizeof(tag), record);
+
+    jcvm::fs::Tag fs_tag{};
+    fs_tag.len = sizeof(tag);
+    std::memcpy(fs_tag.value, tag, sizeof(tag));
+    std::array<uint8_t, array_length> copied{};
+    persistent_transaction_test::reset_counted_fs_calls();
+    jcvm::FlashMemory_Handler::readPersistentArrayRange(
+        fs_tag, jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE, array_length, 0,
+        array_length, 1, copied.data());
+    const unsigned int read_calls =
+        persistent_transaction_test::counted_fs_call_count();
+
+    std::array<uint8_t, array_length> replacement{};
+    replacement.fill(0xa5);
+    persistent_transaction_test::reset_counted_fs_calls();
+    jcvm::FlashMemory_Handler::writePersistentArrayRange(
+        fs_tag, jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE, array_length, 0,
+        array_length, 1, replacement.data(), true);
+    const unsigned int write_calls =
+        persistent_transaction_test::counted_fs_call_count();
+    const auto updated = read(tag, sizeof(tag));
+    const bool data_matches =
+        std::equal(copied.begin(), copied.end(), record.begin() + 3) &&
+        updated.size() == record.size() &&
+        std::equal(replacement.begin(), replacement.end(), updated.begin() + 3);
+    expect(data_matches && read_calls == 1 && write_calls == 2,
+           "persistent_array_range_uses_one_read_and_one_validated_write");
+    std::printf("BENCHMARK:PERSISTENT_ARRAY_RANGE bytes=%u read_fs_calls=%u "
+                "write_fs_calls=%u total_fs_calls=%u\n",
+                static_cast<unsigned>(array_length), read_calls,
+                write_calls, read_calls + write_calls);
+
+    jcvm::fs::Tag legacy_source_tag = fs_tag;
+    jcvm::fs::Tag legacy_destination_tag = fs_tag;
+    legacy_source_tag.value[2] = 0xf6;
+    legacy_destination_tag.value[2] = 0xf7;
+    seed(legacy_source_tag.value, legacy_source_tag.len, record);
+    seed(legacy_destination_tag.value, legacy_destination_tag.len, record);
+    jcvm::Heap legacy_heap(7);
+    persistent_transaction_test::reset_counted_fs_calls();
+    for (uint16_t index = 0; index < array_length; ++index) {
+      const auto value = jcvm::FlashMemory_Handler::getPersistentField_Array_Byte(
+          legacy_source_tag, index, legacy_heap);
+      jcvm::FlashMemory_Handler::setPersistentField_Array_Byte(
+          legacy_destination_tag, index, value, legacy_heap);
+    }
+    const unsigned int scalar_copy_calls =
+        persistent_transaction_test::counted_fs_call_count();
+    const unsigned int range_copy_calls = read_calls + write_calls;
+    expect(scalar_copy_calls == 1024 && range_copy_calls == 3,
+           "persistent_array_copy_fs_calls_reduced_from_1024_to_3");
+    std::printf("BENCHMARK:PERSISTENT_ARRAY_COPY bytes=%u "
+                "before_fs_calls=%u after_fs_calls=%u\n",
+                static_cast<unsigned>(array_length), scalar_copy_calls,
+                range_copy_calls);
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);

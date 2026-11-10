@@ -207,6 +207,13 @@ public:
   /// Copy native bytes into transient byte-array storage in one memory write.
   void copyByteEntriesFrom(uint16_t offset, uint16_t length,
                            const uint8_t *source);
+  /// Copy primitive array elements to/from their big-endian native encoding.
+  /// Persistent arrays use one record read/write; transient and volatile
+  /// arrays retain the element-wise access path.
+  void copyPrimitiveEntriesTo(uint16_t offset, uint16_t length,
+                              uint8_t *destination);
+  void copyPrimitiveEntriesFrom(uint16_t offset, uint16_t length,
+                                const uint8_t *source, bool atomic = true);
 
   /// Get the backing tag for a persistent array.
   fs::Tag getPersistentTag() const noexcept { return this->computeTag(); }

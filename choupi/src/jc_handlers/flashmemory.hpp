@@ -240,6 +240,16 @@ public:
   /// Replace the contents of a persistent byte array with one record write.
   static void writePersistentField_Array_Byte(
       const fs::Tag &tag, const std::vector<uint8_t> &contents);
+  /// Read/write a validated range of a persistent primitive array in one
+  /// record operation. Non-atomic writes remain outside transaction rollback.
+  static void readPersistentArrayRange(
+      const fs::Tag &tag, FieldType expected_type, uint16_t array_length,
+      uint16_t offset, uint16_t count, uint8_t element_width,
+      uint8_t *destination);
+  static void writePersistentArrayRange(
+      const fs::Tag &tag, FieldType expected_type, uint16_t array_length,
+      uint16_t offset, uint16_t count, uint8_t element_width,
+      const uint8_t *source, bool atomic);
   /// Get array data store in flash memory at a specific index.
   static const jshort_t getPersistentField_Array_Short(const fs::Tag &tag,
                                                        const uint16_t index

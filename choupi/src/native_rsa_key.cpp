@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cstdint>
+#include <vector>
 
 namespace jcvm {
 namespace {
@@ -95,6 +96,8 @@ jshort_t getComponent(JC_Instance &instance, const uint16_t component,
                       const std::shared_ptr<JC_Array> &buffer,
                       const jshort_t offset) {
   if (!buffer) throw Exceptions::NullPointerException;
+  if (buffer->getType() != JAVA_ARRAY_T_BYTE)
+    throw Exceptions::ArrayStoreException;
   const jshort_t length = lengthsArray(instance)->getShortEntry(
       kComponentLengths[component]);
   if (length == 0)
@@ -106,10 +109,12 @@ jshort_t getComponent(JC_Instance &instance, const uint16_t component,
   }
   auto source = componentArray(instance, kComponentFields[component]);
   const uint16_t start = static_cast<uint16_t>(source->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i) {
-    buffer->setByteEntry(static_cast<uint16_t>(offset + i),
-                         source->getByteEntry(static_cast<uint16_t>(start + i)));
-  }
+  std::vector<uint8_t> contents(static_cast<size_t>(length));
+  source->copyPrimitiveEntriesTo(start, static_cast<uint16_t>(length),
+                                 contents.data());
+  buffer->copyPrimitiveEntriesFrom(static_cast<uint16_t>(offset),
+                                   static_cast<uint16_t>(length),
+                                   contents.data(), true);
   return length;
 }
 

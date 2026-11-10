@@ -1103,6 +1103,131 @@ void JC_Array::copyByteEntriesFrom(const uint16_t offset,
   std::memcpy(const_cast<uint8_t *>(this->getData()) + offset, source, length);
 }
 
+void JC_Array::copyPrimitiveEntriesTo(const uint16_t offset,
+                                      const uint16_t length,
+                                      uint8_t *destination) {
+  const uint16_t width = this->getEntrySize();
+  if (offset > this->logical_length ||
+      length > this->logical_length - offset) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (this->type == JAVA_ARRAY_T_REFERENCE)
+    throw Exceptions::NotYetImplemented;
+  const uint32_t byte_length = static_cast<uint32_t>(length) * width;
+  if (byte_length == 0) return;
+  if (destination == nullptr) throw Exceptions::NullPointerException;
+
+  if (this->isPersistent() && !this->isTransientArray()) {
+    FieldType field_type;
+    switch (this->type) {
+    case JAVA_ARRAY_T_BOOLEAN: field_type = FIELD_TYPE_ARRAY_BOOLEAN; break;
+    case JAVA_ARRAY_T_BYTE: field_type = FIELD_TYPE_ARRAY_BYTE; break;
+    case JAVA_ARRAY_T_SHORT: field_type = FIELD_TYPE_ARRAY_SHORT; break;
+#ifdef JCVM_INT_SUPPORTED
+    case JAVA_ARRAY_T_INT: field_type = FIELD_TYPE_ARRAY_INT; break;
+#endif
+    case JAVA_ARRAY_T_REFERENCE: throw Exceptions::NotYetImplemented;
+    default: throw Exceptions::SecurityException;
+    }
+    this->recoverMissingPersistentBody();
+    FlashMemory_Handler::readPersistentArrayRange(
+        this->computeTag(), field_type, this->logical_length, offset, length,
+        static_cast<uint8_t>(width), destination);
+    return;
+  }
+
+  for (uint16_t index = 0; index < length; ++index) {
+    const uint16_t array_index = static_cast<uint16_t>(offset + index);
+    uint8_t *out = destination + static_cast<uint32_t>(index) * width;
+    switch (this->type) {
+    case JAVA_ARRAY_T_BOOLEAN:
+    case JAVA_ARRAY_T_BYTE:
+      out[0] = static_cast<uint8_t>(this->getByteEntry(array_index));
+      break;
+    case JAVA_ARRAY_T_SHORT: {
+      const uint16_t value = static_cast<uint16_t>(this->getShortEntry(array_index));
+      out[0] = static_cast<uint8_t>(value >> 8);
+      out[1] = static_cast<uint8_t>(value);
+      break;
+    }
+#ifdef JCVM_INT_SUPPORTED
+    case JAVA_ARRAY_T_INT: {
+      const uint32_t value = static_cast<uint32_t>(this->getIntEntry(array_index));
+      out[0] = static_cast<uint8_t>(value >> 24);
+      out[1] = static_cast<uint8_t>(value >> 16);
+      out[2] = static_cast<uint8_t>(value >> 8);
+      out[3] = static_cast<uint8_t>(value);
+      break;
+    }
+#endif
+    case JAVA_ARRAY_T_REFERENCE: throw Exceptions::NotYetImplemented;
+    }
+  }
+}
+
+void JC_Array::copyPrimitiveEntriesFrom(const uint16_t offset,
+                                        const uint16_t length,
+                                        const uint8_t *source,
+                                        const bool atomic) {
+  const uint16_t width = this->getEntrySize();
+  if (offset > this->logical_length ||
+      length > this->logical_length - offset) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (this->type == JAVA_ARRAY_T_REFERENCE)
+    throw Exceptions::NotYetImplemented;
+  const uint32_t byte_length = static_cast<uint32_t>(length) * width;
+  if (byte_length == 0) return;
+  if (source == nullptr) throw Exceptions::NullPointerException;
+
+  if (this->isPersistent() && !this->isTransientArray()) {
+    FieldType field_type;
+    switch (this->type) {
+    case JAVA_ARRAY_T_BOOLEAN: field_type = FIELD_TYPE_ARRAY_BOOLEAN; break;
+    case JAVA_ARRAY_T_BYTE: field_type = FIELD_TYPE_ARRAY_BYTE; break;
+    case JAVA_ARRAY_T_SHORT: field_type = FIELD_TYPE_ARRAY_SHORT; break;
+#ifdef JCVM_INT_SUPPORTED
+    case JAVA_ARRAY_T_INT: field_type = FIELD_TYPE_ARRAY_INT; break;
+#endif
+    case JAVA_ARRAY_T_REFERENCE: throw Exceptions::NotYetImplemented;
+    default: throw Exceptions::SecurityException;
+    }
+    this->recoverMissingPersistentBody();
+    FlashMemory_Handler::writePersistentArrayRange(
+        this->computeTag(), field_type, this->logical_length, offset, length,
+        static_cast<uint8_t>(width), source, atomic);
+    return;
+  }
+
+  for (uint16_t index = 0; index < length; ++index) {
+    const uint16_t array_index = static_cast<uint16_t>(offset + index);
+    const uint8_t *in = source + static_cast<uint32_t>(index) * width;
+    switch (this->type) {
+    case JAVA_ARRAY_T_BOOLEAN:
+    case JAVA_ARRAY_T_BYTE:
+      if (atomic) {
+        this->setByteEntry(array_index, static_cast<jbyte_t>(in[0]));
+      } else {
+        this->setByteEntryNonAtomic(array_index, static_cast<jbyte_t>(in[0]));
+      }
+      break;
+    case JAVA_ARRAY_T_SHORT:
+      this->setShortEntry(array_index, signedShortFromBits(
+          BYTES_TO_SHORT(in[0], in[1])));
+      break;
+#ifdef JCVM_INT_SUPPORTED
+    case JAVA_ARRAY_T_INT:
+      this->setIntEntry(array_index, static_cast<jint_t>(
+          (static_cast<uint32_t>(in[0]) << 24) |
+          (static_cast<uint32_t>(in[1]) << 16) |
+          (static_cast<uint32_t>(in[2]) << 8) | in[3]));
+      break;
+#endif
+    case JAVA_ARRAY_T_REFERENCE: throw Exceptions::NotYetImplemented;
+    }
+  }
+}
+
 /*
  * Is a transient array?
  *

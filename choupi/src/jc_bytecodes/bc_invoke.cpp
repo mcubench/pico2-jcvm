@@ -53,6 +53,7 @@
 #include <array>
 #include <cstring>
 #include <cstdio>
+#include <vector>
 
 namespace jcvm {
 
@@ -986,26 +987,38 @@ void Bytecodes::bc_invokestatic() {
       check_range(*source, source_offset);
       check_range(*destination, destination_offset);
 
-      if (source == destination && destination_offset > source_offset &&
-          static_cast<uint32_t>(destination_offset) <
-              static_cast<uint32_t>(source_offset) +
-                  static_cast<uint32_t>(length)) {
-        for (jshort_t index = length; index > 0; --index) {
-          const uint16_t source_index = static_cast<uint16_t>(
-              source_offset + index - 1);
-          const uint16_t destination_index = static_cast<uint16_t>(
-              destination_offset + index - 1);
-          destination->setByteEntryNonAtomic(
-              destination_index, source->getByteEntry(source_index));
-        }
+      if ((source->isPersistent() && !source->isTransientArray()) ||
+          (destination->isPersistent() &&
+           !destination->isTransientArray())) {
+        std::vector<uint8_t> copied(static_cast<size_t>(length));
+        source->copyPrimitiveEntriesTo(static_cast<uint16_t>(source_offset),
+                                       static_cast<uint16_t>(length),
+                                       copied.data());
+        destination->copyPrimitiveEntriesFrom(
+            static_cast<uint16_t>(destination_offset),
+            static_cast<uint16_t>(length), copied.data(), false);
       } else {
-        for (jshort_t index = 0; index < length; ++index) {
-          const uint16_t source_index =
-              static_cast<uint16_t>(source_offset + index);
-          const uint16_t destination_index =
-              static_cast<uint16_t>(destination_offset + index);
-          destination->setByteEntryNonAtomic(
-              destination_index, source->getByteEntry(source_index));
+        if (source == destination && destination_offset > source_offset &&
+            static_cast<uint32_t>(destination_offset) <
+                static_cast<uint32_t>(source_offset) +
+                    static_cast<uint32_t>(length)) {
+          for (jshort_t index = length; index > 0; --index) {
+            const uint16_t source_index = static_cast<uint16_t>(
+                source_offset + index - 1);
+            const uint16_t destination_index = static_cast<uint16_t>(
+                destination_offset + index - 1);
+            destination->setByteEntryNonAtomic(
+                destination_index, source->getByteEntry(source_index));
+          }
+        } else {
+          for (jshort_t index = 0; index < length; ++index) {
+            const uint16_t source_index =
+                static_cast<uint16_t>(source_offset + index);
+            const uint16_t destination_index =
+                static_cast<uint16_t>(destination_offset + index);
+            destination->setByteEntryNonAtomic(
+                destination_index, source->getByteEntry(source_index));
+          }
         }
       }
       const jshort_t result = static_cast<jshort_t>(
@@ -1029,9 +1042,17 @@ void Bytecodes::bc_invokestatic() {
             array->size()) {
       throw Exceptions::ArrayIndexOutOfBoundsException;
     }
-    for (jshort_t index = 0; index < length; ++index) {
-      array->setByteEntryNonAtomic(static_cast<uint16_t>(offset + index),
-                                   value);
+    if (array->isPersistent() && !array->isTransientArray()) {
+      std::vector<uint8_t> repeated(static_cast<size_t>(length),
+                                    static_cast<uint8_t>(value));
+      array->copyPrimitiveEntriesFrom(static_cast<uint16_t>(offset),
+                                      static_cast<uint16_t>(length),
+                                      repeated.data(), false);
+    } else {
+      for (jshort_t index = 0; index < length; ++index) {
+        array->setByteEntryNonAtomic(static_cast<uint16_t>(offset + index),
+                                     value);
+      }
     }
     const jshort_t result = static_cast<jshort_t>(
         static_cast<uint16_t>(offset + length));

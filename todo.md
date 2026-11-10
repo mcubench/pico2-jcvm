@@ -221,7 +221,7 @@ its own logical step with a before/after measurement recorded in
   privilege traps. The 128-cycle test passed 133/133 and APDU 124 took 0.314 s.
   Host FS tests passed 36/36; asymmetric VPCD passed 107/107; ARM and RISC-V
   builds passed. See the matching `progress.md` entry and `.agent/QKB.md`.
-- [ ] **PERF-20261110-03 — Bulk range operations for persistent arrays.** P1;
+- [x] **PERF-20261110-03 — Bulk range operations for persistent arrays.** P1;
   owner: PERSIST-01 / HARD-01. Native `Util.arrayCopy`/`arrayCopyNonAtomic`/
   `arrayFill` (`copyArrayRange`/`fillArrayRange` in `choupi/src/jni.cpp`) and
   RSA/EC key getters copy element by element. With `JCVM_SECURE_HEAP_ACCESS`,
@@ -237,6 +237,12 @@ its own logical step with a before/after measurement recorded in
   VPCD suites pass. Report the FS syscall count for one 128-byte persistent
   `arrayCopy` before and after. ARM and RISC-V build, flash, and
   `TEST:SUMMARY` pass.
+  Completed 2026-11-10: a 128-byte persistent byte-array copy now uses 3 FS
+  calls versus 1,024 in the scalar path (one range read, two validated range
+  write calls). Transaction probe cases 89–92 pass on two identified physical
+  Pico 2 boards; each passed the finite runtime monitor and all 17 transaction
+  checks. `Util` API validation passed 19/19; symmetric and asymmetric VPCD
+  suites passed 102/102 and 107/107. ARM/RISC-V builds passed.
 - [ ] **PERF-20261110-04 — Cache persistent array metadata.** P2; owner:
   PERSIST-01. Cache type/length/tag validity on the heap-resident `JC_Array`,
   keyed by `persistentWriteRollbackGeneration()`, instead of re-reading the

@@ -139,14 +139,54 @@ public final class JCSystemTransactionPhysicalProbe {
           "commit preserves persistent applet field");
       expectByte(channel, 7, 0x33,
           "committed persistent field survives next APDU");
+      byte[] copyBeyondCommitCapacity = probe(channel, 89);
+      if (copyBeyondCommitCapacity.length != 2 ||
+          (copyBeyondCommitCapacity[0] & 0xff) != 0x01 ||
+          (copyBeyondCommitCapacity[1] & 0xff) != 0x5a) {
+        throw new IllegalStateException(
+            "non-atomic array copy must work beyond commit capacity and " +
+            "survive abort: " + hex(copyBeyondCommitCapacity));
+      }
+      System.out.println(
+          "TEST:PASS Util.arrayCopyNonAtomic exceeds commit capacity and survives abort");
+      byte[] copyAbortSameArray = probe(channel, 90);
+      if (copyAbortSameArray.length != 2 ||
+          (copyAbortSameArray[0] & 0xff) != 0x43 ||
+          (copyAbortSameArray[1] & 0xff) != 0x12) {
+        throw new IllegalStateException(
+            "same-array non-atomic copy rollback mismatch: " +
+            hex(copyAbortSameArray));
+      }
+      System.out.println(
+          "TEST:PASS Util.arrayCopyNonAtomic same-array transaction abort");
+      byte[] copyAbortOtherArray = probe(channel, 91);
+      if (copyAbortOtherArray.length != 2 ||
+          (copyAbortOtherArray[0] & 0xff) != 0x11 ||
+          (copyAbortOtherArray[1] & 0xff) != 0x54) {
+        throw new IllegalStateException(
+            "other-array non-atomic copy rollback mismatch: " +
+            hex(copyAbortOtherArray));
+      }
+      System.out.println(
+          "TEST:PASS Util.arrayCopyNonAtomic preserves separate non-atomic array");
+      byte[] copyThenAtomicAbort = probe(channel, 92);
+      if (copyThenAtomicAbort.length != 2 ||
+          (copyThenAtomicAbort[0] & 0xff) != 0x63 ||
+          (copyThenAtomicAbort[1] & 0xff) != 0x12) {
+        throw new IllegalStateException(
+            "non-atomic copy followed by atomic write rollback mismatch: " +
+            hex(copyThenAtomicAbort));
+      }
+      System.out.println(
+          "TEST:PASS Util.arrayCopyNonAtomic survives later atomic rollback");
       expectTransactionArrayLength(channel,
           "large persistent array length is readable");
 
       byte[] overflow = probe(channel, 83);
       if (overflow.length != 2 || (overflow[0] & 0xff) != 3 ||
-          (overflow[1] & 0xff) != 0) {
+          (overflow[1] & 0xff) != 0x5a) {
         throw new IllegalStateException(
-            "BUFFER_FULL must be catchable and leave the rejected array byte unchanged: " +
+            "BUFFER_FULL must be catchable and leave the pre-test array byte unchanged: " +
             hex(overflow));
       }
       System.out.println(
@@ -184,7 +224,7 @@ public final class JCSystemTransactionPhysicalProbe {
           "global array reference is rejected from static fields");
       expectByte(channel, 40, 0x01,
           "global array reference is rejected from array components");
-      System.out.println("TEST:SUMMARY pass=13 fail=0");
+      System.out.println("TEST:SUMMARY pass=17 fail=0");
     } finally {
       card.disconnect(false);
     }

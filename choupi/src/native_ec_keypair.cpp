@@ -256,10 +256,10 @@ void putComponent(const std::shared_ptr<JC_Instance> &key, uint16_t index,
       lengths->getType() != JAVA_ARRAY_T_SHORT || lengths->size() <= index ||
       bytes.size() > array->size())
     throw Exceptions::ArrayStoreException;
-  for (uint16_t i = 0; i < array->size(); ++i) array->setByteEntry(i, 0);
   const uint16_t start = static_cast<uint16_t>(array->size() - bytes.size());
-  for (size_t i = 0; i < bytes.size(); ++i)
-    array->setByteEntry(static_cast<uint16_t>(start + i), bytes[i]);
+  std::vector<uint8_t> contents(array->size(), 0);
+  std::copy(bytes.begin(), bytes.end(), contents.begin() + start);
+  array->copyPrimitiveEntriesFrom(0, array->size(), contents.data(), true);
   lengths->setShortEntry(index, static_cast<jshort_t>(bytes.size()));
 }
 
