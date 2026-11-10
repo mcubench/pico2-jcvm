@@ -55,6 +55,7 @@ namespace {
 constexpr uint8_t kPersistentObjectAlias = 0xFE;
 constexpr uint8_t kPersistentArrayAlias = 0xFD;
 constexpr uint8_t kPersistentArrayIdentityVersion = 1;
+constexpr uint32_t kPersistentArrayIdentityReservationSize = 64;
 constexpr uint8_t kPersistentArrayIdentityCounterTagBytes[] = {
     0x02, 0xfe, 'J', 'C', 'V', 'M', 'A', 'R', 'R', 'I', 'D'};
 constexpr uint8_t kMaxPersistentAliasDepth = 32;
@@ -368,7 +369,8 @@ bool is_persistent_array_type(const FieldType type) noexcept {
 
 uint32_t allocate_persistent_array_identity() {
   static bool initialized = false;
-  static uint32_t last_identity = 0;
+  static uint64_t next_identity = 1;
+  static uint32_t reserved_through = 0;
 
   fs::Tag counter_tag;
   counter_tag.len = sizeof(kPersistentArrayIdentityCounterTagBytes);
@@ -385,26 +387,34 @@ uint32_t allocate_persistent_array_identity() {
           stored_counter[0] != kPersistentArrayIdentityVersion) {
         throw Exceptions::SecurityException;
       }
-      last_identity = (static_cast<uint32_t>(stored_counter[1]) << 24) |
-                      (static_cast<uint32_t>(stored_counter[2]) << 16) |
-                      (static_cast<uint32_t>(stored_counter[3]) << 8) |
-                      static_cast<uint32_t>(stored_counter[4]);
+      reserved_through = (static_cast<uint32_t>(stored_counter[1]) << 24) |
+                         (static_cast<uint32_t>(stored_counter[2]) << 16) |
+                         (static_cast<uint32_t>(stored_counter[3]) << 8) |
+                         static_cast<uint32_t>(stored_counter[4]);
+      next_identity = static_cast<uint64_t>(reserved_through) + 1u;
     }
     initialized = true;
   }
 
-  if (last_identity == UINT32_MAX) throw Exceptions::IOException;
-  const uint32_t next_identity = last_identity + 1;
-  const uint8_t encoded_counter[] = {
-      kPersistentArrayIdentityVersion,
-      static_cast<uint8_t>(next_identity >> 24),
-      static_cast<uint8_t>(next_identity >> 16),
-      static_cast<uint8_t>(next_identity >> 8),
-      static_cast<uint8_t>(next_identity)};
-  write_persistent_tag_or_throw(counter_tag, encoded_counter,
-                                sizeof(encoded_counter));
-  last_identity = next_identity;
-  return next_identity;
+  if (next_identity > UINT32_MAX) throw Exceptions::IOException;
+  if (next_identity > reserved_through) {
+    const uint64_t available = UINT32_MAX - next_identity + 1u;
+    const uint32_t reserve_count = static_cast<uint32_t>(
+        std::min<uint64_t>(kPersistentArrayIdentityReservationSize,
+                           available));
+    const uint32_t new_reserved_through =
+        static_cast<uint32_t>(next_identity + reserve_count - 1u);
+    const uint8_t encoded_counter[] = {
+        kPersistentArrayIdentityVersion,
+        static_cast<uint8_t>(new_reserved_through >> 24),
+        static_cast<uint8_t>(new_reserved_through >> 16),
+        static_cast<uint8_t>(new_reserved_through >> 8),
+        static_cast<uint8_t>(new_reserved_through)};
+    write_persistent_tag_or_throw(counter_tag, encoded_counter,
+                                  sizeof(encoded_counter));
+    reserved_through = new_reserved_through;
+  }
+  return static_cast<uint32_t>(next_identity++);
 }
 
 // Persistent array contents need an identity independent of the field's

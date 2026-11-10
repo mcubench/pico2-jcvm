@@ -91,7 +91,10 @@ Archive text is historical evidence, not current device state or priorities.
      record and commit for the VPCD validation.
   4. **C4 — bulk writes.** Replace per-byte `wipeCipherArray` /
      `loadKeyComponent` persistent writes with single record writes, and stop
-     rewriting the identity counter record on every allocation.
+     rewriting the identity counter record on every allocation. **Done:**
+     persistent byte ranges are fetched with one record read, transient RSA
+     workspaces are filled in bulk, and array identity allocation reserves
+     IDs in persistent blocks of 64. Counter rollback safety remains in C5.
   5. **C5 — correctness.** Give `JC_Array` the missing-body recovery and
      rollback-generation handling that `JC_Instance` has; make the identity
      counter rollback-safe so identities are never reused (explains the

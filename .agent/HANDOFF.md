@@ -1,3 +1,30 @@
+# Current handoff — RESOURCE-02 C4 complete; C5 next — 2026-11-10 12:09 CET
+
+RESOURCE-01 physical work remains paused. RESOURCE-02 C1, C2, and C4 are
+implemented. C4 adds bounded bulk byte-array access for native cipher/RSA
+paths, fills transient RSA workspaces in one copy, and reserves persistent
+array identity numbers in blocks of 64 rather than writing the counter on each
+allocation. A pending C5 check still needs to prove that reservations cannot
+be reused after a transaction rolls them back.
+
+Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm
+--profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed;
+the ARM image ended at `0x100f2698`, leaving 55,656 bytes. The RESOURCE-02
+VPCD plateau run passed for AES, aliases, and RSA. Repeated-phase inventory
+deltas were all zero: AES 39 records / 589 bytes, aliases 18 / 433 bytes, RSA
+46 / 1,155 bytes. RSA key setup took 134.211 s and its 64-init repeat phase
+took 28.569 s. `./tools/test-asymm-crypto-vpcd` passed 107/107 after identifying
+and locally fixing a CRT signature issue that is being committed separately.
+`./tools/test-vpcd-multipackage --timeout 300` passed 47/47. No physical
+device was used.
+
+Next: commit the isolated RSA-CRT signature correction, implement C5 array
+rollback/missing-body behavior, high-byte tag encoding, and rollback-safe
+identity reservations, then rerun the saved-state APDU 410 replay and requested
+VPCD suites. Continue preserving unrelated worktree changes. Latest C4 logs:
+`artifacts/logs/resource02-vpcd-20261110T104912Z/` and
+`artifacts/logs/host-vpcd-multipackage-apdu-20261110T105338Z.log`.
+
 # Current handoff — pinned replay reproduces saved-state RSA failure; RESOURCE-01 open — 2026-11-10 06:04 CET
 
 RESOURCE-01 remains open. A clean `max_crypto` PC VPCD replay with

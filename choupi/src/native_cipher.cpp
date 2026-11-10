@@ -172,8 +172,7 @@ void checkArray(const std::shared_ptr<JC_Array> &array, jshort_t offset,
 std::vector<unsigned char> readArray(const std::shared_ptr<JC_Array> &array,
                                      uint16_t offset, uint16_t length) {
   std::vector<unsigned char> result(length);
-  for (uint16_t i = 0; i < length; ++i)
-    result[i] = static_cast<unsigned char>(array->getByteEntry(offset + i));
+  array->copyByteEntriesTo(offset, length, result.data());
   return result;
 }
 

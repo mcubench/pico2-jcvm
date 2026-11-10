@@ -55,8 +55,7 @@ void checkArray(const JC_Array &array) {
 
 std::vector<unsigned char> readBytes(JC_Array &array, uint16_t length) {
   std::vector<unsigned char> bytes(length);
-  for (uint16_t i = 0; i < length; ++i)
-    bytes[i] = static_cast<unsigned char>(array.getByteEntry(i));
+  array.copyByteEntriesTo(0, length, bytes.data());
   return bytes;
 }
 
@@ -384,12 +383,13 @@ void loadKeyComponent(const JC_Instance &key, const uint16_t valueField,
       static_cast<uint16_t>(componentLength) > value->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint16_t srcStart = static_cast<uint16_t>(value->size() - componentLength);
-  for (uint16_t i = 0; i < destinationLength; ++i)
-    destination.setByteEntry(static_cast<uint16_t>(destinationOffset + i), 0);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(componentLength); ++i)
-    destination.setByteEntry(static_cast<uint16_t>(destinationOffset +
-                             destinationLength - componentLength + i),
-        value->getByteEntry(static_cast<uint16_t>(srcStart + i)));
+  std::vector<uint8_t> component(destinationLength, 0);
+  RsaSensitiveBufferGuard componentGuard(component);
+  value->copyByteEntriesTo(srcStart, static_cast<uint16_t>(componentLength),
+                           component.data() + destinationLength -
+                               static_cast<uint16_t>(componentLength));
+  destination.copyByteEntriesFrom(destinationOffset, destinationLength,
+                                  component.data());
 }
 
 void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
@@ -521,14 +521,11 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
         std::vector<unsigned char> &factor = factors[i];
         factor.resize(crtPartLength);
         const uint16_t start = static_cast<uint16_t>(i * crtPartLength);
-        for (uint16_t j = 0; j < crtPartLength; ++j)
-          factor[j] = static_cast<unsigned char>(exponent->getByteEntry(
-              static_cast<uint16_t>(start + j)));
+        exponent->copyByteEntriesTo(start, crtPartLength, factor.data());
       }
     }
     const auto derivedModulus = rsaCrtModulus(factors[0], factors[1], keyLength);
-    for (uint16_t i = 0; i < keyLength; ++i)
-      modulus->setByteEntry(i, static_cast<jbyte_t>(derivedModulus[i]));
+    modulus->copyByteEntriesFrom(0, keyLength, derivedModulus.data());
   } else {
     loadKeyComponent(*key,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_MODULUS, 0,

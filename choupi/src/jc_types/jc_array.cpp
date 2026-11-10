@@ -31,6 +31,8 @@
 #include "jc_array_type.hpp"
 #include "../heap.hpp"
 
+#include <cstring>
+
 #ifdef PC_VERSION
 #include <cstdio>
 #endif
@@ -1005,6 +1007,63 @@ const uint8_t *JC_Array::getData() const {
   }
 
   return static_cast<const uint8_t *>(this->array.data());
+}
+
+void JC_Array::copyByteEntriesTo(const uint16_t offset,
+                                 const uint16_t length,
+                                 uint8_t *destination) const {
+  if ((this->type != JAVA_ARRAY_T_BYTE &&
+       this->type != JAVA_ARRAY_T_BOOLEAN) ||
+      offset > this->size() || length > this->size() - offset) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (length == 0) return;
+  if (destination == nullptr) throw Exceptions::NullPointerException;
+
+  if (this->isPersistent() && !this->isTransientArray()) {
+    const fs::Tag tag = this->computeTag();
+#ifdef JCVM_SECURE_HEAP_ACCESS
+    auto stored_array =
+        FlashMemory_Handler::getPersistentField_Array(
+            tag, const_cast<JC_Array *>(this)->getOwner());
+    if (stored_array->isTransientArray() ||
+        (stored_array->getType() != JAVA_ARRAY_T_BYTE &&
+         stored_array->getType() != JAVA_ARRAY_T_BOOLEAN) ||
+        stored_array->size() != this->size()) {
+      throw Exceptions::SecurityException;
+    }
+#endif /* JCVM_SECURE_HEAP_ACCESS */
+    auto [record_length, record] =
+        FlashMemory_Handler::readPersistentRecord(tag);
+    if (!record || record_length < 3) throw Exceptions::SecurityException;
+    const FieldType field_type = static_cast<FieldType>(record[0]);
+    const bool byte_type = field_type == FieldType::FIELD_TYPE_ARRAY_BYTE ||
+                           field_type == FieldType::FIELD_TYPE_ARRAY_BOOLEAN;
+    const uint16_t record_size =
+        static_cast<uint16_t>((record[1] << 8) | record[2]);
+    if (!byte_type || record_size != this->size() ||
+        record_length < static_cast<uint32_t>(3u + record_size)) {
+      throw Exceptions::SecurityException;
+    }
+    std::memcpy(destination, record.get() + 3u + offset, length);
+    return;
+  }
+
+  std::memcpy(destination, this->getData() + offset, length);
+}
+
+void JC_Array::copyByteEntriesFrom(const uint16_t offset,
+                                   const uint16_t length,
+                                   const uint8_t *source) {
+  if (!this->isTransientArray() ||
+      (this->type != JAVA_ARRAY_T_BYTE &&
+       this->type != JAVA_ARRAY_T_BOOLEAN) || offset > this->size() ||
+      length > this->size() - offset) {
+    throw Exceptions::SecurityException;
+  }
+  if (length == 0) return;
+  if (source == nullptr) throw Exceptions::NullPointerException;
+  std::memcpy(const_cast<uint8_t *>(this->getData()) + offset, source, length);
 }
 
 /*

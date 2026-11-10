@@ -197,6 +197,12 @@ public:
 
   /// Get a const pointer to array data
   const uint8_t *getData() const;
+  /// Copy a byte-array range to native memory with one persistent-record read.
+  void copyByteEntriesTo(uint16_t offset, uint16_t length,
+                         uint8_t *destination) const;
+  /// Copy native bytes into transient byte-array storage in one memory write.
+  void copyByteEntriesFrom(uint16_t offset, uint16_t length,
+                           const uint8_t *source);
 
   /// Get the backing tag for a persistent array.
   fs::Tag getPersistentTag() const noexcept { return this->computeTag(); }
