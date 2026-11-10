@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import re
 import signal
@@ -31,6 +32,14 @@ KNOWN_REPLAY_STATUS_DIFFERENCES = {
     bytes.fromhex("80CA9F7F00"): 0x6982,
     bytes.fromhex("80CA006600"): 0x6982,
 }
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def parse_apdus(path: Path):
@@ -158,6 +167,20 @@ def run(args: argparse.Namespace) -> int:
     for required in (emulator, rom_mask, args.cap, load_image):
         if not required.is_file() or not required.stat().st_size:
             raise RuntimeError(f"required VPCD replay input is missing: {required}")
+
+    input_hashes = {
+        "emulator": sha256_file(emulator),
+        "rom_mask": sha256_file(rom_mask),
+        "cap": sha256_file(args.cap),
+        "load_image": sha256_file(load_image),
+    }
+    if args.resume_card is not None:
+        input_hashes["card"] = sha256_file(args.resume_card.resolve())
+        input_hashes["registry"] = sha256_file(
+            Path(f"{args.resume_card.resolve()}.cap-registry"))
+    print("REPLAY:INPUTS " + " ".join(
+        f"{name}_sha256={digest}" for name, digest in input_hashes.items()),
+        flush=True)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

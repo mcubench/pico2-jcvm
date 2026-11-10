@@ -25,16 +25,18 @@
 - **Status:** This narrows RESOURCE-01 to a restored JCAlgTest RSA KeyPair
   persistent-reference graph; it does not identify the point where the body
   record was lost. Two later retries from the same saved image and registry
-  returned `9000` at APDU 410, so the observed `6F00` is intermittent or
-  build-dependent. The passing artifacts are
-  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/` and
-  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`; the
-  original failure remains in
-  `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`. Do not
-  enable production deletion or mark RESOURCE-01 fixed. Next pin the emulator
-  binary hash, repeat the same saved-state replay, and trace the ROM API
-  `KeyPair`/`NativeKey` graph if the failure recurs. The unchanged client
-  transcript and CAP remain untouched.
+  returned `9000`, but their artifacts did not record executable or ROM-mask
+  hashes. After rebuilding, two retries against emulator SHA-256
+  `343a75a913acd6127f82ba664b05758215ab0746d8b9f4ecd1ecb1ba79e02d62`
+  returned `6F00` and the same missing-array diagnostic. The hash-logged run is
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/`; earlier
+  conflicting outcomes remain in `...T042148Z/`, `...T044405Z/`, and
+  `...T044644Z/`. Do not enable production deletion or mark RESOURCE-01 fixed.
+  Replay logs now record hashes for emulator, ROM mask, CAP, extracted load
+  image, and resumed card/registry. Next pin the whole input set, investigate
+  why the current build restores this KeyPair graph with a missing body, and
+  add the saved-state sequence as a regression. The unchanged client transcript
+  and CAP remain untouched.
 - **Builds:** `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and
   `./tools/build riscv` passed after diagnostic logging was added. Physical
   validation was not run; last bounded `pcsc_scan -r` timed out and no PC/SC

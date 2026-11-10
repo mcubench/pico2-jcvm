@@ -1,4 +1,4 @@
-# Current handoff — saved-state RSA failure is intermittent; RESOURCE-01 open — 2026-11-10 05:49 CET
+# Current handoff — pinned replay reproduces saved-state RSA failure; RESOURCE-01 open — 2026-11-10 06:04 CET
 
 RESOURCE-01 remains open. A clean `max_crypto` PC VPCD replay with
 `PICO2_TEST_OBJECT_DELETION=1` completed the full captured 414-APDU
@@ -33,17 +33,20 @@ The full-suite VPCD wrapper was given an early `--help`/`-h` exit and now limits
 reader-discovery failure output to 40 lines per scan while preserving full logs.
 Its shell syntax and help path pass; this does not repair PC/SC availability.
 
-The saved-state APDU 410 result is inconsistent. A prior replay from the
-post-APDU-408 image returned `6F00` in `KeyPair.genKeyPair()` (native method
-52, exception 5 / `IOException`) while reading missing persistent array tag
+The saved-state APDU 410 result differs between unpinned and current emulator
+builds. A replay after rebuilding returned `6F00` in `KeyPair.genKeyPair()`
+(native method 52, exception 5 / `IOException`) while reading missing
+persistent array tag
 `03013894FFFFFE000000420303FFFE000000470606FFFE000000010000FFFE000000020909FFFF00000005`
-(`fs_exists=0`, `fs_length status=2`). Two later retries from that same saved
-image and registry returned `9000` and successful RSA KeyPair responses.
-Artifacts: failing replay `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`;
-passing replays `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/`
-and `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`. The
-result is intermittent or build-dependent, not a verified fix. Pin the emulator
-binary hash and repeat before changing code. The earlier plain `--resume`
+(`fs_exists=0`, `fs_length status=2`). Two retries against the rebuilt emulator
+SHA-256 `343a75a913acd6127f82ba664b05758215ab0746d8b9f4ecd1ecb1ba79e02d62`
+reproduced the same `6F00`. Earlier retries returned `9000`, but the artifacts
+did not capture emulator or ROM-mask hashes, so those passes cannot be
+attributed to a known build. The hash-logged replay is
+`artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/`; prior
+conflicting runs are under `...T042148Z/`, `...T044405Z/`, and `...T044644Z/`.
+The replay harness now logs emulator, ROM-mask, CAP, load-image, and saved
+card/registry hashes. RESOURCE-01 remains open. The earlier plain `--resume`
 rejected the memory/registry pair; `--restore-applet` is required to reconnect.
 
 Diagnostic-only source changes now report the last native method/package on
@@ -53,10 +56,9 @@ size read status, and copied persistent-record read failures. `./tools/build-pc
 The ARM wrapper built the `current` profile image ending at `0x100d79b4`, leaving
 165,452 bytes below its configured flash limit. No physical board was flashed.
 
-Next actions: (1) pin the emulator binary and repeated APDU 408 -> restart ->
-410 behavior; if `6F00` recurs, trace the missing array tag through
-`Heap::getPersistentReference`, `getPersistentField_ReferenceImpl`, and
-persistent array identity restoration; add a deterministic regression; (2)
+Next actions: (1) explain why the current pinned build loses or fails to
+restore the APDU 410 RSA array body, tracing the serialized reference and array
+identity path; add a deterministic post-408 restart regression; (2)
 diagnose the bounded PC/SC scanner timeout and refresh reader availability
 before physical work; (3) run the unchanged full 1.8.4/jc305 client in a
 test-gated VPCD configuration and compare all 8,607 rows; (4) advance production

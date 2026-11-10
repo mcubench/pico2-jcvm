@@ -26908,3 +26908,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open. Pin and record the emulator binary hash for each replay, repeat from the saved image, and diagnose the missing persistent array if the failure recurs. Production deletion remains disabled.
 - Commit: This investigation commit; resolve with `git log --grep="debug: trace intermittent saved-state RSA replay"`.
 - Artifacts/logs: failing replay `artifacts/results/resource01-apdu-replay-vpcd-20261110T042148Z/`; passing replays `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/` and `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`; emulator SHA-256 at this step `e4a59053a42e3d84ace739c684c4a287cc6d005cf6329a40b575ab61d065e1fe`.
+
+## 2026-11-10 Record replay input hashes and reproduce saved-state failure 10 minutes
+
+- Step/experiment: `RESOURCE-01-PINNED-REPLAY-INPUTS`
+- When: '2026-11-10 05:54 CET' - '2026-11-10 06:04 CET'
+- Change: The APDU replay harness now records SHA-256 hashes for emulator, ROM mask, CAP, extracted LOAD image, and resumed card/registry. Updated RESOURCE-01 TODO, QKB, and handoff to distinguish the earlier unpinned successful runs from current hash-pinned failures.
+- Validation: `python3 -m py_compile tests/integration/jcalgtest_apdu_replay_vpcd_test.py` passed. `./tools/build-pc --profile max_crypto` passed and emitted `ROMMASK:PASS` (pre-existing Java converter, Maven metadata/network, and packed-member warnings were present). The post-APDU-408 replay against emulator SHA-256 `343a75a913acd6127f82ba664b05758215ab0746d8b9f4ecd1ecb1ba79e02d62` returned `6F00` twice at APDU 410 with exception 5 (`IOException`) and the same missing 43-byte persistent array tag. The latest complete input hashes are in `artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/replay.log`. No ARM/RISC-V rebuild or physical test was run.
+- Result: The current rebuilt binary reproducibly exhibits the saved-state KeyPair failure in 2/2 attempts. Two earlier `9000` responses were obtained before the replay harness logged binary/ROM-mask hashes, so they do not establish a fix or a known build comparison. RESOURCE-01 remains open.
+- Decision: Use the hash logging for all subsequent replay evidence; inspect the persistent array reference path against this pinned reproducer and add a deterministic restart regression. Do not enable production deletion.
+- Commit: This instrumentation and evidence commit; resolve with `git log --grep="debug: record RESOURCE-01 replay input hashes"`.
+- Artifacts/logs: failing pinned replay `artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/`; second current-build failure `artifacts/results/resource01-apdu-replay-vpcd-20261110T045719Z/`; current emulator SHA-256 `343a75a913acd6127f82ba664b05758215ab0746d8b9f4ecd1ecb1ba79e02d62`, ROM-mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.

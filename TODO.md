@@ -233,15 +233,16 @@ Archive text is historical evidence, not current device state or priorities.
   RSA KeyPair object graph. Root cause and fix are still unknown; keep RESOURCE-01
   open. ARM and RISC-V wrappers pass after the diagnostic changes, but hardware
   validation was not performed.
-  Two subsequent PC-only retries from the same preserved post-APDU-408 card
-  image and registry returned `9000` for APDU 410, with a successful RSA
-  KeyPair response. This conflicts with the reproduced `6F00` from the same
-  saved inputs and makes the restore failure intermittent or build-dependent;
-  it does not establish a fix. The two passing replay artifacts are
-  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044405Z/` and
-  `artifacts/results/resource01-apdu-replay-vpcd-20261110T044644Z/`. Keep the
-  failure open and repeat against a recorded, fixed emulator binary before
-  drawing conclusions. Physical hardware was not tested.
+  Two PC-only retries from the same preserved post-APDU-408 card image and
+  registry returned `9000`, but those artifacts do not include emulator or ROM
+  mask hashes, so the exact tested binary cannot be proven. After rebuilding,
+  two retries against emulator SHA-256
+  `343a75a913acd6127f82ba664b05758215ab0746d8b9f4ecd1ecb1ba79e02d62`
+  returned the original `6F00` with the same missing-array tag and status.
+  The latest replay logs all input hashes in
+  `artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/`; keep
+  RESOURCE-01 open. Replay input hash logging is now part of the harness.
+  Physical hardware was not tested.
 - Immediate action order (2026-11-09 review):
   1. **Reproduce the remaining failure in a small mixed workload.** Extract
      the ordered key creation/replacement, cache-clear and deletion APDUs leading
