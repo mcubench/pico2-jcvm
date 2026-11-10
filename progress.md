@@ -26886,3 +26886,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open and production object deletion disabled. Next isolate restart/restore APDU 410, complete the full unchanged client suite under the test-gated mode, and restore usable PC/SC before hardware testing.
 - Commit: This documentation and replay-validation commit; resolve with `git log --grep="test: validate request-gated RESOURCE-01 replay"`.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261110T024318Z/`; replay SHA-256 `e01031479b24a4d28cdbc1cb4e1bbfd2f9b578838d22fbe652ef1378737892ec`; emulator SHA-256 `b9361a2075781e737f59d80c3b6b179d6ba031925c731603f0d4d8cfa968d09c`.
+
+## 2026-11-10 Bound the JCAlgTest wrapper help and failure output 5 minutes
+
+- Step/experiment: `HOST-02-VPCD-WRAPPER-DIAGNOSTICS`
+- When: '2026-11-10 04:29 CET' - '2026-11-10 04:34 CET'
+- Change: Added early `--help`/`-h` handling to `tools/test-jcalgtest-support-vpcd` so help cannot build or poll PC/SC. Changed reader-discovery failure output to the last 40 lines per inventory while preserving complete scanner logs in artifacts. Recorded the cause and bounded diagnostic behavior in QKB and handoff.
+- Validation: `bash -n tools/test-jcalgtest-support-vpcd` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcalgtest-support-vpcd --help` passed and exited immediately without invoking the reader scan or acceptance suite. Earlier `timeout 10s pcsc_scan -r` returned 124; no suite run and no hardware flashed.
+- Result: Help checks no longer enter the reader wait. Reader failure will produce bounded terminal output with full logs retained. PC/SC remains unavailable; `pcscd.service` is inactive and access denied was observed during the earlier mistaken help probe.
+- Decision: Use the wrapper normally only after a bounded PC/SC scan confirms the VPCD reader. Continue RESOURCE-01 diagnosis offline until then.
+- Commit: This wrapper diagnostics commit; resolve with `git log --grep="fix: bound JCAlgTest VPCD wrapper diagnostics"`.
+- Artifacts/logs: Scanner inventories created by the mistaken pre-fix help call are in the ignored `artifacts/results/jcalgtest-support-vpcd-*` directory; no runtime metrics measured.

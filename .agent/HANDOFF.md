@@ -1,4 +1,4 @@
-# Current handoff — gated cleanup clears captured RSA replay; RESOURCE-01 open — 2026-11-10 04:28 CET
+# Current handoff — gated cleanup clears captured RSA replay; RESOURCE-01 open — 2026-11-10 04:34 CET
 
 RESOURCE-01 remains open. A clean `max_crypto` PC VPCD replay with
 `PICO2_TEST_OBJECT_DELETION=1` completed the full captured 414-APDU
@@ -29,6 +29,9 @@ Three tokens currently enumerate over USB (`2e8a:0009`, devices 047–049), and
 `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to all three nodes.
 However, `timeout 10s pcsc_scan -r` timed out (124), so no reader is currently
 confirmed usable through PC/SC. No board was flashed or physically tested.
+The full-suite VPCD wrapper was given an early `--help`/`-h` exit and now limits
+reader-discovery failure output to 40 lines per scan while preserving full logs.
+Its shell syntax and help path pass; this does not repair PC/SC availability.
 
 A separate saved-state restart experiment using `--restore-applet` returned
 `6F00` at RSA 1536 / APDU 410 both with and without the deletion test flag. A

@@ -1,5 +1,24 @@
 # 2026-11-08 RESOURCE-01 request-gated collection progress
 
+## HOST-02: full-suite wrapper now handles help without entering PC/SC polling — 2026-11-10
+
+- **Symptom:** Invoking `tools/test-jcalgtest-support-vpcd --help` before this
+  fix did not display help. The script proceeded into its reader-discovery loop,
+  ran three `pcsc_scan -r` attempts (up to 20 seconds each), and printed all
+  captured scanner output when no `Virtual PCD 00 00` reader appeared. With
+  `pcscd.service` inactive, the scan log contained repeated
+  `SCardEstablishContext: Access denied` / `SCardReleaseContext: Invalid handle`
+  messages and generated excessive terminal output.
+- **Viable fix:** The wrapper now handles `--help` and `-h` before host-access
+  checks, builds, or reader polling. On reader-discovery failure it prints only
+  the last 40 lines from each inventory log; complete logs remain in the
+  artifact directory. Validation: `bash -n tools/test-jcalgtest-support-vpcd`
+  and `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcalgtest-support-vpcd --help`
+  passed. Keep using the explicit host-access path for any actual test run.
+- **Limit:** This prevents the help-path wait and diagnostic flood; it does not
+  restore PC/SC. The currently observed service is inactive and no reader has
+  been confirmed by a bounded scan.
+
 ## RESOURCE-01: request-triggered cleanup clears captured RSA exhaustion — 2026-11-10
 
 - **Experiment:** Rebuilt the PC emulator with `./tools/build-pc --profile

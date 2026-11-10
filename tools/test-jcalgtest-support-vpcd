@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'USAGE'
+Usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-jcalgtest-support-vpcd
+
+Runs the unchanged JCAlgTest 1.8.4/jc305 support suite against an empty
+PC/SC-published VPCD reader. Set JCALGTEST_VPCD_READER and
+JCALGTEST_VPCD_ENDPOINT to override the default reader and endpoint. Set
+JCALGTEST_SUPPORT_TIMEOUT_SECONDS to choose a timeout from 1 to 3600 seconds.
+Full logs and intermediate artifacts are written under artifacts/results/.
+USAGE
+  exit 0
+fi
+
 require_host_usb_access
 require_command timeout
 require_command grep
@@ -51,7 +65,11 @@ for attempt in 1 2 3; do
   sleep 1
 done
 [[ "${reader_found}" == true ]] || {
-  cat "${out_dir}"/reader-inventory-*.log >&2
+  for inventory in "${out_dir}"/reader-inventory-*.log; do
+    [[ -f "${inventory}" ]] || continue
+    printf '%s (last 40 lines; full log retained):\n' "${inventory}" >&2
+    tail -n 40 "${inventory}" >&2
+  done
   die "VPCD PC/SC reader was not published: ${reader}"
 }
 
