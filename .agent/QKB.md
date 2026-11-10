@@ -9447,6 +9447,32 @@ emulator `cc7ca20083363d893307556e10c2921d79ecb0e276ed494a90a79943fc8c0bdb`,
 CSV `ccee129851dc3df8727e5439a87ae4ef151a9a021993d63faed4b84bf76209f6`.
 The run remains incomplete and RESOURCE-01 remains open.
 
+## Current-build compaction latency measured with persistent RSA replacements — 2026-11-10
+
+- A 128-operation PC VPCD batch repeatedly created a 512-bit persistent RSA
+  public key in the applet's retained field, then used the PC-only gated
+  reclaimer once. The integration run passed `TEST:SUMMARY pass=133 fail=0`;
+  the final collection erased 1,280 applet-owned tags. One `FS_OUT_OF_FLASH`
+  caused a completed compaction.
+- A monotonic event sidecar directly measured `FS_DEFRAG_START` to
+  `FS_DEFRAG_DONE`: 43.7476 seconds (stage 19.5854 s; copyback 24.1622 s).
+  The triggering APDU 124 took 47.289 seconds, about 92.5% of which was the
+  compaction interval. This is current PC VPCD performance; do not project it
+  directly to RP2350 flash hardware.
+- Two apparently suitable but insufficient workloads were checked: 32 and
+  128 local RSA-CRT `KeyPair` generations both passed their APDUs but produced
+  no defrag events because their key references were not retained across
+  APDUs. A 64-key rooted RSA replacement batch also passed and reclaimed 640
+  tags but did not trigger compaction on the current build. Storage stress
+  fixtures need persistent roots and enough replacements to reach the sector
+  append threshold.
+- Evidence: `artifacts/logs/rsa-replacement-compaction-128-20261110.log`
+  (SHA-256 `c897dff29393eeaa8b61fbc1c1d0c9afa19001ebddf01490683851e87cce0a3b`)
+  and timestamp sidecar `artifacts/logs/rsa-replacement-compaction-128-timeline.tsv`
+  (SHA-256 `dfb9e9d783a469c76f9d1d470c67a218e1881da43013d368ed63e6fa0c2d9845`).
+- RESOURCE-01 remains open; this isolated synthetic case is not the full
+  JCAlgTest workload and deletion stayed test-gated.
+
 ## RESOURCE-02 C5: indexed persistent array tags and rollback recovery
 
 - Persistent indexed tags must encode the index as high byte then low byte.

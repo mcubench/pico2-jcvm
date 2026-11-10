@@ -125,8 +125,12 @@ Archive text is historical evidence, not current device state or priorities.
      31 completions; the last was in staging when the watchdog ended the run,
      so its outcome is unknown. See
      `.agent/HANDOFF.md` and `.agent/QKB.md` for evidence hashes. Next
-     reproduce with a bounded CRT workload and capture each process exit status
-     before rerunning the full suite.
+     investigate why the unchanged JCAlgTest workload's cache clear remains
+     unsupported and why its persistent roots grow. A current-build 128-key
+     rooted replacement test measured one compaction at 43.7476 seconds; its
+     triggering APDU took 47.289 seconds (about 92.5% compaction). Local CRT
+     probes that do not retain keys did not trigger compaction. See the QKB
+     timing record; do not project PC VPCD timing directly to Pico hardware.
   Acceptance: the step-1 regression shows a flat plateau of records/bytes over
   N inits for both RSA and AES; the saved-state APDU 410 replay returns `9000`
   on the pinned build; ARM and RISC-V builds pass with no new warnings; the

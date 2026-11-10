@@ -1,6 +1,18 @@
-# Current handoff — RESOURCE-01 full-suite run reaches 3,600-second watchdog — 2026-11-10 16:01 CET
+# Current handoff — measured current-build VPCD compaction cost — 2026-11-10 16:40 CET
 
 RESOURCE-02 C1–C5 remain implemented and focused acceptance remains green.
+The latest bounded current-build test used 128 persistent RSA-512 public-key
+replacements followed by the PC-only gated reclaimer. It passed 133/133 APDU,
+selection, and teardown checks; the final collector request erased 1,280
+applet-owned records. Exactly one `FS_OUT_OF_FLASH` compaction was observed,
+and the event sidecar timestamps it from start to done at 43.7476 seconds.
+Staging took 19.5854 seconds and copyback 24.1622 seconds. The triggering APDU
+124 took 47.289 seconds, so the compaction itself was about 92.5% of that
+APDU's time. This is a current PC VPCD measurement, not physical Pico timing.
+The 32 and 128 local RSA-CRT KeyPair probe sequences passed but emitted no
+defrag events because they did not retain key references across APDUs; use a
+persistent rooted replacement pattern for storage stress.
+
 The current unchanged JCAlgTest 1.8.4/jc305 production-configuration VPCD run
 did **not** complete. The configured 3,600-second suite watchdog ended it
 while the client was issuing DSA-1024 key generation (`B0 75 19 00 03 03 04
@@ -36,11 +48,17 @@ flashed or tested.
 
 External Windows package remains ready; see `.agent/EXT_REQUESTS.md` for the
 current UF2/ZIP links, hashes, and requested results. Preserve all unrelated
-worktree changes. Next: investigate why the unchanged JCAlgTest workload
-retains unreachable applet records in production (cache-clear `F206` because
-object deletion is unsupported), then run a bounded targeted CRT workload
-with explicit APDU and suite exit capture. Do not attempt another entire suite
-until the current resource reclamation question has a concrete next change.
+worktree changes. Next: use the current-build VPCD timing and exact full-suite
+inventory evidence to isolate why JCAlgTest's cache-clear returns `F206` and
+its unreachable graph grows under production configuration. Keep object
+deletion disabled until PERSIST-01 safety acceptance passes. A bounded local
+RSA-CRT probe is not representative unless it roots/replaces keys across
+APDUs. No physical Pico was flashed or tested.
+
+Compaction timing artifacts: `artifacts/logs/rsa-replacement-compaction-128-20261110.log`
+and `artifacts/logs/rsa-replacement-compaction-128-timeline.tsv`; log SHA-256
+`c897dff29393eeaa8b61fbc1c1d0c9afa19001ebddf01490683851e87cce0a3b`, timeline
+SHA-256 `dfb9e9d783a469c76f9d1d470c67a218e1881da43013d368ed63e6fa0c2d9845`.
 
 # Current handoff — RESOURCE-02 C5 and external max_crypto package committed — 2026-11-10 14:25 CET
 
