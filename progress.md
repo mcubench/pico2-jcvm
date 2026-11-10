@@ -27091,3 +27091,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Next, profile the emulator once with elevated ptrace to confirm the trap count. Then remove the per-word privilege traps, and batch persistent array ranges.
 - Commit: resolve with `git log --grep="docs: record memory/persistent-write performance analysis"`.
 - Artifacts/logs: `artifacts/perf/memory-alloc-analysis-20261110/native-defrag-bench.log` SHA-256 `30d8aecdd0f339d2375c69d0a898dfb0a92bb8f6b79b9bc1dde0962171f55935`; `native-defrag-bench.patch` SHA-256 `d947d84e748aff38b94e4a9568ab6aa081ee76133ecae6adda5838e282243959`.
+
+## 2026-11-10 Record performance tasks in todo.md 5
+
+- Step/experiment: `PERF-MEM-ANALYSIS-20261110` follow-up
+- When: '2026-11-10 17:25 CET' - '2026-11-10 17:30 CET'
+- Model: `claude-opus-5-5`
+- Change: Added the section "Memory allocation and persistent-write performance" to `todo.md`, with tasks PERF-20261110-01..08 and their acceptance criteria.
+- Validation: Documentation only; no build or hardware run.
+- Result: Tasks are ordered: confirm the emulator trap cause, remove per-word host flash traps, add bulk persistent array ranges, cache metadata, constant-time heap handles, index transaction snapshots, make Pico `fs_sync` incremental, and reduce PC FS write amplification.
+- Decision: Start with PERF-20261110-01, which needs elevated ptrace host access.
+- Commit: `386cc141` (todo.md); this record is in the following commit.
+- Artifacts/logs: none.
