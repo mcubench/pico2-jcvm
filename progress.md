@@ -26919,3 +26919,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the hash logging for all subsequent replay evidence; inspect the persistent array reference path against this pinned reproducer and add a deterministic restart regression. Do not enable production deletion.
 - Commit: This instrumentation and evidence commit; resolve with `git log --grep="debug: record RESOURCE-01 replay input hashes"`.
 - Artifacts/logs: failing pinned replay `artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/`; second current-build failure `artifacts/results/resource01-apdu-replay-vpcd-20261110T045719Z/`; current emulator SHA-256 `343a75a913acd6127f82ba664b05758215ab0746d8b9f4ecd1ecb1ba79e02d62`, ROM-mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.
+
+## 2026-11-10 RESOURCE-01 code review and RESOURCE-02 task 45 minutes
+
+- Step/experiment: `RESOURCE-01-CODE-REVIEW-OPUS55`
+- When: '2026-11-10 08:15 CET' - '2026-11-10 09:05 CET'
+- Change: Added static code review `docs/review_opus55_202611100.md` identifying per-call persistent allocations in native `Cipher`/`Signature` init/update paths (C1), new flash bodies for every transient-array assignment (C2), absent production orphan reclamation (C3), per-byte persistent writes and full-snapshot syncs driving slowdowns (C4), and array rollback / identity-counter / `computeTag` correctness bugs consistent with the saved-state APDU 410 failure (C5). Added top-priority backlog task RESOURCE-02 in `TODO.md` with ordered fixes and acceptance gates.
+- Validation: Review only; no code changed, no build, test, emulator, or device run (explicitly requested). Findings are source-level and include line references; quantitative estimates are calculated, not measured.
+- Result: Expected main cause of long-run exhaustion is per-operation leaks in native crypto, not key creation alone; the reclaimer only drains them afterwards.
+- Decision: Worker agent implements RESOURCE-02 in order, starting with a measuring regression of repeated `Cipher.init` on one persistent cipher.
+- Commit: This documentation commit; resolve with `git log --grep="docs: add RESOURCE-01 code review"`.
+- Artifacts/logs: none

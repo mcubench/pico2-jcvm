@@ -7,30 +7,36 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. **Top priority: RESOURCE-01 — stop long-run resource exhaustion and
+1. **Top priority: RESOURCE-02 — fix the per-operation persistent leaks
+   identified by code review.** Native `Cipher`/`Signature` `init`/`update`
+   paths re-allocate work arrays into persistent objects on every call, and
+   transient arrays get a new flash body on every assignment. Implement the
+   ordered fixes in [the review](docs/review_opus55_202611100.md) before
+   further reclaimer work; this is the expected main cause of RESOURCE-01.
+2. **Top priority: RESOURCE-01 — stop long-run resource exhaustion and
    investigate resets.** Complete safe object reclamation and verify bounded
    allocation during key reuse and JCAlgTest cache clearing. Coordinate
    PERSIST-01/02/03, STORE-01, API-01/03 and JC-RESET-01; see the acceptance
    task below. This takes precedence over the other backlog items.
-2. Close **HOST-02 (P1)** acceptance: collect no-console Windows reconnect
+3. Close **HOST-02 (P1)** acceptance: collect no-console Windows reconnect
    timings for the current and original images. Normal startup wait removal
    and the no-DTR diagnostic deadline are implemented and hardware-tested; the
    timing harness is ready for Windows execution. See the
    [diagnostic workflow](docs/usb-startup-diagnostics.md).
-3. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
+4. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
    R53 `JCSystem.isAppletActive(AID)` now checks the executing install context
    and active retained applet instances across AIDs; focused callback and SIO
    VPCD checks pass.
-4. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
+5. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
-5. Close the current-image coverage and integration gates in **API-03**,
+6. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
-6. Implement and validate native support for the `ALG_HMAC_*` algorithms;
+7. Implement and validate native support for the `ALG_HMAC_*` algorithms;
    acceptance must use the unchanged JCAlgTest 1.8.4 / jc305 fixture and
    matching client. See HMAC-01.
-7. Diagnose the reported physical-reader disappearance during the max_crypto
+8. Diagnose the reported physical-reader disappearance during the max_crypto
    JCAlgTest Signature factory matrix without using real tokens. See
    JC-RESET-01.
 
@@ -57,6 +63,44 @@ accounts for every original unchecked item, including historical entries.
 Archive text is historical evidence, not current device state or priorities.
 
 ## Top-priority resource lifecycle investigation
+
+### RESOURCE-02
+
+- [ ] **Remove per-operation persistent-record leaks in native crypto and
+  persistent serialization.** Priority: highest; blocks closing RESOURCE-01.
+  Source: [code review 2026-11-10](docs/review_opus55_202611100.md) (C1–C5).
+  Work in the order below; each step is a separate validated commit. All
+  changes are native C++ VM code; keep upstream CAPs unchanged.
+  1. **Measure first.** Add a PC VPCD regression that calls `Cipher.init`
+     N times (e.g. 64) on one persistent RSA-2048 public cipher and on one
+     persistent AES cipher, with no new keys, sampling persistent inventory
+     (records, payload bytes, unreachable tags) before and after. Record the
+     current linear growth as the baseline in `progress.md`.
+  2. **C1 — reuse native work buffers.** In `native_rsa_cipher.cpp`
+     (`initializeRsaCipher`, `appendInput`), `native_cipher.cpp`
+     (`allocateKeyWorkspace`, `ensureCapacity`), `native_signature.cpp` and
+     `native_rsa_signature.cpp` (message-buffer growth), stop calling
+     `setField_Reference` with a new array on every call. Allocate fixed
+     capacity once (or keep the workspace in native RAM session state) and
+     overwrite in place. Do not persist RSA public modulus/exponent copies.
+  3. **C2 — transient array identity.** Make a transient array keep its body
+     tag after first serialization (`FlashMemory_Handler::writeArray`,
+     `setPersistentField_Reference`) so re-assignment writes only an alias,
+     and skip rewriting an unchanged reference.
+  4. **C4 — bulk writes.** Replace per-byte `wipeCipherArray` /
+     `loadKeyComponent` persistent writes with single record writes, and stop
+     rewriting the identity counter record on every allocation.
+  5. **C5 — correctness.** Give `JC_Array` the missing-body recovery and
+     rollback-generation handling that `JC_Instance` has; make the identity
+     counter rollback-safe so identities are never reused (explains the
+     saved-state APDU 410 `6F00`); fix `computeTag` to encode the index high
+     byte; map element-write `OutOfFlash` to `NO_RESOURCE`.
+  Acceptance: the step-1 regression shows a flat plateau of records/bytes over
+  N inits for both RSA and AES; the saved-state APDU 410 replay returns `9000`
+  on the pinned build; ARM and RISC-V builds pass with no new warnings; the
+  existing VPCD crypto/object-deletion/multipackage suites still pass; the
+  unchanged JCAlgTest 1.8.4/jc305 run is then repeated for RESOURCE-01 with
+  inventory sampling. Physical validation follows AGENTS.md host-access rules.
 
 ### RESOURCE-01
 
