@@ -26990,8 +26990,19 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: The ARM max_crypto build passed with firmware ending at `0x100f2974` (54,924 bytes remaining). `./tools/package-empty-card-uf2` emitted `EMPTY_CARD_UF2:PASS` with 3,882 firmware blocks and 4,096 erased storage blocks. `./tools/fixture-path --verify` passed (81 files). The ZIP passed `unzip -t`; every entry passed the included `SHA256SUMS.txt` check. No Windows host or physical Pico was used for this packaging step.
 - Result: Empty-card UF2 is 4,085,248 bytes, SHA-256 `fafd25c5f92783876949f385f6f7041b61c17113257e4d46e2a000b695373188`. Complete test ZIP is 18,274,889 bytes, SHA-256 `34ebf5b28743314d47ea0fc1ed4e7987709987a83bb9f7ffc18965dc740cbadf`. The UF2's larger file size is UF2 block framing for the full erased card-storage area; the firmware UF2 itself is 1,988,096 bytes.
 - Decision: Ready for external Windows flash, PC/SC, GPPro install, and JCAlgTest 1.8.4 validation. Await the requested reader/ATR, GPPro listings, CSV, and comparator output in `.agent/EXT_REQUESTS.md`.
-- Commit: This external-test request commit; resolve with `git log --grep="docs: request max_crypto Windows validation"`.
+- Commit: `500c216f`.
 - Artifacts/logs: [standalone UF2](artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2); [complete test package](build/external-test/pico2-jcvm-max_crypto-windows-test.zip); package contents and hashes in `build/external-test/max_crypto-package/SHA256SUMS.txt`.
+
+## 2026-11-10 Refresh session handoff after C5 and package delivery 3 minutes
+
+- Step/experiment: `SESSION-HANDOFF-C5-AND-EXTERNAL-REQUEST`
+- When: '2026-11-10 14:22 CET' - '2026-11-10 14:25 CET'
+- Change: Updated `.agent/HANDOFF.md` with final C5 acceptance results, exact C5 and external-request commit IDs, prepared artifact locations, the preserved pre-existing worktree changes, and the next external and RESOURCE-01 actions.
+- Validation: Inspected `git status`, the two relevant commits, the packaged image and archive hashes, and the C5 test logs. No additional build, test, flash, or physical device action was run.
+- Result: Handoff accurately identifies the C5 implementation as validated in PC VPCD, the Windows package as ready, and the external test response as pending.
+- Decision: Continue with external Windows results and later RESOURCE-01 full-suite inventory acceptance; physical hardware remained unused.
+- Commit: This handoff update commit; resolve with `git log --grep="docs: refresh C5 and external-test handoff"`.
+- Artifacts/logs: `.agent/HANDOFF.md`; existing evidence is listed in the preceding C5 and package records.
 
 ## 2026-11-10 CAP load/install/bytecode input-handling review recorded (duration not measured)
 

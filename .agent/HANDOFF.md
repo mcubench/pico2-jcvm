@@ -1,4 +1,4 @@
-# Current handoff — RESOURCE-02 C5 implemented and VPCD validated; external max_crypto test prepared — 2026-11-10 14:10 CET
+# Current handoff — RESOURCE-02 C5 and external max_crypto package committed — 2026-11-10 14:25 CET
 
 RESOURCE-01 physical work remains paused. RESOURCE-02 C5 now restores live
 persistent array bodies after transaction rollback, preserves identity-counter
@@ -27,11 +27,17 @@ external Windows testing steps are in `.agent/EXT_REQUESTS.md`. The UF2 is
 4,085,248 bytes because it carries the erased 1 MiB persistent region in UF2
 blocks; firmware payload itself is 1,988,096 bytes.
 
-Next: finish the running object-deletion test, review/commit the C5 step, then
-commit the external-test request and its progress record separately. Preserve
-all unrelated worktree changes. Latest logs: `artifacts/logs/resource02-vpcd-20261110T124803Z/`,
+Commits: C5 `df99935e`; external package/request `500c216f`. The external
+request is now waiting for Windows test results. Preserve the pre-existing
+unstaged deletions in `.agent/EXT_REQUESTS.md` and all other unrelated worktree
+changes. Latest logs: `artifacts/logs/resource02-vpcd-20261110T124803Z/`,
 `artifacts/logs/host-vpcd-multipackage-apdu-20261110T125309Z.log`, and
 `artifacts/results/resource01-apdu-replay-vpcd-20261110T130345Z/`.
+
+Next: receive the Windows reader/ATR, GPPro listings, JCAlgTest CSV, and
+comparator output; continue RESOURCE-01's unchanged full JCAlgTest suite with
+inventory sampling when that acceptance work resumes. No physical hardware
+was used in this session.
 
 # Current handoff — pinned replay reproduces saved-state RSA failure; RESOURCE-01 open — 2026-11-10 06:04 CET
 
