@@ -9405,6 +9405,32 @@ See `docs/sha256-reset-timing-analysis-20261105.md`.
 - Evidence: `artifacts/logs/host-vpcd-multipackage-apdu-20261110T092336Z.log`
   and `artifacts/logs/resource02-alias-c2-fixed-20261110.log`.
 
+## Full JCAlgTest VPCD run ends during RSA-CRT after persistent-record growth — 2026-11-10
+
+- A fresh unchanged 1.8.4/jc305 run in the production configuration reached
+  RSA-CRT key generation with six complete persistent-inventory samples. At
+  sample 6 it held 1,687 applet-owner records / 43,649 bytes, 1,821 global
+  records / 46,781 bytes, and 1,513 unreachable tags / 39,405 bytes. All six
+  samples reported zero invalid references, edge failures, or root failures.
+- Filesystem compaction cycles logged `FS_DEFRAG_DONE`, but later persistent
+  writes still returned `NO_RESOURCE`. Ordinary RSA key generation passed
+  through 1024 bits and failed with `NO_RESOURCE` at 1280–2048. RSA-CRT failed
+  from 512 through 1536. The log then ends after issuing the RSA-CRT 1792 APDU,
+  with no response or final process status. Treat it as incomplete evidence;
+  do not label it a timeout or compaction hang without the exit status.
+- Measurement scope: the APDU timings are whole-operation latencies. Earlier
+  compaction-triggering APDUs took 55–102 seconds; RSA-1024 key generation
+  took 453.779 seconds while triggering several compactions. No isolated
+  compaction latency has been measured.
+- This run does not close RESOURCE-01. `F206` during cache clear is consistent
+  with normal firmware's unsupported object deletion, leaving applet-owned
+  orphan records for long-run pressure. Next, reproduce with a bounded CRT
+  workload and capture wrapper/client/emulator exit statuses before starting
+  another full suite. No physical token was used.
+- Evidence: `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/`;
+  client SHA-256 `34f39991d45bd6d6110cd0b568174e3b591b6965b1f35d47a0c2780bea674959`,
+  emulator SHA-256 `8ecbffb2c335d92b8f732c693248b8bd397240b74997be571550144c1b7b9ebd`.
+
 ## RESOURCE-02 C5: indexed persistent array tags and rollback recovery
 
 - Persistent indexed tags must encode the index as high byte then low byte.

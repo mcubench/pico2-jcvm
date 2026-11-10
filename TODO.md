@@ -7,17 +7,17 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. **Top priority: RESOURCE-02 — fix the per-operation persistent leaks
-   identified by code review.** Native `Cipher`/`Signature` `init`/`update`
-   paths re-allocate work arrays into persistent objects on every call, and
-   transient arrays get a new flash body on every assignment. Implement the
-   ordered fixes in [the review](docs/review_opus55_202611100.md) before
-   further reclaimer work; this is the expected main cause of RESOURCE-01.
-2. **Top priority: RESOURCE-01 — stop long-run resource exhaustion and
+1. **Top priority: RESOURCE-01 — stop long-run resource exhaustion and
    investigate resets.** Complete safe object reclamation and verify bounded
    allocation during key reuse and JCAlgTest cache clearing. Coordinate
    PERSIST-01/02/03, STORE-01, API-01/03 and JC-RESET-01; see the acceptance
    task below. This takes precedence over the other backlog items.
+2. **RESOURCE-02 — focused per-operation leak fixes are implemented; full
+   suite acceptance remains open under RESOURCE-01.** C1–C5 are implemented
+   and the focused AES/alias/RSA plateau, transaction, saved-state, and
+   multipackage regressions pass. Keep the full unchanged JCAlgTest run as an
+   RESOURCE-01 gate; do not describe RESOURCE-02 as wholly accepted until that
+   gate and required physical validation are complete.
 3. Close **HOST-02 (P1)** acceptance: collect no-console Windows reconnect
    timings for the current and original images. Normal startup wait removal
    and the no-DTR diagnostic deadline are implemented and hardware-tested; the
@@ -114,6 +114,16 @@ Archive text is historical evidence, not current device state or priorities.
      VPCD connection timeout; the default-timeout rerun also passed. The
      unchanged full JCAlgTest 1.8.4 suite with inventory sampling remains part
      of RESOURCE-01 acceptance.
+     A clean production-configuration VPCD rerun on 2026-11-10 logged
+     successful defrag completion but still accumulated 1,513 unreachable
+     tags (39,405 payload bytes) by inventory sample 6. RSA key generation
+     returned `SystemException_NO_RESOURCE` at 1280–2048 bits; RSA-CRT
+     returned it at 512–1536 bits. The client log ends after issuing CRT-1792,
+     without a response or captured exit status, so this run is incomplete
+     and does not establish a compaction hang or watchdog exit. See
+     `.agent/HANDOFF.md` and `.agent/QKB.md` for evidence hashes. Next
+     reproduce with a bounded CRT workload and capture each process exit status
+     before rerunning the full suite.
   Acceptance: the step-1 regression shows a flat plateau of records/bytes over
   N inits for both RSA and AES; the saved-state APDU 410 replay returns `9000`
   on the pinned build; ARM and RISC-V builds pass with no new warnings; the

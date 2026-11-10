@@ -27047,3 +27047,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep PC/SC untouched until the clean VPCD run completes; then summarize its storage/failure outcome and continue physical validation only if a real reader is registered.
 - Commit: Pending.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261110T132850Z/` (interrupted); `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/` (active rerun).
+## 2026-11-10 Record RESOURCE-01 VPCD rerun and refresh priorities 4 minutes
+
+- Step/experiment: `RESOURCE-01-VPCD-PARTIAL-RSA-CRT-20261110`
+- When: '2026-11-10 15:53 CET' - '2026-11-10 15:57 CET'
+- Change: Recorded the latest incomplete production-configuration JCAlgTest VPCD run in `.agent/HANDOFF.md`, `.agent/QKB.md`, and `TODO.md`. Corrected the current-priority summary to reflect that RESOURCE-02 C1–C5 implementation and focused tests are complete while full-suite acceptance remains part of RESOURCE-01.
+- Validation: Confirmed no client/emulator process remained; inspected the final client, emulator, CSV, and six persistent-inventory samples. `git diff --check -- TODO.md .agent/HANDOFF.md .agent/QKB.md` passed. No build, test rerun, USB operation, or physical hardware action was performed.
+- Result: Partial CSV has 278 lines; sample 6 reports 1,687 applet-owner records / 43,649 bytes, 1,821 global records / 46,781 bytes, and 1,513 unreachable tags / 39,405 bytes. Defrags completed, yet key generation returned `NO_RESOURCE`; the client log ends after issuing CRT-1792 with no response or exit status. Whole-operation observations remain 55–102 seconds for earlier compaction-triggering APDUs and 453.779 seconds for RSA-1024 with multiple compactions; isolated compaction cost is unmeasured.
+- Decision: Keep RESOURCE-01 open. Next isolate a bounded CRT workload and capture client, emulator, and wrapper exit statuses before another full-suite run. No hardware was flashed or tested.
+- Commit: This evidence record is included in the RESOURCE-01 handoff commit; resolve with `git log --grep="docs: record RESOURCE-01 VPCD rerun evidence"`.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/`; client SHA-256 `34f39991d45bd6d6110cd0b568174e3b591b6965b1f35d47a0c2780bea674959`, emulator SHA-256 `8ecbffb2c335d92b8f732c693248b8bd397240b74997be571550144c1b7b9ebd`, partial report SHA-256 `cb14990a3113758a90e756a713c79edd6d955cc08a4417d404237bf8a2c190de`.
