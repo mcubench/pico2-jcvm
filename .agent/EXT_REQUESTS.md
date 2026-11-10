@@ -86,12 +86,12 @@ region; install the upstream JCAlgTest CAP explicitly during the test.
   (includes firmware, GPPro, pinned JCAlgTest 1.8.4/jc305 CAP and matching
   client, expected support CSV, comparator, and run sheet).
 - [Download the standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2)
-- Package SHA-256: `34ebf5b28743314d47ea0fc1ed4e7987709987a83bb9f7ffc18965dc740cbadf`
-- UF2 SHA-256: `fafd25c5f92783876949f385f6f7041b61c17113257e4d46e2a000b695373188`
+- Package SHA-256: `c872e23383daa298212caefafa24f3c860a3c1ea9c18e0a6b2f8db44124da804`
+- UF2 SHA-256: `5f0b8383261b511c11c23f5cd9f96c93948fd66616527dc5f2fd48e733418502`
 - UF2 size: 4,085,248 bytes (UF2 transport blocks include firmware and a full
   erased persistent-storage region).
 - Build provenance: profile `max_crypto`, ARM `rp2350-arm-s`, serial wait
-  `0 ms`, CPLC source ID `0xFF55C81E`; firmware end `0x100F2974`, leaving
+  `0 ms`, CPLC source ID `0xFF393005`; firmware end `0x100F2974`, leaving
   54,924 bytes before the configured flash limit.
 
 The package [README](../build/external-test/max_crypto-package/README.md)

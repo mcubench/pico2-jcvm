@@ -27023,5 +27023,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `git diff --check -- tests/unit/persistent_transaction/persistent_transaction_test.cpp` passed. No firmware build or hardware validation was needed for this test-only correction.
 - Result: All three previously failing cases pass, confirming retry after each actual publication failure point for identity-tagged objects.
 - Decision: Keep this as a test-only regression correction; continue the active unchanged JCAlgTest VPCD resource run.
-- Commit: Pending.
+- Commit: `3930055a` (this record was finalized in a following documentation commit).
 - Artifacts/logs: Unit output was captured in the command session; the concurrent full-suite run is under `artifacts/results/jcalgtest-support-vpcd-20261110T132850Z/`.
+
+## 2026-11-10 Refresh max_crypto empty-card package for Windows testing 10 minutes
+
+- Step/experiment: `MAX-CRYPTO-EXTERNAL-REFRESH`
+- When: '2026-11-10 14:42 CET' - '2026-11-10 14:52 CET'
+- Change: Rebuilt max_crypto ARM and RISC-V through repository wrappers, regenerated the ARM empty-card UF2, refreshed the Windows test archive, and updated `.agent/EXT_REQUESTS.md` with current hashes and build provenance.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. ARM firmware ends at `0x100f2974` with 54,924 bytes remaining. `./tools/package-empty-card-uf2` passed with 3,882 firmware and 4,096 erased-storage blocks. `./tools/fixture-path --verify` passed (81 files); archive structure, `unzip -t`, and all package SHA-256 entries passed. No USB or physical hardware was used.
+- Result: Empty-card UF2 is 4,085,248 bytes with SHA-256 `5f0b8383261b511c11c23f5cd9f96c93948fd66616527dc5f2fd48e733418502`; Windows package is 18,274,887 bytes with SHA-256 `c872e23383daa298212caefafa24f3c860a3c1ea9c18e0a6b2f8db44124da804`. CPLC source ID is `0xFF393005`.
+- Decision: The fresh image and package are ready for external Windows validation. Continue the active full JCAlgTest VPCD run to assess long-run storage behavior.
+- Commit: Pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; `build/external-test/pico2-jcvm-max_crypto-windows-test.zip`; instructions and links in `.agent/EXT_REQUESTS.md`.
