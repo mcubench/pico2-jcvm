@@ -1032,6 +1032,23 @@ void verify_retained_context_repeated_diamond_reclamation() {
   std::puts("RMI_REGISTRY:PASS retained_context_diamond_cycles=8 slots=4");
 }
 
+void verify_retained_context_ambiguous_package_fails_closed() {
+  constexpr jcvm::jpackage_ID_t package_id = 46;
+  jcvm::Context first_context(38, package_id);
+  jcvm::Context second_context(39, package_id);
+  const auto first_array = first_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto second_array = second_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+
+  const auto result = jcvm::Context::collectRetainedHeaps();
+  assert(!result.complete);
+  assert(result.root_enumeration_failures == 1);
+  assert(first_context.getHeap().getArray(first_array));
+  assert(second_context.getHeap().getArray(second_array));
+  std::puts("RMI_REGISTRY:PASS retained_context_ambiguous_package_fails_closed=1");
+}
+
 void verify_three_heap_foreign_cycle_and_repeated_reclamation() {
   constexpr jcvm::jpackage_ID_t package_a = 34;
   constexpr jcvm::jpackage_ID_t package_b = 35;
@@ -1775,6 +1792,7 @@ int main() {
 
   verify_retained_context_foreign_cycle_collected();
   verify_retained_context_repeated_diamond_reclamation();
+  verify_retained_context_ambiguous_package_fails_closed();
 
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);

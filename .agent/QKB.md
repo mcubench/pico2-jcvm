@@ -9923,6 +9923,16 @@ Check new loader, resolver and bytecode code against these before review.
 - These are host/unit flash-model results. They do not replace RP2350 flash
   power-cut testing or JCAlgTest reset-driven physical acceptance.
 
+### Production collector duplicate-package guard — 2026-11-11
+
+- `Context::collectRetainedHeaps()` was tested with two retained `Context`
+  instances claiming one package ID. It returned incomplete with one root
+  enumeration failure and preserved both heaps' arrays.
+- This validates the conservative failure mode, not the absence of duplicate
+  package contexts in every production restore sequence. Keep deletion off if
+  enumeration is incomplete and investigate any future device telemetry that
+  reports this guard.
+
 ## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
 
 - **Observed:** The Pico-only helper grants access to `/dev/bus/usb/001/045`;

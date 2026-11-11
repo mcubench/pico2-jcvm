@@ -1,4 +1,16 @@
-# Current handoff — persistence and cut-recovery suites revalidated — 2026-11-11 15:00 CET
+# Current handoff — production collector ambiguity guard covered — 2026-11-11 15:02 CET
+
+`tests/unit/rmi_registry/rmi_registry_test.cpp` now verifies that the
+production `Context::collectRetainedHeaps()` fails closed when two retained
+contexts claim the same package ID. It returns incomplete with one root
+enumeration failure and leaves both contexts' arrays intact. The full focused
+RMI/GC suite passes under AddressSanitizer/UBSan. This confirms the safety gate
+for an ambiguous registry fixture; it does not prove that production restores
+can never create this state. Continue to keep deletion disabled by default.
+
+---
+
+# Previous handoff — persistence and cut-recovery suites revalidated — 2026-11-11 15:00 CET
 
 After the production retained-context cycle/root tests, reran
 `./tools/test-persistent-transaction` and `./tools/test-rp2350-fs-overlay`.

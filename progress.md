@@ -27529,3 +27529,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep object deletion disabled by default and RESOURCE-01 open; physical JCAlgTest reset/deletion remains required.
 - Commit: `dea49328`
 - Artifacts/logs: test outputs in terminal; binaries under `build/tests/unit/`.
+
+## 2026-11-11 Verify production collector duplicate-package fail-closed guard 2 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-AMBIGUOUS-PACKAGE`
+- When: '2026-11-11 15:00 CET' - '2026-11-11 15:02 CET'
+- Model: `GPT-6`
+- Change: Added a production-entrypoint regression with two retained contexts for one package. Updated R59 TODO, QKB and handoff with the guard's observed behavior and scope.
+- Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan. `collectRetainedHeaps()` returned incomplete with `root_enumeration_failures=1`; both context arrays remained accessible.
+- Result: Production coordinated collection does not reclaim either heap when package-to-context ownership is ambiguous in this fixture.
+- Decision: Keep deletion disabled by default and R59 open; separately verify runtime restore ownership and physical reset behavior.
+- Commit: `pending`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output `RMI_REGISTRY:PASS retained_context_ambiguous_package_fails_closed=1`.
