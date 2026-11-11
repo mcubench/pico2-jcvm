@@ -27163,6 +27163,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: Pending.
 - Artifacts/logs: `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-host.log` and `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-monitor.log`; D92 monitor and first D92 host trace were captured in tool output only.
 
+## 2026-11-11 Correct JCAlgTest version attribution and start pinned static run 4 minutes
+
+- Step/experiment: `RESOURCE-01-CLIENT-VERSION-STATIC-20261111`
+- When: '2026-11-11 07:52 CET' - '2026-11-11 07:56 CET'
+- Model: `gpt-6`
+- Change: Corrected the external-client version interpretation in the current QKB, handoff, and TODO. The fixture manifest says the supplied 1.8.4 client internally reports 1.8.3, so the external version field does not prove a mismatch. Started a full pinned 1.8.4 `ALG_PERFORMANCE_STATIC` physical run on 2BED.
+- Validation: Confirmed `tests/fixtures/manifest.json` note and observed the pinned client report `AlgTestJClient version; 1.8.3` while its CAP reports `1.8.4_jc305`. Started `tools/run-jcalgtest` with a 180-second APDU watchdog and 3,600-second suite deadline. The run is still in progress; early SHA-384 MessageDigest APDUs returned `9000`. `./tools/fixture-path --verify` had passed earlier this turn (81 fixture files).
+- Result: The prior conclusion that the external run used a different client was unsupported. External client identity cannot be established without the supplied JAR bytes/hash. The current pinned run provides version-correct acceptance evidence and has not yet reached the RSA-3072 case.
+- Decision: Keep RESOURCE-01 open until the static run reaches the relevant case or watchdog and resource/transport evidence is inspected.
+- Commit: resolve with `git log --grep="Correct JCAlgTest version attribution and start pinned static run"`.
+- Artifacts/logs: `artifacts/logs/resource01-jcalgtest-184-static-2bed-20261111.log`; results directory `artifacts/results/resource01-jcalgtest-184-static-2bed-20261111T0753/`.
+
 ## 2026-11-11 Merge task backlogs 2 minutes
 
 - Step/experiment: `merge-todo-files`

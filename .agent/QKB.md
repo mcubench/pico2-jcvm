@@ -9638,9 +9638,12 @@ Check new loader, resolver and bytecode code against these before review.
 ## External Windows JCAlgTest static RSA failure (2026-11-11)
 
 - **Evidence:** `artifacts/results/external_test_20261110/ALGTEST_log_1794341266469.log`
-  and its CSV are from the 2026-11-10 Windows performance run. The CSV
-  identifies client version **1.8.3**, not the repository's pinned 1.8.4
-  client. The log contains 146 `F205` responses. For RSA-3072
+  and its CSV are from the 2026-11-10 Windows performance run. They report
+  client-internal version **1.8.3** and applet version `1.8.4_jc305`. The
+  repository fixture manifest explicitly notes that its supplied, versioned
+  1.8.4 client also internally reports 1.8.3. Therefore the CSV label does not
+  prove a mismatched client; the external JAR hash/bytes are unavailable. The
+  log contains 146 `F205` responses. For RSA-3072
   `ALG_RSA_ISO9796 Cipher_doFinal`, the `B0 31` prepare APDU returned `F205`
   after 62,143 ms. The next `Cipher_init` APDU failed with Windows PC/SC error
   `0x8010002f`; later calls report `SCARD_E_SERVICE_STOPPED`. Therefore this
@@ -9673,18 +9676,27 @@ Check new loader, resolver and bytecode code against these before review.
   The configured Pico-only PC/SC helper restored enumeration of both readers.
   GPPro showed no JCAlgTest applet on 2BED, so the unchanged pinned 1.8.4/jc305
   CAP was installed explicitly.
-- **Targeted replay:** On both boards, replayed the exact external
-  `B0 31` prepare APDU for RSA-private-3072/ISO9796 after selecting the
-  JCAlgTest applet. Host SmartcardIO did not return within the 120-second hard
-  timeout. Device serial diagnostics recorded a three-byte final response with
-  `SW=9000`; no `F205` was observed. This prepares the named operation but does
-  not execute its `Cipher_doFinal` measurement. On D92, PC/SC enumeration
+- **Targeted replay:** On both boards, replayed `B0 31` preparation APDU bytes
+  captured in the external log for RSA-private-3072/ISO9796 against the
+  installed 1.8.4 applet. Host SmartcardIO did not return within the 120-second
+  hard timeout. Device serial diagnostics later recorded a three-byte final
+  response with `SW=9000`; no `F205` was observed. Because the external client
+  JAR hash is unavailable, this manual replay does not prove version-matched
+  behavior. It prepares the named operation but does not execute the
+  `Cipher_doFinal` measurement. Repeating the same prepare APDU after the first
+  attempt returned `039000` in 1.167 seconds on D92 and 618 ms on 2BED. On D92,
+  PC/SC enumeration
   stopped answering until a verified reflash; on 2BED, enumeration remained
   available after the timeout. This is evidence of a long host transaction and
   a board-dependent PC/SC recovery outcome, not a reproduced persistent
   `NO_RESOURCE` failure. The 2BED host and serial logs are under
   `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-*.log`.
-- **Next:** Capture the CCID response at the host boundary to explain the
-  SmartcardIO timeout despite the card-side `9000`. Then inspect persistent
-  storage before/after and reproduce the external `F205` using the pinned
-  1.8.4 client. Do not conflate those outcomes or mark RESOURCE-01 complete.
+- **Current 1.8.4 run:** The pinned fixture client is running
+  `ALG_PERFORMANCE_STATIC` on 2BED with a 180-second APDU watchdog and a
+  3,600-second suite deadline. At the latest check, SHA-384 MessageDigest
+  calls were returning `9000`; no resource failure had occurred yet. Logs:
+  `artifacts/logs/resource01-jcalgtest-184-static-2bed-20261111.log` and
+  `artifacts/results/resource01-jcalgtest-184-static-2bed-20261111T0753/`.
+- **Next:** Let the pinned static run reach a result or watchdog, then inspect
+  persistent usage and trace CCID completion if the host stalls. Keep the
+  different failure classes separate and RESOURCE-01 open.

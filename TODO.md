@@ -336,6 +336,12 @@ Archive text is historical evidence, not current device state or priorities.
   and inspect persistent storage around a pinned 1.8.4 reproduction. Logs:
   `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-host.log`
   and `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-monitor.log`.
+  Version note: the external CSV's `AlgTestJClient version; 1.8.3` does not
+  establish that its client differed from the pinned 1.8.4 jar; the fixture
+  manifest records that the pinned jar internally reports 1.8.3 as well. The
+  external and current logs both report applet `1.8.4_jc305`. The full pinned
+  static run on 2BED is now in progress with a 180-second APDU watchdog and
+  3,600-second suite limit.
 - Immediate action order (2026-11-09 review):
   1. **Reproduce the remaining failure in a small mixed workload.** Extract
      the ordered key creation/replacement, cache-clear and deletion APDUs leading
