@@ -18,6 +18,16 @@ build_dir="${repo_root}/build/choupi-pc"
 support_dir="${repo_root}/build/javacard-support"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 jcvm_debug="${CHOUPI_JCVM_DEBUG:-OFF}"
+cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
+printf 'BUILD:CPLC_SOURCE_ID value=%s\n' "${cplc_source_id}"
+source_tree_status="$(git -C "${repo_root}" status --porcelain --untracked-files=normal --ignore-submodules=none)" || \
+  die "cannot determine source tree state"
+source_tree_state=clean
+if [[ -n "${source_tree_status}" ]]; then
+  source_tree_state=dirty
+fi
+printf 'BUILD:SOURCE_TREE_STATE state=%s head=%s\n' \
+  "${source_tree_state}" "$(git -C "${repo_root}" rev-parse --short=8 HEAD)"
 [[ -x "${java8_home}/bin/javac" ]] || \
   die "Java 8 javac not found; set JAVA8_HOME to a JDK 8 installation"
 
@@ -33,6 +43,7 @@ python3 "${repo_root}/tools/javacard-support.py" \
   -DCHOUPI_TARGET_STM32=OFF \
   -DCHOUPI_OS_DEBUG=OFF \
   -DCHOUPI_JCVM_DEBUG="${jcvm_debug}" \
+  -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${cplc_source_id}" \
   -DCHOUPI_JAVA8_HOME="${java8_home}"
 
 "${repo_root}/tools/env" cmake --build "${build_dir}" --target javacard-sdk -j2

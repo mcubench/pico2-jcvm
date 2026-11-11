@@ -24,7 +24,7 @@ option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING
   "Bounded CDC DTR startup wait for diagnostic firmware builds (milliseconds)")
 set(CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID "0x00000000" CACHE STRING
-  "Eight-hex-digit CPLC source ID (00=clean, FF=dirty, six-digit commit prefix)")
+  "Eight-hex-digit CPLC identifier from the first 32 bits of the HEAD commit hash")
 string(LENGTH "${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}" CHOUPI_CPLC_ID_LENGTH)
 if(NOT CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID MATCHES "^0x[0-9A-Fa-f]+$" OR
    NOT CHOUPI_CPLC_ID_LENGTH EQUAL 10)

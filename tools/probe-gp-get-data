@@ -10,7 +10,9 @@ require_host_usb_access
 
 build_dir="${repo_root}/build/gp-get-data-apdu-probe"
 mkdir -p "${build_dir}"
+expected_cplc_id="$("${repo_root}/tools/cplc-source-id")"
 "${repo_root}/tools/env" javac -d "${build_dir}" \
   "${repo_root}/tests/hardware/GPGetDataApduProbe.java"
+PICO2_EXPECTED_CPLC_EQUIPMENT_ID="${expected_cplc_id}" \
 timeout --signal=TERM --kill-after=2s "${timeout_seconds}s" \
   "${repo_root}/tools/env" java -cp "${build_dir}" GPGetDataApduProbe "$@"

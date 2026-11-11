@@ -27718,3 +27718,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark the focused measurement subtask complete; continue with RESOURCE-01 and keep production object deletion disabled until its safety/acceptance gates pass.
 - Commit: `3e522939`
 - Artifacts/logs: `artifacts/logs/resource02-vpcd-20261111T182124Z/{aes,aliases,rsa}.log`; emulator SHA-256 `1c9295aab5536765bf8b1f9056a2ca7953c87a97bb806e7aab254e5f7358859e`, ROM mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`, probe CAP SHA-256 `903e153f71d33e95676ad37abf2c3527228f2a6679321ece22e3d55c528d12a5`.
+
+## 2026-11-11 Identify CPLC firmware by commit hash 18 min
+
+- Step/experiment: `CPLC-COMMIT-ID-01`
+- When: '2026-11-11 19:32 UTC' - '2026-11-11 19:50 UTC'
+- Model: `GPT-6`
+- Change: Changed `ICPersonalizationEquipmentID` to encode the first 32 bits of the Git HEAD commit hash, with source-tree dirt reported separately in build logs. Updated ARM and PC build configuration, runtime probe expectations, and VPCD build wiring.
+- Validation: `./tools/test-gp-get-data` passed (`TEST:SUMMARY pass=25 fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-gp-get-data-vpcd` passed open and authenticated CPLC GET DATA checks, returning equipment ID `21D5DAAD`. `bash -n` and scoped `git diff --check` passed. ARM and RISC-V builds passed before commit with the prior HEAD ID `21D5DAAD`.
+- Result: CPLC identifies the source commit with its available four-byte field; dirty-tree state remains visible in build output. Physical flash verification not yet performed.
+- Decision: Rebuild both architectures immediately after this source commit so the produced image encodes this commit's hash; confirm physical firmware ID if a reader remains available.
+- Commit: `resolved by the immediately following progress entry (commit ID is self-referential)`
+- Artifacts/logs: `artifacts/logs/cplc-commit-id-build-arm-20261111-final.log`, `artifacts/logs/cplc-commit-id-build-riscv-20261111-final.log`, `artifacts/logs/cplc-commit-id-vpcd-20261111T194111Z.log`; ARM UF2 SHA-256 before this commit `39e7773307c4b5aa652c3b50781cb92e1e1a855e94ee0ef033bca03c05b2c7b4`.

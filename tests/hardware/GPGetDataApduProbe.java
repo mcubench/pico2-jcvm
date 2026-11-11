@@ -22,14 +22,18 @@ public final class GPGetDataApduProbe {
   private static boolean matchesCplc(byte[] actual) {
     if (actual.length != CPLC_DATA.length) return false;
     // Compare all fixed CPLC fields through ICPersonalizationDate. The final
-    // four bytes are generated from the build's source commit: leading 00
-    // marks a clean tree, FF marks a dirty tree, and the remaining three
-    // bytes are a short prefix of the base commit hash.
+    // four bytes contain the first 32 bits of the source HEAD commit hash.
     for (int i = 0; i < 41; i++) {
       if (actual[i] != CPLC_DATA[i]) return false;
     }
-    int sourceState = actual[41] & 0xff;
-    return sourceState == 0x00 || sourceState == 0xff;
+    String expectedEquipmentId =
+        System.getenv("PICO2_EXPECTED_CPLC_EQUIPMENT_ID");
+    if (expectedEquipmentId == null ||
+        !expectedEquipmentId.matches("0[xX][0-9A-Fa-f]{8}")) {
+      return false;
+    }
+    byte[] expected = fromHex(expectedEquipmentId.substring(2));
+    return Arrays.equals(expected, Arrays.copyOfRange(actual, 41, 45));
   }
 
   private static byte[] fromHex(String text) {

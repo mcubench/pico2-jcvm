@@ -25,8 +25,9 @@ constexpr uint8_t kCardRecognitionData[] = {
 // marker; RP2350 is encoded as the synthetic IC type 2350. These are not
 // claimed to be GlobalPlatform-assigned CPLC manufacturer/type codes.
 // Unavailable per-device serial, batch and pre-personalization equipment IDs
-// are zero. The personalization equipment ID is generated for each firmware
-// build and identifies its source commit (with an explicit dirty marker).
+// are zero. The personalization equipment ID contains the first 32 bits of
+// the source HEAD commit hash. Dirty source changes are not distinguished by
+// this fixed-width field; the build log records whether the tree was dirty.
 // Firmware release encoding in OperatingSystemReleaseLevel is four hex
 // digits: major version nibble, minor version nibble, then an update byte.
 // Thus 0.1.1 is 0x0101. Change these only for an explicitly requested release.
