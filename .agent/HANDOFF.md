@@ -12076,3 +12076,15 @@ physical test was run. R59 still needs persistent/runtime-root coverage,
 physical reset-driven deletion, and measured device RAM behavior. The working
 tree has unrelated edits from other work; stage only this added test function
 and its invocation, plus this handoff and progress record.
+# Current handoff — fail closed for omitted foreign target heaps — 2026-11-11 15:22 CET
+
+Added a production `Context::collectHeaps()` regression that requests a sweep
+for a rooted source context while omitting the context named by its reachable
+foreign array edge. The collector returns incomplete with one root-enumeration
+failure and both source and target arrays remain accessible. `./tools/test-rmi-registry`
+passes with `RMI_REGISTRY:PASS retained_missing_foreign_target_fails_closed=1`.
+This is host-unit evidence only. R59 remains open for broader runtime roots,
+physical reset-driven deletion, and measured device RAM behavior. Stage only
+this new test and invocation with the TODO summary, progress record, and handoff;
+the unrelated sibling transient-array test edits in the same unit-test file
+remain unstaged.

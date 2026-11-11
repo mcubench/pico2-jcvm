@@ -27564,3 +27564,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R59 open for actual persistent/runtime-root coverage, physical reset-driven deletion, and measured device RAM behavior.
 - Commit: `c3ec118b`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
+## 2026-11-11 Fail closed for omitted foreign target heaps 4 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-MISSING-FOREIGN-TARGET`
+- When: '2026-11-11 15:18 CET' - '2026-11-11 15:22 CET'
+- Model: `GPT-6`
+- Change: Added a production `Context::collectHeaps()` regression that requests collection of a rooted source heap while omitting the target heap named by its live foreign array edge. Updated the R59 summary.
+- Validation: `./tools/test-rmi-registry` passed and reported `RMI_REGISTRY:PASS retained_missing_foreign_target_fails_closed=1`; the result was incomplete and both source and target arrays remained accessible. `git diff --check -- tests/unit/rmi_registry/rmi_registry_test.cpp` passed. No firmware build or hardware test was needed.
+- Result: An omitted foreign target package prevents sweeping; the collector does not reclaim either object on an incomplete trace.
+- Decision: Keep R59 open for broader runtime roots, physical reset-driven deletion, and measured device RAM behavior.
+- Commit: `<record after commit>`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.

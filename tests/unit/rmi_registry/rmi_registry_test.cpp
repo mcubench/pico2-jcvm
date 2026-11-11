@@ -1049,6 +1049,31 @@ void verify_retained_context_ambiguous_package_fails_closed() {
   std::puts("RMI_REGISTRY:PASS retained_context_ambiguous_package_fails_closed=1");
 }
 
+void verify_retained_context_missing_foreign_target_fails_closed() {
+  constexpr jcvm::jpackage_ID_t source_package = 52;
+  constexpr jcvm::jpackage_ID_t target_package = 53;
+  jcvm::Context source_context(44, source_package);
+  jcvm::Context target_context(45, target_package);
+  const auto source_array = source_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto target_array = target_context.getHeap().addArray(
+      0, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  source_context.getHeap().getArray(source_array)->setReferenceEntry(
+      0, target_array, source_context, target_package);
+  source_context.getHeap().setStaticReferenceRoot(
+      source_package, 0, source_array);
+  jcvm::Context *incomplete_contexts[] = {&source_context};
+
+  const auto result = jcvm::Context::collectHeaps(incomplete_contexts, 1);
+  assert(!result.complete);
+  assert(result.root_enumeration_failures == 1);
+  assert(source_context.getHeap().getArray(source_array));
+  assert(target_context.getHeap().getArray(target_array));
+  std::puts("RMI_REGISTRY:PASS retained_missing_foreign_target_fails_closed=1");
+}
+
 void verify_retained_context_foreign_instance_cycle_collected() {
   constexpr jcvm::jpackage_ID_t package_a = 50;
   constexpr jcvm::jpackage_ID_t package_b = 51;
@@ -1843,6 +1868,7 @@ int main() {
   verify_retained_context_foreign_cycle_collected();
   verify_retained_context_repeated_diamond_reclamation();
   verify_retained_context_ambiguous_package_fails_closed();
+  verify_retained_context_missing_foreign_target_fails_closed();
   verify_retained_context_foreign_instance_cycle_collected();
 
   jcvm::Context context(1, 1);
