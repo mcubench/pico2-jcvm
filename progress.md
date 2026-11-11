@@ -27837,5 +27837,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:PASS reclaimer_batch_preserves_instance_array_through_next_heap_collection` and `TEST:SUMMARY fail=0`. No platform source changed; ARM/RISC-V builds and hardware were not applicable/available.
 - Result: The model sequence now covers bounded persistent deletion followed by the next heap collection without losing a rooted array.
 - Decision: Keep RESOURCE-01 open; this does not identify candidate tags from the physical failure.
-- Commit: pending
+- Commit: `6c0a69b6`
 - Artifacts/logs: focused output from `./tools/test-persistent-transaction`.

@@ -12443,4 +12443,4 @@ now performs an eight-record deletion batch, restores the graph in a fresh
 heap, runs the next heap collection, and verifies the array remains reachable
 and readable. The focused persistent transaction suite passes with
 `TEST:SUMMARY fail=0`. The physical failure and candidate deletion tag remain
-unidentified; no board was available in PC/SC or BOOTSEL at the last check.
+unidentified. Commit: `6c0a69b6`. No board was available in PC/SC or BOOTSEL at the last check.
