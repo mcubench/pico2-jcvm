@@ -11936,3 +11936,21 @@ The upstream fixture manifest was reverified offline with
 `./tools/fixture-path --verify`: `FIXTURES:PASS files=81 jcalgtest=1.8.4
 api_caps=48`. The original CAP/client pair remains intact and ready for the
 two physical runs once PC/SC recovers.
+
+# Current handoff — R01 interpreter recovery VPCD coverage — 2026-11-11 14:30 CET
+
+Expanded `tests/integration/cap_malformed_vpcd_test.py` with a
+`zero-process-body-length` mutation that changes only the test copy of the
+unchanged JCAlgTest CAP's Descriptor metadata. The PC VPCD run returns `6F00`
+for the malformed applet entry, then selects the manager, handles the failed
+unselected-app command, reselects the manager, and returns GP Card Data with
+`9000`. Fall-through and truncated-SIPUSH variants also pass the expanded
+recovery sequence (7/7 each) with the same successful GET DATA response.
+
+The R01 TODO and review status now distinguish completed PC VPCD coverage from
+remaining physical and caller-state acceptance. `python3 -m py_compile` and
+the changed-file `git diff --check` pass. No firmware or physical card was
+used. Physical JCAlgTest options 2 and 1 remain blocked until PC/SC publishes
+D92; the privileged restart request is in `.agent/EXT_REQUESTS.md`. The
+workspace still contains unrelated pre-existing edits; stage only the R01
+test/docs/progress changes.

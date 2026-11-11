@@ -27445,3 +27445,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Reuse the pinned 1.8.4 CAP/client after the physical Pico is published by PC/SC.
 - Commit: `739fbb43`
 - Artifacts/logs: fixture paths and hashes in `tests/fixtures/manifest.json`; no separate output file.
+
+## 2026-11-11 Extend R01 malformed-entry recovery acceptance 14 min
+
+- Step/experiment: `RV-20261106-01-INTERPRETER-RECOVERY`
+- When: '2026-11-11 14:16 CET' - '2026-11-11 14:30 CET'
+- Model: `GPT-6`
+- Change: Added an unchanged-upstream-CAP mutation that sets the `process()` Descriptor bytecode length to zero, testing malformed interpreter entry metadata. Expanded each relevant VPCD recovery sequence with a successful GP Card Data GET DATA after manager reselection. Updated R01 TODO/review status and handoff; kept physical acceptance open.
+- Validation: `python3 -m py_compile tests/integration/cap_malformed_vpcd_test.py` passed. `./tools/test-cap-malformed-vpcd --mutation zero-process-body-length`, `--mutation fall-through`, and `--mutation truncated-sipush` each passed 7/7; each returned the expected failure response, selected the manager afterward, and received Card Data response `6618731606072A864886FC6B01640B06092A864886FC6B0403109000`. The upstream CAP SHA-256 remained `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`. Changed-file `git diff --check` passed. No architecture build was needed for the Python test/docs-only change.
+- Result: PC VPCD confirms controlled recovery for method fall-through, a truncated operand, and an invalid zero-length method body; a subsequent manager command succeeds. No physical board test was performed. Whole-worktree `git diff --check` reports whitespace in unrelated pre-existing edits in `AGENTS.md`, `choupi/src/heap.hpp`, and `choupi/src/jc_bytecodes/bc_invoke.cpp`.
+- Decision: Keep R01 open for physical acceptance and remaining caller-state checks; continue with the next actionable P1 finding while PC/SC recovery is pending.
+- Commit: `<fill after commit>`
+- Artifacts/logs: `artifacts/logs/rv28-malformed-zero-process-body-length-vpcd-20261106.log`, `artifacts/logs/rv28-malformed-fall-through-vpcd-20261106.log`, `artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log`; generated CAP code is ignored under `build/`.

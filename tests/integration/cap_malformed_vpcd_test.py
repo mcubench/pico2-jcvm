@@ -205,6 +205,47 @@ def build_malformed_load_code(mutation: str) -> Path:
         replacement = bytes((0x00,))  # NOP at the final byte exhausts the body.
         if mutable[mutation_index] != 0x7A:
             raise ValueError("expected process method to end with BC_RETURN")
+    elif mutation == "zero-process-body-length":
+        descriptor = parts["Descriptor"]
+        payload = descriptor[3:]
+        descriptor_offset = 1
+        length_field_offset = None
+        for class_index, methods in enumerate(owners):
+            if descriptor_offset > len(payload) or len(payload) - descriptor_offset < 9:
+                raise ValueError("truncated Descriptor class record")
+            interfaces = payload[descriptor_offset + 4]
+            fields = int.from_bytes(
+                payload[descriptor_offset + 5 : descriptor_offset + 7], "big"
+            )
+            method_count = int.from_bytes(
+                payload[descriptor_offset + 7 : descriptor_offset + 9], "big"
+            )
+            method_records = descriptor_offset + 9 + interfaces * 2 + fields * 7
+            if method_count != len(methods):
+                raise ValueError("Descriptor method table changed during parse")
+            for method_index, (offset, length) in enumerate(methods):
+                if class_index == owner_index and offset == PROCESS_METHOD_OFFSET:
+                    if length == 0:
+                        raise ValueError("upstream process body is already empty")
+                    length_field_offset = (
+                        3 + method_records + method_index * 12 + 6
+                    )
+                    break
+            if length_field_offset is not None:
+                break
+            descriptor_offset = method_records + method_count * 12
+        if length_field_offset is None:
+            raise ValueError("process method Descriptor length field not found")
+        descriptor_component_index = next(
+            index for index, (name, _) in enumerate(COMPONENTS)
+            if name == "Descriptor"
+        )
+        descriptor_start = sum(
+            len(parts[name]) if name in parts else 0
+            for name, _ in COMPONENTS[:descriptor_component_index]
+        )
+        mutation_index = descriptor_start + length_field_offset
+        replacement = b"\x00\x00"
     elif mutation == "branch-into-operand":
         mutation_index = code_index
         replacement = bytes((0x70, 0x01))  # GOTO +1 targets its operand byte.
@@ -518,7 +559,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mutation", choices=("impdep1", "impdep2", "truncated-sipush",
-                                "fall-through",
+                                "fall-through", "zero-process-body-length",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
                                 "wide-conditional-branch-into-operand",
@@ -542,14 +583,16 @@ def main() -> int:
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
     select_status = "9000" if args.mutation in (
-        "truncated-sipush", "fall-through", "exception-catch-cp-out-of-range",
+        "truncated-sipush", "fall-through",
+        "exception-catch-cp-out-of-range",
         "exception-handler-target-into-operand",
         "exception-handler-range-into-operand",
         "exception-handler-range-out-of-bounds",
         "exception-handler-range-start-out-of-bounds",
     ) else "6F00"
     process_status = "6F00" if args.mutation in (
-        "truncated-sipush", "fall-through", "exception-catch-cp-out-of-range",
+        "truncated-sipush", "fall-through",
+        "exception-catch-cp-out-of-range",
         "exception-handler-target-into-operand",
         "exception-handler-range-into-operand",
         "exception-handler-range-out-of-bounds",
@@ -570,6 +613,9 @@ def main() -> int:
         "--expect-apdu-response", select_status,
         "--apdu", "00A4040008A00000015100000000",
         "--expect-apdu-response", "6F0A8408A0000001510000009000",
+        "--apdu", "80CA006600",
+        "--expect-apdu-response",
+        "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
         "--log", str(log),
     ]
     result = subprocess.run(
