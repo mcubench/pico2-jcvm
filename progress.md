@@ -27371,5 +27371,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-javacard-support.py` passed 15 tests; `./tools/fixture-path --verify` passed 81 files; JSON comparison against the pre-change HEAD confirmed baseline equals the old current map and base/no_aes/symm_crypto/asymm_crypto/max_crypto maps are unchanged. Default `./tools/build arm` and `./tools/build riscv`, plus explicit `--profile baseline` builds for both, passed and reported `JAVACARD_SUPPORT:PASS profile=baseline capabilities=162 enabled=15`. No flash was performed.
 - Result: Default and explicitly named baseline selections are identical and compile for both architectures. Existing upstream converter, Rust OS, and packed-structure warnings remain; no new warning was attributed to this rename. The reader helper refresh succeeded and its installed checksum matches the repository copy, but PC/SC still enumerates only the two VPCD readers despite one Pico `2e8a:0009` USB device; physical long-run tests remain unavailable.
 - Decision: PROFILE-03 acceptance is met offline. Resume the two physical long JCAlgTest options when the Pico reader is published by PC/SC.
-- Commit: `<fill after commit>`
+- Commit: `85b14bf8`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; helper output `PCSC:ACCESS_GRANTED count=1 nodes=/dev/bus/usb/001/045`.

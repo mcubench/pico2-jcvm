@@ -11850,7 +11850,7 @@ ARM empty-card image remains ready at
 
 ---
 
-# Current handoff — PROFILE-03 renamed to baseline; Pico PC/SC still absent — 2026-11-11 12:36 CET
+# Current handoff — PROFILE-03 renamed to baseline; Pico PC/SC still absent — 2026-11-11 12:38 CET
 
 The active capability profile and default name are now `baseline`. Its 15 enabled flags exactly match the former `current` profile; `base`, `no_aes`, `symm_crypto`, `asymm_crypto`, and `max_crypto` maps are unchanged. Support unit tests pass 15/15, pinned fixtures verify 81/81, and default plus explicit baseline ARM and RISC-V builds pass with `JAVACARD_SUPPORT:PASS profile=baseline capabilities=162 enabled=15`. The full ARM firmware is `build/arm/pico2_choupi.uf2`; no hardware flash was performed for this profile rename.
 
