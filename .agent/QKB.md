@@ -9808,3 +9808,24 @@ Check new loader, resolver and bytecode code against these before review.
   RP2350 flash erase, production API enablement, or the unchanged full
   JCAlgTest long run. The physical probe remains blocked before APDUs until the
   user refreshes the installed helper as requested in `.agent/EXT_REQUESTS.md`.
+
+## Long physical JCAlgTest blocked by PC/SC enumeration — 2026-11-11
+
+- **Requested runs:** Run the interactive client's `2 -> PERFORMANCE TEST`
+  and `1 -> All algorithms` options on separate identified Pico 2 tokens when
+  possible. Both runs exercise periodic `INS_CARD_RESET` and the diagnostic
+  `JCSystem.requestObjectDeletion()` path.
+- **Observed 11:50 CET:** The authorized helper granted `/dev/bus/usb/001/055`
+  and `/dev/bus/usb/001/045`; `lsusb` identified both as `2e8a:0009 Pico2
+  Pico2 JCVM CCID`. `pcscd.service` is active, and both USB nodes have
+  `pcscd:rw` ACLs. `pcsc_scan -r` and Java SmartcardIO enumerate only
+  `Virtual PCD 00 00` and `Virtual PCD 00 01`. The exact JCVM reader names are
+  absent from the PC/SC reader list.
+- **Impact:** Neither long client run could start on hardware; no APDU was sent
+  to either physical token in this attempt. This is a host enumeration blocker,
+  not a JCVM test result. Do not infer card failure from USB presence alone.
+- **Artifact:** `artifacts/logs/jcalgtest-longrun-reader-check-20261111T1150CET.log`.
+- **Next:** Restore physical Pico PC/SC enumeration, then run option 2 on one
+  board and option 1 on a different board if available. Preserve per-board
+  reader names, chip IDs, firmware hashes, result directories, and serial logs;
+  switch to another enumerated board if one stalls or disappears.

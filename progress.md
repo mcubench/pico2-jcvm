@@ -27313,3 +27313,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep physical JCAlgTest option-2 and option-1 runs pending until a Pico appears in PC/SC. Do not attribute the enumeration problem to firmware. Continue offline and retry both identified devices when the reader list changes.
 - Commit: `277703b6`.
 - Artifacts/logs: `pcsc_scan -r` output contained only the two VPCD reader names; system journal had no CCID/pcscd detail visible to this user.
+
+## 2026-11-11 JCAlgTest long-run reader availability check 8 minutes
+
+- Step/experiment: `RESOURCE-01-LONG-JCALGTEST-READER-CHECK-20261111`
+- When: '2026-11-11 11:44 CET' - '2026-11-11 11:52 CET'
+- Model: `gpt-6`
+- Change: Added the two-token policy for the multi-hour JCAlgTest options to root `AGENTS.md`; recorded current PC/SC blocker in QKB and handoff.
+- Validation: Authorized Pico PC/SC helper succeeded and granted two nodes. Both `lsusb` and PC/SC permission inspection succeeded; `pcscd.service` was active and both nodes had `pcscd:rw` ACLs. `pcsc_scan -r` and bounded Java SmartcardIO enumeration returned only `Virtual PCD 00 00` and `Virtual PCD 00 01`. Physical JCAlgTest runs were not started because neither Pico was registered as a PC/SC reader; no physical APDU was sent.
+- Result: Two Pico USB devices are connected, but PC/SC does not expose either physical CCID interface. No performance or all-algorithms outcome was measured.
+- Decision: Resume the 1–3-hour option 2 run and 5–8-hour option 1 run on distinct identified tokens once they appear in PC/SC; preserve per-token logs/results and fail over if a board disappears or stalls.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcalgtest-longrun-reader-check-20261111T1150CET.log` (ignored by `.gitignore`, retained locally).

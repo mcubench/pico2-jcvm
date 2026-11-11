@@ -11762,3 +11762,25 @@ VPCD or hardware activity. No finding was reproduced; each CAPIN task starts
 with a failing fixture. The RESOURCE-02 handoff at the top of this file is
 unchanged and still current. Other sessions' uncommitted changes were left
 untouched (only this session's hunks of TODO.md and QKB.md were staged).
+# Current handoff — physical JCAlgTest reader discovery blocks long runs — 2026-11-11 11:52 CET
+
+The user requested the upstream interactive JCAlgTest client options
+`2 -> PERFORMANCE TEST` (1–3 hours) and `1 -> All algorithms` (5–8 hours),
+using a separate physical Pico 2 for the second run when possible. This advice
+is now explicit in root `AGENTS.md` and `.agent/SESSION_CONTINUITY.md`.
+
+The authorized helper grants two USB nodes. `lsusb` identifies both as
+`2e8a:0009 Pico2 Pico2 JCVM CCID`; the nodes have `pcscd:rw` ACLs and
+`pcscd.service` is active. However, `pcsc_scan -r` and Java SmartcardIO each
+list only `Virtual PCD 00 00` and `Virtual PCD 00 01`. No physical APDU was
+sent and neither requested client run has started. Do not start either long
+campaign until the physical reader appears in both PC/SC and Java SmartcardIO.
+
+Evidence: `artifacts/logs/jcalgtest-longrun-reader-check-20261111T1150CET.log`.
+Next: restore PC/SC enumeration, then run option 2 and option 1 on distinct
+identified boards when possible. Keep result folders and serial telemetry
+separate, record firmware hashes and chip IDs, and fail over to another
+enumerated token if one disappears or stalls. See `.agent/QKB.md` for the
+current PC/SC diagnosis.
+
+# Current handoff — opt-in JCSystem deletion image packaged for Windows — 2026-11-11 11:31 CET

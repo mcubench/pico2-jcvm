@@ -25,6 +25,12 @@ Java Card runtime boundary:
 - Capture finite serial output: `./tools/monitor --seconds 8`
 - Diagnose the host setup: `./tools/doctor`
 
+For the long JCAlgTest client campaigns, run `2 -> PERFORMANCE TEST` (1–3
+hours) and `1 -> All algorithms` (5–8 hours) on different identified Pico 2
+tokens when possible. Keep each token's result directory and serial telemetry
+separate, record its chip ID and firmware hash, and continue on another
+available token if one becomes unavailable or stalls.
+
 After changing platform-independent source:
 
 1. Build ARM and RISC-V.
