@@ -1,4 +1,4 @@
-# Current handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:16 CET
+# Current handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:18 CET
 
 Committed as `1651bbdd`. Fixed the physical object-deletion path in `choupi/src/main.cpp`: Pico ARM now
 services the request after APDU frames unwind, using the same retained-heap
