@@ -149,10 +149,13 @@ namespace PersistentReclaimer {
 /// preflight, so the active-tag cursor is never mutated while being traversed.
 /// A failure may leave an already-erased prefix of unreachable records; retry
 /// is safe, and only Complete means the entire owner inventory was reclaimed.
+/// `max_erased_count` bounds one call; Stopped means the caller may safely
+/// resume with a later call after the APDU response has been sent.
 PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     uint8_t applet_owner, Heap &heap,
     PersistentInventory::RootReferenceEnumerator enumerate_roots,
-    void *root_context, uint32_t *erased_count = nullptr);
+    void *root_context, uint32_t *erased_count = nullptr,
+    uint32_t max_erased_count = UINT32_MAX);
 
 /// Remove unreachable records in one package-static namespace after a strict
 /// root trace and external-alias scan. Direct static slots are preserved.
@@ -160,7 +163,8 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
 PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     uint8_t package_id, Heap &heap,
     PersistentInventory::RootReferenceEnumerator enumerate_roots,
-    void *root_context, uint32_t *erased_count = nullptr);
+    void *root_context, uint32_t *erased_count = nullptr,
+    uint32_t max_erased_count = UINT32_MAX);
 
 } // namespace PersistentReclaimer
 } // namespace jcvm

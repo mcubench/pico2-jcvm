@@ -1,3 +1,28 @@
+# Physical object deletion ran synchronously before CCID reply — 2026-11-11
+
+- **Original cause:** The request-triggered reclaimer was wired into the PC
+  collector but omitted from the physical ARM post-APDU collector. The native
+  `requestObjectDeletion()` flag was set on Pico, but no physical code serviced
+  it. The ARM collector now consumes the latched context after the APDU stack
+  is empty and runs the same strict heap-root and persistent-root checks.
+- **Physical proof:** On `8E464F4E2BBC0A19`, the unchanged 1.8.4 support client
+  sent `INS_CARD_RESET` (`B0 E2 00 00 00`). Serial output records the request,
+  confirms `stack_empty=1`, and reports `applet_result=0`,
+  `package_result=0`, `erased_applet=1417`, then `APDU_PROCESS ... sw=9000`.
+  SmartcardIO received `SCARD_E_NOT_TRANSACTED`; PC/SC then stopped listing
+  readers. This ties the transport failure to an unbounded synchronous sweep;
+  its exact elapsed time was not measured.
+- **Current mitigation:** Limit physical cleanup to eight persistent records
+  per APDU and retain the request while either namespace has remaining work.
+  A later post-APDU pass resumes safely. The persistent-transaction unit suite
+  passes with a one-record-per-pass resume regression; current ARM and RISC-V
+  diagnostic builds pass. The first bounded physical run is still required.
+- **Recovery:** The alternate board `2BED26ED20556535` still passes the
+  finite CDC runtime monitor. PC/SC now hangs before reader enumeration, so
+  restart `pcscd.service` after the card suite is no longer active, refresh the
+  approved helper, and scan readers before the next APDU test. Continue on a
+  different identified device if the affected board remains unavailable.
+
 # Pico USB CCID devices present but absent from PC/SC enumeration — 2026-11-11
 
 - **Symptom:** The authorized helper grants access to two RP2350 USB nodes and

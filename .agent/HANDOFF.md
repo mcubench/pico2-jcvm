@@ -1,36 +1,41 @@
-# Current handoff — physical SCP03 routing regression passes; JCAlgTest campaigns running — 2026-11-11 16:40 CET
+# Current handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:05 CET
 
-Fixed `src/ccid_apdu_route.hpp`: an active SCP03 session now blocks only
-unauthenticated `ProtectedCardManager` commands. Ordinary selected-applet
-APDUs and public card-manager commands are not rejected because GPPro opened
-and disconnected an SCP03 session. `./tools/test-ccid-apdu-route` passes all
-17 checks. The object-deletion-enabled `max_crypto` ARM and RISC-V builds
-passed earlier in this step.
+Fixed the physical object-deletion path in `choupi/src/main.cpp`: Pico ARM now
+services the request after APDU frames unwind, using the same retained-heap
+and persistent-root safety checks as the PC collector. A real JCAlgTest
+1.8.4 support run on `8E464F4E2BBC0A19` sent `INS_CARD_RESET`; serial telemetry
+showed `stack_empty=1`, `9000`, and `erased_applet=1417`. The reader then
+returned `SCARD_E_NOT_TRANSACTED`, and PC/SC stopped listing readers. Exact
+cause is inferred to be the synchronous 1,417-record sweep blocking the CCID
+response; elapsed time was not measured.
 
-Physical validation uses two separately identified boards. On 2BED, GPPro
-`--list` successfully opened SCP03; the following JCAlgTest 1.8.4
-AES-CBC-NOPAD `B0 31` prepare returned `AA9000` and the focused probe passed.
-Then `ALG_PERFORMANCE_STATIC` was started with a 3-hour suite limit and 120s
-per-APDU watchdog. At handoff it is still running and returning `9000`; its
-CSV has 23,756 bytes. Logs:
-`artifacts/logs/physical-deletion-20261111-2BED-performance-routefix-client.log`
-and `...-serial.log`; results are under
-`artifacts/results/physical-deletion-20261111/2BED-performance-routefix/`.
+Added an eight-record-per-APDU limit to the physical reclaimer. The request
+stays latched and resumes after each subsequent APDU until both owner
+namespaces are complete. Added a one-record bounded-resume unit regression.
+`./tools/test-persistent-transaction` passes; diagnostic ARM and RISC-V
+`max_crypto` builds pass with object deletion enabled. The new bounded build
+has not been flashed or validated on hardware yet.
 
-On separate board 8E46, `ALG_SUPPORT_EXTENDED` is still running and has
-recorded 116 result rows so far. Some large/unavailable RSA/ECC key
-configurations are classified as `SystemException_NO_RESOURCE`; PC/SC remains
-responsive. Logs:
-`artifacts/logs/physical-deletion-20261111-8E46-support-routefix-client.log`
-and `...-serial.log`; results are under
-`artifacts/results/physical-deletion-20261111/8E46-alg-support-routefix/`.
-Neither campaign has a final result yet; poll the running tool sessions and
-preserve both logs. The PC/SC helper last reported two physical readers.
+Physical evidence/logs:
 
-The user-reported Windows “unrecognized USB device” after BOOTSEL flashing is
-also documented in `.agent/EXT_REQUESTS.md`, with a request for the exact UF2
-hash and Windows Device Manager details. Linux physical tests passing do not
-explain that Windows-specific enumeration failure.
+- On D92, an earlier focused `B0E2` probe returned `9000`; serial output showed
+  the physical deletion service running with zero records erased. Logs:
+  `artifacts/logs/physical-deletion-20261111-D92-object-deletion-fixed-{client,serial}.log`.
+- On 8E46, `ALG_SUPPORT_EXTENDED` got `SCARD_E_NOT_TRANSACTED` at its first
+  reset and the collector reported 1,417 records erased. Logs/results:
+  `artifacts/logs/physical-deletion-20261111-8E46-support-object-deletion-fixed-{client,serial}.log`,
+  `artifacts/results/physical-deletion-20261111/8E46-support-object-deletion-fixed/`.
+- 2BED passed `./tools/monitor --serial 2BED26ED20556535 --seconds 8` with
+  `TEST:SUMMARY pass=1 fail=0`. Firmware-only flash attempts on 8E46 and 2BED
+  failed before writing because the VM did not see BOOTSEL; the second attempt
+  caused VirtualBox to detach all three Pico devices. The authorized helper
+  now reports zero nodes. No current firmware has been flashed.
+
+The next step is in `.agent/EXT_REQUESTS.md`: reattach the Pico devices to the
+VM, preferably with 2BED in BOOTSEL. Then flash the already-built ARM image
+only after confirming both build gates, capture its serial startup, refresh
+the PC/SC helper, and run the bounded reset test. If a board drops out, use a
+different enumerated board.
 
 ---
 

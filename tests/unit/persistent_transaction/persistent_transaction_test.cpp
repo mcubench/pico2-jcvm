@@ -2459,6 +2459,44 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x5a;
+    const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};
+    seed(first_tag, sizeof(first_tag), byte_record(0x31));
+    seed(second_tag, sizeof(second_tag), byte_record(0x32));
+
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    uint32_t erased = 0;
+    const auto first_pass =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased, 1);
+    const bool one_tag_per_pass =
+        first_pass == jcvm::PersistentInventory::VisitResult::Stopped &&
+        erased == 1 &&
+        (read(first_tag, sizeof(first_tag)).empty() !=
+         read(second_tag, sizeof(second_tag)).empty());
+
+    erased = 0;
+    const auto second_pass =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased, 1);
+    const bool resumed_to_completion =
+        second_pass == jcvm::PersistentInventory::VisitResult::Stopped &&
+        erased == 1;
+    erased = 0;
+    const auto final_pass =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased, 1);
+    expect(one_tag_per_pass && resumed_to_completion &&
+               final_pass == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 0 && read(first_tag, sizeof(first_tag)).empty() &&
+               read(second_tag, sizeof(second_tag)).empty(),
+           "reclaimer_resumes_bounded_applet_deletion_until_complete");
+  }
+
+  {
     constexpr uint8_t owner = 0x42;
     const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
     const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};

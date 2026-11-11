@@ -55,6 +55,18 @@
 
 namespace jcvm {
 
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
+namespace {
+Context *last_object_deletion_request_context = nullptr;
+}
+
+extern "C" Context *choupi_take_object_deletion_request_context() noexcept {
+  Context *context = last_object_deletion_request_context;
+  last_object_deletion_request_context = nullptr;
+  return context;
+}
+#endif
+
 #ifndef PC_VERSION
 extern "C" uint32_t choupi_available_transient_memory_bytes(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
@@ -1897,7 +1909,13 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_isObjectDeletionSupported() {
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_requestObjectDeletion() {
 #ifdef CHOUPI_ENABLE_OBJECT_DELETION
-  Context::getActiveContext().requestObjectDeletion();
+  Context &context = Context::getActiveContext();
+  context.requestObjectDeletion();
+  last_object_deletion_request_context = &context;
+  std::fprintf(stderr,
+               "OBJECT_DELETION:REQUEST package=%u owner=%u\n",
+               static_cast<unsigned>(context.getAppletPackageID()),
+               static_cast<unsigned>(context.getAppletID()));
   return;
 #endif
 #ifdef PC_VERSION

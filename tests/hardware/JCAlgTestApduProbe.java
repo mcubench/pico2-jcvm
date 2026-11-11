@@ -369,6 +369,18 @@ public final class JCAlgTestApduProbe {
         return;
       }
 
+      if (probeArgs.size() == 1 &&
+          "--request-object-deletion".equals(probeArgs.get(0))) {
+        ResponseAPDU response = transmit(channel, "REQUEST_OBJECT_DELETION",
+            new CommandAPDU(0xB0, 0xE2, 0x00, 0x00, 256));
+        if (response.getData().length != 0) {
+          throw new IllegalStateException(
+              "INS_CARD_RESET should return no response data");
+        }
+        System.out.println("TEST:PASS request_object_deletion");
+        return;
+      }
+
       if (probeArgs.size() == 1 && "--aes-cipher-prepare".equals(probeArgs.get(0))) {
         // Reproduce the first official AES-128 CBC-NOPAD preparation from
         // ALG_PERFORMANCE_STATIC. The probe reports the raw APDU status so

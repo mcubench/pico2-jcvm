@@ -572,10 +572,13 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
 PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     const uint8_t applet_owner, Heap &heap,
     const PersistentInventory::RootReferenceEnumerator enumerate_roots,
-    void *root_context, uint32_t *erased_count) {
+    void *root_context, uint32_t *erased_count,
+    const uint32_t max_erased_count) {
   using PersistentInventory::VisitResult;
   if (erased_count != nullptr) *erased_count = 0;
-  if (enumerate_roots == nullptr) return VisitResult::InvalidArgument;
+  if (enumerate_roots == nullptr || max_erased_count == 0) {
+    return VisitResult::InvalidArgument;
+  }
   if (FlashMemory_Handler::persistentWriteTransactionActive()) {
     return VisitResult::TransactionActive;
   }
@@ -638,6 +641,10 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
         return VisitResult::EraseFailure;
       }
       ++erased;
+      if (erased >= max_erased_count) {
+        if (erased_count != nullptr) *erased_count = erased;
+        return VisitResult::Stopped;
+      }
     }
   }
 }
@@ -645,10 +652,13 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
 PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     const uint8_t package_id, Heap &heap,
     const PersistentInventory::RootReferenceEnumerator enumerate_roots,
-    void *root_context, uint32_t *erased_count) {
+    void *root_context, uint32_t *erased_count,
+    const uint32_t max_erased_count) {
   using PersistentInventory::VisitResult;
   if (erased_count != nullptr) *erased_count = 0;
-  if (enumerate_roots == nullptr) return VisitResult::InvalidArgument;
+  if (enumerate_roots == nullptr || max_erased_count == 0) {
+    return VisitResult::InvalidArgument;
+  }
   if (FlashMemory_Handler::persistentWriteTransactionActive()) {
     return VisitResult::TransactionActive;
   }
@@ -708,6 +718,10 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
         return VisitResult::EraseFailure;
       }
       ++erased;
+      if (erased >= max_erased_count) {
+        if (erased_count != nullptr) *erased_count = erased;
+        return VisitResult::Stopped;
+      }
     }
   }
 }

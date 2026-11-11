@@ -58,6 +58,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(CHOUPI_ENABLE_OBJECT_DELETION)
+extern "C" jcvm::Context *choupi_take_object_deletion_request_context() noexcept;
+#endif
+
 #ifdef PC_VERSION
 extern int main_pc(int argc, char *argv[]);
 #else
@@ -306,6 +310,125 @@ bool enumerate_selected_applet_roots(
       ? jcvm::PersistentInventory::VisitResult::Complete
       : jcvm::PersistentInventory::VisitResult::ReadFailure;
   return applet_root;
+}
+
+struct PhysicalObjectDeletionRoots {
+  std::vector<jcvm::jref_t> references;
+  unsigned static_roots = 0;
+  unsigned applet_roots = 0;
+};
+
+void append_physical_object_deletion_root(const jcvm::jref_t reference,
+                                          void *opaque) {
+  auto &roots = *static_cast<PhysicalObjectDeletionRoots *>(opaque);
+  roots.references.emplace_back(reference);
+  ++roots.applet_roots;
+}
+
+bool append_physical_package_static_root(const uint8_t, const uint16_t,
+                                         const uint16_t reference,
+                                         void *opaque) {
+  auto &roots = *static_cast<PhysicalObjectDeletionRoots *>(opaque);
+  roots.references.emplace_back(jcvm::jref_t(reference));
+  ++roots.static_roots;
+  return true;
+}
+
+bool enumerate_physical_object_deletion_roots(
+    jcvm::Heap::ReferenceVisitor visitor, void *visitor_context,
+    void *opaque) {
+  if (visitor == nullptr || opaque == nullptr) return false;
+  const auto &roots = *static_cast<PhysicalObjectDeletionRoots *>(opaque);
+  for (const auto &reference : roots.references) {
+    visitor(reference, visitor_context);
+  }
+  return true;
+}
+
+void service_physical_object_deletion_request(jcvm::Context &context) {
+  // A single request may find thousands of garbage records after an applet
+  // has run for hours. Keep the CCID response within the reader's APDU timeout
+  // by reclaiming at most one fixed-size batch before returning to the host.
+  // The request remains latched while either namespace still has work, so a
+  // later APDU safely resumes the sweep.
+  constexpr uint32_t kMaxObjectDeletionRecordsPerApdu = 8;
+  if (!context.isObjectDeletionRequested()) return;
+  const auto heap_result = jcvm::Context::collectRetainedHeaps();
+  if (!heap_result.complete) {
+    std::printf("OBJECT_DELETION:SKIP package=%u owner=%u "
+                "reason=coordinated_heap_trace_incomplete "
+                "invalid=%u edge_failures=%u root_failures=%u "
+                "request_retained=1\r\n",
+                static_cast<unsigned>(context.getAppletPackageID()),
+                static_cast<unsigned>(context.getAppletID()),
+                static_cast<unsigned>(heap_result.invalid_references),
+                static_cast<unsigned>(heap_result.edge_load_failures),
+                static_cast<unsigned>(heap_result.root_enumeration_failures));
+    return;
+  }
+  std::printf("OBJECT_DELETION:HEAP_GC package=%u owner=%u "
+              "arrays_reclaimed=%u instances_reclaimed=%u "
+              "arrays_live=%u instances_live=%u\r\n",
+              static_cast<unsigned>(context.getAppletPackageID()),
+              static_cast<unsigned>(context.getAppletID()),
+              static_cast<unsigned>(heap_result.arrays_reclaimed),
+              static_cast<unsigned>(heap_result.instances_reclaimed),
+              static_cast<unsigned>(heap_result.arrays_reachable),
+              static_cast<unsigned>(heap_result.instances_reachable));
+
+  PhysicalObjectDeletionRoots roots;
+  if (!context.appendRetainedRootsForPackage(
+          context.getAppletPackageID(), roots.references)) {
+    std::printf("OBJECT_DELETION:SKIP package=%u owner=%u "
+                "reason=ambiguous_package_context request_retained=1\r\n",
+                static_cast<unsigned>(context.getAppletPackageID()),
+                static_cast<unsigned>(context.getAppletID()));
+    return;
+  }
+  const auto static_result =
+      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+          context.getAppletPackageID(), context.getHeap(),
+          append_physical_package_static_root, &roots);
+  context.appendRootReferences(roots.references);
+  const bool applet_root = enumerate_applet_context_root(
+      context, append_physical_object_deletion_root, &roots);
+  if (static_result != jcvm::PersistentInventory::VisitResult::Complete ||
+      !applet_root) {
+    std::printf("OBJECT_DELETION:SKIP package=%u static_result=%u "
+                "applet_roots_complete=%u\r\n",
+                static_cast<unsigned>(context.getAppletPackageID()),
+                static_cast<unsigned>(static_result), applet_root ? 1u : 0u);
+    return;
+  }
+
+  uint32_t erased_applet = 0;
+  uint32_t erased_package = 0;
+  const auto applet_result =
+      jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+          static_cast<uint8_t>(context.getAppletID()), context.getHeap(),
+          enumerate_physical_object_deletion_roots, &roots, &erased_applet,
+          kMaxObjectDeletionRecordsPerApdu);
+  auto package_result = applet_result;
+  if (applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
+    package_result =
+        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            context.getAppletPackageID(), context.getHeap(),
+            enumerate_physical_object_deletion_roots, &roots, &erased_package,
+            kMaxObjectDeletionRecordsPerApdu);
+  }
+  const bool complete =
+      applet_result == jcvm::PersistentInventory::VisitResult::Complete &&
+      package_result == jcvm::PersistentInventory::VisitResult::Complete;
+  std::printf("OBJECT_DELETION: package=%u owner=%u applet_result=%u "
+              "package_result=%u erased_applet=%u erased_package=%u "
+              "static_roots=%u applet_roots=%u pending=%u\r\n",
+              static_cast<unsigned>(context.getAppletPackageID()),
+              static_cast<unsigned>(context.getAppletID()),
+              static_cast<unsigned>(applet_result),
+              static_cast<unsigned>(package_result), erased_applet,
+              erased_package, roots.static_roots, roots.applet_roots,
+              complete ? 0u : 1u);
+  if (complete) context.clearObjectDeletionRequest();
 }
 
 #ifdef CHOUPI_DEBUG_HEAP_GC
@@ -679,6 +802,22 @@ void collect_heap_after_apdu() {
   const bool inventory_once = inventory_setting != nullptr &&
                               std::strcmp(inventory_setting, "once") == 0;
   static std::array<bool, 256> inventory_reported{};
+#if defined(CHOUPI_ENABLE_OBJECT_DELETION)
+  if (jcvm::Context *request_context =
+          choupi_take_object_deletion_request_context()) {
+    std::fprintf(stderr,
+                 "OBJECT_DELETION:POST_APDU request_context=%p "
+                 "selected_context=%p same_context=%u requested=%u "
+                 "stack_empty=%u package=%u owner=%u\n",
+                 static_cast<void *>(request_context),
+                 static_cast<void *>(selected_applet_context.get()),
+                 request_context == selected_applet_context.get() ? 1u : 0u,
+                 request_context->isObjectDeletionRequested() ? 1u : 0u,
+                 request_context->getStack().empty() ? 1u : 0u,
+                 static_cast<unsigned>(request_context->getAppletPackageID()),
+                 static_cast<unsigned>(request_context->getAppletID()));
+  }
+#endif
   if (!selected_applet_context) return;
 
   unsigned long repeat_count = 1;
@@ -697,6 +836,15 @@ void collect_heap_after_apdu() {
                                    const bool collect_heap) {
     const unsigned owner = static_cast<unsigned>(context.getAppletID());
     if (!context.getStack().empty()) {
+#if defined(PC_VERSION) || defined(CHOUPI_ENABLE_OBJECT_DELETION)
+      if (context.isObjectDeletionRequested()) {
+        std::fprintf(stderr,
+                     "OBJECT_DELETION:DEFER package=%u owner=%u "
+                     "reason=active_java_frames\n",
+                     static_cast<unsigned>(context.getAppletPackageID()),
+                     owner);
+      }
+#endif
       if (trace_enabled || collect_all_contexts) {
         std::fprintf(stderr,
                      "HEAP_TRACE:SKIP owner=%u reason=active_java_frames\n",
@@ -815,9 +963,43 @@ void collect_heap_after_apdu() {
 
   jcvm::Context &context = *selected_applet_context;
   if (!context.getStack().empty()) {
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
+    if (context.isObjectDeletionRequested()) {
+      std::printf("OBJECT_DELETION:DEFER package=%u owner=%u "
+                  "reason=active_java_frames\r\n",
+                  static_cast<unsigned>(context.getAppletPackageID()),
+                  static_cast<unsigned>(context.getAppletID()));
+    }
+#endif
     std::printf("CHOUPI:HEAP_GC_SKIP reason=active_java_frames\r\n");
     return;
   }
+
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
+  if (jcvm::Context *request_context =
+          choupi_take_object_deletion_request_context()) {
+    std::printf("OBJECT_DELETION:POST_APDU request_context=%p "
+                "selected_context=%p same_context=%u requested=%u "
+                "stack_empty=%u package=%u owner=%u\r\n",
+                static_cast<void *>(request_context),
+                static_cast<void *>(&context),
+                request_context == &context ? 1u : 0u,
+                request_context->isObjectDeletionRequested() ? 1u : 0u,
+                request_context->getStack().empty() ? 1u : 0u,
+                static_cast<unsigned>(request_context->getAppletPackageID()),
+                static_cast<unsigned>(request_context->getAppletID()));
+    if (request_context->getStack().empty()) {
+      service_physical_object_deletion_request(*request_context);
+    } else {
+      std::printf("OBJECT_DELETION:DEFER package=%u owner=%u "
+                  "reason=request_context_frames\r\n",
+                  static_cast<unsigned>(request_context->getAppletPackageID()),
+                  static_cast<unsigned>(request_context->getAppletID()));
+    }
+  } else {
+    service_physical_object_deletion_request(context);
+  }
+#endif
 
   SelectedAppletRootContext roots{&context, nullptr, nullptr};
   try {

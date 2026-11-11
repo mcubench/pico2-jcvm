@@ -27596,8 +27596,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: ARM/RISC-V object-deletion-enabled max_crypto builds passed earlier in this step. `./tools/test-ccid-apdu-route` passed 17/17. On physical 2BED, GPPro opened SCP03 and disconnected; the subsequent JCAlgTest AES-CBC-NOPAD prepare returned `AA9000` (`TEST:PASS aes_cipher_prepare`). The separate full physical `ALG_PERFORMANCE_STATIC` run on 2BED and `ALG_SUPPORT_EXTENDED` run on 8E46 are still running; see handoff and logs. These are not final suite validations.
 - Result: The prior post-GPPro applet `6982` is fixed and physically regressed. At handoff, option 2 has a 23,756-byte CSV; option 1 has 116 result rows, including `SystemException_NO_RESOURCE` for some large/unavailable key configurations while the reader remains responsive.
 - Decision: Continue monitoring both physical runs to completion; investigate any unexpected APDU timeout or client/reader failure before claiming JCAlgTest acceptance.
-- Commit: `pending`
+- Commit: `6fb0410d`
 - Artifacts/logs: `artifacts/logs/physical-deletion-20261111-2BED-performance-routefix-{client,serial}.log`; `artifacts/logs/physical-deletion-20261111-8E46-support-routefix-{client,serial}.log`; results under `artifacts/results/physical-deletion-20261111/`.
+
+## 2026-11-11 Bound physical object deletion per APDU 32 min
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-DELETION-BUDGET-01`
+- When: '2026-11-11 17:33 CET' - '2026-11-11 18:05 CET'
+- Model: `GPT-6`
+- Change: Wired the deferred object-deletion request into the physical ARM post-APDU collector, after the APDU stack unwinds. Added an eight-record per-APDU deletion budget; requests remain pending until the applet and package-static sweeps complete. Added host-side `B0E2` probe support and a bounded-resume reclaimer regression. Updated QKB, handoff, and external recovery requests.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `reclaimer_resumes_bounded_applet_deletion_until_complete`. `./tools/env javac -d build/jc-algtest-apdu-probe tests/hardware/JCAlgTestApduProbe.java` passed. `PICO_BUILD_JOBS=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed (firmware end `0x100f4158`, 48,808 bytes remaining); matching RISC-V wrapper passed. On 8E46 the unchanged 1.8.4 support suite reached `INS_CARD_RESET`; serial showed `stack_empty=1`, completed GC and `sw=9000`, with 1,417 unreachable applet records erased, but SmartcardIO returned `SCARD_E_NOT_TRANSACTED`. No bounded firmware was flashed. A finite monitor on 2BED passed; firmware-only flash attempts could not reach BOOTSEL, and VirtualBox then detached all devices. The helper reports zero Pico nodes at handoff.
+- Result: The original physical collector omission is fixed and confirmed on a real board. A separate unbounded-sweep transport failure is now mitigated in code and passes unit/build validation, but the eight-record limit has not yet been exercised on hardware. The 1,417-record APDU elapsed time was not measured.
+- Decision: Keep deletion diagnostic-only. Reattach devices to the VM, place 2BED in BOOTSEL if possible, then flash the current bounded image and rerun a physical `INS_CARD_RESET` check before resuming long campaigns.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/physical-deletion-20261111-D92-object-deletion-fixed-serial.log`; `artifacts/logs/physical-deletion-20261111-8E46-support-object-deletion-fixed-{client,serial}.log`; `artifacts/results/physical-deletion-20261111/8E46-support-object-deletion-fixed/`; `artifacts/logs/physical-deletion-20261111-8E46-support-object-deletion-fixed-serial.log`.
 
 ## 2026-11-11 Refresh README support table 4 minutes
 
