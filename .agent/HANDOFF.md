@@ -12433,4 +12433,5 @@ records, runs an eight-record deletion batch, then restores and reads the array
 from a fresh heap. `./tools/test-persistent-transaction` passes with
 `TEST:SUMMARY fail=0`; the targeted regression passes. This is host-only
 coverage and does not identify the operation behind the prior hardware missing
-body. RESOURCE-01 remains open. No physical board was flashed or used.
+body. Commit: `a45c2d0a`. RESOURCE-01 remains open. No physical board was
+flashed or used.

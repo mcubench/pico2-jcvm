@@ -27825,5 +27825,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed; targeted output includes `TEST:PASS reclaimer_preserves_array_body_reachable_through_persistent_instance_root` and `TEST:SUMMARY fail=0`. ARM/RISC-V builds and hardware tests intentionally skipped; test-only change and no physical reader is available through the VM.
 - Result: The reclaimer erased exactly eight unreachable records and preserved/restored the rooted array body through the bounded batch. This covers the missing host scenario but does not reproduce which operation removed the body in the prior hardware log.
 - Decision: Keep RESOURCE-01 open; continue with deletion-candidate instrumentation when a board is accessible.
-- Commit: pending
+- Commit: `a45c2d0a`
 - Artifacts/logs: focused test output from `./tools/test-persistent-transaction`.
