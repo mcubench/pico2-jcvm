@@ -11909,3 +11909,13 @@ Pico and option 1 on another when possible, retaining per-device outcomes,
 firmware hashes, and serial logs. Remaining R59 acceptance includes physical
 reset/deletion behavior and measured bounded RAM growth; `TODO.md` and
 `.agent/QKB.md` record this limitation.
+
+## Reader recheck — 2026-11-11 14:05 CET
+
+The authorized helper again granted access to `/dev/bus/usb/001/045`; direct
+USB enumeration reports `2e8a:0009 Pico2 Pico2 JCVM CCID` at bus 001/device
+045. `timeout 5s pcsc_scan -r` completes but lists only `Virtual PCD 00 00`
+and `Virtual PCD 00 01`. No client connection or APDU was attempted. The
+matching 1.8.4 client and interactive instructions are documented in
+`docs/windows-jcalgtest-object-deletion.md`; once PC/SC publishes the physical
+reader, use separate identified tokens for options 2 and 1 when available.

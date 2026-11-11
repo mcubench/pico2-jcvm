@@ -27395,7 +27395,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed: rooted/unrooted two-heap cycle, three-heap cycle under two context orders, rooted/unrooted four-heap diamond, eight repeated cycles with total slots remaining 3, and ambiguous-package fail-closed behavior. `./tools/build arm` and `./tools/build riscv` passed with baseline. Both `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm` and `... riscv` passed. Object-deletion-enabled ARM reports firmware end `0x100d8f6c`, 159,892 bytes remaining under `0x10100000`.
 - Result: The former rootless two-heap cycle is reclaimed by coordinated sweep; rooted cross-heap graphs remain live. Normal per-APDU GC remains conservative; the coordinated sweep runs when object deletion is requested. No firmware was flashed. The physical reader helper refreshed D92, but `pcsc_scan -r` still exposes only VPCD; no physical JCAlgTest run or RAM plateau measurement was performed.
 - Decision: Keep R59 open for real-card reset/deletion validation and measured bounded RAM growth. Retry option 2 and option 1 on separate identified Picos once PC/SC publishes a physical reader.
-- Commit: `<fill after commit>`
+- Commit: `fd462d3f`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`, `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no standalone runtime log.
 
 ## 2026-11-11 Record physical long-run campaign guidance 6 min
@@ -27407,5 +27407,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Reviewed `.agent/SESSION_CONTINUITY.md`, confirmed the same failover advice exists there, then ran the authorized PC/SC helper and bounded physical reader scans. `pcsc_scan -r` lists only the two VPCD readers. `lsusb -v -d 2e8a:0009` confirms D92 enumerates a CCID interface; its USB node ACL includes `pcscd` and `claude`. `./tools/doctor` passed build prerequisite checks but intentionally does not test hardware.
 - Result: The guidance is explicit in both root and session instructions. The physical option 2/1 runs could not start because PC/SC does not publish the attached CCID device. A second RP2350 BOOTSEL device is visible. No APDUs were sent.
 - Decision: Restore PC/SC publication before starting either long client campaign. Continue offline work meanwhile.
-- Commit: `<fill after commit>`
+- Commit: `08568184`
 - Artifacts/logs: `lsusb`/PCSC diagnostics were inspected in the terminal; no standalone log was created.
+
+## 2026-11-11 Recheck reader publication for long JCAlgTest runs 10 min
+
+- Step/experiment: `HW-JCALGTEST-LONGRUN-PCSC-RECHECK`
+- When: '2026-11-11 13:55 CET' - '2026-11-11 14:05 CET'
+- Model: `GPT-6`
+- Change: Rechecked the Pico-only helper and physical USB/PCSC visibility before starting the requested long 1.8.4 option 2 and option 1 campaigns. Confirmed the interactive client procedure and matching client in the existing diagnostic runbook; no new runner was added because no physical reader is published.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted `/dev/bus/usb/001/045`; `lsusb -d 2e8a:0009` showed `2e8a:0009 Pico2 Pico2 JCVM CCID`; `timeout 5s pcsc_scan -r` exited 0 and listed only VPCD 00 00 and VPCD 00 01. No client/APDU was attempted.
+- Result: USB is enumerated, but the physical device remains unavailable to PC/SC; long campaigns could not start.
+- Decision: Keep R59 open. Begin option 2 on one identified Pico and option 1 on another when PC/SC publishes the reader, keeping separate result folders and serial logs.
+- Commit: `<fill after commit>`
+- Artifacts/logs: terminal diagnostics only; no standalone log.
