@@ -2347,3 +2347,300 @@ results establish behavior. Keep validation limitations attached to both.
     ptrace wrapper to panic, so the wrapper exited 1; this is an interrupted
     experiment, not a JCAlgTest failure/pass. Do not run this all-APDU mode on
     the full suite again; make deletion request-gated before further sweeps.
+
+# Additional review TODOs — 2026-11-06
+
+Review-only additions requested by the user. No implementation was changed. Detailed evidence, triggers and validation limits are in [docs/review_20261106.md](docs/review_20261106.md). These merged review additions supplement the project backlog above; existing task owners and completion history are preserved. IDs below map one-to-one to the new review findings. Unexecuted acceptance cases are requirements, not passing results.
+
+## Status update — 7 November 2026
+
+There are 60 recorded findings/tasks, including historical defects since changed by another session. Source corrections exist for R01/R02/R03/R05/R06/R07/R08/R60; see the report's status table and commit IDs before implementing anything. Remaining checks below are acceptance follow-ups, not an instruction to duplicate those changes. R60 software closure is reported by the implementing session; physical evidence is separate. Test/build results from that session have not been independently rerun by this review during this update.
+
+## P1 — correctness, recovery and acceptance
+
+- [ ] **RV-20261106-01 — Contain opcode-fetch exceptions inside interpreter recovery.** Owner: HARD-01 / RV-20261103-28. Include method fall-through and exhausted bodies; require controlled failure, intact caller state, manager selection and a successful following APDU. Original source finding; see the 7 November update for the other session's new recovery evidence. [R01](docs/review_20261106.md#r01--p1-opcode-fetch-failure-escapes-the-interpreters-exception-boundary)
+- [ ] **RV-20261106-02 — Correct nested frame unwinding direction.** Owner: CTX-01 / HARD-01. Preserve caller PCs/locals/roots when trimming nonzero-depth stacks; cover Java/ISO errors, allocation failure and timeout through multiple nested callbacks. Historical `pop_back()` versus `emplace_front()` defect; current source now uses front removal. [R02](docs/review_20261106.md#r02--p1-nested-failure-cleanup-removes-callers-instead-of-callees)
+- [ ] **RV-20261106-03 — Check local/stack bounds before metadata and pointer access.** Owner: HARD-01. Check complete two-word ranges before mutation; sanitize high local indices at nonzero frame bases and stack-capacity boundaries. Source-confirmed ordering defect; sanitizer reproducer pending. [R03](docs/review_20261106.md#r03--p1-local-metadata-is-indexed-before-the-local-variable-bounds-check)
+- [ ] **RV-20261106-04 — Give PIN validation/retry state its required native lifecycle.** Owner: PROFILE-01 / CTX-03 / PERSIST-02. Check wrong-PIN + abort, successful PIN + reset/cold restore, unblock + abort and OwnerPINx variants against the matching generated ROM. Retry decrements must survive applet abort; validation must clear on reset. Follow repository native C++ API policy. [R04](docs/review_20261106.md#r04--p1-ownerpin-validation-and-retry-state-use-ordinary-persistent-fields)
+- [ ] **RV-20261106-05 — Keep persistent field caches unchanged when a write fails.** Owner: PERSIST-03. Fault-inject capacity/allocation/serialization/backend errors for scalar/int/reference stores; catch and read immediately, commit, abort, collect and restore. Prove cache/storage agreement and preserved old roots, including failure before snapshot insertion. [R05](docs/review_20261106.md#r05--p1-failed-persistent-setters-publish-cache-changes-before-storage-succeeds)
+- [ ] **RV-20261106-06 — Validate field receiver assignability and access.** Owner: HARD-01 / PROFILE-01. Cover all getter/setter encodings, unrelated same-layout classes, imported/inherited fields and ROM API object receivers. Declared field-kind and owner checks alone are insufficient. [R06](docs/review_20261106.md#r06--p1-instance-field-resolution-does-not-verify-the-receivers-class)
+- [ ] **RV-20261106-07 — Bound every superclass traversal and reject cycles.** Owner: HARD-01. Audit allocation sizing, class casts, Object lookup and field flattening, including checked size accumulation. Test self/two-class cycles and deep chains with bounded same-process recovery on PC and hardware. Hostile-CAP reachability/physical timing remain unmeasured. [R07](docs/review_20261106.md#r07--p1-several-superclass-walks-can-loop-inside-one-native-operation)
+- [ ] **RV-20261106-08 — Make all Cipher operational bytes consistent with native session lifetime.** Owner: PROFILE-01 / PERSIST-02. Audit IV, saved IV, buffered input, CTR stream and grown buffers; test update/abort/final, reset and fresh restore and inspect persistent records for retained operational data. Preserve existing transient key-workspace safeguards. [R08](docs/review_20261106.md#r08--p1-cipher-operational-byte-arrays-still-have-persistenttransactional-lifetime)
+  Progress: Operational Cipher arrays now use reset-cleared transient storage. CBC/CTR abort, buffer-growth, fresh-process restore, and five raw-image sentinel cases pass in VPCD. Remaining: inspect older persistent Cipher instances from pre-transient firmware. A grown persistent array can have a separate body tag; rebinding its field to a transient array may leave that body record orphaned. This is a source-level risk pending a legacy-seeded reproducer and full tag inventory; do not claim upgrade cleanup yet. Physical acceptance remains pending PC/SC reader publication.
+- [ ] **RV-20261106-20 — Remove ARM cycle/smoke-image ambiguity.** Owner: HOST-01 / AC-02. Align wrapper target names and instructions; require exact full-runtime image/profile/hash and runtime marker in JCVM acceptance. Current `cycle arm` selects the smoke image; `cycle choupi` selects the full VM. [R20](docs/review_20261106.md#r20--p1-the-documented-arm-cycle-flashes-the-smoke-firmware)
+
+## P2 — API behavior and stability
+
+- [x] **RV-20261106-09 — Accept valid empty final tails after block-aligned Cipher updates.** Owner: API-03 / PROFILE-01. Compare AES/DES NOPAD and M1 multipart outputs to one-shot known answers, including repeated full blocks, empty final, IV reset and reuse. VPCD covers all four algorithms and reuse; both target builds pass. Physical acceptance remains pending PC/SC publication. [R09](docs/review_20261106.md#r09--p2-block-aligned-update-followed-by-an-empty-final-call-is-rejected)
+- [x] **RV-20261106-10 — Reject method-2 padding longer than the final block.** Owner: API-03 / HARD-01. AES/DES VPCD cases reject early markers, missing markers and all-zero tails, then reinitialize and accept valid full-block padding. ARM/RISC-V builds and the 99-vector symmetric suite pass. Physical acceptance remains pending PC/SC publication. [R10](docs/review_20261106.md#r10--p2-iso9797-method-2-unpadding-accepts-an-overlong-padding-suffix)
+- [ ] **RV-20261106-11 — Establish/reclaim public global-array lifetime.** Owner: CTX-03 / PERSIST-01. Transient global-array handles are now reclaimed after an APDU has unwound; a live array remains valid during a 257-array batch. An 80-round VPCD stress run reclaimed 20,817 handles without exhausting the global slots. Still test repeated reset operations and extend the audit to distinct-AID install/lookup/delete and global AID cache lifetime/lookup costs. Physical acceptance remains pending. [R11](docs/review_20261106.md#r11--p2-makeglobalarray-allocations-have-no-evident-reclamation-path)
+- [ ] **RV-20261106-12 — Accept 13-byte no-data case-3 SCP03 commands.** Owner: GP-01. Test valid independent MAC vectors with/without Le, malformed lengths and failed-MAC recovery; derive minimum length from supported APDU cases. [R12](docs/review_20261106.md#r12--p2-scp03-rejects-a-valid-no-data-case-3-protected-command)
+- [ ] **RV-20261106-13 — Define and enforce a total VPCD frame deadline.** Owner: EMU-01. Cover slow-drip header/payload and EINTR, not just idle/stopped input; record elapsed upper bounds and successful reconnect. Distinguish intentional inactivity timeout if retained. [R13](docs/review_20261106.md#r13--p2-vpcd-read-timeout-is-an-inactivity-timeout-not-a-frame-deadline)
+- [ ] **RV-20261106-14 — Apply execution budgets to the PC interpreter.** Owner: EMU-01 / HARD-01. Use monotonic time and preserve nested deadlines; recover an infinite interpreted call in the same process, restore transactions/callers and accept a subsequent command. Killing a timed-out emulator does not close this. [R14](docs/review_20261106.md#r14--p2-the-pc-interpreter-has-no-equivalent-execution-deadline)
+- [ ] **RV-20261106-15 — Restore the allocation-failure regression's linkability.** Owner: HARD-01 / PERSIST-01. Fix missing `persistentWriteRollbackGeneration()` dependency in the existing fixture, run every assertion and include this target in routine offline checks. Observed exit 2; no runtime assertions executed. [R15](docs/review_20261106.md#r15--p2-allocation-regression-cannot-currently-link)
+
+## P2 — performance and capacity
+
+- [ ] **RV-20261106-16 — Measure repeated branch-boundary rescans.** Owner: HARD-01 / API-03. Compare equivalent loops at increasing method offsets; record device latency and RAM cost before introducing a validated instruction-start cache. Keep boundary checks and package invalidation intact. [R16](docs/review_20261106.md#r16--p2-branch-validation-rescans-from-method-start-on-every-taken-branch)
+- [ ] **RV-20261106-17 — Measure handle lookup and worst-case GC scaling.** Owner: PERSIST-01 / API-01 / EMU-01. Include forward/reverse chains, wide graphs and sparse slot tables; record heap size, GC duration, watchdog margin and p95/p99 APDU latency. Current list lookup and repeated mark passes have linear/quadratic scaling risks. [R17](docs/review_20261106.md#r17--p2-stable-handle-lookup-and-gc-have-adverse-scaling)
+- [ ] **RV-20261106-18 — Disclose Signature cumulative limits and peak memory.** Owner: PROFILE-01 / API-01. Document the current 32,767-byte buffering ceiling; test multipart boundaries and failed growth. Evaluate incremental native hash/MAC state with correct reset/abort semantics as separate implementation work. Preserve the already disclosed MessageDigest limit. [R18](docs/review_20261106.md#r18--p2-signature-update-is-whole-message-buffering-with-a-32767-byte-ceiling)
+- [ ] **RV-20261106-19 — Bound service gaps inside long native loops.** Owner: HOST-01 / HARD-01 / API-03. Measure maximum-size persistent Util copy/fill, crypto workspace copies and cleanup under capacity pressure; verify CCID progress, immutable deadline and watchdog margin before choosing callback cadence. [R19](docs/review_20261106.md#r19--p2-lengthy-native-copyfill-loops-lack-cooperative-progressdeadline-checks)
+
+## P3 — accurate claims
+
+- [ ] **RV-20261106-21 — Synchronize profile/trust statements with current code and limits.** Owner: PROFILE-01 / ARCH-08. Replace blanket multi-applet exclusions with a capability/remaining-gap/evidence matrix; disclose Signature limits and SCP03 subset, preserve RISC-V build-only distinction and separate helper/emulator/hardware evidence. Review R01–R20 remain open until validated. [R21](docs/review_20261106.md#r21--p3-profiletrust-documentation-has-fallen-behind-implemented-behavior)
+
+Existing physical power-cut, reclamation, cold restoration, Windows, current-image API/support and three-pass release gates remain under their current owners in uppercase `TODO.md`. This review does not duplicate them as new missing implementations or mark them passed.
+
+## Follow-up iteration — additional source findings R22–R31
+
+The report now contains 31 findings with 31 matching tasks. These ten additions are source-confirmed; the historical persistence probe runner failed to link before executing any case. Its old static-slot assumptions also need correction before its output can count as production evidence. Extend RV-20261106-15 to cover that review fixture's missing CAP dependencies and aligned reference slots; no fixture was repaired during review.
+
+- [x] **RV-20261106-22 — Give ordinary persistent objects durable identity independent of reference fields.** P1; owner: PERSIST-01/02/03. New objects use independent identity-body tags; legacy objects migrate with a recoverable marker so aborted migration can reload the original record and retry. Regression coverage passes for replacing/clearing the first reference, sibling and diamond sharing, cycles, alias mutation, GC, migration abort/retry, and fresh restore. Null nested fields are covered; serialization diagnostics now skip null handles before heap lookup. Unit, ASan/UBSan, ARM, and RISC-V checks pass; physical test was not performed because PC/SC published no reader. [R22](docs/review_20261106.md#r22--p1-ordinary-object-identity-still-depends-on-the-first-referencing-field)
+- [x] **RV-20261106-23 — Preserve ordinary object bodies on same-value assignment.** P1; owner: PERSIST-02/03. R22's stable object bodies keep same-value writes at instance and static reference slots distinct from the body. Production-handler tests verify alias targets, same-value writes outside transactions and under commit/abort, canonical identity after fresh restore, and subsequent mutation. The existing native build gates passed with R22; current persistent transaction unit and ASan/UBSan suites pass. No new firmware source change or physical test was needed. [R23](docs/review_20261106.md#r23--p1-writing-an-object-back-to-its-own-body-field-creates-a-self-alias)
+- [x] **RV-20261106-24 — Make first object persistence failure/abort retryable.** P1; owner: PERSIST-03. Production-handler regressions inject failures before the object header, between child records, and at root-alias publication; each retries the same live instance and verifies fields, alias/body identity, and canonical fresh-heap restore. A transaction-abort case verifies removal of the published root/body and retry of the same preexisting live object. Unit and ASan/UBSan suites pass. This confirms the R22 runtime reconciliation; no additional firmware-source change or physical test was needed. [R24](docs/review_20261106.md#r24--p1-failed-first-persistence-leaves-an-object-permanently-marked-with-an-unpublished-tag)
+- [ ] **RV-20261106-25 — Clear SensitiveResult before sensitive JNI argument conversion can fail.** P2; owner: CTX-02 / PROFILE-01. Correct the generator/dispatch contract, not generated headers. Cover null/foreign arguments and invalid receivers after a prior result, caught exceptions and SIO return; preserve passive-call result lifetime. [R25](docs/review_20261106.md#r25--p2-jni-argument-conversion-can-bypass-sensitiveresult-invalidation)
+- [x] **RV-20261106-26 — Support persistent boolean reads through production handlers.** P1; owner: PROFILE-01 / PERSIST-02 / HARD-01. The byte helper rejects booleans and ordinary boolean decoding reads a nonexistent event byte. Test empty/normal arrays, StaticField initialization, mutation/abort and fresh restore under sanitizers without replacing production helpers with stubs. Production-handler unit and ASan/UBSan coverage plus ARM/RISC-V builds pass; no physical card test was performed. [R26](docs/review_20261106.md#r26--p1-persistent-boolean-array-reads-are-rejected-by-the-byte-array-helper)
+- [ ] **RV-20261106-27 — Preserve reference-array component type namespaces.** P2; owner: CTX-01 / PROFILE-01 / PERSIST-02. Retain the defining CAP or stable resolved component identity through allocation/persistence; exercise imported-library allocation followed by applet stores/casts using deliberately colliding CP indexes, then restore. [R27](docs/review_20261106.md#r27--p2-reference-array-component-types-lose-their-defining-cap-namespace)
+- [ ] **RV-20261106-28 — Validate EC cofactors against accepted domain parameters.** P2; owner: API-03 / PROFILE-01 / HARD-01. Reject inconsistent positive K as well as missing/invalid K; compare accepted DH/DHC domains to an independent reference. Document the current named-curve restriction; arbitrary-domain expansion is not required. [R28](docs/review_20261106.md#r28--p2-ec-domain-validation-checks-named-curve-parameters-but-accepts-inconsistent-cofactors)
+- [ ] **RV-20261106-29 — Make native EC agreement resources exception-safe.** P2; owner: HARD-01 / API-01 / API-03. Audit raw MPI/point lifetimes across C++ allocations, fault-inject after each allocation and verify repeated failures leave stable heap usage and a subsequent valid operation usable. Preserve sensitive scratch cleanup. [R29](docs/review_20261106.md#r29--p2-native-ec-agreement-leaks-mbed-tls-allocations-when-c-allocation-throws)
+- [ ] **RV-20261106-30 — Prevent exception diagnostics from reading arbitrary field kinds as short.** P2; owner: HARD-01 / PROFILE-01 / CTX-01. Exercise fresh-boot hardware throws of custom exceptions with byte/int/reference/short first fields, exact/superclass catches and a following successful APDU; trace-budget state must not alter behavior. [R30](docs/review_20261106.md#r30--p2-hardware-exception-diagnostics-assume-every-exceptions-first-field-is-a-short)
+- [ ] **RV-20261106-31 — Preserve new instance fields when first persisted after an unrelated rollback.** P1; owner: PERSIST-02/03. Synchronize promotion/cache-generation state without reloading unwritten fields. Advance the real rollback generation, construct/populate scalar/reference objects and persist them successfully; verify values and identity immediately and after fresh restore. Include pre-rollback-created objects and failed-promotion retry. [R31](docs/review_20261106.md#r31--p1-an-earlier-rollback-can-erase-a-new-objects-fields-on-its-first-persistence)
+
+
+## Third pass — host and physical evidence boundaries R32–R36
+
+There are now 36 findings with 36 matching tasks. R32 has two observed failed acceptance checks against a hashed existing emulator binary; R33–R36 are source-confirmed and their proposed end-to-end tests remain unexecuted.
+
+- [ ] **RV-20261106-32 — Propagate emulator application failures to the parent process exit.** P1; owner: EMU-01 / HOST-01. Carry startup/transport/save status through C++ and Rust context/IPC. Assert nonzero exits for absent restored instance, refused connection, malformed transport, failed install and image/sidecar save failures; preserve clean shutdown success. Existing startup and refused-connection attempts both exited 0 despite errors. [R32](docs/review_20261106.md#r32--p1-emulator-failures-are-discarded-across-the-startup-and-process-boundary)
+- [ ] **RV-20261106-33 — Protect shared PC and firmware generation from concurrent writers.** P2; owner: HOST-01 / PROFILE-01. Use shared serialization with safe nested invocation or isolated complete generation sets and atomic publication. Exercise concurrent profiles/architectures and verify compiled profile/ROM/JNI provenance. Standalone build-pc currently bypasses the build lock. [R33](docs/review_20261106.md#r33--p2-standalone-pc-builds-bypass-the-lock-protecting-shared-generated-artifacts)
+- [ ] **RV-20261106-34 — Keep explicit flash device identity mandatory through discovery and re-enumeration.** P1; owner: HOST-01 / AC-02. Reject missing/ambiguous requested serials rather than selecting another sole board. Cover absent A/sole B, multiple devices, BOOTSEL changes and replaced stable-port devices with offline fixtures; later record exact hardware identity before programming. No flash was attempted in review. [R34](docs/review_20261106.md#r34--p1-an-explicit-flash-serial-can-fall-back-to-a-different-board)
+- [ ] **RV-20261106-35 — Pin one reader through every power-up acceptance phase.** P2; owner: HOST-01 / PERSIST-03 / AC-02. Forward the exact reader to the existing APDU probe, record actual selected identity and reject ambiguous fallback. Test opposing registry/APDU outcomes across two readers; retain the honest power-cycle-not-verified marker. [R35](docs/review_20261106.md#r35--p2-the-power-up-acceptance-script-can-combine-evidence-from-different-readers)
+- [ ] **RV-20261106-36 — Align physical CCID and VPCD reset/power callback semantics.** P2; owner: CTX-03 / HOST-01 / PERSIST-03. Prevent reset/power-off from invoking applet deselect code. Verify persistent callback counter, reset/deselect transients, transactions and native session cleanup through logical off/on and reader reset on each backend; test supply loss separately. [R36](docs/review_20261106.md#r36--p2-physical-ccid-power-off-executes-an-applet-callback-unlike-vpcd-power-off)
+  Offline progress (2026-11-07): physical CCID POWER_OFF now uses the reset cleanup path, which clears selection, applet transactions, both transient classes, shareable session state, secure-channel state and pending transfers without running Java deselect. VPCD unit tests pass 29/29; the focused JCSystem case passes power-off/on and reader-reset callback-count plus both transient-class checks. ARM and RISC-V max_crypto builds pass. Physical CCID and supply-loss checks remain pending. A full APDU-suite run without light-install exceeded its 240 s bound; a light-install full run is invalid for capacity acceptance (case 83 expects the 32,767-byte field). See QKB/progress for scope.
+
+Extend RV-20261106-21 to reconcile `docs/NATIVE_PROGRESS_CALLBACKS.md` with immutable execution deadlines and current timeout constants. This is part of the existing documentation task rather than an additional finding/task.
+
+
+## Fourth pass — native API contracts R37–R40
+
+The review now has 40 findings and 40 matching tasks. These four additions are source-confirmed contract mismatches; the acceptance cases below were not executed or implemented.
+
+- [ ] **RV-20261106-37 — Make EC cofactor requirements algorithm-specific.** P2; owner: API-03 / PROFILE-01. Allow fully populated EC keys and ECDSA to initialize without optional K; preserve DHC's required-cofactor check and R28's validation of inconsistent supplied K. Cover generated/manual public and private keys, missing/correct/invalid K and non-DHC agreement. [R37](docs/review_20261106.md#r37--p2-ec-initialization-and-ecdsa-require-an-optional-cofactor)
+- [ ] **RV-20261106-38 — Honor or reject preinitialized key-pair parameters explicitly.** P2; owner: API-03 / PROFILE-01. Preserve supported RSA exponents and EC domains rather than silently replacing them. Test default/nondefault/invalid exponents and supported/invalid/unsupported EC domains, parameter readback, pair consistency and repeated generation. A named-curve restriction may reject unsupported domains explicitly. [R38](docs/review_20261106.md#r38--p2-key-pair-generation-silently-replaces-preinitialized-parameters)
+- [ ] **RV-20261106-39 — Reset CBC MAC IV to zero after finalization.** P2; owner: API-03 / PROFILE-01. Cover sign, successful/false verify, multipart input and explicit reinit on the same object after a nonzero-IV init. Compare first output with that IV and next output with an independent zero-IV reference; default-zero repeated-message tests are insufficient. [R39](docs/review_20261106.md#r39--p2-cbc-mac-finalization-preserves-the-nonzero-iv-for-the-next-message)
+- [ ] **RV-20261106-40 — Restore persistent-key crypto initialization across reset.** P2; owner: CTX-03 / PROFILE-01 / PERSIST-02. Separate retained key/mode/configuration from discarded intermediates. Test retained Cipher and Signature objects without reinit after logical reset and cold restore, partial input, zero-IV reset, inactive applets and output-length metadata. Keep cleared transient keys unusable. [R40](docs/review_20261106.md#r40--p2-card-reset-discards-persistent-key-crypto-initialization-instead-of-restoring-it)
+
+Extend RV-20261106-29's allocation fault audit to EC key-pair `curveA` while `mpiBytes()` allocates. This is an instance of the existing resource-cleanup finding, not a separate TODO.
+
+
+## Fifth pass — APDU and invocation failure contracts R41–R43
+
+The report and additional task list now contain 43 matching findings/tasks. These additions are source-confirmed; proposed runtime cases remain unexecuted.
+
+- [ ] **RV-20261106-41 — Validate receiveBytes state and offsets despite fully buffered input.** P2; owner: PROFILE-01 / HOST-01 / HARD-01. Enforce checks through native VM dispatch. Test calls before primary receive, after outgoing, negative/oversized offsets, zero remaining input, exact Java exception reasons and recovery. Valid post-receive calls may return zero. [R41](docs/review_20261106.md#r41--p2-receivebytes-ignores-its-state-and-offset-contract)
+- [ ] **RV-20261106-42 — Enforce outgoing API length limits and preserve BAD_LENGTH reasons.** P2; owner: PROFILE-01 / HOST-01. Separate applet capability and chaining limits from the 1,022-byte buffer capacity; test -1/0/252/253/256/257/1022/1023, chaining modes and invalid states. Catch/read reasons rather than asserting only APDU failure; explicitly disclose any supported long-response extension. [R42](docs/review_20261106.md#r42--p2-outgoing-length-validation-follows-buffer-capacity-rather-than-the-declared-apdu-contract)
+- [ ] **RV-20261106-43 — Contain allocation failure during package-stack insertion at method entry.** P1; owner: HARD-01 / CTX-01 / EMU-01. Remove allocating-noexcept termination and make frame/package entry coherent on failure. Inject failure after frame creation, verify retained callers/packages and a following APDU; audit analogous noexcept allocation paths. Measure per-call allocation and method-heavy latency before choosing storage changes. [R43](docs/review_20261106.md#r43--p1-method-entry-package-bookkeeping-can-terminate-on-allocation-failure)
+
+
+## Sixth pass — transaction recovery and allocation costs R44–R47
+
+The review and additional task list now have 47 matching entries. These four additions are source-confirmed; fault-injection outcomes and performance impact have not been measured.
+
+- [ ] **RV-20261106-44 — Preserve recovery state when rollback itself fails.** P1; owner: PERSIST-03 / STORE-01 / HARD-01. Retain a recoverable journal or block ordinary use until reset/recovery; do not sync a partially restored overlay. Inject each rollback erase/write failure and commit/rollback sync failures, verify no mixed durable state, and exercise retry plus restart. A single failed commit with successful rollback does not close this. [R44](docs/review_20261106.md#r44--p1-failed-rollback-discards-the-recovery-journal-and-reopens-ordinary-writes)
+- [ ] **RV-20261106-45 — Make snapshot publication and capacity charging exception-safe.** P2; owner: PERSIST-02/03 / HARD-01. Inject vector growth failure after record read/charge, verify unchanged journal/capacity, then retry the same tag and commit/abort. Cover old/new records and prior successful snapshots; distinguish this from instance-cache rollback. [R45](docs/review_20261106.md#r45--p2-snapshot-insertion-failure-leaves-commit-capacity-charged-without-a-snapshot)
+- [ ] **RV-20261106-46 — Avoid owning-array reconstruction for each persistent element check.** P2; owner: API-01 / PERSIST-01 / HARD-01. Preserve header/type/size/provenance validation with bounded metadata access. Measure increasing primitive/reference scans, allocator calls, temporary bytes and latency; reference validation currently initializes an entire owner vector per element. Cover low-memory reads and malformed records with secure checks enabled. [R46](docs/review_20261106.md#r46--p2-persistent-array-element-validation-allocates-a-temporary-array-on-every-access)
+- [ ] **RV-20261106-47 — Invalidate transaction-created object references on abort or force safe session recovery.** P2; owner: PERSIST-02/03 / CTX-01 / HARD-01. Track allocation lifetime through native runtime state. Test aliases in locals/transient arrays, abort, null comparison and dereference, preexisting objects, commit and nested/SIO returns; prove stale handles cannot alias later allocations. Ordinary record rollback alone does not close this. [R47](docs/review_20261106.md#r47--p2-transaction-abort-leaves-references-to-newly-allocated-objects-usable)
+
+
+## Seventh pass — generic array utility behavior R48–R51
+
+The report and additional task list now contain 51 matching findings/tasks. All four additions are source-confirmed; proposed API/fault-injection cases remain unexecuted.
+
+- [ ] **RV-20261106-48 — Implement native primitive array packing and unpacking contracts.** P2; owner: PROFILE-01 / API-03. Cover all byte/short/int cross-type directions, big-endian bit preservation, converted destination range/end offset, invalid multiples, zero length and same-array overlap. Reject booleans/references with the documented utility error; same-type copying is insufficient. [R48](docs/review_20261106.md#r48--p2-arraycopyrepack-rejects-the-cross-type-conversions-it-is-intended-to-perform)
+- [ ] **RV-20261106-49 — Give atomic ArrayLogic copy/fill a native transaction boundary.** P2; owner: PERSIST-02/03 / PROFILE-01 / HARD-01. Enforce capacity and all-or-nothing persistent updates outside/inside caller transactions without committing the caller. Inject failures at every destination write and check unchanged destination on rejection, catch/recovery and fresh restore; validate physical interruption separately. [R49](docs/review_20261106.md#r49--p2-atomic-generic-copy-and-fill-have-no-standalone-atomic-transaction-boundary)
+- [ ] **RV-20261106-50 — Keep generic NonAtomic writes outside applet rollback.** P2; owner: PERSIST-02/03 / PROFILE-01. Use distinct native storage behavior for byte/short/int and reconcile preexisting snapshots. Cover both orderings of atomic/nonatomic writes to one array, capacity exhaustion, overlap, abort and restore; do not route through ordinary journaled setters. [R50](docs/review_20261106.md#r50--p2-generic-nonatomic-copy-and-fill-participate-in-applet-rollback)
+- [ ] **RV-20261106-51 — Dispatch native utility errors as catchable Java UtilException with reasons.** P2; owner: PROFILE-01 / HARD-01 / CTX-01. Provide ILLEGAL_VALUE versus TYPE_MISMATCHED through native exception dispatch. Test exact/superclass catches for invalid types and mismatched fills, assert reasons and complete valid work in the same and next APDU. [R51](docs/review_20261106.md#r51--p2-native-utility-errors-cannot-be-caught-as-the-declared-utilexception)
+
+Extend R19/R46 measurements to the generic copy helper's whole-input `uint32_t` vector, including byte copies. Scratch overhead is source-observed; peak memory and throughput remain unmeasured.
+
+
+## Eighth pass — JCSystem transient and activity contracts R52–R54
+
+There are now 54 matching findings/tasks. These additions are source-confirmed; RV-20261106-53 now has focused VPCD runtime coverage. Foreign raw Object arguments and reset-zeroed AID bytes were investigated and excluded as defects after checking owner validation and retained storage.
+
+- [x] **RV-20261106-52 — Enforce selected-context rules for CLEAR_ON_DESELECT allocation.** P2; owner: CTX-03 / PROFILE-01 / HARD-01. `Context::canAllocateDeselectTransientArray()` checks active or installing applet-instance state for every transient array type. Cross-AID VPCD verifies all five types reject with `ILLEGAL_TRANSIENT` for an unselected service, allows selected caller and sibling allocations, checks reset-array success/recovery; JCSystem APDU coverage verifies same-context clear events, install-time allocation, select-callback allocation and invalid-event `ILLEGAL_VALUE`. The focused VPCD test passes 2/2. Broad JCSystem run passes through case 56, including new case 94, then fails at known separate RV-20261106-36 case 57 (reset callback count). No physical test was performed. [R52](docs/review_20261106.md#r52--p2-deselect-transient-allocation-does-not-check-whether-its-applet-context-is-selected)
+- [x] **RV-20261106-53 — Query requested applet activity independently of the executing applet.** P2; owner: CTX-01/03 / PROFILE-01. Resolution: native lookup now checks the executing Context (including the short-lived install interpreter) and then retained applet-instance state, keyed by full AID. Focused VPCD tests pass for registration/install/select/deselect/process callbacks, cross-AID SIO, active caller versus inactive sibling/service and unknown AIDs, sibling instances, and reset. [R53](docs/review_20261106.md#r53--p2-isappletactive-answers-only-for-the-executing-applets-own-aid)
+- [x] **RV-20261106-54 — Report NO_TRANSIENT_SPACE for transient backing-limit failures.** P2; owner: PROFILE-01 / HARD-01 / CTX-03. Transient backing overflow and local/global transient handle exhaustion now map to `SystemException.NO_TRANSIENT_SPACE` (2); persistent `NO_RESOURCE` mappings are unchanged. Dedicated tests pass with int enabled and disabled, cover negative lengths, both local and global handle-table exhaustion, and verify successful allocations after backing-limit rejection plus preservation of existing handles after exhaustion. ARM/RISC-V max_crypto builds pass; no hardware flash was done. [R54](docs/review_20261106.md#r54--p2-transient-allocation-limit-failures-report-the-wrong-resource-reason)
+
+Extend RV-20261106-11 to repeated distinct-AID install/lookup/delete and global AID cache lifetime/lookup costs. Reclaim only unreferenced entries while preserving live runtime AID references and identity semantics; no memory-exhaustion rate was measured.
+
+
+## Ninth pass — CAP dependency closure and cleanup cost R55–R56
+
+The report and additional task list now contain 56 matching entries. These two additions are source-confirmed; the dependency scenario and scan/latency measurements remain unexecuted. Existing version matching, importer deletion guards and lifecycle recovery were verified present.
+
+- [ ] **RV-20261106-55 — Validate loaded-library dependency readiness before applet execution.** P2; owner: GP-01 / PROFILE-01 / HARD-01. Cover A→B→C with missing/wrong-version/present C and C used only inside B's method body. Validate reachable dependencies with bounded traversal or an earlier library linking boundary, preserve supported load order, define cycle handling and demonstrate correction permits INSTALL. Direct-import and deletion guards are insufficient evidence. [R55](docs/review_20261106.md#r55--p2-install-preflight-does-not-validate-the-dependency-closure-of-loaded-libraries)
+- [ ] **RV-20261106-56 — Avoid repeated full-store orphan sweeps for already clean free IDs.** P2; owner: STORE-01 / HOST-01 / PERSIST-03. Measure scan counts/manager latency for 0/1/7 free slots and sparse/dense clean/orphaned stores. Batch or cache only with validated recovery invariants; cover interrupted publication and package-ID reuse. Traversal counts are source-inferred; no flash erase count or speedup is claimed. [R56](docs/review_20261106.md#r56--p2-orphan-cleanup-repeats-full-storage-walks-for-ordinary-free-package-slots)
+
+Extend RV-20261106-29's allocation-failure resource audit to RSA CRT modulus/exponentiation helpers in `native_rsa_math.hpp`, including vector failures while raw MPIs are live. This is the existing exception-cleanup issue, not another task.
+
+
+## Tenth pass — asymmetric key-type and constructor coverage R57–R58
+
+The report and additional task list now contain 58 matching findings/tasks. These source-confirmed limitations were not exercised at runtime. RSA transient Signature support was checked present and is not reported as missing.
+
+- [ ] **RV-20261106-57 — Define and validate ECDSA with enabled transient EC private keys.** P2; owner: API-03 / PROFILE-01 / CTX-03. Native initialization currently accepts only persistent type 12. Support or disclose types 30/31 explicitly; compare identical complete key material across lifetimes/digests, independent verification, clear-event rejection and reinit. Validate downstream component use; keep optional-K handling separate. [R57](docs/review_20261106.md#r57--p2-ecdsa-initialization-rejects-enabled-transient-ec-private-key-types)
+- [ ] **RV-20261106-58 — Implement or disclose the existing-key KeyPair constructor overload.** P2; owner: API-03 / PROFILE-01. Add supported behavior through native binding/VM code, preserving supplied references. Cover initialized/uninitialized compatible RSA/EC pairs, getter identity, mismatched sizes/algorithms, generation and transient-private variants. Current native generation/factory tests cover only algorithm/length construction. [R58](docs/review_20261106.md#r58--p2-the-keypair-constructor-taking-existing-keys-remains-an-unbound-stub)
+
+Extend RV-20261106-28's EC matrix to allocatable versus operational key sizes/domains, including enabled 320/512-bit key storage with no native named group. Disclose storage-only cases rather than inferring full algorithm support from key construction.
+
+
+## Eleventh pass — foreign-array reachability R59
+
+The report and additional task list now contain 59 matching entries. Existing `./tools/test-rmi-registry` passed normal foreign retention/release coverage; the new unreachable cross-heap cycle case remains unexecuted.
+
+- [ ] **RV-20261106-59 — Prevent unreachable foreign-array cycles from becoming permanent GC roots.** P2; owner: PERSIST-01 / CTX-01 / HARD-01. Separate registry edges from reachable roots using a validated cross-heap lifetime strategy. Exercise two/three-heap cycles and diamonds with/without real roots, different collection orders, edge breaking, package deletion and handle reuse. Use production Context enumeration and measure reclaimed/live counts plus bounded repeated-work RAM growth while preserving live foreign references and owner collision isolation. [R59](docs/review_20261106.md#r59--p2-foreign-array-root-routing-can-keep-an-unreachable-cross-heap-cycle-alive)
+
+Extend RV-20261106-17's GC measurements to incoming foreign-array registry traversal. Existing overwrite/delete helper passes do not establish collection of graphs whose only reachability is cyclic foreign edges.
+
+
+## Twelfth pass — stack instruction semantics R60
+
+The report and additional task list now contain 60 matching entries. R01/R02/R03 were rechecked on the original snapshot; the 7 November source corrections now supersede those descriptions. Existing registry assertions are enabled, but their zero-depth dup tests do not cover this new positive-depth finding.
+
+- [ ] **RV-20261106-60 — Audit acceptance of the corrected positive-depth dup_x implementation.** P1; owner: HARD-01 / PROFILE-01 / CTX-01. Duplicate only the top M words at depth N, with correct input/output bounds and inclusive N limits. Cover every legal/invalid M/N form, exact values/depth, capacity boundaries, owner-tagged references and int pairs through helper and full interpreter execution. Preserve metadata and failure recovery; use integer-range checks before pointer arithmetic as in R03. [R60](docs/review_20261106.md#r60--p1-positive-depth-dup_x-duplicates-the-wrong-stack-segment)
+
+## Testing-data migration follow-ups — 7 November 2026
+
+The user accepted these two host-test failures as documented follow-ups.
+They were observed while validating relocated tests; no runtime correction
+is included in the migration. See [migration evidence](docs/testing-data-migration.md).
+
+- [ ] **MIG-20261107-01 — Restore the standalone allocation test link dependency.**
+  `tools/test-jcvmarray-allocation` configures in its new directory, then fails
+  to link `FlashMemory_Handler::persistentWriteRollbackGeneration()` from the
+  existing heap implementation. Supply the appropriate test dependency and
+  rerun this focused test; preserve unrelated in-progress heap changes.
+- [ ] **MIG-20261107-02 — Reconcile the VPCD partial-header regression.**
+  `tools/test-vpcd-protocol` fails `send partial frame header`. Inspect socket
+  state after its preceding idle-read timeout and the intended transport
+  shutdown behavior, then correct the regression or implementation in its
+  own change. Preserve the existing timeout/partial-frame acceptance intent.
+
+## Memory allocation and persistent-write performance — 10 November 2026
+
+Source: analysis `PERF-MEM-ANALYSIS-20261110` (`progress.md`, `.agent/QKB.md`
+entry "PC VPCD compaction/persistent writes ~100x slower than native FS",
+commit `6efcd876`). Evidence: native FS bench
+`artifacts/perf/memory-alloc-analysis-20261110/` (64 KiB sector compaction
+with ~1,150 live records ≤169 ms natively) versus 43.7476 s for one VPCD
+compaction (`artifacts/logs/rsa-replacement-compaction-128-20261110.log`).
+Related: RESOURCE-01 in [TODO.md](TODO.md). Do these in order; each item is
+its own logical step with a before/after measurement recorded in
+`progress.md`. Unmeasured items stay hypotheses until profiled.
+
+- [x] **PERF-20261110-01 — Confirm where emulator compaction time goes.** P1;
+  owner: EMU-01 / RESOURCE-01. With elevated ptrace host access, run the
+  existing 128-cycle rooted RSA replacement workload once under profiling.
+  Count tracer traps per `EmulatorCall` kind during one `FS_DEFRAG_START` to
+  `FS_DEFRAG_DONE` window, for example with a counter in `handle_trap`
+  (`choupi/os/src/arch/host/emulator.rs`) or `perf`. Hypothesis to confirm or
+  reject: the host `flash_ll` `clear_error`/`write`/`currently_busy`/
+  `has_error` calls each assert `privilege::is_privileged()`, which is an
+  `int3` tracer round trip. `FlashBlockMut::write_block_generic` programs one
+  word at a time, so one compaction costs 10^4–10^5 round trips.
+  Acceptance: a trap-count breakdown per compaction and per persistent
+  `edit_at`, recorded with artifact paths. Physical hardware is not involved.
+- [x] **PERF-20261110-02 — Remove per-word tracer traps from host flash
+  emulation.** P1; owner: EMU-01. Depends on 01 confirming the cause. Options:
+  have the tracer keep a privilege flag in guest memory, update it on
+  privilege transitions, and read it locally; or make the host-only privilege
+  asserts `debug_assert!`. Also program flash a whole block per call instead
+  of once per word. Keep the program/erase AND semantics, the failure-injection
+  tests, and real MPU enforcement for unprivileged guest code.
+  Acceptance: `javacard-os` host FS/flash tests pass (elevated ptrace). The
+  128-cycle RSA replacement workload passes 133/133. Measured compaction time
+  drops from 43.7 s to below 2 s, and APDU 124 time is reported.
+  `./tools/test-asymm-crypto-vpcd` passes. PC-only change, so the ARM/RISC-V
+  builds must still pass but no flashing is needed.
+  Completed 2026-11-10: the baseline defrag profile captured 29,590
+  `is_privileged` traps in 40.032402 s; one-byte persistent edits used 94–106
+  traps each. Bulk programming reduced the intermediate defrag to 12.349847 s
+  and 9,766 traps. The final optimized defrag measured 2,731 us with zero
+  privilege traps. The 128-cycle test passed 133/133 and APDU 124 took 0.314 s.
+  Host FS tests passed 36/36; asymmetric VPCD passed 107/107; ARM and RISC-V
+  builds passed. See the matching `progress.md` entry and `.agent/QKB.md`.
+- [x] **PERF-20261110-03 — Bulk range operations for persistent arrays.** P1;
+  owner: PERSIST-01 / HARD-01. Native `Util.arrayCopy`/`arrayCopyNonAtomic`/
+  `arrayFill` (`copyArrayRange`/`fillArrayRange` in `choupi/src/jni.cpp`) and
+  RSA/EC key getters copy element by element. With `JCVM_SECURE_HEAP_ACCESS`,
+  each persistent element access re-parses the record and allocates a
+  temporary `JC_Array` (`FlashMemory_Handler::getPersistentField_Array`), and
+  `size()` performs two more FS reads. Add validated range read/write
+  primitives: one bounds and type check, one transaction snapshot, and one
+  record write per call, respecting atomic versus non-atomic semantics. Use
+  them for persistent destinations and sources. Keep per-element paths for
+  transient and volatile arrays.
+  Acceptance: transaction commit/abort/non-atomic tests (existing
+  JCSystem transaction probe), the API validation suite rows for `Util`, and the symmetric/asymmetric
+  VPCD suites pass. Report the FS syscall count for one 128-byte persistent
+  `arrayCopy` before and after. ARM and RISC-V build, flash, and
+  `TEST:SUMMARY` pass.
+  Completed 2026-11-10: a 128-byte persistent byte-array copy now uses 3 FS
+  calls versus 1,024 in the scalar path (one range read, two validated range
+  write calls). Transaction probe cases 89–92 pass on two identified physical
+  Pico 2 boards; each passed the finite runtime monitor and all 17 transaction
+  checks. `Util` API validation passed 19/19; symmetric and asymmetric VPCD
+  suites passed 102/102 and 107/107. ARM/RISC-V builds passed.
+- [x] **PERF-20261110-04 — Cache persistent array metadata.** P2; owner:
+  PERSIST-01. Cache type/length/tag validity on the heap-resident `JC_Array`,
+  keyed by `persistentWriteRollbackGeneration()`, instead of re-reading the
+  length bytes from flash on every `size()` and `checkArrayEntryIndex`. The
+  existing rollback/recovery behaviour (`recoverMissingPersistentBody`)
+  must remain correct. Acceptance: rollback/restore regressions pass, plus
+  a before/after `baload`/`bastore` loop timing on a persistent array (VPCD and
+  physical). Completed 2026-11-11: unit instrumentation confirms repeated
+  metadata reads drop from 256 filesystem reads to 1 for 128 `size()` calls;
+  rollback/tag invalidation tests and physical transaction acceptance pass.
+  Physical timing on chip `2BED26ED20556535` did not show an improvement:
+  1,024 `arraylength` iterations took 4.799–4.845 s with the cache versus
+  4.598–4.607 s without it; mixed read/write timing was 1.559–1.596 s cached
+  versus 1.553–1.593 s uncached. Treat reduced FS calls as established, but do
+  not claim a user-visible latency gain.
+- [ ] **PERF-20261110-05 — Constant-time heap handle lookup.** P2; owner:
+  HARD-01. `Heap::SharedStorage` uses `List` (`std::list`) whose `at()` walks
+  from the head on every `getArray`/`getInstance`; `addArray`/`addInstance`
+  scan for a free slot. Replace with an indexed container (e.g. `std::vector`
+  plus a free-slot list) while preserving handle stability, the 0x3fff limit,
+  the shared-storage facade semantics, the GC mark bitmaps, and foreign-reference
+  registration. Avoid needless `shared_ptr` copies on hot bytecode paths where
+  lifetime allows. Acceptance: heap/GC/RMI unit tests, VPCD suites, and a measured
+  array-access microbenchmark at 16, 256, and 4,096 live handles on PC and Pico.
+- [ ] **PERF-20261110-06 — Reduce transaction snapshot lookup cost.** P3;
+  owner: PERSIST-01. `snapshot_persistent_tag` and
+  `preserve_non_atomic_array_byte_in_snapshot` scan all snapshots linearly
+  on every persistent write, which is O(n²) per large transaction. Index snapshots by
+  tag (hash or sorted) without changing rollback order or capacity
+  accounting. Acceptance: transaction probe and commit-capacity tests pass;
+  report timing for a transaction touching 256 records.
+- [ ] **PERF-20261110-07 — Make Pico `fs_sync` incremental.** P2; owner:
+  PERSIST-01 / HOST-01. `persist_overlay()` (`src/pico_filesystem.cpp`)
+  erases and reprograms the whole FS snapshot (bitmap + index + up to 96 KiB
+  payload) after every APDU that dirtied persistent state, so a one-byte
+  change costs about 1 s of flash time, assumed rather than measured. Each
+  slot is erased once every two such APDUs, which is an endurance risk. Measure
+  first (timing per `fs_sync`, bytes erased/programmed). Then design an append-only
+  journal or sector-granular dirty write-back that keeps power-loss atomicity
+  across the two slots. `append_overlay` also memmoves up to 96 KiB and loops
+  over 8,192 entries on each record resize; include it in the measurement.
+  Acceptance: power-loss/rollback tests (`RP2350_FS_OVERLAY_TEST`) pass;
+  measured per-APDU sync time and erase count before/after on physical Pico 2
+  (ARM and RISC-V); full CHOUPI cycle `TEST:SUMMARY` passes.
+- [ ] **PERF-20261110-08 — Reduce PC FS write amplification.** P3; owner:
+  EMU-01. `FileSystem::edit_at` (`choupi/os/src/fs/mod.rs`) appends a full copy
+  of the record for every edit, and `Sector::lock` scans every outstanding
+  lock linearly (16-bucket set; FS file set uses 32 buckets). After 02–03
+  land, re-measure; only optimize if compaction or lookups still dominate VPCD
+  APDU time. Acceptance: native FS bench (patch in the artifact folder above)
+  and `fs::` tests pass with before/after numbers.

@@ -27138,3 +27138,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark PERF-04 complete for cache correctness and FS-call reduction, but do not claim a user-visible latency gain. Continue to PERF-05 and verify the board pool state before further flashing.
 - Commit: Pending.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-physical-20261111T053419Z.log`; pre-cache comparison logs `artifacts/logs/jcsystem-transaction-physical-20261111T050827Z.log` and `artifacts/logs/jcsystem-transaction-physical-20261111T051133Z.log`.
+
+## 2026-11-11 Merge task backlogs 2 minutes
+
+- Step/experiment: `merge-todo-files`
+- When: '2026-11-11 07:40 CET' - '2026-11-11 07:40 CET'
+- Model: `gpt-6`
+- Change: Merged lowercase review/performance tasks into `TODO.md`, removed `todo.md`, and updated active documentation references. Preserved existing task status and evidence.
+- Validation: Verified all original lowercase task lines remain in the merged file, the uppercase backlog remains an unchanged prefix, lowercase file is absent, and the staged diff passes whitespace checks. Builds and hardware checks intentionally skipped for documentation-only changes.
+- Result: One root backlog, `TODO.md`; no task metrics measured.
+- Decision: Use `TODO.md` for future backlog updates.
+- Commit: resolve with `git log --grep="Merge todo backlogs into TODO.md"`.
+- Artifacts/logs: none.

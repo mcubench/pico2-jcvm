@@ -77,7 +77,7 @@ tool consumers no longer depend on the former root directory or tools/tests.
   USB/PCSC tests were intentionally skipped: no runtime source changed in this
   migration. No flash or physical acceptance claim is made.
 
-Accepted host-test follow-ups (also in `todo.md`):
+Accepted host-test follow-ups (also in `TODO.md`):
 
 1. `tools/test-jcvmarray-allocation`: after successful relocation/configuration,
    linking fails on the existing missing
