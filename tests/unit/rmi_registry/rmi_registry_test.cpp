@@ -865,6 +865,64 @@ void verify_local_array_routes_foreign_references_through_gc() {
             "package_delete_root_cleared=1 owner_slot_reuse_safe=1");
 }
 
+void verify_unreachable_foreign_array_cycle_retention_is_reproduced() {
+  constexpr jcvm::jpackage_ID_t package_a = 24;
+  constexpr jcvm::jpackage_ID_t package_b = 25;
+  jcvm::Context context_a(18, package_a);
+  jcvm::Context context_b(19, package_b);
+
+  const jcvm::jref_t array_a_ref = context_a.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const jcvm::jref_t array_b_ref = context_b.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_a = context_a.getHeap().getArray(array_a_ref);
+  const auto array_b = context_b.getHeap().getArray(array_b_ref);
+  array_a->setReferenceEntry(0, array_b_ref, context_a, package_b);
+  array_b->setReferenceEntry(0, array_a_ref, context_b, package_a);
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, array_a_ref);
+  context_b.getHeap().setStaticReferenceRoot(package_b, 0, array_b_ref);
+
+  std::vector<jcvm::jref_t> roots_a;
+  context_a.appendRootReferences(roots_a);
+  std::vector<jcvm::jref_t> roots_b;
+  context_b.appendRootReferences(roots_b);
+  assert(context_a.getHeap().collectUnreachableFrom(roots_a).complete);
+  assert(context_b.getHeap().collectUnreachableFrom(roots_b).complete);
+
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+  context_b.getHeap().setStaticReferenceRoot(package_b, 0, jcvm::jref_t{});
+  roots_a.clear();
+  context_a.appendRootReferences(roots_a);
+  roots_b.clear();
+  context_b.appendRootReferences(roots_b);
+  const auto cycle_a = context_a.getHeap().collectUnreachableFrom(roots_a);
+  const auto cycle_b = context_b.getHeap().collectUnreachableFrom(roots_b);
+  assert(cycle_a.complete && cycle_b.complete);
+
+  // The current per-heap GC imports every registered incoming foreign edge as
+  // a root. This records the known R59 failure while keeping the diagnostic
+  // suite green; the acceptance assertion should become reclaimed==1 once a
+  // coordinated cross-heap trace replaces this behavior.
+  assert(cycle_a.arrays_reclaimed == 0);
+  assert(cycle_b.arrays_reclaimed == 0);
+  assert(context_a.getHeap().getArray(array_a_ref));
+  assert(context_b.getHeap().getArray(array_b_ref));
+
+  array_a->setReferenceEntry(0, jcvm::jref_t{}, context_a);
+  array_b->setReferenceEntry(0, jcvm::jref_t{}, context_b);
+  roots_a.clear();
+  context_a.appendRootReferences(roots_a);
+  roots_b.clear();
+  context_b.appendRootReferences(roots_b);
+  assert(context_a.getHeap().collectUnreachableFrom(roots_a).arrays_reclaimed ==
+         1);
+  assert(context_b.getHeap().collectUnreachableFrom(roots_b).arrays_reclaimed ==
+         1);
+  std::puts("RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2 ");
+}
+
 void verify_same_package_sibling_array_blocks_instance_delete() {
   constexpr jcvm::jpackage_ID_t package_id = 30;
   jcvm::Context package_context(7, package_id);
@@ -1488,6 +1546,7 @@ int main() {
   verify_heap_owner_facades_share_package_roots();
   verify_global_object_array_package_ownership();
   verify_local_array_routes_foreign_references_through_gc();
+  verify_unreachable_foreign_array_cycle_retention_is_reproduced();
   verify_same_package_sibling_array_blocks_instance_delete();
   verify_shareable_object_root_lease();
   verify_shareable_proxy_registry();

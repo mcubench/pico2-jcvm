@@ -9863,3 +9863,10 @@ Check new loader, resolver and bytecode code against these before review.
   The same `./tools/test-vpcd-protocol` then passed all 18 checks, including
   rejecting timeout after a partial frame. Keep the test's errno diagnostic so
   a future failure distinguishes `EPERM` from a transport regression.
+
+## R59: rootless two-heap foreign-array cycle reproduced — 2026-11-11
+
+- **Reproduction:** `verify_unreachable_foreign_array_cycle_retention_is_reproduced` in `tests/unit/rmi_registry/rmi_registry_test.cpp` creates one volatile `Object[]` in each of two package contexts. Each array stores a foreign reference to the other; both arrays are first rooted by package static slots, then both static roots are cleared.
+- **Observed:** `./tools/test-rmi-registry` reports both collections complete but `arrays_reclaimed=0` for each heap; both objects remain resolvable solely through the registered incoming foreign edges. Explicitly clearing both cross-heap entries then lets both arrays be reclaimed. Existing rooted foreign-reference retention, edge overwrite, package cleanup, and slot-reuse assertions still pass.
+- **Cause:** Current per-heap root enumeration treats every registered foreign source-array edge as a root without first checking whether that source array is reachable from a real root. The two incoming edges therefore keep a rootless cycle alive.
+- **Limit / next:** This confirms the static analysis for a two-heap array cycle only. The diagnostic currently asserts the incorrect retained state to keep the suite green; replace it with positive reclamation assertions after implementing coordinated reachability-based foreign-edge tracing. Add rooted chain/diamond, three-heap cycle, collection-order, edge-break, package-delete, owner-collision, and bounded repeated-cycle checks through production Context roots. No firmware build or physical test was performed.

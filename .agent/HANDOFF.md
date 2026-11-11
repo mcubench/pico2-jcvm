@@ -11855,3 +11855,11 @@ ARM empty-card image remains ready at
 The active capability profile and default name are now `baseline`. Its 15 enabled flags exactly match the former `current` profile; `base`, `no_aes`, `symm_crypto`, `asymm_crypto`, and `max_crypto` maps are unchanged. Support unit tests pass 15/15, pinned fixtures verify 81/81, and default plus explicit baseline ARM and RISC-V builds pass with `JAVACARD_SUPPORT:PASS profile=baseline capabilities=162 enabled=15`. The full ARM firmware is `build/arm/pico2_choupi.uf2`; no hardware flash was performed for this profile rename.
 
 The helper refresh request is resolved and the installed helper SHA-256 matches `tools/pico2-pcsc-reader-root` (`c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`). Current refresh grants `/dev/bus/usb/001/045`, and `lsusb` sees a Pico `2e8a:0009`, but `pcsc_scan -r` still lists only Virtual PCD 00 00/01. No physical JCAlgTest operation could start. Next: restore PC/SC publication of a physical Pico, then run option 2 and option 1 on separate identified tokens when possible, retaining per-board result directories and serial telemetry. Continue offline repository work while no physical reader is available.
+
+---
+
+# Current handoff — R59 two-heap foreign-array cycle reproduced — 2026-11-11 12:54 CET
+
+`./tools/test-rmi-registry` now reproduces the R59 root-retention defect. Two volatile `Object[]` arrays in separate package contexts point to each other through foreign references. After removing both package-static roots, both per-heap collections report complete but reclaim zero arrays because the incoming registered edges are counted as roots. Clearing both edges then reclaims one array from each heap. The existing positive foreign-root test still passes.
+
+The regression currently reports `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`; replace this expected-bug assertion with reclamation after implementing coordinated cross-heap reachability. Remaining acceptance includes rooted one-way chains/diamonds, three-heap cycles, collection order, owner collisions, edge breaking, package deletion, repeated-cycle RAM plateau, ARM/RISC-V builds, and physical checks where applicable. No source collector change or firmware build has been made for R59 yet.

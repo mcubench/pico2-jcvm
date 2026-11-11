@@ -2574,7 +2574,7 @@ Extend RV-20261106-28's EC matrix to allocatable versus operational key sizes/do
 
 ## Eleventh pass — foreign-array reachability R59
 
-The report and additional task list now contain 59 matching entries. Existing `./tools/test-rmi-registry` passed normal foreign retention/release coverage; the new unreachable cross-heap cycle case remains unexecuted.
+The report and additional task list now contain 59 matching entries. Existing `./tools/test-rmi-registry` passes normal foreign retention/release coverage. A new two-context rootless-cycle case now reproduces R59: both arrays remain allocated after their only static roots are removed, then reclaim after the foreign edges are broken. The reachability-based fix and two-/three-heap rooted/cyclic acceptance remain open.
 
 - [ ] **RV-20261106-59 — Prevent unreachable foreign-array cycles from becoming permanent GC roots.** P2; owner: PERSIST-01 / CTX-01 / HARD-01. Separate registry edges from reachable roots using a validated cross-heap lifetime strategy. Exercise two/three-heap cycles and diamonds with/without real roots, different collection orders, edge breaking, package deletion and handle reuse. Use production Context enumeration and measure reclaimed/live counts plus bounded repeated-work RAM growth while preserving live foreign references and owner collision isolation. [R59](docs/review_20261106.md#r59--p2-foreign-array-root-routing-can-keep-an-unreachable-cross-heap-cycle-alive)
 

@@ -27373,3 +27373,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: PROFILE-03 acceptance is met offline. Resume the two physical long JCAlgTest options when the Pico reader is published by PC/SC.
 - Commit: `85b14bf8`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; helper output `PCSC:ACCESS_GRANTED count=1 nodes=/dev/bus/usb/001/045`.
+
+## 2026-11-11 Reproduce foreign-array GC cycle retention — 11 min
+
+- Step/experiment: `RV-20261106-59`
+- When: '2026-11-11 12:43 CET' - '2026-11-11 12:54 CET'
+- Model: `GPT-6`
+- Change: Added a two-package RMI/GC diagnostic regression that creates a rootless foreign-array cycle, records its current retention, then breaks the edges and confirms reclamation. Updated the active TODO and QKB with the reproduced result and remaining acceptance.
+- Validation: `./tools/test-rmi-registry` passed and emitted `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`; both arrays were reclaimed after explicitly clearing the cycle edges. Existing foreign-root retention/release assertions passed.
+- Result: Confirms R59's inferred leak for a two-heap array cycle. The diagnostic currently encodes the buggy behavior; no collector fix, three-heap/diamond coverage, architecture build, or hardware validation is included.
+- Decision: Continue with coordinated reachability-based cross-heap tracing; preserve existing rooted foreign references and fail closed on ambiguous package ownership.
+- Commit: `<fill after commit>`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; test output `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`.
