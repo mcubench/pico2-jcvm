@@ -8,6 +8,7 @@ shift
 support_profile=current
 debug_heap_gc=OFF
 debug_persistent_gc=OFF
+enable_object_deletion=OFF
 debug_serial_wait_ms="${PICO2_DEBUG_SERIAL_WAIT_MS:-0}"
 [[ "${debug_serial_wait_ms}" =~ ^(0|[1-9][0-9]*)$ && \
    ${#debug_serial_wait_ms} -le 6 ]] || \
@@ -23,6 +24,11 @@ if [[ "${PICO2_DEBUG_PERSISTENT_GC:-0}" == 1 ]]; then
   debug_persistent_gc=ON
 elif [[ "${PICO2_DEBUG_PERSISTENT_GC:-0}" != 0 ]]; then
   die "PICO2_DEBUG_PERSISTENT_GC must be 0 or 1"
+fi
+if [[ "${PICO2_ENABLE_OBJECT_DELETION:-0}" == 1 ]]; then
+  enable_object_deletion=ON
+elif [[ "${PICO2_ENABLE_OBJECT_DELETION:-0}" != 0 ]]; then
+  die "PICO2_ENABLE_OBJECT_DELETION must be 0 or 1"
 fi
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -113,6 +119,7 @@ cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${cplc_source_id}" \
   -DCHOUPI_DEBUG_HEAP_GC="${debug_heap_gc}" \
   -DCHOUPI_DEBUG_PERSISTENT_GC="${debug_persistent_gc}" \
+  -DCHOUPI_ENABLE_OBJECT_DELETION="${enable_object_deletion}" \
   -DCHOUPI_DEBUG_SERIAL_WAIT_MS="${debug_serial_wait_ms}" \
   -DLOCAL_ARM_NEWLIB_INCLUDE="${arm_newlib_include}" \
   -DLOCAL_ARM_NEWLIB_LIBRARY_DIR="${arm_newlib_dir}" \
@@ -152,11 +159,18 @@ provenance_file="${build_dir}/build-provenance.txt"
   printf 'architecture=%s\nprofile=%s\nserial_wait_ms=%s\ncplc_source_id=%s\n' \
     "${arch}" "${support_profile}" "${debug_serial_wait_ms}" \
     "${cplc_source_id}"
+  printf 'debug_heap_gc=%s\ndebug_persistent_gc=%s\nobject_deletion=%s\n' \
+    "${debug_heap_gc}" "${debug_persistent_gc}" "${enable_object_deletion}"
   if [[ "${arch}" == arm ]]; then
     if (( debug_serial_wait_ms > 0 )); then
       printf 'mode=diagnostic\nimage=%s\n' \
         "pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
       sha256sum "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
+    elif [[ "${enable_object_deletion}" == ON || \
+            "${debug_persistent_gc}" == ON || \
+            "${debug_heap_gc}" == ON ]]; then
+      printf 'mode=diagnostic\nimage=pico2_choupi.uf2\n'
+      sha256sum "${build_dir}/pico2_choupi.uf2"
     else
       printf 'mode=normal\nimage=pico2_choupi.uf2\n'
       sha256sum "${build_dir}/pico2_choupi.uf2"
@@ -171,6 +185,7 @@ if [[ "${arch}" == arm && "${debug_serial_wait_ms}" != 0 ]]; then
   cp "${provenance_file}" \
     "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2.provenance.txt"
 fi
-printf 'BUILD:PROVENANCE path=%s serial_wait_ms=%s mode=%s\n' \
+printf 'BUILD:PROVENANCE path=%s serial_wait_ms=%s mode=%s object_deletion=%s debug_persistent_gc=%s\n' \
   "${provenance_file#${repo_root}/}" "${debug_serial_wait_ms}" \
-  "$([[ "${debug_serial_wait_ms}" == 0 ]] && echo normal || echo diagnostic)"
+  "$([[ "${debug_serial_wait_ms}" == 0 && "${enable_object_deletion}" == OFF && "${debug_persistent_gc}" == OFF && "${debug_heap_gc}" == OFF ]] && echo normal || echo diagnostic)" \
+  "${enable_object_deletion}" "${debug_persistent_gc}"

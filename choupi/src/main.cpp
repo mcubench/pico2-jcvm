@@ -550,11 +550,15 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
 }
 
 void service_object_deletion_request_if_enabled(jcvm::Context &context) {
+#ifdef PC_VERSION
   const char *setting = std::getenv("PICO2_TEST_OBJECT_DELETION");
-  if (setting == nullptr || std::strcmp(setting, "1") != 0 ||
-      !context.isObjectDeletionRequested()) {
+  if (setting == nullptr || std::strcmp(setting, "1") != 0) {
     return;
   }
+#elif !defined(CHOUPI_ENABLE_OBJECT_DELETION)
+  return;
+#endif
+  if (!context.isObjectDeletionRequested()) return;
 
   try {
     PersistentInventoryCounts roots;
@@ -691,7 +695,7 @@ void collect_heap_after_apdu() {
         inventory_reported[owner] = true;
       }
     }
-#ifdef PC_VERSION
+#if defined(PC_VERSION) || defined(CHOUPI_ENABLE_OBJECT_DELETION)
     service_object_deletion_request_if_enabled(context);
 #endif
 

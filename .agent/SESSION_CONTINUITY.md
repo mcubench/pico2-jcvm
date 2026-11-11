@@ -24,6 +24,15 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   before flashing or attributing results, and preserve per-board image,
   outcome, and failure logs. Retry the unavailable board only after access
   returns.
+- For long physical JCAlgTest campaigns, prioritize the interactive client
+  options `2 -> PERFORMANCE TEST` (all JC API methods with 256-byte data,
+  estimated 1–3 hours) and `1 -> All algorithms` (estimated 5–8 hours). These
+  runs exercise periodic `INS_CARD_RESET` / `JCSystem.requestObjectDeletion()`
+  calls. Use a different identified Pico 2 for the second long run when
+  possible, instead of consuming both runs sequentially on one token. If a
+  token becomes unavailable or stalls, continue on another enumerated token;
+  keep separate per-device result folders and serial logs and record the
+  firmware hash and chip ID for each run.
 - Do not invoke compiler binaries directly. Use the repository build wrappers
   once available.
 - Keep `.agent/HANDOFF.md` current with completed work, blockers, and the next

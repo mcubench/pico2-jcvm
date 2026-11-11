@@ -27289,3 +27289,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep firmware object deletion disabled pending physical interruption recovery and full unchanged JCAlgTest acceptance.
 - Commit: `075ae778`.
 - Artifacts/logs: none.
+
+## 2026-11-11 Enable diagnostic JCSystem object deletion and prepare Windows runs 36 minutes
+
+- Step/experiment: `RESOURCE-01-OPT-IN-JCSYSTEM-DELETION-20261111`
+- When: '2026-11-11 10:55 CET' - '2026-11-11 11:31 CET'
+- Model: `gpt-6`
+- Change: Added the `PICO2_ENABLE_OBJECT_DELETION=1` diagnostic build option. In that opt-in firmware, `isObjectDeletionSupported()` reports true, `requestObjectDeletion()` records a request, and the existing persistent reclaimer services it after the APDU unwinds. Default builds remain disabled. Fixed build provenance to report diagnostic mode and deletion flag. Prepared an empty-card Windows package containing the diagnostic max_crypto ARM UF2, unchanged pinned JCAlgTest 1.8.4/jc305 CAP and client, GPPro, instructions, hashes, and bounded-blocking PowerShell serial capture. Added the requested two-token long-run guidance to session continuity and replaced the completed PC/SC-helper request with the Windows test request.
+- Validation: Diagnostic `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and `... riscv ...` passed. Default ARM/RISC-V max_crypto builds passed with deletion off. `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed 7/7 APDU checks and reclaimed 10 tags after clearing the live root (`artifacts/logs/object-deletion-vpcd-20261111T100902Z.log`). Persistent transaction/inventory suites passed with `TEST:SUMMARY fail=0`; fixture verification passed for all 81 files. Package SHA256SUMS and ZIP integrity passed; ZIP SHA-256 `c927f5bf88b7d40ed09ed29abe661565c3ca23957dc123e2edc72ff0ce860610`. Installed PC/SC helper matches repository SHA-256 `c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`; authorized helper granted two nodes. `lsusb` confirmed two JCVM CCID descriptors, but `pcsc_scan -r` enumerated only the two VPCD readers. No physical APDUs or flash operation were performed. PowerShell is unavailable in this VM, so the capture script was inspected but not executed here.
+- Result: The diagnostic image can exercise the actual `INS_CARD_RESET` request path when the supplied client calls `requestObjectDeletion()`. Windows long-run validation and physical interruption safety remain outstanding; this option is not enabled in default firmware.
+- Decision: Use separate identified physical tokens for the 1–3-hour performance and 5–8-hour all-algorithms client runs when available. Do not enable object deletion in normal builds until long-run and physical power-loss acceptance pass.
+- Commit: pending.
+- Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-windows.zip`; `build/external-test/object-deletion-windows/SHA256SUMS.txt`; package README `docs/windows-jcalgtest-object-deletion.md`; VPCD log above.

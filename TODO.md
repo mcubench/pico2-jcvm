@@ -183,6 +183,13 @@ Archive text is historical evidence, not current device state or priorities.
   VPCD checks), reclaiming 10 applet-owned records per cycle. This increases
   key-material pressure coverage but remains one PC VPCD context and does not
   establish production or physical recovery.
+  A compile-time diagnostic switch, `PICO2_ENABLE_OBJECT_DELETION=1`, now
+  enables `isObjectDeletionSupported()` and deferred post-APDU servicing on
+  the Pico. ARM/RISC-V max_crypto builds and the existing request-gated VPCD
+  live-root regression pass. A Windows package with the unchanged upstream
+  JCAlgTest 1.8.4 CAP/client is ready to test the `INS_CARD_RESET` request path;
+  external run results, physical interruption recovery, and long-run acceptance
+  remain open. Normal builds keep object deletion disabled.
   On 2026-11-09, a failure-injection unit case confirmed that a failed
   persistent `short` field write leaves the cached value and durable record
   canonical through rollback. This closes a setter-specific test gap only; it

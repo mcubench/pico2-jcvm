@@ -17,6 +17,8 @@ set(PICO_CXX_ENABLE_EXCEPTIONS 1 CACHE BOOL "Enable C++ exceptions for CHOUPI")
 option(CHOUPI_DEBUG_HEAP_GC "Emit periodic CHOUPI heap GC summaries" OFF)
 option(CHOUPI_DEBUG_PERSISTENT_GC
   "Exercise experimental persistent tag reclamation after each applet APDU" OFF)
+option(CHOUPI_ENABLE_OBJECT_DELETION
+  "Enable diagnostic JCSystem object-deletion requests on the Pico" OFF)
 option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
 option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING
@@ -167,6 +169,10 @@ if(CHOUPI_VM_SOURCES)
     -Wno-unused-parameter
     -Wno-array-bounds
     -Wno-format)
+  if(CHOUPI_ENABLE_OBJECT_DELETION)
+    target_compile_definitions(choupi_vm_core PRIVATE
+      CHOUPI_ENABLE_OBJECT_DELETION=1)
+  endif()
   set_target_properties(choupi_vm_core PROPERTIES CXX_STANDARD 17)
 endif()
 
@@ -306,6 +312,10 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(CHOUPI_DEBUG_PERSISTENT_GC)
     target_compile_definitions(pico2_choupi PRIVATE
       CHOUPI_DEBUG_PERSISTENT_GC=1)
+  endif()
+  if(CHOUPI_ENABLE_OBJECT_DELETION)
+    target_compile_definitions(pico2_choupi PRIVATE
+      CHOUPI_ENABLE_OBJECT_DELETION=1)
   endif()
   if(CHOUPI_DEBUG_HEAP_GC_TRACE)
     target_compile_definitions(choupi_vm_core PRIVATE

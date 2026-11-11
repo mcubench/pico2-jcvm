@@ -1883,6 +1883,9 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_getCurrentAppletInstance() {
 
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isObjectDeletionSupported() {
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
+  return TRUE;
+#endif
 #ifdef PC_VERSION
   const char *test_setting = std::getenv("PICO2_TEST_OBJECT_DELETION");
   if (test_setting != nullptr && std::strcmp(test_setting, "1") == 0) {
@@ -1893,6 +1896,10 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_isObjectDeletionSupported() {
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_requestObjectDeletion() {
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
+  Context::getActiveContext().requestObjectDeletion();
+  return;
+#endif
 #ifdef PC_VERSION
   const char *test_setting = std::getenv("PICO2_TEST_OBJECT_DELETION");
   if (test_setting != nullptr && std::strcmp(test_setting, "1") == 0) {

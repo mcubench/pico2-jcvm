@@ -112,21 +112,20 @@ Please return the Windows version, exact reader name/ATR, before/after GPPro
 listings, JCAlgTest CSV, and comparator output. The CAP remains the unchanged
 pinned upstream fixture; do not modify it.
 
-## Refresh the Pico-only PC/SC helper for physical deletion validation
+## Test JCSystem object deletion on Windows
 
-The checked-in physical test guard found that `/usr/local/sbin/pico2-pcsc-reader`
-is an older, broader helper than `tools/pico2-pcsc-reader-root`. It filters by
-USB VID/PID only and does not verify the JCVM manufacturer/product strings.
-Because of that mismatch, `tools/test-persistent-reclaimer-physical` stopped
-before installation or APDUs. Please run once from the repository root:
+Please run the diagnostic package at
+`build/external-test/pico2-jcvm-object-deletion-windows.zip` using the steps in
+its `README.md`. The image is built with `PICO2_ENABLE_OBJECT_DELETION=1` and
+is intentionally diagnostic; it exercises the unchanged upstream JCAlgTest
+1.8.4 / jc305 `INS_CARD_RESET` request path. Capture the Pico CDC serial stream
+with the included PowerShell script while running the interactive client
+option `2 -> PERFORMANCE TEST` (1–3 hours) on one physical Pico and
+`1 -> All algorithms` (5–8 hours) on a different physical Pico when possible.
+Install the unchanged CAP on both tokens and keep their result folders, reader
+names, chip IDs, and serial logs separate.
 
-```sh
-sudo ./tools/install-pcsc-sudoers
-```
-
-Then reply when it finishes. The agent will verify `cmp -s
-tools/pico2-pcsc-reader-root /usr/local/sbin/pico2-pcsc-reader`, refresh the
-authorized USB ACL, and run a bounded physical reclaimer probe on reader
-`Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`. This is required to
-continue physical flash-erasure validation; no test APDUs were sent during the
-failed attempt.
+Return the full result folders and `object-deletion-serial.log`, including
+partial output if the client or reader stops responding. In particular,
+preserve `OBJECT_DELETION:` lines, any `6F00`/`F205`, and PC/SC service errors.
+Do not use this image for production; normal builds still keep deletion off.

@@ -1,3 +1,38 @@
+# Current handoff — opt-in JCSystem deletion image packaged for Windows — 2026-11-11 11:31 CET
+
+`PICO2_ENABLE_OBJECT_DELETION=1` is an explicit diagnostic-only build switch.
+It makes `JCSystem.isObjectDeletionSupported()` true, records
+`requestObjectDeletion()`, and invokes the existing reclaimer after the APDU
+returns with the Java stack empty. Default builds remain
+`object_deletion=OFF`.
+
+The max_crypto ARM diagnostic build and RISC-V shared-code gate pass with the
+option on; fresh default ARM/RISC-V passes also pass with it off. The existing
+VPCD `rsa-live-static` test passed 7/7 APDUs and reclaimed 10 tags only after
+the live root was cleared. The unchanged 1.8.4 CAP/client fixtures verify
+against the manifest. Windows test bundle:
+`build/external-test/pico2-jcvm-object-deletion-windows.zip`, SHA-256
+`c927f5bf88b7d40ed09ed29abe661565c3ca23957dc123e2edc72ff0ce860610`. The
+diagnostic empty-card UF2 and fixture hashes are in its `SHA256SUMS.txt`;
+commands and the bounded-wait serial capture tool are documented in the
+package README and `docs/windows-jcalgtest-object-deletion.md`.
+
+The installed Pico-only helper now matches the repository copy and grants
+access. `lsusb` sees two `Pico2 JCVM CCID` devices with CDC/CCID interfaces,
+but `pcsc_scan -r` sees only the VPCD emulators; no physical card APDUs could
+be sent. The helper-refresh request was removed from `.agent/EXT_REQUESTS.md`;
+the Windows JCAlgTest test is now requested there. User guidance for the long
+client options and using a different physical token for the second multi-hour
+run is recorded in `.agent/SESSION_CONTINUITY.md`.
+
+Next: run the interactive JCAlgTest options `2 -> PERFORMANCE TEST` and
+`1 -> All algorithms` on separate available physical Pico 2 tokens if
+possible, capturing CDC
+`OBJECT_DELETION:` telemetry and per-device results. Keep default/release
+deletion disabled until long-run and physical interruption acceptance passes.
+
+---
+
 # Current handoff — peer proxy and RMI roots verified through reclaim — 2026-11-11 10:50 CET
 
 `tests/unit/persistent_transaction/persistent_transaction_test.cpp` now proves that a real `PersistentReclaimer` pass preserves a persistent server object referenced only by a retained peer shareable proxy, plus a second persistent object rooted through the target context's exported RMI registry. It erases the third, unrooted object and cleans up its fixture records. `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`.

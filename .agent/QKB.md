@@ -1,3 +1,23 @@
+# JCSystem request-object-deletion path can be exercised in a diagnostic Pico build — 2026-11-11
+
+- **Symptom:** JCAlgTest's `INS_CARD_RESET` invokes
+  `JCSystem.requestObjectDeletion()`, but normal Pico firmware reports
+  `isObjectDeletionSupported() == false` and throws `ILLEGAL_USE` for the
+  request. This prevents testing the request-gated reclaimer on hardware.
+- **Diagnostic enablement:** Build with
+  `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto`.
+  The image reports deletion supported, records the request, and services it
+  after the APDU has unwound and the Java stack is empty. The default remains
+  disabled; this does not bypass the PERSIST-01 production safety gates.
+- **Validation:** ARM/RISC-V diagnostic builds pass. The host VPCD
+  `rsa-live-static` object-deletion regression passed 7/7 APDU checks and
+  preserved a live static root before reclaiming 10 records. The external
+  Windows test package is `build/external-test/pico2-jcvm-object-deletion-windows.zip`.
+- **Limit:** No physical card APDUs were run in this check; the PC/SC scan
+  showed only `Virtual PCD 00 00` and `Virtual PCD 00 01`. Wait for the Windows
+  report and physical flash-interruption results before enabling deletion in
+  default firmware.
+
 # 2026-11-10 RSA-CRT signature modulus may be absent
 
 - **Symptom:** `Signature.sign()` on a generated RSA CRT private key threw
@@ -9730,7 +9750,7 @@ Check new loader, resolver and bytecode code against these before review.
 - **Limit:** This does not establish all persistent aliases or every RMI/in-flight root, and it does not turn on deletion in Pico firmware. Physical flash interruption and unchanged long JCAlgTest acceptance remain open. The VPCD case is a distinct PC-only regression.
 - **Next:** Add reclaimer-level tests with durable cross-package roots and RMI/shareable roots, then verify interrupted erase/restart semantics on physical storage before changing `isObjectDeletionSupported()`.
 
-## Physical reclaimer probe blocked by stale installed helper — 2026-11-11
+## Physical reclaimer probe: helper refreshed, no reader enumerated — 2026-11-11
 
 - **Observed:** The authorized helper reported two Pico USB nodes, and
   `pcsc_scan -r` initially listed the identified reader
@@ -9739,15 +9759,18 @@ Check new loader, resolver and bytecode code against these before review.
   installed `/usr/local/sbin/pico2-pcsc-reader` with the repository helper and
   found a mismatch. The installed file filters only USB VID/PID; the checked-in
   helper also checks `Pico2` / `Pico2 JCVM CCID` descriptor strings.
-- **Resolution:** External action request added to `.agent/EXT_REQUESTS.md`:
-  run `sudo ./tools/install-pcsc-sudoers` from the repository root. Then rerun
-  the exact-byte comparison, refresh ACLs with the authorized helper, and retry
-  the bounded physical probe. Do not bypass the wrapper's helper check.
-- **Test impact:** No GPPro install or probe APDU was sent during the blocked
-  attempt. The board was restored to the normal ARM image and its finite serial
-  monitor reported `TEST:SUMMARY pass=1 fail=0`. PC VPCD live-static-root
-  deletion passed 7/7 APDUs; host RP2350 overlay power-cut model passed 1,000
-  reclamation cut points. Neither substitutes for physical flash interruption.
+- **Resolution:** On 2026-11-11, the installed helper matched the repository
+  helper byte-for-byte (both SHA-256
+  `c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`). The
+  authorized `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` command completed and granted access to two
+  USB nodes.
+- **Test impact:** `lsusb` identified both nodes as `Pico2 JCVM CCID` with the
+  expected composite CDC and CCID interfaces, but a subsequent `pcsc_scan -r`
+  listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`. No physical Pico
+  reader was available, so no physical APDUs were sent. The helper-refresh
+  request is complete. Continue physical erase testing when a Pico reader
+  enumerates; do not bypass the helper-integrity guard.
 
 ## Peer proxy and RMI roots survive the destructive reclaimer — 2026-11-11
 
