@@ -27323,5 +27323,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Authorized Pico PC/SC helper succeeded and granted two nodes. Both `lsusb` and PC/SC permission inspection succeeded; `pcscd.service` was active and both nodes had `pcscd:rw` ACLs. `pcsc_scan -r` and bounded Java SmartcardIO enumeration returned only `Virtual PCD 00 00` and `Virtual PCD 00 01`. Physical JCAlgTest runs were not started because neither Pico was registered as a PC/SC reader; no physical APDU was sent.
 - Result: Two Pico USB devices are connected, but PC/SC does not expose either physical CCID interface. No performance or all-algorithms outcome was measured.
 - Decision: Resume the 1–3-hour option 2 run and 5–8-hour option 1 run on distinct identified tokens once they appear in PC/SC; preserve per-token logs/results and fail over if a board disappears or stalls.
-- Commit: pending
+- Commit: `6330ede7`
 - Artifacts/logs: `artifacts/logs/jcalgtest-longrun-reader-check-20261111T1150CET.log` (ignored by `.gitignore`, retained locally).
