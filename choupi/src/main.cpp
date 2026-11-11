@@ -312,6 +312,7 @@ bool enumerate_selected_applet_roots(
   return applet_root;
 }
 
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
 struct PhysicalObjectDeletionRoots {
   std::vector<jcvm::jref_t> references;
   unsigned static_roots = 0;
@@ -419,6 +420,7 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
               complete ? 0u : 1u);
   if (complete) context.clearObjectDeletionRequest();
 }
+#endif
 
 #ifdef CHOUPI_DEBUG_HEAP_GC
 struct PhysicalPersistentTagCount {

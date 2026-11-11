@@ -27742,3 +27742,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the combined two-field value to identify builds and retain the release date semantics. Resume outstanding RESOURCE-01 acceptance separately.
 - Commit: `1960e04e` (CPLC implementation); this record and the updated handoff are committed immediately afterward.
 - Artifacts/logs: ARM UF2 SHA-256 `62100d71267fd7d030a2b26cdced2f83919de68a7f89b1cd01fa64c96c7fdccc`, 2,000,384 bytes; RISC-V smoke UF2 SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`, 79,872 bytes. Cycle logs `artifacts/logs/cycle-choupi-20261111T200306Z.log`, `...T200544Z.log`, `...T200646Z.log`; per-chip CPLC probe logs `artifacts/logs/cplc-commit-prefix-<chipid>-20261111.log` (local ignored artifacts).
+
+## 2026-11-11 Guard physical deletion service when disabled 11 min
+
+- Step/experiment: `FLASH-BUILD-GATE-GUARD-01`
+- When: '2026-11-11 20:29 UTC' - '2026-11-11 20:40 UTC'
+- Model: `GPT-6`
+- Change: Wrapped the Pico-only physical object-deletion root helpers and service in `CHOUPI_ENABLE_OBJECT_DELETION`, fixing the normal firmware build where the service was compiled but unused with `-Werror`.
+- Validation: `./tools/build arm` passed and produced the full CHOUPI ARM image (`firmware_end=0x100d8fec`, 159,764 bytes remaining). `./tools/build riscv` passed and produced the RISC-V core smoke image (`0x10009a78`). The initial ARM build before the guard failed on `-Werror=unused-function`; no hardware operation was attempted during that failed build.
+- Result: Both repository architecture wrappers pass for the baseline profile. The requested `max_crypto` build and physical flash are still pending.
+- Decision: Commit this isolated compile fix, then build `max_crypto` for both architectures and try the identified boards through `tools/cycle`.
+- Commit: recorded with the associated source change in this commit.
+- Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`; RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`; build outputs were captured in the command session.
