@@ -12444,3 +12444,27 @@ heap, runs the next heap collection, and verifies the array remains reachable
 and readable. The focused persistent transaction suite passes with
 `TEST:SUMMARY fail=0`. The physical failure and candidate deletion tag remain
 unidentified. Commit: `6c0a69b6`. No board was available in PC/SC or BOOTSEL at the last check.
+
+# Current handoff — max_crypto CPLC build and device flash attempt — 2026-11-11 23:35 UTC
+
+Rebuilt ARM and RISC-V with `max_crypto`; both repository wrappers passed. ARM
+firmware image is `build/arm/pico2_choupi.uf2`, SHA-256
+`fc786e5c942f82872bd5fb6d8397b3b02699f02ba4378287bab37d2f5daaef07`. Build
+provenance reports normal firmware-only mode (persistent storage preserved),
+object deletion off, and CPLC source ID `0x85885B4EEE2AF66E`, encoding HEAD
+`85885b4eee2af66e` across the personalization and pre-personalization
+equipment ID fields.
+
+The user reported three boards in BOOTSEL. This VM instead enumerated USB paths
+`1-3`, `1-4`, and `1-5` as `2e8a:0009` runtime devices. The approved flash
+wrapper was attempted on each path. Every attempt failed before any flash
+write: picotool reported no BOOTSEL device and no reset interface; bounded
+CDC/reset recovery did not yield `2e8a:000f`. No board was flashed, and there
+is no physical firmware validation from this attempt. Likely remaining issue
+is host/VM USB passthrough state, not evidence of a board firmware failure.
+
+Next: once host access enumerates any of the three as RP2350 BOOTSEL
+(`2e8a:000f`), flash the ARM firmware-only image (preserve storage), then
+capture finite serial output and verify CPLC equipment IDs with GPPro. Do not
+claim a successful board update until both are observed. The working tree
+contains unrelated pre-existing changes; keep them unstaged.

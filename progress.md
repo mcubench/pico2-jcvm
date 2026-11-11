@@ -27839,3 +27839,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open; this does not identify candidate tags from the physical failure.
 - Commit: `6c0a69b6`
 - Artifacts/logs: focused output from `./tools/test-persistent-transaction`.
+
+## 2026-11-12 Rebuild max_crypto and attempt three-board flash 16 min
+
+- Step/experiment: `CPLC-COMMIT-ID-PHYSICAL-20261112`
+- When: '2026-11-11 23:20 UTC' - '2026-11-11 23:36 UTC'
+- Model: `GPT-6`
+- Change: Rebuilt the current `max_crypto` ARM firmware and RISC-V VM core so CPLC embeds HEAD prefix `85885b4eee2af66e`, split across `ICPersonalizationEquipmentID=85885b4e` and `ICPrePersonalizationEquipmentID=ee2af66e`.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. USB enumeration and all flash attempts used the required escalated host-access path. `./tools/flash --usb-path 1-3|1-4|1-5 build/arm/pico2_choupi.uf2` failed before writing: all devices enumerated as runtime `2e8a:0009`, picotool found no BOOTSEL device/reset interface, and bounded recovery did not produce BOOTSEL `2e8a:000f`.
+- Result: ARM image SHA-256 `fc786e5c942f82872bd5fb6d8397b3b02699f02ba4378287bab37d2f5daaef07`; normal firmware-only image preserves persistent card data. No board was flashed, so CPLC was not yet confirmed on physical hardware.
+- Decision: The user's BOOTSEL report and this VM's USB state disagree. Resume once host passthrough exposes a board as BOOTSEL; then flash, inspect finite serial output, and query CPLC.
+- Commit: recorded in the following documentation commit.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`; USB diagnostics from `lsusb`, `./tools/doctor`, and per-path `./tools/flash` attempts.
