@@ -41,6 +41,42 @@ public final class JCSystemTransactionPhysicalProbe {
         new CommandAPDU(0x80, 0x00, p1, 0x00, new byte[0], 256));
   }
 
+  private static void benchmarkPersistentArray(CardChannel channel)
+      throws Exception {
+    int[] expected = {64, 128, 192};
+    for (int round = 0; round < expected.length; round++) {
+      long started = System.nanoTime();
+      byte[] result = probe(channel, 99);
+      long elapsedNanos = System.nanoTime() - started;
+      if (result.length != 2 || result[0] != 0 ||
+          (result[1] & 0xff) != expected[round]) {
+        throw new IllegalStateException("persistent array benchmark result=" +
+            hex(result) + " round=" + round);
+      }
+      System.out.printf("BENCHMARK:PERSISTENT_ARRAY_ACCESS round=%d " +
+          "iterations=192 elapsed_us=%d%n", round + 1,
+          elapsedNanos / 1000);
+    }
+    System.out.println("TEST:PASS persistent_array_access_benchmark");
+  }
+
+  private static void benchmarkPersistentArrayLength(CardChannel channel)
+      throws Exception {
+    for (int round = 0; round < 3; round++) {
+      long started = System.nanoTime();
+      byte[] result = probe(channel, 101);
+      long elapsedNanos = System.nanoTime() - started;
+      if (result.length != 2 || result[0] != 0 || result[1] != 0) {
+        throw new IllegalStateException("persistent array length benchmark=" +
+            hex(result));
+      }
+      System.out.printf("BENCHMARK:PERSISTENT_ARRAY_LENGTH round=%d " +
+          "iterations=1024 elapsed_us=%d%n", round + 1,
+          elapsedNanos / 1000);
+    }
+    System.out.println("TEST:PASS persistent_array_length_benchmark");
+  }
+
   private static void expectByte(CardChannel channel, int p1, int expected,
                                  String description) throws Exception {
     byte[] data = probe(channel, p1);
@@ -181,6 +217,8 @@ public final class JCSystemTransactionPhysicalProbe {
           "TEST:PASS Util.arrayCopyNonAtomic survives later atomic rollback");
       expectTransactionArrayLength(channel,
           "large persistent array length is readable");
+      benchmarkPersistentArray(channel);
+      benchmarkPersistentArrayLength(channel);
 
       byte[] overflow = probe(channel, 83);
       if (overflow.length != 2 || (overflow[0] & 0xff) != 3 ||
@@ -224,7 +262,7 @@ public final class JCSystemTransactionPhysicalProbe {
           "global array reference is rejected from static fields");
       expectByte(channel, 40, 0x01,
           "global array reference is rejected from array components");
-      System.out.println("TEST:SUMMARY pass=17 fail=0");
+      System.out.println("TEST:SUMMARY pass=18 fail=0");
     } finally {
       card.disconnect(false);
     }

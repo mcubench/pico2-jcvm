@@ -243,14 +243,21 @@ its own logical step with a before/after measurement recorded in
   Pico 2 boards; each passed the finite runtime monitor and all 17 transaction
   checks. `Util` API validation passed 19/19; symmetric and asymmetric VPCD
   suites passed 102/102 and 107/107. ARM/RISC-V builds passed.
-- [ ] **PERF-20261110-04 — Cache persistent array metadata.** P2; owner:
+- [x] **PERF-20261110-04 — Cache persistent array metadata.** P2; owner:
   PERSIST-01. Cache type/length/tag validity on the heap-resident `JC_Array`,
   keyed by `persistentWriteRollbackGeneration()`, instead of re-reading the
   length bytes from flash on every `size()` and `checkArrayEntryIndex`. The
   existing rollback/recovery behaviour (`recoverMissingPersistentBody`)
   must remain correct. Acceptance: rollback/restore regressions pass, plus
   a before/after `baload`/`bastore` loop timing on a persistent array (VPCD and
-  physical).
+  physical). Completed 2026-11-11: unit instrumentation confirms repeated
+  metadata reads drop from 256 filesystem reads to 1 for 128 `size()` calls;
+  rollback/tag invalidation tests and physical transaction acceptance pass.
+  Physical timing on chip `2BED26ED20556535` did not show an improvement:
+  1,024 `arraylength` iterations took 4.799–4.845 s with the cache versus
+  4.598–4.607 s without it; mixed read/write timing was 1.559–1.596 s cached
+  versus 1.553–1.593 s uncached. Treat reduced FS calls as established, but do
+  not claim a user-visible latency gain.
 - [ ] **PERF-20261110-05 — Constant-time heap handle lookup.** P2; owner:
   HARD-01. `Heap::SharedStorage` uses `List` (`std::list`) whose `at()` walks
   from the head on every `getArray`/`getInstance`; `addArray`/`addInstance`

@@ -1,3 +1,29 @@
+# Current handoff — PERF-04 metadata cache validated; PERF-05 next — 2026-11-11 06:36 CET
+
+PERF-20261110-04 is implemented and checked off. `JC_Array::size()` now caches
+validated persistent array type/length/tag metadata on the heap-resident array,
+keyed by rollback generation; tag replacement and rollback/recovery force a
+reload. The unit harness measured one filesystem read across 128 repeated
+`size()` calls (256 before caching). Persistent transaction tests, JC_Array
+tests, ARM and RISC-V builds passed. On physical Pico 2 `2BED26ED20556535`, the
+complete transaction probe passed 18/18 and persistent state survived its CCID
+power cycle. The cache-enabled firmware was flashed and its finite monitor
+reported `TEST:SUMMARY pass=1 fail=0`.
+
+Physical timings do **not** show a speedup. For 1,024 `arraylength` loop
+iterations, cached runs were 4,819,218, 4,845,004, and 4,799,377 us; previous
+uncached runs were 4,607,277, 4,599,520, and 4,597,986 us. Mixed 192-iteration
+read/write runs were 1,595,682, 1,558,585, and 1,586,550 us cached versus
+1,586,495, 1,552,671, and 1,592,631 us uncached. Keep the result scoped to
+filesystem-call reduction; do not claim a user-visible performance gain.
+
+Physical test log: `artifacts/logs/jcsystem-transaction-physical-20261111T053419Z.log`.
+The test package was removed successfully. The two attached boards are
+currently in runtime mode despite the initial BOOTSEL report; this was
+confirmed by USB enumeration. One extra reader `D92E743D5F640C0F` remains
+untouched. Continue with PERF-20261110-05, indexed heap handle lookup, after
+reviewing current source and worktree diffs. Preserve unrelated dirty changes.
+
 # Current handoff — PERF-20261110-03 persistent array ranges complete — 2026-11-10 23:00 CET
 
 PERF-20261110-03 is implemented. Persistent primitive arrays now use validated

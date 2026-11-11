@@ -9617,3 +9617,20 @@ Check new loader, resolver and bytecode code against these before review.
   `todo.md`, the corresponding `progress.md` record, and logs named
   `jcsystem-transaction-physical-20261110T214435Z.log` and
   `jcsystem-transaction-physical-20261110T214559Z.log`.
+
+## Persistent array metadata cache latency (2026-11-11)
+
+- **Finding:** Caching validated persistent array type/length/tag metadata on
+  the heap-resident `JC_Array`, keyed by rollback generation, reduces the
+  unit-harness filesystem reads for 128 repeated `size()` calls from 256 to 1.
+  Tag replacement and transaction rollback must invalidate/reload the cache;
+  both paths are covered by the persistent transaction unit tests.
+- **Physical result:** On Pico 2 `2BED26ED20556535`, cached 1,024-iteration
+  `arraylength` probes took 4.799–4.845 s, compared with 4.598–4.607 s before
+  the cache. The mixed 192-iteration persistent read/write probe measured
+  1.559–1.596 s cached versus 1.553–1.593 s uncached. These results establish
+  no physical speedup; interpreter/APDU workload dominates or masks the saved
+  FS reads. Do not cite FS-call reduction alone as an elapsed-time gain.
+- **Validation:** ARM and RISC-V builds passed; physical transaction probe
+  passed 18/18, persistence survived a CCID power cycle, and wrapper cleanup
+  succeeded. See `todo.md` PERF-04 and `progress.md` for exact values/log.

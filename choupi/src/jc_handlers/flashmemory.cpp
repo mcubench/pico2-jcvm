@@ -1039,6 +1039,30 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
   return std::make_pair(data_length, data);
 }
 
+uint16_t FlashMemory_Handler::readPersistentArrayLength(
+    const fs::Tag &tag, const FieldType expected_type,
+    const uint16_t element_width, const uint16_t expected_reference_type) {
+  const auto [record_length, record] = getDataInPlaceFromTag(tag);
+  if (record == nullptr || record_length < 3 ||
+      record[0] != static_cast<uint8_t>(expected_type)) {
+    throw Exceptions::SecurityException;
+  }
+  const uint16_t array_length = BYTES_TO_SHORT(record[1], record[2]);
+  if (expected_type == FieldType::FIELD_TYPE_ARRAY_OBJECT) {
+    if (element_width != 0 || record_length != 5 ||
+        BYTES_TO_SHORT(record[3], record[4]) != expected_reference_type) {
+      throw Exceptions::SecurityException;
+    }
+  } else {
+    const uint32_t expected_length =
+        3u + static_cast<uint32_t>(array_length) * element_width;
+    if (element_width == 0 || record_length != expected_length) {
+      throw Exceptions::SecurityException;
+    }
+  }
+  return array_length;
+}
+
 /*
  * Write data from tag
  *

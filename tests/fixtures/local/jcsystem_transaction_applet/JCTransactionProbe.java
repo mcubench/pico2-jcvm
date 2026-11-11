@@ -1105,6 +1105,29 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 99: {
+        byte checksum = 0;
+        for (short i = 0; i < 128; i++) {
+          checksum ^= transactionCapacityArray[1];
+        }
+        for (short i = 0; i < 64; i++) {
+          transactionCapacityArray[1]++;
+        }
+        buffer[0] = checksum;
+        buffer[1] = transactionCapacityArray[1];
+        length = 2;
+        break;
+      }
+      case 101: {
+        short checksum = 0;
+        for (short i = 0; i < 1024; i++) {
+          checksum ^= transactionCapacityArray.length;
+        }
+        buffer[0] = (byte)(checksum >> 8);
+        buffer[1] = (byte)checksum;
+        length = 2;
+        break;
+      }
       case 90: {
         transactionSmallArray[0] = 0x11;
         transactionSmallArray[1] = 0x12;

@@ -27045,7 +27045,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Inspected `tools/pico2-pcsc-reader-root` and confirmed it invokes `systemctl restart pcscd.service`. The first client terminated with `SCARD_F_COMM_ERROR` at RSA KeyPair 1024 immediately after that helper was run; a clean rerun is active without further PC/SC service changes, at 188 report rows as of 15:05 CET.
 - Result: The first run is an environment-interrupted partial run (261 rows), not a firmware failure. The clean rerun has complete inventory samples with zero invalid references, edge failures, or root failures; no final RESOURCE-01 conclusion yet.
 - Decision: Keep PC/SC untouched until the clean VPCD run completes; then summarize its storage/failure outcome and continue physical validation only if a real reader is registered.
-- Commit: Pending.
+- Commit: resolve with `git log --grep="Validate persistent array metadata cache on Pico 2"`.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261110T132850Z/` (interrupted); `artifacts/results/jcalgtest-support-vpcd-20261110T135820Z/` (active rerun).
 ## 2026-11-10 Record RESOURCE-01 VPCD rerun and refresh priorities 4 minutes
 
@@ -27126,3 +27126,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: PERF-03 acceptance is met; proceed to PERF-20261110-04, metadata caching.
 - Commit: resolve with `git log --grep="Batch persistent primitive array ranges"`.
 - Artifacts/logs: physical transaction logs `artifacts/logs/jcsystem-transaction-physical-20261110T214435Z.log` and `artifacts/logs/jcsystem-transaction-physical-20261110T214559Z.log`; VPCD transaction log `artifacts/logs/perf03-nonatomic-range-vpcd-20261110.log`; symmetric VPCD log `artifacts/logs/symm-crypto-kat-vpcd-20261110T215047Z.log`; asymmetric VPCD log `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
+
+## 2026-11-11 Validate persistent array metadata cache on Pico 2 14 minutes
+
+- Step/experiment: `PERF-20261110-04`
+- When: '2026-11-11 06:22 CET' - '2026-11-11 06:36 CET'
+- Model: `gpt-6`
+- Change: Completed and reviewed the persistent-array metadata cache keyed by rollback generation, array type, field type, and serialized tag. Added validated metadata-header reads and physical read/write plus arraylength timing probes. Updated `todo.md`, `.agent/QKB.md`, and the current handoff with the measured outcome.
+- Validation: `./tools/test-persistent-transaction` and `./tools/test-jcarray` passed; `./tools/build arm` and `./tools/build riscv` passed. Flashed `build/arm/pico2_choupi.uf2` to Pico 2 `2BED26ED20556535` through the authorized host-access wrapper; finite monitor reported `TEST:SUMMARY pass=1 fail=0`. Physical transaction probe passed 18/18, including persistence after CCID power cycle; test package cleanup passed. Builds retain existing compiler warnings.
+- Result: Unit FS-call instrumentation fell from 256 reads to 1 across 128 cached `size()` calls. Physical 1,024-iteration `arraylength` timing was 4.799–4.845 s cached versus 4.598–4.607 s uncached; mixed 192-iteration read/write timing was 1.559–1.596 s cached versus 1.553–1.593 s uncached. No physical latency improvement was observed. Initial flash recovery needed the wrapper's 1200-baud BOOTSEL path; a stale transaction test package was removed and the final test cleanup succeeded.
+- Decision: Mark PERF-04 complete for cache correctness and FS-call reduction, but do not claim a user-visible latency gain. Continue to PERF-05 and verify the board pool state before further flashing.
+- Commit: Pending.
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-physical-20261111T053419Z.log`; pre-cache comparison logs `artifacts/logs/jcsystem-transaction-physical-20261111T050827Z.log` and `artifacts/logs/jcsystem-transaction-physical-20261111T051133Z.log`.

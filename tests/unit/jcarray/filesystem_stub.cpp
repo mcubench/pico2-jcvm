@@ -190,6 +190,11 @@ void FlashMemory_Handler::writePersistentArrayRange(
     const fs::Tag &, FieldType, uint16_t, uint16_t, uint16_t, uint8_t,
     const uint8_t *, bool) {}
 
+uint16_t FlashMemory_Handler::readPersistentArrayLength(
+    const fs::Tag &, FieldType, uint16_t, uint16_t) {
+  throw Exceptions::IOException;
+}
+
 FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &) {
   return FieldType::FIELD_TYPE_UNINITIALIZED;
 }

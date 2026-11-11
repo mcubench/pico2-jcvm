@@ -73,6 +73,14 @@ private:
   bool has_live_data_for_recovery = true;
   mutable uint32_t persistent_rollback_generation = 0;
   mutable bool recovering_after_rollback = false;
+  mutable bool persistent_metadata_valid = false;
+  mutable uint32_t persistent_metadata_generation = 0;
+  mutable jc_array_type persistent_metadata_array_type =
+      jc_array_type::JAVA_ARRAY_T_BYTE;
+  mutable FieldType persistent_metadata_field_type =
+      FieldType::FIELD_TYPE_UNINITIALIZED;
+  mutable uint16_t persistent_metadata_length = 0;
+  mutable fs::Tag persistent_metadata_tag{};
   /// When to clear data
   ClearEvent clear;
   /// Applet package owning each non-global reference stored in a JCRE global

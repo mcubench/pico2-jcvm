@@ -163,6 +163,10 @@ public:
   /// Read or replace an opaque persistent record using transaction snapshots.
   static std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
   readPersistentRecord(const fs::Tag &tag);
+  /// Read and validate the metadata header of a serialized persistent array.
+  static uint16_t readPersistentArrayLength(
+      const fs::Tag &tag, FieldType expected_type, uint16_t element_width,
+      uint16_t expected_reference_type = 0);
   static bool writePersistentRecord(const fs::Tag &tag,
                                     const uint8_t *data,
                                     uint32_t length) noexcept;

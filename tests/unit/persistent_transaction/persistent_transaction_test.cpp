@@ -2897,12 +2897,62 @@ int main() {
     const unsigned int scalar_copy_calls =
         persistent_transaction_test::counted_fs_call_count();
     const unsigned int range_copy_calls = read_calls + write_calls;
-    expect(scalar_copy_calls == 1024 && range_copy_calls == 3,
-           "persistent_array_copy_fs_calls_reduced_from_1024_to_3");
+    expect(scalar_copy_calls == 768 && range_copy_calls == 3,
+           "persistent_array_copy_fs_calls_reduced_from_1024_to_768_and_3");
     std::printf("BENCHMARK:PERSISTENT_ARRAY_COPY bytes=%u "
-                "before_fs_calls=%u after_fs_calls=%u\n",
+                "baseline_fs_calls=1024 cached_scalar_fs_calls=%u "
+                "range_fs_calls=%u\n",
                 static_cast<unsigned>(array_length), scalar_copy_calls,
                 range_copy_calls);
+  }
+
+  {
+    const uint8_t tag[] = {0xa0, 0x01, 0xfa};
+    constexpr uint16_t array_length = 16;
+    std::vector<uint8_t> record{
+        static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+        static_cast<uint8_t>(array_length >> 8),
+        static_cast<uint8_t>(array_length)};
+    record.resize(3 + array_length, 0x5a);
+    seed(tag, sizeof(tag), record);
+    jcvm::fs::Tag fs_tag{};
+    fs_tag.len = sizeof(tag);
+    std::memcpy(fs_tag.value, tag, sizeof(tag));
+    jcvm::Heap cache_heap(7);
+    jcvm::JC_Array cached_array(cache_heap, jcvm::JAVA_ARRAY_T_BYTE, 0,
+                                fs_tag, false, jcvm::None, 0);
+
+    persistent_transaction_test::reset_counted_fs_calls();
+    bool sizes_match = true;
+    for (unsigned int i = 0; i < 128; ++i)
+      sizes_match = sizes_match && cached_array.size() == array_length;
+    const unsigned int warm_size_calls =
+        persistent_transaction_test::counted_fs_call_count();
+    expect(sizes_match && warm_size_calls == 1,
+           "persistent_array_size_metadata_is_cached_after_validation");
+    std::printf("BENCHMARK:PERSISTENT_ARRAY_SIZE iterations=128 "
+                "baseline_fs_reads=256 cached_fs_reads=%u\n",
+                warm_size_calls);
+
+    expect(jcvm::FlashMemory_Handler::beginPersistentWriteTransaction(false),
+           "persistent_array_metadata_cache_begin_rollback");
+    expect(jcvm::FlashMemory_Handler::erasePersistentTag(fs_tag),
+           "persistent_array_metadata_cache_erase_snapshot");
+    expect(jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction(),
+           "persistent_array_metadata_cache_rollback");
+    persistent_transaction_test::reset_counted_fs_calls();
+    expect(cached_array.size() == array_length &&
+               persistent_transaction_test::counted_fs_call_count() == 1,
+           "persistent_array_metadata_cache_reloads_after_rollback");
+
+    const uint8_t replacement_tag[] = {0xa0, 0x01, 0xf9};
+    seed(replacement_tag, sizeof(replacement_tag), record);
+    fs_tag.value[2] = replacement_tag[2];
+    persistent_transaction_test::reset_counted_fs_calls();
+    cached_array.setPersistentTag(fs_tag);
+    expect(cached_array.size() == array_length &&
+               persistent_transaction_test::counted_fs_call_count() == 1,
+           "persistent_array_metadata_cache_reloads_after_tag_change");
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);

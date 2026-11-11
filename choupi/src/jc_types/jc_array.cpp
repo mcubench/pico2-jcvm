@@ -50,6 +50,11 @@ namespace {
 constexpr jpackage_ID_t kNoGlobalReferenceOwner = 0xff;
 constexpr jpackage_ID_t kJCREGlobalReferenceOwner = 0xfe;
 
+bool same_tag(const fs::Tag &left, const fs::Tag &right) noexcept {
+  return left.len == right.len &&
+         std::memcmp(left.value, right.value, left.len) == 0;
+}
+
 void checkArrayEntryIndex(const JC_Array &array, const uint16_t index) {
   if (index >= array.size()) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
@@ -193,6 +198,7 @@ fs::Tag JC_Array::computeTag() const noexcept {
 void JC_Array::setPersistentTag(const fs::Tag &tag) noexcept {
   this->persistent_tag = tag;
   this->has_persistent_tag = true;
+  this->persistent_metadata_valid = false;
   this->persistent_rollback_generation =
       FlashMemory_Handler::persistentWriteRollbackGeneration();
   // Transient arrays can have a persistent identity record that aliases
@@ -286,35 +292,49 @@ uint16_t JC_Array::size() const {
   if (this->isTransientArray()) {
     length = this->array.size() / this->getEntrySize();
   } else if (this->isPersistent()) {
-    fs::Tag tag = this->computeTag();
-    uint8_t size_high = 0;
-    uint8_t size_low = 0;
-    uint8_t read_status =
-        fs_read_1b_at(tag.value, tag.len, 1, &size_high);
-    if (read_status == 0) {
-      read_status = fs_read_1b_at(tag.value, tag.len, 2, &size_low);
-    }
-    if (read_status != 0) {
-#ifdef PC_VERSION
-      uint32_t stored_length = 0;
-      const uint8_t length_status =
-          fs_length(tag.value, tag.len, &stored_length);
-      std::fprintf(stderr,
-                   "PERSIST_ARRAY_SIZE_READ_FAIL status=%u exists=%u "
-                   "length_status=%u stored_length=%u tag_len=%u tag=",
-                   static_cast<unsigned>(read_status),
-                   static_cast<unsigned>(fs_exists(tag.value, tag.len)),
-                   static_cast<unsigned>(length_status),
-                   static_cast<unsigned>(stored_length),
-                   static_cast<unsigned>(tag.len));
-      for (uint8_t tag_index = 0; tag_index < tag.len; ++tag_index) {
-        std::fprintf(stderr, "%02X", tag.value[tag_index]);
-      }
-      std::fprintf(stderr, "\n");
+    const fs::Tag tag = this->computeTag();
+    const uint32_t generation =
+        FlashMemory_Handler::persistentWriteRollbackGeneration();
+    FieldType expected_field_type;
+    uint16_t element_width = this->getEntrySize();
+    switch (this->type) {
+    case jc_array_type::JAVA_ARRAY_T_BOOLEAN:
+      expected_field_type = FieldType::FIELD_TYPE_ARRAY_BOOLEAN;
+      break;
+    case jc_array_type::JAVA_ARRAY_T_BYTE:
+      expected_field_type = FieldType::FIELD_TYPE_ARRAY_BYTE;
+      break;
+    case jc_array_type::JAVA_ARRAY_T_SHORT:
+      expected_field_type = FieldType::FIELD_TYPE_ARRAY_SHORT;
+      break;
+#ifdef JCVM_INT_SUPPORTED
+    case jc_array_type::JAVA_ARRAY_T_INT:
+      expected_field_type = FieldType::FIELD_TYPE_ARRAY_INT;
+      break;
 #endif
-      throw Exceptions::IOException;
+    case jc_array_type::JAVA_ARRAY_T_REFERENCE:
+      expected_field_type = FieldType::FIELD_TYPE_ARRAY_OBJECT;
+      element_width = 0;
+      break;
+    default:
+      throw Exceptions::SecurityException;
     }
-    length = BYTES_TO_SHORT(size_high, size_low);
+    if (this->persistent_metadata_valid &&
+        this->persistent_metadata_generation == generation &&
+        this->persistent_metadata_array_type == this->type &&
+        this->persistent_metadata_field_type == expected_field_type &&
+        same_tag(this->persistent_metadata_tag, tag)) {
+      return this->persistent_metadata_length;
+    }
+    const uint16_t array_length = FlashMemory_Handler::readPersistentArrayLength(
+        tag, expected_field_type, element_width, this->reference_type);
+    this->persistent_metadata_tag = tag;
+    this->persistent_metadata_generation = generation;
+    this->persistent_metadata_array_type = this->type;
+    this->persistent_metadata_field_type = expected_field_type;
+    this->persistent_metadata_length = array_length;
+    this->persistent_metadata_valid = true;
+    length = array_length;
   } else {
     length = this->array.size() / this->getEntrySize();
   }
