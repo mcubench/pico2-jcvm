@@ -9912,6 +9912,17 @@ Check new loader, resolver and bytecode code against these before review.
   This is bounded unit handle-slot evidence only; it does not measure device
   RAM or persistent-flash growth.
 
+### Revalidated persistence interruption suites — 2026-11-11
+
+- `./tools/test-persistent-transaction` completed with
+  `TEST:SUMMARY fail=0`, including retained peer roots, destructive reclaimer
+  root preservation, interruption/retry and malformed-record fail-closed
+  coverage.
+- `./tools/test-rp2350-fs-overlay` completed with `TEST:SUMMARY fail=0`,
+  including 1,000 injected cuts during persistent reclamation and retry.
+- These are host/unit flash-model results. They do not replace RP2350 flash
+  power-cut testing or JCAlgTest reset-driven physical acceptance.
+
 ## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
 
 - **Observed:** The Pico-only helper grants access to `/dev/bus/usb/001/045`;

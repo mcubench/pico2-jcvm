@@ -27517,3 +27517,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R59 open and object deletion disabled by default. Physical JCAlgTest reset/deletion and bounded device memory measurement remain required.
 - Commit: `bfe3780e`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output `RMI_REGISTRY:PASS retained_context_diamond_cycles=8 slots=4`.
+
+## 2026-11-11 Revalidate persistence and interruption suites after R59 roots 5 min
+
+- Step/experiment: `RESOURCE-01-PERSISTENCE-FAULT-REGRESSION`
+- When: '2026-11-11 14:55 CET' - '2026-11-11 15:00 CET'
+- Model: `GPT-6`
+- Change: Re-ran persistent transaction and RP2350 overlay fault-injection suites after adding production retained-context collector coverage; updated handoff and QKB with scope.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including peer static/proxy roots through the destructive reclaimer and interruption/retry. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`, including 1,000 simulated cuts during persistent reclamation and retry.
+- Result: Current host tests still preserve tested durable roots and recover safely across modeled power cuts. No physical flash interruption or card test was performed.
+- Decision: Keep object deletion disabled by default and RESOURCE-01 open; physical JCAlgTest reset/deletion remains required.
+- Commit: `pending`
+- Artifacts/logs: test outputs in terminal; binaries under `build/tests/unit/`.

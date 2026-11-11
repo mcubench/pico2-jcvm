@@ -1,4 +1,17 @@
-# Current handoff — production retained collector repeated-root plateau test — 2026-11-11 14:54 CET
+# Current handoff — persistence and cut-recovery suites revalidated — 2026-11-11 15:00 CET
+
+After the production retained-context cycle/root tests, reran
+`./tools/test-persistent-transaction` and `./tools/test-rp2350-fs-overlay`.
+Both completed with `TEST:SUMMARY fail=0`. The transaction suite covers peer
+static/proxy roots through the destructive reclaimer and interruption/retry
+cases. The overlay suite covers 1,000 simulated power cuts during persistent
+reclamation and safe retry. These are host fault-injection tests, not physical
+RP2350 flash tests. Keep firmware object deletion disabled by default; physical
+JCAlgTest remains blocked because the Pico reader is absent from PC/SC.
+
+---
+
+# Previous handoff — production retained collector repeated-root plateau test — 2026-11-11 14:54 CET
 
 `tests/unit/rmi_registry/rmi_registry_test.cpp` now exercises eight repeated
 four-context diamond create/collect cycles through
