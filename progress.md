@@ -27337,3 +27337,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Await VirtualBox USB reattachment as specified in `.agent/EXT_REQUESTS.md`; then confirm PC/SC and SmartcardIO enumeration, flash the diagnostic image, and begin option 2. Use another identified board for option 1 when possible.
 - Commit: `9b01d0fc`
 - Artifacts/logs: `artifacts/logs/jcalgtest-longrun-physical-check-20261111T1209CET.log` (ignored by `.gitignore`, retained locally); fresh ARM/RISC-V provenance in `build/{arm,riscv}/build-provenance.txt`.
+
+## 2026-11-11 Restore JCVM array-allocation test link 8 minutes
+
+- Step/experiment: `MIG-20261107-01`
+- When: '2026-11-11 12:11 CET' - '2026-11-11 12:19 CET'
+- Model: `gpt-6`
+- Change: Added a standalone fixture stub for `FlashMemory_Handler::persistentWriteRollbackGeneration()` and linked it into the JCVM array-allocation test target. Updated TODO to close the migration harness failure.
+- Validation: `./tools/test-jcvmarray-allocation` configured, built, linked, and passed all nine assertions: static-root reservation atomicity/reuse, allocation failure propagation, copy-construction/assignment cleanup, and persistent-array allocation failure. No firmware source changed; ARM/RISC-V builds were not required for this test fixture.
+- Result: The prior undefined-symbol link failure is fixed without pulling the flash backend into the standalone test. The stub keeps the generation fixed; rollback-generation behavior remains covered by other tests.
+- Decision: Continue with MIG-20261107-02 partial-header regression offline. Resume physical JCAlgTest only after a Pico appears in PC/SC; retain separate tokens for the two long runs when possible.
+- Commit: pending
+- Artifacts/logs: `build/tests/unit/jcvmarray-allocation/`; no standalone log.

@@ -2576,11 +2576,12 @@ The user accepted these two host-test failures as documented follow-ups.
 They were observed while validating relocated tests; no runtime correction
 is included in the migration. See [migration evidence](docs/testing-data-migration.md).
 
-- [ ] **MIG-20261107-01 — Restore the standalone allocation test link dependency.**
-  `tools/test-jcvmarray-allocation` configures in its new directory, then fails
-  to link `FlashMemory_Handler::persistentWriteRollbackGeneration()` from the
-  existing heap implementation. Supply the appropriate test dependency and
-  rerun this focused test; preserve unrelated in-progress heap changes.
+- [x] **MIG-20261107-01 — Restore the standalone allocation test link dependency.**
+  Added a fixture-only `FlashMemory_Handler::persistentWriteRollbackGeneration()`
+  stub to the standalone allocation target instead of linking the full flash
+  backend. `./tools/test-jcvmarray-allocation` now builds and passes all nine
+  allocation/root failure assertions. This only closes the host harness link
+  failure; persistent rollback behavior remains covered by its separate tests.
 - [ ] **MIG-20261107-02 — Reconcile the VPCD partial-header regression.**
   `tools/test-vpcd-protocol` fails `send partial frame header`. Inspect socket
   state after its preceding idle-read timeout and the intended transport

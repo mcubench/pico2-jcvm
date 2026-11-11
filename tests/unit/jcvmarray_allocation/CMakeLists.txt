@@ -4,6 +4,7 @@ project(jcvmarray_allocation_test LANGUAGES CXX)
 add_executable(
   jcvmarray_allocation_test
   jcvmarray_allocation_test.cpp
+  flashmemory_rollback_generation_stub.cpp
   ../../../choupi/src/heap.cpp
   ../../../choupi/src/jc_types/jc_array.cpp
   ../../../choupi/src/jc_types/jref_t.cpp

@@ -11811,3 +11811,20 @@ second enumerated token for option 1 when available; preserve results and
 serial telemetry per board.
 
 # Current handoff — physical JCAlgTest reader discovery blocks long runs — 2026-11-11 11:52 CET
+# Current handoff — standalone JCVM array-allocation test restored — 2026-11-11 12:19 CET
+
+Closed `MIG-20261107-01`: the standalone allocation test now links its
+`FlashMemory_Handler::persistentWriteRollbackGeneration()` dependency through
+a fixture-only stable-generation stub. `./tools/test-jcvmarray-allocation`
+passes all nine assertions. No VM runtime source changed, so ARM/RISC-V builds
+were not needed for this test-only fix. TODO now has this item checked off.
+
+The requested physical JCAlgTest campaigns remain pending. The current
+diagnostic empty-card ARM image is ready, but flashing 2BED did not reach
+BOOTSEL; 2BED disappeared from guest USB, and D92 is CDC-visible but not
+PC/SC-visible. No physical JCAlgTest APDU was sent. The helper refresh and Java
+reader-list checks most recently showed only the two VPCD readers. Continue
+with MIG-20261107-02 offline unless a Pico reader reappears; after USB
+reattachment, resume the long campaigns on separate tokens when possible.
+
+# Current handoff — diagnostic image built; VM USB reattach needed — 2026-11-11 12:10 CET
