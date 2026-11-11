@@ -22176,7 +22176,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid D92E743D5F640C0F` passed. The first picotool reset-interface attempt failed; CDC 1200-baud fallback entered BOOTSEL in 3 seconds, image was written and verified, and 18-second serial capture repeatedly reported `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `FAULT`. `sudo -n /usr/local/sbin/pico2-pcsc-reader && pcsc_scan -r` listed all 3 physical readers. Targeted GPPro `--list` returned `ISD: A000000151000000 (OP_READY)` and no applet/package records. No test CAP was installed.
 - Result: Identified board flashed and booted, remains PC/SC-visible and empty. This is firmware boot/card-manager validation; physical execution of Descriptor-backed field type checks was not measured because standard GPPro LOAD omits Descriptor.
 - Decision: Retain chip-ID-targeted flash and CDC fallback as the working multi-device procedure. Continue physical applet testing only with a valid, verifiable metadata path; keep Descriptor-free execution bounds fail-closed.
-- Commit: `pending`
+- Commit: `cef3a453`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261105T081020Z.log`, SHA-256 `aede2b7c1a48993a6d73ef8a6dc8ce1d8f7a7330807c6c105618fedc8466f782`; flashed `build/arm/pico2_choupi.uf2`, SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 
 - Commit resolved for `hard-20261105-descriptor-field-kinds-physical-cycle`: `b2d2f97` (Record identified Pico flash validation).
