@@ -1,3 +1,17 @@
+# Documentation handoff — TODO compaction — 2026-11-11 20:48 UTC
+
+TODO.md now contains the compact active backlog (924 lines versus 2,744).
+The exact pre-edit file, including existing local TODO measurement edits, is
+preserved at `.agent/archive/2026-11-11-todo-compaction/TODO.md`; its hash and
+status map are alongside it. All open task IDs and review extensions remain;
+linked detailed acceptance cases still apply. Scoped completed fixes were
+archived with outstanding physical gates carried into the active backlog.
+Backup integrity, task inventory, active local links and whitespace checks pass.
+No builds, hardware operations or runtime changes were needed. Continue the
+existing RESOURCE-01 priority; hardware status below is unchanged by this edit.
+
+---
+
 # Current handoff — all three Pico 2 tokens flashed with commit-identifiable max_crypto — 2026-11-11 20:10 CET
 
 The CPLC build identifier now uses both four-byte equipment-ID fields. The

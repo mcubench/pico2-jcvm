@@ -27754,3 +27754,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit this isolated compile fix, then build `max_crypto` for both architectures and try the identified boards through `tools/cycle`.
 - Commit: recorded with the associated source change in this commit.
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`; RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`; build outputs were captured in the command session.
+
+## 2026-11-11 Compact active TODO and preserve complete backlog evidence 8 min
+
+- Step/experiment: `TODO-COMPACTION-20261111`
+- When: '2026-11-11 20:40 UTC' - '2026-11-11 20:48 UTC'
+- Model: `GPT-6`
+- Change: Archived byte-for-byte pre-edit TODO, including its pre-existing uncommitted measurement edits, with SHA-256 manifest and task/status map. Condensed long resource/context histories into remaining-work and acceptance summaries; archived scoped completions; retained all open task IDs, review extensions and physical carry-forward gates. Reconciled HMAC implementation versus acceptance, diagnostic versus normal deletion support, superseded compaction timings, stale device state and the resolved standalone allocation-link failure versus the separate review harness.
+- Validation: Backup `sha256sum -c SHA256SUMS` passed from its archive directory. Offline inventory confirmed every original open numbered review/performance ID, all review extensions, all active local links and task archive anchors. Scoped `git diff --check` passed. Builds and hardware tests intentionally skipped: documentation-only change; no runtime or fixture modifications.
+- Result: TODO reduced from 2,744 to 924 lines, 247,516 to approximately 97,000 bytes (60.7% fewer bytes). Full original specifications, measurements and evidence remain in the linked immutable backup; detailed cases remain requirements. No implementation or physical acceptance was newly claimed.
+- Decision: Use TODO for active work and linked backup/progress/QKB for detailed evidence. Preserve unrelated existing source and instruction edits.
+- Commit: `this documentation commit; locate via TODO-COMPACTION-20261111 in git log`
+- Artifacts/logs: `.agent/archive/2026-11-11-todo-compaction/{TODO.md,SHA256SUMS,MIGRATION.md}`.
