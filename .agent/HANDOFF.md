@@ -31,6 +31,14 @@ submodule modifications included by the build. ZIP integrity and all 16 file
 hashes pass. No board was flashed in this VM, which sees neither runtime CCID
 nor BOOTSEL devices.
 
+The next RESOURCE-02 focused measurement also passes in this current build:
+64 repeated AES and RSA-2048 `Cipher.init` calls show zero inventory delta.
+AES remains 39 records / 589 bytes; RSA remains 46 / 1,155 bytes. The alias
+control remains at 18 / 433 bytes with one setup-time 4-byte unreachable tag.
+Logs and exact emulator/ROM-mask/CAP hashes are recorded in QKB and
+`artifacts/logs/resource02-vpcd-20261111T182124Z/`. The TODO measurement item
+is updated; next continue the higher-priority RESOURCE-01 acceptance work.
+
 ---
 
 # Current handoff — shared deletion budget fixed; VM still sees no Pico — 2026-11-11 18:36 CET

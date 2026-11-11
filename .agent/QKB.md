@@ -9582,6 +9582,27 @@ The run remains incomplete and RESOURCE-01 remains open.
   a restore that exceeds it still needs investigation rather than a longer
   unbounded wait.
 
+## RESOURCE-02 repeated persistent Cipher.init remains at a flat plateau — 2026-11-11
+
+- **Measurement:** `PICO2_HOST_USB_ACCESS=1 RESOURCE02_PASSES=64
+  ./tools/test-resource02-crypto-leaks-vpcd` completed the persistent AES,
+  alias, and RSA VPCD cases. Each case samples immediately after setup and
+  after 64 repeated operations, so setup allocations are separated from repeat
+  growth.
+- **Results:** AES Cipher.init: 39 records / 589 payload bytes before and after,
+  zero unreachable tags and zero delta. RSA-2048 Cipher.init: 46 / 1,155 before
+  and after, zero unreachable tags and zero delta. Alias control: 18 / 433
+  before and after, one existing 4-byte unreachable tag and zero delta.
+- **Build identity:** emulator SHA-256
+  `1c9295aab5536765bf8b1f9056a2ca7953c87a97bb806e7aab254e5f7358859e`; ROM
+  mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`;
+  local probe CAP SHA-256
+  `903e153f71d33e95676ad37abf2c3527228f2a6679321ece22e3d55c528d12a5`.
+- **Limit:** The before/after measurement is post-fix and did not capture the
+  historical linear-growth baseline. It confirms the targeted repeat-phase
+  plateau, not full JCAlgTest/RESOURCE-01 acceptance or RP2350 storage behavior.
+- **Evidence:** `artifacts/logs/resource02-vpcd-20261111T182124Z/`.
+
 
 ## Recurring input-handling patterns in CAP load/install/interpretation — 2026-11-10
 

@@ -27706,3 +27706,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use only this package for the next Windows object-deletion test; do not reuse `1651bbdd`. Keep deletion diagnostic-only until Windows and physical APDU acceptance.
 - Commit: `b8382ee6`
 - Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-shared-budget-73beff17.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-73beff17.uf2`; `build/external-test/object-deletion-shared-budget-73beff17/BUILD-PROVENANCE.txt`.
+
+## 2026-11-11 Measure repeated persistent Cipher.init inventory 3 min
+
+- Step/experiment: `RESOURCE-02-REPEAT-INIT-PLATEAU-01`
+- When: '2026-11-11 19:20 CET' - '2026-11-11 19:23 CET'
+- Model: `GPT-6`
+- Change: Ran the existing PC VPCD resource probe for 64 persistent AES and RSA-2048 `Cipher.init` calls and its persistent alias control. Updated RESOURCE-02's measurement gate in TODO with exact current-build results and clarified that the historical pre-fix linear-growth baseline was not captured.
+- Validation: `PICO2_HOST_USB_ACCESS=1 RESOURCE02_PASSES=64 ./tools/test-resource02-crypto-leaks-vpcd` passed all three cases. AES: 39 records / 589 bytes before and after, delta `(0,0,0,0)`. RSA: 46 / 1,155, same zero delta. Alias control: 18 / 433, one setup-time 4-byte unreachable tag, zero repeat delta. Build uses unchanged upstream libraries and a local probe CAP. No hardware test was attempted; physical devices are absent from this VM.
+- Result: Current post-fix PC VPCD inventory is flat over 64 repeated initializations. Pre-fix growth was not measured, and this does not close RESOURCE-01/full-suite or physical acceptance.
+- Decision: Mark the focused measurement subtask complete; continue with RESOURCE-01 and keep production object deletion disabled until its safety/acceptance gates pass.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/resource02-vpcd-20261111T182124Z/{aes,aliases,rsa}.log`; emulator SHA-256 `1c9295aab5536765bf8b1f9056a2ca7953c87a97bb806e7aab254e5f7358859e`, ROM mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`, probe CAP SHA-256 `903e153f71d33e95676ad37abf2c3527228f2a6679321ece22e3d55c528d12a5`.

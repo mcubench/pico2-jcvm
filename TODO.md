@@ -76,11 +76,15 @@ Archive text is historical evidence, not current device state or priorities.
   Source: [code review 2026-11-10](docs/review_opus55_202611100.md) (C1–C5).
   Work in the order below; each step is a separate validated commit. All
   changes are native C++ VM code; keep upstream CAPs unchanged.
-  1. **Measure first.** Add a PC VPCD regression that calls `Cipher.init`
-     N times (e.g. 64) on one persistent RSA-2048 public cipher and on one
-     persistent AES cipher, with no new keys, sampling persistent inventory
-     (records, payload bytes, unreachable tags) before and after. Record the
-     current linear growth as the baseline in `progress.md`.
+  1. **Measure first — current build measured:** `tools/test-resource02-crypto-leaks-vpcd`
+     runs 64 repeated `Cipher.init` calls on persistent RSA-2048 and AES
+     ciphers without creating new keys and samples records, payload bytes, and
+     unreachable tags before/after the repeat phase. Current deltas are zero
+     for both. RSA stays at 46 records / 1,155 bytes; AES at 39 / 589 bytes.
+     The alias control stays at 18 / 433 bytes with one 4-byte unreachable tag
+     created during setup and no further growth. This establishes a current
+     post-fix plateau; a pre-fix linear-growth baseline was not captured.
+     Full RESOURCE-01 acceptance remains required below.
   2. **C1 — reuse native work buffers.** In `native_rsa_cipher.cpp`
      (`initializeRsaCipher`, `appendInput`), `native_cipher.cpp`
      (`allocateKeyWorkspace`, `ensureCapacity`), `native_signature.cpp` and
