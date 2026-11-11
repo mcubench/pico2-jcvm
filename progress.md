@@ -27287,5 +27287,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; both root-only objects remained readable after the destructive pass, and the orphan body tag was erased. No firmware build or hardware test was run because only the host unit test changed.
 - Result: The reclaimer's peer shareable and exported RMI root domains are now verified through deletion, beyond standalone root tracing.
 - Decision: Keep firmware object deletion disabled pending physical interruption recovery and full unchanged JCAlgTest acceptance.
-- Commit: pending.
+- Commit: `075ae778`.
 - Artifacts/logs: none.
