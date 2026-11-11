@@ -27598,3 +27598,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue monitoring both physical runs to completion; investigate any unexpected APDU timeout or client/reader failure before claiming JCAlgTest acceptance.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/physical-deletion-20261111-2BED-performance-routefix-{client,serial}.log`; `artifacts/logs/physical-deletion-20261111-8E46-support-routefix-{client,serial}.log`; results under `artifacts/results/physical-deletion-20261111/`.
+
+## 2026-11-11 Refresh README support table 4 minutes
+
+- Step/experiment: `README-support-refresh-20261111`
+- When: '2026-11-11 16:53 CET' - '2026-11-11 16:57 CET'
+- Model: `GPT-6`
+- Change: Updated section 5 with diagnostic-only object deletion marked Partial, default baseline and max_crypto capability counts, coordinated cross-context test scope, physical SCP03 route regression evidence, and outstanding campaign acceptance.
+- Validation: Inspected native deletion dispatch, build flag handling, support configuration, handoff and progress evidence. Python checks passed for 15 table rows, consistent columns, 159/162 max_crypto capabilities, baseline default, Partial deletion status, and local links. Changed-file whitespace check passed. Builds and hardware checks intentionally skipped for this documentation-only change; cited runtime evidence belongs to the earlier recorded tests.
+- Result: Table distinguishes default-disabled deletion from opt-in tested reclamation without claiming completed physical campaigns or power-loss acceptance. No new runtime metrics measured.
+- Decision: README refresh complete; retain existing acceptance limitations and unrelated worktree changes.
+- Commit: `this README-support-refresh-20261111 commit; resolve with git log --grep="docs: refresh Java Card support table"`
+- Artifacts/logs: Existing evidence in `artifacts/logs/object-deletion-vpcd-20261111T141050Z.log` and `progress.md`; no new runtime logs.

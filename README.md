@@ -80,29 +80,29 @@ Host application → PC/SC → USB CCID → Card manager / JCRE
                                                       → Flash storage
 ```
 
-The compatibility target is **Java Card Classic 3.0.5**, with the following coverage and limits:
+The compatibility target is **Java Card Classic 3.0.5**, with the following coverage and limits (updated **2026-11-11**):
 
 | Feature | Status | Coverage / limits |
 | --- | --- | --- |
 | CAP loading and bytecode interpretation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Imports must resolve to API packages present in the firmware ROM mask. |
 | Applet lifecycle | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Installation, selection, and deletion. |
 | Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
-| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | Implemented; storage exhaustion remains an issue in long runs. |
+| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | Flash persistence and host transaction/interruption regressions are implemented. Long-run storage exhaustion remains unresolved; diagnostic reclamation is opt-in (see below). |
 | Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, PIN handling, and implemented `JCSystem` transient-memory and transaction operations; complete per-method coverage is not established. |
-| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | Profile-dependent keys, digests, random numbers, ciphers, signatures/MACs, and key agreement. `max_crypto` enables AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants. |
-| GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. |
-| Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted tests exist; full isolation semantics are not established. |
+| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | Profile-dependent keys, digests, random numbers, ciphers, signatures/MACs, and key agreement. `max_crypto` declares **159 of 162** capability flags enabled, including AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants. The default profile is `baseline`; profile flags do not establish full algorithm acceptance. |
+| GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
+| Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted cross-AID sharing, proxy lifecycle, and firewall tests exist. Coordinated cross-context garbage-collection roots/cycles have host-unit coverage; full isolation semantics and device RAM bounds remain unestablished. |
 | MessageDigest input | ![Partial](https://img.shields.io/badge/partial-yellow) | At most **2,046 cumulative bytes** across `update()` and `doFinal()`. |
 | Extended-length APDUs | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
-| Persistent-object reclamation | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Disabled; `JCSystem.requestObjectDeletion()` is unsupported. |
+| Persistent-object reclamation / `JCSystem.requestObjectDeletion()` | ![Partial](https://img.shields.io/badge/partial-yellow) | **Disabled by default.** Opt-in diagnostic builds use `PICO2_ENABLE_OBJECT_DELETION=1` to queue deletion for service after the APDU unwinds. VPCD tests preserve live RSA static roots and reclaim dropped objects; host tests cover coordinated heap collection and modeled interruption/retry. Physical long-run, bounded-memory, and power-loss acceptance remain open. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | RSA/RSA-CRT 4096-bit key-pair generation | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Excluded from `max_crypto`. |
 
 Supported marks the listed implemented path, not full specification conformance. Exact cryptographic capability flags are in [the profile configuration](config/javacard-support.json); these declarations do not prove that every API method or workload passes.
 
-Full specification conformance and complete per-method coverage are not established. JCAlgTest **1.8.4 / jc305** is the acceptance baseline; full acceptance remains open, including persistent-storage exhaustion in long runs. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
+Full specification conformance and complete per-method coverage are not established. JCAlgTest **1.8.4 / jc305** is the acceptance baseline; full acceptance remains open, including persistent-storage exhaustion, diagnostic object deletion, and completion of the physical all-algorithms and performance campaigns. Partial campaign results are not suite passes. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)
