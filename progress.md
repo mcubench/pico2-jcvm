@@ -17466,7 +17466,7 @@
   `5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
 - Decision: Continue with persistent-object reclamation and actual USB cold
   power-cycle recovery; no reclamation is enabled until the latter is proven.
-- Commit: `34ce44dd`.
+- Commit: pending.
 - Artifacts/logs: valid INSTALL SHA-256
   `90358f202b1364270db7c86688f83d288b6ba7ffc8be393b777eeeab6ab31bf6`;
   class rejection SHA-256
@@ -27254,5 +27254,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed; direct executable summary `TEST:SUMMARY fail=0`. The reclaimer returned `Complete`, retained both peer static records, and erased exactly one orphan. No platform build or hardware test was run; this test-only change exercises the host reclaimer.
 - Result: The retained-context static-root vector protects serialized applet objects during the destructive reclaimer pass. Proxy roots are separately verified in the heap root enumeration test, but durable proxy-backed flash data is not yet covered.
 - Decision: Continue to keep firmware deletion disabled. Next cover durable cross-package aliases and live RMI/shareable references in the reclaimer, then physical flash interruption recovery.
-- Commit: pending.
+- Commit: `34ce44dd`.
 - Artifacts/logs: none.
+# 2026-11-11 RESOURCE-01 reclaimer validation and physical setup audit 28 minutes
+
+- Step/experiment: `RESOURCE-01-RECLAIMER-VALIDATION-20261111-B`
+- When: '2026-11-11 10:13 CET' - '2026-11-11 10:41 CET'
+- Model: `gpt-6`
+- Change: Recorded expanded static-root reclaimer and power-cut validation. Built ARM/RISC-V with the persistent-GC diagnostic hook, restored the identified board to normal current firmware after the hardware probe guard blocked, and added the exact helper-refresh request to `.agent/EXT_REQUESTS.md`.
+- Validation: `./tools/test-persistent-transaction` and `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`). `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed 7/7 APDUs, preserving a live RSA static root and then erasing 10 records after clearing it. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including 1,000 modeled power cuts during reclamation. ARM/RISC-V debug-hook builds and normal ARM/RISC-V builds passed. The physical probe stopped before installation/APDUs because the installed privileged helper differs from the checked-in Pico-only allowlist; after restoring the normal image, its 8-second monitor passed `TEST:SUMMARY pass=1 fail=0`.
+- Result: Host alias/root and modeled interruption behavior pass. Physical power-loss recovery remains unverified. The current normal ARM image on `2BED26ED20556535` is `build/arm/pico2_choupi.uf2`, SHA-256 `e7327a9cc26124179b6ec801c9f71094e265431f62553590ef6a62be794874c7`.
+- Decision: Keep production object deletion disabled. Resume the bounded physical reclaimer test after the user refreshes `/usr/local/sbin/pico2-pcsc-reader` using the request in `.agent/EXT_REQUESTS.md`; then continue unchanged 1.8.4 long-run acceptance.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T092825Z.log`; `artifacts/logs/resource01-normal-image-restored-2bed-20261111.log`; no physical reclaimer APDUs were sent.

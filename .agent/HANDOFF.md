@@ -1,3 +1,13 @@
+# Current handoff — reclaimer tests pass; physical helper refresh needed — 2026-11-11 10:41 CET
+
+Additional deletion-safety evidence: `./tools/test-persistent-transaction` and `./tools/test-persistent-inventory` pass. A one-cycle VPCD RSA/static-root run (`PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static`) passed all 7 APDUs, preserved the live key during the first deletion request, then erased its 10-record graph after clearing the root. `./tools/test-rp2350-fs-overlay` passed, including 1,000 simulated cuts during reclamation followed by safe retry. This is host/VPCD evidence, not physical flash interruption.
+
+Two attached Pico USB nodes were observed; reader 2BED was PC/SC-visible earlier. ARM/RISC-V debug-hook builds passed, and a debug image was flashed to `2BED26ED20556535`. The physical reclaimer wrapper refused to proceed before GPPro installation/APDUs because `/usr/local/sbin/pico2-pcsc-reader` differs from `tools/pico2-pcsc-reader-root` (the installed helper filters only VID/PID). Do not bypass this check. The normal current ARM image was rebuilt and restored to chip 2BED; its 8-second monitor passes. Image SHA-256: `e7327a9cc26124179b6ec801c9f71094e265431f62553590ef6a62be794874c7`. Physical serial log: `artifacts/logs/resource01-normal-image-restored-2bed-20261111.log`.
+
+Next: user runs `sudo ./tools/install-pcsc-sudoers` from repo root as requested in `.agent/EXT_REQUESTS.md`. Verify helper bytes, refresh ACL, retry bounded physical persistent reclaimer probe. Continue to keep firmware deletion unsupported until physical interruption and unchanged long JCAlgTest acceptance pass.
+
+---
+
 # Current handoff — retained static-root deletion pass verified — 2026-11-11 10:13 CET
 
 `./tools/test-persistent-transaction` now proves that `PersistentReclaimer` preserves two serialized arrays rooted by static references from another retained package context while erasing exactly one orphan. The separate shareable-proxy root enumeration assertion remains in place. Full unit suite reports `TEST:SUMMARY fail=0`.

@@ -9729,3 +9729,22 @@ Check new loader, resolver and bytecode code against these before review.
 - **Validation:** The persistent-transaction unit case creates two actual objects in the server heap and proves both are reachable from a peer package's cached static slot and shareable proxy. It permits a different peer package context and rejects a second retained target-package context. `./tools/test-persistent-transaction` passed; multipackage VPCD passed 48/48 and erased the expected orphan; both architecture builds passed. Physical board `2BED26ED20556535` flashed the final ARM image and its finite monitor passed.
 - **Limit:** This does not establish all persistent aliases or every RMI/in-flight root, and it does not turn on deletion in Pico firmware. Physical flash interruption and unchanged long JCAlgTest acceptance remain open. The VPCD case is a distinct PC-only regression.
 - **Next:** Add reclaimer-level tests with durable cross-package roots and RMI/shareable roots, then verify interrupted erase/restart semantics on physical storage before changing `isObjectDeletionSupported()`.
+
+## Physical reclaimer probe blocked by stale installed helper — 2026-11-11
+
+- **Observed:** The authorized helper reported two Pico USB nodes, and
+  `pcsc_scan -r` initially listed the identified reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`. The physical test
+  wrapper then stopped before APDUs because its integrity check compared the
+  installed `/usr/local/sbin/pico2-pcsc-reader` with the repository helper and
+  found a mismatch. The installed file filters only USB VID/PID; the checked-in
+  helper also checks `Pico2` / `Pico2 JCVM CCID` descriptor strings.
+- **Resolution:** External action request added to `.agent/EXT_REQUESTS.md`:
+  run `sudo ./tools/install-pcsc-sudoers` from the repository root. Then rerun
+  the exact-byte comparison, refresh ACLs with the authorized helper, and retry
+  the bounded physical probe. Do not bypass the wrapper's helper check.
+- **Test impact:** No GPPro install or probe APDU was sent during the blocked
+  attempt. The board was restored to the normal ARM image and its finite serial
+  monitor reported `TEST:SUMMARY pass=1 fail=0`. PC VPCD live-static-root
+  deletion passed 7/7 APDUs; host RP2350 overlay power-cut model passed 1,000
+  reclamation cut points. Neither substitutes for physical flash interruption.

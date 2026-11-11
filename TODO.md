@@ -615,6 +615,20 @@ Archive text is historical evidence, not current device state or priorities.
   acceptance before enabling firmware deletion. Evidence is in `.agent/QKB.md`
   and the 2026-11-11 `progress.md` record.
 
+  Additional validation (2026-11-11): the actual `PersistentReclaimer` now has
+  a host regression proving two persisted arrays rooted from another retained
+  package survive while exactly one orphan is erased. The separate live
+  shareable-proxy root enumeration check remains. `./tools/test-persistent-transaction`
+  and `./tools/test-persistent-inventory` pass. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed 7/7 APDUs: the
+  live RSA static root survived a request, then its 10-record graph was erased
+  after clearing the root. `./tools/test-rp2350-fs-overlay` passed, including
+  1,000 simulated cuts during reclaim and retry. This is VPCD and modeled-flash
+  evidence, not physical power-loss validation. The physical probe stopped at
+  its helper-integrity guard before installation/APDUs because
+  `/usr/local/sbin/pico2-pcsc-reader` differs from the checked-in allowlist.
+  Reinstall it per `.agent/EXT_REQUESTS.md`; keep firmware deletion disabled.
+
 ## CAP input-handling review — 2026-11-10
 
 Source: [docs/review_fable52_20261110.md](docs/review_fable52_20261110.md)

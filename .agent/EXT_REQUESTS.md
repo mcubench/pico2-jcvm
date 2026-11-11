@@ -111,3 +111,22 @@ contains the complete PowerShell steps. In brief:
 Please return the Windows version, exact reader name/ATR, before/after GPPro
 listings, JCAlgTest CSV, and comparator output. The CAP remains the unchanged
 pinned upstream fixture; do not modify it.
+
+## Refresh the Pico-only PC/SC helper for physical deletion validation
+
+The checked-in physical test guard found that `/usr/local/sbin/pico2-pcsc-reader`
+is an older, broader helper than `tools/pico2-pcsc-reader-root`. It filters by
+USB VID/PID only and does not verify the JCVM manufacturer/product strings.
+Because of that mismatch, `tools/test-persistent-reclaimer-physical` stopped
+before installation or APDUs. Please run once from the repository root:
+
+```sh
+sudo ./tools/install-pcsc-sudoers
+```
+
+Then reply when it finishes. The agent will verify `cmp -s
+tools/pico2-pcsc-reader-root /usr/local/sbin/pico2-pcsc-reader`, refresh the
+authorized USB ACL, and run a bounded physical reclaimer probe on reader
+`Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`. This is required to
+continue physical flash-erasure validation; no test APDUs were sent during the
+failed attempt.
