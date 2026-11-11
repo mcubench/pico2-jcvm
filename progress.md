@@ -27849,5 +27849,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. USB enumeration and all flash attempts used the required escalated host-access path. `./tools/flash --usb-path 1-3|1-4|1-5 build/arm/pico2_choupi.uf2` failed before writing: all devices enumerated as runtime `2e8a:0009`, picotool found no BOOTSEL device/reset interface, and bounded recovery did not produce BOOTSEL `2e8a:000f`.
 - Result: ARM image SHA-256 `fc786e5c942f82872bd5fb6d8397b3b02699f02ba4378287bab37d2f5daaef07`; normal firmware-only image preserves persistent card data. No board was flashed, so CPLC was not yet confirmed on physical hardware.
 - Decision: The user's BOOTSEL report and this VM's USB state disagree. Resume once host passthrough exposes a board as BOOTSEL; then flash, inspect finite serial output, and query CPLC.
-- Commit: recorded in the following documentation commit.
+- Commit: `5a879f5b`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`; USB diagnostics from `lsusb`, `./tools/doctor`, and per-path `./tools/flash` attempts.
