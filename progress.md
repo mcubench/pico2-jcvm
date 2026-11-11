@@ -22138,7 +22138,7 @@
 - Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. Fresh-PC `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 SIO_CROSS_AID_REUSE_FIXTURE=1 timeout --signal=TERM --kill-after=5s 1200s ./tools/test-sio-cross-aid-vpcd` passed `TEST:SUMMARY pass=34 fail=0`. The Descriptor-free cross-AID fixture returned its previously known fail-closed INSTALL `6A80`; the multipackage run stopped during that same Descriptor-free INSTALL and is not counted as a pass. USB refresh after the user reported BOOTSEL devices showed only root hubs and VirtualBox Tablet. No physical device test was possible.
 - Result: Static image/reference bounds and persisted primitive kind consistency coexist with valid Descriptor-present CAP load/install, SIO, restart/reset, DELETE and reinstall. ARM firmware ends at `0x100eb2d4`, leaving 85,292 bytes in its 1 MiB firmware window. PC build retains pre-existing Rust and packed-member warnings. Declared-kind first-store validation and hardware runtime remain unverified.
 - Decision: Keep these layout checks. Next, implement and test Descriptor-backed field-kind lookup, while keeping Descriptor-free dynamic execution fail-closed until a verifiable metadata/trust source exists.
-- Commit: `pending`
+- Commit: `bb126e0e`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T041209Z.log`, SHA-256 `bb7a401db76bf61b65aae5ac662f95edefa9e5f359bf0418b6d08006910f7ce1`; no hardware log.
 
 
