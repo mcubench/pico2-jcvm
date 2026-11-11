@@ -19,6 +19,21 @@
   from this PC/SC enumeration issue. Retry both available devices when the
   reader names appear; preserve separate chip IDs and run logs.
 
+## 2026-11-11: helper ACL refresh succeeds but does not publish Pico reader
+
+- **Observed:** `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` returned
+  `PCSC:ACCESS_GRANTED count=1 nodes=/dev/bus/usb/001/045
+  service=pcscd.service`. A bounded `timeout 12s pcsc_scan -r` exited 0 and
+  listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`.
+- **Conclusion:** The approved ACL helper works for one enumerated USB node,
+  but that is not sufficient evidence of PC/SC reader publication. Do not start
+  SmartcardIO, send APDUs, or attribute failure to card firmware until the
+  exact Pico reader appears in the scan.
+- **Next:** The external service recovery request remains open; after host-side
+  PC/SC recovery, rerun the bounded scan and then continue the physical
+  JCAlgTest campaigns on separate boards when available.
+
 # JCSystem request-object-deletion path can be exercised in a diagnostic Pico build — 2026-11-11
 
 - **Symptom:** JCAlgTest's `INS_CARD_RESET` invokes

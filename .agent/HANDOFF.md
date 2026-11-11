@@ -1,4 +1,15 @@
-# Current handoff — opt-in JCSystem deletion image packaged for Windows — 2026-11-11 11:31 CET
+# Current handoff — PC/SC helper refreshed; physical reader still absent — 2026-11-11 14:37 CET
+
+The approved helper `/usr/local/sbin/pico2-pcsc-reader` ran through the
+authorized host-access path and reported `PCSC:ACCESS_GRANTED count=1
+nodes=/dev/bus/usb/001/045 service=pcscd.service`. A bounded
+`timeout 12s pcsc_scan -r` exited 0 but listed only `Virtual PCD 00 00` and
+`Virtual PCD 00 01`; no Pico reader was published. No APDU or flash operation
+was attempted. Keep the external PC/SC recovery request open. Continue offline;
+when a Pico reader appears, begin JCAlgTest 1.8.4 option 2 on one identified
+board and option 1 on another when possible, with separate logs and results.
+
+## Previous handoff — opt-in JCSystem deletion image packaged for Windows — 2026-11-11 11:31 CET
 
 `PICO2_ENABLE_OBJECT_DELETION=1` is an explicit diagnostic-only build switch.
 It makes `JCSystem.isObjectDeletionSupported()` true, records

@@ -27457,3 +27457,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R01 open for physical acceptance and remaining caller-state checks; continue with the next actionable P1 finding while PC/SC recovery is pending.
 - Commit: `50c3a830`
 - Artifacts/logs: `artifacts/logs/rv28-malformed-zero-process-body-length-vpcd-20261106.log`, `artifacts/logs/rv28-malformed-fall-through-vpcd-20261106.log`, `artifacts/logs/rv28-malformed-truncated-sipush-vpcd-20261106.log`; generated CAP code is ignored under `build/`.
+
+## 2026-11-11 Refresh Pico PC/SC helper and recheck reader publication 3 min
+
+- Step/experiment: `HW-JCALGTEST-LONGRUN-PCSC-HELPER-RECHECK`
+- When: '2026-11-11 14:37 CET' - '2026-11-11 14:40 CET'
+- Model: `GPT-6`
+- Change: Refreshed PC/SC USB access with the approved Pico-only helper and updated QKB and handoff with the latest physical reader result.
+- Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` succeeded and granted `/dev/bus/usb/001/045`. Escalated bounded `timeout 12s pcsc_scan -r` exited 0 and listed only VPCD 00 00 and VPCD 00 01. No physical card APDU or flash was attempted.
+- Result: Helper ACL refresh succeeds for one Pico node; PC/SC still does not publish a physical Pico reader, so physical deletion validation and the long JCAlgTest options remain blocked.
+- Decision: Keep the host PC/SC recovery request open. Resume option 2 and option 1 on separate identified Pico boards when a physical reader is enumerated.
+- Commit: `pending`
+- Artifacts/logs: terminal helper and bounded scan output; no standalone log.
