@@ -11919,3 +11919,15 @@ and `Virtual PCD 00 01`. No client connection or APDU was attempted. The
 matching 1.8.4 client and interactive instructions are documented in
 `docs/windows-jcalgtest-object-deletion.md`; once PC/SC publishes the physical
 reader, use separate identified tokens for options 2 and 1 when available.
+
+## PC/SC daemon recheck — 2026-11-11 14:14 CET
+
+The authorized helper reports access to D92 at `/dev/bus/usb/001/045`, and
+`lsusb -v -d 2e8a:0009` confirms a valid CCID interface. PC/SC remains unusable:
+one bounded scan listed only VPCD 00 00/01; a later terminal-mode scan hung
+after the banner and timed out. A non-sudo `systemctl restart pcscd.service`
+reported a systemd connection timeout; a subsequent status showed a new
+`pcscd` invocation, but it did not resolve reader publication. No CAP was
+installed and no APDUs were sent. `.agent/EXT_REQUESTS.md` asks for one
+privileged restart and bounded scan. Until then, continue offline and do not
+count USB enumeration as physical PC/SC test availability.

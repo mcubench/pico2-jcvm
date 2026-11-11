@@ -140,3 +140,24 @@ device(s) to the VM. If Windows has captured a BOOTSEL device, attach that
 device to the VM too. Once reattached, report completion; I will recheck
 `lsusb -d 2e8a:0009`, `pcsc_scan -r`, and Java SmartcardIO before continuing.
 No additional firmware flash or card APDU has been performed.
+
+## Recover the PC/SC service for the local JCAlgTest campaigns
+
+The Pico `D92E743D5F640C0F` is currently visible in guest USB enumeration as
+`2e8a:0009 Pico2 Pico2 JCVM CCID` at `/dev/bus/usb/001/045`, and its USB
+descriptors include a CCID interface. However, `pcsc_scan -r` has either listed
+only the two VPCD readers or hung after its banner; it never listed D92. The
+Pico-only helper grants `pcscd` access. A non-sudo `systemctl restart
+pcscd.service` timed out while the daemon was in this state.
+
+Please run these commands in the development VM, then send the complete output:
+
+```sh
+sudo systemctl restart pcscd.service
+sudo -n /usr/local/sbin/pico2-pcsc-reader
+timeout 10s pcsc_scan -r
+```
+
+If the final scan still omits D92, leave the token connected and report that
+result; I will continue with offline work until PC/SC publishes it. Do not
+flash or send card APDUs as part of this service recovery.

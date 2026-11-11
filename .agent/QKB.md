@@ -9870,3 +9870,21 @@ Check new loader, resolver and bytecode code against these before review.
 - **Fix:** `Context::collectRetainedHeaps` seeds each package heap from non-foreign roots, propagates only foreign array/instance edges from fully marked sources until the graph stops growing, and then reclaims unmarked slots. The normal per-APDU collector remains conservative; the coordinated sweep runs when an object-deletion request is serviced. Ambiguous package contexts, active Java stacks, incomplete roots, or uncovered foreign-source storage fail closed without freeing objects.
 - **Validation:** `./tools/test-rmi-registry` passes rooted/unrooted two-heap cycles, three-heap cycles in both collection orders, an A→B/C→D rooted diamond, eight repeated three-heap cycles with stable three-slot total, and an ambiguous-package fail-closed case. ARM and RISC-V wrappers pass with `PICO2_ENABLE_OBJECT_DELETION=1`.
 - **Limit / next:** The connected D92 USB device still does not appear in `pcsc_scan -r`; no physical JCAlgTest reset/deletion run or measured RAM plateau has been performed. Keep R59 open until the physical option 2/option 1 campaign can validate deletion requests and repeated-cycle memory behavior.
+
+## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
+
+- **Observed:** The Pico-only helper grants access to `/dev/bus/usb/001/045`;
+  `lsusb -v -d 2e8a:0009` reports the expected CDC and CCID interfaces and
+  serial `D92E743D5F640C0F`. PC/SC has listed only the two VPCD readers, and a
+  later bounded `pcsc_scan -r` stalled after its banner. `pcscd` is
+  socket-activated; a status snapshot showed it active, but no physical reader
+  appeared.
+- **Restart attempt:** Non-sudo `systemctl restart pcscd.service` reported
+  `Connection timed out`. A later status showed a new daemon invocation, but
+  the scan still stalled. Journal details are not readable in this execution
+  context, and root access is limited to the approved Pico-only helper.
+- **Limit / next:** Do not treat USB enumeration as a working PC/SC reader or
+  send APDUs. A privileged restart plus a bounded `pcsc_scan -r` is requested
+  in `.agent/EXT_REQUESTS.md`. Once PC/SC publishes the reader, continue the
+  physical option 2 and option 1 campaigns on separate identified boards when
+  possible.
