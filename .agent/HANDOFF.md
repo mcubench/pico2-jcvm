@@ -11931,3 +11931,8 @@ reported a systemd connection timeout; a subsequent status showed a new
 installed and no APDUs were sent. `.agent/EXT_REQUESTS.md` asks for one
 privileged restart and bounded scan. Until then, continue offline and do not
 count USB enumeration as physical PC/SC test availability.
+
+The upstream fixture manifest was reverified offline with
+`./tools/fixture-path --verify`: `FIXTURES:PASS files=81 jcalgtest=1.8.4
+api_caps=48`. The original CAP/client pair remains intact and ready for the
+two physical runs once PC/SC recovers.

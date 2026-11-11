@@ -27433,3 +27433,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Request one privileged PC/SC service restart and bounded scan through `.agent/EXT_REQUESTS.md`; continue offline until the physical reader is published.
 - Commit: `9ee6ca05`
 - Artifacts/logs: systemd status and USB/PCSC output inspected in terminal; no standalone log.
+
+## 2026-11-11 Verify long-run JCAlgTest fixtures 2 min
+
+- Step/experiment: `HW-JCALGTEST-LONGRUN-FIXTURE-VERIFY`
+- When: '2026-11-11 14:14 CET' - '2026-11-11 14:16 CET'
+- Model: `GPT-6`
+- Change: Revalidated the pinned fixture manifest for the requested physical JCAlgTest campaigns while PC/SC access is unavailable.
+- Validation: `./tools/fixture-path --verify` passed with `FIXTURES:PASS files=81 jcalgtest=1.8.4 api_caps=48`.
+- Result: Unchanged upstream 1.8.4 / jc305 inputs are intact. No physical test was started.
+- Decision: Reuse the pinned 1.8.4 CAP/client after the physical Pico is published by PC/SC.
+- Commit: `<fill after commit>`
+- Artifacts/logs: fixture paths and hashes in `tests/fixtures/manifest.json`; no separate output file.
