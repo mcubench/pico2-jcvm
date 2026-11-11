@@ -27503,5 +27503,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan and reported `RMI_REGISTRY:PASS retained_peer_static_proxy_roots=2`, alongside the existing cycle, diamond, repeated-reclamation and ambiguous-package cases. No firmware build or hardware access was needed for this test-only change.
 - Result: `collectRetainedHeaps()` preserves both peer-rooted objects and reclaims one orphan in this fixture. A synthetic missing proxy instance failed root tracing, so the accepted fixture creates a valid proxy object in the peer heap.
 - Decision: Continue R59 toward broader runtime roots, reset-driven physical deletion and bounded RAM plateau evidence; keep object deletion disabled by default.
-- Commit: `pending`
+- Commit: `e00707d9`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
+
+## 2026-11-11 Repeat diamond reclamation through production context registry 6 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-REPEATED-DIAMOND`
+- When: '2026-11-11 14:48 CET' - '2026-11-11 14:54 CET'
+- Model: `GPT-6`
+- Change: Added an eight-iteration four-context diamond create/root/remove/reclaim test using `Context::collectRetainedHeaps()`. Updated the R59 summary, QKB and handoff with the measured unit slot counts and limitations.
+- Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan. Each rooted iteration had 4 reachable and 4 total arrays; each rootless sweep reclaimed 4 arrays and kept total slots at 4.
+- Result: Production registry enumeration reuses a stable four-slot heap table across these eight host-unit cycles. This is not RP2350 RAM, flash-write or power-loss evidence.
+- Decision: Keep R59 open and object deletion disabled by default. Physical JCAlgTest reset/deletion and bounded device memory measurement remain required.
+- Commit: `pending`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output `RMI_REGISTRY:PASS retained_context_diamond_cycles=8 slots=4`.

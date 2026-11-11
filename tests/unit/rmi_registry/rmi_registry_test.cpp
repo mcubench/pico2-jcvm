@@ -985,6 +985,53 @@ void verify_retained_context_foreign_cycle_collected() {
   std::puts("RMI_REGISTRY:PASS retained_peer_static_proxy_roots=2");
 }
 
+void verify_retained_context_repeated_diamond_reclamation() {
+  constexpr jcvm::jpackage_ID_t package_a = 34;
+  constexpr jcvm::jpackage_ID_t package_b = 35;
+  constexpr jcvm::jpackage_ID_t package_c = 36;
+  constexpr jcvm::jpackage_ID_t package_d = 37;
+  jcvm::Context context_a(28, package_a);
+  jcvm::Context context_b(29, package_b);
+  jcvm::Context context_c(30, package_c);
+  jcvm::Context context_d(31, package_d);
+  constexpr uint32_t stable_slots = 4;
+
+  for (uint8_t iteration = 0; iteration < 8; ++iteration) {
+    const auto array_a = context_a.getHeap().addArray(
+        2, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    const auto array_b = context_b.getHeap().addArray(
+        1, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    const auto array_c = context_c.getHeap().addArray(
+        1, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    const auto array_d = context_d.getHeap().addArray(
+        0, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    context_a.getHeap().getArray(array_a)->setReferenceEntry(
+        0, array_b, context_a, package_b);
+    context_a.getHeap().getArray(array_a)->setReferenceEntry(
+        1, array_c, context_a, package_c);
+    context_b.getHeap().getArray(array_b)->setReferenceEntry(
+        0, array_d, context_b, package_d);
+    context_c.getHeap().getArray(array_c)->setReferenceEntry(
+        0, array_d, context_c, package_d);
+    context_a.getHeap().setStaticReferenceRoot(package_a, 0, array_a);
+
+    const auto rooted = jcvm::Context::collectRetainedHeaps();
+    assert(rooted.complete && rooted.arrays_reclaimed == 0);
+    assert(rooted.arrays_reachable == stable_slots);
+    assert(rooted.arrays_total == stable_slots);
+
+    context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+    const auto rootless = jcvm::Context::collectRetainedHeaps();
+    assert(rootless.complete && rootless.arrays_reclaimed == stable_slots);
+    assert(rootless.arrays_total == stable_slots);
+  }
+  std::puts("RMI_REGISTRY:PASS retained_context_diamond_cycles=8 slots=4");
+}
+
 void verify_three_heap_foreign_cycle_and_repeated_reclamation() {
   constexpr jcvm::jpackage_ID_t package_a = 34;
   constexpr jcvm::jpackage_ID_t package_b = 35;
@@ -1727,6 +1774,7 @@ int main() {
          target_receiver.compact());
 
   verify_retained_context_foreign_cycle_collected();
+  verify_retained_context_repeated_diamond_reclamation();
 
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);

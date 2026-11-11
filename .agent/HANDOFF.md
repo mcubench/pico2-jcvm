@@ -1,4 +1,22 @@
-# Current handoff — retained peer static/proxy GC roots covered — 2026-11-11 14:48 CET
+# Current handoff — production retained collector repeated-root plateau test — 2026-11-11 14:54 CET
+
+`tests/unit/rmi_registry/rmi_registry_test.cpp` now exercises eight repeated
+four-context diamond create/collect cycles through
+`Context::collectRetainedHeaps()`. Each rooted graph reports four reachable
+and four total array slots; after removing its root, the collector reclaims all
+four, and the next iteration reuses the same four slots. The focused suite
+passes under AddressSanitizer/UBSan. Together with the preceding checks, the
+production entrypoint unit coverage now includes a two-context cycle, peer
+cached-static and shareable-proxy roots, and repeated diamond reclamation.
+
+The stable slot count is host unit evidence, not measured RP2350 RAM plateau or
+flash interruption safety. Keep deletion disabled by default and R59 open for
+physical reset/deletion testing and actual memory measurements. Physical
+JCAlgTest is still blocked because PC/SC lists only VPCD.
+
+---
+
+# Previous handoff — retained peer static/proxy GC roots covered — 2026-11-11 14:48 CET
 
 The production `Context::collectRetainedHeaps()` unit test now covers peer
 context roots as well as cross-package cycles. A second context roots one

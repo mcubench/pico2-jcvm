@@ -9906,6 +9906,11 @@ Check new loader, resolver and bytecode code against these before review.
   instance. The proxy itself must be a valid instance in the peer heap because
   `visitRootReferences()` marks the proxy object as well as its server target;
   a synthetic absent proxy handle correctly made the root walk incomplete.
+- **Repeated graph:** Through `collectRetainedHeaps()`, eight four-context
+  diamond cycles each report four reachable/four total arrays, then reclaim all
+  four after root removal. The next iteration reuses the same four slots.
+  This is bounded unit handle-slot evidence only; it does not measure device
+  RAM or persistent-flash growth.
 
 ## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
 
