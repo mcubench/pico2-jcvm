@@ -556,20 +556,21 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
     return;
   }
 
-  // This probe only knows how to collect roots for the currently selected
-  // owner. Retained peer contexts or sibling applets may hold additional roots;
-  // do not mutate persistent storage until those domains are enumerated.
-  if (!context.isSoleRetainedContext()) {
-    std::fprintf(stderr,
-                 "OBJECT_DELETION:SKIP package=%u owner=%u "
-                 "reason=nonexclusive_context request_retained=1\n",
-                 static_cast<unsigned>(context.getAppletPackageID()),
-                 static_cast<unsigned>(context.getAppletID()));
-    return;
-  }
-
   try {
     PersistentInventoryCounts roots;
+    // Each package must have one retained heap/handle namespace. Peer package
+    // contexts may cache cross-package static references or retain server
+    // objects through shareable proxies; include those roots before tracing
+    // this package's persistent records.
+    if (!context.appendRetainedRootsForPackage(
+            context.getAppletPackageID(), roots.references)) {
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:SKIP package=%u owner=%u "
+                   "reason=ambiguous_package_context request_retained=1\n",
+                   static_cast<unsigned>(context.getAppletPackageID()),
+                   static_cast<unsigned>(context.getAppletID()));
+      return;
+    }
     const auto static_result =
         jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
             context.getAppletPackageID(), context.getHeap(),

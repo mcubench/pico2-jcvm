@@ -1,3 +1,13 @@
+# Current handoff — retained cross-context roots added to request-gated deletion — 2026-11-11 09:59 CET
+
+`Context::appendRetainedRootsForPackage()` now gathers cached static references and shareable-proxy server references from retained contexts into the target package's root vector. It allows peer package contexts, but fails closed if more than one retained context owns the target package. The unit test traces two actual server-heap objects held by a peer package's cached static slot and proxy. The previous global sole-context check was removed.
+
+Validation: `./tools/test-persistent-transaction` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `48/48`, with the expected package-static orphan erased; ARM/RISC-V builds passed. Full ARM image was flashed to identified Pico `2BED26ED20556535`; its archived finite serial log reports `TEST:SUMMARY pass=1 fail=0`. Hardware deletion is still disabled. The test only establishes these added roots and does not establish all persistent/RMI roots or flash interruption safety.
+
+Next: add PersistentReclaimer-level tests with durable cross-package aliases and live RMI/shareable roots; validate physical flash-cut recovery; then resume the unchanged 1.8.4 long run before changing the firmware support result. See `.agent/QKB.md` and the current RESOURCE-01 checklist in `TODO.md`.
+
+---
+
 # Current handoff — package-static request-gated reclaim covered in multipackage VPCD — 2026-11-11 09:18 CET
 
 The authenticated PC VPCD multipackage integration now requests deferred object deletion after creating and dropping a serialized package-static byte array. Core and the transaction-probe package are both installed. The request returned `9000`; the runtime completed both root scans and erased exactly one package-static tag (`erased_applet=0`, `erased_package=1`). Full suite: `TEST:SUMMARY pass=48 fail=0`. Logs are `artifacts/logs/host-vpcd-multipackage-apdu-20261111T081343Z.log` and `artifacts/logs/host-vpcd-multipackage-restart-20261111T081343Z.log`.
@@ -10,7 +20,7 @@ This establishes one package-static orphan path in PC VPCD; it does not establis
 
 `./tools/test-rmi-registry` passed under AddressSanitizer and UBSan. Its separate-package-context test verifies that foreign reference arrays are routed into the target heap's root walk: two target objects remained live, clearing one foreign entry released exactly one, and package cleanup released the other. Sibling-applet and RMI lifecycle root checks also passed.
 
-This narrows but does not close the persistent deletion safety gap. The test does not exercise the persistent reclaimer with multiple retained contexts, persistent static aliases, every RMI root domain, an in-flight/quiescence boundary, or physical flash interruption. Keep the `isSoleRetainedContext()` guard and firmware object deletion disabled. Next add reclaimer-level multi-context coverage and determine which root types are still missing.
+At the time of this 08:45 entry, the exclusive-context gate was still in place. The 09:59 entry above replaces it for the host test path with a target-package uniqueness check plus cached-static and shareable-proxy roots from peer contexts. The earlier test still does not cover durable aliases, every RMI root domain, an in-flight/quiescence boundary, or physical flash interruption. Keep firmware object deletion disabled and continue with reclaimer-level durable-root coverage.
 
 The max_crypto empty-card UF2 remains diagnostic-only for a Windows long run; RESOURCE-01 is unresolved. See the 08:23 handoff entry below for image hash and external RSA failure evidence.
 

@@ -94,9 +94,34 @@ Heap *Context::findRetainedAppletHeap(const jpackage_ID_t package_id,
   return nullptr;
 }
 
-bool Context::isSoleRetainedContext() const noexcept {
+bool Context::appendRetainedRootsForPackage(
+    const jpackage_ID_t package_id,
+    std::vector<jref_t> &references) const {
+  const Context *target_context = nullptr;
   for (const Context *context : retained_contexts) {
-    if (context != nullptr && context != this) return false;
+    if (context == nullptr || context->getAppletPackageID() != package_id) {
+      continue;
+    }
+    if (target_context != nullptr && target_context != context) return false;
+    target_context = context;
+  }
+  if (target_context != this) return false;
+
+  const auto append_reference = [](const jref_t reference, void *opaque) {
+    static_cast<std::vector<jref_t> *>(opaque)->push_back(reference);
+  };
+  for (const Context *context : retained_contexts) {
+    if (context == nullptr) continue;
+    context->heap.visitStaticReferenceRootsForPackage(
+        package_id, append_reference, &references);
+    for (const auto &instance : context->applet_instances) {
+      for (const auto &proxy : instance.shareable_proxies) {
+        if (proxy.server_package_id == package_id &&
+            !proxy.server_reference.isNullPointer()) {
+          references.push_back(proxy.server_reference);
+        }
+      }
+    }
   }
   return true;
 }

@@ -113,23 +113,21 @@ int main() {
   {
     constexpr uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62};
     jcvm::Context first_context(0x71, 0x31);
-    const bool first_context_is_exclusive =
-        first_context.isSoleRetainedContext();
-    bool second_context_blocks_collection = false;
+    std::vector<jcvm::jref_t> initial_roots;
+    const bool initial_package_context_is_unique =
+        first_context.appendRetainedRootsForPackage(0x31, initial_roots);
+    bool peer_package_context_is_supported = false;
     {
       jcvm::Context second_context(0x72, 0x32);
-      second_context_blocks_collection =
-          !first_context.isSoleRetainedContext() &&
-          !second_context.isSoleRetainedContext();
+      std::vector<jcvm::jref_t> roots_with_peer;
+      peer_package_context_is_supported =
+          first_context.appendRetainedRootsForPackage(0x31, roots_with_peer);
     }
-    const bool exclusivity_restored =
-        first_context.isSoleRetainedContext();
     const auto original_applet_root = first_context.getHeap().addArray(
         1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
     first_context.markAppletRegistered(original_applet_root);
     const bool sibling_applet_accepted =
-        first_context.activateAppletInstance(0x73, aid, sizeof(aid)) &&
-        first_context.isSoleRetainedContext();
+        first_context.activateAppletInstance(0x73, aid, sizeof(aid));
     const auto sibling_applet_root = first_context.getHeap().addArray(
         1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
     first_context.markAppletRegistered(sibling_applet_root);
@@ -143,10 +141,46 @@ int main() {
     };
     const bool sibling_applet_roots_are_enumerated =
         contains_root(original_applet_root) && contains_root(sibling_applet_root);
-    expect(first_context_is_exclusive && second_context_blocks_collection &&
-               exclusivity_restored && sibling_applet_accepted &&
+    expect(initial_package_context_is_unique &&
+               peer_package_context_is_supported && sibling_applet_accepted &&
                sibling_applet_roots_are_enumerated,
-           "persistent_deletion_probe_accepts_and_roots_sibling_applets");
+           "persistent_deletion_roots_sibling_applets_with_peer_package_context");
+  }
+
+  {
+    constexpr uint8_t server_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x63};
+    jcvm::Context server_context(0x31, 0x41);
+    jcvm::Context client_context(0x32, 0x42);
+    const auto server_object = server_context.getHeap().addInstance(
+        jcvm::JC_Instance(server_context.getHeap(), 0x41, 7));
+    const auto cached_static_object = server_context.getHeap().addInstance(
+        jcvm::JC_Instance(server_context.getHeap(), 0x41, 8));
+    jcvm::jref_t proxy_object;
+    proxy_object.setOffset(3);
+    proxy_object.setAsInstance(true);
+    const bool proxy_registered = client_context.registerShareableProxy(
+        proxy_object, server_aid, sizeof(server_aid), server_object, 0x41);
+    client_context.getHeap().setStaticReferenceRoot(0x42, 2,
+                                                     cached_static_object,
+                                                     0x41);
+    std::vector<jcvm::jref_t> roots;
+    const bool roots_complete =
+        server_context.appendRetainedRootsForPackage(0x41, roots);
+    const auto summary = server_context.getHeap().traceReachableFrom(roots);
+    bool duplicate_target_context_fails_closed = false;
+    {
+      jcvm::Context duplicate_server_context(0x33, 0x41);
+      std::vector<jcvm::jref_t> ambiguous_roots;
+      duplicate_target_context_fails_closed =
+          !server_context.appendRetainedRootsForPackage(
+              0x41, ambiguous_roots) &&
+          ambiguous_roots.empty();
+    }
+    expect(proxy_registered && roots_complete &&
+               summary.complete && summary.instances_total == 2 &&
+               summary.instances_reachable == 2 &&
+               duplicate_target_context_fails_closed,
+           "persistent_deletion_roots_include_peer_shareable_proxy_and_reject_ambiguous_heap");
   }
 
   {

@@ -149,9 +149,12 @@ public:
   /// Find a retained applet owner's Heap facade in a package context.
   static Heap *findRetainedAppletHeap(jpackage_ID_t package_id,
                                       japplet_ID_t owner) noexcept;
-  /// Whether this is the only retained CAP context. Multiple applet instances
-  /// in this context share a heap and are included in its root walk.
-  bool isSoleRetainedContext() const noexcept;
+  /// Append cached static and shareable-proxy references in retained CAP
+  /// contexts that target this package's heap. Return false if the target
+  /// package has multiple retained contexts, whose independent handle tables
+  /// cannot be merged.
+  bool appendRetainedRootsForPackage(
+      jpackage_ID_t package_id, std::vector<jref_t> &references) const;
   /// Default constructor
   Context(const uint8_t appletID, const jpackage_ID_t packageID);
   ~Context() noexcept;

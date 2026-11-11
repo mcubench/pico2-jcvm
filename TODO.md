@@ -604,6 +604,17 @@ Archive text is historical evidence, not current device state or priorities.
   retained applet/package contexts and run flash power-cut recovery before any
   runtime wiring or `isObjectDeletionSupported()` change.
 
+  Progress (2026-11-11): The request-gated host collector now includes cached
+  cross-package static roots and shareable-proxy server references from retained
+  contexts. It permits a peer package context and fails closed if the target
+  package has multiple retained heap contexts. Persistent-transaction tests,
+  multipackage VPCD (48/48), ARM/RISC-V builds, and a finite monitor on identified
+  Pico 2 `2BED26ED20556535` pass. This remains PC-only deletion support: normal
+  Pico firmware still reports deletion unsupported. Complete durable alias/RMI
+  root coverage, physical interruption recovery, and unchanged long JCAlgTest
+  acceptance before enabling firmware deletion. Evidence is in `.agent/QKB.md`
+  and the 2026-11-11 `progress.md` record.
+
 ## CAP input-handling review — 2026-11-10
 
 Source: [docs/review_fable52_20261110.md](docs/review_fable52_20261110.md)
