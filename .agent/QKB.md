@@ -10059,3 +10059,19 @@ Check new loader, resolver and bytecode code against these before review.
 - **Use next time:** Continue a pending batched collection with an APDU that
   does not enqueue a new request; assert the number of service calls and total
   erased records separately.
+
+## PC VPCD collector must use the physical shared deletion coordinator — 2026-11-11
+
+- **Cause:** The PC/VPCD object-deletion path still called applet-tag and
+  package-static reclaimers independently with no per-APDU cap, even after the
+  physical path switched to a shared allowance.
+- **Fix:** Both paths now call `reclaimUnreachableObjectDeletionBatch()` with
+  `kObjectDeletionMaxRecordsPerApdu` (8). The VPCD harness asserts that the
+  total erased across applet and package namespaces never exceeds eight in a
+  single collector call.
+- **Validation:** One- and four-replacement RSA batch tests pass with 2 and 6
+  service calls, reclaiming 10 and 40 records. The live-static case passes all
+  8 checks; persistent transaction tests and ARM/RISC-V object-deletion
+  wrapper builds pass.
+- **Use next time:** Keep emulator collector semantics aligned with the
+  physical implementation so VPCD catches changes to the real batch policy.

@@ -141,6 +141,8 @@ VisitResult visitUnreachablePackageStaticTags(
 
 namespace PersistentReclaimer {
 
+constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = 8;
+
 struct ObjectDeletionBatchResult {
   PersistentInventory::VisitResult applet_result =
       PersistentInventory::VisitResult::Complete;

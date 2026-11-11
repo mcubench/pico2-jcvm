@@ -27682,3 +27682,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the VM passthrough request open. Resume physical validation when a board appears in either runtime PC/SC or BOOTSEL enumeration.
 - Commit: `8be342d3`
 - Artifacts/logs: command output recorded in session; no log file created.
+
+## 2026-11-11 Align PC VPCD deletion with shared physical budget 34 min
+
+- Step/experiment: `RESOURCE-01-VPCD-SHARED-BUDGET-01`
+- When: '2026-11-11 18:36 CET' - '2026-11-11 19:10 CET'
+- Model: `GPT-6`
+- Change: Routed PC/VPCD request servicing through `reclaimUnreachableObjectDeletionBatch()` and a named eight-record-per-APDU constant shared with the physical path. Extended VPCD scenarios for RSA replacement and live static roots, asserted the combined applet/package erase limit, and retained continuation checks for pending batches.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-batch` passed (2 service calls, 10 records); the 4-cycle batch passed (6 calls, 40 records); `rsa-public` passed (2 service calls, 10 records). `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed (8 checks). `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). ARM and RISC-V object-deletion-enabled `max_crypto` builds passed; ARM firmware end `0x100f4190`, 48,752 bytes remaining. No physical device was visible in runtime PC/SC or BOOTSEL enumeration.
+- Result: PC VPCD and physical collectors now share one eight-record deletion policy; integration logs show no call exceeds it. Actual physical CCID timing remains unmeasured.
+- Decision: Keep deletion diagnostic-only; refresh the external Windows package from source with auditable provenance, then validate the updated image on an identified physical board when VM passthrough exposes it.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T175424Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175512Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175736Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T180942Z.log`; ARM/RISC-V outputs under `build/`.

@@ -7,6 +7,8 @@ harness generated a third, empty collection for a 10-record fixture. One- and
 four-replacement runs now pass with exactly 2 and 6 collector calls and erase
 10 and 40 records respectively. Every logged call is checked against the
 shared maximum of eight records. The live-static regression also passes.
+The PC VPCD collector now calls the same shared applet/package coordinator and
+named limit constant as the physical path.
 
 `./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`). The ARM
 object-deletion-enabled `max_crypto` build passes with firmware end
