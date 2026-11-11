@@ -1,4 +1,4 @@
-# Current handoff — VPCD multi-batch harness fixed; VM still receives no Pico — 2026-11-11 18:58 CET
+# Current handoff — VPCD deletion budget aligned; VM still receives no Pico — 2026-11-11 19:10 CET
 
 Fixed `tools/test-object-deletion-vpcd` so RSA batch continuation uses the
 probe's non-requesting status APDU (`00000D`) instead of issuing an extra
@@ -9,6 +9,8 @@ four-replacement runs now pass with exactly 2 and 6 collector calls and erase
 shared maximum of eight records. The live-static regression also passes.
 The PC VPCD collector now calls the same shared applet/package coordinator and
 named limit constant as the physical path.
+The continuation harness change is committed as `cef3a453`, and the shared
+PC/physical implementation plus VPCD assertions are in `c30dacc1`.
 
 `./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`). The ARM
 object-deletion-enabled `max_crypto` build passes with firmware end
