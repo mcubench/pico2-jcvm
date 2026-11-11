@@ -27347,5 +27347,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-jcvmarray-allocation` configured, built, linked, and passed all nine assertions: static-root reservation atomicity/reuse, allocation failure propagation, copy-construction/assignment cleanup, and persistent-array allocation failure. No firmware source changed; ARM/RISC-V builds were not required for this test fixture.
 - Result: The prior undefined-symbol link failure is fixed without pulling the flash backend into the standalone test. The stub keeps the generation fixed; rollback-generation behavior remains covered by other tests.
 - Decision: Continue with MIG-20261107-02 partial-header regression offline. Resume physical JCAlgTest only after a Pico appears in PC/SC; retain separate tokens for the two long runs when possible.
-- Commit: pending
+- Commit: `566adefc`
 - Artifacts/logs: `build/tests/unit/jcvmarray-allocation/`; no standalone log.
