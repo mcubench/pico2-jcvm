@@ -9933,6 +9933,19 @@ Check new loader, resolver and bytecode code against these before review.
   enumeration is incomplete and investigate any future device telemetry that
   reports this guard.
 
+### VPCD deletion test wrapper telemetry counts request completions — 2026-11-11
+
+- **Failure:** `tools/test-object-deletion-vpcd 1 rsa-live-static` completed
+  all 7 APDU checks, but the wrapper expected two deletion requests and counted
+  four lines because each request emits both `OBJECT_DELETION:HEAP_GC` and
+  `OBJECT_DELETION: package=...`.
+- **Fix/validation:** Count only the package reclamation completion records.
+  Rerun passed with one protected-root request, one cleanup request, and 10
+  applet tags erased after clearing the static root. Log:
+  `artifacts/logs/object-deletion-vpcd-20261111T141050Z.log`.
+- **Scope:** This is a PC VPCD harness correction, not a firmware defect or
+  physical hardware result.
+
 ## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
 
 - **Observed:** The Pico-only helper grants access to `/dev/bus/usb/001/045`;

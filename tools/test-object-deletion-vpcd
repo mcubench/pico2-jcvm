@@ -90,7 +90,7 @@ grep -Eq \
   "${log}" || die "deferred request did not complete an applet-tag erase; see ${log}"
 grep -Eq '^OBJECT_DELETION: .*erased_package=0 ' "${log}" || \
   die "unexpected package-static erase in this owner-only fixture; see ${log}"
-call_count="$(grep -c '^OBJECT_DELETION:' "${log}" || true)"
+call_count="$(grep -c '^OBJECT_DELETION: package=' "${log}" || true)"
 reclaim_count="$(grep -Ec \
   '^OBJECT_DELETION: package=.*applet_result=0 package_result=0 erased_applet=[1-9][0-9]* ' \
   "${log}" || true)"

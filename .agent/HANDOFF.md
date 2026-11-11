@@ -1,4 +1,22 @@
-# Current handoff — production collector ambiguity guard covered — 2026-11-11 15:02 CET
+# Current handoff — VPCD deletion wrapper counter corrected and passes — 2026-11-11 15:11 CET
+
+Fixed `tools/test-object-deletion-vpcd` to count completed reclamation records
+(`OBJECT_DELETION: package=...`) rather than all diagnostic lines. Each request
+also emits `OBJECT_DELETION:HEAP_GC`, so the old generic prefix count doubled
+the request total and falsely failed after successful APDUs. Reran
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static`
+through the elevated host path: `TEST:SUMMARY pass=7 fail=0`, then
+`OBJECT_DELETION_LIVE_STATIC:PASS protected_calls=1 cleanup_calls=1
+erased_per_cleanup=10` and `OBJECT_DELETION_VPCD:PASS ... requests=2
+erased_applet_tags=10`. Log:
+`artifacts/logs/object-deletion-vpcd-20261111T141050Z.log`.
+
+This is PC VPCD evidence only. Physical PC/SC still lists only the VPCD readers;
+do not count this as hardware validation or enable object deletion by default.
+
+---
+
+# Previous handoff — production collector ambiguity guard covered — 2026-11-11 15:02 CET
 
 `tests/unit/rmi_registry/rmi_registry_test.cpp` now verifies that the
 production `Context::collectRetainedHeaps()` fails closed when two retained
