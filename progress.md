@@ -27527,5 +27527,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including peer static/proxy roots through the destructive reclaimer and interruption/retry. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`, including 1,000 simulated cuts during persistent reclamation and retry.
 - Result: Current host tests still preserve tested durable roots and recover safely across modeled power cuts. No physical flash interruption or card test was performed.
 - Decision: Keep object deletion disabled by default and RESOURCE-01 open; physical JCAlgTest reset/deletion remains required.
-- Commit: `pending`
+- Commit: `dea49328`
 - Artifacts/logs: test outputs in terminal; binaries under `build/tests/unit/`.
