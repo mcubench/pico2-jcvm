@@ -27222,3 +27222,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep `isSoleRetainedContext()` and firmware deletion disabled. Next add focused persistent-reclaimer tests for multiple contexts and durable/RMI aliases.
 - Commit: 1b9c36cd
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; no archived log.
+
+## 2026-11-11 Verify request-gated package-static deletion with peer package 8 minutes
+
+- Step/experiment: `RESOURCE-01-PEER-PACKAGE-STATIC-RECLAIM-20261111`
+- When: '2026-11-11 09:10 CET' - '2026-11-11 09:18 CET'
+- Model: `gpt-6`
+- Change: Added a local transaction-probe CAP case that creates, serializes, and drops a package-static byte array, then requests object deletion. Added multipackage PC VPCD assertions for both successful root scans and at least one reclaimed record.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed: `TEST:SUMMARY pass=48 fail=0`. The request APDU returned `00 90 00`; runtime reported `applet_result=0 package_result=0 erased_applet=0 erased_package=1`. Logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261111T081343Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261111T081343Z.log`. No ARM/RISC-V build or physical test was run; this changes test-only Java fixture and Python integration code.
+- Result: A dropped package-static array is reclaimed in PC VPCD while another package is installed. Runtime still has only one retained Context at the request point, so this does not establish multi-context root safety or production readiness.
+- Decision: Keep firmware deletion disabled. Next cover shareable roots held by a distinct retained package context in PersistentReclaimer-level tests.
+- Commit: resolve with `git log --grep="test: validate package-static deletion with peer package"`.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261111T081343Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261111T081343Z.log`.

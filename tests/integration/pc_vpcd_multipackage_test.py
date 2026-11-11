@@ -382,6 +382,7 @@ def main() -> int:
         ]
         emulator_env = os.environ.copy()
         emulator_env["PICO2_PERSISTENT_INVENTORY"] = "once"
+        emulator_env["PICO2_TEST_OBJECT_DELETION"] = "1"
         with log_path.open("wb") as log:
             process = subprocess.Popen(command, cwd=root, stdout=log,
                                        stderr=log, start_new_session=True,
@@ -1024,6 +1025,36 @@ def main() -> int:
             if exchange(connection, transaction_select,
                         "SELECT transaction probe")[-2:] != b"\x90\x00":
                 raise RuntimeError("transaction probe SELECT failed")
+            deletion_request = exchange(
+                connection, bytes((0x80, 0x00, 34, 0x00, 0x00)),
+                "request object deletion with retained peer package",
+            )
+            if deletion_request != b"\x00\x90\x00":
+                raise RuntimeError(
+                    "object deletion request with a retained peer package "
+                    "returned " + deletion_request.hex().upper()
+                )
+            deletion_log = restart_log_path.read_text(errors="replace")
+            deletion_result = re.search(
+                r"OBJECT_DELETION: package=(\d+) owner=(\d+) "
+                r"applet_result=(\d+) package_result=(\d+) "
+                r"erased_applet=(\d+) erased_package=(\d+)",
+                deletion_log,
+            )
+            if deletion_result is None:
+                raise RuntimeError(
+                    "deferred object deletion produced no completion diagnostic; "
+                    f"log={restart_log_path}"
+                )
+            if (int(deletion_result.group(3)) != 0 or
+                    int(deletion_result.group(4)) != 0 or
+                    (int(deletion_result.group(5)) < 1 and
+                     int(deletion_result.group(6)) < 1)):
+                raise RuntimeError(
+                    "object deletion did not reclaim the dropped persistent "
+                    f"array cleanly: {deletion_result.group(0)}"
+                )
+            print("TEST:PASS deferred object deletion reclaims orphan with peer package installed")
             prepared = exchange(
                 connection, bytes((0x80, 0x00, 30, 0x00, 0x00)),
                 "prepare transient lifecycle values",
@@ -1090,7 +1121,7 @@ def main() -> int:
                     "registry is not empty after transient probe cleanup"
                 )
             print("TEST:PASS transient probe cleanup leaves registry empty")
-            print("TEST:SUMMARY pass=47 fail=0")
+            print("TEST:SUMMARY pass=48 fail=0")
             return 0
         finally:
             if connection is not None:

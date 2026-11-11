@@ -46,6 +46,7 @@ public final class JCTransactionProbe extends Applet {
   private byte installSawAppletActive;
   private byte selectSawAppletActive;
   private byte deselectSawAppletActive;
+  private static byte[] deletionOrphan;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
@@ -580,6 +581,9 @@ public final class JCTransactionProbe extends Applet {
         break;
       }
       case 34: {
+        deletionOrphan = new byte[8];
+        deletionOrphan[0] = 0x5a;
+        deletionOrphan = null;
         try {
           JCSystem.requestObjectDeletion();
           buffer[0] = 0;

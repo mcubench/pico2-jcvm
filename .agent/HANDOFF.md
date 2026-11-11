@@ -1,3 +1,11 @@
+# Current handoff — package-static request-gated reclaim covered in multipackage VPCD — 2026-11-11 09:18 CET
+
+The authenticated PC VPCD multipackage integration now requests deferred object deletion after creating and dropping a serialized package-static byte array. Core and the transaction-probe package are both installed. The request returned `9000`; the runtime completed both root scans and erased exactly one package-static tag (`erased_applet=0`, `erased_package=1`). Full suite: `TEST:SUMMARY pass=48 fail=0`. Logs are `artifacts/logs/host-vpcd-multipackage-apdu-20261111T081343Z.log` and `artifacts/logs/host-vpcd-multipackage-restart-20261111T081343Z.log`.
+
+This establishes one package-static orphan path in PC VPCD; it does not establish multiple independent retained `Context` root coverage, live cross-package alias safety, physical flash interruption recovery, or long-run JCAlgTest stability. Keep firmware object deletion disabled and RESOURCE-01 open. The local integration fixture and test assertion changes are in the current worktree; validate/commit them as one step.
+
+---
+
 # Current handoff — cross-context root routing validated in unit suite — 2026-11-11 08:45 CET
 
 `./tools/test-rmi-registry` passed under AddressSanitizer and UBSan. Its separate-package-context test verifies that foreign reference arrays are routed into the target heap's root walk: two target objects remained live, clearing one foreign entry released exactly one, and package cleanup released the other. Sibling-applet and RMI lifecycle root checks also passed.
