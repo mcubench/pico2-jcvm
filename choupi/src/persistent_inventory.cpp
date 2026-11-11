@@ -725,5 +725,32 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     }
   }
 }
+
+ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
+    const uint8_t applet_owner, const uint8_t package_id, Heap &heap,
+    const PersistentInventory::RootReferenceEnumerator enumerate_roots,
+    void *root_context, const uint32_t max_erased_count) {
+  ObjectDeletionBatchResult result;
+  result.applet_result = reclaimUnreachableAppletTags(
+      applet_owner, heap, enumerate_roots, root_context,
+      &result.erased_applet, max_erased_count);
+  if (result.applet_result != PersistentInventory::VisitResult::Complete) {
+    result.package_result = result.applet_result;
+    return result;
+  }
+
+  const uint32_t remaining_budget =
+      max_erased_count - result.erased_applet;
+  if (remaining_budget == 0) {
+    // The applet namespace consumed the whole budget. Defer even an empty
+    // package namespace check so this call has a strict upper bound.
+    result.package_result = PersistentInventory::VisitResult::Stopped;
+    return result;
+  }
+  result.package_result = reclaimUnreachablePackageStaticTags(
+      package_id, heap, enumerate_roots, root_context,
+      &result.erased_package, remaining_budget);
+  return result;
+}
 } // namespace PersistentReclaimer
 } // namespace jcvm

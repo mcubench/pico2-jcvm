@@ -651,6 +651,14 @@ Archive text is historical evidence, not current device state or priorities.
   This validates bounded resume behavior in the host filesystem model; physical
   APDU/CCID timing and interruption recovery remain open.
 
+  Budget correction (2026-11-11): review found that the physical caller applied
+  the eight-record limit separately to applet records and package-static
+  records, permitting up to 16 erasures in one APDU. A shared coordinator now
+  spends one total budget across both namespaces. Its regression covers 22
+  records in 8/8/6 batches (the first batch crosses from applet records into
+  package statics). The transaction suite and object-deletion-enabled ARM and
+  RISC-V builds pass. Physical CCID timing remains unverified.
+
 ## CAP input-handling review — 2026-11-10
 
 Source: [docs/review_fable52_20261110.md](docs/review_fable52_20261110.md)

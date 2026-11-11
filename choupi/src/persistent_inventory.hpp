@@ -141,6 +141,31 @@ VisitResult visitUnreachablePackageStaticTags(
 
 namespace PersistentReclaimer {
 
+struct ObjectDeletionBatchResult {
+  PersistentInventory::VisitResult applet_result =
+      PersistentInventory::VisitResult::Complete;
+  PersistentInventory::VisitResult package_result =
+      PersistentInventory::VisitResult::Complete;
+  uint32_t erased_applet = 0;
+  uint32_t erased_package = 0;
+
+  uint32_t erasedTotal() const noexcept {
+    return erased_applet + erased_package;
+  }
+  bool complete() const noexcept {
+    return applet_result == PersistentInventory::VisitResult::Complete &&
+           package_result == PersistentInventory::VisitResult::Complete;
+  }
+};
+
+/// Reclaim applet-owned objects first, then package statics using the same
+/// per-call deletion budget. Stopped means the caller should resume on a later
+/// APDU; the combined erasure count never exceeds `max_erased_count`.
+ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
+    uint8_t applet_owner, uint8_t package_id, Heap &heap,
+    PersistentInventory::RootReferenceEnumerator enumerate_roots,
+    void *root_context, uint32_t max_erased_count);
+
 /// Remove owner-scoped persistent records that a complete strict reachability
 /// walk proves unreachable. This primitive is deliberately not wired into the
 /// normal post-APDU collector: callers must serialize filesystem access and

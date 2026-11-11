@@ -401,32 +401,22 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
     return;
   }
 
-  uint32_t erased_applet = 0;
-  uint32_t erased_package = 0;
-  const auto applet_result =
-      jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
-          static_cast<uint8_t>(context.getAppletID()), context.getHeap(),
-          enumerate_physical_object_deletion_roots, &roots, &erased_applet,
+  const auto deletion_batch =
+      jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+          static_cast<uint8_t>(context.getAppletID()),
+          context.getAppletPackageID(), context.getHeap(),
+          enumerate_physical_object_deletion_roots, &roots,
           kMaxObjectDeletionRecordsPerApdu);
-  auto package_result = applet_result;
-  if (applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
-    package_result =
-        jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
-            context.getAppletPackageID(), context.getHeap(),
-            enumerate_physical_object_deletion_roots, &roots, &erased_package,
-            kMaxObjectDeletionRecordsPerApdu);
-  }
-  const bool complete =
-      applet_result == jcvm::PersistentInventory::VisitResult::Complete &&
-      package_result == jcvm::PersistentInventory::VisitResult::Complete;
+  const bool complete = deletion_batch.complete();
   std::printf("OBJECT_DELETION: package=%u owner=%u applet_result=%u "
               "package_result=%u erased_applet=%u erased_package=%u "
               "static_roots=%u applet_roots=%u pending=%u\r\n",
               static_cast<unsigned>(context.getAppletPackageID()),
               static_cast<unsigned>(context.getAppletID()),
-              static_cast<unsigned>(applet_result),
-              static_cast<unsigned>(package_result), erased_applet,
-              erased_package, roots.static_roots, roots.applet_roots,
+              static_cast<unsigned>(deletion_batch.applet_result),
+              static_cast<unsigned>(deletion_batch.package_result),
+              deletion_batch.erased_applet, deletion_batch.erased_package,
+              roots.static_roots, roots.applet_roots,
               complete ? 0u : 1u);
   if (complete) context.clearObjectDeletionRequest();
 }

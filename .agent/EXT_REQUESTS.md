@@ -152,6 +152,12 @@ the ARM/RISC-V builds, and continue on whichever reader is available.
 
 ## Retry JCSystem object deletion with bounded cleanup (source commit 1651bbdd)
 
+**Superseded:** code review found the eight-record allowance was independently
+applied to applet and package-static namespaces, so one APDU could erase up to
+16 records. A shared total budget is now implemented and validated by host
+tests/builds. Do not use this image for current bounded-deletion acceptance;
+replace this request with a package built from the shared-budget fix.
+
 A fresh empty-card test package is ready. It includes the diagnostic ARM image,
 unchanged JCAlgTest 1.8.4/jc305 CAP and client, GPPro, and serial capture tool.
 The reclaimer now deletes at most eight persistent records per APDU and resumes

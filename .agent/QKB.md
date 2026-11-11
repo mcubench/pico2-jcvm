@@ -10023,3 +10023,21 @@ Check new loader, resolver and bytecode code against these before review.
 - **Use next time:** Treat the boards as physically available but not yet passed
   through to this VM. Refresh the helper after USB reattachment; continue on an
   identified visible token, and do not infer a device fault from this VM state.
+
+## Physical deletion batch limit must span applet and package namespaces — 2026-11-11
+
+- **Cause:** The physical post-APDU caller passed the full limit of eight to
+  `reclaimUnreachableAppletTags()` and then passed eight again to
+  `reclaimUnreachablePackageStaticTags()`. A single APDU could therefore erase
+  as many as 16 records despite the documented eight-record limit.
+- **Fix:** `reclaimUnreachableObjectDeletionBatch()` now runs the applet sweep
+  first and gives the package-static sweep only the unused part of the same
+  budget. If the applet sweep consumes the full limit, package cleanup is
+  deferred to a later APDU.
+- **Validation:** A combined 22-record fixture passes in three calls with
+  erasures split 5+3, 0+8, and 0+6. The persistent transaction suite passes;
+  object-deletion-enabled ARM and RISC-V build wrappers pass. No physical board
+  was visible to this VM, so APDU/CCID response timing remains untested.
+- **Use next time:** Keep one request-wide budget across every namespace that
+  shares a physical APDU. Individual reclaimer limits do not compose into a
+  total limit unless the caller subtracts prior erasures.

@@ -1,4 +1,24 @@
-# Current handoff — bounded reclaimer regression extended; VM still sees no Pico — 2026-11-11 18:30 CET
+# Current handoff — shared deletion budget fixed; VM still sees no Pico — 2026-11-11 18:36 CET
+
+Fixed a second bounded-deletion defect: the physical APDU path had applied the
+limit of eight separately to applet and package-static records. It now uses
+`PersistentReclaimer::reclaimUnreachableObjectDeletionBatch()` to share one
+eight-record total budget and defer package statics when applet cleanup uses
+the full allowance. A 22-record test passes in 8/8/6 total batches, with the
+first split 5 applet + 3 package records. The complete persistent transaction
+suite passes (`TEST:SUMMARY fail=0`); ARM and RISC-V object-deletion-enabled
+build wrappers pass. Physical timing is unverified.
+
+After the user reported the devices physically available, the authorized helper
+was refreshed again and still found zero matching devices in this VM. Do not
+flash until one is passed through. The older package from source commit
+`1651bbdd` predates the shared-budget fix; do not use it for validating the
+current reclaimer. Refresh the Windows package from the new commit after it is
+created, then flash and run the bounded reset test when physical access returns.
+
+---
+
+# Previous handoff — bounded reclaimer regression extended; VM still sees no Pico — 2026-11-11 18:30 CET
 
 The user reports that physical Pico 2 devices are available and the earlier
 absence was a VM passthrough issue. I refreshed the authorized helper, but this

@@ -2556,6 +2556,61 @@ int main() {
   }
 
   {
+    constexpr uint8_t applet_owner = 0x47;
+    constexpr uint8_t package_id = 0xf4;
+    constexpr uint8_t applet_records = 5;
+    constexpr uint8_t package_records = 17;
+    constexpr uint32_t batch_limit = 8;
+    std::array<std::array<uint8_t, 4>, applet_records> applet_tags{};
+    for (uint8_t index = 0; index < applet_records; ++index) {
+      applet_tags[index] = {0x03, applet_owner, 0x20,
+                            static_cast<uint8_t>(index + 1)};
+      seed(applet_tags[index].data(), applet_tags[index].size(),
+           byte_record(index));
+    }
+    std::array<std::array<uint8_t, 5>, package_records> package_tags{};
+    for (uint8_t index = 0; index < package_records; ++index) {
+      package_tags[index] = {0x02, package_id, 0x20,
+                             static_cast<uint8_t>(index + 1), 0xfe};
+      seed(package_tags[index].data(), package_tags[index].size(),
+           byte_record(index));
+    }
+
+    jcvm::Heap heap(applet_owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    const auto first =
+        jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+            applet_owner, package_id, heap, enumerate_root_vector, &roots,
+            batch_limit);
+    const auto second =
+        jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+            applet_owner, package_id, heap, enumerate_root_vector, &roots,
+            batch_limit);
+    const auto third =
+        jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+            applet_owner, package_id, heap, enumerate_root_vector, &roots,
+            batch_limit);
+    const auto all_removed = [&]() {
+      return std::all_of(
+                 applet_tags.begin(), applet_tags.end(), [](const auto &tag) {
+                   return read(tag.data(), tag.size()).empty();
+                 }) &&
+             std::all_of(
+                 package_tags.begin(), package_tags.end(), [](const auto &tag) {
+                   return read(tag.data(), tag.size()).empty();
+                 });
+    };
+    expect(first.erased_applet == 5 && first.erased_package == 3 &&
+               first.erasedTotal() == batch_limit && !first.complete() &&
+               second.erased_applet == 0 && second.erased_package == 8 &&
+               second.erasedTotal() == batch_limit && !second.complete() &&
+               third.erased_applet == 0 && third.erased_package == 6 &&
+               third.erasedTotal() == 6 && third.complete() && all_removed(),
+           "object_deletion_batch_shares_limit_across_applet_and_package_tags");
+  }
+
+  {
     constexpr uint8_t owner = 0x42;
     const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
     const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};
