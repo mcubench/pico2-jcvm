@@ -1,3 +1,45 @@
+# Current handoff — external RSA failure isolated to long-run state; PC/SC unavailable — 2026-11-11 08:23 CET
+
+The external Windows run stopped around
+`TYPE_RSA_PRIVATE LENGTH_RSA_3072 ALG_RSA_ISO9796 Cipher_doFinal()`, but the
+logged response that matters is the preceding `B0 31` prepare APDU: `F205`
+after 62,143 ms. The matching `B0 43` measurement response is absent. The next
+`Cipher_init` then saw PC/SC `0x8010002f`, followed by `SCARD_E_SERVICE_STOPPED`.
+This does not establish that RSA arithmetic in `doFinal()` hung.
+
+On physical 2BED with the unchanged 1.8.4/jc305 CAP, the isolated exact `B0 31`
+prepare returned `039000` in 2.814 s (a repeated paired run returned it in
+2.311 s). Sending the paired `B0 43` in the manually constructed replay
+returned `F101` in 2.383 s; this was not a full client measurement setup, so
+do not interpret it as a matched JCAlgTest result. This isolated attempt did
+not reproduce the external `F205`.
+
+The pinned physical static client run did not reach RSA: its saved log stops at
+a DES3 3-key ECB ISO9797_M1 prepare APDU with no response line, and no client
+process is currently active. The no-fresh resume failed before an applet APDU:
+reader discovery chose index 3, but the JCAlgTest process saw only two virtual
+readers, then failed with `SCARD_E_PROTO_MISMATCH` / `SCARD_E_READER_UNAVAILABLE`
+and an upstream `NoSuchElementException` at the already-measured prompt. See
+`artifacts/logs/resource01-jcalgtest-184-static-2bed-resume-20261111.log`.
+
+Latest hardware state: only one Pico USB device is visible, serial
+`D92E743D5F640C0F`, in runtime mode with valid CDC and CCID descriptors. The
+other board is absent. `pcsc_scan -r` shows only Virtual PCD readers even
+after `sudo -n /usr/local/sbin/pico2-pcsc-reader` refreshed ACLs/restarted
+pcscd. The D92 finite monitor previously reported `TEST:SUMMARY pass=1 fail=0`.
+A flash attempt for 2BED wrote no image: the wrapper could not locate its reset
+interface or an unambiguous CDC port. Do not retry physical SmartcardIO until
+a Pico PC/SC reader is enumerated. The user's BOOTSEL report did not match the
+observed USB state.
+
+RESOURCE-01 remains open. Do not claim the isolated successful prepare fixes
+the long-run failure. Existing evidence still points to persistent resource
+exhaustion during large accumulated JCAlgTest workloads; the missing safe
+production object-deletion path remains an open acceptance item. Next continue
+offline with the existing RESOURCE-01 plan, and retry a bounded physical run
+only after PC/SC recovers. Full recorded evidence is in
+`artifacts/logs/resource01-rsa3072-physical-replay-20261111.log`.
+
 # Current handoff — pinned 1.8.4 physical static run in progress — 2026-11-11 07:56 CET
 
 The supplied external performance trace is `artifacts/results/external_test_20261110/ALGTEST_log_1794341266469.log`.
