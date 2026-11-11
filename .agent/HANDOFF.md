@@ -31,6 +31,15 @@ possible, capturing CDC
 `OBJECT_DELETION:` telemetry and per-device results. Keep default/release
 deletion disabled until long-run and physical interruption acceptance passes.
 
+Fresh 11:39 CET check: the helper granted nodes `/dev/bus/usb/001/055` and
+`/dev/bus/usb/001/045`; USB enumeration confirmed both Pico JCVM CCID
+interfaces, and installed libccid has the exact `2E8A:0009` mapping. PC/SC
+still listed only VPCD. `pcscd --hotplug` could not find
+`/run/pcscd/pcscd.pid`; service inspection showed pcscd inactive after its
+auto-exit. This hotplug failure does not explain the earlier active-scan
+result. No physical JCAlgTest APDUs were sent. See the new QKB entry before
+changing host configuration.
+
 ---
 
 # Current handoff — peer proxy and RMI roots verified through reclaim — 2026-11-11 10:50 CET

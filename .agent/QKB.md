@@ -1,3 +1,24 @@
+# Pico USB CCID devices present but absent from PC/SC enumeration — 2026-11-11
+
+- **Symptom:** The authorized helper grants access to two RP2350 USB nodes and
+  `lsusb` identifies each as `Pico2 JCVM CCID`, but `pcsc_scan -r` lists only
+  `Virtual PCD 00 00` and `Virtual PCD 00 01`.
+- **Checks:** The CCID interface descriptors are present on interface 2, with
+  interface driver `[none]`; CDC interfaces bind to `cdc_acm`. Installed
+  `libccid` 1.7.1 has an exact `0x2E8A:0x0009` entry named `Pico 2 CHOUPI
+  CCID`. Thus VID/PID mapping is not missing. No JCAlgTest APDU was sent.
+- **PC/SC daemon observation:** `pcscd --hotplug` failed because
+  `/run/pcscd/pcscd.pid` does not exist. At inspection time
+  `pcscd.service` was inactive after `--auto-exit`; this explains why that
+  command could not request a rescan but does not explain why an active scan
+  fails to list the physical readers. The authorized helper can restart the
+  service, but repeating that did not make the devices appear in the reader
+  list.
+- **Current response:** Keep the physical-test blocker open and continue
+  offline or use the independent Windows host. Do not claim a firmware failure
+  from this PC/SC enumeration issue. Retry both available devices when the
+  reader names appear; preserve separate chip IDs and run logs.
+
 # JCSystem request-object-deletion path can be exercised in a diagnostic Pico build — 2026-11-11
 
 - **Symptom:** JCAlgTest's `INS_CARD_RESET` invokes
