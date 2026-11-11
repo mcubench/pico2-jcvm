@@ -27562,5 +27562,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed, reporting `RMI_REGISTRY:PASS retained_foreign_instance_cycle=2` and all existing registry checks. `git diff --check -- tests/unit/rmi_registry/rmi_registry_test.cpp` passed. No firmware build or hardware validation was needed for this test-only change.
 - Result: Coordinated retained sweep preserves and reclaims volatile foreign instance cycles in the unit fixture.
 - Decision: Keep R59 open for actual persistent/runtime-root coverage, physical reset-driven deletion, and measured device RAM behavior.
-- Commit: `<record after commit>`
+- Commit: `c3ec118b`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
