@@ -27139,6 +27139,30 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: Pending.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-physical-20261111T053419Z.log`; pre-cache comparison logs `artifacts/logs/jcsystem-transaction-physical-20261111T050827Z.log` and `artifacts/logs/jcsystem-transaction-physical-20261111T051133Z.log`.
 
+## 2026-11-11 Analyze external Windows RSA static failure 24 minutes
+
+- Step/experiment: `RESOURCE-01-EXTERNAL-RSA-STATIC-20261111`
+- When: '2026-11-11 06:36 CET' - '2026-11-11 07:00 CET'
+- Model: `gpt-6`
+- Change: Inspected the external Windows JCAlgTest performance log and CSV; recorded the observed status/transport sequence and a bounded reproduction plan in `.agent/QKB.md` and `.agent/HANDOFF.md`. Rebuilt the max_crypto profile and flashed its ARM image to identified Pico `2BED26ED20556535` for diagnosis.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed; `./tools/fixture-path --verify` passed (81 fixtures). The flashed board's finite monitor reported `TEST:SUMMARY pass=1 fail=0`. `pcsc_scan -r` exposed only the two Virtual PCD readers; physical USB descriptors were visible. A read-only raw CCID GetSlotStatus attempt timed out in libusb bulk OUT; no performance APDU was run on physical hardware. `git diff --check` not applicable to firmware; no source code changed in this diagnostic step.
+- Result: The external CSV identifies client 1.8.3. The log contains 146 `F205` responses. RSA-3072 ISO9796 `Cipher_doFinal` preparation returned `F205` after 62,143 ms; the following `Cipher_init` encountered `0x8010002f`, followed by `SCARD_E_SERVICE_STOPPED`. `F205` can originate from FullMemoryException or persistent OutOfFlash; serial evidence is absent, so the specific resource pool and cause are unknown. Local physical PC/SC access could not be restored for a 1.8.4 reproduction.
+- Decision: Keep RESOURCE-01 open. Restore PC/SC enumeration and run a bounded pinned 1.8.4 physical reproduction with serial logs before changing RSA implementation. Continue PERF-05 if physical access remains blocked.
+- Commit: resolve with `git log --grep="Analyze external Windows RSA static failure"`.
+- Artifacts/logs: external files in `artifacts/results/external_test_20261110/`; post-flash monitor was captured in tool output only (no separate file); no physical performance APDU log.
+
+## 2026-11-11 Reproduce external RSA preparation on Pico 2 29 minutes
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-RSA-REPLAY-20261111`
+- When: '2026-11-11 07:08 CET' - '2026-11-11 07:37 CET'
+- Model: `gpt-6`
+- Change: Rebuilt max_crypto ARM and RISC-V from the current worktree, reflashed identified Picos `D92E743D5F640C0F` and `2BED26ED20556535`, installed the unchanged upstream JCAlgTest 1.8.4/jc305 CAP on the test card, and added the physical replay findings to `TODO.md`, `.agent/QKB.md`, and `.agent/HANDOFF.md`. No firmware source was changed.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. Both reflashes verified through `PICO2_HOST_USB_ACCESS=1 ./tools/flash --chipid ...`; both finite monitors reported `TEST:SUMMARY pass=1 fail=0`. The Pico-only PC/SC helper exposed both physical readers. GPPro listed the initial 2BED contents, loaded/installed the immutable 1.8.4 CAP, and subsequently confirmed the applet. Exact external RSA-private-3072/ISO9796 prepare APDU `B0 31` was replayed through host SmartcardIO with a 120-second hard timeout on both cards. Both host processes timed out (124); serial diagnostics on both recorded a three-byte response with `SW=9000`, with no `F205`. D92 PC/SC enumeration stalled after its attempt and recovered after a verified reflash; both readers remained enumerated after the 2BED attempt.
+- Result: The local replay did not reproduce the external `F205`; it also did not complete the host SmartcardIO request within 120 seconds. The response trace suggests card-side processing completed with `9000`, but the host call did not return. This was the applet preparation APDU and did not execute the actual `Cipher_doFinal` measurement. Keep on-device resource exhaustion, long processing, and CCID/PCSC completion separate pending a host-boundary trace. PC/SC recovery differed by board.
+- Decision: RESOURCE-01 remains open. Capture the CCID response at the host boundary, measure card persistent usage before/after, and continue with a pinned-client physical reproduction. Two boards are currently enumerated; use the other if one becomes unavailable.
+- Commit: Pending.
+- Artifacts/logs: `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-host.log` and `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-monitor.log`; D92 monitor and first D92 host trace were captured in tool output only.
+
 ## 2026-11-11 Merge task backlogs 2 minutes
 
 - Step/experiment: `merge-todo-files`

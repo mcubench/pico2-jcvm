@@ -322,7 +322,20 @@ Archive text is historical evidence, not current device state or priorities.
   The latest replay logs all input hashes in
   `artifacts/results/resource01-apdu-replay-vpcd-20261110T050126Z/`; keep
   RESOURCE-01 open. Replay input hash logging is now part of the harness.
-  Physical hardware was not tested.
+  Physical hardware was not tested in that experiment. On 2026-11-11, both
+  identified Picos were rebuilt/flashed with max_crypto ARM and passed finite
+  serial monitors. The unchanged 1.8.4/jc305 CAP was explicitly installed on
+  2BED; an exact replay of the external RSA-private-3072/ISO9796 prepare APDU
+  (`B0 31`) did not return via host SmartcardIO within 120 seconds on either
+  board. Device serial diagnostics recorded a three-byte response with
+  `9000`, with no `F205`. The replay stops at preparation and does not invoke
+  `Cipher_doFinal`. After the D92 timeout, PC/SC stopped answering until a
+  verified reflash; after the 2BED timeout, both readers remained listed.
+  Keep card-side resource exhaustion, long processing, and host completion as
+  distinct failure classes. Next capture the CCID response at the host boundary
+  and inspect persistent storage around a pinned 1.8.4 reproduction. Logs:
+  `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-host.log`
+  and `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-monitor.log`.
 - Immediate action order (2026-11-09 review):
   1. **Reproduce the remaining failure in a small mixed workload.** Extract
      the ordered key creation/replacement, cache-clear and deletion APDUs leading

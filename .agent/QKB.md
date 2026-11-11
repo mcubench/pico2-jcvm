@@ -9634,3 +9634,57 @@ Check new loader, resolver and bytecode code against these before review.
 - **Validation:** ARM and RISC-V builds passed; physical transaction probe
   passed 18/18, persistence survived a CCID power cycle, and wrapper cleanup
   succeeded. See `todo.md` PERF-04 and `progress.md` for exact values/log.
+
+## External Windows JCAlgTest static RSA failure (2026-11-11)
+
+- **Evidence:** `artifacts/results/external_test_20261110/ALGTEST_log_1794341266469.log`
+  and its CSV are from the 2026-11-10 Windows performance run. The CSV
+  identifies client version **1.8.3**, not the repository's pinned 1.8.4
+  client. The log contains 146 `F205` responses. For RSA-3072
+  `ALG_RSA_ISO9796 Cipher_doFinal`, the `B0 31` prepare APDU returned `F205`
+  after 62,143 ms. The next `Cipher_init` APDU failed with Windows PC/SC error
+  `0x8010002f`; later calls report `SCARD_E_SERVICE_STOPPED`. Therefore this
+  evidence does not show that the first named RSA APDU remained unanswered.
+- **Interpretation:** `F205` is `SystemException.NO_RESOURCE`; it is returned
+  by both the full-memory exception path for Java arrays and persistent FS
+  OutOfFlash writes. The external log alone cannot distinguish those causes.
+  Treat resource exhaustion during the long performance sweep and subsequent
+  PC/SC session loss as two observed failures; do not label the first one an
+  RSA arithmetic hang without a no-response trace.
+- **Local access attempt:** The max_crypto ARM image was rebuilt and flashed
+  to Pico 2 `2BED26ED20556535`; its finite serial monitor passed. USB
+  descriptors for it and `D92E743D5F640C0F` are present, but after flashing,
+  `pcsc_scan -r` lists only the two Virtual PCD readers. A read-only raw CCID
+  GetSlotStatus attempt timed out in host libusb bulk OUT, and serial counters
+  did not change on either Pico in the follow-up snapshot. No performance APDU
+  was sent to physical hardware in this attempt. This is currently a host
+  access/transport blocker; fail over to another Pico if it becomes usable, and
+  do not infer a firmware CCID defect from a request that did not reach it.
+- **Next diagnostic:** Restore physical PC/SC enumeration, then run one
+  bounded test with pinned 1.8.4 on a freshly installed upstream CAP while
+  capturing serial output and per-APDU timing. Preserve separate counts for
+  `F205`, no-response timeout, and PC/SC service failure. Keep the CAP bytes
+  unchanged.
+
+- **Physical follow-up (2026-11-11):** Two boards were visible as runtime USB
+  devices (`2e8a:0009`), despite the initial BOOTSEL report; the third was not
+  visible. Rebuilt max_crypto for ARM and RISC-V and reflashed
+  `D92E743D5F640C0F` and `2BED26ED20556535`. Both finite serial monitors passed.
+  The configured Pico-only PC/SC helper restored enumeration of both readers.
+  GPPro showed no JCAlgTest applet on 2BED, so the unchanged pinned 1.8.4/jc305
+  CAP was installed explicitly.
+- **Targeted replay:** On both boards, replayed the exact external
+  `B0 31` prepare APDU for RSA-private-3072/ISO9796 after selecting the
+  JCAlgTest applet. Host SmartcardIO did not return within the 120-second hard
+  timeout. Device serial diagnostics recorded a three-byte final response with
+  `SW=9000`; no `F205` was observed. This prepares the named operation but does
+  not execute its `Cipher_doFinal` measurement. On D92, PC/SC enumeration
+  stopped answering until a verified reflash; on 2BED, enumeration remained
+  available after the timeout. This is evidence of a long host transaction and
+  a board-dependent PC/SC recovery outcome, not a reproduced persistent
+  `NO_RESOURCE` failure. The 2BED host and serial logs are under
+  `artifacts/logs/resource01-rsa3072-iso9796-prepare-2bed-20261111-*.log`.
+- **Next:** Capture the CCID response at the host boundary to explain the
+  SmartcardIO timeout despite the card-side `9000`. Then inspect persistent
+  storage before/after and reproduce the external `F205` using the pinned
+  1.8.4 client. Do not conflate those outcomes or mark RESOURCE-01 complete.
