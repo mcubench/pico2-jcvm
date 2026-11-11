@@ -27419,5 +27419,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted `/dev/bus/usb/001/045`; `lsusb -d 2e8a:0009` showed `2e8a:0009 Pico2 Pico2 JCVM CCID`; `timeout 5s pcsc_scan -r` exited 0 and listed only VPCD 00 00 and VPCD 00 01. No client/APDU was attempted.
 - Result: USB is enumerated, but the physical device remains unavailable to PC/SC; long campaigns could not start.
 - Decision: Keep R59 open. Begin option 2 on one identified Pico and option 1 on another when PC/SC publishes the reader, keeping separate result folders and serial logs.
-- Commit: `<fill after commit>`
+- Commit: `007ceee8`
 - Artifacts/logs: terminal diagnostics only; no standalone log.
