@@ -629,6 +629,14 @@ Archive text is historical evidence, not current device state or priorities.
   `/usr/local/sbin/pico2-pcsc-reader` differs from the checked-in allowlist.
   Reinstall it per `.agent/EXT_REQUESTS.md`; keep firmware deletion disabled.
 
+  Further root coverage (2026-11-11): a PersistentReclaimer-level unit case
+  now serializes three server objects, roots one through a peer shareable proxy
+  and one through the target context's exported RMI registry, then performs the
+  actual erase pass. Both rooted bodies survive; the unrooted body is erased.
+  `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`.
+  This closes these two host root-enumeration cases only; physical interruption,
+  complete unchanged JCAlgTest acceptance, and production enablement remain open.
+
 ## CAP input-handling review — 2026-11-10
 
 Source: [docs/review_fable52_20261110.md](docs/review_fable52_20261110.md)

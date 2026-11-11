@@ -27267,3 +27267,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep production object deletion disabled. Resume the bounded physical reclaimer test after the user refreshes `/usr/local/sbin/pico2-pcsc-reader` using the request in `.agent/EXT_REQUESTS.md`; then continue unchanged 1.8.4 long-run acceptance.
 - Commit: `f1f6c165`.
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T092825Z.log`; `artifacts/logs/resource01-normal-image-restored-2bed-20261111.log`; no physical reclaimer APDUs were sent.
+# 2026-11-11 RESOURCE-01 proxy/RMI roots through reclaim 9 minutes
+
+- Step/experiment: `RESOURCE-01-PROXY-RMI-RECLAIMER-ROOTS-20261111`
+- When: '2026-11-11 10:41 CET' - '2026-11-11 10:50 CET'
+- Model: `gpt-6`
+- Change: Added a persistent-transaction unit regression that serializes three server objects, roots one through a retained peer shareable proxy and one through the target context's exported RMI registry, then invokes the actual applet-tag reclaimer. The unrooted object is also exercised; test-owned records are erased afterward.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). It confirms both rooted persistent bodies remain readable and the unrooted body's body tag is erased. No firmware build or hardware test was run; this is a host unit-only change.
+- Result: The two missing retained-root domains in the reclaimer test matrix now pass. Physical interrupted-flash recovery and unchanged full JCAlgTest acceptance remain unverified.
+- Decision: Keep firmware deletion disabled. After the user refreshes the PC/SC helper, retry physical reclaimer tests; continue the long-run JCAlgTest investigation afterward.
+- Commit: pending.
+- Artifacts/logs: no standalone log; unit output ends `TEST:SUMMARY fail=0`.
+# 2026-11-11 RESOURCE-01 live proxy/RMI root test 2 minutes
+
+- Step/experiment: `RESOURCE-01-PROXY-RMI-RECLAIMER-ROOTS-20261111`
+- When: '2026-11-11 10:50 CET' - '2026-11-11 10:52 CET'
+- Model: `gpt-6`
+- Change: Added a reclaimer-level regression with persistent server objects reachable via a peer package's shareable-proxy registry and the target context's exported RMI registry. A third object is deliberately unrooted; the test cleans all fixture records after verification.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; both root-only objects remained readable after the destructive pass, and the orphan body tag was erased. No firmware build or hardware test was run because only the host unit test changed.
+- Result: The reclaimer's peer shareable and exported RMI root domains are now verified through deletion, beyond standalone root tracing.
+- Decision: Keep firmware object deletion disabled pending physical interruption recovery and full unchanged JCAlgTest acceptance.
+- Commit: pending.
+- Artifacts/logs: none.

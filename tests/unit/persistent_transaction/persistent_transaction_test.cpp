@@ -246,6 +246,96 @@ int main() {
   }
 
   {
+    constexpr uint8_t server_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x64};
+    constexpr uint8_t owner = 0x6d;
+    constexpr uint8_t server_package = 0x6e;
+    constexpr uint8_t client_package = 0x70;
+    const uint8_t server_tag_bytes[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t remote_tag_bytes[] = {0x03, owner, 0x20, 0x02};
+    const uint8_t orphan_tag_bytes[] = {0x03, owner, 0x20, 0x03};
+    jcvm::fs::Tag server_tag{};
+    server_tag.len = sizeof(server_tag_bytes);
+    std::memcpy(server_tag.value, server_tag_bytes, sizeof(server_tag_bytes));
+    jcvm::fs::Tag orphan_tag{};
+    orphan_tag.len = sizeof(orphan_tag_bytes);
+    std::memcpy(orphan_tag.value, orphan_tag_bytes, sizeof(orphan_tag_bytes));
+    jcvm::fs::Tag remote_tag{};
+    remote_tag.len = sizeof(remote_tag_bytes);
+    std::memcpy(remote_tag.value, remote_tag_bytes, sizeof(remote_tag_bytes));
+    jcvm::Context server_context(owner, server_package);
+    jcvm::Context client_context(0x6f, client_package);
+    const uint16_t previous_field_count =
+        persistent_transaction_test::instance_field_count;
+    persistent_transaction_test::instance_field_count = 0;
+    const auto server_reference = server_context.getHeap().addInstance(
+        jcvm::JC_Instance(server_context.getHeap(), server_package, 7));
+    const auto orphan_reference = server_context.getHeap().addInstance(
+        jcvm::JC_Instance(server_context.getHeap(), server_package, 8));
+    const auto remote_reference = server_context.getHeap().addInstance(
+        jcvm::JC_Instance(server_context.getHeap(), server_package, 9));
+    const auto server_object =
+        server_context.getHeap().getInstance(server_reference);
+    const auto orphan_object =
+        server_context.getHeap().getInstance(orphan_reference);
+    const auto remote_object =
+        server_context.getHeap().getInstance(remote_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Instance(
+        server_tag, *server_object, server_context.getHeap());
+    jcvm::FlashMemory_Handler::setPersistentField_Instance(
+        orphan_tag, *orphan_object, server_context.getHeap());
+    jcvm::FlashMemory_Handler::setPersistentField_Instance(
+        remote_tag, *remote_object, server_context.getHeap());
+    const uint16_t remote_object_id =
+        server_context.exportRemoteObject(remote_reference);
+    jcvm::jref_t proxy_handle;
+    proxy_handle.setOffset(3);
+    proxy_handle.setAsInstance(true);
+    const bool proxy_registered = client_context.registerShareableProxy(
+        proxy_handle, server_aid, sizeof(server_aid), server_reference,
+        server_package);
+    std::vector<jcvm::jref_t> roots;
+    const bool roots_complete =
+        server_context.appendRetainedRootsForPackage(server_package, roots);
+    server_context.appendRootReferences(roots);
+    const auto root_summary =
+        server_context.getHeap().traceReachableFrom(roots);
+    RootVectorContext root_vector{&roots};
+    uint32_t erased = 0;
+    const auto reclaim_result =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, server_context.getHeap(), enumerate_root_vector, &root_vector,
+            &erased);
+    const auto server_body_tag = server_object->getPersistentTag();
+    const auto remote_body_tag = remote_object->getPersistentTag();
+    const auto orphan_body_tag = orphan_object->getPersistentTag();
+    const bool proxy_root_survives_reclaim =
+        reclaim_result == jcvm::PersistentInventory::VisitResult::Complete &&
+        erased > 0 && root_summary.complete &&
+        remote_object_id != 0xffff && root_summary.instances_reachable == 2 &&
+        !persistent_transaction_test::read(server_body_tag.value,
+                                           server_body_tag.len).empty() &&
+        !persistent_transaction_test::read(remote_body_tag.value,
+                                           remote_body_tag.len).empty() &&
+        persistent_transaction_test::read(orphan_body_tag.value,
+                                           orphan_body_tag.len).empty();
+    static_cast<void>(
+        jcvm::FlashMemory_Handler::erasePersistentTag(server_tag));
+    static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+        server_body_tag));
+    static_cast<void>(
+        jcvm::FlashMemory_Handler::erasePersistentTag(remote_tag));
+    static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+        remote_body_tag));
+    static_cast<void>(
+        jcvm::FlashMemory_Handler::erasePersistentTag(orphan_tag));
+    static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+        orphan_body_tag));
+    persistent_transaction_test::instance_field_count = previous_field_count;
+    expect(proxy_registered && roots_complete && proxy_root_survives_reclaim,
+           "persistent_deletion_reclaimer_preserves_peer_proxy_and_rmi_roots");
+  }
+
+  {
     using jcvm::FlashMemory_Handler;
     jcvm::Heap heap(7);
     const auto empty_tag = make_tag(0xd0);

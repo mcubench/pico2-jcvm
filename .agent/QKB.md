@@ -9748,3 +9748,19 @@ Check new loader, resolver and bytecode code against these before review.
   monitor reported `TEST:SUMMARY pass=1 fail=0`. PC VPCD live-static-root
   deletion passed 7/7 APDUs; host RP2350 overlay power-cut model passed 1,000
   reclamation cut points. Neither substitutes for physical flash interruption.
+
+## Peer proxy and RMI roots survive the destructive reclaimer — 2026-11-11
+
+- **Change:** `persistent_transaction_test` now writes three persistent server
+  instances. It retains one only through a shareable proxy in a peer package
+  context, retains another through the target context's exported RMI registry,
+  and leaves the third unrooted. It builds the actual root vector and runs
+  `PersistentReclaimer::reclaimUnreachableAppletTags`.
+- **Result:** The reclaimer reports complete, both rooted bodies remain
+  readable, and the unrooted body's tags are erased. The test removes its own
+  fixture tags afterward. `./tools/test-persistent-transaction` passes with
+  `TEST:SUMMARY fail=0`.
+- **Limit:** This closes those two host root-domain cases, not power loss during
+  RP2350 flash erase, production API enablement, or the unchanged full
+  JCAlgTest long run. The physical probe remains blocked before APDUs until the
+  user refreshes the installed helper as requested in `.agent/EXT_REQUESTS.md`.

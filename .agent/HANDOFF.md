@@ -1,3 +1,11 @@
+# Current handoff — peer proxy and RMI roots verified through reclaim — 2026-11-11 10:50 CET
+
+`tests/unit/persistent_transaction/persistent_transaction_test.cpp` now proves that a real `PersistentReclaimer` pass preserves a persistent server object referenced only by a retained peer shareable proxy, plus a second persistent object rooted through the target context's exported RMI registry. It erases the third, unrooted object and cleans up its fixture records. `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`.
+
+This closes those root-domain unit cases but not physical power-loss interruption or full JCAlgTest long-run acceptance. `isObjectDeletionSupported()` remains false on device. Physical testing stopped before card APDUs because the installed `/usr/local/sbin/pico2-pcsc-reader` does not match the checked-in allowlist. User action is requested in `.agent/EXT_REQUESTS.md`; after the helper refresh, retry the bounded physical reclaimer probe.
+
+---
+
 # Current handoff — reclaimer tests pass; physical helper refresh needed — 2026-11-11 10:41 CET
 
 Additional deletion-safety evidence: `./tools/test-persistent-transaction` and `./tools/test-persistent-inventory` pass. A one-cycle VPCD RSA/static-root run (`PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static`) passed all 7 APDUs, preserved the live key during the first deletion request, then erased its 10-record graph after clearing the root. `./tools/test-rp2350-fs-overlay` passed, including 1,000 simulated cuts during reclamation followed by safe retry. This is host/VPCD evidence, not physical flash interruption.
