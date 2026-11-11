@@ -27551,5 +27551,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Initial `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` returned expected APDU responses and `TEST:SUMMARY pass=7 fail=0`, but the wrapper falsely expected 2 requests and counted 4 lines. After the counter fix, the same run passed: `OBJECT_DELETION_LIVE_STATIC:PASS protected_calls=1 cleanup_calls=1 erased_per_cleanup=10`; `OBJECT_DELETION_VPCD:PASS mode=rsa-live-static requests=2 erased_applet_tags=10`. Build completed with existing compiler/converter warnings.
 - Result: VPCD object deletion preserves the live static RSA graph on the first request and reclaims 10 tags after the root is cleared. No physical device was contacted.
 - Decision: Keep object deletion disabled by default; physical reset/deletion and long JCAlgTest acceptance remain open.
-- Commit: `pending`
+- Commit: `a795dc24`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T141050Z.log`.
