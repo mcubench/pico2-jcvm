@@ -1280,6 +1280,7 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     return out;
   }
 
+#ifdef CHOUPI_DEBUG_PERSISTENT_GC
   if (tag.len == 5 && tag.value[0] == 0x03 && tag.value[4] == 0xff) {
     std::printf("CHOUPI:RESTORE_READ_OK len=%lu type=%02X tag=",
                 static_cast<unsigned long>(length), data[0]);
@@ -1289,6 +1290,7 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     std::printf("\r\n");
     std::fflush(stdout);
   }
+#endif
 
   FieldType type = static_cast<FieldType>(data[0]);
 

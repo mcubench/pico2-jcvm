@@ -12468,3 +12468,19 @@ Next: once host access enumerates any of the three as RP2350 BOOTSEL
 capture finite serial output and verify CPLC equipment IDs with GPPro. Do not
 claim a successful board update until both are observed. The working tree
 contains unrelated pre-existing changes; keep them unstaged.
+
+# Current handoff — gate persistent restore success tracing — 2026-11-11 23:51 UTC
+
+The RP2350 overlay fake-flash suite emitted thousands of `RESTORE_READ_OK`
+lines because every restore of a persistent array flushed a success message.
+Those lines are now gated by `CHOUPI_DEBUG_PERSISTENT_GC`, and that option is
+also defined on `choupi_vm_core` so the explicit diagnostic ARM build retains
+the trace. Restore failures remain logged in release builds.
+
+Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`
+and 134 total output lines. Normal ARM and RISC-V `max_crypto` builds passed;
+`PICO2_DEBUG_PERSISTENT_GC=1 ./tools/build arm --profile max_crypto` also
+passed, then the normal ARM build was restored. No host-time or device runtime
+speedup was measured. Physical boards remain unavailable to this VM in
+BOOTSEL/PCSC; no flash attempt was made in this step. Continue RESOURCE-01 and
+keep its full-suite/physical safety gates open.

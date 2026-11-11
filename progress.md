@@ -27851,3 +27851,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The user's BOOTSEL report and this VM's USB state disagree. Resume once host passthrough exposes a board as BOOTSEL; then flash, inspect finite serial output, and query CPLC.
 - Commit: `5a879f5b`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`; USB diagnostics from `lsusb`, `./tools/doctor`, and per-path `./tools/flash` attempts.
+
+## 2026-11-11 Gate persistent restore success tracing 15 min
+
+- Step/experiment: `RESOURCE-01-RESTORE-TRACE-VOLUME-20261111`
+- When: '2026-11-11 23:36 UTC' - '2026-11-11 23:51 UTC'
+- Model: `GPT-6`
+- Change: Gated the per-read `CHOUPI:RESTORE_READ_OK` print/flush behind `CHOUPI_DEBUG_PERSISTENT_GC` and added that definition to `choupi_vm_core` for diagnostic ARM builds. Failure traces remain active in normal firmware. Updated RESOURCE-01 status.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`; output was 134 total lines and no restore-success spam. Normal `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_DEBUG_PERSISTENT_GC=1 ./tools/build arm --profile max_crypto` passed, then the normal ARM build was restored. Hardware intentionally not flashed because USB sees runtime devices rather than BOOTSEL.
+- Result: Diagnostic traces remain available by explicit debug build; normal and fake-flash test paths avoid per-array-read success printing. Actual runtime speedup was not measured.
+- Decision: Keep RESOURCE-01 open; continue root-safety and full 1.8.4 physical acceptance when PC/SC recovers.
+- Commit: recorded in the following commit.
+- Artifacts/logs: `build/arm/build-provenance.txt` (normal mode restored); focused `./tools/test-rp2350-fs-overlay` output.
