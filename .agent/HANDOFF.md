@@ -12088,3 +12088,19 @@ physical reset-driven deletion, and measured device RAM behavior. Stage only
 this new test and invocation with the TODO summary, progress record, and handoff;
 the unrelated sibling transient-array test edits in the same unit-test file
 remain unstaged.
+# Current handoff — refreshed Windows object-deletion test package — 2026-11-11 15:36 CET
+
+Rebuilt `max_crypto` diagnostic firmware with object deletion enabled. ARM and
+RISC-V wrapper builds passed. The empty-card ARM UF2 includes 3,898 firmware
+blocks and all 4,096 persistent-storage blocks erased. Image SHA-256:
+`a66e7d2b33c4695fa2e3415e4d198300ae92089f1ab93dbcd259968132d871e0`; package
+SHA-256: `318c9e69e55b7a44d0865bf66e18049288fcaf91ef60e240004e2ee45d9edf51`.
+Package README contains exact PowerShell hash/BOOTSEL steps, GPPro install,
+JCAlgTest 1.8.4 files and dependencies, and capture/run instructions for option
+2 and option 1 on separate identified tokens. The external request was refreshed.
+
+Build source commit was `cdd175bc66af28528817c6998008269ed0955b6a`; the source
+worktree was dirty and its tracked root diff hash is in
+`build/external-test/object-deletion-current/BUILD-PROVENANCE.txt`. No physical
+device was flashed. The package is for external diagnostic testing only; do
+not enable deletion in normal firmware based on the build alone.

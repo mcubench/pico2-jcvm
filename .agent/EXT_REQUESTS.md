@@ -114,21 +114,31 @@ pinned upstream fixture; do not modify it.
 
 ## Test JCSystem object deletion on Windows
 
-Please run the diagnostic package at
-`build/external-test/pico2-jcvm-object-deletion-windows.zip` using the steps in
-its `README.md`. The image is built with `PICO2_ENABLE_OBJECT_DELETION=1` and
-is intentionally diagnostic; it exercises the unchanged upstream JCAlgTest
-1.8.4 / jc305 `INS_CARD_RESET` request path. Capture the Pico CDC serial stream
-with the included PowerShell script while running the interactive client
-option `2 -> PERFORMANCE TEST` (1–3 hours) on one physical Pico and
-`1 -> All algorithms` (5–8 hours) on a different physical Pico when possible.
-Install the unchanged CAP on both tokens and keep their result folders, reader
-names, chip IDs, and serial logs separate.
+Please run the refreshed diagnostic package and follow its exact hash check and
+BOOTSEL copy commands:
 
-Return the full result folders and `object-deletion-serial.log`, including
-partial output if the client or reader stops responding. In particular,
-preserve `OBJECT_DELETION:` lines, any `6F00`/`F205`, and PC/SC service errors.
-Do not use this image for production; normal builds still keep deletion off.
+- [Windows package](../build/external-test/pico2-jcvm-object-deletion-windows.zip)
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-cdd175bc.uf2)
+- Package SHA-256: `318c9e69e55b7a44d0865bf66e18049288fcaf91ef60e240004e2ee45d9edf51`
+- Firmware SHA-256: `a66e7d2b33c4695fa2e3415e4d198300ae92089f1ab93dbcd259968132d871e0`
+- Source commit: `cdd175bc66af28528817c6998008269ed0955b6a`; the build used a dirty
+  worktree, disclosed with its tracked-diff hash in the package's
+  `BUILD-PROVENANCE.txt`.
+- The package README includes exact Windows PowerShell hash verification and
+  BOOTSEL flashing commands. It contains the unchanged JCAlgTest 1.8.4/jc305
+  CAP and matching client, GPPro, and serial capture helper.
+
+The diagnostic image uses `max_crypto` with object deletion enabled. It starts
+with an empty card and exercises the periodic `INS_CARD_RESET` request path.
+Run `2 -> PERFORMANCE TEST` (1–3 hours) on one identified Pico. When a second
+token is available, flash/install the same package there and run
+`1 -> All algorithms` (5–8 hours). Keep per-device result folders, reader names,
+chip IDs, firmware hash, and complete serial logs separate.
+
+Return full result folders and serial logs, including partial output if a run
+stalls. Preserve `OBJECT_DELETION:` lines and any `6F00`, `F205`, reset,
+timeout, or PC/SC service errors. This diagnostic image is not for production;
+normal builds keep deletion disabled.
 
 ## Reattach Pico USB devices to the development VM
 

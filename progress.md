@@ -27575,3 +27575,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R59 open for broader runtime roots, physical reset-driven deletion, and measured device RAM behavior.
 - Commit: `48a60708`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
+## 2026-11-11 Refresh object-deletion Windows package 16 min
+
+- Step/experiment: `RESOURCE-01-WINDOWS-OBJECT-DELETION-PACKAGE`
+- When: '2026-11-11 15:20 CET' - '2026-11-11 15:36 CET'
+- Model: `GPT-6`
+- Change: Rebuilt ARM and RISC-V `max_crypto` with `PICO2_ENABLE_OBJECT_DELETION=1`, generated a full-storage-erased ARM UF2, and refreshed the Windows test package and external request with explicit provenance, firmware/package hashes, BOOTSEL flashing commands, JCAlgTest installation steps, and separate-token long-run instructions.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed with firmware end `0x100f3978` (50,824 bytes remaining). The matching RISC-V wrapper passed. `./tools/fixture-path --verify` passed (81 files; JCAlgTest 1.8.4). Empty-card packaging validated 3,898 firmware blocks plus 4,096 erased-storage blocks; ZIP integrity and every package SHA entry passed.
+- Result: Diagnostic empty-card image is 4,093,440 bytes, SHA-256 `a66e7d2b33c4695fa2e3415e4d198300ae92089f1ab93dbcd259968132d871e0`. Windows package SHA-256 is `318c9e69e55b7a44d0865bf66e18049288fcaf91ef60e240004e2ee45d9edf51`. Build source revision is `cdd175bc66af28528817c6998008269ed0955b6a`; the package discloses the dirty worktree hash. No device was flashed or tested.
+- Decision: Package is ready for external Windows flashing and the two long campaigns; keep object deletion diagnostic-only until returned results are evaluated.
+- Commit: `<record after commit>`
+- Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-windows.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-cdd175bc.uf2`.
