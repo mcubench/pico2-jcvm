@@ -1,3 +1,36 @@
+# Current handoff — diagnostic max_crypto flashed on all three identified boards — 2026-11-11 21:38 UTC
+
+Built and flashed the same ARM diagnostic `max_crypto` image to all three Pico 2
+chips: `8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. Each
+`./tools/cycle choupi --profile max_crypto --chipid ...` rebuilt ARM and RISC-V
+first, verified the ARM flash, and passed the 18-second finite monitor with
+`TEST:SUMMARY pass=1 fail=0`. The ARM image is 2,003,456 bytes with SHA-256
+`7185aa877d9373cc33c1872d8f4bffc58560ad6536f16d4cf3c985cf959a80c4`; build
+provenance is diagnostic mode, heap-GC trace ON, object deletion ON. The cycle
+logs are `artifacts/logs/cycle-choupi-20261111T213114Z.log` (2BED),
+`...T213228Z.log` (D92), and `...T213626Z.log` (8E).
+
+Afterward the authorized helper found three runtime nodes, and `pcsc_scan -r`
+listed all three exact readers. Picotool then found no boards in BOOTSEL. This
+supersedes the earlier 21:00 handoff's statement that 2BED and D92 could not
+enter BOOTSEL: they were passed through in BOOTSEL on a later recheck and
+flashed successfully. No applet data was erased.
+
+RESOURCE-01 option 1 was attempted on 8E using the unchanged 1.8.4/jc305 CAP
+and versioned client, but ended incomplete at `SCARD_F_COMM_ERROR`; the CSV
+contains only a partial report. The serial trace logged repeated
+`OBJECT_DELETION:SKIP ... edge_failures=1 request_retained=1`. New edge diagnostics
+captured 60 failures across six persistent instance tags; `exception=5` maps to
+`IOException`. This confirms a persistent field read/trace failure but not why
+the filesystem read failed. The client also reported `SystemException_NO_RESOURCE`
+for DES operations before disconnecting. Logs and partial CSV are under
+`artifacts/results/resource01-option1-allalgorithms-8E46-debug-20261111/`.
+Continue RESOURCE-01 by instrumenting the precise filesystem read status and
+legacy-tag fallback, then rerun on a separate visible reader. Keep this build
+diagnostic-only; the production object-deletion acceptance remains open.
+
+---
+
 # Documentation handoff — QKB compaction — 2026-11-11 21:07 UTC
 
 QKB.md is now a 270-line reusable troubleshooting guide. QKB_INDEX.md maps all

@@ -27790,3 +27790,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Update matching diagnoses with evidence links instead of repeated availability/run diaries; retain TODO as task owner and HANDOFF as current device/build-state owner.
 - Commit: `this documentation commit; locate via QKB-COMPACTION-20261111 in git log`
 - Artifacts/logs: `.agent/archive/2026-11-11-qkb-compaction/{QKB.md,SHA256SUMS,MIGRATION.md}`; `.agent/QKB_INDEX.md`.
+
+
+## 2026-11-11 Flash diagnostic firmware to all three Pico 2 boards 18 min
+
+- Step/experiment: `RESOURCE-01-DIAGNOSTIC-THREE-BOARD-FLASH`
+- When: '2026-11-11 21:20 UTC' - '2026-11-11 21:38 UTC'
+- Model: `GPT-6`
+- Change: Flashed the ARM `max_crypto` diagnostic image (heap-GC tracing and object deletion enabled) to chips `8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. Existing card application data was not erased.
+- Validation: Each `PICO2_HOST_USB_ACCESS=1 PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/cycle choupi --profile max_crypto --chipid <chipid>` passed ARM and RISC-V build gates, verified flash, and finite serial runtime (`TEST:SUMMARY pass=1 fail=0`). The authorized helper and `pcsc_scan -r` subsequently listed all three physical readers. Picotool confirmed all three had returned to runtime mode.
+- Result: All boards run the same 2,003,456-byte ARM UF2, SHA-256 `7185aa877d9373cc33c1872d8f4bffc58560ad6536f16d4cf3c985cf959a80c4`. This is a diagnostic image, not production acceptance. In a separate 1.8.4 option-1 attempt on 8E, the client stopped at `SCARD_F_COMM_ERROR`; serial telemetry recorded 60 persistent-field trace read failures (`IOException`, enum value 5) across six instance tags and retained deletion requests. Cause still needs diagnosis.
+- Decision: Keep RESOURCE-01 open. Instrument the underlying filesystem status/fallback for these persistent field reads, then rerun on another identified reader; do not enable object deletion in release firmware based on these checks.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261111T213114Z.log`, `...T213228Z.log`, `...T213626Z.log`; partial client/serial data at `artifacts/results/resource01-option1-allalgorithms-8E46-debug-20261111/`.
