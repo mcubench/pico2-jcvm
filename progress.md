@@ -27491,7 +27491,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan and reported `RMI_REGISTRY:PASS retained_peer_static_proxy_roots=2`, alongside the existing cycle, diamond, repeated-reclamation and ambiguous-package cases. No firmware build or hardware access was needed for this test-only change.
 - Result: `collectRetainedHeaps()` preserves both peer-rooted objects and reclaims one orphan in this fixture. A synthetic missing proxy instance failed root tracing, so the accepted fixture creates a valid proxy object in the peer heap.
 - Decision: Continue R59 toward broader runtime roots, reset-driven physical deletion and bounded RAM plateau evidence; keep object deletion disabled by default.
-- Commit: `pending`
+- Commit: `e00707d9`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
 
 ## 2026-11-11 Cover peer static and shareable-proxy roots in retained sweep 5 min
