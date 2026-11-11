@@ -2429,8 +2429,12 @@ int main() {
       const auto restored_array =
           jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
               restored_field, restored);
+      const auto post_batch_gc =
+          restored.collectUnreachableFrom({restored_instance});
       restored_array_survives =
-          restored.getArray(restored_array)->getByteEntry(0) == 0x5a;
+          restored.getArray(restored_array)->getByteEntry(0) == 0x5a &&
+          post_batch_gc.complete && post_batch_gc.arrays_reachable == 1 &&
+          post_batch_gc.arrays_reclaimed == 0;
     } catch (jcvm::Exceptions) {
       restored_array_survives = false;
     }
@@ -2439,7 +2443,7 @@ int main() {
                !persistent_transaction_test::read(array_body.value,
                                                   array_body.len).empty() &&
                restored_array_survives,
-           "reclaimer_preserves_array_body_reachable_through_persistent_instance_root");
+           "reclaimer_batch_preserves_instance_array_through_next_heap_collection");
     persistent_transaction_test::instance_field_count = previous_field_count;
   }
 

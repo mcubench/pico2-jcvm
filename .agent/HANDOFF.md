@@ -12435,3 +12435,12 @@ from a fresh heap. `./tools/test-persistent-transaction` passes with
 coverage and does not identify the operation behind the prior hardware missing
 body. Commit: `a45c2d0a`. RESOURCE-01 remains open. No physical board was
 flashed or used.
+
+# Current handoff — post-batch heap collection regression — 2026-11-11 23:19 UTC
+
+Strengthened the rooted instance-to-array persistent deletion regression. It
+now performs an eight-record deletion batch, restores the graph in a fresh
+heap, runs the next heap collection, and verifies the array remains reachable
+and readable. The focused persistent transaction suite passes with
+`TEST:SUMMARY fail=0`. The physical failure and candidate deletion tag remain
+unidentified; no board was available in PC/SC or BOOTSEL at the last check.

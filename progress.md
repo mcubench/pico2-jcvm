@@ -27827,3 +27827,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open; continue with deletion-candidate instrumentation when a board is accessible.
 - Commit: `a45c2d0a`
 - Artifacts/logs: focused test output from `./tools/test-persistent-transaction`.
+
+## 2026-11-11 Verify array after batch and following collection 5 min
+
+- Step/experiment: `RESOURCE-01-POST-BATCH-GC-20261111`
+- When: '2026-11-11 23:14 UTC' - '2026-11-11 23:19 UTC'
+- Model: `GPT-6`
+- Change: Strengthened the rooted instance-array deletion regression to run the ordinary heap collector after the eight-record reclaimer batch and verify the array remains marked reachable and readable after restoration.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:PASS reclaimer_batch_preserves_instance_array_through_next_heap_collection` and `TEST:SUMMARY fail=0`. No platform source changed; ARM/RISC-V builds and hardware were not applicable/available.
+- Result: The model sequence now covers bounded persistent deletion followed by the next heap collection without losing a rooted array.
+- Decision: Keep RESOURCE-01 open; this does not identify candidate tags from the physical failure.
+- Commit: pending
+- Artifacts/logs: focused output from `./tools/test-persistent-transaction`.
