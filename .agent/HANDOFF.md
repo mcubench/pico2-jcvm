@@ -11828,3 +11828,20 @@ with MIG-20261107-02 offline unless a Pico reader reappears; after USB
 reattachment, resume the long campaigns on separate tokens when possible.
 
 # Current handoff — diagnostic image built; VM USB reattach needed — 2026-11-11 12:10 CET
+# Current handoff — migration host-test failures reconciled — 2026-11-11 12:24 CET
+
+Both `MIG-20261107-01` and `MIG-20261107-02` are closed. The standalone
+array-allocation test links through a fixture-only rollback-generation stub
+and passes all nine assertions. `tools/test-vpcd-protocol` failed in the
+restricted sandbox because its AF_UNIX send returned `EPERM`, then passed all
+18 checks when run with elevated sandbox permissions. Its partial-header
+timeout behavior is intact; no protocol implementation defect was reproduced.
+The test now reports the send errno on failure. TODO and QKB contain the
+resolution.
+
+The physical JCAlgTest runs remain outstanding: a Pico must reappear in PC/SC
+before flash/GPPro/client work can proceed. The max_crypto deletion-enabled
+ARM empty-card image remains ready at
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-20261111.uf2`.
+
+# Current handoff — standalone JCVM array-allocation test restored — 2026-11-11 12:19 CET

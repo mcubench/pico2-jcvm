@@ -2582,11 +2582,13 @@ is included in the migration. See [migration evidence](docs/testing-data-migrati
   backend. `./tools/test-jcvmarray-allocation` now builds and passes all nine
   allocation/root failure assertions. This only closes the host harness link
   failure; persistent rollback behavior remains covered by its separate tests.
-- [ ] **MIG-20261107-02 — Reconcile the VPCD partial-header regression.**
-  `tools/test-vpcd-protocol` fails `send partial frame header`. Inspect socket
-  state after its preceding idle-read timeout and the intended transport
-  shutdown behavior, then correct the regression or implementation in its
-  own change. Preserve the existing timeout/partial-frame acceptance intent.
+- [x] **MIG-20261107-02 — Reconcile the VPCD partial-header regression.**
+  The apparent failure was sandbox policy: the local AF_UNIX socketpair send
+  returned `EPERM` in the restricted command context after the idle-read
+  timeout. Running `./tools/test-vpcd-protocol` with elevated sandbox
+  permissions passed all 18 checks, including the partial-header timeout.
+  Added errno diagnostics to distinguish a denied host syscall from a protocol
+  regression. No VPCD protocol implementation defect was reproduced.
 
 ## Memory allocation and persistent-write performance — 10 November 2026
 

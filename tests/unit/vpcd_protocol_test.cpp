@@ -1,6 +1,7 @@
 #include "vpcd_protocol.hpp"
 
 #include <array>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -81,8 +82,14 @@ int main() {
             choupi::vpcd::ReadResult::Timeout && message.empty(),
         "report idle frame timeout");
   const uint8_t partial_header = 0;
-  check(::send(sockets[1], &partial_header, 1, 0) == 1,
-        "send partial frame header");
+  const ssize_t partial_header_sent =
+      ::send(sockets[1], &partial_header, 1, 0);
+  if (partial_header_sent != 1) {
+    std::fprintf(stderr,
+                 "TEST:DIAGNOSTIC partial header send=%zd errno=%d\n",
+                 partial_header_sent, errno);
+  }
+  check(partial_header_sent == 1, "send partial frame header");
   check(choupi::vpcd::read_message(sockets[0], message, 5) ==
             choupi::vpcd::ReadResult::IoError && message.empty(),
         "reject timeout after partial frame");

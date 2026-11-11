@@ -9851,3 +9851,15 @@ Check new loader, resolver and bytecode code against these before review.
   by Windows) in the VM; reattach D92 too if it remains non-PC/SC. Then rerun
   the authorized helper and reader-list checks before flashing or sending APDUs.
 - **Artifact:** `artifacts/logs/jcalgtest-longrun-physical-check-20261111T1209CET.log`.
+
+## Local AF_UNIX protocol tests need host execution permissions — 2026-11-11
+
+- **Symptom:** `./tools/test-vpcd-protocol` failed after its idle-read timeout
+  with `send partial frame header`; the send syscall returned `-1` / `EPERM`.
+- **Cause:** The restricted execution context denied the local AF_UNIX
+  socketpair send. This was a host sandbox permission error, not evidence that
+  `read_message()` closed the peer or corrupted socket state.
+- **Viable solution:** Run the test wrapper with elevated sandbox permissions.
+  The same `./tools/test-vpcd-protocol` then passed all 18 checks, including
+  rejecting timeout after a partial frame. Keep the test's errno diagnostic so
+  a future failure distinguishes `EPERM` from a transport regression.
