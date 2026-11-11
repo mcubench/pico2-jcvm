@@ -1,6 +1,6 @@
-# Current handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:05 CET
+# Current handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:16 CET
 
-Fixed the physical object-deletion path in `choupi/src/main.cpp`: Pico ARM now
+Committed as `1651bbdd`. Fixed the physical object-deletion path in `choupi/src/main.cpp`: Pico ARM now
 services the request after APDU frames unwind, using the same retained-heap
 and persistent-root safety checks as the PC collector. A real JCAlgTest
 1.8.4 support run on `8E464F4E2BBC0A19` sent `INS_CARD_RESET`; serial telemetry
@@ -31,11 +31,19 @@ Physical evidence/logs:
   caused VirtualBox to detach all three Pico devices. The authorized helper
   now reports zero nodes. No current firmware has been flashed.
 
-The next step is in `.agent/EXT_REQUESTS.md`: reattach the Pico devices to the
-VM, preferably with 2BED in BOOTSEL. Then flash the already-built ARM image
-only after confirming both build gates, capture its serial startup, refresh
-the PC/SC helper, and run the bounded reset test. If a board drops out, use a
-different enumerated board.
+Fresh Windows package for the bounded code is
+`build/external-test/pico2-jcvm-object-deletion-bounded-windows-1651bbdd.zip`
+(SHA-256 `a48df3e9c1dd981efaa3beb93f856f52cc9b100dc7c0f151d643fdb9df0548a1`).
+Its empty-card UF2 is
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-1651bbdd.uf2`
+(SHA-256 `7fb42f4b5f706a3df26bc36ed5f2809de4d322f6662771b2d8722a3bdd0d40e4`).
+The package passed its internal SHA256SUMS and ZIP integrity checks; it has
+not yet been tested on hardware.
+
+The next local step is in `.agent/EXT_REQUESTS.md`: reattach the Pico devices
+to the VM, preferably with 2BED in BOOTSEL. Then refresh the authorized helper,
+flash the already-built ARM image, capture finite serial startup, and run the
+bounded reset test. If a board drops out, use a different enumerated board.
 
 ---
 

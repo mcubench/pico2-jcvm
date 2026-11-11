@@ -27608,8 +27608,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `reclaimer_resumes_bounded_applet_deletion_until_complete`. `./tools/env javac -d build/jc-algtest-apdu-probe tests/hardware/JCAlgTestApduProbe.java` passed. `PICO_BUILD_JOBS=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed (firmware end `0x100f4158`, 48,808 bytes remaining); matching RISC-V wrapper passed. On 8E46 the unchanged 1.8.4 support suite reached `INS_CARD_RESET`; serial showed `stack_empty=1`, completed GC and `sw=9000`, with 1,417 unreachable applet records erased, but SmartcardIO returned `SCARD_E_NOT_TRANSACTED`. No bounded firmware was flashed. A finite monitor on 2BED passed; firmware-only flash attempts could not reach BOOTSEL, and VirtualBox then detached all devices. The helper reports zero Pico nodes at handoff.
 - Result: The original physical collector omission is fixed and confirmed on a real board. A separate unbounded-sweep transport failure is now mitigated in code and passes unit/build validation, but the eight-record limit has not yet been exercised on hardware. The 1,417-record APDU elapsed time was not measured.
 - Decision: Keep deletion diagnostic-only. Reattach devices to the VM, place 2BED in BOOTSEL if possible, then flash the current bounded image and rerun a physical `INS_CARD_RESET` check before resuming long campaigns.
-- Commit: `pending`
+- Commit: `1651bbdd`
 - Artifacts/logs: `artifacts/logs/physical-deletion-20261111-D92-object-deletion-fixed-serial.log`; `artifacts/logs/physical-deletion-20261111-8E46-support-object-deletion-fixed-{client,serial}.log`; `artifacts/results/physical-deletion-20261111/8E46-support-object-deletion-fixed/`; `artifacts/logs/physical-deletion-20261111-8E46-support-object-deletion-fixed-serial.log`.
+
+## 2026-11-11 Package bounded object-deletion firmware for Windows 11 min
+
+- Step/experiment: `RESOURCE-01-OBJECT-DELETION-WINDOWS-BOUNDED-1651`
+- When: '2026-11-11 18:05 CET' - '2026-11-11 18:16 CET'
+- Model: `GPT-6`
+- Change: Rebuilt the object-deletion-enabled ARM image from source commit `1651bbdd`, packaged an empty-card UF2 and created a refreshed Windows package containing the unchanged 1.8.4/jc305 CAP/client and GPPro. Updated EXT_REQUESTS and handoff with the new links, hashes, and bounded-cleanup behavior.
+- Validation: ARM and RISC-V `max_crypto` wrappers passed with `PICO2_ENABLE_OBJECT_DELETION=1`; both report CPLC source ID `0xFF1651BB`. `./tools/package-empty-card-uf2` passed with 3,906 firmware blocks plus 4,096 erased-storage blocks. Package `SHA256SUMS.txt` validated all 15 entries and `unzip -t` reported no errors. No device was available in the VM for this package test; the previous software-reset attempt detached all Pico devices.
+- Result: Empty-card UF2 is 4,097,536 bytes, SHA-256 `7fb42f4b5f706a3df26bc36ed5f2809de4d322f6662771b2d8722a3bdd0d40e4`. Windows ZIP SHA-256 is `a48df3e9c1dd981efaa3beb93f856f52cc9b100dc7c0f151d643fdb9df0548a1`. Package build source commit is `1651bbdd`.
+- Decision: The fresh image is ready for external Windows enumeration and bounded object-deletion testing. Physical acceptance remains pending; object deletion stays diagnostic-only.
+- Commit: `pending`
+- Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-bounded-windows-1651bbdd.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-1651bbdd.uf2`; `build/arm/build-provenance.txt`.
 
 ## 2026-11-11 Refresh README support table 4 minutes
 

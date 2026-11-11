@@ -38,6 +38,9 @@ pinned upstream fixture; do not modify it.
 
 ## Test JCSystem object deletion on Windows
 
+The initial package below has been superseded by the bounded-reclaimer package
+in the next section. Do not use the old firmware hash for another upload.
+
 Please run the refreshed diagnostic package and follow its exact hash check and
 BOOTSEL copy commands:
 
@@ -132,3 +135,31 @@ Please reattach the Pico devices to the development VM through VirtualBox
 image directly without another software reset. Otherwise reattach the runtime
 devices and report when they appear. I will then confirm IDs, flash only after
 the ARM/RISC-V builds, and continue on whichever reader is available.
+
+## Retry JCSystem object deletion with bounded cleanup (source commit 1651bbdd)
+
+A fresh empty-card test package is ready. It includes the diagnostic ARM image,
+unchanged JCAlgTest 1.8.4/jc305 CAP and client, GPPro, and serial capture tool.
+The reclaimer now deletes at most eight persistent records per APDU and resumes
+on later APDUs, so a large cleanup will not hold the CCID response while
+erasing the full backlog.
+
+- [Download the bounded Windows package](../build/external-test/pico2-jcvm-object-deletion-bounded-windows-1651bbdd.zip)
+- [Download the standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-1651bbdd.uf2)
+- Package SHA-256: `a48df3e9c1dd981efaa3beb93f856f52cc9b100dc7c0f151d643fdb9df0548a1`
+- UF2 SHA-256: `7fb42f4b5f706a3df26bc36ed5f2809de4d322f6662771b2d8722a3bdd0d40e4`
+- Source commit: `1651bbdd`; ARM profile: `max_crypto`; object deletion:
+  enabled; serial wait: `0 ms`; CPLC source ID: `0xFF1651BB`.
+- UF2 size: `4,097,536` bytes. This is an empty-card image and erases the
+  complete 1 MiB persistent-storage region when copied in BOOTSEL.
+
+The package README contains PowerShell hash verification and exact BOOTSEL,
+installation, and test steps. First confirm the device is recognized after
+flashing and report its reader name and ATR; install the upstream CAP explicitly
+with the packaged GPPro. Then choose `2 -> PERFORMANCE TEST` on one identified
+token and `1 -> All algorithms` on a second token if available. Keep the
+result and full serial log separate per chip ID. If Windows still reports an
+unrecognized USB device, include the exact UF2 hash, Windows version, and
+Device Manager status/error and hardware IDs. The bounded build has passed
+unit tests and ARM/RISC-V builds but has not yet been tested on physical
+hardware.
