@@ -1,4 +1,26 @@
-# Current handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:18 CET
+# Current handoff — bounded reclaimer regression extended; VM still sees no Pico — 2026-11-11 18:30 CET
+
+The user reports that physical Pico 2 devices are available and the earlier
+absence was a VM passthrough issue. I refreshed the authorized helper, but this
+VM currently enumerates none: the helper reports zero matching devices, elevated
+`lsusb` lists only root hubs, and bounded `pcsc_scan -r` shows only the two VPCD
+readers. No board was flashed and no physical APDU was sent.
+
+Extended the reclaimer unit coverage with a 19-record orphan set and an
+eight-record cap. It verifies three resumed calls delete 8, 8, and 3 records,
+and a different owner's record survives. `./tools/test-persistent-transaction`
+passes with `TEST:SUMMARY fail=0`. This is host filesystem-model evidence and
+does not verify physical APDU timing or CCID behavior.
+
+The Windows USB-enumeration failure request remains open in `.agent/EXT_REQUESTS.md`;
+it still needs the exact uploaded UF2 hash and Device Manager error details.
+For local physical validation, VirtualBox must pass a Pico USB node into this
+VM. Once visible, refresh the helper, confirm reader identity, and follow the
+two-architecture build gate before flashing and testing the bounded build.
+
+---
+
+# Previous handoff — bounded physical deletion sweep built; VM USB devices need reattachment — 2026-11-11 18:18 CET
 
 Committed as `1651bbdd`. Fixed the physical object-deletion path in `choupi/src/main.cpp`: Pico ARM now
 services the request after APDU frames unwind, using the same retained-heap

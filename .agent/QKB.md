@@ -10010,3 +10010,16 @@ Check new loader, resolver and bytecode code against these before review.
 - **Use next time:** Do not let an unauthenticated stale SCP03 session block
   normal applet routing. Keep authentication checks on protected card-manager
   operations, and retain this post-GPPro-disconnect hardware regression.
+
+## Physical devices available on host but absent from current VM USB bus — 2026-11-11
+
+- **User report:** Physical Pico 2 devices are available; the earlier absence
+  was a VM passthrough issue, not a board fault.
+- **Current VM check:** Ran the authorized
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper. It reported zero matching
+  Pico devices. Elevated `lsusb` listed only the two Linux root hubs, and a
+  bounded `pcsc_scan -r` listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`.
+  No firmware was flashed and no physical APDU was sent.
+- **Use next time:** Treat the boards as physically available but not yet passed
+  through to this VM. Refresh the helper after USB reattachment; continue on an
+  identified visible token, and do not infer a device fault from this VM state.

@@ -644,6 +644,13 @@ Archive text is historical evidence, not current device state or priorities.
   This closes these two host root-enumeration cases only; physical interruption,
   complete unchanged JCAlgTest acceptance, and production enablement remain open.
 
+  Bounded-sweep regression (2026-11-11): a 19-record applet-owner fixture now
+  verifies that an eight-record limit returns after batches of 8, 8, and 3,
+  resumes to completion, and leaves a different applet owner's record intact.
+  `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`.
+  This validates bounded resume behavior in the host filesystem model; physical
+  APDU/CCID timing and interruption recovery remain open.
+
 ## CAP input-handling review — 2026-11-10
 
 Source: [docs/review_fable52_20261110.md](docs/review_fable52_20261110.md)

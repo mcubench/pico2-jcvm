@@ -2497,6 +2497,65 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x43;
+    constexpr uint8_t unrelated_owner = 0x44;
+    constexpr uint8_t record_count = 19;
+    constexpr uint32_t batch_limit = 8;
+    std::array<std::array<uint8_t, 4>, record_count> tags{};
+    for (uint8_t index = 0; index < record_count; ++index) {
+      tags[index] = {0x03, owner, 0x20,
+                     static_cast<uint8_t>(index + 1)};
+      seed(tags[index].data(), tags[index].size(), byte_record(index));
+    }
+    const uint8_t unrelated_tag[] = {0x03, unrelated_owner, 0x20, 0x01};
+    seed(unrelated_tag, sizeof(unrelated_tag), byte_record(0x7f));
+
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    auto remaining_records = [&]() {
+      uint32_t count = 0;
+      for (const auto &tag : tags) {
+        if (!read(tag.data(), tag.size()).empty()) ++count;
+      }
+      return count;
+    };
+    uint32_t erased = 0;
+    const auto first_pass =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased, batch_limit);
+    const bool first_batch_bounded =
+        first_pass == jcvm::PersistentInventory::VisitResult::Stopped &&
+        erased == batch_limit && remaining_records() == record_count - batch_limit;
+
+    erased = 0;
+    const auto second_pass =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased, batch_limit);
+    const bool second_batch_bounded =
+        second_pass == jcvm::PersistentInventory::VisitResult::Stopped &&
+        erased == batch_limit && remaining_records() == record_count - 2 * batch_limit;
+
+    erased = 0;
+    const auto final_pass =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased, batch_limit);
+    const bool unrelated_owner_preserved =
+        !read(unrelated_tag, sizeof(unrelated_tag)).empty();
+    jcvm::fs::Tag unrelated_fs_tag{};
+    unrelated_fs_tag.len = sizeof(unrelated_tag);
+    std::memcpy(unrelated_fs_tag.value, unrelated_tag, sizeof(unrelated_tag));
+    const bool unrelated_fixture_cleaned =
+        jcvm::FlashMemory_Handler::erasePersistentTag(unrelated_fs_tag);
+    expect(first_batch_bounded && second_batch_bounded &&
+               final_pass == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == record_count - 2 * batch_limit &&
+               remaining_records() == 0 && unrelated_owner_preserved &&
+               unrelated_fixture_cleaned,
+           "reclaimer_caps_each_batch_and_resumes_across_multiple_batches");
+  }
+
+  {
     constexpr uint8_t owner = 0x42;
     const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
     const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};

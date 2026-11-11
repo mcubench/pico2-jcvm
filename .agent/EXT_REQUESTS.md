@@ -120,7 +120,21 @@ Keep the three Pico tokens connected. Do not flash or reset them as part of
 this service recovery. Once PC/SC lists `2BED26ED20556535`, I can continue the
 bounded object-deletion test on that board.
 
-## Reattach Pico USB devices after runtime-reset passthrough loss — 2026-11-11
+## EXT-USB-VM-REATTACH-20261111-1824 — Reattach Pico USB device to VM
+
+The user reports that physical devices are available. At 2026-11-11 18:24 CET,
+the authorized helper still found zero matching Pico devices inside this VM;
+`lsusb` showed only root hubs and PC/SC listed only virtual readers. No device
+was flashed or reset during this check.
+
+Please attach at least one Pico USB device to the development VM through
+VirtualBox **Devices → USB**. Then report when it appears, or reattach it once
+more if it was already selected: host-side physical availability alone does
+not expose its USB node inside this guest. The next action will be a refreshed
+helper/PCSC identification, followed by bounded-reclaimer testing only after
+the architecture build gates pass.
+
+### Earlier runtime-reset passthrough event — 2026-11-11
 
 The VM initially saw all three boards (`D92E743D5F640C0F`,
 `2BED26ED20556535`, and `8E464F4E2BBC0A19`). A firmware-only flash attempt on

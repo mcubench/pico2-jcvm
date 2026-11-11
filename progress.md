@@ -27634,3 +27634,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: README refresh complete; retain existing acceptance limitations and unrelated worktree changes.
 - Commit: `this README-support-refresh-20261111 commit; resolve with git log --grep="docs: refresh Java Card support table"`
 - Artifacts/logs: Existing evidence in `artifacts/logs/object-deletion-vpcd-20261111T141050Z.log` and `progress.md`; no new runtime logs.
+
+## 2026-11-11 Exercise multi-APDU bounded deletion batches 6 min
+
+- Step/experiment: `RESOURCE-01-BOUNDED-RECLAIMER-MULTI-BATCH-01`
+- When: '2026-11-11 18:24 CET' - '2026-11-11 18:30 CET'
+- Model: `GPT-6`
+- Change: Added a 19-record persistent orphan fixture to verify the eight-record reclaimer limit across repeated calls, exact 8/8/3 deletion batches, and preservation of a different applet owner's record. Updated TODO, QKB, handoff, and external request with the regression and the current VM USB visibility check.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`. The first run exposed fixture contamination because its unrelated-owner record remained in the shared filesystem; the test now explicitly verifies that record survives reclamation and removes it during cleanup. Host hardware check used the authorized path: helper found zero devices, `lsusb` showed root hubs only, and bounded PC/SC scan showed only VPCD readers. No firmware build or flash was performed; the code change is test-only and no physical token was visible to validate.
+- Result: The host reclaimer model enforces the configured maximum and resumes across multiple APDU-sized batches while preserving a neighboring owner. Physical timing, recovery, and Windows enumeration failure remain unverified.
+- Decision: Retain object deletion as diagnostic-only; rerun physical validation when the Pico USB node is passed through to the VM.
+- Commit: pending
+- Artifacts/logs: `build/tests/unit/persistent-transaction/persistent_transaction_test`; test output `TEST:SUMMARY fail=0`.
