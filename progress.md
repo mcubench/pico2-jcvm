@@ -27443,5 +27443,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/fixture-path --verify` passed with `FIXTURES:PASS files=81 jcalgtest=1.8.4 api_caps=48`.
 - Result: Unchanged upstream 1.8.4 / jc305 inputs are intact. No physical test was started.
 - Decision: Reuse the pinned 1.8.4 CAP/client after the physical Pico is published by PC/SC.
-- Commit: `<fill after commit>`
+- Commit: `739fbb43`
 - Artifacts/logs: fixture paths and hashes in `tests/fixtures/manifest.json`; no separate output file.
