@@ -1,3 +1,11 @@
+# Current handoff — retained static-root deletion pass verified — 2026-11-11 10:13 CET
+
+`./tools/test-persistent-transaction` now proves that `PersistentReclaimer` preserves two serialized arrays rooted by static references from another retained package context while erasing exactly one orphan. The separate shareable-proxy root enumeration assertion remains in place. Full unit suite reports `TEST:SUMMARY fail=0`.
+
+No build or hardware test was run for this test-only change. Durable objects held specifically by persistent cross-package aliases or proxy-backed RMI references are not yet proven through the erase pass. Continue to keep firmware deletion disabled; next add those roots to destructive reclaimer tests, then address physical interruption recovery.
+
+---
+
 # Current handoff — retained cross-context roots added to request-gated deletion — 2026-11-11 09:59 CET
 
 `Context::appendRetainedRootsForPackage()` now gathers cached static references and shareable-proxy server references from retained contexts into the target package's root vector. It allows peer package contexts, but fails closed if more than one retained context owns the target package. The unit test traces two actual server-heap objects held by a peer package's cached static slot and proxy. The previous global sole-context check was removed.

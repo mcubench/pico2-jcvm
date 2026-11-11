@@ -167,6 +167,67 @@ int main() {
     const bool roots_complete =
         server_context.appendRetainedRootsForPackage(0x41, roots);
     const auto summary = server_context.getHeap().traceReachableFrom(roots);
+    expect(proxy_registered && roots_complete && summary.complete &&
+               summary.instances_total == 2 &&
+               summary.instances_reachable == 2,
+           "persistent_deletion_roots_include_peer_shareable_proxy");
+  }
+
+  {
+    jcvm::Context server_context(0x31, 0x41);
+    jcvm::Context client_context(0x32, 0x42);
+    const uint8_t proxy_tag_bytes[] = {0x03, 0x31, 0x10, 0x01};
+    const uint8_t static_tag_bytes[] = {0x03, 0x31, 0x10, 0x02};
+    const uint8_t orphan_tag_bytes[] = {0x03, 0x31, 0x10, 0x03};
+    jcvm::fs::Tag proxy_tag{};
+    proxy_tag.len = sizeof(proxy_tag_bytes);
+    std::memcpy(proxy_tag.value, proxy_tag_bytes, sizeof(proxy_tag_bytes));
+    jcvm::fs::Tag static_tag{};
+    static_tag.len = sizeof(static_tag_bytes);
+    std::memcpy(static_tag.value, static_tag_bytes, sizeof(static_tag_bytes));
+    const auto second_static_object = server_context.getHeap().addArray(
+        1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
+    const auto cached_static_object = server_context.getHeap().addArray(
+        1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
+    const auto orphan_object = server_context.getHeap().addArray(
+        1, jcvm::jc_array_type::JAVA_ARRAY_T_BYTE);
+    jcvm::fs::Tag orphan_tag{};
+    orphan_tag.len = sizeof(orphan_tag_bytes);
+    std::memcpy(orphan_tag.value, orphan_tag_bytes, sizeof(orphan_tag_bytes));
+    jcvm::FlashMemory_Handler::setPersistentField_Array(
+        static_tag, *server_context.getHeap().getArray(cached_static_object),
+        server_context.getHeap());
+    jcvm::FlashMemory_Handler::setPersistentField_Array(
+        proxy_tag, *server_context.getHeap().getArray(second_static_object),
+        server_context.getHeap());
+    jcvm::FlashMemory_Handler::setPersistentField_Array(
+        orphan_tag, *server_context.getHeap().getArray(orphan_object),
+        server_context.getHeap());
+    client_context.getHeap().setStaticReferenceRoot(0x42, 2,
+                                                     cached_static_object,
+                                                     0x41);
+    client_context.getHeap().setStaticReferenceRoot(0x42, 3,
+                                                     second_static_object,
+                                                     0x41);
+    std::vector<jcvm::jref_t> roots;
+    const bool roots_complete =
+        server_context.appendRetainedRootsForPackage(0x41, roots);
+    const auto summary = server_context.getHeap().traceReachableFrom(roots);
+    RootVectorContext root_vector{&roots};
+    uint32_t erased = 0;
+    const auto reclaim_result =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            0x31, server_context.getHeap(), enumerate_root_vector, &root_vector,
+            &erased);
+    const bool rooted_records_survive_reclaim =
+        reclaim_result == jcvm::PersistentInventory::VisitResult::Complete &&
+        erased == 1 &&
+        !persistent_transaction_test::read(proxy_tag_bytes,
+                                           sizeof(proxy_tag_bytes)).empty() &&
+        !persistent_transaction_test::read(static_tag_bytes,
+                                           sizeof(static_tag_bytes)).empty() &&
+        persistent_transaction_test::read(orphan_tag_bytes,
+                                           sizeof(orphan_tag_bytes)).empty();
     bool duplicate_target_context_fails_closed = false;
     {
       jcvm::Context duplicate_server_context(0x33, 0x41);
@@ -176,11 +237,12 @@ int main() {
               0x41, ambiguous_roots) &&
           ambiguous_roots.empty();
     }
-    expect(proxy_registered && roots_complete &&
-               summary.complete && summary.instances_total == 2 &&
-               summary.instances_reachable == 2 &&
+    expect(roots_complete &&
+               summary.complete && summary.arrays_total == 3 &&
+               summary.arrays_reachable == 2 &&
+               rooted_records_survive_reclaim &&
                duplicate_target_context_fails_closed,
-           "persistent_deletion_roots_include_peer_shareable_proxy_and_reject_ambiguous_heap");
+           "persistent_deletion_reclaimer_preserves_peer_static_roots_and_rejects_ambiguous_heap");
   }
 
   {

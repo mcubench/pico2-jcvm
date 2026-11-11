@@ -1922,7 +1922,6 @@
 - Decision: Continue with independent host-side build work while PC/SC is restored.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
-
 ## 2026-10-14 — Verify offline CHOUPI host-build dependencies
 
 - Step/experiment: `host-vm-offline-dependency-check-20261014`
@@ -27246,3 +27245,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep deletion unsupported in normal firmware. Next test persistent reclaimer reachability with serialized cross-package static aliases and live RMI/shareable graphs, then run interruption testing on physical flash and full 1.8.4 acceptance before changing the firmware API support result.
 - Commit: resolve with `git log --grep="fix: enumerate retained contexts as deletion roots"`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261111T084414Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261111T084414Z.log`; `artifacts/logs/resource01-root-coverage-2bed-20261111.log`; firmware SHA-256 `3269206bff4e99afe98f3cf7e37e46a2d7496dd27c1456dd1cc7d4fd84c17ea1`.
+# 2026-11-11 RESOURCE-01 retained-root reclaimer proof 14 minutes
+
+- Step/experiment: `RESOURCE-01-RETAINED-ROOT-RECLAIMER-20261111`
+- When: '2026-11-11 09:59 CET' - '2026-11-11 10:13 CET'
+- Model: `gpt-6`
+- Change: Extended `persistent_transaction_test` to run the actual applet-tag reclaimer with two persistent arrays rooted from another retained package context and one unrooted orphan. Preserved the separate live shareable-proxy root enumeration assertion.
+- Validation: `./tools/test-persistent-transaction` passed; direct executable summary `TEST:SUMMARY fail=0`. The reclaimer returned `Complete`, retained both peer static records, and erased exactly one orphan. No platform build or hardware test was run; this test-only change exercises the host reclaimer.
+- Result: The retained-context static-root vector protects serialized applet objects during the destructive reclaimer pass. Proxy roots are separately verified in the heap root enumeration test, but durable proxy-backed flash data is not yet covered.
+- Decision: Continue to keep firmware deletion disabled. Next cover durable cross-package aliases and live RMI/shareable references in the reclaimer, then physical flash interruption recovery.
+- Commit: pending.
+- Artifacts/logs: none.
