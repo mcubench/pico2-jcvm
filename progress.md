@@ -22176,7 +22176,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid D92E743D5F640C0F` passed. The first picotool reset-interface attempt failed; CDC 1200-baud fallback entered BOOTSEL in 3 seconds, image was written and verified, and 18-second serial capture repeatedly reported `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `FAULT`. `sudo -n /usr/local/sbin/pico2-pcsc-reader && pcsc_scan -r` listed all 3 physical readers. Targeted GPPro `--list` returned `ISD: A000000151000000 (OP_READY)` and no applet/package records. No test CAP was installed.
 - Result: Identified board flashed and booted, remains PC/SC-visible and empty. This is firmware boot/card-manager validation; physical execution of Descriptor-backed field type checks was not measured because standard GPPro LOAD omits Descriptor.
 - Decision: Retain chip-ID-targeted flash and CDC fallback as the working multi-device procedure. Continue physical applet testing only with a valid, verifiable metadata path; keep Descriptor-free execution bounds fail-closed.
-- Commit: `cef3a453`
+- Commit: `b2d2f97`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261105T081020Z.log`, SHA-256 `aede2b7c1a48993a6d73ef8a6dc8ce1d8f7a7330807c6c105618fedc8466f782`; flashed `build/arm/pico2_choupi.uf2`, SHA-256 `e520925668f07bd722f20643e462e558fb8eee7021d6c1d6498c611cddeb6360`.
 
 - Commit resolved for `hard-20261105-descriptor-field-kinds-physical-cycle`: `b2d2f97` (Record identified Pico flash validation).
@@ -27668,7 +27668,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-batch` passed (2 service calls, 10 records); the 4-cycle batch passed (6 calls, 40 records). `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed (8 checks). `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). ARM and RISC-V object-deletion-enabled `max_crypto` wrappers passed; ARM firmware end `0x100f4190`, 48,752 bytes remaining. The approved Pico helper still reports zero devices after the user's availability update; no hardware flash/APDU validation was possible.
 - Result: VPCD regression enforces the shared eight-record limit and completes repeated continuation batches without spuriously creating another request. Physical timing/CCID behavior remains unverified. Pinned Java Card OS Rust build warnings remain present.
 - Decision: Keep object deletion diagnostic-only. Do not use the superseded `1651bbdd` Windows package; refresh provenance and create a current package before external Windows validation. Retry physical tests when a board is enumerated in the VM.
-- Commit: `pending`
+- Commit: `cef3a453`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T175424Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175512Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175736Z.log`; ARM/RISC-V outputs under `build/`.
 
 ## 2026-11-11 Recheck BOOTSEL visibility after device availability update 5 min
@@ -27680,5 +27680,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed prerequisite checks. `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=2s 8s ./tools/env picotool info --device` reported `No accessible RP-series devices in BOOTSEL mode were found`. The authorized runtime PC/SC helper had reported zero devices; no flash or APDU was attempted.
 - Result: This VM currently sees neither runtime CCID readers nor a BOOTSEL device. This reports VM passthrough visibility only; it does not indicate a physical board fault.
 - Decision: Keep the VM passthrough request open. Resume physical validation when a board appears in either runtime PC/SC or BOOTSEL enumeration.
-- Commit: `pending`
+- Commit: `8be342d3`
 - Artifacts/logs: command output recorded in session; no log file created.
