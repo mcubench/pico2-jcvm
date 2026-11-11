@@ -27515,5 +27515,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan. Each rooted iteration had 4 reachable and 4 total arrays; each rootless sweep reclaimed 4 arrays and kept total slots at 4.
 - Result: Production registry enumeration reuses a stable four-slot heap table across these eight host-unit cycles. This is not RP2350 RAM, flash-write or power-loss evidence.
 - Decision: Keep R59 open and object deletion disabled by default. Physical JCAlgTest reset/deletion and bounded device memory measurement remain required.
-- Commit: `pending`
+- Commit: `bfe3780e`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output `RMI_REGISTRY:PASS retained_context_diamond_cycles=8 slots=4`.
