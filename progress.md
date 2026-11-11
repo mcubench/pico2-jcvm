@@ -27431,5 +27431,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `lsusb -v -d 2e8a:0009` showed CDC plus CCID interfaces and serial D92E743D5F640C0F. `pcsc_scan -r` alternated between VPCD-only output and a bounded hang after its banner. `systemctl status` showed socket activation; non-sudo `systemctl restart pcscd.service` reported `Connection timed out`; a later status showed a new `pcscd` invocation, but PC/SC scan remained unusable. No APDUs were sent.
 - Result: A valid USB CCID device is visible, but local PC/SC discovery is unstable and does not list the physical token. Root cause is undetermined; service journal access is restricted.
 - Decision: Request one privileged PC/SC service restart and bounded scan through `.agent/EXT_REQUESTS.md`; continue offline until the physical reader is published.
-- Commit: `<fill after commit>`
+- Commit: `9ee6ca05`
 - Artifacts/logs: systemd status and USB/PCSC output inspected in terminal; no standalone log.
