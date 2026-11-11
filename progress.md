@@ -27359,5 +27359,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: In the restricted sandbox, `./tools/test-vpcd-protocol` failed because the partial-header `send()` returned `-1` with `errno=EPERM` after the preceding idle timeout. Running the same wrapper with `sandbox_permissions: require_escalated` passed all 18 checks (`TEST:SUMMARY pass=18 fail=0`), including the partial-header timeout case.
 - Result: The failure was a sandbox denial of an AF_UNIX socketpair syscall, not a VPCD parser/transport defect. Existing idle timeout and partial-frame rejection behavior passes outside the restricted context.
 - Decision: MIG-20261107-02 is resolved. Continue with the next independent priority; keep physical JCAlgTest acceptance open until a Pico returns to PC/SC.
-- Commit: pending
+- Commit: `7d852c56`
 - Artifacts/logs: no standalone log.
