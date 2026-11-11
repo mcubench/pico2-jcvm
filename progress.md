@@ -27704,5 +27704,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO_BUILD_JOBS=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed; image end `0x100f4190`, 48,752 bytes remain. Matching RISC-V object-deletion-enabled build passed earlier for this source. `./tools/package-empty-card-uf2` passed with 3,906 firmware and 4,096 erased-storage blocks. All 16 `SHA256SUMS.txt` entries validated; `unzip -t` reported no errors. No device was flashed because the VM had no runtime or BOOTSEL RP2350 visible.
 - Result: Empty-card UF2 SHA-256 `4353d4f2f068aa988fce7d4d92c667634ddf4d3684e4580c8dedae08c2efb3af`; ZIP SHA-256 `39dd82ada1c10eac539c6e77b033bb08097ffd7cab993c3a40c6cdfe91934f65`. Windows USB enumeration and JCAlgTest remain externally unverified.
 - Decision: Use only this package for the next Windows object-deletion test; do not reuse `1651bbdd`. Keep deletion diagnostic-only until Windows and physical APDU acceptance.
-- Commit: `pending`
+- Commit: `b8382ee6`
 - Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-shared-budget-73beff17.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-73beff17.uf2`; `build/external-test/object-deletion-shared-budget-73beff17/BUILD-PROVENANCE.txt`.
