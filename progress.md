@@ -27801,5 +27801,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Each `PICO2_HOST_USB_ACCESS=1 PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/cycle choupi --profile max_crypto --chipid <chipid>` passed ARM and RISC-V build gates, verified flash, and finite serial runtime (`TEST:SUMMARY pass=1 fail=0`). The authorized helper and `pcsc_scan -r` subsequently listed all three physical readers. Picotool confirmed all three had returned to runtime mode.
 - Result: All boards run the same 2,003,456-byte ARM UF2, SHA-256 `7185aa877d9373cc33c1872d8f4bffc58560ad6536f16d4cf3c985cf959a80c4`. This is a diagnostic image, not production acceptance. In a separate 1.8.4 option-1 attempt on 8E, the client stopped at `SCARD_F_COMM_ERROR`; serial telemetry recorded 60 persistent-field trace read failures (`IOException`, enum value 5) across six instance tags and retained deletion requests. Cause still needs diagnosis.
 - Decision: Keep RESOURCE-01 open. Instrument the underlying filesystem status/fallback for these persistent field reads, then rerun on another identified reader; do not enable object deletion in release firmware based on these checks.
-- Commit: pending
+- Commit: `39e7100d`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261111T213114Z.log`, `...T213228Z.log`, `...T213626Z.log`; partial client/serial data at `artifacts/results/resource01-option1-allalgorithms-8E46-debug-20261111/`.
+
+## 2026-11-11 Trace persistent deletion candidates and retry three boards 71 min
+
+- Step/experiment: `RESOURCE-01-CANDIDATE-TRACE-20261111`
+- When: '2026-11-11 21:38 UTC' - '2026-11-11 22:49 UTC'
+- Model: `GPT-6`
+- Change: Added debug-only persistent-tag read status, heap edge owner/tag, and reclaimer candidate/batch/erase tag traces. Preserved the unrelated `releaseGlobalAIDObject()` worktree removal unstaged. No collector fix is claimed.
+- Validation: ARM and RISC-V repository wrappers passed for `max_crypto`, `PICO2_DEBUG_HEAP_GC=1`, object deletion ON, persistent inventory trace OFF. ARM UF2 is 2,004,992 bytes, SHA-256 `9d0b0de77f68eeee69e10341bbe237393c2813dd4a046fc76bbcee03a91d6699`, with 46,460 bytes below the firmware flash boundary. A candidate-tracing image with verbose persistent inventory logging ON was flashed to 2BED and passed `TEST:SUMMARY pass=1 fail=0`; its later physical performance attempt ended `SCARD_E_NOT_TRANSACTED` after applet selection and never reached reset-driven deletion. Subsequent reset/flash attempts failed. Current `pcsc_scan -r` shows only VPCD readers.
+- Result: The VM saw all three devices as runtime `2e8a:0009`, despite the reported BOOTSEL state. 2BED was the only board reflashed in this step. 8E and D92 were not flashed. Candidate/erase trace lines were not captured; RESOURCE-01 remains unresolved. `fuser` found three stale serial `cat` holders; terminating them freed the CDC ports but did not restore BOOTSEL or PC/SC, so monitor interference is not a sufficient explanation.
+- Decision: Keep deletion diagnostic-only. Resume with a visible BOOTSEL or exact physical PC/SC reader, flash the persistent-trace-off image, and capture a deletion request before attributing the missing array-body tag to the reclaimer.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261111T221812Z.log` (2BED flash/monitor pass), `...T222841Z.log`, `...T223745Z.log`, `...T224138Z.log` (bounded reset failures); `artifacts/results/resource01-option2-performance-2BED-trace-20261111/`; current image `build/arm/pico2_choupi.uf2`.

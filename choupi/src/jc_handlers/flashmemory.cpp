@@ -1011,13 +1011,56 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
 
   uint8_t read_status =
       fs_read_inplace(&(tag.value[0]), tag.len, &data, &data_length);
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+  const uint8_t primary_read_status = read_status;
+  const uint32_t primary_data_length = data_length;
+  const bool primary_data_is_null = data == nullptr;
+  bool legacy_read_attempted = false;
+  uint8_t legacy_read_status = 0xff;
+  uint32_t legacy_data_length = 0;
+  bool legacy_data_is_null = true;
+#endif
   fs::Tag legacy_tag;
   if ((read_status || data_length == 0 || data == nullptr) &&
       legacy_applet_tag(tag, legacy_tag)) {
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+    legacy_read_attempted = true;
+#endif
     read_status = fs_read_inplace(legacy_tag.value, legacy_tag.len, &data,
                                   &data_length);
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+    legacy_read_status = read_status;
+    legacy_data_length = data_length;
+    legacy_data_is_null = data == nullptr;
+#endif
   }
   if (read_status || data_length == 0 || data == nullptr) {
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+    std::printf("CHOUPI:HEAP_GC_FS_READ_FAIL status=%u exists=%u "
+                "primary_status=%u primary_length=%lu primary_null=%u "
+                "legacy_attempted=%u legacy_status=%u legacy_length=%lu "
+                "legacy_null=%u tag=",
+                static_cast<unsigned>(read_status),
+                static_cast<unsigned>(fs_exists(tag.value, tag.len)),
+                static_cast<unsigned>(primary_read_status),
+                static_cast<unsigned long>(primary_data_length),
+                primary_data_is_null ? 1u : 0u,
+                legacy_read_attempted ? 1u : 0u,
+                static_cast<unsigned>(legacy_read_status),
+                static_cast<unsigned long>(legacy_data_length),
+                legacy_data_is_null ? 1u : 0u);
+    for (uint8_t index = 0; index < tag.len; ++index) {
+      std::printf("%02X", tag.value[index]);
+    }
+    if (legacy_read_attempted) {
+      std::printf(" legacy_tag=");
+      for (uint8_t index = 0; index < legacy_tag.len; ++index) {
+        std::printf("%02X", legacy_tag.value[index]);
+      }
+    }
+    std::printf("\r\n");
+    std::fflush(stdout);
+#endif
     if (tag.len == 5 && tag.value[0] == 0x03 && tag.value[4] == 0xff) {
       std::printf("CHOUPI:RESTORE_STORAGE status=%u length=%lu\r\n",
                   static_cast<unsigned>(read_status),

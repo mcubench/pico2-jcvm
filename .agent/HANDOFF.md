@@ -1,3 +1,42 @@
+# Current handoff — RESOURCE-01 candidate tracing prepared; physical transport unavailable — 2026-11-11 22:49 UTC
+
+Added debug-only traces for persistent-tag read status, failed heap edges, and
+the persistent reclaimer's selected and erased tags. ARM and RISC-V wrappers
+pass with `max_crypto`, heap tracing on, object deletion on, and verbose
+persistent-inventory tracing off. The current ARM UF2 is
+`build/arm/pico2_choupi.uf2`, 2,004,992 bytes, SHA-256
+`9d0b0de77f68eeee69e10341bbe237393c2813dd4a046fc76bbcee03a91d6699`; it has
+46,460 bytes below the configured firmware boundary. The worktree is dirty;
+this image is built from modified sources, not a clean commit-only artifact.
+
+The user reported all three boards in BOOTSEL, but guest USB enumeration saw
+all three as runtime `2e8a:0009`. `./tools/cycle choupi --profile max_crypto`
+successfully flashed the candidate-tracing image to 2BED and its finite
+monitor passed (`artifacts/logs/cycle-choupi-20261111T221812Z.log`). That image
+also had verbose persistent-inventory diagnostics enabled. The client later
+connected to 2BED and applet SELECT returned `9000`, then JCAlgTest option 2
+failed with `SCARD_E_NOT_TRANSACTED` before any deletion request or candidate
+trace. Its serial log is
+`artifacts/results/resource01-option2-performance-2BED-trace-20261111/serial.log`.
+
+The persistent-trace-off build passed both architecture wrappers, but flash
+retries for 2BED and D92 exhausted the bounded reset path; 8E also failed its
+retry. The authorized helper still grants three USB nodes, but the latest
+`pcsc_scan -r` lists only VPCD readers. `fuser` found three old serial monitor
+processes holding CDC ports; stopping them freed the ports but did not restore
+BOOTSEL or PC/SC, so this was not the complete cause. The latest failure logs
+are `artifacts/logs/cycle-choupi-20261111T222841Z.log`,
+`...T223745Z.log`, and `...T224138Z.log`.
+
+Next: wait for guest USB passthrough to expose BOOTSEL or a physical PC/SC
+reader; flash the current trace build to an identified board; capture a full
+JCAlgTest reset-driven deletion event; then compare its missing body tag
+against the reclaimer's batch/erase logs. RESOURCE-01 and production object
+deletion acceptance remain open. Do not treat the missing `...FFFF...` array
+body as proven reclaimer deletion until those candidate logs are captured.
+
+---
+
 # Current handoff — diagnostic max_crypto flashed on all three identified boards — 2026-11-11 21:38 UTC
 
 Built and flashed the same ARM diagnostic `max_crypto` image to all three Pico 2

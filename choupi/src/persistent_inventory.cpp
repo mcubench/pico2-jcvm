@@ -5,6 +5,7 @@
 #include "jc_handlers/flashmemory.hpp"
 
 #include <array>
+#include <cstdio>
 #include <cstring>
 #include <utility>
 
@@ -67,6 +68,31 @@ bool hasForeignAliasRoot(const Tag &candidate,
   return false;
 }
 
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+bool isHeapPayloadTag(const Tag &tag) {
+  for (uint8_t index = 0; index + 3 < tag.len; ++index) {
+    if (tag.value[index] == 0xff &&
+        (tag.value[index + 1] == 0xfd || tag.value[index + 1] == 0xfe ||
+         tag.value[index + 1] == 0xff)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void logHeapPayloadDecision(const char *stage, const Tag &tag,
+                            const bool reachable, const bool foreign_root) {
+  if (!isHeapPayloadTag(tag)) return;
+  std::printf("OBJECT_DELETION:CANDIDATE stage=%s reachable=%u foreign_root=%u tag=",
+              stage, reachable ? 1u : 0u, foreign_root ? 1u : 0u);
+  for (uint8_t index = 0; index < tag.len; ++index) {
+    std::printf("%02X", tag.value[index]);
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
+}
+#endif
+
 bool visitUnreachableTag(const Tag &tag, void *opaque) {
   auto &context = *static_cast<CandidateContext *>(opaque);
   // Applet instance roots are registration records, not collectible object
@@ -75,8 +101,17 @@ bool visitUnreachableTag(const Tag &tag, void *opaque) {
   fs::Tag heap_tag{};
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
-  if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
-      hasForeignAliasRoot(tag, *context.foreign_alias_targets)) return true;
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+  const bool reachable = context.heap->hasReachablePersistentTagPrefix(heap_tag);
+  const bool foreign_root =
+      hasForeignAliasRoot(tag, *context.foreign_alias_targets);
+  logHeapPayloadDecision("scan", tag, reachable, foreign_root);
+#else
+  const bool reachable = context.heap->hasReachablePersistentTagPrefix(heap_tag);
+  const bool foreign_root =
+      hasForeignAliasRoot(tag, *context.foreign_alias_targets);
+#endif
+  if (reachable || foreign_root) return true;
   return context.visitor(tag, context.visitor_context);
 }
 } // namespace
@@ -565,6 +600,15 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
   auto &batch = *static_cast<CandidateBatch *>(opaque);
   if (batch.count >= batch.tags.size()) return false;
   batch.tags[batch.count++] = tag;
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+  std::printf("OBJECT_DELETION:CANDIDATE stage=batch index=%u tag=",
+              static_cast<unsigned>(batch.count - 1));
+  for (uint8_t index = 0; index < tag.len; ++index) {
+    std::printf("%02X", tag.value[index]);
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
+#endif
   return batch.count < batch.tags.size();
 }
 } // namespace
@@ -635,6 +679,15 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
       fs::Tag tag{};
       tag.len = candidate.len;
       std::memcpy(tag.value, candidate.value, candidate.len);
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+      std::printf("OBJECT_DELETION:CANDIDATE stage=erase index=%u tag=",
+                  static_cast<unsigned>(index));
+      for (uint8_t tag_index = 0; tag_index < candidate.len; ++tag_index) {
+        std::printf("%02X", candidate.value[tag_index]);
+      }
+      std::printf("\r\n");
+      std::fflush(stdout);
+#endif
       if (!FlashMemory_Handler::erasePersistentTag(tag) ||
           fs_exists(candidate.value, candidate.len) != 0) {
         if (erased_count != nullptr) *erased_count = erased;

@@ -33,7 +33,7 @@
 #include "../../src/vm_diagnostics.h"
 
 #include <cstring>
-#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
+#if defined(CHOUPI_DEBUG_HEAP_GC)
 #include <cstdio>
 #endif
 
@@ -67,6 +67,27 @@ bool enumerateVectorRoots(Heap::ReferenceVisitor visitor,
   }
   return true;
 }
+
+#if defined(CHOUPI_DEBUG_HEAP_GC)
+void logHeapTraceEdgeFailure(const char *kind, const uint16_t index,
+                             const fs::Tag &owner_tag,
+                             const fs::Tag &edge_tag,
+                             const Exceptions exception) {
+  std::printf("CHOUPI:HEAP_GC_EDGE_ERROR kind=%s index=%u exception=%u ",
+              kind, static_cast<unsigned>(index),
+              static_cast<unsigned>(exception));
+  std::printf("owner=");
+  for (uint16_t byte = 0; byte < owner_tag.len; ++byte) {
+    std::printf("%02X", static_cast<unsigned>(owner_tag.value[byte]));
+  }
+  std::printf(" edge=");
+  for (uint16_t byte = 0; byte < edge_tag.len; ++byte) {
+    std::printf("%02X", static_cast<unsigned>(edge_tag.value[byte]));
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
+}
+#endif
 
 } // namespace
 
@@ -1301,18 +1322,28 @@ void Heap::visitChildReferences(JC_Array &array,
     for (uint16_t index = 0; index < length; ++index) {
       const fs::Tag element_tag =
           FlashMemory_Handler::computeTag(array_tag, index);
-      jref_t child = FlashMemory_Handler::getPersistentField_ReferenceStrict(
-          element_tag, *this);
-      if (child.isNullPointer() && HIGH_BYTE_SHORT(index) == 0 &&
-          fs_exists(element_tag.value, element_tag.len) == 0) {
-        fs::Tag legacy_tag = element_tag;
-        legacy_tag.value[array_tag.len] = LOW_BYTE_SHORT(index);
-        legacy_tag.value[array_tag.len + 1] = LOW_BYTE_SHORT(index);
-        child = FlashMemory_Handler::getPersistentField_ReferenceStrict(
-            legacy_tag, *this);
-      }
-      if (!child.isNullPointer()) {
-        visitor(child, visitor_context);
+      fs::Tag failing_tag = element_tag;
+      try {
+        jref_t child = FlashMemory_Handler::getPersistentField_ReferenceStrict(
+            element_tag, *this);
+        if (child.isNullPointer() && HIGH_BYTE_SHORT(index) == 0 &&
+            fs_exists(element_tag.value, element_tag.len) == 0) {
+          fs::Tag legacy_tag = element_tag;
+          legacy_tag.value[array_tag.len] = LOW_BYTE_SHORT(index);
+          legacy_tag.value[array_tag.len + 1] = LOW_BYTE_SHORT(index);
+          failing_tag = legacy_tag;
+          child = FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              legacy_tag, *this);
+        }
+        if (!child.isNullPointer()) {
+          visitor(child, visitor_context);
+        }
+      } catch (const Exceptions exception) {
+#if defined(CHOUPI_DEBUG_HEAP_GC)
+        logHeapTraceEdgeFailure("array", index, array_tag, failing_tag,
+                                exception);
+#endif
+        throw;
       }
     }
 
@@ -1343,42 +1374,50 @@ void Heap::visitChildReferences(const JC_Instance &instance,
           instance_tag, index, &field_exists);
       if (!field_exists) continue;
 
-      const FieldType type =
-          FlashMemory_Handler::getPersistentField_Type(field_tag);
-      switch (type) {
-      case FieldType::FIELD_TYPE_OBJECT:
-      case FieldType::FIELD_TYPE_ARRAY_BYTE:
-      case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
-      case FieldType::FIELD_TYPE_ARRAY_SHORT:
+      try {
+        const FieldType type =
+            FlashMemory_Handler::getPersistentField_Type(field_tag);
+        switch (type) {
+        case FieldType::FIELD_TYPE_OBJECT:
+        case FieldType::FIELD_TYPE_ARRAY_BYTE:
+        case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+        case FieldType::FIELD_TYPE_ARRAY_SHORT:
 #ifdef JCVM_INT_SUPPORTED
-      case FieldType::FIELD_TYPE_ARRAY_INT:
+        case FieldType::FIELD_TYPE_ARRAY_INT:
 #endif
-      case FieldType::FIELD_TYPE_ARRAY_OBJECT:
-      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
-      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
-      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+        case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
 #ifdef JCVM_INT_SUPPORTED
-      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
 #endif
-      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT: {
-        const jref_t child =
-            FlashMemory_Handler::getPersistentField_ReferenceStrict(field_tag,
-                                                                     *this);
-        if (!child.isNullPointer()) {
-          visitor(child, visitor_context);
+        case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT: {
+          const jref_t child =
+              FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                  field_tag, *this);
+          if (!child.isNullPointer()) {
+            visitor(child, visitor_context);
+          }
+          break;
         }
-        break;
-      }
-      case FieldType::FIELD_TYPE_BYTE:
-      case FieldType::FIELD_TYPE_BOOLEAN:
-      case FieldType::FIELD_TYPE_SHORT:
+        case FieldType::FIELD_TYPE_BYTE:
+        case FieldType::FIELD_TYPE_BOOLEAN:
+        case FieldType::FIELD_TYPE_SHORT:
 #ifdef JCVM_INT_SUPPORTED
-      case FieldType::FIELD_TYPE_INT:
+        case FieldType::FIELD_TYPE_INT:
 #endif
-      case FieldType::FIELD_TYPE_UNINITIALIZED:
-        break;
-      default:
-        throw Exceptions::SecurityException;
+        case FieldType::FIELD_TYPE_UNINITIALIZED:
+          break;
+        default:
+          throw Exceptions::SecurityException;
+        }
+      } catch (const Exceptions exception) {
+#if defined(CHOUPI_DEBUG_HEAP_GC)
+        logHeapTraceEdgeFailure("instance", index, instance_tag, field_tag,
+                                exception);
+#endif
+        throw;
       }
     }
 
@@ -1618,7 +1657,15 @@ Heap::ReachabilitySummary Heap::traceAndMark(
         if (*array) {
           this->visitChildReferences(**array, visit_child, &visitor_context);
         }
-      } catch (Exceptions) {
+      } catch (const Exceptions exception) {
+#if defined(CHOUPI_DEBUG_HEAP_GC)
+        const fs::Tag owner_tag = (*array)->hasPersistentTag()
+                                      ? (*array)->getPersistentTag()
+                                      : fs::Tag{};
+        logHeapTraceEdgeFailure("array-scan",
+                                static_cast<uint16_t>(index + 1), owner_tag,
+                                owner_tag, exception);
+#endif
         ++summary.edge_load_failures;
         summary.complete = false;
       }
@@ -1654,7 +1701,15 @@ Heap::ReachabilitySummary Heap::traceAndMark(
           this->visitChildReferences(**instance, visit_child,
                                      &visitor_context);
         }
-      } catch (Exceptions) {
+      } catch (const Exceptions exception) {
+#if defined(CHOUPI_DEBUG_HEAP_GC)
+        const fs::Tag owner_tag = (*instance)->hasPersistentTag()
+                                      ? (*instance)->getPersistentTag()
+                                      : fs::Tag{};
+        logHeapTraceEdgeFailure("instance-scan",
+                                static_cast<uint16_t>(index + 1), owner_tag,
+                                owner_tag, exception);
+#endif
         ++summary.edge_load_failures;
         summary.complete = false;
       }
