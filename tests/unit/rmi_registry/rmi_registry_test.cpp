@@ -910,6 +910,50 @@ void verify_unreachable_foreign_array_cycle_collected() {
             "rootless_cycle_reclaimed=2");
 }
 
+void verify_retained_context_foreign_cycle_collected() {
+  constexpr jcvm::jpackage_ID_t package_a = 26;
+  constexpr jcvm::jpackage_ID_t package_b = 27;
+  jcvm::Context context_a(20, package_a);
+  jcvm::Context context_b(21, package_b);
+
+  const auto array_a_ref = context_a.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_b_ref = context_b.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  context_a.getHeap().getArray(array_a_ref)->setReferenceEntry(
+      0, array_b_ref, context_a, package_b);
+  context_b.getHeap().getArray(array_b_ref)->setReferenceEntry(
+      0, array_a_ref, context_b, package_a);
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, array_a_ref);
+
+  const auto rooted = jcvm::Context::collectRetainedHeaps();
+  assert(rooted.complete);
+  assert(rooted.arrays_reclaimed == 0);
+  assert(context_a.getHeap().getArray(array_a_ref));
+  assert(context_b.getHeap().getArray(array_b_ref));
+
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+  const auto rootless = jcvm::Context::collectRetainedHeaps();
+  assert(rootless.complete);
+  assert(rootless.arrays_reclaimed == 2);
+  bool stale_array_a_rejected = false;
+  bool stale_array_b_rejected = false;
+  try {
+    (void)context_a.getHeap().getArray(array_a_ref);
+  } catch (...) {
+    stale_array_a_rejected = true;
+  }
+  try {
+    (void)context_b.getHeap().getArray(array_b_ref);
+  } catch (...) {
+    stale_array_b_rejected = true;
+  }
+  assert(stale_array_a_rejected && stale_array_b_rejected);
+  std::puts("RMI_REGISTRY:PASS retained_context_foreign_cycle=2");
+}
+
 void verify_three_heap_foreign_cycle_and_repeated_reclamation() {
   constexpr jcvm::jpackage_ID_t package_a = 34;
   constexpr jcvm::jpackage_ID_t package_b = 35;
@@ -1650,6 +1694,8 @@ int main() {
   assert(argument_stack.pop_Short() == 0x2468);
   assert(argument_stack.pop_Reference().compact() ==
          target_receiver.compact());
+
+  verify_retained_context_foreign_cycle_collected();
 
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);

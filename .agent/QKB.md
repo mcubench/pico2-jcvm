@@ -9886,6 +9886,21 @@ Check new loader, resolver and bytecode code against these before review.
 - **Validation:** `./tools/test-rmi-registry` passes rooted/unrooted two-heap cycles, three-heap cycles in both collection orders, an A→B/C→D rooted diamond, eight repeated three-heap cycles with stable three-slot total, and an ambiguous-package fail-closed case. ARM and RISC-V wrappers pass with `PICO2_ENABLE_OBJECT_DELETION=1`.
 - **Limit / next:** The connected D92 USB device still does not appear in `pcsc_scan -r`; no physical JCAlgTest reset/deletion run or measured RAM plateau has been performed. Keep R59 open until the physical option 2/option 1 campaign can validate deletion requests and repeated-cycle memory behavior.
 
+### Production retained-context entrypoint test — 2026-11-11
+
+- **Coverage:** The RMI registry unit test now invokes
+  `Context::collectRetainedHeaps()` with two actual retained contexts and a
+  rooted foreign-array cycle. The root preserves both arrays; clearing it lets
+  the production entry point reclaim both. `./tools/test-rmi-registry` passes.
+- **Fail-closed observation:** The first test placement ran after the main
+  fixture had retained two independent contexts with the same package ID; the
+  collector rejected this as ambiguous (`root_enumeration_failures=1`). The
+  isolated test now runs before those fixtures. This confirms current
+  same-package ambiguity rejection, but does not establish whether all such
+  runtime situations should remain blocked or can be safely coalesced.
+- **Limit:** This is a focused unit case, not full applet/RMI runtime coverage,
+  physical deletion, interrupted flash recovery, or a bounded RAM measurement.
+
 ## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
 
 - **Observed:** The Pico-only helper grants access to `/dev/bus/usb/001/045`;

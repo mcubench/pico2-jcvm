@@ -1,4 +1,23 @@
-# Current handoff — PC/SC helper refreshed; physical reader still absent — 2026-11-11 14:37 CET
+# Current handoff — production retained-context GC entrypoint covered — 2026-11-11 14:43 CET
+
+`tests/unit/rmi_registry/rmi_registry_test.cpp` now calls the production
+`Context::collectRetainedHeaps()` entry point on two retained package
+contexts. A static root preserves a cross-package foreign-array cycle; after
+clearing the root, the same sweep reclaims both arrays. `./tools/test-rmi-registry`
+passes under the wrapper's AddressSanitizer/UBSan build. No firmware code or
+hardware was changed. One initial placement ran while the main test fixture's
+two same-package contexts were retained, and correctly failed closed due to
+ambiguous package ownership; the regression now runs before those fixtures.
+
+This adds entrypoint coverage for a simple two-context case, but does not cover
+the production runtime's full retained-context/RMI graph, physical reset/deletion,
+or bounded RAM behavior. Keep object deletion disabled by default and R59 open.
+The physical reader is still absent from PC/SC; see the 14:37 helper recheck
+below.
+
+---
+
+# Previous handoff — PC/SC helper refreshed; physical reader still absent — 2026-11-11 14:37 CET
 
 The approved helper `/usr/local/sbin/pico2-pcsc-reader` ran through the
 authorized host-access path and reported `PCSC:ACCESS_GRANTED count=1

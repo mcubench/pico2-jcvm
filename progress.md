@@ -27467,5 +27467,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` succeeded and granted `/dev/bus/usb/001/045`. Escalated bounded `timeout 12s pcsc_scan -r` exited 0 and listed only VPCD 00 00 and VPCD 00 01. No physical card APDU or flash was attempted.
 - Result: Helper ACL refresh succeeds for one Pico node; PC/SC still does not publish a physical Pico reader, so physical deletion validation and the long JCAlgTest options remain blocked.
 - Decision: Keep the host PC/SC recovery request open. Resume option 2 and option 1 on separate identified Pico boards when a physical reader is enumerated.
-- Commit: `pending`
+- Commit: `b043803d`
 - Artifacts/logs: terminal helper and bounded scan output; no standalone log.
+
+## 2026-11-11 Exercise production retained-context collector entrypoint 6 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-COLLECTOR-ENTRYPOINT`
+- When: '2026-11-11 14:37 CET' - '2026-11-11 14:43 CET'
+- Model: `GPT-6`
+- Change: Added a focused unit regression that calls `Context::collectRetainedHeaps()` with two registered package contexts, proves a rooted cross-package array cycle survives, then removes the root and proves both arrays are reclaimed. Updated QKB and handoff with scope and a fail-closed test-order observation.
+- Validation: `./tools/test-rmi-registry` passed under the wrapper's AddressSanitizer/UBSan configuration, including retained-entrypoint, two/three heap cycles, diamonds, repeated cycles, and ambiguous package fail-closed checks. No firmware build or hardware test was required for this test-only change.
+- Result: The production entry point handles the isolated rooted/unrooted two-context cycle. An initial placement after two same-package test contexts correctly failed closed; moving it before those fixtures isolated the intended case. Physical JCAlgTest and RAM plateau acceptance remain open.
+- Decision: Keep R59 open and object deletion disabled by default; next extend testing to realistic retained applet/RMI root layouts while waiting for PC/SC recovery.
+- Commit: `pending`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output includes `RMI_REGISTRY:PASS retained_context_foreign_cycle=2`.
