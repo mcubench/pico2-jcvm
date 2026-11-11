@@ -27778,3 +27778,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use TODO for active work and linked backup/progress/QKB for detailed evidence. Preserve unrelated existing source and instruction edits.
 - Commit: `this documentation commit; locate via TODO-COMPACTION-20261111 in git log`
 - Artifacts/logs: `.agent/archive/2026-11-11-todo-compaction/{TODO.md,SHA256SUMS,MIGRATION.md}`.
+
+## 2026-11-11 Consolidate QKB with complete archived evidence catalog 7 min
+
+- Step/experiment: `QKB-COMPACTION-20261111`
+- When: '2026-11-11 21:00 UTC' - '2026-11-11 21:07 UTC'
+- Model: `GPT-6`
+- Change: Created and verified a byte-for-byte QKB archive before replacing the active file with 22 consolidated diagnoses. Added a complete stable-ID catalog for all 429 original headings and 257 earlier archive links. Distinguished viable fixes, unresolved causes, volatile device state and physical validation limits. Froze 11 existing practical-guide QKB line citations to the preserved snapshot; did not claim their old line accuracy was newly audited.
+- Validation: Archive SHA-256 check passed; offline checks verified all 429 heading texts and original line ranges, all 257 legacy links, summary-to-catalog IDs, local link existence/line bounds and scoped whitespace. Builds and hardware tests intentionally skipped for documentation-only work.
+- Result: Main QKB reduced from 10,127 lines / 682,138 bytes to 270 lines / 20,256 bytes (97.0% fewer bytes); main plus navigation catalog totals 969 lines. Exact commands, hashes, failed experiments and unique details remain in the immutable archive. No runtime acceptance was newly claimed.
+- Decision: Update matching diagnoses with evidence links instead of repeated availability/run diaries; retain TODO as task owner and HANDOFF as current device/build-state owner.
+- Commit: `this documentation commit; locate via QKB-COMPACTION-20261111 in git log`
+- Artifacts/logs: `.agent/archive/2026-11-11-qkb-compaction/{QKB.md,SHA256SUMS,MIGRATION.md}`; `.agent/QKB_INDEX.md`.

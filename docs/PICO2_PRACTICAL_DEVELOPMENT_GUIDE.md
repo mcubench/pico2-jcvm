@@ -299,7 +299,7 @@ A byte-at-a-time durable update can repeatedly rewrite a large snapshot and stal
 
 For a telemetry application, accumulate a bounded batch in RAM and commit on an explicit save command or checkpoint; document what can be lost before that checkpoint. QKB records persistent key clear/component writes that stalled EC setup and were improved by batching; avoid inferring a numeric wear lifetime or speedup without measuring your flash part and workload.
 
-Source: [src/choupi_pico2.cpp:390](../src/choupi_pico2.cpp#L390); [choupi/src/jc_handlers/flashmemory.cpp:393](../choupi/src/jc_handlers/flashmemory.cpp#L393); [.agent/QKB.md:1279](../.agent/QKB.md#L1279).
+Source: [src/choupi_pico2.cpp:390](../src/choupi_pico2.cpp#L390); [choupi/src/jc_handlers/flashmemory.cpp:393](../choupi/src/jc_handlers/flashmemory.cpp#L393); [.agent/QKB.md:1279](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L1279).
 
 ### 16. Version storage and preserve evidence of corruption
 
@@ -309,7 +309,7 @@ The current filesystem is version 3, accepts version 2, and stores offset bit 16
 
 `fs_init()` emits `FAULT FS snapshot unavailable; preserve flash for recovery` when existing CAP/header evidence makes blank initialization unsafe. For another application, also version the payload schema independently from the container format.
 
-Source: [src/choupi_pico2.cpp:142](../src/choupi_pico2.cpp#L142); [src/choupi_pico2.cpp:167](../src/choupi_pico2.cpp#L167); [src/choupi_pico2.cpp:1095](../src/choupi_pico2.cpp#L1095); [.agent/QKB.md:2389](../.agent/QKB.md#L2389).
+Source: [src/choupi_pico2.cpp:142](../src/choupi_pico2.cpp#L142); [src/choupi_pico2.cpp:167](../src/choupi_pico2.cpp#L167); [src/choupi_pico2.cpp:1095](../src/choupi_pico2.cpp#L1095); [.agent/QKB.md:2389](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L2389).
 
 ### 17. Journal operations spanning separate durable stores
 
@@ -389,7 +389,7 @@ Keep externally stored identifiers stable when freeing objects; do not compact a
 
 The heap resets dead `shared_ptr` slots and reuses holes instead of shifting surviving indices. A different application with a handle registry should include queued messages, callbacks, in-flight operations, and durable references in its root model; an incomplete scan must prevent deletion.
 
-Source: [choupi/src/heap.cpp:92](../choupi/src/heap.cpp#L92); [choupi/src/heap.cpp:1133](../choupi/src/heap.cpp#L1133); [choupi/src/context.cpp:592](../choupi/src/context.cpp#L592); [.agent/QKB.md:2069](../.agent/QKB.md#L2069).
+Source: [choupi/src/heap.cpp:92](../choupi/src/heap.cpp#L92); [choupi/src/heap.cpp:1133](../choupi/src/heap.cpp#L1133); [choupi/src/context.cpp:592](../choupi/src/context.cpp#L592); [.agent/QKB.md:2069](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L2069).
 
 ### 23. Separate RAM reclamation from durable record deletion
 
@@ -397,7 +397,7 @@ Freeing a native wrapper does not automatically prove its persistent records are
 
 Its batches hold at most eight candidate tags; it refuses active transactions and only mutates after the cursor walk has returned. Keep it out of ordinary runtime collection until physical interrupted-erase recovery is established; host fault injection and the recorded physical functional probe do not close that gate.
 
-Source: [choupi/src/persistent_inventory.cpp:228](../choupi/src/persistent_inventory.cpp#L228); [choupi/src/persistent_inventory.cpp:208](../choupi/src/persistent_inventory.cpp#L208); [.agent/QKB.md:11](../.agent/QKB.md#L11).
+Source: [choupi/src/persistent_inventory.cpp:228](../choupi/src/persistent_inventory.cpp#L228); [choupi/src/persistent_inventory.cpp:208](../choupi/src/persistent_inventory.cpp#L208); [.agent/QKB.md:11](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L11).
 
 ### 24. Treat zero-copy pointers and cursors as borrowed views
 
@@ -470,7 +470,7 @@ const uint16_t input_len = parsed.incoming_length;
 ```
 The response-chain helper bounds each copy by pending bytes, host request, and output capacity. For paginated application results, bind continuation state to the original query and clear it when the session/query changes.
 
-Source: [src/short_apdu.hpp:18](../src/short_apdu.hpp#L18); [src/short_apdu.hpp:71](../src/short_apdu.hpp#L71); [.agent/QKB.md:148](../.agent/QKB.md#L148).
+Source: [src/short_apdu.hpp:18](../src/short_apdu.hpp#L18); [src/short_apdu.hpp:71](../src/short_apdu.hpp#L71); [.agent/QKB.md:148](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L148).
 
 ### 29. Handle exact USB packet boundaries and buffer ownership
 
@@ -485,7 +485,7 @@ static_assert(!needs_zlp(63));
 ```
 The repository's 54-byte APDU plus 10-byte CCID header once stalled GET STATUS at exactly 64 bytes. Its completion handler submits the pending ZLP, then rearms OUT; a time-extension completion deliberately does not rearm OUT.
 
-Source: [src/ccid_device.cpp:55](../src/ccid_device.cpp#L55); [src/ccid_device.cpp:326](../src/ccid_device.cpp#L326); [.agent/QKB.md:887](../.agent/QKB.md#L887).
+Source: [src/ccid_device.cpp:55](../src/ccid_device.cpp#L55); [src/ccid_device.cpp:326](../src/ccid_device.cpp#L326); [.agent/QKB.md:887](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L887).
 
 ### 30. Keep serial output bounded and binary data out of text translation
 
@@ -526,7 +526,7 @@ Choose a narrow profile and exclude unused native modules from the source list, 
 ```
 CMake excludes optional sources from the initial glob and adds AES-CTR, SHA-256, and other algorithms only under capability flags. QKB records a real bug where the ARM source list still compiled AES-CTR in a minimal build; inspect generated build inputs as well as declarations.
 
-Source: [CMakeLists.txt:51](../CMakeLists.txt#L51); [CMakeLists.txt:66](../CMakeLists.txt#L66); [.agent/QKB.md:2509](../.agent/QKB.md#L2509).
+Source: [CMakeLists.txt:51](../CMakeLists.txt#L51); [CMakeLists.txt:66](../CMakeLists.txt#L66); [.agent/QKB.md:2509](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L2509).
 
 ### 33. Optimize ARM from a measured hot path and linked output
 
@@ -587,7 +587,7 @@ Do not derive durable ownership solely from a class or array position when multi
 
 The current CAP metadata records a unique owner per applet instance and restores the mapping after restart. For another application, use the same principle for tenants, device profiles, jobs, or channels, and verify that deleting one owner cannot remove another owner's records.
 
-Source: [.agent/QKB.md:846](../.agent/QKB.md#L846); [src/cap_load.cpp:1097](../src/cap_load.cpp#L1097); [src/choupi_pico2.cpp:1368](../src/choupi_pico2.cpp#L1368).
+Source: [.agent/QKB.md:846](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L846); [src/cap_load.cpp:1097](../src/cap_load.cpp#L1097); [src/choupi_pico2.cpp:1368](../src/choupi_pico2.cpp#L1368).
 
 ### 38. Implement status indication without blocking the application loop
 
@@ -621,7 +621,7 @@ Model flash constraints and inject failures between mutations before relying on 
 ```
 These wrappers cover distinct layers; choose the tests relevant to a change. The overlay model injects simulated cuts, but actual USB power interruption and recovery of the persistent reclaimer remain separate physical acceptance work; no tests were rerun to author this guide.
 
-Source: [tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp:66](../tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp#L66); [.agent/HANDOFF.md:146](../.agent/HANDOFF.md#L146); [.agent/QKB.md:11](../.agent/QKB.md#L11).
+Source: [tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp:66](../tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp#L66); [.agent/HANDOFF.md:146](../.agent/HANDOFF.md#L146); [.agent/QKB.md:11](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L11).
 
 ### 40. Flash the intended image and require finite runtime evidence
 
@@ -649,7 +649,7 @@ sudo -n /usr/local/sbin/pico2-pcsc-reader
 ```
 The helper can restore device ACLs after enumeration but cannot guarantee recovery from a stuck daemon or missing passthrough. Stop physical work if host access is unavailable; do not infer a firmware crash or reflash repeatedly from a missing reader, and do not change OTP, boot security, partition tables, or machine configuration.
 
-Source: [.agent/QKB.md:873](../.agent/QKB.md#L873); [.agent/QKB.md:2435](../.agent/QKB.md#L2435); [AGENTS.md:47](../AGENTS.md#L47).
+Source: [.agent/QKB.md:873](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L873); [.agent/QKB.md:2435](../.agent/archive/2026-11-11-qkb-compaction/QKB.md#L2435); [AGENTS.md:47](../AGENTS.md#L47).
 
 ### 42. Report long-run resource failures and evidence limits explicitly
 

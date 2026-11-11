@@ -1,3 +1,17 @@
+# Documentation handoff — QKB compaction — 2026-11-11 21:07 UTC
+
+QKB.md is now a 270-line reusable troubleshooting guide. QKB_INDEX.md maps all
+429 original headings and retains all 257 links into the earlier archive.
+The exact pre-edit QKB is preserved and hash-verified under
+`.agent/archive/2026-11-11-qkb-compaction/`; migration notes explain scope and
+superseded advice. Existing practical-guide QKB line targets now use that frozen
+snapshot. All catalog/link/integrity checks pass; no runtime or hardware work
+was performed. Current device state and RESOURCE-01 priorities below remain
+unchanged. Record future run histories in progress and update matching QKB
+diagnoses with evidence rather than appending repeated availability reports.
+
+---
+
 # Documentation handoff — TODO compaction — 2026-11-11 20:48 UTC
 
 TODO.md now contains the compact active backlog (924 lines versus 2,744).
