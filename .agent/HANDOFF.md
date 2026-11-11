@@ -11877,3 +11877,35 @@ were sent. Next, restore PC/SC reader publication; then run option 2 and
 option 1 on different identified Picos when possible, retaining per-board
 results and serial telemetry. The campaign guidance is in root `AGENTS.md` and
 `.agent/SESSION_CONTINUITY.md`.
+
+# Current handoff — R59 coordinated GC implementation and validation — 2026-11-11 13:55 CET
+
+The R59 reproducer is now a positive regression. `Context::collectHeaps` traces
+the requested package heaps from local roots without importing blanket foreign
+edges, then propagates foreign array and volatile instance-field references
+only from marked source objects until a fixed point. It frees nothing if stacks
+are active, a root walk fails, foreign-source storage is outside the trace set,
+or package ownership is ambiguous. `Context::collectRetainedHeaps` gathers the
+retained runtime contexts. `service_object_deletion_request_if_enabled` runs
+that coordinated sweep before persistent deletion when `requestObjectDeletion`
+is pending; ordinary per-APDU GC keeps conservative foreign roots to avoid
+changing its cost.
+
+`./tools/test-rmi-registry` passes two- and three-heap rootless-cycle
+reclamation, rooted cycle retention, reversed collection order, rooted and
+rootless diamond behavior, eight repeated three-heap cycles with the handle
+table held at three slots, and ambiguous-package fail-closed behavior. Both
+`./tools/build arm` and `./tools/build riscv` passed, followed by both wrappers
+with `PICO2_ENABLE_OBJECT_DELETION=1`; the full ARM build ends at
+`0x100d8f6c`, leaving 159,892 bytes below the configured flash limit. No image
+was flashed.
+
+Physical JCAlgTest remains blocked. The authorized helper refreshed D92 at
+`/dev/bus/usb/001/045` and `lsusb` had identified `2e8a:0009 Pico2 JCVM CCID`
+(serial `D92E743D5F640C0F`) plus a second RP2350 BOOTSEL device, but the latest
+bounded `pcsc_scan -r` still lists only VPCD 00 00/01. Neither long client run
+has started. After reader publication returns, run option 2 on one identified
+Pico and option 1 on another when possible, retaining per-device outcomes,
+firmware hashes, and serial logs. Remaining R59 acceptance includes physical
+reset/deletion behavior and measured bounded RAM growth; `TODO.md` and
+`.agent/QKB.md` record this limitation.

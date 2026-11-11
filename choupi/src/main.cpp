@@ -561,6 +561,30 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
   if (!context.isObjectDeletionRequested()) return;
 
   try {
+    const auto heap_result = jcvm::Context::collectRetainedHeaps();
+    if (!heap_result.complete) {
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:SKIP package=%u owner=%u "
+                   "reason=coordinated_heap_trace_incomplete "
+                   "invalid=%u edge_failures=%u root_failures=%u "
+                   "request_retained=1\n",
+                   static_cast<unsigned>(context.getAppletPackageID()),
+                   static_cast<unsigned>(context.getAppletID()),
+                   static_cast<unsigned>(heap_result.invalid_references),
+                   static_cast<unsigned>(heap_result.edge_load_failures),
+                   static_cast<unsigned>(heap_result.root_enumeration_failures));
+      return;
+    }
+    std::fprintf(stderr,
+                 "OBJECT_DELETION:HEAP_GC package=%u owner=%u "
+                 "arrays_reclaimed=%u instances_reclaimed=%u "
+                 "arrays_live=%u instances_live=%u\n",
+                 static_cast<unsigned>(context.getAppletPackageID()),
+                 static_cast<unsigned>(context.getAppletID()),
+                 static_cast<unsigned>(heap_result.arrays_reclaimed),
+                 static_cast<unsigned>(heap_result.instances_reclaimed),
+                 static_cast<unsigned>(heap_result.arrays_reachable),
+                 static_cast<unsigned>(heap_result.instances_reachable));
     PersistentInventoryCounts roots;
     // Each package must have one retained heap/handle namespace. Peer package
     // contexts may cache cross-package static references or retain server

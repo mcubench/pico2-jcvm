@@ -149,12 +149,23 @@ public:
   /// Find a retained applet owner's Heap facade in a package context.
   static Heap *findRetainedAppletHeap(jpackage_ID_t package_id,
                                       japplet_ID_t owner) noexcept;
+  /// Collect every retained package heap with a reachability-based foreign
+  /// edge fixed point. Returns incomplete without freeing objects if roots or
+  /// package ownership cannot be resolved safely.
+  static Heap::ReachabilitySummary collectRetainedHeaps();
+  /// Collect an explicit package-context set (primarily for isolated tests).
+  static Heap::ReachabilitySummary collectHeaps(Context *const *contexts,
+                                                 std::size_t context_count);
   /// Append cached static and shareable-proxy references in retained CAP
   /// contexts that target this package's heap. Return false if the target
   /// package has multiple retained contexts, whose independent handle tables
   /// cannot be merged.
   bool appendRetainedRootsForPackage(
       jpackage_ID_t package_id, std::vector<jref_t> &references) const;
+  /// Visit cached roots in retained contexts that target this package heap.
+  bool visitRetainedRootsForPackage(
+      jpackage_ID_t package_id, Heap::ReferenceVisitor visitor,
+      void *visitor_context) const;
   /// Default constructor
   Context(const uint8_t appletID, const jpackage_ID_t packageID);
   ~Context() noexcept;
@@ -276,7 +287,8 @@ public:
   void appendRootReferences(std::vector<jref_t> &references) const;
   /// Visit context and heap-owned references without a temporary root vector.
   void visitRootReferences(Heap::ReferenceVisitor visitor,
-                           void *visitor_context) const;
+                           void *visitor_context,
+                           bool include_foreign_references = true) const;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.

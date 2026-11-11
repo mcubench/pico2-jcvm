@@ -97,6 +97,17 @@ Heap *Context::findRetainedAppletHeap(const jpackage_ID_t package_id,
 bool Context::appendRetainedRootsForPackage(
     const jpackage_ID_t package_id,
     std::vector<jref_t> &references) const {
+  const auto append_reference = [](const jref_t reference, void *opaque) {
+    static_cast<std::vector<jref_t> *>(opaque)->push_back(reference);
+  };
+  return this->visitRetainedRootsForPackage(package_id, append_reference,
+                                             &references);
+}
+
+bool Context::visitRetainedRootsForPackage(
+    const jpackage_ID_t package_id, const Heap::ReferenceVisitor visitor,
+    void *visitor_context) const {
+  if (visitor == nullptr) return false;
   const Context *target_context = nullptr;
   for (const Context *context : retained_contexts) {
     if (context == nullptr || context->getAppletPackageID() != package_id) {
@@ -107,23 +118,225 @@ bool Context::appendRetainedRootsForPackage(
   }
   if (target_context != this) return false;
 
-  const auto append_reference = [](const jref_t reference, void *opaque) {
-    static_cast<std::vector<jref_t> *>(opaque)->push_back(reference);
-  };
   for (const Context *context : retained_contexts) {
     if (context == nullptr) continue;
     context->heap.visitStaticReferenceRootsForPackage(
-        package_id, append_reference, &references);
+        package_id, visitor, visitor_context);
     for (const auto &instance : context->applet_instances) {
       for (const auto &proxy : instance.shareable_proxies) {
         if (proxy.server_package_id == package_id &&
             !proxy.server_reference.isNullPointer()) {
-          references.push_back(proxy.server_reference);
+          visitor(proxy.server_reference, visitor_context);
         }
       }
     }
   }
   return true;
+}
+
+Heap::ReachabilitySummary Context::collectRetainedHeaps() {
+  std::array<Context *, 40> contexts{};
+  std::size_t context_count = 0;
+  for (Context *context : retained_contexts) {
+    if (context != nullptr) contexts[context_count++] = context;
+  }
+  if (active_context != nullptr) {
+    bool active_is_retained = false;
+    for (std::size_t index = 0; index < context_count; ++index) {
+      active_is_retained = active_is_retained || contexts[index] == active_context;
+    }
+    if (!active_is_retained) {
+      if (context_count == contexts.size()) {
+        Heap::ReachabilitySummary failure;
+        failure.complete = false;
+        failure.root_enumeration_failures = 1;
+        return failure;
+      }
+      contexts[context_count++] = active_context;
+    }
+  }
+  return collectHeaps(contexts.data(), context_count);
+}
+
+Heap::ReachabilitySummary Context::collectHeaps(
+    Context *const *requested_contexts, const std::size_t requested_count) {
+  Heap::ReachabilitySummary result;
+  if ((requested_contexts == nullptr && requested_count != 0) ||
+      requested_count > 40) {
+    result.complete = false;
+    result.root_enumeration_failures = 1;
+    return result;
+  }
+  std::array<Context *, 40> contexts{};
+  std::array<Heap *, 40> heaps{};
+  std::array<uint32_t, 40> previous_arrays{};
+  std::array<uint32_t, 40> previous_instances{};
+  std::size_t context_count = 0;
+
+  for (std::size_t request_index = 0; request_index < requested_count;
+       ++request_index) {
+    Context *context = requested_contexts[request_index];
+    if (context == nullptr) continue;
+    for (std::size_t index = 0; index < context_count; ++index) {
+      if (contexts[index] == context) {
+        context = nullptr;
+        break;
+      }
+      if (contexts[index]->getAppletPackageID() ==
+          context->getAppletPackageID()) {
+        result.complete = false;
+        result.root_enumeration_failures = 1;
+        return result;
+      }
+    }
+    if (context == nullptr) continue;
+    if (context_count >= contexts.size()) {
+      result.complete = false;
+      result.root_enumeration_failures = 1;
+      return result;
+    }
+    contexts[context_count] = context;
+    heaps[context_count] = &context->getHeap();
+    ++context_count;
+  }
+  for (std::size_t index = 0; index < context_count; ++index) {
+    if (!contexts[index]->stack.empty()) {
+      result.complete = false;
+      result.root_enumeration_failures = 1;
+      return result;
+    }
+  }
+  if (!Heap::foreignReferenceSourcesCoveredBy(heaps.data(), context_count)) {
+    result.complete = false;
+    result.root_enumeration_failures = 1;
+    return result;
+  }
+
+  Heap::resetForeignSourceReachabilityMarks();
+  struct RootContext {
+    const Context *context;
+  };
+  const auto enumerate_base_roots = [](Heap::ReferenceVisitor visitor,
+                                       void *visitor_context,
+                                       void *opaque) {
+    const auto &roots = *static_cast<RootContext *>(opaque);
+    roots.context->visitRootReferences(visitor, visitor_context, false);
+    return roots.context->visitRetainedRootsForPackage(
+        roots.context->getAppletPackageID(), visitor, visitor_context);
+  };
+  for (std::size_t index = 0; index < context_count; ++index) {
+    RootContext roots{contexts[index]};
+    const auto summary = heaps[index]->traceReachableFrom(
+        enumerate_base_roots, &roots);
+    if (!summary.complete) {
+      result.complete = false;
+      result.invalid_references += summary.invalid_references;
+      result.edge_load_failures += summary.edge_load_failures;
+      result.root_enumeration_failures += summary.root_enumeration_failures;
+      return result;
+    }
+    previous_arrays[index] = summary.arrays_reachable;
+    previous_instances[index] = summary.instances_reachable;
+  }
+
+  struct ForeignValidationContext {
+    Context *const *contexts;
+    std::size_t context_count;
+    bool complete;
+  } validation{contexts.data(), context_count, true};
+  const auto validate_foreign_target = [](const jpackage_ID_t package_id,
+                                          const jref_t,
+                                          void *opaque) {
+    auto &state = *static_cast<ForeignValidationContext *>(opaque);
+    bool found = false;
+    for (std::size_t index = 0; index < state.context_count; ++index) {
+      if (state.contexts[index]->getAppletPackageID() == package_id) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) state.complete = false;
+  };
+
+  struct ForeignRootContext {
+    jpackage_ID_t package_id;
+    Heap::ReferenceVisitor visitor;
+    void *visitor_context;
+  };
+  const auto enumerate_foreign_roots = [](Heap::ReferenceVisitor visitor,
+                                          void *visitor_context,
+                                          void *opaque) {
+    auto &roots = *static_cast<ForeignRootContext *>(opaque);
+    ForeignRootContext routed{roots.package_id, visitor, visitor_context};
+    return Heap::visitReachableForeignReferences(
+        [](const jpackage_ID_t package_id, const jref_t reference,
+           void *route_context) {
+          auto &target = *static_cast<ForeignRootContext *>(route_context);
+          if (package_id == target.package_id) {
+            target.visitor(reference, target.visitor_context);
+          }
+        },
+        &routed);
+  };
+
+  bool reached_fixed_point = context_count == 0;
+  for (std::size_t pass = 0; pass <= context_count; ++pass) {
+    validation.complete = true;
+    if (!Heap::visitReachableForeignReferences(validate_foreign_target,
+                                                &validation) ||
+        !validation.complete) {
+      result.complete = false;
+      result.root_enumeration_failures = 1;
+      return result;
+    }
+    bool changed = false;
+    for (std::size_t index = 0; index < context_count; ++index) {
+      ForeignRootContext roots{contexts[index]->getAppletPackageID(),
+                               nullptr, nullptr};
+      const auto summary = heaps[index]->extendReachableFrom(
+          enumerate_foreign_roots, &roots);
+      if (!summary.complete) {
+        result.complete = false;
+        result.invalid_references += summary.invalid_references;
+        result.edge_load_failures += summary.edge_load_failures;
+        result.root_enumeration_failures +=
+            summary.root_enumeration_failures;
+        return result;
+      }
+      if (summary.arrays_reachable > previous_arrays[index] ||
+          summary.instances_reachable > previous_instances[index]) {
+        changed = true;
+      }
+      previous_arrays[index] = summary.arrays_reachable;
+      previous_instances[index] = summary.instances_reachable;
+    }
+    if (!changed) {
+      reached_fixed_point = true;
+      break;
+    }
+  }
+  if (!reached_fixed_point) {
+    result.complete = false;
+    result.root_enumeration_failures = 1;
+    return result;
+  }
+
+  for (std::size_t index = 0; index < context_count; ++index) {
+    const auto summary = heaps[index]->collectUnreachableMarked();
+    if (!summary.complete) {
+      result.complete = false;
+      return result;
+    }
+    result.arrays_total += summary.arrays_total;
+    result.arrays_reachable += summary.arrays_reachable;
+    result.instances_total += summary.instances_total;
+    result.instances_reachable += summary.instances_reachable;
+    result.arrays_reclaimed += summary.arrays_reclaimed;
+    result.instances_reclaimed += summary.instances_reclaimed;
+    result.persistent_tagged_arrays += summary.persistent_tagged_arrays;
+    result.persistent_tagged_instances += summary.persistent_tagged_instances;
+  }
+  return result;
 }
 
 bool Context::isAppletAIDActive(const uint8_t *aid,
@@ -1020,16 +1233,19 @@ void Context::appendRootReferences(
 }
 
 void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
-                                  void *visitor_context) const {
+                                  void *visitor_context,
+                                  const bool include_foreign_references) const {
   this->getHeap().visitRootReferences(visitor, visitor_context, false);
   this->getHeap().visitStaticReferenceRootsForPackage(
       this->applet_package_ID, visitor, visitor_context);
   Heap::visitGlobalArrayReferencesForPackage(
       this->applet_package_ID, visitor, visitor_context);
-  Heap::visitForeignArrayReferencesForPackage(
-      this->applet_package_ID, visitor, visitor_context);
-  Heap::visitForeignInstanceReferencesForPackage(
-      this->applet_package_ID, visitor, visitor_context);
+  if (include_foreign_references) {
+    Heap::visitForeignArrayReferencesForPackage(
+        this->applet_package_ID, visitor, visitor_context);
+    Heap::visitForeignInstanceReferencesForPackage(
+        this->applet_package_ID, visitor, visitor_context);
+  }
   for (const auto &instance : this->applet_instances) {
     for (const auto &entry : instance.remote_objects) {
       if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {

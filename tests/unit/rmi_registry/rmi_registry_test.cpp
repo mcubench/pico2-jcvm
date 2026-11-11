@@ -865,7 +865,7 @@ void verify_local_array_routes_foreign_references_through_gc() {
             "package_delete_root_cleared=1 owner_slot_reuse_safe=1");
 }
 
-void verify_unreachable_foreign_array_cycle_retention_is_reproduced() {
+void verify_unreachable_foreign_array_cycle_collected() {
   constexpr jcvm::jpackage_ID_t package_a = 24;
   constexpr jcvm::jpackage_ID_t package_b = 25;
   jcvm::Context context_a(18, package_a);
@@ -882,45 +882,165 @@ void verify_unreachable_foreign_array_cycle_retention_is_reproduced() {
   array_a->setReferenceEntry(0, array_b_ref, context_a, package_b);
   array_b->setReferenceEntry(0, array_a_ref, context_b, package_a);
   context_a.getHeap().setStaticReferenceRoot(package_a, 0, array_a_ref);
-  context_b.getHeap().setStaticReferenceRoot(package_b, 0, array_b_ref);
-
-  std::vector<jcvm::jref_t> roots_a;
-  context_a.appendRootReferences(roots_a);
-  std::vector<jcvm::jref_t> roots_b;
-  context_b.appendRootReferences(roots_b);
-  assert(context_a.getHeap().collectUnreachableFrom(roots_a).complete);
-  assert(context_b.getHeap().collectUnreachableFrom(roots_b).complete);
-
-  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
-  context_b.getHeap().setStaticReferenceRoot(package_b, 0, jcvm::jref_t{});
-  roots_a.clear();
-  context_a.appendRootReferences(roots_a);
-  roots_b.clear();
-  context_b.appendRootReferences(roots_b);
-  const auto cycle_a = context_a.getHeap().collectUnreachableFrom(roots_a);
-  const auto cycle_b = context_b.getHeap().collectUnreachableFrom(roots_b);
-  assert(cycle_a.complete && cycle_b.complete);
-
-  // The current per-heap GC imports every registered incoming foreign edge as
-  // a root. This records the known R59 failure while keeping the diagnostic
-  // suite green; the acceptance assertion should become reclaimed==1 once a
-  // coordinated cross-heap trace replaces this behavior.
-  assert(cycle_a.arrays_reclaimed == 0);
-  assert(cycle_b.arrays_reclaimed == 0);
+  jcvm::Context *cycle_contexts[] = {&context_a, &context_b};
+  const auto rooted_cycle = jcvm::Context::collectHeaps(cycle_contexts, 2);
+  assert(rooted_cycle.complete);
+  assert(rooted_cycle.arrays_reclaimed == 0);
   assert(context_a.getHeap().getArray(array_a_ref));
   assert(context_b.getHeap().getArray(array_b_ref));
 
-  array_a->setReferenceEntry(0, jcvm::jref_t{}, context_a);
-  array_b->setReferenceEntry(0, jcvm::jref_t{}, context_b);
-  roots_a.clear();
-  context_a.appendRootReferences(roots_a);
-  roots_b.clear();
-  context_b.appendRootReferences(roots_b);
-  assert(context_a.getHeap().collectUnreachableFrom(roots_a).arrays_reclaimed ==
-         1);
-  assert(context_b.getHeap().collectUnreachableFrom(roots_b).arrays_reclaimed ==
-         1);
-  std::puts("RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2 ");
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+  const auto rootless_cycle = jcvm::Context::collectHeaps(cycle_contexts, 2);
+  assert(rootless_cycle.complete);
+  assert(rootless_cycle.arrays_reclaimed == 2);
+  bool stale_array_a_rejected = false;
+  bool stale_array_b_rejected = false;
+  try {
+    (void)context_a.getHeap().getArray(array_a_ref);
+  } catch (...) {
+    stale_array_a_rejected = true;
+  }
+  try {
+    (void)context_b.getHeap().getArray(array_b_ref);
+  } catch (...) {
+    stale_array_b_rejected = true;
+  }
+  assert(stale_array_a_rejected && stale_array_b_rejected);
+  std::puts("RMI_REGISTRY:PASS rooted_foreign_array_cycle=2 "
+            "rootless_cycle_reclaimed=2");
+}
+
+void verify_three_heap_foreign_cycle_and_repeated_reclamation() {
+  constexpr jcvm::jpackage_ID_t package_a = 34;
+  constexpr jcvm::jpackage_ID_t package_b = 35;
+  constexpr jcvm::jpackage_ID_t package_c = 36;
+  jcvm::Context context_a(28, package_a);
+  jcvm::Context context_b(29, package_b);
+  jcvm::Context context_c(30, package_c);
+  jcvm::Context *reverse_contexts[] = {&context_c, &context_a, &context_b};
+  jcvm::Context *forward_contexts[] = {&context_a, &context_b, &context_c};
+
+  const auto array_a_ref = context_a.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_b_ref = context_b.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_c_ref = context_c.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  context_a.getHeap().getArray(array_a_ref)->setReferenceEntry(
+      0, array_b_ref, context_a, package_b);
+  context_b.getHeap().getArray(array_b_ref)->setReferenceEntry(
+      0, array_c_ref, context_b, package_c);
+  context_c.getHeap().getArray(array_c_ref)->setReferenceEntry(
+      0, array_a_ref, context_c, package_a);
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, array_a_ref);
+
+  auto rooted = jcvm::Context::collectHeaps(reverse_contexts, 3);
+  assert(rooted.complete && rooted.arrays_reclaimed == 0);
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+  auto rootless = jcvm::Context::collectHeaps(forward_contexts, 3);
+  assert(rootless.complete && rootless.arrays_reclaimed == 3);
+
+  const uint32_t stable_array_slots = rootless.arrays_total;
+  assert(stable_array_slots == 3);
+  for (uint8_t iteration = 0; iteration < 8; ++iteration) {
+    const auto repeated_a = context_a.getHeap().addArray(
+        1, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    const auto repeated_b = context_b.getHeap().addArray(
+        1, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    const auto repeated_c = context_c.getHeap().addArray(
+        1, jcvm::JAVA_ARRAY_T_REFERENCE,
+        static_cast<jcvm::jc_cp_offset_t>(0xffff));
+    context_a.getHeap().getArray(repeated_a)->setReferenceEntry(
+        0, repeated_b, context_a, package_b);
+    context_b.getHeap().getArray(repeated_b)->setReferenceEntry(
+        0, repeated_c, context_b, package_c);
+    context_c.getHeap().getArray(repeated_c)->setReferenceEntry(
+        0, repeated_a, context_c, package_a);
+    context_a.getHeap().setStaticReferenceRoot(package_a, 0, repeated_a);
+    const auto repeated_rooted =
+        jcvm::Context::collectHeaps(reverse_contexts, 3);
+    assert(repeated_rooted.complete &&
+           repeated_rooted.arrays_reclaimed == 0 &&
+           repeated_rooted.arrays_total == stable_array_slots);
+    context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+    const auto repeated_rootless =
+        jcvm::Context::collectHeaps(forward_contexts, 3);
+    assert(repeated_rootless.complete &&
+           repeated_rootless.arrays_reclaimed == 3 &&
+           repeated_rootless.arrays_total == stable_array_slots);
+  }
+  std::puts("RMI_REGISTRY:PASS three_heap_cycle=1 collection_order=2 "
+            "repeated_cycles=8 slots=3");
+}
+
+void verify_foreign_array_diamond_reclamation() {
+  constexpr jcvm::jpackage_ID_t package_a = 40;
+  constexpr jcvm::jpackage_ID_t package_b = 41;
+  constexpr jcvm::jpackage_ID_t package_c = 42;
+  constexpr jcvm::jpackage_ID_t package_d = 43;
+  jcvm::Context context_a(32, package_a);
+  jcvm::Context context_b(33, package_b);
+  jcvm::Context context_c(34, package_c);
+  jcvm::Context context_d(35, package_d);
+  jcvm::Context *contexts[] = {&context_a, &context_b, &context_c, &context_d};
+
+  const auto array_a_ref = context_a.getHeap().addArray(
+      2, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_b_ref = context_b.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_c_ref = context_c.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto array_d_ref = context_d.getHeap().addArray(
+      0, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  context_a.getHeap().getArray(array_a_ref)->setReferenceEntry(
+      0, array_b_ref, context_a, package_b);
+  context_a.getHeap().getArray(array_a_ref)->setReferenceEntry(
+      1, array_c_ref, context_a, package_c);
+  context_b.getHeap().getArray(array_b_ref)->setReferenceEntry(
+      0, array_d_ref, context_b, package_d);
+  context_c.getHeap().getArray(array_c_ref)->setReferenceEntry(
+      0, array_d_ref, context_c, package_d);
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, array_a_ref);
+
+  const auto rooted = jcvm::Context::collectHeaps(contexts, 4);
+  assert(rooted.complete && rooted.arrays_reclaimed == 0 &&
+         rooted.arrays_reachable == 4);
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+  const auto rootless = jcvm::Context::collectHeaps(contexts, 4);
+  assert(rootless.complete && rootless.arrays_reclaimed == 4);
+  std::puts("RMI_REGISTRY:PASS rooted_foreign_array_diamond=4 "
+            "rootless_diamond_reclaimed=4");
+}
+
+void verify_coordinated_gc_fails_closed_for_ambiguous_package() {
+  jcvm::Context source(36, 45);
+  jcvm::Context target_a(37, 46);
+  jcvm::Context target_b(38, 46);
+  const auto source_ref = source.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto target_ref = target_a.getHeap().addArray(
+      0, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  source.getHeap().getArray(source_ref)->setReferenceEntry(
+      0, target_ref, source, 46);
+  source.getHeap().setStaticReferenceRoot(45, 0, source_ref);
+  jcvm::Context *contexts[] = {&source, &target_a, &target_b};
+
+  const auto result = jcvm::Context::collectHeaps(contexts, 3);
+  assert(!result.complete);
+  assert(source.getHeap().getArray(source_ref));
+  assert(target_a.getHeap().getArray(target_ref));
+  std::puts("RMI_REGISTRY:PASS ambiguous_package_gc_fails_closed=1");
 }
 
 void verify_same_package_sibling_array_blocks_instance_delete() {
@@ -1546,7 +1666,10 @@ int main() {
   verify_heap_owner_facades_share_package_roots();
   verify_global_object_array_package_ownership();
   verify_local_array_routes_foreign_references_through_gc();
-  verify_unreachable_foreign_array_cycle_retention_is_reproduced();
+  verify_unreachable_foreign_array_cycle_collected();
+  verify_three_heap_foreign_cycle_and_repeated_reclamation();
+  verify_foreign_array_diamond_reclamation();
+  verify_coordinated_gc_fails_closed_for_ambiguous_package();
   verify_same_package_sibling_array_blocks_instance_delete();
   verify_shareable_object_root_lease();
   verify_shareable_proxy_registry();

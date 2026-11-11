@@ -27386,6 +27386,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: `cf50f0fa`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; test output `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`.
 
+## 2026-11-11 Coordinate foreign-heap reachability at deletion sweep 45 min
+
+- Step/experiment: `RV-20261106-59`
+- When: '2026-11-11 13:10 CET' - '2026-11-11 13:55 CET'
+- Model: `GPT-6`
+- Change: Added coordinated retained-heap mark/fixed-point/sweep APIs. They seed real Context roots, propagate foreign array and volatile instance edges only from marked source objects, and fail closed on active stacks, incomplete root enumeration, uncovered foreign-source storage, or ambiguous package contexts. Wired the coordinated sweep to the existing object-deletion request service and converted R59 regressions from expected leak to positive reclamation checks. Updated TODO, QKB, and handoff.
+- Validation: `./tools/test-rmi-registry` passed: rooted/unrooted two-heap cycle, three-heap cycle under two context orders, rooted/unrooted four-heap diamond, eight repeated cycles with total slots remaining 3, and ambiguous-package fail-closed behavior. `./tools/build arm` and `./tools/build riscv` passed with baseline. Both `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm` and `... riscv` passed. Object-deletion-enabled ARM reports firmware end `0x100d8f6c`, 159,892 bytes remaining under `0x10100000`.
+- Result: The former rootless two-heap cycle is reclaimed by coordinated sweep; rooted cross-heap graphs remain live. Normal per-APDU GC remains conservative; the coordinated sweep runs when object deletion is requested. No firmware was flashed. The physical reader helper refreshed D92, but `pcsc_scan -r` still exposes only VPCD; no physical JCAlgTest run or RAM plateau measurement was performed.
+- Decision: Keep R59 open for real-card reset/deletion validation and measured bounded RAM growth. Retry option 2 and option 1 on separate identified Picos once PC/SC publishes a physical reader.
+- Commit: `<fill after commit>`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`, `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no standalone runtime log.
+
 ## 2026-11-11 Record physical long-run campaign guidance 6 min
 
 - Step/experiment: `HW-JCALGTEST-LONGRUN-GUIDANCE`

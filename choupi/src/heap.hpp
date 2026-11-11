@@ -52,6 +52,7 @@ class Heap {
 public:
   using ReferenceVisitor = void (*)(jref_t, void *);
   using RootReferenceEnumerator = bool (*)(ReferenceVisitor, void *, void *);
+  using ForeignReferenceVisitor = void (*)(jpackage_ID_t, jref_t, void *);
 
   struct StaticReferenceRoot {
     jpackage_ID_t package_id;
@@ -99,6 +100,7 @@ private:
     std::vector<JC_Array *> foreign_reference_arrays;
     std::vector<RuntimeExceptionRoot> runtime_exception_roots;
     std::vector<StaticReferenceRoot> static_reference_roots;
+    bool reachability_complete = false;
   };
   static std::vector<std::weak_ptr<SharedStorage>> &
   foreignReferenceStorageRegistry() noexcept;
@@ -119,7 +121,8 @@ private:
   jref_t runtime_crypto_exception_imported;
   /// Mark roots and typed children into stable-slot bitmaps.
   ReachabilitySummary traceAndMark(
-      RootReferenceEnumerator enumerate_roots, void *root_context);
+      RootReferenceEnumerator enumerate_roots, void *root_context,
+      bool reset_marks = true);
 
   /// Visit children on an already-resolved stable heap slot.
   void visitChildReferences(JC_Array &array,
@@ -270,6 +273,19 @@ public:
   /// Mark reachable handles from a streamed root set without freeing slots.
   ReachabilitySummary traceReachableFrom(
       RootReferenceEnumerator enumerate_roots, void *root_context);
+  /// Add roots to an existing mark set and trace their same-heap children.
+  ReachabilitySummary extendReachableFrom(
+      RootReferenceEnumerator enumerate_roots, void *root_context);
+  /// Clear marks from every registered local heap before a coordinated trace.
+  static void resetForeignSourceReachabilityMarks() noexcept;
+  /// Ensure every foreign-reference source belongs to a coordinated heap set.
+  static bool foreignReferenceSourcesCoveredBy(
+      const Heap *const *heaps, std::size_t heap_count) noexcept;
+  /// Visit foreign edges whose source object was reached by the current trace.
+  static bool visitReachableForeignReferences(
+      ForeignReferenceVisitor visitor, void *visitor_context);
+  /// Free objects left unmarked by a complete coordinated trace.
+  ReachabilitySummary collectUnreachableMarked();
   /// Test whether a serialized record is the identity or a direct two-byte
   /// field/element record of a currently marked persistent object. Deeper tag
   /// descendants require their own marked object. Call only immediately after

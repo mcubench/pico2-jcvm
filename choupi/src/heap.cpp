@@ -335,6 +335,116 @@ void Heap::visitForeignArrayReferencesForPackage(
   }
 }
 
+void Heap::resetForeignSourceReachabilityMarks() noexcept {
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    for (auto &array : storage->arrays) {
+      if (array) array->heap_mark = 0;
+    }
+    for (auto &instance : storage->instances) {
+      if (instance) instance->heap_mark = 0;
+    }
+    ++it;
+  }
+}
+
+bool Heap::foreignReferenceSourcesCoveredBy(
+    const Heap *const *heaps, const std::size_t heap_count) noexcept {
+  if (heaps == nullptr && heap_count != 0) return false;
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    const bool has_foreign_arrays = std::any_of(
+        storage->foreign_reference_arrays.begin(),
+        storage->foreign_reference_arrays.end(), [](const JC_Array *array) {
+          return array != nullptr && array->hasForeignReferenceEntries();
+        });
+    const bool has_foreign_instances = std::any_of(
+        storage->instances.begin(), storage->instances.end(),
+        [](const auto &instance) {
+          return instance && instance->hasForeignReferenceFields();
+        });
+    if (has_foreign_arrays || has_foreign_instances) {
+      bool covered = false;
+      for (std::size_t index = 0; index < heap_count; ++index) {
+        if (heaps[index] != nullptr &&
+            heaps[index]->shared_storage.get() == storage.get()) {
+          covered = true;
+          break;
+        }
+      }
+      if (!covered) return false;
+    }
+    ++it;
+  }
+  return true;
+}
+
+bool Heap::visitReachableForeignReferences(
+    const ForeignReferenceVisitor visitor, void *visitor_context) {
+  if (visitor == nullptr) return false;
+  auto &registry = foreignReferenceStorageRegistry();
+  for (auto it = registry.begin(); it != registry.end();) {
+    const auto storage = it->lock();
+    if (!storage) {
+      it = registry.erase(it);
+      continue;
+    }
+    for (auto array_it = storage->foreign_reference_arrays.begin();
+         array_it != storage->foreign_reference_arrays.end();) {
+      JC_Array *array = *array_it;
+      if (array == nullptr || !array->hasForeignReferenceEntries()) {
+        array_it = storage->foreign_reference_arrays.erase(array_it);
+        continue;
+      }
+      if (array->heap_mark == 2) {
+        for (uint16_t index = 0; index < array->size(); ++index) {
+          const jpackage_ID_t package_id =
+              array->getReferenceEntryOwner(index);
+          if (package_id == 0xff || package_id == 0xfe) continue;
+          const jref_t reference = array->getReferenceEntry(index);
+          if (!reference.isNullPointer()) {
+            visitor(package_id, reference, visitor_context);
+          }
+        }
+      }
+      ++array_it;
+    }
+    for (const auto &instance : storage->instances) {
+      if (!instance || instance->heap_mark != 2 ||
+          !instance->hasForeignReferenceFields()) {
+        continue;
+      }
+      try {
+        const auto fields = instance->getFields();
+        if (!fields) return false;
+        for (uint16_t index = 0; index < fields->size(); ++index) {
+          const jc_field_t &field = fields->at(index);
+          if (field.reference_owner == 0xff || field.reference_owner == 0xfe)
+            continue;
+          const jref_t reference(field.value);
+          if (!reference.isNullPointer()) {
+            visitor(field.reference_owner, reference, visitor_context);
+          }
+        }
+      } catch (...) {
+        return false;
+      }
+    }
+    ++it;
+  }
+  return true;
+}
+
 void Heap::clearForeignArrayReferencesForPackage(
     const jpackage_ID_t package_id) noexcept {
   auto &registry = foreignReferenceStorageRegistry();
@@ -1373,16 +1483,20 @@ void Heap::visitChildReferences(const JC_Instance &instance,
 }
 
 Heap::ReachabilitySummary Heap::traceAndMark(
-    const RootReferenceEnumerator enumerate_roots, void *root_context) {
+    const RootReferenceEnumerator enumerate_roots, void *root_context,
+    const bool reset_marks) {
   ReachabilitySummary summary;
-  for (auto &array : this->shared_storage->arrays) {
-    if (array) {
-      array->heap_mark = 0;
+  this->shared_storage->reachability_complete = false;
+  if (reset_marks) {
+    for (auto &array : this->shared_storage->arrays) {
+      if (array) {
+        array->heap_mark = 0;
+      }
     }
-  }
-  for (auto &instance : this->shared_storage->instances) {
-    if (instance) {
-      instance->heap_mark = 0;
+    for (auto &instance : this->shared_storage->instances) {
+      if (instance) {
+        instance->heap_mark = 0;
+      }
     }
   }
   summary.static_roots = static_cast<uint32_t>(this->shared_storage->static_reference_roots.size());
@@ -1565,6 +1679,7 @@ Heap::ReachabilitySummary Heap::traceAndMark(
                                        ? 1u
                                        : 0u;
   }
+  this->shared_storage->reachability_complete = summary.complete;
   return summary;
 }
 
@@ -1583,6 +1698,17 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
     return summary;
   }
   return this->traceAndMark(enumerate_roots, root_context);
+}
+
+Heap::ReachabilitySummary Heap::extendReachableFrom(
+    const RootReferenceEnumerator enumerate_roots, void *root_context) {
+  if (this->global_heap || enumerate_roots == nullptr) {
+    ReachabilitySummary summary;
+    summary.complete = false;
+    summary.root_enumeration_failures = 1;
+    return summary;
+  }
+  return this->traceAndMark(enumerate_roots, root_context, false);
 }
 
 bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
@@ -1662,6 +1788,7 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
       ++summary.instances_reclaimed;
     }
   }
+  this->shared_storage->reachability_complete = false;
   return summary;
 }
 
@@ -1692,6 +1819,55 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
       ++summary.instances_reclaimed;
     }
   }
+  this->shared_storage->reachability_complete = false;
+  return summary;
+}
+
+Heap::ReachabilitySummary Heap::collectUnreachableMarked() {
+  ReachabilitySummary summary;
+  if (this->global_heap) {
+    summary.complete = false;
+    return summary;
+  }
+  if (!this->shared_storage->reachability_complete) {
+    summary.complete = false;
+    summary.root_enumeration_failures = 1;
+    return summary;
+  }
+  summary.arrays_total =
+      static_cast<uint32_t>(this->shared_storage->arrays.size());
+  summary.instances_total =
+      static_cast<uint32_t>(this->shared_storage->instances.size());
+  for (const auto &array : this->shared_storage->arrays) {
+    if (array && (array->heap_mark == 1 || array->heap_mark == 2)) {
+      ++summary.arrays_reachable;
+    }
+    if (array && array->hasPersistentTag()) {
+      ++summary.persistent_tagged_arrays;
+    }
+  }
+  for (const auto &instance : this->shared_storage->instances) {
+    if (instance && (instance->heap_mark == 1 || instance->heap_mark == 2)) {
+      ++summary.instances_reachable;
+    }
+    if (instance && instance->hasPersistentTag()) {
+      ++summary.persistent_tagged_instances;
+    }
+  }
+  for (auto &array : this->shared_storage->arrays) {
+    if (array && array->heap_mark == 0) {
+      this->unregisterForeignReferenceArray(array.get());
+      array.reset();
+      ++summary.arrays_reclaimed;
+    }
+  }
+  for (auto &instance : this->shared_storage->instances) {
+    if (instance && instance->heap_mark == 0) {
+      instance.reset();
+      ++summary.instances_reclaimed;
+    }
+  }
+  this->shared_storage->reachability_complete = false;
   return summary;
 }
 
