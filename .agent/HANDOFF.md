@@ -11863,3 +11863,17 @@ The helper refresh request is resolved and the installed helper SHA-256 matches 
 `./tools/test-rmi-registry` now reproduces the R59 root-retention defect. Two volatile `Object[]` arrays in separate package contexts point to each other through foreign references. After removing both package-static roots, both per-heap collections report complete but reclaim zero arrays because the incoming registered edges are counted as roots. Clearing both edges then reclaims one array from each heap. The existing positive foreign-root test still passes.
 
 The regression currently reports `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`; replace this expected-bug assertion with reclamation after implementing coordinated cross-heap reachability. Remaining acceptance includes rooted one-way chains/diamonds, three-heap cycles, collection order, owner collisions, edge breaking, package deletion, repeated-cycle RAM plateau, ARM/RISC-V builds, and physical checks where applicable. No source collector change or firmware build has been made for R59 yet.
+
+# Current handoff — physical JCAlgTest reader still unavailable — 2026-11-11 13:02 CET
+
+The refreshed authorized helper reports one attached reader USB node at
+`/dev/bus/usb/001/045`. `lsusb` identifies it as D92 (`2e8a:0009 Pico2 JCVM
+CCID`, serial `D92E743D5F640C0F`); a separate RP2350 BOOTSEL device is also
+enumerated. USB descriptors show the CCID interface, and the node ACL includes
+both `pcscd` and `claude`. However, bounded `pcsc_scan -r` continues to list
+only `Virtual PCD 00 00` and `00 01`. The device is not yet a usable PC/SC
+reader, so neither requested 1.8.4 JCAlgTest option has started and no APDUs
+were sent. Next, restore PC/SC reader publication; then run option 2 and
+option 1 on different identified Picos when possible, retaining per-board
+results and serial telemetry. The campaign guidance is in root `AGENTS.md` and
+`.agent/SESSION_CONTINUITY.md`.

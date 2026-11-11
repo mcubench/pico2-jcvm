@@ -112,3 +112,9 @@ Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible 
 - Test code belongs in `tests/unit`, `tests/integration`, or `tests/hardware`; repository-owned test applet sources belong in `tests/fixtures/local`. Keep stable entrypoints in `tools/`.
 - Generated tests/CAPs/images go under `build/`; logs/results go under `artifacts/`. SDKs/converters belong in `.local-toolchain/`, not external fixture directories.
 - Legacy 1.8.2 inputs/results remain explicitly versioned historical evidence. Recheck imports, client compatibility, expected responses and support baselines for 1.8.4; never relabel old results as 1.8.4. See `tests/README.md` and `docs/testing-data-migration.md`.
+
+### Long physical JCAlgTest campaigns
+- Treat Windows-host testing as independent evidence; still run the unchanged 1.8.4 client on a physical Pico 2 in this environment when PC/SC access is available.
+- Prioritize client option `2` (all JC API methods, 256-byte data; estimated 1–3 hours) and option `1` (all algorithms; estimated 5–8 hours). These runs exercise periodic `INS_CARD_RESET` / `JCSystem.requestObjectDeletion()` behavior.
+- Use a different identified Pico 2 for the second campaign when possible. Keep per-device results, reader name, chip ID, firmware hash, and serial telemetry separate. If one device disappears or stalls, continue on another available device rather than waiting for it.
+- Do not claim either run started until the physical reader is enumerated in PC/SC and the client is connected to that exact reader.

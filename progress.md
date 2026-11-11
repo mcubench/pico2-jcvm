@@ -27383,5 +27383,17 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed and emitted `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`; both arrays were reclaimed after explicitly clearing the cycle edges. Existing foreign-root retention/release assertions passed.
 - Result: Confirms R59's inferred leak for a two-heap array cycle. The diagnostic currently encodes the buggy behavior; no collector fix, three-heap/diamond coverage, architecture build, or hardware validation is included.
 - Decision: Continue with coordinated reachability-based cross-heap tracing; preserve existing rooted foreign references and fail closed on ambiguous package ownership.
-- Commit: `<fill after commit>`
+- Commit: `cf50f0fa`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; test output `RMI_REGISTRY:KNOWN_GAP rootless_foreign_array_cycle_retained=2`.
+
+## 2026-11-11 Record physical long-run campaign guidance 6 min
+
+- Step/experiment: `HW-JCALGTEST-LONGRUN-GUIDANCE`
+- When: '2026-11-11 13:03 CET' - '2026-11-11 13:09 CET'
+- Model: `GPT-6`
+- Change: Added root-level agent instructions to run JCAlgTest 1.8.4 option 2 and option 1 locally even when Windows testing is happening independently, use different identified Pico 2 tokens when possible, and keep per-device results and telemetry separate. Updated the handoff with the current reader discovery state.
+- Validation: Reviewed `.agent/SESSION_CONTINUITY.md`, confirmed the same failover advice exists there, then ran the authorized PC/SC helper and bounded physical reader scans. `pcsc_scan -r` lists only the two VPCD readers. `lsusb -v -d 2e8a:0009` confirms D92 enumerates a CCID interface; its USB node ACL includes `pcscd` and `claude`. `./tools/doctor` passed build prerequisite checks but intentionally does not test hardware.
+- Result: The guidance is explicit in both root and session instructions. The physical option 2/1 runs could not start because PC/SC does not publish the attached CCID device. A second RP2350 BOOTSEL device is visible. No APDUs were sent.
+- Decision: Restore PC/SC publication before starting either long client campaign. Continue offline work meanwhile.
+- Commit: `<fill after commit>`
+- Artifacts/logs: `lsusb`/PCSC diagnostics were inspected in the terminal; no standalone log was created.
