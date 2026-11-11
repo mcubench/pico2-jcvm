@@ -27815,3 +27815,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep deletion diagnostic-only. Resume with a visible BOOTSEL or exact physical PC/SC reader, flash the persistent-trace-off image, and capture a deletion request before attributing the missing array-body tag to the reclaimer.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261111T221812Z.log` (2BED flash/monitor pass), `...T222841Z.log`, `...T223745Z.log`, `...T224138Z.log` (bounded reset failures); `artifacts/results/resource01-option2-performance-2BED-trace-20261111/`; current image `build/arm/pico2_choupi.uf2`.
+
+## 2026-11-11 Add rooted instance-array deletion regression 8 min
+
+- Step/experiment: `RESOURCE-01-ROOTED-INSTANCE-ARRAY-BATCH-20261111`
+- When: '2026-11-11 23:05 UTC' - '2026-11-11 23:13 UTC'
+- Model: `GPT-6`
+- Change: Added a persistent transaction regression that serializes a persistent instance with an array field using production writers, seeds eight unreachable applet records, runs an eight-record deletion batch, and restores the rooted array from a fresh heap. The existing worktree was dirty; only the new test was staged for this step.
+- Validation: `./tools/test-persistent-transaction` passed; targeted output includes `TEST:PASS reclaimer_preserves_array_body_reachable_through_persistent_instance_root` and `TEST:SUMMARY fail=0`. ARM/RISC-V builds and hardware tests intentionally skipped; test-only change and no physical reader is available through the VM.
+- Result: The reclaimer erased exactly eight unreachable records and preserved/restored the rooted array body through the bounded batch. This covers the missing host scenario but does not reproduce which operation removed the body in the prior hardware log.
+- Decision: Keep RESOURCE-01 open; continue with deletion-candidate instrumentation when a board is accessible.
+- Commit: pending
+- Artifacts/logs: focused test output from `./tools/test-persistent-transaction`.

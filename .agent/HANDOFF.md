@@ -12424,3 +12424,13 @@ worktree was dirty and its tracked root diff hash is in
 `build/external-test/object-deletion-current/BUILD-PROVENANCE.txt`. No physical
 device was flashed. The package is for external diagnostic testing only; do
 not enable deletion in normal firmware based on the build alone.
+
+# Current handoff — rooted instance-array batch regression — 2026-11-11 23:13 UTC
+
+Added a persistent transaction regression for a persistent instance root whose
+reference field aliases an array body. It seeds eight unreachable applet
+records, runs an eight-record deletion batch, then restores and reads the array
+from a fresh heap. `./tools/test-persistent-transaction` passes with
+`TEST:SUMMARY fail=0`; the targeted regression passes. This is host-only
+coverage and does not identify the operation behind the prior hardware missing
+body. RESOURCE-01 remains open. No physical board was flashed or used.

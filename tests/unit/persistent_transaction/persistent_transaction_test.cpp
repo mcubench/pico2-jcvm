@@ -2374,6 +2374,76 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x54;
+    constexpr uint8_t package_id = 0x56;
+    const uint16_t previous_field_count =
+        persistent_transaction_test::instance_field_count;
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(owner);
+    const auto root_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(1, package_id, 3);
+    const auto instance_reference = heap.addInstance(
+        jcvm::JC_Instance(heap, package_id, 3));
+    const auto array_reference = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(array_reference)->setByteEntry(0, 0x5a);
+    auto instance = heap.getInstance(instance_reference);
+    instance->setField_Reference(0, array_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Instance(root_tag, *instance,
+                                                           heap);
+    std::array<std::array<uint8_t, 4>, 8> orphan_tags{};
+    for (uint8_t index = 0; index < orphan_tags.size(); ++index) {
+      orphan_tags[index] = {0x03, owner, 0x30,
+                            static_cast<uint8_t>(index + 1)};
+      persistent_transaction_test::seed(orphan_tags[index].data(),
+                                        orphan_tags[index].size(),
+                                        byte_record(index));
+    }
+    const auto instance_body = instance->getPersistentTag();
+    const auto array_field =
+        jcvm::FlashMemory_Handler::computeTag(instance_body, 0);
+    const auto alias_record = persistent_transaction_test::read(
+        array_field.value, array_field.len);
+    jcvm::fs::Tag array_body{};
+    bool alias_valid = alias_record.size() >= 3 && alias_record[0] == 0xfd &&
+                       alias_record[1] + 2u == alias_record.size() &&
+                       alias_record[1] <= sizeof(array_body.value);
+    if (alias_valid) {
+      array_body.len = alias_record[1];
+      std::memcpy(array_body.value, alias_record.data() + 2, array_body.len);
+    }
+
+    std::vector<jcvm::jref_t> root_references{instance_reference};
+    RootVectorContext roots{&root_references};
+    uint32_t erased = 0;
+    const auto result = jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+        owner, heap, enumerate_root_vector, &roots, &erased, 8);
+    bool restored_array_survives = false;
+    try {
+      jcvm::Heap restored(owner);
+      const auto restored_instance =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root_tag, restored);
+      const auto restored_field =
+          jcvm::FlashMemory_Handler::computeTag(
+              restored.getInstance(restored_instance)->getPersistentTag(), 0);
+      const auto restored_array =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              restored_field, restored);
+      restored_array_survives =
+          restored.getArray(restored_array)->getByteEntry(0) == 0x5a;
+    } catch (jcvm::Exceptions) {
+      restored_array_survives = false;
+    }
+    expect(alias_valid && result == jcvm::PersistentInventory::VisitResult::Stopped &&
+               erased == 8 &&
+               !persistent_transaction_test::read(array_body.value,
+                                                  array_body.len).empty() &&
+               restored_array_survives,
+           "reclaimer_preserves_array_body_reachable_through_persistent_instance_root");
+    persistent_transaction_test::instance_field_count = previous_field_count;
+  }
+
+  {
     constexpr uint8_t owner = 0x55;
     constexpr uint8_t array_alias_owner = 0x56;
     constexpr uint8_t object_alias_owner = 0x57;
