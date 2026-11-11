@@ -53,17 +53,17 @@ PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/base-alg-support
 
-# Build and flash the all-enabled current profile to a second Pico, then run
+# Build and flash the all-enabled baseline profile to a second Pico, then run
 # the same JCAlgTest operation there for an apples-to-apples report comparison.
-current_serial='REPLACE_WITH_SECOND_IDENTIFIED_PICO_SERIAL'
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial "$current_serial"
-mkdir -p artifacts/results/current-alg-support
+baseline_serial='REPLACE_WITH_SECOND_IDENTIFIED_PICO_SERIAL'
+PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile baseline --serial "$baseline_serial"
+mkdir -p artifacts/results/baseline-alg-support
 cp build/javacard-support/jcalgtest-supported.csv \
-  artifacts/results/current-alg-support/expected.csv
-reader_name_current='REPLACE_WITH_EXACT_CURRENT_PCSC_READER_NAME'
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name_current" \
+  artifacts/results/baseline-alg-support/expected.csv
+reader_name_baseline='REPLACE_WITH_EXACT_BASELINE_PCSC_READER_NAME'
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name_baseline" \
   -op ALG_SUPPORT_EXTENDED -fresh \
-  -outpath artifacts/results/current-alg-support
+  -outpath artifacts/results/baseline-alg-support
 
 # Compare each report to the same jCardSim reference, with the expected support
 # set captured from the matching firmware build.
@@ -72,15 +72,15 @@ PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name_curren
   tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv \
   --expected-support artifacts/results/base-alg-support/expected.csv
 ./tools/compare-jcalgtest-support.py \
-  artifacts/results/current-alg-support/*ALGSUPPORT*.csv \
+  artifacts/results/baseline-alg-support/*ALGSUPPORT*.csv \
   tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv \
-  --expected-support artifacts/results/current-alg-support/expected.csv
+  --expected-support artifacts/results/baseline-alg-support/expected.csv
 
 # Each comparison should end with COMPARE:PASS and no status other than yes/no.
 
 # Show which expected capability rows changed between the two profiles.
 diff -u artifacts/results/base-alg-support/expected.csv \
-  artifacts/results/current-alg-support/expected.csv
+  artifacts/results/baseline-alg-support/expected.csv
 
 # Run the static performance suite.
 PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \

@@ -302,10 +302,12 @@ The current unchanged JCAlgTest 1.8.4/jc305 production-configuration VPCD run
 did **not** complete. The configured 3,600-second suite watchdog ended it
 while the client was issuing DSA-1024 key generation (`B0 75 19 00 03 03 04
 00 00`). The final APDU has no response; the wrapper's terminal exit status
-was not preserved in this session output. The separately measured whole-APDU latency remains
-55–102 seconds for earlier compaction-triggering RSA operations and 453.779
-seconds for RSA-1024 key generation that triggered multiple compactions; an
-isolated compaction duration has not been measured.
+was not preserved in this session output. A direct current-build VPCD
+measurement later in this handoff found one compaction taking 43.7476 seconds
+(19.5854 seconds staging and 24.1622 seconds copyback); its triggering APDU
+took 47.289 seconds. Earlier whole-APDU measurements were 55–102 seconds for
+compaction-triggering RSA operations and 453.779 seconds for RSA-1024 with
+multiple compactions. Those are full operation times, not isolated timings.
 
 The final partial support CSV has 286 lines. Ordinary RSA key generation
 returned `yes` through 1024 bits, `SystemException_NO_RESOURCE` at 1280–2048,
@@ -11845,3 +11847,11 @@ ARM empty-card image remains ready at
 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-20261111.uf2`.
 
 # Current handoff — standalone JCVM array-allocation test restored — 2026-11-11 12:19 CET
+
+---
+
+# Current handoff — PROFILE-03 renamed to baseline; Pico PC/SC still absent — 2026-11-11 12:36 CET
+
+The active capability profile and default name are now `baseline`. Its 15 enabled flags exactly match the former `current` profile; `base`, `no_aes`, `symm_crypto`, `asymm_crypto`, and `max_crypto` maps are unchanged. Support unit tests pass 15/15, pinned fixtures verify 81/81, and default plus explicit baseline ARM and RISC-V builds pass with `JAVACARD_SUPPORT:PASS profile=baseline capabilities=162 enabled=15`. The full ARM firmware is `build/arm/pico2_choupi.uf2`; no hardware flash was performed for this profile rename.
+
+The helper refresh request is resolved and the installed helper SHA-256 matches `tools/pico2-pcsc-reader-root` (`c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`). Current refresh grants `/dev/bus/usb/001/045`, and `lsusb` sees a Pico `2e8a:0009`, but `pcsc_scan -r` still lists only Virtual PCD 00 00/01. No physical JCAlgTest operation could start. Next: restore PC/SC publication of a physical Pico, then run option 2 and option 1 on separate identified tokens when possible, retaining per-board result directories and serial telemetry. Continue offline repository work while no physical reader is available.

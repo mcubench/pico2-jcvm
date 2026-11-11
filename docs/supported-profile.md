@@ -24,7 +24,7 @@ STATUS flows. Package and applet AIDs can be loaded dynamically, subject to
 available storage and supported imports.
 
 Cryptographic capabilities are selected by `config/javacard-support.json`.
-The `max_crypto` profile combines the current, symmetric, asymmetric, and
+The `max_crypto` profile combines the baseline, symmetric, asymmetric, and
 AES-CTR profiles. Its generated manifest is authoritative for the selected
 JCAlgTest capabilities; it does not imply support for every algorithm defined
 by Java Card.

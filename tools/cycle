@@ -9,7 +9,7 @@ shift
 serial=""
 chipid=""
 usb_path=""
-support_profile=current
+support_profile=baseline
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --profile)

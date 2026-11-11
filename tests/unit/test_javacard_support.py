@@ -16,7 +16,7 @@ GENERATOR = ROOT / "tools/javacard-support.py"
 COMPARATOR = ROOT / "tools/compare-jcalgtest-support.py"
 SUPPORT_CONFIG = json.loads((ROOT / "config/javacard-support.json").read_text())
 REFERENCE = ROOT / "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv"
-CONFIG = SUPPORT_CONFIG["profiles"]["current"]
+CONFIG = SUPPORT_CONFIG["profiles"]["baseline"]
 
 
 class JavaCardSupportTests(unittest.TestCase):
@@ -32,13 +32,13 @@ class JavaCardSupportTests(unittest.TestCase):
     def run_named_profile(self, profile, out_dir):
         config_path = out_dir.parent / "profiles.json"
         config_path.write_text(json.dumps(SUPPORT_CONFIG))
-        return subprocess.run(
-            [sys.executable, str(GENERATOR), "--config", str(config_path),
-             "--profile", profile, "--out-dir", str(out_dir)],
-            text=True, capture_output=True,
-        )
+        command = [sys.executable, str(GENERATOR), "--config", str(config_path)]
+        if profile is not None:
+            command.extend(("--profile", profile))
+        command.extend(("--out-dir", str(out_dir)))
+        return subprocess.run(command, text=True, capture_output=True)
 
-    def test_current_config_generates_exactly_fifteen_expected_rows(self):
+    def test_baseline_config_generates_exactly_fifteen_expected_rows(self):
         with tempfile.TemporaryDirectory() as temporary:
             out = Path(temporary) / "generated"
             result = self.run_generator(CONFIG, out)
@@ -110,6 +110,16 @@ class JavaCardSupportTests(unittest.TestCase):
                 {path: path.stat().st_mtime_ns for path in generated_inputs},
                 original_mtimes,
             )
+
+    def test_default_profile_is_baseline_and_current_is_not_an_alias(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            default_result = self.run_named_profile(None, out)
+            self.assertEqual(default_result.returncode, 0, default_result.stderr)
+            self.assertIn("profile=baseline", default_result.stdout)
+            old_name_result = self.run_named_profile("current", out)
+            self.assertNotEqual(old_name_result.returncode, 0)
+            self.assertIn("unknown profile 'current'", old_name_result.stderr)
 
     def test_minimal_config_generates_empty_supported_set(self):
         with tempfile.TemporaryDirectory() as temporary:

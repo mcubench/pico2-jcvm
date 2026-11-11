@@ -360,9 +360,9 @@ def load_config(path: Path, requested_profile: str | None = None) -> tuple[str, 
         raise ValueError(f"{path}: top-level JSON value must be an object")
 
     if "profiles" not in value:
-        if requested_profile not in (None, "current"):
-            raise ValueError(f"{path}: flat configuration supports only the current profile")
-        return "current", validate_capabilities(value, path)
+        if requested_profile not in (None, "baseline"):
+            raise ValueError(f"{path}: flat configuration supports only the baseline profile")
+        return "baseline", validate_capabilities(value, path)
 
     unknown_fields = sorted(set(value) - {"default_profile", "profiles"})
     if unknown_fields:

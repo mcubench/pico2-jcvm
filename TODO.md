@@ -2309,6 +2309,23 @@ review.
   then build/physical validation. Otherwise retain documented exclusions; do not
   broaden scope merely to remove expected unsupported rows. See PROFILE-01.
 
+### PROFILE-03
+
+- [x] **Rename the `current` capability profile to `baseline`.** `current` is
+  ambiguous as a profile name and is easily confused with whichever firmware
+  build happens to be newest. Make `baseline` the default profile and update
+  profile selection, generated metadata, support CSV generation, build/package
+  wrappers, documentation, and profile-specific tests accordingly. Preserve
+  the exact capability selection currently assigned to `current` (15 enabled
+  capabilities); do not change implementation support or JCAlgTest results as
+  part of the rename. Keep historical artifacts and records labeled `current`
+  where they describe past builds.
+  Acceptance: default and explicit `baseline` builds report profile
+  `baseline` and produce the same 15-capability support set; `max_crypto`,
+  `symm_crypto`, and `asymm_crypto` remain selectable and unchanged; no active
+  user-facing build instructions describe `current` as the baseline profile.
+  Implementation and acceptance results recorded in the 2026-11-11 progress entry.
+
 ### HARD-01
 
 - [ ] **Complete deferred robustness and private-operation hardening (plan WP9).**

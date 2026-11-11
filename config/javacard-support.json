@@ -1,7 +1,7 @@
 {
-  "default_profile": "current",
+  "default_profile": "baseline",
   "profiles": {
-    "current": {
+    "baseline": {
       "owner_pin": true,
       "owner_pin_x": true,
       "owner_pin_x_with_predecrement": true,

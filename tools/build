@@ -5,7 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 [[ $# -ge 1 ]] || die "usage: ./tools/build arm|riscv [--profile PROFILE]"
 arch_arg="$1"
 shift
-support_profile=current
+support_profile=baseline
 debug_heap_gc=OFF
 debug_persistent_gc=OFF
 enable_object_deletion=OFF

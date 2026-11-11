@@ -76,9 +76,9 @@ This is a source/document inspection, with no new build, flash, USB operation, b
 Use the repository wrappers to keep toolchain, SDK, generated metadata, and profile selection consistent. ARM currently builds the full JCVM firmware; RISC-V builds shared VM objects and a smoke image, so its successful build does not prove a complete RISC-V runtime.
 
 ```sh
-./tools/build arm --profile current
-./tools/build riscv --profile current
-./tools/build-pc --profile current  # separate emulator build
+./tools/build arm --profile baseline
+./tools/build riscv --profile baseline
+./tools/build-pc --profile baseline  # separate emulator build
 ```
 For another application, retain this separation between portable components and board startup/peripheral integration; do not assume the PC executable is rebuilt by either firmware command.
 
@@ -110,7 +110,7 @@ Source: [choupi/src/native_sha256.cpp:9](../choupi/src/native_sha256.cpp#L9); [s
 Keep generated files when their inputs are unchanged, and prevent simultaneous writers to shared build outputs. Start with the existing two-job default and measure before raising concurrency.
 
 ```sh
-PICO_BUILD_JOBS=2 ./tools/build arm --profile current
+PICO_BUILD_JOBS=2 ./tools/build arm --profile baseline
 ```
 The wrapper locks `build/.tools-build.lock` and checks hashes for API, ROM-mask, and support-profile inputs. `perf_tips.md` contains historical timing samples, not guaranteed build times or evidence that more parallel jobs are faster.
 
@@ -630,7 +630,7 @@ Build both architectures before flashing, identify the board, and distinguish a 
 ```sh
 # Each USB command requires host-access execution with elevated sandbox
 # permissions AND this environment flag; do not first try restricted access.
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial CHIP_ID
+PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile baseline --serial CHIP_ID
 PICO2_HOST_USB_ACCESS=1 ./tools/monitor --seconds 8
 ```
 Replace `CHIP_ID` with an identified board serial; the cycle itself builds both targets and selects an 18-second monitor for JCVM. A boot `TEST:PASS choupi_runtime` does not prove protocol correctness, algorithm vectors, installed-state recovery, or power-loss behavior; treat failure markers, timeout, and nonzero exit as failure.
