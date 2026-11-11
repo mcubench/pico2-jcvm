@@ -9900,6 +9900,12 @@ Check new loader, resolver and bytecode code against these before review.
   runtime situations should remain blocked or can be safely coalesced.
 - **Limit:** This is a focused unit case, not full applet/RMI runtime coverage,
   physical deletion, interrupted flash recovery, or a bounded RAM measurement.
+- **Peer roots:** The same production entrypoint test also roots two server
+  instances from another retained package: one through a cached static slot,
+  one through a registered shareable proxy. It reclaims an unrooted third
+  instance. The proxy itself must be a valid instance in the peer heap because
+  `visitRootReferences()` marks the proxy object as well as its server target;
+  a synthetic absent proxy handle correctly made the root walk incomplete.
 
 ## D92 USB CCID enumerates but PC/SC reader scan stalls — 2026-11-11
 

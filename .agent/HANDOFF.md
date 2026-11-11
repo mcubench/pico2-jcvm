@@ -1,4 +1,22 @@
-# Current handoff — production retained-context GC entrypoint covered — 2026-11-11 14:43 CET
+# Current handoff — retained peer static/proxy GC roots covered — 2026-11-11 14:48 CET
+
+The production `Context::collectRetainedHeaps()` unit test now covers peer
+context roots as well as cross-package cycles. A second context roots one
+server-heap object through a cached static reference and another through a
+registered shareable proxy; the coordinated sweep preserves both and reclaims
+one unrooted server object. `./tools/test-rmi-registry` passes under
+AddressSanitizer/UBSan. The test allocates a real proxy instance in the peer
+heap; a synthetic missing proxy handle correctly caused invalid-root failure
+during fixture development.
+
+This remains unit evidence. Full JCAlgTest reset/deletion on hardware, flash
+interruption recovery, and bounded actual RAM behavior are outstanding. Keep
+object deletion disabled by default. The preceding isolated collector-entry
+point coverage is below.
+
+---
+
+# Previous handoff — production retained-context GC entrypoint covered — 2026-11-11 14:43 CET
 
 `tests/unit/rmi_registry/rmi_registry_test.cpp` now calls the production
 `Context::collectRetainedHeaps()` entry point on two retained package

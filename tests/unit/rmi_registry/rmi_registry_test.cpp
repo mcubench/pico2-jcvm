@@ -951,7 +951,38 @@ void verify_retained_context_foreign_cycle_collected() {
     stale_array_b_rejected = true;
   }
   assert(stale_array_a_rejected && stale_array_b_rejected);
+
+  const auto peer_static_root = context_a.getHeap().addInstance(
+      package_a, static_cast<jcvm::jclass_index_t>(1));
+  const auto peer_proxy_root = context_a.getHeap().addInstance(
+      package_a, static_cast<jcvm::jclass_index_t>(1));
+  const auto unrooted_instance = context_a.getHeap().addInstance(
+      package_a, static_cast<jcvm::jclass_index_t>(1));
+  constexpr uint8_t peer_aid[] = {0xa0, 0x00, 0x00, 0x1b, 0x01};
+  constexpr uint8_t server_aid[] = {0xa0, 0x00, 0x00, 0x1a, 0x01};
+  assert(context_b.setAppletAID(peer_aid, sizeof(peer_aid)));
+  const auto proxy_instance = context_b.getHeap().addInstance(
+      package_b, static_cast<jcvm::jclass_index_t>(1));
+  context_b.getHeap().setStaticReferenceRoot(
+      package_b, 0, peer_static_root, package_a);
+  assert(context_b.registerShareableProxy(
+      proxy_instance, server_aid, sizeof(server_aid), peer_proxy_root,
+      package_a));
+
+  const auto peer_roots = jcvm::Context::collectRetainedHeaps();
+  assert(peer_roots.complete);
+  assert(peer_roots.instances_reclaimed == 1);
+  assert(context_a.getHeap().getInstance(peer_static_root));
+  assert(context_a.getHeap().getInstance(peer_proxy_root));
+  bool orphan_rejected = false;
+  try {
+    (void)context_a.getHeap().getInstance(unrooted_instance);
+  } catch (...) {
+    orphan_rejected = true;
+  }
+  assert(orphan_rejected);
   std::puts("RMI_REGISTRY:PASS retained_context_foreign_cycle=2");
+  std::puts("RMI_REGISTRY:PASS retained_peer_static_proxy_roots=2");
 }
 
 void verify_three_heap_foreign_cycle_and_repeated_reclamation() {

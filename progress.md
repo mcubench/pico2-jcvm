@@ -27479,5 +27479,29 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed under the wrapper's AddressSanitizer/UBSan configuration, including retained-entrypoint, two/three heap cycles, diamonds, repeated cycles, and ambiguous package fail-closed checks. No firmware build or hardware test was required for this test-only change.
 - Result: The production entry point handles the isolated rooted/unrooted two-context cycle. An initial placement after two same-package test contexts correctly failed closed; moving it before those fixtures isolated the intended case. Physical JCAlgTest and RAM plateau acceptance remain open.
 - Decision: Keep R59 open and object deletion disabled by default; next extend testing to realistic retained applet/RMI root layouts while waiting for PC/SC recovery.
-- Commit: `pending`
+- Commit: `d9fa839f`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output includes `RMI_REGISTRY:PASS retained_context_foreign_cycle=2`.
+
+## 2026-11-11 Cover peer static and shareable-proxy roots in retained sweep 5 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-PEER-ROOTS`
+- When: '2026-11-11 14:43 CET' - '2026-11-11 14:48 CET'
+- Model: `GPT-6`
+- Change: Extended the production retained-context collector regression to root server objects from a peer package through a cached static reference and a shareable proxy, while reclaiming an unrooted third object. Updated R59 TODO, QKB and handoff status.
+- Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan and reported `RMI_REGISTRY:PASS retained_peer_static_proxy_roots=2`, alongside the existing cycle, diamond, repeated-reclamation and ambiguous-package cases. No firmware build or hardware access was needed for this test-only change.
+- Result: `collectRetainedHeaps()` preserves both peer-rooted objects and reclaims one orphan in this fixture. A synthetic missing proxy instance failed root tracing, so the accepted fixture creates a valid proxy object in the peer heap.
+- Decision: Continue R59 toward broader runtime roots, reset-driven physical deletion and bounded RAM plateau evidence; keep object deletion disabled by default.
+- Commit: `pending`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
+
+## 2026-11-11 Cover peer static and shareable-proxy roots in retained sweep 5 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-PEER-ROOTS`
+- When: '2026-11-11 14:43 CET' - '2026-11-11 14:48 CET'
+- Model: `GPT-6`
+- Change: Extended the production retained-context collector regression to root server objects from a peer package through a cached static reference and a shareable proxy, while reclaiming an unrooted third object. Updated R59 TODO, QKB and handoff status.
+- Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan and reported `RMI_REGISTRY:PASS retained_peer_static_proxy_roots=2`, alongside the existing cycle, diamond, repeated-reclamation and ambiguous-package cases. No firmware build or hardware access was needed for this test-only change.
+- Result: `collectRetainedHeaps()` preserves both peer-rooted objects and reclaims one orphan in this fixture. A synthetic missing proxy instance failed root tracing, so the accepted fixture creates a valid proxy object in the peer heap.
+- Decision: Continue R59 toward broader runtime roots, reset-driven physical deletion and bounded RAM plateau evidence; keep object deletion disabled by default.
+- Commit: `pending`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
