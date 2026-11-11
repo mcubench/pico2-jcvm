@@ -1,3 +1,28 @@
+# Current handoff — VPCD multi-batch harness fixed; VM still receives no Pico — 2026-11-11 18:58 CET
+
+Fixed `tools/test-object-deletion-vpcd` so RSA batch continuation uses the
+probe's non-requesting status APDU (`00000D`) instead of issuing an extra
+`requestObjectDeletion()` after the pending sweep already completed. The old
+harness generated a third, empty collection for a 10-record fixture. One- and
+four-replacement runs now pass with exactly 2 and 6 collector calls and erase
+10 and 40 records respectively. Every logged call is checked against the
+shared maximum of eight records. The live-static regression also passes.
+
+`./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`). The ARM
+object-deletion-enabled `max_crypto` build passes with firmware end
+`0x100f4190` and 48,752 bytes remaining; the RISC-V wrapper passes its core and
+smoke build. The user's boards are physically available, but the authorized
+helper inside this VM still reports zero matching readers. No board was
+flashed. This pass-through state does not indicate a board fault.
+
+The Windows ZIP from source `1651bbdd` is superseded. The later shared-budget
+firmware fix is validated in unit/build and VPCD tests only; it still needs a
+freshly provenance-checked Windows package and physical validation. Continue
+with source/worktree provenance before packaging, and refresh physical
+enumeration through the approved helper when VM passthrough changes.
+
+---
+
 # Current handoff — shared deletion budget fixed; VM still sees no Pico — 2026-11-11 18:36 CET
 
 Fixed a second bounded-deletion defect: the physical APDU path had applied the

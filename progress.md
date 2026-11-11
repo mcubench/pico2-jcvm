@@ -27658,3 +27658,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep deletion diagnostic-only; refresh the Windows package from this code and verify on hardware when an identified board is visible.
 - Commit: `f5a2fd1a`
 - Artifacts/logs: `build/tests/unit/persistent-transaction/persistent_transaction_test`; ARM/RISC-V build outputs under `build/arm/` and `build/riscv/`.
+
+## 2026-11-11 Fix VPCD bounded deletion continuation 22 min
+
+- Step/experiment: `RESOURCE-01-VPCD-BATCH-CONTINUATION-01`
+- When: '2026-11-11 18:36 CET' - '2026-11-11 18:58 CET'
+- Model: `GPT-6`
+- Change: Fixed the RSA batch VPCD harness to resume pending deletion with status-only APDUs rather than accidentally enqueueing a second empty deletion request. Updated QKB, handoff, and EXT_REQUESTS with the failure mechanism, validation, stale Windows package status, and VM visibility result.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-batch` passed (2 service calls, 10 records); the 4-cycle batch passed (6 calls, 40 records). `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed (8 checks). `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). ARM and RISC-V object-deletion-enabled `max_crypto` wrappers passed; ARM firmware end `0x100f4190`, 48,752 bytes remaining. The approved Pico helper still reports zero devices after the user's availability update; no hardware flash/APDU validation was possible.
+- Result: VPCD regression enforces the shared eight-record limit and completes repeated continuation batches without spuriously creating another request. Physical timing/CCID behavior remains unverified. Pinned Java Card OS Rust build warnings remain present.
+- Decision: Keep object deletion diagnostic-only. Do not use the superseded `1651bbdd` Windows package; refresh provenance and create a current package before external Windows validation. Retry physical tests when a board is enumerated in the VM.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T175424Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175512Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175736Z.log`; ARM/RISC-V outputs under `build/`.

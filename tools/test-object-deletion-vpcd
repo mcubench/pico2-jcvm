@@ -78,6 +78,16 @@ else
     fi
   done
 fi
+if [[ "${mode}" == "rsa-batch" ]]; then
+  total_records=$((iterations * 10))
+  deletion_calls=$((total_records / 8 + 1))
+  # APDU 000008 above starts the deletion request; APDU 00000D above is
+  # already the first continuation. Use status-only APDUs for any remaining
+  # batches so the harness does not create a fresh empty deletion request.
+  for ((call = 2; call < deletion_calls; ++call)); do
+    probe_args+=(--apdu 00000D0000 --expect-apdu-response 009000)
+  done
+fi
 probe_args+=(--apdu 0000050000 --expect-apdu-response 009000)
 
 PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 \

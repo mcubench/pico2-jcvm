@@ -10041,3 +10041,21 @@ Check new loader, resolver and bytecode code against these before review.
 - **Use next time:** Keep one request-wide budget across every namespace that
   shares a physical APDU. Individual reclaimer limits do not compose into a
   total limit unless the caller subtracts prior erasures.
+
+## VPCD batch test must resume pending deletion without issuing a new request — 2026-11-11
+
+- **Symptom:** `rsa-batch` reclaimed ten persistent records in two bounded
+  calls, then logged a third call with zero erasures and failed its expected
+  collector-call count.
+- **Cause:** The fixture already sends `00000D` after the initial
+  `requestObjectDeletion()` APDU; this status-only command resumes an active
+  sweep. The wrapper then sent another `000008`, which issues a new deletion
+  request after the original request completed.
+- **Fix and validation:** Additional drain APDUs now repeat `00000D`, never the
+  request command. VPCD passes for 1 and 4 RSA replacements: exactly 2/6
+  collector calls reclaiming 10/40 records, with every APDU at or below the
+  shared limit of eight. The live-static VPCD test and persistent transaction
+  suite pass. ARM and RISC-V object-deletion-enabled build wrappers pass.
+- **Use next time:** Continue a pending batched collection with an APDU that
+  does not enqueue a new request; assert the number of service calls and total
+  erased records separately.

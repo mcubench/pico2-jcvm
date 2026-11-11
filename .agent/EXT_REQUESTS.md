@@ -120,19 +120,20 @@ Keep the three Pico tokens connected. Do not flash or reset them as part of
 this service recovery. Once PC/SC lists `2BED26ED20556535`, I can continue the
 bounded object-deletion test on that board.
 
-## EXT-USB-VM-REATTACH-20261111-1824 — Reattach Pico USB device to VM
+## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 
-The user reports that physical devices are available. At 2026-11-11 18:24 CET,
-the authorized helper still found zero matching Pico devices inside this VM;
-`lsusb` showed only root hubs and PC/SC listed only virtual readers. No device
-was flashed or reset during this check.
+The user confirms that the physical boards are available and the earlier
+problem was VM passthrough, not a board fault. At 2026-11-11 18:58 CET, after
+that update, the authorized helper still found zero matching Pico devices
+inside this VM. No device was flashed or reset during this check. This is the
+current VM visibility result, not a report that the physical boards are
+unavailable or malfunctioning.
 
-Please attach at least one Pico USB device to the development VM through
-VirtualBox **Devices → USB**. Then report when it appears, or reattach it once
-more if it was already selected: host-side physical availability alone does
-not expose its USB node inside this guest. The next action will be a refreshed
-helper/PCSC identification, followed by bounded-reclaimer testing only after
-the architecture build gates pass.
+When changing passthrough, attach at least one Pico USB device to the
+development VM through VirtualBox **Devices → USB**. The next local action is
+to refresh the helper and identify the reader; the bounded deletion tests and
+both architecture build gates already pass. Host-side physical availability
+alone does not expose its USB node inside this guest.
 
 ### Earlier runtime-reset passthrough event — 2026-11-11
 
@@ -152,11 +153,12 @@ the ARM/RISC-V builds, and continue on whichever reader is available.
 
 ## Retry JCSystem object deletion with bounded cleanup (source commit 1651bbdd)
 
-**Superseded:** code review found the eight-record allowance was independently
-applied to applet and package-static namespaces, so one APDU could erase up to
-16 records. A shared total budget is now implemented and validated by host
-tests/builds. Do not use this image for current bounded-deletion acceptance;
-replace this request with a package built from the shared-budget fix.
+**Superseded; do not flash this image for current validation.** Code review
+found the eight-record allowance was independently applied to applet and
+package-static namespaces, so one APDU could erase up to 16 records. A shared
+total budget is now implemented and validated by host tests, VPCD integration,
+and ARM/RISC-V build wrappers. A fresh Windows package from the shared-budget
+firmware has not yet been produced.
 
 A fresh empty-card test package is ready. It includes the diagnostic ARM image,
 unchanged JCAlgTest 1.8.4/jc305 CAP and client, GPPro, and serial capture tool.
@@ -182,4 +184,4 @@ result and full serial log separate per chip ID. If Windows still reports an
 unrecognized USB device, include the exact UF2 hash, Windows version, and
 Device Manager status/error and hardware IDs. The bounded build has passed
 unit tests and ARM/RISC-V builds but has not yet been tested on physical
-hardware.
+hardware. Use it only as historical evidence, not as the current test image.
