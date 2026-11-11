@@ -1,4 +1,4 @@
-# Current handoff — VPCD deletion budget aligned; VM still receives no Pico — 2026-11-11 19:10 CET
+# Current handoff — current shared-budget Windows package ready; VM receives no Pico — 2026-11-11 19:18 CET
 
 Fixed `tools/test-object-deletion-vpcd` so RSA batch continuation uses the
 probe's non-requesting status APDU (`00000D`) instead of issuing an extra
@@ -20,11 +20,16 @@ helper inside this VM still reports zero matching readers. No board was
 flashed. The repository diagnostic reports no BOOTSEL-visible RP-series
 devices, either. This pass-through state does not indicate a board fault.
 
-The Windows ZIP from source `1651bbdd` is superseded. The later shared-budget
-firmware fix is validated in unit/build and VPCD tests only; it still needs a
-freshly provenance-checked Windows package and physical validation. Continue
-with source/worktree provenance before packaging, and refresh physical
-enumeration through the approved helper when VM passthrough changes.
+The Windows ZIP from source `1651bbdd` is superseded. A fresh empty-card
+package from source commit `73beff17` is ready at
+`build/external-test/pico2-jcvm-object-deletion-shared-budget-73beff17.zip`
+(SHA-256 `39dd82ada1c10eac539c6e77b033bb08097ffd7cab993c3a40c6cdfe91934f65`).
+Its standalone UF2 hash is
+`4353d4f2f068aa988fce7d4d92c667634ddf4d3684e4580c8dedae08c2efb3af`; the
+README has exact Windows steps. The package's provenance discloses root and
+submodule modifications included by the build. ZIP integrity and all 16 file
+hashes pass. No board was flashed in this VM, which sees neither runtime CCID
+nor BOOTSEL devices.
 
 ---
 

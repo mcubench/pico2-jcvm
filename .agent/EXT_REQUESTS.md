@@ -79,6 +79,32 @@ stalls. Preserve `OBJECT_DELETION:` lines and any `6F00`, `F205`, reset,
 timeout, or PC/SC service errors. This diagnostic image is not for production;
 normal builds keep deletion disabled.
 
+### Fresh shared-budget Windows package — 2026-11-11
+
+Use this package for the next Windows test. The older `1651bbdd` package has a
+known shared-budget defect and must not be used. The new firmware includes the
+shared eight-record limit across applet and package-static records. It is an
+empty-card image; install the unchanged CAP explicitly after the reader
+enumerates.
+
+- [Windows package](../build/external-test/pico2-jcvm-object-deletion-shared-budget-73beff17.zip)
+- Package SHA-256: `39dd82ada1c10eac539c6e77b033bb08097ffd7cab993c3a40c6cdfe91934f65`
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-73beff17.uf2)
+- UF2 SHA-256: `4353d4f2f068aa988fce7d4d92c667634ddf4d3684e4580c8dedae08c2efb3af`
+- Source commit: `73beff17`; ARM `max_crypto`; object deletion enabled;
+  CPLC source ID `0xFF73BEFF`; 48,752 firmware bytes remain.
+- The package README has exact hash verification, BOOTSEL copy, PC/SC check,
+  GPPro CAP installation, and serial capture commands. `BUILD-PROVENANCE.txt`
+  discloses the dirty root diff and submodule source hashes used by the build.
+
+Please first confirm Windows enumerates this exact UF2 with the reported
+SHA-256 and provide the reader name and ATR. If Windows again shows an
+unrecognized device, send the Windows version, Device Manager error/status and
+hardware IDs (or descriptor-request error), and whether BOOTSEL returns after
+unplug/replug. If it enumerates, explicitly install `AlgTest_v1.8.4_jc305.cap`
+and run the 1.8.4 client following the package README; return results and full
+serial output.
+
 ## Resolved 2026-11-11: Reattach Pico USB devices to the development VM
 
 The user confirmed that the earlier absence was a VM USB passthrough problem.
