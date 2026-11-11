@@ -1,3 +1,48 @@
+# Current handoff — all three Pico 2 tokens flashed with commit-identifiable max_crypto — 2026-11-11 20:10 CET
+
+The CPLC build identifier now uses both four-byte equipment-ID fields. The
+first eight hex digits of the Git HEAD hash are in
+`ICPersonalizationEquipmentID`; the next eight are in
+`ICPrePersonalizationEquipmentID`. The full CPLC prefix is `1960E04EC050BA8A`,
+from source commit `1960e04ec050ba8abc4ff4fcd86a5ea388648151`. CPLC’s two
+four-byte fields hold 64 bits, not the complete 160-bit SHA-1 hash. The OS
+release date remains the release date (`2026-11-07`); it is not a firmware
+build timestamp.
+
+Built `max_crypto` ARM and RISC-V after both CPLC fields were wired. The ARM
+image `build/arm/pico2_choupi.uf2` is 2,000,384 bytes, SHA-256
+`62100d71267fd7d030a2b26cdced2f83919de68a7f89b1cd01fa64c96c7fdccc`; the
+RISC-V wrapper's smoke image is 79,872 bytes, SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925` (the
+RISC-V wrapper does not build full CHOUPI firmware). `./tools/test-gp-get-data`
+passes 25/25 and both architecture wrappers pass.
+
+All three identified physical devices were in BOOTSEL and were flashed with
+the ARM image via `./tools/cycle choupi --profile max_crypto --chipid ...`:
+
+- `2BED26ED20556535`: flash verified, `CYCLE:PASS`; serial log
+  `artifacts/logs/cycle-choupi-20261111T200306Z.log`.
+- `8E464F4E2BBC0A19`: flash verified, `CYCLE:PASS`; serial log
+  `artifacts/logs/cycle-choupi-20261111T200544Z.log`.
+- `D92E743D5F640C0F`: flash verified, `CYCLE:PASS`; serial log
+  `artifacts/logs/cycle-choupi-20261111T200646Z.log`.
+
+Each finite monitor reported `TEST:PASS choupi_runtime` and
+`TEST:SUMMARY pass=1 fail=0`. PC/SC listed all three physical readers after
+flashing. GET DATA(CPLC) on each returned pre-personalization ID
+`C050BA8A` and personalization ID `1960E04E`, matching the expected prefix.
+The diagnostic probe then exited nonzero at its following application-list
+assertion because the cards retain the upstream JCAlgTest applet; flashing the
+firmware did not erase application storage. Captured responses are in the
+ignored local logs `artifacts/logs/cplc-commit-prefix-{2BED26ED20556535,8E464F4E2BBC0A19,D92E743D5F640C0F}-20261111.log`.
+
+The CPLC changes are commits `2fc91993` (initial four-byte ID) and `1960e04e`
+(extend the prefix across both fields). The progress entry below records the
+actual source commit. Continue from the existing RESOURCE-01 acceptance work;
+do not mistake the OS release date for the firmware identity.
+
+---
+
 # Current handoff — current shared-budget Windows package ready; VM receives no Pico — 2026-11-11 19:18 CET
 
 Fixed `tools/test-object-deletion-vpcd` so RSA batch continuation uses the

@@ -27730,3 +27730,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Rebuild both architectures immediately after this source commit so the produced image encodes this commit's hash; confirm physical firmware ID if a reader remains available.
 - Commit: `resolved by the immediately following progress entry (commit ID is self-referential)`
 - Artifacts/logs: `artifacts/logs/cplc-commit-id-build-arm-20261111-final.log`, `artifacts/logs/cplc-commit-id-build-riscv-20261111-final.log`, `artifacts/logs/cplc-commit-id-vpcd-20261111T194111Z.log`; ARM UF2 SHA-256 before this commit `39e7773307c4b5aa652c3b50781cb92e1e1a855e94ee0ef033bca03c05b2c7b4`.
+
+## 2026-11-11 Store 64-bit commit prefix in CPLC and verify physical boards 20 min
+
+- Step/experiment: `CPLC-COMMIT-PREFIX-2-FIELDS-01`
+- When: '2026-11-11 19:50 UTC' - '2026-11-11 20:10 UTC'
+- Model: `GPT-6`
+- Change: Extended commit identification across both four-byte CPLC equipment fields: `ICPersonalizationEquipmentID` stores the first 32 hash bits, and `ICPrePersonalizationEquipmentID` stores the next 32. The resulting eight-byte prefix identifies the firmware source commit.
+- Validation: `./tools/test-gp-get-data` passed (`TEST:SUMMARY pass=25 fail=0`); Java hardware probe compiled; ARM `max_crypto` full CHOUPI build and RISC-V `max_crypto` smoke build passed. The flash cycle passed on chips `2BED26ED20556535`, `8E464F4E2BBC0A19`, and `D92E743D5F640C0F`; all three serial monitors reported `TEST:SUMMARY pass=1 fail=0`. PC/SC GET DATA(CPLC) on each returned pre-personalization ID `C050BA8A` and personalization ID `1960E04E`, exactly matching commit prefix `1960E04EC050BA8A`. The probe's overall exit was 1 after CPLC checks because its later application-list assertion expects an empty registry; JCAlgTest remained installed. The VPCD probe was interrupted after it stalled without output and is not counted as passing.
+- Result: All three physical boards run firmware from source commit `1960e04ec050ba8abc4ff4fcd86a5ea388648151`. OS release date `2026-11-07` remains a release date rather than a build date. The two equipment fields encode 64 hash bits, not all 160 SHA-1 bits.
+- Decision: Use the combined two-field value to identify builds and retain the release date semantics. Resume outstanding RESOURCE-01 acceptance separately.
+- Commit: `1960e04e` (CPLC implementation); this record and the updated handoff are committed immediately afterward.
+- Artifacts/logs: ARM UF2 SHA-256 `62100d71267fd7d030a2b26cdced2f83919de68a7f89b1cd01fa64c96c7fdccc`, 2,000,384 bytes; RISC-V smoke UF2 SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`, 79,872 bytes. Cycle logs `artifacts/logs/cycle-choupi-20261111T200306Z.log`, `...T200544Z.log`, `...T200646Z.log`; per-chip CPLC probe logs `artifacts/logs/cplc-commit-prefix-<chipid>-20261111.log` (local ignored artifacts).
