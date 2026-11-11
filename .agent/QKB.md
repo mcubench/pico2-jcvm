@@ -9963,3 +9963,25 @@ Check new loader, resolver and bytecode code against these before review.
   in `.agent/EXT_REQUESTS.md`. Once PC/SC publishes the reader, continue the
   physical option 2 and option 1 campaigns on separate identified boards when
   possible.
+
+## SCP03 session blocked ordinary applet APDUs after GPPro disconnect — 2026-11-11
+
+- **Symptom:** After GPPro opened SCP03 and disconnected, JCAlgTest APDUs on
+  the selected applet returned `6982`; the performance run recorded
+  `CANT_BE_MEASURED` and could not exercise the applet.
+- **Cause:** `authorize_ccid_apdu_route()` required SCP03 authentication for
+  every route except SELECT, including ordinary applet APDUs and public card
+  manager commands. The secure-channel gate belongs only on protected card
+  manager commands; applet commands run in the selected applet's security
+  context.
+- **Fix and validation:** Restrict the authorization rejection to
+  `ProtectedCardManager`, with unit regressions for applet/public-manager
+  routes. ARM and RISC-V max_crypto diagnostic builds and all 17 route tests
+  pass. On physical 2BED, GPPro successfully opened SCP03 and then disconnected;
+  the JCAlgTest 1.8.4 AES-CBC-NOPAD prepare APDU returned `AA9000` and
+  `TEST:PASS aes_cipher_prepare`. The corrected multi-hour performance suite
+  is running on 2BED and the extended support suite on separate board 8E46;
+  final outcomes are pending.
+- **Use next time:** Do not let an unauthenticated stale SCP03 session block
+  normal applet routing. Keep authentication checks on protected card-manager
+  operations, and retain this post-GPPro-disconnect hardware regression.

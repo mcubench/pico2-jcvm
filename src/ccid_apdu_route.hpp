@@ -122,9 +122,12 @@ inline CcidApduRoute route_ccid_xfr_block(
 inline CcidApduRoute authorize_ccid_apdu_route(
     const CcidApduRoute route, const bool secure_channel_active,
     const bool authenticated) noexcept {
-  if (secure_channel_active && !authenticated &&
-      route != CcidApduRoute::SelectIsd &&
-      route != CcidApduRoute::SelectApplet) {
+  // SCP03 protects card-management commands. A live SCP03 session must not
+  // block ordinary applet APDUs sent on the basic channel after GPPro
+  // disconnects; those commands are dispatched in the selected applet's
+  // security context, independently of the card-manager channel.
+  if (route == CcidApduRoute::ProtectedCardManager &&
+      secure_channel_active && !authenticated) {
     return CcidApduRoute::AuthenticationFailed;
   }
   return route;

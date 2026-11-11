@@ -1,4 +1,40 @@
-# Current handoff — VPCD deletion wrapper counter corrected and passes — 2026-11-11 15:11 CET
+# Current handoff — physical SCP03 routing regression passes; JCAlgTest campaigns running — 2026-11-11 16:40 CET
+
+Fixed `src/ccid_apdu_route.hpp`: an active SCP03 session now blocks only
+unauthenticated `ProtectedCardManager` commands. Ordinary selected-applet
+APDUs and public card-manager commands are not rejected because GPPro opened
+and disconnected an SCP03 session. `./tools/test-ccid-apdu-route` passes all
+17 checks. The object-deletion-enabled `max_crypto` ARM and RISC-V builds
+passed earlier in this step.
+
+Physical validation uses two separately identified boards. On 2BED, GPPro
+`--list` successfully opened SCP03; the following JCAlgTest 1.8.4
+AES-CBC-NOPAD `B0 31` prepare returned `AA9000` and the focused probe passed.
+Then `ALG_PERFORMANCE_STATIC` was started with a 3-hour suite limit and 120s
+per-APDU watchdog. At handoff it is still running and returning `9000`; its
+CSV has 23,756 bytes. Logs:
+`artifacts/logs/physical-deletion-20261111-2BED-performance-routefix-client.log`
+and `...-serial.log`; results are under
+`artifacts/results/physical-deletion-20261111/2BED-performance-routefix/`.
+
+On separate board 8E46, `ALG_SUPPORT_EXTENDED` is still running and has
+recorded 116 result rows so far. Some large/unavailable RSA/ECC key
+configurations are classified as `SystemException_NO_RESOURCE`; PC/SC remains
+responsive. Logs:
+`artifacts/logs/physical-deletion-20261111-8E46-support-routefix-client.log`
+and `...-serial.log`; results are under
+`artifacts/results/physical-deletion-20261111/8E46-alg-support-routefix/`.
+Neither campaign has a final result yet; poll the running tool sessions and
+preserve both logs. The PC/SC helper last reported two physical readers.
+
+The user-reported Windows “unrecognized USB device” after BOOTSEL flashing is
+also documented in `.agent/EXT_REQUESTS.md`, with a request for the exact UF2
+hash and Windows Device Manager details. Linux physical tests passing do not
+explain that Windows-specific enumeration failure.
+
+---
+
+# Previous handoff — VPCD deletion wrapper counter corrected and passes — 2026-11-11 15:11 CET
 
 Fixed `tools/test-object-deletion-vpcd` to count completed reclamation records
 (`OBJECT_DELETION: package=...`) rather than all diagnostic lines. Each request

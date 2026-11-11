@@ -27586,3 +27586,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Package is ready for external Windows flashing and the two long campaigns; keep object deletion diagnostic-only until returned results are evaluated.
 - Commit: `38673a7e`
 - Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-windows.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-cdd175bc.uf2`.
+
+## 2026-11-11 Restrict SCP03 authorization to protected manager routes 11 min
+
+- Step/experiment: `CCID-SCP03-APPLET-ROUTE-01`
+- When: '2026-11-11 16:29 CET' - '2026-11-11 16:40 CET'
+- Model: `GPT-6`
+- Change: Changed CCID route authorization so an active SCP03 session gates only protected card-manager commands; ordinary applet and public manager APDUs remain dispatchable. Added two route regressions and documented the failure mechanism in QKB.
+- Validation: ARM/RISC-V object-deletion-enabled max_crypto builds passed earlier in this step. `./tools/test-ccid-apdu-route` passed 17/17. On physical 2BED, GPPro opened SCP03 and disconnected; the subsequent JCAlgTest AES-CBC-NOPAD prepare returned `AA9000` (`TEST:PASS aes_cipher_prepare`). The separate full physical `ALG_PERFORMANCE_STATIC` run on 2BED and `ALG_SUPPORT_EXTENDED` run on 8E46 are still running; see handoff and logs. These are not final suite validations.
+- Result: The prior post-GPPro applet `6982` is fixed and physically regressed. At handoff, option 2 has a 23,756-byte CSV; option 1 has 116 result rows, including `SystemException_NO_RESOURCE` for some large/unavailable key configurations while the reader remains responsive.
+- Decision: Continue monitoring both physical runs to completion; investigate any unexpected APDU timeout or client/reader failure before claiming JCAlgTest acceptance.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/physical-deletion-20261111-2BED-performance-routefix-{client,serial}.log`; `artifacts/logs/physical-deletion-20261111-8E46-support-routefix-{client,serial}.log`; results under `artifacts/results/physical-deletion-20261111/`.

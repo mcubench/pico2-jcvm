@@ -58,6 +58,13 @@ int main() {
             CcidApduRoute::ProtectedCardManager, true, true) ==
             CcidApduRoute::ProtectedCardManager,
         "authenticated GP command remains on the card-manager route");
+  check(pico2_jcvm::authorize_ccid_apdu_route(
+            CcidApduRoute::Applet, true, false) == CcidApduRoute::Applet,
+        "active SCP03 does not block ordinary applet APDUs");
+  check(pico2_jcvm::authorize_ccid_apdu_route(
+            CcidApduRoute::PublicCardManager, true, false) ==
+            CcidApduRoute::PublicCardManager,
+        "active SCP03 does not block public card-manager commands");
   check(route_ccid_apdu(public_get_data.data(), public_get_data.size(), true,
                         true) == CcidApduRoute::PublicCardManager,
         "public GP GET DATA has one card-manager route while applet selected");
@@ -85,6 +92,6 @@ int main() {
         "secure-channel GET RESPONSE stays on manager path");
   check(route_ccid_apdu(nullptr, 5, true, false) == CcidApduRoute::Invalid,
         "null APDU input is invalid");
-  std::puts("TEST:SUMMARY pass=15 fail=0");
+  std::puts("TEST:SUMMARY pass=17 fail=0");
   return 0;
 }
