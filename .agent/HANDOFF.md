@@ -32,6 +32,14 @@ interface or an unambiguous CDC port. Do not retry physical SmartcardIO until
 a Pico PC/SC reader is enumerated. The user's BOOTSEL report did not match the
 observed USB state.
 
+For a Windows **diagnostic** rerun of the recent long-run workload, rebuilt
+ARM `max_crypto` and packaged an empty-card UF2 at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` (size
+4,088,832 bytes; SHA-256
+`89d3d3e8f4d38625cc1a3d75aed0d1025c4163a67a7c4246b341d59eca3fa100`). ARM
+build and package validation passed. This is not a stable-release claim:
+RESOURCE-01 remains open and object deletion is disabled on hardware.
+
 RESOURCE-01 remains open. Do not claim the isolated successful prepare fixes
 the long-run failure. Existing evidence still points to persistent resource
 exhaustion during large accumulated JCAlgTest workloads; the missing safe

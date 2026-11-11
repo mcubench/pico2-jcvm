@@ -27198,3 +27198,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open. Continue offline with the existing persistent-reclaimer safety plan; resume physical SmartcardIO only after a Pico reader is again enumerated. Do not claim RSA `doFinal()` is the original failure point.
 - Commit: `267693e3`.
 - Artifacts/logs: `artifacts/logs/resource01-rsa3072-physical-replay-20261111.log`; `artifacts/logs/resource01-jcalgtest-184-static-2bed-resume-20261111.log`; prior static trace `artifacts/logs/resource01-jcalgtest-184-static-2bed-20261111.log`.
+
+## 2026-11-11 Prepare max_crypto empty-card image for Windows diagnostic 7 minutes
+
+- Step/experiment: `RESOURCE-01-WINDOWS-DIAGNOSTIC-IMAGE-20261111`
+- When: '2026-11-11 08:24 CET' - '2026-11-11 08:31 CET'
+- Model: `gpt-6`
+- Change: Rebuilt ARM `max_crypto` from the current worktree and packaged the matching empty-card UF2 so Windows testing starts with cleared applet storage. Updated `.agent/HANDOFF.md` with artifact provenance and limitation.
+- Validation: `./tools/build arm --profile max_crypto` passed (`capabilities=162`, `enabled=159`, image end `0x100f30fc`, 52,996 bytes remaining before storage). `./tools/package-empty-card-uf2` passed and reports 3,889 firmware blocks plus 4,096 blank storage blocks spanning `0x10100000-0x101fffff`. No RISC-V build or physical flash was performed in this packaging step; the image is for external Windows diagnostics.
+- Result: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`, 4,088,832 bytes, SHA-256 `89d3d3e8f4d38625cc1a3d75aed0d1025c4163a67a7c4246b341d59eca3fa100`. The non-empty-card firmware input is 1,991,680 bytes, SHA-256 `3d6422495e5d9e01946d6cef2af0c259dcb59ea39cd55c6790fc232cc6764af8`.
+- Decision: Image is suitable for a bounded diagnostic long-run on Windows; persistent deletion remains unsupported on-device, so no stability guarantee is made. Preserve the new run's full log and report the final APDU/resource/reader state.
+- Commit: Pending.
+- Artifacts/logs: `build/arm/build-provenance.txt`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`.
