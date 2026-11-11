@@ -27311,5 +27311,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Authorized reader helper granted nodes `/dev/bus/usb/001/055` and `/dev/bus/usb/001/045`. `lsusb -t` showed both JCVM CCID interfaces present with driver `[none]`, CDC interfaces bound to `cdc_acm`; plist parsing confirmed libccid 1.7.1 maps `0x2E8A:0x0009` to `Pico 2 CHOUPI CCID`. `pcsc_scan -r` still listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`. `pcscd --hotplug` failed because `/run/pcscd/pcscd.pid` was absent; `systemctl status` showed the daemon inactive after auto-exit. No card APDUs or firmware flash were run.
 - Result: The blocker is still local PC/SC reader discovery; the repo helper and libccid VID/PID mapping are correct. The daemon PID-file observation alone does not explain the earlier active scan result.
 - Decision: Keep physical JCAlgTest option-2 and option-1 runs pending until a Pico appears in PC/SC. Do not attribute the enumeration problem to firmware. Continue offline and retry both identified devices when the reader list changes.
-- Commit: pending.
+- Commit: `277703b6`.
 - Artifacts/logs: `pcsc_scan -r` output contained only the two VPCD reader names; system journal had no CCID/pcscd detail visible to this user.
