@@ -27573,5 +27573,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed and reported `RMI_REGISTRY:PASS retained_missing_foreign_target_fails_closed=1`; the result was incomplete and both source and target arrays remained accessible. `git diff --check -- tests/unit/rmi_registry/rmi_registry_test.cpp` passed. No firmware build or hardware test was needed.
 - Result: An omitted foreign target package prevents sweeping; the collector does not reclaim either object on an incomplete trace.
 - Decision: Keep R59 open for broader runtime roots, physical reset-driven deletion, and measured device RAM behavior.
-- Commit: `<record after commit>`
+- Commit: `48a60708`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
