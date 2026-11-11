@@ -27755,6 +27755,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: recorded with the associated source change in this commit.
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`; RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`; build outputs were captured in the command session.
 
+## 2026-11-11 Flash max_crypto to available physical Pico 30 min
+
+- Step/experiment: `MAXCRYPTO-PHYSICAL-FLASH-01`
+- When: '2026-11-11 20:29 UTC' - '2026-11-11 21:00 UTC'
+- Model: `GPT-6`
+- Change: Built and flashed the current `max_crypto` ARM image using the targeted repository cycle wrapper; no source changes were made for the flash operation.
+- Validation: Baseline `./tools/build arm` and `./tools/build riscv` passed after compile fix `cf54447d`. The `max_crypto` wrappers passed for ARM and RISC-V at source HEAD `7c53f3a8c04705d511baa92630fa424bdee4f9fa`; cycle reran both profile builds before each flash attempt. Board `8E464F4E2BBC0A19` entered BOOTSEL, flashed and verified, and passed finite monitoring (`TEST:SUMMARY pass=1 fail=0`). A second cycle on 8E again entered BOOTSEL within 2 seconds and reflashed with the same passing monitor. Post-flash `pcsc_scan -r` lists physical reader 8E and two VPCD readers.
+- Result: Current ARM UF2 is 1,996,288 bytes, SHA-256 `67782faee013b8884ff4f1efef115f4acfbce7057418fba44116cea11fe96997`; profile enables 159/162 capabilities and leaves 50,696 bytes in the firmware region. Boards `2BED26ED20556535` and `D92E743D5F640C0F` appeared as runtime `2e8a:0009`, not BOOTSEL. 2BED did not enter BOOTSEL through CDC reset or bounded picotool retries; D92 missed the first 20-second CDC reset wait and its attempt was stopped to move on. Neither was flashed. The actual cause remains unknown; do not assume all boards are in BOOTSEL from the user's report without checking USB product ID.
+- Decision: Treat 8E as the verified `max_crypto` board. Continue RESOURCE-01 offline or after USB passthrough exposes another board in BOOTSEL (`2e8a:000f`); do not repeat extended reset loops on 2BED/D92 without a state change.
+- Commit: this record, QKB update, and handoff are committed together in the following documentation commit.
+- Artifacts/logs: Successful cycle logs `artifacts/logs/cycle-choupi-20261111T205321Z.log` and `...T205813Z.log`; failed/partial attempts `...T204935Z.log`, `...T205444Z.log`, `...T205638Z.log`. Build provenance `build/arm/build-provenance.txt`; source tree was dirty at build time.
+
 ## 2026-11-11 Compact active TODO and preserve complete backlog evidence 8 min
 
 - Step/experiment: `TODO-COMPACTION-20261111`

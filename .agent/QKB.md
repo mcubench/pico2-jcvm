@@ -10096,3 +10096,32 @@ Check new loader, resolver and bytecode code against these before review.
   wrapper builds pass.
 - **Use next time:** Keep emulator collector semantics aligned with the
   physical implementation so VPCD catches changes to the real batch policy.
+
+## Mixed BOOTSEL entry behavior across Pico boards — observed 2026-11-11
+
+- **Observation:** The authorized host USB view initially showed all three
+  attached boards as runtime `2e8a:0009` CCID devices, despite a report that
+  they were in BOOTSEL. On `8E464F4E2BBC0A19`, `picotool load -f` could not find
+  the reset interface, but the CDC 1200-baud fallback entered BOOTSEL in 2
+  seconds. The `max_crypto` ARM image then flashed, verified, and passed the
+  finite serial monitor. A second cycle on the freshly flashed 8E board again
+  entered BOOTSEL in 2 seconds and passed.
+- **Other boards:** `2BED26ED20556535` did not enter BOOTSEL in two cycle
+  attempts; the first exhausted all recovery attempts and the retry was
+  stopped after its first retry failed. `D92E743D5F640C0F` did not enter
+  BOOTSEL within its first 20-second CDC reset wait. No image was written to
+  these two boards. PC/SC afterward listed 8E and the two VPCD readers only.
+- **Cause/status:** The cause is not established. A stale serial monitor may
+  interfere with CDC line coding, so close monitors before reset requests, but
+  that is not a sufficient proven explanation: 2BED still failed after the
+  monitors were stopped. USB `2e8a:0009` is runtime firmware, not BOOTSEL; verify
+  `2e8a:000f` before assuming a board is ready for a direct flash.
+- **Viable path:** Use the targeted `tools/cycle choupi --profile max_crypto
+  --chipid <ID>` path when the board is in runtime mode; the wrapper can request
+  CDC reset and identifies BOOTSEL devices by chip ID. If it fails, avoid
+  repeating a long reset sequence on the same board; switch to another
+  identified Pico and request host-side USB passthrough re-selection for boards
+  that remain runtime-only.
+- **Logs:** `artifacts/logs/cycle-choupi-20261111T204935Z.log`,
+  `...T205321Z.log`, `...T205444Z.log`, `...T205638Z.log`, and
+  `...T205813Z.log`.

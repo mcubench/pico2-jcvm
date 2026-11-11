@@ -12,6 +12,47 @@ existing RESOURCE-01 priority; hardware status below is unchanged by this edit.
 
 ---
 
+# Current handoff — max_crypto flash verified on 8E; other attached boards did not enter BOOTSEL — 2026-11-11 21:00 CET
+
+Fixed and committed a baseline ARM build error (`cf54447d`): the Pico-only
+physical object-deletion service is now compiled only when
+`CHOUPI_ENABLE_OBJECT_DELETION` is enabled. Baseline ARM and RISC-V wrappers
+pass. The later `max_crypto` ARM and RISC-V wrappers also passed from current
+HEAD `7c53f3a8c04705d511baa92630fa424bdee4f9fa`; the tree remains dirty with
+unrelated changes, so this is a working-tree build, not a clean commit-only
+artifact. The exact ARM UF2 SHA-256 is
+`67782faee013b8884ff4f1efef115f4acfbce7057418fba44116cea11fe96997`,
+1,996,288 bytes, with 50,696 bytes remaining in the firmware flash region.
+
+Board `8E464F4E2BBC0A19` entered BOOTSEL through the CDC 1200-baud fallback,
+was flashed and verified, and passed the finite serial monitor
+(`TEST:SUMMARY pass=1 fail=0`). Repeating the cycle on this newly flashed board
+also entered BOOTSEL in 2 seconds and reflashed successfully. Logs:
+`artifacts/logs/cycle-choupi-20261111T205321Z.log` and
+`artifacts/logs/cycle-choupi-20261111T205813Z.log`. PC/SC afterward lists this
+physical reader.
+
+The user's statement that every board was in BOOTSEL did not match this VM's
+USB enumeration: all three initially showed runtime VID:PID `2e8a:0009`, not
+BOOTSEL `2e8a:000f`. Board `2BED26ED20556535` failed two attempts to enter
+BOOTSEL (`...T204935Z.log`; retry `...T205444Z.log` was stopped after its first
+retry failed). Board `D92E743D5F640C0F` did not enter on the first 20-second
+CDC-reset wait (`...T205638Z.log`, interrupted to move to 8E). No image was
+written to either. These boards remain runtime USB nodes, but current PC/SC
+enumeration exposes only 8E plus two VPCD readers. This is consistent with
+the earlier reset/passthrough issue in QKB; it does not establish a firmware
+failure. Refresh USB visibility and verify `2e8a:000f` before trying direct
+BOOTSEL flash again. Do not hold a serial monitor open while requesting CDC
+1200-baud reset.
+
+The earlier RESOURCE-01 option 2 and option 1 physical client campaigns both
+ended incomplete with transport/resource failures; they are not passes. Their
+logs and remaining diagnosis are in the prior handoff sections and
+`artifacts/results/resource01-*`. Continue RESOURCE-01 diagnosis after the
+user confirms BOOTSEL passthrough for another board, or continue offline.
+
+---
+
 # Current handoff — all three Pico 2 tokens flashed with commit-identifiable max_crypto — 2026-11-11 20:10 CET
 
 The CPLC build identifier now uses both four-byte equipment-ID fields. The
