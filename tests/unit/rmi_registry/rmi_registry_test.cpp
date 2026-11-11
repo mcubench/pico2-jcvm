@@ -1049,6 +1049,56 @@ void verify_retained_context_ambiguous_package_fails_closed() {
   std::puts("RMI_REGISTRY:PASS retained_context_ambiguous_package_fails_closed=1");
 }
 
+void verify_retained_context_foreign_instance_cycle_collected() {
+  constexpr jcvm::jpackage_ID_t package_a = 50;
+  constexpr jcvm::jpackage_ID_t package_b = 51;
+  jcvm::Context context_a(42, package_a);
+  jcvm::Context context_b(43, package_b);
+  const auto instance_a = context_a.getHeap().addInstance(
+      package_a, static_cast<jcvm::jclass_index_t>(1));
+  const auto instance_b = context_b.getHeap().addInstance(
+      package_b, static_cast<jcvm::jclass_index_t>(1));
+  const auto object_a = context_a.getHeap().getInstance(instance_a);
+  const auto object_b = context_b.getHeap().getInstance(instance_b);
+  assert(object_a->getNumberOfFields() != 0);
+  assert(object_b->getNumberOfFields() != 0);
+
+  const auto fields_a = object_a->getFields();
+  const auto fields_b = object_b->getFields();
+  fields_a->at(0).type = jcvm::FieldType::FIELD_TYPE_OBJECT;
+  fields_a->at(0).value = instance_b.compact();
+  fields_a->at(0).reference_owner = package_b;
+  fields_b->at(0).type = jcvm::FieldType::FIELD_TYPE_OBJECT;
+  fields_b->at(0).value = instance_a.compact();
+  fields_b->at(0).reference_owner = package_a;
+  assert(context_a.getHeap().registerForeignReferenceInstance());
+  assert(context_b.getHeap().registerForeignReferenceInstance());
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, instance_a);
+
+  const auto rooted = jcvm::Context::collectRetainedHeaps();
+  assert(rooted.complete && rooted.instances_reclaimed == 0);
+  assert(context_a.getHeap().getInstance(instance_a));
+  assert(context_b.getHeap().getInstance(instance_b));
+
+  context_a.getHeap().setStaticReferenceRoot(package_a, 0, jcvm::jref_t{});
+  const auto rootless = jcvm::Context::collectRetainedHeaps();
+  assert(rootless.complete && rootless.instances_reclaimed == 2);
+  bool stale_a_rejected = false;
+  bool stale_b_rejected = false;
+  try {
+    (void)context_a.getHeap().getInstance(instance_a);
+  } catch (...) {
+    stale_a_rejected = true;
+  }
+  try {
+    (void)context_b.getHeap().getInstance(instance_b);
+  } catch (...) {
+    stale_b_rejected = true;
+  }
+  assert(stale_a_rejected && stale_b_rejected);
+  std::puts("RMI_REGISTRY:PASS retained_foreign_instance_cycle=2");
+}
+
 void verify_three_heap_foreign_cycle_and_repeated_reclamation() {
   constexpr jcvm::jpackage_ID_t package_a = 34;
   constexpr jcvm::jpackage_ID_t package_b = 35;
@@ -1793,6 +1843,7 @@ int main() {
   verify_retained_context_foreign_cycle_collected();
   verify_retained_context_repeated_diamond_reclamation();
   verify_retained_context_ambiguous_package_fails_closed();
+  verify_retained_context_foreign_instance_cycle_collected();
 
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);

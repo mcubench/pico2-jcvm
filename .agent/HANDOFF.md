@@ -12063,3 +12063,16 @@ used. Physical JCAlgTest options 2 and 1 remain blocked until PC/SC publishes
 D92; the privileged restart request is in `.agent/EXT_REQUESTS.md`. The
 workspace still contains unrelated pre-existing edits; stage only the R01
 test/docs/progress changes.
+# Current handoff — retained volatile foreign-instance cycle regression — 2026-11-11 15:18 CET
+
+Added a production-entrypoint unit regression in
+`tests/unit/rmi_registry/rmi_registry_test.cpp`. Two retained package contexts
+contain volatile instances with cross-package reference fields forming a cycle.
+A static root in package A keeps both instances live; after clearing that root,
+`Context::collectRetainedHeaps()` reclaims both. `./tools/test-rmi-registry`
+passes and reports `RMI_REGISTRY:PASS retained_foreign_instance_cycle=2` along
+with all existing checks. This is host-unit evidence only; no firmware build or
+physical test was run. R59 still needs persistent/runtime-root coverage,
+physical reset-driven deletion, and measured device RAM behavior. The working
+tree has unrelated edits from other work; stage only this added test function
+and its invocation, plus this handoff and progress record.

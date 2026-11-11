@@ -27553,3 +27553,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep object deletion disabled by default; physical reset/deletion and long JCAlgTest acceptance remain open.
 - Commit: `a795dc24`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T141050Z.log`.
+## 2026-11-11 Cover foreign volatile instance cycles in retained sweep 3 min
+
+- Step/experiment: `RV-20261106-59-RETAINED-FOREIGN-INSTANCE-CYCLE`
+- When: '2026-11-11 15:15 CET' - '2026-11-11 15:18 CET'
+- Model: `GPT-6`
+- Change: Added a production `Context::collectRetainedHeaps()` regression for a cross-package volatile instance-field cycle. It verifies that a static root retains both objects and that clearing it reclaims both.
+- Validation: `./tools/test-rmi-registry` passed, reporting `RMI_REGISTRY:PASS retained_foreign_instance_cycle=2` and all existing registry checks. `git diff --check -- tests/unit/rmi_registry/rmi_registry_test.cpp` passed. No firmware build or hardware validation was needed for this test-only change.
+- Result: Coordinated retained sweep preserves and reclaims volatile foreign instance cycles in the unit fixture.
+- Decision: Keep R59 open for actual persistent/runtime-root coverage, physical reset-driven deletion, and measured device RAM behavior.
+- Commit: `<record after commit>`
+- Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`.
