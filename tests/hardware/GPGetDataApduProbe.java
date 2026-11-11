@@ -21,19 +21,22 @@ public final class GPGetDataApduProbe {
 
   private static boolean matchesCplc(byte[] actual) {
     if (actual.length != CPLC_DATA.length) return false;
-    // Compare all fixed CPLC fields through ICPersonalizationDate. The final
-    // four bytes contain the first 32 bits of the source HEAD commit hash.
-    for (int i = 0; i < 41; i++) {
+    // The 8-byte commit prefix is split across pre-personalization (bytes
+    // 33..36) and personalization (bytes 41..44) equipment IDs.
+    for (int i = 0; i < 33; i++) {
       if (actual[i] != CPLC_DATA[i]) return false;
     }
-    String expectedEquipmentId =
-        System.getenv("PICO2_EXPECTED_CPLC_EQUIPMENT_ID");
-    if (expectedEquipmentId == null ||
-        !expectedEquipmentId.matches("0[xX][0-9A-Fa-f]{8}")) {
+    String expectedCommitPrefix =
+        System.getenv("PICO2_EXPECTED_CPLC_COMMIT_PREFIX");
+    if (expectedCommitPrefix == null ||
+        !expectedCommitPrefix.matches("0[xX][0-9A-Fa-f]{16}")) {
       return false;
     }
-    byte[] expected = fromHex(expectedEquipmentId.substring(2));
-    return Arrays.equals(expected, Arrays.copyOfRange(actual, 41, 45));
+    byte[] expected = fromHex(expectedCommitPrefix.substring(2));
+    return Arrays.equals(Arrays.copyOfRange(expected, 4, 8),
+                         Arrays.copyOfRange(actual, 33, 37)) &&
+        Arrays.equals(Arrays.copyOfRange(expected, 0, 4),
+                      Arrays.copyOfRange(actual, 41, 45));
   }
 
   private static byte[] fromHex(String text) {

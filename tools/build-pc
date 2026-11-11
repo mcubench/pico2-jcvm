@@ -19,7 +19,10 @@ support_dir="${repo_root}/build/javacard-support"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 jcvm_debug="${CHOUPI_JCVM_DEBUG:-OFF}"
 cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
-printf 'BUILD:CPLC_SOURCE_ID value=%s\n' "${cplc_source_id}"
+personalizer_id="0x${cplc_source_id:2:8}"
+prepersonalizer_id="0x${cplc_source_id:10:8}"
+printf 'BUILD:CPLC_COMMIT_PREFIX value=%s personalizer=%s prepersonalizer=%s\n' \
+  "${cplc_source_id}" "${personalizer_id}" "${prepersonalizer_id}"
 source_tree_status="$(git -C "${repo_root}" status --porcelain --untracked-files=normal --ignore-submodules=none)" || \
   die "cannot determine source tree state"
 source_tree_state=clean
@@ -43,7 +46,8 @@ python3 "${repo_root}/tools/javacard-support.py" \
   -DCHOUPI_TARGET_STM32=OFF \
   -DCHOUPI_OS_DEBUG=OFF \
   -DCHOUPI_JCVM_DEBUG="${jcvm_debug}" \
-  -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${cplc_source_id}" \
+  -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${personalizer_id}" \
+  -DCHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID="${prepersonalizer_id}" \
   -DCHOUPI_JAVA8_HOME="${java8_home}"
 
 "${repo_root}/tools/env" cmake --build "${build_dir}" --target javacard-sdk -j2

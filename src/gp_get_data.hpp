@@ -8,6 +8,9 @@
 #ifndef CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID
 #define CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID 0x00000000UL
 #endif
+#ifndef CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID
+#define CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID 0x00000000UL
+#endif
 
 namespace gp {
 
@@ -25,9 +28,9 @@ constexpr uint8_t kCardRecognitionData[] = {
 // marker; RP2350 is encoded as the synthetic IC type 2350. These are not
 // claimed to be GlobalPlatform-assigned CPLC manufacturer/type codes.
 // Unavailable per-device serial, batch and pre-personalization equipment IDs
-// are zero. The personalization equipment ID contains the first 32 bits of
-// the source HEAD commit hash. Dirty source changes are not distinguished by
-// this fixed-width field; the build log records whether the tree was dirty.
+// The personalization equipment ID stores the first 32 bits of the source
+// HEAD commit hash; the pre-personalization equipment ID stores the next 32
+// bits. Dirty source changes are distinguished in build logs, not these IDs.
 // Firmware release encoding in OperatingSystemReleaseLevel is four hex
 // digits: major version nibble, minor version nibble, then an update byte.
 // Thus 0.1.1 is 0x0101. Change these only for an explicitly requested release.
@@ -56,7 +59,10 @@ constexpr uint8_t kCplcData[] = {
     0x63, 0x11, // IC embedding date
     0x09, 0x6e, // IC pre-personalizer: Feitian marker
     0x63, 0x11, // IC pre-personalization date
-    0x00, 0x00, 0x00, 0x00, // pre-personalization equipment ID unavailable
+    static_cast<uint8_t>((CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID >> 24) & 0xff),
+    static_cast<uint8_t>((CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID >> 16) & 0xff),
+    static_cast<uint8_t>((CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID >> 8) & 0xff),
+    static_cast<uint8_t>(CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID & 0xff),
     0x09, 0x6e, // IC personalizer: Feitian marker
     0x63, 0x11, // IC personalization date
     static_cast<uint8_t>((CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID >> 24) & 0xff),

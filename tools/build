@@ -63,7 +63,10 @@ build_jobs="${PICO_BUILD_JOBS:-2}"
 [[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO_BUILD_JOBS must be a positive integer"
 cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
-printf 'BUILD:CPLC_SOURCE_ID value=%s\n' "${cplc_source_id}"
+personalizer_id="0x${cplc_source_id:2:8}"
+prepersonalizer_id="0x${cplc_source_id:10:8}"
+printf 'BUILD:CPLC_COMMIT_PREFIX value=%s personalizer=%s prepersonalizer=%s\n' \
+  "${cplc_source_id}" "${personalizer_id}" "${prepersonalizer_id}"
 source_tree_status="$(git -C "${repo_root}" status --porcelain --untracked-files=normal --ignore-submodules=none)" || \
   die "cannot determine source tree state"
 source_tree_state=clean
@@ -124,7 +127,8 @@ cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -DPICO_PLATFORM="${platform}" \
   -DPICO_FLASH_SIZE_BYTES=2097152 \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${cplc_source_id}" \
+  -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${personalizer_id}" \
+  -DCHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID="${prepersonalizer_id}" \
   -DCHOUPI_DEBUG_HEAP_GC="${debug_heap_gc}" \
   -DCHOUPI_DEBUG_PERSISTENT_GC="${debug_persistent_gc}" \
   -DCHOUPI_ENABLE_OBJECT_DELETION="${enable_object_deletion}" \

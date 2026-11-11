@@ -27,12 +27,17 @@ cmake_minimum_required(VERSION 3.13)
 project(CHOUPI)
 
 set(CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID "0x00000000" CACHE STRING
-  "Eight-hex-digit CPLC identifier from the first 32 bits of the HEAD commit hash")
-string(LENGTH "${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}" CHOUPI_CPLC_ID_LENGTH)
-if(NOT CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID MATCHES "^0x[0-9A-Fa-f]+$" OR
-   NOT CHOUPI_CPLC_ID_LENGTH EQUAL 10)
-  message(FATAL_ERROR "CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID must be 0x plus 8 hex digits")
-endif()
+  "First 32 bits of the HEAD commit hash in CPLC personalization equipment ID")
+set(CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID "0x00000000" CACHE STRING
+  "Next 32 bits of the HEAD commit hash in CPLC pre-personalization equipment ID")
+foreach(cplc_id_var IN ITEMS CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID
+                             CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID)
+  string(LENGTH "${${cplc_id_var}}" cplc_id_length)
+  if(NOT "${${cplc_id_var}}" MATCHES "^0x[0-9A-Fa-f]+$" OR
+     NOT cplc_id_length EQUAL 10)
+    message(FATAL_ERROR "${cplc_id_var} must be 0x plus 8 hex digits")
+  endif()
+endforeach()
 
 set(JAVACARD_SUPPORT_GENERATED_DIR "${CMAKE_SOURCE_DIR}/../build/javacard-support")
 include("${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
@@ -531,7 +536,8 @@ if(CHOUPI_TARGET_PC)
                   "$ENV{PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
   target_compile_definitions(choupi PRIVATE
     MBEDTLS_CONFIG_FILE=\"mbedtls_config_pc.h\"
-    CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID=${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID})
+    CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID=${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}
+    CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID=${CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID})
 
 endif(CHOUPI_TARGET_PC)
 

@@ -24,12 +24,17 @@ option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING
   "Bounded CDC DTR startup wait for diagnostic firmware builds (milliseconds)")
 set(CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID "0x00000000" CACHE STRING
-  "Eight-hex-digit CPLC identifier from the first 32 bits of the HEAD commit hash")
-string(LENGTH "${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}" CHOUPI_CPLC_ID_LENGTH)
-if(NOT CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID MATCHES "^0x[0-9A-Fa-f]+$" OR
-   NOT CHOUPI_CPLC_ID_LENGTH EQUAL 10)
-  message(FATAL_ERROR "CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID must be 0x plus 8 hex digits")
-endif()
+  "First 32 bits of the HEAD commit hash in CPLC personalization equipment ID")
+set(CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID "0x00000000" CACHE STRING
+  "Next 32 bits of the HEAD commit hash in CPLC pre-personalization equipment ID")
+foreach(cplc_id_var IN ITEMS CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID
+                             CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID)
+  string(LENGTH "${${cplc_id_var}}" cplc_id_length)
+  if(NOT "${${cplc_id_var}}" MATCHES "^0x[0-9A-Fa-f]+$" OR
+     NOT cplc_id_length EQUAL 10)
+    message(FATAL_ERROR "${cplc_id_var} must be 0x plus 8 hex digits")
+  endif()
+endforeach()
 if(NOT CHOUPI_DEBUG_SERIAL_WAIT_MS MATCHES "^(0|[1-9][0-9]*)$")
   message(FATAL_ERROR "CHOUPI_DEBUG_SERIAL_WAIT_MS must be an integer from 0 to 120000")
 endif()
@@ -216,6 +221,8 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   set_source_files_properties(src/ccid_device.cpp PROPERTIES
     COMPILE_DEFINITIONS
       "CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID=${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}")
+  target_compile_definitions(pico2_choupi PRIVATE
+      "CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID=${CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID}")
   set_source_files_properties(src/choupi_pico2.cpp PROPERTIES
     COMPILE_DEFINITIONS
       "CHOUPI_DEBUG_SERIAL_WAIT_MS=${CHOUPI_DEBUG_SERIAL_WAIT_MS}")
