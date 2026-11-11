@@ -22161,7 +22161,7 @@
 - Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. ARM image end `0x100eb604`, remaining 84,476 bytes. `python3 -m py_compile tools/tests/sio_cross_aid_vpcd_test.py` and `git -c core.whitespace=cr-at-eol diff --check` passed. Descriptor-present VPCD cross-AID regression passed 34/34; corrupted static and instance declarations each failed closed 1/1. Elevated USB refresh enumerated three devices as runtime `2e8a:0009` readers, not BOOTSEL; no flash or physical test was run.
 - Result: Descriptor metadata now validates first writes/reads where present. Descriptor-free packages still lack a source of declared field types; the existing fail-closed method-boundary limitation remains open. Existing PC build emits upstream Rust/packed-member warnings; no new warning was reported for the changed C++ files.
 - Decision: Keep enforcement scoped to validated Descriptor data. Continue hostile CAP/parser review and investigate a verifiable Descriptor-free metadata path without weakening method bounds.
-- Commit: `pending`
+- Commit: `e7c8b0fb`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261105T074812Z.log` SHA-256 `a6c85f12b1f3ebe9b6ff9629ddfed8884321a78c481eb9e1cfb03049d1c0b45e`; `artifacts/logs/sio-cross-aid-vpcd-20261105T075613Z.log` SHA-256 `e4fb5aec92eb4fee606f912ee05b302a5261d0348d920e41f218379b97379bc8`; `artifacts/logs/sio-cross-aid-vpcd-20261105T075840Z.log` SHA-256 `ff64fb3e1cd24989e3d55be821ce86169ef948bfb1768e6e914fbd3514d7e956`.
 
 - Commit resolved for `review-20261105-cap-reinstall`: `dc0b404` (Document same-AID CAP reinstall lifecycle review).
