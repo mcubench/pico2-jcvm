@@ -129,3 +129,14 @@ Return the full result folders and `object-deletion-serial.log`, including
 partial output if the client or reader stops responding. In particular,
 preserve `OBJECT_DELETION:` lines, any `6F00`/`F205`, and PC/SC service errors.
 Do not use this image for production; normal builds still keep deletion off.
+
+## Reattach Pico USB devices to the development VM
+
+The VM lost Pico `2BED26ED20556535` during the software BOOTSEL reset used for
+the local physical JCAlgTest setup. Pico `D92E743D5F640C0F` is still visible as
+USB CDC and passes the finite monitor, but neither Pico appears in PC/SC now.
+Please use VirtualBox **Devices → USB** to detach/reattach the relevant Pico
+device(s) to the VM. If Windows has captured a BOOTSEL device, attach that
+device to the VM too. Once reattached, report completion; I will recheck
+`lsusb -d 2e8a:0009`, `pcsc_scan -r`, and Java SmartcardIO before continuing.
+No additional firmware flash or card APDU has been performed.

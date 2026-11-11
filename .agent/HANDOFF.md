@@ -11784,3 +11784,30 @@ enumerated token if one disappears or stalls. See `.agent/QKB.md` for the
 current PC/SC diagnosis.
 
 # Current handoff — opt-in JCSystem deletion image packaged for Windows — 2026-11-11 11:31 CET
+# Current handoff — diagnostic image built; VM USB reattach needed — 2026-11-11 12:10 CET
+
+Fresh `PICO2_ENABLE_OBJECT_DELETION=1` max_crypto ARM and RISC-V builds both
+passed. The regenerated diagnostic empty-card ARM UF2 is
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-20261111.uf2`
+(4,089,344 bytes; SHA-256
+`af5e42af94e2936a0589cfc72419b01ab3ee55940e67a05d1713e0fa8ae25578`).
+
+After USB reset, PC/SC briefly exposed physical `2BED26ED20556535`. Flashing
+that identified board failed before writing: picotool could not find its
+reset interface; the CDC 1200-baud fallback and three bounded BOOTSEL requests
+did not yield a device in the VM. The 2BED board then disappeared from guest
+USB. The other board, `D92E743D5F640C0F`, remains CDC-visible and its 8-second
+monitor passes (`TEST:SUMMARY pass=1 fail=0`), but `pcsc_scan -r` and Java
+SmartcardIO now expose only the two virtual readers. The diagnostic image was
+not flashed, no card contents were changed by this attempt, and no physical
+JCAlgTest APDU was sent.
+
+Evidence: `artifacts/logs/jcalgtest-longrun-physical-check-20261111T1209CET.log`.
+The exact recovery request is in `.agent/EXT_REQUESTS.md`: reattach the Pico
+USB functions to the VM through VirtualBox (including a BOOTSEL device if the
+host captured it). Once PC/SC lists a Pico, flash the diagnostic empty-card
+image, install the unchanged upstream 1.8.4 CAP, and start option 2. Use a
+second enumerated token for option 1 when available; preserve results and
+serial telemetry per board.
+
+# Current handoff — physical JCAlgTest reader discovery blocks long runs — 2026-11-11 11:52 CET

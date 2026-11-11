@@ -9829,3 +9829,25 @@ Check new loader, resolver and bytecode code against these before review.
   board and option 1 on a different board if available. Preserve per-board
   reader names, chip IDs, firmware hashes, result directories, and serial logs;
   switch to another enumerated board if one stalls or disappears.
+
+## Flash-to-BOOTSEL reset lost a Pico from the VM USB pool — 2026-11-11
+
+- **Build:** Diagnostic `max_crypto` builds with `PICO2_ENABLE_OBJECT_DELETION=1`
+  passed for ARM and RISC-V. A fresh empty-card ARM UF2 was packaged at
+  `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-20261111.uf2`
+  (SHA-256 `af5e42af94e2936a0589cfc72419b01ab3ee55940e67a05d1713e0fa8ae25578`).
+- **Flash attempt:** `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial
+  2BED26ED20556535 <image>` stopped before writing. The runtime reset interface
+  was missing; CDC 1200-baud reset ran, but the VM did not see BOOTSEL. Three
+  bounded picotool reboot requests and the fallback exhausted without a flash.
+- **Recovery observation:** 2BED disappeared from guest `lsusb`; D92 remained
+  USB/CDC-visible and passed the finite monitor (`TEST:SUMMARY pass=1 fail=0`).
+  The authorized ACL helper refreshed one node, but both PC/SC and Java
+  SmartcardIO listed only VPCD. A later `usbreset` of D92 did not restore its
+  PC/SC reader. No physical APDU or firmware write occurred.
+- **Viable next action:** The missing step is host-side VirtualBox USB
+  passthrough reattachment, not another autonomous picotool retry. Ask the
+  user to reselect the 2BED device (including its BOOTSEL identity if captured
+  by Windows) in the VM; reattach D92 too if it remains non-PC/SC. Then rerun
+  the authorized helper and reader-list checks before flashing or sending APDUs.
+- **Artifact:** `artifacts/logs/jcalgtest-longrun-physical-check-20261111T1209CET.log`.

@@ -27325,3 +27325,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Resume the 1–3-hour option 2 run and 5–8-hour option 1 run on distinct identified tokens once they appear in PC/SC; preserve per-token logs/results and fail over if a board disappears or stalls.
 - Commit: `6330ede7`
 - Artifacts/logs: `artifacts/logs/jcalgtest-longrun-reader-check-20261111T1150CET.log` (ignored by `.gitignore`, retained locally).
+
+## 2026-11-11 Rebuild deletion image and attempt physical setup 19 minutes
+
+- Step/experiment: `RESOURCE-01-LONGRUN-PHYSICAL-SETUP-20261111-B`
+- When: '2026-11-11 11:52 CET' - '2026-11-11 12:11 CET'
+- Model: `gpt-6`
+- Change: Rebuilt the diagnostic max_crypto firmware for both architecture gates, regenerated the empty-card ARM image, and documented the USB passthrough recovery needed to continue physical JCAlgTest.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the corresponding `riscv` build passed. Empty-card packaging passed (firmware blocks 3,890; erased storage blocks 4,096). The 8-second monitor on D92 passed `TEST:SUMMARY pass=1 fail=0`. The physical flash command targeting 2BED failed before writing because BOOTSEL did not reappear after the reset interface/CDC fallback; no firmware or card data was changed. Current `pcsc_scan -r` and Java SmartcardIO show only VPCD.
+- Result: Diagnostic image is ready at `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-diagnostic-empty-card-20261111.uf2`, SHA-256 `af5e42af94e2936a0589cfc72419b01ab3ee55940e67a05d1713e0fa8ae25578`. The board needed for flash disappeared from VM USB and the remaining board has no PC/SC reader. Neither requested JCAlgTest campaign ran.
+- Decision: Await VirtualBox USB reattachment as specified in `.agent/EXT_REQUESTS.md`; then confirm PC/SC and SmartcardIO enumeration, flash the diagnostic image, and begin option 2. Use another identified board for option 1 when possible.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcalgtest-longrun-physical-check-20261111T1209CET.log` (ignored by `.gitignore`, retained locally); fresh ARM/RISC-V provenance in `build/{arm,riscv}/build-provenance.txt`.
