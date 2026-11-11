@@ -27539,5 +27539,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed under AddressSanitizer/UBSan. `collectRetainedHeaps()` returned incomplete with `root_enumeration_failures=1`; both context arrays remained accessible.
 - Result: Production coordinated collection does not reclaim either heap when package-to-context ownership is ambiguous in this fixture.
 - Decision: Keep deletion disabled by default and R59 open; separately verify runtime restore ownership and physical reset behavior.
-- Commit: `pending`
+- Commit: `616a0c7b`
 - Artifacts/logs: `build/tests/unit/rmi-registry/rmi_registry_test`; output `RMI_REGISTRY:PASS retained_context_ambiguous_package_fails_closed=1`.
