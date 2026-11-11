@@ -27716,5 +27716,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `PICO2_HOST_USB_ACCESS=1 RESOURCE02_PASSES=64 ./tools/test-resource02-crypto-leaks-vpcd` passed all three cases. AES: 39 records / 589 bytes before and after, delta `(0,0,0,0)`. RSA: 46 / 1,155, same zero delta. Alias control: 18 / 433, one setup-time 4-byte unreachable tag, zero repeat delta. Build uses unchanged upstream libraries and a local probe CAP. No hardware test was attempted; physical devices are absent from this VM.
 - Result: Current post-fix PC VPCD inventory is flat over 64 repeated initializations. Pre-fix growth was not measured, and this does not close RESOURCE-01/full-suite or physical acceptance.
 - Decision: Mark the focused measurement subtask complete; continue with RESOURCE-01 and keep production object deletion disabled until its safety/acceptance gates pass.
-- Commit: `pending`
+- Commit: `3e522939`
 - Artifacts/logs: `artifacts/logs/resource02-vpcd-20261111T182124Z/{aes,aliases,rsa}.log`; emulator SHA-256 `1c9295aab5536765bf8b1f9056a2ca7953c87a97bb806e7aab254e5f7358859e`, ROM mask SHA-256 `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`, probe CAP SHA-256 `903e153f71d33e95676ad37abf2c3527228f2a6679321ece22e3d55c528d12a5`.
