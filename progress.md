@@ -27861,5 +27861,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`; output was 134 total lines and no restore-success spam. Normal `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_DEBUG_PERSISTENT_GC=1 ./tools/build arm --profile max_crypto` passed, then the normal ARM build was restored. Hardware intentionally not flashed because USB sees runtime devices rather than BOOTSEL.
 - Result: Diagnostic traces remain available by explicit debug build; normal and fake-flash test paths avoid per-array-read success printing. Actual runtime speedup was not measured.
 - Decision: Keep RESOURCE-01 open; continue root-safety and full 1.8.4 physical acceptance when PC/SC recovers.
-- Commit: recorded in the following commit.
+- Commit: `1a53bccf`
 - Artifacts/logs: `build/arm/build-provenance.txt` (normal mode restored); focused `./tools/test-rp2350-fs-overlay` output.
