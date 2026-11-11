@@ -1,3 +1,13 @@
+# Current handoff — cross-context root routing validated in unit suite — 2026-11-11 08:45 CET
+
+`./tools/test-rmi-registry` passed under AddressSanitizer and UBSan. Its separate-package-context test verifies that foreign reference arrays are routed into the target heap's root walk: two target objects remained live, clearing one foreign entry released exactly one, and package cleanup released the other. Sibling-applet and RMI lifecycle root checks also passed.
+
+This narrows but does not close the persistent deletion safety gap. The test does not exercise the persistent reclaimer with multiple retained contexts, persistent static aliases, every RMI root domain, an in-flight/quiescence boundary, or physical flash interruption. Keep the `isSoleRetainedContext()` guard and firmware object deletion disabled. Next add reclaimer-level multi-context coverage and determine which root types are still missing.
+
+The max_crypto empty-card UF2 remains diagnostic-only for a Windows long run; RESOURCE-01 is unresolved. See the 08:23 handoff entry below for image hash and external RSA failure evidence.
+
+---
+
 # Current handoff — external RSA failure isolated to long-run state; PC/SC unavailable — 2026-11-11 08:23 CET
 
 The external Windows run stopped around
