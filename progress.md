@@ -17466,7 +17466,7 @@
   `5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
 - Decision: Continue with persistent-object reclamation and actual USB cold
   power-cycle recovery; no reclamation is enabled until the latter is proven.
-- Commit: `8a6043a3`.
+- Commit: pending.
 - Artifacts/logs: valid INSTALL SHA-256
   `90358f202b1364270db7c86688f83d288b6ba7ffc8be393b777eeeab6ab31bf6`;
   class rejection SHA-256
@@ -27299,5 +27299,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Diagnostic `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and `... riscv ...` passed. Default ARM/RISC-V max_crypto builds passed with deletion off. `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1 rsa-live-static` passed 7/7 APDU checks and reclaimed 10 tags after clearing the live root (`artifacts/logs/object-deletion-vpcd-20261111T100902Z.log`). Persistent transaction/inventory suites passed with `TEST:SUMMARY fail=0`; fixture verification passed for all 81 files. Package SHA256SUMS and ZIP integrity passed; ZIP SHA-256 `c927f5bf88b7d40ed09ed29abe661565c3ca23957dc123e2edc72ff0ce860610`. Installed PC/SC helper matches repository SHA-256 `c733c2de757d19bed887dedfcbdff1c51b44e9544ae5eb462ede19f0c2ea8dfc`; authorized helper granted two nodes. `lsusb` confirmed two JCVM CCID descriptors, but `pcsc_scan -r` enumerated only the two VPCD readers. No physical APDUs or flash operation were performed. PowerShell is unavailable in this VM, so the capture script was inspected but not executed here.
 - Result: The diagnostic image can exercise the actual `INS_CARD_RESET` request path when the supplied client calls `requestObjectDeletion()`. Windows long-run validation and physical interruption safety remain outstanding; this option is not enabled in default firmware.
 - Decision: Use separate identified physical tokens for the 1–3-hour performance and 5–8-hour all-algorithms client runs when available. Do not enable object deletion in normal builds until long-run and physical power-loss acceptance pass.
-- Commit: pending.
+- Commit: `8a6043a3`.
 - Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-windows.zip`; `build/external-test/object-deletion-windows/SHA256SUMS.txt`; package README `docs/windows-jcalgtest-object-deletion.md`; VPCD log above.
