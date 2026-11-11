@@ -27656,5 +27656,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; the combined regression passed with per-call totals 8, 8, and 6 (split 5+3, 0+8, 0+6). `PICO_BUILD_JOBS=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed; firmware end `0x100f4190`, 48,752 bytes remain. The matching RISC-V wrapper passed its VM-core/smoke build; it does not compile the full CHOUPI firmware. The authorized reader helper found zero Pico devices, so no flash or physical APDU test was performed.
 - Result: The firmware deletion handler now enforces one eight-record total allowance across applet and package-static namespaces. Previous behavior could erase up to 16 records in one APDU.
 - Decision: Keep deletion diagnostic-only; refresh the Windows package from this code and verify on hardware when an identified board is visible.
-- Commit: pending
+- Commit: `f5a2fd1a`
 - Artifacts/logs: `build/tests/unit/persistent-transaction/persistent_transaction_test`; ARM/RISC-V build outputs under `build/arm/` and `build/riscv/`.
