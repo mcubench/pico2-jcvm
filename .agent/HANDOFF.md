@@ -13,7 +13,8 @@ object-deletion-enabled `max_crypto` build passes with firmware end
 `0x100f4190` and 48,752 bytes remaining; the RISC-V wrapper passes its core and
 smoke build. The user's boards are physically available, but the authorized
 helper inside this VM still reports zero matching readers. No board was
-flashed. This pass-through state does not indicate a board fault.
+flashed. The repository diagnostic reports no BOOTSEL-visible RP-series
+devices, either. This pass-through state does not indicate a board fault.
 
 The Windows ZIP from source `1651bbdd` is superseded. The later shared-budget
 firmware fix is validated in unit/build and VPCD tests only; it still needs a

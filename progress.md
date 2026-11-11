@@ -27670,3 +27670,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep object deletion diagnostic-only. Do not use the superseded `1651bbdd` Windows package; refresh provenance and create a current package before external Windows validation. Retry physical tests when a board is enumerated in the VM.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261111T175424Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175512Z.log`, `artifacts/logs/object-deletion-vpcd-20261111T175736Z.log`; ARM/RISC-V outputs under `build/`.
+
+## 2026-11-11 Recheck BOOTSEL visibility after device availability update 5 min
+
+- Step/experiment: `RESOURCE-01-BOOTSEL-VISIBILITY-RECHECK-01`
+- When: '2026-11-11 19:00 CET' - '2026-11-11 19:05 CET'
+- Model: `GPT-6`
+- Change: Rechecked BOOTSEL availability through the repository host diagnostics after the user clarified the boards are physically available and the earlier problem was VM passthrough.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed prerequisite checks. `PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=2s 8s ./tools/env picotool info --device` reported `No accessible RP-series devices in BOOTSEL mode were found`. The authorized runtime PC/SC helper had reported zero devices; no flash or APDU was attempted.
+- Result: This VM currently sees neither runtime CCID readers nor a BOOTSEL device. This reports VM passthrough visibility only; it does not indicate a physical board fault.
+- Decision: Keep the VM passthrough request open. Resume physical validation when a board appears in either runtime PC/SC or BOOTSEL enumeration.
+- Commit: `pending`
+- Artifacts/logs: command output recorded in session; no log file created.

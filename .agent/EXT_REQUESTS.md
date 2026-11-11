@@ -127,7 +127,8 @@ problem was VM passthrough, not a board fault. At 2026-11-11 18:58 CET, after
 that update, the authorized helper still found zero matching Pico devices
 inside this VM. No device was flashed or reset during this check. This is the
 current VM visibility result, not a report that the physical boards are
-unavailable or malfunctioning.
+unavailable or malfunctioning. The required host-access diagnostic also
+reported `No accessible RP-series devices in BOOTSEL mode were found`.
 
 When changing passthrough, attach at least one Pico USB device to the
 development VM through VirtualBox **Devices → USB**. The next local action is
