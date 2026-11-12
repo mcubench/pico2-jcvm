@@ -28171,3 +28171,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: CPLC encoding is physically verified for D92/8E. 2BED still needs BOOTSEL reattachment before its image can be updated or identified.
 - Commit: `3729f503`
 - Artifacts/logs: GPPro traces were inspected directly, not archived; image `build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2`.
+
+## 2026-11-12 Start separate long JCAlgTest campaigns on D92 and 8E 4 min
+
+- Step/experiment: `RESOURCE-01-LONG-184-DUAL-PHYSICAL-20261112`
+- When: '2026-11-12 08:46 UTC' - '2026-11-12 08:50 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Built max_crypto ARM and RISC-V diagnostic variants with heap-GC telemetry and object deletion enabled, packaged the ARM build with a cleared persistent region, flashed D92 and 8E, and started the unchanged JCAlgTest 1.8.4/jc305 long campaigns on separate cards. Added per-device manifests/client logs and long-duration serial captures. Updated TODO and HANDOFF to identify both runs as live and incomplete. No firmware source changed.
+- Validation: `./tools/fixture-path --verify` passed for 81 fixtures. `PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the RISC-V equivalent both passed; ARM provenance records `object_deletion=ON`, `debug_heap_gc=ON`, CPLC source ID `BB53E03D227EC9E4`. Empty-card image `build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-bb53e03d.uf2` is 4,102,656 bytes, SHA-256 `f1ea3990436317e1563a1585b121e5aa9ffd9f03c819dcfc6f01372b8b8a19bd`. Both `tools/flash --chipid ...` commands reported `FLASH:PASS`; each board passed an 8-second finite serial monitor. PC/SC listed the exact readers; GPPro showed the 1.8.4 package/applet registered on both. `tools/run-jcalgtest` connected D92 to `ALG_PERFORMANCE_STATIC` (session 7887; 14,400-second suite/600-second APDU watchdog) and 8E to `ALG_SUPPORT_EXTENDED` (session 53534; 36,000-second suite/1,800-second APDU watchdog). D92 log has advanced into SHA `MessageDigest_update` measurements; 8E log records successful APDUs and positive algorithm rows. Per-board logs/results are under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/<chip-id>/`. Serial monitor sessions 7301 and 44792 are also live. These runs have not completed; no final CSV, duration, or RESOURCE-01 acceptance is claimed.
+- Result: Two independent physical campaigns are active against identified readers with object deletion enabled. The current evidence proves client connection and in-progress APDUs only.
+- Decision: Poll the same process sessions and inspect per-card logs. Do not restart a run that remains live. Stop/record a device only on exit, watchdog expiry, FAULT, or transport failure; the second identified board remains available for failover.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-performance-static/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/`; diagnostic image and build provenance in `build/arm` and `build/riscv`.

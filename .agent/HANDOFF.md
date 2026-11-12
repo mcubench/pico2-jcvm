@@ -1,3 +1,38 @@
+# Current handoff — RESOURCE-01 long physical JCAlgTest campaigns running — 2026-11-12 08:49 UTC
+
+Both available cards are running the current ARM `max_crypto` diagnostic
+empty-card image with heap-GC telemetry and object deletion enabled:
+`build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-bb53e03d.uf2`,
+4,102,656 bytes, SHA-256
+`f1ea3990436317e1563a1585b121e5aa9ffd9f03c819dcfc6f01372b8b8a19bd`.
+Provenance: CPLC source ID `BB53E03D227EC9E4`, object deletion ON,
+`debug_heap_gc=ON`, persistent-GC debug OFF. ARM and RISC-V max_crypto
+diagnostic builds passed. The unchanged 1.8.4/jc305 CAP and matching client
+passed `./tools/fixture-path --verify`; both cards passed startup monitors,
+and GPPro lists the package/applet on both.
+
+- D92 `D92E743D5F640C0F`, reader `Pico 2 CHOUPI CCID [JCVM CCID]
+  (D92E743D5F640C0F) 00 00`: session 7887, operation
+  `ALG_PERFORMANCE_STATIC`, whole-suite watchdog 14,400 s, per-APDU 600 s.
+  Client log/results:
+  `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-performance-static/`.
+  Serial capture session 7301, 14,400 s.
+- 8E `8E464F4E2BBC0A19`, reader `Pico 2 CHOUPI CCID [JCVM CCID]
+  (8E464F4E2BBC0A19) 01 00`: session 53534, operation
+  `ALG_SUPPORT_EXTENDED`, whole-suite watchdog 36,000 s, per-APDU 1,800 s.
+  Client log/results:
+  `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/`.
+  Serial capture session 44792, 36,000 s.
+
+Both client sessions were confirmed live by polling; D92 had progressed into
+SHA `MessageDigest_update` measurement, and 8E had resolved to its exact reader.
+These are in-progress runs, not completed results. Do not restart them. Poll
+the same sessions and inspect their client/serial logs for exit, watchdog,
+`FAULT`, or transport failure; preserve each device's output separately.
+
+Third board 2BED remains unresolved and is not part of these runs. See the
+external request `REATTACH_2BED_20261112` before any write to that board.
+
 # Current handoff — D92 and 8E are confirmed empty max_crypto cards — 2026-11-12 08:27 UTC
 
 Current empty-card ARM UF2 is
