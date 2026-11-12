@@ -17466,7 +17466,7 @@
   `5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
 - Decision: Continue with persistent-object reclamation and actual USB cold
   power-cycle recovery; no reclamation is enabled until the latter is proven.
-- Commit: pending.
+- Commit: `915ebeb6` (this evidence correction); this progress-record hash backfill is committed separately.
 - Artifacts/logs: valid INSTALL SHA-256
   `90358f202b1364270db7c86688f83d288b6ba7ffc8be393b777eeeab6ab31bf6`;
   class rejection SHA-256
