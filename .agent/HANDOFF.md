@@ -1,3 +1,22 @@
+# Current handoff — RESOURCE-01 deletion sequence narrowed — 2026-11-12 01:39 UTC
+
+Offline review of
+`artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`
+found that the first missing array body read
+(`03013894FFFFFE000000420003FFFE000000470000FFFE000005810001FFFF00000583`,
+line 372) immediately follows a persistent-deletion summary with
+`erased_applet=8`; two deletion summaries had reported 16 erasures by then.
+That run predates candidate-tag tracing, so the sequence implicates deletion
+but does not identify the erased tag. The prepared trace image is needed to
+prove or falsify the link.
+
+No source change was justified from this indirect evidence. The prior build
+and hardware status remains below; continue offline analysis while BOOTSEL is
+not visible, and capture the exact erase candidate on hardware before changing
+reclaimer decisions.
+
+---
+
 # Current handoff — RESOURCE-01 physical retry and diagnostic image ready — 2026-11-12 01:29 UTC
 
 The normal ARM `max_crypto` image and RISC-V VM-core wrappers both rebuilt

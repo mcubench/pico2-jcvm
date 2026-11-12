@@ -27898,3 +27898,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Resume physical diagnosis when USB passthrough exposes BOOTSEL; flash the candidate-trace image to one identified token, capture candidate erase tags, then restore normal firmware. RESOURCE-01 remains open.
 - Commit: pending
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/resource01-candidate-trace-20261112/pico2_choupi-max_crypto-object-deletion-trace.uf2`; bounded flash attempts on USB paths `1-3`, `1-4`, and `1-5`.
+
+## 2026-11-12 RESOURCE-01 correlate first missing body with deletion batch 10 min
+
+- Step/experiment: `RESOURCE-01-TRACE-SEQUENCE-20261112`
+- When: '2026-11-12 01:29 UTC' - '2026-11-12 01:39 UTC'
+- Model: `GPT-6`
+- Change: Reanalyzed the saved 8E physical serial trace and recorded the first missing-body event's ordering against persistent deletion summaries in QKB and HANDOFF.
+- Validation: Read-only analysis of `artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`: 9,710 lines, 26 deletion summaries, 208 reported erasures total, 537 missing-body read diagnostics. First missing body is line 372, immediately after a summary reports `erased_applet=8`; the two summaries by that point report 16 erasures. The run has no candidate-tag traces and predates the prepared candidate-trace image. No test/build was needed or run.
+- Result: Deletion is temporally associated with the first missing array body, but the exact body is not proven to have been erased by the candidate batch. The first missing tag is `03013894FFFFFE000000420003FFFE000000470000FFFE000005810001FFFF00000583`.
+- Decision: Do not change reclaimer decisions on this indirect evidence. Capture candidate `stage=erase` tags with the prepared diagnostic image when BOOTSEL becomes visible.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`; `build/resource01-candidate-trace-20261112/pico2_choupi-max_crypto-object-deletion-trace.uf2`.

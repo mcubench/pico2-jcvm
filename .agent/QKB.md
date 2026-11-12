@@ -89,8 +89,20 @@ RESOURCE-01 physical trace and reclaimer-candidate investigation open; do not
 treat the guard as proof that object deletion is safe or that long-run resource
 failures are fixed.
 
+The archived 2026-11-11 physical trace narrows the sequence: the first missing
+array-body read (`03013894FFFFFE000000420003FFFE000000470000FFFE000005810001FFFF00000583`)
+occurs immediately after an `OBJECT_DELETION` summary reports eight applet
+records erased; two summaries (16 records total) had completed by then. The
+trace firmware predates candidate-tag logging, so this temporal ordering does
+not prove that either batch erased this body. A new diagnostic image with
+`OBJECT_DELETION:CANDIDATE stage=scan|batch|erase` instrumentation is prepared
+under `build/resource01-candidate-trace-20261112/`; flash it only after the
+guest exposes a physical board in BOOTSEL, then compare the exact candidate
+against the first missing-body error.
+
 Evidence: `progress.md`, entry `RESOURCE-01-STALE-ARRAY-BODY-GUARD-20261112`;
-regression `persistent_array_handle_rejects_realiasing_missing_body`.
+regression `persistent_array_handle_rejects_realiasing_missing_body`;
+`artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`.
 
 ## Request-gated deletion and batch budgets — implemented, physical acceptance open
 
