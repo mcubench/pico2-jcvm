@@ -80,6 +80,7 @@ struct PersistentWriteSnapshot {
 
 std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
 bool persistent_write_transaction_active = false;
+bool persistent_write_recovery_required = false;
 bool persistent_write_capacity_enforced = false;
 bool persistent_write_transaction_applet_owned = false;
 uint32_t persistent_write_transaction_used_bytes = 0;
@@ -124,6 +125,9 @@ void charge_persistent_snapshot(PersistentWriteSnapshot &snapshot) {
 }
 
 void snapshot_persistent_tag(const fs::Tag &tag) {
+  if (persistent_write_recovery_required) {
+    throw Exceptions::IOException;
+  }
   if (!persistent_write_transaction_active) {
     return;
   }
@@ -286,14 +290,16 @@ void throw_persistent_write_status(const uint8_t status) {
 }
 
 bool rollback_persistent_writes() noexcept {
-  bool success = true;
+  // Keep the journal and transaction guard until every restore and its sync
+  // have succeeded. In particular, never publish a partially restored view.
   // Erase transaction-created records first so a nearly full filesystem can
   // reclaim their space before restoring snapshots of replaced records.
   for (auto it = persistent_write_snapshots.rbegin();
        it != persistent_write_snapshots.rend(); ++it) {
     if (!it->existed && fs_exists(it->tag.value, it->tag.len) != 0 &&
         fs_erase(it->tag.value, it->tag.len) != 0) {
-      success = false;
+      persistent_write_recovery_required = true;
+      return false;
     }
   }
   for (auto it = persistent_write_snapshots.rbegin();
@@ -305,18 +311,21 @@ bool rollback_persistent_writes() noexcept {
     const uint8_t *data = it->data.empty() ? &empty_data : it->data.data();
     if (fs_write(it->tag.value, it->tag.len, data,
                  static_cast<uint32_t>(it->data.size())) != 0) {
-      success = false;
+      persistent_write_recovery_required = true;
+      return false;
     }
+  }
+  if (fs_sync() != 0) {
+    persistent_write_recovery_required = true;
+    return false;
   }
   persistent_write_transaction_active = false;
   persistent_write_capacity_enforced = false;
   persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
-  if (fs_sync() != 0) {
-    success = false;
-  }
+  persistent_write_recovery_required = false;
   persistent_write_snapshots.clear();
-  return success;
+  return true;
 }
 
 bool persist_array_identity_reservation() noexcept {
@@ -567,7 +576,8 @@ extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
 
 bool FlashMemory_Handler::beginPersistentWriteTransaction(
     const bool enforce_commit_capacity) noexcept {
-  if (persistent_write_transaction_active) {
+  if (persistent_write_transaction_active ||
+      persistent_write_recovery_required) {
     return false;
   }
   persistent_write_snapshots.clear();
@@ -585,7 +595,8 @@ bool FlashMemory_Handler::beginAppletWriteTransaction() noexcept {
 }
 
 bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
-  if (!persistent_write_transaction_active) {
+  if (!persistent_write_transaction_active ||
+      persistent_write_recovery_required) {
     return false;
   }
   persistent_write_transaction_active = false;
@@ -593,11 +604,11 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
     persistent_write_transaction_active = true;
     const bool restored_persistent_records =
         !persistent_write_snapshots.empty();
-    (void)rollback_persistent_writes();
+    const bool restored = rollback_persistent_writes();
     if (restored_persistent_records) {
       ++persistent_write_rollback_generation;
     }
-    if (persistent_array_identity_counter_dirty &&
+    if (restored && persistent_array_identity_counter_dirty &&
         !persist_array_identity_reservation()) {
       return false;
     }
@@ -622,13 +633,17 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
     ++persistent_write_rollback_generation;
   }
   const bool counter_preserved =
-      !persistent_array_identity_counter_dirty ||
+      !success || !persistent_array_identity_counter_dirty ||
       persist_array_identity_reservation();
   return success && counter_preserved;
 }
 
 bool FlashMemory_Handler::persistentWriteTransactionActive() noexcept {
   return persistent_write_transaction_active;
+}
+
+bool FlashMemory_Handler::persistentWriteRecoveryRequired() noexcept {
+  return persistent_write_recovery_required;
 }
 
 bool FlashMemory_Handler::appletWriteTransactionActive() noexcept {
@@ -724,6 +739,9 @@ static constexpr uint16_t getPackagesArrayLength() {
  */
 std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
 FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
+  if (persistent_write_recovery_required) {
+    throw Exceptions::IOException;
+  }
   fs::Tag read_tag = tag;
   uint32_t data_length = 0;
 #ifdef PC_VERSION
@@ -995,6 +1013,9 @@ fs::Tag FlashMemory_Handler::computeTagForRead(const fs::Tag &tag,
  */
 std::pair<uint32_t, const uint8_t *>
 FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
+  if (persistent_write_recovery_required) {
+    throw Exceptions::IOException;
+  }
 #ifdef PC_VERSION
   if (tag.len == 2 && tag.value[0] == 0x01) {
     uint32_t rom_length = 0;

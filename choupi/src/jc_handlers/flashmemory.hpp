@@ -152,6 +152,8 @@ public:
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;
   static bool persistentWriteTransactionActive() noexcept;
+  /// True when rollback could not durably restore the journaled state.
+  static bool persistentWriteRecoveryRequired() noexcept;
   static bool appletWriteTransactionActive() noexcept;
   static bool abortAppletWriteTransaction() noexcept;
   /// Java Card commit buffer size, saturated at the positive short limit.

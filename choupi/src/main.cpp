@@ -2068,6 +2068,16 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
 #endif
       return 0xffff; // CCID maps the no-selection sentinel to its default SW.
     }
+    if (jcvm::FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+        !jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction()) {
+      // Keep the card responsive with an explicit storage failure while its
+      // retained rollback journal cannot yet be restored durably.
+      status = 0x6581;
+      response[0] = static_cast<uint8_t>(status >> 8);
+      response[1] = static_cast<uint8_t>(status);
+      *response_length = 2;
+      return status;
+    }
     if (command == nullptr || command_length < 4) {
       status = 0x6700;
       throw status;

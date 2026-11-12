@@ -100,11 +100,12 @@ extern "C" const uint8_t *choupi_cap_store_data_for_package(
 
 namespace {
 std::map<std::string, std::vector<uint8_t>> files;
+std::map<std::string, std::vector<uint8_t>> durable_files;
 bool fail_next_write = false;
 int fail_write_after_count = -1;
 std::vector<uint8_t> last_failed_write_tag;
 bool fail_next_read = false;
-bool fail_next_sync = false;
+unsigned int fail_sync_remaining = 0;
 bool stall_after_one_cursor_result = false;
 bool cursor_result_returned = false;
 uint8_t cursor_stall_owner = 0;
@@ -263,10 +264,11 @@ extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
 
 extern "C" uint8_t fs_sync(void) {
   ++sync_count;
-  if (fail_next_sync) {
-    fail_next_sync = false;
+  if (fail_sync_remaining != 0) {
+    --fail_sync_remaining;
     return 1;
   }
+  durable_files = files;
   return 0;
 }
 
@@ -324,9 +326,16 @@ std::vector<uint8_t> read(const uint8_t *tag, const uint8_t length) {
   return found == files.end() ? std::vector<uint8_t>{} : found->second;
 }
 
+std::vector<uint8_t> read_durable(const uint8_t *tag, const uint8_t length) {
+  const auto found = durable_files.find(key_for(tag, length));
+  return found == durable_files.end() ? std::vector<uint8_t>{} : found->second;
+}
+
 void seed(const uint8_t *tag, const uint8_t tag_length,
           std::vector<uint8_t> value) {
-  files[key_for(tag, tag_length)] = std::move(value);
+  auto record = std::move(value);
+  files[key_for(tag, tag_length)] = record;
+  durable_files[key_for(tag, tag_length)] = std::move(record);
 }
 
 void fail_one_write() {
@@ -341,7 +350,8 @@ void fail_write_after(unsigned int successful_writes) {
 }
 std::vector<uint8_t> failed_write_tag() { return last_failed_write_tag; }
 void fail_one_read() { fail_next_read = true; }
-void fail_one_sync() { fail_next_sync = true; }
+void fail_one_sync() { fail_sync_remaining = 1; }
+void fail_sync_times(unsigned int count) { fail_sync_remaining = count; }
 unsigned int sync_count_value() { return sync_count; }
 void start_array_allocation_tracking() {
   array_allocation_start = persistent_transaction_test::tracked_array_allocations;

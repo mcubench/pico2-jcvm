@@ -27970,3 +27970,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-34 open for physical verification; use this selector for the next authorized hardware attempt.
 - Commit: `45d26b58` (the progress record is backfilled in a follow-up documentation commit).
 - Artifacts/logs: `tests/unit/flash_target_selection/flash_target_selection_test.sh`; synthetic test output in session transcript.
+
+## 2026-11-12 RV-44 retain persistent recovery journal after rollback failure 18 min
+
+- Step/experiment: `RV-20261106-44`
+- When: '2026-11-12 02:27 UTC' - '2026-11-12 02:45 UTC'
+- Model: `GPT-6`
+- Change: Rollback now keeps its snapshots and transaction guard until every restore and `fs_sync()` succeeds. Failures set a recovery-required quarantine; persistent reads, writes and new/commit transactions are blocked. Applet APDUs retry rollback first and return `6581` if recovery still fails. Added durable-state failure injection coverage and updated TODO/HANDOFF.
+- Validation: Before implementation, the four new failure-path cases failed (`TEST:SUMMARY fail=4`). Afterward `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`), including rollback erase/write/sync failures, commit plus rollback sync failure, no partial durable publication, blocked reads/writes, and retry. `./tools/test-persistent-inventory` passed (`fail=0`); `./tools/test-rp2350-fs-overlay` passed (`fail=0`). `./tools/build arm` and `./tools/build riscv` passed. Builds emitted existing warnings in packed CAP metadata/Rust sources and dependency converter/Maven output; no new compile errors. No flash or serial validation was performed.
+- Result: Failure leaves the journal active and prevents further ordinary applet storage access until successful recovery. The VM currently enumerates three `2e8a:0009` runtime devices, despite the user reporting BOOTSEL, so physical validation was unavailable. Reset/power-cut recovery for this particular injected rollback failure remains untested.
+- Decision: Software behavior is implemented; keep RV-44 open for a dedicated reset/power-cut regression and physical verification.
+- Commit: pending
+- Artifacts/logs: Test and build outputs in session transcript; ARM/RISC-V build artifacts under `build/`.

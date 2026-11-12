@@ -1,3 +1,11 @@
+# Current handoff — RV-44 rollback failures retain recovery journal — 2026-11-12 02:45 UTC
+
+Implemented the software fix for RV-20261106-44. `rollback_persistent_writes()` now stops immediately if an erase or restore write fails, never syncs partial restoration, and retains its snapshots/transaction guard until a complete restoration and sync succeed. A failed recovery quarantines persistent reads/writes and new commits; each applet APDU retries rollback and returns `6581` if it still cannot recover. The durable filesystem stub now models synced state separately, and four regressions cover erase/write/sync failures, commit plus rollback sync failure, durable-state preservation, quarantine, and retry. See the new progress entry for exact commands/results; implementation commit is pending.
+
+`./tools/test-persistent-transaction`, `./tools/test-persistent-inventory`, and `./tools/test-rp2350-fs-overlay` pass. `./tools/build arm` and `./tools/build riscv` pass. No hardware flash was performed: despite the report that all boards are in BOOTSEL, the VM's elevated USB enumeration showed three `2e8a:0009` runtime devices and no BOOTSEL interface. Do not flash until the wrapper can identify BOOTSEL targets.
+
+Remaining R44 acceptance: add a reset/power-cut regression for the failed-rollback scenario and verify recovery on hardware. TODO marks software implementation complete in the item text but leaves the full item open. Continue with this acceptance gap or move to the next P1 offline task while devices are unavailable. Preserve unrelated dirty worktree files and commit only the R44 source, test, TODO, progress and handoff changes.
+
 # Current handoff — flash selector now fails closed on identity changes — 2026-11-12 02:26 UTC
 
 Implemented the offline portion of RV-20261106-34. `tools/flash` now uses

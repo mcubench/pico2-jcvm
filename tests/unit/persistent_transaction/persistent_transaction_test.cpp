@@ -23,12 +23,14 @@ void fail_prefix_erase_after_one();
 void fail_package_state_erase_after_one();
 extern uint16_t instance_field_count;
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
+std::vector<uint8_t> read_durable(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
 void fail_one_write();
 void fail_write_after(unsigned int successful_writes);
 std::vector<uint8_t> failed_write_tag();
 void fail_one_read();
 void fail_one_sync();
+void fail_sync_times(unsigned int count);
 unsigned int sync_count_value();
 void start_array_allocation_tracking();
 std::pair<unsigned int, unsigned int> stop_array_allocation_tracking();
@@ -3520,6 +3522,143 @@ int main() {
     expect(cached_array.size() == array_length &&
                persistent_transaction_test::counted_fs_call_count() == 1,
            "persistent_array_metadata_cache_reloads_after_tag_change");
+  }
+
+  {
+    const auto first = make_tag(0xfc);
+    const auto second = make_tag(0xfd);
+    const std::vector<uint8_t> first_original{0x10};
+    const std::vector<uint8_t> second_original{0x20};
+    const std::vector<uint8_t> first_tentative{0x11};
+    const std::vector<uint8_t> second_tentative{0x21};
+    persistent_transaction_test::seed(first.value, first.len, first_original);
+    persistent_transaction_test::seed(second.value, second.len,
+                                      second_original);
+    bool began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    const bool writes_applied =
+        FlashMemory_Handler::writePersistentRecord(
+            first, first_tentative.data(), first_tentative.size()) &&
+        FlashMemory_Handler::writePersistentRecord(
+            second, second_tentative.data(), second_tentative.size());
+    persistent_transaction_test::fail_write_after(1);
+    const unsigned int syncs_before =
+        persistent_transaction_test::sync_count_value();
+    const bool rollback_failed =
+        !FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    bool quarantined_read_blocked = false;
+    try {
+      (void)FlashMemory_Handler::readPersistentRecord(first);
+    } catch (...) {
+      quarantined_read_blocked = true;
+    }
+    const bool failed_rollback_quarantined =
+        FlashMemory_Handler::persistentWriteTransactionActive() &&
+        FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+        !FlashMemory_Handler::beginPersistentWriteTransaction() &&
+        quarantined_read_blocked &&
+        !FlashMemory_Handler::writePersistentRecord(
+            first, first_original.data(), first_original.size()) &&
+        persistent_transaction_test::sync_count_value() == syncs_before &&
+        persistent_transaction_test::read_durable(first.value, first.len) ==
+            first_original &&
+        persistent_transaction_test::read_durable(second.value, second.len) ==
+            second_original;
+    const bool retry_succeeded =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool retry_restored_durable_state =
+        !FlashMemory_Handler::persistentWriteTransactionActive() &&
+        !FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+        persistent_transaction_test::read_durable(first.value, first.len) ==
+            first_original &&
+        persistent_transaction_test::read_durable(second.value, second.len) ==
+            second_original;
+    expect(began && writes_applied && rollback_failed &&
+               quarantined_read_blocked &&
+               failed_rollback_quarantined && retry_succeeded &&
+               retry_restored_durable_state,
+           "rollback_write_failure_retains_journal_and_retries_without_syncing_partial_state");
+
+    const auto created = make_tag(0xfe);
+    const std::vector<uint8_t> created_value{0x31};
+    began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    const bool created_write = FlashMemory_Handler::writePersistentRecord(
+        created, created_value.data(), created_value.size());
+    persistent_transaction_test::fail_erase_after(0);
+    const unsigned int erase_syncs_before =
+        persistent_transaction_test::sync_count_value();
+    const bool erase_rollback_failed =
+        !FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool erase_failure_quarantined =
+        FlashMemory_Handler::persistentWriteTransactionActive() &&
+        FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+        persistent_transaction_test::sync_count_value() == erase_syncs_before &&
+        persistent_transaction_test::read_durable(created.value, created.len)
+            .empty();
+    const bool erase_retry_succeeded =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    expect(began && created_write && erase_rollback_failed &&
+               erase_failure_quarantined && erase_retry_succeeded &&
+               !FlashMemory_Handler::persistentWriteTransactionActive() &&
+               !FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+               persistent_transaction_test::read_durable(created.value,
+                                                          created.len)
+                   .empty(),
+           "rollback_erase_failure_retains_journal_and_retries");
+
+    const auto sync_tag = make_tag(0xfb);
+    const std::vector<uint8_t> sync_original{0x41};
+    const std::vector<uint8_t> sync_tentative{0x42};
+    persistent_transaction_test::seed(sync_tag.value, sync_tag.len,
+                                      sync_original);
+    began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    const bool sync_write = FlashMemory_Handler::writePersistentRecord(
+        sync_tag, sync_tentative.data(), sync_tentative.size());
+    persistent_transaction_test::fail_one_sync();
+    const bool rollback_sync_failed =
+        !FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool sync_failure_quarantined =
+        FlashMemory_Handler::persistentWriteTransactionActive() &&
+        FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+        persistent_transaction_test::read_durable(sync_tag.value, sync_tag.len)
+            == sync_original;
+    const bool sync_retry_succeeded =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    expect(began && sync_write && rollback_sync_failed &&
+               sync_failure_quarantined && sync_retry_succeeded &&
+               !FlashMemory_Handler::persistentWriteTransactionActive() &&
+               !FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+               persistent_transaction_test::read_durable(sync_tag.value,
+                                                          sync_tag.len) ==
+                   sync_original,
+           "rollback_sync_failure_retains_journal_and_retries");
+
+    const auto commit_tag = make_tag(0xfa);
+    const std::vector<uint8_t> commit_original{0x51};
+    const std::vector<uint8_t> commit_tentative{0x52};
+    persistent_transaction_test::seed(commit_tag.value, commit_tag.len,
+                                      commit_original);
+    began = FlashMemory_Handler::beginPersistentWriteTransaction();
+    const bool commit_write = FlashMemory_Handler::writePersistentRecord(
+        commit_tag, commit_tentative.data(), commit_tentative.size());
+    persistent_transaction_test::fail_sync_times(2);
+    const bool commit_sync_failed =
+        !FlashMemory_Handler::commitPersistentWriteTransaction();
+    const bool commit_rollback_sync_failed =
+        FlashMemory_Handler::persistentWriteTransactionActive() &&
+        FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+        persistent_transaction_test::read_durable(commit_tag.value,
+                                                  commit_tag.len) ==
+            commit_original;
+    const bool commit_recovery_succeeded =
+        FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    expect(began && commit_write && commit_sync_failed &&
+               commit_rollback_sync_failed && commit_recovery_succeeded &&
+               !FlashMemory_Handler::persistentWriteTransactionActive() &&
+               !FlashMemory_Handler::persistentWriteRecoveryRequired() &&
+               persistent_transaction_test::read_durable(commit_tag.value,
+                                                          commit_tag.len) ==
+                   commit_original,
+           "commit_and_rollback_sync_failures_preserve_recovery_journal");
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);
