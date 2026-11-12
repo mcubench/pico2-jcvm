@@ -153,6 +153,9 @@ def run_emulator(
             command.extend(("--package-id", str(args.package_id),
                             "--cap-code", str(args.cap_code),
                             "--install", "-s"))
+            if args.load_package_aid_override is not None:
+                command.extend(("--load-package-aid-override",
+                                args.load_package_aid_override))
         if args.install_params is not None and not resume:
             command.extend(("--install-params", args.install_params))
             print(
@@ -250,20 +253,26 @@ def run_emulator(
                     args.expect_resume_apdu_response if resume
                     else args.expect_apdu_response
                 )
+                expected_custom_statuses = (
+                    None if resume else args.expect_apdu_status
+                )
                 if args.apdu or args.resume_apdu:
                     for index, apdu in enumerate(custom_apdus, start=1):
                         expected_response = (
                             expected_custom_responses[index - 1]
                             if expected_custom_responses is not None else None
                         )
+                        expected_status = (
+                            expected_response[-2:]
+                            if expected_response is not None and
+                            len(expected_response) >= 2
+                            else expected_custom_statuses[index - 1]
+                            if expected_custom_statuses is not None
+                            else b"\x90\x00"
+                        )
                         response = exchange(connection, apdu,
                                             f"custom APDU {index}",
-                                            expected_status=(
-                                                expected_response[-2:]
-                                                if expected_response is not None and
-                                                len(expected_response) >= 2
-                                                else b"\x90\x00"
-                                            ))
+                                            expected_status=expected_status)
                         if expected_response is not None and \
                                 response != expected_response:
                             raise RuntimeError(
@@ -510,6 +519,10 @@ def parse_args() -> argparse.Namespace:
         "--cap-code", type=Path, default=repo / "build/tests/jcalgtest/algtest-v184-load-code.bin"
     )
     parser.add_argument(
+        "--load-package-aid-override",
+        help="host-test LOAD package AID override used to exercise CAP Header mismatch rejection",
+    )
+    parser.add_argument(
         "--rom-mask", type=Path, default=repo / "build/choupi-pc/flash"
     )
     parser.add_argument(
@@ -627,6 +640,11 @@ def parse_args() -> argparse.Namespace:
         help="expected response for each --apdu, including SW1/SW2; repeat in matching order",
     )
     parser.add_argument(
+        "--expect-apdu-status",
+        action="append",
+        help="expected SW1/SW2 for each --apdu; use this instead of matching response data",
+    )
+    parser.add_argument(
         "--resume-apdu",
         action="append",
         default=[],
@@ -672,6 +690,10 @@ def parse_args() -> argparse.Namespace:
             [bytes.fromhex(value) for value in args.expect_apdu_response]
             if args.expect_apdu_response is not None else None
         )
+        args.expect_apdu_status = (
+            [bytes.fromhex(value) for value in args.expect_apdu_status]
+            if args.expect_apdu_status is not None else None
+        )
         args.expect_resume_apdu_response = (
             [bytes.fromhex(value) for value in args.expect_resume_apdu_response]
             if args.expect_resume_apdu_response is not None else None
@@ -692,6 +714,14 @@ def parse_args() -> argparse.Namespace:
     if args.expect_apdu_response is not None and \
             len(args.expect_apdu_response) != len(args.apdu):
         parser.error("--expect-apdu-response must be repeated once for each --apdu")
+    if args.expect_apdu_status is not None and \
+            len(args.expect_apdu_status) != len(args.apdu):
+        parser.error("--expect-apdu-status must be repeated once for each --apdu")
+    if args.expect_apdu_response is not None and args.expect_apdu_status is not None:
+        parser.error("use either --expect-apdu-response or --expect-apdu-status")
+    if args.expect_apdu_status is not None and any(
+            len(status) != 2 for status in args.expect_apdu_status):
+        parser.error("each --expect-apdu-status must contain exactly four hex digits")
     if args.expect_resume_apdu_response is not None and \
             len(args.expect_resume_apdu_response) != len(args.resume_apdu):
         parser.error("--expect-resume-apdu-response must be repeated once for each --resume-apdu")

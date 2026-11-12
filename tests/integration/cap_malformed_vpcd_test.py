@@ -194,6 +194,9 @@ def build_malformed_load_code(mutation: str) -> Path:
     if mutation == "unknown-component-tag":
         mutation_index = len(mutable)
         replacement = bytes((12, 0, 1, 0))
+    elif mutation == "load-header-aid-mismatch":
+        mutation_index = 0
+        replacement = b""
     elif mutation in ("impdep1", "impdep2"):
         mutation_index = code_index
         replacement = bytes((0xFE if mutation == "impdep1" else 0xFF,))
@@ -562,7 +565,7 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("unknown-component-tag", "impdep1", "impdep2", "truncated-sipush",
+        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "impdep1", "impdep2", "truncated-sipush",
                                 "fall-through", "zero-process-body-length",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
@@ -586,7 +589,7 @@ def main() -> int:
     args = parser.parse_args()
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
-    if args.mutation == "unknown-component-tag":
+    if args.mutation in ("unknown-component-tag", "load-header-aid-mismatch"):
         log.unlink(missing_ok=True)
     select_status = "9000" if args.mutation in (
         "truncated-sipush", "fall-through",
@@ -613,7 +616,10 @@ def main() -> int:
         "--cap-code", str(code),
         "--log", str(log),
     ]
-    if args.mutation != "unknown-component-tag":
+    if args.mutation == "load-header-aid-mismatch":
+        commands.extend(("--load-package-aid-override",
+                         "4A43416C6754657375"))
+    if args.mutation not in ("unknown-component-tag", "load-header-aid-mismatch"):
         commands.extend((
             "--expect-select-status", select_status,
             "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
@@ -628,7 +634,7 @@ def main() -> int:
             "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
         ))
     run_kwargs = {"cwd": ROOT, "check": False}
-    if args.mutation == "unknown-component-tag":
+    if args.mutation in ("unknown-component-tag", "load-header-aid-mismatch"):
         # The inner generic VPCD runner correctly reports that no applet can
         # start after LOAD rejection. Capture that expected negative result so
         # the outer acceptance check is the only PASS/FAIL summary shown.
@@ -637,7 +643,7 @@ def main() -> int:
     result = subprocess.run(
         [str(ROOT / "tools/test-pc-vpcd-applet"), *commands], **run_kwargs
     )
-    if args.mutation == "unknown-component-tag":
+    if args.mutation in ("unknown-component-tag", "load-header-aid-mismatch"):
         run_log = log.read_text(encoding="utf-8", errors="replace")
         load_rejected = "ERROR: PC CAP LOAD data rejected" in run_log
         registry_match = re.search(
@@ -657,10 +663,10 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        print(
-            "CAP_LOAD_VALIDATION:PASS "
-            f"unknown_component_rejected_before_store registry_saved_packages={stored_packages}"
-        )
+        reason = ("unknown_component" if args.mutation == "unknown-component-tag"
+                  else "package_aid_header_mismatch")
+        print("CAP_LOAD_VALIDATION:PASS "
+              f"{reason}_rejected_before_store registry_saved_packages={stored_packages}")
         return 0
     if result.returncode != 0:
         print(f"MALFORMED_CAP:FAIL vpcd_exit={result.returncode}", file=sys.stderr)

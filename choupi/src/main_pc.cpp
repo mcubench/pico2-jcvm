@@ -82,6 +82,7 @@ unsigned int vpcd_idle_timeout_seconds = 0;
 std::vector<uint8_t> vpcd_applet_aid;
 std::vector<uint8_t> vpcd_cap_code;
 std::vector<uint8_t> vpcd_package_aid;
+std::vector<uint8_t> vpcd_load_package_aid_override;
 uint8_t vpcd_package_id = 63;
 uint16_t vpcd_applet_class_index = 0xffff;
 bool vpcd_configured = false;
@@ -1047,8 +1048,11 @@ bool install_vpcd_applet() {
   }
 
   std::vector<uint8_t> load_init;
-  append_lv(load_init, vpcd_package_aid.data(),
-            static_cast<uint8_t>(vpcd_package_aid.size()));
+  const auto &load_package_aid = vpcd_load_package_aid_override.empty()
+                                     ? vpcd_package_aid
+                                     : vpcd_load_package_aid_override;
+  append_lv(load_init, load_package_aid.data(),
+            static_cast<uint8_t>(load_package_aid.size()));
   append_lv(load_init, isd_aid, sizeof(isd_aid));
   load_init.insert(load_init.end(), {0x00, 0x00, 0x00});
   if (!vpcd_cap_load_session.beginInstallForLoad(load_init.data(),
@@ -1831,6 +1835,16 @@ int main_pc(int argc, char *argv[]) {
       }
       vpcd_package_id = static_cast<uint8_t>(value);
       package_id_present = true;
+    } else if (option == "--load-package-aid-override") {
+      if (arg + 1 >= argc ||
+          !parse_hex(argv[arg + 1], vpcd_load_package_aid_override) ||
+          vpcd_load_package_aid_override.size() < 5 ||
+          vpcd_load_package_aid_override.size() > 16) {
+        std::fprintf(stderr,
+                     "ERROR: --load-package-aid-override requires 10 to 32 hex digits\n");
+        return EXIT_FAILURE;
+      }
+      ++arg;
     } else if (option == "--class-index") {
       if (arg + 1 >= argc) {
         std::fprintf(stderr, "ERROR: --class-index requires a number\n");
@@ -1906,6 +1920,7 @@ int main_pc(int argc, char *argv[]) {
                   "  --vpcd HOST:PORT\n"
                   "  --vpcd-idle-timeout SECONDS (clean save on idle)\n"
                   "  --applet-aid HEX --package-id N --class-index N\n"
+                  "  --load-package-aid-override HEX (test LOAD/Header mismatch)\n"
                   "  --cap-code COMPONENTS_FILENAME (dynamic package only)\n"
                   "  --restore-applet ID CLASS APPLET_AID INSTANCE_AID "
                   "CAP_COMPONENTS (repeatable)\n"

@@ -28399,3 +28399,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Provide this image for external testing; keep device-level GC validation open until the user returns Windows logs or a BOOTSEL token is visible in this VM.
 - Commit: pending.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`; build provenance in `build/arm/build-provenance.txt` and `build/riscv/build-provenance.txt`.
+
+## 2026-11-12 Reproduce CAP LOAD package AID mismatch 13 min
+
+- Step/experiment: `CAPIN-01-LOAD-HEADER-AID-MISMATCH`
+- When: '2026-11-12 11:57 UTC' - '2026-11-12 12:10 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added a host-only `--load-package-aid-override` VPCD test hook and a regression that sends unchanged JCAlgTest 1.8.4 CAP bytes with a LOAD package AID differing from the CAP Header. Updated CAPIN-01 status and handoff with the reproduced failure.
+- Validation: `./tools/build-pc --profile max_crypto` passed, regenerating ROM mask and PC emulator from current dirty source. Python syntax check passed. The red run `PICO2_HOST_USB_ACCESS=1 ./tools/test-cap-malformed-vpcd --mutation load-header-aid-mismatch` reproduced the bug: LOAD was not rejected, CAP registry saved one package, and later INSTALL failed stage 4 with `6A82`. Whitespace check passed. Full ARM/RISC-V builds not run for this test-harness-only step.
+- Result: Before the fix, a CAP whose Header AID differs from GP LOAD's package AID is persisted under the wrong identifier; the failure is delayed to INSTALL and consumes package storage.
+- Decision: Next add an AID equality check in `CapLoadSession::finishLoad()` before cleanup, slot allocation, or storage. Keep malformed fixture bytes upstream and unchanged.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`; `tests/integration/cap_malformed_vpcd_test.py`.

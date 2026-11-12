@@ -1,4 +1,29 @@
-# Current handoff — no-debug max_crypto external image ready — 2026-11-12 11:53 UTC
+# Current handoff — CAPIN-01 package AID mismatch reproduced — 2026-11-12 12:10 UTC
+
+## Current offline step: reject LOAD package AID / CAP Header mismatch
+
+The guest USB refresh at 11:56 UTC still showed three runtime `2e8a:0009`
+devices and no BOOTSEL device, so work continued offline. Added a host-only
+VPCD test override and a mismatch regression using unchanged JCAlgTest 1.8.4
+CAP bytes. The red run proves current LOAD accepts a different package AID,
+stores the CAP (`VPCD:CAP_REGISTRY_SAVED packages=1`), then fails only during
+INSTALL with status `6A82` (stage 4). Log:
+`artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`.
+
+Next: make `CapLoadSession::finishLoad()` reject before package storage unless
+the AID parsed from the CAP Header equals the package AID in INSTALL-for-LOAD;
+rerun this test expecting no stored package, then rerun unchanged JCAlgTest
+install/select and CAP upgrade VPCD checks and build ARM/RISC-V. Preserve the
+shared dirty `src/cap_load.cpp` hunks; stage only the new mismatch guard.
+
+The no-debug `max_crypto` object-deletion image from the previous step remains
+available at
+`../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`;
+its Windows request remains in `.agent/EXT_REQUESTS.md`.
+
+---
+
+## Prior handoff — no-debug max_crypto external image ready — 2026-11-12 11:53 UTC
 
 ## Ready for Windows testing
 

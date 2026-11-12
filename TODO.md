@@ -91,6 +91,13 @@ task:
     CAP upgrade VPCD tests pass. Still open: conditional required-component
     rules, library Import/Export dependency validation, external superclass
     without Import fixture, install-AID mismatch fixture, and physical test.
+  - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
+    that requests the unchanged JCAlgTest CAP under a different package AID.
+    The red regression reproduces the defect: LOAD succeeds, the package is
+    persisted (`registry_saved_packages=1`), then INSTALL fails at stage 4
+    with `6A82`. The LOAD/Header AID check is the next fix; test and source
+    hashes remain unchanged. See the new `CAPIN-01-LOAD-HEADER-AID-MISMATCH`
+    progress entry and its log.
   1. In `CapLoadSession::finishLoad` (`src/cap_load.cpp`), construct
      `JC_Cap` with payload validation over the RAM load buffer and run the
      import-independent part of `validate_cap_imports` before
