@@ -1,20 +1,34 @@
-# Current handoff — debug-off image refreshed; BOOTSEL-01 is next — 2026-11-12 13:57 UTC
+# Current handoff — BOOTSEL reset integrated; hardware state mismatch remains — 2026-11-12 14:21 UTC
 
-## Current priority: implement BOOTSEL-01 offline
+## BOOTSEL-01 implementation complete offline; physical validation open
 
-`TODO.md` ranks BOOTSEL-01 as P0. Integrate the pico-sdk `pico_usb_reset`
-vendor reset descriptor/driver into the custom CDC + CCID composite USB
-device. Make CDC-1200 requests service at a bounded cooperative point after
-TinyUSB returns from the control callback, including during synchronous APDU
-and native work. Add offline regressions for request delivery and bounded
-servicing, keep board selection pinned to chip ID, and build ARM and RISC-V
-before any physical test. See `.agent/QKB.md`'s BOOTSEL audit and preserve
-unrelated worktree changes.
+Integrated pico-sdk `pico_usb_reset`: a vendor reset descriptor and class
+driver are registered as interface 3, alongside CDC interfaces 0/1 and CCID
+interface 2. The USB device descriptor now reports USB 2.10 for MS OS 2.0
+descriptor support. SDK CDC-1200 reset is disabled because CHOUPI owns that
+callback; CHOUPI queues CDC reset and consumes it after TinyUSB returns from
+USB servicing both in the main loop and in interpreter cooperative progress.
+This permits reset during synchronous applet/native work while keeping USB
+event servicing bounded.
 
-The user reports all three tokens in BOOTSEL. The latest guest-access USB
-enumeration instead showed three runtime `2e8a:0009` devices and no BOOTSEL
-`2e8a:000f`; PC/SC listed only D92 after the latest client failure. Do not
-reset or flash until the intended target is visible in BOOTSEL in this guest.
+Validation: `./tools/test-ccid-progress-flow` passes 26/26, including callback
+return ordering, reset while native work is active, and one-shot consumption.
+`./tools/test-flash-target-selection` passes 10/10 identity-pinning cases.
+`./tools/build arm` and `./tools/build riscv` pass. ARM full firmware ends at
+`0x100d91b0`, leaving 159,312 bytes. No physical reset or flash was attempted.
+
+The user reports all three devices in BOOTSEL. After that report, the required
+elevated guest command `lsusb -d 2e8a:` still returned three runtime
+`2e8a:0009` devices and no BOOTSEL `000f`. Physical testing remains blocked on
+this host/device passthrough discrepancy. Next, once a device is actually
+visible as BOOTSEL in the guest, validate vendor reset and CDC-1200 from idle
+and long synchronous work, record latency/chip ID/image hash, then flash by
+exact identity and capture finite serial health. Do not infer availability
+from host-side/VM UI state alone.
+
+The implementation worktree also contains extensive unrelated pre-existing
+changes. Stage only the BOOTSEL source, test, progress, and continuity files for
+its commit; preserve all unrelated dirty and untracked data.
 
 ## Fresh Windows image
 

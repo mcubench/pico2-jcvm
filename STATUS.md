@@ -109,10 +109,14 @@ current physical-test handoff.
 
 ## Highest-priority remaining work
 
-1. **BOOTSEL-01 (P0):** implement the SDK vendor reset interface and bounded
-   CDC-1200 reset servicing offline, then validate descriptors, cooperative
-   request delivery and identity-pinned selection. Physical validation remains
-   gated on guest-visible BOOTSEL identity.
+1. **BOOTSEL-01 (P0):** offline firmware integration is implemented. The SDK
+   vendor reset descriptor/driver is interface 3, and CDC-1200 reset servicing
+   is deferred to cooperative points. Reset/CCID unit coverage passes 26/26,
+   identity-pinned target selection passes 10/10, and ARM/RISC-V builds pass.
+   Physical reset/re-enumeration validation remains gated on guest-visible
+   BOOTSEL identity. After the user's latest report that all three boards are
+   in BOOTSEL, elevated guest USB enumeration still showed three runtime
+   `2e8a:0009` devices and no BOOTSEL `000f`.
 2. **RESOURCE-01 / RESOURCE-02:** flash the quiet CCID trace image after a guest-visible
    BOOTSEL interface returns, localize the post-applet response stall, fix
    remaining reclamation/resource failures, then complete unchanged JCAlgTest

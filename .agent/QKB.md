@@ -430,10 +430,20 @@ guaranteed. An unserviced USB loop also prevents receiving the request.
 Neither mechanism proves the exact D92 failure without existing run-specific
 telemetry. VM passthrough and host CDC request delivery remain alternatives.
 
-Proposed fix (not implemented/validated): integrate the SDK vendor reset driver
-and descriptor, and provide a safe reset servicing point during cooperative
-work after control-transfer completion. Do not reset a board in use. No devices,
-PC/SC, USB probes, builds or physical tests were used in this audit.
+Implementation update — 2026-11-12: added the SDK vendor reset descriptor and
+class driver as interface 3 while retaining CDC interfaces 0/1 and CCID
+interface 2. CHOUPI's CDC-1200 callback now queues a request; main-loop USB
+service and interpreter cooperative progress consume it after TinyUSB returns.
+The SDK CDC reset callback is disabled to avoid a duplicate callback and direct
+reset from inside TinyUSB. Offline evidence: reset/CCID unit tests 26/26,
+identity-pinned flash-target-selection tests 10/10, and ARM/RISC-V wrapper
+builds pass. The ARM image ends at `0x100d91b0`, leaving 159,312 bytes.
+
+Physical limitation remains: after the user reported three devices in BOOTSEL,
+elevated guest `lsusb -d 2e8a:` returned three runtime `2e8a:0009` devices and
+no BOOTSEL `000f`. No reset or flash was attempted. Hardware confirmation of
+vendor reset, CDC-1200 reset during idle and a long synchronous workload, and
+request-to-re-enumeration latency remains open; no latency metric is measured.
 
 ## JCAlgTest option 2 PC/SC failures on 8E and D92 — 2026-11-12
 

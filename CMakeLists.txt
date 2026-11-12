@@ -219,7 +219,14 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   # platform_util.c never tries to compile unavailable POSIX/time routines.
   target_compile_definitions(pico2_choupi PRIVATE
     MBEDTLS_PLATFORM_MS_TIME_ALT
-    MBEDTLS_PLATFORM_ZEROIZE_ALT)
+    MBEDTLS_PLATFORM_ZEROIZE_ALT
+    # CHOUPI owns the CDC line-coding callback so the 1200-baud reset can be
+    # deferred to a cooperative point after TinyUSB returns.
+    PICO_ENABLE_USB_RESET_VIA_BAUD_RATE=0
+    PICO_ENABLE_USB_RESET_VIA_VENDOR_INTERFACE=1
+    PICO_USB_RESET_SUPPORT_MS_OS_20_DESCRIPTOR=1
+    PICO_USB_RESET_MS_OS_20_DESCRIPTOR_ITF=3
+    PICO_USB_RESET_INCLUDE_DEFAULT_APP_DRIVER_CB=0)
   set_source_files_properties(src/ccid_device.cpp PROPERTIES
     COMPILE_DEFINITIONS
       "CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID=${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}")
@@ -256,7 +263,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   # pico_rand also supplies SCP03 host challenge randomness, so it remains a
   # mandatory card-management dependency even when Java Card RandomData is off.
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
-    hardware_pwm
+    hardware_pwm pico_usb_reset
     pico_mbedtls_headers)
   if(JC_SUPPORT_SHA256)
     target_link_libraries(pico2_choupi PRIVATE pico_sha256)

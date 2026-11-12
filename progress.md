@@ -28507,3 +28507,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 +- Decision: Continue BOOTSEL-01 offline as the P0 task. Return to physical validation after this guest sees an identity-verifiable BOOTSEL target and no campaign is active.
 +- Commit: pending.
 +- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option2-gc-nodebug/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/2BED26ED20556535/option2-gc-nodebug/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-gc-nodebug/`; `.agent/QKB.md`; `.agent/HANDOFF.md`.
+
+## 2026-11-12 Integrate cooperative BOOTSEL reset 25 minutes
+
+- Step/experiment: `BOOTSEL-01-INTEGRATION-20261112`
+- When: '2026-11-12 13:57 UTC' - '2026-11-12 14:22 UTC'
+- Model: `GPT-6 (Codex)`
+- Change: Integrated the SDK vendor reset descriptor/driver as USB interface 3. Kept CHOUPI's CDC-1200 callback and deferred reset to after TinyUSB servicing in the main loop and interpreter cooperative progress; disabled the SDK's competing immediate CDC callback. Added reset callback-order/one-shot/in-work coverage and updated TODO, STATUS, QKB and handoff.
+- Validation: `./tools/test-ccid-progress-flow` passed 26/26. `./tools/test-flash-target-selection` passed 10/10. `./tools/build arm` and `./tools/build riscv` passed. ARM firmware ends at `0x100d91b0`, leaving 159,312 bytes. Targeted `git diff --check` passed. No physical reset or flash: after the user reported all three devices in BOOTSEL, elevated `lsusb -d 2e8a:` still showed three runtime `2e8a:0009` devices and no BOOTSEL `000f`. Reset latency was not measured.
+- Result: Offline firmware integration and regression gates pass; the external reset paths and hardware re-enumeration remain unverified due to guest/VM USB state mismatch.
+- Decision: Keep BOOTSEL-01 open for physical validation once an identity-verifiable BOOTSEL device appears in the guest. Do not reset/flash based solely on VM UI or host report.
+- Commit: pending.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/build-provenance.txt`; `.agent/QKB.md`; `.agent/HANDOFF.md`.

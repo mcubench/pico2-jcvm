@@ -7,6 +7,7 @@
 #include "device/usbd_pvt.h"
 #include "pico/time.h"
 #include "pico/unique_id.h"
+#include "pico/usb_reset.h"
 #include "tusb.h"
 #include "scp03.hpp"
 #include "apdu_status.hpp"
@@ -28,6 +29,8 @@
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
+constexpr uint8_t kResetInterface = 3;
+constexpr uint8_t kResetString = 6;
 constexpr uint8_t kEndpointOut = 0x03;
 constexpr uint8_t kEndpointIn = 0x83;
 constexpr uint16_t kEndpointSize = 64;
@@ -52,9 +55,9 @@ bool is_select_by_aid(const uint8_t *apdu, size_t apdu_length) {
 // The standard CDC interface remains available for diagnostics. CCID is the
 // third interface in this composite device and uses independent endpoints.
 constexpr uint16_t kConfigLength = TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN +
-                                  9 + 54 + 2 * 7;
+                                  9 + 54 + 2 * 7 + TUD_RPI_RESET_DESC_LEN;
 const uint8_t kConfiguration[] = {
-    TUD_CONFIG_DESCRIPTOR(1, 3, 0, kConfigLength,
+    TUD_CONFIG_DESCRIPTOR(1, 4, 0, kConfigLength,
                           TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
     TUD_CDC_DESCRIPTOR(0, 4, 0x81, 8, 0x02, 0x82, kEndpointSize),
     9, TUSB_DESC_INTERFACE, kCcidInterface, 0, 2, 0x0b, 0, 0, 5,
@@ -70,6 +73,7 @@ const uint8_t kConfiguration[] = {
     0x0f, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     7, TUSB_DESC_ENDPOINT, kEndpointOut, TUSB_XFER_BULK, 64, 0, 0,
     7, TUSB_DESC_ENDPOINT, kEndpointIn, TUSB_XFER_BULK, 64, 0, 0,
+    TUD_RPI_RESET_DESCRIPTOR(kResetInterface, kResetString),
 };
 static_assert(sizeof(kConfiguration) == kConfigLength,
               "USB configuration descriptor length is inconsistent");
@@ -1296,6 +1300,10 @@ const usbd_class_driver_t kDriver = {
     .xfer_cb = driver_xfer,
     .sof = nullptr,
 };
+const usbd_class_driver_t kApplicationDrivers[] = {
+    kDriver,
+    usb_reset_interface_driver,
+};
 } // namespace
 
 extern "C" void choupi_ccid_task(void) {
@@ -1486,15 +1494,15 @@ extern "C" void choupi_ccid_debug_recent(uint8_t *commands,
 
 extern "C" usbd_class_driver_t const *usbd_app_driver_get_cb(
     uint8_t *driver_count) {
-  *driver_count = 1;
-  return &kDriver;
+  *driver_count = sizeof(kApplicationDrivers) / sizeof(kApplicationDrivers[0]);
+  return kApplicationDrivers;
 }
 
 extern "C" const uint8_t *tud_descriptor_device_cb(void) {
   static const tusb_desc_device_t descriptor = {
       .bLength = sizeof(tusb_desc_device_t),
       .bDescriptorType = TUSB_DESC_DEVICE,
-      .bcdUSB = 0x0200,
+      .bcdUSB = 0x0210,
       .bDeviceClass = TUSB_CLASS_MISC,
       .bDeviceSubClass = MISC_SUBCLASS_COMMON,
       .bDeviceProtocol = MISC_PROTOCOL_IAD,
@@ -1535,6 +1543,7 @@ extern "C" const uint16_t *tud_descriptor_string_cb(uint8_t index,
   }
   if (index == 4) value = "CHOUPI CDC";
   if (index == 5) value = "JCVM CCID";
+  if (index == kResetString) value = "Pico2 BOOTSEL Reset";
   if (value == nullptr) return nullptr;
   size_t length = std::strlen(value);
   if (length > 31) length = 31;

@@ -1,4 +1,5 @@
 #include "ccid_progress_flow.hpp"
+#include "usb_bootsel_request.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -52,6 +53,35 @@ struct FakeProgressHooks {
 } // namespace
 
 int main() {
+  volatile bool bootsel_pending = false;
+  bool line_coding_callback_active = false;
+  bool native_work_active = true;
+  unsigned bootsel_resets = 0;
+  check(!choupi::service_pending_bootsel_reset(
+            bootsel_pending, [&] { ++bootsel_resets; }),
+        "BOOTSEL is not entered without a queued request");
+  const bool reset_during_native_work = choupi::service_usb_then_bootsel_reset(
+      bootsel_pending,
+      [&] {
+        line_coding_callback_active = true;
+        choupi::request_bootsel_reset(bootsel_pending);
+        line_coding_callback_active = false;
+      },
+      [&] {
+        check(!line_coding_callback_active,
+              "CDC reset is serviced only after TinyUSB callback returns");
+        check(native_work_active,
+              "cooperative reset is serviced during synchronous native work");
+        ++bootsel_resets;
+      });
+  check(reset_during_native_work && bootsel_resets == 1 &&
+            !bootsel_pending,
+        "cooperative BOOTSEL request is consumed once");
+  check(!choupi::service_pending_bootsel_reset(
+            bootsel_pending, [&] { ++bootsel_resets; }) &&
+            bootsel_resets == 1,
+        "serviced BOOTSEL request does not reset repeatedly");
+
   bool task_active = true;
   volatile bool pending = true;
   unsigned dispatch_count = 0;
