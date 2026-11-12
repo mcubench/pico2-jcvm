@@ -146,19 +146,19 @@ not safe to flash it until the ROM chip ID is visible again.
 ## PCSC-RECOVER-AFTER-RESET-20261112 — Restore a physical reader and expose BOOTSEL to the VM
 
 The corrected D92 1.8.4 run ended with `SCARD_E_NOT_TRANSACTED` after a
-successful `INS_CARD_RESET`. The approved helper granted two USB nodes, but
-`pcsc_scan -r` listed only the VPCD readers. The guest still sees three runtime
-`2e8a:0009` nodes and no BOOTSEL interface, despite the report that the boards
-are in BOOTSEL.
+successful `INS_CARD_RESET`. On 2026-11-12 at 10:41 UTC, after the user
+reinserted all three boards in BOOTSEL, the guest still saw three runtime
+`2e8a:0009` devices and no BOOTSEL interface. The approved helper granted two
+USB nodes; `pcsc_scan -r` listed only the VPCD readers.
 
-The fresh corrected diagnostic image is
-`../build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-99fbee66.uf2`,
-4,103,680 bytes, SHA-256
-`56253ebaddecd56271571a0ce759dfadcf2b60f3eb5e5dc5873d3cc18f790292`. ARM and
-RISC-V wrappers both passed at source HEAD `99fbee66` (worktree was dirty).
-Identity-pinned flash attempts on D92 and 8E could not find their reset
-interfaces; 2BED was not connected. The wrapper wrote no new image in these
-attempts.
+The latest trace-enabled empty-card diagnostic image is
+`../build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2`,
+4,105,216 bytes, SHA-256
+`05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`. ARM and
+RISC-V wrappers both passed at source commit `5c78e647` (the build tree is
+dirty); CPLC source ID is `42B8697484B7CF78`. Identity-pinned flash attempts
+found D92 and 8E but could not access either reset interface; the third chip ID
+2BED was not connected. No image was written.
 
 To restore one runtime reader for PC/SC validation, run in the guest:
 
@@ -168,7 +168,7 @@ sudo -n /usr/local/sbin/pico2-pcsc-reader
 timeout --signal=TERM --kill-after=1s 10s pcsc_scan -r
 ```
 
-For another firmware flash, attach one BOOTSEL device to this VM through
+To continue physical validation, attach one BOOTSEL device to this VM through
 VirtualBox **Devices → USB** and confirm the guest sees `2e8a:000f` with:
 
 ```sh

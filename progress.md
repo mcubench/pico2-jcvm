@@ -28231,3 +28231,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit the trace instrumentation and records, rebuild/package with the resulting source ID, and flash an identity-verified device once BOOTSEL is visible to the VM. RESOURCE-01 and full JCAlgTest acceptance remain open.
 - Commit: `5c78e647` (the change and initial record); this hash backfill is a separate progress-only commit.
 - Artifacts/logs: Build products `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no new physical run logs.
+
+## 2026-11-12 Rebuild and attempt identity-pinned trace firmware flash 12 min
+
+- Step/experiment: `RESOURCE-01-TRACE-IMAGE-FLASH-20261112`
+- When: '2026-11-12 10:31 UTC' - '2026-11-12 10:43 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Rebuilt the trace-enabled `max_crypto` image from committed source, packaged a fresh empty-card UF2, attempted exact-ID flashes on all three previously identified Pico 2 devices, and updated the active HANDOFF and external recovery request. No source implementation changed in this step.
+- Validation: Both `PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the RISC-V equivalent passed at HEAD `42b86974`; ARM `FLASH_LAYOUT:PASS` reports firmware end `0x100F5018`, 45,032 bytes free. `./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2` passed: 4,105,216 bytes, 3,921 firmware blocks plus 4,096 erased storage blocks. SHA-256 is `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`; CPLC source ID `42B8697484B7CF78`. Provenance reports dirty source tree. The D92 and 8E `tools/flash --chipid` wrappers each found the exact runtime USB serial but failed with `Unable to locate reset interface`; bounded picotool and CDC-1200 recovery did not expose BOOTSEL. The 2BED-pinned wrapper returned `requested identity 2BED26ED20556535 is not connected`. Final `PICO2_HOST_USB_ACCESS=1 lsusb -d 2e8a:` showed three runtime `2e8a:0009` devices and no BOOTSEL `000f`; the approved reader helper granted two nodes and `pcsc_scan -r` listed only VPCD. No flash succeeded, so no firmware serial validation occurred.
+- Result: The trace image is ready, but the guest USB state does not match the reported BOOTSEL state. No physical device received the new image.
+- Decision: Preserve the image and logs/state. Resume physical testing only when VirtualBox exposes a verified BOOTSEL chip ID or a PC/SC reader; continue offline otherwise. Do not treat this as a firmware flash failure.
+- Commit: `5c78e647` (implementation); this record and BOOTSEL state update are in a separate commit.
+- Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2`; SHA-256 above; ARM/RISC-V provenance in `build/{arm,riscv}/build-provenance.txt`; flash outputs inspected directly, not archived.

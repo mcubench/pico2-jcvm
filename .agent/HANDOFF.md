@@ -61,19 +61,32 @@ focused tests pass: `./tools/test-ccid-progress-flow` (21/21) and
 object deletion and heap-GC debug enabled both pass. The ARM build reports
 firmware end `0x100F5018`, leaving 45,032 bytes before `0x10100000`.
 
-The boards were reported reinserted in BOOTSEL, but this guest still sees three
-runtime `2e8a:0009` devices (one without a product descriptor), no `2e8a:000f`
-BOOTSEL interface, and `pcsc_scan -r` lists only the two VPCD readers. The
-approved helper grants two runtime USB nodes. Do not claim that a new image was
-flashed. The separate pre-fix 8E run ended in heap read failures and
-out-of-memory; keep it distinct from this D92 post-applet response stall.
+The user reported all three boards reinserted in BOOTSEL, but this guest still
+sees three runtime `2e8a:0009` devices (one without a product descriptor), no
+`2e8a:000f` BOOTSEL interface, and `pcsc_scan -r` lists only the two VPCD
+readers. The approved helper grants two runtime USB nodes. I rebuilt after the
+trace commit and packaged the current empty-card diagnostic image:
+`build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2`,
+4,105,216 bytes, SHA-256
+`05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`. Build
+provenance is dirty (unrelated worktree changes are preserved), CPLC source ID
+`42B8697484B7CF78`; ARM and RISC-V wrappers both pass.
 
-Next: once a physical device is visible in BOOTSEL to the VM, build/package
-from the committed trace source, verify its exact chip ID, flash one identified
-board, inspect a finite serial boot, and continue unchanged 1.8.4 option 1 and
-option 2 on separate identified devices when possible. Inspect the new markers
-to localize whether the lost response stalls in `fs_sync()`, submission or USB
-completion. Do not claim the partial 1.8.4 run passed. RESOURCE-01 remains open.
+Identity-pinned flash attempts to D92 and 8E both found the exact runtime
+device but `picotool` reported `Unable to locate reset interface`; the CDC-1200
+fallback and bounded retries did not expose BOOTSEL. The third chip ID 2BED was
+not connected by identity. No image was written. A final host-access USB check
+again saw only runtime `0009` devices; the reader helper grants two, while
+PC/SC lists only VPCD. Do not claim this trace image was flashed. The separate
+pre-fix 8E run ended in heap read failures and out-of-memory; keep it distinct
+from this D92 post-applet response stall.
+
+Next: once VirtualBox exposes a physical device in BOOTSEL to the VM, verify its
+exact ROM chip ID, flash the image above, inspect a finite serial boot, and
+continue unchanged 1.8.4 option 1 and option 2 on separate identified devices
+when possible. Inspect the new markers to localize whether the lost response
+stalls in `fs_sync()`, submission or USB completion. Do not claim the partial
+1.8.4 run passed. RESOURCE-01 remains open.
 
 # Handoff snapshot — RESOURCE-01 corrected D92 run active — 2026-11-12 09:44 UTC
 
