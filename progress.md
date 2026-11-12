@@ -27922,3 +27922,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open; collect candidate traces on hardware before changing deletion policy.
 - Commit: pending
 - Artifacts/logs: Test command output from this run; no additional persistent log.
+
+## 2026-11-12 RESOURCE-01 quantify blocked heap reclamation 4 min
+
+- Step/experiment: `RESOURCE-01-HEAP-GROWTH-TRACE-20261112`
+- When: '2026-11-12 01:42 UTC' - '2026-11-12 01:46 UTC'
+- Model: `GPT-6`
+- Change: Quantified heap-GC outcomes and handle counts after the first missing durable array-body read in the archived physical option-1 trace; updated TODO, QKB, and handoff.
+- Validation: Read-only parser over 9,710-line serial log found 277 `CHOUPI:HEAP_GC summary` rows; every row reported zero arrays/instances reclaimed, 276 reported one edge failure. At sequence 6 totals were 118 arrays / 22 instances; sequence 291 totals were 365 / 185. First `F205` is log line 2814, sequence 87, at 136 arrays / 30 instances. No source or runtime test was changed or run.
+- Result: Incomplete graph traversal is strongly associated with the later absence of RAM-handle reclamation and rising heap totals. The log still cannot establish which operation removed the first body.
+- Decision: Keep persistent reclamation fail-closed; use the prepared stage-tagged firmware to identify the exact erase candidate before changing source behavior.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`.

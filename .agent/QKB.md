@@ -100,6 +100,16 @@ under `build/resource01-candidate-trace-20261112/`; flash it only after the
 guest exposes a physical board in BOOTSEL, then compare the exact candidate
 against the first missing-body error.
 
+The same run shows why this matters to RESOURCE-01: after the first edge error,
+277 heap-GC summaries show zero array and instance reclamation; 276 of those
+summaries report one edge failure. Handle totals rise from 118 arrays / 22
+instances at sequence 6 to 365 / 185 by sequence 291. The first `F205` is at
+line 2814, sequence 87 (136 arrays / 30 instances). This supports the chain
+“missing durable body -> strict graph walk incomplete -> conservative heap
+sweep skips -> retained handle growth -> resource failure.” It does not show
+whether the first body was erased by the deletion batch or another storage
+operation; keep that causal claim open until the candidate-tagged run.
+
 Evidence: `progress.md`, entry `RESOURCE-01-STALE-ARRAY-BODY-GUARD-20261112`;
 regression `persistent_array_handle_rejects_realiasing_missing_body`;
 `artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`.

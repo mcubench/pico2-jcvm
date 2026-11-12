@@ -10,6 +10,14 @@ That run predates candidate-tag tracing, so the sequence implicates deletion
 but does not identify the erased tag. The prepared trace image is needed to
 prove or falsify the link.
 
+The downstream failure is clearer: of 277 heap-GC summaries after/around the
+first error, all report zero reclaimed arrays and instances; 276 report one
+edge failure. Totals grow from 118 arrays / 22 instances at sequence 6 to
+365 / 185 at sequence 291. The first `F205` occurs at sequence 87 (136 arrays
+/ 30 instances). This supports incomplete persistent traversal as the reason
+GC stops reclaiming handles and resource use grows. It does not prove which
+operation removed the body.
+
 No source change was justified from this indirect evidence. The prior build
 and hardware status remains below; continue offline analysis while BOOTSEL is
 not visible, and capture the exact erase candidate on hardware before changing
