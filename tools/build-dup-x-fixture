@@ -101,6 +101,33 @@ if replacements != 1:
 path.write_text(updated)
 if not matrix and f"dup_x {assembly_operand};" not in updated:
     raise SystemExit("assembled dup_x operand was not written")
+
+invalid_pattern = re.compile(
+    r"(?P<header>\s*\.method\s+[^\n]*invalidDupXProbe\(\)S(?:\s+\d+)?\s*\{)"
+    r"(?P<body>.*?)"
+    r"(?P<close>^\s*\})",
+    re.MULTILINE | re.DOTALL,
+)
+invalid_body = "\n".join((
+    "\t\t\t.stack 3;",
+    "\t\t\t.locals 0;",
+    "",
+    "\t\t\t\tL0: sspush 30;",
+    "\t\t\t\t\tsspush 40;",
+    "\t\t\t\t\tdup_x 18;",
+    "\t\t\t\t\tssub;",
+    "\t\t\t\t\tsadd;",
+    "\t\t\t\t\tsreturn;",
+))
+updated, invalid_replacements = invalid_pattern.subn(
+    lambda match: match.group("header") + invalid_body + match.group("close"),
+    updated,
+)
+if invalid_replacements != 1:
+    raise SystemExit(
+        f"expected one invalidDupXProbe JCA method, found {invalid_replacements}"
+    )
+path.write_text(updated)
 PY
 
 "${repo_root}/tools/env" java \
@@ -148,6 +175,33 @@ if not matrix and not operand_is_legal:
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+if os.environ.get("DUP_X_INVALID_RUNTIME") == "1":
+    needle = bytes.fromhex("11 00 1e 11 00 28 3f 12 43 41 78")
+    with ZipFile(source, "r") as cap:
+        entries = [(entry, cap.read(entry.filename)) for entry in cap.infolist()]
+    matches = 0
+    updated_entries = []
+    for entry, content in entries:
+        if entry.filename.endswith("/Method.cap"):
+            matches += content.count(needle)
+            if content.count(needle) == 1:
+                content = content.replace(
+                    needle, needle[:7] + bytes([0x17]) + needle[8:], 1)
+        updated_entries.append((entry, content))
+    if matches != 1:
+        raise SystemExit(
+            f"expected one invalid-runtime dup_x placeholder, found {matches}"
+        )
+    fd, temporary = tempfile.mkstemp(dir=os.path.dirname(source), suffix=".cap")
+    os.close(fd)
+    try:
+        with ZipFile(temporary, "w", ZIP_DEFLATED) as cap:
+            for entry, content in updated_entries:
+                cap.writestr(entry, content)
+        os.replace(temporary, source)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
               "Class", "Method", "StaticField", "RefLocation", "Descriptor")
 with ZipFile(source) as cap, open(target, "wb") as output:
@@ -159,5 +213,7 @@ with ZipFile(source) as cap, open(target, "wb") as output:
             raise SystemExit(f"CAP is missing required component {name}")
         output.write(cap.read(name))
 label = "matrix=24" if matrix else f"operand=0x{operand:02X}"
+if os.environ.get("DUP_X_INVALID_RUNTIME") == "1":
+    label += " invalid_runtime=0x17"
 print(f"DUP_X_CAP:PASS {label} cap={source} load_code={target}")
 PY

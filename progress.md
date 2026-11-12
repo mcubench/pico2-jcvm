@@ -28066,3 +28066,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R60 open for remaining interpreter and hardware acceptance. Do not flash until a board enumerates in BOOTSEL with readable identity; continue offline meanwhile.
 - Commit: `b543d306`
 - Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T044827Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T044827Z.log`; `artifacts/logs/build-pc-dup-x-20261112T044827Z.log`; generated `build/dup-x-fixture/`
+
+## 2026-11-12 Verify caught dup_x failure and next APDU 9 min
+
+- Step/experiment: `RV-20261106-60-VPCD-RECOVERY-20261112`
+- When: '2026-11-12 04:51 UTC' - '2026-11-12 05:00 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added a local test-applet path where INS `01` executes runtime-invalid `dup_x 0x17` under a `RuntimeException` handler and INS `02` returns success. Extended the fixture builder to patch only that method's distinctive CAP opcode, and made the integration wrapper archive/assert the host-side APDU transcript. Updated TODO and HANDOFF. This modifies only a test fixture and its tooling, not firmware Java/API code or supplied CAPs.
+- Validation: `bash -n tools/build-dup-x-fixture tools/test-dup-x-vpcd` and `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-dup-x-vpcd` passed: all 24 legal operands reached interpreter dispatch, applet installed, caught invalid-operand APDU returned `9000`, following APDU also returned `9000` in the same VPCD session (`TEST:SUMMARY pass=4 fail=0`); separate invalid INSTALL operand still fails safely with `vm=6F00` before applet publication. Elevated USB discovery still reports three runtime `2e8a:0009` devices, no BOOTSEL; no physical flash. ARM/RISC-V builds were not rerun because only test fixture/tooling changed.
+- Result: The interpreter recovers from a caught `dup_x` runtime exception and handles a later APDU in the same emulator session. PC interpreter SHA-256: `6f0e6a08b63f444c472c7117704b17b2c0240b1c349af2d15135d6626024319b`.
+- Decision: Keep R60 open for full invalid/type interpreter coverage and physical acceptance. No physical board is currently exposed as BOOTSEL in this VM.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T045849Z.log`; `artifacts/logs/dup-x-host-20261112T045849Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T045849Z.log`; `artifacts/logs/dup-x-invalid-host-20261112T045849Z.log`; `artifacts/logs/build-pc-dup-x-20261112T045849Z.log`

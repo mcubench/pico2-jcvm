@@ -1,3 +1,11 @@
+# Current handoff — R60 catches invalid dup_x and accepts the following APDU — 2026-11-12 05:00 UTC
+
+Extended the local test applet so custom APDU INS `01` executes a runtime-invalid `dup_x 0x17` inside a `RuntimeException` handler; INS `02` is an independent success path. The fixture builder generates this second method with a distinctive legal placeholder, then patches only its CAP opcode to the invalid operand. The VPCD wrapper now archives its host-side transcript and asserts both response statuses.
+
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-dup-x-vpcd` passed again. Valid matrix install/select and both custom APDUs pass (`TEST:SUMMARY pass=4 fail=0`); `DUP_X 0x17` appears in the runtime trace; APDU 1 returns `9000` after the caught exception and APDU 2 returns `9000` afterward. The separate install-time invalid `0x17` negative case still fails with `vm=6F00` before publication. Logs: `artifacts/logs/dup-x-vpcd-20261112T045849Z.log`, `artifacts/logs/dup-x-host-20261112T045849Z.log`, `artifacts/logs/dup-x-invalid-vpcd-20261112T045849Z.log`, `artifacts/logs/dup-x-invalid-host-20261112T045849Z.log`, and `artifacts/logs/build-pc-dup-x-20261112T045849Z.log`. PC binary SHA-256 is `6f0e6a08b63f444c472c7117704b17b2c0240b1c349af2d15135d6626024319b`.
+
+R60 still needs full invalid operand/type coverage through the interpreter and physical acceptance. Elevated USB refresh continues to show three runtime `2e8a:0009` devices and no BOOTSEL `2e8a:000f`; no board was flashed. Continue offline while passthrough is unchanged; keep unrelated worktree changes intact.
+
 # Current handoff — R60 legal dup_x operand matrix reaches the VPCD interpreter — 2026-11-12 04:51 UTC
 
 Extended `tools/build-dup-x-fixture` to generate a JCA probe method containing all 24 legal `dup_x` operands (including `n == 0`), clearing each resulting stack before the next case. The normal assembled source now carries the selected operand directly; the invalid-operand test alone assembles a legal placeholder and patches one CAP instruction byte because the JC305 assembler rejects invalid operands. `tools/test-dup-x-vpcd` checks every legal opcode appears in the interpreter trace and preserves the invalid `0x17` install-failure check.

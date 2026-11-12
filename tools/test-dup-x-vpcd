@@ -8,15 +8,33 @@ mkdir -p "${log_dir}"
 
 CHOUPI_JCVM_DEBUG=ON "${repo_root}/tools/build-pc" \
   > "${log_dir}/build-pc-dup-x-${timestamp}.log" 2>&1
-DUP_X_MATRIX=1 "${repo_root}/tools/build-dup-x-fixture"
+DUP_X_MATRIX=1 DUP_X_INVALID_RUNTIME=1 "${repo_root}/tools/build-dup-x-fixture"
 
 PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --passes 1 \
   --cap-code "${repo_root}/build/dup-x-fixture/dup-x-fixture-load-code.bin" \
   --applet-aid A0000001510000006001 \
   --package-id 63 \
-  --select-only \
-  --log "${log_dir}/dup-x-vpcd-${timestamp}.log"
+  --apdu 00010000 \
+  --apdu 00020000 \
+  --log "${log_dir}/dup-x-vpcd-${timestamp}.log" \
+  > "${log_dir}/dup-x-host-${timestamp}.log" 2>&1
+
+rg -q 'TEST:SUMMARY pass=4 fail=0' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: VPCD recovery run did not complete all four checks\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 1 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: caught invalid dup_x APDU did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 2 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: APDU following the caught invalid dup_x did not return 9000\n' >&2
+  exit 1
+}
 
 for m in 1 2 3 4; do
   for n in 0 "$(seq "${m}" "$((m + 4))")"; do
@@ -30,6 +48,10 @@ for m in 1 2 3 4; do
     done
   done
 done
+rg -q 'DUP_X 0x17' "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
+  printf 'ERROR: runtime-invalid dup_x operand was not observed in the interpreter log\n' >&2
+  exit 1
+}
 rg -q 'VPCD:APPLET_INSTALLED package-id=56' \
   "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
   printf 'ERROR: dup_x fixture applet installation was not observed\n' >&2
@@ -64,5 +86,8 @@ fi
 "${repo_root}/tools/build-dup-x-fixture" > /dev/null
 printf 'DUP_X_INVALID_VPCD:PASS operand=0x17 rejected with vm=6F00\n'
 printf 'DUP_X_MATRIX_VPCD:PASS legal_operands=24\n'
+printf 'DUP_X_RECOVERY_VPCD:PASS caught_operand=0x17 following_apdu=9000\n'
 printf 'DUP_X_VPCD:PASS log=%s\n' \
   "${log_dir}/dup-x-vpcd-${timestamp}.log"
+printf 'DUP_X_HOST:PASS log=%s\n' \
+  "${log_dir}/dup-x-host-${timestamp}.log"
