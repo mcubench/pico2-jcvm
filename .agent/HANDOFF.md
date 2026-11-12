@@ -32,6 +32,31 @@ current dirty worktree. This does not reproduce or close the physical issue;
 the recheck is committed as `4b4788cd`, with the progress-record hash
 backfilled in a follow-up documentation commit.
 
+# Current handoff — current max_crypto image built; reported BOOTSEL boards still enumerate as runtime — 2026-11-12 02:04 UTC
+
+Rebuilt current `max_crypto` ARM and RISC-V targets from dirty HEAD
+`ba7f465d`; both wrappers passed. The ARM UF2 is
+`build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
+`be5fca4bdaed456ccd650c3e6d556005dcf37ffb860768b693472009447402d6`.
+Build provenance records current source prefix `BA7F465DC615E3FE` split into
+CPLC personalization equipment IDs `BA7F465D` and `C615E3FE`.
+
+The user reported all three boards in BOOTSEL. This VM instead enumerated three
+runtime `2e8a:0009` devices at USB paths `1-3`, `1-4`, and `1-5`; `picotool
+info -a` reported no accessible BOOTSEL devices. The repository flash wrapper
+was run against each path with host USB access enabled. Each tried force-load,
+picotool reboot, and CDC 1200-baud recovery, then ended with
+`Pico did not enter BOOTSEL ...`; no UF2 was written. The known chip-ID
+selector did not match the runtime USB serial identifiers, so stable topology
+paths were used for the three bounded attempts. Exact outputs are in the
+current session transcript; no serial/PCSC test was possible.
+
+Next: ask the user to detach/re-attach the three USB devices in VirtualBox so
+the guest receives BOOTSEL `2e8a:000f` devices, then refresh `lsusb` and retry
+the current image per stable path. Do not claim the current firmware was
+flashed. Current image build and failed physical attempt are logged in
+`progress.md` under `MAXCRYPTO-THREE-BOARD-FLASH-20261112`.
+
 ---
 
 # Current handoff — RESOURCE-01 physical retry and diagnostic image ready — 2026-11-12 01:29 UTC
