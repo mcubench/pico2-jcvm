@@ -28255,3 +28255,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue physical testing only after a `2e8a:000f` BOOTSEL device or a PC/SC reader appears in the guest; do not classify this as a firmware write failure.
 - Commit: `3c16fd90`
 - Artifacts/logs: `lsusb -v` and finite monitor output inspected directly, not archived; diagnostic UF2 remains unchanged at SHA-256 `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`.
+
+## 2026-11-12 Correct current RESOURCE-01 and project status 6 min
+
+- Step/experiment: `RESOURCE-01-CURRENT-STATUS-REFRESH-20261112`
+- When: '2026-11-12 10:47 UTC' - '2026-11-12 10:53 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Reconciled `TODO.md` with the terminal JCAlgTest process logs and the latest BOOTSEL/PCSC checks; replaced stale “campaigns running” language with their incomplete outcomes. Refreshed `STATUS.md` with current build, image, physical state, evidence, and remaining acceptance gates.
+- Validation: Read all three JCAlgTest `run-info.txt` files and client-log tails; `ps` shows no JCAlgTest client process. The corrected D92 run has 51 rows and `SCARD_E_NOT_TRANSACTED`; the option-2 and earlier option-1 traces are `KeyboardInterrupt`, while the 8E run ends in `SCARD_E_NOT_TRANSACTED` with separate heap/OOM evidence. Current host-access USB/PCSC output is recorded in the preceding entry. `git diff --check -- TODO.md STATUS.md` passed. No source build or hardware write was needed for this documentation correction.
+- Result: Current high-level status no longer presents stopped campaigns or a historical image as current. RESOURCE-01 and whole-project acceptance remain open.
+- Decision: Continue with offline work while guest-visible BOOTSEL/PCSC is unavailable; resume the physical trace test when the mode is actually exposed.
+- Commit: `to be recorded in the commit-hash backfill`
+- Artifacts/logs: JCAlgTest records under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/`; current diagnostic image hash `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`.
