@@ -1,55 +1,55 @@
 # External validation requests
 
-## WIN_MAXCRYPTO_GC_NODEBUG_20261112 — Windows test: max_crypto with object deletion, no debug tracing
+## WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2 — Current Windows test: max_crypto with object deletion, no debug tracing
 
-The original image listed below was superseded on 2026-11-12 after inspection
-found verbose APDU and persistent-reference trace strings still compiled in
-despite the debug switches being off. Those traces are now gated by their
-existing debug options. Please test this rebuilt ARM image on Windows. It has `max_crypto` capabilities,
-deferred JCSystem object deletion enabled, an empty persistent-storage region,
-and no preinstalled applet. Heap-GC, CCID-applet and persistent-GC debug
-tracing are disabled; concise object-deletion event summaries remain in serial
-output.
+Created 2026-11-12 15:45 UTC. This replaces the earlier 31cb571c package.
+Please test the fresh RP2350 ARM image on Windows. It has `max_crypto`
+capabilities, deferred JCSystem object deletion enabled, a fully erased
+persistent-storage region and no preinstalled applet. Heap-GC, CCID-applet and
+persistent-GC debug tracing are disabled; concise object-deletion summaries
+remain enabled.
 
-- [Standalone UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2)
-- SHA-256: `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`
-- Size: 4,098,048 bytes; source HEAD `31cb571c`, dirty worktree; CPLC source ID
-  `31CB571C064FA40F`; firmware SHA-256
-  `7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`.
-- Build provenance: ARM and RISC-V `max_crypto` wrappers passed;
-  `object_deletion=ON`; `debug_heap_gc=OFF`; `debug_ccid_applet=OFF`;
-  `debug_persistent_gc=OFF`. `./tools/test-no-debug-traces` passed for both
-  architectures; the ARM ELF has no per-APDU or persistent-reference trace
-  strings and retains object-deletion event reporting. The RISC-V wrapper
-  builds the VM core only, not full CHOUPI firmware.
+- [Current standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2)
+- UF2 SHA-256: `f17a1fae0c0105475092d81595d2899eb671f8b9686656267c5d2137709ab4b7`
+- Size: 4,099,072 bytes. Firmware-only UF2 SHA-256:
+  `f1d71864a0620ee28a1c4a93b1ff3dd768c9c30757227c87c83873963713ce52`.
+- Source HEAD: `580f3f409c898f6ea71d8d15dc12f98a277d49a2` (dirty worktree).
+  CPLC source ID: `580F3F409C898F6E`. Source-file diff SHA-256 over
+  `choupi/src src config`: `64ee57808d759dec16296d48050a0ef307be06b602c206a4c9836189fec9f9f9`.
+- Build: ARM and RISC-V wrappers passed with `max_crypto` and
+  `PICO2_ENABLE_OBJECT_DELETION=1`; debug heap-GC, CCID-applet, and
+  persistent-GC switches are OFF. `./tools/test-no-debug-traces` passed for
+  both architectures; the ARM ELF retains concise deletion events and omits
+  verbose APDU and persistent-reference trace strings. ARM firmware ends at
+  `0x100f4460`, leaving 48,032 bytes before the configured 1 MiB boundary.
+  RISC-V builds the VM core only, not complete CHOUPI firmware.
+- Local physical check, 2026-11-12: the matching firmware-only UF2 was flashed
+  through the identity-pinned CDC-1200 BOOTSEL fallback to D92
+  (`D92E743D5F640C0F`, BOOTSEL observed after 4 s), 8E
+  (`8E464F4E2BBC0A19`, 3 s) and 2BED (`2BED26ED20556535`, 3 s). All returned
+  `FLASH:PASS`; three finite monitors returned `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. PC/SC subsequently listed all three readers;
+  GPPro `--list` on D92 succeeded and showed the preserved JCAlgTest package
+  and applet. The packaged empty-card UF2 itself was not flashed locally.
+  Per-device serial logs:
+  `artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`.
 
 Windows PowerShell steps:
 
 1. Verify the downloaded image:
-   `Get-FileHash .\pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2 -Algorithm SHA256`
+   `Get-FileHash .\pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2 -Algorithm SHA256`
    and compare with the hash above.
-2. Hold BOOTSEL while connecting the Pico 2. Copy the UF2 to the `RPI-RP2`
-   drive and wait for it to disappear/re-enumerate.
-3. Run `certutil -scinfo`; report the reader name and ATR. Confirm the card is
+2. Hold BOOTSEL while connecting the Pico 2, copy the UF2 to the `RPI-RP2`
+   drive, and wait for it to disappear/re-enumerate.
+3. Run `certutil -scinfo`; return the reader name and ATR. Confirm the card is
    empty with `java -jar .\gp.jar --reader "<exact reader name>" --list`.
 4. Explicitly install the unchanged upstream JCAlgTest 1.8.4/jc305 CAP with
-   GPPro, then use the matching 1.8.4 client. Run option `2 -> PERFORMANCE
+   GPPro, then use its matching 1.8.4 client. Run option `2 -> PERFORMANCE
    TEST` and option `1 -> All algorithms` if time permits. Keep separate
-   result folders and serial logs; record reader name and chip ID for each.
+   result folders and serial logs; record reader name and chip ID.
 5. Return Windows version, hash output, reader/ATR, GPPro install/selection
-   results, client outputs/CSVs, and complete serial logs. Preserve deletion
+   results, client CSVs/logs and complete serial output. Preserve deletion
    summaries and any `6F00`, `F205`, reset, timeout or PC/SC errors.
-
-The 4 MiB UF2 includes firmware plus a full erased 1 MiB storage region. On
-2026-11-12, this exact image was also flashed and verified on D92
-(`D92E743D5F640C0F`), 8E (`8E464F4E2BBC0A19`), and 2BED
-(`2BED26ED20556535`) through the identity-pinned wrapper. Each board passed a
-finite serial `TEST:PASS choupi_runtime` monitor and exact-reader GPPro `--list`
-reported only `ISD: A000000151000000 (OP_READY)`, with no applet installed.
-Per-board evidence is in
-`artifacts/results/maxcrypto-gc-nodebug-flash-20261112/`. This does not replace
-the requested independent Windows validation; return Windows PC/SC, GPPro,
-JCAlgTest and serial results as above.
 
 ## Windows validation: fresh max_crypto empty-card image
 

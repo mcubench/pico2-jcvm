@@ -17,10 +17,13 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 
 Device availability changes: consult the latest [.agent/HANDOFF.md](.agent/HANDOFF.md)
 and [.agent/QKB.md](.agent/QKB.md), then refresh authorized USB/PCSC access.
-At the 2026-11-12 11:49 UTC check, three Pico devices enumerated in the guest as
-runtime `2e8a:0009`; none appeared in BOOTSEL (`000f`), and `pcsc_scan -r` listed
-only VPCD. The user's BOOTSEL report is not reflected in guest USB state. A
-serial heartbeat or USB enumeration alone does not establish API/PCSC acceptance.
+On 2026-11-12, identity-pinned CDC-1200 recovery entered BOOTSEL and flashed
+the current max_crypto/object-deletion firmware to all three boards. Each
+passed finite serial startup; PC/SC listed all three and GPPro listing on D92
+succeeded. The user has since physically disconnected the devices; do no more
+hardware work until they are reported available and guest enumeration confirms
+them. A serial heartbeat or USB enumeration alone does not establish API/PCSC
+acceptance.
 
 Full pre-edit text (including existing uncommitted edits), completed tasks,
 measurements and detailed acceptance cases are preserved in the
@@ -35,18 +38,16 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
 
 ### BOOTSEL-01
 
-- [ ] **P0: Complete reliable software entry into BOOTSEL for identity-pinned Pico 2 boards.** Offline firmware integration is implemented and both architecture builds pass. Physical reset/re-enumeration acceptance remains open. The D92 recovery attempt found the correct board but picotool reported a missing reset interface and the CDC-1200 fallback did not produce an observable BOOTSEL device within 20 seconds.
-- Confirmed source findings: `src/ccid_device.cpp` exposes CDC control/data and CCID only, and registers only the CCID application driver. The SDK vendor reset descriptor/driver is absent despite the requirement in `plan.md`; this omission dates to `dc76f431` (2026-10-11). The CDC fallback added in `971887e4` sets a flag consumed only in the outer main loop. Long synchronous APDU work can service USB and feed the watchdog without acting on that flag. These explain recovery weaknesses; the exact historical D92 failure remains unproven. See [.agent/QKB.md](.agent/QKB.md#bootsel-reset-integration-audit--2026-11-12-offline) and audit commit `31cb571c`.
+- [ ] **P0: Complete reliable software entry into BOOTSEL for identity-pinned Pico 2 boards.** Offline firmware integration is implemented. On 2026-11-12, picotool could not locate its reset interface on D92, 8E or 2BED; identity-pinned CDC-1200 fallback entered BOOTSEL in 4, 3 and 3 seconds respectively, and all three firmware-only flashes verified. All boards passed finite runtime checks; PC/SC listed all three and GPPro listing on D92 succeeded. This validates the CDC fallback from idle on three boards, not the vendor-reset request or recovery during long synchronous work. Both remain acceptance gaps.
+- Confirmed source findings: the earlier implementation exposed only CDC/CCID and consumed CDC reset requests only in the outer main loop; synchronous APDU work could delay recovery. The SDK vendor reset descriptor/driver and cooperative CDC reset servicing have since been integrated, with offline unit coverage. The exact historical D92 failure remains unproven. See [.agent/QKB.md](.agent/QKB.md#bootsel-reset-integration-audit--2026-11-12-offline) and audit commit `31cb571c`.
 - Implementation: **done offline**: the SDK `pico_usb_reset` vendor reset descriptor and driver are integrated as interface 3; CDC/CCID remain interfaces 0–2. CDC-1200 requests are consumed after TinyUSB returns at the main loop and interpreter cooperative points. The SDK's competing CDC callback is disabled while CHOUPI's deferred callback remains active. Reset request unit coverage passes. Preserve identity pinning across USB topology changes; never reset or flash a different board as fallback.
 - Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM and RISC-V with repository wrappers and resolve errors/warnings before flashing. When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
-- Current constraint: after the user again reported all three devices in
-  BOOTSEL, elevated guest `lsusb -d 2e8a:` still showed three runtime
-  `2e8a:0009` devices and no BOOTSEL `000f`. Do not reset or flash until
-  guest-visible BOOTSEL identity is confirmed. Distinguish firmware reset
-  failure from guest passthrough and re-enumeration failure using evidence.
-  Offline validation on 2026-11-12: reset/CCID unit 26/26, identity-pinned
-  target-selection 10/10, ARM and RISC-V build wrappers pass. Physical
-  descriptor reset, CDC-1200 reset and latency validation remain open.
+- Remaining acceptance: exercise the vendor reset descriptor directly and
+  CDC-1200 reset during a long synchronous applet operation, then capture the
+  BOOTSEL re-enumeration latency. The user has now disconnected the boards;
+  resume only after physical availability is reported and confirmed in guest.
+  Offline checks remain reset/CCID 26/26 and identity-pinned target-selection
+  11/11. See `BOOTSEL-01-THREE-BOARD-CDC-RECOVERY` in `progress.md`.
 
 ### BUILD-DBG-01
 
@@ -56,8 +57,9 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
   debug options. ARM and RISC-V `max_crypto` builds with object deletion ON
   pass; `./tools/test-no-debug-traces` confirms the ARM ELF retains concise
   object-deletion events and omits both verbose traces. A fresh empty-card UF2
-  is referenced in `.agent/EXT_REQUESTS.md`. It has not been flashed; guest USB
-  currently exposes runtime devices rather than BOOTSEL. See
+  is referenced in `.agent/EXT_REQUESTS.md`. The package itself was not flashed
+  locally because it erases persistent storage; its matching firmware-only
+  payload was flashed while preserving card data. See
   `BUILD-DBG-01-NODEBUG-MARKERS` in `progress.md`.
 
 ## Resource lifecycle

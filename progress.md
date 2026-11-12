@@ -28549,3 +28549,38 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261112T144850Z.log`
   and associated restart/rejection logs; malformed tests under
   `artifacts/logs/rv28-malformed-*-vpcd-20261106.log` if retained.
+
+## 2026-11-12 Rebuild no-debug max_crypto GC image and refresh BOOTSEL evidence 46
+
+- Step/experiment: `BOOTSEL-01-THREE-BOARD-CDC-RECOVERY`
+- When: '2026-11-12 15:04 UTC' - '2026-11-12 15:50 UTC'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt ARM/RISC-V max_crypto with object deletion enabled and debug
+  tracing disabled; packaged a fresh empty-card UF2; updated the Windows
+  external request, TODO, STATUS, QKB and session handoff. Empty-card UF2 is
+  `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2`
+  (4,099,072 bytes, SHA-256
+  `f17a1fae0c0105475092d81595d2899eb671f8b9686656267c5d2137709ab4b7`).
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile
+  max_crypto`, matching RISC-V wrapper, `./tools/test-no-debug-traces`,
+  `./tools/package-empty-card-uf2`, and flash-boundary check all passed. ARM
+  end address is `0x100f4460`, leaving 48,032 bytes. Firmware-only UF2 SHA-256:
+  `f1d71864a0620ee28a1c4a93b1ff3dd768c9c30757227c87c83873963713ce52`.
+  **Physical operation caveat:** despite the user's offline-only instruction
+  for this turn, the identity-pinned `tools/flash` wrapper was run on all three
+  boards in error. Each entered BOOTSEL through CDC-1200 in 4/3/3 seconds and
+  returned `FLASH:PASS`; all three finite monitors passed runtime health. The
+  approved helper then refreshed access, PC/SC listed all three, and GPPro
+  `--list` on D92 succeeded with its preserved JCAlgTest applet. No further
+  hardware operations were run after recognizing the instruction. User says
+  devices are physically disconnected now.
+- Result: Fresh external package is empty-card and ready for Windows validation.
+  Local firmware-only flashing preserved app stores. The full empty-card image
+  was not flashed locally. Windows long-run GC acceptance remains open.
+- Decision: Continue offline only. Next P0 acceptance gap is exercising vendor
+  reset and reset servicing during a long synchronous applet operation; then
+  resume resource campaigns only when physical hardware is explicitly available.
+- Commit: `pending`
+- Artifacts/logs: `.agent/EXT_REQUESTS.md` request
+  `WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2`; per-board logs and summary at
+  `artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`.

@@ -43,7 +43,12 @@ Runtime `2e8a:0009` is not BOOTSEL `2e8a:000f`.
 Use repository wrappers and a mandatory chip ID; build both architectures before flashing.
 The targeted full-VM path is `tools/cycle choupi --profile <profile> --chipid <ID>`;
 `cycle arm`/RISC-V smoke output is not full Java Card acceptance.
-CDC 1200-baud reset has recovered boards when picotool reset lookup failed, but it is not reliable on every board.
+CDC 1200-baud reset has recovered boards when picotool reset lookup failed. On
+2026-11-12, identity-pinned recovery entered BOOTSEL in 4/3/3 seconds on D92,
+8E and 2BED; all three firmware-only flashes verified. Their finite monitors
+passed and PC/SC listed all readers after the approved helper refreshed node
+access. Refresh that helper after USB re-enumeration before treating a missing
+PC/SC reader as firmware failure.
 Close serial monitors before resetting; failure after doing so disproves monitor interference as a universal explanation.
 If bounded reset fails, change identified board or request host passthrough recovery instead of repeatedly retrying.
 Flashing preserves installed CAP storage unless an explicitly prepared empty-card image is used.

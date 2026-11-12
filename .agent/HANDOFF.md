@@ -1,3 +1,61 @@
+# Current handoff — three-board CDC BOOTSEL recovery and fresh no-debug image — 2026-11-12 15:45 UTC
+
+## Fresh external-test image
+
+Rebuilt ARM and RISC-V with `max_crypto`,
+`PICO2_ENABLE_OBJECT_DELETION=1`, and debug heap-GC, CCID-applet, and
+persistent-GC switches OFF. Both builds and `./tools/test-no-debug-traces`
+pass. ARM ends at `0x100f4460` with 48,032 bytes before the 1 MiB firmware
+boundary. The fresh empty-card image is
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2`
+(4,099,072 bytes, SHA-256
+`f17a1fae0c0105475092d81595d2899eb671f8b9686656267c5d2137709ab4b7`). Its
+matching firmware-only UF2 SHA-256 is
+`f1d71864a0620ee28a1c4a93b1ff3dd768c9c30757227c87c83873963713ce52`.
+Source HEAD is `580f3f40` with dirty tracked source changes; CPLC ID is
+`580F3F409C898F6E`, source diff hash for `choupi/src src config` is
+`64ee57808d759dec16296d48050a0ef307be06b602c206a4c9836189fec9f9f9`.
+Windows hash-check and test steps are refreshed in
+`.agent/EXT_REQUESTS.md` under `WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2`.
+
+## Physical BOOTSEL recovery evidence
+
+After the user reported all three boards in BOOTSEL, they initially enumerated
+in the guest as runtime readers. The identity-pinned repository flasher
+successfully used CDC-1200 to enter BOOTSEL and flash the firmware-only UF2 to
+all three, preserving their card stores:
+
+- D92 `D92E743D5F640C0F`: BOOTSEL in 4 s; `FLASH:PASS`.
+- 8E `8E464F4E2BBC0A19`: BOOTSEL in 3 s; `FLASH:PASS`.
+- 2BED `2BED26ED20556535`: BOOTSEL in 3 s; `FLASH:PASS`.
+
+Each finite serial monitor passed `TEST:PASS choupi_runtime` and
+`TEST:SUMMARY pass=1 fail=0`. After the approved PC/SC helper refreshed access,
+`pcsc_scan -r` listed all three exact readers. GPPro `--list` on D92 succeeded
+and showed the existing JCAlgTest package/applet. This validates idle CDC reset
+and reflash on all three, but not the vendor-reset request or CDC reset during
+long synchronous applet work. The full empty-card UF2 was not flashed locally.
+The user has since clarified to continue without physical hardware because the
+tokens are disconnected. Do not run further USB, PC/SC, serial, reset or flash
+operations until they report hardware is available. The firmware-only flashes
+above were performed during this turn despite that offline-only instruction;
+this was an error. Do not repeat it.
+
+Per-board serial logs and `flash-summary.md`:
+`artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`.
+
+## Next actions
+
+1. Continue offline BOOTSEL-01 review/tests for vendor reset and reset servicing
+   during synchronous work; preserve current completion evidence.
+2. Continue the highest-priority offline backlog item if no boards are
+   available. Do not relabel physical or Windows acceptance as complete.
+3. After physical devices return, refresh the approved reader helper after
+   re-enumeration, then verify vendor reset/long-work reset and continue
+   resource/JCAlgTest acceptance on separate identified boards.
+
+---
+
 # Current handoff — validate CAP Class external package tokens — 2026-11-12 15:04 UTC
 
 Added native CAP LOAD validation for external superclass references in Class

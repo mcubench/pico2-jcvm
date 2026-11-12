@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 15:04 UTC
+Updated: 2026-11-12 15:45 UTC
 
 ## Goal
 
@@ -25,20 +25,17 @@ current physical-test handoff.
   interface package tokens are now range-checked against Import before storage;
   the malformed `FF00` superclass reference is rejected in VPCD. ARM and
   RISC-V builds pass. Library dependency closure, Export consistency, legacy
-  CAP null guards and full physical acceptance remain open. The user's latest
-  BOOTSEL report was followed by enumeration of three runtime `2e8a:0009`
-  devices, so no flash was attempted.
+  CAP null guards and full physical acceptance remain open.
 
-- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2). SHA-256 `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`, 4,098,048 bytes. ARM and RISC-V wrappers pass with `object_deletion=ON` and heap-GC, CCID-applet and persistent-GC debug switches OFF; RISC-V builds the VM core only. The build from source HEAD `31cb571c` uses a dirty worktree and CPLC source ID `31CB571C064FA40F`. `./tools/test-no-debug-traces` confirms the ARM ELF omits verbose APDU/persistent-reference trace strings while retaining concise object-deletion events. The image clears persistent storage and has no preinstalled applet. Firmware SHA-256 is `7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`; this is not a release build.
-  The prior `ed5716bb` package is superseded because it retained those verbose
-  traces despite the debug switches being off.
-  Correction: On 2026-11-12 the image was flashed through the identity-pinned
-  wrapper to D92 (`D92E743D5F640C0F`), 8E (`8E464F4E2BBC0A19`) and 2BED
-  (`2BED26ED20556535`), each with `FLASH:PASS`. All three finite serial monitors
-  passed `TEST:PASS choupi_runtime`; exact-reader GPPro `--list` showed only the
-  ISD, confirming the cards are empty. Per-device logs:
-  `artifacts/results/maxcrypto-gc-nodebug-flash-20261112/`. Windows validation
-  remains open.
+- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2). SHA-256 `f17a1fae0c0105475092d81595d2899eb671f8b9686656267c5d2137709ab4b7`, 4,099,072 bytes; firmware-only UF2 hash `f1d71864a0620ee28a1c4a93b1ff3dd768c9c30757227c87c83873963713ce52`. Source HEAD `580f3f40`, dirty tree; CPLC source ID `580F3F409C898F6E`. ARM/RISC-V max_crypto builds pass with object deletion ON and debug switches OFF; `./tools/test-no-debug-traces` passes. Firmware ends at `0x100f4460`, leaving 48,032 bytes in the 1 MiB firmware window. The package erases persistent storage and has no preinstalled applet; it was not flashed locally. Windows instructions and hash are in `.agent/EXT_REQUESTS.md`.
+  The matching firmware-only UF2 was flashed by exact chip ID to D92
+  (`D92E743D5F640C0F`), 8E (`8E464F4E2BBC0A19`) and 2BED
+  (`2BED26ED20556535`) using the CDC-1200 BOOTSEL fallback (4/3/3 seconds).
+  All three returned `FLASH:PASS`; their finite serial checks passed. PC/SC
+  listed all three and GPPro `--list` succeeded on D92, showing the preserved
+  JCAlgTest package/applet. Per-board logs are in
+  `artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`. The user
+  then disconnected the physical devices; Windows validation remains open.
 
 - ARM and RISC-V `max_crypto` wrappers pass with object deletion enabled and
   heap-GC debug disabled. ARM firmware ends at `0x100F474C`, leaving 47,284
@@ -76,13 +73,14 @@ current physical-test handoff.
 
 ## Hardware and current evidence
 
-- Three Pico USB devices are attached to the guest and now boot as runtime
-  `2e8a:0009`. All were positively enumerated in BOOTSEL before flashing and
-  subsequently identified under PC/SC as D92, 8E and 2BED. All three received
-  the no-debug `max_crypto` object-deletion image and passed finite runtime and
-  GPPro empty-card checks (evidence above).
-- The approved helper granted two runtime USB nodes, while `pcsc_scan -r`
-  listed only VPCD readers. Physical APDU testing is currently unavailable.
+- At the latest physical check, the identity-pinned CDC-1200 path entered
+  BOOTSEL on D92, 8E and 2BED in 4/3/3 seconds. Firmware-only
+  max_crypto/object-deletion images flashed and verified on all three, preserving
+  card stores. All finite serial monitors passed. After the approved helper
+  refreshed USB node access, PC/SC listed all three. GPPro `--list` on D92
+  succeeded and showed the preserved JCAlgTest package/applet. The user has
+  since physically disconnected the boards; no further hardware operation is
+  authorized until they report the boards available.
 - The corrected D92 RESOURCE-01 all-algorithms run produced 51 support rows
   before `SCARD_E_NOT_TRANSACTED` on `B0 75 12 00 01 16 00`. Its last serial
   line is `APDU_PROCESS stage=end sw=9000 len=29`, printed immediately before
@@ -93,35 +91,28 @@ current physical-test handoff.
   panic. D92 performance-static and other all-algorithms attempts were
   interrupted or failed with PC/SC errors. Neither long option-1 nor option-2
   campaign completed; these are not acceptance passes.
-- The user reports all three tokens are now in BOOTSEL. The latest guest USB
-  enumeration still showed three runtime `2e8a:0009` devices and no BOOTSEL
-  `2e8a:000f`; after the latest test failure, PC/SC listed only D92. Do not
-  flash until the guest can confirm the target's BOOTSEL identity.
 - The 2026-11-12 option-2 retry completed 26 measurements on 8E and 32 on D92
   before PC/SC communication/reader errors during DES tests. The 8E attempt
   overlapped a `pcscd` restart from the authorized helper; D92 did not. Serial
   logs show no `FAULT` or `6F00`, but neither run completed or produced an
   object-deletion event. Keep these as partial evidence only.
-- The current external-test image was refreshed after the debug-off build was
-  found to contain verbose APDU and persistent-reference trace strings. The
-  new artifact and hash are in `.agent/EXT_REQUESTS.md`.
-- The current guest sees three `2e8a:0009` runtime devices. D92 was flashed with
-  the current CAP loader test image; 8E and 2BED retain the no-debug object-
-  deletion image. D92 passed the malformed LOAD rejection and valid JCAlgTest
-  install/select check. Other physical acceptance remains open.
-- A bounded 8-second monitor on D92 after the reset attempts exited 0 with no
-  serial output. This did not constitute a boot or runtime health pass.
+- The fresh external-test empty-card image and hash are in
+  `.agent/EXT_REQUESTS.md`. Its packaged empty-storage image was not flashed
+  locally; the matching firmware-only payload was flashed while preserving
+  each local card store.
+- Per-board logs and current image measurements:
+  `artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`. Other
+  physical acceptance remains open.
 
 ## Highest-priority remaining work
 
 1. **BOOTSEL-01 (P0):** offline firmware integration is implemented. The SDK
    vendor reset descriptor/driver is interface 3, and CDC-1200 reset servicing
    is deferred to cooperative points. Reset/CCID unit coverage passes 26/26,
-   identity-pinned target selection passes 10/10, and ARM/RISC-V builds pass.
-   Physical reset/re-enumeration validation remains gated on guest-visible
-   BOOTSEL identity. After the user's latest report that all three boards are
-   in BOOTSEL, elevated guest USB enumeration still showed three runtime
-   `2e8a:0009` devices and no BOOTSEL `000f`.
+   identity-pinned target selection passes 11/11, and ARM/RISC-V builds pass.
+   Idle CDC reset/re-enumeration passed on three boards in 3–4 seconds. Still
+   needed: direct vendor-reset validation and reset during long synchronous
+   applet work. The boards are currently disconnected.
 2. **RESOURCE-01 / RESOURCE-02:** flash the quiet CCID trace image after a guest-visible
    BOOTSEL interface returns, localize the post-applet response stall, fix
    remaining reclamation/resource failures, then complete unchanged JCAlgTest
