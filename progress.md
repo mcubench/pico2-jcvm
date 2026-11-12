@@ -28637,3 +28637,52 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/apdu-reset-prepare.log`,
   `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/serial-health-20261112T1911Z.log`.
+
+## 2026-11-12 Repeat RSA-3072 reset and preparation on no-debug Pico 10 minutes
+
+- Step/experiment: `RESOURCE-01-RSA3072-REPEATED-NODEBUG-PHYSICAL-20261112`
+- When: '2026-11-12 19:12 UTC' - '2026-11-12 19:22 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added physical findings to QKB and HANDOFF; no firmware source
+  changed. Switched from diagnostic 8E to no-debug D92 when heap-GC per-record
+  tracing made the first repeated run inconclusive.
+- Validation: Four consecutive exact `B0E2` reset then RSA3072 private PKCS1
+  `B031` preparation cycles on D92 all passed. Reset APDUs returned `9000` in
+  1,468–1,522 ms; prepare APDUs returned `AA9000` in 1,617–1,691 ms. Finite
+  serial capture passed `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. The failed 8E diagnostic attempt is recorded
+  separately; its host timeout expired before the next `B031` appeared in the
+  serial trace. Hardware commands used elevated host access.
+- Result: Repeated successful RSA-3072 preparation makes a deterministic
+  3072-bit native component-array capacity defect very unlikely. It does not
+  reproduce or explain the Windows long-run PC/SC error or earlier AES `6F00`.
+- Decision: Leave array capacities unchanged. Continue by running the unchanged
+  upstream client on no-debug firmware and capturing the first AES prepare and
+  reset status/transport failure.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/rsa3072-physical-20261112/D92-no-debug/`
+  and `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/`.
+
+## 2026-11-12 Reproduce AES reset/preparation failures on D92 7 minutes
+
+- Step/experiment: `RESOURCE-01-AES-RESET-PREPARE-NODEBUG-PHYSICAL-20261112`
+- When: '2026-11-12 19:22 UTC' - '2026-11-12 19:29 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Recorded the AES and repeated RSA physical probes in QKB and HANDOFF.
+  No firmware code changed; used no-debug D92 after refreshing only the
+  currently visible reader list.
+- Validation: The exact externally reported AES-128 ECB ISO9797 M1 config,
+  preceded by `B0E2`, passed once and then four consecutive times. Reset
+  returned `9000` in 1.477–1.530 s; AES prepare returned `AA9000` in
+  1.713–1.828 s. Four earlier RSA3072 reset/prepare cycles on the same board
+  also passed. Serial monitor ended with `TEST:SUMMARY pass=1 fail=0`. No
+  measurement (`B043`) APDU was included. Hardware operations used elevated
+  host access.
+- Result: Neither reported prepare failure is deterministic in focused probes
+  on no-debug firmware. The cause may require long-run accumulated state or
+  PC/SC transport; current data does not distinguish them.
+- Decision: Continue with unchanged supplied JCAlgTest 1.8.4 option 2 on a
+  no-debug board and preserve first-failure APDU, reset response and serial
+  telemetry. Do not alter native array sizes from current evidence.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/rsa3072-physical-20261112/D92-no-debug/`.

@@ -1,3 +1,61 @@
+# Current handoff — AES and RSA prepare/reset sequences repeat successfully on D92 — 2026-11-12 19:29 UTC
+
+On no-debug D92 (`D92E743D5F640C0F`), the exact Windows-reported AES-128 ECB
+ISO9797 M1 `Cipher_doFinal()` preparation APDU, preceded by JCAlgTest
+`INS_CARD_RESET`, returned `AA9000` on the first run and four consecutive
+repetitions. Across the repeated run, resets returned `9000` in 1,477–1,530 ms
+and AES preparation returned `AA9000` in 1,713–1,828 ms. The earlier exact
+RSA-3072 private PKCS1 prepare likewise passed four reset/prepare cycles on
+D92: reset 1,468–1,522 ms; prepare 1,617–1,691 ms. D92 finite serial telemetry
+remained healthy (`TEST:SUMMARY pass=1 fail=0`).
+
+These physical checks make a deterministic RSA-3072 array-length problem
+unlikely and do not reproduce the first external AES `6F00`. They are focused
+prepare/reset probes, not the complete JCAlgTest performance sequence: the
+measurement `B043` APDU and long campaign history are not included. The 8E
+heap-GC diagnostic-image attempt is confounded by verbose per-record trace
+output and must not be used for timing claims. No source fix is justified yet.
+
+Next: run unchanged JCAlgTest 1.8.4 option 2 on a no-debug identified Pico,
+with serial capture and a watchdog; do not refresh/restart PC/SC during the
+run. Capture the first failed prepare, measurement or reset APDU and exact
+transport status, then fail over to another available board if one disappears.
+Artifacts: `artifacts/results/rsa3072-physical-20261112/D92-no-debug/` and
+`artifacts/results/rsa3072-physical-20261112/8E-heap-debug/`.
+
+This step only updated QKB, HANDOFF and progress. Preserve all other shared
+worktree changes.
+
+# Current handoff — repeated no-debug RSA-3072 reset/prepare passes on D92 — 2026-11-12 19:22 UTC
+
+Continued RESOURCE-01 using identified D92
+(`D92E743D5F640C0F`) with no-debug firmware after the heap-GC diagnostic image
+on 8E caused high-volume trace output during reset. The repeated physical test
+sent JCAlgTest SELECT, then four exact repetitions of `B0E2000000` followed by
+the RSA-3072 private PKCS1 `Cipher_doFinal()` preparation APDU
+`B0310000160011000AFFFF00050C00000700C0FFFF00010032000100`.
+
+All four cycles passed. Resets returned `9000` in 1,468–1,522 ms; preparations
+returned `AA9000` in 1,617–1,691 ms. Finite D92 serial telemetry passed
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The native RSA
+component arrays are 384 bytes for 3072-bit full-width components and 192
+bytes for half-width components, and this exact preparation succeeded on-card
+four times. This makes an insufficient 3072-bit array size very unlikely.
+
+The 8E diagnostic-image repeated attempt was inconclusive: SELECT took 11.2 s,
+reset took 14.5 s amid verbose per-record heap-GC diagnostics, and the bounded
+host command expired before the next preparation APDU was seen in serial. Do
+not use that run for firmware timing claims. The earlier Windows failure is
+still unexplained: there is no reproduction of the AES preparation `6F00` or
+the later PC/SC transport error. Next run the unchanged supplied client on a
+no-debug reader, prioritizing the first AES prepare/reset failure and recording
+the exact reset status/transport error. Artifacts:
+`artifacts/results/rsa3072-physical-20261112/D92-no-debug/` and
+`artifacts/results/rsa3072-physical-20261112/8E-heap-debug/`.
+
+Preserve unrelated worktree edits. This step changes only QKB, HANDOFF and
+progress documentation.
+
 # Current handoff — RSA-3072 reset/prepare sequence passes once on 8E — 2026-11-12 19:11 UTC
 
 Physical PC/SC access returned for one identified reader, 8E

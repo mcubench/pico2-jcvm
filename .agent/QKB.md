@@ -536,3 +536,34 @@ no-debug image, so timing is diagnostic only. Next reproduce the preceding
 failed AES prepare/reset and run repeated exact reset/prepare cycles or the
 unchanged 1.8.4 client while correlating CCID response progress. No source fix
 is established by this one successful sequence.
+
+Repeated physical follow-up, 2026-11-12 19:22 UTC: 8E's diagnostic firmware
+(`PICO2_DEBUG_HEAP_GC=1`) produced large per-record traces during reset. One
+bounded repetition took 11.2 s for SELECT and 14.5 s for reset, then the host
+probe timed out before a `B031` command appeared in serial telemetry. This is
+inconclusive: instrumentation and output volume differ from the user's
+no-debug firmware, and the host timeout expired while waiting for the next
+APDU. Using D92 with no-debug firmware removed that confound. Four consecutive
+reset/prepare cycles all passed: resets `9000` in 1.468–1.522 s; RSA-3072
+prepare `AA9000` in 1.617–1.691 s. The exact preparation remained stable after
+repeated deletion requests. This further argues against insufficient
+3072-bit component arrays, but does not reproduce the earlier AES 6F00 or
+Windows PC/SC disconnect. Continue with the unchanged upstream client on a
+no-debug device and capture the first AES prepare/reset failure and transport
+status. Logs: `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/` and
+`artifacts/results/rsa3072-physical-20261112/D92-no-debug/`.
+
+AES follow-up, 2026-11-12 19:29 UTC: on no-debug D92, the exact reported
+AES-128 ECB ISO9797 M1 `B031` preparation, preceded by `B0E2`, returned
+`AA9000` once and then across four consecutive reset/prepare cycles. Repeated
+reset responses were `9000` in 1.477–1.530 s; AES preparations returned
+`AA9000` in 1.713–1.828 s. Serial remained healthy. This does not reproduce
+the external `6F00` even for its exact AES config, and reduces the likelihood
+that a basic AES or 3072-bit allocation failure is deterministic. The current
+probe omits the measurement `B043` APDU and broad preceding suite history; do
+not claim full performance acceptance. Next diagnostic should use the
+unchanged 1.8.4 client over a longer no-debug campaign, retain the first
+failure's APDU/reset result and correlate card serial and PC/SC events. Logs:
+`artifacts/results/rsa3072-physical-20261112/D92-no-debug/apdu-aes-reset-prepare-20261112T1924Z.log`,
+`.../apdu-aes-repeated-reset-prepare-20261112T1925Z.log` and corresponding
+serial logs.
