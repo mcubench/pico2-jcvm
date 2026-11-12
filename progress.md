@@ -28730,3 +28730,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Future testing workers use the explicit client override; compatibility remains untested. Preserve prior runs and unrelated edits.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `tests/fixtures/external/jcalgtest/1.8.5/README.md`.
+## 2026-11-12 Trace JCAlgTest persistent exhaustion 8 minutes
+
+- Step/experiment: `RESOURCE-01-OPTION2-PERSISTENCE-20261112`
+- When: '2026-11-12 20:24 UTC' - '2026-11-12 20:32 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Ran the unchanged supplied JCAlgTest 1.8.4/jc305 option-2 client on physical D92 using the object-deletion-enabled, CCID-diagnostic `max_crypto` image. Recorded the new failure evidence and next diagnosis in QKB/HANDOFF. No firmware source changed.
+- Validation: The client passed the prior xfr=207 SHA-224 point and reached xfr=824 before persistent writes failed at AES-192 setup. Serial captured `files=2134/8192 bytes=98292/98304`, `PERSIST_WRITE_FAIL status=1`, and `F205` (`SystemException.NO_RESOURCE`). `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). Finite physical serial monitor passed `TEST:SUMMARY pass=1 fail=0`. `./tools/doctor` passed. PC/SC scan showed only Virtual PCD readers; no additional physical client run was started.
+- Result: Direct proof of persistent-arena exhaustion in this campaign; only 12 bytes were free. The full campaign was manually interrupted while advancing through RSA-1536 and exited 1, so option 2 is incomplete. The exact Windows RSA-3072 PC/SC error is not yet tied to this storage failure. The compaction path emitted no success record at the failing writes; its rejection reason remains unknown.
+- Decision: Inspect `compact_deleted_overlay_records()` failure paths and persistent-object reachability before making a storage/GC fix. Preserve the campaign logs and CSV; do not infer RSA array-size failure or option-2 acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-ccid-debug-followup/`; `./tools/test-rp2350-fs-overlay`.

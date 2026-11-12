@@ -593,3 +593,24 @@ from host ACK. Add focused response-submit/IN-completion diagnostics, then
 reproduce on no-debug firmware. Full option-2 acceptance failed; it is not a
 pass. Logs:
 `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-rsa-reset-followup/`.
+## RESOURCE-01 follow-up — persistent-storage exhaustion during option 2
+
+On physical D92 (`D92E743D5F640C0F`), the unchanged JCAlgTest 1.8.4/jc305
+`ALG_PERFORMANCE_STATIC` follow-up passed the earlier SHA-224 reset point but
+later failed at AES-192 setup after the persistent overlay reached 2,134
+records and 98,292/98,304 bytes. The attempted persistent write returned
+filesystem status 1 (`OutOfFlash`), mapped by the VM to
+`SystemException.NO_RESOURCE` / `F205`; later client cases reported
+`CANT_BE_MEASURED`. Object-deletion passes did run and eventually erased
+applet records, but the last write-failure path produced no successful
+`FS_COMPACT` telemetry. Firmware CDC/runtime health remained alive.
+
+This confirms storage exhaustion in this run, not an undersized RSA-3072
+component array. It does not establish the cause of the separate Windows
+`SCARD_E_NOT_TRANSACTED` at RSA-3072. Exact RSA-3072 reset/prepare passed four
+times before storage filled, and this full run failed earlier at AES-192.
+Next inspect why `compact_deleted_overlay_records()` rejected compaction and
+whether current applet persistent roots keep unexpectedly many algorithm
+objects alive. Preserve the campaign artifacts and do not claim option-2
+acceptance. Artifacts:
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-ccid-debug-followup/`.

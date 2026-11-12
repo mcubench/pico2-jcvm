@@ -1,3 +1,35 @@
+# Current handoff — option-2 run reaches persistent-storage exhaustion — 2026-11-12 20:32 UTC
+
+The follow-up unchanged JCAlgTest 1.8.4/jc305 `ALG_PERFORMANCE_STATIC` run was
+performed on physical D92 (`D92E743D5F640C0F`) with object deletion enabled and
+CCID diagnostics enabled. It passed the earlier xfr=207 / SHA-224 reset point
+and continued into AES/RSA cases. At xfr=824, applet persistence failed with
+`FS_WRITE_FAIL ... files=2134/8192 ... bytes=98292/98304` (12 bytes free),
+then `PERSIST_WRITE_FAIL status=1` and card status `F205` (`SystemException.NO_RESOURCE`).
+Later cases repeatedly returned `F205` and were recorded by the client as
+`CANT_BE_MEASURED`. The campaign was interrupted while it continued through
+RSA-1536; it is incomplete, not an option-2 pass. Firmware remained responsive
+over CDC and its runtime health summary passed.
+
+This is direct evidence that this run hit persistent-storage exhaustion,
+independent of RSA buffer sizing. It does not prove the separate Windows
+`SCARD_E_NOT_TRANSACTED` at RSA-3072 had the same cause: the earlier exact
+RSA-3072 prepare/reset sequence passed four times, and this run failed earlier
+at AES-192 due to `NO_RESOURCE`. `fs_write` attempted compaction, but there is
+no `FS_COMPACT` success record at the failure point; the precise compaction
+rejection path and why the object-deletion pass reclaimed only a small number
+of records remain to be diagnosed.
+
+Artifacts: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-ccid-debug-followup/`.
+The final client log and CSV are preserved; the client exited 1 after manual
+interruption. A finite serial capture afterward reported `TEST:SUMMARY
+pass=1 fail=0` and retained the last `F205` response state. The USB runtime
+devices remain enumerated, but `pcsc_scan -r` lists only Virtual PCD 00/01 and
+`pcscd.service` is inactive; do not start another PC/SC campaign until a
+physical reader is published. Continue offline by tracing failed compaction
+preflight and persistent-object reachability, then build both architectures
+before any new flash.
+
 # Current handoff — JCAlgTest 1.8.5 client worker instructions — 2026-11-12
 
 User requested fixture relocation and documentation only; no implementation
