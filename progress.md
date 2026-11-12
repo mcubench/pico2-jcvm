@@ -28411,3 +28411,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Next add an AID equality check in `CapLoadSession::finishLoad()` before cleanup, slot allocation, or storage. Keep malformed fixture bytes upstream and unchanged.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`; `tests/integration/cap_malformed_vpcd_test.py`.
+
+## 2026-11-12 Reject package AID mismatch before CAP storage 12 min
+
+- Step/experiment: `CAPIN-01-LOAD-HEADER-AID-MISMATCH-FIX`
+- When: '2026-11-12 12:10 UTC' - '2026-11-12 12:22 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: `CapLoadSession::finishLoad()` now compares the GP LOAD package AID with the AID parsed from the CAP Header and rejects mismatches before lifecycle cleanup, package-slot allocation, or persistence. Updated CAPIN-01 priority/status, project status, and handoff. Preserved unrelated dirty changes in `src/cap_load.cpp`.
+- Validation: The new VPCD mismatch regression passes and confirms the loader rejects before storing a package. The existing unknown-component LOAD rejection passes. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 1 --select-only` passes 2/2 with unchanged JCAlgTest 1.8.4/jc305. `PICO2_HOST_USB_ACCESS=1 ./tools/test-cap-upgrade-vpcd` passes all upgrade/delete/reinstall/restart checks (`TEST:SUMMARY pass=1 fail=0`). `./tools/fixture-path --verify` passes 81 files. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` pass; ARM firmware ends `0x100F3D84`, leaving 49,788 bytes. Scoped `git diff --check` passes. No physical flash: guest USB has no BOOTSEL device.
+- Result: Reproduced pre-fix behavior persisted one package under the wrong LOAD AID and failed later at INSTALL (`6A82`, stage 4). The corrected test reports `CAP_LOAD_VALIDATION:PASS package_aid_header_mismatch_rejected_before_store`; valid CAP install and upgrade behavior remains intact.
+- Decision: Close this CAPIN-01 subcase. Continue conditional required-component and dependency closure validation offline; return to RESOURCE-01 physical acceptance when BOOTSEL is visible.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`; `artifacts/logs/cap-upgrade-vpcd-20261112T122052Z.log`; current ARM/RISC-V build provenance.

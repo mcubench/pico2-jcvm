@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 12:10 UTC
+Updated: 2026-11-12 12:21 UTC
 
 ## Goal
 
@@ -13,9 +13,11 @@ current physical-test handoff.
 
 ## Current build and source
 
-- CAPIN-01: a new VPCD red case demonstrates LOAD accepts/stores a CAP under
-  a package AID different from its Header AID, then INSTALL fails with `6A82`.
-  The LOAD-time guard is not implemented yet. See TODO and HANDOFF.
+- CAPIN-01: GP LOAD now rejects a package AID that differs from the CAP Header
+  before cleanup, slot allocation or persistence. The VPCD regression fails
+  before the fix and passes after it; unchanged JCAlgTest install/select,
+  CAP upgrade and 81-file fixture verification pass. ARM/RISC-V builds pass.
+  Other CAPIN-01 structural/dependency checks and physical acceptance remain.
 
 - Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2). SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`, 4,099,584 bytes. ARM and RISC-V wrappers pass; provenance is source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`, object deletion ON, heap-GC, CCID-applet and persistent-GC debug OFF. The image clears persistent storage and contains no preinstalled applet. Deletion event summaries remain at runtime; per-object and CCID debug traces are compiled out. This is not a release build, and no device was flashed.
 

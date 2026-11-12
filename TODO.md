@@ -88,9 +88,10 @@ task:
     package storage; import lookups validate missing/truncated Import records,
     and class/static resolvers guard absent Export/Class components. ARM and
     RISC-V builds plus malformed-CAP, unchanged JCAlgTest install/select, and
-    CAP upgrade VPCD tests pass. Still open: conditional required-component
-    rules, library Import/Export dependency validation, external superclass
-    without Import fixture, install-AID mismatch fixture, and physical test.
+    CAP upgrade VPCD tests pass. The LOAD package-AID/Header-AID mismatch is
+    now rejected before persistence and covered by a VPCD regression. Still
+    open: conditional required-component rules, library Import/Export dependency
+    validation, external superclass without Import fixture, and physical test.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is

@@ -1,20 +1,25 @@
-# Current handoff — CAPIN-01 package AID mismatch reproduced — 2026-11-12 12:10 UTC
+# Current handoff — CAPIN-01 package AID mismatch rejected — 2026-11-12 12:21 UTC
 
 ## Current offline step: reject LOAD package AID / CAP Header mismatch
 
 The guest USB refresh at 11:56 UTC still showed three runtime `2e8a:0009`
 devices and no BOOTSEL device, so work continued offline. Added a host-only
 VPCD test override and a mismatch regression using unchanged JCAlgTest 1.8.4
-CAP bytes. The red run proves current LOAD accepts a different package AID,
-stores the CAP (`VPCD:CAP_REGISTRY_SAVED packages=1`), then fails only during
-INSTALL with status `6A82` (stage 4). Log:
+CAP bytes. The red run reproduced LOAD accepting a different package AID,
+persisting one package, then failing at INSTALL with `6A82` (stage 4). The
+fix now rejects the mismatch during LOAD before persistence. The green run
+reports `CAP_LOAD_VALIDATION:PASS package_aid_header_mismatch_rejected_before_store`;
+unknown-component rejection also remains green. Logs:
 `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`.
 
-Next: make `CapLoadSession::finishLoad()` reject before package storage unless
-the AID parsed from the CAP Header equals the package AID in INSTALL-for-LOAD;
-rerun this test expecting no stored package, then rerun unchanged JCAlgTest
-install/select and CAP upgrade VPCD checks and build ARM/RISC-V. Preserve the
-shared dirty `src/cap_load.cpp` hunks; stage only the new mismatch guard.
+The unchanged JCAlgTest install/select VPCD test passes (2/2). CAP upgrade,
+delete/reinstall and restart test passes (1/1). Fixture manifest verification
+passes for all 81 pinned files. ARM and RISC-V `max_crypto` wrappers both pass;
+ARM firmware ends at `0x100F3D84` with 49,788 bytes remaining. Physical testing
+is not done: no guest-visible BOOTSEL device appeared. Next finish the remaining
+CAPIN-01 conditional-component and dependency validation cases, or resume the
+higher-priority RESOURCE-01 physical tests if BOOTSEL returns. Stage only the
+new `src/cap_load.cpp` guard, preserving the shared unrelated hunks.
 
 The no-debug `max_crypto` object-deletion image from the previous step remains
 available at

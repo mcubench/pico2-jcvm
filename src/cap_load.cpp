@@ -1067,9 +1067,13 @@ bool CapLoadSession::finishLoad() noexcept {
       code_length != load_data_length_ - offset) {
     return false;
   }
-  if (!validate_cap_code(load_data_ + offset, code_length, load_package_aid_,
-                         load_package_aid_length_, applet_aid_,
+  uint8_t cap_package_aid[16]{};
+  uint8_t cap_package_aid_length = 0;
+  if (!validate_cap_code(load_data_ + offset, code_length, cap_package_aid,
+                         cap_package_aid_length, applet_aid_,
                          applet_aid_length_) ||
+      !aid_matches(load_package_aid_, load_package_aid_length_,
+                   cap_package_aid, cap_package_aid_length) ||
       !recover_pending_lifecycle_state() ||
       !clear_orphaned_dynamic_persistent_state() ||
       cap_store_find_package(load_package_aid_, load_package_aid_length_,
