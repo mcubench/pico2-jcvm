@@ -27982,3 +27982,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Software behavior is implemented; keep RV-44 open for a dedicated reset/power-cut regression and physical verification.
 - Commit: `3597e364`
 - Artifacts/logs: Test and build outputs in session transcript; ARM/RISC-V build artifacts under `build/`.
+
+## 2026-11-12 RV-44 honor deferred filesystem sync during rollback 12 min
+
+- Step/experiment: `RV-20261106-44-SYNC-RESET`
+- When: '2026-11-12 02:45 UTC' - '2026-11-12 02:57 UTC'
+- Model: `GPT-6`
+- Change: Fixed rollback publication ordering: restore writes are staged under the active transaction; the guard is dropped only for final `fs_sync()`, and reinstated with the journal retained if sync fails. Tightened the transaction test stub to defer sync while active. Added an integration regression using the production overlay and transaction handler that fails rollback sync, verifies quarantine, simulates cold reset, confirms the prior committed state, then verifies transactions work after restart. Updated TODO and QKB with the discovered backend contract.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`) with production-style sync deferral. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including `failed_rollback_sync_quarantines_until_reset_restores_committed_state` and existing 1,000-cut snapshot/reclamation tests. `./tools/build arm` and `./tools/build riscv` passed. No new compile errors; existing third-party/packed-member warnings remain. Hardware flash/serial was not run.
+- Result: Rollback now actually publishes restored records on Pico rather than receiving a false-success deferred sync. If publication fails, the transaction guard and recovery journal remain; cold reset restores the previous committed snapshot in the integration model. Three reported boards still enumerate in this VM as runtime `2e8a:0009`; picotool cannot access BOOTSEL.
+- Decision: Keep RV-44 open for physical validation. Continue with the next offline P1 review task while the guest lacks BOOTSEL access.
+- Commit: pending
+- Artifacts/logs: ARM/RISC-V wrappers; `build/arm/pico2_choupi.uf2`; persistent transaction and RP2350 overlay test outputs in session transcript.

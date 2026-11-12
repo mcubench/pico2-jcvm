@@ -193,6 +193,13 @@ reserve identities safely so abort does not reuse them, and encode both index by
 Focused RESOURCE-02 64-init AES/RSA plateaus are zero-growth; alias setup retains one 4-byte unreachable tag.
 The full mixed workload and physical persistence gates remain open.
 
+On rollback, `fs_sync()` must run with the persistent-transaction-active predicate temporarily false:
+the Pico backend intentionally returns success without publishing while that predicate is true. Restore the active
+guard and retain snapshots if this publication fails. Test doubles must model this deferral; a stub that always commits
+on `fs_sync()` can conceal a rollback that reports success while leaving the durable snapshot unchanged. The R44
+regression now checks failure quarantine and retry, plus simulated cold reset to the previous committed state.
+This is host/integration evidence; physical failure/recovery remains unverified. See [R44](../TODO.md#open-review-acceptance--2026-11-06).
+
 Evidence: [E061](QKB_INDEX.md#e061), [E060](QKB_INDEX.md#e060), [E397](QKB_INDEX.md#e397), [E401](QKB_INDEX.md#e401), [E402](QKB_INDEX.md#e402).
 
 ## Overlay capacity and package deletion — distinguish live data from tombstones

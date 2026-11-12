@@ -27,6 +27,9 @@ extern "C" uint8_t rp2350_fs_test_manual_transaction_active(void);
 #endif
 
 namespace {
+#ifdef RP2350_FS_OVERLAY_TEST
+uint8_t rp2350_fs_test_sync_failures = 0;
+#endif
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
 constexpr uint8_t kFirstDynamicPackageId = 56;
@@ -1340,9 +1343,19 @@ extern "C" uint8_t fs_sync(void) {
   if (choupi_persistent_write_transaction_active() != 0) return FS_STATUS_OK;
 #ifdef RP2350_FS_OVERLAY_TEST
   if (rp2350_fs_test_manual_transaction_active() != 0) return FS_STATUS_OK;
+  if (rp2350_fs_test_sync_failures != 0) {
+    --rp2350_fs_test_sync_failures;
+    return FS_STATUS_IO_UNKNOWN;
+  }
 #endif
   return persist_overlay() ? FS_STATUS_OK : FS_STATUS_IO_UNKNOWN;
 }
+
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" void rp2350_fs_test_fail_next_sync(void) {
+  rp2350_fs_test_sync_failures = 1;
+}
+#endif
 
 extern "C" void fs_drop(void) { (void)fs_sync(); }
 

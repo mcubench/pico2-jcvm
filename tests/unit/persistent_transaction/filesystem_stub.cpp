@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+extern "C" uint8_t choupi_persistent_write_transaction_active(void);
+
 namespace persistent_transaction_test {
 uint16_t instance_field_count = 0;
 unsigned int counted_fs_calls = 0;
@@ -264,6 +266,7 @@ extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
 
 extern "C" uint8_t fs_sync(void) {
   ++sync_count;
+  if (choupi_persistent_write_transaction_active() != 0) return 0;
   if (fail_sync_remaining != 0) {
     --fail_sync_remaining;
     return 1;

@@ -30,6 +30,8 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     uint32_t length);
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count);
+extern "C" void rp2350_fs_test_fail_next_sync(void);
+extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void);
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
 std::array<uint8_t, 2 * 1024 * 1024> committed_flash;
@@ -589,6 +591,55 @@ int main() {
                     sizeof(transaction_first_value)) == 0;
     expect(erase_failed_after_mutation && cold_restored,
            "transactional_prefix_delete_recovers_real_overlay_erase_failure");
+  }
+
+  {
+    constexpr uint8_t rollback_sync_tag[] = {0xa4, 0x32, 0x01};
+    constexpr uint8_t rollback_original[] = {0x61, 0x62, 0x63};
+    constexpr uint8_t rollback_tentative[] = {0x71, 0x72, 0x73};
+    const bool seeded =
+        fs_write(rollback_sync_tag, sizeof(rollback_sync_tag),
+                 rollback_original, sizeof(rollback_original)) == 0 &&
+        fs_sync() == 0;
+    if (seeded) committed_flash = fake_flash;
+    jcvm::fs::Tag tag{};
+    tag.len = sizeof(rollback_sync_tag);
+    std::memcpy(tag.value, rollback_sync_tag, sizeof(rollback_sync_tag));
+    const bool began = seeded &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    const bool wrote = began &&
+        jcvm::FlashMemory_Handler::writePersistentRecord(
+            tag, rollback_tentative, sizeof(rollback_tentative));
+    rp2350_fs_test_fail_next_sync();
+    const bool failed_rollback_sync = wrote &&
+        !jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+        jcvm::FlashMemory_Handler::persistentWriteTransactionActive() &&
+        jcvm::FlashMemory_Handler::persistentWriteRecoveryRequired();
+    bool quarantined_read_blocked = false;
+    try {
+      (void)jcvm::FlashMemory_Handler::readPersistentRecord(tag);
+    } catch (...) {
+      quarantined_read_blocked = true;
+    }
+
+    // Recreate volatile process state and flash contents as on a cold reset.
+    fake_flash = committed_flash;
+    rp2350_fs_test_reset_persistent_transaction_state();
+    const bool restarted = fs_init() == 0 &&
+        !jcvm::FlashMemory_Handler::persistentWriteTransactionActive() &&
+        !jcvm::FlashMemory_Handler::persistentWriteRecoveryRequired();
+    uint8_t recovered[sizeof(rollback_original)]{};
+    const bool restored_old_state = restarted &&
+        fs_read(rollback_sync_tag, sizeof(rollback_sync_tag), recovered,
+                sizeof(recovered)) == 0 &&
+        std::memcmp(recovered, rollback_original, sizeof(recovered)) == 0;
+    const bool usable_after_restart = restored_old_state &&
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction() &&
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    expect(seeded && wrote && failed_rollback_sync &&
+               quarantined_read_blocked && restored_old_state &&
+               usable_after_restart,
+           "failed_rollback_sync_quarantines_until_reset_restores_committed_state");
   }
 
   constexpr uint8_t orphan_prefix[] = {0x02, 0x19};

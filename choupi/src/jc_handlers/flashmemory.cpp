@@ -315,11 +315,15 @@ bool rollback_persistent_writes() noexcept {
       return false;
     }
   }
+  // The Pico filesystem defers sync while a Java Card transaction is active.
+  // Temporarily drop the guard for this one durable publication; restore it
+  // immediately if publication fails so the journal remains recoverable.
+  persistent_write_transaction_active = false;
   if (fs_sync() != 0) {
+    persistent_write_transaction_active = true;
     persistent_write_recovery_required = true;
     return false;
   }
-  persistent_write_transaction_active = false;
   persistent_write_capacity_enforced = false;
   persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
@@ -573,6 +577,22 @@ void validate_persistent_object_body(const fs::Tag &tag) {
 extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
   return persistent_write_transaction_active ? 1u : 0u;
 }
+
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void) {
+  persistent_write_snapshots.clear();
+  persistent_write_transaction_active = false;
+  persistent_write_recovery_required = false;
+  persistent_write_capacity_enforced = false;
+  persistent_write_transaction_applet_owned = false;
+  persistent_write_transaction_used_bytes = 0;
+  persistent_write_rollback_generation = 0;
+  persistent_array_identity_initialized = false;
+  persistent_array_identity_next = 1;
+  persistent_array_identity_reserved_through = 0;
+  persistent_array_identity_counter_dirty = false;
+}
+#endif
 
 bool FlashMemory_Handler::beginPersistentWriteTransaction(
     const bool enforce_commit_capacity) noexcept {
