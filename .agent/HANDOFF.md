@@ -11,6 +11,45 @@ their supplied client. Existing campaign evidence keeps its original versions.
 No firmware, scripts, manifests or test implementations changed. Prior hardware
 findings and next diagnostic steps below remain relevant.
 
+# Current handoff — option-2 run localizes PC/SC failure to CCID response path — 2026-11-12 19:49 UTC
+
+The unchanged supplied JCAlgTest 1.8.4/jc305 client ran
+`-op ALG_PERFORMANCE_STATIC -fresh` on D92
+(`D92E743D5F640C0F`) with no-debug firmware CPLC pre-personalization ID
+`580F3F40`. It completed SHA, MD5, RIPEMD160, SHA-256, SHA-384 and SHA-512
+performance tests, then failed during `ALG_SHA_224 MessageDigest_reset()` on
+a `B041` measurement APDU with `SCARD_E_NOT_TRANSACTED`. The client attempted
+reconnect/reselect and failed with the same code. No reader-helper restart
+occurred while the client was active. This was an incomplete failure, not
+option-2 acceptance.
+
+The contemporaneous serial state was `rx_events=1774`, `xfr=207`,
+`stage=6`, last APDU `B041000016`; the VM had recorded `CCID_RESPONSE ...
+sw=9000`. There were no `CHOUPI:CCID_ERRORS`, `FAULT`, or failing runtime
+summary. An 8-second post-failure serial capture showed D92 still alive with
+`TEST:PASS choupi_runtime` and the same stage-6/last-response state. USB still
+enumerated D92 as runtime `2e8a:0009` and CDC serial worked, but PC/SC no longer
+published a physical reader. After the client exited, the approved helper
+refreshed access; the line-buffered scan listed only Virtual PCD 00 00/01.
+
+In `src/ccid_device.cpp`, the response debug record is written before the
+final bulk-IN transfer completion. Stage 7 is set only in the successful IN
+completion callback. The stuck stage 6 with a client transaction error
+localizes the failure to final CCID response submission/completion or its
+callback servicing. It does **not** identify whether the endpoint transfer was
+never submitted, remained busy, or was not ACKed. The focused AES and RSA
+prepare/reset probes also passed four repetitions on D92; insufficient
+3072-bit component arrays are not supported by current evidence.
+
+Next: inspect and add targeted diagnostics for pending final-response state,
+IN submit result, transfer result and completion callback. Rebuild both
+architectures before flashing. Use D92 or another identified board only after
+PC/SC publication returns; preserve this failed run. Artifacts:
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-rsa-reset-followup/`.
+
+This diagnostic step changes no firmware source. Preserve all unrelated
+shared worktree changes.
+
 # Current handoff — AES and RSA prepare/reset sequences repeat successfully on D92 — 2026-11-12 19:29 UTC
 
 On no-debug D92 (`D92E743D5F640C0F`), the exact Windows-reported AES-128 ECB

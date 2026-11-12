@@ -567,3 +567,29 @@ failure's APDU/reset result and correlate card serial and PC/SC events. Logs:
 `artifacts/results/rsa3072-physical-20261112/D92-no-debug/apdu-aes-reset-prepare-20261112T1924Z.log`,
 `.../apdu-aes-repeated-reset-prepare-20261112T1925Z.log` and corresponding
 serial logs.
+
+Full-client follow-up, 2026-11-12 19:49 UTC: the unchanged 1.8.4/jc305 client
+ran `-op ALG_PERFORMANCE_STATIC -fresh` on D92 no-debug firmware whose CPLC
+pre-personalization ID was `580F3F40`, matching the tested build. It completed
+SHA, MD5, RIPEMD160, SHA-256, SHA-384 and SHA-512 tests, then failed during
+`ALG_SHA_224 MessageDigest_reset()` at a `B041` APDU with
+`SCARD_E_NOT_TRANSACTED`. No reader-helper restart occurred during the client.
+Firmware serial state showed `rx_events=1774`, `xfr=207`, `stage=6`, last APDU
+`B041000016`, and a recorded response `sw=9000`; no `CHOUPI:CCID_ERRORS`,
+`FAULT`, or failed runtime summary appeared. A post-failure serial snapshot
+still passed runtime health with the same stage-6 state. USB still enumerated
+D92 as `2e8a:0009` and its CDC serial remained available, but PC/SC no longer
+published a physical reader. After the client had exited, the approved helper
+refreshed access; a line-buffered scan listed only the two Virtual PCD readers.
+
+In `src/ccid_device.cpp`, `CCID_RESPONSE` is recorded before the final bulk-IN
+transfer is known to have completed; the CCID diagnostic stage changes to 7
+in the successful IN completion callback. Thus the stuck stage 6 plus client
+transaction failure points to the final CCID response transfer not completing
+(or its callback not being serviced), rather than to RSA buffer capacity. This
+is a strong localization, not a proven exact electrical/USB cause: current
+telemetry does not expose pending-response state or distinguish submission
+from host ACK. Add focused response-submit/IN-completion diagnostics, then
+reproduce on no-debug firmware. Full option-2 acceptance failed; it is not a
+pass. Logs:
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-rsa-reset-followup/`.

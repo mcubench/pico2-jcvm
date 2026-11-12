@@ -28687,6 +28687,38 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/rsa3072-physical-20261112/D92-no-debug/`.
 
+## 2026-11-12 Run JCAlgTest option 2 and localize transport failure 20 minutes
+
+- Step/experiment: `RESOURCE-01-OPTION2-CCID-RESPONSE-STALL-20261112`
+- When: '2026-11-12 19:29 UTC' - '2026-11-12 19:49 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Ran the unchanged supplied 1.8.4/jc305 option-2 performance client
+  on D92 no-debug `max_crypto` firmware; recorded failure evidence in QKB and
+  HANDOFF. No firmware source changed.
+- Validation: GPPro first confirmed the JCAlgTest package/applet. Client ran
+  `-op ALG_PERFORMANCE_STATIC -fresh` on exact reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 01 00`, CPLC build ID
+  `580F3F40`. SHA, MD5, RIPEMD160, SHA-256, SHA-384 and SHA-512 measurements
+  completed. The next `ALG_SHA_224 MessageDigest_reset()` B041 call failed in
+  SmartcardIO with `SCARD_E_NOT_TRANSACTED`, including retry/reselect. Serial
+  remained alive and showed stage 6, xfr=207, last B041, response status
+  `9000`; no CCID error counters or runtime failure appeared. Post-failure
+  `TEST:SUMMARY pass=1 fail=0` was captured. USB/CDC still enumerated the Pico,
+  but PC/SC did not; after client exit and authorized helper refresh,
+  line-buffered `pcsc_scan -r` listed only VPCD readers. Campaign failed and is
+  incomplete. Logs are preserved. No build/flash was attempted.
+- Result: The recorded `9000` precedes bulk-IN completion; stage 7 is only set
+  in the successful IN completion callback. Stage 6 persisting with the
+  PC/SC transaction error strongly localizes this failure to the CCID final
+  response transfer/completion path. It does not yet distinguish submit,
+  endpoint busy, host ACK or callback servicing. This is not explained by
+  deterministic RSA-3072 array sizing; focused AES/RSA prepare probes passed.
+- Decision: Add targeted CCID pending-response/submission/completion telemetry
+  and reproduce on no-debug firmware. Do not claim option-2 success or commit a
+  speculative array-size change.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-rsa-reset-followup/`.
+
 ## 2026-11-12 JCAlgTest 1.8.5 client worker documentation 4 minutes
 
 - Step/experiment: `JCALGTEST-CLIENT-185-DOCS`
