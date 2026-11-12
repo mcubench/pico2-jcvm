@@ -28315,3 +28315,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the packaged timing image to capture that missing boundary when BOOTSEL is exposed to the VM; continue offline without attributing a cause prematurely.
 - Commit: pending.
 - Artifacts/logs: Existing D92 serial and client logs under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`.
+
+## 2026-11-12 Separate CCID diagnostic tracing from heap tracing 7 min
+
+- Step/experiment: `RESOURCE-01-SEPARATE-CCID-TRACE-FLAG-20261112`
+- When: '2026-11-12 11:15 UTC' - '2026-11-12 11:22 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added `PICO2_DEBUG_CCID_APPLET=1` / `CHOUPI_DEBUG_CCID_APPLET` to compile only the five applet/CCID boundary markers. They no longer require `PICO2_DEBUG_HEAP_GC=1`, which emits per-object deletion-candidate serial lines and can dominate diagnostic traces. Build provenance now records the new flag and labels it diagnostic.
+- Validation: `bash -n tools/build` and scoped `git diff --check` passed. Both `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1 PICO2_DEBUG_HEAP_GC=0 ./tools/build arm --profile max_crypto` and the RISC-V wrapper passed; ARM firmware ends at `0x100F474C`, leaving 47,284 bytes. `strings` confirms all five CCID markers are in the ARM ELF while `OBJECT_DELETION:CANDIDATE stage=` per-candidate tracing is absent. `PICO2_DEBUG_CCID_APPLET=2 ./tools/build arm` correctly rejects the invalid value. No hardware write was attempted; guest enumeration still has no BOOTSEL device.
+- Result: Future diagnostic builds can capture function return, sync timing and response submission without enabling verbose heap-GC object tracing.
+- Decision: Commit the isolated trace switch, then rebuild/package an empty-card diagnostic image from the commit and publish its hash in the handoff.
+- Commit: pending.
+- Artifacts/logs: `build/arm/pico2_choupi.elf`, ARM/RISC-V build provenance.

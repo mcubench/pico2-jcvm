@@ -1020,7 +1020,7 @@ void process_message(uint8_t rhport) {
             apdu, static_cast<uint16_t>(apdu_length), response,
             static_cast<uint16_t>(sizeof(response)), &applet_response_length);
       }
-#ifdef CHOUPI_DEBUG_HEAP_GC
+#ifdef CHOUPI_DEBUG_CCID_APPLET
       std::printf("CHOUPI:CCID_APPLET stage=vm_return status=%04X len=%u\r\n",
                   static_cast<unsigned>(status),
                   static_cast<unsigned>(applet_response_length));
@@ -1028,13 +1028,13 @@ void process_message(uint8_t rhport) {
 #endif
       if (status != 0xffff) {
         response_length = applet_response_length;
-#ifdef CHOUPI_DEBUG_HEAP_GC
+#ifdef CHOUPI_DEBUG_CCID_APPLET
         std::printf("CHOUPI:CCID_APPLET stage=fs_sync_begin\r\n");
         std::fflush(stdout);
         const uint32_t fs_sync_started_us = time_us_32();
 #endif
         const uint8_t sync_status = fs_sync();
-#ifdef CHOUPI_DEBUG_HEAP_GC
+#ifdef CHOUPI_DEBUG_CCID_APPLET
         const uint32_t fs_sync_elapsed_us =
             time_us_32() - fs_sync_started_us;
         std::printf("CHOUPI:CCID_APPLET stage=fs_sync_end status=%u "
@@ -1054,13 +1054,13 @@ void process_message(uint8_t rhport) {
       response[1] = 0x99;
       response_length = 2;
     }
-#ifdef CHOUPI_DEBUG_HEAP_GC
+#ifdef CHOUPI_DEBUG_CCID_APPLET
     std::printf("CHOUPI:CCID_APPLET stage=response_submit_begin len=%u\r\n",
                 static_cast<unsigned>(response_length));
     std::fflush(stdout);
 #endif
     send_response(rhport, 0x80, response, response_length);
-#ifdef CHOUPI_DEBUG_HEAP_GC
+#ifdef CHOUPI_DEBUG_CCID_APPLET
     std::printf("CHOUPI:CCID_APPLET stage=response_submit_return pending=%u "
                 "zlp=%u in_busy=%u submit_errors=%u\r\n",
                 pending_final_response ? 1u : 0u, tx_zlp_pending ? 1u : 0u,
