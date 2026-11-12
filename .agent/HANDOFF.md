@@ -18,7 +18,9 @@ progress-record hash is backfilled in a follow-up documentation commit.
 
 Current host regression recheck: `./tools/test-persistent-transaction` and
 `./tools/test-persistent-inventory` both pass (`TEST:SUMMARY fail=0`) on the
-current dirty worktree. This does not reproduce or close the physical issue.
+current dirty worktree. This does not reproduce or close the physical issue;
+the recheck is committed as `4b4788cd`, with the progress-record hash
+backfilled in a follow-up documentation commit.
 
 ---
 

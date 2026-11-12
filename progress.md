@@ -3408,7 +3408,7 @@
 - Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed. `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 60 --connect-timeout 60 --log artifacts/logs/jcalgtest-sha256-support-vpcd-20261015.log` passed `TEST:SUMMARY pass=9 fail=0`; SHA-256 support response was `1500FF0000000000000000000000000000000000000000000000009000`. `./tools/cycle choupi` rebuilt both architectures but its flash phase timed out after 120 seconds because no RP-series USB device appeared in this VM; no firmware was uploaded and no hardware validation was performed. An exploratory JCAlgTest performance APDU for `doFinal` returned `6F00` with `SecurityException` at `GETFIELD_S_THIS` in the applet path, so native digest execution is not yet verified by that APDU.
 - Result: JCAlgTest 1.8.2 reports `ALG_SHA_256` supported in VPCD. The on-chip accelerator implementation compiles for the ARM target; SHA output correctness and hardware execution remain unverified. Build output contains existing Rust/C++ warnings from dependencies.
 - Decision: Keep the support implementation; debug the separate JCAlgTest performance-call failure and rerun a bounded SHA known-answer test after USB passthrough is restored.
-- Commit: pending
+- Commit: `4b4788cd` (the recheck record; exact hash backfilled in a follow-up documentation commit).
 - Artifacts/logs: VPCD log `artifacts/logs/jcalgtest-sha256-support-vpcd-20261015.log` (SHA-256 `57466b2d9e41a369d1be4ab0199942e6cc480c4fcc5d7ed1daa7a95280eb6238`); physical flash attempt `artifacts/logs/cycle-choupi-20261015T132103Z.log` (SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`).
 
 ## 2026-10-15 — Record SHA-256 implementation commit
