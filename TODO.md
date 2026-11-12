@@ -72,6 +72,13 @@ task:
 
 - [ ] **P1: Validate a CAP completely before LOAD stores and enables it; add
   resolver null guards.** Findings B1, B2; extends R55.
+  - Progress 2026-11-12: unknown component tags now fail during LOAD before
+    package storage; import lookups validate missing/truncated Import records,
+    and class/static resolvers guard absent Export/Class components. ARM and
+    RISC-V builds plus malformed-CAP, unchanged JCAlgTest install/select, and
+    CAP upgrade VPCD tests pass. Still open: conditional required-component
+    rules, library Import/Export dependency validation, external superclass
+    without Import fixture, install-AID mismatch fixture, and physical test.
   1. In `CapLoadSession::finishLoad` (`src/cap_load.cpp`), construct
      `JC_Cap` with payload validation over the RAM load buffer and run the
      import-independent part of `validate_cap_imports` before

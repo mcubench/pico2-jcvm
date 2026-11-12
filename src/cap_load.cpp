@@ -626,61 +626,65 @@ bool validate_internal_class_references(
   return true;
 }
 
+bool validate_cap_import_independent(const jcvm::JC_Cap &cap) {
+  const auto *imports = cap.getImport();
+  const std::size_t import_count = imports == nullptr ? 0 : imports->count;
+  const auto *constant_pool = cap.getConstantPool();
+  if (constant_pool == nullptr) return false;
+  const auto *entries = reinterpret_cast<const uint8_t *>(
+      constant_pool->constant_pool);
+  const std::size_t entry_count = HTONS(constant_pool->count);
+  if (!jcvm::cap_constant_pool_validation::valid_import_tokens(
+          entries, entry_count, import_count)) {
+    return false;
+  }
+
+  const auto *static_fields = cap.getStaticField();
+  const auto *methods = cap.getMethod();
+  const std::size_t static_image_size =
+      static_fields == nullptr ? 0 : NTOHS(static_fields->image_size);
+  const std::size_t method_offset_base =
+      methods == nullptr
+          ? 0
+          : static_cast<std::size_t>(methods->handler_count) *
+                sizeof(jcvm::jc_cap_exception_handler_info);
+  const std::size_t method_size =
+      methods == nullptr ? 0 : methods->methods().size();
+  if (!jcvm::cap_constant_pool_validation::valid_internal_member_offsets(
+          entries, entry_count, static_image_size, method_offset_base,
+          method_size)) {
+    return false;
+  }
+
+  if (const auto *descriptor = cap.getDescriptor(); descriptor != nullptr) {
+    const std::size_t descriptor_size = NTOHS(descriptor->size);
+    if (!jcvm::cap_constant_pool_validation::
+            valid_descriptor_static_method_offsets(
+                entries, entry_count,
+                reinterpret_cast<const uint8_t *>(&descriptor->class_count),
+                descriptor_size)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
   try {
     const jcvm::Package package(package_id);
     const jcvm::JC_Cap cap = package.getCap();
-    const jcvm::jc_cap_import_component *component = cap.getImport();
-    const std::size_t import_count =
-        component == nullptr ? 0 : component->count;
-    const jcvm::jc_cap_constant_pool_component *constant_pool =
-        cap.getConstantPool();
-    if (constant_pool != nullptr &&
-        !jcvm::cap_constant_pool_validation::valid_import_tokens(
-            reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
-            HTONS(constant_pool->count), import_count)) {
+    if (!validate_cap_import_independent(cap)) {
       return CapImportValidation::internal_error;
     }
+    const jcvm::jc_cap_import_component *component = cap.getImport();
+    const jcvm::jc_cap_constant_pool_component *constant_pool =
+        cap.getConstantPool();
     if (constant_pool != nullptr &&
         !validate_internal_class_references(
             package, cap,
             reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
             HTONS(constant_pool->count))) {
       return CapImportValidation::internal_error;
-    }
-    if (constant_pool != nullptr) {
-      const auto *static_fields = cap.getStaticField();
-      const auto *methods = cap.getMethod();
-      const std::size_t static_image_size =
-          static_fields == nullptr ? 0 : NTOHS(static_fields->image_size);
-      const std::size_t method_offset_base =
-          methods == nullptr
-              ? 0
-              : static_cast<std::size_t>(methods->handler_count) *
-                    sizeof(jcvm::jc_cap_exception_handler_info);
-      const std::size_t method_size =
-          methods == nullptr ? 0 : methods->methods().size();
-      if (!jcvm::cap_constant_pool_validation::
-              valid_internal_member_offsets(
-                  reinterpret_cast<const uint8_t *>(
-                      constant_pool->constant_pool),
-                  HTONS(constant_pool->count), static_image_size,
-                  method_offset_base, method_size)) {
-        return CapImportValidation::internal_error;
-      }
-      if (const auto *descriptor = cap.getDescriptor(); descriptor != nullptr) {
-        const std::size_t descriptor_size = NTOHS(descriptor->size);
-        if (!jcvm::cap_constant_pool_validation::
-                valid_descriptor_static_method_offsets(
-                    reinterpret_cast<const uint8_t *>(
-                        constant_pool->constant_pool),
-                    HTONS(constant_pool->count),
-                    reinterpret_cast<const uint8_t *>(
-                        &descriptor->class_count),
-                    descriptor_size)) {
-          return CapImportValidation::internal_error;
-        }
-      }
     }
     if (component == nullptr) {
       return CapImportValidation::valid;
@@ -854,6 +858,26 @@ bool validate_cap_code(const uint8_t *code, size_t length,
                         uint8_t &package_aid_length,
                         uint8_t applet_aid[16],
                         uint8_t &applet_aid_length) noexcept {
+  if (code == nullptr || length == 0 || length > UINT16_MAX) return false;
+  try {
+    // Validate every component payload while it is still in the LOAD buffer.
+    // In particular, do not persist or publish a package whose component tag,
+    // version, framing, or component-specific tables will later be rejected by
+    // JC_Cap during INSTALL or restore.
+    const jcvm::JC_Cap validated_cap(static_cast<uint16_t>(length), code);
+    if (validated_cap.getHeader() == nullptr ||
+        validated_cap.getDirectory() == nullptr ||
+        validated_cap.getApplet() == nullptr ||
+        validated_cap.getClass() == nullptr ||
+        validated_cap.getMethod() == nullptr ||
+        validated_cap.getConstantPool() == nullptr ||
+        !validate_cap_import_independent(validated_cap)) {
+      return false;
+    }
+  } catch (...) {
+    return false;
+  }
+
   bool found_header = false;
   bool found_applet = false;
   size_t offset = 0;

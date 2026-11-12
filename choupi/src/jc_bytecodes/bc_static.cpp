@@ -63,6 +63,10 @@ StaticFieldLocation resolve_static_field(
           : external_ref.class_token;
 
   const auto export_component = Package(package_id).getCap().getExport();
+  if (export_component == nullptr ||
+      class_token >= export_component->class_count) {
+    throw Exceptions::SecurityException;
+  }
   const auto exported_class = export_component->classexport(class_token);
   const auto field_offsets = exported_class.static_field_offsets();
   return {package_id, field_offsets[external_ref.token]};

@@ -94,36 +94,37 @@ bool imported_aid_matches_resident(const jc_cap_package_info &imported,
  * @return the AID of the package.
  */
 const jc_cap_package_info *Import_Handler::getPackageAID(const uint8_t index)
-#if !defined(JCVM_ARRAY_SIZE_CHECK)
-    noexcept
-#endif
 {
   const JC_Cap &cap = this->package.getCap();
   const jc_cap_import_component *import = cap.getImport();
-
-#ifdef JCVM_ARRAY_SIZE_CHECK
-
-  if (import->count <= index) {
-
-    TRACE_JCVM_DEBUG(
-        "Imported package index (%u) > imported packages number (%u)", index,
-        import->count);
-
+  if (import == nullptr || index >= import->count) {
     throw Exceptions::SecurityException;
   }
 
-#endif /* JCVM_ARRAY_SIZE_CHECK */
-
-  uint16_t pos = 0;
-  const jc_cap_package_info *package_info;
-
-  for (uint8_t foo = 0; foo <= index; foo++) {
-    package_info = reinterpret_cast<const jc_cap_package_info *>(
-        &import->imported_packages[pos]);
-    pos += package_info->size();
+  const std::size_t import_size = NTOHS(import->size);
+  if (import_size < sizeof(import->count)) {
+    throw Exceptions::SecurityException;
   }
-
-  return package_info;
+  const std::size_t package_table_size = import_size - sizeof(import->count);
+  uint16_t pos = 0;
+  for (uint8_t entry = 0; entry <= index; ++entry) {
+    if (pos > package_table_size ||
+        package_table_size - pos < offsetof(jc_cap_package_info, AID)) {
+      throw Exceptions::SecurityException;
+    }
+    const auto *package_info = reinterpret_cast<const jc_cap_package_info *>(
+        &import->imported_packages[pos]);
+    if (package_info->AID_length < 5 || package_info->AID_length > 16) {
+      throw Exceptions::SecurityException;
+    }
+    const std::size_t package_size = package_info->size();
+    if (package_size > package_table_size - pos) {
+      throw Exceptions::SecurityException;
+    }
+    if (entry == index) return package_info;
+    pos += static_cast<uint16_t>(package_size);
+  }
+  throw Exceptions::SecurityException;
 }
 
 /*
@@ -133,6 +134,10 @@ const jc_cap_package_info *Import_Handler::getPackageAID(const uint8_t index)
  */
 const jpackage_ID_t
 Import_Handler::getPackageIndex(const jc_cap_package_info *pinfo) {
+  if (pinfo == nullptr || pinfo->AID_length < 5 ||
+      pinfo->AID_length > 16) {
+    throw Exceptions::SecurityException;
+  }
   for (jpackage_ID_t index = 0; index < JCVM_MAX_PACKAGES; index++) {
     if (!FlashMemory_Handler::isPackageExist(index)) {
       continue;
@@ -140,8 +145,12 @@ Import_Handler::getPackageIndex(const jc_cap_package_info *pinfo) {
 
     Package package = Package(index);
     JC_Cap cap = package.getCap();
-
-    const jc_cap_package_info &pinfo_to_compare = cap.getHeader()->package;
+    const jc_cap_header_component *header = cap.getHeader();
+    if (header == nullptr || header->package.AID_length < 5 ||
+        header->package.AID_length > 16) {
+      continue;
+    }
+    const jc_cap_package_info &pinfo_to_compare = header->package;
 
     // A package import records the version used to convert the client CAP.
     // Java Card linking permits a resident implementation with the same

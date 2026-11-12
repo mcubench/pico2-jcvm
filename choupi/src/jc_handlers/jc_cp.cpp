@@ -557,6 +557,11 @@ ConstantPool_Handler::getClassInformation(const jc_cp_offset_t offset) {
     package = importHandler.getPackageIndex(imported_package);
 
     Package importedPackage(package);
+    const JC_Cap imported_cap = importedPackage.getCap();
+    if (imported_cap.getExport() == nullptr ||
+        imported_cap.getClass() == nullptr) {
+      throw Exceptions::SecurityException;
+    }
     Export_Handler exportHandler(importedPackage);
     const uint8_t imported_class_token =
         classref.external_classref.class_token;
@@ -837,6 +842,9 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref,
 
     package = Package(package_index);
     cap = package.getCap();
+    if (cap.getExport() == nullptr || cap.getClass() == nullptr) {
+      throw Exceptions::SecurityException;
+    }
 
     const uint8_t imported_class_token =
         BYTE_TO_SHORT(classref.external_classref.class_token);

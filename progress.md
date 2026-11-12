@@ -27863,3 +27863,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open; continue root-safety and full 1.8.4 physical acceptance when PC/SC recovers.
 - Commit: `1a53bccf`
 - Artifacts/logs: `build/arm/build-provenance.txt` (normal mode restored); focused `./tools/test-rp2350-fs-overlay` output.
+
+## 2026-11-12 Reject malformed CAPs before storage and guard import resolution 27 min
+
+- Step/experiment: `CAPIN-01-PRELOAD-VALIDATION-20261112`
+- When: '2026-11-12 00:00 UTC' - '2026-11-12 00:27 UTC'
+- Model: `GPT-6`
+- Change: Added unknown-component-tag CAP mutation and LOAD-rejection assertion. CAP input validation now constructs `JC_Cap` with payload validation before package storage and checks component presence plus import-independent CP offsets. Added bounded Import record lookup and null guards for imported Export/Class data in class and static-field resolution. Updated CAPIN-01 status and handoff.
+- Validation: `./tools/fixture-path --verify` passed (81 files). `./tools/test-cap-malformed-vpcd --mutation unknown-component-tag` passed and reported rejection before storage. `./tools/test-pc-vpcd-applet --passes 1 --select-only` passed unchanged JCAlgTest install/select (`9000`, `TEST:SUMMARY pass=2 fail=0`). `./tools/test-cap-upgrade-vpcd` passed (`TEST:SUMMARY pass=1 fail=0`). `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and a second sequential ARM/RISC-V build after resolver guards all passed. ARM image ends at `0x100f3b3c`; 50,372 bytes remain below the firmware boundary. Python syntax and scoped whitespace checks passed.
+- Result: The unknown tag is rejected before CAP storage and valid 1.8.4 install/selection and upgrade remain functional in VPCD. User reported three boards in BOOTSEL, but both authorized USB refreshes showed only runtime `2e8a:0009`; no physical flash or validation occurred.
+- Decision: Keep CAPIN-01 open. Complete conditional required-component and library dependency/link validation plus missing-Import and AID-mismatch fixtures; retry hardware only when BOOTSEL `2e8a:000f` is actually visible. Preserve unrelated dirty files; `src/cap_load.cpp` and some submodule source files contain unrelated changes requiring partial staging.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/rv28-malformed-unknown-component-tag-vpcd-20261106.log`; `artifacts/logs/cap-upgrade-vpcd-20261112T002613Z.log`; `build/arm/pico2_choupi.uf2`.

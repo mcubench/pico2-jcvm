@@ -1,3 +1,28 @@
+# Current handoff — CAPIN-01 early LOAD validation and resolver guards — 2026-11-12 00:27 UTC
+
+Added a test-only unknown-tag mutation to the unchanged JCAlgTest 1.8.4 CAP;
+tag 12 is now rejected at LOAD before package storage/publication. Added bounds
+and null checks to import lookup and guards for missing Export/Class components
+in class/static resolution. ARM and RISC-V `max_crypto` wrappers pass; the ARM
+image ends at `0x100f3b3c`, with 50,372 bytes below the firmware boundary.
+`./tools/fixture-path --verify` passes (81 pinned files).
+
+VPCD validation passes: `./tools/test-cap-malformed-vpcd --mutation
+unknown-component-tag` (rejected before storage), unchanged 1.8.4 JCAlgTest
+install/select (`9000`), and `./tools/test-cap-upgrade-vpcd` (`fail=0`). These
+are host-emulator results, not physical acceptance.
+
+The user reported all three boards in BOOTSEL, but two authorized USB refreshes
+still enumerated all three as runtime `2e8a:0009`; BOOTSEL `2e8a:000f` was not
+visible, and no flash was attempted. Continue CAPIN-01 offline. Remaining:
+conditional required-component rules, library dependency closure/link checks,
+external superclass without Import fixture, INSTALL AID mismatch fixture, and
+physical validation. Other existing dirty files were preserved. Source changes
+are uncommitted pending a partial staging pass because `src/cap_load.cpp` and
+other worktree files contain unrelated edits.
+
+---
+
 # Current handoff — RESOURCE-01 candidate tracing prepared; physical transport unavailable — 2026-11-11 22:49 UTC
 
 Added debug-only traces for persistent-tag read status, failed heap edges, and

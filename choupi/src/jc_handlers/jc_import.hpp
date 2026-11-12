@@ -43,11 +43,7 @@ public:
   Import_Handler(Package package) noexcept : Component_Handler(package){};
 
   /// Get import package AID from index.
-  const jc_cap_package_info *getPackageAID(const uint8_t index)
-#if !defined(JCVM_ARRAY_SIZE_CHECK)
-      noexcept
-#endif
-      ;
+  const jc_cap_package_info *getPackageAID(const uint8_t index);
 
   /// Get the package index in the flash.
   const jpackage_ID_t getPackageIndex(const jc_cap_package_info *pinfo);

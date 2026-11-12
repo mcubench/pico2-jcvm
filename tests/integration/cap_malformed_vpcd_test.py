@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -190,7 +191,10 @@ def build_malformed_load_code(mutation: str) -> Path:
     mutable = bytearray(ordered)
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
-    if mutation in ("impdep1", "impdep2"):
+    if mutation == "unknown-component-tag":
+        mutation_index = len(mutable)
+        replacement = bytes((12, 0, 1, 0))
+    elif mutation in ("impdep1", "impdep2"):
         mutation_index = code_index
         replacement = bytes((0xFE if mutation == "impdep1" else 0xFF,))
         if mutable[mutation_index] == replacement[0]:
@@ -558,7 +562,7 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("impdep1", "impdep2", "truncated-sipush",
+        "--mutation", choices=("unknown-component-tag", "impdep1", "impdep2", "truncated-sipush",
                                 "fall-through", "zero-process-body-length",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
@@ -582,6 +586,8 @@ def main() -> int:
     args = parser.parse_args()
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
+    if args.mutation == "unknown-component-tag":
+        log.unlink(missing_ok=True)
     select_status = "9000" if args.mutation in (
         "truncated-sipush", "fall-through",
         "exception-catch-cp-out-of-range",
@@ -605,24 +611,57 @@ def main() -> int:
         # from an interpreter that never answers.
         "--apdu-timeout", "60",
         "--cap-code", str(code),
-        "--expect-select-status", select_status,
-        "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
-        "--apdu", "00A4040008A00000015100000000",
-        "--expect-apdu-response", "6F0A8408A0000001510000009000",
-        "--apdu", "00A404000A" + APPLET_AID.hex() + "00",
-        "--expect-apdu-response", select_status,
-        "--apdu", "00A4040008A00000015100000000",
-        "--expect-apdu-response", "6F0A8408A0000001510000009000",
-        "--apdu", "80CA006600",
-        "--expect-apdu-response",
-        "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
         "--log", str(log),
     ]
+    if args.mutation != "unknown-component-tag":
+        commands.extend((
+            "--expect-select-status", select_status,
+            "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
+            "--apdu", "00A4040008A00000015100000000",
+            "--expect-apdu-response", "6F0A8408A0000001510000009000",
+            "--apdu", "00A404000A" + APPLET_AID.hex() + "00",
+            "--expect-apdu-response", select_status,
+            "--apdu", "00A4040008A00000015100000000",
+            "--expect-apdu-response", "6F0A8408A0000001510000009000",
+            "--apdu", "80CA006600",
+            "--expect-apdu-response",
+            "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
+        ))
+    run_kwargs = {"cwd": ROOT, "check": False}
+    if args.mutation == "unknown-component-tag":
+        # The inner generic VPCD runner correctly reports that no applet can
+        # start after LOAD rejection. Capture that expected negative result so
+        # the outer acceptance check is the only PASS/FAIL summary shown.
+        run_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          text=True)
     result = subprocess.run(
-        [str(ROOT / "tools/test-pc-vpcd-applet"), *commands],
-        cwd=ROOT,
-        check=False,
+        [str(ROOT / "tools/test-pc-vpcd-applet"), *commands], **run_kwargs
     )
+    if args.mutation == "unknown-component-tag":
+        run_log = log.read_text(encoding="utf-8", errors="replace")
+        load_rejected = "ERROR: PC CAP LOAD data rejected" in run_log
+        registry_match = re.search(
+            r"VPCD:CAP_REGISTRY_SAVED packages=(\d+)", run_log
+        )
+        stored_packages = int(registry_match.group(1)) if registry_match else -1
+        registry_empty = stored_packages in (-1, 0)
+        if not load_rejected or not registry_empty or \
+                "ERROR: PC applet INSTALL failed" in run_log:
+            if args.mutation == "unknown-component-tag" and result.stdout:
+                print(result.stdout, file=sys.stderr, end="")
+            print(
+                "CAP_LOAD_VALIDATION:FAIL "
+                f"load_rejected={int(load_rejected)} "
+                f"registry_saved_packages={stored_packages} "
+                f"install_rejected={int('ERROR: PC applet INSTALL failed' in run_log)}",
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            "CAP_LOAD_VALIDATION:PASS "
+            f"unknown_component_rejected_before_store registry_saved_packages={stored_packages}"
+        )
+        return 0
     if result.returncode != 0:
         print(f"MALFORMED_CAP:FAIL vpcd_exit={result.returncode}", file=sys.stderr)
     return result.returncode
