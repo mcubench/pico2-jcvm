@@ -90,8 +90,15 @@ task:
     RISC-V builds plus malformed-CAP, unchanged JCAlgTest install/select, and
     CAP upgrade VPCD tests pass. The LOAD package-AID/Header-AID mismatch is
     now rejected before persistence and covered by a VPCD regression. Still
-    open: conditional required-component rules, library Import/Export dependency
+    open: required-component presence checks, library Import/Export dependency
     validation, external superclass without Import fixture, and physical test.
+  - Progress 2026-11-12 12:43 UTC: Oracle Java Card 3.0.5 identifies Import,
+    Constant Pool, Method, Static Field and Reference Location as required;
+    Applet and Export are conditional, Debug is optional. A new red VPCD
+    regression removes Reference Location from unchanged JCAlgTest 1.8.4 CAP
+    bytes. LOAD accepts and persists that malformed package (`packages=1`);
+    required-component checks must reject before storage. See
+    [Oracle JCVM 3.0.5 §6.2](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf).
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is
@@ -104,9 +111,11 @@ task:
      import-independent part of `validate_cap_imports` before
      `choupi_store_cap_package`. Reject unknown or duplicate components,
      unsupported CAP versions and lengths above 65,535 on both backends.
-  2. Required-component rules: Class, Method and ConstantPool whenever
-     referenced; Import whenever any class record or ConstantPool entry is
-     external; Export whenever the package can be imported from.
+  2. Enforce the specification's required component set (including Import,
+     Constant Pool, Method, Static Field, and Reference Location); do not infer
+     component presence solely from whether a reference currently uses it.
+     Keep Applet conditional on applet declarations and Export conditional on
+     externally importable public elements.
   3. Run ConstantPool and link validation for library packages too (at LOAD, or
      over the dependency closure at INSTALL).
   4. Null guards that throw `SecurityException` at

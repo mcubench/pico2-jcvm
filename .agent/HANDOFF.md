@@ -1,3 +1,30 @@
+# Current handoff — CAP LOAD accepts missing required Reference Location — 2026-11-12 12:43 UTC
+
+The user reports all three devices in BOOTSEL. Fresh host-access enumeration
+still shows device 088, 096 and 100 as runtime `2e8a:0009`, not BOOTSEL
+`000f`; the approved helper grants access to only 096 and 100. Identity-pinned
+flashing of D92 (`D92E743D5F640C0F`) and 8E (`8E464F4E2BBC0A19`) failed at the
+missing picotool reset interface; CDC-1200 fallback timed out. 2BED
+(`2BED26ED20556535`) was not connected. No device received the prepared image
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`.
+
+Offline CAPIN-01 work found that removing the Reference Location component
+(tag 9) from unchanged JCAlgTest 1.8.4 CAP bytes still lets LOAD succeed and
+persist one package. Red regression:
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-cap-malformed-vpcd --mutation missing-reference-location`
+reports `CAP_LOAD_VALIDATION:FAIL load_rejected=0 registry_saved_packages=1`.
+The artifact is generated under `build/rv28-malformed-missing-reference-location-load-code.bin`;
+the upstream CAP remains unchanged. Oracle JCVM 3.0.5 §6.2 lists Reference
+Location as required. Next enforce all required standard components before
+storage, while preserving conditional Applet/Export handling; then run the
+malformed, valid install/select, upgrade and multipackage checks and both
+architecture builds. Physical acceptance remains open.
+
+The worktree already contains shared uncommitted changes. Preserve them; the
+current test edit is limited to `tests/integration/cap_malformed_vpcd_test.py`.
+
+---
+
 # Current handoff — CAPIN-01 package AID mismatch rejected — 2026-11-12 12:21 UTC
 
 ## Current offline step: reject LOAD package AID / CAP Header mismatch

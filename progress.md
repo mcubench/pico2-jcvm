@@ -28423,3 +28423,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close this CAPIN-01 subcase. Continue conditional required-component and dependency closure validation offline; return to RESOURCE-01 physical acceptance when BOOTSEL is visible.
 - Commit: `35c95824` (progress-record hash backfill committed separately).
 - Artifacts/logs: `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`; `artifacts/logs/cap-upgrade-vpcd-20261112T122052Z.log`; current ARM/RISC-V build provenance.
+
+## 2026-11-12 Reproduce missing required Reference Location component 16 min
+
+- Step/experiment: `CAPIN-01-MISSING-REFERENCE-LOCATION`
+- When: '2026-11-12 12:27 UTC' - '2026-11-12 12:43 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added a generated malformed-CAP regression that removes only the Reference Location component from the unchanged JCAlgTest 1.8.4/jc305 CAP. Updated CAPIN-01 to align required component presence with Oracle JCVM 3.0.5 §6.2 and recorded fresh failed hardware-flash observations.
+- Validation: Python syntax check passed. `./tools/build-pc --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-cap-malformed-vpcd --mutation missing-reference-location` failed as expected before the fix: `CAP_LOAD_VALIDATION:FAIL load_rejected=0 registry_saved_packages=1`; the emulator installed and persisted the package despite its absent required component. The upstream CAP remains unchanged. No ARM/RISC-V build for this regression-only step.
+- Result: Confirmed a required-component validation gap: Reference Location tag 9 can be omitted and LOAD still stores the package. Oracle JCVM 3.0.5 §6.2 lists it among required components; Applet and Export are conditional and Debug is optional.
+- Decision: Next reject missing required CAP components in `validate_cap_code()` before any cleanup, slot allocation, or persistence; then rerun this fixture and valid-install regressions.
+- Commit: pending.
+- Artifacts/logs: `build/rv28-malformed-missing-reference-location-load-code.bin`; `artifacts/logs/rv28-malformed-missing-reference-location-vpcd-20261106.log`.
