@@ -1,3 +1,38 @@
+# Current handoff — RESOURCE-01 physical retry and diagnostic image ready — 2026-11-12 01:29 UTC
+
+The normal ARM `max_crypto` image and RISC-V VM-core wrappers both rebuilt
+successfully from source HEAD `2cfb9560`. Normal ARM image:
+`build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
+`82fa8eac5b05120ee806991dc78e1741d33d60f29d557d9f58abbc346cc6f77a`;
+provenance is `mode=normal`, `object_deletion=OFF`, debug tracing OFF, with
+CPLC source ID `0x2CFB956047065424`. The separate RESOURCE-01 candidate-trace
+image is `build/resource01-candidate-trace-20261112/pico2_choupi-max_crypto-object-deletion-trace.uf2`,
+2,005,504 bytes, SHA-256
+`91cf9d91604fb546892665eabd5763eeb68efbc641e2be3058e2309a23f181a6`; it was
+built with heap tracing and object deletion ON. Use the diagnostic image only
+for the next candidate-tag investigation; do not mistake it for the normal
+firmware.
+
+The user reported all three tokens in BOOTSEL. The guest instead saw three
+runtime USB devices (`2e8a:0009`) at stable paths `1-3`, `1-4`, and `1-5`;
+there were no `2e8a:000f` BOOTSEL devices. The approved helper found zero
+JCVM PC/SC readers. With elevated host USB access from the first attempt,
+`./tools/flash --usb-path <path> <candidate-image>` tried all three. Each
+force-load was rejected as non-BOOTSEL; picotool could not find a reset
+interface, and the bounded CDC/retry sequence did not yield BOOTSEL. No image
+was written to any board. Exact attempts were on paths 1-3, 1-4, and 1-5;
+each ended with `Pico did not enter BOOTSEL after force-load, delayed polling,
+three reboot requests, and CDC reset fallback`.
+
+Next action: once USB passthrough actually exposes a BOOTSEL device, flash the
+candidate-trace image to one identified board and capture the `stage=erase`
+candidate tag immediately preceding any missing-body edge; then restore the
+normal image and verify finite serial output. RESOURCE-01 remains open and
+production object deletion stays disabled. Do not claim physical validation
+from this attempt. The attempt is recorded in `progress.md`; commit follows.
+
+---
+
 # Current handoff — fail closed on aliases to missing persistent array bodies — 2026-11-12 01:01 UTC
 
 Added a guard in `setPersistentField_Reference()` that refuses to publish an

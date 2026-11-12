@@ -27886,3 +27886,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open and object deletion disabled in normal firmware. Continue offline with reclaimer root/candidate analysis; resume physical validation only when the guest enumerates BOOTSEL or a named Pico reader.
 - Commit: `a99843f6` (the source/test commit; this record's exact hash was backfilled in a documentation follow-up).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `artifacts/logs/object-deletion-vpcd-20261112T005920Z.log`; current source/test changes in `choupi/src/jc_handlers/flashmemory.cpp` and `tests/unit/persistent_transaction/persistent_transaction_test.cpp`.
+
+## 2026-11-12 RESOURCE-01 three-board BOOTSEL retry 21 min
+
+- Step/experiment: `RESOURCE-01-BOOTSEL-RETRY-20261112`
+- When: '2026-11-12 01:08 UTC' - '2026-11-12 01:29 UTC'
+- Model: `GPT-6`
+- Change: Refreshed USB state and attempted the prepared candidate-trace firmware on each of three reported BOOTSEL boards using the repository flash wrapper and stable USB topology paths. Updated the RESOURCE-01 next step and handoff with exact device state and artifact identity.
+- Validation: `./tools/build arm --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/build riscv --profile max_crypto` passed. `./tools/doctor`, elevated `lsusb -d 2e8a:`, `picotool info -a`, approved PC/SC helper, and per-path `PICO2_HOST_USB_ACCESS=1 ./tools/flash --usb-path ...` were run through elevated host access. All three guest devices enumerated as runtime `2e8a:0009`; no BOOTSEL `2e8a:000f` devices or JCVM PC/SC readers were available. Each bounded flash sequence failed before write because picotool could not find an accessible BOOTSEL/reset interface. No image was written.
+- Result: Normal ARM image `build/arm/pico2_choupi.uf2` is 1,997,312 bytes, SHA-256 `82fa8eac5b05120ee806991dc78e1741d33d60f29d557d9f58abbc346cc6f77a`. Candidate-trace image is `build/resource01-candidate-trace-20261112/pico2_choupi-max_crypto-object-deletion-trace.uf2`, 2,005,504 bytes, SHA-256 `91cf9d91604fb546892665eabd5763eeb68efbc641e2be3058e2309a23f181a6`. No hardware runtime result was obtained.
+- Decision: Resume physical diagnosis when USB passthrough exposes BOOTSEL; flash the candidate-trace image to one identified token, capture candidate erase tags, then restore normal firmware. RESOURCE-01 remains open.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/resource01-candidate-trace-20261112/pico2_choupi-max_crypto-object-deletion-trace.uf2`; bounded flash attempts on USB paths `1-3`, `1-4`, and `1-5`.
