@@ -13,7 +13,8 @@ prove or falsify the link.
 No source change was justified from this indirect evidence. The prior build
 and hardware status remains below; continue offline analysis while BOOTSEL is
 not visible, and capture the exact erase candidate on hardware before changing
-reclaimer decisions.
+reclaimer decisions. This evidence update is committed as `948777c9`; its
+progress-record hash is backfilled in a follow-up documentation commit.
 
 ---
 
