@@ -13,6 +13,11 @@ or PKG entries. The approved helper grants two USB nodes and `pcsc_scan -r`
 lists both readers plus the two VPCD readers. No PC/SC service restart was
 needed.
 
+Read-only GPPro `--info -d` confirmed CPLC raw data tail
+`...D41EFE30...F2C1A828` on both boards: `ICPrePersonalizationEquipmentID`
+is `D41EFE30` and `ICPersonalizationEquipmentID` is `F2C1A828`, reconstructing
+source ID `F2C1A828D41EFE30`. Both CPLC queries completed successfully.
+
 `2BED26ED20556535` remains at USB path `1-5` as `2e8a:0009` with no serial
 descriptor. A path-specific CDC-1200 reset did not enter BOOTSEL; do not flash
 this board without an identity-confirmed BOOTSEL appearance. It did have the

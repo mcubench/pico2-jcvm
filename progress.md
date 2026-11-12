@@ -28159,3 +28159,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue physical work on D92/8E. Ask the user to reattach 2BED in BOOTSEL, then verify ROM chip ID before flashing.
 - Commit: `bf3979af`
 - Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2`, SHA-256 `63505c753ef50fc03d8bb3213378332eb91985f5270a23f45d96c76745d08c75`; GPPro/PCSC outputs were inspected directly, not archived.
+
+## 2026-11-12 Verify CPLC commit identifier on two physical boards 3 min
+
+- Step/experiment: `CPLC-SOURCE-ID-PHYSICAL-VERIFY-20261112`
+- When: '2026-11-12 08:27 UTC' - '2026-11-12 08:30 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Performed read-only GPPro CPLC inspection on both currently available empty-card devices and updated the active handoff with the physical result.
+- Validation: `timeout --signal=TERM --kill-after=2s 30s ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --reader '<exact reader>' --info -d` exited 0 for D92 and 8E. Both responses returned status `9000`; raw CPLC contains pre-personalization equipment ID `D41EFE30` and personalization equipment ID `F2C1A828`, reconstructing firmware source ID `F2C1A828D41EFE30`.
+- Result: The commit identifier requested for CPLC is present and identical on both empty-card max_crypto boards.
+- Decision: CPLC encoding is physically verified for D92/8E. 2BED still needs BOOTSEL reattachment before its image can be updated or identified.
+- Commit: `<pending>`
+- Artifacts/logs: GPPro traces were inspected directly, not archived; image `build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2`.
