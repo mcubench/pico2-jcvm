@@ -17,6 +17,8 @@ edge failure. Totals grow from 118 arrays / 22 instances at sequence 6 to
 / 30 instances). This supports incomplete persistent traversal as the reason
 GC stops reclaiming handles and resource use grows. It does not prove which
 operation removed the body.
+This analysis is committed as `dd8b16b8`; its progress-record hash is backfilled
+in a follow-up documentation commit.
 
 No source change was justified from this indirect evidence. The prior build
 and hardware status remains below; continue offline analysis while BOOTSEL is
