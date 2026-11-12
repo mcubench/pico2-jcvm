@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 10:53 UTC
+Updated: 2026-11-12 11:08 UTC
 
 ## Goal
 
@@ -16,16 +16,18 @@ current physical-test handoff.
 - ARM and RISC-V `max_crypto` wrappers pass. The ARM full firmware ends at
   `0x100F5018`, leaving 45,032 bytes before the configured `0x10100000` limit.
 - The current diagnostic empty-card image is
-  `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2`
+  `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`
   (4,105,216 bytes, SHA-256
-  `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`). It
+  `c58b22e3854868da66c1b56daad46be88a6a19043019c808f25c6d5c4ddb3bb1`). It
   enables object deletion and heap-GC debug telemetry and has an erased
-  persistent-storage region. CPLC source ID is `42B8697484B7CF78`.
+  persistent-storage region. It also times `fs_sync()` in the debug-gated
+  response trace. CPLC source ID is `FC2FF75E47FF0406`.
 - The diagnostic image is built from a dirty worktree containing unrelated
   pre-existing changes. It is for diagnosis, not a clean release artifact.
 - Commit `5c78e647` adds gated markers around applet return, `fs_sync()` and
-  CCID response submission. Focused tests pass: CCID progress flow 21/21 and
-  APDU routing 17/17. The diagnostic image has not been flashed yet.
+  CCID response submission; `4058a7e6` adds `fs_sync()` duration. Focused tests
+  pass: CCID progress flow 21/21 and APDU routing 17/17. The diagnostic image
+  has not been flashed yet.
 - Current-tree persistent-transaction, persistent-inventory and RP2350
   filesystem-overlay suites pass (`TEST:SUMMARY fail=0`); overlay tests include
   modeled power cuts and full-index compaction. This is host-only evidence.
@@ -54,7 +56,7 @@ current physical-test handoff.
 
 ## Highest-priority remaining work
 
-1. **RESOURCE-01 / RESOURCE-02:** flash the trace image after a guest-visible
+1. **RESOURCE-01 / RESOURCE-02:** flash the timing trace image after a guest-visible
    BOOTSEL interface returns, localize the post-applet response stall, fix
    remaining reclamation/resource failures, then complete unchanged JCAlgTest
    1.8.4/jc305 options 2 and 1 on identified physical devices with separate

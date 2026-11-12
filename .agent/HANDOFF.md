@@ -1,4 +1,4 @@
-# Current handoff — post-applet CCID trace built; guest USB still runtime — 2026-11-12 10:47 UTC
+# Current handoff — CCID sync-timing trace ready; guest USB still runtime — 2026-11-12 11:08 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -61,16 +61,17 @@ focused tests pass: `./tools/test-ccid-progress-flow` (21/21) and
 object deletion and heap-GC debug enabled both pass. The ARM build reports
 firmware end `0x100F5018`, leaving 45,032 bytes before `0x10100000`.
 
-The user reported all three boards reinserted in BOOTSEL, but this guest still
-sees three runtime `2e8a:0009` devices (one without a product descriptor), no
-`2e8a:000f` BOOTSEL interface, and `pcsc_scan -r` lists only the two VPCD
-readers. The approved helper grants two runtime USB nodes. I rebuilt after the
-trace commit and packaged the current empty-card diagnostic image:
-`build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2`,
+The user reports all three boards are in BOOTSEL. Fresh elevated guest
+enumeration at 11:08 UTC still sees devices 088, 096 and 100 as runtime
+`2e8a:0009`, with no `2e8a:000f`; the approved helper grants two runtime nodes
+(096, 100), and `pcsc_scan -r` previously listed only the VPCD readers. The
+current empty-card diagnostic image is
+`build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`,
 4,105,216 bytes, SHA-256
-`05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`. Build
+`c58b22e3854868da66c1b56daad46be88a6a19043019c808f25c6d5c4ddb3bb1`. Build
 provenance is dirty (unrelated worktree changes are preserved), CPLC source ID
-`42B8697484B7CF78`; ARM and RISC-V wrappers both pass.
+`FC2FF75E47FF0406`; ARM and RISC-V wrappers pass at source HEAD `fc2ff75e`.
+The added trace reports `fs_sync()` duration. No image was flashed.
 
 Identity-pinned flash attempts to D92 and 8E both found the exact runtime
 device but `picotool` reported `Unable to locate reset interface`; the CDC-1200

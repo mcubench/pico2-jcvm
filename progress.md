@@ -28291,3 +28291,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit the gated timing probe, rebuild/package from the resulting commit ID, and use it on an identified Pico only after guest-visible BOOTSEL returns.
 - Commit: `4058a7e6`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` and `build/riscv/pico2_jcvm_smoke.uf2`; the current empty-card diagnostic UF2 should be regenerated from the commit after build.
+
+## 2026-11-12 Refresh RESOURCE-01 trace image handoff 2 min
+
+- Step/experiment: `RESOURCE-01-CCID-TRACE-IMAGE-REFRESH-20261112`
+- When: '2026-11-12 11:08 UTC' - '2026-11-12 11:10 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Updated the current status, TODO, handoff and external request with the packaged `fs_sync()` timing diagnostic image and its current checksum, CPLC source ID and build provenance. Recorded the latest guest USB and approved helper observations.
+- Validation: `sha256sum` reports UF2 SHA-256 `c58b22e3854868da66c1b56daad46be88a6a19043019c808f25c6d5c4ddb3bb1` (4,105,216 bytes); firmware SHA-256 `c6eca309649e0c6efec20111323e689b01a795684bb1f2186ea049e8085be20c`. Build provenance is ARM `max_crypto`, object deletion and heap-GC debug enabled, CPLC source ID `FC2FF75E47FF0406`, source HEAD `fc2ff75e`, dirty tree. Elevated `lsusb -d 2e8a:` still shows three runtime `2e8a:0009` devices and no BOOTSEL `000f`; approved helper grants two runtime nodes. `git diff --check` passed for changed documentation.
+- Result: The latest trace image is ready, but no physical device was flashed because the VM does not expose BOOTSEL despite the user's report that all three boards are in BOOTSEL.
+- Decision: Continue offline until USB passthrough exposes a BOOTSEL device; then flash by verified chip ID, capture finite serial output, and resume the CCID response-stall investigation.
+- Commit: pending documentation commit.
+- Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`; SHA-256 above.
