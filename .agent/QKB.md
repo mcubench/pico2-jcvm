@@ -434,3 +434,34 @@ Proposed fix (not implemented/validated): integrate the SDK vendor reset driver
 and descriptor, and provide a safe reset servicing point during cooperative
 work after control-transfer completion. Do not reset a board in use. No devices,
 PC/SC, USB probes, builds or physical tests were used in this audit.
+
+## JCAlgTest option 2 PC/SC failures on 8E and D92 — 2026-11-12
+
+**Symptom:** The unchanged JCAlgTest 1.8.4 `ALG_PERFORMANCE_STATIC` run on 8E
+(`8E464F4E2BBC0A19`) completed 26 measurements, then failed at DES ECB NOPAD
+`Cipher_init()` with `SCARD_F_COMM_ERROR`. Earlier in the same turn, the
+authorized USB/PCSC helper was run while this live campaign was active. The
+helper restarts `pcscd`; this is a confirmed way to tear down a live
+SmartcardIO connection and is the likely cause of this first failure.
+
+A failover attempt on D92 (`D92E743D5F640C0F`) completed 32 measurements before
+DES ECB PKCS5 `Cipher_init()` returned `SCARD_E_NOT_TRANSACTED`. The client
+skipped that case, then saw `SCARD_E_READER_UNAVAILABLE` twice on DES3 2-key CBC
+NOPAD `Cipher_doFinal()`. No reader-helper refresh was run during this D92
+attempt. After the client stopped at its retry prompt, `pcsc_scan -r` still
+listed D92. D92 serial telemetry showed successful `9000` APDU responses and
+`TEST:SUMMARY pass=1 fail=0`; neither serial log contained `FAULT`, `6F00`, or
+an `OBJECT_DELETION` event. This does not establish a firmware fault or a
+completed GC test. The campaign is incomplete.
+
+**Viable response:** Never restart the PC/SC helper while any SmartcardIO
+campaign is active. Preserve its logs and, after the active client is stopped,
+check `pcsc_scan -r` before using another identified reader. If PC/SC remains
+available after a transaction error, record that separately from board loss.
+The exact cause of the D92 errors remains unknown. The user reported all three
+boards in BOOTSEL, but the last guest `lsusb -d 2e8a:` enumeration showed three
+runtime `2e8a:0009` devices and no BOOTSEL `000f`; PC/SC listed only D92. This
+host/device-mode discrepancy must be resolved before flashing.
+
+Evidence: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option2-gc-nodebug/`
+and `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-gc-nodebug/`.

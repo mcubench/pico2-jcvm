@@ -1,4 +1,66 @@
-# Current handoff — required CAP components rejected before LOAD storage — 2026-11-12 13:10 UTC
+# Current handoff — debug-off image refreshed; BOOTSEL-01 is next — 2026-11-12 13:57 UTC
+
+## Current priority: implement BOOTSEL-01 offline
+
+`TODO.md` ranks BOOTSEL-01 as P0. Integrate the pico-sdk `pico_usb_reset`
+vendor reset descriptor/driver into the custom CDC + CCID composite USB
+device. Make CDC-1200 requests service at a bounded cooperative point after
+TinyUSB returns from the control callback, including during synchronous APDU
+and native work. Add offline regressions for request delivery and bounded
+servicing, keep board selection pinned to chip ID, and build ARM and RISC-V
+before any physical test. See `.agent/QKB.md`'s BOOTSEL audit and preserve
+unrelated worktree changes.
+
+The user reports all three tokens in BOOTSEL. The latest guest-access USB
+enumeration instead showed three runtime `2e8a:0009` devices and no BOOTSEL
+`2e8a:000f`; PC/SC listed only D92 after the latest client failure. Do not
+reset or flash until the intended target is visible in BOOTSEL in this guest.
+
+## Fresh Windows image
+
+The current empty-card `max_crypto` ARM image with object deletion enabled and
+debug tracing disabled is
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2`.
+SHA-256: `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`;
+firmware UF2 SHA-256:
+`7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`;
+size 4,098,048 bytes; CPLC source ID `31CB571C064FA40F`. ARM and RISC-V
+max_crypto wrappers passed with object deletion ON and debug switches OFF.
+`./tools/test-no-debug-traces` confirms the ARM ELF excludes per-APDU and
+persistent-reference traces while retaining object-deletion events. The
+previous `ed5716bb` image is superseded. The new image has not been flashed.
+The external request and steps are updated in `.agent/EXT_REQUESTS.md`.
+
+## Interrupted physical option-2 attempts
+
+- 8E (`8E464F4E2BBC0A19`): 26 measurements completed; DES ECB NOPAD
+  `Cipher_init()` failed with `SCARD_F_COMM_ERROR`. I had run the approved
+  reader helper while this campaign was active. The helper restarts `pcscd`,
+  which is a known way to interrupt a live SmartcardIO connection; this likely
+  caused the error. No firmware failure is established.
+- D92 (`D92E743D5F640C0F`): 32 measurements completed; DES ECB PKCS5
+  `Cipher_init()` returned `SCARD_E_NOT_TRANSACTED`. After the client skipped
+  that case, DES3 2-key CBC NOPAD `Cipher_doFinal()` returned
+  `SCARD_E_READER_UNAVAILABLE`. No helper restart happened during this run.
+  `pcsc_scan -r` later still listed D92. The client was stopped at its retry
+  prompt. Its serial trace shows successful `9000` responses and runtime
+  `TEST:SUMMARY pass=1 fail=0`; no `FAULT`, `6F00`, or object-deletion event
+  was recorded. This is partial and incomplete, not an acceptance pass.
+- 2BED (`2BED26ED20556535`): unchanged JCAlgTest 1.8.4 CAP installed and
+  verified in GPPro, but Java SmartcardIO stopped enumerating it before the
+  campaign could start. No option-2 run is claimed for 2BED.
+
+Result directories are under
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/`. Do not run the
+approved PC/SC helper while a client campaign is active. Bounded serial monitor
+sessions were started for 8E, 2BED and D92; output files are in the same
+per-device directories. They were not confirmed stopped after the client
+failures, so inspect/close those sessions before starting another serial
+capture.
+
+---
+
+# Prior handoff — required CAP components rejected before LOAD storage — 2026-11-12 13:10 UTC
 
 Implemented explicit presence checks for standard required CAP components:
 Import, Class, Constant Pool, Method, Static Field, and Reference Location

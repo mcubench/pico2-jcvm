@@ -39,7 +39,12 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
 - Confirmed source findings: `src/ccid_device.cpp` exposes CDC control/data and CCID only, and registers only the CCID application driver. The SDK vendor reset descriptor/driver is absent despite the requirement in `plan.md`; this omission dates to `dc76f431` (2026-10-11). The CDC fallback added in `971887e4` sets a flag consumed only in the outer main loop. Long synchronous APDU work can service USB and feed the watchdog without acting on that flag. These explain recovery weaknesses; the exact historical D92 failure remains unproven. See [.agent/QKB.md](.agent/QKB.md#bootsel-reset-integration-audit--2026-11-12-offline) and audit commit `31cb571c`.
 - Implementation: integrate the SDK `pico_usb_reset` vendor reset descriptor and driver into the composite device, retaining CDC/CCID behavior. Make CDC reset requests take effect at a safe cooperative servicing point after the control transfer completes, including during long APDU/native work. Establish a bounded recovery latency and cover it with meaningful offline regressions. Preserve identity pinning across USB topology changes; never reset or flash a different board as fallback.
 - Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM and RISC-V with repository wrappers and resolve errors/warnings before flashing. When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
-- Current constraint: **devices are in use; do not probe, reset, flash or otherwise access physical devices for this task until they are available.** Implement and validate offline first. Keep physical acceptance open, and distinguish firmware reset failure from guest passthrough/re-enumeration failure using evidence rather than assumptions.
+- Current constraint: the user reports all three devices in BOOTSEL, but the
+  latest guest `lsusb -d 2e8a:` still showed three runtime `2e8a:0009` devices
+  and no BOOTSEL `000f`; `pcsc_scan -r` listed only D92. Do not reset or flash
+  until guest-visible BOOTSEL identity is confirmed. Implement and validate
+  offline first; distinguish firmware reset failure from guest passthrough and
+  re-enumeration failure using evidence rather than assumptions.
 
 ### BUILD-DBG-01
 

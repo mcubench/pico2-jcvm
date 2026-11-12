@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 13:44 UTC
+Updated: 2026-11-12 13:57 UTC
 
 ## Goal
 
@@ -88,6 +88,18 @@ current physical-test handoff.
   panic. D92 performance-static and other all-algorithms attempts were
   interrupted or failed with PC/SC errors. Neither long option-1 nor option-2
   campaign completed; these are not acceptance passes.
+- The user reports all three tokens are now in BOOTSEL. The latest guest USB
+  enumeration still showed three runtime `2e8a:0009` devices and no BOOTSEL
+  `2e8a:000f`; after the latest test failure, PC/SC listed only D92. Do not
+  flash until the guest can confirm the target's BOOTSEL identity.
+- The 2026-11-12 option-2 retry completed 26 measurements on 8E and 32 on D92
+  before PC/SC communication/reader errors during DES tests. The 8E attempt
+  overlapped a `pcscd` restart from the authorized helper; D92 did not. Serial
+  logs show no `FAULT` or `6F00`, but neither run completed or produced an
+  object-deletion event. Keep these as partial evidence only.
+- The current external-test image was refreshed after the debug-off build was
+  found to contain verbose APDU and persistent-reference trace strings. The
+  new artifact and hash are in `.agent/EXT_REQUESTS.md`.
 - The current guest sees three `2e8a:0009` runtime devices. D92 was flashed with
   the current CAP loader test image; 8E and 2BED retain the no-debug object-
   deletion image. D92 passed the malformed LOAD rejection and valid JCAlgTest
@@ -97,16 +109,20 @@ current physical-test handoff.
 
 ## Highest-priority remaining work
 
-1. **RESOURCE-01 / RESOURCE-02:** flash the quiet CCID trace image after a guest-visible
+1. **BOOTSEL-01 (P0):** implement the SDK vendor reset interface and bounded
+   CDC-1200 reset servicing offline, then validate descriptors, cooperative
+   request delivery and identity-pinned selection. Physical validation remains
+   gated on guest-visible BOOTSEL identity.
+2. **RESOURCE-01 / RESOURCE-02:** flash the quiet CCID trace image after a guest-visible
    BOOTSEL interface returns, localize the post-applet response stall, fix
    remaining reclamation/resource failures, then complete unchanged JCAlgTest
    1.8.4/jc305 options 2 and 1 on identified physical devices with separate
    telemetry.
-2. **HOST-02 / CTX-01/03:** finish Windows cold-reconnect measurements and SIO,
+3. **HOST-02 / CTX-01/03:** finish Windows cold-reconnect measurements and SIO,
    firewall and cross-context acceptance.
-3. **STORE/PERSIST, API, GP and AC:** complete storage, power-loss, current-image
+4. **STORE/PERSIST, API, GP and AC:** complete storage, power-loss, current-image
    CAP coverage, installation/selection and end-to-end acceptance.
-4. **HMAC and CAPIN:** complete support acceptance and the remaining CAP input
+5. **HMAC and CAPIN:** complete support acceptance and the remaining CAP input
    validation/security cases listed in [TODO.md](TODO.md).
 
 ## Acceptance

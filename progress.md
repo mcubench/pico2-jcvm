@@ -28495,3 +28495,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the refreshed UF2 and exact hash in `.agent/EXT_REQUESTS.md`. Continue P0 BOOTSEL-01 offline, then flash only after the new image and target are visible through the authorized path.
 - Commit: pending.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2`; `build/arm/build-provenance.txt`; `build/arm/no-debug-trace-strings.txt`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option2-gc-nodebug/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-gc-nodebug/`.
+
+## 2026-11-12 Record interrupted physical option-2 campaigns 17 minutes
+
+- Step/experiment: `RESOURCE-01-PHYSICAL-OPTION2-20261112`
+- When: '2026-11-12 13:26 UTC' - '2026-11-12 13:43 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Ran the pinned JCAlgTest 1.8.4 performance-static campaign against identified Pico readers and recorded per-device PC/SC/serial evidence. No firmware or supplied CAP bytes changed. Added the unresolved D92 transport behavior to QKB and refreshed the handoff with the BOOTSEL discrepancy and current image.
+- Validation: 8E completed 26 measurements before `SCARD_F_COMM_ERROR` during DES ECB NOPAD `Cipher_init()`; the authorized helper had restarted `pcscd` while that campaign was active, a known cause of live SmartcardIO interruption. A failover check installed the unchanged CAP on 2BED, but Java SmartcardIO no longer enumerated it before its run could start. D92 completed 32 measurements before `SCARD_E_NOT_TRANSACTED` on DES ECB PKCS5; after one skip it received `SCARD_E_READER_UNAVAILABLE` twice on DES3 2-key CBC NOPAD `Cipher_doFinal()`. No helper restart occurred during the D92 run. Later `pcsc_scan -r` still listed D92. Serial logs showed successful `9000` responses and `TEST:SUMMARY pass=1 fail=0`; no `FAULT`, `6F00` or object-deletion event was found. User reported all boards in BOOTSEL, but guest `lsusb -d 2e8a:` showed three runtime `0009` devices and no BOOTSEL `000f`. Runs are incomplete, and no firmware fault is established.
++- Result: Neither long option-2 campaign completed. Per-device evidence is preserved. Three bounded serial-monitor tool sessions may still be attached; inspect/close them before another capture. Do not restart `pcscd` while a live JCAlgTest client is using it.
++- Decision: Continue BOOTSEL-01 offline as the P0 task. Return to physical validation after this guest sees an identity-verifiable BOOTSEL target and no campaign is active.
++- Commit: pending.
++- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option2-gc-nodebug/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/2BED26ED20556535/option2-gc-nodebug/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-gc-nodebug/`; `.agent/QKB.md`; `.agent/HANDOFF.md`.
