@@ -216,6 +216,10 @@ timeout --signal=TERM --kill-after=1s 10s pcsc_scan -r
 
 Return the complete output, especially the exact chip IDs and reader names.
 Continue with any published physical reader; no BOOTSEL reattachment is needed.
+The latest agent attempt to refresh the helper using the required elevated
+host-access path was blocked with `sudo: The "no new privileges" flag is set`.
+If the first command works but the helper command fails, return both outputs;
+do not reattach BOOTSEL devices for this issue.
 
 ## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 

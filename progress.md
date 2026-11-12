@@ -28753,3 +28753,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Do not change RSA arrays or filesystem behavior without a reproduced cause. After PC/SC recovers, capture unfiltered `CHOUPI:CCID_APPLET` submit/completion events on an exact identified reader; preserve any fresh overlap details.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/option2-transport-reprobe-20261112/4CDA5BC1B136E46A/`; `artifacts/logs/cycle-choupi-20261112T222047Z.log`; `artifacts/logs/cycle-choupi-20261112T222517Z.log`; D92 compaction trace `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-final-write-diagnostic/serial.log`.
+
+## 2026-11-12 Fix persistent overlay rehash path loss 26 minutes
+
+- Step/experiment: `RESOURCE-01-OVERLAY-REHASH-PATHS-20261112`
+- When: '2026-11-12 22:24 UTC' - '2026-11-12 22:50 UTC'
+- Model: `GPT-6 Codex`
+- Change: Changed in-place overlay rehash to process path components from their zero-incoming-edge sources before moving cycles. Added a near-capacity regression test with 2,400 64-byte compressed tags, 4-byte values, and 32 rounds of deleting 64 and adding 65 records; it checks all live values after every compaction and after snapshot restore.
+- Validation: Before the fix, `./tools/test-rp2350-fs-overlay` failed on the first compaction: ID 856 became unreadable and a later erase returned `FS_STATUS_NO_SUCH_TAG`. After the fix the same command passed with `TEST:SUMMARY fail=0`. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed; the default builds used object deletion OFF. `git diff --check` passed. A fixed-image physical cycle was not run: the required elevated `pico2-pcsc-reader` helper returned `sudo: The "no new privileges" flag is set`. No hardware validation of this source fix and no complete JCAlgTest campaign.
+- Result: Confirmed a compaction rehash bug that dropped live overlay records; the regression test reproduces the pre-fix loss and passes with the path-head-first movement. This plausibly explains the older D92 overlap/F205 failure class, but its exact stored-record pair has not been reproduced under the fix.
+- Decision: Keep the fix; do not alter RSA arrays. Resume physical testing only after elevated host access and physical PC/SC publication recover. Flash the fixed object-deletion-enabled ARM image to an identified board, inspect serial, then repeat option 2 with complete CCID submit/completion telemetry.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `45a7081d2a4d40dd8cd74732e2dfff6112d89aad43cec31492db0ef156f3a7f9`; test output via `./tools/test-rp2350-fs-overlay`; no fixed-image hardware log.

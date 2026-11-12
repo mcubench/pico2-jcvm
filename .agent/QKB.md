@@ -37,6 +37,12 @@ Use the required execution path; if unavailable, stop hardware work and continue
 
 Evidence: [E417](QKB_INDEX.md#e417), [E029](QKB_INDEX.md#e029), [E367](QKB_INDEX.md#e367), [E413](QKB_INDEX.md#e413).
 
+Host-access regression, 2026-11-12 22:49 UTC: the approved reader helper was
+invoked through the required elevated host path, but `sudo` returned
+`The "no new privileges" flag is set`. No USB work followed that failure;
+do not retry in the restricted context. Continue offline until host execution
+is restored.
+
 ## Targeted flashing and BOOTSEL — scoped viable fallback
 
 Runtime `2e8a:0009` is not BOOTSEL `2e8a:000f`.
@@ -524,6 +530,21 @@ while its output prefix had reached `91510`, then returned `FS_STATUS_IO_UNKNOWN
 and the applet returned `F205`. Diagnostic logging now also records the
 previous retained record's fields, but that richer record has not yet been
 captured during a fresh compaction failure. No RSA array change is justified.
+
+Offline root cause confirmed, 2026-11-12 22:49 UTC: compaction's in-place
+open-addressing rehash walked mapping paths from the lowest slot, which can
+start in the middle of a path. That leaves a stale duplicate in a slot later
+overwritten by its predecessor and loses a live record. A deterministic
+96 KiB stress case with 2,400 64-byte compressed tags and 4-byte values
+reproduced the loss at its first compaction (`id=856`, then
+`FS_STATUS_NO_SUCH_TAG`). The fix moves path components from zero-incoming-edge
+heads before processing remaining cycles. The new test passes 32 delete/replace
+cycles, validates every live value after each compaction, and verifies snapshot
+restore. This explains the class of corruption behind the earlier overlap
+rejection, though the exact old D92 offset pair has not been reproduced after
+the fix. ARM and RISC-V `max_crypto` builds pass. A fixed-image hardware cycle
+is still pending: the approved elevated helper call failed with the
+`no new privileges` restriction; see `.agent/EXT_REQUESTS.md`.
 
 ## 2026-11-12 External no-debug run: reset failures precede RSA-3072 disconnect
 

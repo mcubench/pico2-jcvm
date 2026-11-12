@@ -1204,14 +1204,14 @@ uint8_t compact_deleted_overlay_records() {
     erase_bucket_next[old_slot] = static_cast<uint16_t>(new_slot);
   }
 
-  // The destination bitmap proves the mapping is injective, so each component
-  // is either a cycle or a path ending at an empty/deleted slot. Move one
+  // The destination bitmap proves the mapping is injective. Move open paths
+  // from their sources with no incoming edge first, then move the remaining
+  // cycles. Starting a path at an interior source would leave a duplicate in
+  // a destination slot that a later predecessor overwrites. Move one
   // OverlayFile at a time; the high map bit records visited sources without
   // allocating a second full table.
   constexpr uint16_t kMapVisited = 0x8000;
-  for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
-    const uint16_t first_map = erase_bucket_next[start];
-    if (first_map == UINT16_MAX || (first_map & kMapVisited) != 0) continue;
+  auto move_mapping_component = [&](uint16_t start) {
     OverlayFile carried = overlay[start];
     uint16_t current = start;
     while (true) {
@@ -1228,6 +1228,19 @@ uint8_t compact_deleted_overlay_records() {
       // injectivity. Thus this phase has no failure path after mutation starts.
       if (erase_bucket_next[current] == UINT16_MAX) break;
     }
+  };
+  for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
+    const uint16_t mapping = erase_bucket_next[start];
+    if (mapping == UINT16_MAX || (mapping & kMapVisited) != 0 ||
+        (bitmap[start / 8] & (1u << (start % 8))) != 0) {
+      continue;
+    }
+    move_mapping_component(start);
+  }
+  for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
+    const uint16_t mapping = erase_bucket_next[start];
+    if (mapping == UINT16_MAX || (mapping & kMapVisited) != 0) continue;
+    move_mapping_component(start);
   }
 
   // Parent references still contain old hash-slot numbers. The old-to-new

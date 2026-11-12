@@ -2130,6 +2130,157 @@ int main() {
                          sizeof(high_offset_value)) == 0,
          "filesystem_v4_compacts_high_offset_and_restarts");
 
+  // Exercise repeated delete-and-replace compaction with the long compressed
+  // tags and 4-byte values used by persistent Java Card metadata. This keeps
+  // the arena near its 96 KiB ceiling while forcing compaction across offsets
+  // above 64 KiB, where the physical card previously rejected overlapping
+  // records.
+  fake_flash.fill(0xff);
+  constexpr size_t churn_initial_records = 2400;
+  constexpr size_t churn_records_per_cycle = 64;
+  constexpr size_t churn_new_records_per_cycle = 65;
+  constexpr size_t churn_cycles = 32;
+  using ChurnTag = std::array<uint8_t, 64>;
+  auto make_churn_tag = [](uint32_t id) {
+    ChurnTag tag{};
+    tag[0] = 0x03;
+    tag[1] = 0xee;
+    tag[2] = 0xa5;
+    tag[3] = 0x5a;
+    tag[4] = 0x01;
+    tag[5] = 0x02;
+    for (uint8_t pair = 0; pair < 29; ++pair) {
+      const uint8_t byte = static_cast<uint8_t>(
+          (id >> ((pair % 4) * 8)) ^ (0x5du * pair));
+      tag[6 + pair * 2] = byte;
+      tag[7 + pair * 2] = byte;
+    }
+    return tag;
+  };
+  auto churn_value = [](uint32_t id) {
+    return std::array<uint8_t, 4>{
+        static_cast<uint8_t>(id >> 24), static_cast<uint8_t>(id >> 16),
+        static_cast<uint8_t>(id >> 8), static_cast<uint8_t>(id)};
+  };
+  auto write_churn_record = [&](uint32_t id) {
+    const ChurnTag tag = make_churn_tag(id);
+    const auto value = churn_value(id);
+    return fs_write(tag.data(), static_cast<uint8_t>(tag.size()), value.data(),
+                    static_cast<uint32_t>(value.size()));
+  };
+  auto verify_churn_records = [&](const std::vector<uint32_t> &ids) {
+    for (const uint32_t id : ids) {
+      const ChurnTag tag = make_churn_tag(id);
+      const auto expected = churn_value(id);
+      std::array<uint8_t, 4> actual{};
+      const uint8_t status = fs_read(
+          tag.data(), static_cast<uint8_t>(tag.size()), actual.data(),
+          static_cast<uint32_t>(actual.size()));
+      if (status != 0 || actual != expected) {
+        std::printf("TEST:INFO filesystem_churn record id=%lu status=%u expected=%02X%02X%02X%02X actual=%02X%02X%02X%02X\n",
+                    static_cast<unsigned long>(id),
+                    static_cast<unsigned>(status), expected[0], expected[1],
+                    expected[2], expected[3], actual[0], actual[1], actual[2],
+                    actual[3]);
+        return false;
+      }
+    }
+    return true;
+  };
+  bool churn_ok = fs_init() == 0;
+  if (!churn_ok) std::printf("TEST:INFO filesystem_churn stage=init\n");
+  std::vector<uint32_t> live_churn_ids;
+  live_churn_ids.reserve(churn_initial_records + churn_cycles);
+  for (uint32_t id = 0; id < churn_initial_records && churn_ok; ++id) {
+    const uint8_t status = write_churn_record(id);
+    churn_ok = status == FS_STATUS_OK;
+    if (!churn_ok) {
+      std::printf("TEST:INFO filesystem_churn stage=initial_write id=%lu status=%u\n",
+                  static_cast<unsigned long>(id),
+                  static_cast<unsigned>(status));
+    }
+    if (churn_ok) live_churn_ids.push_back(id);
+  }
+  churn_ok = churn_ok &&
+      rp2350_fs_test_overlay_file_count() == churn_initial_records;
+  if (churn_ok == false && live_churn_ids.size() == churn_initial_records) {
+    std::printf("TEST:INFO filesystem_churn stage=initial_count count=%lu\n",
+                static_cast<unsigned long>(
+                    rp2350_fs_test_overlay_file_count()));
+  }
+  for (uint32_t cycle = 0; cycle < churn_cycles && churn_ok; ++cycle) {
+    const size_t count_before = rp2350_fs_test_overlay_file_count();
+    for (size_t index = 0; index < churn_records_per_cycle && churn_ok;
+         ++index) {
+      const ChurnTag tag = make_churn_tag(live_churn_ids[index]);
+      const uint8_t status =
+          fs_erase(tag.data(), static_cast<uint8_t>(tag.size()));
+      churn_ok = status == FS_STATUS_OK;
+      if (!churn_ok) {
+        std::printf("TEST:INFO filesystem_churn stage=erase cycle=%lu index=%lu id=%lu status=%u files=%lu\n",
+                    static_cast<unsigned long>(cycle),
+                    static_cast<unsigned long>(index),
+                    static_cast<unsigned long>(live_churn_ids[index]),
+                    static_cast<unsigned>(status),
+                    static_cast<unsigned long>(
+                        rp2350_fs_test_overlay_file_count()));
+      }
+    }
+    live_churn_ids.erase(live_churn_ids.begin(),
+                         live_churn_ids.begin() + churn_records_per_cycle);
+    for (size_t index = 0; index < churn_new_records_per_cycle && churn_ok;
+         ++index) {
+      const uint32_t id = static_cast<uint32_t>(churn_initial_records) +
+          cycle * churn_new_records_per_cycle + static_cast<uint32_t>(index);
+      const uint8_t status = write_churn_record(id);
+      churn_ok = status == FS_STATUS_OK;
+      if (!churn_ok) {
+        std::printf("TEST:INFO filesystem_churn stage=write cycle=%lu index=%lu id=%lu status=%u files=%lu\n",
+                    static_cast<unsigned long>(cycle),
+                    static_cast<unsigned long>(index),
+                    static_cast<unsigned long>(id),
+                    static_cast<unsigned>(status),
+                    static_cast<unsigned long>(
+                        rp2350_fs_test_overlay_file_count()));
+      }
+      if (churn_ok) live_churn_ids.push_back(id);
+    }
+    if (churn_ok &&
+        rp2350_fs_test_overlay_file_count() != count_before + 1) {
+      std::printf("TEST:INFO filesystem_churn stage=count cycle=%lu before=%lu after=%lu\n",
+                  static_cast<unsigned long>(cycle),
+                  static_cast<unsigned long>(count_before),
+                  static_cast<unsigned long>(
+                      rp2350_fs_test_overlay_file_count()));
+      churn_ok = false;
+    }
+    if (churn_ok) {
+      if (!verify_churn_records(live_churn_ids)) {
+        std::printf("TEST:INFO filesystem_churn stage=verify cycle=%lu\n",
+                    static_cast<unsigned long>(cycle));
+        churn_ok = false;
+      }
+    }
+  }
+  if (churn_ok && !verify_churn_records(live_churn_ids)) {
+    std::printf("TEST:INFO filesystem_churn stage=verify_final\n");
+    churn_ok = false;
+  }
+  if (churn_ok && fs_sync() != FS_STATUS_OK) {
+    std::printf("TEST:INFO filesystem_churn stage=sync\n");
+    churn_ok = false;
+  }
+  if (churn_ok && fs_init() != FS_STATUS_OK) {
+    std::printf("TEST:INFO filesystem_churn stage=restart\n");
+    churn_ok = false;
+  }
+  if (churn_ok && !verify_churn_records(live_churn_ids)) {
+    std::printf("TEST:INFO filesystem_churn stage=verify_restored\n");
+    churn_ok = false;
+  }
+  expect(churn_ok,
+         "filesystem_long_compressed_records_survive_repeated_compaction");
+
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
   // old slot-order traversal, reproducing the persistent-storage exhaustion

@@ -1,3 +1,45 @@
+# Current handoff — persistent overlay compaction data-loss bug reproduced and fixed offline — 2026-11-12 22:50 UTC
+
+The 96 KiB filesystem compactor had an in-place open-addressing rehash bug.
+Its mapping is an injective collection of paths and cycles, but the old loop
+started at arbitrary old slots. Starting inside a path could leave duplicate
+entries at source slots; a predecessor later overwrote one and made live tags
+unfindable. This matches the kind of index/offset inconsistency that later
+caused the D92 `records_overlap` rejection and `F205` (the exact prior D92
+record pair is not freshly reproduced).
+
+Fixed `compact_deleted_overlay_records()` to move path components from
+zero-incoming-edge heads first, then process cycles. Added a deterministic
+unit stress case using 2,400 64-byte compressed tags with 4-byte values,
+32 delete-64/add-65 rounds near the 96 KiB limit, verification of all live
+records after each compaction, and snapshot restore verification. Before the
+fix, it failed at the first compaction: tag ID 856 became unreadable and the
+next erase returned `FS_STATUS_NO_SUCH_TAG`. After the fix,
+`./tools/test-rp2350-fs-overlay` passes with `TEST:SUMMARY fail=0`.
+`./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto` both pass. The default builds have
+object deletion OFF; do not use that UF2 for GC acceptance.
+
+Current fixed image artifact `build/arm/pico2_choupi.uf2` SHA-256:
+`45a7081d2a4d40dd8cd74732e2dfff6112d89aad43cec31492db0ef156f3a7f9`.
+It has not been flashed. A targeted cycle on 2BED with debug and object
+deletion enabled was attempted, but the required reader-helper invocation was
+blocked by `sudo: The "no new privileges" flag is set`. Stop hardware work
+until elevated host access is restored. The earlier 4CDA option-2 run remains
+incomplete: watchdog timed out at SHA-384 `B041000016` after 45 seconds while
+serial logged VM `9000` at CCID stage 6. The reader helper had access to three
+USB nodes, but PC/SC published only Virtual PCD readers. External request
+`PCSC-RESTART-AFTER-WATCHDOG-20261112` asks for service recovery output.
+
+Next: once host access and physical PC/SC return, build both architectures
+with `PICO2_ENABLE_OBJECT_DELETION=1` and `PICO2_DEBUG_CCID_APPLET=1`, then
+identity-pin a cycle to an available board. Capture the full
+`CHOUPI:CCID_APPLET` submit/completion telemetry and run option 2 with the
+unchanged upstream 1.8.4/jc305 CAP/client plus a watchdog. This compaction fix
+has unit and build validation only; it is not yet physically validated, and
+neither the original option-2 campaign nor the RSA-3072 Windows failure has
+passed.
+
 # Current handoff — option-2 response-delivery repro and PC/SC loss — 2026-11-12 22:23 UTC
 
 The external Windows failure still does not implicate RSA-3072 array sizing.
