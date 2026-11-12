@@ -1,4 +1,40 @@
-# Current handoff — RESOURCE-01 same-owner alias guard in physical run — 2026-11-12 09:44 UTC
+# Current handoff — RESOURCE-01 corrected D92 run ended on PC/SC transport error — 2026-11-12 09:50 UTC
+
+The alias-target fix is implemented and committed (`36fcfe69`); its source,
+unit test and validation are summarized in the handoff snapshot below. The
+corrected physical campaign provided positive evidence for reclamation safety,
+then stopped at a PC/SC transaction error before full-suite completion.
+
+D92 `D92E743D5F640C0F`, reader `Pico 2 CHOUPI CCID [JCVM CCID]
+(D92E743D5F640C0F) 00 00`, ran unchanged JCAlgTest 1.8.4/jc305
+`ALG_SUPPORT_EXTENDED` on image SHA-256
+`1837533bb67c06d8eac30f4b22cbc8552b7134b21f56f8a31f3770c31a4dde62`.
+The client session 21246 exited 1 after producing 51 `ALG_` result rows (about
+13 minutes), with `SCARD_E_NOT_TRANSACTED` attempting APDU
+`B0 75 12 00 01 16 00`. The preceding `INS_CARD_RESET` returned `9000` after
+3 applet records were erased. The failed next APDU is absent from the serial
+trace. At the last complete checkpoint there were 3,762 alias protections and
+447 unrelated erasures, with no `HEAP_GC_FS_READ_FAIL`, deletion skip, `FAULT`,
+`F205` or `NO_RESOURCE`. The exact previously erased body
+`03013894FFFFFE000000420007FFFF00000045` was protected. This is partial
+physical validation, not suite acceptance.
+
+At the failure, `pcsc_scan -r` listed only `Virtual PCD 00 00/01`; the approved
+helper granted two USB nodes and `pcscd.service` was active. `lsusb -d 2e8a:`
+still showed three runtime `2e8a:0009` devices, not BOOTSEL. 8E's pinned flash
+attempt could not locate its reset interface; 2BED was not connected. Preserve
+all logs under
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`.
+Do not reset or reflash D92 while its 36,000-second serial capture is retained
+(session 26227); it had no new data after the error checkpoint.
+
+Next: continue offline diagnosis of the PC/SC loss after reset and use another
+identified physical reader if it returns. Do not busy-poll, and do not claim
+the 1.8.4 run passed. RESOURCE-01 still requires a complete option-1 run,
+option-2 `ALG_PERFORMANCE_STATIC` on another identified token, and a diagnosis
+of any remaining resource/transport failures.
+
+# Handoff snapshot — RESOURCE-01 corrected D92 run active — 2026-11-12 09:44 UTC
 
 The same-owner alias/body loss cause is now reproduced, guarded, unit-tested,
 and under physical validation. Commit `36fcfe69` changes

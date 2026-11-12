@@ -368,6 +368,37 @@ See the 2026-11-12 08:27 UTC handoff and progress entries
 `MAXCRYPTO-THREE-PHYSICAL-BOARDS-20261112` and
 `HOST-01-FLASH-PATH-RECOVERY-EMPTY-CARD-20261112`.
 
+## Physical Pico reader disappears from PC/SC after a successful reset APDU — unresolved
+
+**Symptom:** On corrected D92 image `1837533b…dde62`, the 1.8.4 all-algorithms
+client ran for about 13 minutes and produced 51 `ALG_` result rows, then failed with
+`SCARD_E_NOT_TRANSACTED` sending the next test APDU `B0 75 12 00 01 16 00`.
+The immediately preceding `INS_CARD_RESET` returned `9000` after an
+object-deletion batch erased three applet records. The serial trace ends after
+the successful prior response; the failed APDU is absent, and there are no
+`HEAP_GC_FS_READ_FAIL`, deletion skips, `FAULT`, `F205` or `NO_RESOURCE` lines.
+
+**Observed cause status:** The USB nodes remained runtime `2e8a:0009`, but
+`pcsc_scan -r` listed only the two VPCD readers. The approved helper granted
+access to two USB nodes, and `systemctl is-active pcscd.service` reported
+`active`; the accessible journal query returned no entries. This localizes the
+failure to a lost PC/SC reader/transaction after reset, but does not distinguish
+VM passthrough, pcscd/CCID driver state or a device-side CCID condition. Do not
+call this a JCVM panic or a completed suite. `dmesg --ctime` was denied with
+`Operation not permitted` even on the read-only escalated diagnostic path, so
+kernel USB disconnect/reset events could not be checked.
+
+**Response:** Preserve the result/serial logs and use a different identified
+physical board once PC/SC lists it; do not reset or reflash D92 while its
+diagnostic logs are being preserved. Do not retry by busy polling. No recovery
+method has yet been validated. The source-level alias-target regression has
+separate positive physical evidence before the transport failure, but RESOURCE-01
+acceptance remains open.
+
+Evidence: `progress.md`, entry `RESOURCE-01-D92-PCSC-LOSS-AFTER-RESET-20261112`;
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/client.log`,
+`serial.log`, and `results/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(D92E743D5F640C0F)_00_00_ALGSUPPORT__3b_80_01_81.csv`.
+
 ## Maintenance
 
 Add or update the matching diagnosis instead of prepending repeated availability checks.

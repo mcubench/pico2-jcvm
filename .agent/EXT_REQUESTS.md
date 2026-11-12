@@ -143,18 +143,32 @@ board `2BED26ED20556535` remains at USB `2e8a:0009` without its serial
 descriptor and did not enter BOOTSEL after a path-specific CDC reset. It is
 not safe to flash it until the ROM chip ID is visible again.
 
-## REATTACH_2BED_20261112 — Reconnect the third Pico 2 in BOOTSEL
+## PCSC-RECOVER-AFTER-RESET-20261112 — Restore a physical reader and expose BOOTSEL to the VM
 
-Please reconnect `2BED26ED20556535` to the development VM in BOOTSEL mode:
+The corrected D92 1.8.4 run ended with `SCARD_E_NOT_TRANSACTED` after a
+successful `INS_CARD_RESET`. The approved helper granted two USB nodes, but
+`pcsc_scan -r` listed only the VPCD readers. The guest still sees three runtime
+`2e8a:0009` nodes and no BOOTSEL interface, despite the report that the boards
+are in BOOTSEL.
 
-1. Unplug that board, hold its BOOTSEL button while reconnecting it, then
-   release the button.
-2. In VirtualBox, attach the `Raspberry Pi RP2350 Boot` USB device to this VM.
-3. Tell me when it is attached. I will verify the ROM chip ID before writing
-   the current empty-card image.
+To restore one runtime reader for PC/SC validation, run in the guest:
 
-Do not detach D92 or 8E; both are running the max_crypto empty-card image and
-their GPPro registries are confirmed empty. No PC/SC restart command is needed.
+```sh
+sudo systemctl restart pcscd.service
+sudo -n /usr/local/sbin/pico2-pcsc-reader
+timeout --signal=TERM --kill-after=1s 10s pcsc_scan -r
+```
+
+For another firmware flash, attach one BOOTSEL device to this VM through
+VirtualBox **Devices → USB** and confirm the guest sees `2e8a:000f` with:
+
+```sh
+lsusb -d 2e8a:
+```
+
+Return the command output and the chip ID/reader name exposed to the guest.
+Do not write to the unlabelled USB node; flash only after the exact RP2350 chip
+ID is verified. Continue offline while access is restored.
 
 ## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 

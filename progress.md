@@ -28195,3 +28195,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep D92 option 1 running without reset/reflash. Poll its existing client and serial sessions; run option 2 on a second identified physical device after the corrected image can safely be flashed.
 - Commit: `36fcfe69`
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`; corrected UF2 SHA-256 above.
+
+## 2026-11-12 RESOURCE-01 D92 PC/SC loss after reset 6 min
+
+- Step/experiment: `RESOURCE-01-D92-PCSC-LOSS-AFTER-RESET-20261112`
+- When: '2026-11-12 09:44 UTC' - '2026-11-12 09:50 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Captured and classified the exit of the corrected D92 physical all-algorithms campaign; updated RESOURCE-01 TODO, QKB and current handoff. No firmware change.
+- Validation: Existing client session 21246 exited 1 after producing 51 `ALG_` result rows with `SCARD_E_NOT_TRANSACTED` attempting `B0 75 12 00 01 16 00`. Immediately preceding `INS_CARD_RESET` returned `9000`; serial reports `erased_applet=3`, `pending=0`, and the unsuccessful next APDU does not appear in the trace. Last complete counters: 3,762 alias-protect records, 447 unrelated erasures, zero `HEAP_GC_FS_READ_FAIL`, deletion skips, `FAULT`, `F205` or `NO_RESOURCE`. `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted two nodes; bounded `pcsc_scan -r` listed only the two VPCD readers. `pcscd.service` was active; `lsusb -d 2e8a:` still saw three runtime `2e8a:0009` nodes. No build or unit test was rerun for this read-only diagnosis.
+- Result: The live-alias body protection continued to hold through 3,762 protection decisions and 447 other record erasures, but the long JCAlgTest campaign ended with reader/transaction loss after reset and is incomplete. Evidence does not yet distinguish VM passthrough, PC/SC/CCID state or device-side reader behavior. The partial CSV has 51 `ALG_` rows; it is not a completed campaign.
+- Decision: Preserve logs; do not claim RESOURCE-01 acceptance. Continue offline diagnosis and resume on a different identified reader when PC/SC exposes one. Keep D92's serial capture intact; do not reset/reflash during this diagnosis.
+- Commit: `36fcfe69` (firmware fix under test)
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/client.log`, `serial.log`, and partial `results/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(D92E743D5F640C0F)_00_00_ALGSUPPORT__3b_80_01_81.csv`; image SHA-256 `1837533bb67c06d8eac30f4b22cbc8552b7134b21f56f8a31f3770c31a4dde62`.
