@@ -516,3 +516,23 @@ The supplied client excerpt first sends the preparation APDU; on non-9000 it inv
 Important attribution limits: the shown `6F00` belongs to B0 31 preparation. No reset-command response/status or exception is supplied, so an exception specifically inside requestObjectDeletion is a hypothesis. In current source, the enabled native request merely sets a noexcept boolean and records its context; actual collection runs after APDU execution in `choupi/src/main.cpp`. With deletion disabled, the native API explicitly throws SystemException. Verify the tested binary configuration and distinguish request entry, post-APDU collection, reset response, and next prepare response. Retained deletion requests may be serviced again; repeated calls must be tested with live roots and failing preparation paths.
 
 Next: locate the first failing reset in the complete trace, retain its exact APDU/status/elapsed time and preceding successful operation, correlate serial exception and OBJECT_DELETION markers, and reproduce an unchanged upstream 1.8.4 AES prepare/reset sequence repeatedly before attempting the RSA prefix. Measure USB-progress gaps across post-APDU collection as well as native RSA. RSA time-extension starvation remains possible but cannot explain away the earlier AES/reset failures. No robust fix established; no hardware accessed.
+
+Physical follow-up, 2026-11-12 19:11 UTC: reader access returned for 8E
+(`8E464F4E2BBC0A19`); two other runtime USB Picos were not published by PC/SC.
+On 8E, SELECT JCAlgTest returned `9000` in 224 ms, then the exact client
+`INS_CARD_RESET` (`B0E2000000`) returned `9000` in 1,560 ms, and the reported
+RSA-3072 private PKCS1 `Cipher_doFinal()` preparation APDU (`B031...`) returned
+`AA9000` in 1,758 ms. The full sequence passed; a subsequent bounded GPPro
+`--list` showed ISD, JCAlgTest applet and package. A saved finite serial monitor
+reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+
+This is evidence against a deterministic 3072-bit array-capacity defect: the
+native key builder computes `(bits + 7) / 8` in `uint16_t`, yielding a valid
+384-byte modulus/private-component capacity and 192-byte half-size components
+for 3072-bit RSA; the exact client preparation succeeded on-card. It does not
+exclude a state-dependent memory/GC bug or explain the external PC/SC loss.
+The physical image has heap-GC diagnostics enabled and is not the external
+no-debug image, so timing is diagnostic only. Next reproduce the preceding
+failed AES prepare/reset and run repeated exact reset/prepare cycles or the
+unchanged 1.8.4 client while correlating CCID response progress. No source fix
+is established by this one successful sequence.

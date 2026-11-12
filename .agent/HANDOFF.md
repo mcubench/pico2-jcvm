@@ -1,3 +1,32 @@
+# Current handoff — RSA-3072 reset/prepare sequence passes once on 8E — 2026-11-12 19:11 UTC
+
+Physical PC/SC access returned for one identified reader, 8E
+(`8E464F4E2BBC0A19`). Two other USB devices enumerate as runtime Picos but are
+not currently published as PC/SC readers. On 8E, the exact reset-then-prepare
+sequence corresponding to the reported RSA-private-3072 PKCS1 performance
+case completed successfully:
+
+- SELECT JCAlgTest: `9000`, 224 ms.
+- `B0E2000000` (`INS_CARD_RESET` / object deletion): `9000`, 1,560 ms.
+- `B0310000160011000AFFFF00050C00000700C0FFFF00010032000100` (RSA-3072
+  private PKCS1 `Cipher_doFinal()` preparation): `AA9000`, 1,758 ms.
+- Subsequent GPPro `--list` succeeded and showed ISD, JCAlgTest applet and
+  package; bounded serial capture passed `TEST:SUMMARY pass=1 fail=0`.
+
+This rules out a deterministic 3072-bit component-array size failure for that
+sequence: `(3072 + 7) / 8` is 384 bytes and the current native-key builder
+allocated enough for the exact preparation. It does not explain the Windows
+long-run transport loss or repeated earlier AES/reset failures. Current board
+image has heap-GC debug tracing enabled, unlike the Windows no-debug image;
+timings are not an apples-to-apples benchmark. Do not change key array sizing
+without a reproducer. Next: capture the first failing AES preparation/reset on
+hardware or run repeated reset/prepare cycles, with CCID response-progress
+telemetry. Logs: `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/`.
+
+The source investigation is open and has not produced a code fix. Preserve the
+shared dirty worktree; this turn only adds the physical evidence to QKB,
+HANDOFF and progress.
+
 # Current handoff — CAP INSTALL validates transitive library dependencies — 2026-11-12 16:18 UTC
 
 Implemented full dynamic-package dependency closure validation at applet

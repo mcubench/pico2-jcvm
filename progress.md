@@ -28608,3 +28608,32 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Investigate first failed prepare/reset pair and repeated post-APDU deletion before attributing the final disconnect solely to RSA timing.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: User-provided conversation excerpts; full new external log and serial capture not supplied.
+
+## 2026-11-12 Reproduce RSA-3072 reset and prepare on Pico 8 minutes
+
+- Step/experiment: `RESOURCE-01-RSA3072-RESET-PREPARE-PHYSICAL-20261112`
+- When: '2026-11-12 19:04 UTC' - '2026-11-12 19:12 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Recorded physical evidence in QKB and HANDOFF. No firmware code
+  changed. Refreshed approved reader access; used identified Pico
+  `8E464F4E2BBC0A19` only because the other runtime USB devices were not
+  published in PC/SC.
+- Validation: Exact SmartcardIO SELECT / `B0E2` / RSA3072 `B031` sequence
+  passed: `9000` in 224 ms, `9000` in 1,560 ms, and `AA9000` in 1,758 ms.
+  Bounded GPPro `--list` succeeded afterward. `PICO2_HOST_USB_ACCESS=1
+  ./tools/monitor --serial 8E464F4E2BBC0A19 --seconds 8` passed with
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. USB/PCSC
+  operations used elevated host access on first attempt. Builds were skipped:
+  no firmware source changed.
+- Result: A deterministic RSA-3072 key-component array-size failure is not
+  reproduced; the native builder's 384-byte component capacity is valid and
+  the corresponding exact preparation succeeds. One success does not explain
+  the external long-run transport failure or earlier AES/reset errors. Test
+  image has heap-GC debug enabled, so timings do not represent the external
+  no-debug image.
+- Decision: Do not change RSA array sizing without a reproducer. Continue by
+  reproducing earlier AES prepare/reset failure or exercising repeated reset
+  and prepare with CCID response-progress telemetry.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/apdu-reset-prepare.log`,
+  `artifacts/results/rsa3072-physical-20261112/8E-heap-debug/serial-health-20261112T1911Z.log`.
