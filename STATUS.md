@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 15:45 UTC
+Updated: 2026-11-12 16:18 UTC
 
 ## Goal
 
@@ -24,8 +24,11 @@ current physical-test handoff.
   JCAlgTest 1.8.4 install and SELECT succeeded. External class superclass and
   interface package tokens are now range-checked against Import before storage;
   the malformed `FF00` superclass reference is rejected in VPCD. ARM and
-  RISC-V builds pass. Library dependency closure, Export consistency, legacy
-  CAP null guards and full physical acceptance remain open.
+  RISC-V builds pass. INSTALL now validates the full reachable dynamic-package
+  dependency closure; a VPCD regression rejects a transitive missing library
+  import with `6A88`, while valid external-interface install remains `9000`.
+  Export-table consistency beyond resolved references, legacy CAP null guards
+  and full physical acceptance remain open.
 
 - Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2). SHA-256 `f17a1fae0c0105475092d81595d2899eb671f8b9686656267c5d2137709ab4b7`, 4,099,072 bytes; firmware-only UF2 hash `f1d71864a0620ee28a1c4a93b1ff3dd768c9c30757227c87c83873963713ce52`. Source HEAD `580f3f40`, dirty tree; CPLC source ID `580F3F409C898F6E`. ARM/RISC-V max_crypto builds pass with object deletion ON and debug switches OFF; `./tools/test-no-debug-traces` passes. Firmware ends at `0x100f4460`, leaving 48,032 bytes in the 1 MiB firmware window. The package erases persistent storage and has no preinstalled applet; it was not flashed locally. Windows instructions and hash are in `.agent/EXT_REQUESTS.md`.
   The matching firmware-only UF2 was flashed by exact chip ID to D92

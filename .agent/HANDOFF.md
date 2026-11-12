@@ -1,3 +1,31 @@
+# Current handoff — CAP INSTALL validates transitive library dependencies — 2026-11-12 16:18 UTC
+
+Implemented full dynamic-package dependency closure validation at applet
+INSTALL. The validator visits each reachable dynamic package once using a
+fixed eight-slot worklist, detects missing imports in libraries even when the
+applet does not reference them directly, and safely terminates on dependency
+cycles. Packages can still be LOADed before their dependencies arrive.
+
+The RMI VPCD test now includes a local mutated library fixture with an unused
+missing import. The red run returned `9000` before the fix; after the final
+change, the suite passes 4/4 and rejects that applet install with `6A88`.
+Valid external-interface installation remains `9000`; existing invalid export
+cases remain `6F00`. The upstream supplied CAP files are untouched. ARM and
+RISC-V `max_crypto` builds pass; ARM ends at `0x100f3d94`, leaving 49,772 bytes.
+No physical hardware was accessed because the user disconnected the devices.
+
+The working tree contains unrelated existing shared changes, especially in
+`src/cap_load.cpp`, heap/interpreter files, upstream submodules and review/test
+artifacts. Stage only the new closure validator hunk in `src/cap_load.cpp`, the
+new fixture/test hunks in `tests/integration/rmi_external_interface_vpcd_test.py`,
+and the CAPIN-01 TODO, STATUS, QKB, HANDOFF and progress entries for this step.
+The root filesystem erasure and applet deletion edits in `src/cap_load.cpp`
+pre-date this step and must remain unstaged.
+
+Next offline CAPIN-01 work: validate Export table structural consistency beyond
+referenced members, then add null guards for legacy stored CAPs. Physical CAP
+acceptance remains open until boards are reported available.
+
 # Current handoff — three-board CDC BOOTSEL recovery and fresh no-debug image — 2026-11-12 15:45 UTC
 
 ## Fresh external-test image

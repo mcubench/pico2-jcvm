@@ -28584,3 +28584,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `.agent/EXT_REQUESTS.md` request
   `WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2`; per-board logs and summary at
   `artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`.
+
+## 2026-11-12 Validate transitive CAP dependencies at INSTALL 24 minutes
+
+- Step/experiment: `CAPIN-01-TRANSITIVE-DEPENDENCIES`
+- When: '2026-11-12 15:54 UTC' - '2026-11-12 16:18 UTC'
+- Model: `GPT-6 (Codex)`
+- Change: Added an eight-entry bounded worklist to validate imports and links for every reachable dynamic package at INSTALL. Added a local RMI CAP mutation that gives a library an unused missing import; kept supplied upstream CAP files unchanged. Updated TODO, STATUS, QKB and HANDOFF.
+- Validation: The new VPCD case failed before the fix because INSTALL returned `9000`; after the fix it returned expected `6A88`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-external-link-vpcd` passed 4/4 after the final code change. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `python3 -m py_compile tests/integration/rmi_external_interface_vpcd_test.py` and the generated CAP mutation check passed. The PC VPCD run uses only the emulator; no physical hardware was accessed. The builds emit existing upstream/Rust and packed-member warnings; no new build error was observed.
+- Result: Valid staged RMI link installation remains `9000`; invalid external export references remain `6F00`; an applet whose reachable library has a missing dependency is rejected with `6A88`. Final ARM firmware ends at `0x100f3d94`, leaving 49,772 bytes before `0x10100000`. Broader Export-table consistency, legacy CAP null guards and physical acceptance remain open.
+- Decision: Keep library packages loadable before dependencies arrive and enforce the dependency closure at INSTALL. Continue with Export consistency and legacy-CAP guards offline.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rmi-external-link-missing-library-dependency-20261112T162034Z.log`; passing suite logs in `artifacts/logs/rmi-external-link-*-20261112T1620*.log`; `build/arm/build-provenance.txt`.

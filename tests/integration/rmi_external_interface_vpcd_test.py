@@ -73,6 +73,39 @@ def service_variant(source: Path, target: Path, export_token: int) -> None:
             cap.writestr(name, data)
 
 
+def contract_with_missing_library_import(source: Path, target: Path) -> None:
+    """Add an otherwise-unused import to the library package's CAP copy."""
+    with ZipFile(source) as cap:
+        files = {name: cap.read(name) for name in cap.namelist()}
+    import_name = next(name for name in files if name.endswith("/Import.cap"))
+    directory_name = next(name for name in files
+                          if name.endswith("/Directory.cap"))
+    imports = bytearray(files[import_name])
+    directory = bytearray(files[directory_name])
+    if len(imports) != 24 or imports[:4] != bytes.fromhex("04001502"):
+        raise RuntimeError("contract fixture Import.cap layout changed")
+    if directory[33] != 2:
+        raise RuntimeError("contract fixture Directory import count changed")
+
+    # Import a package that is absent from the card. The contract library does
+    # not reference it from its Constant Pool, so validation only catches this
+    # when INSTALL checks the complete dependency closure.
+    missing_package = bytes.fromhex("000107A00000015100FE")
+    imports[1] = 0x00
+    imports[2] = 0x1f
+    imports[3] = 0x03
+    imports.extend(missing_package)
+    directory[9:11] = bytes.fromhex("001f")
+    directory[33] = 3
+    files[import_name] = bytes(imports)
+    files[directory_name] = bytes(directory)
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with ZipFile(target, "w", ZIP_DEFLATED) as cap:
+        for name, data in files.items():
+            cap.writestr(name, data)
+
+
 def start_case(label: str, root: Path, emulator: Path, rom_mask: Path,
                dummy_code: Path, contract_code: bytes, contract_aid: bytes,
                service_code: bytes, service_aid: bytes, applet_aid: bytes,
@@ -124,7 +157,8 @@ def start_case(label: str, root: Path, emulator: Path, rom_mask: Path,
                     vpcd.lv(applet_aid) + bytes.fromhex("03000000") + b"\x00\x00")
             response = scp.command(
                 0xE6, 0x0C, 0x00, data, f"{label} INSTALL",
-                expected_statuses=(0x9000, 0x6F00, 0x6A80, 0x6A82, 0x6985),
+                expected_statuses=(0x9000, 0x6F00, 0x6A80, 0x6A82, 0x6A88,
+                                   0x6985),
             )
             actual_status = int.from_bytes(response[-2:], "big")
             if actual_status != expected_status:
@@ -166,6 +200,15 @@ def main() -> int:
     if len(service_applets) != 1:
         raise RuntimeError("service fixture must contain exactly one applet")
 
+    missing_dependency_cap = build / "contract-missing-dependency.cap"
+    contract_with_missing_library_import(contract_cap,
+                                         missing_dependency_cap)
+    missing_dependency_code, missing_dependency_aid, missing_applets = \
+        cap_components(missing_dependency_cap, include_export=True)
+    if (missing_dependency_aid != contract_aid or missing_applets or
+            missing_dependency_code == contract_code):
+        raise RuntimeError("invalid missing-library-dependency fixture")
+
     variants = []
     for label, export_token, expected in (
         ("valid-interface", 0, 0x9000),
@@ -190,7 +233,15 @@ def main() -> int:
             contract_aid, service_code, service_aid, service_applets[0],
             expected, datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         )
-    print("TEST:SUMMARY pass=3 fail=0")
+    start_case(
+        "missing-library-dependency", root, root / "build/choupi-pc/choupi",
+        root / "build/choupi-pc/flash",
+        root / "build/tests/jcalgtest/algtest-v184-load-code.bin",
+        missing_dependency_code, contract_aid, valid_code, service_aid,
+        service_applets[0], 0x6A88,
+        datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+    )
+    print("TEST:SUMMARY pass=4 fail=0")
     return 0
 
 

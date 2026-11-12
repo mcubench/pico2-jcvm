@@ -672,7 +672,7 @@ bool validate_cap_import_independent(const jcvm::JC_Cap &cap) {
   return true;
 }
 
-CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
+CapImportValidation validate_cap_imports_single(uint8_t package_id) noexcept {
   try {
     const jcvm::Package package(package_id);
     const jcvm::JC_Cap cap = package.getCap();
@@ -831,6 +831,59 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
       if (!exports_valid) return CapImportValidation::internal_error;
     }
     imports.validateRemoteInterfaceReferences();
+  } catch (...) {
+    return CapImportValidation::internal_error;
+  }
+  return CapImportValidation::valid;
+}
+
+CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
+  // Validate the entire dynamic-package dependency closure. A loaded library
+  // may itself import a missing package even when its importing applet never
+  // references that dependency from its own Constant Pool. Validate each
+  // reachable package once; the bounded worklist also handles package cycles.
+  std::array<uint8_t, kDynamicPackageCount> pending{};
+  std::array<bool, kDynamicPackageCount> queued{};
+  if (!jcvm::FlashMemory_Handler::isDynamicPackageID(package_id)) {
+    return CapImportValidation::internal_error;
+  }
+  std::size_t pending_count = 1;
+  std::size_t next_package = 0;
+  pending[0] = package_id;
+  queued[package_id - kFirstDynamicPackageId] = true;
+
+  try {
+    while (next_package < pending_count) {
+      const uint8_t current_id = pending[next_package++];
+      const CapImportValidation current_validation =
+          validate_cap_imports_single(current_id);
+      if (current_validation != CapImportValidation::valid) {
+        return current_validation;
+      }
+
+      const jcvm::Package package(current_id);
+      const jcvm::jc_cap_import_component *component =
+          package.getCap().getImport();
+      if (component == nullptr) continue;
+
+      jcvm::Import_Handler imports(package);
+      for (uint16_t index = 0; index < component->count; ++index) {
+        const auto *imported_package =
+            imports.getPackageAID(static_cast<uint8_t>(index));
+        const uint8_t imported_id = imports.getPackageIndex(imported_package);
+        if (!jcvm::FlashMemory_Handler::isDynamicPackageID(imported_id)) {
+          continue;
+        }
+        const std::size_t imported_index =
+            imported_id - kFirstDynamicPackageId;
+        if (queued[imported_index]) continue;
+        if (pending_count >= pending.size()) {
+          return CapImportValidation::internal_error;
+        }
+        queued[imported_index] = true;
+        pending[pending_count++] = imported_id;
+      }
+    }
   } catch (...) {
     return CapImportValidation::internal_error;
   }

@@ -152,8 +152,19 @@ task:
     instances, then timed out during later package lookup cleanup; that suite
     is not a complete pass. Guest enumeration after the user's BOOTSEL report
     still showed three runtime `2e8a:0009` devices, so no physical test/flash
-    was attempted. Still open: library dependency closure, Export consistency,
-    null guards for legacy stored CAPs, and broad physical acceptance.
+    was attempted. Library dependency closure, Export consistency, null guards
+    for legacy stored CAPs, and broad physical acceptance were open at that
+    point; see the newer progress below for closure validation.
+  - Progress 2026-11-12 16:18 UTC: INSTALL now validates each reachable
+    dynamic package's imports and link metadata once, using an eight-slot
+    bounded worklist that terminates on dependency cycles. A local RMI CAP
+    fixture adds an unused missing dependency to a library; before the fix,
+    INSTALL incorrectly returned `9000`; afterward it returns `6A88`, while
+    valid external-interface installation remains `9000`. The supplied CAPs
+    remain unchanged. PC VPCD suite passes 4/4; ARM and RISC-V builds pass.
+    Physical validation was intentionally skipped because the user disconnected
+    the devices. Export-table consistency beyond references reached through
+    Constant Pool remains open.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is
@@ -169,8 +180,10 @@ task:
   2. Done for required Import, Class, Constant Pool, Method, Static Field and
      Reference Location components. Keep Applet conditional on applet
      declarations; enforce Export only when the package exports public elements.
-  3. Run ConstantPool and link validation for library packages too (at LOAD, or
-     over the dependency closure at INSTALL).
+  3. Done at INSTALL: run ConstantPool and link validation over the complete
+     reachable dynamic-package dependency closure. CAP packages can still be
+     LOADed before dependencies are present; closure validation therefore runs
+     at INSTALL. Broader Export-table consistency remains open.
   4. Null guards that throw `SecurityException` at
      `jc_import.cpp:102-106`, `jc_cp.cpp:613/881/914`, `bc_static.cpp:66` for
      CAPs stored by older firmware.
@@ -179,9 +192,10 @@ task:
   Fixtures: extra tag-12 component; library with Export but no Class plus an
   importer; class with external superclass and no Import. Expect `6A80` at
   LOAD, no slot consumed, and DELETE of an unrelated package still `9000`.
-  External superclass package-token range validation is now covered by
-  `external-superclass-import-token-out-of-range`; library dependency closure
-  and Export consistency remain open.
+  External superclass package-token range validation is covered by
+  `external-superclass-import-token-out-of-range`; transitive library
+  dependency closure is covered by `missing-library-dependency`. Export
+  consistency remains open.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-01).
 

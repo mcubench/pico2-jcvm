@@ -305,6 +305,15 @@ Uploaded code must not invoke VM-internal native opcodes. Parser success is not 
 CAPIN tasks begin with a reproducer; keep local hostile inputs separate from unchanged upstream fixtures.
 Known guards and focused VPCD recovery do not close all hostile-CAP/physical/sanitizer acceptance.
 
+At INSTALL, validate the dynamic package's complete transitive Import closure,
+not only the applet package. A library can import an absent package without
+using it in its Constant Pool; a direct-only check then incorrectly accepts
+the applet. LOAD may precede dependency packages, so defer closure resolution
+until INSTALL. An eight-slot visited worklist handles cycles within the fixed
+dynamic package table. `missing-library-dependency` in the RMI VPCD suite is
+the regression; expected failure is `6A88`, while valid staged loading and
+install remain supported.
+
 Evidence: [E037](QKB_INDEX.md#e037), [E039](QKB_INDEX.md#e039), [E301](QKB_INDEX.md#e301), [E403](QKB_INDEX.md#e403).
 
 ## CCID routing, responses and reset — preserve recovery
