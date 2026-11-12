@@ -28349,5 +28349,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-ccid-progress-flow` passed 21/21; `./tools/test-ccid-apdu-route` passed 17/17; `./tools/fixture-path --verify` passed all 81 files, including upstream JCAlgTest 1.8.4 and 48 API CAPs. Scoped `git diff --check` passed.
 - Result: The CCID retry/routing tests remain green, and the active upstream fixture hashes still verify unchanged.
 - Decision: Keep the trace image ready for physical use; continue implementation and host validation while BOOTSEL passthrough is unavailable.
-- Commit: pending.
+- Commit: `05425677` (regression and fixture verification record); the hash backfill follows separately.
 - Artifacts/logs: Test summaries in command output; fixture manifest `tests/fixtures/manifest.json`.
