@@ -19548,7 +19548,7 @@
 - Validation: Fixture CAPs regenerated with the converter's `-i` flag (zero errors; expected int-support warning). VPCD passed 9/9: server exception caught by client, then another cross-AID call returned `45679000`; positive int round-trip `765432109000`, denied lookup `6A019000`, and local-reference rejection `6A039000` also passed. Physical probe Java source and shell scripts compile/parse cleanly. Firmware builds were not repeated because only test CAP sources/docs changed.
 - Result: The tested SecurityException case unwinds nested server execution and leaves both contexts usable. This does not establish ISOException status propagation, exception identity or behavior for other exception types. Physical execution remains blocked at stage-9 service applet installation on 2BED.
 - Decision: Keep broader exception semantics open pending Java Card firewall review and more tests; retain the fail-closed conversion to caller SecurityException until then.
-- Commit: pending.
+- Commit: `653aab87`.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T220333Z.log`.
 
 ## 2026-11-01 — Verify client-stored proxy across APDU GC 5 minutes
