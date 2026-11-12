@@ -106,7 +106,7 @@ Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible 
 
 ## Validation suites and test layout
 
-- The active JCAlgTest acceptance baseline is the unchanged supplied **1.8.4 / jc305** CAP and its matching versioned client. Resolve them using `./tools/fixture-path jcalgtest.cap` and `./tools/fixture-path jcalgtest.client`. Do not fall back to 1.8.2.
+- For new full JCAlgTest integration campaigns, use the user-supplied **1.8.5 host client** at `tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar`, explicitly selected with `tools/run-jcalgtest --client-jar PATH` (or the runner's supported client override). Scripts and `./tools/fixture-path jcalgtest.client` still default to the historical 1.8.4 client; workers must override that default. Keep the unchanged supplied **1.8.4 / jc305 CAP**, resolved with `./tools/fixture-path jcalgtest.cap`. Record client and CAP versions separately. Do not fall back to 1.8.2. See `tests/README.md` for invocation and hash verification.
 - The separate supplied Java Card API validation suite is under `tests/fixtures/external/javacard-api/provided-20261107/`; retain all version variants and use its own client.
 - `tests/fixtures/manifest.json` pins inputs and hashes. Run `./tools/fixture-path --verify` before acceptance. Keep supplied CAP/JAR bytes unchanged; no Java algorithm providers or modified algorithm CAPs.
 - Test code belongs in `tests/unit`, `tests/integration`, or `tests/hardware`; repository-owned test applet sources belong in `tests/fixtures/local`. Keep stable entrypoints in `tools/`.

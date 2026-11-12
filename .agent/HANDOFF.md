@@ -1,3 +1,16 @@
+# Current handoff — JCAlgTest 1.8.5 client worker instructions — 2026-11-12
+
+User requested fixture relocation and documentation only; no implementation
+changes or test campaigns. New full JCAlgTest workers must explicitly select
+`tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar`
+with `tools/run-jcalgtest --client-jar`, keeping the unchanged 1.8.4/jc305 CAP.
+See `tests/README.md` and the new fixture README for provenance and hash.
+Scripts/catalog defaults still select 1.8.4. No runtime compatibility claim.
+The new JAR lacks `ApiTestJClient`; independent API-suite workers must retain
+their supplied client. Existing campaign evidence keeps its original versions.
+No firmware, scripts, manifests or test implementations changed. Prior hardware
+findings and next diagnostic steps below remain relevant.
+
 # Current handoff — AES and RSA prepare/reset sequences repeat successfully on D92 — 2026-11-12 19:29 UTC
 
 On no-debug D92 (`D92E743D5F640C0F`), the exact Windows-reported AES-128 ECB

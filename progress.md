@@ -28686,3 +28686,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   telemetry. Do not alter native array sizes from current evidence.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/rsa3072-physical-20261112/D92-no-debug/`.
+
+## 2026-11-12 JCAlgTest 1.8.5 client worker documentation 4 minutes
+
+- Step/experiment: `JCALGTEST-CLIENT-185-DOCS`
+- When: '2026-11-12 19:44 UTC' - '2026-11-12 19:48 UTC'
+- Model: `GPT-6 Codex`
+- Change: Moved user-supplied 164953-byte JAR from build into versioned fixtures; linked existing manifest dependencies. Updated worker instructions to explicitly select 1.8.5 for full JCAlgTest runs with unchanged 1.8.4/jc305 CAP. No implementation changes.
+- Validation: JAR SHA-256/ZIP integrity and all manifest dependency paths passed; `./tools/fixture-path --verify` passed for existing 81 catalog files. Documentation inspected. No builds, client execution, hardware tests or throughput measurements requested or performed. A documentation-staging helper initially failed decoding historical AGENTS.md as UTF-8; corrected to preserve original bytes.
+- Result: SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`. New JAR lacks ApiTestJClient, so separate API suite keeps its own client. Catalog/scripts intentionally retain old defaults; new JAR is verified separately.
+- Decision: Future testing workers use the explicit client override; compatibility remains untested. Preserve prior runs and unrelated edits.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `tests/fixtures/external/jcalgtest/1.8.5/README.md`.
