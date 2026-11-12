@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 12:43 UTC
+Updated: 2026-11-12 12:52 UTC
 
 ## Goal
 
@@ -22,7 +22,14 @@ current physical-test handoff.
   Location component is accepted and persisted at LOAD. The 3.0.5 component
   requirements are documented in TODO; reject before persistence is next.
 
-- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2). SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`, 4,099,584 bytes. ARM and RISC-V wrappers pass; provenance is source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`, object deletion ON, heap-GC, CCID-applet and persistent-GC debug OFF. The image clears persistent storage and contains no preinstalled applet. Deletion event summaries remain at runtime; per-object and CCID debug traces are compiled out. This is not a release build, and no device was flashed.
+- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2). SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`, 4,099,584 bytes. ARM and RISC-V wrappers pass; provenance is source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`, object deletion ON, heap-GC, CCID-applet and persistent-GC debug OFF. The image clears persistent storage and contains no preinstalled applet. Deletion event summaries remain at runtime; per-object and CCID debug traces are compiled out. This is not a release build. Initial packaging preceded the physical flash described below.
+  Correction: On 2026-11-12 the image was flashed through the identity-pinned
+  wrapper to D92 (`D92E743D5F640C0F`), 8E (`8E464F4E2BBC0A19`) and 2BED
+  (`2BED26ED20556535`), each with `FLASH:PASS`. All three finite serial monitors
+  passed `TEST:PASS choupi_runtime`; exact-reader GPPro `--list` showed only the
+  ISD, confirming the cards are empty. Per-device logs:
+  `artifacts/results/maxcrypto-gc-nodebug-flash-20261112/`. Windows validation
+  remains open.
 
 - ARM and RISC-V `max_crypto` wrappers pass with object deletion enabled and
   heap-GC debug disabled. ARM firmware ends at `0x100F474C`, leaving 47,284
@@ -54,12 +61,11 @@ current physical-test handoff.
 
 ## Hardware and current evidence
 
-- Three Pico USB devices are attached to the guest, but the latest elevated
-  enumeration at 12:39 UTC showed all as runtime `2e8a:0009`; no BOOTSEL
-  `2e8a:000f` device is visible. This conflicts with the user's report that all
-  three were reinserted in BOOTSEL. Identity-pinned flash attempts found D92 and
-  8E but could not access their reset interfaces; chip ID 2BED was not
-  connected. No image was written.
+- Three Pico USB devices are attached to the guest and now boot as runtime
+  `2e8a:0009`. All were positively enumerated in BOOTSEL before flashing and
+  subsequently identified under PC/SC as D92, 8E and 2BED. All three received
+  the no-debug `max_crypto` object-deletion image and passed finite runtime and
+  GPPro empty-card checks (evidence above).
 - The approved helper granted two runtime USB nodes, while `pcsc_scan -r`
   listed only VPCD readers. Physical APDU testing is currently unavailable.
 - The corrected D92 RESOURCE-01 all-algorithms run produced 51 support rows

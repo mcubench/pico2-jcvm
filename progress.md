@@ -28435,3 +28435,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Next reject missing required CAP components in `validate_cap_code()` before any cleanup, slot allocation, or persistence; then rerun this fixture and valid-install regressions.
 - Commit: pending.
 - Artifacts/logs: `build/rv28-malformed-missing-reference-location-load-code.bin`; `artifacts/logs/rv28-malformed-missing-reference-location-vpcd-20261106.log`.
+
+## 2026-11-12 Flash no-debug max_crypto GC image to three Pico 2 boards 8 min
+
+- Step/experiment: `WIN_MAXCRYPTO_GC_NODEBUG_PHYSICAL_FLASH_20261112`
+- When: '2026-11-12 12:43 UTC' - '2026-11-12 12:52 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: After the user reported all three devices in BOOTSEL, refreshed guest enumeration, confirmed three `2e8a:000f` devices, then flashed the prepared empty-card `max_crypto` object-deletion image to D92, 8E, and 2BED using exact chip-ID selectors. Updated external request, TODO, STATUS and handoff with the local physical results.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/flash --chipid D92E743D5F640C0F ...`, corresponding 8E and 2BED commands, each exited 0 with `FLASH:PASS`. Exact-chip serial monitors ran 8 seconds on each and passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. PC/SC enumerated all three readers; GPPro `--list` on each exact reader exited 0 and returned only `ISD: A000000151000000 (OP_READY)`. The image SHA-256 is `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`. Build wrappers had passed earlier for both ARM and RISC-V at the same runtime source state; this step changed no firmware source.
+- Result: All three identified physical boards run the prepared image and report empty applet registries. This does not yet test applet installation, JCAlgTest GC behavior, or Windows interoperability.
+- Decision: Keep independent Windows and long-run JCAlgTest options 2 and 1 open; preserve per-board logs under `artifacts/results/maxcrypto-gc-nodebug-flash-20261112/`.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/maxcrypto-gc-nodebug-flash-20261112/flash-summary.md`; each board's `serial.log` and `gp-list.log`; UF2 listed above.

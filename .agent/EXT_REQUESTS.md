@@ -34,8 +34,16 @@ Windows PowerShell steps:
    results, client outputs/CSVs, and complete serial logs. Preserve deletion
    summaries and any `6F00`, `F205`, reset, timeout or PC/SC errors.
 
-The 4 MiB UF2 includes firmware plus a full erased 1 MiB storage region. No
-device was flashed here because the guest did not show BOOTSEL.
+The 4 MiB UF2 includes firmware plus a full erased 1 MiB storage region. On
+2026-11-12, this exact image was also flashed and verified on D92
+(`D92E743D5F640C0F`), 8E (`8E464F4E2BBC0A19`), and 2BED
+(`2BED26ED20556535`) through the identity-pinned wrapper. Each board passed a
+finite serial `TEST:PASS choupi_runtime` monitor and exact-reader GPPro `--list`
+reported only `ISD: A000000151000000 (OP_READY)`, with no applet installed.
+Per-board evidence is in
+`artifacts/results/maxcrypto-gc-nodebug-flash-20261112/`. This does not replace
+the requested independent Windows validation; return Windows PC/SC, GPPro,
+JCAlgTest and serial results as above.
 
 ## Windows validation: fresh max_crypto empty-card image
 

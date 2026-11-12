@@ -1,4 +1,34 @@
-# Current handoff — CAP LOAD accepts missing required Reference Location — 2026-11-12 12:43 UTC
+# Current handoff — all three tokens flashed with no-debug max_crypto GC image — 2026-11-12 12:52 UTC
+
+The user reported all three boards in BOOTSEL. Fresh elevated enumeration
+confirmed devices 101, 102 and 103 as `2e8a:000f`. The prepared no-debug
+`max_crypto` object-deletion ARM image was flashed with identity-pinned
+`tools/flash` commands; all returned `FLASH:PASS`:
+
+- D92 `D92E743D5F640C0F`
+- 8E `8E464F4E2BBC0A19`
+- 2BED `2BED26ED20556535`
+
+All three were then visible as exact PC/SC readers. Each board's 8-second
+monitor passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, and
+GPPro `--list` on each exact reader returned only
+`ISD: A000000151000000 (OP_READY)`, confirming an empty card. Logs and image
+hash are in `artifacts/results/maxcrypto-gc-nodebug-flash-20261112/` and its
+`flash-summary.md`. This proves flash, boot/runtime and empty-card listing; it
+does not replace the independent Windows JCAlgTest/GC campaign in
+`.agent/EXT_REQUESTS.md`.
+
+Offline CAPIN-01 red regression is committed as `93956698`. Removing the
+required Reference Location component from unchanged JCAlgTest 1.8.4 CAP bytes
+still permits LOAD and stores one package. The next source change must reject
+missing required components before cleanup, allocation or persistence. The
+failure and specification source are documented in TODO and progress. Preserve
+the unrelated dirty shared worktree, especially existing `src/cap_load.cpp`
+hunks.
+
+---
+
+# Prior handoff — CAP LOAD accepts missing required Reference Location — 2026-11-12 12:43 UTC
 
 The user reports all three devices in BOOTSEL. Fresh host-access enumeration
 still shows device 088, 096 and 100 as runtime `2e8a:0009`, not BOOTSEL
