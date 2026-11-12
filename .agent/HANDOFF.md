@@ -17,12 +17,14 @@ fix, it failed at the first compaction: tag ID 856 became unreadable and the
 next erase returned `FS_STATUS_NO_SUCH_TAG`. After the fix,
 `./tools/test-rp2350-fs-overlay` passes with `TEST:SUMMARY fail=0`.
 `./tools/build arm --profile max_crypto` and
-`./tools/build riscv --profile max_crypto` both pass. The default builds have
-object deletion OFF; do not use that UF2 for GC acceptance.
+`./tools/build riscv --profile max_crypto` both pass. Follow-up builds with
+`PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1` also pass for both
+architectures. The current ARM image is the deletion-enabled diagnostic build,
+but has not been flashed.
 
 Current fixed image artifact `build/arm/pico2_choupi.uf2` SHA-256:
-`45a7081d2a4d40dd8cd74732e2dfff6112d89aad43cec31492db0ef156f3a7f9`.
-It has not been flashed. A targeted cycle on 2BED with debug and object
+`7967e20eb646942bd2f49d118bb5ad32c04599c6b271e12b6e242c634de99b71`.
+It includes object deletion and debug CCID tracing but has not been flashed. A targeted cycle on 2BED with debug and object
 deletion enabled was attempted, but the required reader-helper invocation was
 blocked by `sudo: The "no new privileges" flag is set`. Stop hardware work
 until elevated host access is restored. The earlier 4CDA option-2 run remains

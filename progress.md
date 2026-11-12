@@ -28765,3 +28765,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the fix; do not alter RSA arrays. Resume physical testing only after elevated host access and physical PC/SC publication recover. Flash the fixed object-deletion-enabled ARM image to an identified board, inspect serial, then repeat option 2 with complete CCID submit/completion telemetry.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `45a7081d2a4d40dd8cd74732e2dfff6112d89aad43cec31492db0ef156f3a7f9`; test output via `./tools/test-rp2350-fs-overlay`; no fixed-image hardware log.
+
+## 2026-11-12 Build compaction fix with GC diagnostics enabled 6 minutes
+
+- Step/experiment: `RESOURCE-01-OVERLAY-REHASH-GC-BUILD-20261112`
+- When: '2026-11-12 22:50 UTC' - '2026-11-12 22:56 UTC'
+- Model: `GPT-6 Codex`
+- Change: Built the compaction fix using the same max-crypto diagnostic settings intended for physical GC testing: `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1`.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1 ./tools/build arm --profile max_crypto` and the corresponding `riscv` wrapper both passed. The ARM image is `build/arm/pico2_choupi.uf2`, SHA-256 `7967e20eb646942bd2f49d118bb5ad32c04599c6b271e12b6e242c634de99b71`. No tests were rerun in this build-only follow-up; no hardware flash or performance measurement occurred because the elevated reader helper returned `sudo: The "no new privileges" flag is set`.
+- Result: The exact GC-enabled firmware configuration compiles on both architectures, leaving the physical compaction and option-2 rerun as outstanding validation.
+- Decision: After the helper/PCSC path is restored, flash this image to an identified board and run the upstream 1.8.4/jc305 option-2 client with complete serial capture.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` hash above; `artifacts/logs/cycle-choupi-20261112T222517Z.log` is the earlier pre-fix cycle and must not be used as fix validation.
