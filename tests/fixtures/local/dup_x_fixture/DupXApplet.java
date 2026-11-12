@@ -38,6 +38,24 @@ public final class DupXApplet extends Applet {
       invalidDupXMatrix();
       return;
     }
+    if (buffer[ISO7816.OFFSET_INS] == (byte) 0x04) {
+      if (dupXReferenceProbe(apdu) != (short) 10) {
+        ISOException.throwIt((short) 0x6F04);
+      }
+      return;
+    }
+    if (buffer[ISO7816.OFFSET_INS] == (byte) 0x05) {
+      if (dupXIntProbe() != 0x12345678) {
+        ISOException.throwIt((short) 0x6F05);
+      }
+      return;
+    }
+    if (buffer[ISO7816.OFFSET_INS] == (byte) 0x06) {
+      if (dupXMixedProbe() != 0x12345678) {
+        ISOException.throwIt((short) 0x6F06);
+      }
+      return;
+    }
     ISOException.throwIt((short) 0x6D00);
   }
 
@@ -50,5 +68,17 @@ public final class DupXApplet extends Applet {
   }
 
   private static void invalidDupXMatrix() {
+  }
+
+  private static short dupXReferenceProbe(APDU apdu) {
+    return (short) 10;
+  }
+
+  private static int dupXIntProbe() {
+    return 0x12345678;
+  }
+
+  private static int dupXMixedProbe() {
+    return 0x12345678;
   }
 }

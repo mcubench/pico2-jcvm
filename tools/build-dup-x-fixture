@@ -177,6 +177,96 @@ if os.environ.get("DUP_X_INVALID_MATRIX") == "1":
         raise SystemExit(
             f"expected one invalidDupXMatrix JCA method, found {matrix_replacements}"
         )
+
+reference_pattern = re.compile(
+    r"(?P<header>\s*\.method\s+[^\n]*dupXReferenceProbe\(Ljavacard/framework/APDU;\)S(?:\s+\d+)?\s*\{)"
+    r"(?P<body>.*?)"
+    r"(?P<close>^\s*\})",
+    re.MULTILINE | re.DOTALL,
+)
+reference_body = "\n".join((
+    "\t\t\t.stack 4;",
+    "\t\t\t.locals 2;",
+    "",
+    "\t\t\t\tL0: aload_0;",
+    "\t\t\t\t\tsspush 10;",
+    "\t\t\t\t\tsspush 20;",
+    "\t\t\t\t\tdup_x 18;",
+    "\t\t\t\t\tssub;",
+    "\t\t\t\t\tsadd;",
+    "\t\t\t\t\tsstore_1;",
+    "\t\t\t\t\taload_0;",
+    "\t\t\t\t\tif_acmpeq Lsame;",
+    "\t\t\t\t\tsspush 28420;",
+    "\t\t\t\t\tinvokestatic 2;",
+    "\t\t\t\t\treturn;",
+    "\t\t\t\tLsame: sload_1;",
+    "\t\t\t\t\tsspush 10;",
+    "\t\t\t\t\tif_scmpeq Lvalue;",
+    "\t\t\t\t\tsspush 28420;",
+    "\t\t\t\t\tinvokestatic 2;",
+    "\t\t\t\t\treturn;",
+    "\t\t\t\tLvalue: sload_1;",
+    "\t\t\t\t\tsreturn;",
+))
+updated, reference_replacements = reference_pattern.subn(
+    lambda match: match.group("header") + reference_body + match.group("close"),
+    updated,
+)
+if reference_replacements != 1:
+    raise SystemExit(
+        f"expected one dupXReferenceProbe JCA method, found {reference_replacements}"
+    )
+
+int_pattern = re.compile(
+    r"(?P<header>\s*\.method\s+[^\n]*dupXIntProbe\(\)I(?:\s+\d+)?\s*\{)"
+    r"(?P<body>.*?)"
+    r"(?P<close>^\s*\})",
+    re.MULTILINE | re.DOTALL,
+)
+int_body = "\n".join((
+    "\t\t\t.stack 6;",
+    "\t\t\t.locals 0;",
+    "",
+    "\t\t\t\tL0: iipush 305419896;",
+    "\t\t\t\t\tiipush 591751049;",
+    "\t\t\t\t\tdup_x 36;",
+    "\t\t\t\t\tisub;",
+    "\t\t\t\t\tiadd;",
+    "\t\t\t\t\tireturn;",
+))
+updated, int_replacements = int_pattern.subn(
+    lambda match: match.group("header") + int_body + match.group("close"),
+    updated,
+)
+if int_replacements != 1:
+    raise SystemExit(f"expected one dupXIntProbe JCA method, found {int_replacements}")
+
+mixed_pattern = re.compile(
+    r"(?P<header>\s*\.method\s+[^\n]*dupXMixedProbe\(\)I(?:\s+\d+)?\s*\{)"
+    r"(?P<body>.*?)"
+    r"(?P<close>^\s*\})",
+    re.MULTILINE | re.DOTALL,
+)
+mixed_body = "\n".join((
+    "\t\t\t.stack 5;",
+    "\t\t\t.locals 0;",
+    "",
+    "\t\t\t\tL0: sspush 7;",
+    "\t\t\t\t\tiipush 305419896;",
+    "\t\t\t\t\tdup_x 35;",
+    "\t\t\t\t\tpop2;",
+    "\t\t\t\t\tpop;",
+    "\t\t\t\t\tireturn;",
+))
+updated, mixed_replacements = mixed_pattern.subn(
+    lambda match: match.group("header") + mixed_body + match.group("close"),
+    updated,
+)
+if mixed_replacements != 1:
+    raise SystemExit(
+        f"expected one dupXMixedProbe JCA method, found {mixed_replacements}"
+    )
 path.write_text(updated)
 PY
 

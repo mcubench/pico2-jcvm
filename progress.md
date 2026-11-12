@@ -28090,3 +28090,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R60 open for typed-word interpreter cases and physical acceptance. Continue offline while BOOTSEL is not visible to the VM.
 - Commit: `f4e59b01`
 - Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T050807Z.log`; `artifacts/logs/dup-x-host-20261112T050807Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T050807Z.log`; `artifacts/logs/dup-x-invalid-host-20261112T050807Z.log`; `artifacts/logs/build-pc-dup-x-20261112T050807Z.log`; `./tools/test-rmi-registry`
+
+## 2026-11-12 Validate typed dup_x words through VPCD 14 min
+
+- Step/experiment: `RV-20261106-60-VPCD-TYPED-MATRIX-20261112`
+- When: '2026-11-12 05:09 UTC' - '2026-11-12 05:23 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added interpreter-level typed probes to the generated CAP: preserve and compare an APDU reference across `dup_x 0x12`; duplicate and calculate with a complete int pair using `0x24`; and duplicate a complete int pair above a short using `0x23`. The test sends a successful APDU after each probe. Updated TODO and HANDOFF. All Java sources are confined to the repository's local test fixture; no firmware Java adapter or supplied CAP was changed.
+- Validation: `bash -n tools/build-dup-x-fixture tools/test-dup-x-vpcd` passed; generated JCA/CAP assembled. `PICO2_HOST_USB_ACCESS=1 ./tools/test-dup-x-vpcd` passed all legal/invalid matrices, caught-exception recovery, typed cases and separate invalid install; ten custom APDUs returned `9000`, VPCD host summary `TEST:SUMMARY pass=12 fail=0`. Interpreter trace contains 260 `DUP_X` calls: 24 legal, 232 invalid, one caught invalid and three typed cases. `./tools/test-rmi-registry` passed helper-level short ordering, distinct reference owners and int-pair tests. Fresh elevated `lsusb -d 2e8a:` still shows three runtime `2e8a:0009` interfaces, no BOOTSEL `2e8a:000f`; physical testing/flash skipped. ARM/RISC-V builds were not run because the work changes only test fixture/tooling.
+- Result: Full operand-byte acceptance and short/reference/int/mixed-short-int interpreter cases pass. Cross-context reference owner through interpreter and physical hardware acceptance remain open. PC binary SHA-256 `c9939d11e3b576df6c4df0cef49f169ab5e31bf93a4b39faaeee6bd4498e8653`.
+- Decision: Keep R60 open for cross-context owner and physical checks; continue offline while USB remains in runtime mode.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T052109Z.log`; `artifacts/logs/dup-x-host-20261112T052109Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T052109Z.log`; `artifacts/logs/dup-x-invalid-host-20261112T052109Z.log`; `artifacts/logs/build-pc-dup-x-20261112T052109Z.log`; `./tools/test-rmi-registry`

@@ -20,12 +20,18 @@ PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --apdu 00020000 \
   --apdu 00030000 \
   --apdu 00020000 \
+  --apdu 00040000 \
+  --apdu 00020000 \
+  --apdu 00050000 \
+  --apdu 00020000 \
+  --apdu 00060000 \
+  --apdu 00020000 \
   --log "${log_dir}/dup-x-vpcd-${timestamp}.log" \
   > "${log_dir}/dup-x-host-${timestamp}.log" 2>&1
 
-rg -q 'TEST:SUMMARY pass=6 fail=0' \
+rg -q 'TEST:SUMMARY pass=12 fail=0' \
   "${log_dir}/dup-x-host-${timestamp}.log" || {
-  printf 'ERROR: VPCD recovery run did not complete all four checks\n' >&2
+  printf 'ERROR: VPCD recovery run did not complete all ten custom APDUs\n' >&2
   exit 1
 }
 rg -q 'custom APDU 1 response=9000' \
@@ -46,6 +52,36 @@ rg -q 'custom APDU 3 response=9000' \
 rg -q 'custom APDU 4 response=9000' \
   "${log_dir}/dup-x-host-${timestamp}.log" || {
   printf 'ERROR: APDU following the invalid-operand matrix did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 5 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: typed reference dup_x APDU did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 6 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: APDU following the typed reference case did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 7 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: complete-int dup_x APDU did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 8 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: APDU following the complete-int case did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 9 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: mixed short/int dup_x APDU did not return 9000\n' >&2
+  exit 1
+}
+rg -q 'custom APDU 10 response=9000' \
+  "${log_dir}/dup-x-host-${timestamp}.log" || {
+  printf 'ERROR: APDU following the mixed short/int case did not return 9000\n' >&2
   exit 1
 }
 
@@ -121,6 +157,9 @@ printf 'DUP_X_INVALID_VPCD:PASS operand=0x17 rejected with vm=6F00\n'
 printf 'DUP_X_MATRIX_VPCD:PASS legal_operands=24\n'
 printf 'DUP_X_INVALID_MATRIX_VPCD:PASS invalid_operands=232\n'
 printf 'DUP_X_RECOVERY_VPCD:PASS caught_operand=0x17 matrices_apdu=9000 following_apdu=9000\n'
+printf 'DUP_X_TYPED_REFERENCE_VPCD:PASS operand=0x12 identity_and_short_result=valid\n'
+printf 'DUP_X_TYPED_INT_VPCD:PASS operand=0x24 complete_int_pair_result=0x12345678\n'
+printf 'DUP_X_TYPED_MIXED_VPCD:PASS operand=0x23 short_plus_complete_int_pair=valid\n'
 printf 'DUP_X_VPCD:PASS log=%s\n' \
   "${log_dir}/dup-x-vpcd-${timestamp}.log"
 printf 'DUP_X_HOST:PASS log=%s\n' \
