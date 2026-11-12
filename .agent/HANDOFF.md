@@ -1,4 +1,4 @@
-# Current handoff — post-applet CCID trace built; guest USB still runtime — 2026-11-12 10:31 UTC
+# Current handoff — post-applet CCID trace built; guest USB still runtime — 2026-11-12 10:47 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -80,6 +80,12 @@ again saw only runtime `0009` devices; the reader helper grants two, while
 PC/SC lists only VPCD. Do not claim this trace image was flashed. The separate
 pre-fix 8E run ended in heap read failures and out-of-memory; keep it distinct
 from this D92 post-applet response stall.
+
+Follow-up descriptor inspection shows the runtime devices advertise CDC ACM
+line-coding support on interface 0. The D92 CDC-1200 reset attempt returned
+success at the host ioctl level but did not change USB mode. A bounded
+8-second monitor on exact D92 exited 0 but captured no serial lines (startup
+had already passed); this is not a fresh boot validation.
 
 Next: once VirtualBox exposes a physical device in BOOTSEL to the VM, verify its
 exact ROM chip ID, flash the image above, inspect a finite serial boot, and

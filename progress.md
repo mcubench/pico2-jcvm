@@ -28243,3 +28243,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Preserve the image and logs/state. Resume physical testing only when VirtualBox exposes a verified BOOTSEL chip ID or a PC/SC reader; continue offline otherwise. Do not treat this as a firmware flash failure.
 - Commit: `5c78e647` (implementation); `b954ab3d` (this result/handoff record).
 - Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-empty-card-5c78e647.uf2`; SHA-256 above; ARM/RISC-V provenance in `build/{arm,riscv}/build-provenance.txt`; flash outputs inspected directly, not archived.
+
+## 2026-11-12 Inspect runtime USB reset path after failed BOOTSEL transition 4 min
+
+- Step/experiment: `RESOURCE-01-USB-RESET-DIAGNOSTIC-20261112`
+- When: '2026-11-12 10:43 UTC' - '2026-11-12 10:47 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Inspected the enumerated USB interface descriptors and captured a bounded monitor from exact D92 after the flash wrapper's reset attempts. Updated the active handoff with the resulting limitation. No firmware source changed.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1 lsusb -v -d 2e8a:0009` showed all three devices as composite CDC+CCID devices, with CDC ACM line-coding support on interface 0. The earlier exact D92 `stty`/CDC-1200 request returned without a host ioctl error but no device re-enumerated as BOOTSEL. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial D92E743D5F640C0F --seconds 8` exited 0 and captured no serial lines; this only confirms the monitor ran and is not a fresh startup pass. No flash occurred.
+- Result: The guest is communicating with runtime USB descriptors, not seeing a BOOTSEL interface. The failed transition is still unresolved; descriptor support alone does not prove the running firmware received or acted on the reset request.
+- Decision: Continue physical testing only after a `2e8a:000f` BOOTSEL device or a PC/SC reader appears in the guest; do not classify this as a firmware write failure.
+- Commit: `to be recorded in the following commit-hash backfill`
+- Artifacts/logs: `lsusb -v` and finite monitor output inspected directly, not archived; diagnostic UF2 remains unchanged at SHA-256 `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`.
