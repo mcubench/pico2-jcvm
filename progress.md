@@ -28157,5 +28157,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted two nodes, for D92 and 8E. `timeout --signal=TERM --kill-after=1s 8s stdbuf -oL pcsc_scan -r` listed both readers plus two VPCD readers. GPPro `--list` on `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00` and `Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 01 00` exited 0 and showed only `ISD: A000000151000000 (OP_READY)`, with no APP/PKG entries. For 2BED, USB path `1-5` still enumerates `2e8a:0009` without a serial descriptor; bounded CDC-1200 reset did not expose BOOTSEL. No writes were attempted to 2BED.
 - Result: D92 and 8E have verified empty registries and working PC/SC/serial runtime. 2BED remains unverified and unflashed with the empty-card image; its ID needs BOOTSEL re-enumeration.
 - Decision: Continue physical work on D92/8E. Ask the user to reattach 2BED in BOOTSEL, then verify ROM chip ID before flashing.
-- Commit: `<pending>`
+- Commit: `bf3979af`
 - Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2`, SHA-256 `63505c753ef50fc03d8bb3213378332eb91985f5270a23f45d96c76745d08c75`; GPPro/PCSC outputs were inspected directly, not archived.
