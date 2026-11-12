@@ -27992,5 +27992,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`) with production-style sync deferral. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including `failed_rollback_sync_quarantines_until_reset_restores_committed_state` and existing 1,000-cut snapshot/reclamation tests. `./tools/build arm` and `./tools/build riscv` passed. No new compile errors; existing third-party/packed-member warnings remain. Hardware flash/serial was not run.
 - Result: Rollback now actually publishes restored records on Pico rather than receiving a false-success deferred sync. If publication fails, the transaction guard and recovery journal remain; cold reset restores the previous committed snapshot in the integration model. Three reported boards still enumerate in this VM as runtime `2e8a:0009`; picotool cannot access BOOTSEL.
 - Decision: Keep RV-44 open for physical validation. Continue with the next offline P1 review task while the guest lacks BOOTSEL access.
-- Commit: pending
+- Commit: `ab8e74f2`
 - Artifacts/logs: ARM/RISC-V wrappers; `build/arm/pico2_choupi.uf2`; persistent transaction and RP2350 overlay test outputs in session transcript.
