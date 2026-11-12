@@ -350,11 +350,17 @@ even though the approved access helper still granted access to all three USB
 nodes. The other boards were not subjected to deletion. This does not establish
 that DELETE caused the board symptom or that PC/SC itself caused the timeout.
 
-Response: stop further deletion attempts; do not erase flash. Restore PC/SC
-with the approved host path, re-identify the affected board, and capture its
-finite serial output before retrying. No viable fix is confirmed yet. See the
-2026-11-12 08:05 UTC handoff and `MAXCRYPTO-THREE-PHYSICAL-BOARDS-20261112` in
-`progress.md`.
+After rebuilding the current empty-card UF2 and flashing D92/8E, refreshing
+the approved helper restored PC/SC publication for those two boards. Their
+GPPro lists now show only the ISD and no APP/PKG entries. This does not
+establish whether the earlier GPPro DELETE caused the service or third-board
+symptom. `2BED26ED20556535` still enumerates as `2e8a:0009` without a USB
+serial descriptor and has no PC/SC reader; its bounded monitor had no startup
+output and CDC-1200 did not enter BOOTSEL. Do not retry its write until its
+chip ID is verifiable again. No viable recovery for that board is confirmed.
+See the 2026-11-12 08:27 UTC handoff and progress entries
+`MAXCRYPTO-THREE-PHYSICAL-BOARDS-20261112` and
+`HOST-01-FLASH-PATH-RECOVERY-EMPTY-CARD-20261112`.
 
 ## Maintenance
 

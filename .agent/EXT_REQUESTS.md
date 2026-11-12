@@ -123,7 +123,7 @@ despite USB enumeration, but is not blocking the active tests; no service
 restart or other external action is currently requested. If D92 is needed
 again, reconnect it to the VM and report the result of `timeout 10s pcsc_scan -r`.
 
-## Restart PC/SC after physical object-deletion run — 2026-11-11
+## Resolved 2026-11-12: PC/SC restored for D92 and 8E; 2BED needs reattachment
 
 The fixed physical collector ran on `8E464F4E2BBC0A19` during the upstream
 JCAlgTest support suite. Its serial trace shows `INS_CARD_RESET` completing
@@ -134,29 +134,27 @@ monitor. I have bounded the collector to eight persistent records per APDU;
 both architecture builds and the persistent-transaction unit suite pass, but
 the physical batch-size fix still needs validation after PC/SC recovers.
 
-### Update 2026-11-12 08:21 UTC — current PC/SC recovery needed
+### Result 2026-11-12 08:27 UTC
 
-The current max_crypto image was flashed to `D92E743D5F640C0F` and
-`8E464F4E2BBC0A19`, including the explicitly cleared persistent-storage
-region. Both pass finite serial startup. The third board (`2BED26ED20556535`)
-lost its USB serial descriptor after a GPPro applet DELETE timed out; PC/SC
-then stopped listing readers. The approved helper still grants the three USB
-nodes, but `pcsc_scan -r` times out before listing any reader. Do not flash or
-reset boards while restarting the service. After recovery, verify D92 and 8E
-with GPPro `--list`; continue the 2BED diagnosis separately.
+After flashing the current empty-card image, the approved helper and
+`pcsc_scan -r` listed D92 and 8E. GPPro `--list` confirmed no APP/PKG entries
+on either board, so a PC/SC service restart is no longer needed. The third
+board `2BED26ED20556535` remains at USB `2e8a:0009` without its serial
+descriptor and did not enter BOOTSEL after a path-specific CDC reset. It is
+not safe to flash it until the ROM chip ID is visible again.
 
-Please run this in the development VM and send the complete output:
+## REATTACH_2BED_20261112 — Reconnect the third Pico 2 in BOOTSEL
 
-```sh
-sudo systemctl restart pcscd.service
-sudo -n /usr/local/sbin/pico2-pcsc-reader
-timeout 10s stdbuf -oL pcsc_scan -r
-```
+Please reconnect `2BED26ED20556535` to the development VM in BOOTSEL mode:
 
-Keep the three Pico tokens connected. Do not flash or reset them as part of
-this service recovery. Once PC/SC lists D92 and 8E, I can verify their empty
-registries and continue physical validation; troubleshoot 2BED after its
-reader/serial identity returns.
+1. Unplug that board, hold its BOOTSEL button while reconnecting it, then
+   release the button.
+2. In VirtualBox, attach the `Raspberry Pi RP2350 Boot` USB device to this VM.
+3. Tell me when it is attached. I will verify the ROM chip ID before writing
+   the current empty-card image.
+
+Do not detach D92 or 8E; both are running the max_crypto empty-card image and
+their GPPro registries are confirmed empty. No PC/SC restart command is needed.
 
 ## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 

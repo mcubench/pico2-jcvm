@@ -1,3 +1,31 @@
+# Current handoff — D92 and 8E are confirmed empty max_crypto cards — 2026-11-12 08:27 UTC
+
+Current empty-card ARM UF2 is
+`build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2`, 4,094,464 bytes,
+SHA-256 `63505c753ef50fc03d8bb3213378332eb91985f5270a23f45d96c76745d08c75`.
+It carries max_crypto firmware and an erased persistent region
+`0x10100000–0x101fffff`.
+
+`D92E743D5F640C0F` and `8E464F4E2BBC0A19` each reported `FLASH:PASS`, passed
+an 8-second serial monitor (`TEST:SUMMARY pass=1 fail=0`), and now pass GPPro
+`--list` with only the ISD (`A000000151000000`, `OP_READY`); there are no APP
+or PKG entries. The approved helper grants two USB nodes and `pcsc_scan -r`
+lists both readers plus the two VPCD readers. No PC/SC service restart was
+needed.
+
+`2BED26ED20556535` remains at USB path `1-5` as `2e8a:0009` with no serial
+descriptor. A path-specific CDC-1200 reset did not enter BOOTSEL; do not flash
+this board without an identity-confirmed BOOTSEL appearance. It did have the
+old JCAlgTest applet/package before the attempted GPPro DELETE timed out, so
+its card is not confirmed empty. External request
+`REATTACH_2BED_20261112` asks the user to replug this board in BOOTSEL and
+attach it to the VM; continue other work on D92/8E in the meantime.
+
+The identity-following flash wrapper fix is committed as `147d6e43`, with
+progress SHA backfill `26f59b99`; its synthetic selection suite passes 11/11.
+The empty-card image and physical evidence are recorded in progress entry
+`HOST-01-FLASH-PATH-RECOVERY-EMPTY-CARD-20261112`.
+
 # Current handoff — current max_crypto empty-card image verified on D92 and 8E — 2026-11-12 08:21 UTC
 
 Created `build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2` with
