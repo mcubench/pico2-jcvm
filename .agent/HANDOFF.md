@@ -1,4 +1,35 @@
-# Current handoff — all three tokens flashed with no-debug max_crypto GC image — 2026-11-12 12:52 UTC
+# Current handoff — required CAP components rejected before LOAD storage — 2026-11-12 13:10 UTC
+
+Implemented explicit presence checks for standard required CAP components:
+Import, Class, Constant Pool, Method, Static Field, and Reference Location
+(Header and Directory were already required). Applet remains optional. The
+new Import, Static Field, and Reference Location omission cases reject before
+package persistence in VPCD. Oracle JCVM 3.0.5 §6.2 calls these components
+required.
+
+The updated ARM `max_crypto` build was flashed to D92
+(`D92E743D5F640C0F`) after ARM and RISC-V builds passed. A generated copy of the
+unchanged JCAlgTest 1.8.4 CAP with only Reference Location removed received
+`6A80` on the final physical LOAD block. GPPro `--list` then showed no package.
+The unchanged upstream CAP successfully loaded/installed, and selecting applet
+`4A43416C675465737431` returned `9000`. D92 finite serial check passed. Logs:
+`artifacts/results/capin-required-component-20261112/D92E743D5F640C0F/`.
+Unchanged JCAlgTest VPCD install/select, CAP upgrade and multi-package tests
+pass (48/48); fixture manifest passes. CAPIN-01 still needs Export consistency,
+recursive library dependency closure, and external superclass without Import.
+
+The no-debug object-deletion image remains on 8E and 2BED. All three boards
+were flashed with that image and checked empty earlier; D92 now has JCAlgTest
+installed for physical loader validation. The independent Windows GC campaign
+remains open.
+
+Preserve unrelated shared worktree edits, especially the other uncommitted
+`src/cap_load.cpp` hunks. The component-presence source patch must be staged
+without those unrelated hunks.
+
+---
+
+# Prior handoff — all three tokens flashed with no-debug max_crypto GC image — 2026-11-12 12:52 UTC
 
 The user reported all three boards in BOOTSEL. Fresh elevated enumeration
 confirmed devices 101, 102 and 103 as `2e8a:000f`. The prepared no-debug

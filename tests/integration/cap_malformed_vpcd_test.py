@@ -184,15 +184,21 @@ def build_malformed_load_code(mutation: str) -> Path:
         raise ValueError("process bytecode body exceeds Method component")
 
     ordered = b"".join(parts[name] for name, _ in COMPONENTS if name in parts)
-    if mutation == "missing-reference-location":
-        missing = parts.pop("RefLocation")
-        output = ROOT / "build/rv28-malformed-missing-reference-location-load-code.bin"
+    missing_required_components = {
+        "missing-import-component": "Import",
+        "missing-static-field-component": "StaticField",
+        "missing-reference-location": "RefLocation",
+    }
+    if mutation in missing_required_components:
+        component_name = missing_required_components[mutation]
+        missing = parts.pop(component_name)
+        output = ROOT / f"build/rv28-malformed-{mutation}-load-code.bin"
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_bytes(b"".join(
             parts[name] for name, _ in COMPONENTS if name in parts
         ))
         print(
-            f"MALFORMED_CAP:PASS sha256={digest} removed=RefLocation "
+            f"MALFORMED_CAP:PASS sha256={digest} removed={component_name} "
             f"bytes={len(missing)} type={mutation} source_cap_unchanged=true"
         )
         return output
@@ -577,7 +583,7 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location", "impdep1", "impdep2", "truncated-sipush",
+        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location", "missing-import-component", "missing-static-field-component", "impdep1", "impdep2", "truncated-sipush",
                                 "fall-through", "zero-process-body-length",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
@@ -601,7 +607,12 @@ def main() -> int:
     args = parser.parse_args()
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
-    if args.mutation in ("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location"):
+    load_rejection_mutations = (
+        "unknown-component-tag", "load-header-aid-mismatch",
+        "missing-reference-location", "missing-import-component",
+        "missing-static-field-component",
+    )
+    if args.mutation in load_rejection_mutations:
         log.unlink(missing_ok=True)
     select_status = "9000" if args.mutation in (
         "truncated-sipush", "fall-through",
@@ -631,7 +642,7 @@ def main() -> int:
     if args.mutation == "load-header-aid-mismatch":
         commands.extend(("--load-package-aid-override",
                          "4A43416C6754657375"))
-    if args.mutation not in ("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location"):
+    if args.mutation not in load_rejection_mutations:
         commands.extend((
             "--expect-select-status", select_status,
             "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
@@ -646,7 +657,7 @@ def main() -> int:
             "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
         ))
     run_kwargs = {"cwd": ROOT, "check": False}
-    if args.mutation in ("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location"):
+    if args.mutation in load_rejection_mutations:
         # The inner generic VPCD runner correctly reports that no applet can
         # start after LOAD rejection. Capture that expected negative result so
         # the outer acceptance check is the only PASS/FAIL summary shown.
@@ -655,7 +666,7 @@ def main() -> int:
     result = subprocess.run(
         [str(ROOT / "tools/test-pc-vpcd-applet"), *commands], **run_kwargs
     )
-    if args.mutation in ("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location"):
+    if args.mutation in load_rejection_mutations:
         run_log = log.read_text(encoding="utf-8", errors="replace")
         load_rejected = "ERROR: PC CAP LOAD data rejected" in run_log
         registry_match = re.search(
@@ -675,9 +686,17 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        reason = ("unknown_component" if args.mutation == "unknown-component-tag"
-                  else "package_aid_header_mismatch" if args.mutation == "load-header-aid-mismatch"
-                  else "missing_required_reference_location")
+        if args.mutation == "unknown-component-tag":
+            reason = "unknown_component"
+        elif args.mutation == "load-header-aid-mismatch":
+            reason = "package_aid_header_mismatch"
+        else:
+            component_name = {
+                "missing-reference-location": "reference_location",
+                "missing-import-component": "import",
+                "missing-static-field-component": "static_field",
+            }[args.mutation]
+            reason = f"missing_required_{component_name}"
         print("CAP_LOAD_VALIDATION:PASS "
               f"{reason}_rejected_before_store registry_saved_packages={stored_packages}")
         return 0

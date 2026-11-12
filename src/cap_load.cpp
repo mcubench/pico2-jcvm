@@ -868,9 +868,12 @@ bool validate_cap_code(const uint8_t *code, size_t length,
     const jcvm::JC_Cap validated_cap(static_cast<uint16_t>(length), code);
     if (validated_cap.getHeader() == nullptr ||
         validated_cap.getDirectory() == nullptr ||
+        validated_cap.getImport() == nullptr ||
         validated_cap.getClass() == nullptr ||
         validated_cap.getMethod() == nullptr ||
+        validated_cap.getStaticField() == nullptr ||
         validated_cap.getConstantPool() == nullptr ||
+        validated_cap.getReferenceLocation() == nullptr ||
         !validate_cap_import_independent(validated_cap)) {
       return false;
     }

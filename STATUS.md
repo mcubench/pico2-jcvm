@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 12:52 UTC
+Updated: 2026-11-12 13:10 UTC
 
 ## Goal
 
@@ -18,9 +18,11 @@ current physical-test handoff.
   before the fix and passes after it; unchanged JCAlgTest install/select,
   CAP upgrade and 81-file fixture verification pass. ARM/RISC-V builds pass.
   Other CAPIN-01 structural/dependency checks and physical acceptance remain.
-  A new red regression found another gap: a CAP missing the required Reference
-  Location component is accepted and persisted at LOAD. The 3.0.5 component
-  requirements are documented in TODO; reject before persistence is next.
+  Required Import, Static Field and Reference Location presence is now enforced
+  before package storage. Omission regressions pass for all three. The Reference
+  Location case returned `6A80` on physical D92; a following valid unchanged
+  JCAlgTest 1.8.4 install and SELECT succeeded. Other dependency validation and
+  full physical acceptance remain open.
 
 - Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2). SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`, 4,099,584 bytes. ARM and RISC-V wrappers pass; provenance is source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`, object deletion ON, heap-GC, CCID-applet and persistent-GC debug OFF. The image clears persistent storage and contains no preinstalled applet. Deletion event summaries remain at runtime; per-object and CCID debug traces are compiled out. This is not a release build. Initial packaging preceded the physical flash described below.
   Correction: On 2026-11-12 the image was flashed through the identity-pinned
@@ -34,6 +36,12 @@ current physical-test handoff.
 - ARM and RISC-V `max_crypto` wrappers pass with object deletion enabled and
   heap-GC debug disabled. ARM firmware ends at `0x100F474C`, leaving 47,284
   bytes before the configured `0x10100000` limit.
+- Current dirty-tree ARM CAPIN test image on D92 is `build/arm/pico2_choupi.uf2`
+  (SHA-256 `75741e95b27dcce01e069623255371c526655c3f0e3209b51384684e42291a8d`,
+  CPLC source ID `93D38F8AF8CF06EF`). Its malformed Reference Location LOAD
+  test returned `6A80`; unchanged JCAlgTest 1.8.4 installation and applet
+  selection passed. Physical test logs are under
+  `artifacts/results/capin-required-component-20261112/D92E743D5F640C0F/`.
 - The current diagnostic empty-card image is
   `build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`
   (4,100,608 bytes, SHA-256
@@ -78,9 +86,10 @@ current physical-test handoff.
   panic. D92 performance-static and other all-algorithms attempts were
   interrupted or failed with PC/SC errors. Neither long option-1 nor option-2
   campaign completed; these are not acceptance passes.
-- The current guest still shows three `2e8a:0009` runtime devices; no physical
-  test ran in this turn. BOOTSEL passthrough and all physical acceptance remain
-  open.
+- The current guest sees three `2e8a:0009` runtime devices. D92 was flashed with
+  the current CAP loader test image; 8E and 2BED retain the no-debug object-
+  deletion image. D92 passed the malformed LOAD rejection and valid JCAlgTest
+  install/select check. Other physical acceptance remains open.
 - A bounded 8-second monitor on D92 after the reset attempts exited 0 with no
   serial output. This did not constitute a boot or runtime health pass.
 

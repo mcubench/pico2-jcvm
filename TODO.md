@@ -100,6 +100,19 @@ task:
     bytes. LOAD accepts and persists that malformed package (`packages=1`);
     required-component checks must reject before storage. See
     [Oracle JCVM 3.0.5 §6.2](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf).
+  - Progress 2026-11-12 13:10 UTC: LOAD now explicitly requires Import,
+    Class, Constant Pool, Method, Static Field and Reference Location alongside
+    Header/Directory; Applet remains optional and Export is still conditional.
+    Generated Import/StaticField/ReferenceLocation omission cases all reject
+    before persistence. The ReferenceLocation case was repeated on physical
+    D92: final LOAD response `6A80`, no package in subsequent GET STATUS, then
+    the unchanged 1.8.4 CAP installed and selected successfully. ARM/RISC-V
+    builds and unchanged JCAlgTest install/select, CAP upgrade and
+    multi-package VPCD regressions pass. See
+    `CAPIN-01-REQUIRED-COMPONENTS` in `progress.md` and physical logs under
+    `artifacts/results/capin-required-component-20261112/D92E743D5F640C0F/`.
+    Still open: library dependency closure, external superclass without Import,
+    and broad physical acceptance.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is
@@ -112,11 +125,9 @@ task:
      import-independent part of `validate_cap_imports` before
      `choupi_store_cap_package`. Reject unknown or duplicate components,
      unsupported CAP versions and lengths above 65,535 on both backends.
-  2. Enforce the specification's required component set (including Import,
-     Constant Pool, Method, Static Field, and Reference Location); do not infer
-     component presence solely from whether a reference currently uses it.
-     Keep Applet conditional on applet declarations and Export conditional on
-     externally importable public elements.
+  2. Done for required Import, Class, Constant Pool, Method, Static Field and
+     Reference Location components. Keep Applet conditional on applet
+     declarations; enforce Export only when the package exports public elements.
   3. Run ConstantPool and link validation for library packages too (at LOAD, or
      over the dependency closure at INSTALL).
   4. Null guards that throw `SecurityException` at
