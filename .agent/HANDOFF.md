@@ -25,6 +25,7 @@ the contract library CAP loaded and both dependent applets installed. Current
 PC `symm_crypto` executable SHA-256 is
 `ba23ee9e53aa17614f127eee219e454c2f36af49aaf0f835f204388868b34060`; ROM
 mask SHA-256 remains `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.
+Committed as `2d00f020` (`Test cross-AID dup_x foreign reference return`).
 
 Physical acceptance remains open. Despite the user reporting all three in
 BOOTSEL, elevated `lsusb -d 2e8a:` still shows three `2e8a:0009` runtime CCID
