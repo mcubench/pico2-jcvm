@@ -34,6 +34,10 @@ public final class DupXApplet extends Applet {
     if (buffer[ISO7816.OFFSET_INS] == (byte) 0x02) {
       return;
     }
+    if (buffer[ISO7816.OFFSET_INS] == (byte) 0x03) {
+      invalidDupXMatrix();
+      return;
+    }
     ISOException.throwIt((short) 0x6D00);
   }
 
@@ -43,5 +47,8 @@ public final class DupXApplet extends Applet {
 
   private static short invalidDupXProbe() {
     return (short) 30;
+  }
+
+  private static void invalidDupXMatrix() {
   }
 }

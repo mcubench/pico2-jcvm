@@ -28078,3 +28078,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R60 open for full invalid/type interpreter coverage and physical acceptance. No physical board is currently exposed as BOOTSEL in this VM.
 - Commit: `d660048f`
 - Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T045849Z.log`; `artifacts/logs/dup-x-host-20261112T045849Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T045849Z.log`; `artifacts/logs/dup-x-invalid-host-20261112T045849Z.log`; `artifacts/logs/build-pc-dup-x-20261112T045849Z.log`
+
+## 2026-11-12 Exercise all invalid dup_x byte operands through VPCD 9 min
+
+- Step/experiment: `RV-20261106-60-VPCD-INVALID-MATRIX-20261112`
+- When: '2026-11-12 05:00 UTC' - '2026-11-12 05:09 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Extended the local generated CAP with a 232-case invalid-byte matrix. Each operation receives 15 input words and up to 30 words of stack capacity, catches `RuntimeException`, then continues; if an invalid operand returns, the probe throws a sentinel failure. The host wrapper verifies all 232 invalid values and normalizes sign-extended trace output to the encoded byte. Updated TODO and HANDOFF. No supplied/upstream CAPs or firmware API implementations changed.
+- Validation: Fixture build passed for 24 legal and 232 invalid cases. Initial assembler attempt exposed short-branch range limits for one shared failure target; changing to an inline fail path fixed assembly. First VPCD attempt exposed signed trace formatting for operands `0x80`–`0xFF`; byte normalization fixed the assertion. `PICO2_HOST_USB_ACCESS=1 ./tools/test-dup-x-vpcd` then passed: all 24 legal and 232 invalid operands observed; four custom APDUs (single caught error, following APDU, invalid matrix, following APDU) each returned `9000`; VPCD summary `pass=6 fail=0`; separate invalid-install case rejects `0x17` with `vm=6F00` before publication. `./tools/test-rmi-registry` passed (`stack_dup_x=1`), including short ordering, reference owner and int-pair helper tests. Latest USB check remains three runtime `2e8a:0009`, no BOOTSEL; no hardware flash. ARM/RISC-V builds were not run because only local test fixture/tooling changed.
+- Result: Complete legal and invalid operand-byte dispatch coverage plus caught-exception recovery and a later APDU now pass through the PC interpreter. Typed cases remain helper-level only; interpreter-level reference/int combinations and physical acceptance remain open. PC binary SHA-256 `ac10a4465e0dfdb935b8813ad266fc783ab19fd88b73f91d01b8bd74cc3a949f`.
+- Decision: Keep R60 open for typed-word interpreter cases and physical acceptance. Continue offline while BOOTSEL is not visible to the VM.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T050807Z.log`; `artifacts/logs/dup-x-host-20261112T050807Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T050807Z.log`; `artifacts/logs/dup-x-invalid-host-20261112T050807Z.log`; `artifacts/logs/build-pc-dup-x-20261112T050807Z.log`; `./tools/test-rmi-registry`

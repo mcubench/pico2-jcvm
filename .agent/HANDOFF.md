@@ -1,3 +1,11 @@
+# Current handoff — R60 full legal and invalid dup_x byte matrix passes VPCD — 2026-11-12 05:09 UTC
+
+Expanded `invalidDupXMatrix()` in the generated local applet CAP to execute every invalid byte operand (256 minus the 24 legal integer-enabled forms). Each case has 15 input words plus stack capacity up to 30, catches its expected `RuntimeException`, and branches to an immediate failure if the invalid instruction returns. The first assembler attempt failed because 232 branches to one distant failure label exceeded the short branch range; the generator now emits the fail call inline. The trace prints signed operands above `0x7f` as sign-extended hex, so the wrapper masks trace values back to one byte before checking coverage.
+
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-dup-x-vpcd` passes. `DUP_X_INVALID_MATRIX_LOG:PASS operands=232`; `artifacts/logs/dup-x-vpcd-20261112T050807Z.log` contains 257 `DUP_X` traces (24 legal, 232 matrix-invalid, plus the separate caught `0x17`). Host log `artifacts/logs/dup-x-host-20261112T050807Z.log` reports `TEST:SUMMARY pass=6 fail=0`, with APDUs 1–4 all returning `9000`; APDU 1 catches `0x17`, APDU 3 runs the full invalid matrix, and APDUs 2/4 verify continued operation. The separate invalid-install test still rejects `0x17` with `vm=6F00`. `./tools/test-rmi-registry` passes, including its short ordering, reference-owner and int-pair helper coverage. PC binary SHA-256: `ac10a4465e0dfdb935b8813ad266fc783ab19fd88b73f91d01b8bd74cc3a949f`.
+
+R60 remains open for interpreter-level typed-word combinations and physical acceptance. The latest elevated BOOTSEL refresh still enumerates three runtime `2e8a:0009` devices, no ROM `2e8a:000f`; no flash was attempted. Continue offline unless a fresh host-access check shows an identified BOOTSEL board. Preserve all unrelated dirty worktree changes.
+
 # Current handoff — R60 catches invalid dup_x and accepts the following APDU — 2026-11-12 05:00 UTC
 
 Extended the local test applet so custom APDU INS `01` executes a runtime-invalid `dup_x 0x17` inside a `RuntimeException` handler; INS `02` is an independent success path. The fixture builder generates this second method with a distinctive legal placeholder, then patches only its CAP opcode to the invalid operand. The VPCD wrapper now archives its host-side transcript and asserts both response statuses.

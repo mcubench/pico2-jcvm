@@ -127,6 +127,56 @@ if invalid_replacements != 1:
     raise SystemExit(
         f"expected one invalidDupXProbe JCA method, found {invalid_replacements}"
     )
+
+if os.environ.get("DUP_X_INVALID_MATRIX") == "1":
+    invalid_operands = [
+        value for value in range(256)
+        if not (
+            1 <= (value >> 4) <= 4
+            and ((value & 0x0F) == 0
+                 or (value >> 4) <= (value & 0x0F) <= (value >> 4) + 4)
+        )
+    ]
+    matrix_lines = ["\t\t\t.stack 30;", "\t\t\t.locals 0;", ""]
+    exception_rows = []
+    for index, _value in enumerate(invalid_operands):
+        matrix_lines.append(f"\t\t\t\tL{index * 3}: sspush {0x1000 + index};")
+        matrix_lines.extend(
+            f"\t\t\t\t\tsspush {word};" for word in range(100, 115)
+        )
+        op_start = f"BadOp{index}"
+        op_end = f"AfterBadOp{index}"
+        handler = f"CatchBadOp{index}"
+        matrix_lines.extend((
+            f"\t\t\t\t{op_start}: dup_x 18;",
+            f"\t\t\t\t{op_end}: sspush 28419;",
+            "\t\t\t\t\tinvokestatic 2;",
+            "\t\t\t\t\treturn;",
+            f"\t\t\t\t{handler}: pop;",
+        ))
+        exception_rows.append(f"\t\t\t\t{op_start} {op_end} {handler} 6;")
+    matrix_lines.extend((
+        "\t\t\t\tLsuccess: return;",
+        "\t\t\t.exceptionTable {",
+        "\t\t\t\t// start_block end_block handler_block catch_type_index",
+        *exception_rows,
+        "\t\t\t}",
+    ))
+    matrix_body = "\n".join(matrix_lines)
+    matrix_pattern = re.compile(
+        r"(?P<header>\s*\.method\s+[^\n]*invalidDupXMatrix\(\)V(?:\s+\d+)?\s*\{)"
+        r"(?P<body>.*?)"
+        r"(?P<close>^\s*\})",
+        re.MULTILINE | re.DOTALL,
+    )
+    updated, matrix_replacements = matrix_pattern.subn(
+        lambda match: match.group("header") + matrix_body + match.group("close"),
+        updated,
+    )
+    if matrix_replacements != 1:
+        raise SystemExit(
+            f"expected one invalidDupXMatrix JCA method, found {matrix_replacements}"
+        )
 path.write_text(updated)
 PY
 
@@ -202,6 +252,48 @@ if os.environ.get("DUP_X_INVALID_RUNTIME") == "1":
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+if os.environ.get("DUP_X_INVALID_MATRIX") == "1":
+    invalid_operands = [
+        value for value in range(256)
+        if not (
+            1 <= (value >> 4) <= 4
+            and ((value & 0x0F) == 0
+                 or (value >> 4) <= (value & 0x0F) <= (value >> 4) + 4)
+        )
+    ]
+    needles = [
+        b"\x11" + (0x1000 + index).to_bytes(2, "big")
+        + b"".join(b"\x11" + word.to_bytes(2, "big")
+                  for word in range(100, 115))
+        + b"\x3f\x12"
+        for index in range(len(invalid_operands))
+    ]
+    with ZipFile(source, "r") as cap:
+        entries = [(entry, cap.read(entry.filename)) for entry in cap.infolist()]
+    found = [0] * len(needles)
+    updated_entries = []
+    for entry, content in entries:
+        if entry.filename.endswith("/Method.cap"):
+            for index, (needle, invalid) in enumerate(zip(needles, invalid_operands)):
+                matches = content.count(needle)
+                found[index] += matches
+                if matches == 1:
+                    content = content.replace(
+                        needle, needle[:-1] + bytes([invalid]), 1)
+        updated_entries.append((entry, content))
+    if any(count != 1 for count in found):
+        bad = [index for index, count in enumerate(found) if count != 1]
+        raise SystemExit(f"invalid operand marker match counts are not one at {bad[:8]}")
+    fd, temporary = tempfile.mkstemp(dir=os.path.dirname(source), suffix=".cap")
+    os.close(fd)
+    try:
+        with ZipFile(temporary, "w", ZIP_DEFLATED) as cap:
+            for entry, content in updated_entries:
+                cap.writestr(entry, content)
+        os.replace(temporary, source)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
               "Class", "Method", "StaticField", "RefLocation", "Descriptor")
 with ZipFile(source) as cap, open(target, "wb") as output:
@@ -215,5 +307,7 @@ with ZipFile(source) as cap, open(target, "wb") as output:
 label = "matrix=24" if matrix else f"operand=0x{operand:02X}"
 if os.environ.get("DUP_X_INVALID_RUNTIME") == "1":
     label += " invalid_runtime=0x17"
+if os.environ.get("DUP_X_INVALID_MATRIX") == "1":
+    label += " invalid_matrix=232"
 print(f"DUP_X_CAP:PASS {label} cap={source} load_code={target}")
 PY
