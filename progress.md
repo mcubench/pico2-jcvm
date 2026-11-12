@@ -19526,7 +19526,7 @@
 - Validation: `python3 tools/tests/sio_cross_aid_vpcd_test.py` regenerated all three JC 3.0.5 CAPs (zero converter errors/warnings) and passed six assertions. Positive call returned `45679000`; denied service lookup returned `6A019000`; local array was rejected and caught, returning `6A039000`. Physical probe compiles with `tools/env javac`; shell syntax and scoped diff checks pass. Firmware builds were not repeated because only test fixture and documentation changed.
 - Result: VPCD now covers positive cross-AID arguments/context AIDs, explicit service denial and applet-local reference rejection. The same image's physical fixture remains blocked at service applet installation stage 9; the new negative APDUs have not run on hardware.
 - Decision: Keep CTX-01 open. Preserve both denial regressions and resume physical execution after stage-9 install is diagnosed or a clean card is available.
-- Commit: pending.
+- Commit: `63a3cd43` (progress-record hash backfill committed separately).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214753Z.log`.
 
 ## 2026-11-01 — Verify cross-AID 32-bit argument and return 10 minutes
