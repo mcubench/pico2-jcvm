@@ -28373,5 +28373,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-rmi-registry` passed its complete root/context suite, including retained cycles/diamonds, peer static/proxy roots, fail-closed ambiguity, transient-array lifecycle, and owner-slot reuse. `./tools/test-rmi-cap-metadata` passed (`package_name=bounded`, `signature_pool=4`, `remote_methods=2`, interface/class `Counter`).
 - Result: RMI-related persistent root regressions remain green on the current shared tree. This is host unit evidence only.
 - Decision: Keep RESOURCE-01 and RMI physical acceptance open; continue with physical response tracing when the guest sees BOOTSEL.
-- Commit: pending.
+- Commit: `4345d2e3` (RMI test evidence and status handoff); this progress-record hash backfill is committed separately.
 - Artifacts/logs: Test output was inspected directly; no separate logs.
