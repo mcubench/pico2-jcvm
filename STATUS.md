@@ -26,6 +26,9 @@ current physical-test handoff.
 - Commit `5c78e647` adds gated markers around applet return, `fs_sync()` and
   CCID response submission. Focused tests pass: CCID progress flow 21/21 and
   APDU routing 17/17. The diagnostic image has not been flashed yet.
+- Current-tree persistent-transaction, persistent-inventory and RP2350
+  filesystem-overlay suites pass (`TEST:SUMMARY fail=0`); overlay tests include
+  modeled power cuts and full-index compaction. This is host-only evidence.
 
 ## Hardware and current evidence
 

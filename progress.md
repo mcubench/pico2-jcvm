@@ -28267,3 +28267,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue with offline work while guest-visible BOOTSEL/PCSC is unavailable; resume the physical trace test when the mode is actually exposed.
 - Commit: `0a7efaf4`
 - Artifacts/logs: JCAlgTest records under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/`; current diagnostic image hash `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`.
+
+## 2026-11-12 Recheck persistent reclamation host suites 3 min
+
+- Step/experiment: `RESOURCE-01-HOST-REGRESSION-RECHECK-20261112`
+- When: '2026-11-12 10:53 UTC' - '2026-11-12 10:56 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Re-ran the focused persistent transaction, inventory and RP2350 overlay regression suites against the current shared worktree and recorded their present result in TODO and STATUS. No implementation source changed.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`); `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including 1,000 randomized multi-record cuts, 1,000 reclamation cuts, recovery, and compaction cases. No physical test ran because guest USB exposes runtime devices only and PC/SC has no Pico reader.
+- Result: Current host-model safety and recovery coverage remains green. These tests do not resolve the physical post-applet stall or complete long-run acceptance.
+- Decision: Preserve the host coverage and continue with offline implementation/review while waiting for a guest-visible physical interface.
+- Commit: `to be recorded in the commit-hash backfill`
+- Artifacts/logs: Build/test outputs inspected in command sessions; no separate result files.
