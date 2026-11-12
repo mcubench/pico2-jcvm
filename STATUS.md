@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 11:44 UTC
+Updated: 2026-11-12 11:47 UTC
 
 ## Goal
 
@@ -37,6 +37,9 @@ current physical-test handoff.
   were reclaimed, while the live-static case confirmed the root survived until
   it was cleared. These runs use the PC VPCD backend and are not physical
   acceptance.
+- Current shared-tree RMI registry tests pass: `./tools/test-rmi-registry`
+  (including cycles, diamonds, peer static/proxy roots, fail-closed ambiguous
+  roots and transient-array lifecycle) and `./tools/test-rmi-cap-metadata`.
 
 ## Hardware and current evidence
 

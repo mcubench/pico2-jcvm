@@ -28363,3 +28363,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open; use the quiet CCID trace image on a physical Pico after guest BOOTSEL passthrough returns, then continue unchanged 1.8.4 option 1/2 campaigns.
 - Commit: `b330cb12` (test results, TODO, status and handoff); this progress-record hash backfill is committed separately.
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261112T113705Z.log`, `113846Z.log`, `114015Z.log`, `114204Z.log`, `114400Z.log`.
+
+## 2026-11-12 Recheck RMI persistent-root unit suites 3 min
+
+- Step/experiment: `RESOURCE-01-RMI-ROOT-REGRESSION-20261112`
+- When: '2026-11-12 11:44 UTC' - '2026-11-12 11:47 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Ran the current shared-tree RMI registry and CAP metadata unit suites and recorded their evidence in TODO, STATUS and HANDOFF. No test source, runtime source, or fixture changed.
+- Validation: `./tools/test-rmi-registry` passed its complete root/context suite, including retained cycles/diamonds, peer static/proxy roots, fail-closed ambiguity, transient-array lifecycle, and owner-slot reuse. `./tools/test-rmi-cap-metadata` passed (`package_name=bounded`, `signature_pool=4`, `remote_methods=2`, interface/class `Counter`).
+- Result: RMI-related persistent root regressions remain green on the current shared tree. This is host unit evidence only.
+- Decision: Keep RESOURCE-01 and RMI physical acceptance open; continue with physical response tracing when the guest sees BOOTSEL.
+- Commit: pending.
+- Artifacts/logs: Test output was inspected directly; no separate logs.

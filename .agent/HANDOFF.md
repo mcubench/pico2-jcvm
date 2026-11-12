@@ -1,4 +1,4 @@
-# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:44 UTC
+# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:47 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -85,6 +85,13 @@ cleared. Logs are `artifacts/logs/object-deletion-vpcd-20261112T113705Z.log`,
 `113846Z.log`, `114015Z.log`, `114204Z.log`, and `114400Z.log`. These are PC
 VPCD results, not physical evidence. The physical reader/BOOTSEL mode remains
 unavailable in the guest.
+
+The current shared-tree RMI registry root suite (`./tools/test-rmi-registry`)
+and RMI CAP metadata suite (`./tools/test-rmi-cap-metadata`) also pass. Registry
+assertions cover retained context cycles and diamonds, peer static and proxy
+roots, fail-closed ambiguous roots, transient-array lifecycle, and owner-slot
+reuse. This supplements host root coverage only; physical acceptance is still
+required.
 
 Identity-pinned flash attempts to D92 and 8E both found the exact runtime
 device but `picotool` reported `Unable to locate reset interface`; the CDC-1200
