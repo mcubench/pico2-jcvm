@@ -28265,5 +28265,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Read all three JCAlgTest `run-info.txt` files and client-log tails; `ps` shows no JCAlgTest client process. The corrected D92 run has 51 rows and `SCARD_E_NOT_TRANSACTED`; the option-2 and earlier option-1 traces are `KeyboardInterrupt`, while the 8E run ends in `SCARD_E_NOT_TRANSACTED` with separate heap/OOM evidence. Current host-access USB/PCSC output is recorded in the preceding entry. `git diff --check -- TODO.md STATUS.md` passed. No source build or hardware write was needed for this documentation correction.
 - Result: Current high-level status no longer presents stopped campaigns or a historical image as current. RESOURCE-01 and whole-project acceptance remain open.
 - Decision: Continue with offline work while guest-visible BOOTSEL/PCSC is unavailable; resume the physical trace test when the mode is actually exposed.
-- Commit: `to be recorded in the commit-hash backfill`
+- Commit: `0a7efaf4`
 - Artifacts/logs: JCAlgTest records under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/`; current diagnostic image hash `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`.
