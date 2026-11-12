@@ -1031,11 +1031,16 @@ void process_message(uint8_t rhport) {
 #ifdef CHOUPI_DEBUG_HEAP_GC
         std::printf("CHOUPI:CCID_APPLET stage=fs_sync_begin\r\n");
         std::fflush(stdout);
+        const uint32_t fs_sync_started_us = time_us_32();
 #endif
         const uint8_t sync_status = fs_sync();
 #ifdef CHOUPI_DEBUG_HEAP_GC
-        std::printf("CHOUPI:CCID_APPLET stage=fs_sync_end status=%u\r\n",
-                    static_cast<unsigned>(sync_status));
+        const uint32_t fs_sync_elapsed_us =
+            time_us_32() - fs_sync_started_us;
+        std::printf("CHOUPI:CCID_APPLET stage=fs_sync_end status=%u "
+                    "elapsed_us=%lu\r\n",
+                    static_cast<unsigned>(sync_status),
+                    static_cast<unsigned long>(fs_sync_elapsed_us));
         std::fflush(stdout);
 #endif
         if (sync_status != 0) {

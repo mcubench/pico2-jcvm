@@ -28279,3 +28279,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Preserve the host coverage and continue with offline implementation/review while waiting for a guest-visible physical interface.
 - Commit: `fad359d2`
 - Artifacts/logs: Build/test outputs inspected in command sessions; no separate result files.
+
+## 2026-11-12 Add persistent-sync duration to CCID trace 5 min
+
+- Step/experiment: `RESOURCE-01-CCID-FS-SYNC-TIMING-20261112`
+- When: '2026-11-12 10:58 UTC' - '2026-11-12 11:03 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Extended the debug-gated applet response trace to report elapsed microseconds for `fs_sync()`. The timer begins after the `fs_sync_begin` serial marker is flushed and uses unsigned 32-bit subtraction for timer wrap safety. Normal builds do not compile or run this timing code.
+- Validation: `./tools/test-ccid-progress-flow` passed 21/21; `./tools/test-ccid-apdu-route` passed 17/17; scoped `git diff --check -- src/ccid_device.cpp` passed. `PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the RISC-V equivalent passed. ARM reports firmware end `0x100F5030`, leaving 45,008 bytes before `0x10100000`. The build used dirty worktree HEAD `357beacf`; no image was flashed because no BOOTSEL device is exposed to the guest.
+- Result: A future trace can distinguish a long/blocked snapshot sync from a later CCID transfer stall. This firmware change remains physically unverified.
+- Decision: Commit the gated timing probe, rebuild/package from the resulting commit ID, and use it on an identified Pico only after guest-visible BOOTSEL returns.
+- Commit: `to be recorded in the commit-hash backfill`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` and `build/riscv/pico2_jcvm_smoke.uf2`; the current empty-card diagnostic UF2 should be regenerated from the commit after build.
