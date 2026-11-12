@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+for architecture in arm riscv; do
+  build_dir="${repo_root}/build/${architecture}"
+  cache="${build_dir}/CMakeCache.txt"
+  [[ -s "${cache}" ]] || die "${architecture} CMake cache is missing"
+  for option in CHOUPI_DEBUG_CCID_APPLET CHOUPI_DEBUG_PERSISTENT_GC; do
+    if ! grep -qx "${option}:BOOL=OFF" "${cache}"; then
+      die "${architecture} build must have ${option}=OFF for this check"
+    fi
+  done
+  if [[ "${architecture}" == arm ]]; then
+    binary="${build_dir}/pico2_choupi.elf"
+    [[ -s "${binary}" ]] || die "ARM CHOUPI ELF is missing; build it first"
+    strings "${binary}" > "${build_dir}/no-debug-trace-strings.txt"
+    if grep -Eq 'CHOUPI:APDU_PROCESS stage=|CHOUPI:PERSIST_REF tag_len=' \
+        "${build_dir}/no-debug-trace-strings.txt"; then
+      die "ARM no-debug ELF contains verbose per-APDU or persistence trace strings"
+    fi
+    grep -q 'OBJECT_DELETION:HEAP_GC' "${build_dir}/no-debug-trace-strings.txt" ||
+      die "ARM ELF lacks object-deletion event telemetry"
+    printf 'NO_DEBUG_TRACES:PASS architecture=arm object_deletion_events=present\n'
+  else
+    object="${build_dir}/CMakeFiles/choupi_vm_core.dir/choupi/src/jc_handlers/flashmemory.cpp.o"
+    [[ -s "${object}" ]] || die "RISC-V flash-memory VM object is missing; build it first"
+    if strings "${object}" | grep -q 'CHOUPI:PERSIST_REF tag_len='; then
+      die "RISC-V VM object contains disabled persistent-reference trace strings"
+    fi
+    grep -qx 'CHOUPI_ENABLE_OBJECT_DELETION:BOOL=ON' "${cache}" ||
+      die "RISC-V VM core was not built with object deletion enabled"
+    printf 'NO_DEBUG_TRACES:PASS architecture=riscv object_deletion=enabled\n'
+  fi
+done

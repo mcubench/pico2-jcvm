@@ -28483,3 +28483,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Next implement and validate BOOTSEL-01 offline; physical acceptance remains open until a board is available.
 - Commit: This documentation commit, identifiable by subject `Prioritize BOOTSEL recovery as P0`.
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; none generated.
+
+## 2026-11-12 Gate verbose traces in debug-off max_crypto image 27 minutes
+
+- Step/experiment: `BUILD-DBG-01-NODEBUG-MARKERS`
+- When: '2026-11-12 13:17 UTC' - '2026-11-12 13:44 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Gated per-APDU `APDU_PROCESS` and persistent-reference `PERSIST_REF` diagnostics on the existing `CHOUPI_DEBUG_CCID_APPLET` and `CHOUPI_DEBUG_PERSISTENT_GC` switches. Added `tools/test-no-debug-traces` and refreshed the Windows external-test request to a newly packaged empty-card `max_crypto` image with object deletion enabled.
+- Validation: The regression failed before the fix because the debug-off ARM ELF contained both trace strings. `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the matching RISC-V wrapper both passed. `./tools/test-no-debug-traces` passed for ARM (verbose strings absent, object-deletion event string present) and RISC-V (object deletion enabled; persistent-reference trace absent from the VM object). Empty-card packaging passed: 3,907 firmware UF2 blocks and 4,096 erased storage blocks. `bash -n tools/test-no-debug-traces` and targeted `git -c core.whitespace=cr-at-eol diff --check` passed; unscoped diff check still reports pre-existing whitespace in unrelated dirty files. No hardware flash of this new image; USB currently reports runtime readers, not BOOTSEL.
+- Result: The rebuilt ARM UF2 is 4,098,048 bytes, SHA-256 `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`; firmware UF2 SHA-256 `7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`; CPLC source ID `31CB571C064FA40F`. ARM firmware ends at `0x100F4204`, leaving 48,636 bytes. The prior `ed5716bb` image is superseded. Physical validation remains open.
+- Decision: Use the refreshed UF2 and exact hash in `.agent/EXT_REQUESTS.md`. Continue P0 BOOTSEL-01 offline, then flash only after the new image and target are visible through the authorized path.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2`; `build/arm/build-provenance.txt`; `build/arm/no-debug-trace-strings.txt`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option2-gc-nodebug/`; `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-gc-nodebug/`.

@@ -1619,6 +1619,7 @@ FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
 void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
                                                        const jref_t value,
                                                        Heap &heap) {
+#ifdef CHOUPI_DEBUG_PERSISTENT_GC
   static uint16_t deep_trace_count = 0;
   if (!value.isNullPointer() && tag.len >= 19 && deep_trace_count < 64) {
     if (value.isArray()) {
@@ -1635,6 +1636,7 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
     }
     ++deep_trace_count;
   }
+#endif
 
   try {
   if (value.isNullPointer()) {

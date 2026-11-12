@@ -41,6 +41,18 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
 - Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM and RISC-V with repository wrappers and resolve errors/warnings before flashing. When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
 - Current constraint: **devices are in use; do not probe, reset, flash or otherwise access physical devices for this task until they are available.** Implement and validate offline first. Keep physical acceptance open, and distinguish firmware reset failure from guest passthrough/re-enumeration failure using evidence rather than assumptions.
 
+### BUILD-DBG-01
+
+- [x] **Remove verbose APDU and persistence traces from debug-off firmware.** On
+  2026-11-12, ELF inspection found `APDU_PROCESS` and `PERSIST_REF` strings
+  compiled into a debug-off ARM image. Both are now gated by their existing
+  debug options. ARM and RISC-V `max_crypto` builds with object deletion ON
+  pass; `./tools/test-no-debug-traces` confirms the ARM ELF retains concise
+  object-deletion events and omits both verbose traces. A fresh empty-card UF2
+  is referenced in `.agent/EXT_REQUESTS.md`. It has not been flashed; guest USB
+  currently exposes runtime devices rather than BOOTSEL. See
+  `BUILD-DBG-01-NODEBUG-MARKERS` in `progress.md`.
+
 ## Resource lifecycle
 
 ### RESOURCE-02

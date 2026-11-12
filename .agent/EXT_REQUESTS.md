@@ -2,25 +2,31 @@
 
 ## WIN_MAXCRYPTO_GC_NODEBUG_20261112 — Windows test: max_crypto with object deletion, no debug tracing
 
-Please test this fresh ARM image on Windows. It has `max_crypto` capabilities,
+The original image listed below was superseded on 2026-11-12 after inspection
+found verbose APDU and persistent-reference trace strings still compiled in
+despite the debug switches being off. Those traces are now gated by their
+existing debug options. Please test this rebuilt ARM image on Windows. It has `max_crypto` capabilities,
 deferred JCSystem object deletion enabled, an empty persistent-storage region,
 and no preinstalled applet. Heap-GC, CCID-applet and persistent-GC debug
 tracing are disabled; concise object-deletion event summaries remain in serial
 output.
 
-- [Standalone UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2)
-- SHA-256: `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`
-- Size: 4,099,584 bytes; source HEAD `ed5716bb`, dirty worktree; CPLC source ID
-  `ED5716BBDB878EE2`; firmware SHA-256
-  `d588f1cb72a06fdb99870db3f44a83cef0130e39a79fc8f09c6491b4d2c3fb03`.
+- [Standalone UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2)
+- SHA-256: `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`
+- Size: 4,098,048 bytes; source HEAD `31cb571c`, dirty worktree; CPLC source ID
+  `31CB571C064FA40F`; firmware SHA-256
+  `7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`.
 - Build provenance: ARM and RISC-V `max_crypto` wrappers passed;
   `object_deletion=ON`; `debug_heap_gc=OFF`; `debug_ccid_applet=OFF`;
-  `debug_persistent_gc=OFF`.
+  `debug_persistent_gc=OFF`. `./tools/test-no-debug-traces` passed for both
+  architectures; the ARM ELF has no per-APDU or persistent-reference trace
+  strings and retains object-deletion event reporting. The RISC-V wrapper
+  builds the VM core only, not full CHOUPI firmware.
 
 Windows PowerShell steps:
 
 1. Verify the downloaded image:
-   `Get-FileHash .\pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2 -Algorithm SHA256`
+   `Get-FileHash .\pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2 -Algorithm SHA256`
    and compare with the hash above.
 2. Hold BOOTSEL while connecting the Pico 2. Copy the UF2 to the `RPI-RP2`
    drive and wait for it to disappear/re-enumerate.

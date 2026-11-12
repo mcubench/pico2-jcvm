@@ -2040,7 +2040,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                  command != nullptr && command_length > 1 ? command[1] : 0);
   }
 #endif
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
   std::printf("CHOUPI:APDU_PROCESS stage=begin\r\n");
   std::fflush(stdout);
 #endif
@@ -2062,7 +2062,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
   uint16_t data_length = 0;
   try {
     if (!selected_applet_context || !selected_applet_is_active) {
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
       std::printf("CHOUPI:APDU_PROCESS stage=no_active_applet\r\n");
       std::fflush(stdout);
 #endif
@@ -2226,7 +2226,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                    static_cast<unsigned>(method.first.getPackageID()),
                    static_cast<unsigned>(method.second));
     }
-#else
+#elif defined(CHOUPI_DEBUG_CCID_APPLET)
     std::printf("CHOUPI:APDU_PROCESS stage=interpreter_begin package=%u method=%u\r\n",
                 static_cast<unsigned>(method.first.getPackageID()),
                 static_cast<unsigned>(method.second));
@@ -2236,7 +2236,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
       APDUProcessScope process_scope(context);
       status = interpretor.run();
     }
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
     std::printf("CHOUPI:APDU_PROCESS stage=interpreter_end sw=%04X\r\n",
                 static_cast<unsigned>(status));
     std::fflush(stdout);
@@ -2321,11 +2321,15 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
 #else
   // Keep Java handles stable by collecting only after interpreter/native call
   // scopes have returned and the complete typed root walk has succeeded.
+#ifdef CHOUPI_DEBUG_CCID_APPLET
   std::printf("CHOUPI:APDU_PROCESS stage=gc_begin\r\n");
   std::fflush(stdout);
+#endif
   collect_heap_after_apdu();
+#ifdef CHOUPI_DEBUG_CCID_APPLET
   std::printf("CHOUPI:APDU_PROCESS stage=gc_end\r\n");
   std::fflush(stdout);
+#endif
 #endif
 
   if (static_cast<uint32_t>(data_length) + 2 > response_capacity) {
@@ -2335,7 +2339,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
   response[data_length] = static_cast<uint8_t>(status >> 8);
   response[data_length + 1] = static_cast<uint8_t>(status);
   *response_length = static_cast<uint16_t>(data_length + 2);
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
   std::printf("CHOUPI:APDU_PROCESS stage=end sw=%04X len=%u\r\n",
               static_cast<unsigned>(status),
               static_cast<unsigned>(*response_length));

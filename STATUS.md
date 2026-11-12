@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 13:10 UTC
+Updated: 2026-11-12 13:44 UTC
 
 ## Goal
 
@@ -24,7 +24,9 @@ current physical-test handoff.
   JCAlgTest 1.8.4 install and SELECT succeeded. Other dependency validation and
   full physical acceptance remain open.
 
-- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2). SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`, 4,099,584 bytes. ARM and RISC-V wrappers pass; provenance is source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`, object deletion ON, heap-GC, CCID-applet and persistent-GC debug OFF. The image clears persistent storage and contains no preinstalled applet. Deletion event summaries remain at runtime; per-object and CCID debug traces are compiled out. This is not a release build. Initial packaging preceded the physical flash described below.
+- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2). SHA-256 `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`, 4,098,048 bytes. ARM and RISC-V wrappers pass with `object_deletion=ON` and heap-GC, CCID-applet and persistent-GC debug switches OFF; RISC-V builds the VM core only. The build from source HEAD `31cb571c` uses a dirty worktree and CPLC source ID `31CB571C064FA40F`. `./tools/test-no-debug-traces` confirms the ARM ELF omits verbose APDU/persistent-reference trace strings while retaining concise object-deletion events. The image clears persistent storage and has no preinstalled applet. Firmware SHA-256 is `7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`; this is not a release build.
+  The prior `ed5716bb` package is superseded because it retained those verbose
+  traces despite the debug switches being off.
   Correction: On 2026-11-12 the image was flashed through the identity-pinned
   wrapper to D92 (`D92E743D5F640C0F`), 8E (`8E464F4E2BBC0A19`) and 2BED
   (`2BED26ED20556535`), each with `FLASH:PASS`. All three finite serial monitors
