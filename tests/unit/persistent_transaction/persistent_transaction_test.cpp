@@ -2605,6 +2605,67 @@ int main() {
   }
 
   {
+    // Model an incomplete object edge walk: the durable owner object is a
+    // live root, its alias field is still present, but the current CAP field
+    // layout does not enumerate that slot. Reclamation must keep the target
+    // body while a reachable alias source still names it.
+    constexpr uint8_t owner = 0x58;
+    constexpr uint8_t package_id = 0x56;
+    const uint16_t previous_field_count =
+        persistent_transaction_test::instance_field_count;
+    persistent_transaction_test::instance_field_count = 0;
+    jcvm::Heap heap(owner);
+    const auto root_tag =
+        jcvm::FlashMemory_Handler::getAppletInstanceTag(1, package_id, 3);
+    const auto root_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, package_id, 3));
+    auto root_instance = heap.getInstance(root_reference);
+    jcvm::FlashMemory_Handler::setPersistentField_Instance(
+        root_tag, *root_instance, heap);
+    const auto alias_tag = jcvm::FlashMemory_Handler::computeTag(
+        root_instance->getPersistentTag(), 0);
+    jcvm::fs::Tag body_tag = alias_tag;
+    body_tag.value[body_tag.len++] = 0xff;
+    body_tag.value[body_tag.len++] = 0xff;
+    body_tag.value[body_tag.len++] = 0;
+    body_tag.value[body_tag.len++] = 0;
+    body_tag.value[body_tag.len++] = 0;
+    body_tag.value[body_tag.len++] = 0x45;
+    persistent_transaction_test::seed(
+        body_tag.value, body_tag.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+         0, 1, 0x5a});
+    std::vector<uint8_t> alias_record{0xfd, body_tag.len};
+    alias_record.insert(alias_record.end(), body_tag.value,
+                        body_tag.value + body_tag.len);
+    persistent_transaction_test::seed(alias_tag.value, alias_tag.len,
+                                      std::move(alias_record));
+
+    const std::vector<jcvm::jref_t> roots{root_reference};
+    RootVectorContext root_context{&roots};
+    uint32_t erased = 0;
+    const auto result = jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+        owner, heap, enumerate_root_vector, &root_context, &erased, 8);
+    bool alias_target_restores = false;
+    try {
+      const auto array_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              alias_tag, heap);
+      alias_target_restores =
+          heap.getArray(array_reference)->getByteEntry(0) == 0x5a;
+    } catch (jcvm::Exceptions) {
+      alias_target_restores = false;
+    }
+    expect(result == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 0 &&
+               !persistent_transaction_test::read(body_tag.value,
+                                                  body_tag.len).empty() &&
+               alias_target_restores,
+           "reachable_durable_alias_protects_body_from_incomplete_heap_walk");
+    persistent_transaction_test::instance_field_count = previous_field_count;
+  }
+
+  {
     constexpr uint8_t owner = 0x55;
     constexpr uint8_t array_alias_owner = 0x56;
     constexpr uint8_t object_alias_owner = 0x57;

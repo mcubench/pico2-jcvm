@@ -14,6 +14,9 @@ namespace PersistentInventory {
 
 namespace {
 constexpr uint8_t kPersistentForeignReference = 8;
+constexpr uint8_t kPersistentObjectAlias = 0xfe;
+constexpr uint8_t kPersistentArrayAlias = 0xfd;
+constexpr uint8_t kMaximumAliasDepth = 32;
 
 struct VectorRoots {
   const std::vector<jref_t> *references;
@@ -55,7 +58,90 @@ struct CandidateContext {
   TagVisitor visitor;
   void *visitor_context;
   const std::vector<Tag> *foreign_alias_targets;
+  VisitResult failure = VisitResult::Complete;
 };
+
+// A reachable serialized field alias is itself a durable reference. The
+// object walk normally marks its body target, but keep the body if that edge
+// was missed by the in-memory graph (for example, a stale field layout or a
+// partially restored object). This is deliberately conservative: once the
+// alias field is cleared or its owner becomes unreachable, a later bounded
+// pass can reclaim the body.
+bool reachableAliasTargetsBody(const Tag &candidate, Heap &heap,
+                               VisitResult &failure) {
+  if (candidate.len < 7 ||
+      candidate.value[candidate.len - 6] != 0xff ||
+      (candidate.value[candidate.len - 5] != 0xfe &&
+       candidate.value[candidate.len - 5] != 0xff)) {
+    return false;
+  }
+
+  Tag source{};
+  source.len = static_cast<uint8_t>(candidate.len - 6);
+  std::memcpy(source.value, candidate.value, source.len);
+  fs::Tag heap_source{};
+  heap_source.len = source.len;
+  std::memcpy(heap_source.value, source.value, source.len);
+  if (!heap.hasReachablePersistentTagPrefix(heap_source) ||
+      fs_exists(source.value, source.len) == 0) {
+    return false;
+  }
+
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  if (fs_read_inplace(source.value, source.len, &data, &length) != 0 ||
+      data == nullptr || length == 0) {
+    failure = VisitResult::ReadFailure;
+    return false;
+  }
+
+  Tag current = source;
+  for (uint8_t depth = 0; depth < kMaximumAliasDepth; ++depth) {
+    if (data[0] != kPersistentObjectAlias &&
+        data[0] != kPersistentArrayAlias) {
+      return false;
+    }
+    if (length < 2 || data[1] == 0 || data[1] > kTagCapacity ||
+        length != 2u + data[1]) {
+      failure = VisitResult::InvalidTag;
+      return false;
+    }
+
+    Tag target{};
+    target.len = data[1];
+    std::memcpy(target.value, data + 2, target.len);
+    if (target.len == candidate.len &&
+        std::memcmp(target.value, candidate.value, candidate.len) == 0) {
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+      std::printf("OBJECT_DELETION:CANDIDATE stage=alias-protect source=");
+      for (uint8_t index = 0; index < source.len; ++index) {
+        std::printf("%02X", source.value[index]);
+      }
+      std::printf(" target=");
+      for (uint8_t index = 0; index < candidate.len; ++index) {
+        std::printf("%02X", candidate.value[index]);
+      }
+      std::printf("\r\n");
+      std::fflush(stdout);
+#endif
+      return true;
+    }
+
+    current = target;
+    if (fs_exists(current.value, current.len) == 0) {
+      failure = VisitResult::ReadFailure;
+      return false;
+    }
+    if (fs_read_inplace(current.value, current.len, &data, &length) != 0 ||
+        data == nullptr || length == 0) {
+      failure = VisitResult::ReadFailure;
+      return false;
+    }
+  }
+
+  failure = VisitResult::InvalidTag;
+  return false;
+}
 
 bool hasForeignAliasRoot(const Tag &candidate,
                          const std::vector<Tag> &targets) {
@@ -112,6 +198,10 @@ bool visitUnreachableTag(const Tag &tag, void *opaque) {
       hasForeignAliasRoot(tag, *context.foreign_alias_targets);
 #endif
   if (reachable || foreign_root) return true;
+  if (reachableAliasTargetsBody(tag, *context.heap, context.failure)) {
+    return true;
+  }
+  if (context.failure != VisitResult::Complete) return false;
   return context.visitor(tag, context.visitor_context);
 }
 } // namespace
@@ -156,10 +246,6 @@ VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
 }
 
 namespace {
-constexpr uint8_t kPersistentObjectAlias = 0xfe;
-constexpr uint8_t kPersistentArrayAlias = 0xfd;
-constexpr uint8_t kMaximumAliasDepth = 32;
-
 struct AliasTargetSearch {
   uint8_t owner;
   TagVisitor visitor;
@@ -391,7 +477,9 @@ static VisitResult visitUnreachableAppletTagsWithAliasTargets(
 
   CandidateContext context{&heap, applet_owner, candidate_visitor,
                            candidate_context, &foreign_alias_targets};
-  return visitApplet(applet_owner, visitUnreachableTag, &context);
+  const VisitResult result =
+      visitApplet(applet_owner, visitUnreachableTag, &context);
+  return context.failure == VisitResult::Complete ? result : context.failure;
 }
 
 VisitResult visitUnreachableAppletTags(
