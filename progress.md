@@ -28018,3 +28018,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close the software portion of RV-33. Keep wrapper-mediated build usage as the supported path; physical flash work requires a fresh elevated identity check.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/concurrent-builds-20261112T035503Z/`
+
+## 2026-11-12 Rebuild max_crypto and check reported BOOTSEL boards 13 min
+
+- Step/experiment: `RV-34-BOOTSEL-IDENTITY-RECHECK`
+- When: '2026-11-12 04:05 UTC' - '2026-11-12 04:18 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Rebuilt ARM and RISC-V with `max_crypto` after the RV-33 concurrent-profile test had left `build/arm` at `base`. Refreshed elevated USB state and recorded the observed mismatch against the user's BOOTSEL report.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. ARM support and ROM/JNI generation manifests passed. `lsusb`, `lsusb -t`, repository-pinned `picotool info -a`, and the authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` were run through elevated host access. Guest sees three runtime `2e8a:0009` interfaces at `1-3`, `1-4`, `1-5`; no BOOTSEL `2e8a:000f`; picotool cannot connect/read chip IDs; reader helper finds zero JCVM CCID devices. Flash was intentionally skipped because the target state and identity could not be verified.
+- Result: Prepared ARM max image `build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256 `0c3f9de85b7e2c412262d69018866a8fa84a49d636376b1035b37ae70fd447c1`; firmware end `0x100F3BCC`, 50,228 bytes left in configured 1 MiB window. CPLC source ID `0xF912930E08BE1DAE` identifies source commit `f912930e`. Image is not flashed; physical acceptance remains open.
+- Decision: Keep RV-34 physical validation open. Do not flash until guest USB reports a matching BOOTSEL device with readable chip ID.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; build provenance `build/arm/build-provenance.txt`; USB discovery was read-only and not archived separately.

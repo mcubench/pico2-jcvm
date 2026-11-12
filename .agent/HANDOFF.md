@@ -1,3 +1,25 @@
+# Current handoff — max_crypto rebuilt; user-reported BOOTSEL still enumerates as runtime — 2026-11-12 04:18 UTC
+
+After the RV-33 concurrency test left the ARM output at profile `base`, rebuilt
+both architecture gates with `max_crypto`: `./tools/build arm --profile
+max_crypto` and `./tools/build riscv --profile max_crypto` passed. ARM image is
+`build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
+`0c3f9de85b7e2c412262d69018866a8fa84a49d636376b1035b37ae70fd447c1`. It ends
+at `0x100F3BCC`, leaving 50,228 bytes in the 1 MiB configured firmware window.
+The generation and build provenance checks pass. CPLC source ID is
+`0xF912930E08BE1DAE`, identifying source commit `f912930e` (the RV-33 progress
+SHA backfill); the later documentation-only commit does not change firmware
+sources. The image has not been flashed.
+
+The user reports three boards in BOOTSEL, but elevated guest checks still show
+three runtime `2e8a:0009` interfaces at USB paths `1-3`, `1-4`, `1-5`, and no
+`2e8a:000f` BOOTSEL device. The authorized `pico2-pcsc-reader` helper found
+zero JCVM CCID readers. Pinned picotool cannot connect to the runtime USB
+interfaces and exposes no chip IDs. Do not load an image or reset an arbitrary
+board from these ambiguous interfaces. Repeat the guest enumeration only when
+USB passthrough changes; flash only after a target's BOOTSEL chip ID can be
+verified. RV-34 physical verification remains open.
+
 # Current handoff — RV-33 shared generation locking validated — 2026-11-12 04:05 UTC
 
 Completed RV-20261106-33 in commit `c1af094e`. `tools/build` and standalone `tools/build-pc` now
