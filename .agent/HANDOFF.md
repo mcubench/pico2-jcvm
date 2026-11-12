@@ -1,3 +1,19 @@
+# Current handoff — R60 valid and invalid dup_x interpreter cases pass on VPCD — 2026-11-12 04:34 UTC
+
+`./tools/test-rmi-registry` passes the stack-helper matrix: all M/N byte
+combinations, exact short ordering, underflow/overflow state preservation,
+reference-owner metadata and int pairs. Fresh `./tools/test-dup-x-vpcd` also
+passes a valid `dup_x 0x12` during applet INSTALL/SELECT and rejects invalid
+`dup_x 0x17` during INSTALL with `vm=6F00`, before `VPCD:APPLET_INSTALLED`.
+Logs: `artifacts/logs/dup-x-vpcd-20261112T042945Z.log` and
+`artifacts/logs/dup-x-invalid-vpcd-20261112T042945Z.log`. PC emulator SHA-256:
+`c9d07963633be21451e5d36a263fe483631d62f8d561c817516d95f01249f6c6`.
+
+R60 remains open: the VPCD fixture tests only one valid and one invalid operand,
+not the full operand/type matrix or a following APDU after a caught runtime
+failure; no physical validation was possible. Continue with the next available
+offline priority, preserving unrelated worktree changes.
+
 # Current handoff — persistent foreign-alias cycles fail closed before deletion — 2026-11-12 04:25 UTC
 
 Committed as `6564629f`. Added regression `persistent_alias_cycle_blocks_reclamation_then_retry_succeeds`

@@ -28042,3 +28042,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep PERSIST-01/RESOURCE-01 open. Continue with the next offline safety gap while preserving the requirement for identified physical acceptance.
 - Commit: pending
 - Artifacts/logs: `build/tests/unit/persistent-transaction/persistent_transaction_test`; no separate log archived.
+
+## 2026-11-12 Validate dup_x helper matrix and VPCD execution 9 min
+
+- Step/experiment: `RV-20261106-60-VPCD-ACCEPTANCE-20261112`
+- When: '2026-11-12 04:25 UTC' - '2026-11-12 04:34 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Revalidated the existing `dup_x` helper matrix and ran the fresh valid/invalid CAP fixture through the PC VPCD interpreter. Updated TODO and handoff with the verified scope and remaining R60 gaps; supplied CAP sources remain unchanged.
+- Validation: `./tools/test-rmi-registry` passes. Elevated `./tools/test-dup-x-vpcd` passes valid `dup_x 0x12` through applet INSTALL/SELECT (`TEST:SUMMARY pass=2 fail=0`) and rejects invalid `0x17` with `ERROR: PC applet INSTALL failed ... vm=6F00` before `VPCD:APPLET_INSTALLED`. The wrapper rebuilt PC `max_crypto` with debug logging and generated the local test CAP. No ARM/RISC-V build or physical test was needed/run; this is emulator acceptance only.
+- Result: Helper matrix covers all 256 M/N pairs, exact short values, underflow/overflow preservation, reference owners and int pairs. Full interpreter evidence covers one legal and one illegal operand only. PC emulator SHA-256 `c9d07963633be21451e5d36a263fe483631d62f8d561c817516d95f01249f6c6`; CAP SHA-256 `62cf6d01b01a0722cbdb667938e81be0bfccdee16f1985bbb1184cf29c58bab7`.
+- Decision: Keep R60 open for the complete interpreter type/operand matrix, post-failure recovery APDU, and physical validation. Continue with the next offline priority.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T042945Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T042945Z.log`; `artifacts/logs/build-pc-dup-x-20261112T042945Z.log`.
