@@ -28339,3 +28339,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Flash by verified chip ID once a BOOTSEL device is visible in the guest; inspect whether `vm_return`, `fs_sync_end` and `response_submit_return` appear before investigating later USB completion.
 - Commit: `d14311e7` (image metadata and handoff); this progress-record hash backfill is committed separately.
 - Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`; SHA-256 above.
+
+## 2026-11-12 Verify quiet trace regressions and fixtures 3 min
+
+- Step/experiment: `RESOURCE-01-CCID-TRACE-FLAG-REGRESSION-20261112`
+- When: '2026-11-12 11:26 UTC' - '2026-11-12 11:30 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Re-ran focused CCID state-machine/routing checks and verified the pinned fixture manifest after publishing the isolated trace build. No source or fixture bytes changed.
+- Validation: `./tools/test-ccid-progress-flow` passed 21/21; `./tools/test-ccid-apdu-route` passed 17/17; `./tools/fixture-path --verify` passed all 81 files, including upstream JCAlgTest 1.8.4 and 48 API CAPs. Scoped `git diff --check` passed.
+- Result: The CCID retry/routing tests remain green, and the active upstream fixture hashes still verify unchanged.
+- Decision: Keep the trace image ready for physical use; continue implementation and host validation while BOOTSEL passthrough is unavailable.
+- Commit: pending.
+- Artifacts/logs: Test summaries in command output; fixture manifest `tests/fixtures/manifest.json`.
