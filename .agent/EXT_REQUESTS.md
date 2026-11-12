@@ -152,14 +152,15 @@ reinserted all three boards in BOOTSEL, the guest still saw three runtime
 USB nodes; `pcsc_scan -r` listed only the VPCD readers.
 
 The latest trace-enabled empty-card diagnostic image is
-`../build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`,
-4,105,216 bytes, SHA-256
-`c58b22e3854868da66c1b56daad46be88a6a19043019c808f25c6d5c4ddb3bb1`. ARM and
-RISC-V wrappers both passed at source HEAD `fc2ff75e` (the build tree is
-dirty); CPLC source ID is `FC2FF75E47FF0406`. The trace includes `fs_sync()`
-duration. Fresh guest enumeration at 11:08 UTC still showed three runtime
-`2e8a:0009` devices and no BOOTSEL interface despite the user's report that all
-boards are in BOOTSEL. Identity-pinned flash attempts
+`../build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`,
+4,100,608 bytes, SHA-256
+`32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`. ARM and
+RISC-V wrappers both passed at source HEAD `48e9a50b` (the build tree is
+dirty); CPLC source ID is `48E9A50BB405634E`. It includes CCID response-path
+markers and `fs_sync()` duration without per-object heap-GC logging. Fresh
+guest enumeration at 11:25 UTC still showed three runtime `2e8a:0009` devices
+and no BOOTSEL interface despite the user's report that all boards are in
+BOOTSEL. Identity-pinned flash attempts
 found D92 and 8E but could not access either reset interface; the third chip ID
 2BED was not connected. No image was written.
 

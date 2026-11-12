@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 11:15 UTC
+Updated: 2026-11-12 11:25 UTC
 
 ## Goal
 
@@ -13,21 +13,21 @@ current physical-test handoff.
 
 ## Current build and source
 
-- ARM and RISC-V `max_crypto` wrappers pass. The ARM full firmware ends at
-  `0x100F5018`, leaving 45,032 bytes before the configured `0x10100000` limit.
+- ARM and RISC-V `max_crypto` wrappers pass with object deletion enabled and
+  heap-GC debug disabled. ARM firmware ends at `0x100F474C`, leaving 47,284
+  bytes before the configured `0x10100000` limit.
 - The current diagnostic empty-card image is
-  `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`
-  (4,105,216 bytes, SHA-256
-  `c58b22e3854868da66c1b56daad46be88a6a19043019c808f25c6d5c4ddb3bb1`). It
-  enables object deletion and heap-GC debug telemetry and has an erased
-  persistent-storage region. It also times `fs_sync()` in the debug-gated
-  response trace. CPLC source ID is `FC2FF75E47FF0406`.
+  `build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`
+  (4,100,608 bytes, SHA-256
+  `32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`). It
+  enables object deletion and the five CCID response-path markers, keeps
+  per-object heap-GC tracing disabled, and has erased persistent storage. CPLC
+  source ID is `48E9A50BB405634E`.
 - The diagnostic image is built from a dirty worktree containing unrelated
   pre-existing changes. It is for diagnosis, not a clean release artifact.
-- Commit `5c78e647` adds gated markers around applet return, `fs_sync()` and
-  CCID response submission; `4058a7e6` adds `fs_sync()` duration. Focused tests
-  pass: CCID progress flow 21/21 and APDU routing 17/17. The diagnostic image
-  has not been flashed yet.
+- Commit `028ba49a` separates CCID markers from verbose heap-GC tracing; both
+  architecture wrappers pass. Focused CCID tests remain 21/21 and 17/17. The
+  current image has not been flashed.
 - Current-tree persistent-transaction, persistent-inventory and RP2350
   filesystem-overlay suites pass (`TEST:SUMMARY fail=0`); overlay tests include
   modeled power cuts and full-index compaction. This is host-only evidence.
@@ -35,7 +35,7 @@ current physical-test handoff.
 ## Hardware and current evidence
 
 - Three Pico USB devices are attached to the guest, but the latest elevated
-  enumeration showed all as runtime `2e8a:0009`; no BOOTSEL `2e8a:000f` device
+  enumeration at 11:25 UTC showed all as runtime `2e8a:0009`; no BOOTSEL `2e8a:000f` device
   is visible. This conflicts with the user's report that all three were
   reinserted in BOOTSEL. Identity-pinned flash attempts found D92 and 8E but
   could not access their reset interfaces; chip ID 2BED was not connected.
@@ -57,7 +57,7 @@ current physical-test handoff.
 
 ## Highest-priority remaining work
 
-1. **RESOURCE-01 / RESOURCE-02:** flash the timing trace image after a guest-visible
+1. **RESOURCE-01 / RESOURCE-02:** flash the quiet CCID trace image after a guest-visible
    BOOTSEL interface returns, localize the post-applet response stall, fix
    remaining reclamation/resource failures, then complete unchanged JCAlgTest
    1.8.4/jc305 options 2 and 1 on identified physical devices with separate

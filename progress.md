@@ -28327,3 +28327,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Commit the isolated trace switch, then rebuild/package an empty-card diagnostic image from the commit and publish its hash in the handoff.
 - Commit: pending.
 - Artifacts/logs: `build/arm/pico2_choupi.elf`, ARM/RISC-V build provenance.
+
+## 2026-11-12 Rebuild quiet CCID trace image 4 min
+
+- Step/experiment: `RESOURCE-01-CCID-TRACE-IMAGE-48E9A50B-20261112`
+- When: '2026-11-12 11:22 UTC' - '2026-11-12 11:26 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Rebuilt and packaged an empty-card ARM diagnostic UF2 with deferred object deletion and isolated CCID trace markers. Updated TODO, STATUS, HANDOFF and EXT_REQUESTS to point to this image and record its exact identity and current guest USB state.
+- Validation: ARM and RISC-V `max_crypto` wrappers passed at source HEAD `48e9a50b`; ARM image end is `0x100F474C` with 47,284 bytes free. `strings` confirms all five CCID trace markers are present and per-candidate `OBJECT_DELETION:CANDIDATE` debug strings are absent. `./tools/package-empty-card-uf2` passed: 4,100,608 bytes, 3,912 firmware blocks plus 4,096 erased storage blocks. UF2 SHA-256 `32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`; firmware SHA-256 `143a796cf6a53eda975c684006abb7c5f57b87fe42d79fb11f24da500304f180`; CPLC source ID `48E9A50BB405634E`. Build provenance reports a dirty tree; unrelated worktree changes are preserved. Fresh elevated `lsusb -d 2e8a:` at 11:25 UTC showed devices 088, 096 and 100 all runtime `0009`; no BOOTSEL device appeared. No image was flashed.
+- Result: The image avoids verbose per-candidate serial traffic while retaining the boundary markers needed to isolate a lost CCID response.
+- Decision: Flash by verified chip ID once a BOOTSEL device is visible in the guest; inspect whether `vm_return`, `fs_sync_end` and `response_submit_return` appear before investigating later USB completion.
+- Commit: pending documentation commit.
+- Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`; SHA-256 above.

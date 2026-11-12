@@ -1,4 +1,4 @@
-# Current handoff — CCID sync-timing trace ready; guest USB still runtime — 2026-11-12 11:15 UTC
+# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:25 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -63,16 +63,18 @@ object deletion and heap-GC debug enabled both pass. The ARM build reports
 firmware end `0x100F5018`, leaving 45,032 bytes before `0x10100000`.
 
 The user reports all three boards are in BOOTSEL. Fresh elevated guest
-enumeration at 11:08 UTC still sees devices 088, 096 and 100 as runtime
+enumeration at 11:25 UTC still sees devices 088, 096 and 100 as runtime
 `2e8a:0009`, with no `2e8a:000f`; the approved helper grants two runtime nodes
 (096, 100), and `pcsc_scan -r` previously listed only the VPCD readers. The
 current empty-card diagnostic image is
-`build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`,
-4,105,216 bytes, SHA-256
-`c58b22e3854868da66c1b56daad46be88a6a19043019c808f25c6d5c4ddb3bb1`. Build
+`build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`,
+4,100,608 bytes, SHA-256
+`32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`. Build
 provenance is dirty (unrelated worktree changes are preserved), CPLC source ID
-`FC2FF75E47FF0406`; ARM and RISC-V wrappers pass at source HEAD `fc2ff75e`.
-The added trace reports `fs_sync()` duration. No image was flashed.
+`48E9A50BB405634E`; ARM and RISC-V wrappers pass at source HEAD `48e9a50b`.
+It enables object deletion and CCID applet tracing but disables heap-GC debug
+output, including per-candidate lines. It includes `fs_sync()` duration. No
+image was flashed.
 
 Identity-pinned flash attempts to D92 and 8E both found the exact runtime
 device but `picotool` reported `Unable to locate reset interface`; the CDC-1200
