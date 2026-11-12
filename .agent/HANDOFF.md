@@ -1,4 +1,4 @@
-# Current handoff — CCID sync-timing trace ready; guest USB still runtime — 2026-11-12 11:08 UTC
+# Current handoff — CCID sync-timing trace ready; guest USB still runtime — 2026-11-12 11:15 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -12,12 +12,13 @@ D92 `D92E743D5F640C0F`, reader `Pico 2 CHOUPI CCID [JCVM CCID]
 The client session 21246 exited 1 after producing 51 `ALG_` result rows (about
 13 minutes), with `SCARD_E_NOT_TRANSACTED` attempting APDU
 `B0 75 12 00 01 16 00`. The preceding `INS_CARD_RESET` returned `9000` after
-3 applet records were erased. Correction from final serial inspection: the
-next `B0 75` APDU reached the applet and ended with `sw=9000 len=29`, but the
-log ends before a new `CCID_RESPONSE` record; the previous response snapshot
-is still for `B0E2`. The stall is after applet execution and before the response
-reaches the host, possibly in `fs_sync()`, CCID response submission or USB
-completion; this is not yet localized. At the last complete checkpoint there
+3 applet records were erased. The next `B0 75` APDU's last serial line is
+`APDU_PROCESS stage=end sw=9000 len=29`, printed immediately before the applet
+function returns. This old image lacked the later CCID-caller marker, so it does
+not prove control returned to the CCID caller. The log ends before a new
+`CCID_RESPONSE` snapshot; the previous snapshot is still for `B0E2`. If control
+returned, the remaining candidates include `fs_sync()`, CCID response
+submission or USB completion. At the last complete checkpoint there
 were 3,762 alias protections and
 447 unrelated erasures, with no `HEAP_GC_FS_READ_FAIL`, deletion skip, `FAULT`,
 `F205` or `NO_RESOURCE`. The exact previously erased body

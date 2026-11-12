@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 11:08 UTC
+Updated: 2026-11-12 11:15 UTC
 
 ## Goal
 
@@ -43,10 +43,11 @@ current physical-test handoff.
 - The approved helper granted two runtime USB nodes, while `pcsc_scan -r`
   listed only VPCD readers. Physical APDU testing is currently unavailable.
 - The corrected D92 RESOURCE-01 all-algorithms run produced 51 support rows
-  before `SCARD_E_NOT_TRANSACTED` on `B0 75 12 00 01 16 00`. Serial evidence
-  shows that APDU returned from the applet with `9000 len=29`, but no following
-  CCID response record. New telemetry is ready to locate the stall; it has not
-  been observed on hardware.
+  before `SCARD_E_NOT_TRANSACTED` on `B0 75 12 00 01 16 00`. Its last serial
+  line is `APDU_PROCESS stage=end sw=9000 len=29`, printed immediately before
+  the applet function returns. The old firmware lacked the later CCID-caller
+  marker, so whether control returned to that caller is unproven. New telemetry
+  is ready to locate the stall; it has not been observed on hardware.
 - Earlier 8E all-algorithms testing had heap/body read failures and an OOM
   panic. D92 performance-static and other all-algorithms attempts were
   interrupted or failed with PC/SC errors. Neither long option-1 nor option-2

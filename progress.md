@@ -28303,3 +28303,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline until USB passthrough exposes a BOOTSEL device; then flash by verified chip ID, capture finite serial output, and resume the CCID response-stall investigation.
 - Commit: `0c84d923` (this handoff update); this progress-record hash backfill is committed separately.
 - Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-post-apdu-trace-fs-sync-timing-empty-card-4058a7e6.uf2`; SHA-256 above.
+
+## 2026-11-12 Tighten RESOURCE-01 response-stall evidence 7 min
+
+- Step/experiment: `RESOURCE-01-APDU-RETURN-EVIDENCE-CORRECTION-20261112`
+- When: '2026-11-12 11:08 UTC' - '2026-11-12 11:15 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Reviewed the terminal D92 serial trace against the exact `choupi_vm_process_applet` source location and corrected TODO, STATUS and HANDOFF claims. `APDU_PROCESS stage=end` is printed immediately before that function's return; it does not prove control returned to `ccid_device.cpp`. The older physical image lacked the later `CCID_APPLET stage=vm_return` marker. Updated hypotheses now distinguish an applet return from the unproven later `fs_sync()`/CCID stages.
+- Validation: Compared `choupi/src/main.cpp:2339` and the final lines of `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/serial.log`; inspected failed client APDU `B0 75 12 00 01 16 00` and the corresponding log tail. `git diff --check` passed for TODO, STATUS and HANDOFF. No code or hardware change was made.
+- Result: The root-cause search is correctly scoped to include failure during function return; `fs_sync()` and endpoint submission are only candidates if the caller marker is observed.
+- Decision: Use the packaged timing image to capture that missing boundary when BOOTSEL is exposed to the VM; continue offline without attributing a cause prematurely.
+- Commit: pending.
+- Artifacts/logs: Existing D92 serial and client logs under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`.
