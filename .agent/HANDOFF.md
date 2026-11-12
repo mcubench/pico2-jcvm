@@ -1,6 +1,6 @@
 # Current handoff — persistent foreign-alias cycles fail closed before deletion — 2026-11-12 04:25 UTC
 
-Added regression `persistent_alias_cycle_blocks_reclamation_then_retry_succeeds`
+Committed as `6564629f`. Added regression `persistent_alias_cycle_blocks_reclamation_then_retry_succeeds`
 to the production reclaimer unit suite. Two foreign-owned persistent array
 aliases form a cycle. `findAliasesToAppletOwner()` and the reclaimer both
 return `InvalidTag`; the target and unrelated orphan records remain intact and
