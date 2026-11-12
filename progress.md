@@ -17506,7 +17506,7 @@
   cannot expose either enumerated USB reader.
 - Decision: Keep persistent deletion disabled until real USB cold-power
   recovery passes; continue on independent implementation and test gaps.
-- Commit: pending.
+- Commit: `028ba49a` (the new build switch); the subsequent committed rebuild record will include its image hash.
 - Artifacts/logs: install log SHA-256
   `48da283414541d4009d434c8fb5141117ae519259ed5b5a8f9fbc0f550986b57`;
   install emulator SHA-256
