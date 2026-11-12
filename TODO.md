@@ -8,11 +8,12 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 
 ## Priorities and evidence
 
-1. RESOURCE-01; RESOURCE-02 focused fixes await full-suite/physical acceptance.
-2. HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
-3. STORE-01, PERSIST-01/02/03, API-01/03, GP-01 and AC-01/02 integration gates.
-4. HMAC-01 acceptance and offline-only JC-RESET-01 diagnosis.
-5. CAPIN-01/02 then CAPIN-03/04; relative priority against resource work remains the user's decision.
+1. **BOOTSEL-01 (P0): restore reliable software entry into BOOTSEL; highest priority.**
+2. RESOURCE-01; RESOURCE-02 focused fixes await full-suite/physical acceptance.
+3. HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
+4. STORE-01, PERSIST-01/02/03, API-01/03, GP-01 and AC-01/02 integration gates.
+5. HMAC-01 acceptance and offline-only JC-RESET-01 diagnosis.
+6. CAPIN-01/02 then CAPIN-03/04; relative priority against resource work remains the user's decision.
 
 Device availability changes: consult the latest [.agent/HANDOFF.md](.agent/HANDOFF.md)
 and [.agent/QKB.md](.agent/QKB.md), then refresh authorized USB/PCSC access.
@@ -30,6 +31,16 @@ Linked detailed cases remain requirements unless explicitly superseded here;
 archive device states and old measurements are historical. Detailed new runs go
 in [progress.md](progress.md); reusable diagnoses go in QKB.
 
+## BOOTSEL recovery — highest priority
+
+### BOOTSEL-01
+
+- [ ] **P0: Restore reliable software entry into BOOTSEL for identity-pinned Pico 2 boards.** This takes priority over the remaining implementation backlog. The D92 recovery attempt found the correct board but picotool reported a missing reset interface and the CDC-1200 fallback did not produce an observable BOOTSEL device within 20 seconds.
+- Confirmed source findings: `src/ccid_device.cpp` exposes CDC control/data and CCID only, and registers only the CCID application driver. The SDK vendor reset descriptor/driver is absent despite the requirement in `plan.md`; this omission dates to `dc76f431` (2026-10-11). The CDC fallback added in `971887e4` sets a flag consumed only in the outer main loop. Long synchronous APDU work can service USB and feed the watchdog without acting on that flag. These explain recovery weaknesses; the exact historical D92 failure remains unproven. See [.agent/QKB.md](.agent/QKB.md#bootsel-reset-integration-audit--2026-11-12-offline) and audit commit `31cb571c`.
+- Implementation: integrate the SDK `pico_usb_reset` vendor reset descriptor and driver into the composite device, retaining CDC/CCID behavior. Make CDC reset requests take effect at a safe cooperative servicing point after the control transfer completes, including during long APDU/native work. Establish a bounded recovery latency and cover it with meaningful offline regressions. Preserve identity pinning across USB topology changes; never reset or flash a different board as fallback.
+- Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM and RISC-V with repository wrappers and resolve errors/warnings before flashing. When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
+- Current constraint: **devices are in use; do not probe, reset, flash or otherwise access physical devices for this task until they are available.** Implement and validate offline first. Keep physical acceptance open, and distinguish firmware reset failure from guest passthrough/re-enumeration failure using evidence rather than assumptions.
+
 ## Resource lifecycle
 
 ### RESOURCE-02
@@ -40,7 +51,7 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
 
 ### RESOURCE-01
 
-- [ ] **Highest priority: stop long-run NO_RESOURCE failures and finish physical acceptance.** Follow the [staged plan](docs/resource-01-implementation-plan.md). Focused reuse/replacement regressions pass; prior unchanged JCAlgTest runs still show persistent OutOfFlash/F205. A specific same-owner alias/body deletion bug is now reproduced and guarded (evidence below); this does not yet establish that it is the only source of the historical long-run failures. PC and Pico storage backends differ.
+- [ ] **Stop long-run NO_RESOURCE failures and finish physical acceptance (after BOOTSEL-01).** Follow the [staged plan](docs/resource-01-implementation-plan.md). Focused reuse/replacement regressions pass; prior unchanged JCAlgTest runs still show persistent OutOfFlash/F205. A specific same-owner alias/body deletion bug is now reproduced and guarded (evidence below); this does not yet establish that it is the only source of the historical long-run failures. PC and Pico storage backends differ.
 - Normal firmware keeps object deletion disabled; explicit diagnostic builds enable deferred request-gated servicing. Applet/package-static roots, foreign aliases, peer cached statics, shareable proxies and RMI roots have focused host coverage. The shared coordinator limits total erasures across both namespaces to eight per APDU; tests cover 8/8/6 batches. Host fake-flash covers 1,000 cuts; physical interruption/timing acceptance is open.
 - Successful persistent-array restoration traces are now compiled only with `PICO2_DEBUG_PERSISTENT_GC=1`; failure diagnostics remain enabled. The RP2350 fake-flash suite passes `fail=0` with 134 output lines after the change. This reduces log/flush overhead, but runtime performance improvement has not been measured.
 - 2026-11-12: Added a fail-closed guard against republishing an alias from a retained array handle when its persistent body tag is missing. A host regression reproduces the stale-handle sequence; persistent-transaction, object-deletion VPCD, persistent-inventory, RP2350 overlay, and ARM/RISC-V max_crypto builds pass. This prevents a dangling alias but does not establish who removed the body observed in the physical trace; long-run and physical acceptance remain open.

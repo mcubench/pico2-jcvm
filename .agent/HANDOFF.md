@@ -13341,3 +13341,7 @@ keep its full-suite/physical safety gates open.
 ## Offline BOOTSEL audit — 2026-11-12 13:35 UTC
 
 User prohibits physical access while devices are in use. Source/history audit confirms missing vendor reset descriptor/driver since October 11 and CDC reset flag consumed only by the outer loop (added November 8). See QKB section "BOOTSEL reset integration audit". No firmware changes, builds or hardware operations. Exact D92 cause remains unproven; next implementation would integrate SDK reset support and safe cooperative reset servicing, with offline coverage before eventual authorized hardware checks. Existing device state above is unchanged.
+
+## BOOTSEL-01 promoted to P0 — 2026-11-12 13:42 UTC
+
+User requested a top-priority fix task. TODO now places BOOTSEL-01 above RESOURCE-01, with vendor reset integration, safe cooperative CDC reset, bounded latency, identity preservation and offline/physical acceptance criteria. Devices remain in use: no physical access for this task until available. Documentation only; implementation has not started.

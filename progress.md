@@ -28471,3 +28471,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Treat as longstanding integration gap plus workload-dependent recovery limitation; restore SDK reset integration and safe cooperative servicing in a subsequent implementation step.
 - Commit: This audit commit (resolve with `git log --grep=Document\ offline\ BOOTSEL -1`).
 - Artifacts/logs: `.agent/QKB.md`, `.agent/HANDOFF.md`; source/history evidence only.
+
+## 2026-11-12 Prioritize BOOTSEL recovery 2 minutes
+
+- Step/experiment: `BOOTSEL-01-PRIORITY`
+- When: '2026-11-12 13:40 UTC' - '2026-11-12 13:42 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added BOOTSEL-01 as P0 above RESOURCE-01, specifying confirmed findings, fix scope, acceptance and the active prohibition on physical access while devices are in use.
+- Validation: Inspected TODO priority ordering and task requirements; documentation diff check passed. Builds and hardware tests intentionally skipped for documentation-only work.
+- Result: Highest-priority task is concrete and reviewable; no firmware changes or device access. Runtime metrics not measured.
+- Decision: Next implement and validate BOOTSEL-01 offline; physical acceptance remains open until a board is available.
+- Commit: This documentation commit, identifiable by subject `Prioritize BOOTSEL recovery as P0`.
+- Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; none generated.
