@@ -28253,5 +28253,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Elevated `PICO2_HOST_USB_ACCESS=1 lsusb -v -d 2e8a:0009` showed all three devices as composite CDC+CCID devices, with CDC ACM line-coding support on interface 0. The earlier exact D92 `stty`/CDC-1200 request returned without a host ioctl error but no device re-enumerated as BOOTSEL. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial D92E743D5F640C0F --seconds 8` exited 0 and captured no serial lines; this only confirms the monitor ran and is not a fresh startup pass. No flash occurred.
 - Result: The guest is communicating with runtime USB descriptors, not seeing a BOOTSEL interface. The failed transition is still unresolved; descriptor support alone does not prove the running firmware received or acted on the reset request.
 - Decision: Continue physical testing only after a `2e8a:000f` BOOTSEL device or a PC/SC reader appears in the guest; do not classify this as a firmware write failure.
-- Commit: `to be recorded in the following commit-hash backfill`
+- Commit: `3c16fd90`
 - Artifacts/logs: `lsusb -v` and finite monitor output inspected directly, not archived; diagnostic UF2 remains unchanged at SHA-256 `05d24b83afa967f023bdc8e090e060a0db776225b0ba6d03b7fd62fbad35e4ab`.
