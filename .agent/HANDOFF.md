@@ -29,7 +29,8 @@ candidate-trace image to one identified board and capture the `stage=erase`
 candidate tag immediately preceding any missing-body edge; then restore the
 normal image and verify finite serial output. RESOURCE-01 remains open and
 production object deletion stays disabled. Do not claim physical validation
-from this attempt. The attempt is recorded in `progress.md`; commit follows.
+from this attempt. The attempt is recorded and committed as `3b82cf54`; the
+progress-record hash is backfilled by a follow-up documentation commit.
 
 ---
 
