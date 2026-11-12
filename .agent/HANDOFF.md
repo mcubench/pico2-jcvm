@@ -1,3 +1,39 @@
+# Current handoff — current max_crypto empty-card image verified on D92 and 8E — 2026-11-12 08:21 UTC
+
+Created `build/arm/pico2-jcvm-max_crypto-empty-card-f2c1a828.uf2` with
+`./tools/package-empty-card-uf2` from the current ARM `max_crypto` image. It
+is 4,094,464 bytes, SHA-256
+`63505c753ef50fc03d8bb3213378332eb91985f5270a23f45d96c76745d08c75`, and
+contains the explicit `0x10100000–0x101fffff` erased persistent-storage area.
+This is a full UF2 write, not `picotool erase`.
+
+Flashed this image by verified chip ID to `D92E743D5F640C0F` and
+`8E464F4E2BBC0A19`; both reported `FLASH:PASS`. Each passed an 8-second serial
+monitor with `TEST:SUMMARY pass=1 fail=0`. Before this, GPPro had confirmed the
+upstream JCAlgTest package/applet persisted on all three cards after ordinary
+firmware-only flashes. Thus D92 and 8E now have storage cleared; this still
+needs GPPro `--list` confirmation once PC/SC recovers.
+
+The flash wrapper was hardened to rediscover a selected board by its pinned
+chip ID when VM USB re-enumeration changes its topology path. It rejects a
+different board occupying the stale path and follows only the unique original
+chip ID. `./tools/test-flash-target-selection` passes 11/11 synthetic cases.
+This fixed observed moves from USB path `1-3`/`1-4` to `1-2` during CDC reset.
+
+The third board `2BED26ED20556535` remains USB `2e8a:0009` on path `1-5` but
+has no USB serial descriptor and produced no startup lines on a bounded
+monitor. A path-specific CDC-1200 reset did not move it to BOOTSEL. The
+earlier GPPro applet DELETE on that board timed out; PC/SC then stopped listing
+readers. The approved helper still grants USB permissions, but bounded
+`pcsc_scan -r` returns only scanner startup before timeout. **Do not retry
+DELETE or flash 2BED** until it is re-identified and responsive.
+
+External action is recorded in `.agent/EXT_REQUESTS.md`: restart PC/SC, run
+the approved reader helper and send `timeout 10s stdbuf -oL pcsc_scan -r`
+output. After recovery, verify D92/8E registries are empty with GPPro; continue
+on those healthy boards. Recover 2BED separately. The older 08:05 handoff
+records the initial standard-image flash results and GPPro timeout.
+
 # Current handoff — max_crypto flashed to three Pico 2 boards; cleanup stalled — 2026-11-12 08:05 UTC
 
 Built `max_crypto` for ARM and RISC-V with `./tools/build arm --profile

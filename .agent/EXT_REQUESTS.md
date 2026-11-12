@@ -134,6 +134,17 @@ monitor. I have bounded the collector to eight persistent records per APDU;
 both architecture builds and the persistent-transaction unit suite pass, but
 the physical batch-size fix still needs validation after PC/SC recovers.
 
+### Update 2026-11-12 08:21 UTC — current PC/SC recovery needed
+
+The current max_crypto image was flashed to `D92E743D5F640C0F` and
+`8E464F4E2BBC0A19`, including the explicitly cleared persistent-storage
+region. Both pass finite serial startup. The third board (`2BED26ED20556535`)
+lost its USB serial descriptor after a GPPro applet DELETE timed out; PC/SC
+then stopped listing readers. The approved helper still grants the three USB
+nodes, but `pcsc_scan -r` times out before listing any reader. Do not flash or
+reset boards while restarting the service. After recovery, verify D92 and 8E
+with GPPro `--list`; continue the 2BED diagnosis separately.
+
 Please run this in the development VM and send the complete output:
 
 ```sh
@@ -143,8 +154,9 @@ timeout 10s stdbuf -oL pcsc_scan -r
 ```
 
 Keep the three Pico tokens connected. Do not flash or reset them as part of
-this service recovery. Once PC/SC lists `2BED26ED20556535`, I can continue the
-bounded object-deletion test on that board.
+this service recovery. Once PC/SC lists D92 and 8E, I can verify their empty
+registries and continue physical validation; troubleshoot 2BED after its
+reader/serial identity returns.
 
 ## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 

@@ -49,6 +49,16 @@ If bounded reset fails, change identified board or request host passthrough reco
 Flashing preserves installed CAP storage unless an explicitly prepared empty-card image is used.
 A flash success plus serial heartbeat proves runtime startup only.
 
+On 2026-11-12 the VM reassigned two boards to a different USB topology path
+during CDC-to-BOOTSEL re-enumeration. The selector now rediscovers a selected
+board by the already pinned RP2350 chip ID when its old path disappears or is
+occupied by another device; it still rejects a same-path identity mismatch if
+the original chip cannot be found, and never falls back to a sole unrelated
+board. `./tools/test-flash-target-selection` passes 11/11 synthetic cases.
+The updated path was used to flash empty-card max_crypto to D92 and 8E; both
+passed finite serial health. Physical registry verification is pending PC/SC
+recovery.
+
 Evidence: [E429](QKB_INDEX.md#e429), [E093](QKB_INDEX.md#e093), [E106](QKB_INDEX.md#e106), [E065](QKB_INDEX.md#e065).
 
 ## VPCD setup, stale state and process lifecycle — viable controls

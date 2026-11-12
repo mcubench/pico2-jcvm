@@ -149,6 +149,35 @@ refresh_target_usb "$root" && selected=true
 expect "$([[ "$selected" == true && "$target_expected_chipid" == AAAAAAAAAAAAAAAA && "$target_address" == 9 ]] && echo true || echo false)" \
   "original_bootsel_device_at_stable_path_is_verified"
 
+# Some VM passthrough layers expose the same board at a different topology
+# path after CDC-to-BOOTSEL re-enumeration. Rediscover only by the pinned ROM
+# chip ID, even when another Pico occupies the previous path.
+reset_selection
+chipid="AAAAAAAAAAAAAAAA"
+add_device "1-3" 0009 AAAAAAAAAAAAAAAA 1 3 AAAAAAAAAAAAAAAA
+refresh_target_usb "$root"
+device="${root}/1-3"
+printf 'BBBBBBBBBBBBBBBB\n' > "${device}/serial"
+printf '8\n' > "${device}/devnum"
+add_device "1-2" 000f "" 1 9 AAAAAAAAAAAAAAAA
+selected=false
+refresh_target_usb "$root" && selected=true
+expect "$([[ "$selected" == true && "$target_sysfs_path" == 1-2 && "$target_expected_chipid" == AAAAAAAAAAAAAAAA && "$target_address" == 9 ]] && echo true || echo false)" \
+  "bootsel_reenumeration_at_new_path_follows_only_pinned_chip_id"
+
+# During the USB disconnect interval, absence of the target is transient. The
+# selector must keep waiting without choosing a sole unrelated Pico.
+reset_selection
+chipid="AAAAAAAAAAAAAAAA"
+add_device "1-3" 0009 AAAAAAAAAAAAAAAA 1 3 AAAAAAAAAAAAAAAA
+refresh_target_usb "$root"
+rm -rf "${root}/1-3"
+add_device "1-4" 0009 BBBBBBBBBBBBBBBB 1 4 BBBBBBBBBBBBBBBB
+selected=false
+refresh_target_usb "$root" && selected=true
+expect "$([[ "$selected" == false && -z "$target_identity_error" ]] && echo true || echo false)" \
+  "selected_target_disconnect_waits_without_falling_back"
+
 # A direct serial request in BOOTSEL is resolvable only when it names the
 # sixteen-digit chip ID reported by the ROM.
 reset_selection

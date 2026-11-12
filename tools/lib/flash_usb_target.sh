@@ -123,7 +123,8 @@ flash_validate_runtime_device() {
 
 refresh_target_usb() {
   local sysfs_root="${1:-/sys/bus/usb/devices}"
-  local device device_serial observed_chipid
+  local device device_serial observed_chipid stale_path_error=""
+  local selected_path_stale=0
   local -a bootsel_devices=() serial_devices=() chipid_runtime_devices=() rp_devices=()
   target_identity_error=""
 
@@ -131,17 +132,38 @@ refresh_target_usb() {
     device="${sysfs_root}/${target_sysfs_path}"
     if [[ -r "${device}/idVendor" && "$(<"${device}/idVendor")" == 2e8a ]]; then
       if [[ "$(<"${device}/idProduct")" == 000f ]]; then
-        flash_validate_bootsel_device "$device" || return 1
+        if ! flash_validate_bootsel_device "$device"; then
+          if [[ -n "$usb_path" || -z "$target_expected_chipid" ]]; then
+            return 1
+          fi
+          selected_path_stale=1
+          stale_path_error="$target_identity_error"
+          target_identity_error=""
+        fi
       else
-        flash_validate_runtime_device "$device" || return 1
+        if ! flash_validate_runtime_device "$device"; then
+          if [[ -n "$usb_path" || -z "$target_expected_chipid" ]]; then
+            return 1
+          fi
+          selected_path_stale=1
+          stale_path_error="$target_identity_error"
+          target_identity_error=""
+        fi
       fi
-      capture_usb_device "$device"
-      return 0
+      if ((selected_path_stale == 0)); then
+        capture_usb_device "$device"
+        return 0
+      fi
     fi
     if [[ -n "$usb_path" ]]; then
       return 1
     fi
-    if ((target_selected != 0)); then
+    if ((target_selected != 0)) &&
+        [[ -n "$target_expected_chipid" ]]; then
+      selected_path_stale=1
+    fi
+    if ((target_selected != 0)) &&
+        [[ -z "$target_expected_chipid" ]]; then
       return 1
     fi
   fi
@@ -205,6 +227,17 @@ refresh_target_usb() {
       target_expected_chipid="$expected_chipid"
       capture_usb_device "${matching_bootsel_devices[0]}"
       return 0
+    fi
+    if ((selected_path_stale != 0)) &&
+        ((target_selected != 0)) && [[ -n "$target_expected_chipid" ]]; then
+      if [[ -n "$stale_path_error" ]]; then
+        target_identity_error="$stale_path_error"
+        return 1
+      fi
+      # A selected board may be between USB modes or may have moved to a new
+      # topology path. Keep polling by its pinned chip ID rather than failing
+      # or falling back to another device.
+      return 1
     fi
     if [[ -n "$chipid" || -n "$serial" ]]; then
       flash_set_identity_error \
