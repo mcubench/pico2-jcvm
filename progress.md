@@ -28459,3 +28459,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close required-component presence for these standard components. Continue CAPIN-01 with library dependency closure and the external-superclass-without-Import case; physical testing is one-board evidence only.
 - Commit: `324eaf83` (this progress-reference backfill is committed separately).
 - Artifacts/logs: `artifacts/logs/rv28-malformed-missing-reference-location-vpcd-20261106.log`; `artifacts/logs/rv28-malformed-missing-import-component-vpcd-20261106.log`; `artifacts/logs/rv28-malformed-missing-static-field-component-vpcd-20261106.log`; `artifacts/logs/rv28-malformed-unknown-component-tag-vpcd-20261106.log`; `artifacts/logs/cap-upgrade-vpcd-20261112T125649Z.log`; `artifacts/logs/host-vpcd-multipackage-apdu-20261112T130225Z.log`; `artifacts/results/capin-required-component-20261112/D92E743D5F640C0F/`.
+
+## 2026-11-12 BOOTSEL source and history audit 6 minutes
+
+- Step/experiment: `BOOTSEL-OFFLINE-AUDIT-20261112`
+- When: '2026-11-12 13:29 UTC' - '2026-11-12 13:35 UTC'
+- Model: `GPT-6 Codex`
+- Change: Recorded missing vendor reset integration and deferred CDC reset limitation in QKB and handoff; firmware unchanged.
+- Validation: Inspected descriptors, driver registration, CMake, SDK reset instructions, TinyUSB CDC ACK callback, main-loop/progress code and Git history. Documentation diff check passed. Builds and physical validation intentionally skipped: source investigation only and devices in use.
+- Result: Vendor reset omitted since dc76f431 (2026-10-11); CDC fallback added 971887e4 (2026-11-08) only consumes reset flag at outer loop. Exact D92 failure unproven; no latency metric measured.
+- Decision: Treat as longstanding integration gap plus workload-dependent recovery limitation; restore SDK reset integration and safe cooperative servicing in a subsequent implementation step.
+- Commit: This audit commit (resolve with `git log --grep=Document\ offline\ BOOTSEL -1`).
+- Artifacts/logs: `.agent/QKB.md`, `.agent/HANDOFF.md`; source/history evidence only.

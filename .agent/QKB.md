@@ -410,3 +410,27 @@ Use **symptom → confirmed cause or hypothesis → viable response → validati
 Keep exact commands only when safe under current AGENTS.md; a historical command is not authorization.
 Put new experiment logs/hashes in progress and link them. Keep stable issue IDs in the catalog;
 add new catalog entries without renumbering existing ones. Do not upgrade an unresolved hypothesis to a viable fix without evidence.
+
+## BOOTSEL reset integration audit — 2026-11-12 (offline)
+
+Confirmed firmware integration gap, not a proven new regression: `src/ccid_device.cpp`
+configuration has three interfaces (CDC control/data and CCID), no
+`TUD_RPI_RESET_DESCRIPTOR`, and its application-driver callback returns only CCID.
+This descriptor layout dates to `dc76f431` (2026-10-11). `CMakeLists.txt`
+removes the SDK descriptor source. SDK `pico/usb_reset.h` explicitly requires
+adding the reset descriptor and registering `usb_reset_interface_driver` when
+using custom TinyUSB. The plan promises this interface but implementation lacks it.
+
+CDC fallback added in `971887e4` (2026-11-08) sets `usb_bootsel_requested`
+in the line-coding ACK callback; only the outer loop in `src/choupi_pico2.cpp`
+consumes it. Synchronous `choupi_ccid_task()` work can service USB via native
+progress while feeding the watchdog without checking this flag. Thus a received
+reset can remain pending until the APDU returns; 20-second recovery is not
+guaranteed. An unserviced USB loop also prevents receiving the request.
+Neither mechanism proves the exact D92 failure without existing run-specific
+telemetry. VM passthrough and host CDC request delivery remain alternatives.
+
+Proposed fix (not implemented/validated): integrate the SDK vendor reset driver
+and descriptor, and provide a safe reset servicing point during cooperative
+work after control-transfer completion. Do not reset a board in use. No devices,
+PC/SC, USB probes, builds or physical tests were used in this audit.

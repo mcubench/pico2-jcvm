@@ -13337,3 +13337,7 @@ passed, then the normal ARM build was restored. No host-time or device runtime
 speedup was measured. Physical boards remain unavailable to this VM in
 BOOTSEL/PCSC; no flash attempt was made in this step. Continue RESOURCE-01 and
 keep its full-suite/physical safety gates open.
+
+## Offline BOOTSEL audit — 2026-11-12 13:35 UTC
+
+User prohibits physical access while devices are in use. Source/history audit confirms missing vendor reset descriptor/driver since October 11 and CDC reset flag consumed only by the outer loop (added November 8). See QKB section "BOOTSEL reset integration audit". No firmware changes, builds or hardware operations. Exact D92 cause remains unproven; next implementation would integrate SDK reset support and safe cooperative reset servicing, with offline coverage before eventual authorized hardware checks. Existing device state above is unchanged.
