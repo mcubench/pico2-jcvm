@@ -28006,3 +28006,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close RV-32 software acceptance. Keep physical flashing pending verified BOOTSEL identity and continue offline with RV-33 shared build-generation locking.
 - Commit: `e9c6273f` (progress-record SHA backfilled in a follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/emulator-exit-status-20261112T033224Z/`; `build/arm/pico2_choupi.uf2`; current source tree is dirty with unrelated pre-existing edits.
+
+## 2026-11-12 Serialize shared PC and firmware generation 20 min
+
+- Step/experiment: `RV-20261106-33`
+- When: '2026-11-12 03:45 UTC' - '2026-11-12 04:05 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added a shared build lock used by firmware and standalone PC wrappers. Nested PC generation detects and reuses its caller's lock descriptor. Firmware builds verify the ROM-mask manifest after compilation and record support-selection, ROM-mask and JNI hashes in provenance. Added a lock unit test and three-way concurrent-build integration test.
+- Validation: `./tools/test-build-lock` passed; `bash -n tools/build tools/build-pc tools/lib/build_lock.sh tools/test-build-lock tools/test-concurrent-builds` passed; `python3 -m py_compile tests/integration/concurrent_builds_test.py` passed; `./tools/test-concurrent-builds` passed ARM `base`, standalone PC `max_crypto`, and RISC-V `symm_crypto`. The test verified non-overlapping top-level lock-owner intervals, matching firmware generation provenance and final shared PC artifact hashes. Initial full run failed only because the test expected one generation record where both nested and outer wrappers correctly emitted matching records; the assertion was corrected and the full rerun passed.
+- Result: Three concurrent wrapper requests completed serially with profile-isolated generation provenance. Logs: `artifacts/logs/concurrent-builds-20261112T035503Z/`. Physical USB was not accessed; board state reported by the user is not treated as independently verified.
+- Decision: Close the software portion of RV-33. Keep wrapper-mediated build usage as the supported path; physical flash work requires a fresh elevated identity check.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/concurrent-builds-20261112T035503Z/`

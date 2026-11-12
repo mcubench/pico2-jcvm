@@ -1,3 +1,24 @@
+# Current handoff — RV-33 shared generation locking validated — 2026-11-12 04:05 UTC
+
+Completed RV-20261106-33. `tools/build` and standalone `tools/build-pc` now
+serialize access to shared generated files with `build/.tools-build.lock`;
+nested invocations reuse the inherited lock descriptor. Builds record and
+verify profile-selection, ROM-mask and JNI hashes. `./tools/test-build-lock`
+passed, and `./tools/test-concurrent-builds` passed ARM `base`, standalone PC
+`max_crypto` and RISC-V `symm_crypto` requests. Lock owner intervals did not
+overlap; each firmware provenance matched its own generation. Logs:
+`artifacts/logs/concurrent-builds-20261112T035503Z/`. First run caught a test
+assertion expecting one record despite valid nested and outer generation
+records; all records were required to match and the repeated full run passed.
+
+The user reports three boards in BOOTSEL. This is not yet independently
+verified in guest USB; the previous refresh still showed runtime `2e8a:0009`
+instead of BOOTSEL `2e8a:000f`. No flash was part of RV-33. Before hardware
+work, refresh using the authorized elevated host-access path and require exact
+chip identity; do not flash an ambiguous target. RV-34 physical verification
+is the next relevant hardware task if BOOTSEL is visible. Otherwise continue
+with the next offline P2 item in TODO. Preserve unrelated worktree edits.
+
 # Current handoff — RV-32 emulator exit propagation passes; BOOTSEL still not visible to guest — 2026-11-12 03:35 UTC
 
 Completed RV-20261106-32. Host card startup, failed install, VPCD transport,

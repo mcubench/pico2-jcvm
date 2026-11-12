@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: ./tools/test-build-lock"
+require_command flock
+require_command readlink
+require_command timeout
+"${repo_root}/tests/unit/build_lock/build_lock_test.sh"

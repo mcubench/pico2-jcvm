@@ -47,18 +47,18 @@ case "${arch_arg}" in
 esac
 
 require_sdk
-"${repo_root}/tools/apply-tinyusb-event-budget"
 require_command cmake
 require_command ninja
 require_command picotool
 require_command sha256sum
 require_command flock
+require_command readlink
+require_command date
 mkdir -p "${repo_root}/build"
 build_lock_file="${repo_root}/build/.tools-build.lock"
-exec 9>"${build_lock_file}"
-printf 'BUILD:LOCK waiting arch=%s profile=%s\n' "${arch}" "${support_profile}"
-flock -x 9
-printf 'BUILD:LOCK acquired arch=%s profile=%s\n' "${arch}" "${support_profile}"
+source "${repo_root}/tools/lib/build_lock.sh"
+acquire_build_lock "${build_lock_file}" "${arch} profile=${support_profile}"
+"${repo_root}/tools/apply-tinyusb-event-budget"
 build_jobs="${PICO_BUILD_JOBS:-2}"
 [[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO_BUILD_JOBS must be a positive integer"
@@ -166,11 +166,22 @@ if [[ "${arch}" == arm ]]; then
       "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
   fi
 fi
+(cd "${build_pc_dir}" && sha256sum --check generation.sha256) || \
+  die "shared ROM-mask generation changed during the locked firmware build"
+rommask_sha256="$(sha256sum "${build_pc_dir}/flash" | awk '{print $1}')"
+jni_header_sha256="$(sha256sum "${build_pc_dir}/jni.hpp" | awk '{print $1}')"
+support_selection_sha256="$(awk '$2 == "support-selection" {print $1}' \
+  "${support_config_manifest}")"
+printf 'BUILD:GENERATION profile=%s support_selection_sha256=%s rommask_sha256=%s jni_header_sha256=%s\n' \
+  "${support_profile}" "${support_selection_sha256}" "${rommask_sha256}" \
+  "${jni_header_sha256}"
 provenance_file="${build_dir}/build-provenance.txt"
 {
   printf 'architecture=%s\nprofile=%s\nserial_wait_ms=%s\ncplc_source_id=%s\n' \
     "${arch}" "${support_profile}" "${debug_serial_wait_ms}" \
     "${cplc_source_id}"
+  printf 'support_selection_sha256=%s\nrommask_sha256=%s\njni_header_sha256=%s\n' \
+    "${support_selection_sha256}" "${rommask_sha256}" "${jni_header_sha256}"
   printf 'debug_heap_gc=%s\ndebug_persistent_gc=%s\nobject_deletion=%s\n' \
     "${debug_heap_gc}" "${debug_persistent_gc}" "${enable_object_deletion}"
   if [[ "${arch}" == arm ]]; then

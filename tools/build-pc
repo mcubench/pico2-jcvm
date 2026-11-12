@@ -18,6 +18,12 @@ build_dir="${repo_root}/build/choupi-pc"
 support_dir="${repo_root}/build/javacard-support"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 jcvm_debug="${CHOUPI_JCVM_DEBUG:-OFF}"
+require_command flock
+require_command readlink
+require_command date
+source "${repo_root}/tools/lib/build_lock.sh"
+acquire_build_lock "${repo_root}/build/.tools-build.lock" \
+  "pc profile=${support_profile}"
 cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
 personalizer_id="0x${cplc_source_id:2:8}"
 prepersonalizer_id="0x${cplc_source_id:10:8}"
@@ -81,6 +87,13 @@ python3 "${repo_root}/tools/extract-rom-metadata.py" \
     awk '{print $1 "  rommask-sources"}' > rommask-source.sha256
   sha256sum rommask-source.sha256 >> generation.sha256
 )
+rommask_sha256="$(sha256sum "${rom_image}" | awk '{print $1}')"
+jni_header_sha256="$(sha256sum "${generated_header}" | awk '{print $1}')"
+support_selection_sha256="$(awk '$2 == "support-selection" {print $1}' \
+  "${build_dir}/support-config.sha256")"
+printf 'BUILD:GENERATION profile=%s support_selection_sha256=%s rommask_sha256=%s jni_header_sha256=%s\n' \
+  "${support_profile}" "${support_selection_sha256}" "${rommask_sha256}" \
+  "${jni_header_sha256}"
 printf 'ROMMASK:PASS image=%s header=%s manifest=%s\n' \
   "${rom_image#${repo_root}/}" "${generated_header#${repo_root}/}" \
   "${build_dir#${repo_root}/}/generation.sha256"

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: ./tools/test-concurrent-builds"
+require_command python3
+"${repo_root}/tools/test-build-lock"
+python3 "${repo_root}/tests/integration/concurrent_builds_test.py"

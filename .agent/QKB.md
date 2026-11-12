@@ -286,6 +286,17 @@ use the repository workflow rather than invoking compiler binaries directly.
 
 Evidence: [E349](QKB_INDEX.md#e349), [E124](QKB_INDEX.md#e124), [E071](QKB_INDEX.md#e071), [E340](QKB_INDEX.md#e340), [E341](QKB_INDEX.md#e341), [E395](QKB_INDEX.md#e395).
 
+Shared PC ROM/JNI/profile outputs are written by both `tools/build` and
+standalone `tools/build-pc`. Both wrappers now serialize through
+`build/.tools-build.lock`; nested PC generation reuses the parent's open file
+descriptor. Keep build entrypoints behind these wrappers. The concurrent
+ARM/PC/RISC-V profile regression passed and checked each architecture's
+support-selection, ROM-mask and JNI provenance against its generated profile.
+It does not cover external writers that bypass the wrappers.
+
+Evidence: `progress.md`, entry `RV-20261106-33`; logs
+`artifacts/logs/concurrent-builds-20261112T035503Z/`.
+
 ## Startup and Windows diagnostics — implementation accepted, timings open
 
 Normal firmware has zero console/DTR wait; bounded diagnostic startup capture is explicitly enabled.
