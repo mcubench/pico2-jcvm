@@ -9,7 +9,7 @@ descriptor support. SDK CDC-1200 reset is disabled because CHOUPI owns that
 callback; CHOUPI queues CDC reset and consumes it after TinyUSB returns from
 USB servicing both in the main loop and in interpreter cooperative progress.
 This permits reset during synchronous applet/native work while keeping USB
-event servicing bounded.
+event servicing bounded. Implementation commit: `fc18a6b9`.
 
 Validation: `./tools/test-ccid-progress-flow` passes 26/26, including callback
 return ordering, reset while native work is active, and one-shot consumption.
