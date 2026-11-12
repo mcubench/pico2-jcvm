@@ -18,9 +18,9 @@ visible, and no flash was attempted. Continue CAPIN-01 offline. Remaining:
 conditional required-component rules, library dependency closure/link checks,
 external superclass without Import fixture, INSTALL AID mismatch fixture, and
 physical validation. The validated pre-store payload check and resolver guards
-are committed as `54cb086a`. The working tree still contains the LOAD/Header AID
-comparison and unrelated pre-existing edits in `src/cap_load.cpp`; these were
-left unstaged. Other unrelated dirty files were preserved.
+are committed as `54cb086a`. LOAD/Header AID comparison remains unimplemented;
+`src/cap_load.cpp` has unrelated pre-existing lifecycle/filesystem edits in the
+worktree. Other unrelated dirty files were preserved.
 
 ---
 
