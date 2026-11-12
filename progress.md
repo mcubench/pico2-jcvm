@@ -27946,3 +27946,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Guest USB passthrough does not currently expose the reported BOOTSEL state. Have the user detach/re-attach the boards in VirtualBox, then retry when `2e8a:000f` is visible.
 - Commit: `3633ae74` (the progress record is backfilled in a follow-up documentation commit).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; image hash above; bounded wrapper results in session transcript.
+
+## 2026-11-12 RV-31 preserve fields across rollback generation 10 min
+
+- Step/experiment: `RV-20261106-31`
+- When: '2026-11-12 02:04 UTC' - '2026-11-12 02:14 UTC'
+- Model: `GPT-6`
+- Change: `JC_Instance::getFields()` now returns authoritative in-memory fields for nonpersistent objects before consulting the durable rollback generation. Added production-handler coverage for a real unrelated rollback, objects created before and after rollback, scalar/reference fields, failed first-promotion retry, immediate values, fresh-heap restoration, and shared reference identity.
+- Validation: New regression failed before the fix in both promotion scenarios, reproducing RV-31. After the fix, `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`) and `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`). `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` both passed. Hardware flash/serial validation was not possible because the last guest USB enumeration exposed runtime devices and no BOOTSEL interface.
+- Result: ARM UF2 `build/arm/pico2_choupi.uf2` is 1,997,312 bytes, SHA-256 `50a5914e78b47e57256fcc82fd6453c4130d6ab35eb4c435ba75f4eb2f7b8cbf`; build came from dirty source at HEAD `fef17e6a`, so CPLC prefix is `FEF17E6AC1E9F837`. RISC-V VM-core wrapper passed; it does not emit a full CHOUPI firmware image. Physical acceptance remains unverified.
+- Decision: Mark RV-31 software fix complete. Keep physical PERSIST acceptance open under its existing carry-forward and continue with the next active P1 item.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; focused test output in session transcript.

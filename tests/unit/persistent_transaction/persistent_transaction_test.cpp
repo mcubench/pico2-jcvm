@@ -580,6 +580,120 @@ int main() {
   {
     persistent_transaction_test::instance_field_count = 2;
     jcvm::Heap heap(7);
+    const auto unrelated_tag = make_tag(0xf0);
+    const auto unrelated_value = byte_record(0x5a);
+    const uint32_t generation_before =
+        jcvm::FlashMemory_Handler::persistentWriteRollbackGeneration();
+
+    const auto child_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    auto child = heap.getInstance(child_reference);
+    child->setField_Short(0, 0x1357);
+    const auto parent_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    auto parent = heap.getInstance(parent_reference);
+    parent->setField_Short(0, 0x2468);
+    parent->setField_Reference(1, child_reference);
+
+    const bool rollback_began =
+        jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    const bool unrelated_write =
+        jcvm::FlashMemory_Handler::writePersistentRecord(
+            unrelated_tag, unrelated_value.data(),
+            static_cast<uint32_t>(unrelated_value.size()));
+    const bool rollback_succeeded =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool generation_advanced =
+        jcvm::FlashMemory_Handler::persistentWriteRollbackGeneration() !=
+        generation_before;
+
+    // This is a valid internal access while the instances are still
+    // nonpersistent. It must not mark their authoritative in-memory fields
+    // stale merely because persistent storage rolled back elsewhere.
+    (void)parent->getFields();
+    (void)child->getFields();
+    const auto parent_root = make_tag(0xf1);
+    persistent_transaction_test::fail_one_write();
+    bool first_promotion_failed = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          parent_root, parent_reference, heap);
+    } catch (jcvm::Exceptions) {
+      first_promotion_failed = true;
+    }
+    const bool failed_promotion_kept_live_fields =
+        !parent->hasPersistentTag() &&
+        parent->getField_Short(0) == 0x2468 &&
+        parent->getField_Reference(1) == child_reference &&
+        child->getField_Short(0) == 0x1357;
+
+    bool old_object_retry_restored = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          parent_root, parent_reference, heap);
+      const auto child_root = make_tag(0xf3);
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          child_root, child_reference, heap);
+      const bool immediate_values =
+          parent->getField_Short(0) == 0x2468 &&
+          parent->getField_Reference(1) == child_reference &&
+          child->getField_Short(0) == 0x1357;
+      jcvm::Heap restored_heap(7);
+      const auto restored_parent_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              parent_root, restored_heap);
+      const auto restored_parent =
+          restored_heap.getInstance(restored_parent_reference);
+      const auto restored_child_reference =
+          restored_parent->getField_Reference(1);
+      const auto restored_child_root_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              child_root, restored_heap);
+      const bool restored_values =
+          restored_parent->getField_Short(0) == 0x2468 &&
+          restored_heap.getInstance(restored_child_reference)
+                  ->getField_Short(0) == 0x1357 &&
+          restored_child_reference == restored_child_root_reference;
+      old_object_retry_restored = immediate_values && restored_values;
+    } catch (...) {
+      old_object_retry_restored = false;
+    }
+
+    const auto post_rollback_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+    auto post_rollback_instance = heap.getInstance(post_rollback_reference);
+    post_rollback_instance->setField_Short(0, 0x369c);
+    (void)post_rollback_instance->getFields();
+    const auto post_rollback_root = make_tag(0xf2);
+    bool post_rollback_instance_restored = false;
+    try {
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          post_rollback_root, post_rollback_reference, heap);
+      jcvm::Heap restored_heap(7);
+      const auto restored_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              post_rollback_root, restored_heap);
+      post_rollback_instance_restored =
+          post_rollback_instance->getField_Short(0) == 0x369c &&
+          restored_heap.getInstance(restored_reference)->getField_Short(0) ==
+              0x369c;
+    } catch (...) {
+      post_rollback_instance_restored = false;
+    }
+
+    expect(rollback_began && unrelated_write && rollback_succeeded &&
+               generation_advanced,
+           "unrelated_persistent_rollback_advances_generation_for_rv31");
+    expect(first_promotion_failed && failed_promotion_kept_live_fields &&
+               old_object_retry_restored,
+           "pre_rollback_object_failed_promotion_preserves_fields_and_retries");
+    expect(post_rollback_instance_restored,
+           "post_rollback_new_object_fields_survive_first_promotion_and_restore");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+  {
+    persistent_transaction_test::instance_field_count = 2;
+    jcvm::Heap heap(7);
     const auto instance_tag =
         jcvm::FlashMemory_Handler::getAppletInstanceTag(1, 2, 3);
     const auto int_field_tag =

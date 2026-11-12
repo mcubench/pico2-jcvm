@@ -1,3 +1,23 @@
+# Current handoff — RV-31 cache-generation invalidation fixed — 2026-11-12 02:14 UTC
+
+Fixed RV-20261106-31 in `JC_Instance::getFields()`: nonpersistent instances
+now return their authoritative in-memory fields before the persistent rollback
+generation is checked. Added a regression that first failed before the fix,
+then passed after it. The test advances the actual rollback generation,
+promotes objects created both before and after rollback, checks scalar and
+reference values plus restored alias identity, and retries a failed first
+promotion. `./tools/test-persistent-transaction` and
+`./tools/test-persistent-inventory` pass (`TEST:SUMMARY fail=0`); ARM and
+RISC-V `max_crypto` wrappers pass.
+
+The normal ARM UF2 was rebuilt from the dirty worktree at HEAD `fef17e6a`;
+source changes are uncommitted pending this implementation-step commit. No
+physical flash or serial check was performed: the last authorized USB refresh
+still showed three runtime `2e8a:0009` devices and no BOOTSEL interface. Keep
+physical PERSIST acceptance open and continue with the next clean P1 item from
+TODO after committing this step. The regression and source fix are recorded in
+`progress.md` under `RV-20261106-31`.
+
 # Current handoff — RESOURCE-01 deletion sequence narrowed — 2026-11-12 01:39 UTC
 
 Offline review of

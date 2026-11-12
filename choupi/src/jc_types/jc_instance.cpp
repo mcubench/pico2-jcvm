@@ -921,13 +921,21 @@ void JC_Instance::clearForeignReferencesForPackage(
  * @return the number of instance field.
  */
 auto JC_Instance::getFields() const -> decltype(fields) {
+  // A nonpersistent instance's fields are authoritative in-memory state.
+  // Rollback generations describe durable field caches only; observing a
+  // generation change must not invalidate fields before this object is first
+  // promoted to persistent storage.
+  if (!this->isPersistent()) {
+    return this->fields;
+  }
+
   const uint32_t rollback_generation =
       FlashMemory_Handler::persistentWriteRollbackGeneration();
   if (this->persistent_fields_loaded &&
       this->persistent_rollback_generation != rollback_generation) {
     this->persistent_fields_loaded = false;
   }
-  if (!this->isPersistent() || this->persistent_fields_loaded) {
+  if (this->persistent_fields_loaded) {
     return this->fields;
   }
 
