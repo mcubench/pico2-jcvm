@@ -28545,7 +28545,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CAPIN-01 open for Export/link consistency, library dependency
   closure, old stored CAP guards and physical acceptance; investigate the later
   multipackage DELETE timeout separately.
-- Commit: `pending`
+- Commit: `536bf835`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261112T144850Z.log`
   and associated restart/rejection logs; malformed tests under
   `artifacts/logs/rv28-malformed-*-vpcd-20261106.log` if retained.
