@@ -151,6 +151,15 @@ successful `INS_CARD_RESET`. The approved helper granted two USB nodes, but
 `2e8a:0009` nodes and no BOOTSEL interface, despite the report that the boards
 are in BOOTSEL.
 
+The fresh corrected diagnostic image is
+`../build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-99fbee66.uf2`,
+4,103,680 bytes, SHA-256
+`56253ebaddecd56271571a0ce759dfadcf2b60f3eb5e5dc5873d3cc18f790292`. ARM and
+RISC-V wrappers both passed at source HEAD `99fbee66` (worktree was dirty).
+Identity-pinned flash attempts on D92 and 8E could not find their reset
+interfaces; 2BED was not connected. The wrapper wrote no new image in these
+attempts.
+
 To restore one runtime reader for PC/SC validation, run in the guest:
 
 ```sh

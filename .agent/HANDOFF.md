@@ -1,4 +1,4 @@
-# Current handoff — RESOURCE-01 corrected D92 run ended on PC/SC transport error — 2026-11-12 09:50 UTC
+# Current handoff — corrected build ready, guest has no BOOTSEL/PCSC reader — 2026-11-12 10:06 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -21,18 +21,38 @@ physical validation, not suite acceptance.
 
 At the failure, `pcsc_scan -r` listed only `Virtual PCD 00 00/01`; the approved
 helper granted two USB nodes and `pcscd.service` was active. `lsusb -d 2e8a:`
-still showed three runtime `2e8a:0009` devices, not BOOTSEL. 8E's pinned flash
-attempt could not locate its reset interface; 2BED was not connected. Preserve
-all logs under
-`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`.
-Do not reset or reflash D92 while its 36,000-second serial capture is retained
-(session 26227); it had no new data after the error checkpoint.
+still showed three runtime `2e8a:0009` devices, not BOOTSEL. I then rebuilt ARM
+and RISC-V from source HEAD `99fbee66`; both wrappers passed. Fresh diagnostic
+empty-card image:
+`build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-99fbee66.uf2`,
+4,103,680 bytes, SHA-256
+`56253ebaddecd56271571a0ce759dfadcf2b60f3eb5e5dc5873d3cc18f790292`, CPLC
+source ID `99FBEE66E0266B82`. Its build provenance reports a dirty source tree;
+it includes existing unrelated uncommitted worktree changes and is not a clean
+release build. The older corrected image used by the partial D92 run remains
+available with logs below.
 
-Next: continue offline diagnosis of the PC/SC loss after reset and use another
-identified physical reader if it returns. Do not busy-poll, and do not claim
-the 1.8.4 run passed. RESOURCE-01 still requires a complete option-1 run,
-option-2 `ALG_PERFORMANCE_STATIC` on another identified token, and a diagnosis
-of any remaining resource/transport failures.
+I tried to flash the fresh image to D92 by exact chip ID after preserving the
+client/serial logs. The wrapper found D92 at USB path `1-3`, then failed to
+locate a reset interface; three `picotool` attempts and CDC-1200 fallback did
+not enter BOOTSEL. No image was written. 8E had the same reset-interface
+failure; 2BED was not connected by chip ID. A final host-access `lsusb` still
+showed all three devices as runtime `2e8a:0009`. This differs from the report
+that all three are in BOOTSEL; the VM is not exposing BOOTSEL to this guest.
+
+Preserve all logs under
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`.
+The prior 36,000-second serial capture session 26227 had no new data after the
+error checkpoint; it can be stopped before a future reflash once guest BOOTSEL
+is visible.
+
+Next: continue offline diagnosis of the PC/SC loss after reset. The external
+request `PCSC-RECOVER-AFTER-RESET-20261112` gives the exact service/helper/scan
+commands and asks to attach a BOOTSEL node to the guest. Once usable USB state
+returns, verify the exact chip ID, flash the fresh `99fbee66` image, inspect a
+finite serial boot, restore the unchanged CAP, and continue physical option 1
+and option 2 on separate identified devices. Do not claim the 1.8.4 run passed.
+RESOURCE-01 remains open.
 
 # Handoff snapshot — RESOURCE-01 corrected D92 run active — 2026-11-12 09:44 UTC
 

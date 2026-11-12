@@ -28207,3 +28207,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Preserve logs; do not claim RESOURCE-01 acceptance. Continue offline diagnosis and resume on a different identified reader when PC/SC exposes one. Keep D92's serial capture intact; do not reset/reflash during this diagnosis.
 - Commit: `36fcfe69` (firmware fix under test)
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/client.log`, `serial.log`, and partial `results/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(D92E743D5F640C0F)_00_00_ALGSUPPORT__3b_80_01_81.csv`; image SHA-256 `1837533bb67c06d8eac30f4b22cbc8552b7134b21f56f8a31f3770c31a4dde62`.
+
+## 2026-11-12 Rebuild RESOURCE-01 image with committed CPLC ID 12 min
+
+- Step/experiment: `RESOURCE-01-REBUILD-99FBEE66-20261112`
+- When: '2026-11-12 09:54 UTC' - '2026-11-12 10:06 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Rebuilt the diagnostic `max_crypto` target after committing the alias guard so the embedded CPLC source ID identifies current HEAD `99fbee66`. Packaged a new empty-card ARM UF2 and updated HANDOFF/EXT_REQUESTS with its identity and the corrected VM visibility state.
+- Validation: `PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed, including `FLASH_LAYOUT:PASS firmware_end=0x100F4DF0 limit=0x10100000 remaining=45584 bytes`. The RISC-V wrapper equivalent passed. The ARM empty-card package command passed: 3,918 firmware blocks plus 4,096 erased storage blocks (`0x10100000–0x101FFFFF`), total 4,103,680 bytes; SHA-256 `56253ebaddecd56271571a0ce759dfadcf2b60f3eb5e5dc5873d3cc18f790292`; CPLC source ID `99FBEE66E0266B82`. Build provenance reports `state=dirty`; the image includes the worktree's unrelated uncommitted changes and is not a clean release build. Identity-pinned flash of this image to D92 did not write: the wrapper found the exact chip but could not access its reset interface; three BOOTSEL requests plus CDC fallback timed out. Final host-access `lsusb -d 2e8a:` still showed three runtime `2e8a:0009` devices. `./tools/doctor` passed host build prerequisites but does not validate board mode. PC/SC still listed only VPCD readers.
+- Result: A fresh commit-identified empty-card firmware is ready for physical validation, but no device was reflashed because the guest does not expose BOOTSEL despite the user report. No flash or serial validation of this new image is claimed.
+- Decision: Continue offline while the external request restores BOOTSEL/PCSC visibility. Once a target is exposed, verify chip ID and flash this exact UF2, then run finite serial startup and JCAlgTest on identified devices.
+- Commit: `99fbee66` (source/CPLC ID; build used dirty worktree)
+- Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-99fbee66.uf2`; SHA-256 above; `build/arm/build-provenance.txt`; flash attempt output was inspected directly, not archived.
