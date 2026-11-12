@@ -1,3 +1,26 @@
+# Current handoff — RESOURCE-01 host regression refresh — 2026-11-12 07:37 UTC
+
+The current shared worktree passes `./tools/test-persistent-transaction`
+(`TEST:SUMMARY fail=0`), `./tools/test-persistent-inventory`
+(`TEST:SUMMARY fail=0`), `./tools/test-rmi-registry` (retained-context,
+foreign-cycle, proxy, RMI, stack and dup_x assertions all pass), and
+`./tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`, including simulated
+interrupted snapshot recovery and full-overlay cleanup).
+
+Also ran
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 3 byte-array`.
+It rebuilt PC `max_crypto` and the probe CAP, then passed all 9 APDU checks;
+three deletion requests reclaimed three applet tags. Log:
+`artifacts/logs/object-deletion-vpcd-20261112T073705Z.log`. These results do
+not substitute for real Pico storage or transport.
+
+Fresh elevated USB enumeration still shows three runtime `2e8a:0009` CCID
+interfaces and no BOOTSEL interface. Do not claim physical deletion or the
+RESOURCE-01 long-run issue fixed. The candidate-trace image has still not been
+run on hardware, and the unchanged 1.8.4/jc305 campaigns with inventory and
+allocator telemetry remain outstanding. Preserve all dirty files from the
+other session; no implementation source was changed in this validation step.
+
 # Current handoff — cross-AID foreign-reference dup_x VPCD acceptance — 2026-11-12 07:22 UTC
 
 Extended R60 coverage with a focused cross-AID SIO APDU. The client creates a

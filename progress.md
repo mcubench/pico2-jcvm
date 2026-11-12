@@ -28113,3 +28113,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: R60 remains open for physical acceptance when a BOOTSEL interface is visible to the VM.
 - Commit: `2d00f020`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261112T070740Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261112T071815Z.log`; ARM/RISC-V build outputs in `build/arm` and `build/riscv`.
+## 2026-11-12 Revalidate RESOURCE-01 host suites 15 min
+
+- Step/experiment: `RESOURCE-01-CURRENT-TREE-REGRESSION-20261112`
+- When: '2026-11-12 07:22 UTC' - '2026-11-12 07:37 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Revalidated the current shared worktree's persistent transaction/inventory, retained-context RMI-root, RP2350 overlay fault-injection, and focused object-deletion VPCD suites. Updated TODO and HANDOFF with current host evidence and explicit physical limitations. No implementation source changed.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`); `./tools/test-rmi-registry` passed its retained-context/cycle/proxy/RMI/stack assertions; `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 3 byte-array` passed with 9/9 APDU checks and 3 applet records erased. Elevated USB enumeration still returned three runtime `2e8a:0009` interfaces, no BOOTSEL; no physical operation was attempted.
+- Result: The current source tree retains its host safety and three-cycle reclamation behavior. The physical missing-body deletion cause, interrupt timing, and full unchanged 1.8.4/jc305 long-run acceptance are still unverified.
+- Decision: Keep RESOURCE-01 and related physical acceptance open; wait for visible BOOTSEL only for hardware work, and continue offline implementation/root audit.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261112T073705Z.log`; other unit-suite outputs were inspected from the command sessions.
