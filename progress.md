@@ -27994,3 +27994,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-44 open for physical validation. Continue with the next offline P1 review task while the guest lacks BOOTSEL access.
 - Commit: `ab8e74f2`
 - Artifacts/logs: ARM/RISC-V wrappers; `build/arm/pico2_choupi.uf2`; persistent transaction and RP2350 overlay test outputs in session transcript.
+
+## 2026-11-12 propagate host emulator exit status 38 min
+
+- Step/experiment: `RV-20261106-32`
+- When: '2026-11-12 02:57 UTC' - '2026-11-12 03:35 UTC'
+- Model: `GPT-6 Codex`
+- Change: Carried startup, install, VPCD transport and save status through `starting_jcre()`, the Rust host context and child process exit, then returned it from `main_pc()`. Added `./tools/test-emulator-exit-status`, which validates seven emulator outcomes and preserves run logs. Updated TODO, review notes, QKB and handoff. Code committed in nested `choupi/os` as `9efd14e`; root commit SHA will be backfilled after the implementation commit.
+- Validation: `./tools/test-emulator-exit-status` passed after fixture verification (`81` files): absent restored instance, refused connection, malformed frame, failed install, image save failure and sidecar save failure each exited 1; clean VPCD close exited 0. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. Relevant source syntax and test Python compilation passed. Existing third-party Rust/C++ warnings remain; the root-wide `git diff --check` also reports pre-existing trailing whitespace in unrelated dirty `AGENTS.md`, `heap.hpp` and `bc_invoke.cpp` changes.
+- Result: The prior false-success exit status is fixed for the acceptance matrix. PC emulator SHA-256 is `8cf5716b7491f4d1154a0a300cfe14579ac0f0e4f091d5b2a7d39408c75b5a41`. ARM `max_crypto` UF2 is 1,997,312 bytes, SHA-256 `e2c20a5629f3c5a10b4dfb2f84dd87e27ec6105baa7d5c9543329db09eab82b8`, with CPLC source commit ID `A80276CD5647A824`. It was not flashed: elevated USB enumeration saw three runtime `2e8a:0009` devices, not BOOTSEL; `./tools/flash --usb-path 1-3` stopped before writing because serial/chip identity was unavailable. Hardware outcome was not measured.
+- Decision: Close RV-32 software acceptance. Keep physical flashing pending verified BOOTSEL identity and continue offline with RV-33 shared build-generation locking.
+- Commit: `<root implementation commit; SHA backfilled in follow-up documentation commit>`
+- Artifacts/logs: `artifacts/results/emulator-exit-status-20261112T033224Z/`; `build/arm/pico2_choupi.uf2`; current source tree is dirty with unrelated pre-existing edits.

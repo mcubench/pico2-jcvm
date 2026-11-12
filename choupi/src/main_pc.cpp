@@ -2204,9 +2204,14 @@ int main_pc(int argc, char *argv[]) {
   }
 
   // running emulator
-  run_emulator();
+  const int emulator_status = run_emulator();
+  if (emulator_status != 0) {
+    std::fprintf(stderr, "ERROR: emulator application failed status=%d\n",
+                 emulator_status);
+    return EXIT_FAILURE;
+  }
 
-  return pc_storage_initialization_failed ? EXIT_FAILURE : EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
 
 #ifdef __cplusplus
@@ -2235,9 +2240,11 @@ int starting_jcre() {
     installed = install_vpcd_applet();
   }
 
+  int application_status = installed ? 0 : 1;
   if (installed && vpcd_configured) {
     if (run_vpcd_transport() != 0) {
       TRACE_JCVM_ERR("vpcd transport ended with an error");
+      application_status = 1;
     }
   }
 
@@ -2260,7 +2267,7 @@ int starting_jcre() {
     }
   }
 
-  return installed ? 0 : 1;
+  return application_status;
 }
 #ifdef __cplusplus
 }

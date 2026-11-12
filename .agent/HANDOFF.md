@@ -1,3 +1,29 @@
+# Current handoff — RV-32 emulator exit propagation passes; BOOTSEL still not visible to guest — 2026-11-12 03:35 UTC
+
+Completed RV-20261106-32. Host card startup, failed install, VPCD transport,
+memory-image save and registry-sidecar save statuses now propagate from C++
+through Rust guest context/process exit to `main_pc()`. Clean VPCD close still
+exits 0. `./tools/test-emulator-exit-status` passed all seven cases with the
+unchanged 1.8.4/jc305 fixture; fixture verification passed for 81 files. Logs:
+`artifacts/results/emulator-exit-status-20261112T033224Z/`. PC binary SHA-256:
+`8cf5716b7491f4d1154a0a300cfe14579ac0f0e4f091d5b2a7d39408c75b5a41`.
+
+ARM and RISC-V `max_crypto` wrappers passed. Current ARM UF2:
+`build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
+`e2c20a5629f3c5a10b4dfb2f84dd87e27ec6105baa7d5c9543329db09eab82b8`; CPLC
+source commit ID `A80276CD5647A824`. It was not flashed. The guest enumerates
+three `2e8a:0009` runtime interfaces, not BOOTSEL `2e8a:000f`; the reader helper
+found zero expected JCVM readers. `tools/flash --usb-path 1-3` stopped before
+loading because the runtime descriptor exposes no serial or chip ID, so target
+identity could not be verified. Do not retry flash until the guest identifies
+an exact board in BOOTSEL.
+
+The RV-32 source commit is `9efd14e` in `choupi/os`; root documentation/tests
+and the submodule pointer are pending the root commit. Preserve the unrelated
+dirty worktree and dirty `choupi/os/src/fs/{mod.rs,tests.rs}` files. Next
+offline P1 candidate: RV-33, protect shared PC/firmware generation from
+concurrent writers.
+
 # Current handoff — RV-44 rollback sync now publishes after dropping transaction guard — 2026-11-12 02:57 UTC
 
 A second R44 review found that the Pico `fs_sync()` returns success without publishing when `choupi_persistent_write_transaction_active()` is true. Rollback now stages restoration with the guard active, drops it only around the publication call, and restores it if sync fails. The persistent-transaction stub now models this production deferral. The RP2350 overlay integration test injects rollback-sync failure, verifies quarantine, simulates cold reset to the committed snapshot, and confirms storage is usable afterward. This follow-up and the tests are recorded in `progress.md` under `RV-20261106-44-SYNC-RESET`; committed as `ab8e74f2`.

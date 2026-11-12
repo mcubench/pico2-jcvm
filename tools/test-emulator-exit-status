@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: ./tools/test-emulator-exit-status"
+require_command python3
+
+"${repo_root}/tools/fixture-path" --verify
+"${repo_root}/tools/build-pc" --profile max_crypto
+python3 "${repo_root}/tests/integration/emulator_exit_status_test.py"

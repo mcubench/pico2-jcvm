@@ -58,8 +58,12 @@ Use a freshly generated empty image for clean-card tests: stale images can retai
 Discover readers with bounded, logged retries and pin one reader through install, probe and cleanup.
 A socket-connect timeout may hide an INSTALL failure; preserve emulator stdout and inspect pre-connect stages.
 Terminate only the known test process group when a wrapper times out; a detached emulator can survive and consume CPU.
-Some historical emulator errors exited zero: check VM markers and actual results as well as exit status
-until RV-20261106-32 acceptance is complete.
+RV-20261106-32 now propagates tested startup, VPCD, install and persistence
+failures to the parent exit code. `./tools/test-emulator-exit-status` covers
+absent restored applet, refused connection, malformed frame, failed install,
+image/sidecar save failures and clean close. Run it through host execution that
+permits `ptrace`; continue checking diagnostics and results for new failure
+paths beyond this matrix.
 
 Evidence: [E360](QKB_INDEX.md#e360), [E089](QKB_INDEX.md#e089), [E288](QKB_INDEX.md#e288), [E297](QKB_INDEX.md#e297), [E342](QKB_INDEX.md#e342).
 
