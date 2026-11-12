@@ -28277,5 +28277,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`); `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including 1,000 randomized multi-record cuts, 1,000 reclamation cuts, recovery, and compaction cases. No physical test ran because guest USB exposes runtime devices only and PC/SC has no Pico reader.
 - Result: Current host-model safety and recovery coverage remains green. These tests do not resolve the physical post-applet stall or complete long-run acceptance.
 - Decision: Preserve the host coverage and continue with offline implementation/review while waiting for a guest-visible physical interface.
-- Commit: `to be recorded in the commit-hash backfill`
+- Commit: `fad359d2`
 - Artifacts/logs: Build/test outputs inspected in command sessions; no separate result files.
