@@ -1,4 +1,4 @@
-# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:25 UTC
+# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:44 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -75,6 +75,16 @@ provenance is dirty (unrelated worktree changes are preserved), CPLC source ID
 It enables object deletion and CCID applet tracing but disables heap-GC debug
 output, including per-candidate lines. It includes `fs_sync()` duration. No
 image was flashed.
+
+Current shared-tree host evidence: persistent inventory, persistent transaction
+and RP2350 overlay suites pass (`TEST:SUMMARY fail=0`). The bounded object-
+deletion VPCD probe passed three byte-array cycles, RSA replacement cycles at
+512/2048/4096 bits, and a live package-static RSA-root case. The static-root
+case reclaimed 10 obsolete applet records only after the retained static was
+cleared. Logs are `artifacts/logs/object-deletion-vpcd-20261112T113705Z.log`,
+`113846Z.log`, `114015Z.log`, `114204Z.log`, and `114400Z.log`. These are PC
+VPCD results, not physical evidence. The physical reader/BOOTSEL mode remains
+unavailable in the guest.
 
 Identity-pinned flash attempts to D92 and 8E both found the exact runtime
 device but `picotool` reported `Unable to locate reset interface`; the CDC-1200

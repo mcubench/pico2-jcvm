@@ -28351,3 +28351,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the trace image ready for physical use; continue implementation and host validation while BOOTSEL passthrough is unavailable.
 - Commit: `05425677` (regression and fixture verification record); the hash backfill follows separately.
 - Artifacts/logs: Test summaries in command output; fixture manifest `tests/fixtures/manifest.json`.
+
+## 2026-11-12 Recheck persistent and object-deletion regressions 13 min
+
+- Step/experiment: `RESOURCE-01-CURRENT-SHARED-TREE-REGRESSIONS-20261112`
+- When: '2026-11-12 11:31 UTC' - '2026-11-12 11:44 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Re-ran persistent inventory, transaction, and RP2350 overlay regressions against the current shared worktree, then exercised request-gated deletion through the bounded PC VPCD probe. No source or supplied fixture bytes were changed.
+- Validation: `./tools/test-persistent-inventory`, `./tools/test-persistent-transaction`, and `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). `PICO2_HOST_USB_ACCESS=1 timeout ... ./tools/test-object-deletion-vpcd` passed for 3 byte-array cycles (9 APDU checks; 3 records reclaimed), RSA public-key replacement for 2 cycles each at 512 and 2048 bits (9 checks and 20 records per size), one 4096-bit replacement (6 checks; 10 records in 8+2 batches), and one RSA live-static case (8 checks; live root preserved and 10 obsolete records reclaimed after it was cleared). PC builds emitted pre-existing warnings from the pinned CHOUPI OS and packed CAP headers; builds and probes returned zero. Fixture verification remains pass (81 files; see prior record).
+- Result: Current host model still passes the focused persistent safety/recovery suites and shows bounded deletion across byte arrays, RSA key sizes through 4096 bits, and a retained package-static root. This is PC-backend evidence and does not establish RP2350 flash timing, USB transport health, or long-run physical acceptance.
+- Decision: Keep RESOURCE-01 open; use the quiet CCID trace image on a physical Pico after guest BOOTSEL passthrough returns, then continue unchanged 1.8.4 option 1/2 campaigns.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261112T113705Z.log`, `113846Z.log`, `114015Z.log`, `114204Z.log`, `114400Z.log`.

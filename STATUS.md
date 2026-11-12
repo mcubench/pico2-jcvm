@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 11:25 UTC
+Updated: 2026-11-12 11:44 UTC
 
 ## Goal
 
@@ -31,6 +31,12 @@ current physical-test handoff.
 - Current-tree persistent-transaction, persistent-inventory and RP2350
   filesystem-overlay suites pass (`TEST:SUMMARY fail=0`); overlay tests include
   modeled power cuts and full-index compaction. This is host-only evidence.
+- Current shared-tree object-deletion VPCD runs pass for three byte-array
+  deletion cycles; RSA public-key replacement at 512, 2048 and 4096 bits; and
+  a live package-static RSA root. Across the RSA cases 50 applet-owned records
+  were reclaimed, while the live-static case confirmed the root survived until
+  it was cleared. These runs use the PC VPCD backend and are not physical
+  acceptance.
 
 ## Hardware and current evidence
 
@@ -52,6 +58,9 @@ current physical-test handoff.
   panic. D92 performance-static and other all-algorithms attempts were
   interrupted or failed with PC/SC errors. Neither long option-1 nor option-2
   campaign completed; these are not acceptance passes.
+- The current guest still shows three `2e8a:0009` runtime devices; no physical
+  test ran in this turn. BOOTSEL passthrough and all physical acceptance remain
+  open.
 - A bounded 8-second monitor on D92 after the reset attempts exited 0 with no
   serial output. This did not constitute a boot or runtime health pass.
 
