@@ -371,29 +371,33 @@ See the 2026-11-12 08:27 UTC handoff and progress entries
 ## Physical Pico reader disappears from PC/SC after a successful reset APDU — unresolved
 
 **Symptom:** On corrected D92 image `1837533b…dde62`, the 1.8.4 all-algorithms
-client ran for about 13 minutes and produced 51 `ALG_` result rows, then failed with
-`SCARD_E_NOT_TRANSACTED` sending the next test APDU `B0 75 12 00 01 16 00`.
-The immediately preceding `INS_CARD_RESET` returned `9000` after an
-object-deletion batch erased three applet records. The serial trace ends after
-the successful prior response; the failed APDU is absent, and there are no
-`HEAP_GC_FS_READ_FAIL`, deletion skips, `FAULT`, `F205` or `NO_RESOURCE` lines.
+client ran about 13 minutes and produced 51 `ALG_` rows, then returned
+`SCARD_E_NOT_TRANSACTED` for APDU `B0 75 12 00 01 16 00`. The preceding
+`INS_CARD_RESET` completed with `9000` after erasing three applet records. The
+next APDU did reach the applet: serial logs show `APDU_PROCESS stage=end
+sw=9000 len=29`. However, there is no subsequent `CCID_RESPONSE` record for
+that command; the last response snapshot is still the preceding `B0E2` reset.
+No `HEAP_GC_FS_READ_FAIL`, deletion skip, `FAULT`, `F205` or `NO_RESOURCE`
+appears on this corrected image.
 
-**Observed cause status:** The USB nodes remained runtime `2e8a:0009`, but
-`pcsc_scan -r` listed only the two VPCD readers. The approved helper granted
-access to two USB nodes, and `systemctl is-active pcscd.service` reported
-`active`; the accessible journal query returned no entries. This localizes the
-failure to a lost PC/SC reader/transaction after reset, but does not distinguish
-VM passthrough, pcscd/CCID driver state or a device-side CCID condition. Do not
-call this a JCVM panic or a completed suite. `dmesg --ctime` was denied with
-`Operation not permitted` even on the read-only escalated diagnostic path, so
-kernel USB disconnect/reset events could not be checked.
+**Observed cause status:** `choupi_vm_process_applet()` returns after the
+`APDU_PROCESS stage=end` log, then `src/ccid_device.cpp` calls `fs_sync()` and
+queues the CCID response. The current trace cannot tell whether it stalls in
+that sync, response submission or USB completion. At exit the USB nodes still
+enumerated as runtime `2e8a:0009`, while `pcsc_scan -r` listed only VPCD; the
+approved helper granted two nodes and `pcscd.service` remained active. This is
+not enough evidence to blame PC/SC alone or to call the firmware panic-free at
+the response boundary. `dmesg --ctime` was denied with `Operation not
+permitted`, so kernel USB reset events could not be checked. The earlier 8E
+run is a separate reproduced heap/body failure: it emitted
+`HEAP_GC_FS_READ_FAIL` and later `*** PANIC *** Out of memory`.
 
-**Response:** Preserve the result/serial logs and use a different identified
-physical board once PC/SC lists it; do not reset or reflash D92 while its
-diagnostic logs are being preserved. Do not retry by busy polling. No recovery
-method has yet been validated. The source-level alias-target regression has
-separate positive physical evidence before the transport failure, but RESOURCE-01
-acceptance remains open.
+**Response:** Preserve the result/serial logs. Add gated stage telemetry around
+applet return, `fs_sync()` begin/end, CCID response submission and IN completion;
+then rerun on an identified physical board after PC/SC access returns. Do not
+retry by busy polling. The alias-target fix has separate positive physical
+evidence, but neither this post-applet response path nor RESOURCE-01 acceptance
+is closed.
 
 Evidence: `progress.md`, entry `RESOURCE-01-D92-PCSC-LOSS-AFTER-RESET-20261112`;
 `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/client.log`,

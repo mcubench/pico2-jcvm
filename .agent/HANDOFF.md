@@ -1,4 +1,4 @@
-# Current handoff — corrected build ready, guest has no BOOTSEL/PCSC reader — 2026-11-12 10:06 UTC
+# Current handoff — post-applet CCID trace built; guest USB still runtime — 2026-11-12 10:31 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -12,8 +12,13 @@ D92 `D92E743D5F640C0F`, reader `Pico 2 CHOUPI CCID [JCVM CCID]
 The client session 21246 exited 1 after producing 51 `ALG_` result rows (about
 13 minutes), with `SCARD_E_NOT_TRANSACTED` attempting APDU
 `B0 75 12 00 01 16 00`. The preceding `INS_CARD_RESET` returned `9000` after
-3 applet records were erased. The failed next APDU is absent from the serial
-trace. At the last complete checkpoint there were 3,762 alias protections and
+3 applet records were erased. Correction from final serial inspection: the
+next `B0 75` APDU reached the applet and ended with `sw=9000 len=29`, but the
+log ends before a new `CCID_RESPONSE` record; the previous response snapshot
+is still for `B0E2`. The stall is after applet execution and before the response
+reaches the host, possibly in `fs_sync()`, CCID response submission or USB
+completion; this is not yet localized. At the last complete checkpoint there
+were 3,762 alias protections and
 447 unrelated erasures, with no `HEAP_GC_FS_READ_FAIL`, deletion skip, `FAULT`,
 `F205` or `NO_RESOURCE`. The exact previously erased body
 `03013894FFFFFE000000420007FFFF00000045` was protected. This is partial
@@ -46,13 +51,29 @@ The prior 36,000-second serial capture session 26227 had no new data after the
 error checkpoint; it can be stopped before a future reflash once guest BOOTSEL
 is visible.
 
-Next: continue offline diagnosis of the PC/SC loss after reset. The external
-request `PCSC-RECOVER-AFTER-RESET-20261112` gives the exact service/helper/scan
-commands and asks to attach a BOOTSEL node to the guest. Once usable USB state
-returns, verify the exact chip ID, flash the fresh `99fbee66` image, inspect a
-finite serial boot, restore the unchanged CAP, and continue physical option 1
-and option 2 on separate identified devices. Do not claim the 1.8.4 run passed.
-RESOURCE-01 remains open.
+Added debug-gated `CHOUPI:CCID_APPLET` markers around VM return, `fs_sync()`
+begin/end and response submission. The submit-return marker reports whether the
+final response remains pending, whether a ZLP is pending, IN endpoint busy
+state, and submit error count. The existing periodic CCID progress record
+exposes IN completion stage without printing from the USB callback. Both
+focused tests pass: `./tools/test-ccid-progress-flow` (21/21) and
+`./tools/test-ccid-apdu-route` (17/17). ARM and RISC-V `max_crypto` builds with
+object deletion and heap-GC debug enabled both pass. The ARM build reports
+firmware end `0x100F5018`, leaving 45,032 bytes before `0x10100000`.
+
+The boards were reported reinserted in BOOTSEL, but this guest still sees three
+runtime `2e8a:0009` devices (one without a product descriptor), no `2e8a:000f`
+BOOTSEL interface, and `pcsc_scan -r` lists only the two VPCD readers. The
+approved helper grants two runtime USB nodes. Do not claim that a new image was
+flashed. The separate pre-fix 8E run ended in heap read failures and
+out-of-memory; keep it distinct from this D92 post-applet response stall.
+
+Next: once a physical device is visible in BOOTSEL to the VM, build/package
+from the committed trace source, verify its exact chip ID, flash one identified
+board, inspect a finite serial boot, and continue unchanged 1.8.4 option 1 and
+option 2 on separate identified devices when possible. Inspect the new markers
+to localize whether the lost response stalls in `fs_sync()`, submission or USB
+completion. Do not claim the partial 1.8.4 run passed. RESOURCE-01 remains open.
 
 # Handoff snapshot — RESOURCE-01 corrected D92 run active — 2026-11-12 09:44 UTC
 

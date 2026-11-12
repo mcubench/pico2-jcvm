@@ -28219,3 +28219,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline while the external request restores BOOTSEL/PCSC visibility. Once a target is exposed, verify chip ID and flash this exact UF2, then run finite serial startup and JCAlgTest on identified devices.
 - Commit: `99fbee66` (source/CPLC ID; build used dirty worktree)
 - Artifacts/logs: `build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-99fbee66.uf2`; SHA-256 above; `build/arm/build-provenance.txt`; flash attempt output was inspected directly, not archived.
+
+## 2026-11-12 Trace post-applet CCID response stall 9 min
+
+- Step/experiment: `RESOURCE-01-POST-APPLET-CCID-TRACE-20261112`
+- When: '2026-11-12 10:22 UTC' - '2026-11-12 10:31 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added debug-gated serial markers around applet VM return, `fs_sync()` begin/end, CCID response submission and submit return. The final marker records pending-response, ZLP, IN-endpoint busy and submission-error state. Corrected HANDOFF/QKB/TODO with evidence that D92's failing APDU did reach the applet and returned `9000 len=29`; earlier progress records remain unchanged. No logging was added in the USB completion callback.
+- Validation: `./tools/test-ccid-progress-flow` passed (`TEST:SUMMARY pass=21 fail=0`); `./tools/test-ccid-apdu-route` passed (`TEST:SUMMARY pass=17 fail=0`). `PICO2_DEBUG_HEAP_GC=1 PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` passed and reported firmware end `0x100F5018`, 45,032 bytes remaining before `0x10100000`. The corresponding RISC-V wrapper passed with `mode=shared-code-build-only`; its firmware bytes were not separately applicable. The generated build identifies pre-change HEAD `c194602c` and has dirty-tree provenance. The approved reader helper granted two USB nodes; `lsusb -d 2e8a:` showed three runtime `2e8a:0009` nodes and no BOOTSEL `000f`, while bounded reader scan listed only VPCD. No physical flash was attempted and no new firmware image was validated on-device. `git diff --check` was limited to this step's files; unrelated existing worktree whitespace findings remain outside this step.
+- Result: The likely failure boundary is now observable in a subsequent diagnostic run, but the D92 stall is not localized yet. The reported BOOTSEL state is not visible to the guest, so the trace image has not been tested on hardware.
+- Decision: Commit the trace instrumentation and records, rebuild/package with the resulting source ID, and flash an identity-verified device once BOOTSEL is visible to the VM. RESOURCE-01 and full JCAlgTest acceptance remain open.
+- Commit: `to be recorded in the follow-up progress metadata commit`
+- Artifacts/logs: Build products `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no new physical run logs.
