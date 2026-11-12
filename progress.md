@@ -28580,7 +28580,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline only. Next P0 acceptance gap is exercising vendor
   reset and reset servicing during a long synchronous applet operation; then
   resume resource campaigns only when physical hardware is explicitly available.
-- Commit: `pending`
+- Commit: `eaf27ec1`
 - Artifacts/logs: `.agent/EXT_REQUESTS.md` request
   `WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2`; per-board logs and summary at
   `artifacts/results/maxcrypto-gc-nodebug-flash-20261112-current/`.
