@@ -27944,5 +27944,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` both passed. Elevated `lsusb -d 2e8a:` and `picotool info -a` showed three runtime `2e8a:0009` devices and no accessible BOOTSEL device. `PICO2_HOST_USB_ACCESS=1 ./tools/flash --usb-path {1-3,1-4,1-5} build/arm/pico2_choupi.uf2` was run through elevated host access for all three paths; all bounded attempts failed before writing because none entered BOOTSEL.
 - Result: ARM image size 1,997,312 bytes; SHA-256 `be5fca4bdaed456ccd650c3e6d556005dcf37ffb860768b693472009447402d6`. CPLC commit prefix `BA7F465DC615E3FE`. No board was flashed; no finite serial or PC/SC validation was possible.
 - Decision: Guest USB passthrough does not currently expose the reported BOOTSEL state. Have the user detach/re-attach the boards in VirtualBox, then retry when `2e8a:000f` is visible.
-- Commit: pending
+- Commit: `3633ae74` (the progress record is backfilled in a follow-up documentation commit).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; image hash above; bounded wrapper results in session transcript.
