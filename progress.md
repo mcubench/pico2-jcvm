@@ -27968,5 +27968,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Nine offline cases pass (`TEST:SUMMARY fail=0`): absent serial A with sole device B, duplicate runtime serials, exact runtime selection, replaced runtime at a stable path, replaced BOOTSEL at a stable path, same-device BOOTSEL recovery, direct serial/chip-ID match and mismatch, and ambiguous automatic BOOTSEL selection. `bash -n` passes for all changed shell files; `./tools/flash --help` passes. No real USB command or flash was run for this step.
 - Result: The tested selector rejects the reviewed wrong-board fallback and stable-path replacement cases before any load. Physical flash identity logging remains unverified.
 - Decision: Keep RV-34 open for physical verification; use this selector for the next authorized hardware attempt.
-- Commit: pending
+- Commit: `45d26b58` (the progress record is backfilled in a follow-up documentation commit).
 - Artifacts/logs: `tests/unit/flash_target_selection/flash_target_selection_test.sh`; synthetic test output in session transcript.
