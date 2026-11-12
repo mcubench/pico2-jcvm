@@ -19526,7 +19526,7 @@
 - Validation: `python3 tools/tests/sio_cross_aid_vpcd_test.py` regenerated all three JC 3.0.5 CAPs (zero converter errors/warnings) and passed six assertions. Positive call returned `45679000`; denied service lookup returned `6A019000`; local array was rejected and caught, returning `6A039000`. Physical probe compiles with `tools/env javac`; shell syntax and scoped diff checks pass. Firmware builds were not repeated because only test fixture and documentation changed.
 - Result: VPCD now covers positive cross-AID arguments/context AIDs, explicit service denial and applet-local reference rejection. The same image's physical fixture remains blocked at service applet installation stage 9; the new negative APDUs have not run on hardware.
 - Decision: Keep CTX-01 open. Preserve both denial regressions and resume physical execution after stage-9 install is diagnosed or a clean card is available.
-- Commit: `63a3cd43` (progress-record hash backfill committed separately).
+- Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214753Z.log`.
 
 ## 2026-11-01 — Verify cross-AID 32-bit argument and return 10 minutes
@@ -28385,7 +28385,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Direct elevated `lsusb -d 2e8a:` reports device 088 and devices 096/100 all at runtime PID `0009`; no BOOTSEL PID `000f` is visible. No flash command was issued.
 - Result: The VM still does not expose a BOOTSEL device, despite the user's physical-mode report; the current quiet diagnostic image remains unflashed.
 - Decision: Continue offline. Once VirtualBox attaches a BOOTSEL interface to this guest, flash the prepared image by verified chip ID and capture finite serial output.
-- Commit: pending.
+- Commit: `ed5716bb`.
 - Artifacts/logs: Direct `lsusb` output inspected; no separate log.
 
 ## 2026-11-12 Prepare no-debug max_crypto object-deletion image 7 min
@@ -28397,7 +28397,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed with `object_deletion=ON` and all three debug options OFF. `./tools/package-empty-card-uf2` passed with 3,910 firmware blocks and 4,096 erased storage blocks (storage `0x10100000-0x101FFFFF`). ELF string inspection found no CCID trace marker, per-candidate heap-GC trace, or `HEAP_GC:` debug line; normal object-deletion event summaries remain. `git diff --check -- STATUS.md TODO.md .agent/HANDOFF.md .agent/EXT_REQUESTS.md progress.md` passed.
 - Result: UF2 is 4,099,584 bytes, SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`; firmware SHA-256 `d588f1cb72a06fdb99870db3f44a83cef0130e39a79fc8f09c6491b4d2c3fb03`. Source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`. No physical flash or external Windows validation was performed.
 - Decision: Provide this image for external testing; keep device-level GC validation open until the user returns Windows logs or a BOOTSEL token is visible in this VM.
-- Commit: pending.
+- Commit: `63a3cd43` (progress-record hash backfill committed separately).
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`; build provenance in `build/arm/build-provenance.txt` and `build/riscv/build-provenance.txt`.
 
 ## 2026-11-12 Reproduce CAP LOAD package AID mismatch 13 min
