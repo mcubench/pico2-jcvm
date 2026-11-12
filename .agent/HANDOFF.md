@@ -1,6 +1,6 @@
 # Current handoff — R60 valid and invalid dup_x interpreter cases pass on VPCD — 2026-11-12 04:34 UTC
 
-`./tools/test-rmi-registry` passes the stack-helper matrix: all M/N byte
+Committed as `7e368137`. `./tools/test-rmi-registry` passes the stack-helper matrix: all M/N byte
 combinations, exact short ordering, underflow/overflow state preservation,
 reference-owner metadata and int pairs. Fresh `./tools/test-dup-x-vpcd` also
 passes a valid `dup_x 0x12` during applet INSTALL/SELECT and rejects invalid

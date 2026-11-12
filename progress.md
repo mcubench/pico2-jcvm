@@ -4568,7 +4568,7 @@
   run because no allocation error was captured. Keep physical calls in
   host-access context; the prior USB guard commit covers accidental restricted
   invocations.
-- Commit: pending
+- Commit: `7e368137`
 - Artifacts/logs: `artifacts/logs/build-arm-oneshot-unsupported-fix-20261017.log`,
   `artifacts/logs/build-pc-oneshot-unsupported-fix-20261017.log`,
   `artifacts/logs/jcsystem-oneshot-unsupported-vpcd-final-20261017.log`,
