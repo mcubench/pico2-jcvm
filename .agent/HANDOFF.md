@@ -1,3 +1,37 @@
+# Current handoff — fail closed on aliases to missing persistent array bodies — 2026-11-12 01:01 UTC
+
+Added a guard in `setPersistentField_Reference()` that refuses to publish an
+alias when a retained persistent-array handle's body tag is absent. The new
+host test first reproduced the defect: after deleting the durable body while
+keeping the handle, a second field assignment wrote a dangling alias. With the
+guard, the assignment throws `IOException` and leaves the field unset. This
+prevents propagation of the corrupt edge; it does not recover lost contents or
+prove what removed the body in the earlier physical RESOURCE-01 trace.
+
+Validation after the change: `./tools/test-persistent-transaction` passes
+(`fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 1
+byte-array` passes (5/5 APDU checks; one orphan tag erased);
+`./tools/test-persistent-inventory` and `./tools/test-rp2350-fs-overlay` pass;
+ARM and RISC-V `max_crypto` wrappers pass. Current normal ARM image is
+`build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
+`0a2f5b0ba8e4f707c4fa9f81fe8fbe48e7b06b030404cf85c783c3bcaebe8809`, with
+50,328 bytes below the firmware boundary. CPLC source ID is
+`0x8C01A26BF5804930`. No physical image was written in this step.
+
+USB evidence conflicts with the reported BOOTSEL state: `lsusb -d 2e8a:` sees
+three `2e8a:0009` runtime devices; `picotool info` sees no accessible BOOTSEL
+devices; the approved PC/SC helper found zero readers. The bounded flash cycle
+for chip `8E464F4E2BBC0A19` timed out before writing. Do not claim hardware
+validation. Continue RESOURCE-01 offline by identifying how the missing body
+became unreachable or was erased; retain deletion disabled in normal firmware.
+Retry physical validation only after the VM actually sees BOOTSEL `2e8a:000f`
+or a specific Pico PC/SC reader.
+
+Implementation, regression and progress record are being committed as one
+logical step; preserve unrelated worktree changes.
+
+---
+
 # Current handoff — CAPIN-01 early LOAD validation and resolver guards — 2026-11-12 00:27 UTC
 
 Added a test-only unknown-tag mutation to the unchanged JCAlgTest 1.8.4 CAP;

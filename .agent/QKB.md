@@ -77,6 +77,21 @@ Continue RESOURCE-01 and offline-only JC-RESET-01 under [TODO](../TODO.md).
 
 Evidence: [E012](QKB_INDEX.md#e012), [E409](QKB_INDEX.md#e409), [E368](QKB_INDEX.md#e368).
 
+## Retained array handle after persistent body loss — alias guard implemented; origin unresolved
+
+`setPersistentField_Reference()` used to republish an alias to a persistent
+array's cached body tag without confirming that the body still existed. A
+focused regression deletes the body while retaining the heap handle; the old
+path writes a dangling alias, while the current path throws `IOException` and
+leaves the destination field unset. This prevents propagating a corrupt edge,
+but cannot reconstruct body data or explain who removed it. Keep the full
+RESOURCE-01 physical trace and reclaimer-candidate investigation open; do not
+treat the guard as proof that object deletion is safe or that long-run resource
+failures are fixed.
+
+Evidence: `progress.md`, entry `RESOURCE-01-STALE-ARRAY-BODY-GUARD-20261112`;
+regression `persistent_array_handle_rejects_realiasing_missing_body`.
+
 ## Request-gated deletion and batch budgets — implemented, physical acceptance open
 
 Normal firmware reports object deletion unsupported. Diagnostic `PICO2_ENABLE_OBJECT_DELETION=1`

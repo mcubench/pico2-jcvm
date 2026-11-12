@@ -1656,6 +1656,15 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
     auto array = heap.getArray(value);
     if (array->isPersistent() || array->hasPersistentTag()) {
       const fs::Tag array_tag = array->getPersistentTag();
+      if (array->hasPersistentTag() &&
+          fs_exists(array_tag.value, array_tag.len) == 0) {
+        // A retained array handle may outlive its durable body if a previous
+        // collection or interrupted write removed that record. Publishing a
+        // new alias to the stale identity makes the corrupt edge durable and
+        // causes every later strict heap trace to fail. The body contents may
+        // no longer be recoverable from this handle, so fail closed.
+        throw Exceptions::IOException;
+      }
       if (tag.len != array_tag.len ||
           std::memcmp(tag.value, array_tag.value, tag.len) != 0) {
         write_persistent_array_alias(tag, array_tag);

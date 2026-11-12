@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-11. Active backlog for `plan.md`. Implementation and acceptance
+Updated: 2026-11-12. Active backlog for `plan.md`. Implementation and acceptance
 are separate: keep tasks open while required validation is missing. Follow
 `AGENTS.md` for native API boundaries, unchanged fixtures, build/hardware gates
 and commits. Use unchanged JCAlgTest **1.8.4 / jc305** and its matching client;
@@ -42,6 +42,7 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
 - [ ] **Highest priority: stop long-run NO_RESOURCE failures and establish reset causality.** Follow the [staged plan](docs/resource-01-implementation-plan.md). Focused reuse/replacement regressions pass, but full unchanged JCAlgTest runs still show persistent OutOfFlash/F205. RAM GC alone cannot reclaim durable records. Physical reset causality remains unproven; PC and Pico storage backends differ.
 - Normal firmware keeps object deletion disabled; explicit diagnostic builds enable deferred request-gated servicing. Applet/package-static roots, foreign aliases, peer cached statics, shareable proxies and RMI roots have focused host coverage. The shared coordinator limits total erasures across both namespaces to eight per APDU; tests cover 8/8/6 batches. Host fake-flash covers 1,000 cuts; physical interruption/timing acceptance is open.
 - Successful persistent-array restoration traces are now compiled only with `PICO2_DEBUG_PERSISTENT_GC=1`; failure diagnostics remain enabled. The RP2350 fake-flash suite passes `fail=0` with 134 output lines after the change. This reduces log/flush overhead, but runtime performance improvement has not been measured.
+- 2026-11-12: Added a fail-closed guard against republishing an alias from a retained array handle when its persistent body tag is missing. A host regression reproduces the stale-handle sequence; persistent-transaction, object-deletion VPCD, persistent-inventory, RP2350 overlay, and ARM/RISC-V max_crypto builds pass. This prevents a dangling alias but does not establish who removed the body observed in the physical trace; long-run and physical acceptance remain open.
 - Next: finish complete root and safety coverage with PERSIST-01/02/03; repeat unchanged 1.8.4/jc305 reset/free-cache workloads with inventory and allocator telemetry. Investigate residual full-suite failures after the host compaction optimization (PERF-01/02); old 40–100-second compaction observations are historical, not current timing.
 - Acceptance: same-key reuse, key replacement/deletion and cache resets plateau in retained RAM, handles and persistent records. A request before cache clearing must reclaim the newly unreachable graph before the next `process()` call while preserving live aliases/other owners. Demonstrate interrupted-reclamation recovery. Complete long physical runs without NO_RESOURCE, FAULT, unexpected reset or transport loss; record duration, iterations and high-water marks. Run options 2 and 1 on separate identified tokens when possible, with per-device telemetry. Coordinate STORE-01, API-01/03 and offline-only JC-RESET-01; do not enable production reclamation before safety acceptance.
 

@@ -1963,6 +1963,47 @@ int main() {
            "persistent_array_identity_counter_uses_valid_static_tag");
   }
 
+  // A live handle must not publish another alias if its durable array body
+  // has disappeared. Doing so hides the missing body until a later graph walk
+  // and turns a storage error into an incomplete persistent-GC trace.
+  {
+    jcvm::Heap heap(7);
+    const auto body_field = FlashMemory_Handler::getStaticFieldTag(91, 1);
+    const auto alias_field = FlashMemory_Handler::getStaticFieldTag(91, 2);
+    const auto array = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    heap.getArray(array)->setByteEntry(0, 0x5a);
+    FlashMemory_Handler::setPersistentField_Reference(body_field, array, heap);
+
+    const auto body_alias =
+        persistent_transaction_test::read(body_field.value, body_field.len);
+    jcvm::fs::Tag body_tag{};
+    if (body_alias.size() >= 3 && body_alias[0] == 0xfd &&
+        body_alias[1] <= sizeof(body_tag.value) &&
+        static_cast<size_t>(body_alias[1]) + 2u == body_alias.size()) {
+      body_tag.len = body_alias[1];
+      std::memcpy(body_tag.value, body_alias.data() + 2, body_tag.len);
+    }
+    const bool body_erased = body_tag.len != 0 &&
+        FlashMemory_Handler::erasePersistentTag(body_tag);
+
+    bool missing_body_rejected = false;
+    try {
+      FlashMemory_Handler::setPersistentField_Reference(alias_field, array,
+                                                        heap);
+    } catch (jcvm::Exceptions exception) {
+      missing_body_rejected = exception == jcvm::Exceptions::IOException;
+    }
+    const auto dangling_alias = persistent_transaction_test::read(
+        alias_field.value, alias_field.len);
+    expect(body_erased && missing_body_rejected && dangling_alias.empty(),
+           "persistent_array_handle_rejects_realiasing_missing_body");
+    static_cast<void>(FlashMemory_Handler::erasePersistentTag(body_field));
+    static_cast<void>(FlashMemory_Handler::erasePersistentTag(alias_field));
+    if (body_tag.len != 0) {
+      static_cast<void>(FlashMemory_Handler::erasePersistentTag(body_tag));
+    }
+  }
+
   {
     constexpr uint8_t owner = 0x21;
     const uint8_t root_tag[] = {0x03, owner, 0x44, 0x55, 0xff};
