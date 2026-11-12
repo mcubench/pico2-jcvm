@@ -91,42 +91,48 @@ Continue RESOURCE-01 and offline-only JC-RESET-01 under [TODO](../TODO.md).
 
 Evidence: [E012](QKB_INDEX.md#e012), [E409](QKB_INDEX.md#e409), [E368](QKB_INDEX.md#e368).
 
-## Retained array handle after persistent body loss — alias guard implemented; origin unresolved
+## Reachable same-owner alias target was reclaimed — root cause reproduced and guarded; physical acceptance open
 
 `setPersistentField_Reference()` used to republish an alias to a persistent
 array's cached body tag without confirming that the body still existed. A
 focused regression deletes the body while retaining the heap handle; the old
 path writes a dangling alias, while the current path throws `IOException` and
-leaves the destination field unset. This prevents propagating a corrupt edge,
-but cannot reconstruct body data or explain who removed it. Keep the full
-RESOURCE-01 physical trace and reclaimer-candidate investigation open; do not
-treat the guard as proof that object deletion is safe or that long-run resource
-failures are fixed.
+leaves the destination field unset. This protects against propagating a
+corrupt edge but does not recover a body already lost.
 
-The archived 2026-11-11 physical trace narrows the sequence: the first missing
-array-body read (`03013894FFFFFE000000420003FFFE000000470000FFFE000005810001FFFF00000583`)
-occurs immediately after an `OBJECT_DELETION` summary reports eight applet
-records erased; two summaries (16 records total) had completed by then. The
-trace firmware predates candidate-tag logging, so this temporal ordering does
-not prove that either batch erased this body. A new diagnostic image with
-`OBJECT_DELETION:CANDIDATE stage=scan|batch|erase` instrumentation is prepared
-under `build/resource01-candidate-trace-20261112/`; flash it only after the
-guest exposes a physical board in BOOTSEL, then compare the exact candidate
-against the first missing-body error.
+The archived 2026-11-11 trace showed the first missing array-body read
+(`03013894FFFFFE000000420003FFFE000000470000FFFE000005810001FFFF00000583`)
+after two eight-record deletion batches, but lacked candidate-tag logging.
+The 2026-11-12 candidate-tagged 8E run established the cause for a later
+reproduction: reachable alias source `03013894FFFFFE000000420007` named body
+`03013894FFFFFE000000420007FFFF00000045`, yet the same-owner reclaimer
+selected that body for `stage=erase`. The heap graph had omitted that edge, and
+candidate selection relied on heap reachability plus foreign aliases without
+protecting a durable alias under a reachable same-owner prefix.
 
-The same run shows why this matters to RESOURCE-01: after the first edge error,
-277 heap-GC summaries show zero array and instance reclamation; 276 of those
-summaries report one edge failure. Handle totals rise from 118 arrays / 22
-instances at sequence 6 to 365 / 185 by sequence 291. The first `F205` is at
-line 2814, sequence 87 (136 arrays / 30 instances). This supports the chain
-“missing durable body -> strict graph walk incomplete -> conservative heap
-sweep skips -> retained handle growth -> resource failure.” It does not show
-whether the first body was erased by the deletion batch or another storage
-operation; keep that causal claim open until the candidate-tagged run.
+Commit `36fcfe69` adds that protection. A candidate body ending in the stable
+array marker and identity is mapped back to its alias field prefix; if that
+prefix is reachable and its serialized alias chain targets the body, the
+candidate is retained. Invalid, cyclic, or unreadable alias chains abort the
+inventory fail-closed. A regression with a live root and deliberately omitted
+field-layout edge proves the body survives and strict restoration works. On
+the corrected D92 physical run, the exact old target has appeared as
+`stage=alias-protect`, not `stage=erase`; through the captured checkpoint there
+were 1,092 alias protections, 184 unrelated erasures and zero
+`HEAP_GC_FS_READ_FAIL` or deletion skips. The full unchanged 1.8.4 run is still
+in progress, so this is early evidence rather than full RESOURCE-01 acceptance.
 
-Evidence: `progress.md`, entry `RESOURCE-01-STALE-ARRAY-BODY-GUARD-20261112`;
-regression `persistent_array_handle_rejects_realiasing_missing_body`;
-`artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`.
+The earlier failing 8E run then reported `HEAP_GC_FS_READ_FAIL` for the erased
+body and later skipped conservative heap reclamation, followed by handle
+growth and `F205`. This confirms the chain from the missing durable body to
+incomplete graph walk and retained handles for that reproduced case. Other
+historical resource failures may still have additional causes.
+
+Evidence: `progress.md`, entry `RESOURCE-01-REACHABLE-ALIAS-TARGET-GUARD-20261112`;
+regressions `reachable_durable_alias_protects_body_from_incomplete_heap_walk`
+and `persistent_array_handle_rejects_realiasing_missing_body`;
+8E trace `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`;
+corrected D92 trace `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/serial.log`.
 
 The host reclaimer now has a focused foreign durable-alias cycle regression:
 two aliases owned outside the target applet point to each other. Alias

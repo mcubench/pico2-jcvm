@@ -1,3 +1,50 @@
+# Current handoff — RESOURCE-01 same-owner alias guard in physical run — 2026-11-12 09:44 UTC
+
+The same-owner alias/body loss cause is now reproduced, guarded, unit-tested,
+and under physical validation. Commit `36fcfe69` changes
+`choupi/src/persistent_inventory.cpp` and adds regression
+`reachable_durable_alias_protects_body_from_incomplete_heap_walk`.
+ARM/RISC-V `max_crypto` diagnostic builds and the persistent-transaction suite
+passed after the change. Do not stage or discard the many unrelated pre-existing
+worktree changes listed by `git status`.
+
+The corrected ARM empty-card diagnostic image is
+`build/arm/pico2-jcvm-max_crypto-object-deletion-empty-card-aa44cb12.uf2`,
+4,103,680 bytes, SHA-256
+`1837533bb67c06d8eac30f4b22cbc8552b7134b21f56f8a31f3770c31a4dde62`.
+Its CPLC source ID is `AA44CB12F45A5AB3`; object deletion and heap-GC debug
+telemetry are enabled. The unchanged fixture verification and exact-reader
+GPPro installation succeeded on D92.
+
+- D92 `D92E743D5F640C0F`, reader `Pico 2 CHOUPI CCID [JCVM CCID]
+  (D92E743D5F640C0F) 00 00`: unchanged JCAlgTest 1.8.4/jc305
+  `ALG_SUPPORT_EXTENDED` is active in session 21246; serial capture session
+  26227. Logs/results:
+  `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/`.
+  At 09:43 UTC the client was still progressing through algorithm probes. The
+  serial trace had 1,092 `stage=alias-protect` records and 184 unrelated
+  `stage=erase` records, with zero `HEAP_GC_FS_READ_FAIL`, deletion skips,
+  `FAULT`, `F205`, or `NO_RESOURCE`. The exact historical failure target
+  `03013894FFFFFE000000420007FFFF00000045` was protected. This is an early
+  physical sample, not completion or acceptance.
+- 8E `8E464F4E2BBC0A19`: its pre-fix option-1 run reproduced the bug. Source
+  alias `03013894FFFFFE000000420007` was reachable and named body
+  `03013894FFFFFE000000420007FFFF00000045`, but the old build erased the body;
+  strict GC then failed to read it. The latest identity-pinned flash attempt
+  found this board as runtime USB `2e8a:0009` but could not locate its reset
+  interface or enter BOOTSEL. No new image was written to it.
+- 2BED `2BED26ED20556535` was not found by the pinned flash wrapper. A host
+  `lsusb -d 2e8a:` listing showed three runtime `2e8a:0009` nodes, not BOOTSEL;
+  preserve identity checks and do not flash an unverified node. D92 remains
+  under test and must not be reset or reflashed during the campaign.
+
+Next: poll sessions 21246/26227 and inspect the same logs. If D92 completes,
+record exact client exit, elapsed time, error counters and result CSV. Then run
+`ALG_PERFORMANCE_STATIC` on a second identified board using the corrected
+image; both option 1 and option 2 physical acceptance remain open. Continue
+with offline work if no other board exposes BOOTSEL. The source-level root
+cause is confirmed for the reproduced case, but RESOURCE-01 is not closed.
+
 # Current handoff — RESOURCE-01 long physical JCAlgTest campaigns running — 2026-11-12 08:49 UTC
 
 Both available cards are running the current ARM `max_crypto` diagnostic
