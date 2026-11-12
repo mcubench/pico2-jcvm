@@ -27,8 +27,8 @@ became unreachable or was erased; retain deletion disabled in normal firmware.
 Retry physical validation only after the VM actually sees BOOTSEL `2e8a:000f`
 or a specific Pico PC/SC reader.
 
-Implementation, regression and progress record are being committed as one
-logical step; preserve unrelated worktree changes.
+Implementation and regression are committed as `a99843f6`; preserve unrelated
+worktree changes.
 
 ---
 
