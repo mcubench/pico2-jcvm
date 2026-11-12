@@ -1,4 +1,33 @@
-# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:49 UTC
+# Current handoff — no-debug max_crypto external image ready — 2026-11-12 11:53 UTC
+
+## Ready for Windows testing
+
+Use [the fresh empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2).
+SHA-256: `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`;
+size: 4,099,584 bytes. It is `max_crypto`, enables deferred object deletion,
+and has `PICO2_DEBUG_HEAP_GC=0`, `PICO2_DEBUG_CCID_APPLET=0`, and
+`PICO2_DEBUG_PERSISTENT_GC=0`. It starts with empty persistent storage and no
+applet. Deletion event summaries remain; verbose per-object and CCID debug
+tracing is absent. Both ARM and RISC-V build wrappers passed.
+Build provenance: source HEAD `ed5716bb`, dirty worktree, CPLC source ID
+`ED5716BBDB878EE2`; firmware SHA-256
+`d588f1cb72a06fdb99870db3f44a83cef0130e39a79fc8f09c6491b4d2c3fb03`.
+
+External steps and requested test results are in
+[EXT_REQUESTS.md](EXT_REQUESTS.md), section
+`WIN_MAXCRYPTO_GC_NODEBUG_20261112`. No physical device was flashed; guest USB
+still enumerates runtime devices rather than BOOTSEL. This is a test image
+built from the current shared tree, not a clean release artifact.
+
+## Physical test blocker
+
+At the latest pre-build check, USB devices were runtime `2e8a:0009`; no
+BOOTSEL `2e8a:000f` device appeared. Do not attempt flashing until BOOTSEL is
+visible in the guest and the target identity is verified.
+
+---
+
+## Earlier RESOURCE-01 handoff snapshot
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The

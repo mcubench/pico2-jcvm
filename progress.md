@@ -28387,3 +28387,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline. Once VirtualBox attaches a BOOTSEL interface to this guest, flash the prepared image by verified chip ID and capture finite serial output.
 - Commit: pending.
 - Artifacts/logs: Direct `lsusb` output inspected; no separate log.
+
+## 2026-11-12 Prepare no-debug max_crypto object-deletion image 7 min
+
+- Step/experiment: `WIN_MAXCRYPTO_GC_NODEBUG_20261112`
+- When: '2026-11-12 11:49 UTC' - '2026-11-12 11:56 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Built and packaged an empty-card ARM `max_crypto` UF2 with deferred object deletion enabled and all heap-GC, CCID-applet, and persistent-GC debug tracing disabled. Recorded external Windows flash/test steps and artifact provenance in `.agent/EXT_REQUESTS.md`, `STATUS.md`, `TODO.md`, and `.agent/HANDOFF.md`.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed with `object_deletion=ON` and all three debug options OFF. `./tools/package-empty-card-uf2` passed with 3,910 firmware blocks and 4,096 erased storage blocks (storage `0x10100000-0x101FFFFF`). ELF string inspection found no CCID trace marker, per-candidate heap-GC trace, or `HEAP_GC:` debug line; normal object-deletion event summaries remain. `git diff --check -- STATUS.md TODO.md .agent/HANDOFF.md .agent/EXT_REQUESTS.md progress.md` passed.
+- Result: UF2 is 4,099,584 bytes, SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`; firmware SHA-256 `d588f1cb72a06fdb99870db3f44a83cef0130e39a79fc8f09c6491b4d2c3fb03`. Source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`. No physical flash or external Windows validation was performed.
+- Decision: Provide this image for external testing; keep device-level GC validation open until the user returns Windows logs or a BOOTSEL token is visible in this VM.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`; build provenance in `build/arm/build-provenance.txt` and `build/riscv/build-provenance.txt`.

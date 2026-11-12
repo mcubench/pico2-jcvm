@@ -897,6 +897,13 @@ Extend RV-20261106-17's GC measurements to incoming foreign-array registry trave
 
 ## Physical carry-forward from scoped completed fixes
 
+The no-debug `max_crypto` external-test image with object deletion enabled is
+available at
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`.
+Windows validation is requested in `.agent/EXT_REQUESTS.md` under
+`WIN_MAXCRYPTO_GC_NODEBUG_20261112`. Both architecture build wrappers pass;
+physical flashing and external acceptance remain outstanding.
+
 - [ ] **API-03 / PERSIST-02: retain outstanding physical gates from RV-20261106-09/10/22/23/24/26/52/53/54.** Software checks are completed and archived; confirm current-image Cipher padding/reuse, object identity/rollback/retry, boolean restore, transient allocation/activity and resource reasons as applicable. Do not reopen the implemented fixes as missing features. Detailed original scope and evidence remain in the backup.
 
 ## Remaining performance work

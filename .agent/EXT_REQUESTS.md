@@ -1,5 +1,42 @@
 # External validation requests
 
+## WIN_MAXCRYPTO_GC_NODEBUG_20261112 — Windows test: max_crypto with object deletion, no debug tracing
+
+Please test this fresh ARM image on Windows. It has `max_crypto` capabilities,
+deferred JCSystem object deletion enabled, an empty persistent-storage region,
+and no preinstalled applet. Heap-GC, CCID-applet and persistent-GC debug
+tracing are disabled; concise object-deletion event summaries remain in serial
+output.
+
+- [Standalone UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2)
+- SHA-256: `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`
+- Size: 4,099,584 bytes; source HEAD `ed5716bb`, dirty worktree; CPLC source ID
+  `ED5716BBDB878EE2`; firmware SHA-256
+  `d588f1cb72a06fdb99870db3f44a83cef0130e39a79fc8f09c6491b4d2c3fb03`.
+- Build provenance: ARM and RISC-V `max_crypto` wrappers passed;
+  `object_deletion=ON`; `debug_heap_gc=OFF`; `debug_ccid_applet=OFF`;
+  `debug_persistent_gc=OFF`.
+
+Windows PowerShell steps:
+
+1. Verify the downloaded image:
+   `Get-FileHash .\pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2 -Algorithm SHA256`
+   and compare with the hash above.
+2. Hold BOOTSEL while connecting the Pico 2. Copy the UF2 to the `RPI-RP2`
+   drive and wait for it to disappear/re-enumerate.
+3. Run `certutil -scinfo`; report the reader name and ATR. Confirm the card is
+   empty with `java -jar .\gp.jar --reader "<exact reader name>" --list`.
+4. Explicitly install the unchanged upstream JCAlgTest 1.8.4/jc305 CAP with
+   GPPro, then use the matching 1.8.4 client. Run option `2 -> PERFORMANCE
+   TEST` and option `1 -> All algorithms` if time permits. Keep separate
+   result folders and serial logs; record reader name and chip ID for each.
+5. Return Windows version, hash output, reader/ATR, GPPro install/selection
+   results, client outputs/CSVs, and complete serial logs. Preserve deletion
+   summaries and any `6F00`, `F205`, reset, timeout or PC/SC errors.
+
+The 4 MiB UF2 includes firmware plus a full erased 1 MiB storage region. No
+device was flashed here because the guest did not show BOOTSEL.
+
 ## Windows validation: fresh max_crypto empty-card image
 
 Please validate the current RP2350 ARM `max_crypto` firmware on a Windows host.

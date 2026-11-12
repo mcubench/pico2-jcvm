@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 11:49 UTC
+Updated: 2026-11-12 11:53 UTC
 
 ## Goal
 
@@ -12,6 +12,8 @@ for the acceptance backlog and [.agent/HANDOFF.md](.agent/HANDOFF.md) for the
 current physical-test handoff.
 
 ## Current build and source
+
+- Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2). SHA-256 `5521f06a20a032cfcd177c129a859c4da1fb469cb833328e3870f797b8d61532`, 4,099,584 bytes. ARM and RISC-V wrappers pass; provenance is source HEAD `ed5716bb`, dirty worktree, CPLC source ID `ED5716BBDB878EE2`, object deletion ON, heap-GC, CCID-applet and persistent-GC debug OFF. The image clears persistent storage and contains no preinstalled applet. Deletion event summaries remain at runtime; per-object and CCID debug traces are compiled out. This is not a release build, and no device was flashed.
 
 - ARM and RISC-V `max_crypto` wrappers pass with object deletion enabled and
   heap-GC debug disabled. ARM firmware ends at `0x100F474C`, leaving 47,284
