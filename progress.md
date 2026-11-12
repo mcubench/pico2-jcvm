@@ -28741,3 +28741,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Inspect `compact_deleted_overlay_records()` failure paths and persistent-object reachability before making a storage/GC fix. Preserve the campaign logs and CSV; do not infer RSA array-size failure or option-2 acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-ccid-debug-followup/`; `./tools/test-rp2350-fs-overlay`.
+
+## 2026-11-12 Trace option-2 response delivery and compaction rejection 14 minutes
+
+- Step/experiment: `RESOURCE-01-CCID-FS-DIAGNOSTICS-20261112`
+- When: '2026-11-12 22:10 UTC' - '2026-11-12 22:24 UTC'
+- Model: `GPT-6 Codex`
+- Change: Extended debug-only filesystem compaction diagnostics with the previous retained record's slot, offset, key length and size. Updated QKB, handoff, and the open PC/SC recovery request with the new evidence. No algorithm or filesystem behavior was changed.
+- Validation: `./tools/test-rp2350-fs-overlay` had passed earlier in this step; identity-pinned `./tools/cycle choupi --profile max_crypto` rebuilt ARM and RISC-V and flashed D92 and 2BED successfully. Both finite monitors reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Firmware SHA-256: `ef556efbd15d764b09ff04eade6b04273008c1f65cca70b9daaffb81c3d5f180`. On 4CDA, the exact-reader 1.8.4/jc305 option-2 run advanced past xfr=800, then the 45-second APDU watchdog timed out at SHA-384 `B041000016`; CDC showed VM response `9000` at CCID stage 6. The run exited 124 and is incomplete. No compaction failure occurred in this run. PC/SC afterward listed only virtual readers; unprivileged service restart was denied. No full option-2 pass or RSA-3072 failure reproduction.
+- Result: Captured a second transport stall before RSA-3072: VM execution produced `9000`, but successful CCID bulk-IN completion was not observed. The earlier separate D92 log still shows overlap at slot 4916/offset 91502 with `kept=91510`, then `F205`; richer previous-record metadata has not yet been captured. D92 and 2BED were restored to runtime firmware, but physical PC/SC access requires the service recovery request.
+- Decision: Do not change RSA arrays or filesystem behavior without a reproduced cause. After PC/SC recovers, capture unfiltered `CHOUPI:CCID_APPLET` submit/completion events on an exact identified reader; preserve any fresh overlap details.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/option2-transport-reprobe-20261112/4CDA5BC1B136E46A/`; `artifacts/logs/cycle-choupi-20261112T222047Z.log`; `artifacts/logs/cycle-choupi-20261112T222517Z.log`; D92 compaction trace `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-final-write-diagnostic/serial.log`.

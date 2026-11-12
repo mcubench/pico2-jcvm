@@ -502,6 +502,29 @@ host/device-mode discrepancy must be resolved before flashing.
 Evidence: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option2-gc-nodebug/`
 and `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-gc-nodebug/`.
 
+Follow-up, 2026-11-12: On 4CDA (`4CDA5BC1B136E46A`), a watchdog-bounded
+option-2 repro stalled for 45 seconds on SHA-384 `MessageDigest_update()`
+measurement APDU `B041000016`. The VM logged its `9000` APDU response, but CCID
+telemetry remained at stage 6 (response submission) rather than stage 7
+(successful IN completion); the SmartcardIO client emitted no response before
+the watchdog terminated it. This points to the CCID response-delivery boundary,
+not specifically RSA-3072 or persistent-storage compaction. Afterward the
+physical readers disappeared from `pcsc_scan -r`; the helper still granted
+access to three USB nodes. D92 and 2BED were then identity-pinned through
+`tools/cycle choupi`; both ARM/RISC-V builds, firmware flashes and finite
+runtime checks passed, but `pcsc_scan` still listed only Virtual PCD readers.
+An unprivileged PC/SC service restart was denied. A human service restart is
+requested in `.agent/EXT_REQUESTS.md`. This is a reproduction of missing host
+delivery after a successful VM result, not a confirmed cause or a complete
+option-2 run.
+
+The prior D92 storage failure is separate evidence: at `files=2134`,
+`bytes=98292/98304`, compaction retained a record beginning at offset `91502`
+while its output prefix had reached `91510`, then returned `FS_STATUS_IO_UNKNOWN`
+and the applet returned `F205`. Diagnostic logging now also records the
+previous retained record's fields, but that richer record has not yet been
+captured during a fresh compaction failure. No RSA array change is justified.
+
 ## 2026-11-12 External no-debug run: reset failures precede RSA-3072 disconnect
 
 Investigation ID: RESOURCE-01-EXTERNAL-RESET-PREFIX-20261112.

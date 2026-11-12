@@ -827,6 +827,28 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
 
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                     uint32_t length) {
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  static bool reject_reported = false;
+  const auto reject = [](const char *reason, const size_t attempted_bytes) {
+    if (!reject_reported) {
+      std::printf("CHOUPI:FS_APPEND_REJECT reason=%s files=%u bytes=%lu "
+                  "attempted=%lu limit=%lu\r\n",
+                  reason, static_cast<unsigned>(overlay_file_count),
+                  static_cast<unsigned long>(overlay_bytes_used),
+                  static_cast<unsigned long>(attempted_bytes),
+                  static_cast<unsigned long>(overlay_byte_limit(
+                      overlay_file_count)));
+      std::fflush(stdout);
+      reject_reported = true;
+    }
+    return false;
+  };
+#else
+  const auto reject = [](const char *reason, const size_t) {
+    (void)reason;
+    return false;
+  };
+#endif
   const bool parent_tag = (file.flags & kOverlayParentTag) != 0;
   const uint8_t key_length = parent_tag
                                  ? 3
@@ -838,7 +860,7 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                                                   2)
                                         : file.tag_length);
   if (key_length > 0x7F) {
-    return false;
+    return reject("key_length", key_length);
   }
   const size_t old_record_size = overlay_has_storage(file)
                                      ? 1 + stored_tag_length(file) + file.size
@@ -846,7 +868,7 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   const size_t new_record_size = 1 + key_length + length;
   const size_t new_used = overlay_bytes_used - old_record_size + new_record_size;
   if (!filesystem_payload_fits(overlay_file_count, new_used)) {
-    return false;
+    return reject("payload_capacity", new_used);
   }
   const size_t old_offset = overlay_offset(file);
   if (old_record_size != 0) {
@@ -871,7 +893,7 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   if (parent_tag) {
     uint16_t parent_slot = 0;
     if (!find_parent_slot(tag, file.tag_length, &parent_slot)) {
-      return false;
+      return reject("parent_missing", new_used);
     }
     overlay_bytes[new_offset + 1] = static_cast<uint8_t>(parent_slot);
     overlay_bytes[new_offset + 2] = static_cast<uint8_t>(parent_slot >> 8);
@@ -895,6 +917,9 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   file.flags |= kOverlaySerialized;
   file.flags &= static_cast<uint8_t>(~kOverlayDeleted);
   overlay_bytes_used = new_used;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  reject_reported = false;
+#endif
   return true;
 }
 
@@ -960,6 +985,22 @@ uint8_t compact_deleted_overlay_records() {
   const size_t files_before = overlay_file_count;
   const size_t bytes_before = overlay_bytes_used;
 #endif
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  const auto reject = [](const uint8_t status, const char *reason) {
+    std::printf("CHOUPI:FS_COMPACT_REJECT status=%u reason=%s files=%u "
+                "bytes=%lu\r\n",
+                static_cast<unsigned>(status), reason,
+                static_cast<unsigned>(overlay_file_count),
+                static_cast<unsigned long>(overlay_bytes_used));
+    std::fflush(stdout);
+    return status;
+  };
+#else
+  const auto reject = [](const uint8_t status, const char *reason) {
+    (void)reason;
+    return status;
+  };
+#endif
   auto *bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
   std::fill(bitmap, bitmap + kFilesystemBitmapBytes, 0);
   auto is_marked = [bitmap](uint16_t slot) {
@@ -996,7 +1037,7 @@ uint8_t compact_deleted_overlay_records() {
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
     if (!reconstruct_overlay_tag(slot, tag, &tag_length)) {
-      return FS_STATUS_IO_UNKNOWN;
+      return reject(FS_STATUS_IO_UNKNOWN, "tag_reconstruction");
     }
     if (!overlay_has_record(file)) {
       const uint8_t *rom_data = nullptr;
@@ -1033,7 +1074,7 @@ uint8_t compact_deleted_overlay_records() {
       if (offset >= overlay_bytes_used ||
           (overlay_bytes[offset] & 0x7fu) != 3 ||
           overlay_bytes_used - offset < 4) {
-        return FS_STATUS_IO_UNKNOWN;
+        return reject(FS_STATUS_IO_UNKNOWN, "parent_record_bounds");
       }
       const uint16_t parent_slot =
           static_cast<uint16_t>(overlay_bytes[offset + 1]) |
@@ -1041,38 +1082,87 @@ uint8_t compact_deleted_overlay_records() {
       if (parent_slot >= kMaxOverlayFiles ||
           !overlay_is_used(overlay[parent_slot]) ||
           !overlay_has_storage(overlay[parent_slot])) {
-        return FS_STATUS_IO_UNKNOWN;
+        return reject(FS_STATUS_IO_UNKNOWN, "parent_record_missing");
       }
       unmark(parent_slot);
       child_slot = parent_slot;
     }
     if ((overlay[child_slot].flags & kOverlayParentTag) != 0) {
-      return FS_STATUS_IO_UNKNOWN;
+      return reject(FS_STATUS_IO_UNKNOWN, "parent_chain_too_deep");
     }
   }
 
   size_t kept_count = 0;
   size_t compacted_bytes = 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  uint16_t previous_kept_slot = UINT16_MAX;
+  uint32_t previous_kept_offset = 0;
+  size_t previous_kept_key_length = 0;
+  size_t previous_kept_size = 0;
+#endif
   for (size_t index = 0; index < ordered_count; ++index) {
     const uint16_t slot = erase_bucket_next[index];
     if (is_marked(slot)) continue;
     const auto &file = overlay[slot];
     const uint32_t offset = overlay_offset(file);
-    if (offset >= overlay_bytes_used) return FS_STATUS_IO_UNKNOWN;
+    if (offset >= overlay_bytes_used) {
+      return reject(FS_STATUS_IO_UNKNOWN, "record_offset_out_of_bounds");
+    }
     const size_t key_length = overlay_bytes[offset] & 0x7fu;
     if (key_length > overlay_bytes_used - offset - 1) {
-      return FS_STATUS_IO_UNKNOWN;
+      return reject(FS_STATUS_IO_UNKNOWN, "record_key_out_of_bounds");
     }
     const size_t record_size = 1 + key_length + file.size;
-    if (record_size > overlay_bytes_used - offset ||
-        compacted_bytes > offset) {
-      return FS_STATUS_IO_UNKNOWN;
+    if (record_size > overlay_bytes_used - offset) {
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+      std::printf("CHOUPI:FS_COMPACT_LAYOUT reason=record_exceeds_tail "
+                  "slot=%u offset=%lu key=%lu size=%lu record=%lu "
+                  "remaining=%lu kept=%lu\r\n",
+                  static_cast<unsigned>(slot),
+                  static_cast<unsigned long>(offset),
+                  static_cast<unsigned long>(key_length),
+                  static_cast<unsigned long>(file.size),
+                  static_cast<unsigned long>(record_size),
+                  static_cast<unsigned long>(overlay_bytes_used - offset),
+                  static_cast<unsigned long>(compacted_bytes));
+      std::fflush(stdout);
+#endif
+      return reject(FS_STATUS_IO_UNKNOWN, "record_exceeds_tail");
+    }
+    if (compacted_bytes > offset) {
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+      std::printf("CHOUPI:FS_COMPACT_LAYOUT reason=records_overlap "
+                  "slot=%u offset=%lu key=%lu size=%lu record=%lu "
+                  "kept=%lu previous_slot=%u previous_offset=%lu "
+                  "previous_key=%lu previous_size=%lu "
+                  "previous_end=%lu\r\n",
+                  static_cast<unsigned>(slot),
+                  static_cast<unsigned long>(offset),
+                  static_cast<unsigned long>(key_length),
+                  static_cast<unsigned long>(file.size),
+                  static_cast<unsigned long>(record_size),
+                  static_cast<unsigned long>(compacted_bytes),
+                  static_cast<unsigned>(previous_kept_slot),
+                  static_cast<unsigned long>(previous_kept_offset),
+                  static_cast<unsigned long>(previous_kept_key_length),
+                  static_cast<unsigned long>(previous_kept_size),
+                  static_cast<unsigned long>(previous_kept_offset +
+                      1 + previous_kept_key_length + previous_kept_size));
+      std::fflush(stdout);
+#endif
+      return reject(FS_STATUS_IO_UNKNOWN, "records_overlap");
     }
     compacted_bytes += record_size;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    previous_kept_slot = slot;
+    previous_kept_offset = offset;
+    previous_kept_key_length = key_length;
+    previous_kept_size = file.size;
+#endif
     ++kept_count;
   }
   if (!filesystem_payload_fits(kept_count, compacted_bytes)) {
-    return FS_STATUS_OUT_OF_FLASH;
+    return reject(FS_STATUS_OUT_OF_FLASH, "payload_capacity");
   }
 
   // Preflight above is read-only. Drop the identified entries, then compact
@@ -1441,6 +1531,20 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
                             const uint8_t *data, uint32_t length) {
   const uint8_t tag_status = validate_tag(tag, tag_length);
   if (tag_status != FS_STATUS_OK) return tag_status;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  static bool failure_path_reported = false;
+  const auto report_failure_path = [](const char *reason) {
+    if (!failure_path_reported) {
+      std::printf("CHOUPI:FS_WRITE_PATH reason=%s files=%u bytes=%lu\r\n",
+                  reason, static_cast<unsigned>(overlay_file_count),
+                  static_cast<unsigned long>(overlay_bytes_used));
+      std::fflush(stdout);
+      failure_path_reported = true;
+    }
+  };
+#else
+  const auto report_failure_path = [](const char *) {};
+#endif
   auto *file = find_overlay(tag, tag_length);
   auto can_write = [&]() {
     const size_t old_record_size =
@@ -1461,11 +1565,13 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
   // compaction rehashes the overlay table and invalidates the old pointer.
   if (!can_write()) {
     if (compact_deleted_overlay_records() != FS_STATUS_OK) {
+      report_failure_path("compaction_failed");
       report_fs_write_failure("new", tag, tag_length, length);
       return FS_STATUS_OUT_OF_FLASH;
     }
     file = find_overlay(tag, tag_length);
     if (!can_write()) {
+      report_failure_path("capacity_after_compaction");
       report_fs_write_failure("new", tag, tag_length, length);
       return FS_STATUS_OUT_OF_FLASH;
     }
@@ -1475,10 +1581,14 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
     file = allocate_overlay(tag, tag_length);
   }
   if (file == nullptr || !append_overlay(*file, tag, data, length)) {
+    report_failure_path(file == nullptr ? "slot_allocation" : "append_failed");
     report_fs_write_failure("new", tag, tag_length, length);
     return FS_STATUS_OUT_OF_FLASH;
   }
   overlay_dirty = true;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  failure_path_reported = false;
+#endif
   return FS_STATUS_OK;
 }
 

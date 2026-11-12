@@ -194,28 +194,19 @@ board `2BED26ED20556535` remains at USB `2e8a:0009` without its serial
 descriptor and did not enter BOOTSEL after a path-specific CDC reset. It is
 not safe to flash it until the ROM chip ID is visible again.
 
-## PCSC-RECOVER-AFTER-RESET-20261112 — Restore a physical reader and expose BOOTSEL to the VM
+## PCSC-RESTART-AFTER-WATCHDOG-20261112 — Restore physical reader publication
 
-The corrected D92 1.8.4 run ended with `SCARD_E_NOT_TRANSACTED` after a
-successful `INS_CARD_RESET`. On 2026-11-12 at 10:41 UTC, after the user
-reinserted all three boards in BOOTSEL, the guest still saw three runtime
-`2e8a:0009` devices and no BOOTSEL interface. The approved helper granted two
-USB nodes; `pcsc_scan -r` listed only the VPCD readers.
+Updated 2026-11-12 22:23 UTC. The approved helper grants access to three Pico
+USB nodes. After a JCAlgTest APDU watchdog stopped the Java process, `pcsc_scan
+-r` showed only Virtual PCD readers or timed out before listing readers. The
+physical boards remain present as USB devices. D92 (`D92E743D5F640C0F`) and
+2BED (`2BED26ED20556535`) were identity-pinned through the full CHOUPI cycle;
+both builds, flash verification and finite runtime checks passed, but the
+physical readers are still not published. An unprivileged
+`systemctl --no-ask-password restart pcscd.service` was denied. No sudo service
+restart was attempted.
 
-The latest trace-enabled empty-card diagnostic image is
-`../build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2`,
-4,100,608 bytes, SHA-256
-`32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`. ARM and
-RISC-V wrappers both passed at source HEAD `48e9a50b` (the build tree is
-dirty); CPLC source ID is `48E9A50BB405634E`. It includes CCID response-path
-markers and `fs_sync()` duration without per-object heap-GC logging. Fresh
-guest enumeration at 11:49 UTC still showed three runtime `2e8a:0009` devices
-and no BOOTSEL interface despite the user's report that all boards are in
-BOOTSEL. Identity-pinned flash attempts
-found D92 and 8E but could not access either reset interface; the third chip ID
-2BED was not connected. No image was written.
-
-To restore one runtime reader for PC/SC validation, run in the guest:
+There is no active SmartcardIO campaign. Please run in the guest:
 
 ```sh
 sudo systemctl restart pcscd.service
@@ -223,16 +214,8 @@ sudo -n /usr/local/sbin/pico2-pcsc-reader
 timeout --signal=TERM --kill-after=1s 10s pcsc_scan -r
 ```
 
-To continue physical validation, attach one BOOTSEL device to this VM through
-VirtualBox **Devices → USB** and confirm the guest sees `2e8a:000f` with:
-
-```sh
-lsusb -d 2e8a:
-```
-
-Return the command output and the chip ID/reader name exposed to the guest.
-Do not write to the unlabelled USB node; flash only after the exact RP2350 chip
-ID is verified. Continue offline while access is restored.
+Return the complete output, especially the exact chip IDs and reader names.
+Continue with any published physical reader; no BOOTSEL reattachment is needed.
 
 ## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 

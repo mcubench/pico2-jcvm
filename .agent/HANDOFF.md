@@ -1,3 +1,51 @@
+# Current handoff — option-2 response-delivery repro and PC/SC loss — 2026-11-12 22:23 UTC
+
+The external Windows failure still does not implicate RSA-3072 array sizing.
+On physical 4CDA (`4CDA5BC1B136E46A`), the unchanged 1.8.4/jc305
+`ALG_PERFORMANCE_STATIC` campaign was started against the exact PC/SC reader
+with a 45-second per-APDU watchdog. It progressed past xfr=800, then stalled on
+SHA-384 `MessageDigest_update()` measurement APDU `B041000016`. The client
+logged no `ResponseAPDU` before watchdog termination (`exit=124`), while CDC
+telemetry reported the VM's `B041` response as `9000` and CCID stage 6. Stage 7
+is set only after the successful bulk-IN completion callback. This reproduces
+a failure at the CCID response-delivery boundary earlier than RSA; it does not
+establish why the IN completion was missing. No filesystem compaction or
+`F205` occurred in this run. Logs:
+`artifacts/results/option2-transport-reprobe-20261112/4CDA5BC1B136E46A/`.
+
+The approved reader helper continues to grant USB access to three Pico nodes,
+but PC/SC stopped publishing physical readers after the watchdog. D92
+(`D92E743D5F640C0F`) had been in BOOTSEL; it and 2BED
+(`2BED26ED20556535`) were each identity-pinned through
+`tools/cycle choupi --profile max_crypto --chipid ...` with
+`PICO2_DEBUG_CCID_APPLET=1 PICO2_ENABLE_OBJECT_DELETION=1`. Both ARM and
+RISC-V builds passed; both flashes verified; both finite serial checks showed
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. D92, 2BED and 4CDA
+are now runtime USB devices, but `pcsc_scan -r` lists only Virtual PCD readers.
+An unprivileged PC/SC restart was denied; the only approved sudo command is the
+reader-access helper. `.agent/EXT_REQUESTS.md` asks the user to restart
+`pcscd.service` and return the scan output. No physical campaign is active.
+
+The earlier D92 storage issue remains separate: at 12 bytes free,
+`compact_deleted_overlay_records()` rejected overlapping serialized records
+(`slot=4916 offset=91502 record=40 kept=91510`), then persistent write returned
+`F205`. `src/pico_filesystem.cpp` has debug-only logging that now includes the
+previous retained record's location and size. The richer overlap details have
+not been captured in a fresh failure. FS overlay unit tests passed earlier;
+the latest full `cycle choupi` runs rebuilt both architectures and passed on
+D92 and 2BED. No functional filesystem or RSA fix has been made. Do not claim
+option-2 acceptance.
+
+Current firmware hash: `build/arm/pico2_choupi.uf2` SHA-256
+`ef556efbd15d764b09ff04eade6b04273008c1f65cca70b9daaffb81c3d5f180`; built
+from dirty tree at HEAD `da3c02b5` (CPLC commit-prefix metadata
+`DA3C02B5DB0FF60E`). Preserve unrelated edits. Next: after PC/SC is restored,
+capture all `CHOUPI:CCID_APPLET` response-submit markers alongside the client
+and serial logs; continue on another exact identified reader if 4CDA remains
+unavailable. If the first observed issue is filesystem compaction, preserve
+the richer `FS_COMPACT_LAYOUT` previous-record fields and trace that invariant
+before modifying storage behavior.
+
 # Current handoff — option-2 run reaches persistent-storage exhaustion — 2026-11-12 20:32 UTC
 
 The follow-up unchanged JCAlgTest 1.8.4/jc305 `ALG_PERFORMANCE_STATIC` run was
