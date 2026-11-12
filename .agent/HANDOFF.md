@@ -13,6 +13,7 @@ It rebuilt PC `max_crypto` and the probe CAP, then passed all 9 APDU checks;
 three deletion requests reclaimed three applet tags. Log:
 `artifacts/logs/object-deletion-vpcd-20261112T073705Z.log`. These results do
 not substitute for real Pico storage or transport.
+This validation record is committed as `e261e4b2`.
 
 Fresh elevated USB enumeration still shows three runtime `2e8a:0009` CCID
 interfaces and no BOOTSEL interface. Do not claim physical deletion or the

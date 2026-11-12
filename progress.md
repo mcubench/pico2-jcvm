@@ -28122,5 +28122,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`); `./tools/test-rmi-registry` passed its retained-context/cycle/proxy/RMI/stack assertions; `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd 3 byte-array` passed with 9/9 APDU checks and 3 applet records erased. Elevated USB enumeration still returned three runtime `2e8a:0009` interfaces, no BOOTSEL; no physical operation was attempted.
 - Result: The current source tree retains its host safety and three-cycle reclamation behavior. The physical missing-body deletion cause, interrupt timing, and full unchanged 1.8.4/jc305 long-run acceptance are still unverified.
 - Decision: Keep RESOURCE-01 and related physical acceptance open; wait for visible BOOTSEL only for hardware work, and continue offline implementation/root audit.
-- Commit: `<pending>`
+- Commit: `e261e4b2`
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261112T073705Z.log`; other unit-suite outputs were inspected from the command sessions.
