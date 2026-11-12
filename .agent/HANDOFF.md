@@ -1,6 +1,6 @@
 # Current handoff — RV-33 shared generation locking validated — 2026-11-12 04:05 UTC
 
-Completed RV-20261106-33. `tools/build` and standalone `tools/build-pc` now
+Completed RV-20261106-33 in commit `c1af094e`. `tools/build` and standalone `tools/build-pc` now
 serialize access to shared generated files with `build/.tools-build.lock`;
 nested invocations reuse the inherited lock descriptor. Builds record and
 verify profile-selection, ROM-mask and JNI hashes. `./tools/test-build-lock`

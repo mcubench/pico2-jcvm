@@ -3681,7 +3681,7 @@
 - Validation: `./tools/test-gp-delete` passed 11 checks with `-Wall -Wextra -Werror`; `./tools/build arm` passed the smoke and CHOUPI ARM images without warnings. The parser is not yet connected to the authenticated card-manager dispatch, so no APDU or persistent deletion was exercised.
 - Result: Malformed and unsupported command encodings are rejected before any state mutation; parsed AID remains a bounded view into caller data.
 - Decision: Keep GP DELETE open. Next integrate the parser with secure-channel dispatch and implement deletion semantics that remain consistent across restart and GET STATUS.
-- Commit: pending
+- Commit: `c1af094e`
 - Artifacts/logs: Focused test output `TEST:SUMMARY pass=11 fail=0`; ARM image outputs `build/arm/pico2_jcvm_smoke.uf2` and `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-16 — Confirm JCAlgTest static simulator run completion
