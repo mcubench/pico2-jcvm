@@ -1,4 +1,4 @@
-# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:47 UTC
+# Current handoff — quieter CCID trace image ready; guest USB still runtime — 2026-11-12 11:49 UTC
 
 The alias-target fix is implemented and committed (`36fcfe69`); its source,
 unit test and validation are summarized in the handoff snapshot below. The
@@ -63,7 +63,7 @@ object deletion and heap-GC debug enabled both pass. The ARM build reports
 firmware end `0x100F5018`, leaving 45,032 bytes before `0x10100000`.
 
 The user reports all three boards are in BOOTSEL. Fresh elevated guest
-enumeration at 11:25 UTC still sees devices 088, 096 and 100 as runtime
+enumeration at 11:49 UTC still sees devices 088, 096 and 100 as runtime
 `2e8a:0009`, with no `2e8a:000f`; the approved helper grants two runtime nodes
 (096, 100), and `pcsc_scan -r` previously listed only the VPCD readers. The
 current empty-card diagnostic image is

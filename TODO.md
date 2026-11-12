@@ -16,7 +16,7 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 
 Device availability changes: consult the latest [.agent/HANDOFF.md](.agent/HANDOFF.md)
 and [.agent/QKB.md](.agent/QKB.md), then refresh authorized USB/PCSC access.
-At the 2026-11-12 11:25 UTC check, three Pico devices enumerated in the guest as
+At the 2026-11-12 11:49 UTC check, three Pico devices enumerated in the guest as
 runtime `2e8a:0009`; none appeared in BOOTSEL (`000f`), and `pcsc_scan -r` listed
 only VPCD. The user's BOOTSEL report is not reflected in guest USB state. A
 serial heartbeat or USB enumeration alone does not establish API/PCSC acceptance.

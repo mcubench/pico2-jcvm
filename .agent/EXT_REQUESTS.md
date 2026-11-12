@@ -158,7 +158,7 @@ The latest trace-enabled empty-card diagnostic image is
 RISC-V wrappers both passed at source HEAD `48e9a50b` (the build tree is
 dirty); CPLC source ID is `48E9A50BB405634E`. It includes CCID response-path
 markers and `fs_sync()` duration without per-object heap-GC logging. Fresh
-guest enumeration at 11:25 UTC still showed three runtime `2e8a:0009` devices
+guest enumeration at 11:49 UTC still showed three runtime `2e8a:0009` devices
 and no BOOTSEL interface despite the user's report that all boards are in
 BOOTSEL. Identity-pinned flash attempts
 found D92 and 8E but could not access either reset interface; the third chip ID

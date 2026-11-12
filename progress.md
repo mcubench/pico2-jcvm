@@ -28375,3 +28375,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 and RMI physical acceptance open; continue with physical response tracing when the guest sees BOOTSEL.
 - Commit: `4345d2e3` (RMI test evidence and status handoff); this progress-record hash backfill is committed separately.
 - Artifacts/logs: Test output was inspected directly; no separate logs.
+
+## 2026-11-12 Recheck reported BOOTSEL visibility 1 min
+
+- Step/experiment: `RESOURCE-01-BOOTSEL-GUEST-REENUMERATION-20261112-1149Z`
+- When: '2026-11-12 11:47 UTC' - '2026-11-12 11:49 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Rechecked elevated guest USB enumeration after the BOOTSEL report and refreshed TODO, STATUS, HANDOFF and EXT_REQUESTS with the observation.
+- Validation: Direct elevated `lsusb -d 2e8a:` reports device 088 and devices 096/100 all at runtime PID `0009`; no BOOTSEL PID `000f` is visible. No flash command was issued.
+- Result: The VM still does not expose a BOOTSEL device, despite the user's physical-mode report; the current quiet diagnostic image remains unflashed.
+- Decision: Continue offline. Once VirtualBox attaches a BOOTSEL interface to this guest, flash the prepared image by verified chip ID and capture finite serial output.
+- Commit: pending.
+- Artifacts/logs: Direct `lsusb` output inspected; no separate log.

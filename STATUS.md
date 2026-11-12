@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 11:47 UTC
+Updated: 2026-11-12 11:49 UTC
 
 ## Goal
 
@@ -44,7 +44,7 @@ current physical-test handoff.
 ## Hardware and current evidence
 
 - Three Pico USB devices are attached to the guest, but the latest elevated
-  enumeration at 11:25 UTC showed all as runtime `2e8a:0009`; no BOOTSEL `2e8a:000f` device
+  enumeration at 11:49 UTC showed all as runtime `2e8a:0009`; no BOOTSEL `2e8a:000f` device
   is visible. This conflicts with the user's report that all three were
   reinserted in BOOTSEL. Identity-pinned flash attempts found D92 and 8E but
   could not access their reset interfaces; chip ID 2BED was not connected.
