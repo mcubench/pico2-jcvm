@@ -18,8 +18,8 @@ loading because the runtime descriptor exposes no serial or chip ID, so target
 identity could not be verified. Do not retry flash until the guest identifies
 an exact board in BOOTSEL.
 
-The RV-32 source commit is `9efd14e` in `choupi/os`; root documentation/tests
-and the submodule pointer are pending the root commit. Preserve the unrelated
+The RV-32 source commit is `9efd14e` in `choupi/os`; root integration commit is
+`e9c6273f` (the progress-record SHA backfill is pending). Preserve the unrelated
 dirty worktree and dirty `choupi/os/src/fs/{mod.rs,tests.rs}` files. Next
 offline P1 candidate: RV-33, protect shared PC/firmware generation from
 concurrent writers.
