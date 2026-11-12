@@ -8,7 +8,7 @@ mkdir -p "${log_dir}"
 
 CHOUPI_JCVM_DEBUG=ON "${repo_root}/tools/build-pc" \
   > "${log_dir}/build-pc-dup-x-${timestamp}.log" 2>&1
-"${repo_root}/tools/build-dup-x-fixture"
+DUP_X_MATRIX=1 "${repo_root}/tools/build-dup-x-fixture"
 
 PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --passes 1 \
@@ -18,10 +18,18 @@ PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --select-only \
   --log "${log_dir}/dup-x-vpcd-${timestamp}.log"
 
-rg -q 'DUP_X 0x12' "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
-  printf 'ERROR: positive-depth dup_x was not observed in the interpreter log\n' >&2
-  exit 1
-}
+for m in 1 2 3 4; do
+  for n in 0 "$(seq "${m}" "$((m + 4))")"; do
+    for value in ${n}; do
+      operand=$(( (m << 4) | value ))
+      printf -v expected 'DUP_X 0x%02X' "${operand}"
+      rg -q "${expected}" "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
+        printf 'ERROR: legal dup_x operand %s was not observed in the interpreter log\n' "${expected}" >&2
+        exit 1
+      }
+    done
+  done
+done
 rg -q 'VPCD:APPLET_INSTALLED package-id=56' \
   "${log_dir}/dup-x-vpcd-${timestamp}.log" || {
   printf 'ERROR: dup_x fixture applet installation was not observed\n' >&2
@@ -55,5 +63,6 @@ if rg -q 'VPCD:APPLET_INSTALLED' "${invalid_log}"; then
 fi
 "${repo_root}/tools/build-dup-x-fixture" > /dev/null
 printf 'DUP_X_INVALID_VPCD:PASS operand=0x17 rejected with vm=6F00\n'
+printf 'DUP_X_MATRIX_VPCD:PASS legal_operands=24\n'
 printf 'DUP_X_VPCD:PASS log=%s\n' \
   "${log_dir}/dup-x-vpcd-${timestamp}.log"

@@ -49,28 +49,49 @@ JAVA_HOME="${java8_home}" "${repo_root}/tools/env" ant \
 jca="${build_dir}/output/dupx/fixture/javacard/fixture.jca"
 python3 - "${jca}" <<'PY'
 import re
+import os
 import sys
 from pathlib import Path
 
 path = Path(sys.argv[1])
 text = path.read_text()
+matrix = os.environ.get("DUP_X_MATRIX") == "1"
+operand = int(os.environ.get("DUP_X_OPERAND", "18"), 0)
+if not 0 <= operand <= 0xFF:
+    raise SystemExit("DUP_X_OPERAND must be a byte value")
+operand_m, operand_n = operand >> 4, operand & 0x0F
+operand_is_legal = (
+    1 <= operand_m <= 4
+    and (operand_n == 0 or operand_m <= operand_n <= operand_m + 4)
+)
+assembly_operand = operand if operand_is_legal else 18
+
+instructions = []
+if matrix:
+    for m in range(1, 5):
+        for n in (0, *range(m, m + 5)):
+            depth = m if n == 0 else n
+            instructions.extend(f"sspush {value};" for value in range(1, depth + 1))
+            instructions.append(f"dup_x {(m << 4) | n};")
+            instructions.extend("pop;" for _ in range(depth + m))
+    instructions.extend(("sspush 10;", "sreturn;"))
+    stack_limit = 12
+else:
+    instructions = ["sspush 10;", "sspush 20;", f"dup_x {assembly_operand};",
+                    "ssub;", "sadd;", "sreturn;"]
+    stack_limit = 3
+replacement_body = "\n".join(
+    [f"\t\t\t.stack {stack_limit};", "\t\t\t.locals 0;", ""]
+    + [f"\t\t\t\tL{index}: {instruction}" if index == 0
+       else f"\t\t\t\t\t{instruction}"
+       for index, instruction in enumerate(instructions)]
+)
 pattern = re.compile(
     r"(?P<header>\s*\.method\s+[^\n]*dupXProbe\(\)S(?:\s+\d+)?\s*\{)"
     r"(?P<body>.*?)"
     r"(?P<close>^\s*\})",
     re.MULTILINE | re.DOTALL,
 )
-replacement_body = """
-\t\t\t.stack 3;
-\t\t\t.locals 0;
-
-\t\t\t\tL0: sspush 10;
-\t\t\t\t\tsspush 20;
-\t\t\t\t\tdup_x 18;
-\t\t\t\t\tssub;
-\t\t\t\t\tsadd;
-\t\t\t\t\tsreturn;
-"""
 updated, replacements = pattern.subn(
     lambda match: match.group("header") + replacement_body + match.group("close"),
     text,
@@ -78,7 +99,7 @@ updated, replacements = pattern.subn(
 if replacements != 1:
     raise SystemExit(f"expected one dupXProbe JCA method, found {replacements}")
 path.write_text(updated)
-if "dup_x 18;" not in updated:
+if not matrix and f"dup_x {assembly_operand};" not in updated:
     raise SystemExit("assembled dup_x operand was not written")
 PY
 
@@ -89,31 +110,34 @@ PY
 
 python3 - "${build_dir}/output/fixture.cap" \
   "${build_dir}/dup-x-fixture-load-code.bin" <<'PY'
-import sys
 import os
+import sys
 import tempfile
 from zipfile import ZIP_DEFLATED, ZipFile
 
 source, target = sys.argv[1:]
 operand = int(os.environ.get("DUP_X_OPERAND", "18"), 0)
-if not 0 <= operand <= 0xFF:
-    raise SystemExit("DUP_X_OPERAND must be a byte value")
-if operand != 18:
+matrix = os.environ.get("DUP_X_MATRIX") == "1"
+operand_m, operand_n = operand >> 4, operand & 0x0F
+operand_is_legal = (
+    1 <= operand_m <= 4
+    and (operand_n == 0 or operand_m <= operand_n <= operand_m + 4)
+)
+if not matrix and not operand_is_legal:
     needle = bytes.fromhex("11 00 0a 11 00 14 3f 12 43 41 78")
     with ZipFile(source, "r") as cap:
         entries = [(entry, cap.read(entry.filename)) for entry in cap.infolist()]
+    matches = 0
     updated_entries = []
-    method_matches = 0
     for entry, content in entries:
         if entry.filename.endswith("/Method.cap"):
-            method_matches += content.count(needle)
+            matches += content.count(needle)
             if content.count(needle) == 1:
                 content = content.replace(
                     needle, needle[:7] + bytes([operand]) + needle[8:], 1)
         updated_entries.append((entry, content))
-    if method_matches != 1:
-        raise SystemExit(
-            f"expected one assembled dup_x instruction sequence, found {method_matches}")
+    if matches != 1:
+        raise SystemExit(f"expected one placeholder dup_x instruction, found {matches}")
     fd, temporary = tempfile.mkstemp(dir=os.path.dirname(source), suffix=".cap")
     os.close(fd)
     try:
@@ -134,5 +158,6 @@ with ZipFile(source) as cap, open(target, "wb") as output:
         if name not in names:
             raise SystemExit(f"CAP is missing required component {name}")
         output.write(cap.read(name))
-print(f"DUP_X_CAP:PASS operand=0x{operand:02X} cap={source} load_code={target}")
+label = "matrix=24" if matrix else f"operand=0x{operand:02X}"
+print(f"DUP_X_CAP:PASS {label} cap={source} load_code={target}")
 PY

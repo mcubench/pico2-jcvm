@@ -1,3 +1,11 @@
+# Current handoff — R60 legal dup_x operand matrix reaches the VPCD interpreter — 2026-11-12 04:51 UTC
+
+Extended `tools/build-dup-x-fixture` to generate a JCA probe method containing all 24 legal `dup_x` operands (including `n == 0`), clearing each resulting stack before the next case. The normal assembled source now carries the selected operand directly; the invalid-operand test alone assembles a legal placeholder and patches one CAP instruction byte because the JC305 assembler rejects invalid operands. `tools/test-dup-x-vpcd` checks every legal opcode appears in the interpreter trace and preserves the invalid `0x17` install-failure check.
+
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-dup-x-vpcd` passed: VPCD `TEST:SUMMARY pass=2 fail=0`, all 24 legal operands observed, applet installed, then invalid `0x17` rejected with `vm=6F00` before publication. PC interpreter SHA-256: `603901b403a84adc0eccca73f670de7b5e2b2a4b5efd18685a75f79ad922ba78`. Logs: `artifacts/logs/dup-x-vpcd-20261112T044827Z.log`, `artifacts/logs/dup-x-invalid-vpcd-20261112T044827Z.log`, `artifacts/logs/build-pc-dup-x-20261112T044827Z.log`. The fixture build was restored to default `0x12` after testing.
+
+The user reports all three boards in BOOTSEL, but elevated `lsusb -d 2e8a:` still sees three runtime `2e8a:0009` interfaces and no BOOTSEL `2e8a:000f`. No board identity can be verified, so no flash was attempted. R60 remains open for interpreter invalid/type/caught-failure recovery and following-APDU coverage, plus physical acceptance. Continue with the next offline TODO item while USB passthrough is unchanged. Preserve unrelated dirty files.
+
 # Current handoff — R60 valid and invalid dup_x interpreter cases pass on VPCD — 2026-11-12 04:34 UTC
 
 Committed as `7e368137`. `./tools/test-rmi-registry` passes the stack-helper matrix: all M/N byte
