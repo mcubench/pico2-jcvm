@@ -330,6 +330,22 @@ Archive all measurements and corrections; current remaining work belongs in [TOD
 
 Evidence: [E092](QKB_INDEX.md#e092), [E276](QKB_INDEX.md#e276), [E277](QKB_INDEX.md#e277), [E278](QKB_INDEX.md#e278).
 
+## GPPro DELETE timeout followed by PC/SC loss — unresolved observation (2026-11-12)
+
+After `GPPro --list` succeeded on all three newly flashed cards, deleting the
+JCAlgTest applet on chip `2BED26ED20556535` exceeded a 30-second timeout. The
+board remained USB `2e8a:0009` but lost its USB serial descriptor; its bounded
+serial monitor had no output. PC/SC enumeration then stopped listing readers,
+even though the approved access helper still granted access to all three USB
+nodes. The other boards were not subjected to deletion. This does not establish
+that DELETE caused the board symptom or that PC/SC itself caused the timeout.
+
+Response: stop further deletion attempts; do not erase flash. Restore PC/SC
+with the approved host path, re-identify the affected board, and capture its
+finite serial output before retrying. No viable fix is confirmed yet. See the
+2026-11-12 08:05 UTC handoff and `MAXCRYPTO-THREE-PHYSICAL-BOARDS-20261112` in
+`progress.md`.
+
 ## Maintenance
 
 Add or update the matching diagnosis instead of prepending repeated availability checks.

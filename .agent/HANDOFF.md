@@ -1,3 +1,38 @@
+# Current handoff — max_crypto flashed to three Pico 2 boards; cleanup stalled — 2026-11-12 08:05 UTC
+
+Built `max_crypto` for ARM and RISC-V with `./tools/build arm --profile
+max_crypto` and `./tools/build riscv --profile max_crypto`; both passed. ARM
+image: `build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
+`6daf352a4c3679b7e6c68c640c3b6371ac2f971974ad64020b558afbe37af0a7`.
+Provenance is `max_crypto`, normal startup, object deletion off, CPLC source
+ID `F2C1A828D41EFE30` (commit prefix/suffix from `f2c1a828`).
+
+Flashed identified boards: `2BED26ED20556535` and `8E464F4E2BBC0A19` both
+reported `FLASH:PASS`; `D92E743D5F640C0F` entered BOOTSEL and the image reached
+100% load/verify, then picotool aborted with `picoboot::connection_error`.
+That board re-enumerated as the JCVM runtime and passed the finite 8-second
+serial monitor (`TEST:SUMMARY pass=1 fail=0`), but the flash wrapper did not
+report success. The other two identified boards also passed the same finite
+serial health check.
+
+PC/SC initially enumerated all three readers. GPPro `--list` showed each still
+contained package `4A43416C6754657374` and applet
+`4A43416C675465737431`; reflashing does not erase persistent card storage.
+Deleting the applet on `2BED26ED20556535` timed out after 30 seconds. After
+that, `pcsc_scan -r` no longer enumerated readers (only scanner startup, then
+timeout), and USB path `1-5` still showed `2e8a:0009` but no serial descriptor;
+its 8-second monitor produced no startup lines. The helper granted access to
+all three device nodes, but PC/SC did not recover. Do not retry GPPro deletion
+or claim empty-card status until PC/SC is healthy and the affected board is
+identified again. No raw flash erase was used.
+
+Next: restore PC/SC using only the approved access path; verify all board IDs;
+then delete the JCAlgTest applet and package with GPPro one board at a time,
+confirm each list is empty, and capture bounded serial checks. Investigate the
+timed-out DELETE/USB descriptor loss separately; this is an unresolved
+physical symptom, not a diagnosed firmware cause. Preserve unrelated dirty
+worktree changes. Progress entry: `MAXCRYPTO-THREE-PHYSICAL-BOARDS-20261112`.
+
 # Current handoff — RESOURCE-01 host regression refresh — 2026-11-12 07:37 UTC
 
 The current shared worktree passes `./tools/test-persistent-transaction`
