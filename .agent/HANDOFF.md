@@ -13541,3 +13541,18 @@ User prohibits physical access while devices are in use. Source/history audit co
 ## BOOTSEL-01 promoted to P0 — 2026-11-12 13:42 UTC
 
 User requested a top-priority fix task. TODO now places BOOTSEL-01 above RESOURCE-01, with vendor reset integration, safe cooperative CDC reset, bounded latency, identity preservation and offline/physical acceptance criteria. Devices remain in use: no physical access for this task until available. Documentation only; implementation has not started.
+
+## 2026-11-12 External no-debug run: reset failures precede RSA-3072 disconnect
+
+Investigation ID: RESOURCE-01-EXTERNAL-RESET-PREFIX-20261112.
+User-reported evidence for `pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2`; full new external log and serial telemetry are not available locally.
+
+The first reported failure is AES-128 ECB ISO9797 M1 `Cipher_doFinal()` preparation, not RSA:
+`B0 31 00 00 16 00 11 00 19 FF FF 00 0F 00 80 00 07 01 00 FF FF 00 02 00 32 00 01 00`
+returned `6F00` in 1482 ms. The client then printed “Free unused card objects...”, “Reset applet didn't work, speed of algorithm couldn't be mesured”, and `CANT_BE_MEASURED`. User reports many repetitions before the final RSA-private-3072 PKCS1 preparation transport failure, and reset calls after every command to be measured.
+
+The supplied client excerpt first sends the preparation APDU; on non-9000 it invokes `resetApplet(cla, resetIns)`. Only a true reset result permits retry of the preparation APDU. A false result prints the reset-failure message and raises CANT_BE_MEASURED. Thus this message identifies a failed recovery attempt, not proof of a slow RSA measurement. The reported applet INS_CARD_RESET branch invokes `JCSystem.requestObjectDeletion()`.
+
+Important attribution limits: the shown `6F00` belongs to B0 31 preparation. No reset-command response/status or exception is supplied, so an exception specifically inside requestObjectDeletion is a hypothesis. In current source, the enabled native request merely sets a noexcept boolean and records its context; actual collection runs after APDU execution in `choupi/src/main.cpp`. With deletion disabled, the native API explicitly throws SystemException. Verify the tested binary configuration and distinguish request entry, post-APDU collection, reset response, and next prepare response. Retained deletion requests may be serviced again; repeated calls must be tested with live roots and failing preparation paths.
+
+Next: locate the first failing reset in the complete trace, retain its exact APDU/status/elapsed time and preceding successful operation, correlate serial exception and OBJECT_DELETION markers, and reproduce an unchanged upstream 1.8.4 AES prepare/reset sequence repeatedly before attempting the RSA prefix. Measure USB-progress gaps across post-APDU collection as well as native RSA. RSA time-extension starvation remains possible but cannot explain away the earlier AES/reset failures. No robust fix established; no hardware accessed.

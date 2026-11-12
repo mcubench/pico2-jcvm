@@ -28596,3 +28596,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep library packages loadable before dependencies arrive and enforce the dependency closure at INSTALL. Continue with Export consistency and legacy-CAP guards offline.
 - Commit: `4a2f0996`.
 - Artifacts/logs: `artifacts/logs/rmi-external-link-missing-library-dependency-20261112T162034Z.log`; passing suite logs in `artifacts/logs/rmi-external-link-*-20261112T1620*.log`; `build/arm/build-provenance.txt`.
+
+## 2026-11-12 Record external reset-failure prefix 3 minutes
+
+- Step/experiment: `RESOURCE-01-EXTERNAL-RESET-PREFIX-20261112`
+- When: '2026-11-12 16:44 UTC' - '2026-11-12 16:47 UTC'
+- Model: `GPT-6 (Codex)`
+- Change: Appended user-supplied AES preparation 6F00, repeated reset failures, client recovery semantics and investigation priorities to QKB and HANDOFF.
+- Validation: Inspected native requestObjectDeletion, noexcept context flag setter, and post-APDU collection dispatch; documentation diff checked. Builds intentionally skipped because no source changed; hardware unavailable and not accessed.
+- Result: First reported prepare failure is AES-128 (1482 ms), preceding RSA-3072 transport loss. Reset failure is established by client reporting; its exact status and exception origin remain unmeasured.
+- Decision: Investigate first failed prepare/reset pair and repeated post-APDU deletion before attributing the final disconnect solely to RSA timing.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: User-provided conversation excerpts; full new external log and serial capture not supplied.
