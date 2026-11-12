@@ -1,6 +1,6 @@
 # Current handoff — max_crypto rebuilt; user-reported BOOTSEL still enumerates as runtime — 2026-11-12 04:18 UTC
 
-After the RV-33 concurrency test left the ARM output at profile `base`, rebuilt
+This status record is committed as `77e17f61`. After the RV-33 concurrency test left the ARM output at profile `base`, rebuilt
 both architecture gates with `max_crypto`: `./tools/build arm --profile
 max_crypto` and `./tools/build riscv --profile max_crypto` passed. ARM image is
 `build/arm/pico2_choupi.uf2`, 1,997,312 bytes, SHA-256
