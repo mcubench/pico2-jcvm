@@ -209,7 +209,39 @@ def build_malformed_load_code(mutation: str) -> Path:
     mutable = bytearray(ordered)
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
-    if mutation == "unknown-component-tag":
+    if mutation == "external-superclass-import-token-out-of-range":
+        class_data = parts["Class"][3:]
+        class_offset = 0
+        target_superclass = None
+        for class_index in range(owner_index + 1):
+            if len(class_data) - class_offset < 10:
+                raise ValueError("truncated Class info before applet class")
+            flags = class_data[class_offset]
+            if flags & 0x80:
+                raise ValueError("fixture parser expected class records only")
+            if class_index == owner_index:
+                target_superclass = class_data[class_offset + 1 : class_offset + 3]
+                break
+            public_count = class_data[class_offset + 7]
+            package_count = class_data[class_offset + 9]
+            class_end = class_offset + 10 + 2 * (public_count + package_count)
+            for _ in range(flags & 0x0F):
+                if class_end + 3 > len(class_data):
+                    raise ValueError("truncated implemented-interface record")
+                class_end += 3 + class_data[class_end + 2]
+            if class_end > len(class_data):
+                raise ValueError("Class info exceeds component bounds")
+            class_offset = class_end
+        if target_superclass is None or len(target_superclass) != 2:
+            raise ValueError("applet Class superclass reference not found")
+        if target_superclass == b"\xff\xff":
+            raise ValueError("applet class unexpectedly is java.lang.Object")
+        mutation_index = (
+            sum(len(parts[name]) for name, _ in COMPONENTS[:5])
+            + 3 + class_offset + 1
+        )
+        replacement = b"\xff\x00"  # external package token 127, class token 0
+    elif mutation == "unknown-component-tag":
         mutation_index = len(mutable)
         replacement = bytes((12, 0, 1, 0))
     elif mutation == "load-header-aid-mismatch":
@@ -583,7 +615,7 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location", "missing-import-component", "missing-static-field-component", "impdep1", "impdep2", "truncated-sipush",
+        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location", "missing-import-component", "missing-static-field-component", "external-superclass-import-token-out-of-range", "impdep1", "impdep2", "truncated-sipush",
                                 "fall-through", "zero-process-body-length",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
@@ -611,6 +643,7 @@ def main() -> int:
         "unknown-component-tag", "load-header-aid-mismatch",
         "missing-reference-location", "missing-import-component",
         "missing-static-field-component",
+        "external-superclass-import-token-out-of-range",
     )
     if args.mutation in load_rejection_mutations:
         log.unlink(missing_ok=True)
@@ -690,6 +723,8 @@ def main() -> int:
             reason = "unknown_component"
         elif args.mutation == "load-header-aid-mismatch":
             reason = "package_aid_header_mismatch"
+        elif args.mutation == "external-superclass-import-token-out-of-range":
+            reason = "external_superclass_import_token_out_of_range"
         else:
             component_name = {
                 "missing-reference-location": "reference_location",

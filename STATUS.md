@@ -1,6 +1,6 @@
 # JCVM project status
 
-Updated: 2026-11-12 13:57 UTC
+Updated: 2026-11-12 15:04 UTC
 
 ## Goal
 
@@ -21,8 +21,13 @@ current physical-test handoff.
   Required Import, Static Field and Reference Location presence is now enforced
   before package storage. Omission regressions pass for all three. The Reference
   Location case returned `6A80` on physical D92; a following valid unchanged
-  JCAlgTest 1.8.4 install and SELECT succeeded. Other dependency validation and
-  full physical acceptance remain open.
+  JCAlgTest 1.8.4 install and SELECT succeeded. External class superclass and
+  interface package tokens are now range-checked against Import before storage;
+  the malformed `FF00` superclass reference is rejected in VPCD. ARM and
+  RISC-V builds pass. Library dependency closure, Export consistency, legacy
+  CAP null guards and full physical acceptance remain open. The user's latest
+  BOOTSEL report was followed by enumeration of three runtime `2e8a:0009`
+  devices, so no flash was attempted.
 
 - Fresh external-test ARM image: [empty-card max_crypto with object deletion enabled and debug tracing disabled](artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-31cb571c.uf2). SHA-256 `b57c7b07b0c0673b8ae7d3ba0a8de5c8f79290e16d70b63cf2241aef754b0e60`, 4,098,048 bytes. ARM and RISC-V wrappers pass with `object_deletion=ON` and heap-GC, CCID-applet and persistent-GC debug switches OFF; RISC-V builds the VM core only. The build from source HEAD `31cb571c` uses a dirty worktree and CPLC source ID `31CB571C064FA40F`. `./tools/test-no-debug-traces` confirms the ARM ELF omits verbose APDU/persistent-reference trace strings while retaining concise object-deletion events. The image clears persistent storage and has no preinstalled applet. Firmware SHA-256 is `7e477e96b137e40aef71c15134fcc5625bd7f1c5bda4177376d8f974dedc10ee`; this is not a release build.
   The prior `ed5716bb` package is superseded because it retained those verbose

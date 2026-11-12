@@ -77,6 +77,18 @@ paths beyond this matrix.
 
 Evidence: [E360](QKB_INDEX.md#e360), [E089](QKB_INDEX.md#e089), [E288](QKB_INDEX.md#e288), [E297](QKB_INDEX.md#e297), [E342](QKB_INDEX.md#e342).
 
+## CAP Class external references — validate Import token bounds before storage
+
+External superclass references in Class records and external superinterface
+references in Interface records also carry package tokens into the Import
+component. Checking only Constant Pool references leaves malformed inheritance
+metadata able to pass LOAD. Walk Class component records before persistence and
+reject any external package token whose low seven bits are outside Import
+count. Preserve the `0xFFFF` no-superclass sentinel. Regression uses unchanged
+JCAlgTest 1.8.4 bytes with its applet superclass changed from `8203` to `FF00`;
+the VPCD test confirms LOAD rejects before package storage. Keep separate
+coverage for Import/Export consistency and transitive library dependencies.
+
 ## Late mixed-suite resource failures — unresolved; reproduce state
 
 Capture exact ordered APDUs, initial storage, profile/build/backend and first terminal error.

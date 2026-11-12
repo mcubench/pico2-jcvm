@@ -7,6 +7,7 @@
 #include "vm_filesystem.h"
 #include "vm_cap_initialization.h"
 #include "cap_constant_pool_validation.hpp"
+#include "cap_import_reference_validation.hpp"
 #include "cap_package_dependencies.hpp"
 
 #ifdef PC_VERSION
@@ -629,6 +630,8 @@ bool validate_internal_class_references(
 bool validate_cap_import_independent(const jcvm::JC_Cap &cap) {
   const auto *imports = cap.getImport();
   const std::size_t import_count = imports == nullptr ? 0 : imports->count;
+  if (!cap_import_reference_validation::valid_class_import_tokens(cap))
+    return false;
   const auto *constant_pool = cap.getConstantPool();
   if (constant_pool == nullptr) return false;
   const auto *entries = reinterpret_cast<const uint8_t *>(

@@ -141,8 +141,17 @@ task:
     multi-package VPCD regressions pass. See
     `CAPIN-01-REQUIRED-COMPONENTS` in `progress.md` and physical logs under
     `artifacts/results/capin-required-component-20261112/D92E743D5F640C0F/`.
-    Still open: library dependency closure, external superclass without Import,
-    and broad physical acceptance.
+    Progress 2026-11-12 15:04 UTC: Added LOAD-time validation for external
+    superclass and interface package tokens in Class records. The unchanged
+    JCAlgTest 1.8.4 CAP mutation changes the applet superclass reference from
+    `8203` to invalid external token `FF00`; it is rejected before package
+    storage. Adjacent missing-Import case also passes. ARM and RISC-V builds
+    pass. The valid multi-package VPCD run loaded 3 packages and installed 21
+    instances, then timed out during later package lookup cleanup; that suite
+    is not a complete pass. Guest enumeration after the user's BOOTSEL report
+    still showed three runtime `2e8a:0009` devices, so no physical test/flash
+    was attempted. Still open: library dependency closure, Export consistency,
+    null guards for legacy stored CAPs, and broad physical acceptance.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is
@@ -168,6 +177,9 @@ task:
   Fixtures: extra tag-12 component; library with Export but no Class plus an
   importer; class with external superclass and no Import. Expect `6A80` at
   LOAD, no slot consumed, and DELETE of an unrelated package still `9000`.
+  External superclass package-token range validation is now covered by
+  `external-superclass-import-token-out-of-range`; library dependency closure
+  and Export consistency remain open.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-01).
 

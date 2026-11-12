@@ -28519,3 +28519,33 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep BOOTSEL-01 open for physical validation once an identity-verifiable BOOTSEL device appears in the guest. Do not reset/flash based solely on VM UI or host report.
 - Commit: `fc18a6b9`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `build/arm/build-provenance.txt`; `.agent/QKB.md`; `.agent/HANDOFF.md`.
+
+# 2026-11-12 Validate CAP Class external package tokens 30
+
+- Step/experiment: `CAPIN-01-CLASS-IMPORT-TOKENS`
+- When: '2026-11-12 14:34 UTC' - '2026-11-12 15:04 UTC'
+- Model: `gpt-6.1-sol`
+- Change: Added pre-storage checks for external superclass and interface
+  package tokens against the CAP Import count. Added an unchanged-upstream-CAP
+  mutation test (`8203` to `FF00`) and marked this CAPIN-01 subcase complete in
+  TODO, STATUS, QKB and handoff notes.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`,
+  `./tools/build riscv`, `PICO2_HOST_USB_ACCESS=1 ./tools/test-cap-malformed-vpcd
+  --mutation external-superclass-import-token-out-of-range`, and the adjacent
+  `missing-import-component` mutation all passed. `./tools/test-vpcd-multipackage`
+  loaded 3 packages and installed 21 applet instances, passed initial lifecycle
+  and persistence checks, then failed by timeout during
+  `DELETE lookup package and paginated instances`; full suite acceptance is
+  incomplete. `python3 -m py_compile tests/integration/cap_malformed_vpcd_test.py`
+  passed. Elevated `lsusb -d 2e8a:` showed devices 105, 106 and 108 as runtime
+  `2e8a:0009`; no physical flash/test was attempted.
+- Result: Malformed superclass reference rejected before package storage.
+  ARM firmware ends at `0x100d92bc`, leaving 159,044 bytes before the configured
+  flash limit. RISC-V smoke build passes. Physical validation remains open.
+- Decision: Keep CAPIN-01 open for Export/link consistency, library dependency
+  closure, old stored CAP guards and physical acceptance; investigate the later
+  multipackage DELETE timeout separately.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261112T144850Z.log`
+  and associated restart/rejection logs; malformed tests under
+  `artifacts/logs/rv28-malformed-*-vpcd-20261106.log` if retained.

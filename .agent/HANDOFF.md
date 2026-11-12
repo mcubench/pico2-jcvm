@@ -1,3 +1,37 @@
+# Current handoff — validate CAP Class external package tokens — 2026-11-12 15:04 UTC
+
+Added native CAP LOAD validation for external superclass references in Class
+records and external superinterface references in Interface records. External
+package tokens are checked against Import count before package storage. The
+unchanged JCAlgTest 1.8.4 CAP mutation changes the applet superclass from
+`8203` to `FF00`; the regression reports
+`CAP_LOAD_VALIDATION:PASS external_superclass_import_token_out_of_range_rejected_before_store`.
+The neighboring missing-Import regression also passes.
+
+Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and
+`./tools/build riscv` pass. ARM firmware ends at `0x100d92bc`, leaving 159,044
+bytes before the configured flash limit. The valid multi-package VPCD test
+loaded 3 packages and 21 instances and passed its routing, persistence,
+duplicate-install, and initial delete checks, but later timed out during
+`DELETE lookup package and paginated instances`; do not call that full suite a
+pass. Logs are
+`artifacts/logs/host-vpcd-multipackage-apdu-20261112T144850Z.log` plus the
+associated restart/rejection logs. Physical acceptance was not run.
+
+After the user reported three BOOTSEL boards, elevated enumeration still
+showed devices 105, 106, and 108 as runtime `2e8a:0009 Pico2 Pico2 JCVM CCID`.
+The approved helper granted PC/SC node access to all three, but they are not
+in BOOTSEL in this guest. No flash was attempted.
+
+CAPIN-01 remains open for library dependency closure, Export consistency,
+legacy CAP null guards, and broad physical acceptance. The next source focus
+is validating Import/Export/link consistency for library packages before
+storage/INSTALL; keep the CAP bytes unchanged. Preserve unrelated worktree
+changes, especially the preexisting `src/cap_load.cpp` hunks. The new source
+guard in that file must be staged by hunk only.
+
+---
+
 # Current handoff — BOOTSEL reset integrated; hardware state mismatch remains — 2026-11-12 14:21 UTC
 
 ## BOOTSEL-01 implementation complete offline; physical validation open
