@@ -27958,3 +27958,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark RV-31 software fix complete. Keep physical PERSIST acceptance open under its existing carry-forward and continue with the next active P1 item.
 - Commit: `d78fc7ef` (the progress record is backfilled in a follow-up documentation commit).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; focused test output in session transcript.
+
+## 2026-11-12 fail closed on flash target identity changes 12 min
+
+- Step/experiment: `RV-20261106-34`
+- When: '2026-11-12 02:14 UTC' - '2026-11-12 02:26 UTC'
+- Model: `GPT-6`
+- Change: Extracted flash target discovery into `tools/lib/flash_usb_target.sh`. Explicit serials/chip IDs no longer fall back to another board; duplicate matches fail. Stable-path re-enumeration now validates runtime identity or the BOOTSEL ROM chip ID, and the flash wrapper logs the selected path, bus/address, serial and chip ID before loading. Added `./tools/test-flash-target-selection` with synthetic sysfs fixtures.
+- Validation: Nine offline cases pass (`TEST:SUMMARY fail=0`): absent serial A with sole device B, duplicate runtime serials, exact runtime selection, replaced runtime at a stable path, replaced BOOTSEL at a stable path, same-device BOOTSEL recovery, direct serial/chip-ID match and mismatch, and ambiguous automatic BOOTSEL selection. `bash -n` passes for all changed shell files; `./tools/flash --help` passes. No real USB command or flash was run for this step.
+- Result: The tested selector rejects the reviewed wrong-board fallback and stable-path replacement cases before any load. Physical flash identity logging remains unverified.
+- Decision: Keep RV-34 open for physical verification; use this selector for the next authorized hardware attempt.
+- Commit: pending
+- Artifacts/logs: `tests/unit/flash_target_selection/flash_target_selection_test.sh`; synthetic test output in session transcript.

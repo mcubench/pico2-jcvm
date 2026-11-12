@@ -1,3 +1,22 @@
+# Current handoff — flash selector now fails closed on identity changes — 2026-11-12 02:26 UTC
+
+Implemented the offline portion of RV-20261106-34. `tools/flash` now uses
+`tools/lib/flash_usb_target.sh`; a requested serial cannot fall back to a
+different sole Pico, duplicate identities are rejected, and the originally
+selected runtime serial/chip ID must still match when the device re-enumerates.
+BOOTSEL transitions are checked against the ROM chip ID before the wrapper can
+load an image. The wrapper prints selected USB path, bus/address, serial and
+chip ID before any load operation.
+
+Added `./tools/test-flash-target-selection`. All nine synthetic sysfs cases
+pass, including absent A/sole B, duplicate matches, correct and replaced
+BOOTSEL at the same path, direct serial-to-chip-ID selection, and automatic
+ambiguity rejection. `bash -n`, `./tools/flash --help`, and diff whitespace
+checks pass. No real USB operation or flash was performed for this code step;
+RV-34 remains open for physical verification with identity logged. The code,
+tests, TODO and this handoff are recorded in `progress.md` under RV-34; commit
+is pending.
+
 # Current handoff — RV-31 cache-generation invalidation fixed — 2026-11-12 02:14 UTC
 
 Fixed RV-20261106-31 in `JC_Instance::getFields()`: nonpersistent instances

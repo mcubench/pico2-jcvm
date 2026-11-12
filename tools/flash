@@ -66,111 +66,14 @@ target_bus=""
 target_address=""
 target_product=""
 target_device_serial=""
+target_expected_usb_serial=""
+target_expected_chipid=""
+target_selected=0
+target_identity_error=""
 if [[ -n "$usb_path" ]]; then
   target_sysfs_path="$usb_path"
 fi
-capture_usb_device() {
-  local device="$1"
-  target_sysfs_path="${device##*/}"
-  target_bus="$(<"${device}/busnum")"
-  target_address="$(<"${device}/devnum")"
-  target_product="$(<"${device}/idProduct")"
-  if [[ -r "${device}/serial" ]]; then
-    target_device_serial="$(<"${device}/serial")"
-  fi
-}
-
-refresh_target_usb() {
-  local device device_serial bus address info observed_chipid
-  local -a bootsel_devices=() serial_devices=() chipid_runtime_devices=() rp_devices=()
-
-  # The USB port path remains stable across runtime <-> BOOTSEL re-enumeration,
-  # while the BOOTSEL ROM does not expose the firmware's USB serial number.
-  if [[ -n "$target_sysfs_path" ]]; then
-    device="/sys/bus/usb/devices/${target_sysfs_path}"
-    if [[ -r "${device}/idVendor" && "$(<"${device}/idVendor")" == 2e8a ]]; then
-      if [[ -z "$chipid" || "$(<"${device}/idProduct")" == 000f ]]; then
-        capture_usb_device "$device"
-        return 0
-      fi
-      if [[ -r "${device}/serial" ]]; then
-        device_serial="$(<"${device}/serial")"
-        if [[ "${device_serial^^}" == "$chipid" ]]; then
-          capture_usb_device "$device"
-          return 0
-        fi
-      fi
-    fi
-    if [[ -n "$usb_path" ]]; then
-      return 1
-    fi
-  fi
-
-  for device in /sys/bus/usb/devices/*; do
-    [[ -r "${device}/idVendor" && -r "${device}/idProduct" &&
-       -r "${device}/busnum" && -r "${device}/devnum" ]] || continue
-    [[ "$(<"${device}/idVendor")" == 2e8a ]] || continue
-    rp_devices+=("${device}")
-    if [[ "$(<"${device}/idProduct")" == 000f ]]; then
-      bootsel_devices+=("${device}")
-    fi
-    if [[ -n "$serial" && -r "${device}/serial" ]]; then
-      device_serial="$(<"${device}/serial")"
-      if [[ "${device_serial^^}" == "$serial" ]]; then
-        serial_devices+=("${device}")
-      fi
-    fi
-    if [[ -n "$chipid" && "$(<"${device}/idProduct")" != 000f &&
-          -r "${device}/serial" ]]; then
-      device_serial="$(<"${device}/serial")"
-      if [[ "${device_serial^^}" == "$chipid" ]]; then
-        chipid_runtime_devices+=("${device}")
-      fi
-    fi
-  done
-
-  if [[ -n "$chipid" ]]; then
-    if ((${#chipid_runtime_devices[@]} == 1)); then
-      capture_usb_device "${chipid_runtime_devices[0]}"
-      return 0
-    fi
-    if ((${#chipid_runtime_devices[@]} > 1)); then
-      return 1
-    fi
-    # BOOTSEL drops the runtime USB serial. With multiple BOOTSEL boards,
-    # select by the stable RP2350 chip ID reported by the ROM, not USB order.
-    for device in "${bootsel_devices[@]}"; do
-      bus="$(<"${device}/busnum")"
-      address="$(<"${device}/devnum")"
-      if ! info="$(timeout --signal=TERM --kill-after=2s 4s \
-          picotool info --device --bus "$bus" --address "$address" 2>&1)"; then
-        continue
-      fi
-      observed_chipid="$(sed -nE 's/^[[:space:]]*chipid:[[:space:]]*0x?([[:xdigit:]]{16})[[:space:]]*$/\1/p' <<<"$info" | tr '[:lower:]' '[:upper:]')"
-      if [[ "$observed_chipid" == "$chipid" ]]; then
-        capture_usb_device "$device"
-        return 0
-      fi
-    done
-    return 1
-  fi
-
-  if ((${#serial_devices[@]} == 1)); then
-    capture_usb_device "${serial_devices[0]}"
-    return 0
-  fi
-  # A unique BOOTSEL device is unambiguous even though ROM has no serial. This
-  # also supports flashing a board that was already inserted in BOOTSEL.
-  if ((${#bootsel_devices[@]} == 1)); then
-    capture_usb_device "${bootsel_devices[0]}"
-    return 0
-  fi
-  if ((${#rp_devices[@]} == 1)); then
-    capture_usb_device "${rp_devices[0]}"
-    return 0
-  fi
-  return 1
-}
+source "${repo_root}/tools/lib/flash_usb_target.sh"
 
 set_target_selector() {
   [[ -n "$target_bus" && -n "$target_address" ]] || \
@@ -194,6 +97,7 @@ wait_for_rp_usb() {
       printf 'FLASH:USB RP-series device detected wait_seconds=%s\n' "${elapsed}"
       return 0
     fi
+    [[ -z "$target_identity_error" ]] || die "$target_identity_error"
     if ((elapsed == 0)); then
       printf 'FLASH:USB RP-series device absent; waiting up to %s seconds for re-enumeration\n' "${limit}"
     fi
@@ -228,6 +132,7 @@ wait_for_bootsel() {
       printf 'FLASH:BOOTSEL detected wait_seconds=%s\n' "${elapsed}"
       return 0
     fi
+    [[ -z "$target_identity_error" ]] || die "$target_identity_error"
     if ((elapsed < limit)); then
       sleep 1
     fi
@@ -376,10 +281,15 @@ recover_bootsel() {
 
 printf 'FLASH:IMAGE path=%s\n' "${image}"
 wait_for_rp_usb 120 || die "no RP-series USB device appeared; reconnect the Pico and retry"
+printf 'FLASH:TARGET usb_path=%s bus=%s address=%s serial=%s chipid=%s\n' \
+  "${target_sysfs_path}" "${target_bus}" "${target_address}" \
+  "${target_device_serial:-unavailable}" \
+  "${target_expected_chipid:-unverified}"
 if is_bootsel; then
   printf 'FLASH:BOOTSEL already available\n'
   run_load normal || die "direct BOOTSEL flash failed"
 else
+  [[ -z "$target_identity_error" ]] || die "$target_identity_error"
   if run_load force; then
     exit 0
   fi
