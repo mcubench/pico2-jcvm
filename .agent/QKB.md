@@ -118,6 +118,16 @@ Evidence: `progress.md`, entry `RESOURCE-01-STALE-ARRAY-BODY-GUARD-20261112`;
 regression `persistent_array_handle_rejects_realiasing_missing_body`;
 `artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`.
 
+The host reclaimer now has a focused foreign durable-alias cycle regression:
+two aliases owned outside the target applet point to each other. Alias
+inventory returns `InvalidTag` before deleting the target or an unrelated
+orphan; after removing the corrupt records, retry reclaims the now-unreachable
+target records. This confirms bounded fail-closed behavior in the host stub,
+not physical recovery or the cause of the archived missing-body incident.
+
+Evidence: `progress.md`, entry `PERSIST-01-ALIAS-CYCLE-20261112`;
+regression `persistent_alias_cycle_blocks_reclamation_then_retry_succeeds`.
+
 ## Request-gated deletion and batch budgets — implemented, physical acceptance open
 
 Normal firmware reports object deletion unsupported. Diagnostic `PICO2_ENABLE_OBJECT_DELETION=1`

@@ -1,3 +1,17 @@
+# Current handoff — persistent foreign-alias cycles fail closed before deletion — 2026-11-12 04:25 UTC
+
+Added regression `persistent_alias_cycle_blocks_reclamation_then_retry_succeeds`
+to the production reclaimer unit suite. Two foreign-owned persistent array
+aliases form a cycle. `findAliasesToAppletOwner()` and the reclaimer both
+return `InvalidTag`; the target and unrelated orphan records remain intact and
+the erase count stays zero. After deleting the corrupt alias records, retry
+completes and reclaims exactly the two now-unreachable target records.
+`./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`,
+including the new case. `./tools/test-rmi-registry` also passed on the current
+worktree, including rootless foreign-array cycles. PERSIST-01 remains open for
+physical multi-owner/power-cut acceptance and complete root audit; this host
+case does not explain the physical missing-body trace. No source code changed.
+
 # Current handoff — max_crypto rebuilt; user-reported BOOTSEL still enumerates as runtime — 2026-11-12 04:18 UTC
 
 This status record is committed as `77e17f61`. After the RV-33 concurrency test left the ARM output at profile `base`, rebuilt

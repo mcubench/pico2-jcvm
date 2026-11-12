@@ -347,7 +347,7 @@ review.
 ### PERSIST-01
 
 - [ ] **Complete safety acceptance before enabling normal persistent reclamation.** Owner-scoped inventory and bounded reclaimer primitives exist; incomplete roots, malformed/unreadable aliases, cursor errors or transactions fail closed. Stable owner IDs, direct applet roots and cross-namespace alias protection are required. Current diagnostic root/budget progress is summarized under RESOURCE-01.
-- Evidence: a physical single-owner hook erased exactly one orphan while preserving the live root; host tests cover owner isolation, sibling roots, bounded batches, erase failures/retry and 1,000 modeled power cuts using the production reclaimer. These do not establish physical multi-owner or power-loss safety.
+- Evidence: a physical single-owner hook erased exactly one orphan while preserving the live root; host tests cover owner isolation, sibling roots, bounded batches, erase failures/retry and 1,000 modeled power cuts using the production reclaimer. A cross-owner two-record alias cycle now returns `InvalidTag` before any erase; after removing the corrupt cycle, a retry reclaims both target records. These do not establish physical multi-owner or power-loss safety.
 - Remaining: physical multi-owner/foreign-alias inventory, real per-record interruption and restart/retry, complete retained-context/native-root audit, stable handles and physical APDU timing. Acceptance: all live roots/aliases and other owners survive; interrupted batches resume safely; incomplete reachability never permits deletion. Coordinate PERSIST-02/03; normal builds continue to report object deletion unsupported.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#persist-01).

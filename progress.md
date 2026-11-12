@@ -28030,3 +28030,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RV-34 physical validation open. Do not flash until guest USB reports a matching BOOTSEL device with readable chip ID.
 - Commit: pending
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; build provenance `build/arm/build-provenance.txt`; USB discovery was read-only and not archived separately.
+
+## 2026-11-12 Fail closed on persistent foreign-alias cycles 5 min
+
+- Step/experiment: `PERSIST-01-ALIAS-CYCLE-20261112`
+- When: '2026-11-12 04:20 UTC' - '2026-11-12 04:25 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added a production-reclaimer regression for a two-record persistent alias cycle owned by two foreign applets. It checks inventory and reclamation fail with `InvalidTag` before erasing either the reachable target or unrelated orphan, then removes the corrupt cycle and verifies retry safely reclaims both target records.
+- Validation: `./tools/test-persistent-transaction` passes with `TEST:SUMMARY fail=0`, including `persistent_alias_cycle_blocks_reclamation_then_retry_succeeds`. `./tools/test-rmi-registry` passes with rootless foreign-array cycles and retained-root cases. No firmware build was run because this change is test/documentation-only. No hardware check was attempted; current guest USB state still lacks BOOTSEL/chip identity.
+- Result: Durable alias cycles are bounded and fail closed in the host reclaimer test; retry succeeds after corruption is removed. This does not establish physical multi-owner/power-cut safety or identify the source of the historical missing body.
+- Decision: Keep PERSIST-01/RESOURCE-01 open. Continue with the next offline safety gap while preserving the requirement for identified physical acceptance.
+- Commit: pending
+- Artifacts/logs: `build/tests/unit/persistent-transaction/persistent_transaction_test`; no separate log archived.

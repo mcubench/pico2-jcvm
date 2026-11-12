@@ -2904,6 +2904,68 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x5e;
+    constexpr uint8_t alias_owner_a = 0x5f;
+    constexpr uint8_t alias_owner_b = 0x60;
+    const uint8_t target_tag[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t orphan_tag[] = {0x03, owner, 0x30, 0x01};
+    const uint8_t alias_tag_a[] = {0x03, alias_owner_a, 0x40, 0x01};
+    const uint8_t alias_tag_b[] = {0x03, alias_owner_b, 0x40, 0x02};
+    const auto alias_record = [](const uint8_t *target,
+                                 const uint8_t target_length) {
+      std::vector<uint8_t> record{0xfd, target_length};
+      record.insert(record.end(), target, target + target_length);
+      return record;
+    };
+    seed(target_tag, sizeof(target_tag), byte_record(0x73));
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x74));
+    seed(alias_tag_a, sizeof(alias_tag_a),
+         alias_record(alias_tag_b, sizeof(alias_tag_b)));
+    seed(alias_tag_b, sizeof(alias_tag_b),
+         alias_record(alias_tag_a, sizeof(alias_tag_a)));
+
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    bool alias_found = false;
+    const auto alias_scan =
+        jcvm::PersistentInventory::findAliasesToAppletOwner(owner,
+                                                             alias_found);
+    uint32_t erased = 99;
+    const auto blocked =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    const bool blocked_without_mutation =
+        alias_scan == jcvm::PersistentInventory::VisitResult::InvalidTag &&
+        !alias_found &&
+        blocked == jcvm::PersistentInventory::VisitResult::InvalidTag &&
+        erased == 0 &&
+        read(target_tag, sizeof(target_tag)) == byte_record(0x73) &&
+        read(orphan_tag, sizeof(orphan_tag)) == byte_record(0x74) &&
+        !read(alias_tag_a, sizeof(alias_tag_a)).empty() &&
+        !read(alias_tag_b, sizeof(alias_tag_b)).empty();
+
+    jcvm::fs::Tag alias_fs_tag_a{};
+    alias_fs_tag_a.len = sizeof(alias_tag_a);
+    std::memcpy(alias_fs_tag_a.value, alias_tag_a, sizeof(alias_tag_a));
+    jcvm::fs::Tag alias_fs_tag_b{};
+    alias_fs_tag_b.len = sizeof(alias_tag_b);
+    std::memcpy(alias_fs_tag_b.value, alias_tag_b, sizeof(alias_tag_b));
+    const bool aliases_removed =
+        jcvm::FlashMemory_Handler::erasePersistentTag(alias_fs_tag_a) &&
+        jcvm::FlashMemory_Handler::erasePersistentTag(alias_fs_tag_b);
+    erased = 0;
+    const auto retried =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(blocked_without_mutation && aliases_removed &&
+               retried == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 2 && read(target_tag, sizeof(target_tag)).empty() &&
+               read(orphan_tag, sizeof(orphan_tag)).empty(),
+           "persistent_alias_cycle_blocks_reclamation_then_retry_succeeds");
+  }
+
+  {
     constexpr uint8_t owner = 0x43;
     const uint8_t orphan_tag[] = {0x03, owner, 0x20, 0x01};
     seed(orphan_tag, sizeof(orphan_tag), byte_record(0x11));
