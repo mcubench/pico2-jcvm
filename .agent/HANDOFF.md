@@ -17,9 +17,10 @@ still enumerated all three as runtime `2e8a:0009`; BOOTSEL `2e8a:000f` was not
 visible, and no flash was attempted. Continue CAPIN-01 offline. Remaining:
 conditional required-component rules, library dependency closure/link checks,
 external superclass without Import fixture, INSTALL AID mismatch fixture, and
-physical validation. Other existing dirty files were preserved. Source changes
-are uncommitted pending a partial staging pass because `src/cap_load.cpp` and
-other worktree files contain unrelated edits.
+physical validation. The validated pre-store payload check and resolver guards
+are committed as `54cb086a`. The working tree still contains the LOAD/Header AID
+comparison and unrelated pre-existing edits in `src/cap_load.cpp`; these were
+left unstaged. Other unrelated dirty files were preserved.
 
 ---
 
