@@ -43,6 +43,58 @@ converter_int=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
   -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03:0x01 \
   sio.service.ServiceApplet sio.service \
   0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03 1.0
+if [[ "${SIO_CROSS_AID_DUPX_TEST:-0}" == 1 ]]; then
+  service_jca_dir="${build_dir}/service-jca"
+  "${converter_int[@]}" \
+    -classdir "${build_dir}/service-classes" \
+    -exportpath "${kit}/api_export_files:${api_classes}:${build_dir}/contract-exp" \
+    -d "${service_jca_dir}" -out JCA \
+    -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03:0x01 \
+    sio.service.ServiceApplet sio.service \
+    0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03 1.0
+  service_jca="${service_jca_dir}/sio/service/javacard/service.jca"
+  python3 - "${service_jca}" <<'PY_DUPX'
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+pattern = re.compile(
+    r"(?P<header>\s*\.method\s+[^\n]*dupXForeignReferenceProbe\(Ljava/lang/Object;\)Ljava/lang/Object;(?:\s+\d+)?\s*\{)"
+    r"(?P<body>.*?)"
+    r"(?P<close>^\s*\})",
+    re.MULTILINE | re.DOTALL,
+)
+body = "\n".join((
+    "\t\t\t.stack 4;",
+    "\t\t\t.locals 1;",
+    "",
+    "\t\t\t\tL0: sspush 10;",
+    "\t\t\t\t\tsspush 20;",
+    "\t\t\t\t\taload_1;",
+    "\t\t\t\t\tdup_x 18;",
+    "\t\t\t\t\tastore_1;",
+    "\t\t\t\t\tpop;",
+    "\t\t\t\t\tswap_x 17;",
+    "\t\t\t\t\tpop;",
+    "\t\t\t\t\tareturn;",
+))
+updated, replacements = pattern.subn(
+    lambda match: match.group("header") + body + match.group("close"),
+    text,
+)
+if replacements != 1:
+    raise SystemExit(
+        f"expected one dupXForeignReferenceProbe JCA method, found {replacements}"
+    )
+path.write_text(updated)
+PY_DUPX
+  "${repo_root}/tools/env" java \
+    -cp "${kit}/lib/tools.jar" com.sun.javacard.jcasm.cap.Main \
+    -nobanner -o "${build_dir}/service-cap/sio/service/javacard/service.cap" \
+    "${service_jca}" > "${build_dir}/service-cap-assemble.log" 2>&1
+fi
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
   -source 1.7 -target 1.7 -Xlint:-options \
   -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \

@@ -303,6 +303,12 @@ public final class ClientApplet extends Applet {
                            (short) 0x6A4B
                    ? (short) 0x6A4B
                    : (short) 0x6A4C;
+    } else if (buffer[1] == 0x4C) {
+      byte[] foreignReference = new byte[1];
+      Object returned = ((Probe) shareable)
+          .dupXForeignReferenceProbe(foreignReference);
+      result = returned == foreignReference
+          ? (short) 0x6A7B : (short) 0x6A7C;
     } else if (buffer[1] == 0x53) {
       try {
         byte[] local = JCSystem.makeTransientByteArray(

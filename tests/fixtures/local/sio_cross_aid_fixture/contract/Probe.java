@@ -28,6 +28,7 @@ public interface Probe extends Shareable {
   short sensitiveRandomDataResults();
   short sensitiveArrayCapabilityResults();
   int exerciseWide(int value);
+  Object dupXForeignReferenceProbe(Object foreignReference);
   short throwSecurityException();
   short rejectForeignException(RuntimeException exception);
   short throwCryptoException();

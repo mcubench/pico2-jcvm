@@ -863,11 +863,11 @@ bool validate_cap_code(const uint8_t *code, size_t length,
     // Validate every component payload while it is still in the LOAD buffer.
     // In particular, do not persist or publish a package whose component tag,
     // version, framing, or component-specific tables will later be rejected by
-    // JC_Cap during INSTALL or restore.
+    // JC_Cap during INSTALL or restore. Applet is optional: library packages
+    // can be loaded for their exported classes without an applet to install.
     const jcvm::JC_Cap validated_cap(static_cast<uint16_t>(length), code);
     if (validated_cap.getHeader() == nullptr ||
         validated_cap.getDirectory() == nullptr ||
-        validated_cap.getApplet() == nullptr ||
         validated_cap.getClass() == nullptr ||
         validated_cap.getMethod() == nullptr ||
         validated_cap.getConstantPool() == nullptr ||

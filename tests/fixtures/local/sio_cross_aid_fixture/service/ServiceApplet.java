@@ -181,6 +181,10 @@ public final class ServiceApplet extends Applet implements Probe {
     return value == 0x12345678 ? 0x76543210 : 0x6F010001;
   }
 
+  public Object dupXForeignReferenceProbe(Object foreignReference) {
+    return foreignReference;
+  }
+
   private boolean sensitiveResultUnassigned() {
     try {
       SensitiveResult.assertEquals((short) 0x7777);

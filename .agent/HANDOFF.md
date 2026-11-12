@@ -1,3 +1,38 @@
+# Current handoff — cross-AID foreign-reference dup_x VPCD acceptance — 2026-11-12 07:22 UTC
+
+Extended R60 coverage with a focused cross-AID SIO APDU. The client creates a
+package-owned byte array, passes it through a Shareable call, the service
+executes `dup_x 0x12` on that reference while shorts are beneath it, removes
+the original reference and shorts with typed stack operations, then returns
+the duplicated reference. The client checks object identity. This validates
+foreign-owner reference metadata across argument marshalling, `dup_x`, nested
+context return and client restoration.
+
+The fixture builder injects only the service method's JCA body when
+`SIO_CROSS_AID_DUPX_TEST=1`; the repository-owned applet Java sources remain
+test fixture sources and no supplied CAP is modified. The focused test passed
+with `TEST:SUMMARY pass=1 fail=0`; log:
+`artifacts/logs/sio-cross-aid-vpcd-20261112T070740Z.log`. Full cross-AID suite
+passed under `symm_crypto` with `TEST:SUMMARY pass=35 fail=0`; log:
+`artifacts/logs/sio-cross-aid-vpcd-20261112T071815Z.log`. A baseline-profile
+run reached the signature cases then failed as expected because that profile
+does not enable Signature; rebuilding with `./tools/build-pc --profile
+symm_crypto` made the complete suite pass. ARM and RISC-V builds passed.
+
+The test also exposed that GP LOAD rejected a library CAP without an Applet
+component. `validate_cap_code` now accepts the optional component as absent;
+the contract library CAP loaded and both dependent applets installed. Current
+PC `symm_crypto` executable SHA-256 is
+`ba23ee9e53aa17614f127eee219e454c2f36af49aaf0f835f204388868b34060`; ROM
+mask SHA-256 remains `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.
+
+Physical acceptance remains open. Despite the user reporting all three in
+BOOTSEL, elevated `lsusb -d 2e8a:` still shows three `2e8a:0009` runtime CCID
+interfaces and no BOOTSEL `2e8a:000f`; no flash or physical test was attempted.
+R60 remains open pending physical acceptance. Preserve unrelated worktree
+changes, especially other hunks in `src/cap_load.cpp` and existing edits in
+`choupi/src/jc_bytecodes/bc_invoke.cpp`.
+
 # Current handoff — R60 typed reference, int-pair and mixed dup_x interpreter cases pass — 2026-11-12 05:23 UTC
 
 Extended the generated fixture with two typed interpreter probes. `dupXReferenceProbe(APDU)` places a live APDU reference below two shorts, runs `dup_x 0x12`, then checks the short result and compares the preserved reference against its original local. `dupXIntProbe()` duplicates a complete top int pair with `dup_x 0x24` and checks result `0x12345678`. `dupXMixedProbe()` places a short below a complete int pair, executes `dup_x 0x23`, removes the original pair and short, and returns the duplicated int. APDUs after each typed probe verify continued operation.

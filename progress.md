@@ -28102,3 +28102,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep R60 open for cross-context owner and physical checks; continue offline while USB remains in runtime mode.
 - Commit: `6da4cfd9`
 - Artifacts/logs: `artifacts/logs/dup-x-vpcd-20261112T052109Z.log`; `artifacts/logs/dup-x-host-20261112T052109Z.log`; `artifacts/logs/dup-x-invalid-vpcd-20261112T052109Z.log`; `artifacts/logs/dup-x-invalid-host-20261112T052109Z.log`; `artifacts/logs/build-pc-dup-x-20261112T052109Z.log`; `./tools/test-rmi-registry`
+## 2026-11-12 Cross-AID dup_x foreign-reference VPCD acceptance 32 min
+
+- Step/experiment: `RV-20261106-60-CROSS-AID-REFERENCE-DUPX-20261112`
+- When: '2026-11-12 06:50 UTC' - '2026-11-12 07:22 UTC'
+- Model: `GPT-6.1 (Codex)`
+- Change: Added a focused client/service CAP test that passes a client-owned byte array through cross-AID SIO, runs `dup_x 0x12` in the service, returns the duplicate, and verifies identity in the caller. Fixed CAP LOAD validation to accept a library CAP without the optional Applet component; the SIO contract package now loads before its dependent applets. Updated R60 in TODO and the session handoff. Removed temporary diagnostics and staged only the CAP validation hunk from `src/cap_load.cpp`, preserving unrelated changes.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/build-pc --profile symm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed with `TEST:SUMMARY pass=35 fail=0`. `CHOUPI_VM_TRACE_EXCEPTIONS=1 SIO_CROSS_AID_DUPX_TEST=1 PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-vpcd` passed the focused foreign-owner case with `TEST:SUMMARY pass=1 fail=0`. The same full suite under `baseline` reached Signature cases and failed because Signature is not enabled in that profile; the `symm_crypto` run passed. Elevated `lsusb -d 2e8a:` returned three `2e8a:0009` CCID readers and no BOOTSEL device; physical flashing/testing was skipped.
+- Result: Cross-context foreign-reference owner metadata survives interpreter `dup_x`, SIO return and caller identity comparison. Applet-free library CAP packages can be loaded. PC executable SHA-256: `ba23ee9e53aa17614f127eee219e454c2f36af49aaf0f835f204388868b34060`; ROM-mask SHA-256: `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`.
+- Decision: R60 remains open for physical acceptance when a BOOTSEL interface is visible to the VM.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261112T070740Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261112T071815Z.log`; ARM/RISC-V build outputs in `build/arm` and `build/riscv`.

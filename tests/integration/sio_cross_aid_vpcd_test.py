@@ -994,6 +994,31 @@ def main() -> int:
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)
             print("TEST:PASS installed cross-AID client applet")
+            if os.environ.get("SIO_CROSS_AID_DUPX_TEST") == "1":
+                select_client = bytes((0x00, 0xA4, 0x04, 0x00,
+                                       len(CLIENT_APPLET))) + CLIENT_APPLET
+                selected = vpcd.exchange(
+                    connection, select_client,
+                    "SELECT client for foreign-reference dup_x probe",
+                )
+                if selected[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        "client SELECT for dup_x probe returned "
+                        f"{selected.hex().upper()}"
+                    )
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("804C000000"),
+                    "cross-AID dup_x round-trip of foreign reference",
+                )
+                if response != bytes.fromhex("6A7B9000"):
+                    raise RuntimeError(
+                        "dup_x did not preserve the foreign reference through "
+                        f"SIO: {response.hex().upper()}, expected 6A7B9000"
+                    )
+                print("TEST:PASS dup_x preserved a foreign-owner reference "
+                      "through the service return and client identity check")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
             if os.environ.get(
                     "SIO_CROSS_AID_TEST_TRANSIENT_CONTEXT") == "1":
                 sibling_install = vpcd.install_applet(
