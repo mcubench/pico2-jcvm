@@ -19537,7 +19537,7 @@
 - Validation: `./tools/build-sio-cross-aid-fixture` generated all CAPs with zero errors (the expected `This package requires int support.` warning is emitted). `SIO_CROSS_AID_REUSE_FIXTURE=1 python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 7/7; int round-trip response was `765432109000`, alongside positive short/byte/ref call, denied lookup and local-array rejection. Physical Java probe compiles; fixture scripts pass `bash -n`.
 - Result: Cross-context int argument word order and int result transfer pass through actual CAP Descriptor dispatch on VPCD. Physical exercise still cannot proceed: the current VM USB view exposes only the running 2BED reader and its earlier applet install failed at internal stage 9.
 - Decision: Retain this as test-only CAP coverage; no firmware or upstream CAP was modified. Continue CTX-01 with exception unwinding, proxy-root lifecycle and then repeat on a clean identified physical card.
-- Commit: pending.
+- Commit: `c8984db5` (progress-record hash backfill committed separately).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T215809Z.log`.
 
 ## 2026-11-01 — Exercise nested Shareable exception unwinding 5 minutes
