@@ -27956,5 +27956,5 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: New regression failed before the fix in both promotion scenarios, reproducing RV-31. After the fix, `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`) and `./tools/test-persistent-inventory` passed (`TEST:SUMMARY fail=0`). `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` both passed. Hardware flash/serial validation was not possible because the last guest USB enumeration exposed runtime devices and no BOOTSEL interface.
 - Result: ARM UF2 `build/arm/pico2_choupi.uf2` is 1,997,312 bytes, SHA-256 `50a5914e78b47e57256fcc82fd6453c4130d6ab35eb4c435ba75f4eb2f7b8cbf`; build came from dirty source at HEAD `fef17e6a`, so CPLC prefix is `FEF17E6AC1E9F837`. RISC-V VM-core wrapper passed; it does not emit a full CHOUPI firmware image. Physical acceptance remains unverified.
 - Decision: Mark RV-31 software fix complete. Keep physical PERSIST acceptance open under its existing carry-forward and continue with the next active P1 item.
-- Commit: pending
+- Commit: `d78fc7ef` (the progress record is backfilled in a follow-up documentation commit).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; focused test output in session transcript.
