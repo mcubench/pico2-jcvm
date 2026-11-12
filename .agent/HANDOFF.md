@@ -16,6 +16,10 @@ not visible, and capture the exact erase candidate on hardware before changing
 reclaimer decisions. This evidence update is committed as `948777c9`; its
 progress-record hash is backfilled in a follow-up documentation commit.
 
+Current host regression recheck: `./tools/test-persistent-transaction` and
+`./tools/test-persistent-inventory` both pass (`TEST:SUMMARY fail=0`) on the
+current dirty worktree. This does not reproduce or close the physical issue.
+
 ---
 
 # Current handoff — RESOURCE-01 physical retry and diagnostic image ready — 2026-11-12 01:29 UTC

@@ -27910,3 +27910,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Do not change reclaimer decisions on this indirect evidence. Capture candidate `stage=erase` tags with the prepared diagnostic image when BOOTSEL becomes visible.
 - Commit: pending
 - Artifacts/logs: `artifacts/results/resource01-option1-allalgorithms-8E46-fsdiag-20261111/serial.log`; `build/resource01-candidate-trace-20261112/pico2_choupi-max_crypto-object-deletion-trace.uf2`.
+
+## 2026-11-12 RESOURCE-01 focused host regression recheck 3 min
+
+- Step/experiment: `RESOURCE-01-HOST-RECHECK-20261112`
+- When: '2026-11-12 01:39 UTC' - '2026-11-12 01:42 UTC'
+- Model: `GPT-6`
+- Change: Re-ran the persistent transaction/reclaimer and persistent inventory test entrypoints on the current worktree after reviewing the physical trace.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` passed with `TEST:SUMMARY fail=0`.
+- Result: Focused host tests remain green, including the stale array-body alias regression and fail-closed reclaimer coverage. They do not identify which physical tag was erased.
+- Decision: Keep RESOURCE-01 open; collect candidate traces on hardware before changing deletion policy.
+- Commit: pending
+- Artifacts/logs: Test command output from this run; no additional persistent log.
