@@ -1,36 +1,31 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-9188DCFC — Fresh Windows test package
+## WIN-OBJECT-DELETION-NODEBUG-9E7223ED — Max crypto external test package
 
-Created 2026-11-13 09:08 UTC; refreshed 2026-11-13 09:35 UTC. This package
-supersedes the `BEF9E1F7` package immediately below and the older Windows
-object-deletion packages in this file; use only this image for the next
-root-scan/reclamation diagnostic run.
+Created 2026-11-13 10:00 UTC; refreshed 2026-11-13 10:08 UTC. This is the current package for Windows
+external validation. It has the `max_crypto` profile and object deletion
+enabled, with CCID, heap-GC, and persistent-GC debug logging disabled. It is an
+empty-card image; flashing clears the 1 MiB persistent-storage region. Do not
+use the older diagnostic images for this no-debug run.
 
-- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-9188dcfc.zip)
-- [Standalone empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-9188dcfc.uf2)
-- Package SHA-256: `8a6d0241615603a00a648d9b3fc53d4a7d78616a6689ab35833b31827e0c6aa9`
-- UF2 SHA-256: `57cb784f651ad6bb50063f87765fdc5016a3ec140c2e3e3146698dec923f8227`
-- Source commit: `9188dcfcb7ab6e2c81194960dfcfacff88106f05`; source worktree was
-  dirty, with its tracked-root diff hash disclosed in package provenance.
-- This revision preserves the applet-root scan's exact `VisitResult` through
-  inventory/skip telemetry, distinguishing missing roots, invalid metadata,
-  and persistent-record read failures.
-- Profile `max_crypto`; object deletion, CCID diagnostics, and heap-GC root
-  tracing enabled; firmware end `0x100f5ecc`, 41,268 bytes remain.
-- Package includes the unchanged 1.8.4/jc305 CAP, supplied 1.8.5 client,
-  GPPro, serial capture script, hash manifest, and exact flashing/test steps.
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip)
+- [Standalone empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2)
+- Package SHA-256: `523c749431b8f23a4119ae65bb4e5581be475cfd815764ed5b8ddec4cac79718`
+- UF2 SHA-256: `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`
+- UF2 size: 4,099,584 bytes; firmware end `0x100f45cc`, 47,668 bytes remain.
+- Source HEAD: `9e7223ed2b9767966ef395259273648b5800a30d`; build used a dirty
+  worktree. `BUILD-PROVENANCE.txt` records root/CHOUPI/OS tracked-diff hashes
+  and submodule revisions.
+- Package contains the unchanged JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5
+  host client, GPPro, and Windows flashing/test instructions.
 
-Verify the supplied package hashes, copy the UF2 to the Pico 2 in BOOTSEL,
-confirm `Pico2 JCVM CCID` enumerates, and explicitly install the CAP using the
-included GPPro command. Run option `2 -> PERFORMANCE TEST` on one identified
-device and option `1 -> All algorithms` on a different token if available.
-Capture full client outputs and serial telemetry. Return Windows version,
-reader/ATR, chip ID, firmware hash, full result folders, and all
-`OBJECT_DELETION:`, `APPLET_ROOT_SCAN_FAIL`, `FS_TAG_RECON_FAIL`, `F205`,
-`6F00`, PC/SC, reset, timeout, or USB enumeration errors. This is a debug
-diagnostic image, not a production release. No local physical flash/test was
-performed while preparing this package.
+Follow the package README. Verify the supplied hashes, flash the exact UF2 in
+BOOTSEL, confirm the `Pico2 JCVM CCID` reader and empty GPPro listing, then
+explicitly install the unchanged CAP. Run option `2 -> PERFORMANCE TEST` on
+one identified device and option `1 -> All algorithms` on a second token if
+available. Return Windows version, reader/ATR, chip ID, firmware hash, client
+results, and any PC/SC, timeout, reset, `6F00`, or `F205` errors. Because this
+image has debug logging off, internal root-scan trace markers are not expected.
 
 ## PCSC-BOOTSEL-RECOVERY-20261113 — Restore physical reader and BOOTSEL access
 

@@ -1,3 +1,50 @@
+# Current handoff — no-debug object-deletion Windows package ready — 2026-11-13 10:08 UTC
+
+The user clarified that the external-host image must have debug logging disabled.
+Built ARM and RISC-V `max_crypto` with `PICO2_ENABLE_OBJECT_DELETION=1`,
+`PICO2_DEBUG_CCID_APPLET=0`, and `PICO2_DEBUG_HEAP_GC=0` (persistent-GC debug
+also OFF). Both repository wrappers pass. The ARM image ends at `0x100f45cc`,
+leaving 47,668 bytes; the standalone empty-card UF2 is 4,099,584 bytes with
+SHA-256 `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`.
+The Windows package is
+`build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip`
+(SHA-256 `523c749431b8f23a4119ae65bb4e5581be475cfd815764ed5b8ddec4cac79718`).
+It contains unchanged JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro,
+and exact flashing/empty-card instructions. Fixture manifest verification and
+archive/internal checksums pass.
+
+The no-debug image was flashed and verified on Pico 2 `D92E743D5F640C0F` after
+identity-pinned BOOTSEL failover. Finite serial output repeatedly reported
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The approved helper
+then granted access to two runtime USB devices; PC/SC listed D92 and
+`4CDA5BC1B136E46A`. GPPro `--list` on D92 returned only
+`ISD: A000000151000000 (OP_READY)` with no applet/package entries. This verifies
+boot, reader visibility, and empty persistent card, but does not validate a
+JCAlgTest run. D92 is now running the no-debug external-test image.
+
+The first local attempt to reflash 2BED (`2BED26ED20556535`) from runtime
+failed its force-load (picotool status 247) and the device stopped responding
+at bus 1/address 51 during BOOTSEL recovery. Per failover guidance, continued
+with D92; a second BOOTSEL token `8E464F4E2BBC0A19` answered identity queries.
+Do not repeat on 2BED until it is visible again.
+
+The user asked whether image `9188dcfc` meaningfully differs from older
+`bef9e1f7`. Yes for diagnosis: `9188dcfc` was built with the then-dirty
+working-tree change later committed as `a655e4af` (`enumerate_applet_context_root`
+returns/preserves `VisitResult`, and object-deletion telemetry prints the exact
+`applet_result`). The source commit in that package alone does not capture this
+because the package was built from a dirty tree; provenance records its diff
+hash. Its root-scan result is materially more useful than `bef9e1f7`, but this
+is diagnostic visibility, not a reclamation fix. The fresh no-debug build also
+contains the preserved result code; detailed root tracing is disabled. If a
+long external run on `bef9e1f7` is already underway, let it finish; use the
+no-debug `9e7223ed` package for a subsequent run instead of interrupting it.
+
+Next: user may run Windows option 2 and option 1 as directed in
+`.agent/EXT_REQUESTS.md`. Do not claim long-campaign acceptance until full
+client results arrive. Local physical access is volatile; refresh the approved
+helper before future device operations.
+
 # Current handoff — VM host helper sees no Pico readers — 2026-11-13 09:38 UTC
 
 The user reported PC/SC restored. I refreshed access once through the approved

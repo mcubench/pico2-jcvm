@@ -28944,3 +28944,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue offline. Resume local physical tests only after VirtualBox USB passthrough exposes an identified reader or BOOTSEL device.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `.agent/EXT_REQUESTS.md` request `PCSC-BOOTSEL-RECOVERY-20261113` and `.agent/HANDOFF.md` current host-access state.
+
+
+## 2026-11-13 Build no-debug max_crypto object-deletion external package 26
+
+- Step/experiment: `WIN-OBJECT-DELETION-NODEBUG-9E7223ED`
+- When: '2026-11-13 09:42 UTC' - '2026-11-13 10:08 UTC'
+- Model: `GPT-6 Codex`
+- Change: Built the ARM `max_crypto` external-test firmware with object deletion enabled and CCID, heap-GC, and persistent-GC debug logging disabled. Packaged a fresh empty-card UF2, unchanged upstream JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro, checksums, and Windows instructions. Updated the active external request to identify this no-debug image.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=0 PICO2_DEBUG_HEAP_GC=0 ./tools/build arm --profile max_crypto` passed; same wrapper command for `riscv` passed. `./tools/fixture-path --verify` passed (`files=81`). ZIP integrity and all package SHA256SUMS passed. Flashed the exact no-debug UF2 to Pico 2 `D92E743D5F640C0F`; flash verification passed. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial D92E743D5F640C0F --seconds 12` passed with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC enumerated D92; GPPro `--list` returned only ISD `A000000151000000 (OP_READY)`, no applets/packages.
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`, SHA-256 `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`, 4,099,584 bytes; linked image end `0x100f45cc`, 47,668 bytes remain. Package `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip`, SHA-256 `523c749431b8f23a4119ae65bb4e5581be475cfd815764ed5b8ddec4cac79718`. Full long JCAlgTest campaigns were not run. Initial flash attempt on 2BED failed at BOOTSEL transition (picotool status 247); failover to D92 succeeded.
+- Decision: Use only the no-debug `9e7223ed` package for new external testing. The older `9188dcfc` included the later-committed `a655e4af` exact `VisitResult` preservation in its dirty build; this materially improves diagnostic result codes over `bef9e1f7`, but does not fix reclamation. Do not interrupt an already-running `bef9e1f7` long campaign; use the fresh package for a subsequent run.
+- Commit: to be recorded in the next repository commit
+- Artifacts/logs: package and UF2 paths above; command output not archived separately.

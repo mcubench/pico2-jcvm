@@ -11,6 +11,19 @@ The [complete issue catalog](QKB_INDEX.md) indexes every original heading and th
 Catalog titles retain dated wording; read later corrections and the summaries below before reusing a diagnosis.
 Evidence links identify archived sections; resolve original relative links from `.agent/`.
 
+## BOOTSEL force-load failure and board failover — 2026-11-13
+
+After one board accepted a diagnostic image, a later identity-pinned force-load
+to that runtime board failed with picotool status 247; the wrapper could not
+re-enumerate the selected device at its former bus/address. Do not keep probing
+or retrying that same failing target. Enumerate BOOTSEL devices with the
+approved elevated host-access path, obtain each chip ID (`picotool info -d
+--bus N --address N`), and switch to another responding identified board.
+On this occurrence, D92 flashed successfully after 2BED stopped responding;
+its finite runtime monitor and PC/SC reader check passed. The approved reader
+helper is for runtime CCID visibility and reports zero while boards are only in
+BOOTSEL, so use picotool/USB enumeration for BOOTSEL diagnosis.
+
 ## USB visible, physical reader missing — unresolved / volatile
 
 Runtime USB, PC/SC reader publication, card presence and APDU success are separate checks.
