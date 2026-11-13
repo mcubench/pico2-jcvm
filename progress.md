@@ -28896,3 +28896,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Capture the first root-scan detail on hardware when an identified Pico becomes guest-visible. Keep the persistent-root issue distinct from compaction and CCID response-delivery failures; do not claim object-deletion acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: D92 source evidence `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/serial.log`; new image `build/arm/pico2_choupi.uf2`, not flashed.
+
+## 2026-11-13 Remove verified duplicate Windows inbox 1 minute
+
+- Step/experiment: `WIN-RESET-INBOX-CLEANUP`
+- When: '2026-11-13 09:17 UTC' - '2026-11-13 09:17 UTC'
+- Model: `GPT-6 Codex`
+- Change: Removed `inbox/maxcrypto_20261112withReset/` at the user's explicit request; updated archive provenance.
+- Validation: All three inbox files matched archive SHA-256 values, current archive bytes, and committed bytes in `8e0150fa` before removal. Source file set matched manifest exactly.
+- Result: Duplicate inbox removed; committed evidence preserved. Hardware/build validation intentionally skipped for file cleanup; performance not measured.
+- Decision: Use the committed evidence archive for subsequent analysis.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261112-with-reset/`.
