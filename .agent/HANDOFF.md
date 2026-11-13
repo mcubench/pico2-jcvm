@@ -1,3 +1,18 @@
+# Current handoff — malformed persisted CAP fails closed — 2026-11-13 14:53 UTC
+
+Added `--corrupt-persisted-cap-after-install` to the PC VPCD applet harness.
+It installs the unchanged 1.8.4 CAP, changes the stored Class component tag to
+an unknown value while retaining valid VCR registry framing and CRC, restarts
+the emulator, expects applet SELECT `6F00`, then SELECTs the card manager and
+expects `9000`. The run passes `TEST:SUMMARY pass=5 fail=0`; log:
+`artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`. Python
+syntax validation passes. No native source or firmware changed; no physical
+device was accessed. This confirms fail-closed runtime handling and continued
+card-manager response for one malformed persisted-CAP case; individual missing
+Import/Export/Class component mutants and physical acceptance remain open.
+
+The prior Export-completeness step is committed as `052d1971`.
+
 # Current handoff — library Export completeness — 2026-11-13 14:43 UTC
 
 CAPIN-01 now checks library Export completeness when Descriptor is present:

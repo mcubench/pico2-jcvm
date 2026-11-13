@@ -29124,3 +29124,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CAPIN-01 open for malformed legacy persisted-CAP runtime coverage and physical acceptance; continue offline. Windows external validation remains on no-debug d63877f6 package, not debug root-diagnostic firmware.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T141929Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T142130Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T143208Z.log`.
+
+## 2026-11-13 Persisted CAP corruption recovery regression 10 minutes
+
+- Step/experiment: `CAPIN-01-PERSISTED-CAP-CORRUPTION-RUNTIME`
+- When: '2026-11-13 15:43 CET' - '2026-11-13 15:53 CET'
+- Model: `GPT-6 Codex`
+- Change: Added an integration option that corrupts the stored Class component tag after a valid install while preserving VCR sidecar framing/checksum, restarts the PC emulator, checks applet SELECT failure, and checks card-manager recovery.
+- Validation: `python3 -m py_compile tests/integration/pc_vpcd_applet_test.py` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 2 --select-only --corrupt-persisted-cap-after-install --log artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log` passed: 5/5; corrupted applet SELECT returned `6F00`, subsequent card-manager SELECT returned `6F0A8408A0000001510000009000`. No firmware rebuild was needed because only the integration harness changed.
+- Result: One malformed persisted CAP is rejected during runtime lookup without preventing the card manager from responding. Other stored-component corruption variants and physical acceptance are not established.
+- Decision: Retain the regression; continue with per-component legacy/null-guard variants and then physical acceptance when available.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`; upstream CAP remains unchanged.

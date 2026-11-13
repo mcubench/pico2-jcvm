@@ -12,6 +12,7 @@ import socket
 import subprocess
 import sys
 import time
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -42,6 +43,93 @@ def send_message(connection: socket.socket, message: bytes) -> None:
     if not message or len(message) > 0xFFFF:
         raise ValueError("VPCD messages must contain 1..65535 bytes")
     connection.sendall(len(message).to_bytes(2, "big") + message)
+
+
+def corrupt_persisted_cap_class_tag(registry_path: Path,
+                                   package_id: int) -> None:
+    """Corrupt one stored CAP component while retaining a valid registry CRC."""
+    data = bytearray(registry_path.read_bytes())
+    if len(data) < 14 or data[:4] != b"VCR1":
+        raise RuntimeError("invalid persisted CAP registry for corruption test")
+    if int.from_bytes(data[-4:], "big") != zlib.crc32(data[:-4]):
+        raise RuntimeError("persisted CAP registry CRC was already invalid")
+    if data[4] not in (1, 2):
+        raise RuntimeError("unsupported persisted CAP registry version")
+
+    package_count = data[9]
+    cursor = 10
+    cap_start = None
+    cap_length = 0
+    for _ in range(package_count):
+        if cursor >= len(data) - 4:
+            raise RuntimeError("truncated persisted CAP registry package")
+        current_id = data[cursor]
+        cursor += 1
+        if cursor >= len(data) - 4:
+            raise RuntimeError("truncated persisted CAP registry AID")
+        aid_length = data[cursor]
+        cursor += 1
+        if (aid_length < 5 or aid_length > 16 or
+                aid_length > len(data) - 4 - cursor):
+            raise RuntimeError("invalid persisted CAP registry AID length")
+        cursor += aid_length
+        if len(data) - 4 - cursor < 4:
+            raise RuntimeError("truncated persisted CAP registry CAP length")
+        current_length = int.from_bytes(data[cursor:cursor + 4], "big")
+        cursor += 4
+        if current_length > len(data) - 4 - cursor:
+            raise RuntimeError("truncated persisted CAP registry CAP code")
+        if current_id == package_id:
+            cap_start = cursor
+            cap_length = current_length
+        cursor += current_length
+        if cursor >= len(data) - 4:
+            raise RuntimeError("truncated persisted CAP registry instance count")
+        instance_count = data[cursor]
+        cursor += 1
+        for _ in range(instance_count):
+            if cursor >= len(data) - 4:
+                raise RuntimeError("truncated persisted CAP registry instance AID")
+            instance_aid_length = data[cursor]
+            cursor += 1
+            if instance_aid_length < 5 or instance_aid_length > 16 or \
+                    instance_aid_length > len(data) - 4 - cursor:
+                raise RuntimeError("invalid persisted CAP instance AID length")
+            cursor += instance_aid_length
+            if cursor >= len(data) - 4:
+                raise RuntimeError("truncated persisted CAP instance ID")
+            instance_id_length = data[cursor]
+            cursor += 1
+            owner_length = 1 if data[4] == 2 else 0
+            if (instance_id_length < 5 or instance_id_length > 16 or
+                    instance_id_length + 2 + owner_length >
+                    len(data) - 4 - cursor):
+                raise RuntimeError("invalid persisted CAP instance ID length")
+            cursor += instance_id_length + 2 + owner_length
+
+    if cursor != len(data) - 4 or cap_start is None:
+        raise RuntimeError("target package missing or trailing registry bytes")
+    cap_end = cap_start + cap_length
+    component_offset = cap_start
+    class_tag_offset = None
+    while component_offset < cap_end:
+        if cap_end - component_offset < 3:
+            raise RuntimeError("truncated stored CAP component header")
+        size = int.from_bytes(data[component_offset + 1:component_offset + 3],
+                              "big")
+        component_end = component_offset + 3 + size
+        if component_end > cap_end:
+            raise RuntimeError("truncated stored CAP component payload")
+        if data[component_offset] == 6:
+            class_tag_offset = component_offset
+            break
+        component_offset = component_end
+    if class_tag_offset is None:
+        raise RuntimeError("stored CAP has no Class component to corrupt")
+
+    data[class_tag_offset] = 0x7F  # Unrecognized component tag.
+    data[-4:] = (zlib.crc32(data[:-4]) & 0xffffffff).to_bytes(4, "big")
+    registry_path.write_bytes(data)
 
 
 def exchange(
@@ -234,7 +322,11 @@ def run_emulator(
                 select += args.applet_aid + b"\x00"
                 select_response = exchange(
                     connection, select, "target applet SELECT",
-                    expected_status=args.expect_select_status,
+                    expected_status=(
+                        b"\x6f\x00"
+                        if resume and args.corrupt_persisted_cap_after_install
+                        else args.expect_select_status
+                    ),
                 )
                 if args.expect_select_data is not None:
                     actual = select_response[:-2]
@@ -246,6 +338,14 @@ def run_emulator(
                         )
 
                 if args.select_only:
+                    if resume and args.corrupt_persisted_cap_after_install:
+                        manager_select = bytes.fromhex(
+                            "00A4040008A00000015100000000"
+                        )
+                        exchange(
+                            connection, manager_select,
+                            "card manager SELECT after malformed stored CAP",
+                        )
                     return
 
                 custom_apdus = args.resume_apdu if resume else args.apdu
@@ -545,6 +645,14 @@ def parse_args() -> argparse.Namespace:
         help="number of clean emulator passes (default: 2)",
     )
     parser.add_argument(
+        "--corrupt-persisted-cap-after-install",
+        action="store_true",
+        help=(
+            "corrupt the stored Class component after pass 1, then verify "
+            "resume rejects applet SELECT without losing card-manager access"
+        ),
+    )
+    parser.add_argument(
         "--inject-install-recovery-gap",
         action="store_true",
         help=(
@@ -603,7 +711,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--select-only",
         action="store_true",
-        help="stop after a successful SELECT instead of sending the JCAlgTest GETVERSION APDU",
+        help="stop after target applet SELECT instead of sending JCAlgTest APDUs",
     )
     parser.add_argument(
         "--reset-after-custom-apdu",
@@ -752,6 +860,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.corrupt_persisted_cap_after_install and (
+            args.passes != 2 or not args.select_only):
+        print(
+            "TEST:FAIL persisted CAP corruption requires --passes 2 "
+            "and --select-only",
+            file=sys.stderr,
+        )
+        return 1
     if args.verify_install_process_restart:
         args.inject_install_recovery_gap = True
         if args.passes != 1:
@@ -923,6 +1039,14 @@ def main() -> int:
                     int, package_match[-1]
                 )
                 resume_installed = True
+            if args.corrupt_persisted_cap_after_install and pass_number == 1:
+                corrupt_persisted_cap_class_tag(
+                    Path(f"{args.flash_copy}.cap-registry"), args.package_id
+                )
+                print(
+                    "TEST:PASS corrupted persisted Class component while "
+                    "preserving VPCD registry framing and CRC"
+                )
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
         return 1
@@ -967,6 +1091,8 @@ def main() -> int:
         print("TEST:PASS install journal recovered after clear sync failure")
     if args.select_only:
         total_checks = args.passes * 2  # ATR and target-app SELECT.
+        if args.corrupt_persisted_cap_after_install:
+            total_checks += 1  # card-manager SELECT after failed applet SELECT.
     elif args.apdu or args.resume_apdu:
         total_checks = args.passes * 2 + len(args.apdu) + len(args.resume_apdu)
     else:
