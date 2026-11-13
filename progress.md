@@ -29089,3 +29089,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Distinguish collector/sync execution from CCID response delivery at failed reset; no runtime change or acceptance claim.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261113-d63877f6/`.
+
+## 2026-11-13 Reject duplicate CAP Export mappings 20
+
+- Step/experiment: `CAPIN-01-EXPORT-DUPLICATE-MAPPINGS`
+- When: '2026-11-13 13:19 UTC' - '2026-11-13 13:39 UTC'
+- Model: `GPT-6 Codex`
+- Change: LOAD validation now rejects duplicate Export class targets and duplicate static-field and static-method offsets. Added a VPCD malformed-CAP regression that duplicates an Export class entry and confirms rejection before persistence. Updated CAPIN-01 tracking and handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 53/53; `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed; `python3 -m py_compile tests/integration/sio_cross_aid_vpcd_test.py` passed; duplicate-target VPCD LOAD regression passed with `6A80`; valid VPCD SIO suite passed 35/35 with Descriptor omitted and 35/35 with Descriptor included. Scoped diff check passed. PC build retains existing Rust and packed-member warnings.
+- Result: Malformed duplicate Export class mappings are rejected before storage, while both valid Descriptor layouts remain compatible. No physical token was accessed.
+- Decision: Keep the duplicate-offset checks. Continue CAPIN-01 with Descriptor-free method-start validation limits, legacy persisted-CAP runtime corruption coverage, and physical acceptance when hardware is available.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T133007Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T133102Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T133436Z.log`; no hardware log.

@@ -76,6 +76,17 @@ inline bool valid_export_class_offsets(
     if (offset > payload_size || payload_size - offset < 4) return false;
     const std::size_t class_offset =
         (static_cast<std::size_t>(payload[offset]) << 8) | payload[offset + 1];
+    std::size_t previous = 1;
+    for (std::size_t prior_index = 0; prior_index < index; ++prior_index) {
+      const std::size_t previous_class_offset =
+          (static_cast<std::size_t>(payload[previous]) << 8) |
+          payload[previous + 1];
+      if (previous_class_offset == class_offset) return false;
+      previous += 4 +
+                  (static_cast<std::size_t>(payload[previous + 2]) +
+                   payload[previous + 3]) *
+                      sizeof(uint16_t);
+    }
     if (class_offset >= class_component_size ||
         (class_record_starts[class_offset / 8] &
          static_cast<uint8_t>(1u << (class_offset & 7))) == 0) {
@@ -249,6 +260,10 @@ inline bool valid_export_offsets(
   }
 
   static std::array<uint8_t, 1u << 13> descriptor_methods{};
+  static std::array<uint8_t, 1u << 13> exported_field_offsets{};
+  static std::array<uint8_t, 1u << 13> exported_method_offsets{};
+  exported_field_offsets.fill(0);
+  exported_method_offsets.fill(0);
   if (descriptor_payload != nullptr &&
       !descriptor_method_offsets(descriptor_payload, descriptor_size,
                                  descriptor_methods)) {
@@ -271,7 +286,13 @@ inline bool valid_export_offsets(
       const std::size_t field_offset =
           (static_cast<std::size_t>(payload[offset + field_index * 2]) << 8) |
           payload[offset + field_index * 2 + 1];
-      if (field_offset >= static_image_size) return false;
+      if (field_offset >= static_image_size ||
+          (exported_field_offsets[field_offset / 8] &
+           static_cast<uint8_t>(1u << (field_offset & 7))) != 0) {
+        return false;
+      }
+      exported_field_offsets[field_offset / 8] |=
+          static_cast<uint8_t>(1u << (field_offset & 7));
     }
     offset += field_bytes;
     if (method_bytes > payload_size - offset) return false;
@@ -280,7 +301,13 @@ inline bool valid_export_offsets(
       const std::size_t method_offset =
           (static_cast<std::size_t>(payload[offset + method_index * 2]) << 8) |
           payload[offset + method_index * 2 + 1];
-      if (method_offset <= method_offset_base) return false;
+      if (method_offset <= method_offset_base ||
+          (exported_method_offsets[method_offset / 8] &
+           static_cast<uint8_t>(1u << (method_offset & 7))) != 0) {
+        return false;
+      }
+      exported_method_offsets[method_offset / 8] |=
+          static_cast<uint8_t>(1u << (method_offset & 7));
       const std::size_t method_index_in_stream =
           method_offset - method_offset_base - 1;
       if (method_index_in_stream >= method_size) return false;

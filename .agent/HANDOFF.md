@@ -1,3 +1,25 @@
+# Current handoff — duplicate Export mappings rejected — 2026-11-13 13:39 UTC
+
+CAPIN-01 now rejects duplicate Export `class_offset` targets and duplicate
+static-field/static-method offsets. It uses fixed bitmaps for the member-offset
+domains; class targets are compared against earlier validated records. The
+unit suite passes 53/53. A malformed duplicate-class SIO CAP rejects at LOAD
+with `6A80` before storage. Valid SIO VPCD suites pass 35/35 both with
+Descriptor omitted and included. ARM, RISC-V, and PC `max_crypto` builds pass;
+the PC build still emits existing Rust and packed-member warnings. Python
+syntax validation passes. No physical token was accessed.
+
+CAPIN-01 remains open for exact Export method starts in Descriptor-free CAPs
+(the Method component has no per-method length field), legacy persisted-CAP
+runtime corruption coverage, and physical acceptance. Continue with the next
+offline CAP consistency invariant, preserving unrelated dirty worktree files.
+
+For external Windows object-deletion testing, use only the no-debug package
+`build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`
+(SHA-256 `16b27c69018092bb65f7c6a59186dbf63d15353afcb6972b2dc7de73d2dc6877`)
+and its empty-card UF2 under `artifacts/firmware/`. Debug root-diagnostic
+images are not for that run.
+
 # Windows d63877f6 first-failure evidence — 2026-11-13
 
 User returned no-debug package results and stopped at first incident. Archived three supplied files (log, CSV, exact UF2) at `artifacts/results/windows-maxcrypto-20261113-d63877f6/`; README/ANALYSIS and SHA256SUMS preserve provenance. Move the inbox duplicate only after committed-byte verification. Fulfilled external request WIN-OBJECT-DELETION-NODEBUG-D63877F6 removed. No implementation or hardware work in this step.

@@ -198,6 +198,14 @@ task:
     Descriptor omitted and included; ARM/RISC-V/PC builds pass. This follows
     JCVM 3.0.5 §6.13. Physical validation was not run. Other Export invariants
     remain open.
+  - Progress 2026-11-13 13:39 UTC: Export validation now rejects duplicate
+    class targets and duplicate static-field/static-method offset mappings.
+    Unit checks pass 53/53, a malformed duplicate-class CAP rejects during
+    LOAD with `6A80`, and valid SIO VPCD suites pass 35/35 with Descriptor
+    omitted and included. PC, ARM and RISC-V max_crypto builds pass. This
+    enforces one-to-one Export token mappings for classes and static members.
+    Physical validation was not run. Descriptor-free exact method-start
+    validation and malformed legacy stored-CAP runtime coverage remain open.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is

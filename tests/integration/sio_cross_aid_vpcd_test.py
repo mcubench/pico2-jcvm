@@ -651,6 +651,50 @@ def append_unreferenced_bad_export_method_offset(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def append_duplicate_export_class_entry(code: bytes) -> bytes:
+    """Append a duplicate of the first Export class token mapping."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    if offset != len(code):
+        raise RuntimeError("unaccounted CAP code bytes")
+
+    export = next((item for item in components if item[0] == 10), None)
+    directory = next((item for item in components if item[0] == 2), None)
+    if (export is None or directory is None or len(export) < 8 or
+            export[3] == 0 or export[3] == 0xff):
+        raise RuntimeError("test CAP lacks an Export class record")
+    export_size = int.from_bytes(export[1:3], "big")
+    if export_size != len(export) - 3:
+        raise RuntimeError("Export component size mismatch")
+    first_record_size = 4 + 2 * (export[6] + export[7])
+    if first_record_size > len(export) - 4:
+        raise RuntimeError("truncated first Export class record")
+    duplicate = bytes(export[4:4 + first_record_size])
+    export.extend(duplicate)
+    export[3] += 1
+    export[1:3] = (export_size + first_record_size).to_bytes(2, "big")
+
+    directory_size = int.from_bytes(directory[1:3], "big")
+    size_offset = 3 + 9 * 2
+    if directory_size < size_offset + 2:
+        raise RuntimeError("Directory lacks Export component size field")
+    if int.from_bytes(directory[size_offset:size_offset + 2], "big") != export_size:
+        raise RuntimeError("Directory Export size does not match component")
+    directory[size_offset:size_offset + 2] = (
+        export_size + first_record_size
+    ).to_bytes(2, "big")
+    return b"".join(bytes(component) for component in components)
+
+
 def offset_first_export_target_into_record(code: bytes) -> bytes:
     """Move the first Export target one byte into its valid Class record."""
     components: list[bytearray] = []
@@ -1028,6 +1072,22 @@ def main() -> int:
                     )
                 print("TEST:PASS LOAD rejected an Export class offset that "
                       "does not point to a Class record start")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_TEST_DUPLICATE_EXPORT_CLASS") == "1":
+                bad_service_code = append_duplicate_export_class_entry(
+                    service[0]
+                )
+                response = vpcd.load_package(
+                    scp, bad_service_code, service[1],
+                    expected_final_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "duplicate Export class target LOAD returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS LOAD rejected duplicate Export class targets")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_APPLET_EXPORT_CLASS") == "1":

@@ -113,6 +113,13 @@ int main() {
             class_record_starts, class_component_payload,
             sizeof(class_component_payload), true),
         "applet Export rejects a class");
+  const uint8_t duplicate_export_class_target[] = {
+      2, 0, 2, 0, 0, 0, 2, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            duplicate_export_class_target,
+            sizeof(duplicate_export_class_target), class_record_starts,
+            class_component_payload, sizeof(class_component_payload), false),
+        "Export class tokens cannot target the same Class record");
   const uint8_t export_interface_with_field[] = {1, 0, 7, 1, 0};
   check(!jcvm::cap_constant_pool_validation::valid_export_class_offsets(
             export_interface_with_field, sizeof(export_interface_with_field),
@@ -221,6 +228,20 @@ int main() {
             exported_field_out_of_range, sizeof(exported_field_out_of_range),
             4, 2, method_stream, sizeof(method_stream)),
         "unreferenced exported static field outside image rejected");
+  const uint8_t duplicate_exported_field_offsets[] = {
+      1, 0, 2, 2, 0, 0, 1, 0, 1};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            duplicate_exported_field_offsets,
+            sizeof(duplicate_exported_field_offsets), 4, 2, method_stream,
+            sizeof(method_stream)),
+        "static field tokens cannot target the same image offset");
+  const uint8_t duplicate_exported_method_offsets[] = {
+      1, 0, 2, 0, 2, 0, 3, 0, 3};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            duplicate_exported_method_offsets,
+            sizeof(duplicate_exported_method_offsets), 4, 2, method_stream,
+            sizeof(method_stream)),
+        "static method tokens cannot target the same method offset");
   const uint8_t exported_method_out_of_range[] = {
       1, 0, 0, 0, 1, 0xff, 0xff};
   check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
