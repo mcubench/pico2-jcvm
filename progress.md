@@ -29257,6 +29257,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.
 
+## 2026-11-13 MEM-01 RP2350 overlay object-deletion churn 18 minutes
+
+- Step/experiment: `MEM-01-T7-OVERLAY-CHURN-20261113`
+- When: '2026-11-13 19:41 UTC' - '2026-11-13 19:59 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added test-only live-record counting for the RP2350 filesystem overlay and a sustained object-deletion regression. It creates and reclaims eight persistent arrays per cycle while preserving/reloading one durable root, synchronizes the production snapshot format each cycle, and checks live-record plateau and nonzero available capacity. Updated TODO.md and HANDOFF.md with the partial T7 evidence and its limits.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; 1,030 cycles × 8 objects passed, with 1 live record, 57 index slots at completion, and 35,932 bytes minimum reported capacity. ARM and RISC-V `max_crypto` repository wrappers passed with object deletion ON and debug output OFF. Scoped `git diff --check` passed. No hardware was accessed.
+- Result: The real RP2350 overlay code sustained 8,240 create/reclaim operations across index-table compaction and snapshot reload without live-record growth or capacity exhaustion. This synthetic direct-API test is not the unchanged JCAlgTest option-2 VPCD acceptance run and does not measure RAM handles or alias-protect events. ARM UF2 SHA-256 `2e3ef4f9ea4823e24eabe10d7ffb742cbbf0192d8dd6d397a2ace77e84da7f1f`; RISC-V smoke UF2 SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+- Decision: Retain as T7 partial evidence; continue wiring the RP2350 overlay backend into PC VPCD so unchanged JCAlgTest option 2 can test GC and storage together. T1 repair/quarantine and T2 diagnostics remain open.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; test output was not archived.
+
 ## 2026-11-13 MEM-01 progress review and next-step handoff 15 minutes
 
 - Step/experiment: `MEM-01-PROGRESS-REVIEW-20261113`

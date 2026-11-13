@@ -1,3 +1,24 @@
+# Current handoff — MEM-01 overlay churn evidence — 2026-11-13 20:59 Europe/Prague
+
+Added an RP2350 overlay unit regression that drives the actual `src/pico_filesystem.cpp`
+and persistent reclaimer through 1,030 cycles × 8 newly persisted garbage arrays.
+Every cycle reclaims its unreachable records, synchronizes the snapshot, verifies
+the durable root, and checks live-record/capacity bounds. `./tools/test-rp2350-fs-overlay`
+passes `TEST:SUMMARY fail=0`: live records stayed at 1, index auto-compaction
+reduced the table to 57 used slots by the end, and minimum reported free
+persistent capacity was 35,932 bytes. ARM and RISC-V `max_crypto` wrapper builds
+pass with object deletion enabled and debug output disabled. UF2 hashes:
+ARM `2e3ef4f9ea4823e24eabe10d7ffb742cbbf0192d8dd6d397a2ace77e84da7f1f`,
+RISC-V smoke `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+No hardware was accessed.
+
+This is T7 partial evidence. The PC VPCD emulator still links the Rust host
+filesystem; the required unchanged JCAlgTest 1.8.5 option-2 campaign on the
+RP2350 overlay backend remains unimplemented. This test also does not measure
+RAM handles or emit/check `alias-protect` events. Continue with the T7 PC VPCD
+backend wiring, then T1 repair/quarantine and T2 reason-specific diagnostics.
+Preserve all unrelated dirty worktree changes.
+
 # Current handoff — MEM-01 progress check and next steps — 2026-11-13 20:45 UTC
 
 Reviewed MEM-01 commits since the review plan (`db1b9dfa`):

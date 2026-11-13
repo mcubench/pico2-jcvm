@@ -1858,6 +1858,17 @@ extern "C" uint32_t rp2350_fs_test_overlay_file_count(void) {
   return static_cast<uint32_t>(overlay_file_count);
 }
 
+extern "C" uint32_t rp2350_fs_test_live_record_count(void) {
+  size_t live_records = 0;
+  for (const auto &file : overlay) {
+    if (overlay_is_used(file) && overlay_has_record(file) &&
+        overlay_has_storage(file)) {
+      ++live_records;
+    }
+  }
+  return static_cast<uint32_t>(live_records);
+}
+
 extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
     uint32_t length) {
