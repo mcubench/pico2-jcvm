@@ -28920,3 +28920,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use only this fresh package for the next Windows object-deletion/root-scan diagnostic test. Its exact external instructions are in `.agent/EXT_REQUESTS.md` under `WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-BEF9E1F7`.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-bef9e1f7.uf2`; `build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-bef9e1f7.zip`; package contents under `build/external-test/object-deletion-root-diagnostic-bef9e1f7/`.
+
+## 2026-11-13 Preserve object-deletion root scan results 15 minutes
+
+- Step/experiment: `RESOURCE-01-ROOT-SCAN-RESULT-PROPAGATION-20261113`
+- When: '2026-11-13 09:21 UTC' - '2026-11-13 09:36 UTC'
+- Model: `GPT-6 Codex`
+- Change: Changed `enumerate_applet_context_root()` to return its actual `PersistentInventory::VisitResult`. Invalid root metadata and duplicate roots report `InvalidTag`; a missing root reports `IncompleteReachability`; inventory and storage failures retain their original result. Object-deletion skip and inventory telemetry now include the exact status instead of a boolean-derived `ReadFailure`. Refreshed the empty-card Windows root-diagnostic package with this change and updated TODO, EXT_REQUESTS and HANDOFF.
+- Validation: ARM and RISC-V wrappers passed for `max_crypto` with object deletion, CCID debug, and heap-GC debug enabled. `PICO2_HOST_USB_ACCESS=1 ./tools/test-object-deletion-vpcd` passed through the escalated host-access path (`TEST:SUMMARY pass=19 fail=0`; byte-array mode reclaimed 8 tags over 8 requests). Fixture verification passed (`files=81`). Empty-card packaging, ZIP integrity, and all 7 package checksums passed. `git diff --check` passed. No physical Pico was flashed or tested.
+- Result: D92 evidence separates the initial reclaimer `applet_result=6` at xfr=142 (after three erasures) from the later applet-root scan failure on the next APDU; the latter is not established as the initiating cause. ARM firmware end `0x100f5ecc`, 41,268 bytes remain. Refreshed UF2 SHA-256 `57cb784f651ad6bb50063f87765fdc5016a3ec140c2e3e3146698dec923f8227`; Windows ZIP SHA-256 `8a6d0241615603a00a648d9b3fc53d4a7d78616a6689ab35833b31827e0c6aa9`. Package is diagnostic, not production firmware.
+- Decision: Use only the refreshed `9188dcfc` package for the next Windows diagnostic run. If its root scan completes while reclaimer `ReadFailure` remains, instrument the reclaimer's repeated persistent heap trace; do not attribute the first failure to the later root scan.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-9188dcfc.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-9188dcfc.uf2`; VPCD log `artifacts/logs/object-deletion-vpcd-20261113T093250Z.log`.

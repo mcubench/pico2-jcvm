@@ -251,7 +251,7 @@ bool visit_registered_applet_root(uint8_t owner, uint8_t package_id,
   return true;
 }
 
-bool enumerate_applet_context_root(
+jcvm::PersistentInventory::VisitResult enumerate_applet_context_root(
     jcvm::Context &context, jcvm::Heap::ReferenceVisitor visitor,
     void *visitor_context) {
   const auto report_failure = [&](const char *reason,
@@ -291,13 +291,13 @@ bool enumerate_applet_context_root(
     report_failure("visitor_null", applet_reference,
                    jcvm::PersistentInventory::VisitResult::InvalidArgument,
                    0, false, 0);
-    return false;
+    return jcvm::PersistentInventory::VisitResult::InvalidArgument;
   }
   if (applet_reference.isNullPointer()) {
     report_failure("restored_reference_null", applet_reference,
                    jcvm::PersistentInventory::VisitResult::ReadFailure,
                    0, false, 0);
-    return false;
+    return jcvm::PersistentInventory::VisitResult::ReadFailure;
   }
   try {
     const auto instance = context.getHeap().getInstance(applet_reference);
@@ -307,20 +307,34 @@ bool enumerate_applet_context_root(
     const auto result = jcvm::PersistentInventory::visitAppletInstanceRoots(
         context.getAppletID(), context.getHeap(), visit_registered_applet_root,
         &root_context);
-    const bool complete =
-        result == jcvm::PersistentInventory::VisitResult::Complete &&
-        root_context.metadata_matches && root_context.root_count == 1;
-    if (!complete) {
-      report_failure("persistent_root_record", applet_reference, result,
-                     root_context.root_count, root_context.metadata_matches,
+    if (!root_context.metadata_matches) {
+      report_failure("persistent_root_metadata", applet_reference,
+                     jcvm::PersistentInventory::VisitResult::InvalidTag,
+                     root_context.root_count, false,
                      instance->getClassIndex());
+      return jcvm::PersistentInventory::VisitResult::InvalidTag;
     }
-    return complete;
+    if (result != jcvm::PersistentInventory::VisitResult::Complete) {
+      report_failure("persistent_root_record", applet_reference, result,
+                     root_context.root_count, true,
+                     instance->getClassIndex());
+      return result;
+    }
+    if (root_context.root_count != 1) {
+      const auto failure = root_context.root_count == 0
+          ? jcvm::PersistentInventory::VisitResult::IncompleteReachability
+          : jcvm::PersistentInventory::VisitResult::InvalidTag;
+      report_failure("persistent_root_count", applet_reference, failure,
+                     root_context.root_count, true,
+                     instance->getClassIndex());
+      return failure;
+    }
+    return jcvm::PersistentInventory::VisitResult::Complete;
   } catch (...) {
     report_failure("instance_load_exception", applet_reference,
                    jcvm::PersistentInventory::VisitResult::ReadFailure, 0,
                    false, 0);
-    return false;
+    return jcvm::PersistentInventory::VisitResult::ReadFailure;
   }
 }
 
@@ -355,12 +369,10 @@ bool enumerate_selected_applet_roots(
   roots.visitor = visitor;
   roots.visitor_context = visitor_context;
   roots.static_result = jcvm::PersistentInventory::VisitResult::Complete;
-  const bool applet_root = enumerate_applet_context_root(
+  roots.applet_result = enumerate_applet_context_root(
       *selected_context, visit_selected_applet_instance_root, &roots);
-  roots.applet_result = applet_root
-      ? jcvm::PersistentInventory::VisitResult::Complete
-      : jcvm::PersistentInventory::VisitResult::ReadFailure;
-  return applet_root;
+  return roots.applet_result ==
+         jcvm::PersistentInventory::VisitResult::Complete;
 }
 
 #ifdef CHOUPI_ENABLE_OBJECT_DELETION
@@ -441,14 +453,15 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
           context.getAppletPackageID(), context.getHeap(),
           append_physical_package_static_root, &roots);
   context.appendRootReferences(roots.references);
-  const bool applet_root = enumerate_applet_context_root(
+  const auto applet_result = enumerate_applet_context_root(
       context, append_physical_object_deletion_root, &roots);
   if (static_result != jcvm::PersistentInventory::VisitResult::Complete ||
-      !applet_root) {
+      applet_result != jcvm::PersistentInventory::VisitResult::Complete) {
     std::printf("OBJECT_DELETION:SKIP package=%u static_result=%u "
-                "applet_roots_complete=%u\r\n",
+                "applet_result=%u\r\n",
                 static_cast<unsigned>(context.getAppletPackageID()),
-                static_cast<unsigned>(static_result), applet_root ? 1u : 0u);
+                static_cast<unsigned>(static_result),
+                static_cast<unsigned>(applet_result));
     return;
   }
 
@@ -615,9 +628,7 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   context.appendRootReferences(counts.references);
   const std::size_t context_roots = counts.references.size();
   const auto applet_result = enumerate_applet_context_root(
-      context, count_applet_inventory_root, &counts)
-      ? jcvm::PersistentInventory::VisitResult::Complete
-      : jcvm::PersistentInventory::VisitResult::ReadFailure;
+      context, count_applet_inventory_root, &counts);
   jcvm::Heap::ReachabilitySummary reachability;
   unsigned owner_scans = 0;
   PersistentTagStats owner_records;
@@ -769,16 +780,16 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
             context.getAppletPackageID(), context.getHeap(),
             count_package_static_inventory_root, &roots);
     context.appendRootReferences(roots.references);
-    const bool applet_root = enumerate_applet_context_root(
+    const auto applet_result = enumerate_applet_context_root(
         context, count_applet_inventory_root, &roots);
     if (static_result != jcvm::PersistentInventory::VisitResult::Complete ||
-        !applet_root) {
+        applet_result != jcvm::PersistentInventory::VisitResult::Complete) {
       std::fprintf(stderr,
                    "OBJECT_DELETION:SKIP package=%u static_result=%u "
-                   "applet_roots_complete=%u\n",
+                   "applet_result=%u\n",
                    static_cast<unsigned>(context.getAppletPackageID()),
                    static_cast<unsigned>(static_result),
-                   applet_root ? 1u : 0u);
+                   static_cast<unsigned>(applet_result));
       return;
     }
 

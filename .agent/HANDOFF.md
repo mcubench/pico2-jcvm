@@ -1,3 +1,36 @@
+# Current handoff — preserve applet-root scan failure codes — 2026-11-13 09:36 UTC
+
+The D92 option-2 serial log shows the first request at xfr=142 returned a
+reclaimer `applet_result=6` after erasing three applet tags. On the following
+APDU, root enumeration became incomplete. The earlier image lacked the new
+branch-specific trace, so the reason is still unknown. I updated
+`enumerate_applet_context_root()` to preserve `VisitResult` values instead of
+mapping every failure to `ReadFailure`, and added explicit `InvalidTag` for
+root metadata/count mismatches and `IncompleteReachability` for a missing root.
+Skip/inventory logs now carry the exact result. This improves diagnosis; it
+does not fix the underlying persistent reclaimer failure.
+
+ARM and RISC-V max_crypto diagnostic wrapper builds pass with object deletion,
+CCID logging, and heap-GC logging enabled. The `test-object-deletion-vpcd`
+integration suite passes (`TEST:SUMMARY pass=19 fail=0`; eight byte-array
+deletion requests reclaimed eight applet tags). No physical hardware test was
+run. A refreshed empty-card Windows package is available at
+`build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-9188dcfc.zip`
+(SHA-256 `8a6d0241615603a00a648d9b3fc53d4a7d78616a6689ab35833b31827e0c6aa9`);
+standalone UF2:
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-9188dcfc.uf2`
+(SHA-256 `57cb784f651ad6bb50063f87765fdc5016a3ec140c2e3e3146698dec923f8227`).
+`.agent/EXT_REQUESTS.md` now names this as the current Windows diagnostic
+package. It still requires explicit CAP installation and is not production
+firmware.
+
+Next: obtain the Windows serial/client result for this refreshed package. If
+the root scanner reports a failure, use its reason/result and owner/package/
+reference fields. If it completes but the reclaimer still returns `ReadFailure`,
+instrument the exact failing stage inside `visitUnreachableAppletTagsWithAliasTargets`
+and the persistent heap trace; do not infer the following root-scan failure was
+the original cause.
+
 # Current handoff — package fresh Windows root-diagnostic firmware — 2026-11-13 09:20 UTC
 
 Prepared a fresh empty-card ARM `max_crypto` external-test image from source

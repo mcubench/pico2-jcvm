@@ -1,19 +1,23 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-BEF9E1F7 — Fresh Windows test package
+## WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-9188DCFC — Fresh Windows test package
 
-Created 2026-11-13 09:08 UTC. This package supersedes the earlier Windows
+Created 2026-11-13 09:08 UTC; refreshed 2026-11-13 09:35 UTC. This package
+supersedes the `BEF9E1F7` package immediately below and the older Windows
 object-deletion packages in this file; use only this image for the next
 root-scan/reclamation diagnostic run.
 
-- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-bef9e1f7.zip)
-- [Standalone empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-bef9e1f7.uf2)
-- Package SHA-256: `5e9f008cddbcead42ec4898fb7427a188f8a19f6312d4c58ee043a91d2b52d29`
-- UF2 SHA-256: `d8288305ee99cb80a94a4bc353c95b27f043c9399c7c0303c3f7c73ac144983a`
-- Source commit: `bef9e1f72bb761e6b474f38c3de597d420ff005f`; source worktree was
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-9188dcfc.zip)
+- [Standalone empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-9188dcfc.uf2)
+- Package SHA-256: `8a6d0241615603a00a648d9b3fc53d4a7d78616a6689ab35833b31827e0c6aa9`
+- UF2 SHA-256: `57cb784f651ad6bb50063f87765fdc5016a3ec140c2e3e3146698dec923f8227`
+- Source commit: `9188dcfcb7ab6e2c81194960dfcfacff88106f05`; source worktree was
   dirty, with its tracked-root diff hash disclosed in package provenance.
+- This revision preserves the applet-root scan's exact `VisitResult` through
+  inventory/skip telemetry, distinguishing missing roots, invalid metadata,
+  and persistent-record read failures.
 - Profile `max_crypto`; object deletion, CCID diagnostics, and heap-GC root
-  tracing enabled; firmware end `0x100f5e5c`, 41,380 bytes remain.
+  tracing enabled; firmware end `0x100f5ecc`, 41,268 bytes remain.
 - Package includes the unchanged 1.8.4/jc305 CAP, supplied 1.8.5 client,
   GPPro, serial capture script, hash manifest, and exact flashing/test steps.
 
