@@ -695,6 +695,58 @@ def append_duplicate_export_class_entry(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def drop_last_export_class_entry(code: bytes) -> bytes:
+    """Remove one valid Export class record while preserving component framing."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    if offset != len(code):
+        raise RuntimeError("unaccounted CAP code bytes")
+
+    export = next((item for item in components if item[0] == 10), None)
+    directory = next((item for item in components if item[0] == 2), None)
+    if export is None or directory is None or len(export) < 8 or export[3] < 2:
+        raise RuntimeError("test CAP needs at least two Export class records")
+    export_size = int.from_bytes(export[1:3], "big")
+    cursor = 4
+    last_start = cursor
+    for _ in range(export[3]):
+        if len(export) - cursor < 4:
+            raise RuntimeError("truncated Export class record")
+        last_start = cursor
+        field_count = export[cursor + 2]
+        method_count = export[cursor + 3]
+        record_size = 4 + 2 * (field_count + method_count)
+        if record_size > len(export) - cursor:
+            raise RuntimeError("Export class record exceeds component")
+        cursor += record_size
+    if cursor != len(export):
+        raise RuntimeError("Export component has trailing class-table data")
+    removed_size = len(export) - last_start
+    del export[last_start:]
+    export[3] -= 1
+    export[1:3] = (export_size - removed_size).to_bytes(2, "big")
+
+    directory_size = int.from_bytes(directory[1:3], "big")
+    size_offset = 3 + 9 * 2
+    if directory_size < size_offset + 2:
+        raise RuntimeError("Directory lacks Export component size field")
+    if int.from_bytes(directory[size_offset:size_offset + 2], "big") != export_size:
+        raise RuntimeError("Directory Export size does not match component")
+    directory[size_offset:size_offset + 2] = (
+        export_size - removed_size
+    ).to_bytes(2, "big")
+    return b"".join(bytes(component) for component in components)
+
+
 def offset_first_export_target_into_record(code: bytes) -> bytes:
     """Move the first Export target one byte into its valid Class record."""
     components: list[bytearray] = []
@@ -930,6 +982,29 @@ def main() -> int:
                 raise RuntimeError(f"SELECT ISD failed: {response.hex().upper()}")
             scp = vpcd.Scp03(connection)
             scp.authenticate()
+
+            if os.environ.get(
+                    "SIO_CROSS_AID_TEST_MISSING_PUBLIC_EXPORT_CLASS"
+            ) == "1":
+                if os.environ.get("SIO_CROSS_AID_INCLUDE_DESCRIPTOR") != "1":
+                    raise RuntimeError(
+                        "missing-public-Export regression requires the "
+                        "Descriptor component"
+                    )
+                incomplete_contract = drop_last_export_class_entry(contract[0])
+                response = vpcd.load_package(
+                    scp, incomplete_contract, contract[1],
+                    expected_final_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "library CAP missing a public Export class returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS LOAD rejected a library Export table missing "
+                      "a public Descriptor class")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
 
             vpcd.load_package(scp, contract[0], contract[1])
             print("TEST:PASS loaded Shareable contract and Export component")

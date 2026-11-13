@@ -214,6 +214,17 @@ task:
     RISC-V max_crypto builds pass. This follows JCVM 3.0.5 §§6.13–6.14.
     Physical validation was not run; Descriptor-free method-start and legacy
     persisted-CAP runtime coverage remain open.
+  - Progress 2026-11-13 14:43 UTC: For library CAPs with Descriptor, LOAD now
+    requires a complete one-to-one Export mapping for every public Descriptor
+    class/interface, including matching token, Class record offset and
+    interface kind. Package-private classes need no Export entry; applet
+    package shareable-interface rules remain unchanged. Unit checks pass
+    61/61; a malformed library CAP omitting a public Export class rejects
+    LOAD with `6A80`; valid SIO VPCD suites pass 35/35 both with Descriptor
+    omitted (normal GPPro path) and included. ARM/RISC-V/PC max_crypto builds
+    pass. This completeness check requires Descriptor and therefore cannot
+    cover Descriptor-free CAP LOADs. Legacy persisted-CAP runtime coverage
+    and physical acceptance remain open.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is

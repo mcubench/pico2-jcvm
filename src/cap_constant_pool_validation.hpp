@@ -63,7 +63,8 @@ inline bool valid_export_class_offsets(
     const uint8_t *class_record_starts,
     const uint8_t *class_component_payload,
     const std::size_t class_component_size,
-    const bool applet_package) noexcept {
+    const bool applet_package, const uint8_t *descriptor_payload = nullptr,
+    const std::size_t descriptor_size = 0) noexcept {
   if (payload == nullptr || payload_size <= 1 ||
       class_component_payload == nullptr || class_component_size == 0) {
     return false;
@@ -107,7 +108,75 @@ inline bool valid_export_class_offsets(
     if (entries > payload_size - offset) return false;
     offset += entries;
   }
-  return offset == payload_size;
+  if (offset != payload_size) return false;
+  if (descriptor_payload == nullptr) return descriptor_size == 0;
+  if (descriptor_size == 0) return false;
+  if (applet_package) return true;
+
+  // Library packages export every public class and interface. Descriptor
+  // records identify each class token and its Class-component offset, so
+  // require a complete token-to-record mapping when that metadata is present.
+  std::array<uint16_t, 256> exported_class_offsets{};
+  exported_class_offsets.fill(UINT16_MAX);
+  std::size_t export_cursor = 1;
+  for (std::size_t token = 0; token < class_count; ++token) {
+    if (export_cursor > payload_size || payload_size - export_cursor < 4) {
+      return false;
+    }
+    exported_class_offsets[token] = static_cast<uint16_t>(
+        (static_cast<uint16_t>(payload[export_cursor]) << 8) |
+        payload[export_cursor + 1]);
+    const std::size_t fields = payload[export_cursor + 2];
+    const std::size_t methods = payload[export_cursor + 3];
+    export_cursor += 4 + (fields + methods) * sizeof(uint16_t);
+  }
+
+  const auto read_be16 = [](const uint8_t *bytes) {
+    return static_cast<std::size_t>(
+        (static_cast<uint16_t>(bytes[0]) << 8) | bytes[1]);
+  };
+  std::array<uint8_t, 256> seen_tokens{};
+  std::size_t public_class_count = 0;
+  std::size_t descriptor_cursor = 1;
+  const std::size_t descriptor_class_count = descriptor_payload[0];
+  for (std::size_t index = 0; index < descriptor_class_count; ++index) {
+    if (descriptor_cursor > descriptor_size ||
+        descriptor_size - descriptor_cursor < 9) {
+      return false;
+    }
+    const std::size_t token = descriptor_payload[descriptor_cursor];
+    const uint8_t access_flags = descriptor_payload[descriptor_cursor + 1];
+    const std::size_t class_offset =
+        read_be16(descriptor_payload + descriptor_cursor + 2);
+    const std::size_t interfaces = descriptor_payload[descriptor_cursor + 4];
+    const std::size_t fields =
+        read_be16(descriptor_payload + descriptor_cursor + 5);
+    const std::size_t methods =
+        read_be16(descriptor_payload + descriptor_cursor + 7);
+    const std::size_t method_start =
+        descriptor_cursor + 9 + interfaces * 2 + fields * 7;
+    if (method_start > descriptor_size ||
+        methods > (descriptor_size - method_start) / 12) {
+      return false;
+    }
+    if ((access_flags & 0x01u) != 0) {
+      if ((class_offset & 0x8000u) != 0 ||
+          class_offset >= class_component_size ||
+          (class_record_starts[class_offset / 8] &
+           static_cast<uint8_t>(1u << (class_offset & 7))) == 0 ||
+          (((access_flags & 0x40u) != 0) !=
+           ((class_component_payload[class_offset] & 0x80u) != 0)) ||
+          token >= class_count || seen_tokens[token] != 0 ||
+          exported_class_offsets[token] != class_offset) {
+        return false;
+      }
+      seen_tokens[token] = 1;
+      ++public_class_count;
+    }
+    descriptor_cursor = method_start + methods * 12;
+  }
+  return descriptor_cursor <= descriptor_size &&
+         public_class_count == class_count;
 }
 
 inline bool valid_instance_field_token(const std::size_t token,

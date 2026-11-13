@@ -1,3 +1,32 @@
+# Current handoff — library Export completeness — 2026-11-13 14:43 UTC
+
+CAPIN-01 now checks library Export completeness when Descriptor is present:
+each public Descriptor class/interface must map exactly once to its class
+token and Class-component record offset in Export, with interface kind
+consistent. Package-private classes are excluded; applet package Export keeps
+its separate shareable-interface checks. Unit validation passes 61/61. The
+malformed library CAP with its last public Export class removed rejects LOAD
+with `6A80`; valid SIO VPCD suites pass 35/35 with Descriptor omitted and
+included. ARM, RISC-V, and PC `max_crypto` builds pass. The VPCD runner's
+missing-public-class negative option requires
+`SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1`; it now fails explicitly if omitted.
+Logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T141929Z.log`,
+`artifacts/logs/sio-cross-aid-vpcd-20261113T142130Z.log`, and
+`artifacts/logs/sio-cross-aid-vpcd-20261113T143208Z.log`. No physical device
+was accessed. Descriptor-free inputs retain only structural/bounds checks;
+legacy stored-CAP runtime coverage and physical acceptance remain open.
+
+External Windows validation must use the no-debug package
+`build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`
+(UF2 SHA-256 `b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6fe92006a5400e80a71d3a70`).
+Its provenance verifies all debug flags are OFF. The `9e7223ed` no-debug
+package is older; do not substitute it for the d63877f6 package. Root-diagnostic
+images are also not for that run.
+
+Next: continue CAPIN-01 by auditing and testing malformed persisted-CAP runtime
+recovery paths, preserving all unrelated worktree changes. Physical acceptance
+remains pending.
+
 # Current handoff — verify Export method tokens against Descriptor — 2026-11-13 13:54 UTC
 
 CAPIN-01 now validates Export class token/offset pairs against Descriptor class

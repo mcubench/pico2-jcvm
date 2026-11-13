@@ -29113,3 +29113,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep Descriptor-backed semantic checks. Descriptor-free CAPs continue bounds/header checks. Continue with legacy persisted-CAP runtime coverage and physical acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T135119Z.log`; Oracle JCVM 3.0.5 §§6.13–6.14; no hardware log.
+## 2026-11-13 Library Export completeness 30 minutes
+
+- Step/experiment: `CAPIN-01-LIBRARY-EXPORT-COMPLETENESS`
+- When: '2026-11-13 15:13 CET' - '2026-11-13 15:43 CET'
+- Model: `GPT-6 Codex`
+- Change: When Descriptor is present, library Export mappings must cover every public Descriptor class/interface exactly once with its declared token, matching Class record offset, and matching interface kind. Package-private classes are omitted; applet-package shareable-interface validation is unchanged. Added unit checks and a malformed library-CAP LOAD regression; the latter requires Descriptor inclusion. Updated CAPIN-01 and session handoff.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 61/61; ARM, RISC-V, and PC `max_crypto` wrappers passed; Python syntax and scoped diff checks passed. Authorized VPCD tests passed: malformed missing-public-class CAP rejected with `6A80`; valid SIO suite passed 35/35 with Descriptor omitted and 35/35 with Descriptor included. PC build retains existing Rust and packed-member warnings.
+- Result: Incomplete library Export class tables are rejected before persistence when Descriptor metadata is supplied. Descriptor-free CAPs cannot be checked for semantic completeness. No physical device was accessed.
+- Decision: Keep CAPIN-01 open for malformed legacy persisted-CAP runtime coverage and physical acceptance; continue offline. Windows external validation remains on no-debug d63877f6 package, not debug root-diagnostic firmware.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T141929Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T142130Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T143208Z.log`.

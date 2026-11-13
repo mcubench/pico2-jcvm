@@ -84,6 +84,36 @@ int main() {
             sizeof(export_class_at_record_start), class_record_starts,
             class_component_payload, sizeof(class_component_payload), false),
         "Export class offset at a Class record start accepted");
+  const uint8_t library_export_with_all_public_classes[] = {
+      2, 0, 2, 0, 0, 0, 7, 0, 0};
+  const uint8_t descriptor_with_two_public_classes[] = {
+      2, 0, 1, 0, 2, 0, 0, 0, 0, 0,
+      1, 0x41, 0, 7, 0, 0, 0, 0, 0};
+  check(jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            library_export_with_all_public_classes,
+            sizeof(library_export_with_all_public_classes),
+            class_record_starts, class_component_payload,
+            sizeof(class_component_payload), false,
+            descriptor_with_two_public_classes,
+            sizeof(descriptor_with_two_public_classes)),
+        "library Export includes each public Descriptor class");
+  check(!jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            export_class_at_record_start, sizeof(export_class_at_record_start),
+            class_record_starts, class_component_payload,
+            sizeof(class_component_payload), false,
+            descriptor_with_two_public_classes,
+            sizeof(descriptor_with_two_public_classes)),
+        "library Export cannot omit a public Descriptor class");
+  const uint8_t descriptor_with_package_private_class[] = {
+      2, 0, 1, 0, 2, 0, 0, 0, 0, 0,
+      0xff, 0, 0, 7, 0, 0, 0, 0, 0};
+  check(jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            export_class_at_record_start, sizeof(export_class_at_record_start),
+            class_record_starts, class_component_payload,
+            sizeof(class_component_payload), false,
+            descriptor_with_package_private_class,
+            sizeof(descriptor_with_package_private_class)),
+        "library Export does not require package-private Descriptor classes");
   const uint8_t export_class_inside_record[] = {1, 0, 3, 0, 0};
   check(!jcvm::cap_constant_pool_validation::valid_export_class_offsets(
             export_class_inside_record, sizeof(export_class_inside_record),

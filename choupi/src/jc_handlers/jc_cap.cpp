@@ -930,7 +930,13 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
             this->class_comp == nullptr
                 ? 0
                 : NTOHS(this->class_comp->size),
-            this->applet_comp != nullptr)) {
+            this->applet_comp != nullptr,
+            this->descriptor_comp == nullptr
+                ? nullptr
+                : &this->descriptor_comp->class_count,
+            this->descriptor_comp == nullptr
+                ? 0
+                : NTOHS(this->descriptor_comp->size))) {
       throw Exceptions::SecurityException;
     }
   }
