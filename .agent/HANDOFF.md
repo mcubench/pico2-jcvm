@@ -14360,6 +14360,29 @@ physical reset-driven deletion, and measured device RAM behavior. Stage only
 this new test and invocation with the TODO summary, progress record, and handoff;
 the unrelated sibling transient-array test edits in the same unit-test file
 remain unstaged.
+# Current handoff — MEM-01 T2 reclaimer skips unresolvable records — 2026-11-13 16:38 UTC
+
+T2 now filters enumerable candidates through `fs_exists()` before forming each
+bounded erase batch. An unresolvable candidate is reported as
+`OBJECT_DELETION:SKIP_CANDIDATE` in heap-GC diagnostic builds and does not stop
+later candidates from being processed. Candidate batches sort by descending
+tag length so parent-encoded descendants are erased first. The offline overlay
+test reproduces one orphaned probe-chain slot plus 19 garbage applet records;
+the reclaimer erases the 19 and completes. A second regression confirms a
+parent-encoded child and parent are both removed in safe order.
+
+Validation: `./tools/test-rp2350-fs-overlay` passes `TEST:SUMMARY fail=0`.
+ARM `max_crypto` object-deletion/no-debug build passed; RISC-V wrapper passed
+(core/smoke only). Current ARM UF2 SHA-256:
+`a80b63931b08a1bf066062436a02ed7ff7432472f29bb5049a47f6a7356f9db2`. No
+physical board was accessed or flashed.
+
+T1 remains incomplete: integrity violations are detected and an older COW
+snapshot is selected when available, but there is no in-place index
+reconstruction/quarantine yet. T2 also needs reason-specific reporting for
+strict inventory/alias read failures and should invoke the eventual T1 repair
+before its next reclaim pass. Continue MEM-01 offline.
+
 # Current handoff — MEM-01 T1 overlay integrity checks — 2026-11-13 16:24 UTC
 
 Started MEM-01 from `TODO.md` and `docs/review_memory_analysis_opus55_20261113.md`.

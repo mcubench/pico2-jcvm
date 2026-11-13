@@ -1158,6 +1158,35 @@ extern "C" uint8_t rp2350_fs_test_share_record_offset(
   set_overlay_offset(*target, overlay_offset(*source));
   return FS_STATUS_OK;
 }
+extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
+    const uint8_t *tag, uint8_t tag_length) {
+  auto *file = find_overlay(tag, tag_length);
+  if (file == nullptr || !overlay_has_storage(*file)) {
+    return FS_STATUS_NO_SUCH_TAG;
+  }
+  const uint16_t source_slot = static_cast<uint16_t>(file - overlay);
+  size_t gap = file->hash % kMaxOverlayFiles;
+  bool found_gap = false;
+  for (size_t probes = 0; probes < kMaxOverlayFiles; ++probes) {
+    if (!overlay_is_used(overlay[gap])) {
+      found_gap = true;
+      break;
+    }
+    gap = (gap + 1) % kMaxOverlayFiles;
+  }
+  if (!found_gap) return FS_STATUS_OUT_OF_FLASH;
+  size_t destination = (gap + 1) % kMaxOverlayFiles;
+  for (size_t probes = 0; probes < kMaxOverlayFiles; ++probes) {
+    if (!overlay_is_used(overlay[destination])) break;
+    destination = (destination + 1) % kMaxOverlayFiles;
+  }
+  if (destination == source_slot || overlay_is_used(overlay[destination])) {
+    return FS_STATUS_IO_UNKNOWN;
+  }
+  overlay[destination] = *file;
+  *file = OverlayFile{};
+  return FS_STATUS_OK;
+}
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
     const uint8_t *tag, uint8_t tag_length,
     const uint8_t *parent_tag, uint8_t parent_tag_length) {

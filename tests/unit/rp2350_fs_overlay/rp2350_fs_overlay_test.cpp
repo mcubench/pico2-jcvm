@@ -34,6 +34,8 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
     const uint8_t *target_tag, uint8_t target_tag_length);
+extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
+    const uint8_t *tag, uint8_t tag_length);
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *parent_tag,
     uint8_t parent_tag_length);
@@ -1468,6 +1470,87 @@ int main() {
          "persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry");
   std::printf("TEST:METRIC persistent_reclamation_orphan_tags=%zu cuts=1000\n",
               reclamation_candidate_records.size());
+
+  // One enumerable tag whose index slot lies beyond an empty probe bucket
+  // must not abort deletion of later, resolvable garbage records.
+  fake_flash.fill(0xff);
+  constexpr uint8_t corruptible_owner = 0x47;
+  std::array<std::array<uint8_t, 4>, 20> mixed_reclamation_tags{};
+  constexpr uint8_t mixed_reclamation_value[] = {0x61, 0x62};
+  bool mixed_reclamation_seeded = fs_init() == FS_STATUS_OK;
+  for (uint8_t index = 0; index < mixed_reclamation_tags.size(); ++index) {
+    mixed_reclamation_tags[index] = {
+        0x03, corruptible_owner, 0x70, index};
+    mixed_reclamation_seeded = mixed_reclamation_seeded &&
+        fs_write(mixed_reclamation_tags[index].data(),
+                 mixed_reclamation_tags[index].size(),
+                 mixed_reclamation_value, sizeof(mixed_reclamation_value)) ==
+            FS_STATUS_OK;
+  }
+  mixed_reclamation_seeded = mixed_reclamation_seeded &&
+      rp2350_fs_test_move_slot_beyond_probe_gap(
+          mixed_reclamation_tags[0].data(),
+          mixed_reclamation_tags[0].size()) == FS_STATUS_OK &&
+      fs_exists(mixed_reclamation_tags[0].data(),
+                mixed_reclamation_tags[0].size()) == 0;
+  jcvm::Heap mixed_reclamation_heap(corruptible_owner);
+  const std::vector<jcvm::jref_t> no_reclaimer_roots;
+  ReclaimerRootContext no_reclaimer_roots_context{&no_reclaimer_roots};
+  uint32_t mixed_reclamation_erased = 0;
+  const auto mixed_reclamation_result = mixed_reclamation_seeded
+      ? jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            corruptible_owner, mixed_reclamation_heap,
+            enumerate_reclaimer_roots, &no_reclaimer_roots_context,
+            &mixed_reclamation_erased)
+      : jcvm::PersistentInventory::VisitResult::InvalidArgument;
+  bool mixed_reclamation_progress =
+      mixed_reclamation_result ==
+          jcvm::PersistentInventory::VisitResult::Complete &&
+      mixed_reclamation_erased == mixed_reclamation_tags.size() - 1 &&
+      fs_exists(mixed_reclamation_tags[0].data(),
+                mixed_reclamation_tags[0].size()) == 0;
+  for (size_t index = 1; index < mixed_reclamation_tags.size(); ++index) {
+    mixed_reclamation_progress = mixed_reclamation_progress &&
+        fs_exists(mixed_reclamation_tags[index].data(),
+                  mixed_reclamation_tags[index].size()) == 0;
+  }
+  expect(mixed_reclamation_progress,
+         "persistent_reclaimer_skips_unresolvable_candidate_and_erases_19_others");
+
+  fake_flash.fill(0xff);
+  constexpr uint8_t nested_reclamation_owner = 0x48;
+  constexpr std::array<uint8_t, 6> nested_reclamation_parent{
+      0x03, nested_reclamation_owner, 0x30, 0x01, 0x11, 0x22};
+  constexpr std::array<uint8_t, 8> nested_reclamation_child{
+      0x03, nested_reclamation_owner, 0x30, 0x01, 0x11, 0x22, 0x02, 0x02};
+  constexpr uint8_t nested_reclamation_value[] = {0x73};
+  const bool nested_reclamation_seeded =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(nested_reclamation_parent.data(),
+               nested_reclamation_parent.size(), nested_reclamation_value,
+               sizeof(nested_reclamation_value)) == FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          nested_reclamation_child.data(), nested_reclamation_child.size(),
+          nested_reclamation_value,
+          sizeof(nested_reclamation_value)) == FS_STATUS_OK;
+  jcvm::Heap nested_reclamation_heap(nested_reclamation_owner);
+  const std::vector<jcvm::jref_t> no_nested_roots;
+  ReclaimerRootContext no_nested_roots_context{&no_nested_roots};
+  uint32_t nested_reclamation_erased = 0;
+  const auto nested_reclamation_result = nested_reclamation_seeded
+      ? jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            nested_reclamation_owner, nested_reclamation_heap,
+            enumerate_reclaimer_roots, &no_nested_roots_context,
+            &nested_reclamation_erased)
+      : jcvm::PersistentInventory::VisitResult::InvalidArgument;
+  expect(nested_reclamation_result ==
+                 jcvm::PersistentInventory::VisitResult::Complete &&
+             nested_reclamation_erased == 2 &&
+             fs_exists(nested_reclamation_parent.data(),
+                       nested_reclamation_parent.size()) == 0 &&
+             fs_exists(nested_reclamation_child.data(),
+                       nested_reclamation_child.size()) == 0,
+         "persistent_reclaimer_erases_nested_child_before_parent");
 
   constexpr uint8_t cross_store_journal_tag[] = {0x02, 0xff, 56, 3};
   constexpr uint8_t cross_store_journal_value[] = {

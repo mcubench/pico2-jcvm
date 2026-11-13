@@ -4,6 +4,7 @@
 #include "ffi.h"
 #include "jc_handlers/flashmemory.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstring>
@@ -679,6 +680,24 @@ struct CandidateBatch {
   uint8_t count = 0;
 };
 
+void logUnresolvableCandidate(const char *namespace_name,
+                             const char *reason,
+                             const PersistentInventory::Tag &tag) {
+#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
+  std::printf("OBJECT_DELETION:SKIP_CANDIDATE namespace=%s reason=%s tag=",
+              namespace_name, reason);
+  for (uint8_t index = 0; index < tag.len; ++index) {
+    std::printf("%02X", tag.value[index]);
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
+#else
+  (void)namespace_name;
+  (void)reason;
+  (void)tag;
+#endif
+}
+
 bool acceptAllCandidates(const PersistentInventory::Tag &, void *) {
   return true;
 }
@@ -686,6 +705,16 @@ bool acceptAllCandidates(const PersistentInventory::Tag &, void *) {
 bool collectCandidateBatch(const PersistentInventory::Tag &tag,
                            void *opaque) {
   auto &batch = *static_cast<CandidateBatch *>(opaque);
+  if (tag.len == 0 || tag.len > PersistentInventory::kTagCapacity ||
+      (tag.value[0] != 0x02 && tag.value[0] != 0x03)) {
+    logUnresolvableCandidate("unknown", "invalid_tag", tag);
+    return true;
+  }
+  if (fs_exists(tag.value, tag.len) == 0) {
+    logUnresolvableCandidate(tag.value[0] == 0x03 ? "applet" : "package",
+                             "not_resolvable", tag);
+    return true;
+  }
   if (batch.count >= batch.tags.size()) return false;
   batch.tags[batch.count++] = tag;
 #if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
@@ -698,6 +727,14 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
   std::fflush(stdout);
 #endif
   return batch.count < batch.tags.size();
+}
+
+void sortCandidateBatch(CandidateBatch &batch) {
+  std::sort(batch.tags.begin(), batch.tags.begin() + batch.count,
+            [](const PersistentInventory::Tag &left,
+               const PersistentInventory::Tag &right) {
+              return left.len > right.len;
+            });
 }
 } // namespace
 
@@ -755,6 +792,7 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
       if (erased_count != nullptr) *erased_count = erased;
       return VisitResult::Complete;
     }
+    sortCandidateBatch(batch);
 
     for (uint8_t index = 0; index < batch.count; ++index) {
       const auto &candidate = batch.tags[index];
@@ -841,6 +879,7 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
       if (erased_count != nullptr) *erased_count = erased;
       return VisitResult::Complete;
     }
+    sortCandidateBatch(batch);
 
     for (uint8_t index = 0; index < batch.count; ++index) {
       const auto &candidate = batch.tags[index];

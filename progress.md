@@ -29208,3 +29208,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue T1 with repair/quarantine and mutation-integrity coverage, then T2 unresolvable-candidate recovery. Physical acceptance remains gated on T1–T7 and an empty-card image.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; no test log file was retained.
+
+## 2026-11-13 MEM-01 T2 skip bad candidates and preserve progress 14 minutes
+
+- Step/experiment: `MEM-01-T2-RECLAIMER-PROGRESS-20261113`
+- When: '2026-11-13 16:24 UTC' - '2026-11-13 16:38 UTC'
+- Model: `GPT-6 Codex`
+- Change: Candidate batching now filters enumerable tags that cannot be resolved by `fs_exists()` and reports them as `OBJECT_DELETION:SKIP_CANDIDATE` in heap-GC diagnostic builds, allowing later resolvable records to be erased. Batches process descending tag length so children precede parents. Added a test-only RP2350 overlay mutation that moves a slot beyond an empty probe bucket, plus regressions for one unresolvable plus 19 valid candidates and a parent-encoded child/parent pair.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`, including 19/19 resolvable records erased and nested child-before-parent reclamation. ARM `max_crypto` object-deletion/no-debug wrapper build passed. RISC-V wrapper build passed (core/smoke only). No physical hardware accessed.
+- Result: ARM firmware UF2 SHA-256 `a80b63931b08a1bf066062436a02ed7ff7432472f29bb5049a47f6a7356f9db2`. A single bad candidate no longer causes the batch reclaimer to return `ReadFailure` before reclaiming later valid records. Reason-specific logging for strict inventory/alias read failures and automatic T1 repair are not yet implemented.
+- Decision: Keep T1/T2 partially open until damaged snapshots can be rebuilt or quarantined and all distinct read-failure paths are reported; continue with T1 repair, then T7/T3.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; no test log retained.
