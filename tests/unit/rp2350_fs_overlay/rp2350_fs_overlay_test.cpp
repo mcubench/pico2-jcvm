@@ -31,6 +31,9 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
     const uint8_t *tag, uint8_t tag_length, uint8_t header);
+extern "C" uint8_t rp2350_fs_test_share_record_offset(
+    const uint8_t *source_tag, uint8_t source_tag_length,
+    const uint8_t *target_tag, uint8_t target_tag_length);
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *parent_tag,
     uint8_t parent_tag_length);
@@ -2542,6 +2545,60 @@ int main() {
       hashed_child_actual == hashed_child_value;
   expect(stale_parent_rejected,
          "filesystem_compaction_rejects_stale_valid_parent_slot_by_hash");
+
+  // A duplicate offset used to survive the relocation loops and leave one
+  // index entry pointing into a different record. Compaction must reject the
+  // inconsistent layout before moving any arena bytes.
+  fake_flash.fill(0xff);
+  constexpr uint8_t shared_offset_a[] = {0xf2, 0x21, 0x01};
+  constexpr uint8_t shared_offset_b[] = {0xf2, 0x21, 0x02};
+  constexpr uint8_t shared_offset_value_a[] = {0x81, 0x82, 0x83};
+  constexpr uint8_t shared_offset_value_b[] = {0x91, 0x92, 0x93, 0x94};
+  bool duplicate_offset_rejected =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+          FS_STATUS_OK &&
+      fs_write(shared_offset_b, sizeof(shared_offset_b),
+               shared_offset_value_b, sizeof(shared_offset_value_b)) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_share_record_offset(
+          shared_offset_a, sizeof(shared_offset_a), shared_offset_b,
+          sizeof(shared_offset_b)) == FS_STATUS_OK;
+  duplicate_offset_rejected = duplicate_offset_rejected &&
+      rp2350_fs_test_compact() == FS_STATUS_IO_UNKNOWN &&
+      rp2350_fs_test_overlay_file_count() == 2;
+  expect(duplicate_offset_rejected,
+         "filesystem_compaction_rejects_duplicate_record_offsets_without_flash_mutation");
+
+  fake_flash.fill(0xff);
+  std::array<uint8_t, sizeof(shared_offset_value_a)> restored_shared_a{};
+  std::array<uint8_t, sizeof(shared_offset_value_b)> restored_shared_b{};
+  const bool corrupt_snapshot_fallback =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+          FS_STATUS_OK &&
+      fs_write(shared_offset_b, sizeof(shared_offset_b),
+               shared_offset_value_b, sizeof(shared_offset_value_b)) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_share_record_offset(
+          shared_offset_a, sizeof(shared_offset_a), shared_offset_b,
+          sizeof(shared_offset_b)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      fs_read(shared_offset_a, sizeof(shared_offset_a),
+              restored_shared_a.data(), restored_shared_a.size()) ==
+          FS_STATUS_OK &&
+      fs_read(shared_offset_b, sizeof(shared_offset_b),
+              restored_shared_b.data(), restored_shared_b.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(restored_shared_a.data(), shared_offset_value_a,
+                  restored_shared_a.size()) == 0 &&
+      std::memcmp(restored_shared_b.data(), shared_offset_value_b,
+                  restored_shared_b.size()) == 0;
+  expect(corrupt_snapshot_fallback,
+         "filesystem_restore_rejects_integrity_failure_and_uses_previous_snapshot");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the

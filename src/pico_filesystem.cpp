@@ -97,6 +97,7 @@ size_t overlay_byte_limit(size_t file_count) {
 bool filesystem_payload_fits(size_t file_count, size_t bytes_used) {
   return bytes_used <= overlay_byte_limit(file_count);
 }
+bool overlay_integrity_valid();
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -476,6 +477,12 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
   }
   overlay_file_count = header->file_count;
   overlay_bytes_used = header->bytes_used;
+  if (!overlay_integrity_valid()) {
+    for (auto &entry : overlay) entry = OverlayFile{};
+    overlay_file_count = 0;
+    overlay_bytes_used = 0;
+    return false;
+  }
   overlay_dirty = false;
   filesystem_active_slot = migration_source ? 0xff : slot;
   filesystem_generation = header->generation;
@@ -604,6 +611,7 @@ bool overlay_compresses_tag(const OverlayFile &file) {
 
 bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
                         uint8_t tag_length);
+bool overlay_integrity_valid();
 
 OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
                           size_t *found_slot = nullptr);
@@ -881,6 +889,90 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
   return finish();
 }
 
+// Validate the index against the serialized arena before it is used for
+// reads, mutation, or compaction. The slot-order scratch array is safe here:
+// integrity checks run during restore and at compaction boundaries only.
+bool overlay_integrity_valid() {
+  size_t used_slots = 0;
+  size_t serialized_slots = 0;
+  size_t serialized_bytes = 0;
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const auto &file = overlay[slot];
+    if (!overlay_is_used(file)) continue;
+    ++used_slots;
+    if (!overlay_has_storage(file)) {
+      if (overlay_has_record(file)) return false;
+      continue;
+    }
+    ++serialized_slots;
+    const uint32_t offset = overlay_offset(file);
+    if (offset >= overlay_bytes_used || overlay_bytes_used - offset < 1) {
+      return false;
+    }
+    const uint8_t header = overlay_bytes[offset];
+    const size_t key_length = header & 0x7fu;
+    if (((header & 0x80u) != 0) !=
+            ((file.flags & kOverlayParentTag) != 0) ||
+        key_length > overlay_bytes_used - offset - 1 ||
+        file.size > overlay_bytes_used - offset - 1 - key_length ||
+        (!overlay_has_record(file) && file.size != 0)) {
+      return false;
+    }
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length)) return false;
+
+    // Every used slot must be reachable by ordinary linear probing from its
+    // home bucket; an empty slot before it makes the entry invisible.
+    size_t probe = file.hash % kMaxOverlayFiles;
+    bool reached = false;
+    for (size_t probes = 0; probes < kMaxOverlayFiles; ++probes) {
+      if (!overlay_is_used(overlay[probe])) break;
+      if (probe == slot) {
+        reached = true;
+        break;
+      }
+      probe = (probe + 1) % kMaxOverlayFiles;
+    }
+    if (!reached) return false;
+
+    // Multiple live records for one canonical tag make lookup dependent on
+    // offsets and can hide a valid value behind a stale slot.
+    size_t live_matches = 0;
+    probe = file.hash % kMaxOverlayFiles;
+    for (size_t probes = 0; probes < kMaxOverlayFiles; ++probes) {
+      const auto &candidate = overlay[probe];
+      if (!overlay_is_used(candidate)) break;
+      if (candidate.hash == file.hash && candidate.tag_length == tag_length &&
+          overlay_has_storage(candidate) && overlay_has_record(candidate) &&
+          stored_tag_matches(candidate, tag, tag_length)) {
+        ++live_matches;
+      }
+      probe = (probe + 1) % kMaxOverlayFiles;
+    }
+    if (live_matches > 1) return false;
+
+    erase_bucket_next[serialized_slots - 1] = slot;
+    serialized_bytes += 1 + key_length + file.size;
+  }
+  if (used_slots != overlay_file_count || serialized_bytes != overlay_bytes_used)
+    return false;
+
+  std::sort(erase_bucket_next, erase_bucket_next + serialized_slots,
+            [](uint16_t left, uint16_t right) {
+              return overlay_offset(overlay[left]) <
+                     overlay_offset(overlay[right]);
+            });
+  size_t expected_offset = 0;
+  for (size_t index = 0; index < serialized_slots; ++index) {
+    const auto &file = overlay[erase_bucket_next[index]];
+    if (overlay_offset(file) != expected_offset) return false;
+    expected_offset += 1 + (overlay_bytes[overlay_offset(file)] & 0x7fu) +
+                       file.size;
+  }
+  return expected_offset == overlay_bytes_used;
+}
+
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                     uint32_t length) {
 #ifdef CHOUPI_DEBUG_CCID_APPLET
@@ -921,6 +1013,15 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   const size_t old_record_size = overlay_has_storage(file)
                                      ? 1 + stored_tag_length(file) + file.size
                                      : 0;
+  if (old_record_size != 0) {
+    const uint32_t old_offset = overlay_offset(file);
+    for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
+      if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
+          overlay_offset(overlay[index]) == old_offset) {
+        return reject("shared_record_offset", old_offset);
+      }
+    }
+  }
   const size_t new_record_size = 1 + key_length + length;
   const size_t new_used = overlay_bytes_used - old_record_size + new_record_size;
   if (!filesystem_payload_fits(overlay_file_count, new_used)) {
@@ -1045,6 +1146,18 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
   overlay_bytes[overlay_offset(*file)] = header;
   return FS_STATUS_OK;
 }
+extern "C" uint8_t rp2350_fs_test_share_record_offset(
+    const uint8_t *source_tag, uint8_t source_tag_length,
+    const uint8_t *target_tag, uint8_t target_tag_length) {
+  auto *source = find_overlay(source_tag, source_tag_length);
+  auto *target = find_overlay(target_tag, target_tag_length);
+  if (source == nullptr || target == nullptr || source == target ||
+      !overlay_has_storage(*source) || !overlay_has_storage(*target)) {
+    return FS_STATUS_NO_SUCH_TAG;
+  }
+  set_overlay_offset(*target, overlay_offset(*source));
+  return FS_STATUS_OK;
+}
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
     const uint8_t *tag, uint8_t tag_length,
     const uint8_t *parent_tag, uint8_t parent_tag_length) {
@@ -1104,6 +1217,9 @@ uint8_t compact_deleted_overlay_records() {
     return status;
   };
 #endif
+  if (!overlay_integrity_valid()) {
+    return reject(FS_STATUS_IO_UNKNOWN, "overlay_integrity");
+  }
   auto *bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
   std::fill(bitmap, bitmap + kFilesystemBitmapBytes, 0);
   auto is_marked = [bitmap](uint16_t slot) {
@@ -1743,6 +1859,12 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   // it through the now-deleted parent. Preserving the encoding lets us write
   // a durable tombstone without resolving that parent again.
   const uint32_t file_offset = overlay_offset(file);
+  for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
+    if (index != slot && overlay_has_storage(overlay[index]) &&
+        overlay_offset(overlay[index]) == file_offset) {
+      return FS_STATUS_IO_UNKNOWN;
+    }
+  }
   const uint8_t key_header = overlay_bytes[file_offset];
   const size_t key_length = key_header & 0x7f;
   const size_t old_record_size = 1 + key_length + file.size;

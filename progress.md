@@ -29196,3 +29196,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Worker should implement MEM-01 T1 → T2 → T7 → T3 → T4 → T5 → T6 → T8; wipe D92 before physical acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `docs/review_memory_analysis_opus55_20261113.md`.
+
+## 2026-11-13 MEM-01 T1 overlay integrity detection 12 minutes
+
+- Step/experiment: `MEM-01-T1-OVERLAY-INTEGRITY-20261113`
+- When: '2026-11-13 16:12 UTC' - '2026-11-13 16:24 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added snapshot-load and compaction integrity checks for serialized overlay bounds, contiguous/non-overlapping arena offsets, byte accounting, reconstructed tag hashes, probe-chain reachability, and duplicate live tags. Append and erase relocation now reject shared offsets before mutation. The overlay test target now links `stack.cpp` required by the preceding frame-owned package change.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`, including duplicate-offset compaction rejection and fallback from an integrity-invalid newest snapshot to the prior copy-on-write snapshot with both values preserved. ARM `max_crypto` object-deletion diagnostic/no-debug wrapper build passed; RISC-V `max_crypto` wrapper build passed (core/smoke only). `git -c core.whitespace=cr-at-eol diff --check` passed. No physical hardware was accessed.
+- Result: Firmware image SHA-256 `ae1b6b97b46fb10b61ac4d249045f99e76570bb20b92b6c41770dacd569f2887`. T1 integrity detection and fail-closed offset protection are covered; record reconstruction/quarantine remains unimplemented, so this does not yet close T1 or prove recovery of a corrupted store.
+- Decision: Continue T1 with repair/quarantine and mutation-integrity coverage, then T2 unresolvable-candidate recovery. Physical acceptance remains gated on T1–T7 and an empty-card image.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; no test log file was retained.

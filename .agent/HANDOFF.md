@@ -14360,6 +14360,30 @@ physical reset-driven deletion, and measured device RAM behavior. Stage only
 this new test and invocation with the TODO summary, progress record, and handoff;
 the unrelated sibling transient-array test edits in the same unit-test file
 remain unstaged.
+# Current handoff — MEM-01 T1 overlay integrity checks — 2026-11-13 16:24 UTC
+
+Started MEM-01 from `TODO.md` and `docs/review_memory_analysis_opus55_20261113.md`.
+The first T1 slice adds arena/index checks on snapshot restore and before
+compaction: serialized record bounds and contiguous non-overlapping offsets,
+exact arena byte accounting, tag/hash reconstruction, probe-chain reachability,
+and duplicate live-tag detection. Append/erase relocation now fails before
+mutation if another slot shares the edited offset. A restore integrity failure
+falls back to the previous copy-on-write snapshot when it is valid; no record
+rebuild or quarantine is implemented yet, so T1 remains open.
+
+Validation: `./tools/test-rp2350-fs-overlay` passes `TEST:SUMMARY fail=0`,
+including duplicate-offset compaction rejection and corrupted newest-snapshot
+fallback preserving both previous values. ARM `max_crypto` object-deletion
+diagnostic/no-debug build passed with firmware SHA-256
+`ae1b6b97b46fb10b61ac4d249045f99e76570bb20b92b6c41770dacd569f2887`;
+RISC-V wrapper build passed (core/smoke only). The filesystem change is ARM
+firmware-specific. No physical board was accessed or flashed. The test target
+also now links `stack.cpp`, required by the recent frame-owned package change.
+
+Next: finish T1 repair/quarantine and mutation-integrity coverage, then proceed
+to T2 (skip and report unresolvable deletion candidates). Do not start physical
+MEM-01 acceptance until T1–T7 are complete and the board is freshly empty-carded.
+
 # Current handoff — refreshed Windows object-deletion test package — 2026-11-11 15:36 CET
 
 Rebuilt `max_crypto` diagnostic firmware with object deletion enabled. ARM and

@@ -12,6 +12,7 @@ add_executable(
   "${REPO_ROOT}/choupi/src/persistent_inventory.cpp"
   "${REPO_ROOT}/choupi/src/heap.cpp"
   "${REPO_ROOT}/choupi/src/context.cpp"
+  "${REPO_ROOT}/choupi/src/stack.cpp"
   "${REPO_ROOT}/choupi/src/jc_types/jc_array.cpp"
   "${REPO_ROOT}/choupi/src/jc_types/jc_object.cpp"
   "${REPO_ROOT}/choupi/src/jc_types/jc_instance.cpp"
