@@ -2281,6 +2281,122 @@ int main() {
   expect(churn_ok,
          "filesystem_long_compressed_records_survive_repeated_compaction");
 
+  // The physical JCAlgTest failure had 2,468 live records, a 29-byte
+  // persistent tag, and a 37-byte value. Exercise the legacy parent-slot
+  // encoding used by older snapshots at a similar byte occupancy, including
+  // repeated compaction and snapshot restore.
+  fake_flash.fill(0xff);
+  constexpr uint32_t parent_encoded_initial = 2300;
+  constexpr uint32_t parent_encoded_cycle_size = 100;
+  constexpr uint32_t parent_encoded_cycles = 2;
+  using ParentEncodedTag = std::array<uint8_t, 27>;
+  using ParentEncodedChildTag = std::array<uint8_t, 29>;
+  auto make_parent_encoded_parent = [](uint8_t parent_id) {
+    ParentEncodedTag tag{};
+    tag[0] = 0x03;
+    tag[1] = 0x91;
+    tag[2] = parent_id;
+    tag[3] = 0x42;
+    tag[4] = 0x24;
+    for (uint8_t index = 5; index < tag.size(); ++index) {
+      tag[index] = static_cast<uint8_t>(parent_id * 17u + index * 11u);
+    }
+    return tag;
+  };
+  auto make_parent_encoded_child = [&](uint32_t id) {
+    const uint8_t parent_id = static_cast<uint8_t>(id / 256u);
+    const uint8_t suffix = static_cast<uint8_t>(id % 256u);
+    const ParentEncodedTag parent = make_parent_encoded_parent(parent_id);
+    ParentEncodedChildTag child{};
+    std::copy(parent.begin(), parent.end(), child.begin());
+    child[27] = suffix;
+    child[28] = suffix;
+    return child;
+  };
+  auto make_parent_encoded_value = [](uint32_t id) {
+    std::array<uint8_t, 37> value{};
+    for (size_t index = 0; index < value.size(); ++index) {
+      value[index] = static_cast<uint8_t>(id * 29u + index * 13u);
+    }
+    return value;
+  };
+  bool parent_encoded_ok = fs_init() == FS_STATUS_OK;
+  for (uint8_t parent_id = 0; parent_id < 10 && parent_encoded_ok;
+       ++parent_id) {
+    const ParentEncodedTag parent = make_parent_encoded_parent(parent_id);
+    parent_encoded_ok = fs_write(parent.data(), parent.size(), nullptr, 0) ==
+                        FS_STATUS_OK;
+  }
+  std::vector<uint32_t> live_parent_encoded_ids;
+  live_parent_encoded_ids.reserve(parent_encoded_initial);
+  for (uint32_t id = 0; id < parent_encoded_initial && parent_encoded_ok;
+       ++id) {
+    const ParentEncodedChildTag child = make_parent_encoded_child(id);
+    const auto value = make_parent_encoded_value(id);
+    parent_encoded_ok = rp2350_fs_test_write_parent_encoded(
+                            child.data(), child.size(), value.data(),
+                            value.size()) == FS_STATUS_OK;
+    if (parent_encoded_ok) live_parent_encoded_ids.push_back(id);
+  }
+  auto verify_parent_encoded_records = [&]() {
+    for (const uint32_t id : live_parent_encoded_ids) {
+      const ParentEncodedChildTag child = make_parent_encoded_child(id);
+      const auto expected = make_parent_encoded_value(id);
+      std::array<uint8_t, 37> actual{};
+      const uint8_t status = fs_read(child.data(), child.size(), actual.data(),
+                                     actual.size());
+      if (status != FS_STATUS_OK || actual != expected) {
+        std::printf("TEST:INFO parent_encoded id=%lu status=%u\n",
+                    static_cast<unsigned long>(id),
+                    static_cast<unsigned>(status));
+        return false;
+      }
+    }
+    return true;
+  };
+  for (uint32_t cycle = 0; cycle < parent_encoded_cycles &&
+                           parent_encoded_ok;
+       ++cycle) {
+    for (uint32_t index = 0; index < parent_encoded_cycle_size &&
+                             parent_encoded_ok;
+         ++index) {
+      const uint32_t id = cycle * parent_encoded_cycle_size + index;
+      const ParentEncodedChildTag child = make_parent_encoded_child(id);
+      parent_encoded_ok = fs_erase(child.data(), child.size()) ==
+                          FS_STATUS_OK;
+      if (parent_encoded_ok) {
+        live_parent_encoded_ids.erase(
+            std::remove(live_parent_encoded_ids.begin(),
+                        live_parent_encoded_ids.end(), id),
+            live_parent_encoded_ids.end());
+      }
+    }
+    for (uint32_t index = 0; index < parent_encoded_cycle_size &&
+                             parent_encoded_ok;
+         ++index) {
+      const uint32_t id = parent_encoded_initial +
+                          cycle * parent_encoded_cycle_size + index;
+      const ParentEncodedChildTag child = make_parent_encoded_child(id);
+      const auto value = make_parent_encoded_value(id);
+      parent_encoded_ok = rp2350_fs_test_write_parent_encoded(
+                              child.data(), child.size(), value.data(),
+                              value.size()) == FS_STATUS_OK;
+      if (parent_encoded_ok) live_parent_encoded_ids.push_back(id);
+    }
+    if (parent_encoded_ok && !verify_parent_encoded_records()) {
+      std::printf("TEST:INFO parent_encoded stage=verify cycle=%lu\n",
+                  static_cast<unsigned long>(cycle));
+      parent_encoded_ok = false;
+    }
+  }
+  if (parent_encoded_ok) {
+    parent_encoded_ok = fs_sync() == FS_STATUS_OK &&
+                        fs_init() == FS_STATUS_OK &&
+                        verify_parent_encoded_records();
+  }
+  expect(parent_encoded_ok,
+         "filesystem_parent_encoded_records_survive_repeated_compaction");
+
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
   // old slot-order traversal, reproducing the persistent-storage exhaustion

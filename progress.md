@@ -28836,3 +28836,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Flash only after USB/BOOTSEL access returns; capture the exact failure chain before changing compaction or persistence semantics.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: Existing D92 evidence is `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`; new physical diagnostic logs not yet available.
+
+## 2026-11-13 Stress legacy parent-encoded compaction 6 minutes
+
+- Step/experiment: `RESOURCE-01-PARENT-ENCODED-COMPACTION-STRESS-20261113`
+- When: '2026-11-13 08:33 UTC' - '2026-11-13 08:39 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a filesystem regression approximating the D92 failure shape: 2,400 live legacy parent-encoded records, 29-byte tags, 37-byte values, two rounds deleting/replacing 100 records, then sync/reinitialize and verify all live records.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:PASS filesystem_parent_encoded_records_survive_repeated_compaction` and `TEST:SUMMARY fail=0`. ARM/RISC-V firmware builds were not rerun because this step changed only the host-side regression test; the immediately preceding commit built both targets with the same runtime source. `git diff --check` passed.
+- Result: The synthetic stress did not reproduce `tag_reconstruction`; it passed repeated compaction and snapshot restore. D92's exact physical failing parent/record state remains unknown.
+- Decision: Keep the test and wait for `FS_TAG_RECON_FAIL` physical output before changing compaction semantics.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: Test output via `./tools/test-rp2350-fs-overlay`; existing hardware log `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/serial.log`.

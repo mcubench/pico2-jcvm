@@ -735,6 +735,13 @@ no physical capture identifies D92's failing record yet. Current diagnostic
 image: `build/arm/pico2_choupi.uf2`, SHA-256
 `898e968b8f2b03cfb6533b8c19d093451f1d957d49114daa96bda6b75b4ac7a0`.
 
+Added `filesystem_parent_encoded_records_survive_repeated_compaction`: a
+2,400-record near-capacity test using 29-byte legacy parent-encoded tags and
+37-byte values, deleting/replacing 100 children twice, then snapshotting,
+restarting, and verifying all live records. It passes, so this synthetic
+pattern does not reproduce D92's rejection; preserve the physical failure and
+wait for `FS_TAG_RECON_FAIL` output before changing compaction semantics.
+
 The separate D92 run hit `FS_COMPACT_REJECT status=131
 reason=tag_reconstruction` repeatedly with 2,468 live overlay entries and
 98,273/98,304 bytes. Persistent writes then returned `F205` /
