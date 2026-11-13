@@ -28848,3 +28848,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the test and wait for `FS_TAG_RECON_FAIL` physical output before changing compaction semantics.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: Test output via `./tools/test-rp2350-fs-overlay`; existing hardware log `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/serial.log`.
+
+## 2026-11-13 Stress tombstoned parent references during compaction 3 minutes
+
+- Step/experiment: `RESOURCE-01-TOMBSTONED-PARENT-COMPACTION-20261113`
+- When: '2026-11-13 08:43 UTC' - '2026-11-13 08:46 UTC'
+- Model: `GPT-6 Codex`
+- Change: Extended the parent-encoded near-capacity regression to tombstone all ten parent records while children remain live, force compaction with a new record, verify children, then re-add parents and run the second compaction.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:PASS filesystem_parent_encoded_records_survive_repeated_compaction`; `TEST:SUMMARY fail=0`). This changes test code only; ARM/RISC-V builds were not rerun.
+- Result: Tombstoned-parent retention and remapping did not reproduce D92's failure. The v3 filesystem validator caps `bytes_used` at 77,824, so the observed 98,273-byte state was v4.
+- Decision: Keep the stress; use the pending physical `FS_TAG_RECON_FAIL` trace to target any remaining parent or metadata invariant.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: Test output via `./tools/test-rp2350-fs-overlay`; no new physical log.

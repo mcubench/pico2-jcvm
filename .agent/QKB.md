@@ -742,6 +742,13 @@ restarting, and verifying all live records. It passes, so this synthetic
 pattern does not reproduce D92's rejection; preserve the physical failure and
 wait for `FS_TAG_RECON_FAIL` output before changing compaction semantics.
 
+Follow-up stress also tombstones all ten parent tags while 2,199 children
+remain live, forces capacity compaction, then recreates the parents and runs a
+second compaction. It still passes. The D92 snapshot cannot be v3 at the
+reported 98,273 bytes because v3 validation limits `bytes_used` to 77,824;
+that failure was reached in v4 state, so v3 migration alone is not a likely
+explanation.
+
 The separate D92 run hit `FS_COMPACT_REJECT status=131
 reason=tag_reconstruction` repeatedly with 2,468 live overlay entries and
 98,273/98,304 bytes. Persistent writes then returned `F205` /

@@ -2357,10 +2357,15 @@ int main() {
   for (uint32_t cycle = 0; cycle < parent_encoded_cycles &&
                            parent_encoded_ok;
        ++cycle) {
-    for (uint32_t index = 0; index < parent_encoded_cycle_size &&
-                             parent_encoded_ok;
+    const uint32_t delete_count = parent_encoded_cycle_size +
+                                  (cycle == 0 ? 1u : 0u);
+    for (uint32_t index = 0; index < delete_count && parent_encoded_ok;
          ++index) {
-      const uint32_t id = cycle * parent_encoded_cycle_size + index;
+      if (live_parent_encoded_ids.empty()) {
+        parent_encoded_ok = false;
+        break;
+      }
+      const uint32_t id = live_parent_encoded_ids.front();
       const ParentEncodedChildTag child = make_parent_encoded_child(id);
       parent_encoded_ok = fs_erase(child.data(), child.size()) ==
                           FS_STATUS_OK;
@@ -2369,6 +2374,36 @@ int main() {
             std::remove(live_parent_encoded_ids.begin(),
                         live_parent_encoded_ids.end(), id),
             live_parent_encoded_ids.end());
+      }
+    }
+    if (parent_encoded_ok && cycle == 0) {
+      // Leave the parent records tombstoned while their legacy children are
+      // live. A capacity-triggered compaction must retain those ancestors.
+      for (uint8_t parent_id = 0; parent_id < 10 && parent_encoded_ok;
+           ++parent_id) {
+        const ParentEncodedTag parent =
+            make_parent_encoded_parent(parent_id);
+        parent_encoded_ok = fs_erase(parent.data(), parent.size()) ==
+                            FS_STATUS_OK;
+      }
+      constexpr uint8_t tombstoned_parent_probe_tag[] = {0xf1, 0x42, 0x01};
+      const auto tombstoned_parent_probe_value =
+          make_parent_encoded_value(0xfeedu);
+      parent_encoded_ok = parent_encoded_ok &&
+          fs_write(tombstoned_parent_probe_tag,
+                   sizeof(tombstoned_parent_probe_tag),
+                   tombstoned_parent_probe_value.data(),
+                   tombstoned_parent_probe_value.size()) == FS_STATUS_OK;
+      for (uint8_t parent_id = 0; parent_id < 10 && parent_encoded_ok;
+           ++parent_id) {
+        const ParentEncodedTag parent =
+            make_parent_encoded_parent(parent_id);
+        parent_encoded_ok = fs_write(parent.data(), parent.size(), nullptr, 0) ==
+                            FS_STATUS_OK;
+      }
+      if (parent_encoded_ok && !verify_parent_encoded_records()) {
+        std::printf("TEST:INFO parent_encoded stage=tombstoned_parent_compaction\n");
+        parent_encoded_ok = false;
       }
     }
     for (uint32_t index = 0; index < parent_encoded_cycle_size &&

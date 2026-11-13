@@ -37,8 +37,11 @@ reason. `./tools/test-ccid-progress-flow` passes 30/30;
 `./tools/test-rp2350-fs-overlay` passes (`TEST:SUMMARY fail=0`), including
 parent-encoded full-index compaction. A new near-capacity test with 2,400
 legacy parent-encoded records (29-byte tags, 37-byte values), two compaction
-rounds, and snapshot restore also passes. ARM and RISC-V wrapper builds pass
-with object deletion and CCID debug enabled. Latest ARM image hash is
+rounds, and snapshot restore also passes. It also erases all ten parent tags
+while children remain live, triggers compaction, and successfully verifies the
+retained parent references. Since v3 snapshots cap `bytes_used` at 77,824,
+D92's observed 98,273 bytes had to be in a v4 runtime snapshot/state. ARM and
+RISC-V wrapper builds pass with object deletion and CCID debug enabled. Latest ARM image hash is
 `898e968b8f2b03cfb6533b8c19d093451f1d957d49114daa96bda6b75b4ac7a0`. It has
 not been flashed because neither board entered BOOTSEL.
 
