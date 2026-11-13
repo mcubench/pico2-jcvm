@@ -28993,3 +28993,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep BOOTSEL-01 open for physical acceptance, but continue with the next available offline task in TODO priority order. External Windows validation should use the no-debug `9e7223ed` UF2/package only.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: Unit-test outputs are recorded above; no additional log files.
+
+## 2026-11-13 Reject stale parent-slot tag reconstruction 8 minutes
+
+- Step/experiment: `RESOURCE-01-PARENT-SLOT-HASH-GUARD-20261113`
+- When: '2026-11-13 11:30 UTC' - '2026-11-13 11:38 UTC'
+- Model: `GPT-6 Codex`
+- Change: `reconstruct_overlay_tag()` now verifies every reconstructed canonical tag against the overlay entry's stored hash. A stale parent slot that points to a different valid parent is rejected with `hash_mismatch` before compaction can move records. Added a fake-flash corruption hook and regression that confirms rejection and successful read after restoring the proper pointer.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including prior compaction, restart, and 1,000-cut power-loss checks. `./tools/build arm --profile max_crypto` passed with `FLASH_LAYOUT:PASS`; `./tools/build riscv --profile max_crypto` passed. Scoped `git diff --check` passed. No USB or physical hardware was accessed.
+- Result: Structurally valid but stale parent-slot references can no longer silently reconstruct to a different tag and be compacted. This is fail-closed data integrity; it does not prove the cause of the old 2,468-record physical rejection. ARM image ends at `0x100f4960`, leaving 46,752 bytes.
+- Decision: Keep RESOURCE-01 open and use `FS_TAG_RECON_FAIL reason=hash_mismatch` to distinguish this newly guarded case in a future physical trace. Continue offline with the next uncovered resource gap.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: RP2350 fake-flash test output; ARM/RISC-V wrapper output.

@@ -819,6 +819,13 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
       overlay_offset(file) >= overlay_bytes_used) {
     return fail("file_metadata");
   }
+  const auto finish = [&]() {
+    if (hash_tag(tag, file.tag_length) != file.hash) {
+      return fail("hash_mismatch");
+    }
+    *tag_length = file.tag_length;
+    return true;
+  };
 
   const uint32_t offset = overlay_offset(file);
   if (offset >= overlay_bytes_used ||
@@ -849,8 +856,7 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
     }
     tag[parent_length] = stored[2];
     tag[parent_length + 1] = stored[2];
-    *tag_length = file.tag_length;
-    return true;
+    return finish();
   }
 
   if (overlay_compresses_tag(file)) {
@@ -872,8 +878,7 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
     }
     std::memcpy(tag, stored, file.tag_length);
   }
-  *tag_length = file.tag_length;
-  return true;
+  return finish();
 }
 
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
@@ -1039,6 +1044,39 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
   }
   overlay_bytes[overlay_offset(*file)] = header;
   return FS_STATUS_OK;
+}
+extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
+    const uint8_t *tag, uint8_t tag_length,
+    const uint8_t *parent_tag, uint8_t parent_tag_length) {
+  if (tag == nullptr || parent_tag == nullptr || tag_length < 2 ||
+      parent_tag_length + 2 != tag_length) {
+    return FS_STATUS_INVALID_TAG_LENGTH;
+  }
+  OverlayFile *parent = find_overlay(parent_tag, parent_tag_length);
+  if (parent == nullptr || !overlay_has_record(*parent)) {
+    return FS_STATUS_NO_SUCH_TAG;
+  }
+  const uint16_t tag_hash = hash_tag(tag, tag_length);
+  size_t slot = tag_hash % kMaxOverlayFiles;
+  for (size_t probes = 0; probes < kMaxOverlayFiles; ++probes) {
+    OverlayFile &file = overlay[slot];
+    if (!overlay_is_used(file)) break;
+    if (file.hash == tag_hash && file.tag_length == tag_length &&
+        overlay_has_storage(file) &&
+        (file.flags & kOverlayParentTag) != 0) {
+      const uint32_t offset = overlay_offset(file);
+      if (offset >= overlay_bytes_used || overlay_bytes_used - offset < 4 ||
+          (overlay_bytes[offset] & 0x80) == 0) {
+        return FS_STATUS_IO_UNKNOWN;
+      }
+      overlay_bytes[offset + 1] = static_cast<uint8_t>(parent - overlay);
+      overlay_bytes[offset + 2] =
+          static_cast<uint8_t>((parent - overlay) >> 8);
+      return FS_STATUS_OK;
+    }
+    slot = (slot + 1) % kMaxOverlayFiles;
+  }
+  return FS_STATUS_NO_SUCH_TAG;
 }
 extern "C" uint8_t rp2350_fs_test_compact(void) {
   return compact_deleted_overlay_records();

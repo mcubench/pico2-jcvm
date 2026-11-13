@@ -1,4 +1,26 @@
-# Current handoff — BOOTSEL offline recheck; hardware acceptance pending — 2026-11-13 11:30 UTC
+# Current handoff — RESOURCE-01 parent-slot integrity guard — 2026-11-13 11:38 UTC
+
+Added a fail-closed invariant to RP2350 filesystem tag reconstruction:
+reconstructed canonical tags must hash to the value stored in the overlay
+index. A stale parent-slot pointer to another valid same-length parent is now
+detected as `hash_mismatch` before compaction mutates data. Added a fake-flash
+regression that reproduces that malformed state, verifies compaction rejects
+it, restores the pointer, and reads the original value successfully.
+
+Validation passed: `./tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`),
+`./tools/build arm --profile max_crypto`, and
+`./tools/build riscv --profile max_crypto`. ARM image ends at `0x100f4960`,
+46,752 bytes below the configured flash limit. No physical test was run; this
+does not establish the cause of the historical 2,468-record failure or
+complete RESOURCE-01 acceptance. Commit is pending for this step.
+
+Continue RESOURCE-01 offline per TODO. Preserve unrelated changes. For the
+external Windows run, use only no-debug UF2
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`
+(SHA-256 `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`)
+and ZIP `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip`.
+
+# Previous handoff — BOOTSEL offline recheck; hardware acceptance pending — 2026-11-13 11:30 UTC
 
 The external Windows test must use the no-debug image
 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`

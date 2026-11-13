@@ -31,6 +31,9 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
     const uint8_t *tag, uint8_t tag_length, uint8_t header);
+extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
+    const uint8_t *tag, uint8_t tag_length, const uint8_t *parent_tag,
+    uint8_t parent_tag_length);
 extern "C" uint8_t rp2350_fs_test_compact(void);
 extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count);
 extern "C" void rp2350_fs_test_fail_next_sync(void);
@@ -2498,6 +2501,47 @@ int main() {
                  FS_STATUS_OK &&
              rp2350_fs_test_compact() == FS_STATUS_IO_UNKNOWN,
          "filesystem_compaction_rejects_out_of_bounds_serialized_key");
+
+  // Parent-slot records depend on a live table index. If that index is stale
+  // but still points at another valid same-length parent, structural bounds
+  // alone cannot detect that reconstruction silently changed the canonical
+  // child tag. The stored hash must make compaction fail closed before any
+  // records or payload bytes move.
+  fake_flash.fill(0xff);
+  constexpr std::array<uint8_t, 5> hashed_parent_a = {
+      0x03, 0x91, 0x02, 0x44, 0x44};
+  constexpr std::array<uint8_t, 5> hashed_parent_b = {
+      0x03, 0x91, 0x02, 0x55, 0x55};
+  constexpr std::array<uint8_t, 7> hashed_child = {
+      0x03, 0x91, 0x02, 0x44, 0x44, 0xaa, 0xaa};
+  constexpr std::array<uint8_t, 4> hashed_child_value = {0x71, 0x72, 0x73,
+                                                         0x74};
+  bool stale_parent_rejected =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(hashed_parent_a.data(), hashed_parent_a.size(), nullptr, 0) ==
+          FS_STATUS_OK &&
+      fs_write(hashed_parent_b.data(), hashed_parent_b.size(), nullptr, 0) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_child_value.data(),
+          hashed_child_value.size()) == FS_STATUS_OK &&
+      rp2350_fs_test_repoint_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_parent_b.data(),
+          hashed_parent_b.size()) == FS_STATUS_OK &&
+      rp2350_fs_test_compact() == FS_STATUS_IO_UNKNOWN &&
+      rp2350_fs_test_overlay_file_count() == 3;
+  stale_parent_rejected = stale_parent_rejected &&
+      rp2350_fs_test_repoint_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_parent_a.data(),
+          hashed_parent_a.size()) == FS_STATUS_OK;
+  std::array<uint8_t, hashed_child_value.size()> hashed_child_actual{};
+  stale_parent_rejected = stale_parent_rejected &&
+      fs_read(hashed_child.data(), hashed_child.size(),
+              hashed_child_actual.data(), hashed_child_actual.size()) ==
+          FS_STATUS_OK &&
+      hashed_child_actual == hashed_child_value;
+  expect(stale_parent_rejected,
+         "filesystem_compaction_rejects_stale_valid_parent_slot_by_hash");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the

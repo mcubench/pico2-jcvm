@@ -570,6 +570,21 @@ CCID interface 2, and SDK vendor reset interface 3, with the MS OS 2.0 function
 subset also pointing to interface 3. These are offline checks only and do not
 close the physical reset/re-enumeration acceptance gap.
 
+## Overlay parent-slot reconstruction integrity
+
+Parent-encoded filesystem records store a hash and tag length in the overlay
+index, plus a parent table slot in the serialized record. Bounds checks alone
+cannot detect a stale slot that still points to a different valid parent of
+the same length. `reconstruct_overlay_tag()` now hashes the reconstructed
+canonical tag and compares it with `OverlayFile::hash`; mismatch rejects the
+read/compaction path before compaction mutates the overlay. The RP2350 overlay
+suite covers a valid-but-wrong parent slot and confirms compaction returns
+`FS_STATUS_IO_UNKNOWN` without losing the child's value after restoring the
+correct slot. This is fail-closed hardening, not a recovery mechanism and not
+evidence that the old 2,468-record physical failure had this cause. When
+debugging a repeat, capture `FS_TAG_RECON_FAIL reason=hash_mismatch` to
+distinguish stale index/reference state from the existing bounds failures.
+
 ## JCAlgTest option 2 PC/SC failures on 8E and D92 — 2026-11-12
 
 **Symptom:** The unchanged JCAlgTest 1.8.4 `ALG_PERFORMANCE_STATIC` run on 8E
