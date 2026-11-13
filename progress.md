@@ -28777,3 +28777,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: After the helper/PCSC path is restored, flash this image to an identified board and run the upstream 1.8.4/jc305 option-2 client with complete serial capture.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` hash above; `artifacts/logs/cycle-choupi-20261112T222517Z.log` is the earlier pre-fix cycle and must not be used as fix validation.
+
+## 2026-11-13 Add recovery for stale CCID time extension 18 minutes
+
+- Step/experiment: `RESOURCE-01-CCID-STALE-EXTENSION-20261113`
+- When: '2026-11-13 07:23 UTC' - '2026-11-13 07:41 UTC'
+- Model: `GPT-6 Codex`
+- Change: A physical D92 option-2 test reached xfr=2037 and stalled with a final response pending, IN idle, and no submit error after a slow persistent sync. Added a 100 ms fallback that clears a stale CCID time-extension state only when a final response is pending and the endpoint is idle. Added unit boundary/guard cases. Updated QKB/HANDOFF and removed the fulfilled PC/SC recovery request.
+- Validation: `./tools/test-ccid-progress-flow` passed (`TEST:SUMMARY pass=30 fail=0`). ARM and RISC-V `max_crypto` builds passed with `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1`. Identity-pinned cycles on D92 and 2BED passed flash verification and finite serial checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). PC/SC enumerated both exact readers. A new D92 option-2 run with the supplied 1.8.5 client and unchanged 1.8.4/jc305 CAP is in progress at xfr=496; the recovery trigger at xfr~2037 has not yet been reached.
+- Result: The prior trace strongly localizes the withheld response to stale `native_extension_in_flight` state (`pending=1`, `in_busy=0`, `submit_errors=0`), but the reason its completion callback was missing is unresolved. The fix is deployed but not yet proven by observing `CCID_EXTENSION_RECOVER` and subsequent APDUs. No full option-2 or RSA-3072 acceptance.
+- Decision: Continue the active D92 campaign without refreshing/restarting PC/SC; confirm the recovery event and following APDUs. Keep broader RESOURCE-01 acceptance open.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.5-compaction-fix-20261113/2BED26ED20556535/`; `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`; ARM image SHA-256 `f0ad042bad09854d5d0fdc3510fe8b4c377c7ec44018b05db43728b23f4f56c2`.

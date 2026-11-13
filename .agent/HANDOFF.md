@@ -1,4 +1,49 @@
-# Current handoff — persistent overlay compaction data-loss bug reproduced and fixed offline — 2026-11-12 22:50 UTC
+# Current handoff — CCID stale-extension recovery implemented; physical option-2 validation running — 2026-11-13 07:42 UTC
+
+The offline overlay rehash fix is now flashed on D92 (`D92E743D5F640C0F`) and
+2BED (`2BED26ED20556535`). Both boards completed identity-pinned
+`tools/cycle choupi --profile max_crypto --chipid ...`; ARM and RISC-V wrapper
+builds passed, and both finite serial captures reported
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The approved reader
+helper and `pcsc_scan -r` now list both exact physical reader names.
+
+A pre-recovery option-2 campaign on 2BED reached xfr=2037, then stalled on
+`B0E2000000` after object deletion had erased eight applet records and left a
+deferred package deletion. `fs_sync()` completed in 1,379,916 us and the VM
+returned `9000`. `response_submit_return pending=1 zlp=0 in_busy=0
+submit_errors=0` implies the response was held behind a stale
+`native_extension_in_flight` state: the IN endpoint was idle, and response
+submission had not failed. The client watchdog terminated after 60 seconds.
+No `F205`, persistent-write failure, or VM fault appeared before this CCID
+stall. Logs: `artifacts/results/jcalgtest-1.8.5-compaction-fix-20261113/2BED26ED20556535/`.
+
+Added a 100 ms stale time-extension recovery: if a final response is pending,
+the IN endpoint is idle, and the extension completion callback has not arrived,
+clear the stale extension flag and submit the final response. The recovery is
+covered by four boundary/guard unit checks. `./tools/test-ccid-progress-flow`
+passes (`TEST:SUMMARY pass=30 fail=0`); both architecture builds pass with
+object deletion and CCID diagnostics enabled. The current ARM image SHA-256 is
+`f0ad042bad09854d5d0fdc3510fe8b4c377c7ec44018b05db43728b23f4f56c2`.
+
+Current physical campaign: supplied JCAlgTest 1.8.5 client hash
+`b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`, unchanged
+1.8.4/jc305 CAP hash `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`,
+exact D92 reader, object deletion enabled, 60 s APDU watchdog. At the current
+checkpoint it has reached xfr=496 without the prior failure or a
+`CCID_EXTENSION_RECOVER` event; the failure point near xfr=2037 has not yet
+been reached. Separate client/serial logs and exact input/image hashes are in
+`artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`.
+Do not claim the workaround fixed the long run until a recovery event is
+observed and subsequent APDUs complete; continue monitoring this campaign.
+
+The old PC/SC restart request is fulfilled and has been removed from
+`.agent/EXT_REQUESTS.md`. PC/SC is volatile; refresh the authorized helper only
+after an active client exits, and never during an active SmartcardIO campaign.
+The overlay compaction unit regression still passes and the fixed build has
+passed physical option-2 traffic through xfr=2036 without persistent-storage
+errors, but broader RESOURCE-01 and Windows RSA-3072 validation remain open.
+
+# Historical handoff — persistent overlay compaction data-loss bug reproduced and fixed offline — 2026-11-12 22:50 UTC
 
 The 96 KiB filesystem compactor had an in-place open-addressing rehash bug.
 Its mapping is an injective collection of paths and cycles, but the old loop

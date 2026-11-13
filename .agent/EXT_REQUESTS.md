@@ -194,33 +194,6 @@ board `2BED26ED20556535` remains at USB `2e8a:0009` without its serial
 descriptor and did not enter BOOTSEL after a path-specific CDC reset. It is
 not safe to flash it until the ROM chip ID is visible again.
 
-## PCSC-RESTART-AFTER-WATCHDOG-20261112 — Restore physical reader publication
-
-Updated 2026-11-12 22:23 UTC. The approved helper grants access to three Pico
-USB nodes. After a JCAlgTest APDU watchdog stopped the Java process, `pcsc_scan
--r` showed only Virtual PCD readers or timed out before listing readers. The
-physical boards remain present as USB devices. D92 (`D92E743D5F640C0F`) and
-2BED (`2BED26ED20556535`) were identity-pinned through the full CHOUPI cycle;
-both builds, flash verification and finite runtime checks passed, but the
-physical readers are still not published. An unprivileged
-`systemctl --no-ask-password restart pcscd.service` was denied. No sudo service
-restart was attempted.
-
-There is no active SmartcardIO campaign. Please run in the guest:
-
-```sh
-sudo systemctl restart pcscd.service
-sudo -n /usr/local/sbin/pico2-pcsc-reader
-timeout --signal=TERM --kill-after=1s 10s pcsc_scan -r
-```
-
-Return the complete output, especially the exact chip IDs and reader names.
-Continue with any published physical reader; no BOOTSEL reattachment is needed.
-The latest agent attempt to refresh the helper using the required elevated
-host-access path was blocked with `sudo: The "no new privileges" flag is set`.
-If the first command works but the helper command fails, return both outputs;
-do not reattach BOOTSEL devices for this issue.
-
 ## EXT-USB-VM-REATTACH-20261111-1824 — Current VM USB passthrough status
 
 The user confirms that the physical boards are available and the earlier

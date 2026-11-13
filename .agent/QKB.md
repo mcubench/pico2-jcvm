@@ -435,6 +435,46 @@ Evidence: `progress.md`, entry `RESOURCE-01-D92-PCSC-LOSS-AFTER-RESET-20261112`;
 `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option1-alias-guard-aa44cb12/client.log`,
 `serial.log`, and `results/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(D92E743D5F640C0F)_00_00_ALGSUPPORT__3b_80_01_81.csv`.
 
+## CCID final response blocked by stale time-extension state — recovery deployed; long-run validation pending
+
+On physical 2BED (`2BED26ED20556535`), the pre-recovery JCAlgTest option-2
+campaign reached xfr=2037 and stalled on reset APDU `B0E2000000`. Object
+deletion completed and erased eight applet records; persistent `fs_sync()`
+returned status 0 after 1,379,916 us, and the VM response was `9000`. The
+CCID trace then reported `response_submit_return pending=1 zlp=0 in_busy=0
+submit_errors=0`; stage remained 6 and the client watchdog timed out after 60
+seconds. There was no `F205`, persistent-write failure, or `FAULT` before the
+stall.
+
+Given `retry_pending_ccid_transfer()`'s gates, this state indicates the final
+response was withheld because `native_extension_in_flight` remained set even
+though the IN endpoint was idle. A time-extension completion callback had not
+cleared that state. This explains why the final response was never submitted;
+it does not establish why TinyUSB omitted/delayed the callback.
+
+Recovery now records when a time-extension IN transfer is accepted. When a
+final response is pending and the endpoint is idle for at least 100 ms, the
+driver clears stale extension state and submits the response. An active native
+operation is not affected because this recovery requires a pending final
+response. `./tools/test-ccid-progress-flow` passes 30/30 and ARM/RISC-V builds
+pass with object deletion plus CCID diagnostics enabled. This image is flashed
+on D92 and 2BED, both of which passed finite startup checks.
+
+The new option-2 run on D92 uses the supplied 1.8.5 client with the unchanged
+1.8.4/jc305 CAP. At the captured checkpoint it had reached xfr=496 with normal
+responses; it has not reached the old failure point or logged
+`CCID_EXTENSION_RECOVER`. Do not mark this recovery proven until the event is
+observed and later APDUs complete. Preserve the logs and keep broader RESOURCE-01
+acceptance open. Artifacts:
+`artifacts/results/jcalgtest-1.8.5-compaction-fix-20261113/2BED26ED20556535/`
+and
+`artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`.
+
+The previously requested PC/SC restart has been completed by the user and the
+physical readers are presently enumerated. Refresh the approved helper only
+between campaigns; running it during a SmartcardIO session can restart PC/SC
+and tear down that active connection.
+
 ## Maintenance
 
 Add or update the matching diagnosis instead of prepending repeated availability checks.

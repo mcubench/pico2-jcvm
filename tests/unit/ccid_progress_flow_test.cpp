@@ -200,6 +200,20 @@ int main() {
       });
   check(retried_submit && !pending_response && final_submit_attempts == 2,
         "final response submits after late extension completion");
+  check(!choupi::stale_ccid_extension_completion(true, true, true, 1000,
+                                                 200000),
+        "busy extension endpoint is not treated as stale");
+  check(!choupi::stale_ccid_extension_completion(false, true, false, 1000,
+                                                 200000),
+        "stale extension does not clear without a pending final response");
+  check(!choupi::stale_ccid_extension_completion(
+            true, true, false, 1000,
+            1000 + choupi::kStaleCcidExtensionCompletionUs - 1),
+        "stale extension grace interval is respected");
+  check(choupi::stale_ccid_extension_completion(
+            true, true, false, 1000,
+            1000 + choupi::kStaleCcidExtensionCompletionUs),
+        "idle stale extension cannot block the final response");
   bool failed_extension = true;
   bool response_after_extension = true;
   bool recovery_out_armed = false;

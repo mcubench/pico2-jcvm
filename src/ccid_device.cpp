@@ -126,6 +126,7 @@ volatile uint8_t debug_recent_command_index = 0;
 volatile uint16_t debug_command_count = 0;
 bool native_operation_active = false;
 bool native_extension_in_flight = false;
+uint32_t native_extension_submitted_at_us = 0;
 bool ccid_task_active = false;
 bool ccid_progress_active = false;
 uint8_t native_operation_rhport = 0;
@@ -355,6 +356,21 @@ void service_pending_final_response() {
   const uint32_t now = time_us_32();
   if (static_cast<int32_t>(now - pending_response_retry_after_us) < 0) return;
   pending_response_retry_after_us = now + kPendingResponseRetryIntervalUs;
+  if (choupi::stale_ccid_extension_completion(
+          pending_final_response, native_extension_in_flight,
+          usbd_edpt_busy(pending_final_response_rhport, ep_in),
+          native_extension_submitted_at_us, now)) {
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    std::printf("CHOUPI:CCID_EXTENSION_RECOVER age_us=%lu\r\n",
+                static_cast<unsigned long>(now -
+                                          native_extension_submitted_at_us));
+    std::fflush(stdout);
+#endif
+    // The endpoint is idle, but its completion callback was lost. Once the
+    // applet has returned, the stale time-extension state must not block the
+    // final response indefinitely.
+    native_extension_in_flight = false;
+  }
   bool submit_attempted = false;
   const bool submitted = choupi::retry_pending_ccid_transfer(
       pending_final_response, native_extension_in_flight,
@@ -1102,6 +1118,7 @@ void driver_init() {
   pending_out_rearm_after_us = 0;
   native_operation_active = false;
   native_extension_in_flight = false;
+  native_extension_submitted_at_us = 0;
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
@@ -1113,6 +1130,7 @@ void driver_init() {
 bool driver_deinit() {
   native_operation_active = false;
   native_extension_in_flight = false;
+  native_extension_submitted_at_us = 0;
   tx_zlp_pending = false;
   pending_final_response = false;
   pending_final_response_length = 0;
@@ -1141,6 +1159,7 @@ void driver_reset(uint8_t) {
   pending_out_rearm_after_us = 0;
   native_operation_active = false;
   native_extension_in_flight = false;
+  native_extension_submitted_at_us = 0;
   slot_state = 1;
   get_status_first_seen = false;
   ep_out = 0;
@@ -1213,6 +1232,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     }
     if (choupi::recover_ccid_extension_transfer_error(
             endpoint == ep_in, native_extension_in_flight)) {
+      native_extension_submitted_at_us = 0;
       return true;
     }
     // Drop a partial command or a response that could not be delivered. The
@@ -1227,12 +1247,14 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     pending_final_response_length = 0;
     pending_response_submit_failures = 0;
     native_extension_in_flight = false;
+    native_extension_submitted_at_us = 0;
     queue_out(rhport);
     return true;
   }
   if (endpoint == ep_in) {
     if (native_extension_in_flight) {
       native_extension_in_flight = false;
+      native_extension_submitted_at_us = 0;
       ++native_progress_stats.extensions_completed;
       debug_stage = 7;
       // Keep Bulk-OUT unarmed until the original XfrBlock gets its final
@@ -1353,6 +1375,7 @@ struct CcidProgressHooks {
                        sizeof(native_extension_response))) {
       ++native_progress_stats.extensions_submitted;
       debug_stage = 6;
+      native_extension_submitted_at_us = time_us_32();
       return true;
     }
     ++debug_in_submit_errors;

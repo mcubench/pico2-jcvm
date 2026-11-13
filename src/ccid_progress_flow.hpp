@@ -7,6 +7,17 @@
 namespace choupi {
 
 inline constexpr uint8_t kMaxPendingCcidSubmitFailures = 32;
+inline constexpr uint32_t kStaleCcidExtensionCompletionUs = 100000U;
+
+inline bool stale_ccid_extension_completion(const bool final_response_pending,
+                                           const bool extension_in_flight,
+                                           const bool endpoint_busy,
+                                           const uint32_t submitted_at_us,
+                                           const uint32_t now_us) {
+  return final_response_pending && extension_in_flight && !endpoint_busy &&
+         static_cast<uint32_t>(now_us - submitted_at_us) >=
+             kStaleCcidExtensionCompletionUs;
+}
 
 inline bool record_pending_ccid_submit_failure(uint8_t &failure_count) {
   if (failure_count < kMaxPendingCcidSubmitFailures) ++failure_count;
