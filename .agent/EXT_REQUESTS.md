@@ -1,5 +1,33 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-BEF9E1F7 — Fresh Windows test package
+
+Created 2026-11-13 09:08 UTC. This package supersedes the earlier Windows
+object-deletion packages in this file; use only this image for the next
+root-scan/reclamation diagnostic run.
+
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-bef9e1f7.zip)
+- [Standalone empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-bef9e1f7.uf2)
+- Package SHA-256: `5e9f008cddbcead42ec4898fb7427a188f8a19f6312d4c58ee043a91d2b52d29`
+- UF2 SHA-256: `d8288305ee99cb80a94a4bc353c95b27f043c9399c7c0303c3f7c73ac144983a`
+- Source commit: `bef9e1f72bb761e6b474f38c3de597d420ff005f`; source worktree was
+  dirty, with its tracked-root diff hash disclosed in package provenance.
+- Profile `max_crypto`; object deletion, CCID diagnostics, and heap-GC root
+  tracing enabled; firmware end `0x100f5e5c`, 41,380 bytes remain.
+- Package includes the unchanged 1.8.4/jc305 CAP, supplied 1.8.5 client,
+  GPPro, serial capture script, hash manifest, and exact flashing/test steps.
+
+Verify the supplied package hashes, copy the UF2 to the Pico 2 in BOOTSEL,
+confirm `Pico2 JCVM CCID` enumerates, and explicitly install the CAP using the
+included GPPro command. Run option `2 -> PERFORMANCE TEST` on one identified
+device and option `1 -> All algorithms` on a different token if available.
+Capture full client outputs and serial telemetry. Return Windows version,
+reader/ATR, chip ID, firmware hash, full result folders, and all
+`OBJECT_DELETION:`, `APPLET_ROOT_SCAN_FAIL`, `FS_TAG_RECON_FAIL`, `F205`,
+`6F00`, PC/SC, reset, timeout, or USB enumeration errors. This is a debug
+diagnostic image, not a production release. No local physical flash/test was
+performed while preparing this package.
+
 ## PCSC-BOOTSEL-RECOVERY-20261113 — Restore physical reader and BOOTSEL access
 
 Created 2026-11-13 08:19 UTC. The local option-2 clients have exited. After

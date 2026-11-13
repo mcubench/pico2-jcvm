@@ -1,3 +1,27 @@
+# Current handoff — package fresh Windows root-diagnostic firmware — 2026-11-13 09:20 UTC
+
+Prepared a fresh empty-card ARM `max_crypto` external-test image from source
+HEAD `bef9e1f72bb761e6b474f38c3de597d420ff005f`. Object deletion, CCID
+diagnostics, and heap-GC root-scan tracing are enabled. Image:
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-bef9e1f7.uf2`
+(SHA-256 `d8288305ee99cb80a94a4bc353c95b27f043c9399c7c0303c3f7c73ac144983a`,
+4,112,384 bytes). The complete Windows bundle is
+`build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-bef9e1f7.zip`
+(SHA-256 `5e9f008cddbcead42ec4898fb7427a188f8a19f6312d4c58ee043a91d2b52d29`).
+It contains the unchanged 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro,
+serial capture helper, hash manifest, and flashing instructions. See
+`.agent/EXT_REQUESTS.md` under `WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-BEF9E1F7`.
+
+Both repository build wrappers passed with object deletion and diagnostics
+enabled. ARM firmware ends at `0x100f5e5c`, leaving 41,380 bytes. Fixture hash
+verification passed for 81 files. The empty-card UF2 was generated and the
+package ZIP layout, internal SHA256SUMS, and archive integrity were checked.
+No physical flash or test was performed while preparing this package. This is
+a debug diagnostic build, not a production release. Next: user flashes the
+package on Windows, explicitly installs the unchanged CAP, then returns exact
+reader/ATR, chip ID, client results, and serial traces as described in the
+external request.
+
 # Current handoff — trace incomplete applet roots during object deletion — 2026-11-13 09:07 UTC
 
 Investigating the D92 option-2 persistence failure uncovered a second signal in

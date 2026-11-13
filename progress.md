@@ -28908,3 +28908,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the committed evidence archive for subsequent analysis.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261112-with-reset/`.
+
+## 2026-11-13 Package fresh Windows root-diagnostic firmware 13 minutes
+
+- Step/experiment: `WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-BEF9E1F7`
+- When: '2026-11-13 09:08 UTC' - '2026-11-13 09:21 UTC'
+- Model: `GPT-6 Codex`
+- Change: Built a fresh empty-card ARM `max_crypto` image with object deletion, CCID diagnostics, and heap-GC root tracing enabled. Packaged the image with unchanged upstream JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro, Windows serial capture helper, provenance, checksums, and exact flashing/test steps. Added the package to `.agent/EXT_REQUESTS.md` and updated the current handoff.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1 PICO2_DEBUG_HEAP_GC=1 ./tools/build arm --profile max_crypto` passed; matching RISC-V wrapper passed (core/smoke only, not full CHOUPI firmware). `./tools/fixture-path --verify` passed (`files=81`); generated empty-card UF2; ZIP integrity and all 7 internal SHA-256 entries passed. ARM image end `0x100f5e5c`, 41,380 bytes remain. `git diff --check` passed. No physical board flash or test was run.
+- Result: Empty-card UF2 is 4,112,384 bytes, SHA-256 `d8288305ee99cb80a94a4bc353c95b27f043c9399c7c0303c3f7c73ac144983a`. Windows package ZIP SHA-256 `5e9f008cddbcead42ec4898fb7427a188f8a19f6312d4c58ee043a91d2b52d29`. Build used source HEAD `bef9e1f72bb761e6b474f38c3de597d420ff005f` and a dirty worktree; package provenance records the tracked root-diff hash. This image is diagnostic, not a production release.
+- Decision: Use only this fresh package for the next Windows object-deletion/root-scan diagnostic test. Its exact external instructions are in `.agent/EXT_REQUESTS.md` under `WIN-OBJECT-DELETION-ROOT-DIAGNOSTIC-BEF9E1F7`.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-bef9e1f7.uf2`; `build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-bef9e1f7.zip`; package contents under `build/external-test/object-deletion-root-diagnostic-bef9e1f7/`.
