@@ -28801,3 +28801,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Preserve failed persistent state and distinguish storage rejection/backlog from CCID delivery before further changes; user requested analysis only.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261112-with-reset/` including SHA256SUMS, README.md and ANALYSIS.md; original inbox retained.
+## 2026-11-13 CCID retry-state instrumentation 37 minutes
+
+- Step/experiment: `RESOURCE-01-CCID-RETRY-DIAGNOSTIC-20261113`
+- When: '2026-11-13 07:42 UTC' - '2026-11-13 08:19 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added debug-only once-per-second `CHOUPI:CCID_RESPONSE_WAIT` reporting of pending extension state, IN endpoint busy state, native operation activity, extension age, and submit retry count so the response retry blocker can be identified from a stalled physical run. Preserved independent logs for 2BED transport and D92 storage failures; added QKB/handoff records and a PC/SC/BOOTSEL external request.
+- Validation: `./tools/test-ccid-progress-flow` passed (`TEST:SUMMARY pass=30 fail=0`). `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1 ./tools/build arm --profile max_crypto` and the matching `riscv` build passed. `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` granted two USB nodes, but escalated `pcsc_scan -r` listed only Virtual PCD 00/01. Two identity-pinned `tools/cycle choupi` attempts completed builds but neither identified board entered BOOTSEL; no flash occurred.
+- Result: The recovery-build 2BED option-2 run timed out at xfr=1156 on `B043000016`; VM response was `9000`, `fs_sync()` took 1,023,217 us, and serial showed `pending=1`, `in_busy=0`, `submit_errors=0`, but no `CCID_EXTENSION_RECOVER`. D92 independently rejected tag reconstruction at 2,468 records/98,273 bytes and then returned `F205`; 292 compaction rejects were recorded before stopping that run. Neither campaign completed. The 100 ms response recovery remains unproven and did not prevent the second physical stall. Diagnostic ARM image SHA-256: `bac4fa26572efbdbc2f88deff331b9a5976c3cd3d2c6d4dade8ed3a3cae8c7ec`; it was not flashed.
+- Decision: Keep the two failure classes separate. Once physical PC/SC and BOOTSEL return, flash the diagnostic build to one identified board and observe `CCID_RESPONSE_WAIT` before changing retry behavior. Do not restart PC/SC during a client run.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`; `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/2BED26ED20556535/`; no new firmware flashed.

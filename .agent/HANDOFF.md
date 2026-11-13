@@ -1,3 +1,45 @@
+# Current handoff — response watchdog repro and diagnostics staged — 2026-11-13 08:19 UTC
+
+The stale CCID extension workaround has **not** passed physical validation.
+After the prior 2BED campaign exited, the approved helper granted access to two
+runtime USB devices (`2e8a:0009`), but `pcsc_scan -r` listed only Virtual PCD
+00/01. `picotool info -a` confirmed neither device was in BOOTSEL; its
+identity-pinned force reboot did not switch either previously identified
+board into BOOTSEL. The wrapper made three BOOTSEL requests for 2BED
+(`2BED26ED20556535`) and three for D92 (`D92E743D5F640C0F`), then exited
+without flashing. Do not claim the diagnostic image is on either board.
+
+The second recovery-build option-2 run on 2BED reached xfr=1156. At
+`B043000016`, `fs_sync()` took 1,023,217 us, the VM returned `9000`, and serial
+reported `response_submit_return pending=1 zlp=0 in_busy=0 submit_errors=0`.
+The stage remained 6, no `CCID_EXTENSION_RECOVER` appeared, and the client
+watchdog expired at 60 seconds. No `FAULT`, compaction rejection, or
+persistent-write failure occurred on 2BED. This is a second physical
+response-delivery failure; the 100 ms recovery code did not demonstrate
+recovery. Client and serial logs:
+`artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/2BED26ED20556535/`.
+
+D92's parallel option-2 run independently reached xfr≈638 then produced
+repeated `FS_COMPACT_REJECT status=131 reason=tag_reconstruction` at
+`files=2468`, `bytes=98273/98304`, followed by persistent-write `F205` /
+`SystemException_NO_RESOURCE`. I stopped it after repeated rejection. It had
+reached xfr=1270; 292 rejects were captured. Logs:
+`artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`.
+This storage failure is distinct from 2BED's transport stall.
+
+Added a debug-only, once-per-second `CHOUPI:CCID_RESPONSE_WAIT` trace of
+extension in-flight state, endpoint busy state, native operation state, age,
+and submit failures. `./tools/test-ccid-progress-flow` passes 30/30; ARM and
+RISC-V wrapper builds pass with object deletion and CCID debug enabled. ARM
+image hash is `bac4fa26572efbdbc2f88deff331b9a5976c3cd3d2c6d4dade8ed3a3cae8c7ec`.
+This diagnostic build was not flashed because neither board entered BOOTSEL.
+
+Next: request PC/SC recovery and BOOTSEL access via `.agent/EXT_REQUESTS.md`.
+Then flash the diagnostic image to an available identified board, inspect the
+new wait-state fields, and fix the exact retry blocker before another long
+campaign. Preserve the current failed-state logs; do not restart PC/SC while
+any SmartcardIO run is active.
+
 # Windows evidence analysis — 2026-11-13
 
 User requested analysis only; no firmware implementation, builds, flash or campaigns in this step. Supplied `inbox/maxcrypto_20261112withReset/` files are archived byte-identically with hashes at `artifacts/results/windows-maxcrypto-20261112-with-reset/`; see its README and ANALYSIS. Source inbox retained. Fulfilled external request WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2 removed; missing serial/hash/chip-ID evidence recorded in archive, not treated as a pass.

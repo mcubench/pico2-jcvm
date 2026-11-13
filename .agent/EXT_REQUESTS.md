@@ -1,5 +1,25 @@
 # External validation requests
 
+## PCSC-BOOTSEL-RECOVERY-20261113 — Restore physical reader and BOOTSEL access
+
+Created 2026-11-13 08:19 UTC. The local option-2 clients have exited. After
+the response watchdog failure, the approved Pico helper granted two USB nodes,
+but `pcsc_scan -r` listed only Virtual PCD 00/01. Both identified runtime
+devices (`2BED26ED20556535`, `D92E743D5F640C0F`) failed the wrapper's bounded
+force-reboot attempts and did not enter BOOTSEL; no firmware was flashed.
+
+Please restore PC/SC and put at least one identified Pico 2 into BOOTSEL, then
+run:
+
+```sh
+sudo systemctl restart pcscd.service
+timeout 10s pcsc_scan -r
+```
+
+Return the scan output and which chip ID is in BOOTSEL/visible to the VM. Once
+available, I will flash the built diagnostic image and continue without
+restarting PC/SC during the next SmartcardIO run.
+
 ## Windows validation: fresh max_crypto empty-card image
 
 Please validate the current RP2350 ARM `max_crypto` firmware on a Windows host.

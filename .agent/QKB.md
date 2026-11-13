@@ -702,3 +702,24 @@ acceptance. Artifacts:
 ## 2026-11-13 Windows reset campaign: distinguish transport from persistent resource failure
 
 Evidence: `artifacts/results/windows-maxcrypto-20261112-with-reset/ANALYSIS.md`. First AES measurement transport loss precedes memory errors. After RSA-1984 reconnect F205 precedes 6F00; replug does not clear lasting failure. F205 can mean failed overlay compaction, not only true capacity exhaustion. Reported 580f3f40 image predates independently reproduced rehash fix 92c91943 and CCID recovery 49a390d5. Existing viable fix for reproduced rehash mapping loss: path-head-first rehash (unit validation previously recorded); **not proven to resolve this Windows run**. Eight-record/APDU backlog is still a hypothesis without deletion telemetry. No implementation in this step.
+
+## 2026-11-13: CCID response retry remains unresolved; D92 compaction rejects tag reconstruction
+
+On physical 2BED (`2BED26ED20556535`), the recovery-build option-2 campaign
+stalled at xfr=1156 on `B043000016`: the VM returned `9000`,
+`fs_sync()` took 1,023,217 us, and the CCID response remained pending with the
+IN endpoint reported idle and no submit errors. The client watchdog expired
+after 60 seconds; no `CCID_EXTENSION_RECOVER` was logged. Thus the deployed
+100 ms stale-extension recovery is not validated and failed to complete this
+second observed pending response. A new debug-only `CCID_RESPONSE_WAIT`
+trace reports extension flag, endpoint busy state, native operation activity,
+age, and retry failures; it has not yet been flashed or observed.
+
+The separate D92 run hit `FS_COMPACT_REJECT status=131
+reason=tag_reconstruction` repeatedly with 2,468 live overlay entries and
+98,273/98,304 bytes. Persistent writes then returned `F205` /
+`SystemException_NO_RESOURCE`. This is distinct from the 2BED response stall.
+No failed slot or parent-chain detail is currently logged, so root cause is
+unresolved. Preserve both physical logs. Do not conflate `F205` with the
+transport failure or claim option-2 acceptance. Logs are under
+`artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/`.

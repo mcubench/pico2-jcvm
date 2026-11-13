@@ -356,10 +356,11 @@ void service_pending_final_response() {
   const uint32_t now = time_us_32();
   if (static_cast<int32_t>(now - pending_response_retry_after_us) < 0) return;
   pending_response_retry_after_us = now + kPendingResponseRetryIntervalUs;
+  const bool endpoint_busy =
+      usbd_edpt_busy(pending_final_response_rhport, ep_in);
   if (choupi::stale_ccid_extension_completion(
           pending_final_response, native_extension_in_flight,
-          usbd_edpt_busy(pending_final_response_rhport, ep_in),
-          native_extension_submitted_at_us, now)) {
+          endpoint_busy, native_extension_submitted_at_us, now)) {
 #ifdef CHOUPI_DEBUG_CCID_APPLET
     std::printf("CHOUPI:CCID_EXTENSION_RECOVER age_us=%lu\r\n",
                 static_cast<unsigned long>(now -
@@ -371,6 +372,25 @@ void service_pending_final_response() {
     // final response indefinitely.
     native_extension_in_flight = false;
   }
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  // The response-delivery watchdog needs a trace even when the endpoint is
+  // reported busy or its extension timestamp is unexpectedly fresh. Without
+  // this state, stage 6 alone cannot distinguish those two retry blockers.
+  static uint32_t last_wait_report_us = 0;
+  if (pending_final_response &&
+      (native_extension_in_flight || endpoint_busy) &&
+      static_cast<uint32_t>(now - last_wait_report_us) >= 1000000U) {
+    std::printf("CHOUPI:CCID_RESPONSE_WAIT ext=%u busy=%u active=%u "
+                "age_us=%lu retries=%u\r\n",
+                native_extension_in_flight ? 1u : 0u,
+                endpoint_busy ? 1u : 0u, native_operation_active ? 1u : 0u,
+                static_cast<unsigned long>(now -
+                                          native_extension_submitted_at_us),
+                static_cast<unsigned>(pending_response_submit_failures));
+    std::fflush(stdout);
+    last_wait_report_us = now;
+  }
+#endif
   bool submit_attempted = false;
   const bool submitted = choupi::retry_pending_ccid_transfer(
       pending_final_response, native_extension_in_flight,
