@@ -47,6 +47,8 @@ public:
       return 0x6581; // nonvolatile memory failure
     case 7:
       return 0x6985; // install transaction unavailable
+    case 13:
+      return 0x6982; // CAP imports a private ROM implementation package
     case 9:
       return 0x6f00; // unexpected internal error
     case 10:

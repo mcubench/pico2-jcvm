@@ -21,7 +21,6 @@ import javacard.security.KeyBuilder;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 import javacardx.security.SensitiveResult;
-import fr.gouv.ssi.nativeimpl.NativeImplementation;
 import sio.contract.Probe;
 
 public final class ServiceApplet extends Applet implements Probe {
@@ -145,12 +144,6 @@ public final class ServiceApplet extends Applet implements Probe {
     } catch (SystemException expected) {
       if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 8;
     }
-    try {
-      NativeImplementation.makeTransientIntArray(
-          (short) 1, JCSystem.CLEAR_ON_DESELECT);
-    } catch (SystemException expected) {
-      if (expected.getReason() == SystemException.ILLEGAL_TRANSIENT) result |= 16;
-    }
     byte[] resetBytes;
     try {
       resetBytes = JCSystem.makeTransientByteArray(
@@ -165,16 +158,9 @@ public final class ServiceApplet extends Applet implements Probe {
     } catch (SystemException unexpected) {
       return (short) 0x6A62;
     }
-    int[] resetInts;
-    try {
-      resetInts = NativeImplementation.makeTransientIntArray(
-          (short) 1, JCSystem.CLEAR_ON_RESET);
-    } catch (SystemException unexpected) {
-      return (short) 0x6A63;
-    }
-    if (resetBytes != null && resetObjects != null && resetInts != null)
+    if (resetBytes != null && resetObjects != null)
       result |= 32;
-    return result == 63 ? (short) 0x6A52 : (short) 0x6A53;
+    return result == 47 ? (short) 0x6A52 : (short) 0x6A53;
   }
 
   public int exerciseWide(int value) {
@@ -305,7 +291,7 @@ public final class ServiceApplet extends Applet implements Probe {
   }
 
   public short sensitiveObjectResult() {
-    NativeImplementation.setSensitiveResultObject(this);
+    JCSystem.getAID();
     return (short) 0x6A57;
   }
 

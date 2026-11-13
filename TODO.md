@@ -13,7 +13,7 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 3. HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
 4. STORE-01, PERSIST-01/02/03, API-01/03, GP-01 and AC-01/02 integration gates.
 5. HMAC-01 acceptance and offline-only JC-RESET-01 diagnosis.
-6. CAPIN-01/02 then CAPIN-03/04; relative priority against resource work remains the user's decision.
+6. CAPIN-01 then CAPIN-03/04; relative priority against resource work remains the user's decision.
 
 Device availability changes: consult the latest [.agent/HANDOFF.md](.agent/HANDOFF.md)
 and [.agent/QKB.md](.agent/QKB.md), then refresh authorized USB/PCSC access.
@@ -204,16 +204,20 @@ task:
 
 ### CAPIN-02
 
-- [ ] **P1: Allow-list the ROM packages an uploaded CAP may import.** Finding
-  A1. Add the list of public Java Card / GlobalPlatform API AIDs and enforce it
-  in `validate_cap_imports` and again at runtime external resolution
-  (`invokestatic`, `new`, static field and classref resolution) when the
-  caller is a dynamic package. The native bridge `A0000000600001` and other
-  internal ROM packages must be refused. Replace the `// TODO: PANIC`
-  reference-argument path in the generated native dispatcher with a throw.
-  First dump the bridge package's Export table and record whether it is
-  importable today (not verified by the review). Fixture: a CAP importing the
-  bridge AID with an external StaticMethodref must fail INSTALL.
+- [x] **P1: Allow-list the ROM packages an uploaded CAP may import.** On
+  2026-11-13, added exact public Java Card / GlobalPlatform package AIDs with
+  the CHOUPI AID aliases, checked dynamic callers in the central package
+  resolver and returned `6982` for forbidden imports during INSTALL. The same
+  resolver guard protects runtime `invokestatic`, `new`, static-field and
+  classref lookups. The native bridge (`A0000000600001`) and all unlisted ROM
+  packages are denied. Generated native dispatcher array-type mismatches now
+  throw `SecurityException`. Export table dump:
+  `artifacts/reviews/cap-import-policy/nativeimpl-export-table-20261113.txt`.
+  Before the fix its two exported classes/68 total methods were visible, and a
+  hostile CAP with an external `StaticMethodref` installed with `9000`; after
+  the fix it fails INSTALL with `6982` and creates no applet instance.
+  Validation: hostile-CAP VPCD test, multi-package install smoke, and the
+  35-case SIO suite pass; ARM and RISC-V `max_crypto` wrapper builds pass.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-02).
 

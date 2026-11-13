@@ -11,6 +11,23 @@ The [complete issue catalog](QKB_INDEX.md) indexes every original heading and th
 Catalog titles retain dated wording; read later corrections and the summaries below before reusing a diagnosis.
 Evidence links identify archived sections; resolve original relative links from `.agent/`.
 
+## Uploaded CAP could import the internal native bridge — fixed 2026-11-13
+
+The ROM resolver searched every resident package by AID, including the
+exported `fr/gouv/ssi/nativeimpl` package (`A0000000600001`). A hostile CAP
+with a direct external `StaticMethodref` to
+`NativeImplementation.getAID()` installed successfully before the fix. The
+Export table and baseline result are recorded in
+`artifacts/reviews/cap-import-policy/nativeimpl-export-table-20261113.txt`.
+
+`Import_Handler::getPackageIndex` now denies unlisted ROM package AIDs for a
+dynamic caller and is used by preflight and external reference resolution.
+Keep the exact public Java Card / GlobalPlatform AID allow-list; do not replace
+it with an AID prefix rule. Rejection maps to `6982`. The regression command is
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --cap-import-policy`
+through elevated host access. It passes after the fix; public API installs and
+the 35-case cross-AID SIO suite also pass.
+
 ## BOOTSEL force-load failure and board failover — 2026-11-13
 
 After one board accepted a diagnostic image, a later identity-pinned force-load

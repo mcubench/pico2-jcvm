@@ -521,6 +521,7 @@ bool aid_matches(const uint8_t *left, uint8_t left_length,
 enum class CapImportValidation : uint8_t {
   valid,
   missing_package,
+  forbidden_package,
   internal_error,
 };
 
@@ -701,6 +702,9 @@ CapImportValidation validate_cap_imports_single(uint8_t package_id) noexcept {
       } catch (jcvm::Exceptions exception) {
         if (exception == jcvm::RuntimeException) {
           return CapImportValidation::missing_package;
+        }
+        if (exception == jcvm::SecurityException) {
+          return CapImportValidation::forbidden_package;
         }
         return CapImportValidation::internal_error;
       }
@@ -1259,6 +1263,10 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       validate_cap_imports(resolved_package_id);
   if (import_validation == CapImportValidation::missing_package) {
     install_failure_stage_ = 10;
+    return false;
+  }
+  if (import_validation == CapImportValidation::forbidden_package) {
+    install_failure_stage_ = 13;
     return false;
   }
   if (import_validation != CapImportValidation::valid) {

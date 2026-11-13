@@ -1,4 +1,38 @@
-# Current handoff — no-debug object-deletion Windows package ready — 2026-11-13 10:08 UTC
+# Current handoff — CAPIN-02 ROM import policy implemented — 2026-11-13 10:40 UTC
+
+CAPIN-02 is implemented. `Import_Handler::getPackageIndex` now permits
+dynamic CAPs to resolve only exact public Java Card / GlobalPlatform ROM AIDs
+(including the known CHOUPI aliases); every unlisted ROM package, including
+the native bridge AID `A0000000600001`, is refused for dynamic callers. This
+central resolver also protects runtime external method, class, constructor and
+field resolution. Install preflight maps the refusal to `6982`. The generated
+native dispatcher now throws `SecurityException` instead of leaving a TODO
+after array argument type mismatches.
+
+The native bridge EXP dump is
+`artifacts/reviews/cap-import-policy/nativeimpl-export-table-20261113.txt`
+(SHA-256 `7df422946030e149fc22f5ab5d0288a5b61b137dadd3715e8ab611fc9825f1cc`).
+It contains two exported classes; `NativeImplementation` exports 66 methods,
+including `getAID` at class token 0 / method token 42. The hostile CAP's JCA
+confirms the native bridge Import and external StaticMethodref. Before the
+policy, INSTALL returned `9000`; after it, INSTALL returns `6982` and GET
+STATUS shows no applet instance.
+
+Validation passed: ARM and RISC-V `max_crypto` wrappers; hostile bridge VPCD
+test (`TEST:SUMMARY pass=1 fail=0`); multi-package public API install smoke
+(`pass=1 fail=0`); and cross-AID SIO suite (`pass=35 fail=0`). No physical
+hardware was accessed. The SIO fixture no longer imports private native bridge
+methods directly; it uses public Java Card APIs for the still-covered behavior.
+The ROM-mask generator change is committed inside its submodule as
+`0532cf3`; root commit is pending progress logging.
+
+Next: continue with CAPIN-01 or CAPIN-03 according to the priority ordering in
+`TODO.md`. Preserve unrelated dirty worktree changes. The separately prepared
+no-debug external Windows image remains
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`;
+do not substitute the older root-diagnostic debug images.
+
+# Previous current handoff — no-debug object-deletion Windows package ready — 2026-11-13 10:08 UTC
 
 The user clarified that the external-host image must have debug logging disabled.
 Built ARM and RISC-V `max_crypto` with `PICO2_ENABLE_OBJECT_DELETION=1`,

@@ -28957,3 +28957,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use only the no-debug `9e7223ed` package for new external testing. The older `9188dcfc` included the later-committed `a655e4af` exact `VisitResult` preservation in its dirty build; this materially improves diagnostic result codes over `bef9e1f7`, but does not fix reclamation. Do not interrupt an already-running `bef9e1f7` long campaign; use the fresh package for a subsequent run.
 - Commit: `d5639d23`
 - Artifacts/logs: package and UF2 paths above; command output not archived separately.
+
+## 2026-11-13 Enforce dynamic CAP ROM import allow-list 30 minutes
+
+- Step/experiment: `CAPIN-02-IMPORT-POLICY`
+- When: '2026-11-13 10:10 UTC' - '2026-11-13 10:40 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added exact public Java Card / GlobalPlatform ROM package AIDs and CHOUPI aliases to the central resolver policy. Dynamic CAP callers can no longer resolve private ROM packages; forbidden imports return INSTALL status `6982`. The generated native dispatcher now throws `SecurityException` for native array argument type mismatches instead of emitting a panic TODO. Added a hostile CAP fixture and VPCD regression. Removed direct private bridge imports from the cross-AID test applet while preserving public API result checks.
+- Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. Through elevated host access, `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --cap-import-policy` passed (`TEST:SUMMARY pass=1 fail=0`), `--install-smoke` passed (`pass=1 fail=0`), and `./tools/test-sio-cross-aid-vpcd` passed (`pass=35 fail=0`). The pre-fix hostile CAP returned `9000`; the fixed VM returns `6982` and GET STATUS reports no installed instance. `git diff --check` reports CR-at-EOL whitespace on pre-existing CRLF files and unrelated pre-existing dirty hunks; no source line endings were normalized. No physical hardware validation was run.
+- Result: Dumped all two classes and 68 method entries in the bridge Export file; `NativeImplementation.getAID()` is class token 0 / method token 42. Dump SHA-256: `7df422946030e149fc22f5ab5d0288a5b61b137dadd3715e8ab611fc9825f1cc`. Root build uses ROM-mask hash `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`; ARM firmware end is `0x100f4740` with 47,296 bytes remaining.
+- Decision: CAPIN-02's import enforcement, export-table evidence and hostile INSTALL acceptance are complete. Continue with the next open CAP input/security item from `TODO.md`; no device flash is needed for this host-resolver change.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/reviews/cap-import-policy/nativeimpl-export-table-20261113.txt`; `artifacts/logs/host-vpcd-multipackage-apdu-20261113T103940Z.log`; `artifacts/logs/host-vpcd-multipackage-apdu-20261113T103537Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261113T103735Z.log`; ROM-mask generator submodule commit `0532cf3`.

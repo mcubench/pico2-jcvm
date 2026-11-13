@@ -48,6 +48,9 @@ public:
   /// Get the package index in the flash.
   const jpackage_ID_t getPackageIndex(const jc_cap_package_info *pinfo);
 
+  /// Whether a package AID is part of the public Java Card / GP ROM API.
+  static bool isPublicApiPackage(const jc_cap_package_info &pinfo) noexcept;
+
   /// Get the package index in the flash from import component offset.
   const jpackage_ID_t getPackageIndexFromOffset(const uint8_t offset);
 

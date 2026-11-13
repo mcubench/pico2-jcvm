@@ -337,6 +337,11 @@ def main() -> int:
         help="stop after loading the Core and Multi packages and installing "
              "their applets",
     )
+    parser.add_argument(
+        "--cap-import-policy", action="store_true",
+        help="load a fixture importing the internal native bridge and require "
+             "INSTALL rejection",
+    )
     args = parser.parse_args()
     root = args.root.resolve()
     ensure_algtest_load_code(root)
@@ -449,6 +454,38 @@ def main() -> int:
             scp = Scp03(connection)
             scp.authenticate()
             print("TEST:PASS SCP03 authentication")
+
+            if args.cap_import_policy:
+                fixture_builder = root / "tools/build-cap-import-policy-fixture"
+                subprocess.run([str(fixture_builder)], cwd=root, check=True,
+                               timeout=120)
+                hostile_cap = root / (
+                    "build/cap-import-policy-fixture/cap/"
+                    "capimportpolicy/javacard/capimportpolicy.cap"
+                )
+                hostile_code, hostile_package, hostile_applets = load_code(
+                    hostile_cap
+                )
+                if len(hostile_applets) != 1:
+                    raise RuntimeError("hostile import fixture must have one applet")
+                load_package(scp, hostile_code, hostile_package)
+                response = install_applet(
+                    scp, hostile_package, hostile_applets[0], hostile_applets[0],
+                    (0x6982,)
+                )
+                if response[-2:] != b"\x69\x82":
+                    raise RuntimeError(
+                        "INSTALL of native bridge import did not return 6982: "
+                        f"{response.hex().upper()}"
+                    )
+                if hostile_applets[0] in get_status(scp, 0x40):
+                    raise RuntimeError(
+                        "hostile native bridge applet appears in GET STATUS "
+                        "after rejected INSTALL"
+                    )
+                print("TEST:PASS internal native bridge import rejected at INSTALL")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
 
             core_code, core_package, core_applets = load_code(core_cap)
             multi_code, multi_package, multi_applets = load_code(multi_cap)

@@ -1,0 +1,84 @@
+File: build/choupi-pc/javacard-api/fr/gouv/ssi/nativeimpl/javacard/nativeimpl.exp
+SHA-256: 7df422946030e149fc22f5ab5d0288a5b61b137dadd3715e8ab611fc9825f1cc
+Package: fr/gouv/ssi/nativeimpl
+AID: A0000000600001
+Exported classes: 2
+
+Class token 0: fr/gouv/ssi/nativeimpl/NativeImplementation access=0x0001
+Exported fields: 0
+Exported methods: 66
+  method token=0 access=0x0019 arrayCopyRepack(Ljava/lang/Object;SSLjava/lang/Object;S)S
+  method token=1 access=0x0019 arrayCopyRepackNonAtomic(Ljava/lang/Object;SSLjava/lang/Object;S)S
+  method token=2 access=0x0019 arrayFillGeneric(Ljava/lang/Object;SSLjava/lang/Object;S)S
+  method token=3 access=0x0019 arrayFillGenericNonAtomic(Ljava/lang/Object;SSLjava/lang/Object;S)S
+  method token=4 access=0x0019 arrayCompareGeneric(Ljava/lang/Object;SLjava/lang/Object;SS)B
+  method token=5 access=0x0019 arrayFindGeneric(Ljava/lang/Object;S[BS)S
+  method token=6 access=0x0001 <init>()V
+  method token=7 access=0x0009 isAppletReselecting()Z
+  method token=8 access=0x0009 isAppletSelecting()Z
+  method token=9 access=0x0009 registerAppletUsingInstallAID(Ljavacard/framework/Applet;)V
+  method token=10 access=0x0009 registerApplet(Ljavacard/framework/Applet;[BSB)V
+  method token=11 access=0x0009 exportRemoteObject(Ljava/lang/Object;)S
+  method token=12 access=0x0009 unexportRemoteObject(Ljava/lang/Object;)V
+  method token=13 access=0x0009 retainRemoteObjectForSession(Ljava/lang/Object;)Z
+  method token=14 access=0x0009 getRemoteObjectId(Ljava/lang/Object;)S
+  method token=15 access=0x0009 encodeRemoteReference(Ljava/lang/Object;Z[B)S
+  method token=16 access=0x0009 processRemoteInvoke([BSZ)S
+  method token=17 access=0x0009 getRemoteObject(S)Ljava/lang/Object;
+  method token=18 access=0x0009 getAPDUBuffer()[B
+  method token=19 access=0x0009 getCurrentAPDU()Ljavacard/framework/APDU;
+  method token=20 access=0x0009 setAPDUBuffer([B)V
+  method token=21 access=0x0009 getAPDUIncomingLength()S
+  method token=22 access=0x0009 getAPDUExpectedResponseLength()S
+  method token=23 access=0x0009 beginAPDUOutgoing(Z)S
+  method token=24 access=0x0009 setAPDUOutgoingLength(S)V
+  method token=25 access=0x0009 getAPDUState()B
+  method token=26 access=0x0009 isAPDUOutgoingNoChaining()Z
+  method token=27 access=0x0009 receiveAPDUIncoming()S
+  method token=28 access=0x0009 setAPDUOutgoing([BSS)V
+  method token=29 access=0x0009 resetSensitiveResult()V
+  method token=30 access=0x0009 setSensitiveResultBoolean(Z)V
+  method token=31 access=0x0009 setSensitiveResultShort(S)V
+  method token=32 access=0x0009 setSensitiveResultObject(Ljava/lang/Object;)V
+  method token=33 access=0x0009 assertSensitiveResultObject(Ljava/lang/Object;)V
+  method token=34 access=0x0009 assertSensitiveResultBoolean(Z)V
+  method token=35 access=0x0009 assertSensitiveResultShort(SB)V
+  method token=36 access=0x0009 isTransient(Ljava/lang/Object;)B
+  method token=37 access=0x0009 makeTransientBooleanArray(SB)[Z
+  method token=38 access=0x0009 makeTransientByteArray(SB)[B
+  method token=39 access=0x0009 makeTransientShortArray(SB)[S
+  method token=40 access=0x0009 makeTransientObjectArray(SB)[Ljava/lang/Object;
+  method token=41 access=0x0009 makeGlobalArray(BS)Ljava/lang/Object;
+  method token=42 access=0x0009 getAID()Ljavacard/framework/AID;
+  method token=43 access=0x0009 lookupAID([BSB)Ljavacard/framework/AID;
+  method token=44 access=0x0009 beginTransaction()B
+  method token=45 access=0x0009 abortTransaction()B
+  method token=46 access=0x0009 commitTransaction()B
+  method token=47 access=0x0009 getTransactionDepth()B
+  method token=48 access=0x0009 getUnusedCommitCapacity()S
+  method token=49 access=0x0009 getMaxCommitCapacity()S
+  method token=50 access=0x0009 getPreviousContextAID()Ljavacard/framework/AID;
+  method token=51 access=0x0009 getAvailableMemory(B)S
+  method token=52 access=0x0009 getAvailableMemory([SSB)V
+  method token=53 access=0x0009 getAppletShareableInterfaceObject(Ljavacard/framework/AID;B)Ljavacard/framework/Shareable;
+  method token=54 access=0x0009 isObjectDeletionSupported()Z
+  method token=55 access=0x0009 requestObjectDeletion()V
+  method token=56 access=0x0009 getAssignedChannel()B
+  method token=57 access=0x0009 isAppletActive(Ljavacard/framework/AID;)Z
+  method token=58 access=0x0009 assertIntegrity(Ljava/lang/Object;)V
+  method token=59 access=0x0009 isIntegritySensitive(Ljava/lang/Object;)Z
+  method token=60 access=0x0009 isIntegritySensitiveArraysSupported()Z
+  method token=61 access=0x0009 makeIntegritySensitiveArray(BBS)Ljava/lang/Object;
+  method token=62 access=0x0009 clearArray(Ljava/lang/Object;)S
+  method token=63 access=0x0009 makeTransientIntArray(SB)[I
+  method token=0 access=0x0001 equals(Ljava/lang/Object;)Z
+  method token=1 access=0x0001 selectingApplet()Z
+
+Class token 1: fr/gouv/ssi/nativeimpl/RandomDataNativeBridge access=0x0011
+Exported fields: 0
+Exported methods: 2
+  method token=0 access=0x0009 generateRandomData([BSS)V
+  method token=0 access=0x0001 equals(Ljava/lang/Object;)Z
+Parsed bytes: 2881/2881
+Baseline hostile fixture: package import A0000000600001, StaticMethodref NativeImplementation.getAID()Ljavacard/framework/AID; INSTALL returned 9000 before CAPIN-02 enforcement.
+Conclusion: the native bridge Export component publishes these class and method tokens; it was importable before this change.

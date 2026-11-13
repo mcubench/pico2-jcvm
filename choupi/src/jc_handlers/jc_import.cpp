@@ -85,7 +85,49 @@ bool imported_aid_matches_resident(const jc_cap_package_info &imported,
                   sizeof(sensitive_result_resident_aid)) == 0;
   return apdu_util_alias || sensitive_result_alias;
 }
+
+struct PublicApiAid {
+  uint8_t length;
+  uint8_t bytes[10];
+};
+
+constexpr PublicApiAid kPublicApiAids[] = {
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x01}}, // java/lang
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x02}}, // java/io
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x03}}, // java/rmi
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01}}, // javacard/framework
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01, 0x01}}, // framework/service
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02}}, // javacard/security
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x01}}, // javacardx/crypto
+    {6, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02}}, // javacardx/biometry
+    {6, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x04}}, // javacardx/biometry1toN
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x09, 0x01}}, // apdu/util
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x09}}, // javacardx/apdu
+    {6, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x03}}, // javacardx/external
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x08, 0x02}}, // framework/math
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x08, 0x04}}, // framework/string
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x08, 0x03}}, // framework/tlv
+    {9, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x08, 0x01, 0x01}}, // framework/util/intx
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x08, 0x01}}, // framework/util
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x05}}, // javacardx/security
+    {6, {0xa0, 0x00, 0x00, 0x01, 0x51, 0x00}}, // org/globalplatform
+    // CHOUPI resident AID aliases for the public apdu/util and security APIs.
+    {10, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x02, 0x08, 0x09, 0x01}},
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x02, 0x05}},
+};
 } // namespace
+
+bool Import_Handler::isPublicApiPackage(
+    const jc_cap_package_info &pinfo) noexcept {
+  if (pinfo.AID_length < 5 || pinfo.AID_length > 16) return false;
+  for (const PublicApiAid &allowed : kPublicApiAids) {
+    if (pinfo.AID_length == allowed.length &&
+        std::memcmp(pinfo.AID, allowed.bytes, allowed.length) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /*
  * Get import package AID from index.
@@ -160,6 +202,13 @@ Import_Handler::getPackageIndex(const jc_cap_package_info *pinfo) {
     if (pinfo->major_version == pinfo_to_compare.major_version &&
         pinfo->minor_version <= pinfo_to_compare.minor_version &&
         imported_aid_matches_resident(*pinfo, pinfo_to_compare)) {
+      if (FlashMemory_Handler::isDynamicPackageID(
+              this->package.getPackageID()) &&
+          !FlashMemory_Handler::isDynamicPackageID(index) &&
+          !isPublicApiPackage(*pinfo)) {
+        print_package_aid("CAP_IMPORT_FORBIDDEN", *pinfo);
+        throw Exceptions::SecurityException;
+      }
       return index;
     }
   }
