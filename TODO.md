@@ -46,6 +46,20 @@ pre-`36fcfe69` alias erasure on 8E) amplified by current design defects that
 make one bad record permanent. Clean-store 2BED runs drained the deletion
 backlog and never hit `F205`. Do tasks in this order; one commit per task.
 
+Status 2026-11-13 20:45 UTC (review of commits `dce9f08f`..`b219daf2`): T3, T4,
+T5 done offline; T1 and T2 partial; T7, T6, T8 not started. **Next, in this
+order:** (1) **T7** harness — none of the five fixes has been exercised together
+on the real overlay backend over a long run; this is the gating evidence for
+MEM-01. (2) **T1 repair/quarantine** — detection alone now makes a damaged
+store fail closed at boot (both snapshots rejected → `FAULT FS snapshot
+unavailable`); add a test that boots a store with both snapshots damaged and
+define the recovery outcome. (3) **T2 remainder** — reason-specific
+`ReadFailure` logging and triggering T1 repair. Also measure
+`overlay_integrity_valid()` cost at full index (8,192 slots, long probe
+chains) since it now runs at every compaction; record it against the CCID
+timeout. Do not firmware-only flash new images onto D92 (or any board with
+pre-`92c91943` data) — use the empty-card UF2.
+
 - [ ] **T1 overlay integrity check + repair (M6/M7).** `fs_check_integrity()` at snapshot load and compaction preflight (unique non-overlapping offsets, size sum == `bytes_used`, stored hash == reconstructed hash, probe-chain reachability, ≤1 live slot per tag); rebuild/quarantine; make `erase_overlay_slot`/`append_overlay` fail closed before mutation if another slot shares the edited offset. Unit tests in `tests/unit/rp2350_fs_overlay` with injected duplicate/orphan/overlap/hash corruption.
 - [ ] **T2 reclaimer survives an unresolvable candidate (M3/M10).** `persistent_inventory.cpp:763`/`:849` must skip+report (and trigger T1) instead of returning `ReadFailure` forever; erase children before parents; split `ReadFailure` causes in logs. Test: 1 unresolvable + 19 garbage records → 19 erased, `pending=0`.
 - [ ] **T7 offline long-run harness on the real overlay backend.** PC VPCD build linking `src/pico_filesystem.cpp` over fake flash (96 KiB / 8,192 slots); unchanged option 2 (1.8.5 client, 1.8.4 jc305 CAP) with `PICO2_TEST_OBJECT_DELETION=1`; assert no SKIP, backlog drains, plateau, zero compaction rejects, zero `alias-protect`, bounded RAM handles.

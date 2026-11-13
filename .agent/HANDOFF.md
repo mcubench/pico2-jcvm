@@ -1,3 +1,27 @@
+# Current handoff — MEM-01 progress check and next steps — 2026-11-13 20:45 UTC
+
+Reviewed MEM-01 commits since the review plan (`db1b9dfa`):
+`dce9f08f` T1 detection, `40de3a23` T2 skip bad candidates, `6cd370b0` T3
+partial RAM sweep, `6c8e494b` T4 subtree guard, `b219daf2` T5 package-static
+guard. All have focused unit tests plus ARM/RISC-V builds only.
+
+The tasks were done out of the planned order; resume with:
+1. **T7** offline long-run option-2 harness on `src/pico_filesystem.cpp` over
+   fake flash. It is the only evidence that T1–T5 work together and plateau.
+2. **T1 repair/quarantine.** `restore_overlay_slot()` now rejects a snapshot
+   that fails `overlay_integrity_valid()`; if both slots fail,
+   `fs_initialize` prints `FAULT FS snapshot unavailable` and the card is
+   unusable (fail closed, data preserved). Expected on D92-like stores. Add a
+   both-snapshots-damaged regression and implement recovery.
+3. **T2 remainder:** reason-specific failure logging; trigger T1 repair.
+4. Measure `overlay_integrity_valid()` time at full index (it runs at every
+   compaction) and compare with the CCID response deadline.
+
+Hardware: never firmware-only flash these images onto D92 or any board with
+pre-`92c91943` storage; use the empty-card UF2 and record initial overlay
+counts. Details: TODO.md MEM-01 status paragraph and
+`docs/review_memory_analysis_opus55_20261113.md`.
+
 # Current handoff — MEM-01 memory-exhaustion review is top priority — 2026-11-13 16:15 UTC
 
 User directive: work MEM-01 before other offline tasks. Read

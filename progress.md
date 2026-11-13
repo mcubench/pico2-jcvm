@@ -29256,3 +29256,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T4 focused implementation is complete; continue with T5 and then add the T7 offline storage harness before MEM-01 acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.
+
+## 2026-11-13 MEM-01 progress review and next-step handoff 15 minutes
+
+- Step/experiment: `MEM-01-PROGRESS-REVIEW-20261113`
+- When: '2026-11-13 20:30 UTC' - '2026-11-13 20:45 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Reviewed MEM-01 commits `dce9f08f`, `40de3a23`, `6cd370b0`, `6c8e494b`, `b219daf2` against review tasks T1–T8. Added a status/next-steps paragraph to TODO.md MEM-01 and a new top HANDOFF section. No source changes.
+- Validation: Inspection of commits, progress records and `src/pico_filesystem.cpp` (`overlay_integrity_valid()`, `restore_overlay_slot()`, `fs_initialize` failure path). No builds or hardware (documentation-only).
+- Result: T3/T4/T5 done offline; T1 detection-only; T2 partial; T7/T6/T8 not started. Found that integrity-invalid snapshots in both COW slots now make boot fail closed with `FAULT FS snapshot unavailable` — a damaged store (e.g. D92) becomes unusable until T1 repair exists or the board is wiped. Integrity-check cost at full index is unmeasured.
+- Decision: Next worker steps: T7 harness, then T1 repair/quarantine with both-snapshots-damaged regression, then T2 logging/repair trigger; measure integrity-check time.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: none.
