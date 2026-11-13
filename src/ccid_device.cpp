@@ -127,6 +127,16 @@ volatile uint16_t debug_command_count = 0;
 bool native_operation_active = false;
 bool native_extension_in_flight = false;
 uint32_t native_extension_submitted_at_us = 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+bool debug_final_response_in_flight = false;
+uint32_t debug_final_response_submitted_at_us = 0;
+uint32_t debug_final_response_wait_report_us = 0;
+void reset_debug_final_response_tracking() {
+  debug_final_response_in_flight = false;
+  debug_final_response_submitted_at_us = 0;
+  debug_final_response_wait_report_us = 0;
+}
+#endif
 bool ccid_task_active = false;
 bool ccid_progress_active = false;
 uint8_t native_operation_rhport = 0;
@@ -405,8 +415,25 @@ void service_pending_final_response() {
   if (submitted) {
     pending_final_response_length = 0;
     pending_response_submit_failures = 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    debug_final_response_in_flight = true;
+    debug_final_response_submitted_at_us = now;
+#endif
     return;
   }
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  if (debug_final_response_in_flight &&
+      static_cast<uint32_t>(now - debug_final_response_wait_report_us) >=
+          1000000U) {
+    std::printf("CHOUPI:CCID_RESPONSE_IN_FLIGHT age_us=%lu busy=%u\r\n",
+                static_cast<unsigned long>(
+                    now - debug_final_response_submitted_at_us),
+                usbd_edpt_busy(pending_final_response_rhport, ep_in) ? 1u
+                                                                    : 0u);
+    std::fflush(stdout);
+    debug_final_response_wait_report_us = now;
+  }
+#endif
   if (submit_attempted) {
     ++debug_in_submit_errors;
     if (choupi::record_pending_ccid_submit_failure(
@@ -1139,6 +1166,9 @@ void driver_init() {
   native_operation_active = false;
   native_extension_in_flight = false;
   native_extension_submitted_at_us = 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  reset_debug_final_response_tracking();
+#endif
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
@@ -1151,6 +1181,9 @@ bool driver_deinit() {
   native_operation_active = false;
   native_extension_in_flight = false;
   native_extension_submitted_at_us = 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  reset_debug_final_response_tracking();
+#endif
   tx_zlp_pending = false;
   pending_final_response = false;
   pending_final_response_length = 0;
@@ -1180,6 +1213,9 @@ void driver_reset(uint8_t) {
   native_operation_active = false;
   native_extension_in_flight = false;
   native_extension_submitted_at_us = 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+  reset_debug_final_response_tracking();
+#endif
   slot_state = 1;
   get_status_first_seen = false;
   ep_out = 0;
@@ -1250,6 +1286,12 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     } else if (endpoint == ep_in) {
       ++debug_in_xfer_errors;
     }
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    if (endpoint == ep_in) {
+      debug_final_response_in_flight = false;
+      debug_final_response_submitted_at_us = 0;
+    }
+#endif
     if (choupi::recover_ccid_extension_transfer_error(
             endpoint == ep_in, native_extension_in_flight)) {
       native_extension_submitted_at_us = 0;
@@ -1286,6 +1328,10 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
       debug_stage = 7;
       return true;
     }
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    debug_final_response_in_flight = false;
+    debug_final_response_submitted_at_us = 0;
+#endif
     if (choupi::ccid_in_transfer_completion_rearms_out(
             native_extension_in_flight, tx_zlp_pending)) {
       debug_stage = 7;

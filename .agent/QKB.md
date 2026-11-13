@@ -713,7 +713,14 @@ after 60 seconds; no `CCID_EXTENSION_RECOVER` was logged. Thus the deployed
 100 ms stale-extension recovery is not validated and failed to complete this
 second observed pending response. A new debug-only `CCID_RESPONSE_WAIT`
 trace reports extension flag, endpoint busy state, native operation activity,
-age, and retry failures; it has not yet been flashed or observed.
+age, and retry failures; it has not yet been flashed or observed. The trace was
+extended to report `CCID_RESPONSE_IN_FLIGHT` once per second after TinyUSB
+accepts the final response but before its successful IN completion callback.
+This distinguishes a response stuck in the endpoint from one blocked before
+submission; stage 6 alone cannot distinguish these paths. Latest diagnostic
+image is `build/arm/pico2_choupi.uf2`, SHA-256
+`6147b04aea8abb3e90ac112347bb4fc331c54eff3de7bf10aea21955d92d55a7`; it has
+not been flashed because the identified devices did not enter BOOTSEL.
 
 The separate D92 run hit `FS_COMPACT_REJECT status=131
 reason=tag_reconstruction` repeatedly with 2,468 live overlay entries and

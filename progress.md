@@ -28812,3 +28812,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the two failure classes separate. Once physical PC/SC and BOOTSEL return, flash the diagnostic build to one identified board and observe `CCID_RESPONSE_WAIT` before changing retry behavior. Do not restart PC/SC during a client run.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`; `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/2BED26ED20556535/`; no new firmware flashed.
+
+## 2026-11-13 Track accepted CCID response transfers 9 minutes
+
+- Step/experiment: `RESOURCE-01-CCID-INFLIGHT-TRACE-20261113`
+- When: '2026-11-13 08:19 UTC' - '2026-11-13 08:28 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added debug-only tracking and once-per-second `CHOUPI:CCID_RESPONSE_IN_FLIGHT` logging after TinyUSB accepts the final CCID response, cleared on endpoint completion or error. This complements the pending-response trace and can distinguish queued response delivery from a response blocked before submission.
+- Validation: `./tools/test-ccid-progress-flow` passed (`TEST:SUMMARY pass=30 fail=0`). ARM and RISC-V wrapper builds passed with `PICO2_ENABLE_OBJECT_DELETION=1` and `PICO2_DEBUG_CCID_APPLET=1`. `git diff --check -- src/ccid_device.cpp` passed. Physical testing was skipped because PC/SC listed only Virtual PCD readers and both identified devices failed bounded BOOTSEL recovery; no flash occurred.
+- Result: The new trace is compiled into the ARM diagnostic image `build/arm/pico2_choupi.uf2`, SHA-256 `6147b04aea8abb3e90ac112347bb4fc331c54eff3de7bf10aea21955d92d55a7`. It is not on hardware. The stuck stage-6 physical failure remains unresolved.
+- Decision: Once PC/SC and BOOTSEL access return, flash this diagnostic image and use the new `CCID_RESPONSE_WAIT` / `CCID_RESPONSE_IN_FLIGHT` states to identify where the transaction stops before changing retry or endpoint-reset behavior.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: No new logs; previous physical evidence remains at `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/2BED26ED20556535/`.

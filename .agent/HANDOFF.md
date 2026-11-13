@@ -27,12 +27,15 @@ reached xfr=1270; 292 rejects were captured. Logs:
 `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`.
 This storage failure is distinct from 2BED's transport stall.
 
-Added a debug-only, once-per-second `CHOUPI:CCID_RESPONSE_WAIT` trace of
-extension in-flight state, endpoint busy state, native operation state, age,
-and submit failures. `./tools/test-ccid-progress-flow` passes 30/30; ARM and
-RISC-V wrapper builds pass with object deletion and CCID debug enabled. ARM
-image hash is `bac4fa26572efbdbc2f88deff331b9a5976c3cd3d2c6d4dade8ed3a3cae8c7ec`.
-This diagnostic build was not flashed because neither board entered BOOTSEL.
+Added debug-only, once-per-second `CHOUPI:CCID_RESPONSE_WAIT` logging while a
+response is blocked before submission, plus `CHOUPI:CCID_RESPONSE_IN_FLIGHT`
+logging while an accepted final transfer awaits its completion callback. The
+second trace distinguishes a response stuck in TinyUSB's endpoint from the
+extension-state blocker. `./tools/test-ccid-progress-flow` passes 30/30; ARM
+and RISC-V wrapper builds pass with object deletion and CCID debug enabled.
+Latest ARM image hash is
+`6147b04aea8abb3e90ac112347bb4fc331c54eff3de7bf10aea21955d92d55a7`. Neither
+diagnostic build was flashed because neither board entered BOOTSEL.
 
 Next: request PC/SC recovery and BOOTSEL access via `.agent/EXT_REQUESTS.md`.
 Then flash the diagnostic image to an available identified board, inspect the
