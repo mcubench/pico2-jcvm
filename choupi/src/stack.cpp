@@ -975,4 +975,15 @@ pc_t &Stack::restorePC(const uint8_t index) {
  */
 Frame &Stack::getCurrentFrame() { return *(this->frames.begin()); }
 
+void Stack::setCurrentPackageID(const jpackage_ID_t package_id) noexcept {
+  if (this->frames.empty()) return;
+  this->frames.front().setPackageID(package_id);
+}
+
+bool Stack::getCurrentPackageID(jpackage_ID_t &package_id) const noexcept {
+  if (this->frames.empty()) return false;
+  package_id = this->frames.front().getPackageID();
+  return true;
+}
+
 } // namespace jcvm

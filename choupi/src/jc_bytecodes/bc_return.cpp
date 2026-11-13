@@ -66,7 +66,6 @@ void Bytecodes::bc_areturn() {
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
-  context.backToPreviousPackageID();
 
   if (root_frame) {
     stack.setRootReferenceReturnValue(returned_value);
@@ -117,7 +116,6 @@ void Bytecodes::bc_sreturn() {
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
-  context.backToPreviousPackageID();
 
   if (root_frame) {
     stack.setRootReturnValue(static_cast<uint16_t>(returned_value),
@@ -169,7 +167,6 @@ void Bytecodes::bc_ireturn() {
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
-  context.backToPreviousPackageID();
 
   if (root_frame) {
     stack.setRootReturnValue(static_cast<uint32_t>(returned_value),
@@ -209,7 +206,6 @@ void Bytecodes::bc_return() {
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
-  context.backToPreviousPackageID();
   if (root_frame) {
     stack.setRootReturnValue(0, Stack::ReturnKind::Void);
   }

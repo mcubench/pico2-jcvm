@@ -500,12 +500,10 @@ bool Context::hasForeignArrayReferenceToAppletOwner(
  */
 Context::Context(const japplet_ID_t appletID,
                  const jpackage_ID_t packageID)
-    : applet_instances(1), applet_package_ID(packageID), stack(),
-      packagesID(), heap(appletID) {
+    : applet_instances(1), applet_package_ID(packageID), stack(), heap(appletID) {
   this->activeAppletInstance().owner = appletID;
   this->activeAppletInstance().owner_heap =
       std::make_shared<Heap>(appletID, this->heap);
-  this->packagesID.push_front(packageID);
   for (Context *&context : retained_contexts) {
     if (context != nullptr) continue;
     context = this;
@@ -527,7 +525,9 @@ Context::~Context() noexcept {
  * @return current context ID
  */
 jpackage_ID_t Context::getCurrentPackageID() noexcept {
-  return *(this->packagesID.cbegin());
+  jpackage_ID_t package_id = this->applet_package_ID;
+  this->stack.getCurrentPackageID(package_id);
+  return package_id;
 }
 
 /**
@@ -1334,23 +1334,12 @@ Package Context::getCurrentPackage() {
 }
 
 /**
- * Shift the context package ID. This function is call when an invoke
- * instruction is invoked. There, the security context ID does not change but
- * the executed package changed.
+ * Set the package ID for the active frame after an invoke instruction.
  *
  * @param[packageID] new executed package ID.
  */
 void Context::changePackageID(const jpackage_ID_t packageID) noexcept {
-  this->packagesID.push_front(packageID);
-}
-
-/**
- * Shift the context package ID to the caller one. This function is call when
- * a return instruction is executed. There, the security context ID does not
- * change but the executed package changed.
- */
-void Context::backToPreviousPackageID() noexcept {
-  this->packagesID.pop_front();
+  this->stack.setCurrentPackageID(packageID);
 }
 
 } // namespace jcvm

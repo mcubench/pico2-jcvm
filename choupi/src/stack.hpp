@@ -35,8 +35,6 @@
 #include "types.hpp"
 #include <cstddef>
 
-// TODO: Move the PC to the context.hpp file (in the packagesID list)
-
 namespace jcvm {
 
 /**
@@ -180,6 +178,9 @@ public:
   uint16_t frameDepth() const noexcept {
     return static_cast<uint16_t>(this->frames.size());
   }
+  /// Package ID belongs to the active frame, so unwinding restores it with the frame.
+  void setCurrentPackageID(jpackage_ID_t package_id) noexcept;
+  bool getCurrentPackageID(jpackage_ID_t &package_id) const noexcept;
   // The stack is empty? (no pushed Java Card frame)
   bool empty() noexcept;
   /// Whether the current frame is the top-level interpreter entry.

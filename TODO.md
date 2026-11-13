@@ -294,15 +294,7 @@ task:
 
 ### CAPIN-03
 
-- [ ] **P1: Keep the executing-package record in step with frames.** Finding
-  A3. Store the package ID in `Frame` and derive `getCurrentPackageID()` from
-  the top frame, or pop `packagesID` on every frame pop including
-  `Stack::unwindToDepth` and all `doThrow` paths. Add an invariant check that
-  both depths agree at interpreter entry and exit. Fixture: a nested
-  same-context run (RMI `processRemoteInvoke`) whose method overflows its
-  operand stack; afterwards the caller's `impdep1` must raise
-  `SecurityException` and a retained context must not grow per failed APDU.
-  The exploit chain was not traced end to end; record what the fixture shows.
+- [ ] **P1: Complete end-to-end validation of frame-owned executing-package state.** Finding A3. Implemented: the package ID is stored in each `Frame`; `Context::getCurrentPackageID()` reads the top frame, with the applet package as the empty-stack fallback. Normal returns, exception pops, `unwindToDepth()` and `unwind()` therefore restore package identity automatically. Removed the separately allocated `packagesID` list and its missed-pop failure mode. A sanitizer-backed unit test reproduced the stale package after partial unwind before the fix and passes for normal return, partial unwind and full unwind after it. ARM/RISC-V builds and the official RMI client VPCD regression pass 18/18. Still required: the hostile nested same-context `processRemoteInvoke` stack-overflow fixture, caller `impdep1` rejection, and retained-context size check across repeated failed APDUs; record exact outcomes before closing this item.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-03).
 

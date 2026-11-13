@@ -53,6 +53,7 @@ private:
   pc_t pc;      // method program counter
   const uint8_t *method_start_pc; // entry bytecode for this frame
   const uint8_t *instruction_pc; // address of the currently executing opcode
+  jpackage_ID_t package_id = 0; // package executing in this frame
   SensitiveReturn sensitive_return = SensitiveReturn::None;
 
   List<old_pc_t> old_pcs;
@@ -93,6 +94,8 @@ public:
   void setSensitiveReturn(SensitiveReturn value) noexcept { sensitive_return = value; }
   /// Save the address of the opcode before it is decoded.
   void setInstructionPC(const uint8_t *instruction_pc) noexcept;
+  jpackage_ID_t getPackageID() const noexcept { return package_id; }
+  void setPackageID(jpackage_ID_t value) noexcept { package_id = value; }
   /// Discard all operands in this frame.
   void clearOperands() noexcept;
   /// Save PC value for jsr instruction

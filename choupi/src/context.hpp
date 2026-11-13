@@ -32,7 +32,6 @@
 #include "jc_config.h"
 #include "jc_handlers/package.hpp"
 #include "jc_types/jref_t.hpp"
-#include "jcvm_types/list.hpp"
 #include "stack.hpp"
 #include "types.hpp"
 
@@ -122,9 +121,6 @@ private:
   uint16_t apdu_outgoing_length = 0;
   /// Current Java Card stack.
   Stack stack;
-  /// Linked-list where the executed Packages ID is stored. The Head of the
-  /// linked-list is the current executed package ID.
-  List<jpackage_ID_t> packagesID;
   /// Context's heap
   Heap heap;
 
@@ -298,8 +294,6 @@ public:
   Package getCurrentPackage();
   /// Shift context package ID
   void changePackageID(const uint8_t packageID) noexcept;
-  /// Back to the previous package ID.
-  void backToPreviousPackageID() noexcept;
 };
 
 /// Retain a server object during proxy creation and roll back only a root

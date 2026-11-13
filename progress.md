@@ -29160,3 +29160,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use this no-debug package for the next external test; do not substitute prior images.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-0e67df89.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-0e67df89.uf2`; package provenance and checksum list.
+
+## 2026-11-13 Store executing package identity in frames 20 minutes
+
+- Step/experiment: `CAPIN-03-FRAME-OWNED-PACKAGE-ID-20261113`
+- When: '2026-11-13 15:29 UTC' - '2026-11-13 15:49 UTC'
+- Model: `GPT-6 Codex`
+- Change: Reproduced stale `Context::getCurrentPackageID()` after `Stack::unwindToDepth`. Moved executing-package identity into each `Frame`, made context lookup derive it from the active frame with the applet package as empty-stack fallback, and removed the parallel allocating package-ID list and pop calls. Updated CAPIN-03 and handoff; full exploit-chain acceptance remains open.
+- Validation: The new unit regression failed before implementation (actual current package remained 30 instead of expected caller package 20). Afterward `./tools/test-rmi-registry` passed under ASan/UBSan, including normal return, partial unwind and full unwind. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `./tools/test-rmi-client-vpcd` passed `JCRMI_CLIENT:SUMMARY pass=18 fail=0`; first restricted run failed binding localhost (`Operation not permitted`), rerun with host execution access passed. No physical test.
+- Result: Frame unwinding can no longer leave a separately maintained package stack stale; cross-package RMI compatibility regression passed.
+- Decision: Keep CAPIN-03 open until the nested same-context overflow/`impdep1`/retained-context-size scenario is tested end to end.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261113T154706Z.log`; `artifacts/logs/build-pc-rmi-client-20261113T154706Z.log`.

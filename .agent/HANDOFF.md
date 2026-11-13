@@ -1,3 +1,28 @@
+# Current handoff — CAPIN-03 package identity follows frames — 2026-11-13 15:49 UTC
+
+The stale executing-package state from CAPIN-03 is fixed offline. Each
+interpreter frame now owns its package ID; `Context::getCurrentPackageID()`
+uses the active frame, falling back to the applet package when the stack is
+empty. Normal returns and every frame discard path restore the caller package
+by removing the callee frame. This also removes one heap allocation per
+cross-package call and the old separately maintained `packagesID` list.
+
+The new RMI registry unit regression failed before the change (package 30
+remained current after unwinding back to package 20) and now passes for normal
+return, partial unwind, and full unwind. `./tools/test-rmi-registry` passes
+under ASan/UBSan, ARM/RISC-V `max_crypto` builds pass, and the official RMI
+client VPCD suite passes 18/18. The restricted attempt at that integration
+failed because loopback binding was denied; rerun with host execution access
+passed. Logs: `artifacts/logs/rmi-client-official-vpcd-client-20261113T154706Z.log`
+and `artifacts/logs/build-pc-rmi-client-20261113T154706Z.log`.
+
+CAPIN-03 remains open for the hostile nested same-context `processRemoteInvoke`
+stack-overflow -> caller `impdep1` regression and repeated-failure retained
+context size check. Continue that test, then continue the project's highest
+open offline priority. The current external no-debug image was built before
+this source change; rebuild the external package after the next commit if it is
+still needed for a fresh Windows run. Preserve all unrelated dirty changes.
+
 # Current handoff — current no-debug Windows image — 2026-11-13 15:27 UTC
 
 The user clarified that the Windows external test must use a no-debug image. A

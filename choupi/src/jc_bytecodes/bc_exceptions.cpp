@@ -462,7 +462,6 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
     stack.pop_Frame();
     if (!stack.empty()) {
       checking_caller_frame = true;
-      this->context.backToPreviousPackageID();
     }
   }
 
