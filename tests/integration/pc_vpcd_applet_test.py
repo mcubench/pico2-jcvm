@@ -45,9 +45,10 @@ def send_message(connection: socket.socket, message: bytes) -> None:
     connection.sendall(len(message).to_bytes(2, "big") + message)
 
 
-def corrupt_persisted_cap_class_tag(registry_path: Path,
-                                   package_id: int) -> None:
-    """Corrupt one stored CAP component while retaining a valid registry CRC."""
+def mutate_persisted_cap_component(registry_path: Path, package_id: int,
+                                   component_tag: int,
+                                   remove_component: bool = False) -> None:
+    """Mutate stored CAP bytes while retaining a valid VCR registry checksum."""
     data = bytearray(registry_path.read_bytes())
     if len(data) < 14 or data[:4] != b"VCR1":
         raise RuntimeError("invalid persisted CAP registry for corruption test")
@@ -59,6 +60,7 @@ def corrupt_persisted_cap_class_tag(registry_path: Path,
     package_count = data[9]
     cursor = 10
     cap_start = None
+    cap_length_offset = None
     cap_length = 0
     for _ in range(package_count):
         if cursor >= len(data) - 4:
@@ -81,6 +83,7 @@ def corrupt_persisted_cap_class_tag(registry_path: Path,
             raise RuntimeError("truncated persisted CAP registry CAP code")
         if current_id == package_id:
             cap_start = cursor
+            cap_length_offset = cursor - 4
             cap_length = current_length
         cursor += current_length
         if cursor >= len(data) - 4:
@@ -111,7 +114,8 @@ def corrupt_persisted_cap_class_tag(registry_path: Path,
         raise RuntimeError("target package missing or trailing registry bytes")
     cap_end = cap_start + cap_length
     component_offset = cap_start
-    class_tag_offset = None
+    target_component = None
+    directory_offset = None
     while component_offset < cap_end:
         if cap_end - component_offset < 3:
             raise RuntimeError("truncated stored CAP component header")
@@ -120,14 +124,49 @@ def corrupt_persisted_cap_class_tag(registry_path: Path,
         component_end = component_offset + 3 + size
         if component_end > cap_end:
             raise RuntimeError("truncated stored CAP component payload")
-        if data[component_offset] == 6:
-            class_tag_offset = component_offset
-            break
+        if data[component_offset] == component_tag:
+            target_component = (component_offset, component_end)
+        elif data[component_offset] == 2:
+            directory_offset = component_offset
         component_offset = component_end
-    if class_tag_offset is None:
-        raise RuntimeError("stored CAP has no Class component to corrupt")
+    if target_component is None:
+        raise RuntimeError(
+            f"stored CAP has no component with tag {component_tag}"
+        )
 
-    data[class_tag_offset] = 0x7F  # Unrecognized component tag.
+    if remove_component:
+        if component_tag == 2 or directory_offset is None:
+            raise RuntimeError("cannot remove Directory or CAP has no Directory")
+        target_start, target_end = target_component
+        target_size = int.from_bytes(data[target_start + 1:target_start + 3],
+                                     "big")
+        directory_size_offset = directory_offset + 3 + 2 * (component_tag - 1)
+        directory_component_end = directory_offset + 3 + int.from_bytes(
+            data[directory_offset + 1:directory_offset + 3], "big"
+        )
+        if directory_size_offset + 2 > directory_component_end:
+            raise RuntimeError("Directory has no size entry for target component")
+        if int.from_bytes(data[directory_size_offset:directory_size_offset + 2],
+                          "big") != target_size:
+            raise RuntimeError("Directory size does not match target component")
+
+        code = bytearray(data[cap_start:cap_end])
+        directory_size_offset -= cap_start
+        target_start -= cap_start
+        target_end -= cap_start
+        code[directory_size_offset:directory_size_offset + 2] = b"\x00\x00"
+        replacement_code = code[:target_start] + code[target_end:]
+        if cap_length_offset is None:
+            raise RuntimeError("persisted CAP length offset was not recorded")
+        data = bytearray(
+            data[:cap_length_offset]
+            + len(replacement_code).to_bytes(4, "big")
+            + replacement_code
+            + data[cap_end:-4]
+            + b"\x00\x00\x00\x00"
+        )
+    else:
+        data[target_component[0]] = 0x7F  # Unrecognized component tag.
     data[-4:] = (zlib.crc32(data[:-4]) & 0xffffffff).to_bytes(4, "big")
     registry_path.write_bytes(data)
 
@@ -324,7 +363,10 @@ def run_emulator(
                     connection, select, "target applet SELECT",
                     expected_status=(
                         b"\x6f\x00"
-                        if resume and args.corrupt_persisted_cap_after_install
+                        if resume and (
+                            args.corrupt_persisted_cap_after_install or
+                            args.remove_persisted_component_after_install is not None
+                        )
                         else args.expect_select_status
                     ),
                 )
@@ -338,7 +380,10 @@ def run_emulator(
                         )
 
                 if args.select_only:
-                    if resume and args.corrupt_persisted_cap_after_install:
+                    if resume and (
+                        args.corrupt_persisted_cap_after_install or
+                        args.remove_persisted_component_after_install is not None
+                    ):
                         manager_select = bytes.fromhex(
                             "00A4040008A00000015100000000"
                         )
@@ -653,6 +698,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--remove-persisted-component-after-install",
+        type=int,
+        choices=(4, 6),
+        metavar="TAG",
+        help=(
+            "remove Import (tag 4) or Class (tag 6) from the saved CAP and "
+            "update Directory before the resumed fail-closed check"
+        ),
+    )
+    parser.add_argument(
         "--inject-install-recovery-gap",
         action="store_true",
         help=(
@@ -860,7 +915,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.corrupt_persisted_cap_after_install and (
+    if (args.corrupt_persisted_cap_after_install and
+            args.remove_persisted_component_after_install is not None):
+        print("TEST:FAIL choose one persisted CAP mutation mode", file=sys.stderr)
+        return 1
+    if (args.corrupt_persisted_cap_after_install or
+            args.remove_persisted_component_after_install is not None) and (
             args.passes != 2 or not args.select_only):
         print(
             "TEST:FAIL persisted CAP corruption requires --passes 2 "
@@ -1039,13 +1099,30 @@ def main() -> int:
                     int, package_match[-1]
                 )
                 resume_installed = True
-            if args.corrupt_persisted_cap_after_install and pass_number == 1:
-                corrupt_persisted_cap_class_tag(
-                    Path(f"{args.flash_copy}.cap-registry"), args.package_id
+            if pass_number == 1 and (
+                args.corrupt_persisted_cap_after_install or
+                args.remove_persisted_component_after_install is not None
+            ):
+                component_tag = (
+                    6 if args.corrupt_persisted_cap_after_install else
+                    args.remove_persisted_component_after_install
+                )
+                mutate_persisted_cap_component(
+                    Path(f"{args.flash_copy}.cap-registry"), args.package_id,
+                    component_tag,
+                    remove_component=(
+                        args.remove_persisted_component_after_install is not None
+                    ),
+                )
+                mutation = (
+                    f"removed component tag {component_tag} and updated "
+                    "Directory"
+                    if args.remove_persisted_component_after_install is not None
+                    else "corrupted persisted Class component tag"
                 )
                 print(
-                    "TEST:PASS corrupted persisted Class component while "
-                    "preserving VPCD registry framing and CRC"
+                    f"TEST:PASS {mutation} while preserving VPCD registry "
+                    "framing and CRC"
                 )
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
@@ -1091,7 +1168,8 @@ def main() -> int:
         print("TEST:PASS install journal recovered after clear sync failure")
     if args.select_only:
         total_checks = args.passes * 2  # ATR and target-app SELECT.
-        if args.corrupt_persisted_cap_after_install:
+        if (args.corrupt_persisted_cap_after_install or
+                args.remove_persisted_component_after_install is not None):
             total_checks += 1  # card-manager SELECT after failed applet SELECT.
     elif args.apdu or args.resume_apdu:
         total_checks = args.passes * 2 + len(args.apdu) + len(args.resume_apdu)

@@ -407,6 +407,15 @@ produce a false regression result. The Export class-offset negative case first
 returned `9000` against a stale emulator, then returned the expected `6A80`
 after rebuilding; it passed with Descriptor both omitted and included.
 
+The default `pc_vpcd_applet_test.py` APDU deadline is 20 seconds, which can be
+shorter than SELECT on the full JCAlgTest 1.8.4 CAP. Persisted-CAP corruption
+restart runs measured applet SELECT from 18.7 to 30.7 seconds; a 20-second
+deadline therefore produced a test timeout despite the valid SELECT eventually
+completing. Use `--apdu-timeout 60` for full JCAlgTest restart/corruption runs
+and distinguish this harness deadline from an emulator crash or card failure.
+Evidence: `artifacts/logs/capin-missing-class-persisted-vpcd-20261113-retry60.log`
+and `artifacts/logs/capin-missing-import-persisted-vpcd-20261113.log`.
+
 ## Startup and Windows diagnostics — implementation accepted, timings open
 
 Normal firmware has zero console/DTR wait; bounded diagnostic startup capture is explicitly enabled.

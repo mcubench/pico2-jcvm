@@ -29136,3 +29136,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Retain the regression; continue with per-component legacy/null-guard variants and then physical acceptance when available.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`; upstream CAP remains unchanged.
+
+## 2026-11-13 Persisted CAP missing-component restart coverage 15 minutes
+
+- Step/experiment: `CAPIN-01-PERSISTED-CAP-COMPONENT-REMOVAL`
+- When: '2026-11-13 15:53 CET' - '2026-11-13 16:08 CET'
+- Model: `GPT-6 Codex`
+- Change: Generalized the persisted-registry mutator to replace a component tag with an unknown value or remove Import/Class components while updating Directory component sizes, CAP record length and VCR CRC. The upstream JCAlgTest CAP remains unchanged. Added a targeted option to the PC VPCD harness.
+- Validation: Python syntax check passed. Unknown Class-tag, missing Class, and missing Import restart cases each passed `TEST:SUMMARY pass=5 fail=0`; each applet SELECT returned `6F00`, followed by card-manager SELECT `9000`. Component-removal tests used `--apdu-timeout 60`. No firmware rebuild was needed because only the integration harness changed.
+- Result: Three forms of malformed stored CAP fail closed while the card manager remains responsive. Full JCAlgTest applet SELECT takes 18.7–30.7 seconds on this PC VPCD path; a default 20-second deadline caused one timeout, so QKB now records a 60-second deadline for these cases. First removal attempt exposed and fixed a checksum-slot bug in the test mutator.
+- Decision: Keep the restart coverage. Applet Export is optional and library Export validation is covered independently; physical acceptance remains open.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`, `artifacts/logs/capin-unknown-component-persisted-vpcd-20261113.log`, `artifacts/logs/capin-missing-class-persisted-vpcd-20261113-retry60.log`, `artifacts/logs/capin-missing-import-persisted-vpcd-20261113.log`.

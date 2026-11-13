@@ -249,14 +249,14 @@ task:
      Export, or Class components are absent or their requested token/offset is
      out of bounds. `jc_import.cpp` validates Import presence and record bounds;
      `bc_static.cpp` checks Export presence/count; `jc_cp.cpp` now checks Class
-     presence/size before class-index and classref access. Older persisted CAP
-    corruption now has a restart regression: after a valid install, the saved
-    Class component tag is corrupted while the VPCD sidecar CRC remains valid;
-    applet SELECT returns `6F00`, and card-manager SELECT still returns `9000`
-    in the same emulator process. This verifies malformed stored CAPs fail
-    closed without wedging the card-manager path. The test does not yet mutate
-    each absent-component/null-guard case independently or establish physical
-    behavior.
+    presence/size before class-index and classref access. Persisted-CAP restart
+    regressions now cover an unknown Class component tag and removal of the
+    required Import and Class components while updating Directory sizes and
+    retaining a valid VPCD sidecar checksum. Each restarts, gets `6F00` on
+    applet SELECT, then `9000` from card-manager SELECT. This verifies malformed
+    stored CAPs fail closed without wedging the card-manager path. Export is
+    optional for applet packages; library Export completeness is tested
+    separately when Descriptor is present. Physical behavior remains open.
   5. Done: LOAD compares the requested package AID with the CAP Header AID
      before cleanup, slot allocation or storage (`load-header-aid-mismatch`,
      `6A80`, no package registry entry). If storage succeeds but package-enable

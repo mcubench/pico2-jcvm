@@ -1,17 +1,26 @@
-# Current handoff — malformed persisted CAP fails closed — 2026-11-13 14:53 UTC
+# Current handoff — persisted CAP component corruption coverage — 2026-11-13 15:08 UTC
 
-Added `--corrupt-persisted-cap-after-install` to the PC VPCD applet harness.
-It installs the unchanged 1.8.4 CAP, changes the stored Class component tag to
-an unknown value while retaining valid VCR registry framing and CRC, restarts
-the emulator, expects applet SELECT `6F00`, then SELECTs the card manager and
-expects `9000`. The run passes `TEST:SUMMARY pass=5 fail=0`; log:
-`artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`. Python
-syntax validation passes. No native source or firmware changed; no physical
-device was accessed. This confirms fail-closed runtime handling and continued
-card-manager response for one malformed persisted-CAP case; individual missing
-Import/Export/Class component mutants and physical acceptance remain open.
+PC VPCD now exercises three persistent CAP mutations after installation:
+unknown Class tag, removed Class component, and removed Import component. For
+component removals, the harness updates Directory's component size, CAP length,
+and VCR sidecar CRC without changing the upstream CAP fixture. After restart,
+each malformed applet SELECT returns `6F00`, and card-manager SELECT returns
+`9000`; all runs pass `TEST:SUMMARY pass=5 fail=0`. The component-removal SELECT
+times were 18.7–29.1 seconds; one initial 20-second APDU deadline timed out,
+so use `--apdu-timeout 60` for these full JCAlgTest restart tests. The timeout
+was test configuration, not a malformed-CAP acceptance. A first mutation
+attempt also exposed and fixed a test helper CRC-slot truncation bug.
 
-The prior Export-completeness step is committed as `052d1971`.
+Logs: `artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`,
+`artifacts/logs/capin-unknown-component-persisted-vpcd-20261113.log`,
+`artifacts/logs/capin-missing-class-persisted-vpcd-20261113-retry60.log`, and
+`artifacts/logs/capin-missing-import-persisted-vpcd-20261113.log`. Only test
+harness/docs changed; no firmware rebuild or physical access. Applet-package
+Export is optional, and library Export consistency is separately covered with
+Descriptor. Physical acceptance remains open.
+
+Previous commits: `052d1971` (library Export completeness), `1510fd64`
+(initial persisted-CAP corruption regression).
 
 # Current handoff — library Export completeness — 2026-11-13 14:43 UTC
 
