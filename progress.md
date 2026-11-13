@@ -29005,3 +29005,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep RESOURCE-01 open and use `FS_TAG_RECON_FAIL reason=hash_mismatch` to distinguish this newly guarded case in a future physical trace. Continue offline with the next uncovered resource gap.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: RP2350 fake-flash test output; ARM/RISC-V wrapper output.
+
+## 2026-11-13 Record RESOURCE-01 commit in handoff 1 minute
+
+- Step/experiment: `RESOURCE-01-HANDOFF-COMMIT-REFERENCE-20261113`
+- When: '2026-11-13 11:42 UTC' - '2026-11-13 11:43 UTC'
+- Model: `GPT-6 Codex`
+- Change: Replaced the pending marker in the current handoff with the completed filesystem integrity-guard commit `c1d14d6e`.
+- Validation: Inspected `git show --stat c1d14d6e` to confirm it contains the filesystem guard, regression, TODO/QKB/HANDOFF updates, and preceding progress record. No build or test rerun was needed; no source changed.
+- Result: Current handoff points to the actual committed change.
+- Decision: Continue RESOURCE-01 with the historical physical failure still open; no hardware access occurred.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `c1d14d6e`.

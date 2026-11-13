@@ -12,7 +12,8 @@ Validation passed: `./tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`),
 `./tools/build riscv --profile max_crypto`. ARM image ends at `0x100f4960`,
 46,752 bytes below the configured flash limit. No physical test was run; this
 does not establish the cause of the historical 2,468-record failure or
-complete RESOURCE-01 acceptance. Commit is pending for this step.
+complete RESOURCE-01 acceptance. The integrity-guard change is committed as
+`c1d14d6e`.
 
 Continue RESOURCE-01 offline per TODO. Preserve unrelated changes. For the
 external Windows run, use only no-debug UF2
