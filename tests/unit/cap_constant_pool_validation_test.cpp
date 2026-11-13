@@ -215,7 +215,7 @@ int main() {
   const uint8_t one_exported_method[] = {1, 0, 0, 0, 1, 0, 3};
   const uint8_t method_stream[] = {0, 0, 0, 0};
   const uint8_t descriptor_for_exported_method[] = {
-      1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3,
+      1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 9, 0, 3,
       0, 0, 0, 0, 0, 0, 0, 0};
   check(jcvm::cap_constant_pool_validation::valid_export_offsets(
             one_exported_method, sizeof(one_exported_method), 4, 2,
@@ -223,6 +223,51 @@ int main() {
             descriptor_for_exported_method,
             sizeof(descriptor_for_exported_method)),
         "all Export offsets resolve within component bounds and Descriptor");
+  const uint8_t descriptor_for_virtual_exported_method[] = {
+      1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 3,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            one_exported_method, sizeof(one_exported_method), 4, 2,
+            method_stream, sizeof(method_stream),
+            descriptor_for_virtual_exported_method,
+            sizeof(descriptor_for_virtual_exported_method)),
+        "Export static method cannot target a virtual Descriptor method");
+  const uint8_t descriptor_for_different_exported_token[] = {
+      1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 9, 0, 3,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            one_exported_method, sizeof(one_exported_method), 4, 2,
+            method_stream, sizeof(method_stream),
+            descriptor_for_different_exported_token,
+            sizeof(descriptor_for_different_exported_token)),
+        "Export static method token must match its Descriptor token");
+  const uint8_t descriptor_for_different_exported_class[] = {
+      1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 9, 0, 3,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            one_exported_method, sizeof(one_exported_method), 4, 2,
+            method_stream, sizeof(method_stream),
+            descriptor_for_different_exported_class,
+            sizeof(descriptor_for_different_exported_class)),
+        "Export class token must map to its Descriptor class");
+  const uint8_t descriptor_with_wrong_export_class_offset[] = {
+      1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 9, 0, 3,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            one_exported_method, sizeof(one_exported_method), 4, 2,
+            method_stream, sizeof(method_stream),
+            descriptor_with_wrong_export_class_offset,
+            sizeof(descriptor_with_wrong_export_class_offset)),
+        "Export class target must match its Descriptor class reference");
+  const uint8_t descriptor_for_nonpublic_export_class[] = {
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 9, 0, 3,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            one_exported_method, sizeof(one_exported_method), 4, 2,
+            method_stream, sizeof(method_stream),
+            descriptor_for_nonpublic_export_class,
+            sizeof(descriptor_for_nonpublic_export_class)),
+        "Exported class must be public in its Descriptor");
   const uint8_t exported_field_out_of_range[] = {1, 0, 0, 1, 0, 4};
   check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
             exported_field_out_of_range, sizeof(exported_field_out_of_range),

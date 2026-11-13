@@ -29101,3 +29101,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the duplicate-offset checks. Continue CAPIN-01 with Descriptor-free method-start validation limits, legacy persisted-CAP runtime corruption coverage, and physical acceptance when hardware is available.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T133007Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T133102Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T133436Z.log`; no hardware log.
+
+## 2026-11-13 Validate Export method tokens against Descriptor 15
+
+- Step/experiment: `CAPIN-01-EXPORT-DESCRIPTOR-METHODS`
+- When: '2026-11-13 13:39 UTC' - '2026-11-13 13:54 UTC'
+- Model: `GPT-6 Codex`
+- Change: When a Descriptor component is present, each Export class token/offset must match one public Descriptor class record. Every exported static-method token and offset must map to a public or protected static method or constructor descriptor in that class. Added unit cases for virtual methods, wrong class/method tokens, wrong class offsets, and nonpublic exported classes.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 58/58; ARM, RISC-V, and PC `max_crypto` build wrappers passed; Descriptor-bearing `PICO2_HOST_USB_ACCESS=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 ./tools/test-sio-cross-aid-vpcd` passed 35/35; Python syntax check passed; scoped diff check passed. PC emits existing Rust and packed-member warnings.
+- Result: Valid Descriptor-bearing CAPs still load, while Descriptor-backed Export methods must match their actual static method/constructor token and access flags. No physical token was accessed.
+- Decision: Keep Descriptor-backed semantic checks. Descriptor-free CAPs continue bounds/header checks. Continue with legacy persisted-CAP runtime coverage and physical acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T135119Z.log`; Oracle JCVM 3.0.5 §§6.13–6.14; no hardware log.

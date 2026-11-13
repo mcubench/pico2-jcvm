@@ -206,6 +206,14 @@ task:
     enforces one-to-one Export token mappings for classes and static members.
     Physical validation was not run. Descriptor-free exact method-start
     validation and malformed legacy stored-CAP runtime coverage remain open.
+  - Progress 2026-11-13 13:54 UTC: When Descriptor is present, Export class
+    tokens and offsets must resolve to a public Descriptor class, and each
+    exported static-method token must resolve to that class's matching public
+    or protected static method/constructor offset. Unit checks pass 58/58 and
+    the valid Descriptor-bearing SIO VPCD suite passes 35/35. PC, ARM and
+    RISC-V max_crypto builds pass. This follows JCVM 3.0.5 §§6.13–6.14.
+    Physical validation was not run; Descriptor-free method-start and legacy
+    persisted-CAP runtime coverage remain open.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is

@@ -244,6 +244,113 @@ inline bool descriptor_method_offsets(
   return offset <= descriptor_size;
 }
 
+inline bool descriptor_export_method_records(
+    const uint8_t *descriptor_payload, const std::size_t descriptor_size,
+    const std::size_t class_token, const std::size_t class_offset,
+    const uint8_t *&method_records,
+    std::size_t &method_count,
+    uint8_t &class_access_flags) noexcept {
+  if (descriptor_payload == nullptr || descriptor_size == 0) return false;
+  const auto read_be16 = [](const uint8_t *bytes) {
+    return static_cast<std::size_t>(
+        (static_cast<uint16_t>(bytes[0]) << 8) | bytes[1]);
+  };
+
+  method_records = nullptr;
+  method_count = 0;
+  class_access_flags = 0;
+  std::size_t matches = 0;
+  std::size_t offset = 1;
+  const std::size_t descriptor_class_count = descriptor_payload[0];
+  for (std::size_t index = 0; index < descriptor_class_count; ++index) {
+    if (offset > descriptor_size || descriptor_size - offset < 9) {
+      return false;
+    }
+    const std::size_t token = descriptor_payload[offset];
+    const std::size_t reference = read_be16(descriptor_payload + offset + 2);
+    const std::size_t interfaces = descriptor_payload[offset + 4];
+    const std::size_t fields = read_be16(descriptor_payload + offset + 5);
+    const std::size_t methods = read_be16(descriptor_payload + offset + 7);
+    const std::size_t method_start = offset + 9 + interfaces * 2 + fields * 7;
+    if (method_start > descriptor_size ||
+        methods > (descriptor_size - method_start) / 12) {
+      return false;
+    }
+    if (token == class_token) {
+      if ((reference & 0x8000u) != 0 || reference != class_offset) {
+        return false;
+      }
+      ++matches;
+      method_records = descriptor_payload + method_start;
+      method_count = methods;
+      class_access_flags = descriptor_payload[offset + 1];
+    }
+    offset = method_start + methods * 12;
+  }
+  return offset <= descriptor_size && matches == 1;
+}
+
+inline bool valid_export_methods_with_descriptor(
+    const uint8_t *export_payload, const std::size_t export_payload_size,
+    const uint8_t *descriptor_payload,
+    const std::size_t descriptor_size) noexcept {
+  if (export_payload == nullptr || export_payload_size == 0 ||
+      descriptor_payload == nullptr || descriptor_size == 0) {
+    return false;
+  }
+  const auto read_be16 = [](const uint8_t *bytes) {
+    return static_cast<std::size_t>(
+        (static_cast<uint16_t>(bytes[0]) << 8) | bytes[1]);
+  };
+
+  std::size_t export_offset = 1;
+  const std::size_t class_count = export_payload[0];
+  for (std::size_t class_token = 0; class_token < class_count; ++class_token) {
+    if (export_offset > export_payload_size ||
+        export_payload_size - export_offset < 4) {
+      return false;
+    }
+    const std::size_t class_offset = read_be16(export_payload + export_offset);
+    const std::size_t field_count = export_payload[export_offset + 2];
+    const std::size_t method_count = export_payload[export_offset + 3];
+    const std::size_t field_bytes = field_count * 2;
+    if (field_bytes > export_payload_size - export_offset - 4) return false;
+    export_offset += 4 + field_bytes;
+    const std::size_t method_bytes = method_count * 2;
+    if (method_bytes > export_payload_size - export_offset) return false;
+    const uint8_t *exported_methods = export_payload + export_offset;
+
+    const uint8_t *descriptor_methods = nullptr;
+    std::size_t descriptor_method_count = 0;
+    uint8_t class_access_flags = 0;
+    if (!descriptor_export_method_records(
+            descriptor_payload, descriptor_size, class_token, class_offset,
+            descriptor_methods, descriptor_method_count,
+            class_access_flags) ||
+        (class_access_flags & 0x01u) == 0) {
+      return false;
+    }
+    std::array<uint8_t, 256> seen_tokens{};
+    std::size_t exported_descriptor_methods = 0;
+    for (std::size_t index = 0; index < descriptor_method_count; ++index) {
+      const uint8_t *method = descriptor_methods + index * 12;
+      const std::size_t token = method[0];
+      const uint8_t flags = method[1];
+      const bool visible = (flags & (0x01u | 0x04u)) != 0;
+      const bool exportable = (flags & (0x08u | 0x80u)) != 0;
+      if (!visible || !exportable) continue;
+      if (token >= method_count || seen_tokens[token] != 0) return false;
+      seen_tokens[token] = 1;
+      const std::size_t target = read_be16(method + 2);
+      if (read_be16(exported_methods + token * 2) != target) return false;
+      ++exported_descriptor_methods;
+    }
+    if (exported_descriptor_methods != method_count) return false;
+    export_offset += method_bytes;
+  }
+  return export_offset == export_payload_size;
+}
+
 // Validate every offset in an Export component, including entries not
 // currently referenced by this package's ConstantPool. Without Descriptor,
 // method offsets can only be checked for component bounds and a complete
@@ -267,6 +374,11 @@ inline bool valid_export_offsets(
   if (descriptor_payload != nullptr &&
       !descriptor_method_offsets(descriptor_payload, descriptor_size,
                                  descriptor_methods)) {
+    return false;
+  }
+  if (descriptor_payload != nullptr &&
+      !valid_export_methods_with_descriptor(
+          payload, payload_size, descriptor_payload, descriptor_size)) {
     return false;
   }
 

@@ -1,3 +1,26 @@
+# Current handoff — verify Export method tokens against Descriptor — 2026-11-13 13:54 UTC
+
+CAPIN-01 now validates Export class token/offset pairs against Descriptor class
+records when Descriptor is present, requires the corresponding class to be
+public, and checks that each Export static-method token/offset maps to a
+public/protected static method or constructor in that class. This closes a gap
+where an in-bounds Export method offset could identify a virtual method or a
+different token. Unit checks pass 58/58; valid Descriptor-bearing SIO VPCD
+passes 35/35. ARM, RISC-V and PC `max_crypto` builds pass. Oracle reference:
+[JCVM 3.0.5 §§6.13–6.14](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf). No
+physical device was accessed.
+
+Descriptor-free CAPs retain the current bounds/header checks because they do
+not carry enough metadata to confirm method token/access semantics or exact
+method starts. CAPIN-01 remains open for malformed legacy stored-CAP runtime
+coverage and physical acceptance; continue offline with the next LOAD/runtime
+consistency gap. Preserve all unrelated worktree changes.
+
+External Windows object-deletion testing must use the no-debug package
+`build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`;
+its firmware has all CCID, heap-GC, and persistent-GC debug flags OFF.
+Do not use the root-diagnostic image.
+
 # Current handoff — duplicate Export mappings rejected — 2026-11-13 13:39 UTC
 
 CAPIN-01 now rejects duplicate Export `class_offset` targets and duplicate
