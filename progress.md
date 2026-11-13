@@ -28824,3 +28824,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Once PC/SC and BOOTSEL access return, flash this diagnostic image and use the new `CCID_RESPONSE_WAIT` / `CCID_RESPONSE_IN_FLIGHT` states to identify where the transaction stops before changing retry or endpoint-reset behavior.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: No new logs; previous physical evidence remains at `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/2BED26ED20556535/`.
+
+## 2026-11-13 Diagnose compaction tag reconstruction rejection 4 minutes
+
+- Step/experiment: `RESOURCE-01-FS-TAG-RECON-DIAGNOSTIC-20261113`
+- When: '2026-11-13 08:28 UTC' - '2026-11-13 08:32 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added debug-only `FS_TAG_RECON_FAIL` messages at each recursive tag-reconstruction failure, exposing slot, flags, tag length, offset/header, parent slot/length, depth, root length and precise failure reason. The compaction call enables this trace; normal builds do not print it.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including compressed tags, parent-encoded full-index compaction and persistence restart cases. ARM and RISC-V wrapper builds passed with object deletion and CCID diagnostics enabled. `git diff --check -- src/pico_filesystem.cpp` passed. Physical flash was not attempted because neither board entered BOOTSEL and PC/SC only listed Virtual PCD readers.
+- Result: Offline filesystem regressions do not reproduce the reported 2,468-record `tag_reconstruction` rejection. The diagnostic image is `build/arm/pico2_choupi.uf2`, SHA-256 `898e968b8f2b03cfb6533b8c19d093451f1d957d49114daa96bda6b75b4ac7a0`; it has not been flashed. No compaction root cause established.
+- Decision: Flash only after USB/BOOTSEL access returns; capture the exact failure chain before changing compaction or persistence semantics.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: Existing D92 evidence is `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`; new physical diagnostic logs not yet available.

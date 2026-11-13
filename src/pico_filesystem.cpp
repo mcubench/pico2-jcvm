@@ -772,16 +772,52 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
 
 bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
                              uint8_t *tag_length,
-                             uint8_t depth = 0) {
+                             uint8_t depth = 0,
+                             bool report_failure = false) {
+  const auto fail = [&](const char *reason, uint16_t parent_slot = UINT16_MAX,
+                        uint8_t parent_length = 0, uint8_t root_length = 0) {
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    if (report_failure) {
+      const OverlayFile *file =
+          slot < kMaxOverlayFiles ? &overlay[slot] : nullptr;
+      const uint32_t offset = file == nullptr ? UINT32_MAX
+                                               : overlay_offset(*file);
+      const bool header_valid = offset < overlay_bytes_used;
+      const uint8_t header =
+          header_valid ? overlay_bytes[offset] : static_cast<uint8_t>(0);
+      std::printf("CHOUPI:FS_TAG_RECON_FAIL slot=%u reason=%s depth=%u "
+                  "flags=%02X tag_len=%u offset=%lu header=%02X used=%lu "
+                  "parent=%u parent_len=%u root_len=%u\r\n",
+                  static_cast<unsigned>(slot), reason,
+                  static_cast<unsigned>(depth),
+                  file == nullptr ? 0u : static_cast<unsigned>(file->flags),
+                  file == nullptr ? 0u
+                                  : static_cast<unsigned>(file->tag_length),
+                  static_cast<unsigned long>(offset),
+                  static_cast<unsigned>(header),
+                  static_cast<unsigned long>(overlay_bytes_used),
+                  static_cast<unsigned>(parent_slot),
+                  static_cast<unsigned>(parent_length),
+                  static_cast<unsigned>(root_length));
+      std::fflush(stdout);
+    }
+#else
+    (void)reason;
+    (void)parent_slot;
+    (void)parent_length;
+    (void)root_length;
+#endif
+    return false;
+  };
   if (slot >= kMaxOverlayFiles || tag == nullptr || tag_length == nullptr ||
       depth > 64) {
-    return false;
+    return fail("arguments_or_depth");
   }
   const OverlayFile &file = overlay[slot];
   if (!overlay_is_used(file) || !overlay_has_storage(file) ||
       file.tag_length == 0 || file.tag_length > 128 ||
       overlay_offset(file) >= overlay_bytes_used) {
-    return false;
+    return fail("file_metadata");
   }
 
   const uint32_t offset = overlay_offset(file);
@@ -789,14 +825,19 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
   const uint8_t key_length = header & 0x7f;
   const uint8_t *stored = overlay_bytes + offset + 1;
   if ((header & 0x80) != 0) {
-    if (key_length != 3 || file.tag_length < 2) return false;
+    if (key_length != 3 || file.tag_length < 2) {
+      return fail("parent_header");
+    }
     const uint16_t parent_slot = static_cast<uint16_t>(stored[0]) |
                                  static_cast<uint16_t>(stored[1] << 8);
     uint8_t parent_length = 0;
     if (!reconstruct_overlay_tag(parent_slot, tag, &parent_length,
-                                 static_cast<uint8_t>(depth + 1)) ||
-        parent_length + 2 != file.tag_length) {
-      return false;
+                                 static_cast<uint8_t>(depth + 1),
+                                 report_failure)) {
+      return fail("parent_reconstruction", parent_slot, parent_length);
+    }
+    if (parent_length + 2 != file.tag_length) {
+      return fail("parent_length", parent_slot, parent_length);
     }
     tag[parent_length] = stored[2];
     tag[parent_length + 1] = stored[2];
@@ -809,7 +850,7 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
     if (root_length == 0 || file.tag_length <= root_length ||
         ((file.tag_length - root_length) & 1u) != 0 ||
         key_length != root_length + (file.tag_length - root_length) / 2) {
-      return false;
+      return fail("compressed_header", UINT16_MAX, 0, root_length);
     }
     std::memcpy(tag, stored, root_length);
     uint8_t stored_index = root_length;
@@ -818,7 +859,9 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
       tag[index + 1] = tag[index];
     }
   } else {
-    if (key_length != file.tag_length) return false;
+    if (key_length != file.tag_length) {
+      return fail("plain_header");
+    }
     std::memcpy(tag, stored, file.tag_length);
   }
   *tag_length = file.tag_length;
@@ -1036,7 +1079,7 @@ uint8_t compact_deleted_overlay_records() {
     const auto &file = overlay[slot];
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
-    if (!reconstruct_overlay_tag(slot, tag, &tag_length)) {
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, true)) {
       return reject(FS_STATUS_IO_UNKNOWN, "tag_reconstruction");
     }
     if (!overlay_has_record(file)) {

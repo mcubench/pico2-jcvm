@@ -31,11 +31,14 @@ Added debug-only, once-per-second `CHOUPI:CCID_RESPONSE_WAIT` logging while a
 response is blocked before submission, plus `CHOUPI:CCID_RESPONSE_IN_FLIGHT`
 logging while an accepted final transfer awaits its completion callback. The
 second trace distinguishes a response stuck in TinyUSB's endpoint from the
-extension-state blocker. `./tools/test-ccid-progress-flow` passes 30/30; ARM
-and RISC-V wrapper builds pass with object deletion and CCID debug enabled.
-Latest ARM image hash is
-`6147b04aea8abb3e90ac112347bb4fc331c54eff3de7bf10aea21955d92d55a7`. Neither
-diagnostic build was flashed because neither board entered BOOTSEL.
+extension-state blocker. Also added debug-only `FS_TAG_RECON_FAIL` details for
+the compactor's failing slot, metadata, parent chain, and reconstruction
+reason. `./tools/test-ccid-progress-flow` passes 30/30;
+`./tools/test-rp2350-fs-overlay` passes (`TEST:SUMMARY fail=0`), including
+parent-encoded full-index compaction. ARM and RISC-V wrapper builds pass with
+object deletion and CCID debug enabled. Latest ARM image hash is
+`898e968b8f2b03cfb6533b8c19d093451f1d957d49114daa96bda6b75b4ac7a0`. It has
+not been flashed because neither board entered BOOTSEL.
 
 Next: request PC/SC recovery and BOOTSEL access via `.agent/EXT_REQUESTS.md`.
 Then flash the diagnostic image to an available identified board, inspect the

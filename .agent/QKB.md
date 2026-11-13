@@ -722,6 +722,19 @@ image is `build/arm/pico2_choupi.uf2`, SHA-256
 `6147b04aea8abb3e90ac112347bb4fc331c54eff3de7bf10aea21955d92d55a7`; it has
 not been flashed because the identified devices did not enter BOOTSEL.
 
+### D92 tag reconstruction diagnostics
+
+Added debug-only `FS_TAG_RECON_FAIL` logging inside the compaction tag
+reconstructor. It reports the failing slot, flags, tag length, serialized
+offset/header, parent slot and length, depth, root length, and precise local
+failure reason; recursive failures are reported along the chain. This is meant
+to distinguish stale parent indices from malformed compressed/plain record
+metadata. `./tools/test-rp2350-fs-overlay` still passes, including full-index
+compaction with a parent-encoded child. The new trace is build-validated only;
+no physical capture identifies D92's failing record yet. Current diagnostic
+image: `build/arm/pico2_choupi.uf2`, SHA-256
+`898e968b8f2b03cfb6533b8c19d093451f1d957d49114daa96bda6b75b4ac7a0`.
+
 The separate D92 run hit `FS_COMPACT_REJECT status=131
 reason=tag_reconstruction` repeatedly with 2,468 live overlay entries and
 98,273/98,304 bytes. Persistent writes then returned `F205` /
