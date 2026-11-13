@@ -29148,3 +29148,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the restart coverage. Applet Export is optional and library Export validation is covered independently; physical acceptance remains open.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/capin-persisted-cap-corruption-vpcd-20261113.log`, `artifacts/logs/capin-unknown-component-persisted-vpcd-20261113.log`, `artifacts/logs/capin-missing-class-persisted-vpcd-20261113-retry60.log`, `artifacts/logs/capin-missing-import-persisted-vpcd-20261113.log`.
+
+## 2026-11-13 Prepare current no-debug Windows package 5 minutes
+
+- Step/experiment: `WIN-OBJECT-DELETION-NODEBUG-0E67DF89`
+- When: '2026-11-13 15:22 UTC' - '2026-11-13 15:27 UTC'
+- Model: `GPT-6 Codex`
+- Change: Packaged the current ARM `max_crypto` empty-card image with object deletion enabled and CCID, heap-GC, persistent-GC debug logging disabled. Added exact provenance and Windows validation instructions; updated external request and handoff to supersede older packages.
+- Validation: ARM/RISC-V build wrappers, no-debug trace checks for both architectures, fixture hash verification, package SHA256SUMS, and ZIP integrity passed. No hardware flash or Windows test was performed.
+- Result: UF2 SHA-256 `51572f69103c02dfd056f1772366d1cafbd8ac92d0da7967e9f310a6099f94f5`; ZIP SHA-256 `e51d161d6622e77595fd704988e45229060a27550f2f3be575ff22d7aeb74657`. Object deletion is enabled; all debug logging flags are OFF.
+- Decision: Use this no-debug package for the next external test; do not substitute prior images.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-0e67df89.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-0e67df89.uf2`; package provenance and checksum list.

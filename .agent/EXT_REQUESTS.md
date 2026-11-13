@@ -1,5 +1,28 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-NODEBUG-0E67DF89 — Test current no-debug firmware
+
+Created 2026-11-13 15:27 UTC. Please use this fresh current-checkout image for
+the Windows object-deletion campaign. It is an empty-card ARM `max_crypto`
+image with object deletion enabled and all CCID, heap-GC, and persistent-GC
+debug logging disabled (serial wait 0 ms). The build provenance says
+`mode=diagnostic` because object deletion is enabled; it does not indicate
+debug logging.
+
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-nodebug-windows-0e67df89.zip)
+- Package SHA-256: `e51d161d6622e77595fd704988e45229060a27550f2f3be575ff22d7aeb74657`
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-0e67df89.uf2)
+- UF2 SHA-256: `51572f69103c02dfd056f1772366d1cafbd8ac92d0da7967e9f310a6099f94f5`
+- Source HEAD: `0e67df893aea78efbf1a428608a74060af090b14` (worktree dirty; see package provenance).
+
+The package README contains hash checks, exact BOOTSEL copying, reader/ATR
+checks, GPPro installation of the unchanged JCAlgTest 1.8.4/jc305 CAP, and
+client 1.8.5 campaign steps. Please return the Windows version, reader/ATR,
+chip ID, complete campaign result directory, and serial log. The previous
+d63877f6 package and all root-diagnostic images are superseded for this new
+run.
+
+
 ## PCSC-BOOTSEL-RECOVERY-20261113 — Restore physical reader and BOOTSEL access
 
 Created 2026-11-13 08:19 UTC. The local option-2 clients have exited. After

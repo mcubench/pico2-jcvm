@@ -1,3 +1,23 @@
+# Current handoff — current no-debug Windows image — 2026-11-13 15:27 UTC
+
+The user clarified that the Windows external test must use a no-debug image. A
+fresh empty-card ARM `max_crypto` image was built from current HEAD
+`0e67df893aea78efbf1a428608a74060af090b14`, with object deletion ON, all
+CCID/heap-GC/persistent-GC debug logging OFF, and serial wait 0 ms. This exact
+image is packaged at
+`build/external-test/pico2-jcvm-object-deletion-nodebug-windows-0e67df89.zip`
+(SHA-256 `e51d161d6622e77595fd704988e45229060a27550f2f3be575ff22d7aeb74657`).
+Standalone UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-0e67df89.uf2`
+(SHA-256 `51572f69103c02dfd056f1772366d1cafbd8ac92d0da7967e9f310a6099f94f5`,
+4,108,288 bytes). Build provenance discloses that the source worktree was dirty.
+The build tool labels the mode `diagnostic` because deletion is enabled; this
+is not a debug-logging build. The package README explicitly explains this.
+
+ARM/RISC-V builds, no-debug trace checks on both architectures, fixture hash
+verification, package SHA256SUMS, and ZIP integrity passed before packaging. No
+physical device was flashed. This package supersedes d63877f6 and older
+no-debug packages for a fresh Windows run.
+
 # Current handoff — persisted CAP component corruption coverage — 2026-11-13 15:08 UTC
 
 PC VPCD now exercises three persistent CAP mutations after installation:
