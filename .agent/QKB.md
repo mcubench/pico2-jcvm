@@ -28,6 +28,20 @@ it with an AID prefix rule. Rejection maps to `6982`. The regression command is
 through elevated host access. It passes after the fix; public API installs and
 the 35-case cross-AID SIO suite also pass.
 
+## CAP Export member offsets must be checked before persistence — viable partial fix 2026-11-13
+
+Checking only ConstantPool references leaves malformed or unused Export
+entries unchecked. At LOAD, validate every static-field offset against the
+StaticField image and every static-method offset against the Method component,
+including complete method headers. When Descriptor is present, build a bounded
+method-offset bitmap once and require exported offsets to occur in its method
+records. Without Descriptor, the CAP format does not provide enough information
+to prove an offset is an exact method start; retain the bounds/header check and
+do not claim exact-start validation. The VPCD fixture appends a malformed,
+unreferenced Export method and verifies final LOAD returns `6A80` before
+persistence. Remaining: validate Export `class_offset` values against Class
+record starts and tighten exported field width/type checks where metadata allows.
+
 ## BOOTSEL force-load failure and board failover — 2026-11-13
 
 After one board accepted a diagnostic image, a later identity-pinned force-load

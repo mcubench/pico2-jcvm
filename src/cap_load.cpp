@@ -670,6 +670,25 @@ bool validate_cap_import_independent(const jcvm::JC_Cap &cap) {
       return false;
     }
   }
+
+  if (const auto *exports = cap.getExport(); exports != nullptr) {
+    if (static_fields == nullptr || methods == nullptr) return false;
+    const auto method_bytes = methods->methods();
+    const std::size_t descriptor_size =
+        cap.getDescriptor() == nullptr ? 0 : NTOHS(cap.getDescriptor()->size);
+    const uint8_t *descriptor_payload =
+        cap.getDescriptor() == nullptr
+            ? nullptr
+            : reinterpret_cast<const uint8_t *>(
+                  &cap.getDescriptor()->class_count);
+    if (!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            reinterpret_cast<const uint8_t *>(&exports->class_count),
+            NTOHS(exports->size), NTOHS(static_fields->image_size),
+            method_offset_base, method_bytes.data(), method_bytes.size(),
+            descriptor_payload, descriptor_size)) {
+      return false;
+    }
+  }
   return true;
 }
 

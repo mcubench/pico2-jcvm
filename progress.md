@@ -28969,3 +28969,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: CAPIN-02's import enforcement, export-table evidence and hostile INSTALL acceptance are complete. Continue with the next open CAP input/security item from `TODO.md`; no device flash is needed for this host-resolver change.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/reviews/cap-import-policy/nativeimpl-export-table-20261113.txt`; `artifacts/logs/host-vpcd-multipackage-apdu-20261113T103940Z.log`; `artifacts/logs/host-vpcd-multipackage-apdu-20261113T103537Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261113T103735Z.log`; ROM-mask generator submodule commit `0532cf3`.
+
+## 2026-11-13 Validate Export member offsets at LOAD 28 minutes
+
+- Step/experiment: `CAPIN-01-EXPORT-MEMBER-OFFSETS-20261113`
+- When: '2026-11-13 10:56 UTC' - '2026-11-13 11:24 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added LOAD-time validation for all Export static-field offsets against the static image and all Export static-method offsets against the Method component, including unreferenced entries. Method headers must fit; when Descriptor is present, a fixed 8 KiB bitmap checks that exported offsets occur in Descriptor method records. Added unit coverage and malformed VPCD fixtures for zero and unreferenced out-of-range method offsets. Updated TODO, QKB, and HANDOFF. Existing source CAPs remain unchanged.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 42/42; Python bytecode compilation and scoped `git diff --check` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Full Descriptor-free and Descriptor-bearing SIO VPCD suites each passed 35/35. Focused malformed Export cases returned `6A80` during final LOAD before persistence, with Descriptor omitted and included. The repository-wide `git diff --check` reports whitespace in unrelated pre-existing dirty files; no hardware was accessed.
+- Result: Both valid CAP layouts continue to load/link and run. Export static-field offsets outside the image and method offsets in handlers/outside Method are rejected; the unreferenced bad method regression verifies validation is not limited to used ConstantPool entries. ARM firmware end `0x100f4998`, 46,696 bytes remain.
+- Decision: This closes Export member component-bound checks within CAPIN-01. Keep CAPIN-01 open for Export `class_offset` record-start/type validation, exact method starts when Descriptor is omitted, legacy stored-CAP null guards, and physical acceptance. Continue per TODO priority ordering.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T105406Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T110607Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T110635Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T111852Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T112130Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T112334Z.log`.

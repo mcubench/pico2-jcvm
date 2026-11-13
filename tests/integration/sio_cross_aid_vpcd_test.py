@@ -610,6 +610,47 @@ def inject_zero_exported_static_method_offset(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def append_unreferenced_bad_export_method_offset(code: bytes) -> bytes:
+    """Append an unused Export entry whose method offset is outside Method."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    export_index = next((i for i, item in enumerate(components)
+                         if item[0] == 10), None)
+    directory_index = next((i for i, item in enumerate(components)
+                            if item[0] == 2), None)
+    if export_index is None or directory_index is None:
+        raise RuntimeError("test CAP lacks Export or Directory component")
+
+    export = components[export_index]
+    export_size = int.from_bytes(export[1:3], "big")
+    if export_size < 5 or export[3] == 0:
+        raise RuntimeError("test CAP has no exported class to copy")
+    # Reuse a valid class target but add a distinct, unreferenced method entry.
+    class_offset = bytes(export[4:6])
+    export.extend(class_offset + b"\x00\x01\xff\xff")
+    export[3] += 1
+    export[1:3] = (export_size + 6).to_bytes(2, "big")
+
+    directory = components[directory_index]
+    directory_size = int.from_bytes(directory[1:3], "big")
+    size_offset = 3 + 9 * 2
+    if directory_size < size_offset + 2:
+        raise RuntimeError("Directory lacks Export component size field")
+    if int.from_bytes(directory[size_offset:size_offset + 2], "big") != export_size:
+        raise RuntimeError("Directory Export size does not match component")
+    directory[size_offset:size_offset + 2] = (export_size + 6).to_bytes(2, "big")
+    return b"".join(bytes(component) for component in components)
+
+
 def remove_empty_export_class_records(code: bytes) -> bytes:
     """Drop Export class records that have no fields or methods."""
     components: list[bytearray] = []
@@ -870,18 +911,36 @@ def main() -> int:
                 bad_service_code = inject_zero_exported_static_method_offset(
                     service[0]
                 )
-                vpcd.load_package(scp, bad_service_code, service[1])
-                response = vpcd.install_applet(
-                    scp, service[1], service[2][0], service[2][0],
-                    expected_statuses=(0x6A80,),
+                response = vpcd.load_package(
+                    scp, bad_service_code, service[1],
+                    expected_final_statuses=(0x6A80,),
                 )
                 if response[-2:] != bytes.fromhex("6A80"):
                     raise RuntimeError(
-                        "zero Export static-method offset INSTALL returned "
+                        "zero Export static-method offset LOAD returned "
                         f"{response[-2:].hex().upper()}, expected 6A80"
                     )
-                print("TEST:PASS INSTALL rejected a zero Export static-method "
-                      "offset before applet execution")
+                print("TEST:PASS LOAD rejected a zero Export static-method "
+                      "offset before persistence")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get(
+                    "SIO_CROSS_AID_TEST_UNREFERENCED_BAD_EXPORT_METHOD_OFFSET"
+            ) == "1":
+                bad_service_code = append_unreferenced_bad_export_method_offset(
+                    service[0]
+                )
+                response = vpcd.load_package(
+                    scp, bad_service_code, service[1],
+                    expected_final_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "unreferenced bad Export method offset LOAD returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS LOAD rejected an unreferenced Export method "
+                      "offset before persistence")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_STATIC_METHODREF_OFFSET") == "1":

@@ -244,7 +244,10 @@ def load_code(cap_path: Path) -> tuple[bytes, bytes, list[bytes]]:
     return code, package_aid, applet_aids
 
 
-def load_package(scp: Scp03, code: bytes, package_aid: bytes) -> None:
+def load_package(
+    scp: Scp03, code: bytes, package_aid: bytes,
+    expected_final_statuses: tuple[int, ...] = (0x9000, 0x6310),
+) -> bytes:
     init = (lv(package_aid) + lv(ISD_AID) + b"\x00\x00\x00")
     scp.command(0xE6, 0x02, 0x00, init, f"LOAD init {package_aid.hex()}")
     block = b"\xC4" + ber_length(len(code)) + code
@@ -254,14 +257,18 @@ def load_package(scp: Scp03, code: bytes, package_aid: bytes) -> None:
         chunk = block[offset:offset + 239]
         offset += len(chunk)
         final = offset == len(block)
-        scp.command(0xE8, 0x80 if final else 0x00, block_number,
-                    chunk, f"LOAD block {package_aid.hex()} #{block_number}")
+        response = scp.command(
+            0xE8, 0x80 if final else 0x00, block_number, chunk,
+            f"LOAD block {package_aid.hex()} #{block_number}",
+            expected_final_statuses if final else (0x9000, 0x6310),
+        )
         print(
             f"TEST:TRACE LOAD package={package_aid.hex().upper()} "
             f"block={block_number} bytes={len(chunk)} final={int(final)}",
             flush=True,
         )
         block_number += 1
+    return response
 
 
 def install_applet(scp: Scp03, package_aid: bytes, applet_aid: bytes,

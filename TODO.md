@@ -168,6 +168,17 @@ task:
     Physical validation was intentionally skipped because the user disconnected
     the devices. Export-table consistency beyond references reached through
     Constant Pool remains open.
+  - Progress 2026-11-13 11:21 UTC: LOAD now checks every exported static-field
+    offset against the static image and every exported static-method offset
+    against the Method component, including methods that no ConstantPool entry
+    references. When Descriptor is present, a fixed 8 KiB bitmap confirms each
+    method offset occurs in its method records; without Descriptor, validation
+    checks bounds and a complete method header only. Malformed zero and
+    unreferenced out-of-range Export method offsets reject final LOAD with
+    `6A80` before persistence. Unit validation passes 42/42; both Descriptor
+    modes of the SIO VPCD suite pass 35/35; ARM/RISC-V builds pass. Physical
+    validation was not run. Export class-offset-to-Class-record validation and
+    exact starts in Descriptor-free CAPs remain open.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is

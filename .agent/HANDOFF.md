@@ -1,4 +1,34 @@
-# Current handoff — CAPIN-02 ROM import policy implemented — 2026-11-13 10:40 UTC
+# Current handoff — CAPIN-01 Export member offsets validated at LOAD — 2026-11-13 11:21 UTC
+
+LOAD now validates every Export static-field offset against the static image
+and every Export static-method offset against the Method component, including
+entries no ConstantPool currently references. A fixed 8 KiB bitmap checks
+exported methods against Descriptor method records when Descriptor is present.
+Without Descriptor, validation checks bounds and a complete method header but
+cannot prove the exact method start. The malformed, unreferenced Export-method
+fixture rejects final LOAD with `6A80` before persistence.
+
+Validation: the sanitizer CAP validation helper passes 42/42; VPCD cross-AID
+SIO suites pass 35/35 with Descriptor omitted and included; the malformed
+unreferenced Export entry rejects with `6A80` in both Descriptor modes. PC,
+ARM, and RISC-V `max_crypto` builds pass. No physical device was accessed.
+The first Descriptor-bearing run exposed that Descriptor has trailing
+ConstantPool/type metadata after class records; the parser now correctly accepts
+that layout. Scoped diff check and Python syntax check pass. The repository-wide
+diff check still reports unrelated pre-existing whitespace changes.
+
+CAPIN-01 remains open for Export `class_offset` validation, legacy stored-CAP
+null guards, and physical acceptance. Follow `TODO.md` priority ordering for
+the next task. Preserve unrelated uncommitted changes, including the existing
+`src/cap_load.cpp` hunks; stage only the Export-validation hunks in that file.
+
+For external Windows validation, the requested image remains the no-debug
+package `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`
+(SHA-256 `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`)
+and ZIP `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip`.
+The debug root-diagnostic images are not for this external run.
+
+# Previous handoff — CAPIN-02 ROM import policy implemented — 2026-11-13 10:40 UTC
 
 CAPIN-02 is implemented. `Import_Handler::getPackageIndex` now permits
 dynamic CAPs to resolve only exact public Java Card / GlobalPlatform ROM AIDs

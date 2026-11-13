@@ -153,6 +153,38 @@ int main() {
                 internal_static_method, 1, descriptor_for_method_0x17, 10),
         "truncated Descriptor method record rejected");
 
+  const uint8_t one_exported_method[] = {1, 0, 0, 0, 1, 0, 3};
+  const uint8_t method_stream[] = {0, 0, 0, 0};
+  const uint8_t descriptor_for_exported_method[] = {
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3,
+      0, 0, 0, 0, 0, 0, 0, 0};
+  check(jcvm::cap_constant_pool_validation::valid_export_offsets(
+            one_exported_method, sizeof(one_exported_method), 4, 2,
+            method_stream, sizeof(method_stream),
+            descriptor_for_exported_method,
+            sizeof(descriptor_for_exported_method)),
+        "all Export offsets resolve within component bounds and Descriptor");
+  const uint8_t exported_field_out_of_range[] = {1, 0, 0, 1, 0, 4};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            exported_field_out_of_range, sizeof(exported_field_out_of_range),
+            4, 2, method_stream, sizeof(method_stream)),
+        "unreferenced exported static field outside image rejected");
+  const uint8_t exported_method_out_of_range[] = {
+      1, 0, 0, 0, 1, 0xff, 0xff};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            exported_method_out_of_range,
+            sizeof(exported_method_out_of_range), 4, 2, method_stream,
+            sizeof(method_stream)),
+        "unreferenced exported static method beyond component rejected");
+  const uint8_t exported_method_not_in_descriptor[] = {
+      1, 0, 0, 0, 1, 0, 4};
+  check(!jcvm::cap_constant_pool_validation::valid_export_offsets(
+            exported_method_not_in_descriptor,
+            sizeof(exported_method_not_in_descriptor), 4, 2, method_stream,
+            sizeof(method_stream), descriptor_for_exported_method,
+            sizeof(descriptor_for_exported_method)),
+        "Export method offset must identify a Descriptor method record");
+
   unsigned int resolved_external_tokens = 0;
   check(jcvm::cap_constant_pool_validation::validate_external_class_tokens(
             external_records, 6,
