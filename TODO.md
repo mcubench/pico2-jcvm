@@ -46,8 +46,9 @@ in [progress.md](progress.md); reusable diagnoses go in QKB.
   CDC-1200 reset during a long synchronous applet operation, then capture the
   BOOTSEL re-enumeration latency. The user has now disconnected the boards;
   resume only after physical availability is reported and confirmed in guest.
-  Offline checks remain reset/CCID 26/26 and identity-pinned target-selection
-  11/11. See `BOOTSEL-01-THREE-BOARD-CDC-RECOVERY` in `progress.md`.
+  Offline checks were refreshed on 2026-11-13: reset/CCID progress 30/30 and
+  identity-pinned target-selection 11/11. See
+  `BOOTSEL-01-OFFLINE-RECHECK-20261113` in `progress.md`.
 
 ### BUILD-DBG-01
 

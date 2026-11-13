@@ -1,4 +1,24 @@
-# Current handoff — CAPIN-01 Export member offsets validated at LOAD — 2026-11-13 11:21 UTC
+# Current handoff — BOOTSEL offline recheck; hardware acceptance pending — 2026-11-13 11:30 UTC
+
+The external Windows test must use the no-debug image
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`
+(SHA-256 `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`)
+and package `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip`.
+Do not substitute root-diagnostic debug builds.
+
+Offline BOOTSEL checks were refreshed: `./tools/test-ccid-progress-flow`
+passes 30/30 and `./tools/test-flash-target-selection` passes 11/11. USB
+descriptor inspection confirms CDC interfaces 0/1, CCID interface 2, and the
+vendor reset interface 3; the MS OS 2.0 function subset references interface
+3. Physical vendor-reset and CDC-1200 recovery during a long synchronous
+operation remain unverified. The user has disconnected the hardware; continue
+offline and do not attempt USB or PC/SC access until availability is reported.
+
+Next: follow `TODO.md` priority ordering. BOOTSEL-01 is implemented and
+offline-validated but remains open for physical acceptance. Preserve existing
+uncommitted changes; recent CAPIN-01 work is committed as `c9bfd87d`.
+
+# Previous handoff — CAPIN-01 Export member offsets validated at LOAD — 2026-11-13 11:21 UTC
 
 LOAD now validates every Export static-field offset against the static image
 and every Export static-method offset against the Method component, including

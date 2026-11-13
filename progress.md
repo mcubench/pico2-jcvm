@@ -28981,3 +28981,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: This closes Export member component-bound checks within CAPIN-01. Keep CAPIN-01 open for Export `class_offset` record-start/type validation, exact method starts when Descriptor is omitted, legacy stored-CAP null guards, and physical acceptance. Continue per TODO priority ordering.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T105406Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T110607Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T110635Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T111852Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T112130Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T112334Z.log`.
+
+## 2026-11-13 Refresh BOOTSEL offline acceptance checks 6 minutes
+
+- Step/experiment: `BOOTSEL-01-OFFLINE-RECHECK-20261113`
+- When: '2026-11-13 11:24 UTC' - '2026-11-13 11:30 UTC'
+- Model: `GPT-6 Codex`
+- Change: Re-inspected the composite USB descriptor and reset callback integration; refreshed the BOOTSEL acceptance evidence in TODO, QKB, and HANDOFF. Confirmed the no-debug Windows image remains the requested external-test artifact.
+- Validation: `./tools/test-ccid-progress-flow` passed (`TEST:SUMMARY pass=30 fail=0`); `./tools/test-flash-target-selection` passed (`TEST:SUMMARY pass=11 fail=0`). Descriptor inspection confirms 4 total interfaces, CDC 0/1, CCID 2, vendor reset 3, and matching MS OS 2.0 function subset interface 3. No hardware or USB commands were run.
+- Result: Software reset request ordering and target identity pinning remain covered offline. Physical vendor reset, reset during a long synchronous operation, and re-enumeration timing remain unverified because devices are disconnected.
+- Decision: Keep BOOTSEL-01 open for physical acceptance, but continue with the next available offline task in TODO priority order. External Windows validation should use the no-debug `9e7223ed` UF2/package only.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: Unit-test outputs are recorded above; no additional log files.

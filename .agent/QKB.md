@@ -561,6 +561,15 @@ no BOOTSEL `000f`. No reset or flash was attempted. Hardware confirmation of
 vendor reset, CDC-1200 reset during idle and a long synchronous workload, and
 request-to-re-enumeration latency remains open; no latency metric is measured.
 
+Offline recheck on 2026-11-13: `./tools/test-ccid-progress-flow` passes
+30/30, including deferred callback reset servicing during synchronous native
+work; `./tools/test-flash-target-selection` passes 11/11, including chip-ID
+pinned rediscovery after BOOTSEL re-enumerates at a new USB topology path.
+Descriptor inspection confirms config interface count 4, CDC interfaces 0/1,
+CCID interface 2, and SDK vendor reset interface 3, with the MS OS 2.0 function
+subset also pointing to interface 3. These are offline checks only and do not
+close the physical reset/re-enumeration acceptance gap.
+
 ## JCAlgTest option 2 PC/SC failures on 8E and D92 — 2026-11-12
 
 **Symptom:** The unchanged JCAlgTest 1.8.4 `ALG_PERFORMANCE_STATIC` run on 8E
