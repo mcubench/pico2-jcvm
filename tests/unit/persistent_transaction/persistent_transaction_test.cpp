@@ -3589,6 +3589,80 @@ int main() {
   }
 
   {
+    constexpr uint8_t package_id = 0xf4;
+    const jcvm::fs::Tag static_root{3, {0x02, package_id, 0x08}};
+    const uint16_t previous_field_count =
+        persistent_transaction_test::instance_field_count;
+    persistent_transaction_test::instance_field_count = 0;
+    bool package_static_alias_subtree_protected = false;
+    try {
+      jcvm::Heap heap(0x42);
+      const auto root_reference = heap.addInstance(
+          jcvm::JC_Instance(heap, 2, 3));
+      const auto root_instance = heap.getInstance(root_reference);
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          static_root, root_reference, heap);
+      const auto root_body = root_instance->getPersistentTag();
+      const auto alias_tag =
+          jcvm::FlashMemory_Handler::computeTag(root_body, 0);
+      jcvm::fs::Tag target_body = alias_tag;
+      target_body.value[target_body.len++] = 0xff;
+      target_body.value[target_body.len++] = 0xfe;
+      target_body.value[target_body.len++] = 0;
+      target_body.value[target_body.len++] = 0;
+      target_body.value[target_body.len++] = 0;
+      target_body.value[target_body.len++] = 0x61;
+      jcvm::fs::Tag nested_field = target_body;
+      nested_field.value[nested_field.len++] = 0;
+      nested_field.value[nested_field.len++] = 0;
+      const std::vector<uint8_t> target_value{
+          static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+          0, 1, 0x51};
+      const std::vector<uint8_t> nested_value{
+          static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_BYTE), 0x62};
+      std::vector<uint8_t> alias_record{0xfe, target_body.len};
+      alias_record.insert(alias_record.end(), target_body.value,
+                          target_body.value + target_body.len);
+      persistent_transaction_test::seed(
+          target_body.value, target_body.len, target_value);
+      persistent_transaction_test::seed(
+          nested_field.value, nested_field.len, nested_value);
+      persistent_transaction_test::seed(alias_tag.value, alias_tag.len,
+                                        std::move(alias_record));
+
+      CandidateTags candidates;
+      const auto result =
+          jcvm::PersistentInventory::visitUnreachablePackageStaticTags(
+              package_id, heap, std::vector<jcvm::jref_t>{root_reference},
+              collect_candidate, &candidates);
+      const std::vector<uint8_t> root_body_value =
+          persistent_transaction_test::read(root_body.value, root_body.len);
+      package_static_alias_subtree_protected =
+          result == jcvm::PersistentInventory::VisitResult::Complete &&
+          candidates.tags.empty() && !root_body_value.empty() &&
+          persistent_transaction_test::read(target_body.value,
+                                             target_body.len) == target_value &&
+          persistent_transaction_test::read(nested_field.value,
+                                             nested_field.len) == nested_value;
+      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+          alias_tag));
+      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+          target_body));
+      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+          nested_field));
+      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+          root_body));
+      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
+          static_root));
+    } catch (...) {
+      package_static_alias_subtree_protected = false;
+    }
+    persistent_transaction_test::instance_field_count = previous_field_count;
+    expect(package_static_alias_subtree_protected,
+           "package_static_reclaimer_preserves_missed_edge_alias_subtree");
+  }
+
+  {
     constexpr uint8_t package_id = 0xf2;
     const uint8_t target_tag[] = {0x02, package_id, 0x20, 0xff, 0xfe};
     const uint8_t orphan_tag[] = {0x02, package_id, 0x21, 0xff, 0xfe};

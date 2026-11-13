@@ -29233,6 +29233,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.
 
+## 2026-11-13 MEM-01 T5 protect package-static alias subtrees 4 minutes
+
+- Step/experiment: `MEM-01-T5-PACKAGE-STATIC-ALIAS-GUARD-20261113`
+- When: '2026-11-13 19:33 UTC' - '2026-11-13 19:37 UTC'
+- Model: `GPT-6 Codex`
+- Change: Reused the reachable-alias collector for package-static records and protect every candidate beneath each target prefix. Added a missed-edge regression with a live package-static root instance, an alias field that the heap layout omits, and a descendant under the target body. Also removed a redundant nested condition found while reviewing the shared collector.
+- Validation: `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`, including the package-static alias subtree regression. ARM and RISC-V `max_crypto` wrappers passed with object deletion ON and debug flags OFF. `git -c core.whitespace=cr-at-eol diff --check` passed. No physical device accessed.
+- Result: Applet and package-static reclaimers now both preserve missed-edge alias targets. ARM image ends at `0x100f6010`, leaving 40,944 bytes. UF2 SHA-256 `dbc55719219884516ea95d0e3becfafbd7972026a894b5e42b76024ec52788fa`. RISC-V wrapper remains VM core/smoke only.
+- Decision: T5 offline regression is complete. Continue to T6/T7; full long-run and physical gates remain required.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.
+
 ## 2026-11-13 MEM-01 T4 protect alias-rescued subtrees 28 minutes
 
 - Step/experiment: `MEM-01-T4-ALIAS-SUBTREE-20261113`

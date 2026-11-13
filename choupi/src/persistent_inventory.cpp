@@ -415,9 +415,7 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
     target.len = data[1];
     std::memcpy(target.value, data + 2, target.len);
     if (!hasTagPrefixRoot(target, *context.targets)) {
-    if (!hasTagPrefixRoot(target, *context.targets)) {
       context.targets->push_back(target);
-    }
     }
     if (fs_read_inplace(target.value, target.len, &data, &length) != 0 ||
         data == nullptr || length == 0) {
@@ -429,13 +427,15 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
   return false;
 }
 
-VisitResult collectReachableAliasTargets(const uint8_t applet_owner,
-                                         Heap &heap,
-                                         std::vector<Tag> &targets) {
+using ReachableTagScanner = VisitResult (*)(uint8_t, TagVisitor, void *);
+
+VisitResult collectReachableAliasTargets(const uint8_t owner, Heap &heap,
+                                         std::vector<Tag> &targets,
+                                         ReachableTagScanner scanner) {
   ReachableAliasTargetContext context{&heap, &targets};
   try {
-    const VisitResult result =
-        visitApplet(applet_owner, collectReachableAliasTarget, &context);
+    const VisitResult result = scanner(owner, collectReachableAliasTarget,
+                                       &context);
     return context.failure == VisitResult::Complete ? result
                                                      : context.failure;
   } catch (...) {
@@ -550,7 +550,7 @@ static VisitResult visitUnreachableAppletTagsWithAliasTargets(
   if (summary.persistent_tagged_arrays != 0 ||
       summary.persistent_tagged_instances != 0) {
     const VisitResult alias_scan = collectReachableAliasTargets(
-        applet_owner, heap, reachable_alias_targets);
+        applet_owner, heap, reachable_alias_targets, visitApplet);
     if (alias_scan != VisitResult::Complete) return alias_scan;
   }
 
@@ -673,6 +673,7 @@ struct PackageStaticCandidateContext {
   TagVisitor visitor;
   void *visitor_context;
   const std::vector<Tag> *foreign_alias_targets;
+  const std::vector<Tag> *reachable_alias_targets;
 };
 
 bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
@@ -684,7 +685,8 @@ bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
   if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
-      hasTagPrefixRoot(tag, *context.foreign_alias_targets)) {
+      hasTagPrefixRoot(tag, *context.foreign_alias_targets) ||
+      hasTagPrefixRoot(tag, *context.reachable_alias_targets)) {
     return true;
   }
   return context.visitor(tag, context.visitor_context);
@@ -702,8 +704,17 @@ VisitResult visitUnreachablePackageStaticTagsWithAliasTargets(
       heap.traceReachableFrom(enumerate_roots, root_context);
   if (!summary.complete) return VisitResult::IncompleteReachability;
 
+  std::vector<Tag> reachable_alias_targets;
+  if (summary.persistent_tagged_arrays != 0 ||
+      summary.persistent_tagged_instances != 0) {
+    const VisitResult alias_scan = collectReachableAliasTargets(
+        package_id, heap, reachable_alias_targets, visitPackageStatics);
+    if (alias_scan != VisitResult::Complete) return alias_scan;
+  }
+
   PackageStaticCandidateContext context{
-      &heap, candidate_visitor, candidate_context, &foreign_alias_targets};
+      &heap, candidate_visitor, candidate_context, &foreign_alias_targets,
+      &reachable_alias_targets};
   return visitPackageStatics(package_id, visitUnreachablePackageStaticTag,
                              &context);
 }

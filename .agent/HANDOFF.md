@@ -14555,4 +14555,17 @@ remaining, UF2 SHA-256 `7a12ee9041278c4ea67326e489ef5849179f56cdb53765c7033da6bf
 No physical device was accessed. T5 package-static alias protection
 and T7 long-run overlay validation remain open.
 
+# Current handoff — MEM-01 T5 package-static alias protection — 2026-11-13 19:37 UTC
+
+T5 is implemented. The shared reachable-alias collector now scans package
+static persistent records as well as applet records, and package-static
+inventory protects all tags under aliases owned by traced durable references.
+The regression uses a package-static root instance whose field edge is omitted
+from heap layout; its alias target body and nested descendant remain byte
+identical and no deletion candidates are returned.
+`./tools/test-persistent-transaction` passes `TEST:SUMMARY fail=0`; ARM and RISC-V max_crypto wrappers
+pass with object deletion enabled and debug flags off. Current ARM image hash:
+`dbc55719219884516ea95d0e3becfafbd7972026a894b5e42b76024ec52788fa`.
+No hardware was accessed. Continue with T6/T7; T8 remains gated on T1–T7.
+
 # Current handoff — MEM-01 T2 skip bad candidates and preserve progress — 2026-11-13 16:38 UTC
