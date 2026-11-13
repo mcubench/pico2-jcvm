@@ -779,3 +779,20 @@ stall as a separate failure class. Follow-up host coverage now also tests a
 nested child -> parent -> root chain with both ancestors tombstoned through
 compaction, re-created after remapping, and verified after snapshot restore;
 the full filesystem suite passes. This still does not reproduce the D92 failure.
+
+## 2026-11-13: D92 object deletion root scan is also incomplete
+
+The preserved D92 option-2 serial log repeatedly reports
+`OBJECT_DELETION:SKIP ... applet_roots_complete=0` and
+`CHOUPI:HEAP_GC_SKIP ... applet_result=6`. The latter is a generic
+`VisitResult::ReadFailure` assigned when `enumerate_applet_context_root()`
+returns false; it does not prove the persistent read itself failed. The helper
+could be failing because the restored reference is null, instance restoration
+throws, or `visitAppletInstanceRoots()` does not find exactly one matching
+owner/package/class root. Added debug-only once-per-boot
+`CHOUPI:APPLET_ROOT_SCAN_FAIL` details for those branches. The ARM diagnostic
+image contains this and the filesystem reconstruction trace, but is not on
+hardware because the current approved host path finds zero Pico devices.
+On the next physical run, capture the first failure reason before attempting a
+long option-2 campaign. Keep this incomplete-root signal separate from the
+compaction `tag_reconstruction` rejection and 2BED CCID transport stall.

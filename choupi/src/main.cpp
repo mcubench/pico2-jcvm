@@ -254,21 +254,72 @@ bool visit_registered_applet_root(uint8_t owner, uint8_t package_id,
 bool enumerate_applet_context_root(
     jcvm::Context &context, jcvm::Heap::ReferenceVisitor visitor,
     void *visitor_context) {
-  if (visitor == nullptr || context.getRestoredAppletRef().isNullPointer()) {
+  const auto report_failure = [&](const char *reason,
+                                  const jcvm::jref_t reference,
+                                  const jcvm::PersistentInventory::VisitResult result,
+                                  const uint8_t root_count,
+                                  const bool metadata_matches,
+                                  const uint16_t class_index) {
+#ifdef CHOUPI_DEBUG_HEAP_GC
+    static bool failure_reported = false;
+    if (!failure_reported) {
+      std::printf("CHOUPI:APPLET_ROOT_SCAN_FAIL reason=%s owner=%u "
+                  "package=%u restored=%u ref=%04X visit_result=%u "
+                  "root_count=%u metadata_matches=%u class=%04X\r\n",
+                  reason, static_cast<unsigned>(context.getAppletID()),
+                  static_cast<unsigned>(context.getAppletPackageID()),
+                  context.hasRestoredAppletInstance() ? 1u : 0u,
+                  static_cast<unsigned>(reference.compact()),
+                  static_cast<unsigned>(result),
+                  static_cast<unsigned>(root_count),
+                  metadata_matches ? 1u : 0u,
+                  static_cast<unsigned>(class_index));
+      std::fflush(stdout);
+      failure_reported = true;
+    }
+#else
+    (void)reason;
+    (void)reference;
+    (void)result;
+    (void)root_count;
+    (void)metadata_matches;
+    (void)class_index;
+#endif
+  };
+  const jcvm::jref_t applet_reference = context.getRestoredAppletRef();
+  if (visitor == nullptr) {
+    report_failure("visitor_null", applet_reference,
+                   jcvm::PersistentInventory::VisitResult::InvalidArgument,
+                   0, false, 0);
+    return false;
+  }
+  if (applet_reference.isNullPointer()) {
+    report_failure("restored_reference_null", applet_reference,
+                   jcvm::PersistentInventory::VisitResult::ReadFailure,
+                   0, false, 0);
     return false;
   }
   try {
-    const auto instance = context.getHeap().getInstance(
-        context.getRestoredAppletRef());
+    const auto instance = context.getHeap().getInstance(applet_reference);
     RegisteredAppletRootContext root_context{
         visitor, visitor_context, context.getAppletID(),
         context.getAppletPackageID(), instance->getClassIndex()};
     const auto result = jcvm::PersistentInventory::visitAppletInstanceRoots(
         context.getAppletID(), context.getHeap(), visit_registered_applet_root,
         &root_context);
-    return result == jcvm::PersistentInventory::VisitResult::Complete &&
-           root_context.metadata_matches && root_context.root_count == 1;
+    const bool complete =
+        result == jcvm::PersistentInventory::VisitResult::Complete &&
+        root_context.metadata_matches && root_context.root_count == 1;
+    if (!complete) {
+      report_failure("persistent_root_record", applet_reference, result,
+                     root_context.root_count, root_context.metadata_matches,
+                     instance->getClassIndex());
+    }
+    return complete;
   } catch (...) {
+    report_failure("instance_load_exception", applet_reference,
+                   jcvm::PersistentInventory::VisitResult::ReadFailure, 0,
+                   false, 0);
     return false;
   }
 }

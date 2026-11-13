@@ -1,3 +1,35 @@
+# Current handoff — trace incomplete applet roots during object deletion — 2026-11-13 09:07 UTC
+
+Investigating the D92 option-2 persistence failure uncovered a second signal in
+the same run: object-deletion requests repeatedly returned with
+`applet_roots_complete=0`. The heap-GC path reports this as generic
+`VisitResult::ReadFailure` (6), because `enumerate_applet_context_root()` only
+returned a boolean; the log did not identify whether the restored applet ref
+was null, loading its instance failed, or the persistent owner-root scan failed.
+Added one-time debug-only `CHOUPI:APPLET_ROOT_SCAN_FAIL` diagnostics for those
+three cases, including owner/package/ref and root-walk metadata. `strings` on
+the ARM ELF confirms both the new root-scan marker and the existing
+`FS_TAG_RECON_FAIL` marker are included.
+
+Validation: `./tools/test-ccid-progress-flow` passes 30/30; the ARM
+`max_crypto` diagnostic build passes with object deletion, CCID logging and
+`PICO2_DEBUG_HEAP_GC=1`. RISC-V wrapper passes; it does not build the complete
+CHOUPI firmware target. Current ARM image hash:
+`7835cfb8ef0557529ee3b239968832a02407912729a035441edb9e5e33e635ea`, firmware
+end `0x100f5e5c`, 41,380 bytes remain. No hardware validation: the approved
+reader helper currently finds zero Pico USB devices despite the earlier user
+report that PC/SC was restored.
+
+Latest D92 option-2 evidence remains two separate failure classes: CCID
+response delivery stalled on 2BED; on D92 compaction repeatedly rejected tag
+reconstruction at 2,468 records / 98,273 bytes and writes returned F205. The
+same D92 logs also show object deletion skipped because applet-root enumeration
+was incomplete. The diagnostic image has not been flashed, so the new cause
+trace has not yet produced physical evidence. Next: when a Pico is visible,
+flash this identified image, run a bounded object-deletion test, and capture
+the first root-scan reason; use the existing filesystem trace if compaction
+rejects. Do not claim the reclaimer or full option-2 run passes.
+
 # Current handoff — bounds-check serialized overlay records — 2026-11-13 08:53 UTC
 
 The user reported PC/SC restored. I refreshed access via the required host path,

@@ -28884,3 +28884,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the regression; preserve the need for physical `FS_TAG_RECON_FAIL` evidence before attributing the D92 issue.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: Test output via `./tools/test-rp2350-fs-overlay`; no new hardware logs.
+
+## 2026-11-13 Trace incomplete applet root scans 7 minutes
+
+- Step/experiment: `RESOURCE-01-APPLET-ROOT-SCAN-DIAGNOSTIC-20261113`
+- When: '2026-11-13 09:00 UTC' - '2026-11-13 09:07 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added debug-only, one-time logging to `enumerate_applet_context_root()` so an incomplete root scan distinguishes null restored applet ref, instance-load exception, and persistent owner-root scan mismatch, including reference and scan metadata. Updated RESOURCE-01 TODO, QKB and HANDOFF with evidence from the D92 failure.
+- Validation: `./tools/test-ccid-progress-flow` passed (`TEST:SUMMARY pass=30 fail=0`). ARM wrapper passed with `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1 PICO2_DEBUG_HEAP_GC=1`; RISC-V wrapper passed (it builds the VM core, not full CHOUPI firmware). `strings build/arm/pico2_choupi.elf` confirms both `APPLET_ROOT_SCAN_FAIL` and `FS_TAG_RECON_FAIL` markers are present. An initial ARM compile caught an invalid accessor name; corrected to `hasRestoredAppletInstance()` and rebuilt successfully. No physical validation: the approved reader helper found zero Pico USB devices.
+- Result: Existing D92 serial logs show repeated `applet_roots_complete=0` and generic `applet_result=6` (`ReadFailure`) from a boolean adapter, alongside a separate `tag_reconstruction` compaction rejection at 2,468 records / 98,273 bytes. The new diagnostics are compiled but not flashed, so the underlying root cause remains unknown. ARM image SHA-256 `7835cfb8ef0557529ee3b239968832a02407912729a035441edb9e5e33e635ea`; firmware end `0x100f5e5c`, remaining flash 41,380 bytes.
+- Decision: Capture the first root-scan detail on hardware when an identified Pico becomes guest-visible. Keep the persistent-root issue distinct from compaction and CCID response-delivery failures; do not claim object-deletion acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: D92 source evidence `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/serial.log`; new image `build/arm/pico2_choupi.uf2`, not flashed.
