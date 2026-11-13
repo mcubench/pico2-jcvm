@@ -20,8 +20,11 @@ This prevents an out-of-bounds read when serialized metadata is damaged, but
 does not prove it explains D92's historical `tag_reconstruction` failure. The
 new regression only covers an oversized key length; existing 2,400-record
 parent-encoded compaction stress remains green and still does not reproduce the
-physical rejection. Next, when a Pico is visible to the VM, flash this
-diagnostic build on an identified board and capture the new
+physical rejection. Added another host regression for a nested child -> parent
+-> root chain: both ancestors are tombstoned during compaction, recreated after
+slot remapping, and the child survives snapshot restore. The full overlay suite
+passes. Latest validation remains host-only. Next, when a Pico is visible to
+the VM, flash this diagnostic build on an identified board and capture the new
 `FS_TAG_RECON_FAIL` detail if compaction rejects again; continue to keep the
 2BED CCID response-delivery failure separate from D92 storage failure.
 

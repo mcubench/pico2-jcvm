@@ -775,4 +775,7 @@ This is defensive hardening, not a confirmed root cause for the physical D92
 near-capacity parent-encoded regression does not reproduce it. If a future
 physical run rejects compaction, use `FS_TAG_RECON_FAIL` to capture the actual
 record and verify whether this guard is implicated. Keep the CCID transport
-stall as a separate failure class.
+stall as a separate failure class. Follow-up host coverage now also tests a
+nested child -> parent -> root chain with both ancestors tombstoned through
+compaction, re-created after remapping, and verified after snapshot restore;
+the full filesystem suite passes. This still does not reproduce the D92 failure.

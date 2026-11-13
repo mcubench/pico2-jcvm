@@ -2435,6 +2435,56 @@ int main() {
   expect(parent_encoded_ok,
          "filesystem_parent_encoded_records_survive_repeated_compaction");
 
+  // Exercise chained legacy parent references (child -> parent -> root) while
+  // both ancestors are tombstoned. Compaction must retain and remap the full
+  // chain, and the records must become readable again after the ancestors are
+  // recreated.
+  fake_flash.fill(0xff);
+  constexpr uint8_t nested_parent_root[] = {0x03, 0x62, 0x11, 0x23, 0x45};
+  constexpr uint8_t nested_parent_middle[] = {
+      0x03, 0x62, 0x11, 0x23, 0x45, 0x67, 0x67};
+  constexpr uint8_t nested_parent_leaf[] = {
+      0x03, 0x62, 0x11, 0x23, 0x45, 0x67, 0x67, 0x89, 0x89};
+  constexpr std::array<uint8_t, 4> nested_parent_value = {
+      0x91, 0x82, 0x73, 0x64};
+  bool nested_parent_ok = fs_init() == FS_STATUS_OK &&
+      fs_write(nested_parent_root, sizeof(nested_parent_root), nullptr, 0) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          nested_parent_middle, sizeof(nested_parent_middle), nullptr, 0) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          nested_parent_leaf, sizeof(nested_parent_leaf),
+          nested_parent_value.data(), nested_parent_value.size()) ==
+          FS_STATUS_OK;
+  if (nested_parent_ok) {
+    nested_parent_ok =
+        fs_erase(nested_parent_middle, sizeof(nested_parent_middle)) ==
+            FS_STATUS_OK &&
+        fs_erase(nested_parent_root, sizeof(nested_parent_root)) ==
+            FS_STATUS_OK &&
+        rp2350_fs_test_compact() == FS_STATUS_OK &&
+        fs_write(nested_parent_root, sizeof(nested_parent_root), nullptr, 0) ==
+            FS_STATUS_OK &&
+        fs_write(nested_parent_middle, sizeof(nested_parent_middle), nullptr,
+                 0) == FS_STATUS_OK;
+  }
+  std::array<uint8_t, sizeof(nested_parent_value)> nested_parent_actual{};
+  if (nested_parent_ok) {
+    nested_parent_ok =
+        fs_read(nested_parent_leaf, sizeof(nested_parent_leaf),
+                nested_parent_actual.data(), nested_parent_actual.size()) ==
+            FS_STATUS_OK &&
+        nested_parent_actual == nested_parent_value &&
+        fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+        fs_read(nested_parent_leaf, sizeof(nested_parent_leaf),
+                nested_parent_actual.data(), nested_parent_actual.size()) ==
+            FS_STATUS_OK &&
+        nested_parent_actual == nested_parent_value;
+  }
+  expect(nested_parent_ok,
+         "filesystem_compaction_retains_nested_tombstoned_parent_chain");
+
   // Corrupt serialized metadata must be rejected before reconstruction reads
   // beyond the stored record. This mirrors malformed/stale index state without
   // requiring a physical flash image and ensures compaction fails closed.

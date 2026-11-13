@@ -28872,3 +28872,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Retain the bounds guard; if physical compaction fails again, use `FS_TAG_RECON_FAIL` to capture its exact slot/header and determine whether this path was involved. Keep the independent CCID response-delivery issue separate.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; no new physical logs.
+
+## 2026-11-13 Stress nested legacy parent chains through compaction 5 minutes
+
+- Step/experiment: `RESOURCE-01-NESTED-PARENT-COMPACTION-20261113`
+- When: '2026-11-13 08:54 UTC' - '2026-11-13 08:59 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a regression for a legacy child -> parent -> root slot-reference chain. Both ancestors are tombstoned while the leaf remains live; compaction remaps the chain, the ancestors are recreated, and the leaf is checked before and after snapshot restore. Updated QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:PASS filesystem_compaction_retains_nested_tombstoned_parent_chain` and final `TEST:SUMMARY fail=0`. The first test compile exposed a fixture C-array/`std::array` comparison mismatch; corrected it and reran successfully. Host-only test source changed, so target firmware builds were not rerun. Physical boards remain absent from approved host enumeration.
+- Result: Nested parent preservation/remapping works in this synthetic case, but it still does not reproduce D92's physical `tag_reconstruction` rejection. No performance or memory metric was measured.
+- Decision: Keep the regression; preserve the need for physical `FS_TAG_RECON_FAIL` evidence before attributing the D92 issue.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: Test output via `./tools/test-rp2350-fs-overlay`; no new hardware logs.
