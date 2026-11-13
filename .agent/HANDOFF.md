@@ -1,3 +1,18 @@
+# Current handoff — VM host helper sees no Pico readers — 2026-11-13 09:38 UTC
+
+The user reported PC/SC restored. I refreshed access once through the approved
+elevated path with `PICO2_HOST_USB_ACCESS=1 sudo -n
+/usr/local/sbin/pico2-pcsc-reader`; it returned
+`Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009, matching USB strings);
+found 0.` No device was reset or flashed. This is the latest VM visibility
+state; it does not imply a physical board or Windows host is unavailable. The
+external Windows package remains usable independently.
+
+To resume local physical checks, attach one Pico USB device to this VM through
+VirtualBox **Devices → USB**, preferably in BOOTSEL. Then refresh the helper,
+identify the board, and follow the build/flash gates. The root-diagnostic
+implementation and refreshed Windows package are documented below.
+
 # Current handoff — preserve applet-root scan failure codes — 2026-11-13 09:36 UTC
 
 The D92 option-2 serial log shows the first request at xfr=142 returned a

@@ -796,3 +796,14 @@ hardware because the current approved host path finds zero Pico devices.
 On the next physical run, capture the first failure reason before attempting a
 long option-2 campaign. Keep this incomplete-root signal separate from the
 compaction `tag_reconstruction` rejection and 2BED CCID transport stall.
+
+Follow-up 2026-11-13: the D92 log's first reclaimer `applet_result=6` at
+xfr=142 (after three applet erasures) precedes the incomplete applet-root scan
+on the next APDU; the later scan failure is not established as the initiating
+cause. `enumerate_applet_context_root()` now preserves exact inventory status
+instead of converting every false result to `ReadFailure`, and maps missing
+or mismatched root count/metadata to `IncompleteReachability` or `InvalidTag`.
+The refreshed diagnostic package is `9188dcfc` (see EXT_REQUESTS); no physical
+validation has occurred. After the user's PC/SC-restored report, the approved
+VM host helper still found zero matching Pico devices, so do not attempt a
+hardware cycle until USB passthrough exposes a reader/BOOTSEL device again.

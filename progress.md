@@ -28932,3 +28932,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use only the refreshed `9188dcfc` package for the next Windows diagnostic run. If its root scan completes while reclaimer `ReadFailure` remains, instrument the reclaimer's repeated persistent heap trace; do not attribute the first failure to the later root scan.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/external-test/pico2-jcvm-object-deletion-root-diagnostic-windows-9188dcfc.zip`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-root-diagnostic-empty-card-9188dcfc.uf2`; VPCD log `artifacts/logs/object-deletion-vpcd-20261113T093250Z.log`.
+
+## 2026-11-13 Recheck restored Pico host access 2 minutes
+
+- Step/experiment: `HOST-USB-REATTACH-20261113-0938`
+- When: '2026-11-13 09:36 UTC' - '2026-11-13 09:38 UTC'
+- Model: `GPT-6 Codex`
+- Change: Refreshed the authorized USB/PCSC helper after the user's report that PC/SC was restored. Updated the external request, QKB, and handoff with the current VM-side observation.
+- Validation: Ran `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` through the required elevated host-access path. No reset, flash, PC/SC restart, or client run was performed.
+- Result: Helper reported `Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009, matching USB strings); found 0.` The development VM does not currently see any Pico reader; physical/Windows-side availability is not inferred.
+- Decision: Continue offline. Resume local physical tests only after VirtualBox USB passthrough exposes an identified reader or BOOTSEL device.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `.agent/EXT_REQUESTS.md` request `PCSC-BOOTSEL-RECOVERY-20261113` and `.agent/HANDOFF.md` current host-access state.

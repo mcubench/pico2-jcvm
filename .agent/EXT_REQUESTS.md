@@ -40,17 +40,16 @@ but `pcsc_scan -r` listed only Virtual PCD 00/01. Both identified runtime
 devices (`2BED26ED20556535`, `D92E743D5F640C0F`) failed the wrapper's bounded
 force-reboot attempts and did not enter BOOTSEL; no firmware was flashed.
 
-Please restore PC/SC and put at least one identified Pico 2 into BOOTSEL, then
-run:
+Latest update 2026-11-13 09:38 UTC: after the user reported PC/SC restored, I
+refreshed the approved helper using the required elevated host-access path. It
+reported `Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009, matching USB
+strings); found 0.` No device was reset or flashed. The current development VM
+still does not see a Pico reader; previous device states above are historical.
 
-```sh
-sudo systemctl restart pcscd.service
-timeout 10s pcsc_scan -r
-```
-
-Return the scan output and which chip ID is in BOOTSEL/visible to the VM. Once
-available, I will flash the built diagnostic image and continue without
-restarting PC/SC during the next SmartcardIO run.
+Please attach at least one Pico 2 to the development VM in VirtualBox
+**Devices → USB** while it is in BOOTSEL. I will refresh the helper and identify
+the exact board before any physical operation. No PC/SC service restart is
+requested while no client is active.
 
 ## Windows validation: fresh max_crypto empty-card image
 
