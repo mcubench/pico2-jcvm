@@ -399,6 +399,14 @@ It does not cover external writers that bypass the wrappers.
 Evidence: `progress.md`, entry `RV-20261106-33`; logs
 `artifacts/logs/concurrent-builds-20261112T035503Z/`.
 
+For VPCD parser regressions, rebuild the PC emulator with
+`./tools/build-pc --profile max_crypto` after changing shared parser/VM sources
+and before invoking `./tools/test-sio-cross-aid-vpcd`. The test wrapper can run
+an existing emulator binary; a stale binary can accept malformed CAP data and
+produce a false regression result. The Export class-offset negative case first
+returned `9000` against a stale emulator, then returned the expected `6A80`
+after rebuilding; it passed with Descriptor both omitted and included.
+
 ## Startup and Windows diagnostics — implementation accepted, timings open
 
 Normal firmware has zero console/DTR wait; bounded diagnostic startup capture is explicitly enabled.

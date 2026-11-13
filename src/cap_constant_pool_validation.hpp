@@ -55,6 +55,39 @@ inline bool valid_export_member_token(const std::size_t token,
   return token < member_count;
 }
 
+// Export.class_offset addresses a record in the Class component, not an
+// arbitrary byte in that component. `class_record_starts` is a 65,536-bit map
+// built while parsing the complete Class payload (including interface
+// records, which Export may also name).
+inline bool valid_export_class_offsets(
+    const uint8_t *payload, const std::size_t payload_size,
+    const uint8_t *class_record_starts,
+    const std::size_t class_component_size) noexcept {
+  if (payload == nullptr || payload_size == 0) return false;
+  const std::size_t class_count = payload[0];
+  if (class_count != 0 && class_record_starts == nullptr) return false;
+
+  std::size_t offset = 1;
+  for (std::size_t index = 0; index < class_count; ++index) {
+    if (offset > payload_size || payload_size - offset < 4) return false;
+    const std::size_t class_offset =
+        (static_cast<std::size_t>(payload[offset]) << 8) | payload[offset + 1];
+    if (class_offset >= class_component_size ||
+        (class_record_starts[class_offset / 8] &
+         static_cast<uint8_t>(1u << (class_offset & 7))) == 0) {
+      return false;
+    }
+
+    const std::size_t fields = payload[offset + 2];
+    const std::size_t methods = payload[offset + 3];
+    offset += 4;
+    const std::size_t entries = (fields + methods) * sizeof(uint16_t);
+    if (entries > payload_size - offset) return false;
+    offset += entries;
+  }
+  return offset == payload_size;
+}
+
 inline bool valid_instance_field_token(const std::size_t token,
                                       const std::size_t declared_size,
                                       const std::size_t first_reference_token,

@@ -74,6 +74,24 @@ int main() {
         "first exported member token accepted");
   check(!jcvm::cap_constant_pool_validation::valid_export_member_token(2, 2),
         "member token at member count rejected");
+  uint8_t class_record_starts[1u << 13] = {};
+  class_record_starts[2 / 8] |= static_cast<uint8_t>(1u << (2 & 7));
+  class_record_starts[7 / 8] |= static_cast<uint8_t>(1u << (7 & 7));
+  const uint8_t export_class_at_record_start[] = {1, 0, 2, 0, 0};
+  check(jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            export_class_at_record_start,
+            sizeof(export_class_at_record_start), class_record_starts, 8),
+        "Export class offset at a Class record start accepted");
+  const uint8_t export_class_inside_record[] = {1, 0, 3, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            export_class_inside_record, sizeof(export_class_inside_record),
+            class_record_starts, 8),
+        "Export class offset inside a Class record rejected");
+  const uint8_t export_class_outside_component[] = {1, 0, 8, 0, 0};
+  check(!jcvm::cap_constant_pool_validation::valid_export_class_offsets(
+            export_class_outside_component,
+            sizeof(export_class_outside_component), class_record_starts, 8),
+        "Export class offset beyond the Class component rejected");
   check(jcvm::cap_constant_pool_validation::valid_instance_field_token(
             2, 5, 3, 2),
         "instance field token within declared layout accepted");

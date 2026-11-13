@@ -29029,3 +29029,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use this no-debug package for the requested external test; do not use root-diagnostic images.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `.agent/EXT_REQUESTS.md`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-d63877f6.uf2`; `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`.
+
+## 2026-11-13 Validate Export class offsets at LOAD 33 minutes
+
+- Step/experiment: `CAPIN-01-EXPORT-CLASS-OFFSETS-20261113`
+- When: '2026-11-13 12:02 UTC' - '2026-11-13 12:35 UTC'
+- Model: `GPT-6 Codex`
+- Change: Validate every Export `class_offset` against class/interface record starts parsed from the Class component for CAP 2.1 and 2.2, including Descriptor-free CAPs. Added unit and malformed SIO LOAD regression coverage; updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 45/45; `python3 -m py_compile tests/integration/sio_cross_aid_vpcd_test.py` and scoped diff check passed. PC, ARM and RISC-V `max_crypto` builds passed. Descriptor-free and Descriptor-bearing SIO VPCD suites passed 35/35; focused malformed Export class-offset tests returned `6A80` before persistence in both modes. The first malformed test against stale `build/choupi-pc/choupi` returned `9000`; after `./tools/build-pc --profile max_crypto`, both regressions passed. No physical hardware was accessed.
+- Result: Export targets inside a Class record or outside the Class component are rejected; valid CAP layouts continue to pass. This no longer requires Descriptor to identify exact Class component record starts.
+- Decision: Keep CAPIN-01 open for remaining Export invariants, legacy stored-CAP null guards, and physical acceptance. Rebuild the PC emulator after shared parser changes before running VPCD tests.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T121339Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T121655Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T122518Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T122635Z.log`.

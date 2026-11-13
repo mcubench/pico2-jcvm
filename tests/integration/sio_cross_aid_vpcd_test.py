@@ -651,6 +651,29 @@ def append_unreferenced_bad_export_method_offset(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def offset_first_export_target_into_record(code: bytes) -> bytes:
+    """Move the first Export target one byte into its valid Class record."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    export = next((item for item in components if item[0] == 10), None)
+    if export is None or len(export) < 7 or export[3] == 0:
+        raise RuntimeError("test CAP has no exported class record")
+    original = int.from_bytes(export[4:6], "big")
+    if original == 0xffff:
+        raise RuntimeError("first Export target cannot be advanced")
+    export[4:6] = (original + 1).to_bytes(2, "big")
+    return b"".join(bytes(component) for component in components)
+
+
 def remove_empty_export_class_records(code: bytes) -> bytes:
     """Drop Export class records that have no fields or methods."""
     components: list[bytearray] = []
@@ -941,6 +964,23 @@ def main() -> int:
                     )
                 print("TEST:PASS LOAD rejected an unreferenced Export method "
                       "offset before persistence")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_EXPORT_CLASS_OFFSET") == "1":
+                bad_service_code = offset_first_export_target_into_record(
+                    service[0]
+                )
+                response = vpcd.load_package(
+                    scp, bad_service_code, service[1],
+                    expected_final_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "Export class offset inside a record returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS LOAD rejected an Export class offset that "
+                      "does not point to a Class record start")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_STATIC_METHODREF_OFFSET") == "1":

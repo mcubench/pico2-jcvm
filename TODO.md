@@ -180,7 +180,16 @@ task:
     `6A80` before persistence. Unit validation passes 42/42; both Descriptor
     modes of the SIO VPCD suite pass 35/35; ARM/RISC-V builds pass. Physical
     validation was not run. Export class-offset-to-Class-record validation and
-    exact starts in Descriptor-free CAPs remain open.
+    exact starts in Descriptor-free CAPs were still open at that point; they
+    are addressed by the following progress record.
+  - Progress 2026-11-13 12:35 UTC: LOAD now validates every Export
+    `class_offset` against the start of an actual class or interface record in
+    the Class component for CAP 2.1 and 2.2, including Descriptor-free CAPs.
+    Offsets into record bodies and beyond the component reject before storage.
+    Unit checks pass 45/45; malformed LOAD regressions reject with `6A80` in
+    Descriptor-free and Descriptor-bearing SIO VPCD runs; PC, ARM and RISC-V
+    builds pass. No physical validation was run. Exact Class record boundaries
+    are now established from Class framing, so they do not depend on Descriptor.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is
@@ -199,7 +208,8 @@ task:
   3. Done at INSTALL: run ConstantPool and link validation over the complete
      reachable dynamic-package dependency closure. CAP packages can still be
      LOADed before dependencies are present; closure validation therefore runs
-     at INSTALL. Broader Export-table consistency remains open.
+     at INSTALL. Export class offsets, static-field offsets and static-method
+     offsets are validated; broader Export-table consistency remains open.
   4. Null guards that throw `SecurityException` at
      `jc_import.cpp:102-106`, `jc_cp.cpp:613/881/914`, `bc_static.cpp:66` for
      CAPs stored by older firmware.

@@ -44,10 +44,18 @@ uint16_t read_be16(const uint8_t *bytes) {
 bool validate_class_component_21(const uint8_t *payload, const size_t size,
                                  uint16_t *info_offsets = nullptr,
                                  const size_t info_capacity = 0,
-                                 size_t *info_count = nullptr) {
+                                 size_t *info_count = nullptr,
+                                 std::array<uint8_t, 1u << 13>
+                                     *record_start_bits = nullptr) {
+  if (record_start_bits != nullptr) record_start_bits->fill(0);
   size_t offset = 0;
   size_t record_count = 0;
   const auto record_starts_here = [&]() {
+    if (record_start_bits != nullptr) {
+      if (offset > UINT16_MAX) return false;
+      (*record_start_bits)[offset / 8] |=
+          static_cast<uint8_t>(1u << (offset & 7));
+    }
     if (info_offsets != nullptr) {
       if (record_count >= info_capacity || offset > UINT16_MAX) return false;
       info_offsets[record_count] = static_cast<uint16_t>(offset);
@@ -311,7 +319,9 @@ bool validate_internal_remote_interface_refs(
 }
 
 bool validate_class_component_22(const uint8_t *payload, const size_t size,
-                                 const uint8_t import_count = UINT8_MAX) {
+                                 const uint8_t import_count = UINT8_MAX,
+                                 std::array<uint8_t, 1u << 13>
+                                     *record_start_bits = nullptr) {
   if (size < 2) return false;
   const size_t signature_pool_length = read_be16(payload);
   // CAP validation runs synchronously in the single-threaded VM loader. Keep
@@ -325,6 +335,7 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size,
   static std::array<uint8_t, 0x8000 / 8> interface_start_bits{};
   signature_start_bits.fill(0);
   interface_start_bits.fill(0);
+  if (record_start_bits != nullptr) record_start_bits->fill(0);
   if (signature_pool_length > size - 2 ||
       !validate_type_descriptor_sequence(payload + 2,
                                          signature_pool_length,
@@ -335,6 +346,11 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size,
   size_t offset = 2 + signature_pool_length;
   size_t record_count = 0;
   while (offset < size) {
+    if (record_start_bits != nullptr) {
+      if (offset > UINT16_MAX) return false;
+      (*record_start_bits)[offset / 8] |=
+          static_cast<uint8_t>(1u << (offset & 7));
+    }
     const uint8_t flags = payload[offset] >> 4;
     const size_t interfaces = payload[offset] & 0x0f;
     if ((flags & 0x01) != 0) return false;
@@ -886,13 +902,33 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
   // Validate these only after all components are known because CAP component
   // order is not fixed. The first Class pass checks record framing and
   // internal targets; this contextual pass checks imported package indexes.
-  if (validate_payloads && cap_major == 2 && cap_minor == 2 &&
-      this->class_comp != nullptr) {
+  if (validate_payloads) {
+    static std::array<uint8_t, 1u << 13> class_record_start_bits{};
     const uint8_t import_count =
         this->import_comp == nullptr ? 0 : this->import_comp->count;
-    if (!validate_class_component_22(
-            this->class_comp->infos, NTOHS(this->class_comp->size),
-            import_count)) {
+    if (this->class_comp != nullptr) {
+      const size_t class_size = NTOHS(this->class_comp->size);
+      bool valid_class = false;
+      if (cap_major == 2 && cap_minor == 1) {
+        valid_class = validate_class_component_21(
+            this->class_comp->infos, class_size, nullptr, 0, nullptr,
+            &class_record_start_bits);
+      } else if (cap_major == 2 && cap_minor == 2) {
+        valid_class = validate_class_component_22(
+            this->class_comp->infos, class_size, import_count,
+            &class_record_start_bits);
+      }
+      if (!valid_class) throw Exceptions::SecurityException;
+    } else {
+      class_record_start_bits.fill(0);
+    }
+    if (this->export_comp != nullptr &&
+        !cap_constant_pool_validation::valid_export_class_offsets(
+            &this->export_comp->class_count,
+            NTOHS(this->export_comp->size), class_record_start_bits.data(),
+            this->class_comp == nullptr
+                ? 0
+                : NTOHS(this->class_comp->size))) {
       throw Exceptions::SecurityException;
     }
   }

@@ -25,6 +25,23 @@ client instructions is at `.agent/EXT_REQUESTS.md` under
 waiting for the Windows run or local hardware availability; preserve unrelated
 worktree changes.
 
+# Previous handoff — CAPIN-01 Export class offsets validated — 2026-11-13 12:35 UTC
+
+LOAD now checks each Export `class_offset` against a parsed class or interface
+record start in the Class component for CAP 2.1 and 2.2. This uses the Class
+component parser, so it also works when Descriptor is absent. Offsets into a
+record body or beyond the component reject before package storage. The unit
+suite passes 45/45; malformed LOAD regressions return `6A80` with Descriptor
+omitted and included. PC, ARM and RISC-V max_crypto builds pass. No physical
+device was accessed.
+
+The first negative VPCD run used a stale PC emulator and incorrectly returned
+`9000`; rebuilding via `./tools/build-pc --profile max_crypto` resolved that,
+after which the malformed offset was rejected in both Descriptor modes. See
+the new QKB guidance. CAPIN-01 remains open for remaining Export invariants,
+legacy stored-CAP null guards, and physical acceptance. External Windows testing
+continues to use the no-debug package `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`.
+
 # Previous handoff — BOOTSEL offline recheck; hardware acceptance pending — 2026-11-13 11:30 UTC
 
 The external Windows test must use the no-debug image
