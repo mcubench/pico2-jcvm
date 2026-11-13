@@ -1,25 +1,29 @@
-# Current handoff — RESOURCE-01 parent-slot integrity guard — 2026-11-13 11:38 UTC
+# Current handoff — fresh no-debug Windows package — 2026-11-13 11:54 UTC
 
-Added a fail-closed invariant to RP2350 filesystem tag reconstruction:
-reconstructed canonical tags must hash to the value stored in the overlay
-index. A stale parent-slot pointer to another valid same-length parent is now
-detected as `hash_mismatch` before compaction mutates data. Added a fake-flash
-regression that reproduces that malformed state, verifies compaction rejects
-it, restores the pointer, and reads the original value successfully.
+The user clarified that external Windows testing must use the no-debug firmware.
+Built a fresh ARM `max_crypto` image from the current worktree after the latest
+RESOURCE-01 filesystem integrity guard, with object deletion ON and CCID,
+heap-GC, and persistent-GC debug logging OFF. Package and exact Windows steps:
+`build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`
+(SHA-256 `16b27c69018092bb65f7c6a59186dbf63d15353afcb6972b2dc7de73d2dc6877`).
+Standalone empty-card UF2:
+`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-d63877f6.uf2`
+(SHA-256 `b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6fe92006a5400e80a71d3a70`).
+The package is explicitly no-debug and the prior root-diagnostic debug image is
+not for this external run. The source worktree was dirty; package provenance
+records root/CHOUPI/OS diffs and all input hashes.
 
-Validation passed: `./tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`),
-`./tools/build arm --profile max_crypto`, and
-`./tools/build riscv --profile max_crypto`. ARM image ends at `0x100f4960`,
-46,752 bytes below the configured flash limit. No physical test was run; this
-does not establish the cause of the historical 2,468-record failure or
-complete RESOURCE-01 acceptance. The integrity-guard change is committed as
-`c1d14d6e`.
+Validation: ARM and RISC-V `max_crypto` wrappers pass with object deletion ON
+and all three debug flags OFF. `./tools/test-no-debug-traces` passes for ARM
+and RISC-V. `./tools/fixture-path --verify` passes (`files=81`). UF2 flash-boundary
+check passes at `0x100f50f0`, leaving 44,816 bytes. The package checksum list
+validates. No physical device was accessed or tested.
 
-Continue RESOURCE-01 offline per TODO. Preserve unrelated changes. For the
-external Windows run, use only no-debug UF2
-`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-9e7223ed.uf2`
-(SHA-256 `346f7400ef1f470c4eb8bf2f7d09901e91a6db767905286da41b77a1d49e2b3b`)
-and ZIP `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-9e7223ed.zip`.
+The external request with hash checks, BOOTSEL copy, GPPro installation, and
+client instructions is at `.agent/EXT_REQUESTS.md` under
+`WIN-OBJECT-DELETION-NODEBUG-D63877F6`. Continue offline with RESOURCE-01 while
+waiting for the Windows run or local hardware availability; preserve unrelated
+worktree changes.
 
 # Previous handoff — BOOTSEL offline recheck; hardware acceptance pending — 2026-11-13 11:30 UTC
 

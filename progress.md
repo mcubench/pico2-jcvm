@@ -29017,3 +29017,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue RESOURCE-01 with the historical physical failure still open; no hardware access occurred.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `c1d14d6e`.
+
+## 2026-11-13 Prepare fresh no-debug Windows GC package 9 minutes
+
+- Step/experiment: `RESOURCE-01-WINDOWS-NODEBUG-PACKAGE-D63877F6`
+- When: '2026-11-13 11:45 UTC' - '2026-11-13 11:54 UTC'
+- Model: `GPT-6 Codex`
+- Change: Prepared a fresh empty-card ARM `max_crypto` object-deletion build from the current worktree with CCID, heap-GC, and persistent-GC debug logging disabled. Repacked the unchanged upstream 1.8.4/jc305 CAP, supplied 1.8.5 client and GPPro with exact firmware hashes and Windows steps. Updated `.agent/EXT_REQUESTS.md` and `.agent/HANDOFF.md` to make this the only current external package.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_HEAP_GC=0 PICO2_DEBUG_CCID_APPLET=0 PICO2_DEBUG_PERSISTENT_GC=0 ./tools/build arm --profile max_crypto` and the equivalent RISC-V wrapper passed. `./tools/test-no-debug-traces` passed for ARM and RISC-V; `./tools/fixture-path --verify` passed (`files=81`); empty-card UF2 boundary check passed; all package SHA256SUMS entries validated. No USB/PCSC or physical test was run.
+- Result: ARM image ends at `0x100f50f0`, leaving 44,816 bytes. No-debug empty-card UF2 is 4,105,216 bytes, SHA-256 `b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6fe92006a5400e80a71d3a70`; Windows package SHA-256 `16b27c69018092bb65f7c6a59186dbf63d15353afcb6972b2dc7de73d2dc6877`. Dirty source provenance is included in package.
+- Decision: Use this no-debug package for the requested external test; do not use root-diagnostic images.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `.agent/EXT_REQUESTS.md`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-d63877f6.uf2`; `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip`.
