@@ -2687,6 +2687,8 @@ int main() {
         root_tag, *root_instance, heap);
     const auto alias_tag = jcvm::FlashMemory_Handler::computeTag(
         root_instance->getPersistentTag(), 0);
+    const auto array_alias_tag = jcvm::FlashMemory_Handler::computeTag(
+        root_instance->getPersistentTag(), 1);
     jcvm::fs::Tag body_tag = alias_tag;
     body_tag.value[body_tag.len++] = 0xff;
     body_tag.value[body_tag.len++] = 0xff;
@@ -2694,15 +2696,63 @@ int main() {
     body_tag.value[body_tag.len++] = 0;
     body_tag.value[body_tag.len++] = 0;
     body_tag.value[body_tag.len++] = 0x45;
+    const auto body_field_tag =
+        jcvm::FlashMemory_Handler::computeTag(body_tag, 0);
+    jcvm::fs::Tag nested_array_body_tag = body_tag;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0xff;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0xfd;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0;
+    nested_array_body_tag.value[nested_array_body_tag.len++] = 0x46;
+    jcvm::fs::Tag migrated_array_body_tag = array_alias_tag;
+    migrated_array_body_tag.value[migrated_array_body_tag.len++] = 0xff;
+    migrated_array_body_tag.value[migrated_array_body_tag.len++] = 0xfd;
+    migrated_array_body_tag.value[migrated_array_body_tag.len++] = 0;
+    migrated_array_body_tag.value[migrated_array_body_tag.len++] = 0;
+    migrated_array_body_tag.value[migrated_array_body_tag.len++] = 0;
+    migrated_array_body_tag.value[migrated_array_body_tag.len++] = 0x47;
     persistent_transaction_test::seed(
         body_tag.value, body_tag.len,
         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
          0, 1, 0x5a});
+    const std::vector<uint8_t> body_field_value{0xfd,
+                                                nested_array_body_tag.len};
+    std::vector<uint8_t> serialized_body_field = body_field_value;
+    serialized_body_field.insert(serialized_body_field.end(),
+                                 nested_array_body_tag.value,
+                                 nested_array_body_tag.value +
+                                     nested_array_body_tag.len);
+    persistent_transaction_test::seed(
+        body_field_tag.value, body_field_tag.len, serialized_body_field);
+    const std::vector<uint8_t> nested_array_value{
+        static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+        0, 1, 0x6b};
+    persistent_transaction_test::seed(
+        nested_array_body_tag.value, nested_array_body_tag.len,
+        nested_array_value);
+    const std::vector<uint8_t> migrated_array_value{
+        static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+        0, 1, 0x7c};
+    persistent_transaction_test::seed(
+        migrated_array_body_tag.value, migrated_array_body_tag.len,
+        migrated_array_value);
     std::vector<uint8_t> alias_record{0xfd, body_tag.len};
     alias_record.insert(alias_record.end(), body_tag.value,
                         body_tag.value + body_tag.len);
     persistent_transaction_test::seed(alias_tag.value, alias_tag.len,
                                       std::move(alias_record));
+    std::vector<uint8_t> migrated_alias_record{
+        0xfd, migrated_array_body_tag.len};
+    migrated_alias_record.insert(migrated_alias_record.end(),
+                                 migrated_array_body_tag.value,
+                                 migrated_array_body_tag.value +
+                                     migrated_array_body_tag.len);
+    persistent_transaction_test::seed(
+        array_alias_tag.value, array_alias_tag.len,
+        std::move(migrated_alias_record));
 
     const std::vector<jcvm::jref_t> roots{root_reference};
     RootVectorContext root_context{&roots};
@@ -2721,10 +2771,23 @@ int main() {
     }
     expect(result == jcvm::PersistentInventory::VisitResult::Complete &&
                erased == 0 &&
-               !persistent_transaction_test::read(body_tag.value,
-                                                  body_tag.len).empty() &&
+               persistent_transaction_test::read(body_tag.value,
+                                                  body_tag.len) ==
+                   std::vector<uint8_t>{
+                       static_cast<uint8_t>(
+                           jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+                       0, 1, 0x5a} &&
+               persistent_transaction_test::read(
+                   body_field_tag.value, body_field_tag.len) ==
+                   serialized_body_field &&
+               persistent_transaction_test::read(
+                   nested_array_body_tag.value,
+                   nested_array_body_tag.len) == nested_array_value &&
+               persistent_transaction_test::read(
+                   migrated_array_body_tag.value,
+                   migrated_array_body_tag.len) == migrated_array_value &&
                alias_target_restores,
-           "reachable_durable_alias_protects_body_from_incomplete_heap_walk");
+           "reachable_durable_alias_protects_body_subtree_from_incomplete_heap_walk");
     persistent_transaction_test::instance_field_count = previous_field_count;
   }
 

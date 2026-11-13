@@ -14534,4 +14534,25 @@ committing T3; that edit predates this step. The current source work also
 includes T1/T2 changes already committed separately. See the latest progress
 entry for tests and the exact step scope.
 
+# Current handoff — MEM-01 T4 protect alias-rescued subtrees — 2026-11-13 17:26 UTC
+
+T4 is implemented in the current worktree. Applet deletion traces the supplied
+roots, scans applet persistent records once for aliases owned by reachable
+objects, and protects all records under each resolved alias target. This keeps
+fields and nested array bodies within the rescued object's tag subtree. The
+direct body guard recognizes `FF FD` migrated array markers. Malformed or
+unreadable reachable alias chains fail closed before candidates are deleted.
+The scan is skipped when the heap contains no persistent handles; no repeated
+whole-store scans are done per alias target.
+
+`./tools/test-persistent-transaction` passes `TEST:SUMMARY fail=0`. The new
+regression deliberately omits the root object's field edge from heap layout;
+after reclamation it checks exact bytes for the rescued body, its alias field,
+a separately tagged nested array body reached from that field, and an `FF FD`
+array body. ARM and RISC-V max_crypto wrappers pass with object deletion on and
+debug switches off; ARM firmware ends at `0x100f5f80` with 41,088 flash bytes
+remaining, UF2 SHA-256 `7a12ee9041278c4ea67326e489ef5849179f56cdb53765c7033da6bf6df13b20`.
+No physical device was accessed. T5 package-static alias protection
+and T7 long-run overlay validation remain open.
+
 # Current handoff — MEM-01 T2 skip bad candidates and preserve progress — 2026-11-13 16:38 UTC

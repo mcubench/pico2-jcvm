@@ -58,6 +58,7 @@ struct CandidateContext {
   TagVisitor visitor;
   void *visitor_context;
   const std::vector<Tag> *foreign_alias_targets;
+  const std::vector<Tag> *reachable_alias_targets;
   VisitResult failure = VisitResult::Complete;
 };
 
@@ -72,7 +73,8 @@ bool reachableAliasTargetsBody(const Tag &candidate, Heap &heap,
   if (candidate.len < 7 ||
       candidate.value[candidate.len - 6] != 0xff ||
       (candidate.value[candidate.len - 5] != 0xfe &&
-       candidate.value[candidate.len - 5] != 0xff)) {
+       candidate.value[candidate.len - 5] != 0xff &&
+       candidate.value[candidate.len - 5] != 0xfd)) {
     return false;
   }
 
@@ -143,8 +145,7 @@ bool reachableAliasTargetsBody(const Tag &candidate, Heap &heap,
   return false;
 }
 
-bool hasForeignAliasRoot(const Tag &candidate,
-                         const std::vector<Tag> &targets) {
+bool hasTagPrefixRoot(const Tag &candidate, const std::vector<Tag> &targets) {
   for (const Tag &target : targets) {
     if (candidate.len >= target.len &&
         std::memcmp(candidate.value, target.value, target.len) == 0) {
@@ -190,14 +191,18 @@ bool visitUnreachableTag(const Tag &tag, void *opaque) {
 #if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
   const bool reachable = context.heap->hasReachablePersistentTagPrefix(heap_tag);
   const bool foreign_root =
-      hasForeignAliasRoot(tag, *context.foreign_alias_targets);
+      hasTagPrefixRoot(tag, *context.foreign_alias_targets);
+  const bool reachable_alias_subtree =
+      hasTagPrefixRoot(tag, *context.reachable_alias_targets);
   logHeapPayloadDecision("scan", tag, reachable, foreign_root);
 #else
   const bool reachable = context.heap->hasReachablePersistentTagPrefix(heap_tag);
   const bool foreign_root =
-      hasForeignAliasRoot(tag, *context.foreign_alias_targets);
+      hasTagPrefixRoot(tag, *context.foreign_alias_targets);
+  const bool reachable_alias_subtree =
+      hasTagPrefixRoot(tag, *context.reachable_alias_targets);
 #endif
-  if (reachable || foreign_root) return true;
+  if (reachable || foreign_root || reachable_alias_subtree) return true;
   if (reachableAliasTargetsBody(tag, *context.heap, context.failure)) {
     return true;
   }
@@ -373,6 +378,72 @@ VisitResult visitApplet(const uint8_t applet_owner, const TagVisitor visitor,
   return visitPrefix(prefix, visitor, context);
 }
 
+namespace {
+struct ReachableAliasTargetContext {
+  Heap *heap;
+  std::vector<Tag> *targets;
+  VisitResult failure = VisitResult::Complete;
+};
+
+bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
+  auto &context = *static_cast<ReachableAliasTargetContext *>(opaque);
+  fs::Tag heap_tag{};
+  heap_tag.len = source_tag.len;
+  std::memcpy(heap_tag.value, source_tag.value, source_tag.len);
+  if (!context.heap->hasReachablePersistentTagPrefix(heap_tag)) return true;
+
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  if (fs_read_inplace(source_tag.value, source_tag.len, &data, &length) != 0 ||
+      data == nullptr || length == 0) {
+    context.failure = VisitResult::ReadFailure;
+    return false;
+  }
+
+  for (uint8_t depth = 0; depth < kMaximumAliasDepth; ++depth) {
+    if (data[0] != kPersistentObjectAlias &&
+        data[0] != kPersistentArrayAlias) {
+      return true;
+    }
+    if (length < 2 || data[1] == 0 || data[1] > kTagCapacity ||
+        length != 2u + data[1]) {
+      context.failure = VisitResult::InvalidTag;
+      return false;
+    }
+
+    Tag target{};
+    target.len = data[1];
+    std::memcpy(target.value, data + 2, target.len);
+    if (!hasTagPrefixRoot(target, *context.targets)) {
+    if (!hasTagPrefixRoot(target, *context.targets)) {
+      context.targets->push_back(target);
+    }
+    }
+    if (fs_read_inplace(target.value, target.len, &data, &length) != 0 ||
+        data == nullptr || length == 0) {
+      context.failure = VisitResult::ReadFailure;
+      return false;
+    }
+  }
+  context.failure = VisitResult::InvalidTag;
+  return false;
+}
+
+VisitResult collectReachableAliasTargets(const uint8_t applet_owner,
+                                         Heap &heap,
+                                         std::vector<Tag> &targets) {
+  ReachableAliasTargetContext context{&heap, &targets};
+  try {
+    const VisitResult result =
+        visitApplet(applet_owner, collectReachableAliasTarget, &context);
+    return context.failure == VisitResult::Complete ? result
+                                                     : context.failure;
+  } catch (...) {
+    return VisitResult::IncompleteReachability;
+  }
+}
+} // namespace
+
 bool isAppletInstanceRootTag(const Tag &tag,
                              const uint8_t expected_owner) noexcept {
   return (tag.len == 5 || tag.len == 6) && tag.value[0] == 0x03 &&
@@ -475,8 +546,17 @@ static VisitResult visitUnreachableAppletTagsWithAliasTargets(
       heap.traceReachableFrom(enumerate_roots, root_context);
   if (!summary.complete) return VisitResult::IncompleteReachability;
 
+  std::vector<Tag> reachable_alias_targets;
+  if (summary.persistent_tagged_arrays != 0 ||
+      summary.persistent_tagged_instances != 0) {
+    const VisitResult alias_scan = collectReachableAliasTargets(
+        applet_owner, heap, reachable_alias_targets);
+    if (alias_scan != VisitResult::Complete) return alias_scan;
+  }
+
   CandidateContext context{&heap, applet_owner, candidate_visitor,
-                           candidate_context, &foreign_alias_targets};
+                           candidate_context, &foreign_alias_targets,
+                           &reachable_alias_targets};
   const VisitResult result =
       visitApplet(applet_owner, visitUnreachableTag, &context);
   return context.failure == VisitResult::Complete ? result : context.failure;
@@ -604,7 +684,7 @@ bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
   if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
-      hasForeignAliasRoot(tag, *context.foreign_alias_targets)) {
+      hasTagPrefixRoot(tag, *context.foreign_alias_targets)) {
     return true;
   }
   return context.visitor(tag, context.visitor_context);

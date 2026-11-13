@@ -29232,3 +29232,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T3 focused implementation is complete; continue MEM-01 with T7 harness and remaining T1/T2 integrity/recovery work before physical acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.
+
+## 2026-11-13 MEM-01 T4 protect alias-rescued subtrees 28 minutes
+
+- Step/experiment: `MEM-01-T4-ALIAS-SUBTREE-20261113`
+- When: '2026-11-13 16:58 UTC' - '2026-11-13 17:26 UTC'
+- Model: `GPT-6 Codex`
+- Change: Applet reclamation now collects durable aliases from reachable persistent fields before inventory deletion and treats each resolved target as a subtree root, protecting descendant fields and nested array bodies under that prefix. The direct alias-target guard now accepts `FF FD` migrated array bodies. Updated regression with a missing heap edge and exact persisted-byte checks for the rescued object, its fields, a nested array body under its prefix, and an `FF FD` body. Kept the alias cursor preflight conditional on persistent handles being present, preserving the streamed-cursor failure test and avoiding a needless scan when no heap handles exist.
+- Validation: `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`, including the T3 50×200 stress test and T4 subtree/FD cases. ARM `max_crypto` object-deletion/no-debug wrapper build passed; firmware end `0x100f5f80`, 41,088 bytes remain. RISC-V `max_crypto` wrapper build passed (VM core and smoke image only). No physical device accessed.
+- Result: A rescued durable object can no longer lose its persistent fields or nested array body under the applet reclaimer's body prefix. ARM UF2 SHA-256 `7a12ee9041278c4ea67326e489ef5849179f56cdb53765c7033da6bf6df13b20`. Package-static reclaimer still needs matching protection (T5); long-run real-overlay boundedness remains unmeasured.
+- Decision: T4 focused implementation is complete; continue with T5 and then add the T7 offline storage harness before MEM-01 acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.
