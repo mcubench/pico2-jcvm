@@ -29042,6 +29042,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T121339Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T121655Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T122518Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T122635Z.log`.
 
+## 2026-11-13 Guard legacy CAP class-component access 23 minutes
+
+- Step/experiment: `CAPIN-01-LEGACY-CLASS-NULL-GUARDS-20261113`
+- When: '2026-11-13 12:35 UTC' - '2026-11-13 12:58 UTC'
+- Model: `GPT-6 Codex`
+- Change: `ConstantPool_Handler::getClassFromClassIndex()` and `resolveClassref()` now reject absent Class components and out-of-range class offsets with `SecurityException` before dereferencing or indexing. Audited adjacent guards: Import entry access checks component/record bounds, and static-field resolution checks Export presence/count. Updated TODO and HANDOFF.
+- Validation: `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, and `./tools/build-pc --profile max_crypto` passed. Descriptor-free and Descriptor-bearing `./tools/test-sio-cross-aid-vpcd` each passed 35/35. No physical hardware was accessed. Existing PC/Rust packed-member and cfg/deprecation warnings remain.
+- Result: Current runtime paths fail closed instead of dereferencing a missing Class component or indexing outside it. A legacy malformed persistent package was not synthesized, so direct runtime coverage of that case remains outstanding.
+- Decision: Mark the specific null/size guards implemented while retaining legacy-persistence runtime coverage as open. Continue CAPIN-01 remaining Export invariants and LOAD failure atomicity/AID behavior.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T124853Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T125340Z.log`.
+
 ## 2026-11-13 Archive Windows d63877f6 first failure 4 minutes
 
 - Step/experiment: `WIN-D63877F6-FIRST-FAILURE`

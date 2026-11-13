@@ -6,7 +6,7 @@ Returned UF2 SHA-256 matches requested b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6
 
 Old rehash fix and stale-extension recovery are already included; new run does not establish a rehash regression or memory exhaustion. Reset/collector/sync progress versus CCID final-response delivery is the next discriminating boundary. Existing local recovery-build stall evidence means idle-endpoint fallback is not a proven complete transport fix. Preserve failed board state if available. Prior package/build validation below remains historical; no external retest requested here.
 
-# Current handoff — fresh no-debug Windows package — 2026-11-13 11:54 UTC
+# Current handoff — no-debug Windows package and CAPIN-01 progress — 2026-11-13 12:58 UTC
 
 The user clarified that external Windows testing must use the no-debug firmware.
 Built a fresh ARM `max_crypto` image from the current worktree after the latest
@@ -32,6 +32,16 @@ client instructions is at `.agent/EXT_REQUESTS.md` under
 `WIN-OBJECT-DELETION-NODEBUG-D63877F6`. Continue offline with RESOURCE-01 while
 waiting for the Windows run or local hardware availability; preserve unrelated
 worktree changes.
+
+CAPIN-01 Export class offsets are committed as `760a9960`: LOAD requires each
+Export target to be a parsed Class-component class/interface record start for
+CAP 2.1/2.2, with or without Descriptor. This turn added null/size checks before
+Class-component access in `ConstantPool_Handler::getClassFromClassIndex()` and
+`resolveClassref()`; ARM, RISC-V and PC builds pass, and the SIO VPCD suite
+passes 35/35 with Descriptor omitted and included. No physical test was run.
+This guard step is recorded in `progress.md`. Continue CAPIN-01 with its
+remaining Export invariants and LOAD transaction/AID failure behavior. The
+external Windows run still uses only the no-debug package and UF2 named above.
 
 # Previous handoff — CAPIN-01 Export class offsets validated — 2026-11-13 12:35 UTC
 

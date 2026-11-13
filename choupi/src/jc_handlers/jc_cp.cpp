@@ -615,7 +615,15 @@ ConstantPool_Handler::getClassFromClassIndex(const jclass_index_t claz_index)
 #endif
 {
   const jc_cap_class_info *claz_info = nullptr;
-  auto classes = this->getPackage().getCap().getClass()->claz();
+  const JC_Cap cap = this->getPackage().getCap();
+  const jc_cap_class_component *class_component = cap.getClass();
+#ifdef JCVM_DYNAMIC_CHECKS_CAP
+  if (class_component == nullptr ||
+      claz_index >= NTOHS(class_component->size)) {
+    throw Exceptions::SecurityException;
+  }
+#endif /* JCVM_DYNAMIC_CHECKS_CAP */
+  auto classes = class_component->claz();
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
@@ -881,17 +889,25 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref,
     class_token = HTONS(classref.internal_classref);
   }
 
+  const jc_cap_class_component *class_component = cap.getClass();
+#ifdef JCVM_DYNAMIC_CHECKS_CAP
+  if (class_component == nullptr ||
+      class_token >= NTOHS(class_component->size)) {
+    throw Exceptions::SecurityException;
+  }
+#endif /* JCVM_DYNAMIC_CHECKS_CAP */
+
 #ifndef PC_VERSION
   choupi_install_stage(16);
   choupi_install_context((static_cast<uint32_t>(package.getPackageID()) << 16) |
                          class_token);
 #endif
-  classFound = &(cap.getClass()->claz()[class_token]);
+  classFound = &(class_component->claz()[class_token]);
 #ifdef PC_VERSION
   if (const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
       trace_setting != nullptr && std::strcmp(trace_setting, "1") == 0 &&
       classref.isExternalClassRef() && is_interface) {
-    const auto *class_base = cap.getClass()->claz().data();
+    const auto *class_base = class_component->claz().data();
     std::fprintf(stderr,
                  "CHOUPI:INTERFACE_RESOLVE package=%u src_token=%u class_index=%u is_interface=%u ptr_offset=%td\n",
                  static_cast<unsigned>(this->package.getPackageID()),
@@ -919,7 +935,7 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref,
         (((struct jc_cap_interface_info *)classFound)->interface_count);
   }
 
-  if ((class_token + classref_length) > HTONS(cap.getClass()->size)) {
+  if ((class_token + classref_length) > NTOHS(class_component->size)) {
     throw Exceptions::SecurityException;
   }
 

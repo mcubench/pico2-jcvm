@@ -210,9 +210,12 @@ task:
      LOADed before dependencies are present; closure validation therefore runs
      at INSTALL. Export class offsets, static-field offsets and static-method
      offsets are validated; broader Export-table consistency remains open.
-  4. Null guards that throw `SecurityException` at
-     `jc_import.cpp:102-106`, `jc_cp.cpp:613/881/914`, `bc_static.cpp:66` for
-     CAPs stored by older firmware.
+  4. Done: old stored CAP paths now fail with `SecurityException` when Import,
+     Export, or Class components are absent or their requested token/offset is
+     out of bounds. `jc_import.cpp` validates Import presence and record bounds;
+     `bc_static.cpp` checks Export presence/count; `jc_cp.cpp` now checks Class
+     presence/size before class-index and classref access. Older persisted CAP
+     corruption is not synthesized in a runtime integration test yet.
   5. Compare the INSTALL-for-load AID with the Header AID; decide and record
      what happens to a slot whose enable transaction failed after the store.
   Fixtures: extra tag-12 component; library with Export but no Class plus an
