@@ -300,13 +300,7 @@ task:
 
 ### CAPIN-04
 
-- [ ] **P1: Bound frame depth; no allocation inside `noexcept`.** Finding C4,
-  trigger for R43. Add a hard maximum frame depth in `Stack::push_Frame` that
-  raises a controlled stack-overflow error; remove `noexcept` from
-  `Context::changePackageID` or make it non-allocating (resolved by CAPIN-03 if
-  the package moves into `Frame`). Fixture: static method with
-  `nargs=max_locals=max_stack=0` that invokes itself; expect a status word, not
-  process termination or reset.
+- [ ] **P1: Validate bounded frame depth and controlled APDU failure.** Finding C4, trigger for R43. Implemented a hard 64-frame limit in `Stack::push_Frame`; a 65th zero-word frame throws `StackOverflowException`, even though the method consumes no `jc_stack` words. CAPIN-03 moved package identity into the frame, so `Context::changePackageID` no longer allocates and safely remains `noexcept`. The sanitizer-backed regression fails before the bound (zero-word frames grow without limit) and passes afterward with frame depth exactly 64. ARM/RISC-V builds and official RMI client VPCD pass 18/18. Remaining: execute a recursive uploaded CAP method via APDU and verify a controlled status word plus successful subsequent APDU; confirm the selected limit is sufficient for supported applets.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-04).
 

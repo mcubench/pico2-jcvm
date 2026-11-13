@@ -1,3 +1,28 @@
+# Current handoff — CAPIN-04 bounds zero-word frame growth — 2026-11-13 16:08 UTC
+
+`Stack::push_Frame` now rejects a 65th active frame with
+`StackOverflowException`. This closes unbounded metadata growth for recursive
+CAP methods whose `nargs`, `max_locals`, and `max_stack` are all zero and thus
+consume no words from the bounded Java Card stack. The chosen hard limit is 64
+frames. CAPIN-03's frame-owned package ID also makes
+`Context::changePackageID` non-allocating while it remains `noexcept`.
+
+A new ASan/UBSan unit regression failed before the change (`overflow` was
+false after 65 zero-word pushes) and passes after it with frame depth exactly
+64. `./tools/test-rmi-registry` passes. ARM and RISC-V `max_crypto` builds pass;
+the official RMI client VPCD regression passes 18/18 after both frame changes.
+Logs: `artifacts/logs/rmi-client-official-vpcd-client-20261113T160330Z.log`
+and `artifacts/logs/build-pc-rmi-client-20261113T160330Z.log`. No hardware was
+flashed.
+
+CAPIN-04 remains open until a recursive uploaded CAP method reaches the
+boundary through an APDU, returns a controlled status word, and the next APDU
+succeeds. Also confirm 64 frames is adequate for the supported applet set.
+CAPIN-03's same-context RMI overflow / caller `impdep1` / retained-context
+size acceptance remains open. The external no-debug image predates these frame
+changes; refresh it before asking for a new external run. Continue with the
+next open offline P1 task, preserving unrelated worktree edits.
+
 # Current handoff — CAPIN-03 package identity follows frames — 2026-11-13 15:49 UTC
 
 The stale executing-package state from CAPIN-03 is fixed offline. Each

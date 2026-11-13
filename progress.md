@@ -29172,3 +29172,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CAPIN-03 open until the nested same-context overflow/`impdep1`/retained-context-size scenario is tested end to end.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261113T154706Z.log`; `artifacts/logs/build-pc-rmi-client-20261113T154706Z.log`.
+
+## 2026-11-13 Bound zero-word interpreter frames 19 minutes
+
+- Step/experiment: `CAPIN-04-FRAME-DEPTH-LIMIT-20261113`
+- When: '2026-11-13 15:49 UTC' - '2026-11-13 16:08 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a 64-frame hard limit before `Stack::push_Frame` allocates frame metadata. This prevents recursive CAP methods with zero locals/operand words from bypassing the bounded Java Card word stack. The CAPIN-03 frame-owned package state also removes allocation from `Context::changePackageID`.
+- Validation: Before the fix, the sanitizer-backed regression pushed 65 zero-word frames and failed because no `StackOverflowException` occurred. Afterward `./tools/test-rmi-registry` passed with exact depth 64 and controlled exception. ARM/RISC-V `max_crypto` builds passed. Official RMI client VPCD passed `JCRMI_CLIENT:SUMMARY pass=18 fail=0`. No physical test.
+- Result: A zero-word recursive frame chain can no longer allocate unbounded linked-list metadata; existing official RMI flows remain functional.
+- Decision: Keep CAPIN-04 open for recursive uploaded-CAP APDU status/recovery coverage and confirming the 64-frame allowance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261113T160330Z.log`; `artifacts/logs/build-pc-rmi-client-20261113T160330Z.log`.

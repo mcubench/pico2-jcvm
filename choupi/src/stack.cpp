@@ -83,6 +83,10 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
                        const uint8_t *method_begin,
                        const uint8_t *method_end,
                        const bool arguments_on_caller_stack) {
+  if (this->frames.size() >= kMaximumFrameDepth) {
+    throw Exceptions::StackOverflowException;
+  }
+
   jword_t *new_fp, *new_op, *new_tos, *new_eos;
   Frame *previous_frame = nullptr;
   size_t new_fp_index = 0;

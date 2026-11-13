@@ -57,6 +57,9 @@ static_assert(sizeof(std::declval<jref_t &>().compact()) == sizeof(jword_t),
 
 class Stack {
 public:
+  // Bound frame metadata even when a CAP method declares no locals or
+  // operand stack words and therefore consumes none of jc_stack.
+  static constexpr uint16_t kMaximumFrameDepth = 64;
   enum class ReturnKind : uint8_t { None, Void, Short, Int, Reference };
   // Package provenance is carried beside a compact reference while values
   // move through operand words and locals. Heap-local handles alone do not
