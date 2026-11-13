@@ -29220,3 +29220,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep T1/T2 partially open until damaged snapshots can be rebuilt or quarantined and all distinct read-failure paths are reported; continue with T1 repair, then T7/T3.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; no test log retained.
+
+## 2026-11-13 MEM-01 T3 conservative RAM partial sweep 20 minutes
+
+- Step/experiment: `MEM-01-T3-PARTIAL-RAM-GC-20261113`
+- When: '2026-11-13 16:38 UTC' - '2026-11-13 16:58 UTC'
+- Model: `GPT-6 Codex`
+- Change: When reachability is incomplete exclusively due to persistent-owner edge load failures, retry tracing with all persistent-tagged objects as roots. Reclaim untagged volatile objects only if the retry has complete root enumeration, no invalid references and no volatile-owner edge failures; retain all persistent-tagged objects. Runtime output distinguishes this safe partial sweep as `HEAP_GC_PARTIAL`. Added 50-cycle stress coverage with 200 volatile arrays per cycle and updated malformed persistent-edge regressions.
+- Validation: `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`; each of 50 cycles reclaimed all 200 arrays while retaining the malformed persistent owner. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed with object deletion ON and debug switches OFF. `git -c core.whitespace=cr-at-eol diff --check` passed. No physical hardware was accessed.
+- Result: Focused volatile-handle accumulation is bounded despite unreadable durable edges. ARM UF2 SHA-256 `e25c14b867015e85bbebd639869620776a8eb205d295c14d1eda819d018d57c0`; RISC-V wrapper builds core/smoke image only. Real-overlay long-run boundedness remains unmeasured.
+- Decision: T3 focused implementation is complete; continue MEM-01 with T7 harness and remaining T1/T2 integrity/recovery work before physical acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; no test log retained.

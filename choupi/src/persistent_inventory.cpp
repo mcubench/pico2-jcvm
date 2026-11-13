@@ -4,7 +4,6 @@
 #include "ffi.h"
 #include "jc_handlers/flashmemory.hpp"
 
-#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstring>
@@ -730,11 +729,19 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
 }
 
 void sortCandidateBatch(CandidateBatch &batch) {
-  std::sort(batch.tags.begin(), batch.tags.begin() + batch.count,
-            [](const PersistentInventory::Tag &left,
-               const PersistentInventory::Tag &right) {
-              return left.len > right.len;
-            });
+  const uint8_t count = batch.count < kTagBatchCapacity
+                            ? batch.count
+                            : kTagBatchCapacity;
+  for (uint8_t index = 1; index < count; ++index) {
+    const PersistentInventory::Tag candidate = batch.tags[index];
+    uint8_t destination = index;
+    while (destination != 0 &&
+           batch.tags[destination - 1].len < candidate.len) {
+      batch.tags[destination] = batch.tags[destination - 1];
+      --destination;
+    }
+    batch.tags[destination] = candidate;
+  }
 }
 } // namespace
 

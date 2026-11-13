@@ -14506,3 +14506,32 @@ The supplied client excerpt first sends the preparation APDU; on non-9000 it inv
 Important attribution limits: the shown `6F00` belongs to B0 31 preparation. No reset-command response/status or exception is supplied, so an exception specifically inside requestObjectDeletion is a hypothesis. In current source, the enabled native request merely sets a noexcept boolean and records its context; actual collection runs after APDU execution in `choupi/src/main.cpp`. With deletion disabled, the native API explicitly throws SystemException. Verify the tested binary configuration and distinguish request entry, post-APDU collection, reset response, and next prepare response. Retained deletion requests may be serviced again; repeated calls must be tested with live roots and failing preparation paths.
 
 Next: locate the first failing reset in the complete trace, retain its exact APDU/status/elapsed time and preceding successful operation, correlate serial exception and OBJECT_DELETION markers, and reproduce an unchanged upstream 1.8.4 AES prepare/reset sequence repeatedly before attempting the RSA prefix. Measure USB-progress gaps across post-APDU collection as well as native RSA. RSA time-extension starvation remains possible but cannot explain away the earlier AES/reset failures. No robust fix established; no hardware accessed.
+# Current handoff — MEM-01 T3 conservative RAM partial sweep — 2026-11-13 16:58 UTC
+
+MEM-01 T3 is implemented and locally validated. If heap reachability is
+incomplete solely because persistent-tagged owners have unreadable edges, the
+collector retries with every persistent-tagged handle treated as a root. It
+then sweeps only when the second trace still has complete root enumeration,
+zero invalid references and zero volatile-owner edge failures. All
+persistent-tagged objects are retained; known reachable volatile children and
+ordinary roots remain marked. Otherwise collection remains fail-closed. Runtime
+reports use `HEAP_GC_PARTIAL` for this case.
+
+The persistent-transaction suite passes a stress regression of 50 cycles × 200
+volatile byte arrays with one malformed persistent edge; each cycle reclaims
+all 200 arrays and preserves the tagged persistent owner. Existing malformed
+persistent array/instance edge cases now assert this conservative behavior.
+ARM and RISC-V `max_crypto` wrappers pass with object deletion enabled and all
+debug options disabled. ARM UF2 SHA-256:
+`e25c14b867015e85bbebd639869620776a8eb205d295c14d1eda819d018d57c0`.
+RISC-V wrapper produces the VM core/smoke image only. No physical device was
+accessed. T3 does not establish end-to-end memory boundedness on the RP2350
+overlay; T7 harness and T8 physical acceptance remain open. T1/T2 also remain
+partial.
+
+Do not stage the existing removal of `Heap::releaseGlobalAIDObject()` while
+committing T3; that edit predates this step. The current source work also
+includes T1/T2 changes already committed separately. See the latest progress
+entry for tests and the exact step scope.
+
+# Current handoff — MEM-01 T2 skip bad candidates and preserve progress — 2026-11-13 16:38 UTC

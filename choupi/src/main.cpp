@@ -928,13 +928,26 @@ void collect_heap_after_apdu() {
                                  ? context.getHeap().collectUnreachableFrom(roots)
                                  : context.getHeap().traceReachableFrom(roots);
         if (!summary.complete) {
-          std::fprintf(stderr,
-                       "HEAP_GC_SKIP owner=%u invalid=%u edge_failures=%u "
-                       "root_failures=%u\n",
-                       static_cast<unsigned>(context.getAppletID()),
-                       static_cast<unsigned>(summary.invalid_references),
-                       static_cast<unsigned>(summary.edge_load_failures),
-                       static_cast<unsigned>(summary.root_enumeration_failures));
+          if (summary.partial_sweep) {
+            std::fprintf(stderr,
+                         "HEAP_GC_PARTIAL owner=%u reclaimed_arrays=%u "
+                         "reclaimed_instances=%u kept_persistent_arrays=%u "
+                         "kept_persistent_instances=%u edge_failures=%u\n",
+                         static_cast<unsigned>(context.getAppletID()),
+                         static_cast<unsigned>(summary.arrays_reclaimed),
+                         static_cast<unsigned>(summary.instances_reclaimed),
+                         static_cast<unsigned>(summary.persistent_tagged_arrays),
+                         static_cast<unsigned>(summary.persistent_tagged_instances),
+                         static_cast<unsigned>(summary.edge_load_failures));
+          } else {
+            std::fprintf(stderr,
+                         "HEAP_GC_SKIP owner=%u invalid=%u edge_failures=%u "
+                         "root_failures=%u\n",
+                         static_cast<unsigned>(context.getAppletID()),
+                         static_cast<unsigned>(summary.invalid_references),
+                         static_cast<unsigned>(summary.edge_load_failures),
+                         static_cast<unsigned>(summary.root_enumeration_failures));
+          }
         }
         if (collect_all_contexts || trace_enabled) {
           std::fprintf(stderr,
@@ -1154,14 +1167,26 @@ void collect_heap_after_apdu() {
     }
 #endif
     if (!summary.complete) {
-      std::printf(
-          "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u root_failures=%u "
-          "static_result=%u applet_result=%u\r\n",
-          static_cast<unsigned>(summary.invalid_references),
-          static_cast<unsigned>(summary.edge_load_failures),
-          static_cast<unsigned>(summary.root_enumeration_failures),
-          static_cast<unsigned>(roots.static_result),
-          static_cast<unsigned>(roots.applet_result));
+      if (summary.partial_sweep) {
+        std::printf("CHOUPI:HEAP_GC_PARTIAL owner=%u reclaimed_arrays=%u "
+                    "reclaimed_instances=%u kept_persistent_arrays=%u "
+                    "kept_persistent_instances=%u edge_failures=%u\r\n",
+                    static_cast<unsigned>(context.getAppletID()),
+                    static_cast<unsigned>(summary.arrays_reclaimed),
+                    static_cast<unsigned>(summary.instances_reclaimed),
+                    static_cast<unsigned>(summary.persistent_tagged_arrays),
+                    static_cast<unsigned>(summary.persistent_tagged_instances),
+                    static_cast<unsigned>(summary.edge_load_failures));
+      } else {
+        std::printf(
+            "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u root_failures=%u "
+            "static_result=%u applet_result=%u\r\n",
+            static_cast<unsigned>(summary.invalid_references),
+            static_cast<unsigned>(summary.edge_load_failures),
+            static_cast<unsigned>(summary.root_enumeration_failures),
+            static_cast<unsigned>(roots.static_result),
+            static_cast<unsigned>(roots.applet_result));
+      }
     }
   } catch (...) {
     std::printf("CHOUPI:HEAP_GC_SKIP reason=root_enumeration_failed\r\n");
@@ -1187,13 +1212,25 @@ void collect_heap_after_apdu() {
             inactive_context->getHeap().collectUnreachableFrom(
                 enumerate_selected_applet_roots, &inactive_roots);
         if (!inactive_summary.complete) {
-          std::printf(
-              "CHOUPI:HEAP_GC_SKIP owner=%u invalid=%u edge_failures=%u "
-              "root_failures=%u\r\n",
-              static_cast<unsigned>(inactive_context->getAppletID()),
-              static_cast<unsigned>(inactive_summary.invalid_references),
-              static_cast<unsigned>(inactive_summary.edge_load_failures),
-              static_cast<unsigned>(inactive_summary.root_enumeration_failures));
+          if (inactive_summary.partial_sweep) {
+            std::printf("CHOUPI:HEAP_GC_PARTIAL owner=%u reclaimed_arrays=%u "
+                        "reclaimed_instances=%u kept_persistent_arrays=%u "
+                        "kept_persistent_instances=%u edge_failures=%u\r\n",
+                        static_cast<unsigned>(inactive_context->getAppletID()),
+                        static_cast<unsigned>(inactive_summary.arrays_reclaimed),
+                        static_cast<unsigned>(inactive_summary.instances_reclaimed),
+                        static_cast<unsigned>(inactive_summary.persistent_tagged_arrays),
+                        static_cast<unsigned>(inactive_summary.persistent_tagged_instances),
+                        static_cast<unsigned>(inactive_summary.edge_load_failures));
+          } else {
+            std::printf(
+                "CHOUPI:HEAP_GC_SKIP owner=%u invalid=%u edge_failures=%u "
+                "root_failures=%u\r\n",
+                static_cast<unsigned>(inactive_context->getAppletID()),
+                static_cast<unsigned>(inactive_summary.invalid_references),
+                static_cast<unsigned>(inactive_summary.edge_load_failures),
+                static_cast<unsigned>(inactive_summary.root_enumeration_failures));
+          }
         }
 #else
         (void)inactive_context->getHeap().collectUnreachableFrom(

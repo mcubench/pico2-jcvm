@@ -1523,7 +1523,7 @@ void Heap::visitChildReferences(const JC_Instance &instance,
 
 Heap::ReachabilitySummary Heap::traceAndMark(
     const RootReferenceEnumerator enumerate_roots, void *root_context,
-    const bool reset_marks) {
+    const bool reset_marks, const bool include_all_persistent) {
   ReachabilitySummary summary;
   this->shared_storage->reachability_complete = false;
   if (reset_marks) {
@@ -1615,6 +1615,21 @@ Heap::ReachabilitySummary Heap::traceAndMark(
     ++summary.root_enumeration_failures;
     summary.complete = false;
   }
+  if (include_all_persistent) {
+    for (auto &array : this->shared_storage->arrays) {
+      if (array && array->hasPersistentTag() && array->heap_mark == 0) {
+        array->heap_mark = 1;
+        found_new_reference = true;
+      }
+    }
+    for (auto &instance : this->shared_storage->instances) {
+      if (instance && instance->hasPersistentTag() &&
+          instance->heap_mark == 0) {
+        instance->heap_mark = 1;
+        found_new_reference = true;
+      }
+    }
+  }
 #if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
   for (const auto &array : this->shared_storage->arrays) {
     root_count += array && array->heap_mark == 1 ? 1u : 0u;
@@ -1667,6 +1682,11 @@ Heap::ReachabilitySummary Heap::traceAndMark(
                                 owner_tag, exception);
 #endif
         ++summary.edge_load_failures;
+        if ((*array)->hasPersistentTag()) {
+          ++summary.persistent_edge_load_failures;
+        } else {
+          ++summary.volatile_edge_load_failures;
+        }
         summary.complete = false;
       }
     }
@@ -1711,6 +1731,11 @@ Heap::ReachabilitySummary Heap::traceAndMark(
                                 owner_tag, exception);
 #endif
         ++summary.edge_load_failures;
+        if ((*instance)->hasPersistentTag()) {
+          ++summary.persistent_edge_load_failures;
+        } else {
+          ++summary.volatile_edge_load_failures;
+        }
         summary.complete = false;
       }
     }
@@ -1826,11 +1851,25 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
   VectorRootContext root_context{&roots};
   summary = this->traceAndMark(enumerateVectorRoots, &root_context);
   if (!summary.complete) {
-    return summary;
+    const bool persistent_edges_only =
+        summary.invalid_references == 0 &&
+        summary.root_enumeration_failures == 0 &&
+        summary.persistent_edge_load_failures != 0 &&
+        summary.volatile_edge_load_failures == 0;
+    if (!persistent_edges_only) return summary;
+    summary = this->traceAndMark(enumerateVectorRoots, &root_context, true,
+                                 true);
+    summary.partial_sweep =
+        !summary.complete && summary.invalid_references == 0 &&
+        summary.root_enumeration_failures == 0 &&
+        summary.persistent_edge_load_failures != 0 &&
+        summary.volatile_edge_load_failures == 0;
+    if (!summary.complete && !summary.partial_sweep) return summary;
   }
 
   for (auto &array : this->shared_storage->arrays) {
-    if (array && array->heap_mark == 0) {
+    if (array && array->heap_mark == 0 &&
+        (!summary.partial_sweep || !array->hasPersistentTag())) {
       this->unregisterForeignReferenceArray(array.get());
       array.reset();
       ++summary.arrays_reclaimed;
@@ -1838,7 +1877,8 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
   }
 
   for (auto &instance : this->shared_storage->instances) {
-    if (instance && instance->heap_mark == 0) {
+    if (instance && instance->heap_mark == 0 &&
+        (!summary.partial_sweep || !instance->hasPersistentTag())) {
       instance.reset();
       ++summary.instances_reclaimed;
     }
@@ -1857,11 +1897,24 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
 
   summary = this->traceAndMark(enumerate_roots, root_context);
   if (!summary.complete) {
-    return summary;
+    const bool persistent_edges_only =
+        summary.invalid_references == 0 &&
+        summary.root_enumeration_failures == 0 &&
+        summary.persistent_edge_load_failures != 0 &&
+        summary.volatile_edge_load_failures == 0;
+    if (!persistent_edges_only) return summary;
+    summary = this->traceAndMark(enumerate_roots, root_context, true, true);
+    summary.partial_sweep =
+        !summary.complete && summary.invalid_references == 0 &&
+        summary.root_enumeration_failures == 0 &&
+        summary.persistent_edge_load_failures != 0 &&
+        summary.volatile_edge_load_failures == 0;
+    if (!summary.complete && !summary.partial_sweep) return summary;
   }
 
   for (auto &array : this->shared_storage->arrays) {
-    if (array && array->heap_mark == 0) {
+    if (array && array->heap_mark == 0 &&
+        (!summary.partial_sweep || !array->hasPersistentTag())) {
       this->unregisterForeignReferenceArray(array.get());
       array.reset();
       ++summary.arrays_reclaimed;
@@ -1869,7 +1922,8 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
   }
 
   for (auto &instance : this->shared_storage->instances) {
-    if (instance && instance->heap_mark == 0) {
+    if (instance && instance->heap_mark == 0 &&
+        (!summary.partial_sweep || !instance->hasPersistentTag())) {
       instance.reset();
       ++summary.instances_reclaimed;
     }

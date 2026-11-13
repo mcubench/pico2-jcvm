@@ -83,6 +83,15 @@ jcvm::fs::Tag make_tag(uint8_t first) {
   return tag;
 }
 
+bool array_reference_was_reclaimed(jcvm::Heap &heap,
+                                   const jcvm::jref_t reference) {
+  try {
+    return heap.getArray(reference) == nullptr;
+  } catch (jcvm::Exceptions) {
+    return true;
+  }
+}
+
 std::vector<uint8_t> byte_record(uint8_t value) {
   return {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_BYTE), value};
 }
@@ -813,6 +822,57 @@ int main() {
            "clearing_first_reference_keeps_object_reachable_through_other_alias");
 
     persistent_transaction_test::instance_field_count = 0;
+  }
+
+  // A failed edge owned by a persistent object may hide only durable
+  // references. Keep every persistent-tagged handle and its known children,
+  // while proving that unrelated volatile garbage does not accumulate.
+  {
+    jcvm::Heap heap(7);
+    const auto parent_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_REFERENCE, 0xffff);
+    const auto parent = heap.getArray(parent_reference);
+    const auto parent_tag = make_tag(0x7e);
+    parent->setPersistentTag(parent_tag);
+    persistent_transaction_test::seed(
+        parent_tag.value, parent_tag.len,
+        {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+         0, 1, 0xff, 0xff});
+    const auto malformed_edge =
+        jcvm::FlashMemory_Handler::computeTag(parent_tag, 0);
+    persistent_transaction_test::seed(malformed_edge.value,
+                                      malformed_edge.len, {0xfe});
+
+    constexpr size_t kCycles = 50;
+    constexpr size_t kGarbagePerCycle = 200;
+    bool bounded_reclamation = true;
+    for (size_t cycle = 0; cycle < kCycles && bounded_reclamation; ++cycle) {
+      std::array<jcvm::jref_t, kGarbagePerCycle> garbage{};
+      for (auto &reference : garbage) {
+        reference = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      }
+      const auto summary = heap.collectUnreachableFrom({parent_reference});
+      bool all_garbage_freed = true;
+      for (const auto reference : garbage) {
+        all_garbage_freed = all_garbage_freed &&
+                            array_reference_was_reclaimed(heap, reference);
+      }
+      bounded_reclamation =
+          !summary.complete && summary.partial_sweep &&
+          summary.persistent_edge_load_failures == 1 &&
+          summary.volatile_edge_load_failures == 0 &&
+          summary.arrays_reclaimed == kGarbagePerCycle &&
+          summary.persistent_tagged_arrays == 1 &&
+          heap.getArray(parent_reference) != nullptr && all_garbage_freed;
+    }
+    expect(bounded_reclamation,
+           "incomplete_persistent_trace_reclaims_200_volatile_arrays_for_50_cycles");
+    jcvm::fs::Tag malformed_edge_tag{};
+    malformed_edge_tag.len = malformed_edge.len;
+    std::memcpy(malformed_edge_tag.value, malformed_edge.value,
+                malformed_edge.len);
+    expect(jcvm::FlashMemory_Handler::erasePersistentTag(malformed_edge_tag),
+           "partial_heap_sweep_fixture_cleanup");
   }
 
   {
@@ -1601,11 +1661,12 @@ int main() {
     const auto malformed_edge = jcvm::FlashMemory_Handler::computeTag(parent_tag, 0);
     seed(malformed_edge.value, malformed_edge.len, {0xfe});
     const auto summary = heap.collectUnreachableFrom({parent_reference});
-    expect(!summary.complete && summary.edge_load_failures == 1 &&
-               summary.arrays_reclaimed == 0 &&
+    expect(!summary.complete && summary.partial_sweep &&
+               summary.edge_load_failures == 1 &&
+               summary.arrays_reclaimed == 1 &&
                heap.getArray(parent_reference) != nullptr &&
-               heap.getArray(unreachable_reference) != nullptr,
-           "malformed_serialized_object_alias_blocks_heap_reclamation");
+               array_reference_was_reclaimed(heap, unreachable_reference),
+           "malformed_persistent_array_edge_allows_only_safe_partial_sweep");
   }
 
   const auto exercise_bad_array_edge = [&](const uint8_t suffix,
@@ -1625,14 +1686,15 @@ int main() {
     const auto edge_tag = jcvm::FlashMemory_Handler::computeTag(parent_tag, 0);
     seed(edge_tag.value, edge_tag.len, std::move(record));
     const auto summary = heap.collectUnreachableFrom({parent_reference});
-    expect(!summary.complete && summary.edge_load_failures == 1 &&
-               summary.arrays_reclaimed == 0 &&
+    expect(!summary.complete && summary.partial_sweep &&
+               summary.edge_load_failures == 1 &&
+               summary.arrays_reclaimed == 1 &&
                heap.getArray(parent_reference) != nullptr &&
-               heap.getArray(unreachable_reference) != nullptr,
+               array_reference_was_reclaimed(heap, unreachable_reference),
            test_name);
   };
   exercise_bad_array_edge(0x7a, {0xfd},
-                          "truncated_serialized_array_alias_blocks_reclamation");
+                          "truncated_persistent_array_alias_allows_safe_partial_sweep");
 
   const auto alias_parent_tag = make_tag(0x7b);
   const auto alias_edge_tag = jcvm::FlashMemory_Handler::computeTag(alias_parent_tag, 0);
@@ -1640,7 +1702,7 @@ int main() {
   cyclic_alias.insert(cyclic_alias.end(), alias_edge_tag.value,
                       alias_edge_tag.value + alias_edge_tag.len);
   exercise_bad_array_edge(0x7b, std::move(cyclic_alias),
-                          "cyclic_serialized_array_alias_is_bounded_and_blocks_reclamation");
+                          "cyclic_persistent_array_alias_is_bounded_with_safe_partial_sweep");
 
   {
     jcvm::Heap heap(7);
@@ -1722,11 +1784,12 @@ int main() {
         jcvm::FlashMemory_Handler::computeTag(instance_tag, 0);
     seed(malformed_field.value, malformed_field.len, {0xfe});
     const auto summary = heap.collectUnreachableFrom({instance_reference});
-    expect(!summary.complete && summary.edge_load_failures == 1 &&
-               summary.arrays_reclaimed == 0 &&
+    expect(!summary.complete && summary.partial_sweep &&
+               summary.edge_load_failures == 1 &&
+               summary.arrays_reclaimed == 1 &&
                heap.getInstance(instance_reference) != nullptr &&
-               heap.getArray(unreachable_reference) != nullptr,
-           "malformed_serialized_object_field_blocks_heap_reclamation");
+               array_reference_was_reclaimed(heap, unreachable_reference),
+           "malformed_persistent_instance_edge_allows_safe_partial_sweep");
     jcvm::fs::Tag malformed_field_tag{};
     malformed_field_tag.len = malformed_field.len;
     std::memcpy(malformed_field_tag.value, malformed_field.value,
