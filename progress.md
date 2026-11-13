@@ -29184,3 +29184,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CAPIN-04 open for recursive uploaded-CAP APDU status/recovery coverage and confirming the 64-frame allowance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261113T160330Z.log`; `artifacts/logs/build-pc-rmi-client-20261113T160330Z.log`.
+
+## 2026-11-13 MEM-01 memory-exhaustion code review and backlog 75 minutes
+
+- Step/experiment: `MEM-01-REVIEW-20261113`
+- When: '2026-11-13 15:00 UTC' - '2026-11-13 16:15 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Added `docs/review_memory_analysis_opus55_20261113.md` (static review of persistent reclaimer, heap trace, RP2350 overlay filesystem and archived serial logs). Added top-priority MEM-01 tasks T1–T8 to TODO.md, a current HANDOFF section and a QKB diagnosis entry. No source code changed.
+- Validation: Code reading and log analysis only; no builds, tests or hardware runs (documentation-only step). Verified log facts by grep of D92/2BED/8E serial logs.
+- Result: Identified confirmed defects M3 (reclaimer stops forever on one unresolvable candidate), M4 (RAM GC all-or-nothing → 8E OOM), M5 (alias guard does not protect rescued body subtree), M6 (offset fix-up corrupts shared-offset duplicate slots → `tag_reconstruction`), M7 (snapshot load lacks index consistency checks), M8 (package-static reclaimer lacks alias guard), plus legacy M9/M10. D92 exhaustion explained by pre-`92c91943` damage on a non-wiped store; clean 2BED runs drained backlog with zero `F205`.
+- Decision: Worker should implement MEM-01 T1 → T2 → T7 → T3 → T4 → T5 → T6 → T8; wipe D92 before physical acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `docs/review_memory_analysis_opus55_20261113.md`.

@@ -1,3 +1,25 @@
+# Current handoff — MEM-01 memory-exhaustion review is top priority — 2026-11-13 16:15 UTC
+
+User directive: work MEM-01 before other offline tasks. Read
+`docs/review_memory_analysis_opus55_20261113.md` and TODO.md `MEM-01`.
+This was a static review (Claude Opus 5.5); no code changed, nothing built
+or flashed. Findings M3–M8 are confirmed from current source; root cause of
+the 8E trace-edge omission (M2) is still unknown.
+
+Key points for the next worker:
+- D92's 1.8.5 option-2 exhaustion is not evidence of a clean-store leak:
+  its store predates the `92c91943` rehash fix (firmware-only flashes
+  preserved storage). At xfr=143 the reclaimer hit `ReadFailure` after 3
+  erasures and never reclaimed again (M3); compaction then rejected
+  `tag_reconstruction` 295× (M6/M7). 2BED clean runs drained the backlog.
+- 8E OOM: RAM GC skipped every pass after one edge failure (M4).
+- Start with T1 (overlay integrity check/repair), then T2 (reclaimer skips
+  unresolvable candidates), then T7 (offline option-2 harness on
+  `src/pico_filesystem.cpp` over fake flash). All are offline.
+- Wipe D92 (empty-card UF2) before any further physical acceptance.
+- Unrelated pre-existing worktree edits (AGENTS.md, heap.cpp/hpp,
+  bc_invoke.cpp, cap_load.cpp, tests/tools) were left untouched.
+
 # Current handoff — CAPIN-04 bounds zero-word frame growth — 2026-11-13 16:08 UTC
 
 `Stack::push_Frame` now rejects a 65th active frame with

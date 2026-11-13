@@ -896,3 +896,30 @@ hardware cycle until USB passthrough exposes a reader/BOOTSEL device again.
 ## 2026-11-13 Windows d63877f6 loses communication on reset, without memory SW
 
 Evidence: `artifacts/results/windows-maxcrypto-20261113-d63877f6/ANALYSIS.md`. Returned UF2 matches no-debug package hash. 1,920 responses all 9000; first error on B0E2 reset after successful AES-192 ECB NOPAD preparation, five baselines and first 50-iteration sample. Error 0x8010002F = SCARD_E_COMM_DATA_LOST. Subsequent B043 and SELECT also fail. Both rehash fix and CCID recovery are included; neither a new rehash failure nor exhaustion is demonstrated. 956 successful resets and per-sample reset pattern invalidate a once-per-method cleanup assumption for this client log. Root cause unresolved without serial/endpoint/collector state; no new fix claimed.
+
+## 2026-11-13 MEM-01: one bad overlay record becomes permanent exhaustion
+
+**Symptom:** reclaimer logs `applet_result=6` once, then every later request
+`OBJECT_DELETION:SKIP … applet_roots_complete=0`; later
+`FS_COMPACT_REJECT reason=tag_reconstruction` repeats and writes return
+`F205`; or RAM GC logs `HEAP_GC_SKIP edge_failures>0` every APDU until
+`*** PANIC *** Out of memory`.
+
+**Confirmed causes (code review, not yet fixed):** reclaimer returns
+`ReadFailure` forever on a candidate that `fs_next_tag` enumerates but
+`fs_exists` cannot resolve (M3); erase/append offset fix-up corrupts a second
+slot sharing the same record offset (M6); snapshot load never validates index
+consistency, so damage persists across reboots and firmware-only flashes
+(M7); RAM GC is all-or-nothing on any trace edge failure (M4). Initial damage
+came from the pre-`92c91943` compaction rehash and pre-`36fcfe69` alias-target
+erasure.
+
+**Viable response (until T1–T3 land):** treat such a board's store as
+corrupt; re-flash with an empty-card UF2 before acceptance runs and record
+the initial overlay file count. Do not chase new tracing on that state.
+**Planned fix:** MEM-01 T1–T8 in TODO.md.
+
+Evidence: `docs/review_memory_analysis_opus55_20261113.md`;
+`artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/serial.log`
+lines 3527–3580 and 14062+; 8E OOM at line 12905 of
+`artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`.

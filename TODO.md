@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-12. Active backlog for `plan.md`. Implementation and acceptance
+Updated: 2026-11-13 (MEM-01 added). Active backlog for `plan.md`. Implementation and acceptance
 are separate: keep tasks open while required validation is missing. Follow
 `AGENTS.md` for native API boundaries, unchanged fixtures, build/hardware gates
 and commits. Use unchanged JCAlgTest **1.8.4 / jc305** and its matching client;
@@ -8,8 +8,9 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 
 ## Priorities and evidence
 
-1. **BOOTSEL-01 (P0): restore reliable software entry into BOOTSEL; highest priority.**
-2. RESOURCE-01; RESOURCE-02 focused fixes await full-suite/physical acceptance.
+0. **MEM-01 (P0, user directive 2026-11-13): fix persistent/RAM memory-exhaustion defects from [review_memory_analysis_opus55_20261113](docs/review_memory_analysis_opus55_20261113.md); highest priority, offline-first.** See [MEM-01](#mem-01).
+1. **BOOTSEL-01 (P0): restore reliable software entry into BOOTSEL; hardware-recovery priority (needs boards).**
+2. RESOURCE-01 (acceptance now gated on MEM-01); RESOURCE-02 focused fixes await full-suite/physical acceptance.
 3. HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
 4. STORE-01, PERSIST-01/02/03, API-01/03, GP-01 and AC-01/02 integration gates.
 5. HMAC-01 acceptance and offline-only JC-RESET-01 diagnosis.
@@ -33,6 +34,27 @@ measurements and detailed acceptance cases are preserved in the
 Linked detailed cases remain requirements unless explicitly superseded here;
 archive device states and old measurements are historical. Detailed new runs go
 in [progress.md](progress.md); reusable diagnoses go in QKB.
+
+## Memory exhaustion fixes — highest priority (2026-11-13)
+
+### MEM-01
+
+Source: [docs/review_memory_analysis_opus55_20261113.md](docs/review_memory_analysis_opus55_20261113.md)
+(static review; nothing in it is validated yet). Key conclusion: observed
+`F205`/OOM came from corrupted state (pre-`92c91943` rehash damage on D92,
+pre-`36fcfe69` alias erasure on 8E) amplified by current design defects that
+make one bad record permanent. Clean-store 2BED runs drained the deletion
+backlog and never hit `F205`. Do tasks in this order; one commit per task.
+
+- [ ] **T1 overlay integrity check + repair (M6/M7).** `fs_check_integrity()` at snapshot load and compaction preflight (unique non-overlapping offsets, size sum == `bytes_used`, stored hash == reconstructed hash, probe-chain reachability, ≤1 live slot per tag); rebuild/quarantine; make `erase_overlay_slot`/`append_overlay` fail closed before mutation if another slot shares the edited offset. Unit tests in `tests/unit/rp2350_fs_overlay` with injected duplicate/orphan/overlap/hash corruption.
+- [ ] **T2 reclaimer survives an unresolvable candidate (M3/M10).** `persistent_inventory.cpp:763`/`:849` must skip+report (and trigger T1) instead of returning `ReadFailure` forever; erase children before parents; split `ReadFailure` causes in logs. Test: 1 unresolvable + 19 garbage records → 19 erased, `pending=0`.
+- [ ] **T7 offline long-run harness on the real overlay backend.** PC VPCD build linking `src/pico_filesystem.cpp` over fake flash (96 KiB / 8,192 slots); unchanged option 2 (1.8.5 client, 1.8.4 jc305 CAP) with `PICO2_TEST_OBJECT_DELETION=1`; assert no SKIP, backlog drains, plateau, zero compaction rejects, zero `alias-protect`, bounded RAM handles.
+- [ ] **T3 bounded RAM GC under incomplete persistent trace (M4).** Replace blanket `HEAP_GC_SKIP` with a safe partial sweep of untagged volatile objects not reachable via failed edges; test 50 cycles with one missing body + garbage stays bounded (8E OOM case).
+- [ ] **T4 protect the whole subtree of an alias-rescued body; accept `FF FD` (M5).**
+- [ ] **T5 add the alias guard to package-static reclamation (M8).**
+- [ ] **T6 find why the trace omitted the 8E edge (M2 root cause)** using T7; any `alias-protect` event on a clean trace is a bug to report.
+- [ ] **T8 physical acceptance** only after T1–T7: wipe boards with empty-card UF2 first (D92 mandatory), record initial overlay counts, options 2 and 1 on separate identified boards. Keep CCID response stalls (M11) out of MEM-01.
+- Rule: do not run acceptance on a board whose store was written by an image older than the newest storage fix. Keep storage, CCID-delivery and host/PCSC failures as separate classes.
 
 ## BOOTSEL recovery — highest priority
 
