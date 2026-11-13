@@ -926,9 +926,11 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
         !cap_constant_pool_validation::valid_export_class_offsets(
             &this->export_comp->class_count,
             NTOHS(this->export_comp->size), class_record_start_bits.data(),
+            this->class_comp == nullptr ? nullptr : this->class_comp->infos,
             this->class_comp == nullptr
                 ? 0
-                : NTOHS(this->class_comp->size))) {
+                : NTOHS(this->class_comp->size),
+            this->applet_comp != nullptr)) {
       throw Exceptions::SecurityException;
     }
   }

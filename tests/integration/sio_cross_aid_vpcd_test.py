@@ -674,6 +674,53 @@ def offset_first_export_target_into_record(code: bytes) -> bytes:
     return b"".join(bytes(component) for component in components)
 
 
+def redirect_first_export_to_class(code: bytes) -> bytes:
+    """Point an applet package Export entry at a valid class_info record."""
+    components: list[bytearray] = []
+    offset = 0
+    while offset < len(code):
+        if len(code) - offset < 3:
+            raise RuntimeError("truncated CAP component header")
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        end = offset + 3 + size
+        if end > len(code):
+            raise RuntimeError("truncated CAP component payload")
+        components.append(bytearray(code[offset:end]))
+        offset = end
+    header = next((item for item in components if item[0] == 1), None)
+    class_component = next((item for item in components if item[0] == 6), None)
+    export = next((item for item in components if item[0] == 10), None)
+    if (header is None or len(header) < 9 or class_component is None or
+            export is None or len(export) < 7 or export[3] == 0):
+        raise RuntimeError("test CAP lacks Header, Class, or exported class")
+
+    class_data = class_component[3:]
+    cursor = 0
+    if header[7] >= 2:
+        if len(class_data) < 2:
+            raise RuntimeError("truncated Class signature-pool prefix")
+        signature_length = int.from_bytes(class_data[:2], "big")
+        if signature_length > len(class_data) - 2:
+            raise RuntimeError("Class signature pool exceeds component")
+        cursor = 2 + signature_length
+    while cursor < len(class_data) and class_data[cursor] & 0x80:
+        flags = class_data[cursor] >> 4
+        superinterfaces = class_data[cursor] & 0x0f
+        record_size = 1 + superinterfaces * 2
+        if flags & 0x02:
+            if record_size >= len(class_data) - cursor:
+                raise RuntimeError("truncated remote interface name")
+            record_size += 1 + class_data[cursor + record_size]
+        if record_size > len(class_data) - cursor:
+            raise RuntimeError("interface_info exceeds Class component")
+        cursor += record_size
+    if cursor >= len(class_data) or class_data[cursor] & 0x80:
+        raise RuntimeError("test CAP has no class_info record")
+
+    export[4:6] = cursor.to_bytes(2, "big")
+    return b"".join(bytes(component) for component in components)
+
+
 def remove_empty_export_class_records(code: bytes) -> bytes:
     """Drop Export class records that have no fields or methods."""
     components: list[bytearray] = []
@@ -981,6 +1028,20 @@ def main() -> int:
                     )
                 print("TEST:PASS LOAD rejected an Export class offset that "
                       "does not point to a Class record start")
+                print("TEST:SUMMARY pass=1 fail=0")
+                return 0
+            if os.environ.get("SIO_CROSS_AID_TEST_BAD_APPLET_EXPORT_CLASS") == "1":
+                bad_service_code = redirect_first_export_to_class(service[0])
+                response = vpcd.load_package(
+                    scp, bad_service_code, service[1],
+                    expected_final_statuses=(0x6A80,),
+                )
+                if response[-2:] != bytes.fromhex("6A80"):
+                    raise RuntimeError(
+                        "applet Export class target returned "
+                        f"{response[-2:].hex().upper()}, expected 6A80"
+                    )
+                print("TEST:PASS LOAD rejected an applet Export target to a class")
                 print("TEST:SUMMARY pass=1 fail=0")
                 return 0
             if os.environ.get("SIO_CROSS_AID_TEST_BAD_STATIC_METHODREF_OFFSET") == "1":

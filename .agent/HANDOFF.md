@@ -6,7 +6,7 @@ Returned UF2 SHA-256 matches requested b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6
 
 Old rehash fix and stale-extension recovery are already included; new run does not establish a rehash regression or memory exhaustion. Reset/collector/sync progress versus CCID final-response delivery is the next discriminating boundary. Existing local recovery-build stall evidence means idle-endpoint fallback is not a proven complete transport fix. Preserve failed board state if available. Prior package/build validation below remains historical; no external retest requested here.
 
-# Current handoff — no-debug Windows package and CAPIN-01 progress — 2026-11-13 12:58 UTC
+# Current handoff — no-debug Windows package and CAPIN-01 progress — 2026-11-13 13:18 UTC
 
 The user clarified that external Windows testing must use the no-debug firmware.
 Built a fresh ARM `max_crypto` image from the current worktree after the latest
@@ -50,6 +50,17 @@ and `./tools/test-rp2350-fs-overlay` passes its idempotent
 `lifecycle_recovery_removes_unenabled_staged_load` scenario. These CAPIN-01
 checklist items are now marked done; continue with remaining Export invariants
 and legacy malformed-persistent-CAP runtime coverage.
+
+The 13:18 CAPIN step enforces additional JCVM 3.0.5 Export rules: an Export
+component must contain entries; interface exports cannot list static fields or
+methods; applet-package Export targets must be shareable interfaces. A
+malformed applet Export targeting a valid class_info record rejects LOAD with
+`6A80`. Unit validation passes 50/50 and SIO VPCD passes 35/35 with Descriptor
+omitted and included. ARM/RISC-V/PC builds pass. Spec reference: Oracle [JCVM
+3.0.5 §6.13](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf). Continue other
+Export invariants, legacy persisted-CAP runtime coverage, then physical
+acceptance when a device is available. Windows testing remains on the no-debug
+package above.
 
 # Previous handoff — CAPIN-01 Export class offsets validated — 2026-11-13 12:35 UTC
 

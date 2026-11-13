@@ -55,17 +55,21 @@ inline bool valid_export_member_token(const std::size_t token,
   return token < member_count;
 }
 
-// Export.class_offset addresses a record in the Class component, not an
-// arbitrary byte in that component. `class_record_starts` is a 65,536-bit map
-// built while parsing the complete Class payload (including interface
-// records, which Export may also name).
+// Export.class_offset addresses a class_info/interface_info record in the
+// Class component. `class_record_starts` is built while parsing that complete
+// component. The record flags use the CAP Class-component high nibble.
 inline bool valid_export_class_offsets(
     const uint8_t *payload, const std::size_t payload_size,
     const uint8_t *class_record_starts,
-    const std::size_t class_component_size) noexcept {
-  if (payload == nullptr || payload_size == 0) return false;
+    const uint8_t *class_component_payload,
+    const std::size_t class_component_size,
+    const bool applet_package) noexcept {
+  if (payload == nullptr || payload_size <= 1 ||
+      class_component_payload == nullptr || class_component_size == 0) {
+    return false;
+  }
   const std::size_t class_count = payload[0];
-  if (class_count != 0 && class_record_starts == nullptr) return false;
+  if (class_count == 0 || class_record_starts == nullptr) return false;
 
   std::size_t offset = 1;
   for (std::size_t index = 0; index < class_count; ++index) {
@@ -80,6 +84,13 @@ inline bool valid_export_class_offsets(
 
     const std::size_t fields = payload[offset + 2];
     const std::size_t methods = payload[offset + 3];
+    const uint8_t class_flags = class_component_payload[class_offset] >> 4;
+    const bool is_interface = (class_flags & 0x08) != 0;
+    const bool is_shareable = (class_flags & 0x04) != 0;
+    if ((is_interface && (fields != 0 || methods != 0)) ||
+        (applet_package && (!is_interface || !is_shareable))) {
+      return false;
+    }
     offset += 4;
     const std::size_t entries = (fields + methods) * sizeof(uint16_t);
     if (entries > payload_size - offset) return false;

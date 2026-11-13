@@ -190,6 +190,14 @@ task:
     Descriptor-free and Descriptor-bearing SIO VPCD runs; PC, ARM and RISC-V
     builds pass. No physical validation was run. Exact Class record boundaries
     are now established from Class framing, so they do not depend on Descriptor.
+  - Progress 2026-11-13 13:18 UTC: Export validation now also rejects an empty
+    Export table, nonzero static-member counts on interface exports, and applet
+    package Export entries that do not target a shareable interface. A mutated
+    applet CAP pointing its Export at a valid class_info record rejects at LOAD
+    with `6A80`. Unit checks pass 50/50; valid SIO VPCD suites pass 35/35 with
+    Descriptor omitted and included; ARM/RISC-V/PC builds pass. This follows
+    JCVM 3.0.5 §6.13. Physical validation was not run. Other Export invariants
+    remain open.
   - Progress 2026-11-12 12:10 UTC: Added a VPCD LOAD AID override for a test
     that requests the unchanged JCAlgTest CAP under a different package AID.
     The red regression reproduces the defect: LOAD succeeds, the package is

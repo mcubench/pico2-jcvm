@@ -29066,6 +29066,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`; unit output `./tools/test-rp2350-fs-overlay`.
 
+## 2026-11-13 Enforce applet Export interface rules 15 minutes
+
+- Step/experiment: `CAPIN-01-EXPORT-APPLET-INTERFACE-RULES-20261113`
+- When: '2026-11-13 13:03 UTC' - '2026-11-13 13:18 UTC'
+- Model: `GPT-6 Codex`
+- Change: Expanded Export validation: a present Export component must have entries; exported interface records must have zero static member counts; applet packages may export only shareable interface records. Added unit cases and a malformed SIO applet CAP that redirects an Export entry to a valid Class-component class record. Scope follows Oracle [JCVM 3.0.5 §6.13](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf). Updated TODO and HANDOFF.
+- Validation: `./tools/test-cap-constant-pool-validation` passed 50/50; Python syntax check and scoped diff check passed. PC, ARM and RISC-V `max_crypto` builds passed. The invalid applet Export target rejected during LOAD (`6A80`, pass=1/fail=0). Valid Descriptor-free and Descriptor-bearing SIO VPCD suites each passed 35/35. No physical hardware was accessed.
+- Result: Valid shareable-interface applet exports and library exports still load, while empty Export tables, interface static members, and applet class exports reject.
+- Decision: Keep CAPIN-01 open for the remaining Export invariants, direct legacy malformed-persistent-CAP runtime coverage, and physical acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T131122Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T131203Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T131515Z.log`.
+
 ## 2026-11-13 Archive Windows d63877f6 first failure 4 minutes
 
 - Step/experiment: `WIN-D63877F6-FIRST-FAILURE`
