@@ -216,8 +216,12 @@ task:
      `bc_static.cpp` checks Export presence/count; `jc_cp.cpp` now checks Class
      presence/size before class-index and classref access. Older persisted CAP
      corruption is not synthesized in a runtime integration test yet.
-  5. Compare the INSTALL-for-load AID with the Header AID; decide and record
-     what happens to a slot whose enable transaction failed after the store.
+  5. Done: LOAD compares the requested package AID with the CAP Header AID
+     before cleanup, slot allocation or storage (`load-header-aid-mismatch`,
+     `6A80`, no package registry entry). If storage succeeds but package-enable
+     transaction does not, lifecycle recovery removes the unenabled staged CAP
+     on the next recovery pass; `lifecycle_recovery_removes_unenabled_staged_load`
+     verifies repeated recovery is idempotent.
   Fixtures: extra tag-12 component; library with Export but no Class plus an
   importer; class with external superclass and no Import. Expect `6A80` at
   LOAD, no slot consumed, and DELETE of an unrelated package still `9000`.

@@ -43,6 +43,14 @@ This guard step is recorded in `progress.md`. Continue CAPIN-01 with its
 remaining Export invariants and LOAD transaction/AID failure behavior. The
 external Windows run still uses only the no-debug package and UF2 named above.
 
+Correction after the checklist audit: LOAD/Header AID mismatch rejection and
+recovery of a stored-but-unenabled CAP were already implemented. The focused
+`load-header-aid-mismatch` VPCD regression passes (`6A80`, no registry entry),
+and `./tools/test-rp2350-fs-overlay` passes its idempotent
+`lifecycle_recovery_removes_unenabled_staged_load` scenario. These CAPIN-01
+checklist items are now marked done; continue with remaining Export invariants
+and legacy malformed-persistent-CAP runtime coverage.
+
 # Previous handoff — CAPIN-01 Export class offsets validated — 2026-11-13 12:35 UTC
 
 LOAD now checks each Export `class_offset` against a parsed class or interface

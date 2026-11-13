@@ -29054,6 +29054,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T124853Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T125340Z.log`.
 
+## 2026-11-13 Close CAPIN LOAD AID and orphan recovery checklist 5 minutes
+
+- Step/experiment: `CAPIN-01-LOAD-AID-ORPHAN-RECOVERY-AUDIT-20261113`
+- When: '2026-11-13 12:58 UTC' - '2026-11-13 13:03 UTC'
+- Model: `GPT-6 Codex`
+- Change: Reconciled stale CAPIN-01 checklist entries with the current LOAD implementation. LOAD/Header package AID mismatch is rejected before storage; an unenabled stored CAP is removed by lifecycle recovery. Updated TODO and HANDOFF to record the existing behavior and evidence.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-cap-malformed-vpcd --mutation load-header-aid-mismatch` passed (`6A80`, `registry_saved_packages=-1`); `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including repeated idempotent recovery of an unenabled staged CAP. No physical hardware was accessed.
+- Result: The mismatch cannot consume a package slot; a failure after CAP storage is recovered by the next lifecycle recovery pass. No code changed in this audit.
+- Decision: Mark CAPIN-01 checklist item 5 done. Continue Export invariant review and legacy persisted-CAP runtime coverage.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/rv28-malformed-load-header-aid-mismatch-vpcd-20261106.log`; unit output `./tools/test-rp2350-fs-overlay`.
+
 ## 2026-11-13 Archive Windows d63877f6 first failure 4 minutes
 
 - Step/experiment: `WIN-D63877F6-FIRST-FAILURE`
