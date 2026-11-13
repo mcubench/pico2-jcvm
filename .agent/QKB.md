@@ -757,3 +757,22 @@ No failed slot or parent-chain detail is currently logged, so root cause is
 unresolved. Preserve both physical logs. Do not conflate `F205` with the
 transport failure or claim option-2 acceptance. Logs are under
 `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/`.
+
+## 2026-11-13: Validate stored overlay record bounds before tag reconstruction
+
+`reconstruct_overlay_tag()` previously validated that the record offset was
+inside `overlay_bytes_used`, but trusted the serialized key length and then
+read/copy key bytes without checking the complete key and value span. A
+malformed or inconsistent serialized header could therefore read beyond the
+used overlay region during compaction. The function now verifies that
+`key_length + file.size` fits in the remaining bytes before accessing the
+payload. The regression corrupts a stored header to claim a 127-byte key and
+confirms compaction returns `FS_STATUS_IO_UNKNOWN` without reading beyond the
+record. `./tools/test-rp2350-fs-overlay` passes; ARM/RISC-V wrappers build.
+
+This is defensive hardening, not a confirmed root cause for the physical D92
+`tag_reconstruction` rejection: the exact slot/header is still unknown and the
+near-capacity parent-encoded regression does not reproduce it. If a future
+physical run rejects compaction, use `FS_TAG_RECON_FAIL` to capture the actual
+record and verify whether this guard is implicated. Keep the CCID transport
+stall as a separate failure class.

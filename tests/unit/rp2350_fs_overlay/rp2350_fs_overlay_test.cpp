@@ -29,6 +29,9 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
     uint32_t length);
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
+extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
+    const uint8_t *tag, uint8_t tag_length, uint8_t header);
+extern "C" uint8_t rp2350_fs_test_compact(void);
 extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count);
 extern "C" void rp2350_fs_test_fail_next_sync(void);
 extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void);
@@ -2431,6 +2434,20 @@ int main() {
   }
   expect(parent_encoded_ok,
          "filesystem_parent_encoded_records_survive_repeated_compaction");
+
+  // Corrupt serialized metadata must be rejected before reconstruction reads
+  // beyond the stored record. This mirrors malformed/stale index state without
+  // requiring a physical flash image and ensures compaction fails closed.
+  fake_flash.fill(0xff);
+  constexpr uint8_t malformed_record_tag[] = {0xf1, 0x42, 0x01};
+  expect(fs_init() == FS_STATUS_OK &&
+             fs_write(malformed_record_tag, sizeof(malformed_record_tag),
+                      first_value, sizeof(first_value)) == FS_STATUS_OK &&
+             rp2350_fs_test_corrupt_record_header(
+                 malformed_record_tag, sizeof(malformed_record_tag), 0x7f) ==
+                 FS_STATUS_OK &&
+             rp2350_fs_test_compact() == FS_STATUS_IO_UNKNOWN,
+         "filesystem_compaction_rejects_out_of_bounds_serialized_key");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the

@@ -821,8 +821,16 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
   }
 
   const uint32_t offset = overlay_offset(file);
+  if (offset >= overlay_bytes_used ||
+      overlay_bytes_used - offset < 1) {
+    return fail("record_header_out_of_bounds");
+  }
   const uint8_t header = overlay_bytes[offset];
   const uint8_t key_length = header & 0x7f;
+  const size_t remaining = overlay_bytes_used - offset - 1;
+  if (key_length > remaining || file.size > remaining - key_length) {
+    return fail("record_payload_out_of_bounds");
+  }
   const uint8_t *stored = overlay_bytes + offset + 1;
   if ((header & 0x80) != 0) {
     if (key_length != 3 || file.tag_length < 2) {
@@ -1018,8 +1026,22 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
 
 #ifdef RP2350_FS_OVERLAY_TEST
 int32_t fail_bulk_erase_after = -1;
+uint8_t compact_deleted_overlay_records();
 extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count) {
   fail_bulk_erase_after = static_cast<int32_t>(count);
+}
+extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
+    const uint8_t *tag, uint8_t tag_length, uint8_t header) {
+  OverlayFile *file = find_overlay(tag, tag_length);
+  if (file == nullptr || !overlay_has_storage(*file) ||
+      overlay_offset(*file) >= overlay_bytes_used) {
+    return FS_STATUS_NO_SUCH_TAG;
+  }
+  overlay_bytes[overlay_offset(*file)] = header;
+  return FS_STATUS_OK;
+}
+extern "C" uint8_t rp2350_fs_test_compact(void) {
+  return compact_deleted_overlay_records();
 }
 #endif
 

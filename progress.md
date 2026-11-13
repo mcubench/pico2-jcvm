@@ -28860,3 +28860,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the stress; use the pending physical `FS_TAG_RECON_FAIL` trace to target any remaining parent or metadata invariant.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: Test output via `./tools/test-rp2350-fs-overlay`; no new physical log.
+
+## 2026-11-13 Bounds-check serialized overlay records 9 minutes
+
+- Step/experiment: `RESOURCE-01-FS-RECORD-BOUNDS-20261113`
+- When: '2026-11-13 08:44 UTC' - '2026-11-13 08:53 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a remaining-record bounds check in `reconstruct_overlay_tag()` before reading the serialized key or copying data, plus a host-only corruption hook and regression that changes a stored key header to length 127 and expects compaction to reject the malformed record. Updated QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_CCID_APPLET=1 ./tools/build arm --profile max_crypto` and the matching RISC-V wrapper passed. `git diff --check` passed for the implementation and unit test. Host access checks used the approved elevated path: the reader helper found zero Pico devices, and `lsusb -d 2e8a:` / `pcsc_scan -r` found no physical reader. No hardware flash or physical test occurred.
+- Result: Corrupted oversized key metadata now fails compaction safely with `FS_STATUS_IO_UNKNOWN`. This closes an out-of-bounds-read risk but does not establish that it caused D92's historical tag reconstruction failure. ARM image SHA-256 `b0df0477b028b7a68a57eb37ce75a881f991036e2fb33cfc9417690564de30e9`, firmware end `0x100f53b0`, remaining flash 44,112 bytes. Performance/memory change was not measured.
+- Decision: Retain the bounds guard; if physical compaction fails again, use `FS_TAG_RECON_FAIL` to capture its exact slot/header and determine whether this path was involved. Keep the independent CCID response-delivery issue separate.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; no new physical logs.

@@ -1,3 +1,30 @@
+# Current handoff — bounds-check serialized overlay records — 2026-11-13 08:53 UTC
+
+The user reported PC/SC restored. I refreshed access via the required host path,
+but `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` found
+zero matching Pico CCID devices; an elevated `lsusb -d 2e8a:` and
+`pcsc_scan -r` also returned no Pico device/reader. No client was active and no
+hardware command flashed a board.
+
+Hardened `reconstruct_overlay_tag()` against malformed serialized records. It
+now checks the entire stored key and value length against the remaining overlay
+bytes before reading or copying payload data. Added a host regression which
+corrupts a record header to claim a 127-byte key and verifies compaction rejects
+it as `FS_STATUS_IO_UNKNOWN`. Full `./tools/test-rp2350-fs-overlay` passes
+(`TEST:SUMMARY fail=0`). ARM and RISC-V max_crypto wrappers pass with object
+deletion and CCID diagnostics enabled. ARM image hash:
+`b0df0477b028b7a68a57eb37ce75a881f991036e2fb33cfc9417690564de30e9`;
+firmware end `0x100f53b0`, 44,112 bytes remain. No physical validation.
+
+This prevents an out-of-bounds read when serialized metadata is damaged, but
+does not prove it explains D92's historical `tag_reconstruction` failure. The
+new regression only covers an oversized key length; existing 2,400-record
+parent-encoded compaction stress remains green and still does not reproduce the
+physical rejection. Next, when a Pico is visible to the VM, flash this
+diagnostic build on an identified board and capture the new
+`FS_TAG_RECON_FAIL` detail if compaction rejects again; continue to keep the
+2BED CCID response-delivery failure separate from D92 storage failure.
+
 # Current handoff — response watchdog repro and diagnostics staged — 2026-11-13 08:19 UTC
 
 The stale CCID extension workaround has **not** passed physical validation.
