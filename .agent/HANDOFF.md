@@ -1,3 +1,11 @@
+# Windows d63877f6 first-failure evidence — 2026-11-13
+
+User returned no-debug package results and stopped at first incident. Archived three supplied files (log, CSV, exact UF2) at `artifacts/results/windows-maxcrypto-20261113-d63877f6/`; README/ANALYSIS and SHA256SUMS preserve provenance. Move the inbox duplicate only after committed-byte verification. Fulfilled external request WIN-OBJECT-DELETION-NODEBUG-D63877F6 removed. No implementation or hardware work in this step.
+
+Returned UF2 SHA-256 matches requested b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6fe92006a5400e80a71d3a70. Client 1.8.5 / applet 1.8.4_jc305, performance option 2/submenu 1; continuation declined. All 1,920 returned responses are 9000; no F205/6F00. First failure is B0E2 reset immediately after first successful 50-iteration AES-192 ECB NOPAD doFinal measurement (all five baselines/preparation succeeded). Windows 0x8010002F is SCARD_E_COMM_DATA_LOST; next measurement/SELECT fail too. 956 successful reset pairs; reset precedes every sample. Earlier once-per-method budget illustration understates actual cleanup opportunities. No chip ID or serial log supplied.
+
+Old rehash fix and stale-extension recovery are already included; new run does not establish a rehash regression or memory exhaustion. Reset/collector/sync progress versus CCID final-response delivery is the next discriminating boundary. Existing local recovery-build stall evidence means idle-endpoint fallback is not a proven complete transport fix. Preserve failed board state if available. Prior package/build validation below remains historical; no external retest requested here.
+
 # Current handoff — fresh no-debug Windows package — 2026-11-13 11:54 UTC
 
 The user clarified that external Windows testing must use the no-debug firmware.

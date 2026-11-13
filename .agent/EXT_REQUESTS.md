@@ -1,32 +1,5 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-NODEBUG-D63877F6 — Max crypto external test package
-
-Created 2026-11-13 11:45 UTC; refreshed 2026-11-13 11:54 UTC. This is the
-current package for Windows external validation. It is built from the current
-source worktree after the filesystem parent-slot integrity guard, with
-`max_crypto`, object deletion enabled, and CCID, heap-GC, and persistent-GC
-debug logging disabled. It is an empty-card image; flashing clears the 1 MiB
-persistent-storage region. The source worktree was dirty; see
-`BUILD-PROVENANCE.txt` for exact tracked-diff hashes. The upstream CAP and
-supplied 1.8.5 client are unchanged.
-
-- [Complete no-debug Windows package](../build/external-test/pico2-jcvm-object-deletion-nodebug-windows-d63877f6.zip)
-- [Standalone no-debug empty-card ARM UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-d63877f6.uf2)
-- Package SHA-256: `16b27c69018092bb65f7c6a59186dbf63d15353afcb6972b2dc7de73d2dc6877`
-- UF2 SHA-256: `b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6fe92006a5400e80a71d3a70`
-- UF2 size: 4,105,216 bytes; firmware end `0x100f50f0`, 44,816 bytes remain.
-- Source HEAD: `d63877f652522d875e19bdf31577723f70731f00`; the dirty-tree provenance is included in the package.
-- Package includes unchanged JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro, and exact flashing/test instructions.
-
-Follow the package README. Verify its hashes, flash the exact UF2 in BOOTSEL,
-confirm the `Pico2 JCVM CCID` reader and empty GPPro listing, then explicitly
-install the unchanged CAP. Run option `2 -> PERFORMANCE TEST` on one identified
-device and option `1 -> All algorithms` on a second token if available. Return
-Windows version, reader/ATR, chip ID, firmware hash, client results, and any
-PC/SC, timeout, reset, `6F00`, or `F205` errors. This is the no-debug package;
-root-scan trace markers are intentionally absent.
-
 ## PCSC-BOOTSEL-RECOVERY-20261113 — Restore physical reader and BOOTSEL access
 
 Created 2026-11-13 08:19 UTC. The local option-2 clients have exited. After

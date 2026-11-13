@@ -883,3 +883,7 @@ The refreshed diagnostic package is `9188dcfc` (see EXT_REQUESTS); no physical
 validation has occurred. After the user's PC/SC-restored report, the approved
 VM host helper still found zero matching Pico devices, so do not attempt a
 hardware cycle until USB passthrough exposes a reader/BOOTSEL device again.
+
+## 2026-11-13 Windows d63877f6 loses communication on reset, without memory SW
+
+Evidence: `artifacts/results/windows-maxcrypto-20261113-d63877f6/ANALYSIS.md`. Returned UF2 matches no-debug package hash. 1,920 responses all 9000; first error on B0E2 reset after successful AES-192 ECB NOPAD preparation, five baselines and first 50-iteration sample. Error 0x8010002F = SCARD_E_COMM_DATA_LOST. Subsequent B043 and SELECT also fail. Both rehash fix and CCID recovery are included; neither a new rehash failure nor exhaustion is demonstrated. 956 successful resets and per-sample reset pattern invalidate a once-per-method cleanup assumption for this client log. Root cause unresolved without serial/endpoint/collector state; no new fix claimed.

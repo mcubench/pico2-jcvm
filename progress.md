@@ -29041,3 +29041,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep CAPIN-01 open for remaining Export invariants, legacy stored-CAP null guards, and physical acceptance. Rebuild the PC emulator after shared parser changes before running VPCD tests.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261113T121339Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T121655Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T122518Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261113T122635Z.log`.
+
+## 2026-11-13 Archive Windows d63877f6 first failure 4 minutes
+
+- Step/experiment: `WIN-D63877F6-FIRST-FAILURE`
+- When: '2026-11-13 12:53 UTC' - '2026-11-13 12:56 UTC'
+- Model: `GPT-6 Codex`
+- Change: Archived supplied client log, CSV and UF2 with hashes, derived summary and analysis; recorded package provenance and updated handoff/QKB. Removed fulfilled external request; move inbox duplicate after committed-byte verification. No implementation changes.
+- Validation: All three source/archive files byte-identical; UF2 matches canonical image and expected SHA-256 b26c61d4e8db5cd9ee1282be11569ec8d0e51f8b6fe92006a5400e80a71d3a70; package SHA-256 verified. Fixture verification passed (81 inputs). Scoped documentation diff check; supplied whitespace retained. Builds/hardware intentionally skipped for evidence-only analysis.
+- Result: 1,920 returned responses all 9000; 956 successful reset pairs. First loss on B0E2 reset after AES-192 ECB NOPAD first full measurement, then B043/SELECT fail with SCARD_E_COMM_DATA_LOST. No F205/6F00 or serial telemetry; resource exhaustion not demonstrated. Both old rehash fix and CCID recovery are in reported source ancestry. No device memory/timeout duration measured.
+- Decision: Distinguish collector/sync execution from CCID response delivery at failed reset; no runtime change or acceptance claim.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261113-d63877f6/`.

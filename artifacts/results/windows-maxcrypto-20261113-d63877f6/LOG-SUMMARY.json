@@ -1,0 +1,10 @@
+{
+  "method_headers": 120,
+  "completed_operation_stats": 83,
+  "command_headers": 1923,
+  "response_headers": 1920,
+  "status_words": {
+    "9000": 1920
+  },
+  "successful_reset_response_pairs": 956
+}
