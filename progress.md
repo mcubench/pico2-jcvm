@@ -28789,3 +28789,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue the active D92 campaign without refreshing/restarting PC/SC; confirm the recovery event and following APDUs. Keep broader RESOURCE-01 acceptance open.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.5-compaction-fix-20261113/2BED26ED20556535/`; `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/`; ARM image SHA-256 `f0ad042bad09854d5d0fdc3510fe8b4c377c7ec44018b05db43728b23f4f56c2`.
+
+## 2026-11-13 Archive and analyze Windows reset campaign 12 minutes
+
+- Step/experiment: `WIN-RESET-EVIDENCE-ANALYSIS-20261113`
+- When: '2026-11-13 07:56 UTC' - '2026-11-13 08:08 UTC'
+- Model: `GPT-6 Codex`
+- Change: Archived three supplied Windows files byte-for-byte with SHA-256 manifest and provenance; documented source-based failure analysis. Updated handoff/QKB and removed fulfilled Windows R2 request. No runtime implementation changes.
+- Validation: Compared source/archive bytes and SHA-256; parsed response/reset counts and checked exact failure ordering; `./tools/fixture-path --verify` passed (81 files); Scoped `git diff --check` passed for this step; full-tree check reported pre-existing whitespace in unrelated files, preserved unchanged. Builds/hardware intentionally skipped for evidence/documentation-only analysis; no throughput or memory capacity measured.
+- Result: 1,829 successful reset response pairs; first post-RSA-reconnect F205 precedes five 6F00 responses; later F205 persists across reconnect. Old overlay rehash defect is leading persistent-state hypothesis; independent transport stalls and eight-record cleanup backlog remain distinct candidates. No definitive Windows root cause without serial/snapshot data. Combined log identifies 1.8.4 then 1.8.5 clients, unchanged reported 1.8.4_jc305 CAP.
+- Decision: Preserve failed persistent state and distinguish storage rejection/backlog from CCID delivery before further changes; user requested analysis only.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261112-with-reset/` including SHA256SUMS, README.md and ANALYSIS.md; original inbox retained.

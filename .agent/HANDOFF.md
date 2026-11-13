@@ -1,3 +1,9 @@
+# Windows evidence analysis — 2026-11-13
+
+User requested analysis only; no firmware implementation, builds, flash or campaigns in this step. Supplied `inbox/maxcrypto_20261112withReset/` files are archived byte-identically with hashes at `artifacts/results/windows-maxcrypto-20261112-with-reset/`; see its README and ANALYSIS. Source inbox retained. Fulfilled external request WIN_MAXCRYPTO_GC_NODEBUG_20261112_R2 removed; missing serial/hash/chip-ID evidence recorded in archive, not treated as a pass.
+
+Leading persistent-state hypothesis is the already reproduced old overlay rehash defect, absent from reported 580f3f40 image; cleanup's eight-record/APDU budget is an additional possible backlog source. Windows does not prove either. First post-RSA-reconnect preparation is F205 (line 30109), then 6F00, not vice versa. Separate first AES B043 transport stall precedes any memory SW; existing local stale-extension finding may explain that axis, but Windows lacks endpoint telemetry. Client log changes from 1.8.4 to 1.8.5 on resume; command was performance option 2/submenu 1, not two separate suites. No new external action requested. Preserve failed persistent state if available; existing active local campaign status below was not inspected or changed by this analysis.
+
 # Current handoff — CCID stale-extension recovery implemented; physical option-2 validation running — 2026-11-13 07:42 UTC
 
 The offline overlay rehash fix is now flashed on D92 (`D92E743D5F640C0F`) and

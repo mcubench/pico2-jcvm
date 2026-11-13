@@ -1,0 +1,7 @@
+# Windows max_crypto campaign with reset — supplied evidence
+
+Imported 2026-11-13 from repository-relative `inbox/maxcrypto_20261112withReset/` (the supplied `/inbox/...` absolute path does not exist here). Original files copied byte-for-byte; originals retained. The supplied README is `readme.txt`, not `readme.md`. `SHA256SUMS` records every supplied file. See [ANALYSIS.md](ANALYSIS.md).
+
+Reported firmware: `pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-580f3f40.uf2`; expected archived request hash `f17a1fae0c0105475092d81595d2899eb671f8b9686656267c5d2137709ab4b7`. This is reported identity, not a returned Windows hash verification. Source HEAD 580f3f40 used a dirty tree; HEAD alone does not reconstruct its exact source. Reader `Pico2 JCVM CCID 0`, ATR `3b800181`; chip ID not supplied. Windows GPPro transcript identifies Windows 10 amd64 / Java 1.8.0_202. No serial log, client binary/hash, firmware hash output, or persistent snapshot was returned.
+
+The combined log identifies client 1.8.4 initially (21:05:18), then 1.8.5 at the resumed metadata block (21:45:59); do not assign one verified client binary to the whole log. CAP reports `1.8.4_jc305`. This is performance option **2 → submenu 1 (all algorithms)**, not a separate top-level supported-algorithm campaign. Interrupted/resumed failure evidence; not acceptance or one uninterrupted completed run. The user reports three reinsertions; log prompts do not independently establish the physical reinsertion count.

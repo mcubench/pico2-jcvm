@@ -698,3 +698,7 @@ whether current applet persistent roots keep unexpectedly many algorithm
 objects alive. Preserve the campaign artifacts and do not claim option-2
 acceptance. Artifacts:
 `artifacts/results/jcalgtest-1.8.4-resource01-20261112/D92E743D5F640C0F/option2-ccid-debug-followup/`.
+
+## 2026-11-13 Windows reset campaign: distinguish transport from persistent resource failure
+
+Evidence: `artifacts/results/windows-maxcrypto-20261112-with-reset/ANALYSIS.md`. First AES measurement transport loss precedes memory errors. After RSA-1984 reconnect F205 precedes 6F00; replug does not clear lasting failure. F205 can mean failed overlay compaction, not only true capacity exhaustion. Reported 580f3f40 image predates independently reproduced rehash fix 92c91943 and CCID recovery 49a390d5. Existing viable fix for reproduced rehash mapping loss: path-head-first rehash (unit validation previously recorded); **not proven to resolve this Windows run**. Eight-record/APDU backlog is still a hypothesis without deletion telemetry. No implementation in this step.
