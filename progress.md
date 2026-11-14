@@ -29531,3 +29531,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Retain T6/T7/T8 as open; do not infer runtime acceptance from historical evidence.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`; `/tmp/mem01-jcvmarray-allocation.log`; `/tmp/mem01-transient-allocation-failures.log`.
+## 2026-11-14 MEM-01 identify 8E alias-body reachability gap 3 minutes
+
+- Step/experiment: `MEM-01-T6-ALIAS-BODY-ROOT-CAUSE-20261114`
+- When: '2026-11-14 10:37 UTC' - '2026-11-14 10:40 UTC'
+- Model: `GPT-6 Codex`
+- Change: Resolved T6's historical root cause from the 8E serial trace and tag encoding: the reachable source tag ended in `...0007`; its body used the six-byte `FFFF00000045` suffix, which the former exact/direct-two-byte heap-prefix check did not recognize. Updated TODO, QKB and HANDOFF; retained clean post-fix runtime telemetry under T7.
+- Validation: Compared the logged reachable source/body candidate and erase sequence (serial lines 893, 944–945, 1004) with the failed heap read via the source (1012–1014), current `hasReachablePersistentTagPrefix()` and alias-chain guard, and the existing `reachable_durable_alias_protects_body_subtree_from_incomplete_heap_walk` regression. `git diff --check` passed. This analysis-only step did not rerun tests/builds or use emulator/hardware.
+- Result: T6's historical cause is established; the guard plus focused regression address that case. Post-fix `alias-protect` counts and full acceptance remain unmeasured.
+- Decision: Mark T6 root-cause analysis complete; keep T7 and T8 open for runtime and physical acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`; no new logs.

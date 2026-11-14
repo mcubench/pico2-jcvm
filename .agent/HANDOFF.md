@@ -4,12 +4,14 @@ The 8E serial log establishes that the reclaimer classified body
 `03013894FFFFFE000000420007FFFF00000045` as unreachable, erased it, then the
 heap trace immediately failed to read it while following reachable field
 `03013894FFFFFE000000420007` (serial lines 944–945 and 1004, then 1012–1014).
-This confirms the immediate historical chain: unguarded alias-target deletion
-made the following heap trace incomplete. The current alias guard addresses
-that sequence and has focused regression coverage. The archived trace cannot
-explain why the ordinary in-memory walk failed to mark the target before the
-erase, and it cannot establish clean post-fix runtime behavior. Keep T6 open
-for a post-fix trace; keep T7 VPCD plateau and T8 physical acceptance open.
+The structural reason is now clear: the body adds the six-byte
+`FFFF00000045` alias suffix to the source, while the old heap-prefix guard
+recognized exact tags and direct two-byte child records. The alias body was
+therefore treated as unreachable; after it was erased, the heap trace failed
+on the reachable source. The current alias-chain guard and focused subtree
+regression address this. T6's historical root-cause finding is complete.
+Clean post-fix `alias-protect` telemetry remains a T7 acceptance item, as do
+the VPCD plateau and T8 physical acceptance.
 
 Two additional offline allocation suites were run after the packed-alias
 change: `./tools/test-jcvmarray-allocation` and
