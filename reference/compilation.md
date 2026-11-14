@@ -21,11 +21,11 @@ configures Ninja and a Release build for `PICO_BOARD=pico2`, then builds
 `pico2_jcvm_smoke`. The UF2 artifact is
 `build/<arch>/pico2_jcvm_smoke.uf2`.
 
-After changing platform-independent source, build both architectures:
+After changing source, build ARM (RISC-V is out of scope since 2026-11-14;
+`./tools/build riscv` remains available for ad-hoc checks only):
 
 ```sh
 ./tools/build arm
-./tools/build riscv
 ```
 
 The project enables `-Wall -Wextra -Werror`; treat any warning or failed build
@@ -49,9 +49,9 @@ or `PICO_HOME` to the managed tools root when using a non-default installation.
 
 ## Build versus flash
 
-`./tools/build <arch>` only configures and builds. `./tools/cycle <arch>` builds
-both architectures, flashes the requested one, and captures runtime output. Use
+`./tools/build <arch>` only configures and builds. `./tools/cycle <target>` builds
+the flashed architecture, flashes it, and captures runtime output. Use
+`./tools/cycle choupi` for the full JCVM; `arm`/`riscv` flash only the smoke image. Use
 the latter only when a hardware cycle is requested and the repository's safety
-conditions for flashing are met. In particular, do not flash after a shared
-source change until both builds pass. Never use commands that alter OTP, boot
+conditions for flashing are met. In particular, do not flash until the ARM build passes. Never use commands that alter OTP, boot
 security, flash partition tables, or machine configuration.

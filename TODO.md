@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-13 (MEM-01 added). Active backlog for `plan.md`. Implementation and acceptance
+Updated: 2026-11-14 (rule-conflict decisions applied). Active backlog for `plan.md`. Implementation and acceptance
 are separate: keep tasks open while required validation is missing. Follow
 `AGENTS.md` for native API boundaries, unchanged fixtures, build/hardware gates
 and commits. Use the unchanged JCAlgTest **1.8.4 / jc305 CAP** with the **1.8.5 host client** for all new runs (see `AGENTS.md`; older entries below that say "1.8.4 client" are historical);
@@ -8,23 +8,39 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 
 ## Priorities and evidence
 
-0. **MEM-01 (P0, user directive 2026-11-13): fix persistent/RAM memory-exhaustion defects from [review_memory_analysis_opus55_20261113](docs/review_memory_analysis_opus55_20261113.md); highest priority, offline-first.** See [MEM-01](#mem-01).
-1. **BOOTSEL-01 (P0): restore reliable software entry into BOOTSEL; hardware-recovery priority (needs boards).**
-2. RESOURCE-01 (acceptance now gated on MEM-01); RESOURCE-02 focused fixes await full-suite/physical acceptance.
-3. HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
+0. **MEM-01 (the only P0, user directive 2026-11-13): fix persistent/RAM memory-exhaustion defects from [review_memory_analysis_opus55_20261113](docs/review_memory_analysis_opus55_20261113.md).** See [MEM-01](#mem-01).
+1. **BOOTSEL-01 (P1):** finish the remaining BOOTSEL acceptance opportunistically, when a board is already in hand.
+2. RESOURCE-01 and RESOURCE-02 are gated on MEM-01; their physical evidence comes from MEM-01 T8.
+3. HOST-01 owns all CCID stalls and PC/SC reader loss (a T8 blocker). Also: HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
 4. STORE-01, PERSIST-01/02/03, API-01/03, GP-01 and AC-01/02 integration gates.
-5. HMAC-01 acceptance and offline-only JC-RESET-01 diagnosis.
+5. HMAC-01 acceptance and JC-RESET-01 diagnosis (feeds evidence to HOST-01).
 6. CAPIN-01 then CAPIN-03/04; relative priority against resource work remains the user's decision.
 
-Device availability changes: consult the latest [.agent/HANDOFF.md](.agent/HANDOFF.md)
-and [.agent/QKB.md](.agent/QKB.md), then refresh authorized USB/PCSC access.
-On 2026-11-12, identity-pinned CDC-1200 recovery entered BOOTSEL and flashed
-the current max_crypto/object-deletion firmware to all three boards. Each
-passed finite serial startup; PC/SC listed all three and GPPro listing on D92
-succeeded. The user has since physically disconnected the devices; do no more
-hardware work until they are reported available and guest enumeration confirms
-them. A serial heartbeat or USB enumeration alone does not establish API/PCSC
-acceptance.
+Board state is volatile. Never treat a dated "boards disconnected" note as a standing
+rule. Before hardware work, run the approved helper, list readers with
+`./tools/list-readers`, and use any identified board (failover pool); the
+HANDOFF board-state section records the last observation. A serial heartbeat or
+USB enumeration alone does not establish API/PCSC acceptance.
+
+### Current images (update on every storage fix; the only place that names a "current" image)
+
+| Purpose | Image | SHA-256 | Notes |
+|---|---|---|---|
+| Acceptance (max_crypto, object deletion ON, debug OFF, empty card) | **none built since the 2026-11-14 T4/T5 alias fix**: build with `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` (`mode=acceptance`), then `tools/package-empty-card-uf2` | — | Required for T8 acceptance |
+| Latest external (Windows) package | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-0e67df89.uf2` | `51572f69103c02dfd056f1772366d1cafbd8ac92d0da7967e9f310a6099f94f5` | EXT `WIN-OBJECT-DELETION-NODEBUG-0E67DF89`; predates the 11-14 alias fix |
+| Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
+
+### REF-185-01
+
+- [ ] **Regenerate the jCardSim support reference with the 1.8.5 client.**
+  `tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv`
+  was generated with the older versioned client (internally 1.8.3). Rerun
+  `tools/run-jcalgtest --client-jar <1.8.5 JAR> --simulator -op ALG_SUPPORT_EXTENDED -fresh`.
+  Store the new reference alongside the old one (do not overwrite the historical
+  file), record the JAR SHA-256, pin it in `tests/fixtures/manifest.json`, and
+  switch the runbook and Windows packagers to it. Until then, comparisons are
+  mixed-client. Note: the 3072/4096 RSA label mismatch is a host-client bug
+  present in 1.8.3–1.8.5; expect it in the new reference too.
 
 Full pre-edit text (including existing uncommitted edits), completed tasks,
 measurements and detailed acceptance cases are preserved in the
@@ -35,7 +51,7 @@ Linked detailed cases remain requirements unless explicitly superseded here;
 archive device states and old measurements are historical. Detailed new runs go
 in [progress.md](progress.md); reusable diagnoses go in QKB.
 
-## Memory exhaustion fixes — highest priority (2026-11-13)
+## Memory exhaustion fixes — P0 (2026-11-13)
 
 ### MEM-01
 
@@ -44,62 +60,13 @@ Source: [docs/review_memory_analysis_opus55_20261113.md](docs/review_memory_anal
 `F205`/OOM came from corrupted state (pre-`92c91943` rehash damage on D92,
 pre-`36fcfe69` alias erasure on 8E) amplified by current design defects that
 make one bad record permanent. Clean-store 2BED runs drained the deletion
-backlog and never hit `F205`. Do tasks in this order; one commit per task.
+backlog and never hit `F205`. Commit granularity follows `AGENTS.md` (one commit per logical step).
 
-**Reviewer status 2026-11-14 (after `d06b65a8`..`7f9c6c10`):** T1–T6 are now complete offline. T6's cause is that the old prefix guard covered only exact tags and +2-byte children, not the 6-byte `FF FF id` alias-body suffix, so the 8E body was erased while still reachable; this matches review M2/M5. `d06b65a8` adds offline coverage of the leak mechanism (superseded child bodies under a live prefix at 68.6% occupancy; 12 reclaimed and live slots constant at 581). **MEM-01 offline work is exhausted.** The only open items are runtime evidence, T7 (VPCD option 2 past sync seq ≈1,750, where the pre-fix run failed) and T8 (hardware). ~~Both are blocked on the user's instruction to stop long emulator runs.~~ **Unblocked by user 2026-11-14:** long simulator runs are permitted under the "Long simulator/emulator runs" rule in `AGENTS.md`. Each run needs a stated reason and benefit, and you must first think whether the target scenario (e.g. sync seq >1,750 with high live occupancy and alias bodies) can be reached more cheaply than by a naive long run. Proceed with T7: use the bounded VPCD run described below unless a cheaper method reaches the same state faithfully.
+**MEM-01 current status (2026-11-14, consolidated):** T1–T6 are complete offline (T6 root cause: the old prefix guard missed the 6-byte `FF FF id` alias-body suffix, so a reachable 8E body was erased). Open items:
+- **T7 runtime proof.** No post-fix run has shown a plateau yet. The pre-fix VPCD run hit `FS_WRITE_FAIL` at sync seq ≈1,750 (`bytes=94311`); the only post-fix run (60 s) stopped at ≈800. Long VPCD runs are permitted under the `AGENTS.md` long-run rule; first check whether the target state is reachable more cheaply (see the T7 extensions below). Bounded decision check: option-2 VPCD to sync seq ≥2,500, logging live records and live bytes per compaction. Pass: no `FS_WRITE_FAIL`/`F205`, live bytes flat over the last 1,000 syncs, `reachable_alias` bounded. If bytes still grow, use `PICO2_GC_SCAN_DIAGNOSTICS=1` `ALIAS_ROOT` counts.
+- **T8 physical acceptance.** See T8 below.
 
-**Reviewer status 2026-11-14 (after `af4659e9`..`c5706f78`):** T2, T3, T4 and T5 are done offline. T1 is done except for one remaining policy: what to do when neither snapshot copy validates and record boundaries cannot be proven. T7 offline coverage is strong (high occupancy, interrupted publishes, heap graph; integrity check ≤1,024 µs). **But the T4/T5 leak fix has no runtime evidence yet.**
-- The only post-fix VPCD run (`20261114T063317Z`, 60 s) stopped at sync seq ≈800. That is before the point where the leak failed: the leaking run `20261114T055811Z` hit `FS_WRITE_FAIL` at sync seq ≈1,750 (`bytes=94311`), after about 5 minutes of wall-clock time.
-- At equal sync seq the post-fix run shows the **same `files` counts** (323/351/568/837 at seq 200/400/600/800). Its `bytes` are only ~18% lower (29,913 vs 36,297 at seq 800) and still more than double between seq 400 and 800.
-- So the post-fix run has not shown a plateau. It may still be leaking more slowly.
-
-**Cheapest decisive check (~6–8 min, compatible with the speed constraint):** rerun the same VPCD option-2 setup, stopping at sync seq ≥2,500, not after a complete option 2.
-- Log live record count and live bytes after each compaction, not `files` (which includes tombstones until compaction).
-- Pass: no `FS_WRITE_FAIL`/`F205`; live bytes at seq 1,700 well below 94,311 and flat over the last 1,000 syncs; `reachable_alias` bounded in `OBJECT_DELETION:SCAN`.
-- If bytes still grow: use `PICO2_GC_SCAN_DIAGNOSTICS=1` `ALIAS_ROOT` counts to find the prefix that keeps growing, before any hardware work.
-
-The historical T6 cause is now identified below. After the bounded T7 runtime check, review any `alias-protect` events there and proceed to T8 hardware runs only after wiping with the empty-card UF2.
-
-**T6 offline evidence review (2026-11-14):** the archived 8E trace shows the
-exact body `03013894FFFFFE000000420007FFFF00000045` reported as an unreachable
-candidate at serial lines 944–945 and erased at line 1004. Immediately after
-that batch, the heap trace cannot read the same body (`fs_exists=0`) while
-loading the reachable instance field `03013894FFFFFE000000420007` (lines
-1012–1014). This establishes the direct failure chain: the old reclaimer
-deleted a body still named by a reachable serialized alias, and the following
-heap trace failed because that target no longer existed. The current alias
-guard addresses that deletion path and has focused regression coverage. The
-tag-format reason the body was not recognized is identified in the T6 finding
-below. This archived trace does not provide clean post-fix runtime evidence
-with zero `alias-protect` events; keep that check under T7 and do not relabel
-the historical failed trace as current runtime acceptance.
-
-**MEM-01 update (2026-11-14):** T1's offline fail-closed policy is now covered
-by a two-invalid-COW regression: boot fails and the flash image remains
-byte-identical. T1's offline corruption/recovery work is complete. T6's
-historical alias-body root cause is identified and covered by the alias-chain
-regression. T7 clean post-fix runtime plateau/alias telemetry and T8 physical
-acceptance remain open.
-
-**Status 2026-11-14 (review of VPCD runs on the RP2350 overlay backend, `artifacts/results/jcalgtest-support-vpcd-20261113T211216Z`..`20261114T062133Z`):** the T7 VPCD harness (uncommitted: `src/pc_rp2350_overlay_fs.cpp`, `CHOUPI_PC_RP2350_FS_OVERLAY`) **reproduces storage exhaustion on a clean store**. Option 2 runs reach ~1,256 CSV lines, then the arena is full (`FS_WRITE_FAIL … files=2212/8192 bytes=98287/98304`), followed by `6F00` and ~177–256 `F205`. Every reclaimer scan reports `candidates=0`; the growth is `reachable_alias` records (18 → 51 → 76 …) under one live object prefix `03013894FFFFFE000000420004FFFE0000004E` (superseded bodies written when a field of a live persistent object is reassigned). **Cause: the prefix-wide subtree keep added for T4/T5 (`36fcfe69`, `6c8e494b`, `b219daf2`) retains every historical body under a live prefix forever.** The arena (96 KiB), not the index, is the binding limit.
-
-**Implementation update 2026-11-14:** T4/T5 now resolve reachable durable aliases into heap roots and trace their graphs; the prefix-wide keep is removed. The transient-array identity check was widened so marked arrays with durable tags count as reachable for this collection pass, which ended the repeated alias-retrace loop. `./tools/test-persistent-transaction` passes the existing T4/T5 missing-edge cases and a new 500× field-reassignment regression: after each reassignment, the old records are reclaimed; the applet namespace settles at 5 records / 121 tag-plus-payload bytes, and a fresh heap reads back the last child. `./tools/test-persistent-inventory`, ARM and RISC-V builds also pass. The PC VPCD harness is now wired to the RP2350 overlay implementation and builds with `./tools/build-pc --profile max_crypto --rp2350-overlay`. A bounded 60-second VPCD run (`artifacts/results/jcalgtest-support-vpcd-20261114T063317Z`) made 445 deletion calls, erased 564 persistent records, first reported 5 stale-alias candidates at scan 400, and had no `FS_WRITE_FAIL`/`F205`; the synchronized overlay was 29,913 bytes at event 800. It timed out before option 2 completed, so a storage plateau and full-run pass are **not established**. No physical board was accessed. T4/T5 implementation is complete offline; T7 remains the acceptance gate. The user requested offline implementation and reported the emulator is too slow; do not extend this into a long VPCD campaign unless asked.
-
-Status 2026-11-13 20:45 UTC (review of commits `dce9f08f`..`b219daf2`): T3, T4,
-T5 done offline; T1 and T2 partial; T7 now has direct-overlay synthetic
-coverage but the JCAlgTest/VPCD harness remains unimplemented; T6 and T8 not
-started. **Next, in this
-order:** (1) **T7** harness — none of the five fixes has been exercised together
-on the real overlay backend over a long run; this is the gating evidence for
-MEM-01. (2) **T1 repair/quarantine** — detection alone now makes a damaged
-store fail closed at boot (both snapshots rejected → `FAULT FS snapshot
-unavailable`); add a test that boots a store with both snapshots damaged and
-define the recovery outcome. (3) **T2 remainder** — reason-specific
-`ReadFailure` logging and triggering T1 repair. Also measure
-`overlay_integrity_valid()` cost at full index (8,192 slots, long probe
-chains) since it now runs at every compaction; record it against the CCID
-timeout. Do not firmware-only flash new images onto D92 (or any board with
-pre-`92c91943` data) — use the empty-card UF2.
+Superseded reviewer/status blocks are archived in `.agent/archive/2026-11-14-todo-conflict-cleanup/TODO-mem01-superseded-status-blocks.md`.
 
 - [x] **T1 overlay integrity check + repair (M6/M7), offline safety coverage complete.** Snapshot integrity is checked at load/compaction; provable index damage is repaired or boundedly quarantined; ambiguous state remains fail-closed. Regression coverage includes duplicate/orphan/overlap/hash corruption, quarantined descendants and tombstones, prior-COW fallback, CRC-invalid copies, and two CRC-valid copies with overlapping record intervals. In each unrecoverable case `fs_init()` fails without mutating flash instead of treating the store as empty. Physical recovery acceptance remains under T8.
 - 2026-11-14 T1 follow-up: integrity failures identify reason and slot in `FS_INTEGRITY_FAIL`. Pure probe-chain placement errors are rebuilt from self-describing arena entries. A stored-hash mismatch is repaired only for self-contained plain/compressed tags after record bounds, contiguous non-overlapping intervals, and unique canonical live identities verify. Parent-slot references are remapped. A hash mismatch on a parent-encoded record is ambiguous with a damaged parent pointer, so it is rejected and uses the prior COW generation. Regression tests cover orphan repair with a parent-encoded child, self-contained hash repair with a parent-encoded child plus unrelated value, ambiguous parent-pointer fallback, and overlapping-record fallback; values survive compaction/reload. `erase_overlay_slot` and `append_overlay` already fail before mutation on shared offsets. T1 remains open for quarantine of individually unreconstructable records and recovery of a damaged arena when no valid prior COW generation exists. RP2350 fake-flash suite, ARM and RISC-V builds pass. No long emulator or physical run.
@@ -119,18 +86,18 @@ pre-`92c91943` data) — use the empty-card UF2.
 - [x] **T4 protect the live graph reached through durable aliases; accept `FF FD` (M5).** Applet reclamation resolves reachable aliases into heap handles and retraces their graphs, rather than preserving every record sharing the target prefix. The direct body guard accepts migrated `FF FD` array bodies. Persistent transaction regressions preserve missed-edge object/array subtrees and reclaim stale descendants; a 500× persistent-field reassignment test confirms bounded records and bytes. ARM/RISC-V builds pass. T7 long-run acceptance remains open.
 - [x] **T5 trace package-static aliases without retaining historical prefixes (M8).** Package-static reclamation uses the same alias-root retrace as applet reclamation. The missed-edge package-static test preserves the active target and descendant while reclaiming a detached sibling; 500× reassignment coverage also passes. ARM/RISC-V builds pass. T7 long-run acceptance remains open.
 - [x] **T6 identify why the 8E body was omitted from reachability (M2 root cause).** The archived 8E log shows the reachable alias source `03013894FFFFFE000000420007`, but its body `03013894FFFFFE000000420007FFFF00000045` was classified unreachable and erased. The body appends the six-byte `FFFF00000045` suffix; the old heap-prefix guard recognized exact tags and direct two-byte records, not this alias-body encoding. The heap then failed loading the source field through that missing body. The current alias-chain guard resolves this encoding and its regression preserves the body subtree. Keep clean post-fix `alias-protect` telemetry under T7 acceptance; do not conflate that runtime check with identifying the historical root cause.
-- [ ] **T8 physical acceptance** only after T1–T7: wipe boards with empty-card UF2 first (D92 mandatory), record initial overlay counts, options 2 and 1 on separate identified boards. Keep CCID response stalls (M11) out of MEM-01.
+- [ ] **T8 physical acceptance.** MEM-01 T8 is the single owner of the physical option 1/2 campaigns; RESOURCE-01/02 cite its results. **Exploratory** physical runs are allowed whenever a board is available (in parallel with T7). Only runs after T7 passes count as **T8 acceptance**, and they must use the `AGENTS.md` acceptance image (max_crypto, object deletion ON, debug OFF) on boards wiped with an empty-card UF2 (D92 mandatory). Record initial overlay counts and the client JAR SHA-256, and run options 2 and 1 on separate identified boards. CCID response stalls and reader loss (M11) are owned by HOST-01, which is a T8 blocker.
 - 2026-11-14 partial T8 option-2 run on 8E (`8E464F4E2BBC0A19`): the max_crypto/object-deletion image and unchanged JCAlgTest 1.8.4/jc305 CAP were exercised with the supplied 1.8.5 client JAR. Over 32 minutes, 92 method groups and 668 CSV rows were recorded; 717 reset/deletion requests and 833 heap-GC samples were logged. Live counts stayed within 51–115 arrays and 27–28 instances, with no `F205`, `6F00`, or `NO_RESOURCE`. The run did not pass: PC/SC returned `SCARD_E_NOT_TRANSACTED` / `SCARD_E_READER_UNAVAILABLE` around `TYPE_DES LENGTH_DES3_3KEY ALG_DES_ECB_ISO9797_M2 Cipher_init()`. The 8E serial monitor still passed and showed the last `B0E2` response as `9000`, while PC/SC subsequently stopped publishing the Pico reader even though USB `2e8a:0009` remained visible. The approved PC/SC helper/service refresh did not restore it. This is partial storage evidence, not T8 acceptance; keep storage and CCID/PCSC failure classes separate. Logs/results: `artifacts/results/jcalgtest-1.8.5-physical-20261114/8E464F4E2BBC0A19/option2-performance/`.
 - Rule: do not run acceptance on a board whose store was written by an image older than the newest storage fix. Keep storage, CCID-delivery and host/PCSC failures as separate classes.
 
-## BOOTSEL recovery — highest priority
+## BOOTSEL recovery — P1
 
 ### BOOTSEL-01
 
-- [ ] **P0: Complete reliable software entry into BOOTSEL for identity-pinned Pico 2 boards.** Offline firmware integration is implemented. On 2026-11-12, picotool could not locate its reset interface on D92, 8E or 2BED; identity-pinned CDC-1200 fallback entered BOOTSEL in 4, 3 and 3 seconds respectively, and all three firmware-only flashes verified. All boards passed finite runtime checks; PC/SC listed all three and GPPro listing on D92 succeeded. This validates the CDC fallback from idle on three boards, not the vendor-reset request or recovery during long synchronous work. Both remain acceptance gaps.
+- [ ] **P1 (opportunistic, when a board is in hand): Complete reliable software entry into BOOTSEL for identity-pinned Pico 2 boards.** Offline firmware integration is implemented. On 2026-11-12, picotool could not locate its reset interface on D92, 8E or 2BED; identity-pinned CDC-1200 fallback entered BOOTSEL in 4, 3 and 3 seconds respectively, and all three firmware-only flashes verified. All boards passed finite runtime checks; PC/SC listed all three and GPPro listing on D92 succeeded. This validates the CDC fallback from idle on three boards, not the vendor-reset request or recovery during long synchronous work. Both remain acceptance gaps.
 - Confirmed source findings: the earlier implementation exposed only CDC/CCID and consumed CDC reset requests only in the outer main loop; synchronous APDU work could delay recovery. The SDK vendor reset descriptor/driver and cooperative CDC reset servicing have since been integrated, with offline unit coverage. The exact historical D92 failure remains unproven. See [.agent/QKB.md](.agent/QKB.md#bootsel-reset-integration-audit--2026-11-12-offline) and audit commit `31cb571c`.
 - Implementation: **done offline**: the SDK `pico_usb_reset` vendor reset descriptor and driver are integrated as interface 3; CDC/CCID remain interfaces 0–2. CDC-1200 requests are consumed after TinyUSB returns at the main loop and interpreter cooperative points. The SDK's competing CDC callback is disabled while CHOUPI's deferred callback remains active. Reset request unit coverage passes. Preserve identity pinning across USB topology changes; never reset or flash a different board as fallback.
-- Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM and RISC-V with repository wrappers and resolve errors/warnings before flashing. When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
+- Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM with the repository wrapper and resolve errors/warnings before flashing (RISC-V is out of scope). When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
 - Remaining acceptance: exercise the vendor reset descriptor directly and
   CDC-1200 reset during a long synchronous applet operation, then capture the
   BOOTSEL re-enumeration latency. On 2026-11-14, host enumeration did not match
@@ -169,7 +136,7 @@ pre-`92c91943` data) — use the empty-card UF2.
 
 ### RESOURCE-02
 
-- [ ] **Accept the implemented C1–C5 leak fixes.** Native buffer reuse, transient identity, bulk writes, rollback-safe identities, missing-body recovery, tag encoding and NO_RESOURCE mapping are implemented. Current 64-init plateau: AES 39 records / 589 bytes; RSA-2048 46 / 1,155; alias control 18 / 433 with one setup-time 4-byte unreachable tag; repeat deltas zero. No pre-fix linear-growth baseline was captured. Saved-state APDU 410 returns `9000`; transaction and multipackage regressions pass. Remaining: unchanged full 1.8.4 suite with inventory sampling under RESOURCE-01 and required physical acceptance. Keep this open until those gates pass.
+- [ ] **Accept the implemented C1–C5 leak fixes.** Native buffer reuse, transient identity, bulk writes, rollback-safe identities, missing-body recovery, tag encoding and NO_RESOURCE mapping are implemented. Current 64-init plateau: AES 39 records / 589 bytes; RSA-2048 46 / 1,155; alias control 18 / 433 with one setup-time 4-byte unreachable tag; repeat deltas zero. No pre-fix linear-growth baseline was captured. Saved-state APDU 410 returns `9000`; transaction and multipackage regressions pass. Remaining: full unchanged 1.8.4/jc305 CAP suite with the 1.8.5 client and inventory sampling (physical evidence from MEM-01 T8) and required physical acceptance. Keep this open until those gates pass.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#resource-02).
 
@@ -179,23 +146,23 @@ pre-`92c91943` data) — use the empty-card UF2.
 - 2026-11-13 follow-up: the D92 log's first reclaimer `applet_result=6` at xfr=142 (after three applet erasures) precedes `applet_roots_complete=0` on the following APDU. The latter is not proven to be the original failure. `enumerate_applet_context_root()` now preserves its exact inventory result and maps missing/mismatched root count/metadata to `IncompleteReachability`/`InvalidTag`; object-deletion skip and inventory logs retain that result. ARM/RISC-V diagnostic builds and the VPCD object-deletion regression pass. A refreshed Windows package with this change is listed in `.agent/EXT_REQUESTS.md`; no physical run has validated it. Instrument the reclaimer's repeated heap-root trace next if the external run shows the applet-root scan completes.
 
 - 2026-11-13 offline storage hardening: `reconstruct_overlay_tag()` now checks every reconstructed canonical tag against the index's stored hash. A stale parent-slot reference that points to another structurally valid same-length record fails closed with `hash_mismatch` before compaction moves data. The RP2350 fake-flash regression restores the original pointer afterward and verifies the value remains readable. This is defensive integrity validation; it does not reproduce or fix the historical 2,468-record failure. No hardware access was possible.
-- [ ] **Stop long-run NO_RESOURCE failures and finish physical acceptance (after BOOTSEL-01).** Follow the [staged plan](docs/resource-01-implementation-plan.md). Focused reuse/replacement regressions pass; prior unchanged JCAlgTest runs still show persistent OutOfFlash/F205. A specific same-owner alias/body deletion bug is now reproduced and guarded (evidence below); this does not yet establish that it is the only source of the historical long-run failures. PC and Pico storage backends differ.
-- Normal firmware keeps object deletion disabled; explicit diagnostic builds enable deferred request-gated servicing. Applet/package-static roots, foreign aliases, peer cached statics, shareable proxies and RMI roots have focused host coverage. The shared coordinator limits total erasures across both namespaces to eight per APDU; tests cover 8/8/6 batches. Host fake-flash covers 1,000 cuts; physical interruption/timing acceptance is open.
+- [ ] **Stop long-run NO_RESOURCE failures and finish physical acceptance (gated on MEM-01).** Physical option 1/2 evidence comes from MEM-01 T8. The [staged plan](docs/archive/resource-01-implementation-plan.md) is archived and largely overtaken by MEM-01. Focused reuse/replacement regressions pass; prior unchanged JCAlgTest runs still show persistent OutOfFlash/F205. A specific same-owner alias/body deletion bug is now reproduced and guarded (evidence below); this does not yet establish that it is the only source of the historical long-run failures. PC and Pico storage backends differ.
+- The default build keeps object deletion disabled until MEM-01 T8 and PERSIST-01 pass (then the default flips; see `AGENTS.md`). The `max_crypto` acceptance image (`mode=acceptance`: deletion ON, debug OFF) enables deferred request-gated servicing for campaigns. Applet/package-static roots, foreign aliases, peer cached statics, shareable proxies and RMI roots have focused host coverage. The shared coordinator limits total erasures across both namespaces to eight per APDU; tests cover 8/8/6 batches. Host fake-flash covers 1,000 cuts; physical interruption/timing acceptance is open.
 - Successful persistent-array restoration traces are now compiled only with `PICO2_DEBUG_PERSISTENT_GC=1`; failure diagnostics remain enabled. The RP2350 fake-flash suite passes `fail=0` with 134 output lines after the change. This reduces log/flush overhead, but runtime performance improvement has not been measured.
 - 2026-11-12: Added a fail-closed guard against republishing an alias from a retained array handle when its persistent body tag is missing. A host regression reproduces the stale-handle sequence; persistent-transaction, object-deletion VPCD, persistent-inventory, RP2350 overlay, and ARM/RISC-V max_crypto builds pass. This prevents a dangling alias but does not establish who removed the body observed in the physical trace; long-run and physical acceptance remain open.
-- Next: rerun option 1 and option 2 (unchanged 1.8.4/jc305 CAP, 1.8.5 client) with inventory and allocator telemetry once a physical reader is available. Then finish complete root and safety coverage with PERSIST-01/02/03 and investigate residual full-suite failures after the host compaction optimization (PERF-01/02); old 40–100-second compaction observations are historical, not current timing.
-- 2026-11-12 physical retry: the guest enumerated three attached devices at USB paths `1-3`, `1-4`, and `1-5`, each `2e8a:0009` runtime. The approved PC/SC helper found zero readers; picotool found no accessible BOOTSEL device/reset interface. The bounded repository flash wrapper tried all three and none entered BOOTSEL, so no image was written. Resume only after passthrough exposes `2e8a:000f` or a named reader; then use the saved candidate-trace image documented in `.agent/HANDOFF.md`.
+- Next: physical option 1/2 evidence comes from MEM-01 T8 (unchanged 1.8.4/jc305 CAP, 1.8.5 client, inventory and allocator telemetry). Then finish complete root and safety coverage with PERSIST-01/02/03 and investigate residual full-suite failures after the host compaction optimization (PERF-01/02); old 40–100-second compaction observations are historical, not current timing.
+- 2026-11-12 physical retry: the guest enumerated three attached devices at USB paths `1-3`, `1-4`, and `1-5`, each `2e8a:0009` runtime. The approved PC/SC helper found zero readers; picotool found no accessible BOOTSEL device/reset interface. The bounded repository flash wrapper tried all three and none entered BOOTSEL, so no image was written. Resume only after passthrough exposes `2e8a:000f` or a named reader; then use the image named in the "Current images" table at the top.
 - 2026-11-12: The prepared empty-card no-debug `max_crypto` object-deletion image was successfully flashed and verified by exact RP2350 chip ID on D92, 8E and 2BED after all three appeared as `2e8a:000f`. All three passed finite serial runtime monitors and GPPro exact-reader `--list` returned only the ISD. Per-board logs: `artifacts/results/maxcrypto-gc-nodebug-flash-20261112/`. This is flash/boot/empty-card validation; it is not the long JCAlgTest GC/Windows acceptance campaign.
 - 2026-11-12 trace analysis: after the first missing durable array-body read, 277 heap-GC summaries show zero handle reclamation (276 with an edge failure); totals grow from 118 arrays / 22 instances at sequence 6 to 365 / 185 at sequence 291. First F205 is at sequence 87. The incomplete persistent walk therefore explains continued handle growth, but the missing body's deletion source remains unproven.
 - 2026-11-12 current-tree regression refresh: persistent transaction, persistent inventory, RMI registry, and RP2350 filesystem-overlay tests pass. A focused three-cycle byte-array object-deletion VPCD run passes all 9 APDU checks and reclaims 3 applet records. These are host results only; BOOTSEL is still not visible in guest USB enumeration, so physical candidate tracing and long-run acceptance remain open.
 - 2026-11-12 10:56 UTC recheck after CCID trace/status changes: `./tools/test-persistent-transaction`, `./tools/test-persistent-inventory`, and `./tools/test-rp2350-fs-overlay` all pass with `TEST:SUMMARY fail=0`. Overlay coverage includes 1,000 randomized multi-record cuts, 1,000 reclamation cuts, interruption recovery and full-index compaction. Host evidence only; the trace image still has not been flashed.
 - 2026-11-12 current shared-tree regression pass: `./tools/test-persistent-inventory`, `./tools/test-persistent-transaction`, and `./tools/test-rp2350-fs-overlay` pass with `TEST:SUMMARY fail=0`. The bounded VPCD object-deletion probe passes 3 byte-array cycles (9 APDU checks, 3 records reclaimed), 2 RSA key replacements each at 512 and 2048 bits (9 checks and 20 records each), one 4096-bit RSA replacement (6 checks, 10 records), and one live-static RSA cycle (8 checks, 10 obsolete records reclaimed after clearing the static root). Logs are under `artifacts/logs/object-deletion-vpcd-20261112T113705Z.log` through `114400Z.log`. This is PC VPCD evidence only; physical response-stall and long-run acceptance remain open.
 - 2026-11-12 RMI root refresh: current `./tools/test-rmi-registry` and `./tools/test-rmi-cap-metadata` pass against the shared worktree. Registry coverage includes retained context cycles/diamonds, peer static and proxy roots, fail-closed ambiguous roots, transient-array allocation lifecycle, and owner-slot reuse. Host unit evidence only; no physical JCAlgTest or USB validation is implied.
-- 2026-11-12 campaign correction: the option-1/2 processes are no longer live and neither campaign passed. On pre-fix 8E, option 1 ended with `SCARD_E_NOT_TRANSACTED`, heap read failures and OOM; D92 option 2 was interrupted (`KeyboardInterrupt`). A D92 option-1 attempt was also interrupted; the corrected alias-guard run produced 51 algorithm rows, then failed with `SCARD_E_NOT_TRANSACTED` on `B0 75 12 00 01 16 00`. Its serial log ends at `CHOUPI:APDU_PROCESS stage=end sw=9000 len=29`; source places that print immediately before the applet function returns. Thus the log does not prove control returned to the CCID caller. The log has no later CCID response snapshot. Logs are under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/`. Commit `028ba49a` separates the CCID response markers from per-object heap-GC tracing. Current diagnostic image: `build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2` (4,100,608 bytes, SHA-256 `32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`, CPLC source ID `48E9A50BB405634E`). It is built with object deletion on, CCID tracing on, heap-GC tracing off. Fresh guest enumeration still shows runtime USB devices rather than BOOTSEL, so no board received the image. Long-run physical acceptance remains open.
+- 2026-11-12 campaign correction: the option-1/2 processes are no longer live and neither campaign passed. On pre-fix 8E, option 1 ended with `SCARD_E_NOT_TRANSACTED`, heap read failures and OOM; D92 option 2 was interrupted (`KeyboardInterrupt`). A D92 option-1 attempt was also interrupted; the corrected alias-guard run produced 51 algorithm rows, then failed with `SCARD_E_NOT_TRANSACTED` on `B0 75 12 00 01 16 00`. Its serial log ends at `CHOUPI:APDU_PROCESS stage=end sw=9000 len=29`; source places that print immediately before the applet function returns. Thus the log does not prove control returned to the CCID caller. The log has no later CCID response snapshot. Logs are under `artifacts/results/jcalgtest-1.8.4-resource01-20261112/`. Commit `028ba49a` separates the CCID response markers from per-object heap-GC tracing. Diagnostic image at that time (historical; see "Current images" table): `build/arm/pico2-jcvm-max_crypto-object-deletion-ccid-trace-empty-card-48e9a50b.uf2` (4,100,608 bytes, SHA-256 `32e4977ed65bc3087fbf5e2c7de8f5066c62c89dacb9b2a9f98b37c3b2a2124e`, CPLC source ID `48E9A50BB405634E`). It is built with object deletion on, CCID tracing on, heap-GC tracing off. Fresh guest enumeration still shows runtime USB devices rather than BOOTSEL, so no board received the image. Long-run physical acceptance remains open.
 - 2026-11-12 RESOURCE-01 cause confirmed: the 8E candidate-trace run showed the live alias source `03013894FFFFFE000000420007` pointing to body `03013894FFFFFE000000420007FFFF00000045`; the reclaimer nevertheless emitted that body as `stage=erase`, then strict GC failed to read it. The alias source remained reachable but same-owner serialized aliases were not considered as body roots when the in-memory field walk omitted the edge. Added a conservative guard in commit `36fcfe69` to preserve any same-owner body directly targeted by an alias under a reachable persistent prefix; malformed or unreadable chains fail closed. The focused zero-field/missed-edge regression passes. Current D92 run uses corrected image SHA-256 `1837533bb67c06d8eac30f4b22cbc8552b7134b21f56f8a31f3770c31a4dde62`; at 2026-11-12 09:43 UTC it had 1,092 alias protections and 184 unrelated erasures, with zero `HEAP_GC_FS_READ_FAIL`, deletion skips, `FAULT`, `F205` or `NO_RESOURCE` in the captured serial log. The unchanged 1.8.4 `ALG_SUPPORT_EXTENDED` run is still active and incomplete; this early sample is not full acceptance. The image's finite monitor passed and GPPro installed the unchanged fixture successfully. The guest currently enumerates three runtime `2e8a:0009` devices rather than BOOTSEL; the 8E identity-pinned flash attempt could not find a reset interface, and 2BED was not attached. Keep option 2 plus complete option 1, longer duration and second-board acceptance open.
-- 2026-11-12 D92 follow-up: the corrected option-1 client stopped after about 13 minutes with `SCARD_E_NOT_TRANSACTED` for `B0 75 12 00 01 16 00`. The preceding `INS_CARD_RESET` and 3-record deletion batch returned `9000`. The final serial line is `CHOUPI:APDU_PROCESS stage=end sw=9000 len=29`, printed immediately before the applet function's `return`; this old image did not include the later `CCID_APPLET stage=vm_return` marker, so whether control reached its caller is unproven. There is no later CCID response snapshot; `fs_sync()` and transfer submission/completion remain candidate locations only if the call returned. This corrected image has no GC read errors, deletion skips, `FAULT`, `F205` or `NO_RESOURCE`. The partial CSV contains 51 `ALG_` rows and is not acceptance. PC/SC then listed only VPCD while three USB nodes remained runtime `2e8a:0009`. Physical options 1 and 2 remain open; capture with the timing image before assigning a cause.
-- RESOURCE-01 post-applet response stall: debug-gated telemetry around applet return, `fs_sync()` begin/end and CCID response submission is implemented and built; existing periodic stage telemetry covers IN completion. Relevant CCID tests pass 21/21 and 17/17. The trace image has not been physically flashed, so the location remains unknown until a guest-visible BOOTSEL/reader is available. Keep the earlier 8E heap/body failure separate: that run had `HEAP_GC_FS_READ_FAIL` and `*** PANIC *** Out of memory`; the corrected D92 trace did not.
-- Acceptance: same-key reuse, key replacement/deletion and cache resets plateau in retained RAM, handles and persistent records. A request before cache clearing must reclaim the newly unreachable graph before the next `process()` call while preserving live aliases/other owners. Demonstrate interrupted-reclamation recovery. Complete long physical runs without NO_RESOURCE, FAULT, unexpected reset or transport loss; record duration, iterations and high-water marks. Run options 2 and 1 on separate identified tokens when possible, with per-device telemetry. Coordinate STORE-01, API-01/03 and offline-only JC-RESET-01; do not enable production reclamation before safety acceptance.
+- 2026-11-12 D92 follow-up: the corrected option-1 client stopped after about 13 minutes with `SCARD_E_NOT_TRANSACTED` for `B0 75 12 00 01 16 00`. The preceding `INS_CARD_RESET` and 3-record deletion batch returned `9000`. The final serial line is `CHOUPI:APDU_PROCESS stage=end sw=9000 len=29`, printed immediately before the applet function's `return`; this old image did not include the later `CCID_APPLET stage=vm_return` marker, so whether control reached its caller is unproven. There is no later CCID response snapshot; `fs_sync()` and transfer submission/completion remain candidate locations only if the call returned. This corrected image has no GC read errors, deletion skips, `FAULT`, `F205` or `NO_RESOURCE`. The partial CSV contains 51 `ALG_` rows and is not acceptance. PC/SC then listed only VPCD while three USB nodes remained runtime `2e8a:0009`. Physical options 1 and 2 remain open; capture with a timing diagnostic image (see "Current images" table) before assigning a cause.
+- Post-applet response stall (owned by HOST-01; evidence recorded here): debug-gated telemetry around applet return, `fs_sync()` begin/end and CCID response submission is implemented and built; existing periodic stage telemetry covers IN completion. Relevant CCID tests pass 21/21 and 17/17. The trace image has not been physically flashed, so the location remains unknown until a guest-visible BOOTSEL/reader is available. Keep the earlier 8E heap/body failure separate: that run had `HEAP_GC_FS_READ_FAIL` and `*** PANIC *** Out of memory`; the corrected D92 trace did not.
+- Acceptance: same-key reuse, key replacement/deletion and cache resets plateau in retained RAM, handles and persistent records. A request before cache clearing must reclaim the newly unreachable graph before the next `process()` call while preserving live aliases/other owners. Demonstrate interrupted-reclamation recovery. Complete long physical runs without NO_RESOURCE, FAULT, unexpected reset or transport loss; record duration, iterations and high-water marks. Physical options 2 and 1 run under MEM-01 T8 on separate identified tokens when possible, with per-device telemetry. Coordinate STORE-01, API-01/03 and offline-only JC-RESET-01; keep the default build's reclamation OFF until the MEM-01 T8 + PERSIST-01 gate (the acceptance image enables it).
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#resource-01).
 
@@ -214,8 +181,8 @@ task:
   stay unchanged; fixes are native C++ VM or loader code.
 - Acceptance for each item: the fixture gets a controlled status word on PC
   VPCD (under ASan where memory safety is the claim), the next valid APDU
-  succeeds, the multipackage VPCD regression and the unchanged JCAlgTest 1.8.4
-  install still pass, and ARM and RISC-V builds pass. Physical validation is
+  succeeds, the multipackage VPCD regression and the unchanged JCAlgTest 1.8.4/jc305
+  CAP install still pass, and the ARM build passes. Physical validation is
   separate and stays open until run.
 - One CAPIN item per commit series; do not combine with RESOURCE work.
 
@@ -450,7 +417,8 @@ task:
 
 ### CAPIN-08
 
-- [ ] **P2: Validate control flow and exception tables once at LOAD.** Finding
+- [ ] **P2: Validate control flow and exception tables once at LOAD.** Prerequisite:
+  RV-20261106-16 latency/RAM measurement before keeping a branch-result cache. Finding
   B4; closes R16. Call `cap_instruction_boundaries::validate_control_flow` for
   every enumerated method body and validate each exception-handler entry
   (range inside one method, handler at an instruction start, catch index a
@@ -515,7 +483,7 @@ task:
     per slot keyed by CRC/generation instead of revalidating in every
     `getCap()`; measure before and after.
   - Replace `uint16_t&` views over packed CAP tables with byte-wise reads;
-    confirm on the RISC-V build.
+    (RISC-V is out of scope; ARM only.)
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-12).
 
@@ -610,7 +578,7 @@ review.
 
 - [ ] **Complete safety acceptance before enabling normal persistent reclamation.** Owner-scoped inventory and bounded reclaimer primitives exist; incomplete roots, malformed/unreadable aliases, cursor errors or transactions fail closed. Stable owner IDs, direct applet roots and cross-namespace alias protection are required. Current diagnostic root/budget progress is summarized under RESOURCE-01.
 - Evidence: a physical single-owner hook erased exactly one orphan while preserving the live root; host tests cover owner isolation, sibling roots, bounded batches, erase failures/retry and 1,000 modeled power cuts using the production reclaimer. A cross-owner two-record alias cycle now returns `InvalidTag` before any erase; after removing the corrupt cycle, a retry reclaims both target records. These do not establish physical multi-owner or power-loss safety.
-- Remaining: physical multi-owner/foreign-alias inventory, real per-record interruption and restart/retry, complete retained-context/native-root audit, stable handles and physical APDU timing. Acceptance: all live roots/aliases and other owners survive; interrupted batches resume safely; incomplete reachability never permits deletion. Coordinate PERSIST-02/03; normal builds continue to report object deletion unsupported.
+- Remaining: physical multi-owner/foreign-alias inventory, real per-record interruption and restart/retry, complete retained-context/native-root audit, stable handles and physical APDU timing. Acceptance: all live roots/aliases and other owners survive; interrupted batches resume safely; incomplete reachability never permits deletion. Coordinate PERSIST-02/03; the default build reports object deletion unsupported until the MEM-01 T8 + PERSIST-01 gate flips the default.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#persist-01).
 
@@ -709,12 +677,13 @@ review.
   the reported row to the matching client’s actual execution order (including
   whether row numbering includes a header), then inspect the corresponding
   native `Signature.getInstance` dispatch and allocation/lifecycle paths.
-  Reproduce offline with the unchanged pinned JCAlgTest 1.8.4 / jc305 fixture
-  and matching client on a fresh VPCD image; add focused repeated factory-call
+  Reproduce offline with the unchanged pinned JCAlgTest 1.8.4 / jc305 CAP
+  and the 1.8.5 host client on a fresh VPCD image; add focused repeated factory-call
   and resource-accounting probes if needed. Capture APDU progress, SW/VM fault,
   allocator/persistent capacity, USB/CCID reset and host reader state to
-  distinguish causes. **Do not test with real tokens or perform physical
-  reproduction under this task.**
+  distinguish causes. Do not start a dedicated physical reproduction under this
+  task; reader loss or stalls seen during physical option 1 are recorded under
+  HOST-01, which owns transport failures. This task feeds evidence to HOST-01.
   Acceptance: provide a cause or a bounded set of remaining hypotheses with
   evidence; an offline reproducer or explicit non-reproduction bound; any
   required code fix and VPCD regression; and build results. Physical validation,
@@ -793,7 +762,7 @@ review.
   Evidence: current progress/QKB; original deploy and focused retest entries
   retain exact CSV/log paths, hashes, selected calls and historical baselines.
 
-- [ ] **Resolve JCAlgTest 1.8.4 static-performance cases that could not be measured.**
+- [ ] **Resolve JCAlgTest (1.8.4/jc305 CAP) static-performance cases that could not be measured.**
   Status: on Pico 2 `2BED26ED20556535`, the unchanged upstream 1.8.4 client
   completed the full static matrix in 2,209 seconds on the 60-second-budget
   firmware: 1,847 expected `NO_SUCH_ALGORITHM` results and four
@@ -807,8 +776,8 @@ review.
   map to `{1,3,2,0,5,4}` made the exact 64/128/192-bit `clearKey()` measurements
   return `AA9000` on the final ARM image. The final image passed a verified
   flash and finite runtime monitor on 2BED.
-  Remaining: rerun the complete unchanged 1.8.4 static suite on the combined
-  final image. The attempted final run did not start because authorized host
+  Remaining: rerun the complete static suite (unchanged 1.8.4/jc305 CAP, 1.8.5
+  client) on the combined final image. The attempted final run did not start because authorized host
   refresh and PC/SC enumeration found zero physical Pico readers (only the two
   VPCD readers); this is a device-availability gap, not a test failure.
   Do not classify `NO_SUCH_ALGORITHM` results as failures.
@@ -945,7 +914,9 @@ review.
 
 ### HOST-01
 
-- [ ] **Diagnose recurring physical USB/PCSC reader disappearance.**
+- [ ] **Diagnose recurring physical USB/PCSC reader disappearance and CCID response stalls (sole owner; blocker for MEM-01 T8).**
+  RESOURCE-01 and JC-RESET-01 feed their transport evidence here (e.g. the
+  2026-11-14 8E option-2 `SCARD_E_NOT_TRANSACTED` → `SCARD_E_READER_UNAVAILABLE`).
   Status: reader loss has occurred after flashes, long APDUs and reconnects;
   an absent guest USB device is distinct from visible USB with no PCSC reader,
   and from an APDU returning a card error. No common cause is established.
@@ -998,7 +969,7 @@ review.
   Status: individual Linux AC2/3/4 and historical ordinary-power-cycle AC5 checks
   have evidence. A complete set of three consecutive integration passes has not
   been established; newer persistence/reclamation gates are separately open.
-  Remaining: for each pass build both architectures, verify the intended flashed
+  Remaining: for each pass build ARM, verify the intended flashed
   image and initial card state, explicitly install the CAP, complete the support
   report/comparison, remove USB power, and
   repeat post-boot applet execution/report. Preserve unrelated installed artifacts
@@ -1075,12 +1046,12 @@ Source corrections exist for R01/02/03/05/06/07/08/60; check the [review status 
   Progress: Operational Cipher arrays now use reset-cleared transient storage. CBC/CTR abort, buffer-growth, fresh-process restore, and five raw-image sentinel cases pass in VPCD. Remaining: inspect older persistent Cipher instances from pre-transient firmware. A grown persistent array can have a separate body tag; rebinding its field to a transient array may leave that body record orphaned. This is a source-level risk pending a legacy-seeded reproducer and full tag inventory; do not claim upgrade cleanup yet. Physical acceptance remains pending PC/SC reader publication.
 - [ ] **RV-20261106-20 — Remove ARM cycle/smoke-image ambiguity.** Owner: HOST-01 / AC-02. Align wrapper target names and instructions; require exact full-runtime image/profile/hash and runtime marker in JCVM acceptance. Current `cycle arm` selects the smoke image; `cycle choupi` selects the full VM. [R20](docs/review_20261106.md#r20--p1-the-documented-arm-cycle-flashes-the-smoke-firmware)
 
-- [ ] **RV-20261106-16 — Measure repeated branch-boundary rescans.** Owner: HARD-01 / API-03. Compare equivalent loops at increasing method offsets; record device latency and RAM cost before introducing a validated instruction-start cache. Keep boundary checks and package invalidation intact. [R16](docs/review_20261106.md#r16--p2-branch-validation-rescans-from-method-start-on-every-taken-branch)
+- [ ] **RV-20261106-16 — Measure repeated branch-boundary rescans.** Prerequisite of CAPIN-08 (its branch-result cache must wait for this measurement). Owner: HARD-01 / API-03. Compare equivalent loops at increasing method offsets; record device latency and RAM cost before introducing a validated instruction-start cache. Keep boundary checks and package invalidation intact. [R16](docs/review_20261106.md#r16--p2-branch-validation-rescans-from-method-start-on-every-taken-branch)
 - [ ] **RV-20261106-17 — Measure handle lookup and worst-case GC scaling.** Owner: PERSIST-01 / API-01 / EMU-01. Include forward/reverse chains, wide graphs and sparse slot tables; record heap size, GC duration, watchdog margin and p95/p99 APDU latency. Current list lookup and repeated mark passes have linear/quadratic scaling risks. [R17](docs/review_20261106.md#r17--p2-stable-handle-lookup-and-gc-have-adverse-scaling)
 - [ ] **RV-20261106-18 — Disclose Signature cumulative limits and peak memory.** Owner: PROFILE-01 / API-01. Document the current 32,767-byte buffering ceiling; test multipart boundaries and failed growth. Evaluate incremental native hash/MAC state with correct reset/abort semantics as separate implementation work. Preserve the already disclosed MessageDigest limit. [R18](docs/review_20261106.md#r18--p2-signature-update-is-whole-message-buffering-with-a-32767-byte-ceiling)
 - [ ] **RV-20261106-19 — Bound service gaps inside long native loops.** Owner: HOST-01 / HARD-01 / API-03. Measure maximum-size persistent Util copy/fill, crypto workspace copies and cleanup under capacity pressure; verify CCID progress, immutable deadline and watchdog margin before choosing callback cadence. [R19](docs/review_20261106.md#r19--p2-lengthy-native-copyfill-loops-lack-cooperative-progressdeadline-checks)
 
-- [ ] **RV-20261106-21 — Synchronize profile/trust statements with current code and limits.** Owner: PROFILE-01 / ARCH-08. Replace blanket multi-applet exclusions with a capability/remaining-gap/evidence matrix; disclose Signature limits and SCP03 subset, preserve RISC-V build-only distinction and separate helper/emulator/hardware evidence. Review R01–R20 remain open until validated. [R21](docs/review_20261106.md#r21--p3-profiletrust-documentation-has-fallen-behind-implemented-behavior)
+- [ ] **RV-20261106-21 — Synchronize profile/trust statements with current code and limits.** Owner: PROFILE-01 / ARCH-08. Replace blanket multi-applet exclusions with a capability/remaining-gap/evidence matrix; disclose Signature limits and SCP03 subset, state RISC-V as out of scope and separate helper/emulator/hardware evidence. Review R01–R20 remain open until validated. [R21](docs/review_20261106.md#r21--p3-profiletrust-documentation-has-fallen-behind-implemented-behavior)
 
 - [x] **RV-20261106-32 — Propagate emulator application failures to the parent process exit.** P1; owner: EMU-01 / HOST-01. Completed 2026-11-12: startup, transport, installation and save status now pass through C++ and Rust context/process exit handling. `./tools/test-emulator-exit-status` passes seven cases covering absent restored instance, refused connection, malformed transport, failed install, both image/sidecar save failures, and clean shutdown. [R32](docs/review_20261106.md#r32--p1-emulator-failures-are-discarded-across-the-startup-and-process-boundary)
 - [x] **RV-20261106-33 — Protect shared PC and firmware generation from concurrent writers.** P2; owner: HOST-01 / PROFILE-01. Completed 2026-11-12: `tools/build` and standalone `tools/build-pc` now use one shared lock with safe nested descriptor reuse; profile, ROM and JNI hashes are checked into architecture provenance. Three concurrent wrapper builds (ARM `base`, standalone PC `max_crypto`, RISC-V `symm_crypto`) passed with disjoint lock-owner intervals and matching generation provenance. [R33](docs/review_20261106.md#r33--p2-standalone-pc-builds-bypass-the-lock-protecting-shared-generated-artifacts)
@@ -1100,7 +1071,7 @@ Extend RV-20261106-29's allocation fault audit to EC key-pair `curveA` while `mp
 
 - [ ] **RV-20261106-41 — Validate receiveBytes state and offsets despite fully buffered input.** P2; owner: PROFILE-01 / HOST-01 / HARD-01. Enforce checks through native VM dispatch. Test calls before primary receive, after outgoing, negative/oversized offsets, zero remaining input, exact Java exception reasons and recovery. Valid post-receive calls may return zero. [R41](docs/review_20261106.md#r41--p2-receivebytes-ignores-its-state-and-offset-contract)
 - [ ] **RV-20261106-42 — Enforce outgoing API length limits and preserve BAD_LENGTH reasons.** P2; owner: PROFILE-01 / HOST-01. Separate applet capability and chaining limits from the 1,022-byte buffer capacity; test -1/0/252/253/256/257/1022/1023, chaining modes and invalid states. Catch/read reasons rather than asserting only APDU failure; explicitly disclose any supported long-response extension. [R42](docs/review_20261106.md#r42--p2-outgoing-length-validation-follows-buffer-capacity-rather-than-the-declared-apdu-contract)
-- [ ] **RV-20261106-43 — Contain allocation failure during package-stack insertion at method entry.** P1; owner: HARD-01 / CTX-01 / EMU-01. Remove allocating-noexcept termination and make frame/package entry coherent on failure. Inject failure after frame creation, verify retained callers/packages and a following APDU; audit analogous noexcept allocation paths. Measure per-call allocation and method-heavy latency before choosing storage changes. [R43](docs/review_20261106.md#r43--p1-method-entry-package-bookkeeping-can-terminate-on-allocation-failure)
+- [ ] **RV-20261106-43 — Contain allocation failure during package-stack insertion at method entry.** Implemented via CAPIN-03/04 (package list removed; `changePackageID` no longer allocates); **acceptance only** (failure injection and following-APDU check). P1; owner: HARD-01 / CTX-01 / EMU-01. Remove allocating-noexcept termination and make frame/package entry coherent on failure. Inject failure after frame creation, verify retained callers/packages and a following APDU; audit analogous noexcept allocation paths. Measure per-call allocation and method-heavy latency before choosing storage changes. [R43](docs/review_20261106.md#r43--p1-method-entry-package-bookkeeping-can-terminate-on-allocation-failure)
 
 - [ ] **RV-20261106-44 — Preserve recovery state when rollback itself fails.** P1; owner: PERSIST-03 / STORE-01 / HARD-01. Software fix is implemented: rollback retains its journal and active guard after erase/write/sync failure, blocks persistent reads/writes and new commits, and retries recovery before applet APDUs (returns `6581` while recovery still fails). Regression injections cover restore erase/write failure, rollback sync failure, commit plus rollback sync failure, no partial durable publication, successful retry, and simulated cold reset restoring the prior committed state. Remaining acceptance: validate recovery on hardware. [R44](docs/review_20261106.md#r44--p1-failed-rollback-discards-the-recovery-journal-and-reopens-ordinary-writes)
 - [ ] **RV-20261106-45 — Make snapshot publication and capacity charging exception-safe.** P2; owner: PERSIST-02/03 / HARD-01. Inject vector growth failure after record read/charge, verify unchanged journal/capacity, then retry the same tag and commit/abort. Cover old/new records and prior successful snapshots; distinguish this from instance-cache rollback. [R45](docs/review_20261106.md#r45--p2-snapshot-insertion-failure-leaves-commit-capacity-charged-without-a-snapshot)
@@ -1116,7 +1087,7 @@ Extend R19/R46 measurements to the generic copy helper's whole-input `uint32_t` 
 
 Extend RV-20261106-11 to repeated distinct-AID install/lookup/delete and global AID cache lifetime/lookup costs. Reclaim only unreferenced entries while preserving live runtime AID references and identity semantics; no memory-exhaustion rate was measured.
 
-- [ ] **RV-20261106-55 — Validate loaded-library dependency readiness before applet execution.** P2; owner: GP-01 / PROFILE-01 / HARD-01. Cover A→B→C with missing/wrong-version/present C and C used only inside B's method body. Validate reachable dependencies with bounded traversal or an earlier library linking boundary, preserve supported load order, define cycle handling and demonstrate correction permits INSTALL. Direct-import and deletion guards are insufficient evidence. [R55](docs/review_20261106.md#r55--p2-install-preflight-does-not-validate-the-dependency-closure-of-loaded-libraries)
+- [ ] **RV-20261106-55 — Validate loaded-library dependency readiness before applet execution.** Implemented via CAPIN-01 (bounded eight-slot dependency-closure worklist); **acceptance only** (remaining A→B→C cases). P2; owner: GP-01 / PROFILE-01 / HARD-01. Cover A→B→C with missing/wrong-version/present C and C used only inside B's method body. Validate reachable dependencies with bounded traversal or an earlier library linking boundary, preserve supported load order, define cycle handling and demonstrate correction permits INSTALL. Direct-import and deletion guards are insufficient evidence. [R55](docs/review_20261106.md#r55--p2-install-preflight-does-not-validate-the-dependency-closure-of-loaded-libraries)
 - [ ] **RV-20261106-56 — Avoid repeated full-store orphan sweeps for already clean free IDs.** P2; owner: STORE-01 / HOST-01 / PERSIST-03. Measure scan counts/manager latency for 0/1/7 free slots and sparse/dense clean/orphaned stores. Batch or cache only with validated recovery invariants; cover interrupted publication and package-ID reuse. Traversal counts are source-inferred; no flash erase count or speedup is claimed. [R56](docs/review_20261106.md#r56--p2-orphan-cleanup-repeats-full-storage-walks-for-ordinary-free-package-slots)
 
 Extend RV-20261106-29's allocation-failure resource audit to RSA CRT modulus/exponentiation helpers in `native_rsa_math.hpp`, including vector failures while raw MPIs are live. This is the existing exception-cleanup issue, not another task.
@@ -1150,12 +1121,8 @@ Extend RV-20261106-17's GC measurements to incoming foreign-array registry trave
 
 ## Physical carry-forward from scoped completed fixes
 
-The no-debug `max_crypto` external-test image with object deletion enabled is
-available at
-`artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-no-debug-empty-card-ed5716bb.uf2`.
-Windows validation is requested in `.agent/EXT_REQUESTS.md` under
-`WIN_MAXCRYPTO_GC_NODEBUG_20261112`. Both architecture build wrappers pass;
-physical flashing and external acceptance remain outstanding.
+For the current external-test image and its request ID, see the "Current
+images" table at the top of this file.
 
 - [ ] **API-03 / PERSIST-02: retain outstanding physical gates from RV-20261106-09/10/22/23/24/26/52/53/54.** Software checks are completed and archived; confirm current-image Cipher padding/reuse, object identity/rollback/retry, boolean restore, transient allocation/activity and resource reasons as applicable. Do not reopen the implemented fixes as missing features. Detailed original scope and evidence remain in the backup.
 
@@ -1164,7 +1131,7 @@ physical flashing and external acceptance remain outstanding.
 PERF-20261110-01–04 are completed with measurements in the backup and progress;
 metadata caching reduced filesystem reads but showed no physical latency gain.
 Unmeasured costs below remain hypotheses. Keep each optimization a separately
-validated/measured step. PERF-05 overlaps RV-20261106-17; PERF-07 overlaps PERSIST-01/03.
+validated/measured step. PERF-05 overlaps RV-20261106-17; PERF-07 overlaps PERSIST-01/03 (ARM measurements only).
 
 - [ ] **PERF-20261110-05 — Constant-time heap handle lookup.** P2; owner:
   HARD-01. `Heap::SharedStorage` uses `List` (`std::list`) whose `at()` walks
@@ -1194,7 +1161,7 @@ validated/measured step. PERF-05 overlaps RV-20261106-17; PERF-07 overlaps PERSI
   over 8,192 entries on each record resize; include it in the measurement.
   Acceptance: power-loss/rollback tests (`RP2350_FS_OVERLAY_TEST`) pass;
   measured per-APDU sync time and erase count before/after on physical Pico 2
-  (ARM and RISC-V); full CHOUPI cycle `TEST:SUMMARY` passes.
+  (ARM only; RISC-V is out of scope); full CHOUPI cycle `TEST:SUMMARY` passes.
 - [ ] **PERF-20261110-08 — Reduce PC FS write amplification.** P3; owner:
   EMU-01. `FileSystem::edit_at` (`choupi/os/src/fs/mod.rs`) appends a full copy
   of the record for every edit, and `Sector::lock` scans every outstanding

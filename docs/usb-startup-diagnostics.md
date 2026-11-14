@@ -74,7 +74,7 @@ An additional bounded capture, if needed:
 PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial "$board_serial" --seconds 8
 ```
 
-The existing cycle builds both architectures before flashing and then opens
+The existing cycle builds the ARM image before flashing and then opens
 the serial monitor. Require `TEST:PASS`, the expected `TEST:SUMMARY`, and no
 `TEST:FAIL`, `FAULT`, timeout, or nonzero status. Opening a monitor that asserts
 DTR ends the diagnostic wait; this is intentional for early-log capture.
@@ -83,7 +83,7 @@ DTR ends the diagnostic wait; this is intentional for early-log capture.
 
 1. Verify diagnostic startup both with DTR and without it: the wait must end
    on connection or its configured deadline. Capture startup phase timestamps.
-2. Rebuild **both architectures with value zero** using the normal commands
+2. Rebuild **the ARM image with value zero** using the normal commands
    above, then flash the identified ARM normal image through the authorized
    host path and inspect its finite serial log.
 3. Separately unplug/reconnect on Windows with **no terminal, serial monitor,

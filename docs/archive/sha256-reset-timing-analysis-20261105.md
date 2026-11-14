@@ -1,3 +1,5 @@
+> **Archived 2026-11-14 (not guidance):** Historical analysis made with the 1.8.2 client; not current procedure.
+
 # SHA-256 reset timing analysis — 2026-11-05
 
 The supplied 6.20 ms `MessageDigest_reset()` result overstates reset cost.

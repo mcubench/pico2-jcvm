@@ -1,7 +1,9 @@
+> **Archived 2026-11-14 (not guidance):** Proposed 2026-11-08 plan, largely overtaken by MEM-01 T1–T8 in `TODO.md`.
+
 # RESOURCE-01 implementation plan
 
 Date: 2026-11-08. Status: proposed implementation; documentation only.
-Priority: highest. Backlog: [RESOURCE-01](../TODO.md#resource-01).
+Priority: highest. Backlog: [RESOURCE-01](../../TODO.md#resource-01).
 
 The goal is to make the unchanged JCAlgTest cleanup effective and keep resource
 use bounded during long runs, while preserving live objects through resets and
@@ -123,4 +125,4 @@ CAP or test implementation is performed by saving this plan.
 - [Java Card 3.0.5 JCSystem](https://docs.oracle.com/cd/E59935_01/api/javacard/framework/JCSystem.html)
 - [Java Card 3.0.5 Key](https://docs.oracle.com/cd/E59935_01/api/javacard/security/Key.html)
 - [Java Card 3.0.5 KeyBuilder](https://docs.oracle.com/cd/E59935_01/api/javacard/security/KeyBuilder.html)
-- [Repository issue knowledge base](../.agent/QKB.md)
+- [Repository issue knowledge base](../../.agent/QKB.md)

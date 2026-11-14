@@ -333,7 +333,7 @@ Physical reset causality remains a separate open question.
 
 ### Evidence and audit notes
 
-Primary sources are [progress.md](../progress.md), the [implementation plan](resource-01-implementation-plan.md),
+Primary sources are [progress.md](../progress.md), the [implementation plan](archive/resource-01-implementation-plan.md),
 [TODO](../TODO.md), [QKB](../.agent/QKB.md), and Git commit contents. Representative
 raw evidence: [initial accumulation](../artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log),
 [package-static control](../artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log),

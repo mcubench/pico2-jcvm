@@ -1,3 +1,5 @@
+> **Snapshot, not procedure (2026-11-14):** this guide reflects the repository at HEAD `eeb02fb` (2026-10-31); its QKB/HANDOFF line links point into archived versions. Current rules are in `AGENTS.md`, `.agent/SESSION_CONTINUITY.md` and `TODO.md`; where they differ, they win.
+
 # Practical Pico 2 development patterns from pico2-jcvm
 
 Repository review: **2026-10-31**, HEAD **`eeb02fb`**, including the current working tree. This guide extracts reusable patterns for a different native Pico 2 application; Java Card ownership, tags, and APDUs are examples rather than prerequisites.

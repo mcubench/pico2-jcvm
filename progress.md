@@ -29707,3 +29707,51 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: TODO/STATUS/EXT_REQUESTS/doc archiving follow in the next step. The
   first worker build after this should confirm the `mode=acceptance` provenance.
 - Artifacts/logs: none
+
+## 2026-11-14 Apply rule-conflict decisions: TODO, STATUS, EXT_REQUESTS, doc archive 50
+
+- Step-Id: `20261114-2100-conflicts-todo-docs`
+- Task: user decision sheet `docs/archive/jcvm_rule-conflicts_opus55_20261114.md` (items 1–7, 9, 11, 16–18, 20–24)
+- When: '2026-11-14 20:10 CET' - '2026-11-14 21:00 CET'
+- Model: `claude-opus-5-5`
+- Change: `TODO.md` now has:
+  - MEM-01 as the only P0 and BOOTSEL-01 as P1 (opportunistic); RESOURCE-01/02
+    are gated on MEM-01.
+  - Volatile-board-state text replacing the "no hardware work" freeze.
+  - MEM-01 status blocks collapsed into one current paragraph; the superseded
+    blocks are archived verbatim under
+    `.agent/archive/2026-11-14-todo-conflict-cleanup/`.
+  - T8 as the single owner of option 1/2 campaigns: exploratory runs are
+    allowed at any time; acceptance needs post-T7 runs on wiped boards with the
+    acceptance image.
+  - HOST-01 as sole owner of CCID stalls and reader loss, and a T8 blocker;
+    JC-RESET-01 feeds evidence to it.
+  - RV-43 and RV-55 marked "implemented via CAPIN; acceptance only"; RV-16 made
+    a CAPIN-08 prerequisite.
+  - ARM-only RISC-V wording; the object-deletion default-flip gate; and the
+    1.8.4 CAP + 1.8.5 client wording.
+  - A single "Current images" table (no post-alias-fix acceptance image exists
+    yet), replacing the other "use image X" pointers.
+  - New task REF-185-01 to regenerate the jCardSim reference with 1.8.5.
+
+  Other changes:
+  - `STATUS.md` was deleted (the CTO report replaces it).
+  - The stale "matching client" EXT_REQUESTS entry was removed and archived.
+  - Five obsolete docs moved to `docs/archive/` with "archived" headers, and
+    their links were fixed.
+  - A snapshot banner was added to `PICO2_PRACTICAL_DEVELOPMENT_GUIDE.md`.
+  - The remaining "build both architectures" statements were removed from the
+    runbook, `usb-startup-diagnostics.md` and `reference/compilation.md`.
+  - The user's two review reports were archived in `docs/archive/`.
+- Validation: Inspection only. A grep sweep over the active instruction files
+  for `cycle arm`, both-architecture gates, `pcsc_scan`, "1.8.4 client",
+  "matching client", "speed constraint" and "highest priority" left only
+  historical, smoke-target or prohibition mentions. All relative links in the
+  archived docs resolve. CRLF line endings were preserved.
+- Result: The decision sheet is applied, except for one deviation:
+  `docs/windows-asymm-symm-test.md` and `docs/symm-crypto-windows-test.md` are
+  live inputs of the Windows packagers (copied as package README), so they were
+  updated to the 1.8.5 client (previous commit) instead of archived.
+- Decision: REF-185-01 and building a post-fix acceptance image are open
+  follow-ups for the worker.
+- Artifacts/logs: `.agent/archive/2026-11-14-todo-conflict-cleanup/`

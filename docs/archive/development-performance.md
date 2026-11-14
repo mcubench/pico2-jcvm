@@ -1,3 +1,5 @@
+> **Archived 2026-11-14 (not guidance):** Historical measurement notes (Oct 15–16 timings, 1.8.2 VPCD runs); not current procedure.
+
 # Development performance tips
 
 These are measured observations and low-risk experiments for keeping the Pico 2
@@ -27,7 +29,7 @@ one-pass run took 23.835 s and reported connect 2.554 s, ATR 0.001 s, SELECT
 0.231 s, JCSystem info 16.437 s, supported-algorithm APDU 4.561 s, and shutdown
 0.031 s. These are single-run phase timings, not stable throughput. This is
 host-emulator coverage, not a physical-card result. See
-[`jcalgtest-vpcd-phase-timing-20261015.log`](../artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log).
+[`jcalgtest-vpcd-phase-timing-20261015.log`](../../artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log).
 
 A separate one-pass resource sample reported 23.48 s wall, 0.48 s user, 6.61 s
 system, 30% CPU, and 17,128 KiB peak RSS. These counters are from the wrapper

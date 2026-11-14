@@ -5,7 +5,7 @@ record of current board state. Identify each board and its installed packages
 before flashing or installing a CAP. Every USB/PCSC command below must use the
 host-access execution path from `AGENTS.md` (elevated sandbox execution plus
 `PICO2_HOST_USB_ACCESS=1`); the marker alone does not grant access. The flash
-wrapper builds both architectures before flashing the ARM CHOUPI image.
+wrapper builds the ARM image before flashing the CHOUPI image (RISC-V is out of scope).
 
 Replace the example serials and reader names below with the identities from
 that authorized discovery. Keep per-board results separate.

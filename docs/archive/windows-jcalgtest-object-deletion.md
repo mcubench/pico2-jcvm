@@ -1,3 +1,5 @@
+> **Archived 2026-11-14 (not guidance):** Superseded by the per-package README of EXT request WIN-OBJECT-DELETION-NODEBUG-0E67DF89 and `AGENTS.md` (1.8.5 client); used the 1.8.4 client.
+
 # Windows test: JCAlgTest object deletion enabled
 
 This is a diagnostic firmware build of the `max_crypto` profile. It reports
