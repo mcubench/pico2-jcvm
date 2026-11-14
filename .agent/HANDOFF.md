@@ -18,17 +18,29 @@ value retained) and tombstone rejection. T1's safe response to unprovable
 intervals is explicit: restore a strict valid COW copy if one exists; otherwise
 fail closed rather than guess boundaries.
 
-T7 now has a high-occupancy storage-side extension: 320 live index slots,
-71,274/98,304 arena bytes used (72.5%), 12 compactions, 12 integrity checks
-(196 µs average / 240 µs max), minimum free capacity 27,030 bytes, and sync/
-reload every four cycles. All values and integrity checks passed. Five cuts
-across a 157,184-mutation publish recovered the complete old or new snapshot,
-with all 300 payload records intact. ARM and RISC-V builds passed. This uses
-parent-encoded child records but does not run the collector with real heap
-alias graphs at this occupancy. The unchanged JCAlgTest 1.8.5 option-2 VPCD
-run and bounded RAM-handle evidence remain open. Next, combine reclaimer/object
-graphs with the mixed live set in fake flash, then stop before any long
-emulator campaign per the user's instruction.
+T7 now has two offline high-occupancy fake-flash checks. The storage-only case
+holds 320 live slots and 71,274/98,304 bytes (72.5%), passes 12 compactions,
+checks integrity each cycle (196 µs average / 240 µs max), holds a 27,030-byte
+capacity floor and reloads every four cycles. Five cuts across a 157,184-
+mutation publish recover a complete old or new snapshot with all 300 records.
+
+A second case uses one long-lived heap with 20 persistent reference-array roots
+and 280 aliased byte-array children, using 67,458/98,304 bytes (68.6%) across
+581 live index slots. Across 12 reclaimer cycles, all 96 unreachable arrays
+are erased from flash and reclaimed from RAM; each batch has eight candidates
+and the high-water mark remains 308 handles for 300 live arrays. Twelve
+compactions pass integrity (latest run: 613 µs average / 1,024 µs maximum),
+minimum available capacity is 30,846 bytes, and sync/reload every four cycles
+passes with child values intact. `./tools/test-rp2350-fs-overlay` and
+`./tools/test-persistent-transaction` pass. ARM/RISC-V builds passed on the
+prior source step; this integration change is unit-test-only. No physical or
+emulator run was used.
+
+T7 still lacks runtime `alias-protect` event evidence and the unchanged JCAlgTest
+1.8.5 option-2 VPCD campaign. The latter remains intentionally unrun because of
+the user's instruction to stop long emulator campaigns. Continue offline with
+the remaining memory-review item if feasible; do not touch physical boards or
+start a long emulator run unless asked.
 
 # Previous handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
 

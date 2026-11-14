@@ -234,6 +234,18 @@ this mixed live set all rebooted into a complete old or new generation. Every
 trial verified the full 300-record data set and passed integrity. This does
 not replace reclaimer/heap-graph churn or JCAlgTest option 2.
 
+The reclaimer/heap integration follow-up uses 20 persistent reference-array
+roots with 280 aliased byte-array children in one long-lived Context. Twelve
+cycles each create and reclaim eight unrooted arrays. The reclaimer erased all
+96 candidates (eight per batch); conservative heap marking reclaimed the eight
+RAM arrays per cycle while retaining all 300 rooted arrays. The initial live
+set occupied 581 index slots and 67,458/98,304 bytes. Handle high-water stayed
+at 308; minimum available capacity was 30,846 bytes. Twelve integrity checks
+averaged 613 µs (1,024 µs maximum) in the latest run. Reload every four cycles
+and child-value checks passed. This is direct fake-flash coverage of the real
+reclaimer and heap graph, but does not report runtime `alias-protect` events or
+constitute the unchanged JCAlgTest VPCD campaign.
+
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 
 ## CAP Class external references — validate Import token bounds before storage

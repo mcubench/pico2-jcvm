@@ -29460,3 +29460,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T7 remains open for reclaimer/real heap alias graph churn at this occupancy, RAM-handle bounds and unchanged JCAlgTest option 2. Continue offline; do not run the long emulator campaign.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t7-mixed-cuts.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 mixed-live heap and reclaimer coverage 5 minutes
+
+- Step/experiment: `MEM-01-T7-HEAP-RECLAIMER-MIXED-LIVE-20261114`
+- When: '2026-11-14 09:40 UTC' - '2026-11-14 09:45 UTC'
+- Model: `GPT-6 Codex`
+- Change: Extended the fake-flash overlay integration test with a long-lived heap graph: 20 persistent reference-array roots, 280 aliased byte-array children, and repeated allocation/reclamation of unrelated persistent garbage. Added metrics/assertions for occupied slots, erased candidates and high-water heap handles. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`; `git diff --check` passed. No firmware rebuild was needed because this step changed only unit-test and documentation files. No emulator or physical hardware was used.
+- Result: 581 initial live slots; 67,458/98,304 bytes (68.6%); 12 compactions and integrity checks (613 µs average / 1,024 µs max); 96 records erased in 12 batches of 8; 308 peak RAM handles for 300 retained arrays; 30,846-byte minimum free capacity. All child values survived reload every four cycles.
+- Decision: The high-occupancy reclaimer/heap-graph offline case is covered. T7 remains open for runtime `alias-protect` evidence and unchanged JCAlgTest 1.8.5 option-2 VPCD acceptance; continue with offline MEM-01 items without a long emulator run.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t7-heap-graph-final.log`, `/tmp/mem01-t7-heap-transaction-final.log`; no hardware logs.
