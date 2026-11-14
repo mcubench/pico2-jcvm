@@ -1,5 +1,20 @@
 # Issue knowledge base
 
+## Picotool aborts after verified flash — identity-pinned runtime recovery — 2026-11-14
+
+Picotool can abort with `picoboot::connection_error` / status 134 after its
+`Verifying Flash: 100%` milestone, while the board has already rebooted. Do not
+accept a nonzero flash status from progress output alone. `tools/flash` now
+accepts this narrow case only after full verification was reported and the
+same pinned USB serial or RP2350 chip ID reappears as a runtime device within
+10 seconds. The subsequent cycle monitor still checks finite firmware health.
+Offline regression coverage rejects loading-only output, an unpinned runtime,
+and a different chip ID. The recovery path was not triggered in the latest
+physical run; a normal 8E flash/verify/reboot/monitor passed. The D92 board
+verified its write but did not reappear as a serial device and is currently
+not enumerated; continue on another identified board rather than retrying D92
+without USB visibility.
+
 ## One damaged persistent candidate blocking object deletion — scoped fix 2026-11-14
 
 Applet and package-static reclaimers now leave an enumerable but unresolved

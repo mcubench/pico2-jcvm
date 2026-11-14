@@ -1,3 +1,33 @@
+# Current handoff — BOOTSEL-01 physical failover and flash-wrapper recovery — 2026-11-14 UTC
+
+The flash wrapper now accepts picotool's occasional post-verification
+disconnect only when its output includes `Verifying Flash: 100%` and the same
+identity-pinned board reappears in runtime mode within 10 seconds. Offline
+tests cover the verification milestone and serial/chip-ID match rules. This
+specific nonzero-status recovery branch was not reproduced during today's
+physical cycle.
+
+Validation on 2026-11-14: object-deletion-enabled `max_crypto` ARM and RISC-V
+builds passed. The target-selection suite passes 18/18 and Bash syntax checks
+pass. 8E (`8E464F4E2BBC0A19`) entered BOOTSEL via picotool, was flashed, passed
+full flash verification, and passed an 18-second cycle monitor and a separate
+8-second monitor (`TEST:PASS`, `TEST:SUMMARY pass=1 fail=0`). Cycle log:
+`artifacts/logs/cycle-choupi-20261114T115519Z.log`. ARM UF2 SHA-256:
+`17c40320e1d271b194801a9c8880eec9de98d53330be5aa72c5b6ed2aef2e1a0`.
+
+Board discrepancy: the host saw one BOOTSEL board, D92 (`D92E743D5F640C0F`),
+and one runtime board, 8E, despite the user's report of three boards in
+BOOTSEL. D92's flash write reported verification 100% and reboot, but the
+cycle could not find its serial interface. Follow-up USB checks showed only
+8E in runtime and no BOOTSEL devices; D92 is currently not enumerated. Do not
+retry D92 until it reappears; continue with any other identified visible
+board. The other reported boards were not found in guest enumeration.
+
+Remaining BOOTSEL-01 acceptance: directly exercise CDC-1200 reset during a
+long synchronous applet operation and capture latency. User should be told
+the physical visibility mismatch if hardware work is next. No long emulator
+run was started.
+
 # Current handoff — MEM-01 reviewer: offline complete, runtime gate needs user OK — 2026-11-14 UTC
 
 Reviewer note (Claude Opus 5.5) on `d06b65a8`..`7f9c6c10`. T1–T6 are complete

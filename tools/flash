@@ -109,6 +109,40 @@ wait_for_rp_usb() {
   return 1
 }
 
+wait_for_runtime() {
+  local limit="$1"
+  local deadline=$((SECONDS + limit))
+  local device device_serial matches
+  local -a matching_devices=()
+  while ((SECONDS <= deadline)); do
+    matching_devices=()
+    for device in /sys/bus/usb/devices/*; do
+      [[ -r "${device}/idVendor" && -r "${device}/idProduct" &&
+         -r "${device}/serial" ]] || continue
+      [[ "$(<"${device}/idVendor")" == 2e8a &&
+         "$(<"${device}/idProduct")" != 000f ]] || continue
+      device_serial="$(<"${device}/serial")"
+      if flash_runtime_identity_matches "$device_serial"; then
+        matching_devices+=("${device}")
+      fi
+    done
+    if ((${#matching_devices[@]} == 1)); then
+      capture_usb_device "${matching_devices[0]}"
+      printf 'FLASH:RUNTIME reenumerated chipid=%s usb_path=%s\n' \
+        "${target_expected_chipid:-unverified}" "${target_sysfs_path}"
+      return 0
+    fi
+    if ((${#matching_devices[@]} > 1)); then
+      printf 'FLASH:RUNTIME identity is ambiguous across %s runtime devices\n' \
+        "${#matching_devices[@]}"
+      return 1
+    fi
+    sleep 1
+  done
+  printf 'FLASH:RUNTIME expected board did not re-enumerate within %s seconds\n' "$limit"
+  return 1
+}
+
 is_bootsel() {
   local info
   refresh_target_usb || return 1
@@ -223,6 +257,13 @@ run_load() {
   rm -f "${load_capture}"
   if ((load_status != 0)); then
     printf 'FLASH:LOAD failed status=%s\n' "${load_status}"
+    if flash_load_output_verified "${normalized_load}"; then
+      printf 'FLASH:LOAD recovered_after_verified_disconnect status=%s\n' "${load_status}"
+      if wait_for_runtime 10; then
+        printf 'FLASH:PASS image=%s verified=100%% recovery=runtime-reenumeration\n' "${image}"
+        return 0
+      fi
+    fi
     if grep -qi 'Unable to locate reset interface' <<<"${normalized_load}"; then
       last_load_failure=reset-interface-missing
     elif grep -qi 'No accessible RP-series device in BOOTSEL mode' <<<"${normalized_load}"; then
@@ -233,8 +274,9 @@ run_load() {
     return 1
   fi
   if ! grep -Eq 'Loading into Flash:.*100%' <<<"${normalized_load}" || \
+      ! flash_load_output_verified "${normalized_load}" || \
       ! grep -q 'The device was rebooted to start the application' <<<"${normalized_load}"; then
-    printf 'FLASH:LOAD returned without a confirmed 100%% flash and application reboot\n'
+    printf 'FLASH:LOAD returned without a confirmed 100%% flash verification and application reboot\n'
     return 1
   fi
   printf 'FLASH:PASS image=%s\n' "${image}"

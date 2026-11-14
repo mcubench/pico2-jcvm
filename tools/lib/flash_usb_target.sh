@@ -1,6 +1,23 @@
 # USB target selection shared by tools/flash and its offline selection tests.
 # The caller provides serial, chipid, usb_path and target_* state.
 
+flash_load_output_verified() {
+  local output="$1"
+  grep -Eq 'Verifying Flash:[[:space:]].*100%' <<<"${output}"
+}
+
+flash_runtime_identity_matches() {
+  local device_serial="${1^^}"
+  [[ -n "$device_serial" ]] || return 1
+  if [[ -n "$target_expected_usb_serial" ]]; then
+    [[ "$device_serial" == "${target_expected_usb_serial^^}" ]] && return 0
+  fi
+  if [[ -n "$target_expected_chipid" ]]; then
+    [[ "$device_serial" == "${target_expected_chipid^^}" ]] && return 0
+  fi
+  return 1
+}
+
 flash_read_bootsel_chipid() {
   local device="$1"
   local bus address info

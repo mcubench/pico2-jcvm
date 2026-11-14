@@ -29578,3 +29578,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Stop offline MEM-01 work; ask the user to authorize the bounded 6–8 minute VPCD run or T8; meanwhile proceed to BOOTSEL-01.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: none.
+## 2026-11-14 BOOTSEL-01 harden verified-flash recovery and physical failover 23 minutes
+
+- Step/experiment: `BOOTSEL-01-FLASH-RECOVERY-20261114`
+- When: '2026-11-14 11:35 UTC' - '2026-11-14 11:58 UTC'
+- Model: `GPT-6 Codex`
+- Change: Updated `tools/flash` to require a full picotool flash verification milestone and reboot confirmation for ordinary success. If picotool exits nonzero after `Verifying Flash: 100%`, it now accepts success only after the same pinned USB serial/chip ID returns in runtime mode within 10 seconds. Added offline checks for verification evidence and identity matching; updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-flash-target-selection` passed 18/18; Bash syntax checks passed. `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the RISC-V equivalent passed. Physical 8E (`8E464F4E2BBC0A19`) runtime-to-BOOTSEL `cycle choupi --profile max_crypto` passed with full verification and an 18-second monitor (`TEST:PASS`, fail=0); a direct wrapper flash and separate 8-second monitor passed too. D92 (`D92E743D5F640C0F`) reported a verified write and reboot, but no serial device appeared; later enumeration found neither D92 runtime nor BOOTSEL. Picotool status-134 recovery was not reproduced, so only its decision predicates were exercised offline.
+- Result: ARM image SHA-256 is `17c40320e1d271b194801a9c8880eec9de98d53330be5aa72c5b6ed2aef2e1a0`; firmware window remains 35,060 bytes. Host enumeration saw only D92 in BOOTSEL and 8E in runtime at the start, despite the reported three BOOTSEL boards. The 8E cycle log is `artifacts/logs/cycle-choupi-20261114T115519Z.log`; D92 failure log is `artifacts/logs/cycle-choupi-20261114T115211Z.log`.
+- Decision: Keep the recovery narrow: verified contents plus same-board runtime return, followed by finite monitor health. Continue BOOTSEL-01 on another enumerated board; CDC-1200 reset during a long synchronous operation remains untested.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261114T115519Z.log`, `artifacts/logs/cycle-choupi-20261114T115211Z.log`, `/tmp/project-goal-bootsel-progress.log` (earlier 30/30), `/tmp/project-goal-flash-target.log` (prior 11/11); firmware hash above.

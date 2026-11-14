@@ -83,6 +83,29 @@ add_device() {
 
 source "${repo_root}/tools/lib/flash_usb_target.sh"
 
+# A picotool disconnect after full verification is recoverable only when the
+# output contains the verification milestone and the expected runtime identity
+# returns. Loading progress alone is not evidence that flash contents match.
+target_expected_chipid="AAAAAAAAAAAAAAAA"
+target_expected_usb_serial=""
+expect "$(flash_load_output_verified $'Verifying Flash: [================] 100%' && echo true || echo false)" \
+  "verified_flash_milestone_is_recognized"
+expect "$(! flash_load_output_verified $'Loading into Flash: [================] 100%' && echo true || echo false)" \
+  "loading_without_verification_is_not_accepted"
+expect "$(flash_runtime_identity_matches AAAAAAAAAAAAAAAA && echo true || echo false)" \
+  "runtime_reenumeration_must_match_pinned_chip_id"
+expect "$(! flash_runtime_identity_matches BBBBBBBBBBBBBBBB && echo true || echo false)" \
+  "runtime_reenumeration_rejects_different_chip_id"
+target_expected_usb_serial="USB-SERIAL-1"
+expect "$(flash_runtime_identity_matches usb-serial-1 && echo true || echo false)" \
+  "runtime_reenumeration_accepts_pinned_usb_serial"
+expect "$(flash_runtime_identity_matches AAAAAAAAAAAAAAAA && echo true || echo false)" \
+  "runtime_reenumeration_also_checks_chip_id_when_usb_serial_differs"
+target_expected_usb_serial=""
+target_expected_chipid=""
+expect "$(! flash_runtime_identity_matches AAAAAAAAAAAAAAAA && echo true || echo false)" \
+  "runtime_reenumeration_without_pinned_identity_is_rejected"
+
 # An absent explicit serial must not fall back to the only other Pico.
 reset_selection
 serial="AAAAAAAAAAAAAAAA"

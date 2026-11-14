@@ -132,11 +132,19 @@ pre-`92c91943` data) — use the empty-card UF2.
 - Validation: verify descriptors and driver dispatch, CDC callback-to-reset servicing, busy-work recovery and identity-selection regressions offline. Build ARM and RISC-V with repository wrappers and resolve errors/warnings before flashing. When an identified board is explicitly available, validate both picotool and CDC-1200 BOOTSEL entry from idle and long-running workloads; record request/re-enumeration times, chip ID, firmware hash, logs and finite post-flash serial health. Treat timeout, `TEST:FAIL`, `FAULT` or nonzero status as failure. Keep unrelated boards/campaigns running and preserve installed CAP storage.
 - Remaining acceptance: exercise the vendor reset descriptor directly and
   CDC-1200 reset during a long synchronous applet operation, then capture the
-  BOOTSEL re-enumeration latency. The user has now disconnected the boards;
-  resume only after physical availability is reported and confirmed in guest.
-  Offline checks were refreshed on 2026-11-13: reset/CCID progress 30/30 and
-  identity-pinned target-selection 11/11. See
-  `BOOTSEL-01-OFFLINE-RECHECK-20261113` in `progress.md`.
+  BOOTSEL re-enumeration latency. On 2026-11-14, host enumeration did not match
+  the report of three boards in BOOTSEL: it found one BOOTSEL board (D92) and
+  one runtime board (8E). The D92 image write verified fully, but D92 did not
+  return as a serial device; it is currently absent from both modes. Failover
+  to 8E succeeded: picotool entered BOOTSEL, flashed and verified the image,
+  and the 18-second finite monitor repeatedly reported `TEST:PASS`. A second
+  direct flash and 8-second monitor also passed. The occasional picotool
+  status-134-after-verification case was not reproduced on this run; the flash
+  wrapper now has a bounded, identity-pinned runtime-reenumeration recovery
+  path with offline coverage. CDC-1200 during a long synchronous operation
+  remains untested. Offline checks were refreshed: reset/CCID progress 30/30
+  and identity-pinned target-selection 18/18. See
+  `BOOTSEL-01-FLASH-RECOVERY-20261114` in `progress.md`.
 
 ### BUILD-DBG-01
 
