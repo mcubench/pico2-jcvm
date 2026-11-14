@@ -2837,8 +2837,8 @@ int main() {
          "filesystem_restore_rejects_integrity_failure_and_uses_previous_snapshot");
 
   // A self-consistent snapshot envelope can still contain an unreachable
-  // index slot. Reject that newest generation and restore the previous COW
-  // copy without discarding either serialized value.
+  // index slot. Reject that newest generation, restore the previous COW copy,
+  // and republish the known-good copy over the rejected slot.
   fake_flash.fill(0xff);
   std::array<uint8_t, sizeof(shared_offset_value_a)> restored_orphan_a{};
   std::array<uint8_t, sizeof(shared_offset_value_b)> restored_orphan_b{};
@@ -2854,7 +2854,8 @@ int main() {
       rp2350_fs_test_move_slot_beyond_probe_gap(
           shared_offset_b, sizeof(shared_offset_b)) == FS_STATUS_OK &&
       rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
-      fs_init() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      rp2350_fs_test_integrity_valid() == 1 &&
       fs_read(shared_offset_a, sizeof(shared_offset_a),
               restored_orphan_a.data(), restored_orphan_a.size()) ==
           FS_STATUS_OK &&
@@ -2870,7 +2871,8 @@ int main() {
          "filesystem_restore_recovers_probe_chain_corruption_from_previous_snapshot");
 
   // A stored hash mismatch is detected before any tag lookup is trusted. The
-  // older COW snapshot remains usable after the damaged generation is rejected.
+  // older COW snapshot remains usable after the damaged generation is
+  // rejected, and boot repairs the rejected slot from that known-good state.
   fake_flash.fill(0xff);
   std::array<uint8_t, sizeof(shared_offset_value_a)> restored_hash_value{};
   const bool hash_snapshot_fallback =
@@ -2882,7 +2884,8 @@ int main() {
       rp2350_fs_test_corrupt_record_hash(
           shared_offset_a, sizeof(shared_offset_a)) == FS_STATUS_OK &&
       rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
-      fs_init() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      rp2350_fs_test_integrity_valid() == 1 &&
       fs_read(shared_offset_a, sizeof(shared_offset_a),
               restored_hash_value.data(), restored_hash_value.size()) ==
           FS_STATUS_OK &&

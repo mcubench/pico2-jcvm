@@ -29340,3 +29340,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue T1 with safe per-record salvage/quarantine and overlapping-record injection before moving to T2. Keep long VPCD campaigns stopped per user request.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-overlay.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 republish known-good overlay after semantic corruption 8 minutes
+
+- Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`
+- When: '2026-11-14 07:20 UTC' - '2026-11-14 07:28 UTC'
+- Model: `GPT-6 Codex`
+- Change: When current-format slot validation finds a rejected COW snapshot but another slot restores, `fs_init()` now republishes the known-good restored generation over the rejected slot. It retains the good source until the replacement passes snapshot validation; a failed rewrite logs a recovery failure but still boots from the good source. Corruption test hooks now set `overlay_dirty`, ensuring the regression actually persists semantic corruption instead of merely reloading an unchanged snapshot. Tests assert that the second initialization is clean after recovery. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`, with observed `FS_INTEGRITY_FAIL` and `FS_RECOVER` for duplicate-offset, orphaned-probe-chain and stored-hash scenarios; second restore is clean. `./tools/build arm` and `./tools/build riscv` passed for the preceding diagnostic changes; rerun both after this final recovery-path adjustment before commit. No physical board or emulator campaign.
+- Result: Detected semantic corruption in a CRC-valid newest snapshot no longer repeats across boots when the prior COW snapshot is valid; that prior generation is copied back to the rejected slot.
+- Decision: Keep T1 open for individual-record arena salvage/quarantine and explicit overlapping-record injection; current generation-level fallback avoids guessing at ambiguous records.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-republish.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
+
+- Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`
+- When: '2026-11-14 07:20 UTC' - '2026-11-14 07:29 UTC'
+- Model: `GPT-6 Codex`
+- Change: Startup now detects a rejected current-format COW slot even when its outer CRC/header validation fails, restores the remaining valid generation, and republishes the known-good state over the rejected slot. Corruption hooks mark the overlay dirty so the tests actually persist semantic corruption. Regressions perform a second initialization and assert the repaired snapshot passes integrity validation.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; logs show recovery for duplicate-offset, probe-chain and stored-hash corruption. `./tools/build arm` and `./tools/build riscv` passed after the final source change. No long emulator run or hardware access.
+- Result: A recoverable bad COW generation is overwritten with a verified snapshot, so it is not reconsidered on every subsequent boot. When neither generation validates, existing behavior still preserves flash and fails closed.
+- Decision: T1 remains open for per-record salvage/quarantine and overlapping-interval recovery; this change only repairs from another fully valid generation.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-republish.log`; no hardware logs.

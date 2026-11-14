@@ -528,10 +528,15 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
 
 bool restore_overlay_snapshot(uint32_t offset0, uint32_t offset1,
                               uint32_t slot_size, bool migration_source,
-                              bool require_v4) {
+                              bool require_v4,
+                              bool *used_previous_snapshot = nullptr) {
+  if (used_previous_snapshot != nullptr) *used_previous_snapshot = false;
   const bool valid0 = filesystem_slot_valid(offset0, slot_size, require_v4);
   const bool valid1 = filesystem_slot_valid(offset1, slot_size, require_v4);
   if (!valid0 && !valid1) return false;
+  const bool rejected_snapshot =
+      (!valid0 && filesystem_slot_header(offset0)->magic == kFilesystemMagic) ||
+      (!valid1 && filesystem_slot_header(offset1)->magic == kFilesystemMagic);
   uint8_t first = valid0 ? 0 : 1;
   if (valid0 && valid1 &&
       static_cast<int32_t>(filesystem_slot_header(offset1)->generation -
@@ -539,11 +544,20 @@ bool restore_overlay_snapshot(uint32_t offset0, uint32_t offset1,
     first = 1;
   }
   const uint32_t first_offset = first == 0 ? offset0 : offset1;
-  if (restore_overlay_slot(first_offset, first, migration_source)) return true;
+  if (restore_overlay_slot(first_offset, first, migration_source)) {
+    if (used_previous_snapshot != nullptr) {
+      *used_previous_snapshot = rejected_snapshot;
+    }
+    return true;
+  }
   const uint8_t other = first == 0 ? 1 : 0;
   if (!(other == 0 ? valid0 : valid1)) return false;
-  return restore_overlay_slot(other == 0 ? offset0 : offset1, other,
-                              migration_source);
+  if (!restore_overlay_slot(other == 0 ? offset0 : offset1, other,
+                            migration_source)) {
+    return false;
+  }
+  if (used_previous_snapshot != nullptr) *used_previous_snapshot = true;
+  return true;
 }
 
 void report_fs_write_failure(const char *operation, const uint8_t *tag,
@@ -1204,6 +1218,7 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
   OverlayFile *file = find_overlay(tag, tag_length);
   if (file == nullptr) return FS_STATUS_NO_SUCH_TAG;
   file->hash ^= 0x0101;
+  overlay_dirty = true;
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_integrity_valid(void) {
@@ -1219,6 +1234,7 @@ extern "C" uint8_t rp2350_fs_test_share_record_offset(
     return FS_STATUS_NO_SUCH_TAG;
   }
   set_overlay_offset(*target, overlay_offset(*source));
+  overlay_dirty = true;
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
@@ -1248,6 +1264,7 @@ extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
   }
   overlay[destination] = *file;
   *file = OverlayFile{};
+  overlay_dirty = true;
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
@@ -1714,8 +1731,10 @@ extern "C" uint8_t fs_init(void) {
       image_end < kFilesystemXipBase + flash_layout::firmware_end_limit;
 #endif
   if (!filesystem_layout_available || !cap_store_initialize()) return 1;
+  bool recovered_current_snapshot = false;
   const bool restored_current = restore_overlay_snapshot(
-      kFilesystemSlot0, kFilesystemSlot1, kFilesystemSlotSize, false, true);
+      kFilesystemSlot0, kFilesystemSlot1, kFilesystemSlotSize, false, true,
+      &recovered_current_snapshot);
   const bool restored_previous =
       !restored_current && restore_overlay_snapshot(
                                kFilesystemSlot0, kFilesystemSlot1,
@@ -1734,6 +1753,21 @@ extern "C" uint8_t fs_init(void) {
     if (!persist_overlay()) return 1;
     std::printf("CHOUPI:FS_MIGRATE generation=%lu\r\n",
                 static_cast<unsigned long>(filesystem_generation));
+    std::fflush(stdout);
+  }
+  if (recovered_current_snapshot) {
+    // The older COW generation is the only proven-good state. Re-publish it
+    // over the rejected slot so the same corrupt generation is not retried on
+    // every boot. Keep the valid source slot intact until the new snapshot is
+    // verified by persist_overlay(). A failed repair must not prevent booting
+    // from the valid snapshot.
+    overlay_dirty = true;
+    if (persist_overlay()) {
+      std::printf("CHOUPI:FS_RECOVER source=previous action=replace_rejected_snapshot generation=%lu\r\n",
+                  static_cast<unsigned long>(filesystem_generation));
+    } else {
+      std::printf("CHOUPI:FS_RECOVER_FAIL source=previous action=retain_valid_snapshot\r\n");
+    }
     std::fflush(stdout);
   }
   if (!restored_current && !restored_previous && !restored_legacy) {

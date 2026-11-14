@@ -1,12 +1,13 @@
 # Current handoff — MEM-01 T1 snapshot integrity diagnostics and fallback tests — 2026-11-14 UTC
 
 T1 now reports the specific failed overlay invariant and snapshot slot when a
-semantically invalid snapshot is rejected. Regressions inject a broken probe
-chain and stored-hash mismatch into the newest snapshot; startup rejects that
-generation, restores the previous COW snapshot, preserves both values where
-applicable, and allows compaction. This is recovery by previous-snapshot
-fallback, **not** rebuilding/quarantining individual records from a damaged
-arena; T1 remains open for that work and for explicit overlap coverage.
+semantically invalid snapshot is rejected. Startup restores the previous COW
+generation, preserves its values, then republishes that known-good generation
+over the rejected slot. Regressions inject a broken probe chain and stored-hash
+mismatch, verify the first load recovers, and verify a second load is clean.
+This is whole-generation COW recovery, **not** rebuilding/quarantining
+individual records from a damaged arena; T1 remains open for that work and for
+explicit overlapping-record coverage.
 
 The RP2350 fake-flash overlay suite passes (`TEST:SUMMARY fail=0`). Its build
 needed `CHOUPI_PC_RP2350_FS_OVERLAY=1` in the generated test CMake flags because
@@ -17,8 +18,8 @@ records can be reconstructed unambiguously; otherwise preserve the valid COW
 snapshot and fail closed. Do not run another long emulator campaign.
 
 The above T1 diagnostic/test step is committed with its progress record
-(self-reference omitted); T4/T5 fix is `af4659e9`, and the RP2350 overlay VPCD
-harness is committed as `07f809bf`.
+(self-reference omitted); prior commits are `1eeb50fc` (integrity diagnostics),
+`af4659e9` (T4/T5), and `07f809bf` (RP2350 overlay VPCD harness).
 
 # Current handoff — MEM-01 alias-prefix leak fix and reassignment regression — 2026-11-14 UTC
 
