@@ -149,6 +149,14 @@ the earlier events: granted USB-node access does not establish PC/SC reader
 publication. Continue offline and re-enumerate through the host path before
 any physical or VPCD PC/SC run; do not repeatedly poll the hanging service.
 
+2026-11-14 22:07 UTC follow-up: after the approved helper granted three USB
+node ACLs (`/dev/bus/usb/001/074`, `/001/078`, `/001/077`), two bounded
+`PICO2_HOST_USB_ACCESS=1 ./tools/list-readers` attempts (12 s then 15 s) both
+timed out, including the retry after socket activation. No reader inventory
+was returned. This does not prove the USB nodes are Pico readers or that
+pcscd is healthy. Do not keep retrying the service; continue offline until a
+fresh externally observed PC/SC state is available.
+
 2026-11-14 sustained-run reproduction on 8E (`8E464F4E2BBC0A19`): the
 physical option-2 client run lasted about 32 minutes and reached
 `TYPE_DES LENGTH_DES3_3KEY ALG_DES_ECB_ISO9797_M2 Cipher_init()`. JCAlgTest

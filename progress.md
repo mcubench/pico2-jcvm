@@ -29992,3 +29992,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `30dcd9f581cdea7729f66e9c08c832438f8d01ff32c3e56c37bbaae45d46287f`; Windows package SHA-256 `2d3735a37acd34d81620e893c79071b533fbeec3ccc13c2c47e526a93338ea44`. Build incorporates current dirty source; root tracked-diff hash is recorded in package provenance.
 - Decision: Provide this fresh image for Windows external validation of the current bugfix. Physical acceptance remains open.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-50114a30-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-50114a30-dirty.zip`; package hashes and instructions in `build/external-test/object-deletion-normal-50114a30-dirty/`.
+
+## 2026-11-14 Recheck T7 overlay and PCSC availability 9 minutes
+
+- Step-Id: `20261114-2216-mem01-t7-overlay-recheck`
+- Task: MEM-01 T7 offline regression and reader state
+- When: '2026-11-14 22:07 UTC' - '2026-11-14 22:16 UTC'
+- Model: `gpt-6.1-sol`
+- Change: Refreshed the approved Pico USB ACL helper and recorded the resulting reader state. Updated the current-image table to point at the newly built bugfix UF2/package and recorded the latest T7 regression result in the handoff.
+- Validation: Approved helper returned three USB nodes. Two bounded `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers` queries (12 s and 15 s) both timed out; no reader inventory. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`, including persistent-write interruption and recovery cases. No physical test was attempted.
+- Result: Current fake-flash overlay safety regression passes. PC/SC publication is unavailable despite three ACL-granted USB nodes; this is not proof that the nodes are Pico readers. Full unchanged-client option-2 VPCD evidence remains missing.
+- Decision: Continue offline; do not repeatedly poll the unresponsive PC/SC service. T7 remains open.
+- Artifacts/logs: `artifacts/results/` unchanged; regression output was streamed and not archived; current firmware/package are listed in `TODO.md` and `.agent/EXT_REQUESTS.md`.

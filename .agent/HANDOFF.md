@@ -25,6 +25,16 @@ Updated: 2026-11-14.
    current reader inventory with `./tools/list-readers`; obey root AGENTS USB
    host-access wrapper rules for all USB/PCSC operations.
 
+## Latest reader observation
+- Approved helper granted ACLs for three USB nodes (`/dev/bus/usb/001/074`,
+  `/001/078`, `/001/077`), but bounded `tools/list-readers` timed out after
+  12 seconds and again after 15 seconds. No inventory was available; do not
+  claim these nodes are JCVM readers. Continue offline and avoid repeated
+  polling or `pcsc_scan`.
+- `./tools/test-rp2350-fs-overlay` passed on the current source with
+  `TEST:SUMMARY fail=0`; this remains fake-flash evidence and does not close
+  MEM-01 T7 runtime acceptance.
+
 ## Workspace notes
 - Preserve all pre-existing dirty files. At build time there were unrelated
   active changes in TODO, review probes, CHOUPI, tests and tool wrappers.
