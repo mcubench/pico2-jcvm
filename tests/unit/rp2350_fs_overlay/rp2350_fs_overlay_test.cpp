@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -31,6 +32,7 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     uint32_t length);
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" uint32_t rp2350_fs_test_live_record_count(void);
+extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
     const uint8_t *tag, uint8_t tag_length, uint8_t header);
@@ -1632,6 +1634,163 @@ int main() {
               overlay_churn_min_available);
   std::printf("TEST:METRIC rp2350_overlay_object_deletion index_slots=%zu\n",
               overlay_churn_final_index_slots);
+
+  // Exercise the overlay near a realistic mixed live occupancy instead of
+  // keeping a single small root. The parent-encoded children model persistent
+  // object fields; independent values and variable payload sizes keep records
+  // interleaved in the arena. Repeated compaction checks integrity cost and a
+  // steady-state capacity floor.
+  fake_flash.fill(0xff);
+  constexpr uint8_t mixed_live_owner = 0x4b;
+  constexpr uint8_t mixed_live_parent_count = 20;
+  constexpr uint8_t mixed_live_children_per_parent = 14;
+  constexpr uint8_t mixed_live_independent_count = 20;
+  constexpr uint32_t mixed_live_cycles = 12;
+  constexpr uint8_t mixed_live_garbage_per_cycle = 12;
+  struct MixedLiveRecord {
+    std::vector<uint8_t> tag;
+    std::vector<uint8_t> value;
+  };
+  std::vector<MixedLiveRecord> mixed_live_records;
+  mixed_live_records.reserve(mixed_live_parent_count *
+                             mixed_live_children_per_parent +
+                             mixed_live_independent_count);
+  bool mixed_live_ok = fs_init() == FS_STATUS_OK;
+  for (uint8_t parent_id = 0;
+       parent_id < mixed_live_parent_count && mixed_live_ok; ++parent_id) {
+    const std::array<uint8_t, 5> parent_tag = {
+        0x03, mixed_live_owner, parent_id, 0x42, 0x24};
+    mixed_live_ok = fs_write(parent_tag.data(), parent_tag.size(), nullptr, 0) ==
+                    FS_STATUS_OK;
+    for (uint8_t child_index = 0;
+         child_index < mixed_live_children_per_parent && mixed_live_ok;
+         ++child_index) {
+      const uint8_t suffix = static_cast<uint8_t>(
+          parent_id * mixed_live_children_per_parent + child_index);
+      std::array<uint8_t, 7> child_tag{};
+      std::copy(parent_tag.begin(), parent_tag.end(), child_tag.begin());
+      child_tag[5] = suffix;
+      child_tag[6] = suffix;
+      const size_t value_size = 180 + ((suffix * 73u + parent_id * 19u) % 101u);
+      std::vector<uint8_t> value(value_size);
+      for (size_t index = 0; index < value.size(); ++index) {
+        value[index] = static_cast<uint8_t>(suffix * 31u + index * 17u);
+      }
+      mixed_live_ok = rp2350_fs_test_write_parent_encoded(
+                          child_tag.data(), child_tag.size(), value.data(),
+                          value.size()) == FS_STATUS_OK;
+      if (mixed_live_ok) {
+        MixedLiveRecord record;
+        record.tag.assign(child_tag.begin(), child_tag.end());
+        record.value = std::move(value);
+        mixed_live_records.push_back(std::move(record));
+      }
+    }
+  }
+  for (uint8_t index = 0;
+       index < mixed_live_independent_count && mixed_live_ok; ++index) {
+    const std::array<uint8_t, 5> tag = {
+        0xa1, 0x55, index, static_cast<uint8_t>(index ^ 0x5a), 0x01};
+    std::vector<uint8_t> value(250 + (index * 11u) % 51u);
+    for (size_t byte = 0; byte < value.size(); ++byte) {
+      value[byte] = static_cast<uint8_t>(index * 23u + byte * 7u);
+    }
+    mixed_live_ok = fs_write(tag.data(), tag.size(), value.data(),
+                             value.size()) == FS_STATUS_OK;
+    if (mixed_live_ok) {
+      MixedLiveRecord record;
+      record.tag.assign(tag.begin(), tag.end());
+      record.value = std::move(value);
+      mixed_live_records.push_back(std::move(record));
+    }
+  }
+  const size_t mixed_live_initial_slots = rp2350_fs_test_overlay_file_count();
+  const size_t mixed_live_initial_bytes =
+      rp2350_fs_test_overlay_bytes_used();
+  const size_t mixed_live_initial_available =
+      choupi_available_persistent_memory_bytes();
+  mixed_live_ok = mixed_live_ok &&
+      mixed_live_initial_slots == mixed_live_parent_count *
+              (mixed_live_children_per_parent + 1) +
+          mixed_live_independent_count &&
+      mixed_live_initial_bytes >= 60 * 1024 &&
+      mixed_live_initial_bytes <= 75 * 1024 &&
+      mixed_live_initial_available > 8000 &&
+      rp2350_fs_test_integrity_valid() == 1 && fs_sync() == FS_STATUS_OK;
+  uint64_t integrity_check_total_us = 0;
+  uint64_t integrity_check_max_us = 0;
+  size_t mixed_live_min_available = mixed_live_initial_available;
+  uint32_t mixed_live_compactions = 0;
+  auto verify_mixed_live_records = [&]() {
+    for (const auto &record : mixed_live_records) {
+      std::vector<uint8_t> actual(record.value.size());
+      if (fs_read(record.tag.data(), static_cast<uint8_t>(record.tag.size()),
+                  actual.data(), actual.size()) != FS_STATUS_OK ||
+          actual != record.value) {
+        return false;
+      }
+    }
+    return true;
+  };
+  for (uint32_t cycle = 0; cycle < mixed_live_cycles && mixed_live_ok;
+       ++cycle) {
+    for (uint8_t index = 0; index < mixed_live_garbage_per_cycle &&
+                             mixed_live_ok;
+         ++index) {
+      const std::array<uint8_t, 6> tag = {
+          0x03, mixed_live_owner, 0x70, static_cast<uint8_t>(cycle >> 8),
+          static_cast<uint8_t>(cycle), index};
+      std::vector<uint8_t> value(80 + ((cycle * 37u + index * 29u) % 221u));
+      for (size_t byte = 0; byte < value.size(); ++byte) {
+        value[byte] = static_cast<uint8_t>(cycle * 13u + index * 41u + byte);
+      }
+      mixed_live_ok = fs_write(tag.data(), tag.size(), value.data(),
+                               value.size()) == FS_STATUS_OK &&
+          fs_erase(tag.data(), tag.size()) == FS_STATUS_OK;
+    }
+    if (mixed_live_ok) {
+      mixed_live_ok = rp2350_fs_test_compact() == FS_STATUS_OK;
+      if (mixed_live_ok) ++mixed_live_compactions;
+    }
+    if (mixed_live_ok) {
+      const auto check_start = std::chrono::steady_clock::now();
+      const bool integrity_ok = rp2350_fs_test_integrity_valid() == 1;
+      const auto check_end = std::chrono::steady_clock::now();
+      const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+          check_end - check_start).count();
+      integrity_check_total_us += static_cast<uint64_t>(elapsed);
+      integrity_check_max_us = std::max(
+          integrity_check_max_us, static_cast<uint64_t>(elapsed));
+      mixed_live_ok = integrity_ok &&
+          rp2350_fs_test_overlay_file_count() == mixed_live_initial_slots &&
+          choupi_available_persistent_memory_bytes() + 128 >=
+              mixed_live_initial_available &&
+          verify_mixed_live_records() && fs_sync() == FS_STATUS_OK;
+      mixed_live_min_available = std::min(
+          mixed_live_min_available,
+          static_cast<size_t>(choupi_available_persistent_memory_bytes()));
+    }
+    if (mixed_live_ok && (cycle + 1) % 4 == 0) {
+      mixed_live_ok = fs_init() == FS_STATUS_OK &&
+          rp2350_fs_test_integrity_valid() == 1 &&
+          rp2350_fs_test_overlay_file_count() == mixed_live_initial_slots &&
+          verify_mixed_live_records();
+    }
+  }
+  expect(mixed_live_ok && mixed_live_compactions >= 10 &&
+             mixed_live_min_available > 8000,
+         "rp2350_overlay_mixed_live_set_survives_12_compactions_and_reloads");
+  std::printf("TEST:METRIC rp2350_overlay_mixed_live records=%zu slots=%zu "
+              "used_bytes=%zu available_floor=%zu compactions=%u integrity_avg_us=%llu "
+              "integrity_max_us=%llu\n",
+              mixed_live_records.size(), mixed_live_initial_slots,
+              mixed_live_initial_bytes,
+              mixed_live_min_available,
+              static_cast<unsigned>(mixed_live_compactions),
+              static_cast<unsigned long long>(mixed_live_compactions == 0
+                  ? 0
+                  : integrity_check_total_us / mixed_live_compactions),
+              static_cast<unsigned long long>(integrity_check_max_us));
 
   // One enumerable tag whose index slot lies beyond an empty probe bucket
   // triggers T1 index repair, after which the whole batch is reclaimable.

@@ -29436,3 +29436,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T1 remains open for per-record salvage/quarantine and overlapping-interval recovery; this change only repairs from another fully valid generation.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-republish.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 mixed-live overlay compaction coverage 9 minutes
+
+- Step/experiment: `MEM-01-T7-MIXED-LIVE-OVERLAY-20261114`
+- When: '2026-11-14 09:12 UTC' - '2026-11-14 09:21 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a high-occupancy fake-flash scenario with 320 live slots (20 parents, 280 parent-encoded children and 20 independent values), mixed 180–300-byte payloads, 12 garbage batches and 12 compactions. It verifies every live payload and overlay integrity after each compaction, checks a steady-state free-capacity floor, syncs every cycle and reloads every fourth cycle. Added a test-only arena-byte metric. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`. Measured 71,274/98,304 arena bytes used (72.5%), minimum available capacity 27,030 bytes, 12 compactions, integrity check average 196 µs / max 240 µs, with reloads and values intact. `./tools/build arm` and `./tools/build riscv` passed. No hardware or emulator campaign.
+- Result: The overlay keeps a mixed, parent-linked live set stable under repeated compaction near the target 60–75% occupancy, with measurable integrity-check cost and capacity margin. This does not combine the reclaimer with real heap alias graphs at high occupancy and does not replace JCAlgTest option 2.
+- Decision: T7 remains open for reclaimer/heap-graph churn, interrupted publish cases in this mixed scenario, and the unchanged client campaign. Continue offline; do not run the slow emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t7-mixed-live-final.log`, `/tmp/mem01-t7-mixed-live-arm.log`, `/tmp/mem01-t7-mixed-live-riscv.log`; no hardware logs.

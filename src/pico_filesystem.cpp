@@ -1606,6 +1606,9 @@ extern "C" uint8_t rp2350_fs_test_integrity_valid(void) {
   (void)reconstruct_overlay_tag(slot, tag, &tag_length, 0, true, false);
   return 0;
 }
+extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void) {
+  return static_cast<uint32_t>(overlay_bytes_used);
+}
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
     const uint8_t *target_tag, uint8_t target_tag_length) {

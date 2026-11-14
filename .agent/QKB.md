@@ -216,6 +216,18 @@ not justify recovery from overlapping, gapped or otherwise unprovable arena
 intervals. If no strict COW copy remains in those cases, startup still fails
 closed.
 
+### 2026-11-14 — mixed-live overlay churn metrics
+
+The enhanced fake-flash overlay run now holds 320 live index slots: 20
+parent records, 280 parent-encoded children and 20 unrelated records, with
+mixed 180–300-byte child values. Across 12 compactions and garbage batches it
+used 71,274/98,304 arena bytes (72.5%), never dropped below 27,030 bytes
+available, and retained every value. Integrity validation ran each cycle at
+196 µs average and 240 µs maximum in this run; sync/reload every four cycles
+passed. This isolates storage compaction at realistic occupancy. It does not
+measure heap-handle growth or exercise the persistent reclaimer/alias graph
+with this live set; the full JCAlgTest VPCD campaign remains unrun.
+
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 
 ## CAP Class external references — validate Import token bounds before storage

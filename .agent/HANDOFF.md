@@ -12,13 +12,22 @@ passes (`TEST:SUMMARY fail=0`); ARM and RISC-V builds pass. No physical or
 emulator run was used.
 
 Still fail-closed: undecodable tombstones, ambiguous parent-pointer/hash
-damage, bad bounds, gaps/overlaps and duplicate identities. The fake-flash
-matrix now confirms parent-descendant cascade quarantine (two records dropped,
-unrelated value retained) and tombstone rejection. T1's safe response to
-unprovable intervals is explicit: restore a strict valid COW copy if one
-exists; otherwise fail closed rather than guess boundaries. Next, extend T7
-mixed-live-set fake-flash churn. Do not run the slow long emulator campaign or
-touch physical boards unless asked.
+damage, bad bounds, gaps/overlaps and duplicate identities. Fake-flash tests
+confirm parent-descendant cascade quarantine (two records dropped, unrelated
+value retained) and tombstone rejection. T1's safe response to unprovable
+intervals is explicit: restore a strict valid COW copy if one exists; otherwise
+fail closed rather than guess boundaries.
+
+T7 now has a high-occupancy storage-side extension: 320 live index slots,
+71,274/98,304 arena bytes used (72.5%), 12 compactions, 12 integrity checks
+(196 µs average / 240 µs max), minimum free capacity 27,030 bytes, and sync/
+reload every four cycles. All values and integrity checks passed; ARM and
+RISC-V builds passed. This uses parent-encoded child records but does not run
+the collector with real heap alias graphs at this occupancy. The unchanged
+JCAlgTest 1.8.5 option-2 VPCD run, interrupted-publish cases in this scenario,
+and bounded RAM-handle evidence remain open. Next, combine reclaimer/object
+graphs with the mixed live set in fake flash, then stop before any long
+emulator campaign per the user's instruction.
 
 # Previous handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
 
