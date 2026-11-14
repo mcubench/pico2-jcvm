@@ -177,9 +177,9 @@ rehash must clear the vacated source slot; failing to do so left duplicate
 entries and broke probe reachability. This clear is now present in both repair
 and compaction rehash and is covered by compaction/reload checks with a
 parent-encoded child. For hash mismatch or overlapping record bounds, startup
-rejects the generation and republishes the valid prior COW generation. This
-does not salvage individual valid records from a damaged arena. T1 remains open
-for per-record quarantine and no-valid-prior-generation recovery.
+rejects the generation and republishes the valid prior COW generation. See the
+2026-11-14 continuation below for the restricted per-record quarantine path;
+ambiguous arena damage remains fail-closed.
 
 The repair regression found why a probe rehash could itself remain invalid: the
 open-path relocation copied the carried entry into its destination but left a
@@ -187,6 +187,26 @@ duplicate in the vacated source slot. Clear that source when a path terminates;
 do not clear it when closing a permutation cycle. Apply this to both index
 repair and the existing compaction rehash. Coverage with a parent-encoded child
 now verifies the parent-slot remap and value survival after compaction/reload.
+
+### 2026-11-14 — bounded quarantine after proving arena intervals
+
+When no strict COW snapshot restores, a CRC-valid v4 snapshot can recover from
+an undecodable non-tombstone record if every record's stored bounds are valid
+and all intervals exactly cover the arena without overlap or gaps. Recovery
+removes the bad record, packs the remaining serialized records, rebuilds the
+hash table and remaps parent references. Valid unrelated records and a
+parent-encoded child survive reload and compaction. Restore first tries both
+strict COW generations, so quarantine cannot preempt a fully valid older copy.
+
+Safety limits: undecodable tombstones fail closed because dropping one may
+expose ROM contents. A parent-encoded record that remains undecodable after
+known-bad ancestors are excluded is ambiguous with a bad parent pointer and is
+not quarantined. Parent hash mismatches, out-of-bounds records, gaps, overlaps,
+duplicate live identities and malformed parent links also remain fail-closed.
+The fake-flash tests cover one undecodable self-contained record with no usable
+older snapshot and an invalid parent pointer that must not be dropped. Do not
+broaden quarantine based only on successful tag parsing; interval proof and
+parent identity checks are required first.
 
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 

@@ -108,7 +108,9 @@ bool filesystem_payload_fits(size_t file_count, size_t bytes_used) {
 }
 bool overlay_integrity_valid(const char **failure_reason = nullptr,
                              uint16_t *failure_slot = nullptr);
-bool rebuild_overlay_index(const char **failure_reason);
+bool rebuild_overlay_index(const char **failure_reason,
+                           bool allow_quarantine = false,
+                           uint32_t *quarantined_count = nullptr);
 uint8_t repair_overlay_index_if_needed(void);
 bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
                              uint8_t *tag_length, uint8_t depth,
@@ -441,7 +443,8 @@ bool persist_overlay() {
 }
 
 bool restore_overlay_slot(uint32_t offset, uint8_t slot,
-                          bool migration_source) {
+                          bool migration_source,
+                          bool allow_quarantine = false) {
   for (auto &entry : overlay) entry = OverlayFile{};
   overlay_file_count = 0;
   overlay_bytes_used = 0;
@@ -535,8 +538,13 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
     const char *repair_reason = nullptr;
     const bool repairable = integrity_reason != nullptr &&
         (std::strcmp(integrity_reason, "probe_chain") == 0 ||
-         std::strcmp(integrity_reason, "hash_mismatch") == 0);
-    if (!repairable || !rebuild_overlay_index(&repair_reason)) {
+         std::strcmp(integrity_reason, "hash_mismatch") == 0 ||
+         (allow_quarantine &&
+          std::strcmp(integrity_reason, "tag_reconstruction") == 0));
+    uint32_t quarantined_count = 0;
+    if (!repairable ||
+        !rebuild_overlay_index(&repair_reason, allow_quarantine,
+                               &quarantined_count)) {
       if (repairable) {
         std::printf("CHOUPI:FS_INTEGRITY_REPAIR_FAIL reason=%s\r\n",
                     repair_reason == nullptr ? "unknown" : repair_reason);
@@ -547,8 +555,10 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
       overlay_bytes_used = 0;
       return false;
     }
-    std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=%s action=rehash\r\n",
-                integrity_reason);
+    std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=%s action=%s quarantined=%lu\r\n",
+                integrity_reason,
+                quarantined_count == 0 ? "rehash" : "quarantine",
+                static_cast<unsigned long>(quarantined_count));
     std::fflush(stdout);
     index_repaired = true;
   }
@@ -575,21 +585,36 @@ bool restore_overlay_snapshot(uint32_t offset0, uint32_t offset1,
                            filesystem_slot_header(offset0)->generation) > 0) {
     first = 1;
   }
-  const uint32_t first_offset = first == 0 ? offset0 : offset1;
-  if (restore_overlay_slot(first_offset, first, migration_source)) {
+  const auto attempt_pair = [&](const bool allow_quarantine,
+                               uint8_t *restored_slot) {
+    const uint32_t primary_offset = first == 0 ? offset0 : offset1;
+    if (restore_overlay_slot(primary_offset, first, migration_source,
+                             allow_quarantine)) {
+      if (restored_slot != nullptr) *restored_slot = first;
+      return true;
+    }
+    const uint8_t other_slot = first == 0 ? 1 : 0;
+    if (!(other_slot == 0 ? valid0 : valid1)) return false;
+    if (!restore_overlay_slot(other_slot == 0 ? offset0 : offset1,
+                              other_slot, migration_source,
+                              allow_quarantine)) {
+      return false;
+    }
+    if (restored_slot != nullptr) *restored_slot = other_slot;
+    return true;
+  };
+  uint8_t restored_slot = 0xff;
+  if (attempt_pair(false, &restored_slot)) {
     if (used_previous_snapshot != nullptr) {
-      *used_previous_snapshot = rejected_snapshot;
+      *used_previous_snapshot = rejected_snapshot || restored_slot != first;
     }
     return true;
   }
-  const uint8_t other = first == 0 ? 1 : 0;
-  if (!(other == 0 ? valid0 : valid1)) return false;
-  if (!restore_overlay_slot(other == 0 ? offset0 : offset1, other,
-                            migration_source)) {
-    return false;
+  if (!migration_source && attempt_pair(true, &restored_slot)) {
+    if (used_previous_snapshot != nullptr) *used_previous_snapshot = true;
+    return true;
   }
-  if (used_previous_snapshot != nullptr) *used_previous_snapshot = true;
-  return true;
+  return false;
 }
 
 void report_fs_write_failure(const char *operation, const uint8_t *tag,
@@ -1079,12 +1104,27 @@ bool overlay_integrity_valid(const char **failure_reason,
 // their hashes are recomputed. The serialized bytes remain in place; parent
 // slot references are remapped with the table. Ambiguous arena layout or
 // duplicate live tags returns false so restore can use the other COW copy.
-bool rebuild_overlay_index(const char **failure_reason) {
+bool rebuild_overlay_index(const char **failure_reason,
+                           const bool allow_quarantine,
+                           uint32_t *quarantined_count) {
   const auto fail = [&](const char *reason) {
     if (failure_reason != nullptr) *failure_reason = reason;
     return false;
   };
   if (failure_reason != nullptr) *failure_reason = "unknown";
+  if (quarantined_count != nullptr) *quarantined_count = 0;
+  auto *keep_bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
+  std::fill(keep_bitmap, keep_bitmap + kFilesystemBitmapBytes, 0);
+  const auto is_kept = [keep_bitmap](uint16_t slot) {
+    return (keep_bitmap[slot / 8] & (1u << (slot % 8))) != 0;
+  };
+  const auto keep_slot = [keep_bitmap](uint16_t slot) {
+    keep_bitmap[slot / 8] |= static_cast<uint8_t>(1u << (slot % 8));
+  };
+  const auto drop_slot = [keep_bitmap](uint16_t slot) {
+    keep_bitmap[slot / 8] &= static_cast<uint8_t>(~(1u << (slot % 8)));
+  };
+  uint32_t quarantined = 0;
   size_t used_slots = 0;
   size_t serialized_slots = 0;
   size_t serialized_bytes = 0;
@@ -1093,7 +1133,9 @@ bool rebuild_overlay_index(const char **failure_reason) {
     if (!overlay_is_used(file)) continue;
     ++used_slots;
     if (!overlay_has_storage(file)) {
-      if (overlay_has_record(file)) return fail("record_without_storage");
+      if ((file.flags & kOverlayHasRecord) != 0)
+        return fail("record_without_storage");
+      keep_slot(slot);
       continue;
     }
     const uint32_t offset = overlay_offset(file);
@@ -1107,10 +1149,33 @@ bool rebuild_overlay_index(const char **failure_reason) {
     }
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
-    if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
-      return fail("tag_reconstruction");
     erase_bucket_next[serialized_slots++] = slot;
     serialized_bytes += 1 + key_length + file.size;
+    const bool decoded =
+        reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false);
+    const bool tombstone = (file.flags & (kOverlayHasRecord | kOverlayDeleted)) ==
+                           (kOverlayHasRecord | kOverlayDeleted);
+    if (!decoded) {
+      if (!allow_quarantine || tombstone)
+        return fail(tombstone ? "unreconstructable_tombstone"
+                              : "tag_reconstruction");
+      // A bad parent pointer is ambiguous with a bad child identity. Defer
+      // this entry until its parent chain is checked; only cascade quarantine
+      // when a separately proven-bad ancestor is removed.
+      if ((file.flags & kOverlayParentTag) != 0) {
+        keep_slot(slot);
+        continue;
+      }
+      drop_slot(slot);
+      ++quarantined;
+      continue;
+    }
+    const uint16_t canonical_hash = hash_tag(tag, tag_length);
+    if ((file.flags & kOverlayParentTag) != 0 &&
+        canonical_hash != file.hash) {
+      return fail("parent_reference_hash_mismatch");
+    }
+    keep_slot(slot);
   }
   if (used_slots != overlay_file_count || serialized_bytes != overlay_bytes_used)
     return fail("count_or_bytes_used");
@@ -1128,6 +1193,74 @@ bool rebuild_overlay_index(const char **failure_reason) {
   }
   if (expected_offset != overlay_bytes_used) return fail("arena_tail");
 
+  // A parent-encoded child cannot survive removal of its referenced record.
+  // Propagate quarantine through descendants; an undecodable tombstone still
+  // fails closed above because removing it could expose ROM-backed data.
+  if (allow_quarantine) {
+    bool changed = false;
+    do {
+      changed = false;
+      for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+        const auto &file = overlay[slot];
+        if (!overlay_is_used(file) || !is_kept(slot) ||
+            !overlay_has_storage(file) ||
+            (file.flags & kOverlayParentTag) == 0) {
+          continue;
+        }
+        const uint32_t offset = overlay_offset(file);
+        const uint16_t parent = static_cast<uint16_t>(overlay_bytes[offset + 1]) |
+                                static_cast<uint16_t>(overlay_bytes[offset + 2] << 8);
+        if (parent >= kMaxOverlayFiles || !overlay_is_used(overlay[parent]))
+          return fail("parent_mapping");
+        if (is_kept(parent)) continue;
+        const bool tombstone =
+            (file.flags & (kOverlayHasRecord | kOverlayDeleted)) ==
+            (kOverlayHasRecord | kOverlayDeleted);
+        if (tombstone) return fail("unreconstructable_tombstone");
+        drop_slot(slot);
+        ++quarantined;
+        changed = true;
+      }
+    } while (changed);
+
+    for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+      const auto &file = overlay[slot];
+      if (!overlay_is_used(file) || !is_kept(slot) ||
+          !overlay_has_storage(file) ||
+          (file.flags & kOverlayParentTag) == 0) {
+        continue;
+      }
+      uint8_t tag[kMaxOverlayTagLength]{};
+      uint8_t tag_length = 0;
+      if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
+        return fail("parent_reference_undecodable");
+    }
+
+    // The complete arena interval proof above makes leftward packing safe.
+    // Keep each table slot stable until the parent references are remapped.
+    size_t packed_bytes = 0;
+    for (size_t index = 0; index < serialized_slots; ++index) {
+      const uint16_t slot = erase_bucket_next[index];
+      auto &file = overlay[slot];
+      if (!is_kept(slot)) {
+        file = OverlayFile{};
+        if (overlay_file_count == 0) return fail("quarantine_count");
+        --overlay_file_count;
+        continue;
+      }
+      const uint32_t old_offset = overlay_offset(file);
+      const size_t record_length =
+          1 + (overlay_bytes[old_offset] & 0x7fu) + file.size;
+      if (packed_bytes > old_offset) return fail("quarantine_pack_order");
+      if (packed_bytes != old_offset)
+        std::memmove(overlay_bytes + packed_bytes,
+                     overlay_bytes + old_offset, record_length);
+      set_overlay_offset(file, static_cast<uint32_t>(packed_bytes));
+      packed_bytes += record_length;
+    }
+    overlay_bytes_used = packed_bytes;
+  }
+
   // Recover canonical hashes from self-describing records only after the
   // full serialized arena has passed bounds and interval checks. Probe gaps
   // and damaged stored hashes can hide duplicate live tags from lookup, so
@@ -1136,7 +1269,7 @@ bool rebuild_overlay_index(const char **failure_reason) {
             UINT16_MAX);
   for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
     const auto &file = overlay[slot];
-    if (!overlay_is_used(file)) continue;
+    if (!overlay_is_used(file) || !is_kept(slot)) continue;
     uint16_t canonical_hash = file.hash;
     if (overlay_has_storage(file)) {
       uint8_t tag[kMaxOverlayTagLength]{};
@@ -1154,7 +1287,8 @@ bool rebuild_overlay_index(const char **failure_reason) {
 
   for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
     const auto &file = overlay[slot];
-    if (!overlay_is_used(file) || !overlay_has_storage(file) ||
+    if (!overlay_is_used(file) || !is_kept(slot) ||
+        !overlay_has_storage(file) ||
         !overlay_has_record(file)) {
       continue;
     }
@@ -1165,7 +1299,8 @@ bool rebuild_overlay_index(const char **failure_reason) {
     for (uint16_t other = static_cast<uint16_t>(slot + 1);
          other < kMaxOverlayFiles; ++other) {
       const auto &candidate = overlay[other];
-      if (!overlay_is_used(candidate) || !overlay_has_storage(candidate) ||
+      if (!overlay_is_used(candidate) || !is_kept(other) ||
+          !overlay_has_storage(candidate) ||
           !overlay_has_record(candidate) ||
           erase_bucket_next[other] != erase_bucket_next[slot] ||
           candidate.tag_length != tag_length) {
@@ -1247,6 +1382,7 @@ bool rebuild_overlay_index(const char **failure_reason) {
     return fail(post_rebuild_reason == nullptr ? "post_rebuild_integrity"
                                                : post_rebuild_reason);
   }
+  if (quarantined_count != nullptr) *quarantined_count = quarantined;
   return true;
 }
 
@@ -1452,6 +1588,15 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
   overlay_dirty = true;
   return FS_STATUS_OK;
 }
+extern "C" uint8_t rp2350_fs_test_corrupt_record_tag_length(
+    const uint8_t *tag, uint8_t tag_length, uint8_t replacement_length) {
+  OverlayFile *file = find_overlay(tag, tag_length);
+  if (file == nullptr || !overlay_has_storage(*file))
+    return FS_STATUS_NO_SUCH_TAG;
+  file->tag_length = replacement_length;
+  overlay_dirty = true;
+  return FS_STATUS_OK;
+}
 extern "C" uint8_t rp2350_fs_test_integrity_valid(void) {
   const char *reason = nullptr;
   uint16_t slot = UINT16_MAX;
@@ -1551,6 +1696,23 @@ extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
     slot = (slot + 1) % kMaxOverlayFiles;
   }
   return FS_STATUS_NO_SUCH_TAG;
+}
+extern "C" uint8_t rp2350_fs_test_invalidate_parent_reference(
+    const uint8_t *tag, uint8_t tag_length) {
+  OverlayFile *file = find_overlay(tag, tag_length);
+  if (file == nullptr || !overlay_has_storage(*file) ||
+      (file->flags & kOverlayParentTag) == 0) {
+    return FS_STATUS_NO_SUCH_TAG;
+  }
+  const uint32_t offset = overlay_offset(*file);
+  if (offset >= overlay_bytes_used || overlay_bytes_used - offset < 4 ||
+      (overlay_bytes[offset] & 0x80) == 0) {
+    return FS_STATUS_IO_UNKNOWN;
+  }
+  overlay_bytes[offset + 1] = 0xff;
+  overlay_bytes[offset + 2] = 0xff;
+  overlay_dirty = true;
+  return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_compact(void) {
   return compact_deleted_overlay_records();

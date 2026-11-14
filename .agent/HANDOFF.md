@@ -1,22 +1,22 @@
-# Current handoff — MEM-01 T1 canonical hash repair — 2026-11-14 UTC
+# Current handoff — MEM-01 T1 bounded quarantine recovery — 2026-11-14 UTC
 
-Snapshot/index recovery now distinguishes a stored-hash mismatch from tag
-decode failure. If every serialized record has valid bounds, the arena is
-contiguous and non-overlapping, and canonical live tags are unique, hashes
-from self-contained plain/compressed tags can be recomputed, then the index is
-rehashed and parent-slot references remapped. A hash mismatch on a
-parent-encoded record is ambiguous with a bad parent pointer and is rejected;
-the previous COW snapshot is used instead. Regressions cover both safe
-self-contained hash repair (including a parent-encoded child) and ambiguous
-parent-pointer fallback. Ambiguous intervals, tag collisions and other
-undecodable metadata remain fail-closed. ARM/RISC-V builds and the RP2350
-overlay suite pass. No hardware or emulator campaign was used.
+T1 now recovers a CRC-valid v4 snapshot with one or more undecodable
+non-tombstone records when every serialized boundary is valid and the full
+arena is exactly contiguous and non-overlapping. It quarantines bad records
+and dependent parent-encoded descendants, packs the surviving arena, rebuilds
+the table and remaps parent slots. Restore tries both strict COW generations
+before quarantine. Fake-flash tests show an unrelated parent-encoded value
+graph survives sync/reload/compaction, while an invalid parent pointer with no
+valid older snapshot is rejected rather than quarantined. The overlay suite
+passes (`TEST:SUMMARY fail=0`); ARM and RISC-V builds pass. No physical or
+emulator run was used.
 
-Next: implement quarantine only for records that cannot be decoded when every
-record boundary and interval is still unambiguous; preserve all decodable
-records and their parents, and keep COW fallback for overlap/offset ambiguity.
-Then strengthen T7's mixed-live-set fake-flash churn tests. Do not run the slow
-long emulator campaign.
+Still fail-closed: undecodable tombstones, ambiguous parent-pointer/hash
+damage, bad bounds, gaps/overlaps and duplicate identities. T1 needs broader
+tests for multiple damaged records and parent-descendant cascades, and a clear
+policy for snapshots whose intervals cannot be proven. Next, continue MEM-01
+with those T1 cases, then extend T7 mixed-live-set fake-flash churn. Do not run
+the slow long emulator campaign or touch physical boards unless asked.
 
 # Previous handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
 

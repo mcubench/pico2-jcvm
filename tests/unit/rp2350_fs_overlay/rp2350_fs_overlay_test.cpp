@@ -36,6 +36,8 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
     const uint8_t *tag, uint8_t tag_length, uint8_t header);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
     const uint8_t *tag, uint8_t tag_length);
+extern "C" uint8_t rp2350_fs_test_corrupt_record_tag_length(
+    const uint8_t *tag, uint8_t tag_length, uint8_t replacement_length);
 extern "C" uint8_t rp2350_fs_test_integrity_valid(void);
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
@@ -48,6 +50,8 @@ extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *parent_tag,
     uint8_t parent_tag_length);
+extern "C" uint8_t rp2350_fs_test_invalidate_parent_reference(
+    const uint8_t *tag, uint8_t tag_length);
 extern "C" uint8_t rp2350_fs_test_compact(void);
 extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count);
 extern "C" void rp2350_fs_test_fail_next_sync(void);
@@ -3035,6 +3039,78 @@ int main() {
       rp2350_fs_test_compact() == FS_STATUS_OK;
   expect(overlap_snapshot_fallback,
          "filesystem_restore_recovers_overlapping_records_from_previous_snapshot");
+
+  // If one self-contained record cannot be decoded but every serialized
+  // boundary remains provable, quarantine only that record and preserve the
+  // valid parent graph and unrelated data. Invalidate the older COW copy so
+  // this exercises quarantine recovery rather than generation rollback.
+  fake_flash.fill(0xff);
+  constexpr uint8_t quarantine_bad_tag[] = {0xf4, 0x20, 0x01};
+  constexpr uint8_t quarantine_bad_value[] = {0xa1, 0xa2, 0xa3};
+  std::array<uint8_t, sizeof(hashed_child_value)> quarantine_child_actual{};
+  std::array<uint8_t, sizeof(shared_offset_value_a)> quarantine_other_actual{};
+  bool quarantined_record_recovery =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(hashed_parent_a.data(), hashed_parent_a.size(), nullptr, 0) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_child_value.data(),
+          hashed_child_value.size()) == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+          FS_STATUS_OK &&
+      fs_write(quarantine_bad_tag, sizeof(quarantine_bad_tag),
+               quarantine_bad_value, sizeof(quarantine_bad_value)) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_corrupt_record_tag_length(
+          quarantine_bad_tag, sizeof(quarantine_bad_tag), 4) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  fake_flash[flash_layout::filesystem_slot(0)] = 0;
+  quarantined_record_recovery = quarantined_record_recovery &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1 &&
+      rp2350_fs_test_overlay_file_count() == 3 &&
+      fs_read(quarantine_bad_tag, sizeof(quarantine_bad_tag), nullptr, 0) ==
+          FS_STATUS_NO_SUCH_TAG &&
+      fs_read(hashed_child.data(), hashed_child.size(),
+              quarantine_child_actual.data(), quarantine_child_actual.size()) ==
+          FS_STATUS_OK &&
+      quarantine_child_actual == hashed_child_value &&
+      fs_read(shared_offset_a, sizeof(shared_offset_a),
+              quarantine_other_actual.data(), quarantine_other_actual.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(quarantine_other_actual.data(), shared_offset_value_a,
+                  quarantine_other_actual.size()) == 0 &&
+      fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      rp2350_fs_test_integrity_valid() == 1 &&
+      fs_read(hashed_child.data(), hashed_child.size(),
+              quarantine_child_actual.data(), quarantine_child_actual.size()) ==
+          FS_STATUS_OK &&
+      quarantine_child_actual == hashed_child_value &&
+      rp2350_fs_test_compact() == FS_STATUS_OK;
+  expect(quarantined_record_recovery,
+         "filesystem_restore_quarantines_one_undecodable_record_and_preserves_parent_graph");
+
+  fake_flash.fill(0xff);
+  const bool ambiguous_parent_fails_closed =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(hashed_parent_a.data(), hashed_parent_a.size(), nullptr, 0) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_child_value.data(),
+          hashed_child_value.size()) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_invalidate_parent_reference(
+          hashed_child.data(), hashed_child.size()) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  fake_flash[flash_layout::filesystem_slot(0)] = 0;
+  const bool ambiguous_parent_rejected =
+      ambiguous_parent_fails_closed && fs_init() != FS_STATUS_OK;
+  expect(ambiguous_parent_rejected,
+         "filesystem_restore_does_not_quarantine_ambiguous_parent_reference");
+  fake_flash.fill(0xff);
+  expect(fs_init() == FS_STATUS_OK,
+         "filesystem_reinitializes_after_fail_closed_parent_recovery");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the

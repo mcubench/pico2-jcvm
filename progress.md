@@ -29401,6 +29401,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-parent-hash-final.log`, `/tmp/mem01-t1-parent-arm.log`, `/tmp/mem01-t1-parent-riscv.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 quarantine isolated undecodable overlay records 22 minutes
+
+- Step/experiment: `MEM-01-T1-BOUNDED-QUARANTINE-20261114`
+- When: '2026-11-14 08:44 UTC' - '2026-11-14 09:06 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a second recovery pass after both strict COW generations fail. It quarantines non-tombstone records only after validating every record bound and proving exact contiguous, non-overlapping arena coverage; it packs survivors and rebuilds the index with parent-slot remapping. Parent-encoded descendants are quarantined only when their proven parent was quarantined; ambiguous or undecodable parent references remain fatal. Added tests for salvaging one malformed tag-length record while preserving a parent-encoded graph and unrelated data, and for refusing to quarantine an invalid parent reference when no older snapshot exists. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; the new salvage case logged `FS_INTEGRITY_REPAIR reason=tag_reconstruction action=quarantine quarantined=1`, and invalid parent-reference recovery failed closed as expected. `./tools/build arm` and `./tools/build riscv` passed. `git diff --check` passed. No emulator or physical board was used. One earlier suite attempt exposed test-fixture leakage after the intentional fail-closed case; the fixture is now reset and the complete suite passes.
+- Result: One isolated undecodable record can be removed without discarding other records or the valid COW state, while ambiguous parent pointers and tombstones remain protected. This does not recover unprovable interval layouts, duplicate identities or tombstones.
+- Decision: Keep T1 open for multiple-record/descendant/tombstone cases and unprovable-arena policy; then improve T7 mixed-live-set fake-flash acceptance. Do not run the long emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-quarantine-final3.log`, `/tmp/mem01-t1-quarantine-final-arm2.log`, `/tmp/mem01-t1-quarantine-final-riscv2.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
 
 - Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`
