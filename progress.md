@@ -29566,3 +29566,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T1 offline fail-closed coverage is complete; retain physical recovery acceptance under T8.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-both-ambiguous-snapshots.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 reviewer check of d06b65a8..7f9c6c10 10 minutes
+
+- Step/experiment: `MEM-01-PROGRESS-REVIEW-3-20261114`
+- When: '2026-11-14 UTC' - '2026-11-14 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Reviewed 8 worker commits and progress records against T1–T8. Added a reviewer status block to TODO.md MEM-01 and a top HANDOFF section. No source changes.
+- Validation: Commit/progress/HANDOFF inspection only. No builds, tests, emulator runs or hardware.
+- Result: T1–T6 complete offline (T1 fail-closed policy tested byte-identically for two invalid and two ambiguous snapshots; T6 cause = prefix guard missed the 6-byte alias-body suffix). No new VPCD run since `20261114T063317Z`. The remaining gates T7 (runtime plateau past sync seq ≈1,750) and T8 are blocked by the user's stop-long-emulator-runs instruction.
+- Decision: Stop offline MEM-01 work; ask the user to authorize the bounded 6–8 minute VPCD run or T8; meanwhile proceed to BOOTSEL-01.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: none.

@@ -1,3 +1,21 @@
+# Current handoff — MEM-01 reviewer: offline complete, runtime gate needs user OK — 2026-11-14 UTC
+
+Reviewer note (Claude Opus 5.5) on `d06b65a8`..`7f9c6c10`. T1–T6 are complete
+offline, and the T6 explanation (missing 6-byte alias-body suffix in the prefix
+guard) is consistent with review M2/M5. The leak mechanism now has offline
+coverage at high occupancy.
+
+Remaining MEM-01 gates are runtime only:
+- T7: VPCD option 2 must run past sync seq ≈1,750, where the pre-fix run filled
+  the arena (~5 min wall clock). The 60-second post-fix run stopped at ≈800.
+- T8: hardware.
+
+Both are blocked by the user's "stop long emulator runs" instruction. Do not
+override it, and do not add more offline MEM-01 work. Ask the user to authorize
+the bounded 6–8 minute run (stop at seq ≥2,500; pass = no `FS_WRITE_FAIL`/`F205`
+and flat live bytes over the last 1,000 syncs) or T8 directly. Until then,
+work on BOOTSEL-01.
+
 # Current handoff — MEM-01 offline T6 evidence clarified — 2026-11-14 UTC
 
 T1's remaining fail-closed policy has fake-flash coverage for both CRC-invalid
