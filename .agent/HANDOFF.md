@@ -54,6 +54,14 @@ passes with child values intact. `./tools/test-rp2350-fs-overlay` and
 prior source step; this integration change is unit-test-only. No physical or
 emulator run was used.
 
+Follow-up: each of the 12 cycles now also replaces one child alias on a live
+root, verifies its superseded body is reclaimed, then checks the replacement
+value. Each cycle erases exactly nine records (one old body plus eight garbage)
+and the overlay remains at 581 slots. Latest free-capacity floor is 30,752
+bytes; peak handles 309; integrity average 370 µs / max 1,296 µs. This models
+the former historical-body growth pattern at high occupancy and remains a
+fake-flash regression, not long-run client acceptance.
+
 T7 still lacks runtime `alias-protect` event evidence and the unchanged JCAlgTest
 1.8.5 option-2 VPCD campaign. The latter remains intentionally unrun because of
 the user's instruction to stop long emulator campaigns. Continue offline with

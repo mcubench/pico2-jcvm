@@ -2004,6 +2004,28 @@ int main() {
     std::vector<jcvm::PersistentInventory::Tag> graph_candidates;
     for (uint32_t cycle = 0; cycle < graph_reclaim_cycles && heap_graph_ok;
          ++cycle) {
+      auto &reassigned_child = graph_records.front().children.front();
+      const jcvm::fs::Tag superseded_body_tag = reassigned_child.body_tag;
+      const size_t replacement_size = 180 + ((cycle * 37u) % 81u);
+      const auto replacement_reference = heap.addArray(
+          static_cast<uint16_t>(replacement_size), jcvm::JAVA_ARRAY_T_BYTE);
+      auto replacement_array = heap.getArray(replacement_reference);
+      reassigned_child.value.resize(replacement_size);
+      for (size_t byte = 0; byte < replacement_size; ++byte) {
+        const uint8_t value = static_cast<uint8_t>(
+            0x80u + cycle * 19u + byte * 7u);
+        reassigned_child.value[byte] = value;
+        replacement_array->setByteEntry(static_cast<uint16_t>(byte), value);
+      }
+      auto persistent_root_array =
+          heap.getArray(graph_records.front().reference);
+      persistent_root_array->setReferenceEntry(
+          0, replacement_reference, graph_context, graph_owner);
+      reassigned_child.reference = replacement_reference;
+      reassigned_child.body_tag = replacement_array->getPersistentTag();
+      heap_graph_ok = replacement_array->hasPersistentTag() &&
+          fs_exists(superseded_body_tag.value, superseded_body_tag.len) != 0;
+
       std::array<std::array<uint8_t, 6>, graph_garbage_per_cycle> garbage_tags{};
       for (uint8_t index = 0;
            index < graph_garbage_per_cycle && heap_graph_ok; ++index) {
@@ -2042,7 +2064,7 @@ int main() {
       heap_graph_ok = inventory ==
               jcvm::PersistentInventory::VisitResult::Complete &&
           reclaimed == jcvm::PersistentInventory::VisitResult::Complete &&
-          erased == graph_garbage_per_cycle &&
+          erased == graph_garbage_per_cycle + 1 &&
           rp2350_fs_test_compact() == FS_STATUS_OK;
       if (heap_graph_ok) ++heap_graph_compactions;
       if (heap_graph_ok) heap_graph_total_erased += erased;
@@ -2050,6 +2072,8 @@ int main() {
         heap_graph_ok = heap_graph_ok &&
             fs_exists(garbage_tag.data(), garbage_tag.size()) == 0;
       }
+      heap_graph_ok = heap_graph_ok &&
+          fs_exists(superseded_body_tag.value, superseded_body_tag.len) == 0;
       const auto reachability = heap.traceReachableFrom(graph_roots);
       const auto ram_sweep = heap.collectUnreachableMarked();
       heap_graph_peak_handles = std::max(
@@ -2075,10 +2099,10 @@ int main() {
           reachability.arrays_reachable ==
               live_heap_arrays &&
           ram_sweep.complete &&
-          ram_sweep.arrays_reclaimed == graph_garbage_per_cycle &&
+          ram_sweep.arrays_reclaimed == graph_garbage_per_cycle + 1 &&
           ram_sweep.arrays_reachable == live_heap_arrays &&
           heap_graph_peak_handles <= live_heap_arrays +
-                                         graph_garbage_per_cycle &&
+                                         graph_garbage_per_cycle + 1 &&
           integrity_valid &&
           graph_slots == heap_graph_initial_slots &&
           graph_available + 512 >= heap_graph_min_available &&
@@ -2106,10 +2130,10 @@ int main() {
     }
     expect(heap_graph_ok && heap_graph_compactions == graph_reclaim_cycles &&
                heap_graph_total_erased ==
-                   graph_reclaim_cycles * graph_garbage_per_cycle &&
+                   graph_reclaim_cycles * (graph_garbage_per_cycle + 1) &&
                heap_graph_peak_handles <=
                    graph_parent_count * (graph_children_per_parent + 1) +
-                       graph_garbage_per_cycle &&
+                       graph_garbage_per_cycle + 1 &&
                heap_graph_min_available > 8000,
            "rp2350_overlay_reclaimer_preserves_high_occupancy_heap_graph_and_sweeps_garbage");
     std::printf("TEST:METRIC rp2350_overlay_heap_graph roots=%u children=%u "

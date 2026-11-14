@@ -248,6 +248,16 @@ constitute the unchanged JCAlgTest VPCD campaign.
 
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 
+High-occupancy follow-up now replaces one persistent child reference on each
+of the 12 cycles while reclaiming eight unrelated arrays. The superseded
+durable body is asserted absent after every reclaimer batch, the new child is
+included in the persistent root graph, and the 581-slot overlay count remains
+stable. Each pass erases exactly nine records; 67,458 bytes are initially
+occupied, minimum available capacity is 30,752 bytes, peak handles are 309,
+and integrity checks average 370 µs (1,296 µs maximum). This is synthetic
+coverage of the observed historical-alias growth mechanism under mixed live
+occupancy. It does not establish long-run plateau under the official client.
+
 ## CAP Class external references — validate Import token bounds before storage
 
 External superclass references in Class records and external superinterface

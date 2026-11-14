@@ -29473,6 +29473,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t7-heap-graph-final.log`, `/tmp/mem01-t7-heap-transaction-final.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 reassign live child under overlay pressure 7 minutes
+
+- Step/experiment: `MEM-01-T7-LIVE-ALIAS-REASSIGN-20261114`
+- When: '2026-11-14 09:47 UTC' - '2026-11-14 09:54 UTC'
+- Model: `GPT-6 Codex`
+- Change: Extended the high-occupancy real-heap/fake-flash scenario to replace one persistent child reference on every reclaimer cycle, preserving the new child and checking the old durable body is deleted. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; `git diff --check` passed. No production source changed, so firmware builds were not rerun. No emulator or physical device was used.
+- Result: Across 12 cycles, 12 superseded live-child bodies and 96 unrelated garbage records were reclaimed (9 per cycle); all replacement values survived and live index slots stayed at 581. Occupancy began at 67,458/98,304 bytes (68.6%), free capacity stayed above 30,752 bytes, peak heap handles were 309, and 12 integrity checks averaged 370 µs (1,296 µs max).
+- Decision: The earlier historical-body accumulation mechanism now has combined high-occupancy, alias reassignment, reclaimer, RAM GC, compaction and reload fake-flash coverage. T7 still requires runtime alias-protect/official-client evidence; do not run the long emulator campaign without user direction.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t7-reassign-live-graph.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 reviewer check of af4659e9..c5706f78 15 minutes
 
 - Step/experiment: `MEM-01-PROGRESS-REVIEW-2-20261114`
