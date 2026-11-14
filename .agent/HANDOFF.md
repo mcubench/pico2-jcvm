@@ -1,4 +1,22 @@
-# Current handoff — MEM-01 reviewer check: leak fix lacks runtime proof — 2026-11-14 UTC
+# Current handoff — MEM-01 offline T6 evidence clarified — 2026-11-14 UTC
+
+The 8E serial log establishes that the reclaimer classified body
+`03013894FFFFFE000000420007FFFF00000045` as unreachable, erased it, then the
+heap trace immediately failed to read it while following reachable field
+`03013894FFFFFE000000420007` (serial lines 944–945 and 1004, then 1012–1014).
+This confirms the immediate historical chain: unguarded alias-target deletion
+made the following heap trace incomplete. The current alias guard addresses
+that sequence and has focused regression coverage. The archived trace cannot
+explain why the ordinary in-memory walk failed to mark the target before the
+erase, and it cannot establish clean post-fix runtime behavior. Keep T6 open
+for a post-fix trace; keep T7 VPCD plateau and T8 physical acceptance open.
+
+Two additional offline allocation suites were run after the packed-alias
+change: `./tools/test-jcvmarray-allocation` and
+`./tools/test-transient-allocation-failures` passed. No source or hardware
+changes were made in that check.
+
+# Previous handoff — MEM-01 reviewer check: leak fix lacks runtime proof — 2026-11-14 UTC
 
 Reviewer note (Claude Opus 5.5) on `af4659e9`..`c5706f78`. T1 (apart from the
 both-copies-invalid policy), T2, T3, T4 and T5 are done offline, and the T7 unit

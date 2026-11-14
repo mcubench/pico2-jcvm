@@ -1023,6 +1023,12 @@ hardware cycle until USB passthrough exposes a reader/BOOTSEL device again.
 
 Evidence: `artifacts/results/windows-maxcrypto-20261113-d63877f6/ANALYSIS.md`. Returned UF2 matches no-debug package hash. 1,920 responses all 9000; first error on B0E2 reset after successful AES-192 ECB NOPAD preparation, five baselines and first 50-iteration sample. Error 0x8010002F = SCARD_E_COMM_DATA_LOST. Subsequent B043 and SELECT also fail. Both rehash fix and CCID recovery are included; neither a new rehash failure nor exhaustion is demonstrated. 956 successful resets and per-sample reset pattern invalidate a once-per-method cleanup assumption for this client log. Root cause unresolved without serial/endpoint/collector state; no new fix claimed.
 
+## 2026-11-14 MEM-01: archived 8E trace confirms alias-target deletion preceded heap read failures
+
+In `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`, body tag `03013894FFFFFE000000420007FFFF00000045` is classified `reachable=0` in the deletion scan (line 944), added to the batch (945), and erased (1004). Immediately afterward, the heap trace fails to read that same body while loading field `03013894FFFFFE000000420007` (lines 1012–1014). This proves the immediate chain: the old reclaimer erased a body named by a reachable serialized alias; the later heap trace encountered a missing target and became incomplete. The current reachable-alias guard covers this case and has a focused regression.
+
+This archived trace does **not** explain why the normal in-memory graph walk failed to mark that target before deletion, and it is not a clean post-fix run. Keep T6 open until a post-fix trace demonstrates bounded alias protection and no unexplained `alias-protect` events. Do not claim clean-run or physical acceptance from the old trace.
+
 ## 2026-11-13 MEM-01: one bad overlay record becomes permanent exhaustion
 
 **Symptom:** reclaimer logs `applet_result=6` once, then every later request

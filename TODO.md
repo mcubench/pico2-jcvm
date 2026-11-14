@@ -58,6 +58,20 @@ backlog and never hit `F205`. Do tasks in this order; one commit per task.
 
 Only after that: T6 (look for `alias-protect` events on a clean trace), then T8 (hardware runs, after wiping with the empty-card UF2).
 
+**T6 offline evidence review (2026-11-14):** the archived 8E trace shows the
+exact body `03013894FFFFFE000000420007FFFF00000045` reported as an unreachable
+candidate at serial lines 944–945 and erased at line 1004. Immediately after
+that batch, the heap trace cannot read the same body (`fs_exists=0`) while
+loading the reachable instance field `03013894FFFFFE000000420007` (lines
+1012–1014). This establishes the direct failure chain: the old reclaimer
+deleted a body still named by a reachable serialized alias, and the following
+heap trace failed because that target no longer existed. The current alias
+guard addresses that deletion path and has focused regression coverage. This
+archived trace cannot establish why the heap's ordinary object walk failed to
+mark the target before deletion, nor does it provide a clean post-fix trace
+with zero `alias-protect` events. Keep T6 open for that comparison; do not
+relabel the historical failed trace as current runtime acceptance.
+
 **Status 2026-11-14 (review of VPCD runs on the RP2350 overlay backend, `artifacts/results/jcalgtest-support-vpcd-20261113T211216Z`..`20261114T062133Z`):** the T7 VPCD harness (uncommitted: `src/pc_rp2350_overlay_fs.cpp`, `CHOUPI_PC_RP2350_FS_OVERLAY`) **reproduces storage exhaustion on a clean store**. Option 2 runs reach ~1,256 CSV lines, then the arena is full (`FS_WRITE_FAIL … files=2212/8192 bytes=98287/98304`), followed by `6F00` and ~177–256 `F205`. Every reclaimer scan reports `candidates=0`; the growth is `reachable_alias` records (18 → 51 → 76 …) under one live object prefix `03013894FFFFFE000000420004FFFE0000004E` (superseded bodies written when a field of a live persistent object is reassigned). **Cause: the prefix-wide subtree keep added for T4/T5 (`36fcfe69`, `6c8e494b`, `b219daf2`) retains every historical body under a live prefix forever.** The arena (96 KiB), not the index, is the binding limit.
 
 **Implementation update 2026-11-14:** T4/T5 now resolve reachable durable aliases into heap roots and trace their graphs; the prefix-wide keep is removed. The transient-array identity check was widened so marked arrays with durable tags count as reachable for this collection pass, which ended the repeated alias-retrace loop. `./tools/test-persistent-transaction` passes the existing T4/T5 missing-edge cases and a new 500× field-reassignment regression: after each reassignment, the old records are reclaimed; the applet namespace settles at 5 records / 121 tag-plus-payload bytes, and a fresh heap reads back the last child. `./tools/test-persistent-inventory`, ARM and RISC-V builds also pass. The PC VPCD harness is now wired to the RP2350 overlay implementation and builds with `./tools/build-pc --profile max_crypto --rp2350-overlay`. A bounded 60-second VPCD run (`artifacts/results/jcalgtest-support-vpcd-20261114T063317Z`) made 445 deletion calls, erased 564 persistent records, first reported 5 stale-alias candidates at scan 400, and had no `FS_WRITE_FAIL`/`F205`; the synchronized overlay was 29,913 bytes at event 800. It timed out before option 2 completed, so a storage plateau and full-run pass are **not established**. No physical board was accessed. T4/T5 implementation is complete offline; T7 remains the acceptance gate. The user requested offline implementation and reported the emulator is too slow; do not extend this into a long VPCD campaign unless asked.

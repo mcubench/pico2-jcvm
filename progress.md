@@ -29520,3 +29520,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Preserve this packed representation and keep full option-2/physical acceptance open. Continue offline without the slow emulator campaign.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-packed-foreign-transaction.log`, `/tmp/mem01-packed-foreign-inventory.log`, `/tmp/mem01-packed-foreign-overlay.log`, `/tmp/mem01-packed-foreign-arm.log`, `/tmp/mem01-packed-foreign-riscv.log`; no hardware logs.
+## 2026-11-14 MEM-01 clarify archived alias-deletion evidence 3 minutes
+
+- Step/experiment: `MEM-01-T6-ARCHIVED-TRACE-REVIEW-20261114`
+- When: '2026-11-14 10:34 UTC' - '2026-11-14 10:37 UTC'
+- Model: `GPT-6 Codex`
+- Change: Recorded the exact historical 8E sequence in TODO.md, QKB.md and HANDOFF.md: a body was classified unreachable and erased, then the heap trace failed to read that body via a reachable serialized alias. Kept T6 open because the trace does not identify why the in-memory walk omitted the edge or establish clean post-fix runtime behavior.
+- Validation: Inspected archived serial lines 944–945, 1004, and 1012–1014; `git diff --check` passed. The recently run `./tools/test-jcvmarray-allocation` and `./tools/test-transient-allocation-failures` commands also exited successfully; no source tests or builds were needed for this documentation-only update. No emulator or physical hardware.
+- Result: The prior causal statement is now precise: the heap trace failures followed reclaimer deletion of the alias target. The deeper edge-walk cause and clean-run acceptance remain unresolved.
+- Decision: Retain T6/T7/T8 as open; do not infer runtime acceptance from historical evidence.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`; `/tmp/mem01-jcvmarray-allocation.log`; `/tmp/mem01-transient-allocation-failures.log`.
