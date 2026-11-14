@@ -29871,3 +29871,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   concrete host/service state change, then run T7's exact VPCD client scenario.
 - Artifacts/logs: `build/tests/unit/rp2350-fs-overlay/`; reader-list command
   output was `READERS:ERROR listing timed out after 20 s`, exit 124.
+
+## 2026-11-14 Add confirmed product specification SPEC.md 20
+
+- Step-Id: `20261114-2230-spec-md`
+- Task: user request (product invariants)
+- When: '2026-11-14 22:00 CET' - '2026-11-14 22:30 CET'
+- Model: `claude-opus-5-5`
+- Change: Added `SPEC.md` with 27 user-confirmed product invariants
+  (INV-01…INV-28; INV-17 flash wear and INV-29 responsiveness are deliberately
+  unspecified). It is built from the user-marked draft, archived as
+  `docs/archive/SPEC_draft_opus55_20261114.md`. INV-24 (user free text) defines
+  two build modes: normal, with object deletion ON and debug OFF, and
+  diagnostic. INV-15's draft gate sentence (deletion ON only in the acceptance
+  image until T8 and PERSIST-01 pass) was omitted as conflicting with INV-24.
+  Known gaps are recorded for INV-18, INV-19 and INV-24.
+- Validation: Inspection only. Documentation only; at the user's instruction,
+  no implementation or build was done. An interrupted `tools/build arm` was
+  stopped, and the `tools/build`/`CMakeLists.txt` edits were reverted.
+- Result: The tooling and docs do not yet match INV-24 (deletion is still OFF
+  by default, and an `acceptance` label exists). `AGENTS.md` does not yet
+  reference `SPEC.md`.
+- Decision: The user decides whether to align the tooling with INV-24 and
+  whether to reference `SPEC.md` from `AGENTS.md`.
+- Artifacts/logs: `docs/archive/SPEC_draft_opus55_20261114.md`
