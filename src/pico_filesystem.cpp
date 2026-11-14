@@ -1015,8 +1015,12 @@ bool overlay_integrity_valid(const char **failure_reason,
     uint8_t tag_length = 0;
     if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
       return fail("tag_reconstruction", slot);
-    if (hash_tag(tag, tag_length) != file.hash)
-      return fail("hash_mismatch", slot);
+    if (hash_tag(tag, tag_length) != file.hash) {
+      return fail((file.flags & kOverlayParentTag) != 0
+                      ? "parent_reference_hash_mismatch"
+                      : "hash_mismatch",
+                  slot);
+    }
 
     // Every used slot must be reachable by ordinary linear probing from its
     // home bucket; an empty slot before it makes the entry invisible.
@@ -1140,6 +1144,10 @@ bool rebuild_overlay_index(const char **failure_reason) {
       if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
         return fail("tag_reconstruction");
       canonical_hash = hash_tag(tag, tag_length);
+      if ((file.flags & kOverlayParentTag) != 0 &&
+          canonical_hash != file.hash) {
+        return fail("parent_reference_hash_mismatch");
+      }
     }
     erase_bucket_next[slot] = canonical_hash;
   }

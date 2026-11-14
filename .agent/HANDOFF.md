@@ -2,14 +2,15 @@
 
 Snapshot/index recovery now distinguishes a stored-hash mismatch from tag
 decode failure. If every serialized record has valid bounds, the arena is
-contiguous and non-overlapping, parent chains decode, and live canonical tags
-are unique, the overlay recomputes hashes from decoded tags, rehashes the index
-and remaps parent-slot references. A fake-flash regression corrupts a parent
-hash and confirms its parent-encoded child plus an unrelated record survive
-repair, sync, reload and compaction. Ambiguous intervals, tag collisions and
-other undecodable metadata still use a valid previous COW snapshot or fail
-closed. ARM/RISC-V builds and the RP2350 overlay suite pass. No hardware or
-emulator campaign was used.
+contiguous and non-overlapping, and canonical live tags are unique, hashes
+from self-contained plain/compressed tags can be recomputed, then the index is
+rehashed and parent-slot references remapped. A hash mismatch on a
+parent-encoded record is ambiguous with a bad parent pointer and is rejected;
+the previous COW snapshot is used instead. Regressions cover both safe
+self-contained hash repair (including a parent-encoded child) and ambiguous
+parent-pointer fallback. Ambiguous intervals, tag collisions and other
+undecodable metadata remain fail-closed. ARM/RISC-V builds and the RP2350
+overlay suite pass. No hardware or emulator campaign was used.
 
 Next: implement quarantine only for records that cannot be decoded when every
 record boundary and interval is still unambiguous; preserve all decodable

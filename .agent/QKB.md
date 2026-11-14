@@ -20,14 +20,16 @@ This does not establish long-run JCAlgTest behavior or physical acceptance.
 ## Stored overlay hash mismatch — safely repairable when the arena is intact
 
 `overlay_integrity_valid()` now decodes the canonical tag before comparing its
-stored index hash. If all serialized record bounds, contiguous non-overlapping
-intervals, parent links and unique live tags verify, rebuild the index using
-hashes recomputed from those tags, then remap parent-slot references. A
-recovery test corrupts a parent record's hash and verifies its parent-encoded
-child and an unrelated record survive sync, reload and compaction. If the
-arena layout is ambiguous or canonical tags collide, do not mutate; use the
-other valid COW generation or fail closed. This does not yet cover dropping
-only individually undecodable records when no valid COW copy exists.
+stored index hash. Recompute hashes only for self-contained plain/compressed
+tags, after all serialized bounds, contiguous non-overlapping intervals, and
+unique canonical live tags verify; then remap parent-slot references. A
+recovery test corrupts a self-contained parent record's hash and verifies its
+parent-encoded child and an unrelated record survive sync, reload and
+compaction. A hash mismatch on a parent-encoded record is ambiguous with a
+stale/corrupt parent pointer, so reject that snapshot and try the previous COW
+generation instead of recomputing the child identity. If arena layout is
+ambiguous or canonical tags collide, do not mutate. This does not yet cover
+dropping only individually undecodable records when no valid COW copy exists.
 
 Compacted: 2026-11-11. Reusable diagnoses and fixes; current tasks live in
 [TODO](../TODO.md), device/build state in [HANDOFF](HANDOFF.md), and run history in

@@ -2840,15 +2840,14 @@ int main() {
       rp2350_fs_test_write_parent_encoded(
           hashed_child.data(), hashed_child.size(), hashed_child_value.data(),
           hashed_child_value.size()) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
       rp2350_fs_test_repoint_parent_encoded(
           hashed_child.data(), hashed_child.size(), hashed_parent_b.data(),
           hashed_parent_b.size()) == FS_STATUS_OK &&
       rp2350_fs_test_compact() == FS_STATUS_IO_UNKNOWN &&
-      rp2350_fs_test_overlay_file_count() == 3;
-  stale_parent_rejected = stale_parent_rejected &&
-      rp2350_fs_test_repoint_parent_encoded(
-          hashed_child.data(), hashed_child.size(), hashed_parent_a.data(),
-          hashed_parent_a.size()) == FS_STATUS_OK;
+      rp2350_fs_test_overlay_file_count() == 3 &&
+      rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1;
   std::array<uint8_t, hashed_child_value.size()> hashed_child_actual{};
   stale_parent_rejected = stale_parent_rejected &&
       fs_read(hashed_child.data(), hashed_child.size(),
@@ -2856,7 +2855,7 @@ int main() {
           FS_STATUS_OK &&
       hashed_child_actual == hashed_child_value;
   expect(stale_parent_rejected,
-         "filesystem_compaction_rejects_stale_valid_parent_slot_by_hash");
+         "filesystem_restore_falls_back_on_ambiguous_parent_hash_mismatch");
 
   // A duplicate offset used to survive the relocation loops and leave one
   // index entry pointing into a different record. Compaction must reject the

@@ -29389,6 +29389,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-hash-repair-final.log`, `/tmp/mem01-t1-hash-arm.log`, `/tmp/mem01-t1-hash-riscv.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 reject ambiguous parent-hash repair 7 minutes
+
+- Step/experiment: `MEM-01-T1-PARENT-HASH-AMBIGUITY-20261114`
+- When: '2026-11-14 08:34 UTC' - '2026-11-14 08:41 UTC'
+- Model: `GPT-6 Codex`
+- Change: Restricted hash recomputation to self-contained plain/compressed records. A hash mismatch on a parent-encoded record now reports `parent_reference_hash_mismatch` and fails over to a valid previous COW generation, since the bytes cannot distinguish a damaged hash from a stale parent-slot pointer. Added a restore regression that snapshots a wrong-but-valid parent pointer and verifies the original child identity comes from the previous generation.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`, including both self-contained hash repair and ambiguous parent-pointer COW fallback. `./tools/build arm` and `./tools/build riscv` passed. No hardware or VPCD campaign.
+- Result: Recovery no longer silently assigns a different canonical identity to a parent-encoded record.
+- Decision: Keep ambiguous parent pointer/hash mismatches fail-closed; continue T1 per-record quarantine work.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-parent-hash-final.log`, `/tmp/mem01-t1-parent-arm.log`, `/tmp/mem01-t1-parent-riscv.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
 
 - Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`
