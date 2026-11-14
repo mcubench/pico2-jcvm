@@ -1817,8 +1817,12 @@ bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
   };
 
   for (const auto &array : this->shared_storage->arrays) {
-    if (!array || array->heap_mark == 0 || !array->isPersistent() ||
-        !array->hasPersistentTag()) {
+    // Transient arrays can still have a durable identity record while their
+    // contents are subject to a ClearEvent. If such an array is marked by the
+    // active heap walk, its serialized tag and direct records are reachable
+    // for this collection pass even though the Java Card array lifetime is
+    // transient.
+    if (!array || array->heap_mark == 0 || !array->hasPersistentTag()) {
       continue;
     }
     const fs::Tag object_tag = array->getPersistentTag();

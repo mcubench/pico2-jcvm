@@ -290,9 +290,9 @@ public:
   /// Free objects left unmarked by a complete coordinated trace.
   ReachabilitySummary collectUnreachableMarked();
   /// Test whether a serialized record is the identity or a direct two-byte
-  /// field/element record of a currently marked persistent object. Deeper tag
-  /// descendants require their own marked object. Call only immediately after
-  /// a complete traceReachableFrom() pass.
+  /// field/element record of a currently marked tagged object. This includes
+  /// transient arrays with serialized identities; deeper descendants require
+  /// their own marked object. Call only after a complete trace pass.
   bool hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept;
   /// Reclaim unmarked local slots only after a complete mark pass.
   ReachabilitySummary collectUnreachableFrom(

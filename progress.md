@@ -29304,3 +29304,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The T4/T5 prefix keep must be replaced with alias re-trace. Validate with a full option-2 VPCD run and a 500× field-reassignment regression before hardware campaigns. Order: T4/T5 rework → T7 commit → T1 repair → T2 remainder → T6 → T8.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`.
+
+## 2026-11-14 MEM-01 replace alias-prefix retention with traced reachability 23 minutes
+
+- Step/experiment: `MEM-01-T4-T5-ALIAS-RETRACE-20261114`
+- When: '2026-11-14 06:33 UTC' - '2026-11-14 06:56 UTC'
+- Model: `GPT-6 Codex`
+- Change: Replaced the applet/package-static alias subtree prefix keep with alias target resolution into heap roots and graph retracing. Marked transient arrays with durable identity tags now satisfy the persistent-tag reachability query; PC-only diagnostics and their alias-tag vector are compiled out of firmware. Added a 500× persistent instance-field reassignment regression that measures record count and tag-plus-payload bytes and restores the final object graph from a fresh heap. Updated MEM-01, QKB and HANDOFF.
+- Validation: `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`, including `OBJECT_DELETION:REASSIGN_STORE iterations=500 records=5 tag_plus_payload_bytes=121 stable=1 graph_restored=1`; `./tools/test-persistent-inventory` passed `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed; scoped `git -c core.whitespace=cr-at-eol diff --check` passed. A bounded 60-second PC VPCD run reached scan 400 with 5 candidates, erased 564 records across 445 deletion calls, and recorded no `FS_WRITE_FAIL`/`F205`; it stopped before option 2 completed, so storage plateau was not measured. No physical hardware was accessed.
+- Result: The focused alias-retrace loop and 500× record-growth regression pass. Full T7 option-2 acceptance remains open; the bounded VPCD sample is diagnostic evidence only.
+- Decision: Keep T4/T5 implementation complete offline, with T7 long-run acceptance outstanding. Continue MEM-01 offline; do not launch a long emulator campaign under the user's speed constraint.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z/emulator.log`; client ended at the 60-second bound. ARM UF2 remains a build artifact only and was not flashed.

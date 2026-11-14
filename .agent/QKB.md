@@ -934,8 +934,18 @@ lines 3527–3580 and 14062+; 8E OOM at line 12905 of
     `reachable_alias` keeps growing.
 - Cause: the T4/T5 prefix keep (`hasTagPrefixRoot(tag, reachable_alias_targets)`).
   It retains superseded bodies under a live object prefix forever.
-- Viable fix (pending validation): protect alias targets by re-tracing from
-  them (`extendReachableFrom`), never by prefix.
+- Viable fix (implemented with focused offline coverage): resolve reachable
+  aliases into heap roots with `extendReachableFrom`; let the heap trace decide
+  which descendants remain live, never keep a whole historical tag prefix.
+  Marked transient arrays that still have durable identity tags must also count
+  as reachable during that trace. Otherwise alias resolution repeatedly adds
+  the same array root and fails closed before reclaiming stale bodies.
+- Evidence: the transaction suite passes a 500× persistent field reassignment
+  regression with a stable 5 records / 121 tag-plus-payload bytes after every
+  collection. The bounded VPCD run `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z`
+  reached 5 candidates at scan 400 and erased 564 records over 445 deletion
+  calls, with no write failure in its 60-second window. It ended before option
+  2 completed, so storage plateau/full-run acceptance is still outstanding.
 - Diagnostics: `PICO2_GC_SCAN_DIAGNOSTICS=1` prints `ALIAS_ROOT` counts per
   prefix. The prefix with a growing count is the leak.
 - Evidence: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`.

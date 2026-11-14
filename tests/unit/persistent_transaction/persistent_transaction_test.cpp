@@ -3,6 +3,7 @@
 #include "context.hpp"
 #include "persistent_inventory.hpp"
 #include "jc_types/jc_array.hpp"
+#include "../../../choupi/os/src/ffi.h"
 
 #include <algorithm>
 #include <array>
@@ -3593,73 +3594,235 @@ int main() {
     const jcvm::fs::Tag static_root{3, {0x02, package_id, 0x08}};
     const uint16_t previous_field_count =
         persistent_transaction_test::instance_field_count;
-    persistent_transaction_test::instance_field_count = 0;
+    persistent_transaction_test::instance_field_count = 2;
     bool package_static_alias_subtree_protected = false;
     try {
       jcvm::Heap heap(0x42);
-      const auto root_reference = heap.addInstance(
-          jcvm::JC_Instance(heap, 2, 3));
-      const auto root_instance = heap.getInstance(root_reference);
+      const auto root_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, 2, 3));
+      const auto active_child_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, 2, 4));
+      const auto stale_child_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, 2, 5));
+      const auto active_array_reference =
+          heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      const auto stale_array_reference =
+          heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      heap.getArray(active_array_reference)->setByteEntry(0, 0x51);
+      heap.getArray(stale_array_reference)->setByteEntry(0, 0x62);
+      heap.getInstance(active_child_reference)->setField_Reference(
+          0, active_array_reference);
+      heap.getInstance(stale_child_reference)->setField_Reference(
+          0, stale_array_reference);
+      auto root_instance = heap.getInstance(root_reference);
+      root_instance->setField_Reference(0, active_child_reference);
+      root_instance->setField_Reference(1, stale_child_reference);
       jcvm::FlashMemory_Handler::setPersistentField_Reference(
           static_root, root_reference, heap);
-      const auto root_body = root_instance->getPersistentTag();
-      const auto alias_tag =
+      const jcvm::fs::Tag root_body = root_instance->getPersistentTag();
+      const auto root_active_field =
           jcvm::FlashMemory_Handler::computeTag(root_body, 0);
-      jcvm::fs::Tag target_body = alias_tag;
-      target_body.value[target_body.len++] = 0xff;
-      target_body.value[target_body.len++] = 0xfe;
-      target_body.value[target_body.len++] = 0;
-      target_body.value[target_body.len++] = 0;
-      target_body.value[target_body.len++] = 0;
-      target_body.value[target_body.len++] = 0x61;
-      jcvm::fs::Tag nested_field = target_body;
-      nested_field.value[nested_field.len++] = 0;
-      nested_field.value[nested_field.len++] = 0;
-      const std::vector<uint8_t> target_value{
-          static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
-          0, 1, 0x51};
-      const std::vector<uint8_t> nested_value{
-          static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_BYTE), 0x62};
-      std::vector<uint8_t> alias_record{0xfe, target_body.len};
-      alias_record.insert(alias_record.end(), target_body.value,
-                          target_body.value + target_body.len);
-      persistent_transaction_test::seed(
-          target_body.value, target_body.len, target_value);
-      persistent_transaction_test::seed(
-          nested_field.value, nested_field.len, nested_value);
-      persistent_transaction_test::seed(alias_tag.value, alias_tag.len,
-                                        std::move(alias_record));
+      const auto root_cleared_field =
+          jcvm::FlashMemory_Handler::computeTag(root_body, 1);
+      const jcvm::fs::Tag active_body =
+          heap.getInstance(active_child_reference)->getPersistentTag();
+      const auto active_array_field =
+          jcvm::FlashMemory_Handler::computeTag(active_body, 0);
+      const auto active_array_alias =
+          persistent_transaction_test::read(active_array_field.value,
+                                              active_array_field.len);
+      jcvm::fs::Tag active_array_body{};
+      const bool active_alias_valid =
+          active_array_alias.size() >= 3 && active_array_alias[0] == 0xfd &&
+          active_array_alias[1] + 2u == active_array_alias.size() &&
+          active_array_alias[1] <= sizeof(active_array_body.value);
+      if (active_alias_valid) {
+        active_array_body.len = active_array_alias[1];
+        std::memcpy(active_array_body.value, active_array_alias.data() + 2,
+                    active_array_body.len);
+      }
+      auto stale_child = heap.getInstance(stale_child_reference);
+      const jcvm::fs::Tag stale_body = stale_child->getPersistentTag();
+      const auto stale_child_field =
+          jcvm::FlashMemory_Handler::computeTag(stale_body, 0);
+      const auto stale_array_alias =
+          persistent_transaction_test::read(stale_child_field.value,
+                                              stale_child_field.len);
+      jcvm::fs::Tag stale_array_body{};
+      const bool stale_alias_valid =
+          stale_array_alias.size() >= 3 && stale_array_alias[0] == 0xfd &&
+          stale_array_alias[1] + 2u == stale_array_alias.size() &&
+          stale_array_alias[1] <= sizeof(stale_array_body.value);
+      if (stale_alias_valid) {
+        stale_array_body.len = stale_array_alias[1];
+        std::memcpy(stale_array_body.value, stale_array_alias.data() + 2,
+                    stale_array_body.len);
+      }
 
-      CandidateTags candidates;
+      // Clear the durable field, leaving the old object and array records as
+      // detached descendants beneath a still-live static-root object.
+      root_instance->setField_Reference(1, jcvm::jref_t());
+      // Simulate the missing heap edge that the alias rescue path must repair:
+      // the persistent field alias still names the active child, but the
+      // in-memory reference cache no longer reports it to the ordinary walk.
+      auto root_fields = root_instance->getFields();
+      root_fields->at(0).type = jcvm::FieldType::FIELD_TYPE_UNINITIALIZED;
+      root_fields->at(0).value = 0;
+
+      std::vector<jcvm::jref_t> root_references{root_reference};
+      RootVectorContext roots{&root_references};
+      uint32_t erased = 0;
       const auto result =
-          jcvm::PersistentInventory::visitUnreachablePackageStaticTags(
-              package_id, heap, std::vector<jcvm::jref_t>{root_reference},
-              collect_candidate, &candidates);
-      const std::vector<uint8_t> root_body_value =
-          persistent_transaction_test::read(root_body.value, root_body.len);
+          jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+              package_id, heap, enumerate_root_vector, &roots, &erased);
+
+      bool restored_graph = false;
+      try {
+        jcvm::Heap restored(0x42);
+        const auto restored_root =
+            jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                static_root, restored);
+        const auto restored_parent = restored.getInstance(restored_root);
+        const auto restored_active =
+            restored_parent->getField_Reference(0);
+        const auto restored_active_instance =
+            restored.getInstance(restored_active);
+        const auto active_array_tag =
+            jcvm::FlashMemory_Handler::computeTag(
+                restored_active_instance->getPersistentTag(), 0);
+        const auto restored_active_array =
+            jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                active_array_tag, restored);
+        restored_graph =
+            restored.getArray(restored_active_array)->getByteEntry(0) == 0x51;
+      } catch (jcvm::Exceptions) {
+        restored_graph = false;
+      }
       package_static_alias_subtree_protected =
+          active_alias_valid && stale_alias_valid &&
           result == jcvm::PersistentInventory::VisitResult::Complete &&
-          candidates.tags.empty() && !root_body_value.empty() &&
-          persistent_transaction_test::read(target_body.value,
-                                             target_body.len) == target_value &&
-          persistent_transaction_test::read(nested_field.value,
-                                             nested_field.len) == nested_value;
-      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
-          alias_tag));
-      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
-          target_body));
-      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
-          nested_field));
-      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
-          root_body));
-      static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(
-          static_root));
+          erased > 0 && restored_graph &&
+          persistent_transaction_test::read(stale_body.value,
+                                             stale_body.len).empty() &&
+          persistent_transaction_test::read(stale_child_field.value,
+                                             stale_child_field.len).empty() &&
+          persistent_transaction_test::read(stale_array_body.value,
+                                             stale_array_body.len).empty();
+      const jcvm::fs::Tag tags_to_clean[] = {
+          static_root, root_body, root_active_field, root_cleared_field,
+          active_body, active_array_field, active_array_body};
+      for (const auto &tag : tags_to_clean) {
+        static_cast<void>(jcvm::FlashMemory_Handler::erasePersistentTag(tag));
+      }
     } catch (...) {
       package_static_alias_subtree_protected = false;
     }
     persistent_transaction_test::instance_field_count = previous_field_count;
     expect(package_static_alias_subtree_protected,
            "package_static_reclaimer_preserves_missed_edge_alias_subtree");
+  }
+
+  {
+    constexpr uint8_t owner = 0x66;
+    constexpr uint8_t package_id = 2;
+    constexpr uint16_t root_class = 3;
+    constexpr unsigned int reassignment_count = 500;
+    const jcvm::fs::Tag applet_root{
+        6, {0x03, owner, package_id, 0x00, root_class, 0xff}};
+    persistent_transaction_test::instance_field_count = 1;
+    bool reassignment_store_stays_bounded = false;
+    try {
+      jcvm::Heap heap(owner);
+      const auto root_reference =
+          heap.addInstance(jcvm::JC_Instance(heap, package_id, root_class));
+      auto root = heap.getInstance(root_reference);
+      jcvm::FlashMemory_Handler::setPersistentField_Reference(
+          applet_root, root_reference, heap);
+      const std::vector<jcvm::jref_t> roots{root_reference};
+      RootVectorContext root_context{&roots};
+
+      const auto owner_store_usage = [owner]() {
+        std::pair<std::size_t, std::size_t> usage{0, 0};
+        uint8_t prefix[] = {0x03, owner};
+        fs_tag_next_request_t request{};
+        while (true) {
+          const uint8_t status = fs_next_tag(prefix, sizeof(prefix), &request);
+          if (status == 1) return usage;
+          if (status != 0 || request.tag[0] == 0) {
+            return std::pair<std::size_t, std::size_t>{SIZE_MAX, SIZE_MAX};
+          }
+          uint32_t payload_length = 0;
+          if (fs_length(request.tag + 1, request.tag[0], &payload_length) != 0) {
+            return std::pair<std::size_t, std::size_t>{SIZE_MAX, SIZE_MAX};
+          }
+          ++usage.first;
+          usage.second += request.tag[0] + payload_length;
+        }
+      };
+
+      std::pair<std::size_t, std::size_t> steady_usage{SIZE_MAX, SIZE_MAX};
+      bool all_reclaims_complete = true;
+      bool usage_stable = true;
+      for (unsigned int iteration = 0; iteration < reassignment_count;
+           ++iteration) {
+        const auto child_reference =
+            heap.addInstance(jcvm::JC_Instance(heap, package_id, 4));
+        heap.getInstance(child_reference)->setField_Short(
+            0, static_cast<int16_t>(iteration));
+        root->setField_Reference(0, child_reference);
+
+        uint32_t erased = 0;
+        const auto result =
+            jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+                owner, heap, enumerate_root_vector, &root_context, &erased);
+        all_reclaims_complete =
+            all_reclaims_complete &&
+            result == jcvm::PersistentInventory::VisitResult::Complete &&
+            (iteration == 0 || erased != 0);
+        const auto heap_gc = heap.collectUnreachableFrom(
+            enumerate_root_vector, &root_context);
+        all_reclaims_complete = all_reclaims_complete && heap_gc.complete;
+
+        const auto usage = owner_store_usage();
+        if (usage.first == SIZE_MAX) {
+          usage_stable = false;
+        } else if (iteration == 0) {
+          steady_usage = usage;
+        } else {
+          usage_stable = usage_stable && usage == steady_usage;
+        }
+      }
+
+      bool final_graph_restores = false;
+      try {
+        jcvm::Heap restored_heap(owner);
+        const auto restored_root =
+            jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                applet_root, restored_heap);
+        const auto restored_child =
+            restored_heap.getInstance(restored_root)->getField_Reference(0);
+        final_graph_restores =
+            restored_heap.getInstance(restored_child)->getField_Short(0) ==
+            static_cast<int16_t>(reassignment_count - 1);
+      } catch (...) {
+        final_graph_restores = false;
+      }
+      reassignment_store_stays_bounded = all_reclaims_complete &&
+                                         usage_stable &&
+                                         steady_usage.first != SIZE_MAX &&
+                                         final_graph_restores;
+      std::printf("OBJECT_DELETION:REASSIGN_STORE iterations=%u records=%zu "
+                  "tag_plus_payload_bytes=%zu stable=%u graph_restored=%u\n",
+                  reassignment_count, steady_usage.first, steady_usage.second,
+                  usage_stable ? 1u : 0u, final_graph_restores ? 1u : 0u);
+      static_cast<void>(
+          jcvm::FlashMemory_Handler::erasePersistentPrefix(applet_root));
+    } catch (...) {
+      reassignment_store_stays_bounded = false;
+    }
+    persistent_transaction_test::instance_field_count = 0;
+    expect(reassignment_store_stays_bounded,
+           "five_hundred_persistent_field_reassignments_keep_store_bounded");
   }
 
   {

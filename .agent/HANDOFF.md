@@ -1,3 +1,33 @@
+# Current handoff — MEM-01 alias-prefix leak fix and reassignment regression — 2026-11-14 UTC
+
+T4/T5 implementation now replaces the live-prefix keep with alias-root
+retracing. Reachable persistent aliases are resolved to heap handles and their
+graphs are marked; historical descendants can then become reclaim candidates.
+The heap reachability predicate includes marked transient arrays that retain a
+durable identity tag. This fixed the repeated alias-retrace loop seen when
+JCAlgTest referenced a transient work array.
+
+Validation: `./tools/test-persistent-transaction` passes, including the T4/T5
+missed-edge cases and 500 persistent field reassignments. At every iteration
+the previous subtree is reclaimed; the namespace is stable at 5 records / 121
+tag-plus-payload bytes; a fresh heap restores the final child. The inventory
+suite passes. `./tools/build arm` and `./tools/build riscv` pass. No physical
+device was accessed.
+
+Bounded VPCD evidence is in
+`artifacts/results/jcalgtest-support-vpcd-20261114T063317Z`. In its 60-second
+window, 445 deletion calls erased 564 records, scan 400 found 5 candidates, and
+there was no `FS_WRITE_FAIL` or `F205`; synced overlay usage reached 29,913
+bytes at event 800. The command timed out before option 2 completed. This does
+not prove a long-run storage plateau. The user asked to stop long emulator
+runs; do not repeat the campaign. T7 full option-2 acceptance remains open,
+along with T1/T2/T6 and later physical acceptance.
+
+Current uncommitted T4/T5 source/test edits should be committed as a focused
+step. Then isolate and commit the T7 VPCD harness separately, preserving other
+dirty files. Existing 2026-11-14 reviewer notes below describe the state before
+this fix; this section supersedes their T4/T5 status.
+
 # Current handoff — MEM-01 T4/T5 reopened: prefix keep leaks — 2026-11-14 UTC
 
 Reviewer note (Claude Opus 5.5). The worker's VPCD harness on the RP2350 overlay

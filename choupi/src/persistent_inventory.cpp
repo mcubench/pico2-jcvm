@@ -4,7 +4,9 @@
 #include "ffi.h"
 #include "jc_handlers/flashmemory.hpp"
 
+#include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <utility>
@@ -52,6 +54,21 @@ bool decodeForeignStaticTarget(const Tag &source_tag, const uint8_t *data,
   return true;
 }
 
+struct CandidateScanSummary {
+#ifdef PC_VERSION
+  uint32_t scanned = 0;
+  uint32_t applet_roots = 0;
+  uint32_t heap_reachable = 0;
+  uint32_t foreign_alias = 0;
+  uint32_t reachable_alias = 0;
+  uint32_t alias_body = 0;
+  uint32_t candidates = 0;
+  uint32_t reachable_alias_targets = 0;
+  std::vector<uint32_t> reachable_alias_counts;
+  std::vector<Tag> reachable_alias_roots;
+#endif
+};
+
 struct CandidateContext {
   Heap *heap;
   uint8_t applet_owner;
@@ -59,6 +76,7 @@ struct CandidateContext {
   void *visitor_context;
   const std::vector<Tag> *foreign_alias_targets;
   const std::vector<Tag> *reachable_alias_targets;
+  CandidateScanSummary *summary;
   VisitResult failure = VisitResult::Complete;
 };
 
@@ -155,6 +173,28 @@ bool hasTagPrefixRoot(const Tag &candidate, const std::vector<Tag> &targets) {
   return false;
 }
 
+#ifdef PC_VERSION
+void countReachableAliasRoot(const Tag &candidate,
+                             const std::vector<Tag> &targets,
+                             CandidateScanSummary *summary) {
+  if (summary == nullptr) return;
+  size_t best = targets.size();
+  uint8_t best_length = 0;
+  for (size_t index = 0; index < targets.size(); ++index) {
+    const Tag &target = targets[index];
+    if (target.len > best_length && candidate.len >= target.len &&
+        std::memcmp(candidate.value, target.value, target.len) == 0) {
+      best = index;
+      best_length = target.len;
+    }
+  }
+  if (best < summary->reachable_alias_counts.size()) {
+    ++summary->reachable_alias_counts[best];
+  }
+}
+
+#endif
+
 #if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
 bool isHeapPayloadTag(const Tag &tag) {
   for (uint8_t index = 0; index + 3 < tag.len; ++index) {
@@ -182,9 +222,17 @@ void logHeapPayloadDecision(const char *stage, const Tag &tag,
 
 bool visitUnreachableTag(const Tag &tag, void *opaque) {
   auto &context = *static_cast<CandidateContext *>(opaque);
+#ifdef PC_VERSION
+  if (context.summary != nullptr) ++context.summary->scanned;
+#endif
   // Applet instance roots are registration records, not collectible object
   // payload. Their lifetime is controlled by applet uninstall/recovery.
-  if (isAppletInstanceRootTag(tag, context.applet_owner)) return true;
+  if (isAppletInstanceRootTag(tag, context.applet_owner)) {
+#ifdef PC_VERSION
+    if (context.summary != nullptr) ++context.summary->applet_roots;
+#endif
+    return true;
+  }
   fs::Tag heap_tag{};
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
@@ -202,11 +250,40 @@ bool visitUnreachableTag(const Tag &tag, void *opaque) {
   const bool reachable_alias_subtree =
       hasTagPrefixRoot(tag, *context.reachable_alias_targets);
 #endif
-  if (reachable || foreign_root || reachable_alias_subtree) return true;
+  if (reachable) {
+#ifdef PC_VERSION
+    if (context.summary != nullptr) ++context.summary->heap_reachable;
+#endif
+    return true;
+  }
+  if (foreign_root) {
+#ifdef PC_VERSION
+    if (context.summary != nullptr) ++context.summary->foreign_alias;
+#endif
+    return true;
+  }
+  if (reachable_alias_subtree) {
+#ifdef PC_VERSION
+    if (context.summary != nullptr) ++context.summary->reachable_alias;
+    countReachableAliasRoot(tag, *context.reachable_alias_targets,
+                            context.summary);
+#endif
+    // Reachable aliases are resolved into heap handles and their descendants
+    // are marked before this inventory pass. A prefix-wide keep here also
+    // preserves detached historical descendants forever when the alias owner
+    // remains live (for example, a persistent applet object with cleared key
+    // cache fields).
+  }
   if (reachableAliasTargetsBody(tag, *context.heap, context.failure)) {
+#ifdef PC_VERSION
+    if (context.summary != nullptr) ++context.summary->alias_body;
+#endif
     return true;
   }
   if (context.failure != VisitResult::Complete) return false;
+#ifdef PC_VERSION
+  if (context.summary != nullptr) ++context.summary->candidates;
+#endif
   return context.visitor(tag, context.visitor_context);
 }
 } // namespace
@@ -382,6 +459,10 @@ namespace {
 struct ReachableAliasTargetContext {
   Heap *heap;
   std::vector<Tag> *targets;
+  std::vector<jref_t> *references;
+#ifdef PC_VERSION
+  std::vector<Tag> *reference_tags;
+#endif
   VisitResult failure = VisitResult::Complete;
 };
 
@@ -400,9 +481,39 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
     return false;
   }
 
+  if (data[0] != kPersistentObjectAlias &&
+      data[0] != kPersistentArrayAlias) {
+    return true;
+  }
+  Tag current = source_tag;
   for (uint8_t depth = 0; depth < kMaximumAliasDepth; ++depth) {
     if (data[0] != kPersistentObjectAlias &&
         data[0] != kPersistentArrayAlias) {
+      fs::Tag leaf_tag{};
+      leaf_tag.len = current.len;
+      std::memcpy(leaf_tag.value, current.value, current.len);
+      if (!context.heap->hasReachablePersistentTagPrefix(leaf_tag)) {
+        fs::Tag fs_source{};
+        fs_source.len = source_tag.len;
+        std::memcpy(fs_source.value, source_tag.value, source_tag.len);
+        try {
+          const jref_t reference =
+              FlashMemory_Handler::getPersistentField_ReferenceStrict(
+                  fs_source, *context.heap);
+          if (!reference.isNullPointer() && !reference.isGlobalArray() &&
+              !reference.isGlobalInstance() &&
+              std::find(context.references->begin(), context.references->end(),
+                        reference) == context.references->end()) {
+            context.references->push_back(reference);
+#ifdef PC_VERSION
+            context.reference_tags->push_back(current);
+#endif
+          }
+        } catch (Exceptions) {
+          context.failure = VisitResult::ReadFailure;
+          return false;
+        }
+      }
       return true;
     }
     if (length < 2 || data[1] == 0 || data[1] > kTagCapacity ||
@@ -414,6 +525,37 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
     Tag target{};
     target.len = data[1];
     std::memcpy(target.value, data + 2, target.len);
+#ifdef PC_VERSION
+    const char *scan_diagnostics = std::getenv("PICO2_GC_SCAN_DIAGNOSTICS");
+    static std::vector<std::pair<Tag, Tag>> alias_diagnostic_samples;
+    const bool sample_alias =
+        scan_diagnostics != nullptr &&
+        std::strcmp(scan_diagnostics, "1") == 0 &&
+        alias_diagnostic_samples.size() < 256 &&
+        std::none_of(alias_diagnostic_samples.begin(),
+                     alias_diagnostic_samples.end(),
+                     [&source_tag, &target](const auto &sample) {
+                       return sample.first.len == source_tag.len &&
+                              sample.second.len == target.len &&
+                              std::memcmp(sample.first.value,
+                                          source_tag.value,
+                                          source_tag.len) == 0 &&
+                              std::memcmp(sample.second.value,
+                                          target.value, target.len) == 0;
+                     });
+    if (sample_alias) {
+      std::fprintf(stderr, "OBJECT_DELETION:ALIAS_SAMPLE source=");
+      for (uint8_t index = 0; index < source_tag.len; ++index) {
+        std::fprintf(stderr, "%02X", source_tag.value[index]);
+      }
+      std::fprintf(stderr, " target=");
+      for (uint8_t index = 0; index < target.len; ++index) {
+        std::fprintf(stderr, "%02X", target.value[index]);
+      }
+      std::fprintf(stderr, "\n");
+      alias_diagnostic_samples.emplace_back(source_tag, target);
+    }
+#endif
     if (!hasTagPrefixRoot(target, *context.targets)) {
       context.targets->push_back(target);
     }
@@ -422,6 +564,7 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
       context.failure = VisitResult::ReadFailure;
       return false;
     }
+    current = target;
   }
   context.failure = VisitResult::InvalidTag;
   return false;
@@ -432,12 +575,49 @@ using ReachableTagScanner = VisitResult (*)(uint8_t, TagVisitor, void *);
 VisitResult collectReachableAliasTargets(const uint8_t owner, Heap &heap,
                                          std::vector<Tag> &targets,
                                          ReachableTagScanner scanner) {
-  ReachableAliasTargetContext context{&heap, &targets};
+  std::vector<jref_t> references;
+#ifdef PC_VERSION
+  std::vector<Tag> reference_tags;
+#endif
   try {
-    const VisitResult result = scanner(owner, collectReachableAliasTarget,
-                                       &context);
-    return context.failure == VisitResult::Complete ? result
-                                                     : context.failure;
+    uint32_t passes = 0;
+    for (;;) {
+      references.clear();
+#ifdef PC_VERSION
+      reference_tags.clear();
+      ReachableAliasTargetContext context{&heap, &targets, &references,
+                                          &reference_tags};
+#else
+      ReachableAliasTargetContext context{&heap, &targets, &references};
+#endif
+      const VisitResult result = scanner(owner, collectReachableAliasTarget,
+                                         &context);
+      if (context.failure != VisitResult::Complete) return context.failure;
+      if (result != VisitResult::Complete) return result;
+      if (references.empty()) return VisitResult::Complete;
+      ++passes;
+
+#ifdef PC_VERSION
+      if (std::getenv("PICO2_GC_SCAN_DIAGNOSTICS") != nullptr &&
+          passes <= 32) {
+        std::fprintf(stderr,
+                     "OBJECT_DELETION:ALIAS_RETRACE pass=%u roots=%zu first=",
+                     passes, references.size());
+        if (!reference_tags.empty()) {
+          for (uint8_t index = 0; index < reference_tags.front().len; ++index) {
+            std::fprintf(stderr, "%02X", reference_tags.front().value[index]);
+          }
+        }
+        std::fprintf(stderr, "\n");
+      }
+#endif
+      if (passes > 32) return VisitResult::IncompleteReachability;
+
+      VectorRoots root_context{&references};
+      const Heap::ReachabilitySummary extended =
+          heap.extendReachableFrom(enumerateVectorRoots, &root_context);
+      if (!extended.complete) return VisitResult::IncompleteReachability;
+    }
   } catch (...) {
     return VisitResult::IncompleteReachability;
   }
@@ -538,7 +718,8 @@ static VisitResult visitUnreachableAppletTagsWithAliasTargets(
     const uint8_t applet_owner, Heap &heap,
     const RootReferenceEnumerator enumerate_roots, void *root_context,
     const std::vector<Tag> &foreign_alias_targets,
-    const TagVisitor candidate_visitor, void *candidate_context) {
+    const TagVisitor candidate_visitor, void *candidate_context,
+    CandidateScanSummary *scan_summary = nullptr) {
   if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
     return VisitResult::InvalidArgument;
   }
@@ -552,11 +733,20 @@ static VisitResult visitUnreachableAppletTagsWithAliasTargets(
     const VisitResult alias_scan = collectReachableAliasTargets(
         applet_owner, heap, reachable_alias_targets, visitApplet);
     if (alias_scan != VisitResult::Complete) return alias_scan;
+#ifdef PC_VERSION
+  if (scan_summary != nullptr) {
+    scan_summary->reachable_alias_targets = static_cast<uint32_t>(
+        reachable_alias_targets.size());
+    scan_summary->reachable_alias_counts.assign(reachable_alias_targets.size(),
+                                                0);
+    scan_summary->reachable_alias_roots = reachable_alias_targets;
+  }
+#endif
   }
 
   CandidateContext context{&heap, applet_owner, candidate_visitor,
                            candidate_context, &foreign_alias_targets,
-                           &reachable_alias_targets};
+                           &reachable_alias_targets, scan_summary};
   const VisitResult result =
       visitApplet(applet_owner, visitUnreachableTag, &context);
   return context.failure == VisitResult::Complete ? result : context.failure;
@@ -685,10 +875,11 @@ bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
   heap_tag.len = tag.len;
   std::memcpy(heap_tag.value, tag.value, tag.len);
   if (context.heap->hasReachablePersistentTagPrefix(heap_tag) ||
-      hasTagPrefixRoot(tag, *context.foreign_alias_targets) ||
-      hasTagPrefixRoot(tag, *context.reachable_alias_targets)) {
+      hasTagPrefixRoot(tag, *context.foreign_alias_targets)) {
     return true;
   }
+  // Reachable package-static aliases are resolved and traced before the
+  // inventory pass. Do not preserve their entire historical tag prefix.
   return context.visitor(tag, context.visitor_context);
 }
 
@@ -859,11 +1050,70 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
   // Validate the complete tag cursor before any mutation. Later passes may
   // stop after a bounded batch. Alias roots are immutable during this call;
   // each pass still performs a fresh strict heap-root trace.
+#ifdef PC_VERSION
+  PersistentInventory::CandidateScanSummary preflight_summary{};
+  const char *diagnostics = std::getenv("PICO2_GC_SCAN_DIAGNOSTICS");
+  const bool collect_diagnostics = diagnostics != nullptr &&
+                                   std::strcmp(diagnostics, "1") == 0;
+  PersistentInventory::CandidateScanSummary *scan_summary =
+      collect_diagnostics ? &preflight_summary : nullptr;
+#else
+  PersistentInventory::CandidateScanSummary *scan_summary = nullptr;
+#endif
   const VisitResult preflight =
       PersistentInventory::visitUnreachableAppletTagsWithAliasTargets(
           applet_owner, heap, enumerate_roots, root_context,
-          foreign_alias_targets, acceptAllCandidates, nullptr);
+          foreign_alias_targets, acceptAllCandidates, nullptr,
+          scan_summary);
   if (preflight != VisitResult::Complete) return preflight;
+#ifdef PC_VERSION
+  if (collect_diagnostics) {
+    static uint32_t diagnostic_sequence = 0;
+    ++diagnostic_sequence;
+    if (diagnostic_sequence == 1 || diagnostic_sequence % 100 == 0) {
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:SCAN seq=%u scanned=%u applet_roots=%u "
+                   "heap_reachable=%u foreign_alias=%u reachable_alias=%u "
+                   "alias_body=%u candidates=%u alias_targets=%u\n",
+                   diagnostic_sequence, preflight_summary.scanned,
+                   preflight_summary.applet_roots,
+                   preflight_summary.heap_reachable,
+                   preflight_summary.foreign_alias,
+                   preflight_summary.reachable_alias,
+                   preflight_summary.alias_body,
+                   preflight_summary.candidates,
+                   preflight_summary.reachable_alias_targets);
+      std::vector<size_t> emitted;
+      for (size_t rank = 0; rank < 8; ++rank) {
+        size_t best = preflight_summary.reachable_alias_counts.size();
+        uint32_t count = 0;
+        for (size_t index = 0;
+             index < preflight_summary.reachable_alias_counts.size();
+             ++index) {
+          if (preflight_summary.reachable_alias_counts[index] > count &&
+              std::find(emitted.begin(), emitted.end(), index) ==
+                  emitted.end()) {
+            best = index;
+            count = preflight_summary.reachable_alias_counts[index];
+          }
+        }
+        if (best == preflight_summary.reachable_alias_counts.size() ||
+            count == 0) {
+          break;
+        }
+        std::fprintf(stderr, "OBJECT_DELETION:ALIAS_ROOT seq=%u count=%u tag=",
+                     diagnostic_sequence, count);
+        const PersistentInventory::Tag &root =
+            preflight_summary.reachable_alias_roots[best];
+        for (uint8_t index = 0; index < root.len; ++index) {
+          std::fprintf(stderr, "%02X", root.value[index]);
+        }
+        std::fprintf(stderr, "\n");
+        emitted.push_back(best);
+      }
+    }
+  }
+#endif
 
   uint32_t erased = 0;
   while (true) {
