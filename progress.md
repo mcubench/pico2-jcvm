@@ -29937,3 +29937,34 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   package `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ccid-deadline-805420e6.zip`,
   SHA-256 `6a3e343eda7f88c6f845939cf94d71a5ca13d67dbc2b5d268bc1a64ccc0f8bf0`;
   `.agent/EXT_REQUESTS.md`; unit output `TEST:SUMMARY pass=35 fail=0`.
+
+## 2026-11-14 Reference SPEC.md from AGENTS and make object deletion the normal build 30
+
+- Step-Id: `20261114-2245-spec-followups`
+- Task: SPEC.md follow-ups (INV-24 known gap; AGENTS reference)
+- When: '2026-11-14 22:15 CET' - '2026-11-14 22:45 CET'
+- Model: `claude-opus-5-5`
+- Change: `AGENTS.md` gets a "Product specification" section: read `SPEC.md` at
+  session start, never weaken an invariant, ask via EXT_REQUESTS on conflict,
+  and report violations by INV-ID. INV-24 is now implemented:
+  - `tools/build` defaults to object deletion ON;
+    `PICO2_ENABLE_OBJECT_DELETION=0` makes the build diagnostic.
+  - The provenance has only `mode=normal|diagnostic`; the `acceptance` label is
+    removed.
+  - The `CMakeLists.txt` option default is ON.
+  - `AGENTS.md` (build modes and card state), `TODO.md`, `README.md` and
+    `docs/supported-profile.md` are aligned, and the INV-24 known gap is
+    removed from `SPEC.md`.
+
+  The worker's uncommitted `TODO.md`, EXT_REQUESTS and `src/ccid_*` edits were
+  preserved and not committed. Only this step's `TODO.md` hunks were staged.
+- Validation: `bash -n tools/build` passed. `./tools/build arm` (baseline
+  profile) exited 0 with provenance `mode=normal object_deletion=ON`. The only
+  warnings are the long-standing toolchain ones (packed-member, Rust static,
+  Java converter, Maven); none come from firmware deletion code. The RISC-V
+  build was not run (out of scope). No flash.
+- Result: The default firmware now enables `JCSystem.requestObjectDeletion()`.
+  Long-run and power-loss acceptance (MEM-01 T8, PERSIST-01) remain open, and
+  `supported-profile` says so.
+- Decision: The worker's next normal `max_crypto` build is the campaign image.
+- Artifacts/logs: build log not archived (scratch).

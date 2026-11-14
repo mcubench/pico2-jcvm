@@ -9,7 +9,9 @@ support_profile=baseline
 debug_heap_gc=OFF
 debug_ccid_applet=OFF
 debug_persistent_gc=OFF
-enable_object_deletion=OFF
+# SPEC INV-24: object deletion is ON in the normal build.
+# PICO2_ENABLE_OBJECT_DELETION=0 turns it off, which makes the build diagnostic.
+enable_object_deletion=ON
 debug_serial_wait_ms="${PICO2_DEBUG_SERIAL_WAIT_MS:-0}"
 [[ "${debug_serial_wait_ms}" =~ ^(0|[1-9][0-9]*)$ && \
    ${#debug_serial_wait_ms} -le 6 ]] || \
@@ -31,9 +33,9 @@ if [[ "${PICO2_DEBUG_PERSISTENT_GC:-0}" == 1 ]]; then
 elif [[ "${PICO2_DEBUG_PERSISTENT_GC:-0}" != 0 ]]; then
   die "PICO2_DEBUG_PERSISTENT_GC must be 0 or 1"
 fi
-if [[ "${PICO2_ENABLE_OBJECT_DELETION:-0}" == 1 ]]; then
-  enable_object_deletion=ON
-elif [[ "${PICO2_ENABLE_OBJECT_DELETION:-0}" != 0 ]]; then
+if [[ "${PICO2_ENABLE_OBJECT_DELETION:-1}" == 0 ]]; then
+  enable_object_deletion=OFF
+elif [[ "${PICO2_ENABLE_OBJECT_DELETION:-1}" != 1 ]]; then
   die "PICO2_ENABLE_OBJECT_DELETION must be 0 or 1"
 fi
 while [[ $# -gt 0 ]]; do
@@ -197,15 +199,7 @@ provenance_file="${build_dir}/build-provenance.txt"
       printf 'mode=diagnostic\nimage=%s\n' \
         "pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
       sha256sum "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
-    elif [[ "${enable_object_deletion}" == ON && \
-            "${debug_persistent_gc}" == OFF && \
-            "${debug_heap_gc}" == OFF && \
-            "${debug_ccid_applet}" == OFF ]]; then
-      # Object deletion ON with all debug OFF is the acceptance image for
-      # MEM-01/RESOURCE/PERSIST campaigns (user decision 2026-11-14).
-      printf 'mode=acceptance\nimage=pico2_choupi.uf2\n'
-      sha256sum "${build_dir}/pico2_choupi.uf2"
-    elif [[ "${enable_object_deletion}" == ON || \
+    elif [[ "${enable_object_deletion}" == OFF || \
             "${debug_persistent_gc}" == ON || \
             "${debug_heap_gc}" == ON || \
             "${debug_ccid_applet}" == ON ]]; then
@@ -227,5 +221,5 @@ if [[ "${arch}" == arm && "${debug_serial_wait_ms}" != 0 ]]; then
 fi
 printf 'BUILD:PROVENANCE path=%s serial_wait_ms=%s mode=%s object_deletion=%s debug_persistent_gc=%s\n' \
   "${provenance_file#${repo_root}/}" "${debug_serial_wait_ms}" \
-  "$(if [[ "${debug_serial_wait_ms}" != 0 || "${debug_persistent_gc}" == ON || "${debug_heap_gc}" == ON || "${debug_ccid_applet}" == ON ]]; then echo diagnostic; elif [[ "${enable_object_deletion}" == ON ]]; then echo acceptance; else echo normal; fi)" \
+  "$([[ "${debug_serial_wait_ms}" == 0 && "${enable_object_deletion}" == ON && "${debug_persistent_gc}" == OFF && "${debug_heap_gc}" == OFF && "${debug_ccid_applet}" == OFF ]] && echo normal || echo diagnostic)" \
   "${enable_object_deletion}" "${debug_persistent_gc}"

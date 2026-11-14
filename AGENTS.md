@@ -75,6 +75,15 @@ Only escalate the required Git operation.
 Never use destructive Git commands or push without
 explicit authorization.
 
+## Product specification
+
+`SPEC.md` holds the user-confirmed product invariants (`INV-xx`). Read it at
+session start, together with this file. Never weaken, reinterpret or remove an
+invariant. If a task conflicts with one, stop and ask through
+`.agent/EXT_REQUESTS.md`. Reviews must check every invariant and report
+violations by ID. "Known gap" entries in `SPEC.md` are TODO work, not
+permission to diverge.
+
 ## Incremental commits and progress log
 
 Work in small, logical steps. A logical step is one coherent change that can be
@@ -168,11 +177,11 @@ Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible 
 - Do not claim either run started until the physical reader is enumerated in PC/SC and the client is connected to that exact reader.
 - Record the client JAR's SHA-256 (1.8.5: `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`) with every result. The JAR hash is the authoritative client identity: the client version embedded in result CSVs is unreliable (a 1.8.5 run reported 1.8.4). A result without a recorded JAR hash does not count as acceptance.
 
-### Acceptance image and card state (user decision 2026-11-14)
-- **Acceptance and campaign runs** (MEM-01 T8, RESOURCE-01/02, PERSIST, AC, option 1/2 campaigns) use the **acceptance image**: `max_crypto` with object deletion ON (`PICO2_ENABLE_OBJECT_DELETION=1`) and all debug/trace switches OFF. `tools/build` labels this combination `mode=acceptance`. Any debug switch ON is `mode=diagnostic` and is not acceptance evidence.
+### Build modes and card state (SPEC INV-24, INV-27)
+- There are two build modes. **normal** is the default: object deletion ON and all debug/trace switches OFF. **diagnostic** is any debug switch ON, or `PICO2_ENABLE_OBJECT_DELETION=0`. `tools/build` records `mode=normal|diagnostic` in its provenance. Only normal images are evidence.
+- **Acceptance and campaign runs** (MEM-01 T8, RESOURCE-01/02, PERSIST, AC, option 1/2 campaigns) use a normal `max_crypto` image.
 - Acceptance runs start from an **empty card**: wipe with an empty-card UF2 (built by `tools/package-empty-card-uf2`, flashed with `tools/flash` to the identified board), then install the unchanged CAP. Never use `picotool erase`.
-- **Development cycles** (`./tools/cycle choupi`) preserve installed storage. PERSIST power-loss tests create their own state on a freshly wiped acceptance image rather than relying on older stores.
-- Object deletion stays **OFF in the default build** until MEM-01 T8 and PERSIST-01 pass. At that gate, flip the default to ON, rerun the acceptance suite on the default image, and update `README.md` and `docs/supported-profile.md`.
+- **Development cycles** (`./tools/cycle choupi`) preserve installed storage. PERSIST power-loss tests create their own state on a freshly wiped normal image rather than relying on older stores.
 
 ### Long simulator/emulator runs (user directive 2026-11-14)
 Long VPCD/simulator runs are permitted. This replaces the earlier "stop long emulator runs" instruction. Each long run must have a stated reason and an expected benefit. Before starting one, think first:

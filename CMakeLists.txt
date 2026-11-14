@@ -20,7 +20,7 @@ option(CHOUPI_DEBUG_CCID_APPLET
 option(CHOUPI_DEBUG_PERSISTENT_GC
   "Exercise experimental persistent tag reclamation after each applet APDU" OFF)
 option(CHOUPI_ENABLE_OBJECT_DELETION
-  "Enable diagnostic JCSystem object-deletion requests on the Pico" OFF)
+  "Enable JCSystem object-deletion requests on the Pico (normal build; SPEC INV-24)" ON)
 option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
 option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING

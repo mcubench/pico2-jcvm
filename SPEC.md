@@ -153,10 +153,8 @@ each image.
 
 Non-diagnostic images contain no debug strings.
 
-- Known gap: `tools/build`, `CMakeLists.txt`, `AGENTS.md`, `TODO.md`,
-  `README.md` and `docs/supported-profile.md` still describe object deletion as
-  OFF by default, with a separate `acceptance` label. These are to be aligned
-  with this invariant.
+`tools/build` records the mode (`mode=normal|diagnostic`) in its build
+provenance. Building with `PICO2_ENABLE_OBJECT_DELETION=0` is diagnostic.
 
 **INV-25 Firmware identity.**
 - Every image is identifiable on the card: CPLC carries the source commit

@@ -34,11 +34,10 @@ by Java Card.
 - Extended-length APDUs and T=1 waiting-time extension are not implemented.
 - Logical channels and general multi-applet contexts/firewall semantics are
   not implemented.
-- `JCSystem.requestObjectDeletion()` is unsupported in the **default** build;
-  persistent-object reclamation is disabled there pending MEM-01 T8 and
-  PERSIST-01 acceptance. The `max_crypto` acceptance image built with
-  `PICO2_ENABLE_OBJECT_DELETION=1` (`mode=acceptance`) supports it and is used
-  for campaigns. The default flips to ON once that gate passes.
+- `JCSystem.requestObjectDeletion()` is enabled in the normal build
+  (`SPEC.md` INV-24). Long-run plateau, physical interruption and power-loss
+  acceptance (MEM-01 T8, PERSIST-01) remain open, so reclamation is not yet
+  claimed as accepted.
 - Optional API packages absent from the ROM mask, including
   `javacardx.external`, are rejected when CAP imports are resolved.
 - The optional `max_crypto` profile does not enable RSA or RSA-CRT 4096-bit
