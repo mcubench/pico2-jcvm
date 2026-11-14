@@ -30091,3 +30091,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `049b4eadf11a40ccae797a6564f4fb4baaeeb5eb017ec89bc8758497a4d2c5c5`; package SHA-256 `a60883c36effa810c54a392df1c7241ac03c3ecc332abbf0a95f4e888f8e3556`. Firmware end `0x100f7744`, 35,004 bytes remain. Build provenance confirms `object_deletion=ON`, `mode=normal`, zero wait, and debug OFF.
 - Decision: Use this package for external Windows validation; the older 7a396462 package is superseded. Physical/device acceptance remains open.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-2ba049c8-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-2ba049c8-dirty.zip`; `.agent/EXT_REQUESTS.md`.
+
+## 2026-11-15 Reconcile current image and reader state 4 minutes
+
+- Step-Id: `20261115-0054-t7-reader-state`
+- Task: MEM-01 T7 reader-access status and current-image index
+- When: '2026-11-15 00:51 CET' - '2026-11-15 00:54 CET'
+- Model: `GPT-6`
+- Change: Updated TODO's canonical current-image table to the new deletion-enabled `2ba049c8-dirty` artifact. Recorded the latest bounded PC/SC failure in TODO/QKB/handoff so T7 does not assume the prior service state.
+- Validation: The authorized helper succeeded and granted three USB-node ACLs. Read-only `systemctl status` showed pcscd service/socket active. Required elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` exited 124 with `READERS:ERROR listing timed out after 8 s`; no reader was enumerated. No test campaign or hardware operation was started.
+- Result: T7 VPCD/physical client validation remains blocked on reader enumeration, not on an identified firmware fault.
+- Decision: Continue offline and do not repeat unbounded polling; use the current `2ba049c8-dirty` image pointer.
+- Artifacts/logs: `TODO.md`; `.agent/QKB.md`; `.agent/HANDOFF.md`; reader command output only (not separately archived).

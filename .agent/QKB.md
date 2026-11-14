@@ -1236,3 +1236,15 @@ reported `ERROR: PC CAP LOAD data rejected` plus
 CAP-registry sidecar was created. This test path is local VPCD and does not
 require physical USB access, but its startup installation path does not prove
 a GlobalPlatform LOAD APDU status or subsequent DELETE behavior.
+
+
+## 2026-11-15 PC/SC service active but bounded reader listing times out
+
+The approved `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper succeeded and
+granted ACLs to three USB nodes. A read-only `systemctl status` showed both
+`pcscd.service` and `pcscd.socket` active, but elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` still exited 124
+after its 8-second bound with `READERS:ERROR listing timed out after 8 s`.
+No reader names were returned. This does not identify the USB nodes as JCVM
+readers and does not justify repeating scans. VPCD/physical campaigns remain
+blocked until bounded reader enumeration works; proceed with offline work.

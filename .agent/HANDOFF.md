@@ -17,5 +17,5 @@ Updated: 2026-11-15.
 3. CAPIN-01 APDU-level PC VPCD validation passed: malformed LOAD returned `6A80`, GET STATUS excluded it while retaining the control package, and control DELETE returned `9000`. Physical acceptance remains open.
 
 ## Hardware access
-- Last observed PC/SC calls timed out despite USB nodes being ACL-granted by the approved helper; no usable reader inventory was obtained. Do not attribute USB nodes to JCVM boards without bounded reader enumeration.
+- At 2026-11-15 00:51 CET, the approved helper granted ACLs for three USB nodes and `pcscd.service` was active, but elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out. No usable reader inventory was obtained. Do not attribute USB nodes to JCVM boards without bounded enumeration.
 - Do not claim physical acceptance without reader enumeration, identity, flash, and finite serial logs.

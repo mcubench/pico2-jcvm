@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Acceptance (normal `max_crypto`: object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-7a396462-dirty.uf2` | `135d5d3a64c90572bc0a6166828cbde00c3b1705292f8fd32e1d6984bfc99dc3` | rebuilt from the current dirty worktree; no physical validation; T7/HOST-01 hardware acceptance remains open |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-normal-windows-7a396462-dirty.zip` | `ea7f322fcbd77c96e44914203dd55ad1194a03b670230de103dad3e9b66fa5c4` | EXT `WIN-OBJECT-DELETION-NORMAL-DIRTY-7A396462`; dirty source state and submodule are disclosed in package provenance |
+| Acceptance (normal `max_crypto`: object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-2ba049c8-dirty.uf2` | `049b4eadf11a40ccae797a6564f4fb4baaeeb5eb017ec89bc8758497a4d2c5c5` | rebuilt from current dirty worktree; no physical validation; T7/HOST-01 hardware acceptance remains open |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-normal-windows-2ba049c8-dirty.zip` | `a60883c36effa810c54a392df1c7241ac03c3ecc332abbf0a95f4e888f8e3556` | EXT `WIN-OBJECT-DELETION-NORMAL-DIRTY-2BA049C8`; dirty source state and submodule are disclosed in package provenance |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01
@@ -71,6 +71,7 @@ backlog and never hit `F205`. Commit granularity follows `AGENTS.md` (one commit
 **MEM-01 current status (2026-11-14, consolidated):** T1–T6 are complete offline (T6 root cause: the old prefix guard missed the 6-byte `FF FF id` alias-body suffix, so a reachable 8E body was erased). Open items:
 - **T7 runtime proof.** No post-fix run has shown a plateau yet. The pre-fix VPCD run hit `FS_WRITE_FAIL` at sync seq ≈1,750 (`bytes=94311`); the only post-fix run (60 s) stopped at ≈800. Long VPCD runs are permitted under the `AGENTS.md` long-run rule; first check whether the target state is reachable more cheaply (see the T7 extensions below). Bounded decision check: option-2 VPCD to sync seq ≥2,500, logging live records and live bytes per compaction. Pass: no `FS_WRITE_FAIL`/`F205`, live bytes flat over the last 1,000 syncs, `reachable_alias` bounded. If bytes still grow, use `PICO2_GC_SCAN_DIAGNOSTICS=1` `ALIAS_ROOT` counts.
 - 2026-11-14 follow-up: `./tools/test-rp2350-fs-overlay` passes `TEST:SUMMARY fail=0` on the current worktree, including the mixed high-occupancy/alias graph scenario documented below. This remains fake-flash evidence. The authorized helper granted three USB-node ACLs, but `./tools/list-readers` timed out after 20 seconds with no reader inventory, so unchanged-client VPCD option 2 was not started. T7 remains open.
+- 2026-11-15 follow-up: the authorized helper again granted three USB-node ACLs and `pcscd.service` was active, but elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out after 8 seconds. No reader was enumerated; no VPCD option-2 run was started. Continue offline and avoid repeated unbounded PC/SC polling.
 - **T8 physical acceptance.** See T8 below.
 
 Superseded reviewer/status blocks are archived in `.agent/archive/2026-11-14-todo-conflict-cleanup/TODO-mem01-superseded-status-blocks.md`.
