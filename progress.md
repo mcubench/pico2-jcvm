@@ -30004,3 +30004,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Current fake-flash overlay safety regression passes. PC/SC publication is unavailable despite three ACL-granted USB nodes; this is not proof that the nodes are Pico readers. Full unchanged-client option-2 VPCD evidence remains missing.
 - Decision: Continue offline; do not repeatedly poll the unresponsive PC/SC service. T7 remains open.
 - Artifacts/logs: `artifacts/results/` unchanged; regression output was streamed and not archived; current firmware/package are listed in `TODO.md` and `.agent/EXT_REQUESTS.md`.
+
+## 2026-11-14 Add external-superclass missing-Import fixture 9 minutes
+
+- Step-Id: `20261114-2225-capin01-ext-super-no-import`
+- Task: CAPIN-01 LOAD structural validation coverage
+- When: '2026-11-14 22:16 UTC' - '2026-11-14 22:25 UTC'
+- Model: `gpt-6.1-sol`
+- Change: Added a generated-only malformed CAP case combining an external applet superclass reference with omission of the Import component. The fixture verifies the reference is actually external before removing Import, then checks load-code component framing and reports the removed component/reference. The supplied JCAlgTest CAP remains unchanged. Updated CAPIN-01 TODO and handoff.
+- Validation: `python3 -m py_compile tests/integration/cap_malformed_vpcd_test.py` passed. Direct mutation generation passed against pinned upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; it reported `superclass_ref=8203`, omitted component tag 4, and produced valid component framing (`CAPIN_FIXTURE:PASS tags=[1,2,3,5,6,7,8,9,11]`). VPCD was intentionally not run because bounded PC/SC reader enumeration is unavailable.
+- Result: The exact hostile input required by CAPIN-01 is now reproducible offline. No evidence yet that the APDU returns `6A80`, persists no package, or leaves unrelated DELETE functional; those VPCD acceptance checks remain open.
+- Decision: Keep CAPIN-01 open and run the focused malformed-VPCD case when reader publication is restored; meanwhile continue with independent offline P1 work.
+- Artifacts/logs: generated input `build/rv28-malformed-external-superclass-without-import-load-code.bin`; upstream CAP hash and generated component details above.

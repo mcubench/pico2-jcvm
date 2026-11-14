@@ -15,15 +15,16 @@ Updated: 2026-11-14.
   verification passed. No physical hardware validation was performed.
 
 ## Next actions
-1. Run the new Windows image for JCAlgTest option 2; use a second identified
-   device for option 1 if available. Return exact UF2 hash, chip ID, reader/ATR,
-   full result folders and serial logs.
+1. CAPIN-01: run the new `external-superclass-without-import` mutation through
+   `tools/test-cap-malformed-vpcd`; expect LOAD `6A80`, no stored package, and
+   unrelated package deletion still `9000`. Fixture generation passes offline.
 2. MEM-01 T7 remains open: complete unchanged JCAlgTest option-2 proof on the
-   RP2350 overlay backend through sync sequence 2,500, capturing live records,
-   bytes, aliases, compaction and RAM-handle metrics.
-3. Continue offline VPCD harness work if no physical device is visible. Check
-   current reader inventory with `./tools/list-readers`; obey root AGENTS USB
-   host-access wrapper rules for all USB/PCSC operations.
+   RP2350 overlay backend through sync sequence 2,500, with live-store,
+   compaction, alias and RAM-handle metrics. User previously stopped long
+   emulator runs; do not resume them without direction.
+3. Await Windows results for the image listed above. For physical work, refresh
+   helper and reader inventory with repository wrappers; current bounded PC/SC
+   listings timed out despite three ACL-granted USB nodes.
 
 ## Latest reader observation
 - Approved helper granted ACLs for three USB nodes (`/dev/bus/usb/001/074`,
@@ -34,6 +35,9 @@ Updated: 2026-11-14.
 - `./tools/test-rp2350-fs-overlay` passed on the current source with
   `TEST:SUMMARY fail=0`; this remains fake-flash evidence and does not close
   MEM-01 T7 runtime acceptance.
+- The generated CAPIN-01 fixture contains unchanged CAP data except for the
+  omitted Import component; the upstream CAP hash remains pinned. No VPCD
+  acceptance run has yet verified its APDU response or package-store state.
 
 ## Workspace notes
 - Preserve all pre-existing dirty files. At build time there were unrelated

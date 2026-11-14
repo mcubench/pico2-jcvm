@@ -119,6 +119,32 @@ def component_version_header(class_component: bytes) -> tuple[int, int]:
     return header[8], header[7]
 
 
+def applet_class_superclass_ref(class_component: bytes,
+                               target_index: int) -> bytes:
+    if component_version_header(class_component) != (2, 1):
+        raise ValueError("fixture parser expects CAP 2.1")
+    data = class_component[3:]
+    offset = 0
+    for class_index in range(target_index + 1):
+        if len(data) - offset < 10 or data[offset] & 0x80:
+            raise ValueError("invalid class record before applet class")
+        flags = data[offset]
+        public_count = data[offset + 7]
+        package_count = data[offset + 9]
+        superclass = data[offset + 1 : offset + 3]
+        end = offset + 10 + 2 * (public_count + package_count)
+        for _ in range(flags & 0x0F):
+            if end + 3 > len(data):
+                raise ValueError("truncated implemented-interface record")
+            end += 3 + data[end + 2]
+        if end > len(data):
+            raise ValueError("Class info exceeds component bounds")
+        if class_index == target_index:
+            return superclass
+        offset = end
+    raise ValueError("applet class record not found")
+
+
 def build_malformed_load_code(mutation: str) -> Path:
     raw_cap = CAP_PATH.read_bytes()
     digest = hashlib.sha256(raw_cap).hexdigest()
@@ -186,11 +212,21 @@ def build_malformed_load_code(mutation: str) -> Path:
     ordered = b"".join(parts[name] for name, _ in COMPONENTS if name in parts)
     missing_required_components = {
         "missing-import-component": "Import",
+        "external-superclass-without-import": "Import",
         "missing-static-field-component": "StaticField",
         "missing-reference-location": "RefLocation",
     }
     if mutation in missing_required_components:
         component_name = missing_required_components[mutation]
+        superclass_ref = None
+        if mutation == "external-superclass-without-import":
+            superclass_ref = applet_class_superclass_ref(
+                parts["Class"], owner_index
+            )
+            if superclass_ref == b"\xff\xff" or not superclass_ref[0] & 0x80:
+                raise ValueError(
+                    "upstream applet superclass is not an external Classref"
+                )
         missing = parts.pop(component_name)
         output = ROOT / f"build/rv28-malformed-{mutation}-load-code.bin"
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -199,7 +235,10 @@ def build_malformed_load_code(mutation: str) -> Path:
         ))
         print(
             f"MALFORMED_CAP:PASS sha256={digest} removed={component_name} "
-            f"bytes={len(missing)} type={mutation} source_cap_unchanged=true"
+            f"bytes={len(missing)} type={mutation} "
+            + (f"superclass_ref={superclass_ref.hex().upper()} "
+               if superclass_ref is not None else "")
+            + "source_cap_unchanged=true"
         )
         return output
     # Method follows Header, Directory, Applet, Import, ConstantPool, Class.
@@ -615,7 +654,7 @@ def build_malformed_load_code(mutation: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location", "missing-import-component", "missing-static-field-component", "external-superclass-import-token-out-of-range", "impdep1", "impdep2", "truncated-sipush",
+        "--mutation", choices=("unknown-component-tag", "load-header-aid-mismatch", "missing-reference-location", "missing-import-component", "external-superclass-without-import", "missing-static-field-component", "external-superclass-import-token-out-of-range", "impdep1", "impdep2", "truncated-sipush",
                                 "fall-through", "zero-process-body-length",
                                 "branch-into-operand", "branch-outside-method",
                                 "conditional-branch-into-operand",
@@ -642,6 +681,7 @@ def main() -> int:
     load_rejection_mutations = (
         "unknown-component-tag", "load-header-aid-mismatch",
         "missing-reference-location", "missing-import-component",
+        "external-superclass-without-import",
         "missing-static-field-component",
         "external-superclass-import-token-out-of-range",
     )
@@ -729,6 +769,7 @@ def main() -> int:
             component_name = {
                 "missing-reference-location": "reference_location",
                 "missing-import-component": "import",
+                "external-superclass-without-import": "import",
                 "missing-static-field-component": "static_field",
             }[args.mutation]
             reason = f"missing_required_{component_name}"

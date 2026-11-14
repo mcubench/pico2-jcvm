@@ -335,8 +335,12 @@ task:
      on the next recovery pass; `lifecycle_recovery_removes_unenabled_staged_load`
      verifies repeated recovery is idempotent.
   Fixtures: extra tag-12 component; library with Export but no Class plus an
-  importer; class with external superclass and no Import. Expect `6A80` at
-  LOAD, no slot consumed, and DELETE of an unrelated package still `9000`.
+  importer; class with external superclass and no Import. The exact
+  `external-superclass-without-import` mutation is now generated from the
+  unchanged JCAlgTest CAP (external superclass ref `8203`, Import removed);
+  offline construction passes, but the VPCD status/no-store assertion has not
+  run because PC/SC is unavailable. Expect `6A80` at LOAD, no slot consumed,
+  and DELETE of an unrelated package still `9000`.
   External superclass package-token range validation is covered by
   `external-superclass-import-token-out-of-range`; transitive library
   dependency closure is covered by `missing-library-dependency`. Export
