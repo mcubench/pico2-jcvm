@@ -1031,7 +1031,7 @@ The tag formats explain why the old reachability test missed it: the alias sourc
 
 ## 2026-11-14 MEM-01: refuse automatic empty-store recovery when both COW copies are invalid
 
-The RP2350 overlay's `fs_init()` checks for stored CAPs or any current/legacy snapshot header if no snapshot restores. If such evidence of prior persistent data exists, it logs `FAULT FS snapshot unavailable; preserve flash for recovery` and returns failure rather than initializing a blank store. Regression `filesystem_restore_fails_closed_without_mutating_two_invalid_snapshots` commits both current COW generations, corrupts each payload CRC, then requires `fs_init()` failure with the complete 2 MiB fake-flash image unchanged. `./tools/test-rp2350-fs-overlay` passes. This validates the no-autofmt policy for two invalid committed copies; physical recovery procedures remain outside this test.
+The RP2350 overlay's `fs_init()` checks for stored CAPs or any current/legacy snapshot header if no snapshot restores. If such evidence of prior persistent data exists, it logs `FAULT FS snapshot unavailable; preserve flash for recovery` and returns failure rather than initializing a blank store. `filesystem_restore_fails_closed_without_mutating_two_invalid_snapshots` corrupts both payload CRCs and asserts failure with the entire 2 MiB fake-flash image unchanged. The stronger `filesystem_restore_fails_closed_for_two_ambiguous_cow_copies_without_mutation` retains valid payload and header CRCs while making record intervals overlap in both copies, then asserts the same no-write failure. `./tools/test-rp2350-fs-overlay` passes. Physical recovery procedures remain outside this test.
 
 ## 2026-11-13 MEM-01: one bad overlay record becomes permanent exhaustion
 

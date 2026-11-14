@@ -1,12 +1,13 @@
 # Current handoff — MEM-01 offline T6 evidence clarified — 2026-11-14 UTC
 
-T1's remaining fail-closed policy now has a focused fake-flash regression.
-Both current COW payloads are damaged while their snapshot headers remain;
-`fs_init()` returns failure and the entire flash image is byte-identical
-before/after. `./tools/test-rp2350-fs-overlay` passes. T1's offline recovery
-policy is complete: select a valid older copy, quarantine only if all arena
-intervals are provable, otherwise preserve flash and fail closed. Physical
-recovery remains unvalidated under T8.
+T1's remaining fail-closed policy has fake-flash coverage for both CRC-invalid
+copies and two CRC-valid snapshots with overlapping record intervals. In both
+cases `fs_init()` fails and the entire flash image is byte-identical
+before/after. The structural case verifies both payload and header CRCs before
+attempting restore. `./tools/test-rp2350-fs-overlay` passes. T1's offline
+recovery policy is complete: select a valid older copy, quarantine only if all
+arena intervals are provable, otherwise preserve flash and fail closed.
+Physical recovery remains unvalidated under T8.
 
 The 8E serial log establishes that the reclaimer classified body
 `03013894FFFFFE000000420007FFFF00000045` as unreachable, erased it, then the

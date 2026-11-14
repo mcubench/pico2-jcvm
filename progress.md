@@ -29554,3 +29554,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T1 offline recovery policy is complete: restore an older valid copy, quarantine only with proven arena intervals, otherwise fail closed. Hardware recovery remains unvalidated.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-both-snapshots-fail-closed.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 verify fail-closed behavior for structurally ambiguous COW snapshots 5 minutes
+
+- Step/experiment: `MEM-01-T1-AMBIGUOUS-COW-INTERVALS-20261114`
+- When: '2026-11-14 10:47 UTC' - '2026-11-14 10:52 UTC'
+- Model: `GPT-6 Codex`
+- Change: Strengthened T1 fake-flash coverage to make both current COW snapshots structurally ambiguous by assigning two records the same arena offset, while recomputing and verifying both payload and header CRCs. The test requires startup failure and byte-identical flash. Updated TODO, QKB and HANDOFF to distinguish invalid-checksum recovery from CRC-valid structural ambiguity.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:PASS filesystem_restore_fails_closed_for_two_ambiguous_cow_copies_without_mutation` and `TEST:SUMMARY fail=0`. `git diff --check` passed for changed files. No firmware build, emulator or hardware.
+- Result: This directly verifies the policy for two unprovable overlapping arena layouts; firmware refuses restore and makes no flash writes.
+- Decision: T1 offline fail-closed coverage is complete; retain physical recovery acceptance under T8.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-both-ambiguous-snapshots.log`; no hardware logs.

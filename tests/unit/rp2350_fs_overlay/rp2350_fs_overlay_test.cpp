@@ -255,6 +255,54 @@ void convert_v4_snapshot_to_legacy(uint32_t offset, uint16_t version) {
       reinterpret_cast<const uint8_t *>(header),
       offsetof(FilesystemHeaderTest, header_crc32));
 }
+
+bool make_v4_snapshot_record_offsets_overlap(const uint32_t offset) {
+  auto *header = reinterpret_cast<FilesystemHeaderTest *>(
+      fake_flash.data() + offset);
+  if (header->version != 4 || header->file_count < 2 ||
+      header->payload_length > filesystem_snapshot_scratch.size()) {
+    return false;
+  }
+  uint8_t *payload = fake_flash.data() + offset + 4096;
+  uint8_t *records = payload + 1024;
+  uint8_t *first = nullptr;
+  uint8_t *second = nullptr;
+  uint32_t record_rank = 0;
+  for (uint16_t slot = 0; slot < 8192; ++slot) {
+    if ((payload[slot / 8] & (1u << (slot % 8))) == 0) continue;
+    uint8_t *record = records + record_rank * 8;
+    if (first == nullptr) {
+      first = record;
+    } else if (second == nullptr) {
+      second = record;
+      break;
+    }
+    ++record_rank;
+  }
+  if (first == nullptr || second == nullptr) return false;
+  second[4] = first[4];
+  second[5] = first[5];
+  header->payload_crc32 = test_crc32(payload, header->payload_length);
+  header->header_crc32 = test_crc32(
+      reinterpret_cast<const uint8_t *>(header),
+      offsetof(FilesystemHeaderTest, header_crc32));
+  return true;
+}
+
+bool v4_snapshot_checksums_valid(const uint32_t offset) {
+  const auto *header = reinterpret_cast<const FilesystemHeaderTest *>(
+      fake_flash.data() + offset);
+  if (header->magic != 0x3253464a || header->version != 4 ||
+      header->payload_length > flash_layout::filesystem_slot_size - 4096) {
+    return false;
+  }
+  const uint8_t *payload = fake_flash.data() + offset + 4096;
+  return header->payload_crc32 ==
+             test_crc32(payload, header->payload_length) &&
+         header->header_crc32 == test_crc32(
+             reinterpret_cast<const uint8_t *>(header),
+             offsetof(FilesystemHeaderTest, header_crc32));
+}
 }
 
 extern "C" const uint8_t *rp2350_fs_test_flash_base(void) {
@@ -3472,6 +3520,40 @@ int main() {
       fake_flash == both_bad_snapshot_flash;
   expect(both_bad_snapshots_fail_closed,
          "filesystem_restore_fails_closed_without_mutating_two_invalid_snapshots");
+
+  // Retain valid CRCs while making the serialized arena intervals
+  // unprovable in both generations. Startup must reject both copies without
+  // dropping records or writing an empty replacement snapshot.
+  fake_flash.fill(0xff);
+  constexpr uint8_t ambiguous_snapshot_tag_a[] = {0xf2, 0x23, 0x01};
+  constexpr uint8_t ambiguous_snapshot_tag_b[] = {0xf2, 0x23, 0x02};
+  constexpr uint8_t ambiguous_snapshot_value_a[] = {0x21, 0x22, 0x23};
+  constexpr uint8_t ambiguous_snapshot_value_b[] = {0x31, 0x32, 0x33};
+  const bool ambiguous_snapshots_seeded =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(ambiguous_snapshot_tag_a, sizeof(ambiguous_snapshot_tag_a),
+               ambiguous_snapshot_value_a,
+               sizeof(ambiguous_snapshot_value_a)) == FS_STATUS_OK &&
+      fs_write(ambiguous_snapshot_tag_b, sizeof(ambiguous_snapshot_tag_b),
+               ambiguous_snapshot_value_b,
+               sizeof(ambiguous_snapshot_value_b)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      fs_write(ambiguous_snapshot_tag_b, sizeof(ambiguous_snapshot_tag_b),
+               ambiguous_snapshot_value_a,
+               sizeof(ambiguous_snapshot_value_a)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  const bool ambiguous_snapshots_corrupted = ambiguous_snapshots_seeded &&
+      make_v4_snapshot_record_offsets_overlap(
+          flash_layout::filesystem_slot(0)) &&
+      make_v4_snapshot_record_offsets_overlap(
+          flash_layout::filesystem_slot(1)) &&
+      v4_snapshot_checksums_valid(flash_layout::filesystem_slot(0)) &&
+      v4_snapshot_checksums_valid(flash_layout::filesystem_slot(1));
+  const auto ambiguous_snapshot_flash = fake_flash;
+  const bool ambiguous_snapshots_fail_closed = ambiguous_snapshots_corrupted &&
+      fs_init() != FS_STATUS_OK && fake_flash == ambiguous_snapshot_flash;
+  expect(ambiguous_snapshots_fail_closed,
+         "filesystem_restore_fails_closed_for_two_ambiguous_cow_copies_without_mutation");
 
   // A self-consistent snapshot envelope can still contain an unreachable
   // index slot while all serialized records remain intact. Rebuild the hash
