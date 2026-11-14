@@ -77,26 +77,51 @@ At the end of every logical step:
 1. Validate the step with the relevant build, test, hardware cycle, or inspection.
 2. Append a concise record to the repository-root `progress.md`; never rewrite or
    delete earlier records. Append at the end of file.
-3. Create a new Git commit containing the step and its `progress.md` record. Do
-   not amend or reuse the previous step's commit.
+3. Create **one** new Git commit containing the step and its `progress.md` record.
+   Do not amend or reuse the previous step's commit.
 4. Commit only files that belong to that step; preserve unrelated pre-existing
    changes.
+
+### One step = one commit (no hash backfill commits)
+A commit cannot contain its own SHA. Records therefore link to commits through
+a **Step-Id**, not a SHA.
+- Choose a unique Step-Id before committing: `YYYYMMDD-HHMM-<short-slug>`, e.g.
+  `20261114-1845-mem01-t7-vpcd`. Put it in the `progress.md` record and as a
+  trailer in the commit message, together with the model:
+  ```
+  Step-Id: 20261114-1845-mem01-t7-vpcd
+  Agent-Model: gpt6-luna
+  ```
+  Find the commit for a record with `git log --grep='Step-Id: <id>'`.
+- **Never** create a commit whose only purpose is to record, backfill or correct
+  a commit hash ("Record … commit", "Backfill … SHA"). Never amend to insert a
+  SHA either.
+- Do not create commits that only restate status already recorded (e.g.
+  repeating the same "remains open" decision). Bookkeeping-only commits
+  (`progress.md`, `TODO.md`, HANDOFF, QKB) are allowed only when they add new
+  information: a new measurement, a hardware or campaign result, a new blocker,
+  or a user directive.
+- A record may cite **earlier** commits by SHA (e.g. "regression introduced in
+  `4f225cbb`"); those SHAs already exist.
 
 Each `progress.md` record should be structured as:
 
 ```markdown
 ## YYYY-MM-DD <short step title> <total minutes of actual work>
 
-- Step/experiment: `<identifier if applicable>`
+- Step-Id: `<YYYYMMDD-HHMM-short-slug>` (same value as the commit trailer)
+- Task: `<TODO identifier, e.g. MEM-01 T7, if applicable>`
 - When: '<start date + time>' - '<end date + time>'
 - Model: `<name of the model you are, e.g., gpt6-funny>`
 - Change: <what changed and why>
 - Validation: <commands/tests/hardware checks run and whether they passed>
 - Result: <key measured or observed outcome; include failures or limitations>
 - Decision: <what this establishes and the next action, if any>
-- Commit: `<commit SHA>`
 - Artifacts/logs: `<paths, hashes, or none>`
 ```
+
+Older records use `Commit: <SHA>` lines and separate backfill commits. Those are
+historical; do not convert or "fix" them.
 
 Include exact measurements, important runtime output, hashes, or archived log
 paths when they materially explain how the step worked. State explicitly when a

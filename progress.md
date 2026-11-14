@@ -29654,3 +29654,24 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   add its hash to `--verify`. This awaits the user's decision.
 - Commit: `ce972442` (HANDOFF compaction); this record's commit (instructions).
 - Artifacts/logs: `.agent/history/handoff-archive-20261114.md`
+
+## 2026-11-14 Replace commit-SHA records with Step-Id trailers 10
+
+- Step-Id: `20261114-1900-stepid-trailers`
+- Task: user directive (bookkeeping overhead)
+- When: '2026-11-14 18:50 CET' - '2026-11-14 19:00 CET'
+- Model: `claude-opus-5-5`
+- Change: `AGENTS.md` no longer requires the `Commit: <SHA>` line in
+  `progress.md` records. A commit cannot contain its own SHA, so agents made a
+  second "Record/Backfill commit hash" commit almost every time. Records and
+  commits now share a `Step-Id` (`YYYYMMDD-HHMM-slug`), carried as a commit
+  trailer with `Agent-Model`. Hash-backfill commits and status-restating
+  bookkeeping-only commits are forbidden.
+- Validation: Inspection only. `git log` showed 1,883 of 2,842 commits touch
+  only Markdown/bookkeeping, and 1,548 subjects are Record/docs/Backfill/hash
+  style. This step is itself a single commit with the new trailers.
+- Result: Not measured yet. The expected effect is roughly half as many commits
+  per step, and per-model statistics from `git log --grep='Agent-Model:'`.
+- Decision: Have the CTO daily report count new backfill-style commits to
+  check compliance.
+- Artifacts/logs: none
