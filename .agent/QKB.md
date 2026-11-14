@@ -128,6 +128,25 @@ Do not restart PC/SC while another test is active; service restart can interrupt
 
 Evidence: [E002](QKB_INDEX.md#e002), [E032](QKB_INDEX.md#e032), [E425](QKB_INDEX.md#e425), [E006](QKB_INDEX.md#e006).
 
+2026-11-14 sustained-run reproduction on 8E (`8E464F4E2BBC0A19`): the
+physical option-2 client run lasted about 32 minutes and reached
+`TYPE_DES LENGTH_DES3_3KEY ALG_DES_ECB_ISO9797_M2 Cipher_init()`. JCAlgTest
+reported `SCARD_E_NOT_TRANSACTED`, then `SCARD_E_READER_UNAVAILABLE`; its
+non-interactive prompt ended with `NoSuchElementException`. The supplied
+1.8.5 client JAR was used (`b6a753be…e3acec3`) with the unchanged 1.8.4/jc305
+CAP (`cac42cd3…dbfad`); the generated CSV labels its embedded client version
+1.8.4, so retain both identities when reporting it. At the failure boundary,
+the 8E serial telemetry showed no `CHOUPI:CCID_ERRORS`, and the final logged
+`B0E2` response was `9000`; a finite CDC monitor still passed afterward.
+Runtime USB `2e8a:0009` remained visible, but a later PC/SC scan listed only
+the two virtual readers. Re-running the approved Pico-only ACL/service helper
+did not restore physical reader publication. This points to a host CCID/PCSC
+delivery or device-channel problem, not demonstrated persistent-storage
+exhaustion; it does not prove the firmware CCID path healthy. During the run,
+live heap counts stayed within 51–115 arrays and 27–28 instances over 833 GC
+samples, with no `F205`, `6F00`, or `NO_RESOURCE`. Preserve the logs in
+`artifacts/results/jcalgtest-1.8.5-physical-20261114/8E464F4E2BBC0A19/option2-performance/`.
+
 ## Host access and helper failures — viable execution path
 
 Every USB/PCSC attempt must use elevated host execution from the first attempt.

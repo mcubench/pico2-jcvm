@@ -1,3 +1,39 @@
+# Current handoff — MEM-01 physical option-2 partial run lost PC/SC — 2026-11-14 UTC
+
+The physical JCAlgTest option-2 performance run on 8E
+(`8E464F4E2BBC0A19`) used the supplied 1.8.5 client JAR with the unchanged
+1.8.4/jc305 CAP. The client ran about 32 minutes, produced 92 method groups
+and 668 CSV rows, and failed around
+`TYPE_DES LENGTH_DES3_3KEY ALG_DES_ECB_ISO9797_M2 Cipher_init()` with
+`SCARD_E_NOT_TRANSACTED` followed by `SCARD_E_READER_UNAVAILABLE`. The
+non-interactive client then exhausted stdin at its retry/skip prompt and
+terminated with `NoSuchElementException`. This is a failed partial run, not
+T8 acceptance.
+
+Storage/heap evidence during the run: 717 `INS_CARD_RESET`/deletion requests
+and 833 heap-GC samples; live counts ranged from 51 to 115 arrays and 27 to
+28 instances. No `F205`, `6F00`, or `NO_RESOURCE` appeared. The last serial
+snapshot recorded `B0E2` returning `9000`, `rx_events=3012`, `tasks=3012`,
+`xfr=1441`, and no `CHOUPI:CCID_ERRORS`. A separate finite CDC monitor passed
+after the client failed. USB runtime `2e8a:0009` remained visible, but PC/SC
+later listed only the two virtual readers; the approved helper restarted the
+service but did not restore the physical reader. Only 8E had been guest-visible
+as a physical PC/SC reader; the two other boards reported in BOOTSEL were not
+enumerated. Do not classify this as a persistent-memory failure or claim CCID
+health from the CDC heartbeat alone.
+
+Results/logs:
+`artifacts/results/jcalgtest-1.8.5-physical-20261114/8E464F4E2BBC0A19/option2-performance/`.
+Host JAR SHA-256 is `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`;
+CAP SHA-256 is `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+The CSV reports its embedded client version as 1.8.4 despite the selected
+1.8.5 JAR; keep that discrepancy explicit.
+
+Next: continue offline CCID state-machine/error-path review while the Pico
+reader is absent from PC/SC. Resume physical testing only after the same or
+another identified reader is published again. Do not start the option-1 run
+on a second board until that board is actually enumerated.
+
 # Current handoff — BOOTSEL-01 physical failover and flash-wrapper recovery — 2026-11-14 UTC
 
 The flash wrapper now accepts picotool's occasional post-verification
