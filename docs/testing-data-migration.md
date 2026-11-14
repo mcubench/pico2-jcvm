@@ -16,8 +16,9 @@ runtime, native API implementation, or external CAP/JAR/runner bytes changed.
   libraries, runner and GP tool. Snapshot date identifies ingestion, not release.
 - `tests/fixtures/external/jcalgtest/legacy/1.8.2/`: explicitly historical CAP
   and simulator reference; no active default selects these.
-- `tests/fixtures/reference/`: newly generated 1.8.4 simulator reference,
-  historical expected-support data and supplied card comparison CSVs.
+- `tests/fixtures/reference/`: preserved 1.8.4 and newly generated 1.8.5-client
+  simulator references, historical expected-support data and supplied card
+  comparison CSVs.
 - `tools/`: stable build/test/probe entrypoints; renamed Python tests retain
   compatibility entrypoints. The old versioned LOAD builder forwards to
   `tools/build-jcalgtest-load-code` and explicitly announces the new baseline.
@@ -29,9 +30,9 @@ runtime, native API implementation, or external CAP/JAR/runner bytes changed.
 
 ## Input provenance and preservation
 
-`tests/fixtures/manifest.json` records 81 files with byte counts and SHA-256
-hashes: 77 initially supplied suite/legacy assets, one fresh simulator reference
-and three additional historical reference CSVs. No input was downloaded.
+`tests/fixtures/manifest.json` records 83 files with byte counts and SHA-256
+hashes: 78 supplied suite/legacy assets, two simulator references and three
+additional historical reference CSVs. No input was downloaded.
 JCAlgTest 1.8.4 CAP SHA-256:
 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
 

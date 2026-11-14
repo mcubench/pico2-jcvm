@@ -56,7 +56,7 @@ install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
 install -m 0644 "${expected_csv}" \
   "${package_dir}/expected/expected-support-symm_crypto.csv"
 install -m 0644 "${reference_csv}" \
-  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv"
+  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.5-alg-support-extended.csv"
 install -m 0644 "${repo_root}/docs/symm-crypto-windows-test.md" \
   "${package_dir}/README.md"
 

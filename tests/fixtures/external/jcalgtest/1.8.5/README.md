@@ -16,3 +16,9 @@ or a supported equivalent; see `tests/README.md`.
 This JAR contains `algtestjclient.AlgTestJClient`, but does not contain
 `algtestjclient.ApiTestJClient`. Keep the independent Java Card API suite on
 its own supplied client.
+
+The client reports `AlgTestJClient version; 1.8.4` in generated support CSV
+metadata even though this supplied JAR is the 1.8.5 client. Identify client
+versions by the selected JAR and SHA-256, not by that CSV field. The pinned
+1.8.5 jCardSim reference is
+`tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv`.

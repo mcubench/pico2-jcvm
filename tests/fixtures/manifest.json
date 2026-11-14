@@ -29,9 +29,11 @@
     "toolchain.jc305": ".local-toolchain/java-card/provided/jc305u3_kit",
     "toolchain.ant-javacard": ".local-toolchain/java-card/provided/ant-javacard.jar",
     "jcalgtest.legacy.reference": "tests/fixtures/external/jcalgtest/legacy/1.8.2/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv",
-    "jcalgtest.reference": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
+    "jcalgtest.reference": "tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv",
     "reference.card.noecc": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv",
-    "reference.card.j3r180": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv"
+    "reference.card.j3r180": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv",
+    "jcalgtest.reference.1.8.4": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
+    "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
   },
   "files": [
     {
@@ -523,6 +525,20 @@
       "size": 943,
       "sha256": "024fa70c6869061f113ce4d40e04bf1c6f165555b349c48ab45439d6037a0e34",
       "note": "Historical reference input; unchanged, not JCAlgTest 1.8.4 acceptance."
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar",
+      "sha256": "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3",
+      "size": 164953,
+      "provided_path": "build/AlgTestJClient_v1.8.5.jar",
+      "note": "User-supplied immutable host client; distinct from the unchanged JCAlgTest 1.8.4/jc305 CAP."
+    },
+    {
+      "path": "tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv",
+      "size": 597551,
+      "sha256": "8a8b7d75f77dbb77707dafdb6d100ac27c920a986c8509b8e7a6df09b6552746",
+      "generated_by": "tools/run-jcalgtest --client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar --simulator -op ALG_SUPPORT_EXTENDED -fresh -cardname jcardsim_jcalgtest_184; 2026-11-15",
+      "note": "Applet is unchanged 1.8.4_jc305. Client JAR SHA-256 b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3; CSV self-reports client version 1.8.4. Support yes/no identities match the prior simulator run; timing values are run-specific."
     }
   ]
 }

@@ -17,7 +17,7 @@ Updated: 2026-11-15.
 3. CAPIN-01 APDU-level PC VPCD validation passed: malformed final LOAD returned `6A80`; GET STATUS excluded it and retained an unrelated package; unrelated DELETE returned `9000`. Evidence is in `artifacts/logs/cap-missing-import-apdu-20261114T230132Z.log`. Physical acceptance remains open.
 
 ## Last hardware / PCSC state
-- Approved helper granted ACLs for three USB nodes; the latest elevated bounded `tools/list-readers --timeout 8` timed out. No usable PC/SC reader inventory was obtained; do not attribute the USB nodes to JCVM boards.
+- Approved helper granted ACLs for three USB nodes; elevated `tools/list-readers --timeout 8` timed out, as did `timeout 12s pcsc_scan -r` with no output. No usable PC/SC reader inventory was obtained; do not attribute the USB nodes to JCVM boards.
 - Do not repeat unbounded PCSC polling or claim physical acceptance without reader enumeration, identity, flash, and finite serial logs.
 - `./tools/test-rp2350-fs-overlay` passed on current source with `TEST:SUMMARY fail=0`; fake-flash evidence only, not T7 client acceptance. `tools/list-readers --timeout 12` again timed out, so no JCAlgTest VPCD PC/SC campaign started.
 - The wired `./tools/test-cap-malformed-vpcd --mutation external-superclass-without-import` entrypoint passed under elevated localhost-socket execution and runs raw GP LOAD/GET STATUS/DELETE VPCD validation. Earlier direct startup-path evidence remains in the preceding progress record.

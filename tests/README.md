@@ -32,9 +32,11 @@ fixtures. The original provided tree is archived during migration so no
 source, older artifact, or result is discarded. See
 `docs/testing-data-migration.md` for the inventory and migration evidence.
 
-Simulator/card comparison input lives under `fixtures/reference/`. It retains
-its recorded applet version and provenance. The supplied versioned client
-reports an internal version of 1.8.3; its simulator applet is 1.8.4_jc305.
+Simulator/card comparison input lives under `fixtures/reference/`. Both 1.8.4-
+and 1.8.5-client simulator references are preserved under versioned directories;
+new comparisons use the 1.8.5-generated reference with the unchanged 1.8.4_jc305
+applet. The CSV self-reported client version is not authoritative; identify the
+host JAR by its pinned hash in the fixture manifest.
 The original distribution is preserved at
 `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
 See `docs/testing-data-migration.md` for checks and accepted follow-ups.

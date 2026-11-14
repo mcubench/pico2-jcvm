@@ -73,7 +73,7 @@ result CSV against the generated support list:
 
 ```powershell
 $csv = Get-ChildItem .\results\symm_crypto\*ALGSUPPORT*.csv | Select-Object -First 1
-$reference = '.\reference\jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv'
+$reference = '.\reference\jcardsim-jcalgtest-v1.8.5-alg-support-extended.csv'
 py .\tools\compare-jcalgtest-support.py $csv.FullName $reference --expected-support .\expected\expected-support-symm_crypto.csv
 ```
 

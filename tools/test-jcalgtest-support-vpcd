@@ -41,7 +41,7 @@ rom_mask="${JCALGTEST_VPCD_ROM_MASK:-${repo_root}/build/choupi-pc/flash}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 client="${JCALGTEST_CLIENT_JAR:-$("${repo_root}/tools/fixture-path" jcalgtest.client)}"
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
-reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv"
+reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv"
 expected="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
 
 for input in "${emulator}" "${rom_mask}" "${gp_jar}" "${client}" "${cap}" \

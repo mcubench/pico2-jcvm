@@ -57,7 +57,7 @@ cp -RL "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
 install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
   "${package_dir}/tools/compare-jcalgtest-support.py"
 install -m 0644 "${reference_csv}" \
-  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv"
+  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.5-alg-support-extended.csv"
 install -m 0644 "${repo_root}/docs/windows-asymm-symm-test.md" \
   "${package_dir}/README.md"
 

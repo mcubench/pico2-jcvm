@@ -32,15 +32,21 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 ### REF-185-01
 
-- [ ] **Regenerate the jCardSim support reference with the 1.8.5 client.**
-  `tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv`
-  was generated with the older versioned client (internally 1.8.3). Rerun
-  `tools/run-jcalgtest --client-jar <1.8.5 JAR> --simulator -op ALG_SUPPORT_EXTENDED -fresh`.
-  Store the new reference alongside the old one (do not overwrite the historical
-  file), record the JAR SHA-256, pin it in `tests/fixtures/manifest.json`, and
-  switch the runbook and Windows packagers to it. Until then, comparisons are
-  mixed-client. Note: the 3072/4096 RSA label mismatch is a host-client bug
-  present in 1.8.3–1.8.5; expect it in the new reference too.
+- [x] **Regenerate the jCardSim support reference with the 1.8.5 client.**
+  Generated `tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv`
+  with the supplied unchanged 1.8.5 client JAR (SHA-256
+  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`)
+  and the unchanged 1.8.4/jc305 CAP. The CSV SHA-256 is
+  `8a8b7d75f77dbb77707dafdb6d100ac27c920a986c8509b8e7a6df09b6552746`.
+  The prior 1.8.4-generated CSV remains intact. Both runs report 4,406
+  yes/no result rows and their section/algorithm/status distributions are
+  identical; timing columns differ as expected. The new CSV's self-reported
+  client version field says 1.8.4, so use the selected JAR hash as client
+  identity. Pinned both JAR and new CSV in `tests/fixtures/manifest.json`, made
+  the 1.8.5 reference the active catalog alias, and updated the VPCD comparator,
+  physical runbook, Windows packagers and their instructions. The known
+  3072/4096 RSA label issue remains a client bug and is not fixed by refreshing
+  this support reference.
 
 Full pre-edit text (including existing uncommitted edits), completed tasks,
 measurements and detailed acceptance cases are preserved in the

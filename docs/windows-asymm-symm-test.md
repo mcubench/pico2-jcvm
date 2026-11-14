@@ -74,7 +74,7 @@ the actual CSV under `results\symm_crypto`, then run this command (the
 jCardSim reference is a required second positional argument):
 
 ```powershell
-py .\tools\compare-jcalgtest-support.py .\results\symm_crypto\<actual-file>.csv .\reference\jcardsim-jcalgtest-v1.8.4-alg-support-extended.csv --expected-support .\expected\expected-support-symm_crypto.csv
+py .\tools\compare-jcalgtest-support.py .\results\symm_crypto\<actual-file>.csv .\reference\jcardsim-jcalgtest-v1.8.5-alg-support-extended.csv --expected-support .\expected\expected-support-symm_crypto.csv
 ```
 
 For the second profile, repeat BOOTSEL flashing with

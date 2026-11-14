@@ -30066,3 +30066,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use this package for new external tests; record results against the exact UF2 hash. Keep MEM-01 T7/T8 acceptance open pending VPCD/physical reader availability and client evidence.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-7a396462-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-7a396462-dirty.zip`; package instructions and `BUILD-PROVENANCE.txt` in the corresponding directory.
+
+## 2026-11-14 Refresh JCAlgTest simulator reference with client 1.8.5 10 minutes
+
+- Step-Id: `20261114-2324-ref185-jcardsim`
+- Task: REF-185-01 version-aligned simulator support reference
+- When: '2026-11-14 23:24 UTC' - '2026-11-14 23:34 UTC'
+- Model: `GPT-6`
+- Change: Ran unchanged JCAlgTest 1.8.4/jc305 CAP in bundled jCardSim with the supplied 1.8.5 host client, preserved the older 1.8.4-generated reference, and added a separate 1.8.5 reference plus manifest-pinned client/reference hashes. Switched the active fixture alias, VPCD support runner, physical runbook, Windows packaging scripts and package instructions to the new reference. Documented that the generated CSV self-reports client version 1.8.4, so client identity comes from the selected JAR/hash.
+- Validation: `tools/run-jcalgtest --client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar --simulator -op ALG_SUPPORT_EXTENDED -fresh -cardname jcardsim_jcalgtest_184` completed with exit 0. A section/algorithm/status multiset comparison found 4,406 yes/no rows in both simulator outputs and zero differences; timing columns varied. The JAR SHA-256 is `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CSV SHA-256 is `8a8b7d75f77dbb77707dafdb6d100ac27c920a986c8509b8e7a6df09b6552746`. `./tools/fixture-path --verify` passed with 83 files; active and historical aliases resolve correctly; `bash -n` passed on the three affected shell entrypoints; `git diff --check` passed for changed files. The simulator run does not establish Pico hardware acceptance.
+- Result: New and historical jCardSim references report identical algorithm support statuses. Their performance timing columns are run-specific and must not be compared as fixed values.
+- Decision: Use the 1.8.5-generated reference for new comparisons; preserve the old CSV for historical reproducibility. REF-185-01 is complete.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv`; `artifacts/results/jcardsim-alg-support-1.8.5-reference/ALGTEST_log_1794698919589.log`; `artifacts/logs/jcardsim-alg-support-1.8.5-reference.log`; `artifacts/logs/jcardsim-alg-support-reference-comparison-20261115.txt`.
