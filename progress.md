@@ -29542,3 +29542,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark T6 root-cause analysis complete; keep T7 and T8 open for runtime and physical acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`; no new logs.
+
+## 2026-11-14 MEM-01 prove fail-closed recovery with two invalid snapshots 5 minutes
+
+- Step/experiment: `MEM-01-T1-BOTH-SNAPSHOTS-FAIL-CLOSED-20261114`
+- When: '2026-11-14 10:42 UTC' - '2026-11-14 10:47 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a fake-flash regression that writes two COW generations, damages each snapshot payload CRC while preserving headers, then requires `fs_init()` to fail without changing any flash byte. Updated TODO, QKB and HANDOFF with the validated recovery policy.
+- Validation: `./tools/test-rp2350-fs-overlay` passed, including `TEST:PASS filesystem_restore_fails_closed_without_mutating_two_invalid_snapshots` and `TEST:SUMMARY fail=0`. Test-only change; no firmware build, emulator or hardware run. `git diff --check` on the changed test file passed.
+- Result: Two invalid current snapshots do not silently become an empty filesystem; fake flash remained byte-identical across failed startup.
+- Decision: T1 offline recovery policy is complete: restore an older valid copy, quarantine only with proven arena intervals, otherwise fail closed. Hardware recovery remains unvalidated.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-both-snapshots-fail-closed.log`; no hardware logs.

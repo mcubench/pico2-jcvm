@@ -1029,6 +1029,10 @@ In `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/optio
 
 The tag formats explain why the old reachability test missed it: the alias source ends in `...0007`, while the body extends it by the six-byte `FFFF00000045` suffix. `Heap::hasReachablePersistentTagPrefix()` recognized exact object tags and direct two-byte child records; it did not resolve this alias encoding. The reclaimer therefore erased the body even though the serialized alias source was reachable. The current alias-chain guard resolves and protects the target, and `reachable_durable_alias_protects_body_subtree_from_incomplete_heap_walk` covers the missed-edge case. T6's historical root-cause finding is complete. The archived run is not clean post-fix evidence; zero/unexplained `alias-protect` runtime telemetry remains a separate T7 acceptance item.
 
+## 2026-11-14 MEM-01: refuse automatic empty-store recovery when both COW copies are invalid
+
+The RP2350 overlay's `fs_init()` checks for stored CAPs or any current/legacy snapshot header if no snapshot restores. If such evidence of prior persistent data exists, it logs `FAULT FS snapshot unavailable; preserve flash for recovery` and returns failure rather than initializing a blank store. Regression `filesystem_restore_fails_closed_without_mutating_two_invalid_snapshots` commits both current COW generations, corrupts each payload CRC, then requires `fs_init()` failure with the complete 2 MiB fake-flash image unchanged. `./tools/test-rp2350-fs-overlay` passes. This validates the no-autofmt policy for two invalid committed copies; physical recovery procedures remain outside this test.
+
 ## 2026-11-13 MEM-01: one bad overlay record becomes permanent exhaustion
 
 **Symptom:** reclaimer logs `applet_result=6` once, then every later request

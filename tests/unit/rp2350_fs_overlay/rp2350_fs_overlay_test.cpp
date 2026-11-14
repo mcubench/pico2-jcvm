@@ -3442,6 +3442,37 @@ int main() {
   expect(corrupt_snapshot_fallback,
          "filesystem_restore_rejects_integrity_failure_and_uses_previous_snapshot");
 
+  // If neither committed COW copy validates, a present snapshot header means
+  // the store may contain data whose record boundaries cannot be recovered.
+  // Startup must fail closed and leave both damaged copies untouched instead
+  // of initializing an empty filesystem over the user's persistent state.
+  fake_flash.fill(0xff);
+  constexpr uint8_t both_bad_snapshot_tag[] = {0xf2, 0x22, 0x01};
+  constexpr uint8_t both_bad_snapshot_value_a[] = {0x11, 0x22, 0x33};
+  constexpr uint8_t both_bad_snapshot_value_b[] = {0x44, 0x55, 0x66};
+  const bool both_snapshot_copies_seeded =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(both_bad_snapshot_tag, sizeof(both_bad_snapshot_tag),
+               both_bad_snapshot_value_a,
+               sizeof(both_bad_snapshot_value_a)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      fs_write(both_bad_snapshot_tag, sizeof(both_bad_snapshot_tag),
+               both_bad_snapshot_value_b,
+               sizeof(both_bad_snapshot_value_b)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  const uint32_t snapshot0 = flash_layout::filesystem_slot(0);
+  const uint32_t snapshot1 = flash_layout::filesystem_slot(1);
+  if (both_snapshot_copies_seeded) {
+    fake_flash[snapshot0 + 4096] ^= 1;
+    fake_flash[snapshot1 + 4096] ^= 1;
+  }
+  const auto both_bad_snapshot_flash = fake_flash;
+  const bool both_bad_snapshots_fail_closed =
+      both_snapshot_copies_seeded && fs_init() != FS_STATUS_OK &&
+      fake_flash == both_bad_snapshot_flash;
+  expect(both_bad_snapshots_fail_closed,
+         "filesystem_restore_fails_closed_without_mutating_two_invalid_snapshots");
+
   // A self-consistent snapshot envelope can still contain an unreachable
   // index slot while all serialized records remain intact. Rebuild the hash
   // placement from their canonical tags, then publish the repaired index.
