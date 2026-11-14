@@ -3,24 +3,32 @@
 Updated: 2026-11-14.
 
 ## Current external image
-- Normal ARM `max_crypto`; object deletion ON; all debug/trace options OFF;
-  empty persistent storage and no preinstalled applet.
-- UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-97d9027e.uf2`
-- UF2 SHA-256: `9157bc1a41661f04ded8fff40136c27825c427a90f87bc03742d84711fd358ad`
-- Windows package: `build/external-test/pico2-jcvm-object-deletion-normal-windows-97d9027e.zip`
-- Package SHA-256: `eb1b6e9bdad555ddac5f1241f999c60a37ebffebda191644a10c250e0063b7f3`
-- External request: `WIN-OBJECT-DELETION-NORMAL-97D9027E` in `.agent/EXT_REQUESTS.md`.
-- Build, empty-card packaging, internal checksums, and ZIP integrity passed.
-  The package has not been flashed or tested on physical hardware here.
+- Fresh ARM `max_crypto`, normal mode: object deletion ON, all debug/trace
+  options OFF, serial wait 0 ms, empty storage, no preinstalled applet.
+- UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-50114a30-dirty.uf2`
+- UF2 SHA-256: `30dcd9f581cdea7729f66e9c08c832438f8d01ff32c3e56c37bbaae45d46287f`
+- Windows package: `build/external-test/pico2-jcvm-object-deletion-normal-windows-50114a30-dirty.zip`
+- Package SHA-256: `2d3735a37acd34d81620e893c79071b533fbeec3ccc13c2c47e526a93338ea44`
+- Request: `WIN-OBJECT-DELETION-NORMAL-DIRTY-50114A30` in `.agent/EXT_REQUESTS.md`.
+- Built from current dirty worktree; packaged provenance records root tracked-diff
+  hash and CHOUPI OS submodule state. Package integrity and fixture manifest
+  verification passed. No physical hardware validation was performed.
 
 ## Next actions
-1. Await external Windows test results for the package above. Require the exact
-   UF2 hash, Windows version, reader/ATR, chip ID, full result folders and
-   serial logs; keep option 2 and option 1 results separate by token.
-2. **MEM-01 T7:** finish bounded overlay-backed VPCD option-2 proof through
-   sync sequence ≥2,500, including live records/bytes and alias roots at
-   compaction. Earlier high-occupancy synthetic overlay tests pass; unchanged
-   JCAlgTest option-2 VPCD acceptance is still open.
-3. **HOST-01 / MEM-01 T8:** after T7, use a current normal image on identified
-   physical boards for option 2 and option 1. Refresh the approved reader
-   helper and verify exact PC/SC reader enumeration before each campaign.
+1. Run the new Windows image for JCAlgTest option 2; use a second identified
+   device for option 1 if available. Return exact UF2 hash, chip ID, reader/ATR,
+   full result folders and serial logs.
+2. MEM-01 T7 remains open: complete unchanged JCAlgTest option-2 proof on the
+   RP2350 overlay backend through sync sequence 2,500, capturing live records,
+   bytes, aliases, compaction and RAM-handle metrics.
+3. Continue offline VPCD harness work if no physical device is visible. Check
+   current reader inventory with `./tools/list-readers`; obey root AGENTS USB
+   host-access wrapper rules for all USB/PCSC operations.
+
+## Workspace notes
+- Preserve all pre-existing dirty files. At build time there were unrelated
+  active changes in TODO, review probes, CHOUPI, tests and tool wrappers.
+- Avoid `pcsc_scan`; it has hung and consumed CPU in this VM. Use bounded
+  `tools/list-readers` and the approved PC/SC helper only.
+- Do not claim physical acceptance without exact reader enumeration, board
+  identity, flash, and finite serial-log evidence.

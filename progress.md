@@ -29980,3 +29980,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `9157bc1a41661f04ded8fff40136c27825c427a90f87bc03742d84711fd358ad`; Windows ZIP SHA-256 `eb1b6e9bdad555ddac5f1241f999c60a37ebffebda191644a10c250e0063b7f3`. Source tree was dirty; tracked diff and submodule hashes are recorded in package provenance.
 - Decision: This is the current external-testing image with deletion ON and an empty card. Physical acceptance remains open; see `.agent/EXT_REQUESTS.md`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-97d9027e.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-97d9027e.zip`; `build/external-test/object-deletion-normal-97d9027e/`
+
+## 2026-11-14 Rebuild current bugfix external image 4 minutes
+
+- Step-Id: `20261114-2207-win-object-deletion-bugfix`
+- Task: External validation image with object deletion enabled
+- When: '2026-11-14 22:03 UTC' - '2026-11-14 22:07 UTC'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt ARM firmware after current uncommitted storage/memory changes, produced a clean-storage empty-card UF2, and packaged it with the unchanged upstream JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 host client, GPPro and Windows instructions. Updated the active external request and session handoff; older 97d9027e image is marked superseded.
+- Validation: `./tools/build arm --profile max_crypto` passed with `mode=normal`, deletion ON, all debug flags OFF, serial wait 0 ms; linked end `0x100f7744`, 35,004 bytes remain. `./tools/package-empty-card-uf2` passed (4,125,184 bytes, 3,960 firmware blocks + 4,096 erased-storage blocks); `./tools/fixture-path --verify`, package SHA-256 checks and `unzip -t` passed. No hardware flash/test was performed.
+- Result: UF2 SHA-256 `30dcd9f581cdea7729f66e9c08c832438f8d01ff32c3e56c37bbaae45d46287f`; Windows package SHA-256 `2d3735a37acd34d81620e893c79071b533fbeec3ccc13c2c47e526a93338ea44`. Build incorporates current dirty source; root tracked-diff hash is recorded in package provenance.
+- Decision: Provide this fresh image for Windows external validation of the current bugfix. Physical acceptance remains open.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-50114a30-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-50114a30-dirty.zip`; package hashes and instructions in `build/external-test/object-deletion-normal-50114a30-dirty/`.

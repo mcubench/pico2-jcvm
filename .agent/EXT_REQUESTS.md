@@ -1,5 +1,33 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-50114A30 — Test current bugfix image
+
+Created 2026-11-14 22:07 UTC. This package was rebuilt from the current
+worktree after the latest storage/memory bugfix. Use this image for the next
+external Windows run: ARM `max_crypto`, normal mode, object deletion ON, all
+debug/trace flags OFF, zero serial delay, empty persistent storage, no applet
+preinstalled.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-50114a30-dirty.uf2)
+- UF2 SHA-256: `30dcd9f581cdea7729f66e9c08c832438f8d01ff32c3e56c37bbaae45d46287f`
+- Size: 4,125,184 bytes
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-50114a30-dirty.zip)
+- Package SHA-256: `2d3735a37acd34d81620e893c79071b533fbeec3ccc13c2c47e526a93338ea44`
+- Instructions: [package README](../build/external-test/object-deletion-normal-50114a30-dirty/README.md)
+- Source HEAD: `50114a30092de25e`; source worktree was dirty. Packaged provenance records root tracked-diff SHA-256 `d11fd2b444c552a66ad1a8cdd9083bca34e6953d84bfd25e7577fd4eefad74bd` and CHOUPI OS submodule commit/diff.
+- Build passed with 35,004 bytes remaining before the firmware limit. Empty-card packaging, fixture manifest verification, package checksums and ZIP integrity passed. No physical flash or hardware validation was performed here.
+- Exercise assets: unchanged upstream JCAlgTest 1.8.4/jc305 CAP (SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`) and supplied 1.8.5 host client (SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`).
+
+Flash only the provided UF2 and record its exact hash, Windows version, reader
+name/ATR, chip ID, result directory and serial log. Run option 2 on this board;
+use a second identified device for option 1 when available. Install the CAP
+explicitly with the included GPPro JAR after confirming the card is empty.
+
+## Superseded: WIN-OBJECT-DELETION-NORMAL-97D9027E
+
+Use `WIN-OBJECT-DELETION-NORMAL-DIRTY-50114A30` above; the 97d9027e image
+predates the current worktree bugfix.
+
 ## WIN-OBJECT-DELETION-NORMAL-97D9027E — Test max_crypto with deletion enabled
 
 Created 2026-11-14 21:30 UTC. Use this fresh empty-card Windows package for
