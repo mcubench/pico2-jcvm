@@ -29589,3 +29589,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the recovery narrow: verified contents plus same-board runtime return, followed by finite monitor health. Continue BOOTSEL-01 on another enumerated board; CDC-1200 reset during a long synchronous operation remains untested.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261114T115519Z.log`, `artifacts/logs/cycle-choupi-20261114T115211Z.log`, `/tmp/project-goal-bootsel-progress.log` (earlier 30/30), `/tmp/project-goal-flash-target.log` (prior 11/11); firmware hash above.
+
+## 2026-11-14 BOOTSEL-01 verify CDC-1200 idle reset on hardware 6 minutes
+
+- Step/experiment: `BOOTSEL-01-CDC1200-IDLE-8E-20261114`
+- When: '2026-11-14 11:59 UTC' - '2026-11-14 12:05 UTC'
+- Model: `GPT-6 Codex`
+- Change: No firmware or tool changes. Exercised the CDC-1200 reset directly on identified 8E after flash-wrapper recovery was committed, then restored the board through the repository cycle wrapper. Updated TODO, QKB and HANDOFF with measured evidence.
+- Validation: Direct `stty -F /dev/serial/by-id/usb-Pico2_Pico2_JCVM_CCID_8E464F4E2BBC0A19-if00 1200 raw -echo` followed by identity-pinned BOOTSEL discovery reported `CDC1200:PASS chipid=8E464F4E2BBC0A19 wait_ms=3119 attempts=9`. `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 8E464F4E2BBC0A19` rebuilt ARM and RISC-V, verified the flash, and passed the finite 18-second serial monitor (`TEST:SUMMARY pass=1 fail=0`).
+- Result: CDC-1200 from idle reliably entered BOOTSEL on 8E in 3.119 seconds; its firmware was restored and is healthy. This does not test reset during a long synchronous applet command. Host enumeration still exposed only 8E; the other two reported devices were not found.
+- Decision: Mark the idle CDC-1200 entry path validated for 8E. Keep BOOTSEL-01 open for long-operation reset and resolve USB visibility of the other boards before multi-device acceptance.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261114T120343Z.log`; resulting ARM UF2 SHA-256 `0e29248928dda42a3079a9097866b790ad64ed45f0b337eb6f66cf9f52952d30`.

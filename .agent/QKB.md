@@ -15,6 +15,12 @@ verified its write but did not reappear as a serial device and is currently
 not enumerated; continue on another identified board rather than retrying D92
 without USB visibility.
 
+The CDC-1200 idle reset path was also exercised on 8E on 2026-11-14: the
+same chip ID appeared in BOOTSEL after 3,119 ms (9 short polling attempts).
+The max_crypto image was then restored through `tools/cycle`; ARM/RISC-V
+builds and the finite runtime monitor passed. This does not cover a reset
+request during a long synchronous APDU.
+
 ## One damaged persistent candidate blocking object deletion — scoped fix 2026-11-14
 
 Applet and package-static reclaimers now leave an enumerable but unresolved

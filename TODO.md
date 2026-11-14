@@ -142,7 +142,10 @@ pre-`92c91943` data) — use the empty-card UF2.
   status-134-after-verification case was not reproduced on this run; the flash
   wrapper now has a bounded, identity-pinned runtime-reenumeration recovery
   path with offline coverage. CDC-1200 during a long synchronous operation
-  remains untested. Offline checks were refreshed: reset/CCID progress 30/30
+  remains untested. Additional 2026-11-14 idle-path evidence: direct CDC-1200
+  on 8E entered BOOTSEL for the same chip in 3,119 ms; the image was restored
+  through the wrapper, ARM/RISC-V builds passed, and the 18-second monitor
+  passed. Offline checks were refreshed: reset/CCID progress 30/30
   and identity-pinned target-selection 18/18. See
   `BOOTSEL-01-FLASH-RECOVERY-20261114` in `progress.md`.
 

@@ -24,9 +24,15 @@ retry D92 until it reappears; continue with any other identified visible
 board. The other reported boards were not found in guest enumeration.
 
 Remaining BOOTSEL-01 acceptance: directly exercise CDC-1200 reset during a
-long synchronous applet operation and capture latency. User should be told
-the physical visibility mismatch if hardware work is next. No long emulator
-run was started.
+long synchronous applet operation and capture latency. The idle CDC-1200 path
+was exercised after the first commit: direct 1200-baud reset on 8E entered
+BOOTSEL for the same chip in 3,119 ms (9 polling attempts). `cycle choupi`
+then rebuilt ARM/RISC-V, restored the same board, and passed its 18-second
+serial monitor (`artifacts/logs/cycle-choupi-20261114T120343Z.log`). Current
+UF2 SHA-256 is
+`0e29248928dda42a3079a9097866b790ad64ed45f0b337eb6f66cf9f52952d30`.
+User should be told the physical visibility mismatch if hardware work is next.
+No long emulator run was started.
 
 # Current handoff — MEM-01 reviewer: offline complete, runtime gate needs user OK — 2026-11-14 UTC
 
