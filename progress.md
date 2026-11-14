@@ -29830,3 +29830,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ba7e4aa1.uf2`;
   `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ba7e4aa1.zip`;
   `.agent/EXT_REQUESTS.md`.
+
+## 2026-11-14 refresh current-image backlog pointers 1
+
+- Step-Id: `20261114-2152-refresh-current-image-todo`
+- Task: `MEM-01 image tracking`
+- When: '2026-11-14 21:51 CET' - '2026-11-14 21:52 CET'
+- Model: `gpt-6`
+- Change: Replaced stale acceptance and external-image entries in the root
+  backlog with the freshly built empty-card max_crypto acceptance UF2 and its
+  Windows package, hashes, and remaining T7/HOST-01 gates.
+- Validation: Cross-checked both hashes with `sha256sum`; build provenance
+  reports `mode=acceptance`, object deletion ON, and all three debug flags OFF.
+- Result: `TODO.md` now identifies the current image accurately and does not
+  imply that hardware acceptance has occurred.
+- Decision: Proceed with MEM-01 T7 before treating the image as T8 acceptance.
+- Artifacts/logs: `TODO.md`; UF2 SHA-256
+  `88e620964a0a52a6d061f2a3c14f538227f11ba0962d6f32972d6bc534545b6e`.

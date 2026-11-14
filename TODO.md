@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Acceptance (max_crypto, object deletion ON, debug OFF, empty card) | **none built since the 2026-11-14 T4/T5 alias fix**: build with `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` (`mode=acceptance`), then `tools/package-empty-card-uf2` | — | Required for T8 acceptance |
-| Latest external (Windows) package | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-0e67df89.uf2` | `51572f69103c02dfd056f1772366d1cafbd8ac92d0da7967e9f310a6099f94f5` | EXT `WIN-OBJECT-DELETION-NODEBUG-0E67DF89`; predates the 11-14 alias fix |
+| Acceptance (max_crypto, object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ba7e4aa1.uf2` | `88e620964a0a52a6d061f2a3c14f538227f11ba0962d6f32972d6bc534545b6e` | `mode=acceptance`; ready for T8 after T7 and HOST-01 gates; not hardware tested |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ba7e4aa1.zip` | `ea11fb0fd6274af68c9f7840c4ba2dc13dcae5a8eb2b9ea79997028c193ddeec` | EXT `WIN-OBJECT-DELETION-NODEBUG-BA7E4AA1`; source worktree was dirty and is disclosed in package provenance |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01
