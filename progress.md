@@ -29280,3 +29280,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Next worker steps: T7 harness, then T1 repair/quarantine with both-snapshots-damaged regression, then T2 logging/repair trigger; measure integrity-check time.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: none.
+
+## 2026-11-14 MEM-01 T7 churn-test review 10 minutes
+
+- Step/experiment: `MEM-01-T7-CHURN-REVIEW-20261114`
+- When: '2026-11-14 UTC' - '2026-11-14 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Reviewed worker commit `93b6fef4` (RP2350 overlay object-deletion churn test) against the MEM-01 failure modes. Added a review note and extensions (a)–(e) to the TODO.md T7 bullet, plus a new top section in HANDOFF.md. No source changes.
+- Validation: Inspection of the test diff and of the uncommitted `src/pc_rp2350_overlay_fs.cpp` VPCD adapter. No builds, tests or hardware (documentation-only).
+- Result: The test keeps 1 live record, uses only flat field tags, creates a fresh heap every cycle, reloads once and never calls `overlay_integrity_valid()` directly, so it cannot reproduce M1/M6/M7-type damage or RAM-handle growth. It is valid as smoke coverage only.
+- Decision: Extend the synthetic test (high occupancy, real graphs, integrity assert every cycle, ≥10 compactions with integrity-check timing, interrupted publish) alongside the VPCD wiring; T7 acceptance still requires unchanged JCAlgTest option 2 on the overlay backend.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: none.

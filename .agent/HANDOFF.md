@@ -1,3 +1,18 @@
+# Current handoff — MEM-01 T7 churn-test review — 2026-11-14 UTC
+
+Reviewer note (Claude Opus 5.5) on `93b6fef4`: the 1,030×8 overlay churn test is
+useful smoke coverage, but it does not exercise the conditions that caused the
+D92/8E damage. Only 1 record stays live, all tags are flat 6-byte field tags (no
+bodies, aliases or compressed tags), each cycle uses a fresh Context (no RAM
+handle growth), the store is reloaded once, and `overlay_integrity_valid()` is
+never asserted directly. See the T7 bullet in TODO.md for extensions (a)–(e):
+high live occupancy with mixed sizes and real graphs, an integrity assert every
+cycle, ≥10 compactions with timing of the integrity check, a real capacity
+bound, and interrupted snapshot publishes. The VPCD wiring already in progress
+(`src/pc_rp2350_overlay_fs.cpp`, uncommitted, written by the worker) remains the
+main T7 deliverable; do not count the synthetic test as T7 acceptance. Priority
+order is unchanged: T7 → T1 repair/quarantine → T2 remainder.
+
 # Current handoff — MEM-01 overlay churn evidence — 2026-11-13 20:59 Europe/Prague
 
 Added an RP2350 overlay unit regression that drives the actual `src/pico_filesystem.cpp`
