@@ -26,8 +26,8 @@ The implementation is based on [CHOUPI, an open-source Java Card Virtual Machine
 
 You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these downloads:
 
-- [JCAlgTest CAP files — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): the repository acceptance baseline is the supplied **v1.8.4, Java Card Classic 3.0.5 (`jc305`)** CAP, pinned with its matching client in `tests/fixtures/manifest.json`.
-- [JCAlgTest PC client — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): extract `AlgTestJClient.jar` from the same distribution to match the applet.
+- [JCAlgTest CAP files — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): the repository acceptance baseline is the supplied **v1.8.4, Java Card Classic 3.0.5 (`jc305`)** CAP, pinned in `tests/fixtures/manifest.json`; run it with the v1.8.5 host client.
+- [JCAlgTest PC client — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): use client **v1.8.5** (`AlgTestJClient_v1.8.5.jar`, pinned in `tests/fixtures/external/jcalgtest/1.8.5/client/`). Older clients do not send the card-reset/object-deletion APDU correctly, so long runs exhaust card memory.
 - [GlobalPlatformPro `gp.jar` binary](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar).
 
 1. Download [pico2-jcvm-max_crypto-arm__latest.uf2](https://github.com/mcubench/pico2-jcvm/releases), or build an ARM JCVM **`.uf2`** image below.
@@ -39,10 +39,10 @@ You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these
      --install "<downloaded JC305 CAP file>"
    ```
 
-4. Run the matching client and select the Pico reader when prompted:
+4. Run the v1.8.5 client and select the Pico reader when prompted:
 
    ```sh
-   java -jar AlgTestJClient.jar \
+   java -jar AlgTestJClient_v1.8.5.jar \
      -op ALG_SUPPORT_EXTENDED -fresh -outpath results
    ```
 
@@ -111,4 +111,4 @@ Full specification conformance and complete per-method coverage are not establis
 
 ## Test organization
 
-See [tests/README.md](tests/README.md) for unit/integration/hardware tests and immutable external fixtures. Verify supplied inputs with `./tools/fixture-path --verify`. JCAlgTest 1.8.4 and the independent API CAP suite have separate pinned clients; historical 1.8.2 evidence is not current acceptance.
+See [tests/README.md](tests/README.md) for unit/integration/hardware tests and immutable external fixtures. Verify supplied inputs with `./tools/fixture-path --verify`. JCAlgTest (1.8.4 CAP, 1.8.5 client) and the independent API CAP suite have separate pinned clients; historical 1.8.2 evidence is not current acceptance.

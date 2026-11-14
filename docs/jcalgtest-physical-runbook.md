@@ -10,10 +10,14 @@ wrapper builds both architectures before flashing the ARM CHOUPI image.
 Replace the example serials and reader names below with the identities from
 that authorized discovery. Keep per-board results separate.
 
-`tools/run-jcalgtest` selects the supplied versioned JCAlgTest client and
-JCAlgTest 1.8.4 / jc305 baseline through `tests/fixtures/manifest.json`.
-The independent API suite client must not be substituted. The versioned client
-reports its internal client version as 1.8.3; the applet reports 1.8.4_jc305.
+`tools/run-jcalgtest` resolves the JCAlgTest 1.8.4 / jc305 CAP through
+`tests/fixtures/manifest.json`. Its default client is still the historical 1.8.4
+one, so **always pass the 1.8.5 client explicitly**:
+`--client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar`.
+Add this to every `run-jcalgtest` command below. The independent API suite
+client must not be substituted. The applet reports 1.8.4_jc305. Output CSVs
+have been seen to report an embedded client version of 1.8.4 even with the
+1.8.5 JAR, so record the JAR SHA-256 as the authoritative client identity.
 
 ```sh
 # Verify the pinned CAP, clients, API corpus and simulator reference.

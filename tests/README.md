@@ -6,7 +6,9 @@ Repository-owned applet/fixture sources live in `fixtures/local/`.
 
 `fixtures/external/` contains immutable, supplied validation assets:
 
-- JCAlgTest **1.8.4**, Java Card Classic 3.0.5, and its versioned client.
+- JCAlgTest **1.8.4** CAP, Java Card Classic 3.0.5, with its historical 1.8.4 client,
+  and the supplied **1.8.5 host client**, which is the only client to use for new runs
+  (see "Worker instruction" below).
 - The independent Java Card API validation suite, snapshot
   `provided-20261107`, including all 48 CAPs and its own client/runner.
 
@@ -37,11 +39,13 @@ The original distribution is preserved at
 `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
 See `docs/testing-data-migration.md` for checks and accepted follow-ups.
 
-## Worker instruction: new JCAlgTest client (2026-11-12)
+## Worker instruction: JCAlgTest client is always 1.8.5 (2026-11-12, extended 2026-11-14)
 
-Use the supplied 1.8.5 host client for new full JCAlgTest integration support
-and performance runs, including option 1 (all algorithms) and option 2
-(performance). Keep the unchanged 1.8.4/jc305 CAP. Select the client explicitly:
+Use the supplied 1.8.5 host client for every new JCAlgTest run: option 1 (all
+algorithms), option 2 (performance), and short or focused, VPCD and physical
+runs. The historical 1.8.4 client is evidence only. Its
+`INS_CARD_RESET` did not reach the card (negative APDU length bug), so object
+deletion was never triggered. Keep the unchanged 1.8.4/jc305 CAP. Select the client explicitly:
 
 ```bash
 PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest \

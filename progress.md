@@ -29625,3 +29625,32 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep T8 open. Review CCID delivery/recovery and the non-interactive client failure path offline; resume physical testing only when a physical PC/SC reader is again enumerated. Do not treat the 8E CDC heartbeat as proof that CCID still accepts card transactions.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-1.8.5-physical-20261114/8E464F4E2BBC0A19/option2-performance/client.log`, `ALGTEST_log_1794658670250.log`, `pico2_8E464F4E2BBC0A19____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1794658670250__3b_80_01_81.csv`, `serial.log`; prior verified cycle log `artifacts/logs/cycle-choupi-20261114T121025Z.log`.
+
+## 2026-11-14 User directives: long simulator runs, compact HANDOFF, 1.8.5 client everywhere 25
+
+- Step/experiment: `INSTR-20261114`
+- When: '2026-11-14 18:15 CET' - '2026-11-14 18:45 CET'
+- Model: `claude-opus-5-5`
+- Change: At the user's request, the instructions were updated in three parts.
+  (1) Long VPCD/simulator runs are permitted again: `AGENTS.md` gets a section
+  "Long simulator/emulator runs". It requires a stated reason and benefit, and
+  first reasoning whether the target scenario is reachable more cheaply than a
+  naive long run. The MEM-01 T7 "blocked by user" note in `TODO.md` is lifted.
+  (2) `.agent/HANDOFF.md` was compacted to next steps only (commit `ce972442`).
+  (3) The 1.8.5 JCAlgTest host client is mandatory for every new run (with the
+  unchanged 1.8.4/jc305 CAP). This is made consistent across `AGENTS.md`, the
+  `TODO.md` header, `.agent/QKB.md`, `tests/README.md`, `README.md`, `plan.md`
+  and `docs/jcalgtest-physical-runbook.md`. Dated historical records are left
+  unchanged. This commit also includes the user's earlier pending `AGENTS.md`
+  edits (index.lock rule, progress record format, EXT_REQUESTS section).
+- Validation: Inspection only (documentation change). A grep confirmed that no
+  remaining active instruction says "matching client" or "1.8.4 client" for new
+  runs. The `plan.md` CRLF line endings were preserved (6-line diff). No build
+  or hardware run was needed.
+- Result: Instructions are consistent. Tooling still defaults to the 1.8.4
+  client (`tests/fixtures/manifest.json`, `tools/fixture-path`), so the explicit
+  `--client-jar` override is still required.
+- Decision: A follow-up should switch the tooling default client to 1.8.5 and
+  add its hash to `--verify`. This awaits the user's decision.
+- Commit: `ce972442` (HANDOFF compaction); this record's commit (instructions).
+- Artifacts/logs: `.agent/history/handoff-archive-20261114.md`

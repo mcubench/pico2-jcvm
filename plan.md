@@ -10,7 +10,7 @@ Oct 9, 2026 · @PetrS
 
 
 
-The port is done when the supplied JCAlgTest v1.8.4 applet CAP is loaded onto a Raspberry Pi Pico 2 running CHOUPI, and the matching JCAlgTest host client, run on a PC, completes the "supported algorithms" test and writes a results file. The plan gets there in phases, and each phase leaves a runnable, testable state behind.
+The port is done when the supplied JCAlgTest v1.8.4 applet CAP is loaded onto a Raspberry Pi Pico 2 running CHOUPI, and the supplied JCAlgTest v1.8.5 host client, run on a PC, completes the "supported algorithms" test and writes a results file. The plan gets there in phases, and each phase leaves a runnable, testable state behind.
 
 
 
@@ -50,7 +50,7 @@ Acceptance criteria:
 
 \- \[ ] AC2: The supplied JCAlgTest v1.8.4 CAP (supported-algorithms applet, Java Card version variant compatible with CHOUPI) installs via `gp --install`, and is selectable by AID.
 
-\- \[ ] AC3: The JCAlgTest v1.8.4 host client's "supported algorithms" mode runs to completion against the Pico 2 with no transport errors.
+\- \[ ] AC3: The JCAlgTest v1.8.5 host client's (with the v1.8.4 CAP) "supported algorithms" mode runs to completion against the Pico 2 with no transport errors.
 
 \- \[ ] AC4: The produced results CSV matches what CHOUPI really implements, cross-checked against a reference simulator run (jCardSim) for the same algorithm list.
 
@@ -124,7 +124,7 @@ The toolchain is also stale. It needs Rust nightly-2020-03-10 with `xargo`, and 
 
 
 
-Use the supplied `tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap` and matching versioned client selected by `tests/fixtures/manifest.json`. This baseline was explicitly selected by the user on 7 November 2026. Inspect this CAP's header/imports and verify its hash before acceptance; old 1.8.2 sources, results and compatibility conclusions do not establish 1.8.4 behavior.
+Use the supplied `tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap` selected by `tests/fixtures/manifest.json` (CAP baseline selected by the user on 7 November 2026), run with the supplied 1.8.5 host client `tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar` passed explicitly via `--client-jar` (user directive 2026-11-14; the catalog's 1.8.4 client is historical only). Inspect this CAP's header/imports and verify its hash before acceptance; old 1.8.2 sources, results and compatibility conclusions do not establish 1.8.4 behavior.
 
 The independent Java Card API CAP suite is retained under `tests/fixtures/external/javacard-api/provided-20261107/`. Test entrypoints remain in `tools/`; implementations and data are described in `tests/README.md`.
 
