@@ -338,15 +338,15 @@ task:
   importer; class with external superclass and no Import. The exact
   `external-superclass-without-import` mutation is generated from unchanged
   JCAlgTest CAP bytes (external superclass ref `8203`, Import removed). On
-  2026-11-14 the direct PC VPCD startup path reported
-  `ERROR: PC CAP LOAD data rejected`; the harness printed
-  `CAP_LOAD_VALIDATION:PASS missing_required_import_rejected_before_store`,
-  and no CAP-registry sidecar was created. This startup path does not
-  expose a GlobalPlatform LOAD APDU status or continue to test unrelated DELETE.
-  Still require APDU status `6A80`, no slot/package in card-manager status, and
-  DELETE of an unrelated package returning `9000`. The bounded PC/SC reader
-  listing separately timed out; the direct VPCD socket test ran under elevated
-  execution and does not establish physical acceptance.
+  2026-11-14 the direct PC VPCD startup path rejected it before registry
+  publication. A separate raw GlobalPlatform APDU VPCD test now verifies the
+  final LOAD response is `6A80`, GET STATUS omits the malformed package and
+  retains an unrelated control package, and DELETE of that control package
+  returns `9000` and removes it. Log:
+  `artifacts/logs/cap-missing-import-apdu-20261114T230132Z.log`; run via
+  `./tools/test-cap-malformed-vpcd --mutation external-superclass-without-import`.
+  The bounded PC/SC reader listing separately timed out; VPCD does not
+  establish physical acceptance.
   External superclass package-token range validation is covered by
   `external-superclass-import-token-out-of-range`; transitive library
   dependency closure is covered by `missing-library-dependency`. Export

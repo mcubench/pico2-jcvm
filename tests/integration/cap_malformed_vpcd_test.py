@@ -676,6 +676,17 @@ def main() -> int:
         default="impdep1",
     )
     args = parser.parse_args()
+    if args.mutation == "external-superclass-without-import":
+        # Exercise the real GlobalPlatform LOAD APDU, then prove the card
+        # manager still answers GET STATUS and DELETE after rejecting it.
+        return subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tests/integration/cap_missing_import_apdu_vpcd.py"),
+            ],
+            cwd=ROOT,
+            check=False,
+        ).returncode
     code = build_malformed_load_code(args.mutation)
     log = ROOT / f"artifacts/logs/rv28-malformed-{args.mutation}-vpcd-20261106.log"
     load_rejection_mutations = (

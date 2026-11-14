@@ -30040,3 +30040,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The generated input is rejected by CAP load before registry publication in the PC VPCD startup path. The harness does not expose GP LOAD's APDU status or continue after this expected startup failure, so `6A80`, GET STATUS/no package, and unrelated DELETE `9000` remain unverified.
 - Decision: Keep CAPIN-01 open for APDU-level and physical checks; run this local VPCD path elevated in future.
 - Artifacts/logs: `build/rv28-malformed-external-superclass-without-import-load-code.bin`; `artifacts/logs/rv28-malformed-external-superclass-without-import-vpcd-20261106.log`; generated from upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+
+## 2026-11-14 Verify missing-Import rejection over GP APDUs 4 minutes
+
+- Step-Id: `20261114-2300-capin01-missing-import-apdu`
+- Task: CAPIN-01 malformed external superclass without Import
+- When: '2026-11-14 22:59 UTC' - '2026-11-14 23:03 UTC'
+- Model: `GPT-6`
+- Change: Added a raw GlobalPlatform APDU VPCD regression and wired the existing malformed-CAP test entrypoint to use it for `external-superclass-without-import`. It loads a valid control package first, tests malformed LOAD rejection and GET STATUS visibility, then deletes the unrelated package to check manager recovery. Updated the CAPIN-01 result and handoff; the supplied upstream CAP remains unchanged.
+- Validation: `python3 -m py_compile tests/integration/cap_missing_import_apdu_vpcd.py tests/integration/cap_malformed_vpcd_test.py` passed; the wired `./tools/test-cap-malformed-vpcd --mutation external-superclass-without-import` passed, including PC build, SCP03 authentication, control package LOAD, final malformed LOAD `6A80`, GET STATUS checks, and unrelated DELETE `9000`; `TEST:SUMMARY pass=1 fail=0`. `git diff --check` on the complete worktree reports pre-existing trailing whitespace in unrelated dirty `choupi/` files; the changed Python files passed syntax validation. Physical validation was not run because PC/SC reader enumeration timed out.
+- Result: The rejection status and post-rejection card-manager behavior are now demonstrated over actual GP APDUs in PC VPCD. This does not establish physical-card acceptance.
+- Decision: Retain the physical CAPIN-01 acceptance gate; use the now-wired focused VPCD case for regression coverage.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/cap-missing-import-apdu-20261114T230132Z.log`; fixture derived from upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
