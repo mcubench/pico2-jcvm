@@ -29968,3 +29968,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `supported-profile` says so.
 - Decision: The worker's next normal `max_crypto` build is the campaign image.
 - Artifacts/logs: build log not archived (scratch).
+
+## 2026-11-14 Prepare deletion-enabled normal external image 6 minutes
+
+- Step-Id: `20261114-2130-win-object-deletion-normal`
+- Task: External max_crypto image with object deletion ON
+- When: '2026-11-14 21:25 UTC' - '2026-11-14 21:31 UTC'
+- Model: `gpt-6.1-sol`
+- Change: Built a fresh ARM `max_crypto` image using the current normal-mode wrapper defaults (object deletion ON, debug/trace OFF), generated an empty-card UF2, and packaged unchanged JCAlgTest 1.8.4/jc305 and supplied 1.8.5 client with GPPro and Windows instructions. Updated current-image references and external request.
+- Validation: `./tools/build arm --profile max_crypto` passed; provenance reports `mode=normal`, `object_deletion=ON`, all debug flags OFF, CPLC source ID `0x97D9027E69047543`; linked image end `0x100f7744`, 35,004 bytes remaining. `./tools/package-empty-card-uf2` passed (4,125,184 bytes; 3,960 firmware blocks + 4,096 erased storage blocks); local picotool metadata inspection passed; all package SHA256SUMS checks and `unzip -t` passed. Physical validation intentionally not performed.
+- Result: UF2 SHA-256 `9157bc1a41661f04ded8fff40136c27825c427a90f87bc03742d84711fd358ad`; Windows ZIP SHA-256 `eb1b6e9bdad555ddac5f1241f999c60a37ebffebda191644a10c250e0063b7f3`. Source tree was dirty; tracked diff and submodule hashes are recorded in package provenance.
+- Decision: This is the current external-testing image with deletion ON and an empty card. Physical acceptance remains open; see `.agent/EXT_REQUESTS.md`.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-97d9027e.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-97d9027e.zip`; `build/external-test/object-deletion-normal-97d9027e/`

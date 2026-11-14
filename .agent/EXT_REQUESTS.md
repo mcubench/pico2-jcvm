@@ -1,5 +1,28 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-NORMAL-97D9027E — Test max_crypto with deletion enabled
+
+Created 2026-11-14 21:30 UTC. Use this fresh empty-card Windows package for
+object-deletion testing. This is a normal-mode ARM `max_crypto` build: object
+deletion ON and all debug/trace options OFF. No applet is preinstalled; install
+the unchanged upstream JCAlgTest CAP through GPPro after confirming PC/SC.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-97d9027e.uf2)
+- UF2 SHA-256: `9157bc1a41661f04ded8fff40136c27825c427a90f87bc03742d84711fd358ad`
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-97d9027e.zip)
+- Package SHA-256: `eb1b6e9bdad555ddac5f1241f999c60a37ebffebda191644a10c250e0063b7f3`
+- Package instructions: [README](../build/external-test/object-deletion-normal-97d9027e/README.md)
+- Source HEAD and CPLC source ID: `97d9027e690475438890c1d5eddefba32245f29d`, `0x97D9027E69047543`; worktree dirty, exact tracked diffs are in packaged provenance.
+- ARM build passed for `max_crypto`, `mode=normal`, object deletion ON, all debug OFF. Firmware ends at `0x100f7744`, leaving 35,004 bytes before the configured limit. Empty-card packaging, file checksums and ZIP integrity passed.
+- Exercise CAP: unchanged JCAlgTest 1.8.4/jc305, SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`. Host client: supplied 1.8.5 JAR, SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
+
+Run `2 -> PERFORMANCE TEST` and, on another token if available, `1 -> All algorithms`. Return complete per-token result folders and serial logs, Windows version, reader name/ATR, chip ID and UF2 hash. Do not report this as hardware-validated by the development environment; no local physical flash was performed for this package.
+
+## Superseded: WIN-OBJECT-DELETION-NODEBUG-CCID-DEADLINE-805420E6
+
+This prior package is superseded by `WIN-OBJECT-DELETION-NORMAL-97D9027E`;
+use the current normal-mode artifact above for new testing.
+
 ## WIN-OBJECT-DELETION-NODEBUG-CCID-DEADLINE-805420E6 — Retest long-run CCID fix
 
 Created 2026-11-14 22:14 CET. Please use this fresh Windows package for the
