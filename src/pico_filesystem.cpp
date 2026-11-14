@@ -108,8 +108,11 @@ bool filesystem_payload_fits(size_t file_count, size_t bytes_used) {
 }
 bool overlay_integrity_valid(const char **failure_reason = nullptr,
                              uint16_t *failure_slot = nullptr);
-bool rebuild_overlay_probe_index(const char **failure_reason);
-uint8_t repair_overlay_probe_index_if_needed(void);
+bool rebuild_overlay_index(const char **failure_reason);
+uint8_t repair_overlay_index_if_needed(void);
+bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
+                             uint8_t *tag_length, uint8_t depth,
+                             bool report_failure, bool verify_hash);
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -520,12 +523,21 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
                 static_cast<unsigned>(integrity_slot),
                 static_cast<unsigned>(slot));
     std::fflush(stdout);
+#ifdef CHOUPI_DEBUG_CCID_APPLET
+    if (integrity_reason != nullptr &&
+        std::strcmp(integrity_reason, "tag_reconstruction") == 0) {
+      uint8_t failed_tag[kMaxOverlayTagLength]{};
+      uint8_t failed_tag_length = 0;
+      (void)reconstruct_overlay_tag(integrity_slot, failed_tag,
+                                    &failed_tag_length, 0, true, false);
+    }
+#endif
     const char *repair_reason = nullptr;
-    if (integrity_reason == nullptr ||
-        std::strcmp(integrity_reason, "probe_chain") != 0 ||
-        !rebuild_overlay_probe_index(&repair_reason)) {
-      if (integrity_reason != nullptr &&
-          std::strcmp(integrity_reason, "probe_chain") == 0) {
+    const bool repairable = integrity_reason != nullptr &&
+        (std::strcmp(integrity_reason, "probe_chain") == 0 ||
+         std::strcmp(integrity_reason, "hash_mismatch") == 0);
+    if (!repairable || !rebuild_overlay_index(&repair_reason)) {
+      if (repairable) {
         std::printf("CHOUPI:FS_INTEGRITY_REPAIR_FAIL reason=%s\r\n",
                     repair_reason == nullptr ? "unknown" : repair_reason);
         std::fflush(stdout);
@@ -535,7 +547,8 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
       overlay_bytes_used = 0;
       return false;
     }
-    std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=probe_chain action=rehash\r\n");
+    std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=%s action=rehash\r\n",
+                integrity_reason);
     std::fflush(stdout);
     index_repaired = true;
   }
@@ -852,7 +865,8 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
 bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
                              uint8_t *tag_length,
                              uint8_t depth = 0,
-                             bool report_failure = false) {
+                             bool report_failure = false,
+                             bool verify_hash = true) {
   const auto fail = [&](const char *reason, uint16_t parent_slot = UINT16_MAX,
                         uint8_t parent_length = 0, uint8_t root_length = 0) {
 #ifdef CHOUPI_DEBUG_CCID_APPLET
@@ -899,7 +913,7 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
     return fail("file_metadata");
   }
   const auto finish = [&]() {
-    if (hash_tag(tag, file.tag_length) != file.hash) {
+    if (verify_hash && hash_tag(tag, file.tag_length) != file.hash) {
       return fail("hash_mismatch");
     }
     *tag_length = file.tag_length;
@@ -927,7 +941,7 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
     uint8_t parent_length = 0;
     if (!reconstruct_overlay_tag(parent_slot, tag, &parent_length,
                                  static_cast<uint8_t>(depth + 1),
-                                 report_failure)) {
+                                 report_failure, verify_hash)) {
       return fail("parent_reconstruction", parent_slot, parent_length);
     }
     if (parent_length + 2 != file.tag_length) {
@@ -999,8 +1013,10 @@ bool overlay_integrity_valid(const char **failure_reason,
     }
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
-    if (!reconstruct_overlay_tag(slot, tag, &tag_length))
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
       return fail("tag_reconstruction", slot);
+    if (hash_tag(tag, tag_length) != file.hash)
+      return fail("hash_mismatch", slot);
 
     // Every used slot must be reachable by ordinary linear probing from its
     // home bucket; an empty slot before it makes the entry invisible.
@@ -1054,13 +1070,12 @@ bool overlay_integrity_valid(const char **failure_reason,
   return expected_offset == overlay_bytes_used || fail("arena_tail");
 }
 
-// Repair only a pure open-addressing placement error. Every serialized record
-// must still reconstruct to its stored hash, all parent links must resolve,
-// and the byte arena must remain a contiguous non-overlapping sequence. The
-// serialized bytes are left in place; parent-slot references are remapped with
-// the index. Any ambiguity returns false so restore can try the other COW
-// generation instead of guessing which value to discard.
-bool rebuild_overlay_probe_index(const char **failure_reason) {
+// Rebuild the hash table when every record boundary and parent chain is
+// structurally unambiguous. Canonical tags are decoded from the arena and
+// their hashes are recomputed. The serialized bytes remain in place; parent
+// slot references are remapped with the table. Ambiguous arena layout or
+// duplicate live tags returns false so restore can use the other COW copy.
+bool rebuild_overlay_index(const char **failure_reason) {
   const auto fail = [&](const char *reason) {
     if (failure_reason != nullptr) *failure_reason = reason;
     return false;
@@ -1088,7 +1103,7 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
     }
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
-    if (!reconstruct_overlay_tag(slot, tag, &tag_length))
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
       return fail("tag_reconstruction");
     erase_bucket_next[serialized_slots++] = slot;
     serialized_bytes += 1 + key_length + file.size;
@@ -1109,9 +1124,26 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
   }
   if (expected_offset != overlay_bytes_used) return fail("arena_tail");
 
-  // Rehashing preserves lookup semantics only when each canonical live tag is
-  // unique. Probe gaps can hide duplicates from the fast lookup path, so check
-  // them across the full index before the first table mutation.
+  // Recover canonical hashes from self-describing records only after the
+  // full serialized arena has passed bounds and interval checks. Probe gaps
+  // and damaged stored hashes can hide duplicate live tags from lookup, so
+  // check all canonical identities before changing the table.
+  std::fill(erase_bucket_next, erase_bucket_next + kMaxOverlayFiles,
+            UINT16_MAX);
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const auto &file = overlay[slot];
+    if (!overlay_is_used(file)) continue;
+    uint16_t canonical_hash = file.hash;
+    if (overlay_has_storage(file)) {
+      uint8_t tag[kMaxOverlayTagLength]{};
+      uint8_t tag_length = 0;
+      if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
+        return fail("tag_reconstruction");
+      canonical_hash = hash_tag(tag, tag_length);
+    }
+    erase_bucket_next[slot] = canonical_hash;
+  }
+
   for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
     const auto &file = overlay[slot];
     if (!overlay_is_used(file) || !overlay_has_storage(file) ||
@@ -1120,13 +1152,14 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
     }
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
-    if (!reconstruct_overlay_tag(slot, tag, &tag_length))
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, false))
       return fail("tag_reconstruction");
     for (uint16_t other = static_cast<uint16_t>(slot + 1);
          other < kMaxOverlayFiles; ++other) {
       const auto &candidate = overlay[other];
       if (!overlay_is_used(candidate) || !overlay_has_storage(candidate) ||
-          !overlay_has_record(candidate) || candidate.hash != file.hash ||
+          !overlay_has_record(candidate) ||
+          erase_bucket_next[other] != erase_bucket_next[slot] ||
           candidate.tag_length != tag_length) {
         continue;
       }
@@ -1138,11 +1171,10 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
   auto *destination_bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
   std::fill(destination_bitmap,
             destination_bitmap + kFilesystemBitmapBytes, 0);
-  std::fill(erase_bucket_next, erase_bucket_next + kMaxOverlayFiles,
-            UINT16_MAX);
   for (uint16_t old_slot = 0; old_slot < kMaxOverlayFiles; ++old_slot) {
-    const auto &file = overlay[old_slot];
+    auto &file = overlay[old_slot];
     if (!overlay_is_used(file)) continue;
+    file.hash = erase_bucket_next[old_slot];
     size_t new_slot = file.hash % kMaxOverlayFiles;
     while ((destination_bitmap[new_slot / 8] & (1u << (new_slot % 8))) != 0)
       new_slot = (new_slot + 1) % kMaxOverlayFiles;
@@ -1210,15 +1242,18 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
   return true;
 }
 
-uint8_t repair_overlay_probe_index_if_needed(void) {
+uint8_t repair_overlay_index_if_needed(void) {
   const char *reason = nullptr;
   if (overlay_integrity_valid(&reason, nullptr)) return 0;
-  if (reason == nullptr || std::strcmp(reason, "probe_chain") != 0)
+  if (reason == nullptr ||
+      (std::strcmp(reason, "probe_chain") != 0 &&
+       std::strcmp(reason, "hash_mismatch") != 0))
     return 2;
   const char *repair_reason = nullptr;
-  if (!rebuild_overlay_probe_index(&repair_reason)) return 2;
+  if (!rebuild_overlay_index(&repair_reason)) return 2;
   overlay_dirty = true;
-  std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=probe_chain action=rehash\r\n");
+  std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=%s action=rehash\r\n",
+              reason);
   std::fflush(stdout);
   return 1;
 }
@@ -1410,7 +1445,13 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_integrity_valid(void) {
-  return overlay_integrity_valid() ? 1 : 0;
+  const char *reason = nullptr;
+  uint16_t slot = UINT16_MAX;
+  if (overlay_integrity_valid(&reason, &slot)) return 1;
+  uint8_t tag[kMaxOverlayTagLength]{};
+  uint8_t tag_length = 0;
+  (void)reconstruct_overlay_tag(slot, tag, &tag_length, 0, true, false);
+  return 0;
 }
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
@@ -1910,8 +1951,8 @@ void set_path(uint8_t (*tag)[128], uint8_t *length,
 
 } // namespace
 
-extern "C" uint8_t fs_repair_probe_index_if_needed(void) {
-  return repair_overlay_probe_index_if_needed();
+extern "C" uint8_t fs_repair_overlay_index_if_needed(void) {
+  return repair_overlay_index_if_needed();
 }
 
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void) {

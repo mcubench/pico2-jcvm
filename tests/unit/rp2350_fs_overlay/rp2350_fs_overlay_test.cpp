@@ -2971,30 +2971,40 @@ int main() {
   expect(repaired_probe_chain,
          "filesystem_restore_rebuilds_probe_chain_index_from_records");
 
-  // A stored hash mismatch is detected before any tag lookup is trusted. The
-  // older COW snapshot remains usable after the damaged generation is
-  // rejected, and boot repairs the rejected slot from that known-good state.
+  // If canonical tags, parent links and record intervals still decode, a
+  // damaged stored hash is recoverable. Rebuild every hash from the arena and
+  // remap the child record's parent slot while keeping the newest snapshot.
   fake_flash.fill(0xff);
   std::array<uint8_t, sizeof(shared_offset_value_a)> restored_hash_value{};
-  const bool hash_snapshot_fallback =
+  std::array<uint8_t, hashed_child_value.size()> restored_hash_child{};
+  const bool repaired_hash_index =
       fs_init() == FS_STATUS_OK &&
-      fs_write(shared_offset_a, sizeof(shared_offset_a),
-               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+      fs_write(hashed_parent_a.data(), hashed_parent_a.size(), nullptr, 0) ==
           FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_child_value.data(),
+          hashed_child_value.size()) == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) == FS_STATUS_OK &&
       fs_sync() == FS_STATUS_OK &&
       rp2350_fs_test_corrupt_record_hash(
-          shared_offset_a, sizeof(shared_offset_a)) == FS_STATUS_OK &&
+          hashed_parent_a.data(), hashed_parent_a.size()) == FS_STATUS_OK &&
       rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
-      fs_init() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1 &&
+      fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
       rp2350_fs_test_integrity_valid() == 1 &&
       fs_read(shared_offset_a, sizeof(shared_offset_a),
               restored_hash_value.data(), restored_hash_value.size()) ==
           FS_STATUS_OK &&
+      fs_read(hashed_child.data(), hashed_child.size(),
+              restored_hash_child.data(), restored_hash_child.size()) ==
+          FS_STATUS_OK &&
       std::memcmp(restored_hash_value.data(), shared_offset_value_a,
                   restored_hash_value.size()) == 0 &&
+      restored_hash_child == hashed_child_value &&
       rp2350_fs_test_compact() == FS_STATUS_OK;
-  expect(hash_snapshot_fallback,
-         "filesystem_restore_recovers_hash_corruption_from_previous_snapshot");
+  expect(repaired_hash_index,
+         "filesystem_restore_recomputes_hash_and_remaps_parent_slot");
 
   fake_flash.fill(0xff);
   std::array<uint8_t, sizeof(shared_offset_value_a)> restored_overlap_a{};

@@ -29377,6 +29377,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t2-overlay-final2.log`, `/tmp/mem01-t2-transaction.log`, `/tmp/mem01-t2-arm.log`, `/tmp/mem01-t2-riscv.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 repair a stored overlay hash from canonical tags 21 minutes
+
+- Step/experiment: `MEM-01-T1-CANONICAL-HASH-REPAIR-20261114`
+- When: '2026-11-14 08:12 UTC' - '2026-11-14 08:33 UTC'
+- Model: `GPT-6 Codex`
+- Change: Snapshot validation now separates canonical tag decoding from stored-hash comparison. If arena bounds/intervals and parent links are sound, rebuilding recomputes hashes from decoded tags, verifies duplicate live identities before mutation, rehashes slots and remaps parent-slot references. The T2 repair hook now calls the generalized index repair for either a probe-chain fault or a stored-hash mismatch. Added a parent-hash corruption regression with a parent-encoded child and unrelated record, checking sync/reload/compaction. Updated MEM-01, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; it logged `FS_INTEGRITY_FAIL reason=hash_mismatch` followed by `FS_INTEGRITY_REPAIR reason=hash_mismatch action=rehash`, and preserved the child and unrelated value through reload and compaction. Ambiguous duplicate-offset/overlap cases still reject the damaged generation and recover from the previous COW snapshot. `./tools/build arm` and `./tools/build riscv` passed. No physical hardware or VPCD campaign.
+- Result: A correctable index hash no longer forces rollback to an older snapshot; ambiguous serialized intervals remain fail-closed.
+- Decision: Keep T1 open for per-record quarantine when tags cannot be reconstructed but boundaries are provable; continue offline and do not run the long emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-hash-repair-final.log`, `/tmp/mem01-t1-hash-arm.log`, `/tmp/mem01-t1-hash-riscv.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
 
 - Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`

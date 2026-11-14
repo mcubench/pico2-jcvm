@@ -11,7 +11,7 @@
 #include <cstring>
 #include <utility>
 
-extern "C" uint8_t fs_repair_probe_index_if_needed(void)
+extern "C" uint8_t fs_repair_overlay_index_if_needed(void)
     __attribute__((weak));
 
 namespace jcvm {
@@ -982,10 +982,10 @@ bool reportSkippedCandidates(const char *namespace_name,
   bool repaired = false;
   if (repair_attempted != nullptr && !*repair_attempted) {
     *repair_attempted = true;
-    if (fs_repair_probe_index_if_needed == nullptr) {
+    if (fs_repair_overlay_index_if_needed == nullptr) {
       repair = "unavailable";
     } else {
-      const uint8_t status = fs_repair_probe_index_if_needed();
+      const uint8_t status = fs_repair_overlay_index_if_needed();
       repair = status == 0 ? "not_needed"
                            : status == 1 ? "repaired" : "unrecoverable";
       repaired = status == 1;
@@ -994,7 +994,7 @@ bool reportSkippedCandidates(const char *namespace_name,
   if (integrity_logged == nullptr || !*integrity_logged) {
     if (integrity_logged != nullptr) *integrity_logged = true;
     std::printf("OBJECT_DELETION:INTEGRITY stage=candidate_scan "
-                "namespace=%s skipped=%u probe_repair=%s tag=",
+                "namespace=%s skipped=%u index_repair=%s tag=",
                 namespace_name,
                 static_cast<unsigned>(batch.skipped_unresolvable), repair);
     const uint8_t tag_length = std::min<uint8_t>(

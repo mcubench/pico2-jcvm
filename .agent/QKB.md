@@ -6,15 +6,28 @@ Applet and package-static reclaimers now leave an enumerable but unresolved
 candidate intact and continue reclaiming the other candidates across bounded
 batches. They report the first bad tag once per invocation, avoiding a serial
 log line for every later batch. A weak filesystem hook lets the RP2350 overlay
-check its index and rebuild a pure probe-chain placement fault; after repair,
-the reclaimer restarts enumeration. Hash, record, and arena ambiguity is not
-mutated and remains an integrity failure to investigate. `ReadFailure` logs
-identify `alias_chain`, `root_scan`, or `candidate_scan`.
+check its index and rebuild a pure probe-chain placement fault or a stored-hash
+mismatch whose serialized tags and parent chains remain verifiable; after
+repair, the reclaimer restarts enumeration. Other record and arena ambiguity
+is not mutated and remains an integrity failure to investigate. `ReadFailure`
+logs identify `alias_chain`, `root_scan`, or `candidate_scan`.
 
 Regression evidence: the fake-flash overlay suite repairs an orphaned probe
 slot and reclaims all 20 records; injected unresolved applet and package
 candidates remain present while the other 19 in each namespace are reclaimed.
 This does not establish long-run JCAlgTest behavior or physical acceptance.
+
+## Stored overlay hash mismatch — safely repairable when the arena is intact
+
+`overlay_integrity_valid()` now decodes the canonical tag before comparing its
+stored index hash. If all serialized record bounds, contiguous non-overlapping
+intervals, parent links and unique live tags verify, rebuild the index using
+hashes recomputed from those tags, then remap parent-slot references. A
+recovery test corrupts a parent record's hash and verifies its parent-encoded
+child and an unrelated record survive sync, reload and compaction. If the
+arena layout is ambiguous or canonical tags collide, do not mutate; use the
+other valid COW generation or fail closed. This does not yet cover dropping
+only individually undecodable records when no valid COW copy exists.
 
 Compacted: 2026-11-11. Reusable diagnoses and fixes; current tasks live in
 [TODO](../TODO.md), device/build state in [HANDOFF](HANDOFF.md), and run history in

@@ -1,10 +1,30 @@
-# Current handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
+# Current handoff — MEM-01 T1 canonical hash repair — 2026-11-14 UTC
+
+Snapshot/index recovery now distinguishes a stored-hash mismatch from tag
+decode failure. If every serialized record has valid bounds, the arena is
+contiguous and non-overlapping, parent chains decode, and live canonical tags
+are unique, the overlay recomputes hashes from decoded tags, rehashes the index
+and remaps parent-slot references. A fake-flash regression corrupts a parent
+hash and confirms its parent-encoded child plus an unrelated record survive
+repair, sync, reload and compaction. Ambiguous intervals, tag collisions and
+other undecodable metadata still use a valid previous COW snapshot or fail
+closed. ARM/RISC-V builds and the RP2350 overlay suite pass. No hardware or
+emulator campaign was used.
+
+Next: implement quarantine only for records that cannot be decoded when every
+record boundary and interval is still unambiguous; preserve all decodable
+records and their parents, and keep COW fallback for overlap/offset ambiguity.
+Then strengthen T7's mixed-live-set fake-flash churn tests. Do not run the slow
+long emulator campaign.
+
+# Previous handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
 
 T2 now completes bounded applet and package-static reclamation when an
 enumerable candidate cannot be resolved. The candidate is preserved and
 reported once per invocation; later resolvable entries continue through
 subsequent batches. Before proceeding, the RP2350 overlay asks T1 to repair a
-pure probe-chain index fault. If repaired, candidate enumeration restarts;
+probe-chain or stored-hash index fault when reconstructable. If repaired,
+candidate enumeration restarts;
 ambiguous record/hash/arena damage remains fail-closed. `ReadFailure` events
 now identify `alias_chain`, `root_scan`, or `candidate_scan`.
 
