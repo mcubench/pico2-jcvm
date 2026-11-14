@@ -30016,3 +30016,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The exact hostile input required by CAPIN-01 is now reproducible offline. No evidence yet that the APDU returns `6A80`, persists no package, or leaves unrelated DELETE functional; those VPCD acceptance checks remain open.
 - Decision: Keep CAPIN-01 open and run the focused malformed-VPCD case when reader publication is restored; meanwhile continue with independent offline P1 work.
 - Artifacts/logs: generated input `build/rv28-malformed-external-superclass-without-import-load-code.bin`; upstream CAP hash and generated component details above.
+
+## 2026-11-14 Rebuild current deletion-enabled external image 6 minutes
+
+- Step-Id: `20261114-2230-win-object-deletion-current`
+- Task: External max_crypto acceptance image with object deletion ON
+- When: '2026-11-14 22:30 UTC' - '2026-11-14 22:36 UTC'
+- Model: `GPT-6`
+- Change: Rebuilt the current dirty worktree for ARM `max_crypto`, generated a 1 MiB erased-storage empty-card UF2, and assembled a Windows package with the unchanged upstream 1.8.4/jc305 CAP, supplied 1.8.5 host client, GPPro, serial capture script, and exact instructions. Updated the current-image table, external request, and session handoff. Previous 50114a30 artifact is superseded because its source diff hash no longer matched the tree.
+- Validation: `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_HEAP_GC=0 PICO2_DEBUG_CCID_APPLET=0 PICO2_DEBUG_PERSISTENT_GC=0 PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` passed (`mode=normal`, deletion ON, all debug OFF, serial wait 0 ms; linked end `0x100f7744`, 35,004 bytes remaining). `./tools/package-empty-card-uf2` passed (4,125,184 bytes; 3,960 firmware + 4,096 erased-storage blocks). Local picotool metadata inspection, `./tools/fixture-path --verify`, package `sha256sum --check`, and `unzip -t` passed. No physical flash/test was performed.
+- Result: UF2 SHA-256 `74b27919ac2165b750734eb2fae7bd29c87bdf536ee225fea8f896bdad5f20da`; Windows ZIP SHA-256 `8ea646a8e2d637f7b69f50ed1fc6e4a7a9dc343a61487a26f9772a9ce4c9218d`. Source HEAD `219c1d1f62277bf3`; dirty root diff SHA-256 `99938a657a68be0618b38c3c6ebcdf97d3b46b4a3f8f53eac115b8c4e40c9792`; details in package provenance.
+- Decision: Provide this normal-mode empty-card image for external Windows testing; it has object deletion enabled. Physical acceptance remains open.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-219c1d1f-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-219c1d1f-dirty.zip`; package directory of the same stem.

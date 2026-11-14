@@ -1,20 +1,25 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-NORMAL-DIRTY-50114A30 — Test current bugfix image
+## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-50114A30
 
-Created 2026-11-14 22:07 UTC. This package was rebuilt from the current
-worktree after the latest storage/memory bugfix. Use this image for the next
+Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-219C1D1F` image below; the
+50114a30 package predates the latest source-tree state.
+
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-219C1D1F — Test current bugfix image
+
+Created 2026-11-14 22:34 UTC. This package was rebuilt from the current
+worktree after the latest source updates. Use this image for the next
 external Windows run: ARM `max_crypto`, normal mode, object deletion ON, all
 debug/trace flags OFF, zero serial delay, empty persistent storage, no applet
 preinstalled.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-50114a30-dirty.uf2)
-- UF2 SHA-256: `30dcd9f581cdea7729f66e9c08c832438f8d01ff32c3e56c37bbaae45d46287f`
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-219c1d1f-dirty.uf2)
+- UF2 SHA-256: `74b27919ac2165b750734eb2fae7bd29c87bdf536ee225fea8f896bdad5f20da`
 - Size: 4,125,184 bytes
-- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-50114a30-dirty.zip)
-- Package SHA-256: `2d3735a37acd34d81620e893c79071b533fbeec3ccc13c2c47e526a93338ea44`
-- Instructions: [package README](../build/external-test/object-deletion-normal-50114a30-dirty/README.md)
-- Source HEAD: `50114a30092de25e`; source worktree was dirty. Packaged provenance records root tracked-diff SHA-256 `d11fd2b444c552a66ad1a8cdd9083bca34e6953d84bfd25e7577fd4eefad74bd` and CHOUPI OS submodule commit/diff.
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-219c1d1f-dirty.zip)
+- Package SHA-256: `8ea646a8e2d637f7b69f50ed1fc6e4a7a9dc343a61487a26f9772a9ce4c9218d`
+- Instructions: [package README](../build/external-test/pico2-jcvm-object-deletion-normal-windows-219c1d1f-dirty/README.md)
+- Source HEAD: `219c1d1f62277bf3`; source worktree was dirty. Packaged provenance records root tracked-diff SHA-256 `99938a657a68be0618b38c3c6ebcdf97d3b46b4a3f8f53eac115b8c4e40c9792` and CHOUPI OS submodule commit/diff.
 - Build passed with 35,004 bytes remaining before the firmware limit. Empty-card packaging, fixture manifest verification, package checksums and ZIP integrity passed. No physical flash or hardware validation was performed here.
 - Exercise assets: unchanged upstream JCAlgTest 1.8.4/jc305 CAP (SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`) and supplied 1.8.5 host client (SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`).
 
