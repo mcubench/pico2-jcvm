@@ -3112,6 +3112,71 @@ int main() {
   expect(fs_init() == FS_STATUS_OK,
          "filesystem_reinitializes_after_fail_closed_parent_recovery");
 
+  // A self-contained bad parent makes its parent-encoded descendants
+  // undecodable too. Quarantine that whole dependent chain, but retain a
+  // separate record when the interval proof remains exact.
+  fake_flash.fill(0xff);
+  constexpr uint8_t cascade_other_tag[] = {0xb4, 0x33, 0x44};
+  constexpr uint8_t cascade_child_value[] = {0xc1, 0xc2};
+  constexpr uint8_t cascade_other_value[] = {0xd1, 0xd2, 0xd3};
+  std::array<uint8_t, sizeof(cascade_other_value)> cascade_other_actual{};
+  bool cascaded_quarantine =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(hashed_parent_a.data(), hashed_parent_a.size(),
+               nullptr, 0) == FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          hashed_child.data(), hashed_child.size(), cascade_child_value,
+          sizeof(cascade_child_value)) == FS_STATUS_OK &&
+      fs_write(cascade_other_tag, sizeof(cascade_other_tag), cascade_other_value,
+               sizeof(cascade_other_value)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_corrupt_record_tag_length(
+          hashed_parent_a.data(), hashed_parent_a.size(), 4) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  fake_flash[flash_layout::filesystem_slot(0)] = 0;
+  cascaded_quarantine = cascaded_quarantine && fs_init() == FS_STATUS_OK &&
+      rp2350_fs_test_integrity_valid() == 1 &&
+      rp2350_fs_test_overlay_file_count() == 1 &&
+      fs_read(hashed_parent_a.data(), hashed_parent_a.size(), nullptr, 0) ==
+          FS_STATUS_NO_SUCH_TAG &&
+      fs_read(hashed_child.data(), hashed_child.size(), nullptr, 0) ==
+          FS_STATUS_NO_SUCH_TAG &&
+      fs_read(cascade_other_tag, sizeof(cascade_other_tag),
+              cascade_other_actual.data(), cascade_other_actual.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(cascade_other_actual.data(), cascade_other_value,
+                  cascade_other_actual.size()) == 0 &&
+      fs_sync() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1;
+  expect(cascaded_quarantine,
+         "filesystem_restore_quarantines_bad_parent_and_dependent_child");
+
+  // A tombstone carries deletion semantics for possible ROM-backed content.
+  // Even with provable record boundaries, an undecodable tombstone is never
+  // removed by salvage because doing so could resurrect that ROM value.
+  fake_flash.fill(0xff);
+  constexpr uint8_t quarantine_tombstone_tag[] = {0xf5, 0x21, 0x02};
+  bool malformed_tombstone_rejected =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(quarantine_tombstone_tag, sizeof(quarantine_tombstone_tag),
+               nullptr, 0) == FS_STATUS_OK &&
+      fs_erase(quarantine_tombstone_tag,
+               sizeof(quarantine_tombstone_tag)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_corrupt_record_tag_length(
+          quarantine_tombstone_tag, sizeof(quarantine_tombstone_tag), 4) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  fake_flash[flash_layout::filesystem_slot(0)] = 0;
+  malformed_tombstone_rejected = malformed_tombstone_rejected &&
+      fs_init() != FS_STATUS_OK;
+  expect(malformed_tombstone_rejected,
+         "filesystem_restore_never_quarantines_undecodable_tombstone");
+  fake_flash.fill(0xff);
+  expect(fs_init() == FS_STATUS_OK,
+         "filesystem_reinitializes_after_tombstone_fail_closed_recovery");
+
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
   // old slot-order traversal, reproducing the persistent-storage exhaustion

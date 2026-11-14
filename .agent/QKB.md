@@ -208,6 +208,14 @@ older snapshot and an invalid parent pointer that must not be dropped. Do not
 broaden quarantine based only on successful tag parsing; interval proof and
 parent identity checks are required first.
 
+Follow-up matrix: a malformed self-contained parent plus its undecodable
+parent-encoded child is quarantined as a dependent chain while an unrelated
+record survives. An undecodable tombstone with valid intervals causes restore
+to fail closed (`unreconstructable_tombstone`); it is not dropped. This does
+not justify recovery from overlapping, gapped or otherwise unprovable arena
+intervals. If no strict COW copy remains in those cases, startup still fails
+closed.
+
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 
 ## CAP Class external references — validate Import token bounds before storage

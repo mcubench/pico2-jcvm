@@ -29413,6 +29413,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-quarantine-final3.log`, `/tmp/mem01-t1-quarantine-final-arm2.log`, `/tmp/mem01-t1-quarantine-final-riscv2.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 quarantine dependency and tombstone matrix 5 minutes
+
+- Step/experiment: `MEM-01-T1-QUARANTINE-MATRIX-20261114`
+- When: '2026-11-14 09:06 UTC' - '2026-11-14 09:11 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added fake-flash regressions for a malformed self-contained parent whose parent-encoded child must be quarantined with it, and for an undecodable tombstone that must make restore fail closed. The descendant test verifies an unrelated record survives and the recovered snapshot stays valid through sync/reload. Updated TODO, QKB and HANDOFF with the now-tested boundaries and policy for unprovable intervals.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; observed `quarantined=2` for the parent/child chain and `FS_INTEGRITY_REPAIR_FAIL reason=unreconstructable_tombstone` for the protected tombstone. Production source was unchanged since the preceding ARM/RISC-V builds; this step changed test coverage and documentation only. No hardware or emulator.
+- Result: Parent descendants are removed only when their known-bad ancestor is independently quarantined; ambiguous parent references and tombstones are not salvaged.
+- Decision: T1’s remaining rule is to preserve a strict prior COW image or fail closed when interval boundaries cannot be proven. Proceed to T7 mixed-live-set fake-flash churn coverage; no long emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-quarantine-matrix.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
 
 - Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`

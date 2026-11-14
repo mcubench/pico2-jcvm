@@ -12,11 +12,13 @@ passes (`TEST:SUMMARY fail=0`); ARM and RISC-V builds pass. No physical or
 emulator run was used.
 
 Still fail-closed: undecodable tombstones, ambiguous parent-pointer/hash
-damage, bad bounds, gaps/overlaps and duplicate identities. T1 needs broader
-tests for multiple damaged records and parent-descendant cascades, and a clear
-policy for snapshots whose intervals cannot be proven. Next, continue MEM-01
-with those T1 cases, then extend T7 mixed-live-set fake-flash churn. Do not run
-the slow long emulator campaign or touch physical boards unless asked.
+damage, bad bounds, gaps/overlaps and duplicate identities. The fake-flash
+matrix now confirms parent-descendant cascade quarantine (two records dropped,
+unrelated value retained) and tombstone rejection. T1's safe response to
+unprovable intervals is explicit: restore a strict valid COW copy if one
+exists; otherwise fail closed rather than guess boundaries. Next, extend T7
+mixed-live-set fake-flash churn. Do not run the slow long emulator campaign or
+touch physical boards unless asked.
 
 # Previous handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
 
