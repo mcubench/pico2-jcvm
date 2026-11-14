@@ -30053,3 +30053,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Retain the physical CAPIN-01 acceptance gate; use the now-wired focused VPCD case for regression coverage.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/cap-missing-import-apdu-20261114T230132Z.log`; fixture derived from upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+
+## 2026-11-14 Refresh deletion-enabled external image 19 minutes
+
+- Step-Id: `20261114-2302-win-object-deletion-current-worktree`
+- Task: Prepare the current ARM max_crypto empty-card image for Windows testing
+- When: '2026-11-14 23:02 UTC' - '2026-11-14 23:21 UTC'
+- Model: `GPT-6`
+- Change: Rebuilt ARM max_crypto with object deletion ON, all debug/trace flags OFF, zero startup delay and generated empty persistent storage. Packaged the unchanged upstream JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro, serial capture helper, instructions and provenance. Updated the current-image table, external request and session handoff; the prior 219c1d1f package is superseded because its dirty-diff provenance no longer matches the present worktree.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`, including mixed live-set compaction and power-cut recovery. `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed on current source; requested image command `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_HEAP_GC=0 PICO2_DEBUG_CCID_APPLET=0 PICO2_DEBUG_PERSISTENT_GC=0 PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` passed. `./tools/package-empty-card-uf2`, `./tools/fixture-path --verify`, package `sha256sum --check`, `unzip -t` and local picotool UF2 metadata inspection passed. The approved USB helper granted three node ACLs; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out, so no physical operation was attempted.
+- Result: Firmware SHA-256 `135d5d3a64c90572bc0a6166828cbde00c3b1705292f8fd32e1d6984bfc99dc3`; package SHA-256 `ea7f322fcbd77c96e44914203dd55ad1194a03b670230de103dad3e9b66fa5c4`. Linked firmware ends at `0x100f7744`, leaving 35,004 bytes in the configured flash region. Source dirty state at build is disclosed in package provenance. No hardware validation was performed.
+- Decision: Use this package for new external tests; record results against the exact UF2 hash. Keep MEM-01 T7/T8 acceptance open pending VPCD/physical reader availability and client evidence.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-7a396462-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-7a396462-dirty.zip`; package instructions and `BUILD-PROVENANCE.txt` in the corresponding directory.

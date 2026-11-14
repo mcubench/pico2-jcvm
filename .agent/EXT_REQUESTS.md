@@ -2,10 +2,33 @@
 
 ## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-50114A30
 
-Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-219C1D1F` image below; the
+Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-7A396462` image below; the
 50114a30 package predates the latest source-tree state.
 
-## WIN-OBJECT-DELETION-NORMAL-DIRTY-219C1D1F — Test current bugfix image
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-7A396462 — Test latest deletion-enabled image
+
+Created 2026-11-14 23:21 UTC. This is the newest external Windows test image,
+built from source HEAD `7a396462e1b5e60ae44e5ca7094de2656fe74dfa` and the dirty
+source state disclosed in its provenance. ARM `max_crypto`, normal mode,
+object deletion ON, all debug/trace OFF, zero serial delay, empty persistent
+storage, no preinstalled applet.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-7a396462-dirty.uf2)
+- UF2 SHA-256: `135d5d3a64c90572bc0a6166828cbde00c3b1705292f8fd32e1d6984bfc99dc3`
+- Size: 4,125,184 bytes
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-7a396462-dirty.zip)
+- Package SHA-256: `ea7f322fcbd77c96e44914203dd55ad1194a03b670230de103dad3e9b66fa5c4`
+- Instructions: [package README](../build/external-test/pico2-jcvm-object-deletion-normal-windows-7a396462-dirty/README.md)
+- Build provenance includes the dirty root diff hash, CHOUPI OS submodule commit/diff, profile, flags, ROM mask, and input CAP/client hashes.
+- ARM build passed with 35,004 bytes remaining. Empty-card package, fixture manifest, file hashes, ZIP integrity, and local UF2 metadata passed. Windows host test and local physical validation have not yet been run.
+- Exercise assets: unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied 1.8.5 host client.
+
+Please flash only this UF2, record its exact hash, Windows version, reader
+name/ATR, chip ID, per-device results and serial log. Run option 2 on one board;
+use another identified board for option 1 when available. Install the unchanged
+CAP explicitly with the included GPPro JAR after confirming the card is empty.
+
+## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-219C1D1F
 
 Created 2026-11-14 22:34 UTC. This package was rebuilt from the current
 worktree after the latest source updates. Use this image for the next
