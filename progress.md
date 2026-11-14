@@ -29826,7 +29826,7 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the new package for external Windows testing; prior
   `0e67df89` image is superseded. Continue MEM-01 T7 and HOST-01 before another
   long physical campaign.
-- Commit: `<pending>`
+- Commit: `f3f6a158` (progress-reference backfill is committed separately).
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ba7e4aa1.uf2`;
   `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ba7e4aa1.zip`;
   `.agent/EXT_REQUESTS.md`.
