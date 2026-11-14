@@ -29755,3 +29755,42 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: REF-185-01 and building a post-fix acceptance image are open
   follow-ups for the worker.
 - Artifacts/logs: `.agent/archive/2026-11-14-todo-conflict-cleanup/`
+
+## 2026-11-14 D92 physical object-deletion stress trace 46
+
+- Step-Id: `20261114-2128-mem01-t8-d92-exploratory`
+- Task: `MEM-01 T8 exploratory; HOST-01 evidence`
+- When: '2026-11-14 20:42 CET' - '2026-11-14 21:28 CET'
+- Model: `gpt-6`
+- Change: Flashed diagnostic ARM max_crypto firmware with object deletion and
+  CCID applet tracing enabled onto identified D92 (`D92E743D5F640C0F`), passed
+  finite serial startup, installed unchanged upstream JCAlgTest 1.8.4/jc305
+  CAP, and ran option 2 using the pinned 1.8.5 host JAR. Recorded the recurring
+  CCID response-delivery failure separately from MEM-01 storage evidence.
+- Validation: ARM and RISC-V object-deletion/debug wrapper builds passed before
+  flashing. `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial D92E743D5F640C0F
+  build/arm/pico2_choupi.uf2` verified and rebooted the image;
+  `./tools/monitor --serial D92E743D5F640C0F --seconds 10` passed
+  `TEST:SUMMARY pass=1 fail=0`; bounded GPPro install of the unchanged CAP
+  succeeded. The option-2 client ran about 45 minutes, then failed at
+  `TYPE_AES LENGTH_AES_192 ALG_AES_BLOCK_128_ECB_NOPAD Cipher_init()` with
+  `SCARD_E_NOT_TRANSACTED`. After preserving traces, `sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` granted access to three USB nodes, but
+  `pcsc_scan -r` did not enumerate a physical reader; `lsusb` still showed all
+  three Pico runtime devices. No source test suite was run in this step.
+- Result: 121 method groups / 289 CSV rows and 1,101 heap-GC samples before
+  transport failure. Heap live counts plateaued at 105 arrays / 24 instances;
+  no `F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, `FS_COMPACT_REJECT`, heap trace
+  skip or firmware fault occurred. Firmware completed `B043000016` with SW
+  `9000`; `fs_sync` took 1,269,927 us, then response submission remained
+  `pending=1`, `in_busy=0`, `submit_errors=0` with no recorded IN completion.
+  This is partial memory evidence and a HOST-01 blocker, not T8 acceptance.
+- Decision: Keep PC/SC/CCID delivery separate from MEM-01. Continue with the
+  bounded T7 overlay proof and inspect the final-response pending transition
+  before another long physical run.
+- Artifacts/logs: UF2 SHA-256
+  `079ae6883c60b2fe12013c3e84bac0f5a25f35554f1215ddb96304d67c01225a`; client
+  JAR SHA-256
+  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CAP
+  SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`;
+  `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.

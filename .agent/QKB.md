@@ -1158,3 +1158,35 @@ unique, non-covered prefix rather than 129 bytes per target. The foreign alias
 cycle regression and all persistent inventory/transaction/overlay tests pass;
 ARM/RISC-V object-deletion-enabled max_crypto builds pass. The actual target
 count and physical free-heap delta remain unmeasured.
+
+## 2026-11-14: D92 option-2 response remains queued with idle CCID IN endpoint
+
+Physical D92 (`D92E743D5F640C0F`) exploratory option-2 run used the diagnostic
+ARM max_crypto/object-deletion image (`079ae6883c60b2fe12013c3e84bac0f5a25f35554f1215ddb96304d67c01225a`),
+the unchanged upstream JCAlgTest 1.8.4/jc305 CAP
+(`cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`), and
+the supplied 1.8.5 host JAR
+(`b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`). The
+client failed after 121 method groups / 289 CSV rows at
+`TYPE_AES LENGTH_AES_192 ALG_AES_BLOCK_128_ECB_NOPAD Cipher_init()` with
+`SCARD_E_NOT_TRANSACTED`.
+
+The serial trace shows the `B043000016` applet execution returned `9000`; its
+`fs_sync` took 1,269,927 us. Final submission then reported
+`pending=1 zlp=0 in_busy=0 submit_errors=0`. The CCID diagnostic stage remained
+6 at 4,448 RX events / 4,015 tasks / 2,056 XfrBlocks, with no later IN
+completion. No `CCID_RESPONSE_WAIT`, `CCID_EXTENSION_RECOVER`, or
+`CCID_ERRORS` appeared. The approved PC/SC access helper granted access to all
+three USB nodes, but subsequent `pcsc_scan -r` emitted only its banner and
+never enumerated a reader; all three `2e8a:0009` runtime devices remained in
+`lsusb`.
+
+This run produced 1,101 heap-GC samples. Live counts settled in bounded steps
+at `(95,18)`, `(103,22)`, and `(105,24)` arrays/instances; there were no
+`F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, `FS_COMPACT_REJECT`, heap trace skips,
+or firmware faults. Treat it as partial memory evidence and a HOST-01 CCID
+response-delivery failure, not memory exhaustion. Next, inspect why the
+pending final response does not transition when the endpoint is idle; keep the
+host transport failure separate from MEM-01.
+
+Logs: `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.

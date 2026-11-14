@@ -1,49 +1,28 @@
 # Handoff — next steps only
 
-Rules for this file: **replace it, do not append**. Keep it to ≤ 60 lines,
-covering only the next concrete actions, current blockers and board state.
-Task definitions and acceptance criteria live in `TODO.md`, history in
-`progress.md`, recurring issues in `.agent/QKB.md`. The full pre-compaction
-handoff history (233 blocks, to 2026-11-14 16:38) is in
-`.agent/history/handoff-archive-20261114.md`.
+Replace this file, do not append. Keep ≤ 60 lines. Task criteria are in
+`TODO.md`, history in `progress.md`, recurring diagnoses in `.agent/QKB.md`.
 
-Updated: 2026-11-14 (compacted by user request; state as of commit `4f225cbb`).
+Updated: 2026-11-14.
 
-## User directive in force
-Long simulator/emulator runs are permitted again, but each needs a stated reason
-and benefit. First reason whether the target scenario can be reached more cheaply
-than by a naive long run. See `AGENTS.md` → "Long simulator/emulator runs".
+## Next actions
+1. **MEM-01 T7:** perform the bounded VPCD option-2 proof through sync sequence
+   ≥2,500. The previous post-fix run stopped at ≈800; this bounded overlay run
+   reaches the target more cheaply than a full physical campaign. Log live
+   record/byte counts at each compaction and alias-root counts.
+2. **HOST-01:** inspect why the D92 final response stayed queued with an idle
+   IN endpoint (`pending=1`, `in_busy=0`, no submit errors or completion) and why
+   no wait/recovery telemetry appeared. Avoid another long physical run until
+   the state transition is understood or instrumented.
+3. **MEM-01 T8:** after T7, use the no-debug acceptance image and an empty-card
+   image before the option-2/option-1 runs. Keep one identified board per run.
 
-## Next steps (in order)
-1. **MEM-01 T7 runtime proof (VPCD).** Target scenario: sync seq past ≈1,750
-   (pre-fix `FS_WRITE_FAIL` at `bytes=94311`) with many live mixed-size records
-   and alias bodies. First consider the cheaper churn-test extensions (a)–(e) in
-   `TODO.md` T7. Otherwise run the bounded VPCD option-2 run: stop at sync seq
-   ≥ 2,500 and log live records and bytes per compaction. Pass = no
-   `FS_WRITE_FAIL`/`F205`, flat live bytes over the last 1,000 syncs, and bounded
-   `reachable_alias`. If bytes still grow, use `PICO2_GC_SCAN_DIAGNOSTICS=1`
-   `ALIAS_ROOT` counts.
-2. **MEM-01 T8 physical.** The last 8E option-2 run (1.8.5 client, 1.8.4 CAP)
-   failed after about 32 min with `SCARD_E_NOT_TRANSACTED` →
-   `SCARD_E_READER_UNAVAILABLE` near `ALG_DES_ECB_ISO9797_M2 Cipher_init()`.
-   There was no `F205`/`NO_RESOURCE`, and 717 deletion requests were served.
-   This is a transport failure, not memory. Before rerunning:
-   - Diagnose the CCID/PC/SC reader loss (offline state-machine review).
-   - Feed the client's retry/skip prompt so it does not die on stdin.
-   - Explain why the CSV reports client 1.8.4 when the 1.8.5 JAR was used.
-
-   Logs: `artifacts/results/jcalgtest-1.8.5-physical-20261114/8E464F4E2BBC0A19/option2-performance/`.
-3. **BOOTSEL-01 remaining acceptance.** Exercise CDC-1200 reset during a long
-   synchronous applet operation and record the BOOTSEL latency. Idle CDC-1200
-   works on 8E (3,119 ms).
-4. When a second board enumerates, run option 1 on it (not before).
-
-## Board state (volatile — re-check with the approved helper)
-- 8E `8E464F4E2BBC0A19`: runtime USB visible, but its physical reader is missing
-  from PC/SC; the helper restart did not restore it.
-- D92 `D92E743D5F640C0F`: not enumerated after flash. Do not retry until it
-  reappears.
-- Other boards the user reported in BOOTSEL are not visible to the guest. Tell
-  the user about this mismatch (via `.agent/EXT_REQUESTS.md`) if hardware work
-  is blocked.
-- Last flashed UF2 SHA-256: `92a603fb041259b6028360290f17f0fb9bc55ab2aac78ebe8b2739969609984d`.
+## Board state (volatile; re-enumerate before physical work)
+- D92 `D92E743D5F640C0F`: diagnostic image SHA-256
+  `079ae6883c60b2fe12013c3e84bac0f5a25f35554f1215ddb96304d67c01225a`; option-2
+  stopped on `SCARD_E_NOT_TRANSACTED` at AES-192. Firmware stayed USB-visible.
+- 8E `8E464F4E2BBC0A19` and 2BED `2BED26ED20556535`: runtime USB devices; prior
+  option-2 sessions also stalled. All three runtime USB devices were visible
+  after D92's failure, but PC/SC listed no physical reader after the approved
+  helper refresh. No BOOTSEL device was visible then.
+- Logs: `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.
