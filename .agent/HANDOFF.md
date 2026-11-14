@@ -71,6 +71,13 @@ RISC-V max_crypto builds with deletion enabled pass. This capacity reduction
 is inferred from the fixed element size and test workload, not measured on a
 physical board. Full option-2 client and physical acceptance remain open.
 
+Follow-up: foreign alias-protection targets are stored as packed
+`[length, bytes...]` values, skipping targets whose prefix is already covered
+by a retained shorter prefix. This preserves candidate membership while
+avoiding one full 129-byte `Tag` per external alias. Persistent transaction,
+inventory and overlay suites plus object-deletion-enabled ARM/RISC-V max_crypto
+builds pass. Physical free-heap change remains unmeasured; no device/emulator.
+
 T7 still lacks runtime `alias-protect` event evidence and the unchanged JCAlgTest
 1.8.5 option-2 VPCD campaign. The latter remains intentionally unrun because of
 the user's instruction to stop long emulator campaigns. Continue offline with

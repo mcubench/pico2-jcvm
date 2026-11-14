@@ -29508,3 +29508,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep host diagnostics opt-in and preserve all traversal. Physical free-heap delta and long option-2 acceptance remain unverified; do not run the slow emulator campaign.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-alias-alloc-transaction.log`, `/tmp/mem01-alias-alloc-inventory.log`, `/tmp/mem01-alias-alloc-overlay.log`, `/tmp/mem01-alias-alloc-arm.log`, `/tmp/mem01-alias-alloc-riscv.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 pack foreign alias prefixes 6 minutes
+
+- Step/experiment: `MEM-01-PACK-FOREIGN-ALIAS-PREFIXES-20261114`
+- When: '2026-11-14 10:17 UTC' - '2026-11-14 10:23 UTC'
+- Model: `GPT-6 Codex`
+- Change: Replaced foreign-alias `vector<Tag>` inventories with packed length-prefixed bytes and prefix deduplication. Candidate checks retain identical prefix membership semantics while external aliases no longer allocate a fixed 129-byte slot apiece. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-persistent-transaction`, `./tools/test-persistent-inventory`, and `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). Object-deletion-enabled ARM and RISC-V `max_crypto` wrapper builds passed. `git diff --check` passed. No hardware or emulator run.
+- Result: The 280-child high-occupancy graph and foreign-alias cycle regressions remain green; overlay metrics were 581 slots, 67,458 live bytes, 30,752-byte free-capacity floor, 309 peak heap handles, 12 compactions, and 108 erased records. Packed external target storage now uses one length byte plus the tag's actual bytes, omitting targets covered by an existing shorter prefix. External alias count and physical free-heap delta were not measured.
+- Decision: Preserve this packed representation and keep full option-2/physical acceptance open. Continue offline without the slow emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-packed-foreign-transaction.log`, `/tmp/mem01-packed-foreign-inventory.log`, `/tmp/mem01-packed-foreign-overlay.log`, `/tmp/mem01-packed-foreign-arm.log`, `/tmp/mem01-packed-foreign-riscv.log`; no hardware logs.

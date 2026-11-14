@@ -23,6 +23,39 @@ constexpr uint8_t kPersistentObjectAlias = 0xfe;
 constexpr uint8_t kPersistentArrayAlias = 0xfd;
 constexpr uint8_t kMaximumAliasDepth = 32;
 
+// Alias-protection code only asks whether a candidate has one of these tag
+// prefixes. Store tags as [length, bytes...] rather than reserving the full
+// 129-byte Tag capacity for every target. Prefix-covered entries are
+// redundant for the membership query and can be omitted safely.
+class PackedTagPrefixes {
+  std::vector<uint8_t> encoded_;
+
+public:
+  bool covers(const Tag &candidate) const noexcept {
+    size_t offset = 0;
+    while (offset < encoded_.size()) {
+      const uint8_t length = encoded_[offset++];
+      if (length == 0 || length > kTagCapacity ||
+          length > encoded_.size() - offset) {
+        return false;
+      }
+      if (candidate.len >= length &&
+          std::memcmp(candidate.value, encoded_.data() + offset, length) == 0) {
+        return true;
+      }
+      offset += length;
+    }
+    return false;
+  }
+
+  void add(const Tag &prefix) {
+    if (prefix.len == 0 || prefix.len > kTagCapacity || covers(prefix)) return;
+    encoded_.push_back(prefix.len);
+    encoded_.insert(encoded_.end(), prefix.value,
+                    prefix.value + prefix.len);
+  }
+};
+
 struct VectorRoots {
   const std::vector<jref_t> *references;
 };
@@ -77,7 +110,7 @@ struct CandidateContext {
   uint8_t applet_owner;
   TagVisitor visitor;
   void *visitor_context;
-  const std::vector<Tag> *foreign_alias_targets;
+  const PackedTagPrefixes *foreign_alias_targets;
   const std::vector<Tag> *reachable_alias_targets;
   CandidateScanSummary *summary;
   VisitResult failure = VisitResult::Complete;
@@ -174,6 +207,11 @@ bool hasTagPrefixRoot(const Tag &candidate, const std::vector<Tag> &targets) {
     }
   }
   return false;
+}
+
+bool hasTagPrefixRoot(const Tag &candidate,
+                      const PackedTagPrefixes &targets) {
+  return targets.covers(candidate);
 }
 
 #ifdef PC_VERSION
@@ -435,12 +473,12 @@ VisitResult visitForeignAliasTargetsToAppletOwner(
 }
 
 static VisitResult collectForeignAliasTargets(
-    const uint8_t applet_owner, std::vector<Tag> &targets) {
+    const uint8_t applet_owner, PackedTagPrefixes &targets) {
   try {
     return visitForeignAliasTargetsToAppletOwner(
         applet_owner,
         [](const Tag &target, void *opaque) {
-          static_cast<std::vector<Tag> *>(opaque)->push_back(target);
+          static_cast<PackedTagPrefixes *>(opaque)->add(target);
           return true;
         },
         &targets);
@@ -726,7 +764,7 @@ VisitResult visitPackageStaticRoots(
 static VisitResult visitUnreachableAppletTagsWithAliasTargets(
     const uint8_t applet_owner, Heap &heap,
     const RootReferenceEnumerator enumerate_roots, void *root_context,
-    const std::vector<Tag> &foreign_alias_targets,
+    const PackedTagPrefixes &foreign_alias_targets,
     const TagVisitor candidate_visitor, void *candidate_context,
     CandidateScanSummary *scan_summary = nullptr) {
   if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
@@ -776,7 +814,7 @@ VisitResult visitUnreachableAppletTags(
     const uint8_t applet_owner, Heap &heap,
     const RootReferenceEnumerator enumerate_roots, void *root_context,
     const TagVisitor candidate_visitor, void *candidate_context) {
-  std::vector<Tag> foreign_alias_targets;
+  PackedTagPrefixes foreign_alias_targets;
   const VisitResult alias_scan =
       collectForeignAliasTargets(applet_owner, foreign_alias_targets);
   if (alias_scan != VisitResult::Complete) return alias_scan;
@@ -873,7 +911,7 @@ struct PackageStaticCandidateContext {
   Heap *heap;
   TagVisitor visitor;
   void *visitor_context;
-  const std::vector<Tag> *foreign_alias_targets;
+  const PackedTagPrefixes *foreign_alias_targets;
 };
 
 bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
@@ -896,7 +934,7 @@ bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
 VisitResult visitUnreachablePackageStaticTagsWithAliasTargets(
     const uint8_t package_id, Heap &heap,
     const RootReferenceEnumerator enumerate_roots, void *root_context,
-    const std::vector<Tag> &foreign_alias_targets,
+    const PackedTagPrefixes &foreign_alias_targets,
     const TagVisitor candidate_visitor, void *candidate_context) {
   if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
     return VisitResult::InvalidArgument;
@@ -920,12 +958,12 @@ VisitResult visitUnreachablePackageStaticTagsWithAliasTargets(
 } // namespace
 
 static VisitResult collectForeignAliasTargetsToPackageStatics(
-    const uint8_t package_id, std::vector<Tag> &targets) {
+    const uint8_t package_id, PackedTagPrefixes &targets) {
   try {
     return visitForeignAliasTargetsToPackageStatics(
         package_id,
         [](const Tag &target, void *opaque) {
-          static_cast<std::vector<Tag> *>(opaque)->push_back(target);
+          static_cast<PackedTagPrefixes *>(opaque)->add(target);
           return true;
         },
         &targets);
@@ -948,7 +986,7 @@ VisitResult visitUnreachablePackageStaticTags(
     const uint8_t package_id, Heap &heap,
     const RootReferenceEnumerator enumerate_roots, void *root_context,
     const TagVisitor candidate_visitor, void *candidate_context) {
-  std::vector<Tag> foreign_alias_targets;
+  PackedTagPrefixes foreign_alias_targets;
   const VisitResult alias_scan =
       collectForeignAliasTargetsToPackageStatics(package_id,
                                                 foreign_alias_targets);
@@ -1076,7 +1114,7 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     return VisitResult::TransactionActive;
   }
 
-  std::vector<PersistentInventory::Tag> foreign_alias_targets;
+  PersistentInventory::PackedTagPrefixes foreign_alias_targets;
   const VisitResult alias_scan =
       PersistentInventory::collectForeignAliasTargets(
           applet_owner, foreign_alias_targets);
@@ -1252,7 +1290,7 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     return VisitResult::TransactionActive;
   }
 
-  std::vector<PersistentInventory::Tag> foreign_alias_targets;
+  PersistentInventory::PackedTagPrefixes foreign_alias_targets;
   const VisitResult alias_scan =
       PersistentInventory::collectForeignAliasTargetsToPackageStatics(
           package_id, foreign_alias_targets);

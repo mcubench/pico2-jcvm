@@ -1091,3 +1091,12 @@ Validation: persistent transaction, persistent inventory and RP2350 overlay
 suites pass; ARM and RISC-V `max_crypto` builds with object deletion enabled
 pass. No physical heap delta was measured; 36,120 bytes is the element payload
 for 280 fixed-size Tags, not runtime allocator usage or vector capacity.
+
+Foreign alias targets are also packed into one byte vector as a sequence of
+length-prefixed values. During insertion, a target whose entire prefix is
+already covered by a retained shorter root is skipped. This preserves
+`hasTagPrefixRoot` results while reducing target storage to `len + 1` bytes per
+unique, non-covered prefix rather than 129 bytes per target. The foreign alias
+cycle regression and all persistent inventory/transaction/overlay tests pass;
+ARM/RISC-V object-deletion-enabled max_crypto builds pass. The actual target
+count and physical free-heap delta remain unmeasured.
