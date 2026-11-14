@@ -70,8 +70,12 @@
 #include "short_apdu.hpp"
 #include "applet_owner_allocator.hpp"
 #include "../../src/vm_lifecycle.h"
+#include "../../src/vm_filesystem.h"
 
 extern "C" bool choupi_vm_applet_owner_in_use(uint8_t owner_id) noexcept;
+#ifdef CHOUPI_PC_RP2350_FS_OVERLAY
+extern "C" uint8_t rp2350_overlay_fs_init(void);
+#endif
 
 bool isSaving = false;
 uint8_t *flash = nullptr;
@@ -561,6 +565,13 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
     pc_storage_initialization_failed = true;
     return 1;
   }
+#ifdef CHOUPI_PC_RP2350_FS_OVERLAY
+  if (rp2350_overlay_fs_init() != 0) {
+    std::fprintf(stderr, "ERROR: RP2350 overlay filesystem initialization failed\n");
+    pc_storage_initialization_failed = true;
+    return 1;
+  }
+#endif
 
   uint8_t package_list_tag = 0x00;
   uint8_t package_bits[JCVM_MAX_PACKAGES / 8]{};
@@ -1700,8 +1711,22 @@ uint16_t vpcd_process_apdu(void *, const uint8_t *command,
                            uint16_t command_length, uint8_t *response,
                            uint16_t response_capacity,
                            uint16_t *response_length) {
-  return choupi_vm_process_applet(command, command_length, response,
-                                  response_capacity, response_length);
+  const uint16_t status = choupi_vm_process_applet(
+      command, command_length, response, response_capacity, response_length);
+#ifdef CHOUPI_PC_RP2350_FS_OVERLAY
+  // The physical CCID path publishes persistent writes after each completed
+  // APDU. Keep the RP2350-overlay VPCD path on the same snapshot semantics.
+  if (status != 0xffff && fs_sync() != 0) {
+    if (response != nullptr && response_length != nullptr &&
+        response_capacity >= 2) {
+      response[0] = 0x6f;
+      response[1] = 0x00;
+      *response_length = 2;
+    }
+    return 0x6f00;
+  }
+#endif
+  return status;
 }
 
 int run_vpcd_transport() {

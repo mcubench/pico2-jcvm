@@ -15,8 +15,15 @@
 #include "flash_layout.hpp"
 #include "jc_handlers/flashmemory.hpp"
 
+#ifndef RP2350_FS_OVERLAY_PC_VPCD
 extern "C" const uint8_t choupi_rommask_start[];
 extern "C" const uint8_t choupi_rommask_end[];
+#else
+extern "C" uint8_t __real_fs_read_inplace(const uint8_t *tag,
+                                           uint8_t tag_length,
+                                           const uint8_t **data,
+                                           uint32_t *length);
+#endif
 extern "C" const uint8_t __flash_binary_end[];
 #ifdef RP2350_FS_OVERLAY_TEST
 extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
@@ -359,8 +366,19 @@ void __not_in_flash_func(write_filesystem_snapshot)(void *opaque) {
 
 bool persist_overlay() {
   if (!overlay_dirty) return true;
-  if (!filesystem_layout_available) return false;
+  if (!filesystem_layout_available) {
+#ifdef RP2350_FS_OVERLAY_TEST
+    std::fprintf(stderr, "RP2350_OVERLAY:persist_reject reason=layout\n");
+#endif
+    return false;
+  }
   if (!filesystem_payload_fits(overlay_file_count, overlay_bytes_used)) {
+#ifdef RP2350_FS_OVERLAY_TEST
+    std::fprintf(stderr,
+                 "RP2350_OVERLAY:persist_reject reason=capacity files=%u bytes=%u\n",
+                 static_cast<unsigned>(overlay_file_count),
+                 static_cast<unsigned>(overlay_bytes_used));
+#endif
     return false;
   }
   const uint8_t next_slot = filesystem_active_slot == 0 ? 1 : 0;
@@ -377,7 +395,12 @@ bool persist_overlay() {
   const uint32_t erase_size =
       (kFilesystemPayloadOffset + programmed_payload + FLASH_SECTOR_SIZE - 1) &
       ~(FLASH_SECTOR_SIZE - 1);
-  if (erase_size > kFilesystemSlotSize) return false;
+  if (erase_size > kFilesystemSlotSize) {
+#ifdef RP2350_FS_OVERLAY_TEST
+    std::fprintf(stderr, "RP2350_OVERLAY:persist_reject reason=slot_size\n");
+#endif
+    return false;
+  }
   FilesystemWriteContext context{next_generation,
                                  slot_offset,
                                  file_count,
@@ -390,6 +413,12 @@ bool persist_overlay() {
                                         5000);
   if (status != PICO_OK || !context.success ||
       !filesystem_slot_valid(slot_offset, kFilesystemSlotSize, true)) {
+#ifdef RP2350_FS_OVERLAY_TEST
+    std::fprintf(stderr,
+                 "RP2350_OVERLAY:persist_reject reason=write status=%d callback=%u slot=%u\n",
+                 status, context.success ? 1u : 0u,
+                 static_cast<unsigned>(next_slot));
+#endif
 #ifndef RP2350_FS_OVERLAY_TEST
     std::printf("CHOUPI:FS_SYNC_FAIL status=%d slot=%u\r\n", status,
                 static_cast<unsigned>(next_slot));
@@ -1082,6 +1111,10 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
 
 bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
                    const uint8_t **data, uint32_t *length) {
+#ifdef RP2350_FS_OVERLAY_PC_VPCD
+  return __real_fs_read_inplace(tag, tag_length, data, length) ==
+         FS_STATUS_OK;
+#else
   const size_t image_size =
       static_cast<size_t>(choupi_rommask_end - choupi_rommask_start);
   if (image_size <= kRomFsOffset) {
@@ -1128,6 +1161,7 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
     position += block_tag_length + block_length + 1; // tag, data, CRC-8
   }
   return false;
+#endif
 }
 
 #ifdef RP2350_FS_OVERLAY_TEST
@@ -2063,6 +2097,7 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
   return compact_deleted_overlay_records();
 }
 
+#ifndef RP2350_FS_OVERLAY_PC_VPCD
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                             const uint8_t *package_aid,
                                             uint8_t package_aid_length,
@@ -2098,6 +2133,7 @@ extern "C" const uint8_t *choupi_cap_store_data_for_package(
     uint8_t package_id, uint32_t *length) {
   return cap_store_data_for_package(package_id, length);
 }
+#endif
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,
                                  uint32_t offset, uint8_t *value) {
@@ -2173,6 +2209,7 @@ extern "C" uint8_t fs_write_4b_at(const uint8_t *tag, uint8_t tag_length,
   return write_at(tag, tag_length, offset, bytes, sizeof(bytes));
 }
 
+#ifndef RP2350_FS_OVERLAY_PC_VPCD
 extern "C" void path_package_list(uint8_t (*tag)[128], uint8_t *length) {
   set_path(tag, length, {0x00});
 }
@@ -2208,3 +2245,4 @@ extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
             static_cast<uint8_t>(class_id >> 8),
             static_cast<uint8_t>(class_id), field});
 }
+#endif

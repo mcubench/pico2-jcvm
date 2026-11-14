@@ -424,6 +424,25 @@ if(CHOUPI_TARGET_PC)
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
 
+  if(CHOUPI_PC_RP2350_FS_OVERLAY)
+    target_sources(choupi PRIVATE
+      "${CMAKE_SOURCE_DIR}/../src/pc_rp2350_overlay_fs.cpp")
+    set_source_files_properties(
+      "${CMAKE_SOURCE_DIR}/../src/pc_rp2350_overlay_fs.cpp"
+      PROPERTIES COMPILE_DEFINITIONS
+                   "RP2350_FS_OVERLAY_TEST=1;RP2350_FS_OVERLAY_PC_VPCD=1"
+                 INCLUDE_DIRECTORIES
+                   "${CMAKE_SOURCE_DIR}/../tests/unit/rp2350_fs_overlay/fake_include")
+    foreach(fs_symbol IN ITEMS
+        fs_init fs_write fs_write_applet fs_erase fs_erase_applet fs_exists
+        fs_next_tag fs_read_inplace fs_read fs_read_1b_at fs_read_2b_at
+        fs_read_4b_at fs_write_1b_at fs_write_2b_at fs_write_4b_at fs_length
+        fs_drop fs_sync fs_erase_prefix fs_erase_package_state)
+      target_link_options(choupi PRIVATE "LINKER:--wrap=${fs_symbol}")
+    endforeach()
+    target_compile_definitions(choupi PRIVATE CHOUPI_PC_RP2350_FS_OVERLAY=1)
+  endif()
+
   if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY OR
      JC_SUPPORT_SIGNATURE_ECDSA_SHA OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 OR
      JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 OR

@@ -3,6 +3,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 support_profile=baseline
+rp2350_overlay=OFF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --profile)
@@ -10,11 +11,19 @@ while [[ $# -gt 0 ]]; do
       support_profile="$2"
       shift 2
       ;;
-    *) die "usage: ./tools/build-pc [--profile PROFILE]" ;;
+    --rp2350-overlay)
+      rp2350_overlay=ON
+      shift
+      ;;
+    *) die "usage: ./tools/build-pc [--profile PROFILE] [--rp2350-overlay]" ;;
   esac
 done
 
-build_dir="${repo_root}/build/choupi-pc"
+if [[ "${rp2350_overlay}" == ON ]]; then
+  build_dir="${repo_root}/build/choupi-pc-rp2350-overlay"
+else
+  build_dir="${repo_root}/build/choupi-pc"
+fi
 support_dir="${repo_root}/build/javacard-support"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 jcvm_debug="${CHOUPI_JCVM_DEBUG:-OFF}"
@@ -23,7 +32,7 @@ require_command readlink
 require_command date
 source "${repo_root}/tools/lib/build_lock.sh"
 acquire_build_lock "${repo_root}/build/.tools-build.lock" \
-  "pc profile=${support_profile}"
+  "pc profile=${support_profile} rp2350_overlay=${rp2350_overlay}"
 cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
 personalizer_id="0x${cplc_source_id:2:8}"
 prepersonalizer_id="0x${cplc_source_id:10:8}"
@@ -50,6 +59,7 @@ python3 "${repo_root}/tools/javacard-support.py" \
   -B "${build_dir}" \
   -DCHOUPI_TARGET_PC=ON \
   -DCHOUPI_TARGET_STM32=OFF \
+  -DCHOUPI_PC_RP2350_FS_OVERLAY="${rp2350_overlay}" \
   -DCHOUPI_OS_DEBUG=OFF \
   -DCHOUPI_JCVM_DEBUG="${jcvm_debug}" \
   -DCHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID="${personalizer_id}" \

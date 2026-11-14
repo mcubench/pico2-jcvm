@@ -6,11 +6,11 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   cat <<'USAGE'
 Usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-jcalgtest-support-vpcd
 
-Runs the unchanged JCAlgTest 1.8.4/jc305 support suite against an empty
-PC/SC-published VPCD reader. Set JCALGTEST_VPCD_READER and
-JCALGTEST_VPCD_ENDPOINT to override the default reader and endpoint. Set
-JCALGTEST_SUPPORT_TIMEOUT_SECONDS to choose a timeout from 1 to 3600 seconds.
-Full logs and intermediate artifacts are written under artifacts/results/.
+Runs an unchanged JCAlgTest operation against an empty PC/SC-published VPCD
+reader. Set JCALGTEST_OPERATION (default ALG_SUPPORT_EXTENDED),
+JCALGTEST_OBJECT_DELETION=1, JCALGTEST_VPCD_READER, and JCALGTEST_VPCD_ENDPOINT
+as needed. Set JCALGTEST_SUPPORT_TIMEOUT_SECONDS to choose a timeout from 1 to
+3600 seconds. Full logs and intermediate artifacts go under artifacts/results/.
 USAGE
   exit 0
 fi
@@ -25,15 +25,21 @@ require_command pcsc_scan
 reader="${JCALGTEST_VPCD_READER:-Virtual PCD 00 00}"
 endpoint="${JCALGTEST_VPCD_ENDPOINT:-127.0.0.1:35963}"
 support_timeout="${JCALGTEST_SUPPORT_TIMEOUT_SECONDS:-3600}"
+object_deletion="${JCALGTEST_OBJECT_DELETION:-0}"
+operation="${JCALGTEST_OPERATION:-ALG_SUPPORT_EXTENDED}"
 [[ "${support_timeout}" =~ ^[1-9][0-9]*$ ]] ||
   die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must be a positive integer"
 (( support_timeout <= 3600 )) ||
   die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must not exceed 3600"
+[[ "${object_deletion}" == 0 || "${object_deletion}" == 1 ]] ||
+  die "JCALGTEST_OBJECT_DELETION must be 0 or 1"
+[[ "${operation}" =~ ^[A-Z0-9_]+$ ]] ||
+  die "JCALGTEST_OPERATION must contain only uppercase letters, digits, and underscores"
 applet_aid="4A43416C675465737431"
-emulator="${repo_root}/build/choupi-pc/choupi"
-rom_mask="${repo_root}/build/choupi-pc/flash"
+emulator="${JCALGTEST_VPCD_EMULATOR:-${repo_root}/build/choupi-pc/choupi}"
+rom_mask="${JCALGTEST_VPCD_ROM_MASK:-${repo_root}/build/choupi-pc/flash}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
+client="${JCALGTEST_CLIENT_JAR:-$("${repo_root}/tools/fixture-path" jcalgtest.client)}"
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv"
 expected="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
@@ -47,6 +53,7 @@ timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out_dir="${repo_root}/artifacts/results/jcalgtest-support-vpcd-${timestamp}"
 mkdir -p "${out_dir}"
 memory="${out_dir}/empty-card.bin"
+overlay_flash="${JCALGTEST_OVERLAY_FLASH:-${out_dir}/rp2350-overlay.flash}"
 client_log="${out_dir}/client.log"
 emulator_log="${out_dir}/emulator.log"
 : > "${memory}"
@@ -73,7 +80,15 @@ done
   die "VPCD PC/SC reader was not published: ${reader}"
 }
 
-"${repo_root}/tools/env" "${emulator}" -m "${memory}" -s \
+timeout --signal=TERM --kill-after=2s 3600s \
+  stdbuf -oL -eL "${repo_root}/tools/env" pcsc_scan \
+  > "${out_dir}/pcsc-keepalive.log" 2>&1 &
+pcsc_keepalive_pid=$!
+sleep 1
+
+PICO2_RP2350_OVERLAY_FLASH="${overlay_flash}" \
+PICO2_TEST_OBJECT_DELETION="${object_deletion}" \
+  "${repo_root}/tools/env" "${emulator}" -m "${memory}" -s \
   --vpcd "${endpoint}" --vpcd-idle-timeout 3600 \
   --applet-aid "${applet_aid}" --package-id 63 \
   --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin" \
@@ -84,12 +99,16 @@ cleanup() {
     kill -TERM "${emulator_pid}" 2>/dev/null || true
     wait "${emulator_pid}" 2>/dev/null || true
   fi
+  if kill -0 "${pcsc_keepalive_pid}" 2>/dev/null; then
+    kill -TERM "${pcsc_keepalive_pid}" 2>/dev/null || true
+    wait "${pcsc_keepalive_pid}" 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT INT TERM
 
 # Let the emulator attach before the PC/SC presence probe starts polling.
 sleep 1
-if ! timeout --signal=TERM --kill-after=2s 12s \
+if ! timeout --signal=TERM --kill-after=2s 30s \
     "${repo_root}/tools/env" java \
     "${repo_root}/tests/hardware/VpcdPresenceProbe.java" "${reader}" 8000 \
     --require-present > "${out_dir}/reader-ready.log" 2>&1; then
@@ -129,28 +148,30 @@ grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" ||
   die "JCAlgTest applet is not listed as selectable"
 }
 
-client_args=(-op ALG_SUPPORT_EXTENDED -fresh -outpath "${out_dir}")
+client_args=(-op "${operation}" -fresh -outpath "${out_dir}")
 if ! JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
-    "${repo_root}/tools/run-jcalgtest" --reader-name "${reader}" \
+    "${repo_root}/tools/run-jcalgtest" --client-jar "${client}" \
+    --reader-name "${reader}" \
     "${client_args[@]}" > "${client_log}" 2>&1; then
   cat "${client_log}" >&2
   cat "${emulator_log}" >&2
-  die "JCAlgTest 1.8.4 support run failed; see ${out_dir}"
+  die "JCAlgTest operation ${operation} failed; see ${out_dir}"
 fi
 
-mapfile -t reports < <(find "${out_dir}" -maxdepth 1 -type f \
-  -iname '*ALGSUPPORT*.csv' -print | sort)
-[[ "${#reports[@]}" -eq 1 ]] || {
-  find "${out_dir}" -maxdepth 1 -type f -printf '%f\n' >&2
-  die "expected one JCAlgTest support CSV, found ${#reports[@]}"
-}
-
-python3 "${repo_root}/tools/compare-jcalgtest-support.py" "${reports[0]}" \
-  "${reference}" --expected-support "${out_dir}/expected-support.csv" \
-  > "${out_dir}/comparison.log" 2>&1 || {
-  cat "${out_dir}/comparison.log" >&2
-  die "JCAlgTest support comparison failed; see ${out_dir}"
-}
-cat "${out_dir}/comparison.log"
-printf 'JCALGTEST_SUPPORT_VPCD:PASS reader=%s report=%s artifacts=%s\n' \
-  "${reader}" "${reports[0]}" "${out_dir#${repo_root}/}"
+if [[ "${operation}" == ALG_SUPPORT_EXTENDED ]]; then
+  mapfile -t reports < <(find "${out_dir}" -maxdepth 1 -type f \
+    -iname '*ALGSUPPORT*.csv' -print | sort)
+  [[ "${#reports[@]}" -eq 1 ]] || {
+    find "${out_dir}" -maxdepth 1 -type f -printf '%f\n' >&2
+    die "expected one JCAlgTest support CSV, found ${#reports[@]}"
+  }
+  python3 "${repo_root}/tools/compare-jcalgtest-support.py" "${reports[0]}" \
+    "${reference}" --expected-support "${out_dir}/expected-support.csv" \
+    > "${out_dir}/comparison.log" 2>&1 || {
+    cat "${out_dir}/comparison.log" >&2
+    die "JCAlgTest support comparison failed; see ${out_dir}"
+  }
+  cat "${out_dir}/comparison.log"
+fi
+printf 'JCALGTEST_VPCD:PASS operation=%s reader=%s artifacts=%s\n' \
+  "${operation}" "${reader}" "${out_dir#${repo_root}/}"

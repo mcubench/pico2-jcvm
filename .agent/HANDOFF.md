@@ -23,10 +23,12 @@ not prove a long-run storage plateau. The user asked to stop long emulator
 runs; do not repeat the campaign. T7 full option-2 acceptance remains open,
 along with T1/T2/T6 and later physical acceptance.
 
-Current uncommitted T4/T5 source/test edits should be committed as a focused
-step. Then isolate and commit the T7 VPCD harness separately, preserving other
-dirty files. Existing 2026-11-14 reviewer notes below describe the state before
-this fix; this section supersedes their T4/T5 status.
+T4/T5 source and regression are committed as `af4659e9`. The T7 VPCD harness
+is being committed separately after the latest overlay build passed. Preserve
+the unrelated dirty files in this worktree. The harness has not completed the
+option-2 campaign, and the user requested no more long emulator runs. Existing
+2026-11-14 reviewer notes below describe the state before the alias fix; this
+section supersedes their T4/T5 status.
 
 # Current handoff — MEM-01 T4/T5 reopened: prefix keep leaks — 2026-11-14 UTC
 

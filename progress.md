@@ -29316,3 +29316,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep T4/T5 implementation complete offline, with T7 long-run acceptance outstanding. Continue MEM-01 offline; do not launch a long emulator campaign under the user's speed constraint.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z/emulator.log`; client ended at the 60-second bound. ARM UF2 remains a build artifact only and was not flashed.
+
+## 2026-11-14 MEM-01 wire VPCD to RP2350 overlay backend 8 minutes
+
+- Step/experiment: `MEM-01-T7-VPCD-OVERLAY-HARNESS-20261114`
+- When: '2026-11-14 06:57 UTC' - '2026-11-14 07:05 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added a PC VPCD build mode that routes the VM filesystem calls through the RP2350 overlay implementation, publishes snapshots after APDUs, and exposes bounded JCAlgTest operation/client overrides for diagnostics. Kept the overlay harness commit separate from the alias-retrace source fix.
+- Validation: `./tools/build-pc --profile max_crypto --rp2350-overlay` passed with the updated alias-retrace source and PC-only diagnostics. The earlier 60-second VPCD run (`artifacts/results/jcalgtest-support-vpcd-20261114T063317Z`) used this backend and did not report `FS_WRITE_FAIL`/`F205`; it ended before option 2 completed. No second emulator run was made because the user reported its runtime cost. No physical hardware was accessed.
+- Result: The actual RP2350 overlay filesystem can now be built into the PC VPCD test VM. Full option-2 throughput, storage plateau and compaction acceptance remain unverified.
+- Decision: Keep T7 unchecked until an appropriately bounded run demonstrates steady-state storage and completes the relevant client option; proceed offline to T1/T2 implementation in the meantime.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `build/choupi-pc-rp2350-overlay/choupi`, `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z/emulator.log`.
