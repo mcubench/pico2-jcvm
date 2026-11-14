@@ -29448,3 +29448,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: T7 remains open for reclaimer/heap-graph churn, interrupted publish cases in this mixed scenario, and the unchanged client campaign. Continue offline; do not run the slow emulator campaign.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t7-mixed-live-final.log`, `/tmp/mem01-t7-mixed-live-arm.log`, `/tmp/mem01-t7-mixed-live-riscv.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 interrupt snapshots at mixed live occupancy 5 minutes
+
+- Step/experiment: `MEM-01-T7-MIXED-LIVE-SNAPSHOT-CUTS-20261114`
+- When: '2026-11-14 09:21 UTC' - '2026-11-14 09:26 UTC'
+- Model: `GPT-6 Codex`
+- Change: Extended the high-occupancy overlay test to interrupt snapshot publication at five deterministic mutation offsets and verify reload yields the complete committed or updated dataset. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; five cuts across 157,184 flash mutations each recovered a complete generation, passed integrity, and retained all 300 payload records. No production source changed in this step, so ARM/RISC-V builds from the preceding step remain applicable. No hardware or emulator.
+- Result: Snapshot publication remains atomic under representative mixed-live occupancy at the sampled cut positions.
+- Decision: T7 remains open for reclaimer/real heap alias graph churn at this occupancy, RAM-handle bounds and unchanged JCAlgTest option 2. Continue offline; do not run the long emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t7-mixed-cuts.log`; no hardware logs.

@@ -21,11 +21,12 @@ fail closed rather than guess boundaries.
 T7 now has a high-occupancy storage-side extension: 320 live index slots,
 71,274/98,304 arena bytes used (72.5%), 12 compactions, 12 integrity checks
 (196 µs average / 240 µs max), minimum free capacity 27,030 bytes, and sync/
-reload every four cycles. All values and integrity checks passed; ARM and
-RISC-V builds passed. This uses parent-encoded child records but does not run
-the collector with real heap alias graphs at this occupancy. The unchanged
-JCAlgTest 1.8.5 option-2 VPCD run, interrupted-publish cases in this scenario,
-and bounded RAM-handle evidence remain open. Next, combine reclaimer/object
+reload every four cycles. All values and integrity checks passed. Five cuts
+across a 157,184-mutation publish recovered the complete old or new snapshot,
+with all 300 payload records intact. ARM and RISC-V builds passed. This uses
+parent-encoded child records but does not run the collector with real heap
+alias graphs at this occupancy. The unchanged JCAlgTest 1.8.5 option-2 VPCD
+run and bounded RAM-handle evidence remain open. Next, combine reclaimer/object
 graphs with the mixed live set in fake flash, then stop before any long
 emulator campaign per the user's instruction.
 

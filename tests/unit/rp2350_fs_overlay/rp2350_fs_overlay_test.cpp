@@ -1792,6 +1792,64 @@ int main() {
                   : integrity_check_total_us / mixed_live_compactions),
               static_cast<unsigned long long>(integrity_check_max_us));
 
+  auto verify_mixed_snapshot = [&](const bool updated_first_record) {
+    for (size_t index = 0; index < mixed_live_records.size(); ++index) {
+      const auto &record = mixed_live_records[index];
+      std::vector<uint8_t> actual(record.value.size());
+      if (fs_read(record.tag.data(), static_cast<uint8_t>(record.tag.size()),
+                  actual.data(), actual.size()) != FS_STATUS_OK) {
+        return false;
+      }
+      if (index == 0 && updated_first_record) {
+        auto expected = record.value;
+        expected[0] ^= 0x5a;
+        if (actual != expected) return false;
+      } else if (actual != record.value) {
+        return false;
+      }
+    }
+    return true;
+  };
+  std::vector<uint8_t> changed_first_record = mixed_live_records.front().value;
+  changed_first_record[0] ^= 0x5a;
+  committed_flash = fake_flash;
+  bool mixed_snapshot_cut_ok = fs_write(
+      mixed_live_records.front().tag.data(),
+      static_cast<uint8_t>(mixed_live_records.front().tag.size()),
+      changed_first_record.data(), changed_first_record.size()) == FS_STATUS_OK;
+  reset_flash_failure();
+  mixed_snapshot_cut_ok = mixed_snapshot_cut_ok && fs_sync() == FS_STATUS_OK;
+  const size_t mixed_snapshot_mutations = flash_mutation_count;
+  mixed_snapshot_cut_ok = mixed_snapshot_cut_ok &&
+      mixed_snapshot_mutations > 4;
+  const std::array<size_t, 5> mixed_snapshot_cuts = {
+      0, mixed_snapshot_mutations / 4, mixed_snapshot_mutations / 2,
+      (mixed_snapshot_mutations * 3) / 4, mixed_snapshot_mutations - 1};
+  for (const size_t cut : mixed_snapshot_cuts) {
+    if (!mixed_snapshot_cut_ok) break;
+    fake_flash = committed_flash;
+    mixed_snapshot_cut_ok = fs_init() == FS_STATUS_OK &&
+        fs_write(mixed_live_records.front().tag.data(),
+                 static_cast<uint8_t>(mixed_live_records.front().tag.size()),
+                 changed_first_record.data(), changed_first_record.size()) ==
+            FS_STATUS_OK;
+    reset_flash_failure(cut);
+    const bool interrupted = fs_sync() == FS_STATUS_IO_UNKNOWN;
+    reset_flash_failure();
+    mixed_snapshot_cut_ok = mixed_snapshot_cut_ok && interrupted &&
+        fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1 &&
+        (verify_mixed_snapshot(false) || verify_mixed_snapshot(true));
+  }
+  fake_flash = committed_flash;
+  mixed_snapshot_cut_ok = mixed_snapshot_cut_ok &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1 &&
+      verify_mixed_snapshot(false);
+  expect(mixed_snapshot_cut_ok,
+         "rp2350_overlay_mixed_live_interrupted_snapshots_restore_old_or_new_state");
+  std::printf("TEST:METRIC rp2350_overlay_mixed_live_snapshot_cut mutations=%zu "
+              "cuts=%zu\n",
+              mixed_snapshot_mutations, mixed_snapshot_cuts.size());
+
   // One enumerable tag whose index slot lies beyond an empty probe bucket
   // triggers T1 index repair, after which the whole batch is reclaimable.
   fake_flash.fill(0xff);

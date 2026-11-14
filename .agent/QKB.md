@@ -228,6 +228,12 @@ passed. This isolates storage compaction at realistic occupancy. It does not
 measure heap-handle growth or exercise the persistent reclaimer/alias graph
 with this live set; the full JCAlgTest VPCD campaign remains unrun.
 
+Interrupted-publish follow-up: five cuts at start, quarter, midpoint,
+three-quarter and final-mutation offsets of a 157,184-mutation publish over
+this mixed live set all rebooted into a complete old or new generation. Every
+trial verified the full 300-record data set and passed integrity. This does
+not replace reclaimer/heap-graph churn or JCAlgTest option 2.
+
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 
 ## CAP Class external references — validate Import token bounds before storage
