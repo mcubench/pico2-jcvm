@@ -51,6 +51,8 @@ extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
 extern "C" uint8_t rp2350_fs_test_compact(void);
 extern "C" void rp2350_fs_test_fail_bulk_erase_after(uint32_t count);
 extern "C" void rp2350_fs_test_fail_next_sync(void);
+extern "C" void rp2350_fs_test_hide_exists_tag(const uint8_t *tag,
+                                                uint8_t tag_length);
 extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void);
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
@@ -1628,7 +1630,7 @@ int main() {
               overlay_churn_final_index_slots);
 
   // One enumerable tag whose index slot lies beyond an empty probe bucket
-  // must not abort deletion of later, resolvable garbage records.
+  // triggers T1 index repair, after which the whole batch is reclaimable.
   fake_flash.fill(0xff);
   constexpr uint8_t corruptible_owner = 0x47;
   std::array<std::array<uint8_t, 4>, 20> mixed_reclamation_tags{};
@@ -1662,16 +1664,87 @@ int main() {
   bool mixed_reclamation_progress =
       mixed_reclamation_result ==
           jcvm::PersistentInventory::VisitResult::Complete &&
-      mixed_reclamation_erased == mixed_reclamation_tags.size() - 1 &&
-      fs_exists(mixed_reclamation_tags[0].data(),
-                mixed_reclamation_tags[0].size()) == 0;
-  for (size_t index = 1; index < mixed_reclamation_tags.size(); ++index) {
+      mixed_reclamation_erased == mixed_reclamation_tags.size();
+  for (size_t index = 0; index < mixed_reclamation_tags.size(); ++index) {
     mixed_reclamation_progress = mixed_reclamation_progress &&
         fs_exists(mixed_reclamation_tags[index].data(),
                   mixed_reclamation_tags[index].size()) == 0;
   }
   expect(mixed_reclamation_progress,
-         "persistent_reclaimer_skips_unresolvable_candidate_and_erases_19_others");
+         "persistent_reclaimer_repairs_probe_gap_and_reclaims_all_candidates");
+
+  // A candidate can still be genuinely unresolvable after the integrity
+  // checker declines repair. It must remain untouched while the other 19
+  // records are reclaimed, including records reached in later batches.
+  fake_flash.fill(0xff);
+  bool hidden_candidate_seeded = fs_init() == FS_STATUS_OK;
+  for (uint8_t index = 0; index < mixed_reclamation_tags.size(); ++index) {
+    hidden_candidate_seeded = hidden_candidate_seeded &&
+        fs_write(mixed_reclamation_tags[index].data(),
+                 mixed_reclamation_tags[index].size(), mixed_reclamation_value,
+                 sizeof(mixed_reclamation_value)) == FS_STATUS_OK;
+  }
+  rp2350_fs_test_hide_exists_tag(mixed_reclamation_tags[0].data(),
+                                 mixed_reclamation_tags[0].size());
+  jcvm::Heap hidden_candidate_heap(corruptible_owner);
+  uint32_t hidden_candidate_erased = 0;
+  const auto hidden_candidate_result = hidden_candidate_seeded
+      ? jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            corruptible_owner, hidden_candidate_heap,
+            enumerate_reclaimer_roots, &no_reclaimer_roots_context,
+            &hidden_candidate_erased)
+      : jcvm::PersistentInventory::VisitResult::InvalidArgument;
+  rp2350_fs_test_hide_exists_tag(nullptr, 0);
+  bool hidden_candidate_progress =
+      hidden_candidate_result ==
+          jcvm::PersistentInventory::VisitResult::Complete &&
+      hidden_candidate_erased == mixed_reclamation_tags.size() - 1 &&
+      fs_exists(mixed_reclamation_tags[0].data(),
+                mixed_reclamation_tags[0].size()) != 0;
+  for (size_t index = 1; index < mixed_reclamation_tags.size(); ++index) {
+    hidden_candidate_progress = hidden_candidate_progress &&
+        fs_exists(mixed_reclamation_tags[index].data(),
+                  mixed_reclamation_tags[index].size()) == 0;
+  }
+  expect(hidden_candidate_progress,
+         "persistent_reclaimer_skips_bad_candidate_and_erases_19_across_batches");
+
+  fake_flash.fill(0xff);
+  constexpr uint8_t corruptible_package = 0x38;
+  std::array<std::array<uint8_t, 6>, 20> package_candidate_tags{};
+  bool package_candidates_seeded = fs_init() == FS_STATUS_OK;
+  for (uint8_t index = 0; index < package_candidate_tags.size(); ++index) {
+    package_candidate_tags[index] = {
+        0x02, corruptible_package, 0xa0, index, 0x01, index};
+    package_candidates_seeded = package_candidates_seeded &&
+        fs_write(package_candidate_tags[index].data(),
+                 package_candidate_tags[index].size(), mixed_reclamation_value,
+                 sizeof(mixed_reclamation_value)) == FS_STATUS_OK;
+  }
+  rp2350_fs_test_hide_exists_tag(package_candidate_tags[0].data(),
+                                 package_candidate_tags[0].size());
+  jcvm::Heap package_candidate_heap(corruptible_package);
+  uint32_t package_candidates_erased = 0;
+  const auto package_candidates_result = package_candidates_seeded
+      ? jcvm::PersistentReclaimer::reclaimUnreachablePackageStaticTags(
+            corruptible_package, package_candidate_heap,
+            enumerate_reclaimer_roots, &no_reclaimer_roots_context,
+            &package_candidates_erased)
+      : jcvm::PersistentInventory::VisitResult::InvalidArgument;
+  rp2350_fs_test_hide_exists_tag(nullptr, 0);
+  bool package_candidates_progress =
+      package_candidates_result ==
+          jcvm::PersistentInventory::VisitResult::Complete &&
+      package_candidates_erased == package_candidate_tags.size() - 1 &&
+      fs_exists(package_candidate_tags[0].data(),
+                package_candidate_tags[0].size()) != 0;
+  for (size_t index = 1; index < package_candidate_tags.size(); ++index) {
+    package_candidates_progress = package_candidates_progress &&
+        fs_exists(package_candidate_tags[index].data(),
+                  package_candidate_tags[index].size()) == 0;
+  }
+  expect(package_candidates_progress,
+         "package_static_reclaimer_skips_bad_candidate_and_erases_19");
 
   fake_flash.fill(0xff);
   constexpr uint8_t nested_reclamation_owner = 0x48;

@@ -1,3 +1,25 @@
+# Current handoff — MEM-01 T2 resilient persistent reclamation — 2026-11-14 UTC
+
+T2 now completes bounded applet and package-static reclamation when an
+enumerable candidate cannot be resolved. The candidate is preserved and
+reported once per invocation; later resolvable entries continue through
+subsequent batches. Before proceeding, the RP2350 overlay asks T1 to repair a
+pure probe-chain index fault. If repaired, candidate enumeration restarts;
+ambiguous record/hash/arena damage remains fail-closed. `ReadFailure` events
+now identify `alias_chain`, `root_scan`, or `candidate_scan`.
+
+Validation: `./tools/test-rp2350-fs-overlay` passes probe-gap repair and the
+1-bad-plus-19 tests for both applet and package-static namespaces;
+`./tools/test-persistent-inventory` and `./tools/test-persistent-transaction`
+pass; `./tools/build arm` and `./tools/build riscv` pass. No physical token or
+long VPCD campaign was used. T2 is checked in TODO.md.
+
+Next: continue T1's individual-record salvage/quarantine only where tags,
+hashes, parent references, and arena intervals can be verified without
+ambiguity; otherwise preserve COW fallback and fail closed. Keep T7's enhanced
+offline churn acceptance open. Do not run the slow long emulator campaign or
+physical work unless asked / devices are available under the hardware gates.
+
 # Current handoff — MEM-01 T1 snapshot integrity diagnostics and fallback tests — 2026-11-14 UTC
 
 T1 reports the specific failed overlay invariant and snapshot slot. A pure

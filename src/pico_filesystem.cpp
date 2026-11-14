@@ -36,6 +36,8 @@ extern "C" uint8_t rp2350_fs_test_manual_transaction_active(void);
 namespace {
 #ifdef RP2350_FS_OVERLAY_TEST
 uint8_t rp2350_fs_test_sync_failures = 0;
+uint8_t rp2350_fs_test_hidden_tag[128]{};
+uint8_t rp2350_fs_test_hidden_tag_length = 0;
 #endif
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
@@ -107,6 +109,7 @@ bool filesystem_payload_fits(size_t file_count, size_t bytes_used) {
 bool overlay_integrity_valid(const char **failure_reason = nullptr,
                              uint16_t *failure_slot = nullptr);
 bool rebuild_overlay_probe_index(const char **failure_reason);
+uint8_t repair_overlay_probe_index_if_needed(void);
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -1106,6 +1109,32 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
   }
   if (expected_offset != overlay_bytes_used) return fail("arena_tail");
 
+  // Rehashing preserves lookup semantics only when each canonical live tag is
+  // unique. Probe gaps can hide duplicates from the fast lookup path, so check
+  // them across the full index before the first table mutation.
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const auto &file = overlay[slot];
+    if (!overlay_is_used(file) || !overlay_has_storage(file) ||
+        !overlay_has_record(file)) {
+      continue;
+    }
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length))
+      return fail("tag_reconstruction");
+    for (uint16_t other = static_cast<uint16_t>(slot + 1);
+         other < kMaxOverlayFiles; ++other) {
+      const auto &candidate = overlay[other];
+      if (!overlay_is_used(candidate) || !overlay_has_storage(candidate) ||
+          !overlay_has_record(candidate) || candidate.hash != file.hash ||
+          candidate.tag_length != tag_length) {
+        continue;
+      }
+      if (stored_tag_matches(candidate, tag, tag_length))
+        return fail("duplicate_live_tag");
+    }
+  }
+
   auto *destination_bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
   std::fill(destination_bitmap,
             destination_bitmap + kFilesystemBitmapBytes, 0);
@@ -1179,6 +1208,19 @@ bool rebuild_overlay_probe_index(const char **failure_reason) {
                                                : post_rebuild_reason);
   }
   return true;
+}
+
+uint8_t repair_overlay_probe_index_if_needed(void) {
+  const char *reason = nullptr;
+  if (overlay_integrity_valid(&reason, nullptr)) return 0;
+  if (reason == nullptr || std::strcmp(reason, "probe_chain") != 0)
+    return 2;
+  const char *repair_reason = nullptr;
+  if (!rebuild_overlay_probe_index(&repair_reason)) return 2;
+  overlay_dirty = true;
+  std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=probe_chain action=rehash\r\n");
+  std::fflush(stdout);
+  return 1;
 }
 
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
@@ -1868,6 +1910,10 @@ void set_path(uint8_t (*tag)[128], uint8_t *length,
 
 } // namespace
 
+extern "C" uint8_t fs_repair_probe_index_if_needed(void) {
+  return repair_overlay_probe_index_if_needed();
+}
+
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void) {
   if (!filesystem_layout_available || overlay_file_count >= kMaxOverlayFiles ||
       overlay_bytes_used >= kMaxOverlayBytes) {
@@ -1975,12 +2021,30 @@ extern "C" uint8_t fs_sync(void) {
 extern "C" void rp2350_fs_test_fail_next_sync(void) {
   rp2350_fs_test_sync_failures = 1;
 }
+
+extern "C" void rp2350_fs_test_hide_exists_tag(const uint8_t *tag,
+                                                  uint8_t tag_length) {
+  rp2350_fs_test_hidden_tag_length = 0;
+  if (tag == nullptr || tag_length == 0 ||
+      tag_length > sizeof(rp2350_fs_test_hidden_tag)) {
+    return;
+  }
+  std::memcpy(rp2350_fs_test_hidden_tag, tag, tag_length);
+  rp2350_fs_test_hidden_tag_length = tag_length;
+}
 #endif
 
 extern "C" void fs_drop(void) { (void)fs_sync(); }
 
 extern "C" uint8_t fs_exists(const uint8_t *tag, uint8_t tag_length) {
   if (validate_tag(tag, tag_length) != FS_STATUS_OK) return 0;
+#ifdef RP2350_FS_OVERLAY_TEST
+  if (rp2350_fs_test_hidden_tag_length == tag_length &&
+      tag_length != 0 &&
+      std::memcmp(rp2350_fs_test_hidden_tag, tag, tag_length) == 0) {
+    return 0;
+  }
+#endif
   const uint8_t *data = nullptr;
   uint32_t length = 0;
   return find_file(tag, tag_length, &data, &length) ? 1 : 0;

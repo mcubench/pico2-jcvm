@@ -29365,6 +29365,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-rehash-final.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 T2 keep reclaiming past unresolved candidates 14 minutes
+
+- Step/experiment: `MEM-01-T2-RECLAIMER-RECOVERY-20261114`
+- When: '2026-11-14 07:57 UTC' - '2026-11-14 08:11 UTC'
+- Model: `GPT-6 Codex`
+- Change: Applet and package-static reclaimers now log an unresolved enumerable candidate once per invocation, preserve it, and continue deleting valid candidates across batches. Before the next scan, they ask the RP2350 overlay to validate and repair a pure probe-chain fault; successful repair restarts enumeration. Read failures now name `alias_chain`, `root_scan`, or `candidate_scan`. Added fake-flash tests for probe-gap repair and hidden unresolved candidates in both namespaces. Updated MEM-01, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`, including repair of an orphaned candidate followed by deletion of all 20 records, plus applet and package-static cases where one unresolved record remains and the other 19 are deleted. `./tools/test-persistent-inventory` and `./tools/test-persistent-transaction` passed `TEST:SUMMARY fail=0`. `./tools/build arm` and `./tools/build riscv` passed. No hardware or long VPCD campaign.
+- Result: One unresolved candidate no longer blocks progress or causes ambiguous erasure; a repairable probe gap is fixed before continuing. Other index/record/arena corruption remains fail-closed.
+- Decision: Mark T2 complete offline. Continue MEM-01 with T1 per-record salvage/quarantine and enhanced T7 fake-flash coverage; no long emulator run.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t2-overlay-final2.log`, `/tmp/mem01-t2-transaction.log`, `/tmp/mem01-t2-arm.log`, `/tmp/mem01-t2-riscv.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
 
 - Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`

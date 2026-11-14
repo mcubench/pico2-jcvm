@@ -11,6 +11,9 @@
 #include <cstring>
 #include <utility>
 
+extern "C" uint8_t fs_repair_probe_index_if_needed(void)
+    __attribute__((weak));
+
 namespace jcvm {
 namespace PersistentInventory {
 
@@ -959,24 +962,50 @@ constexpr uint8_t kTagBatchCapacity = 8;
 struct CandidateBatch {
   std::array<PersistentInventory::Tag, kTagBatchCapacity> tags{};
   uint8_t count = 0;
+  uint16_t skipped_unresolvable = 0;
+  PersistentInventory::Tag first_unresolvable{};
 };
 
-void logUnresolvableCandidate(const char *namespace_name,
-                             const char *reason,
-                             const PersistentInventory::Tag &tag) {
-#if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
-  std::printf("OBJECT_DELETION:SKIP_CANDIDATE namespace=%s reason=%s tag=",
-              namespace_name, reason);
-  for (uint8_t index = 0; index < tag.len; ++index) {
-    std::printf("%02X", tag.value[index]);
-  }
-  std::printf("\r\n");
+void logReadFailure(const char *stage,
+                    const PersistentInventory::VisitResult result) {
+  if (result != PersistentInventory::VisitResult::ReadFailure) return;
+  std::printf("OBJECT_DELETION:READ_FAILURE stage=%s\r\n", stage);
   std::fflush(stdout);
-#else
-  (void)namespace_name;
-  (void)reason;
-  (void)tag;
-#endif
+}
+
+bool reportSkippedCandidates(const char *namespace_name,
+                             const CandidateBatch &batch,
+                             bool *repair_attempted,
+                             bool *integrity_logged) {
+  if (batch.skipped_unresolvable == 0) return false;
+  const char *repair = "already_attempted";
+  bool repaired = false;
+  if (repair_attempted != nullptr && !*repair_attempted) {
+    *repair_attempted = true;
+    if (fs_repair_probe_index_if_needed == nullptr) {
+      repair = "unavailable";
+    } else {
+      const uint8_t status = fs_repair_probe_index_if_needed();
+      repair = status == 0 ? "not_needed"
+                           : status == 1 ? "repaired" : "unrecoverable";
+      repaired = status == 1;
+    }
+  }
+  if (integrity_logged == nullptr || !*integrity_logged) {
+    if (integrity_logged != nullptr) *integrity_logged = true;
+    std::printf("OBJECT_DELETION:INTEGRITY stage=candidate_scan "
+                "namespace=%s skipped=%u probe_repair=%s tag=",
+                namespace_name,
+                static_cast<unsigned>(batch.skipped_unresolvable), repair);
+    const uint8_t tag_length = std::min<uint8_t>(
+        batch.first_unresolvable.len, PersistentInventory::kTagCapacity);
+    for (uint8_t index = 0; index < tag_length; ++index) {
+      std::printf("%02X", batch.first_unresolvable.value[index]);
+    }
+    std::printf("\r\n");
+    std::fflush(stdout);
+  }
+  return repaired;
 }
 
 bool acceptAllCandidates(const PersistentInventory::Tag &, void *) {
@@ -988,12 +1017,13 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
   auto &batch = *static_cast<CandidateBatch *>(opaque);
   if (tag.len == 0 || tag.len > PersistentInventory::kTagCapacity ||
       (tag.value[0] != 0x02 && tag.value[0] != 0x03)) {
-    logUnresolvableCandidate("unknown", "invalid_tag", tag);
+    if (batch.skipped_unresolvable == 0) batch.first_unresolvable = tag;
+    ++batch.skipped_unresolvable;
     return true;
   }
   if (fs_exists(tag.value, tag.len) == 0) {
-    logUnresolvableCandidate(tag.value[0] == 0x03 ? "applet" : "package",
-                             "not_resolvable", tag);
+    if (batch.skipped_unresolvable == 0) batch.first_unresolvable = tag;
+    ++batch.skipped_unresolvable;
     return true;
   }
   if (batch.count >= batch.tags.size()) return false;
@@ -1045,7 +1075,10 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
   const VisitResult alias_scan =
       PersistentInventory::collectForeignAliasTargets(
           applet_owner, foreign_alias_targets);
-  if (alias_scan != VisitResult::Complete) return alias_scan;
+  if (alias_scan != VisitResult::Complete) {
+    logReadFailure("alias_chain", alias_scan);
+    return alias_scan;
+  }
 
   // Validate the complete tag cursor before any mutation. Later passes may
   // stop after a bounded batch. Alias roots are immutable during this call;
@@ -1065,7 +1098,10 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
           applet_owner, heap, enumerate_roots, root_context,
           foreign_alias_targets, acceptAllCandidates, nullptr,
           scan_summary);
-  if (preflight != VisitResult::Complete) return preflight;
+  if (preflight != VisitResult::Complete) {
+    logReadFailure("root_scan", preflight);
+    return preflight;
+  }
 #ifdef PC_VERSION
   if (collect_diagnostics) {
     static uint32_t diagnostic_sequence = 0;
@@ -1116,6 +1152,8 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
 #endif
 
   uint32_t erased = 0;
+  bool probe_repair_attempted = false;
+  bool integrity_logged = false;
   while (true) {
     if (FlashMemory_Handler::persistentWriteTransactionActive()) {
       if (erased_count != nullptr) *erased_count = erased;
@@ -1129,6 +1167,7 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
             foreign_alias_targets, collectCandidateBatch, &batch);
     if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
       if (erased_count != nullptr) *erased_count = erased;
+      logReadFailure("candidate_scan", scan);
       return scan;
     }
     if (scan == VisitResult::Stopped &&
@@ -1137,18 +1176,31 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
       return VisitResult::InvalidCursor;
     }
     if (batch.count == 0) {
+      if (reportSkippedCandidates("applet", batch,
+                                  &probe_repair_attempted,
+                                  &integrity_logged)) {
+        continue;
+      }
       if (erased_count != nullptr) *erased_count = erased;
       return VisitResult::Complete;
     }
     sortCandidateBatch(batch);
+    if (reportSkippedCandidates("applet", batch,
+                                &probe_repair_attempted,
+                                &integrity_logged)) {
+      continue;
+    }
+    batch.skipped_unresolvable = 0;
 
     for (uint8_t index = 0; index < batch.count; ++index) {
       const auto &candidate = batch.tags[index];
       if (candidate.len < 2 || candidate.value[0] != 0x03 ||
           candidate.value[1] != applet_owner ||
           fs_exists(candidate.value, candidate.len) == 0) {
-        if (erased_count != nullptr) *erased_count = erased;
-        return VisitResult::ReadFailure;
+        if (batch.skipped_unresolvable == 0)
+          batch.first_unresolvable = candidate;
+        ++batch.skipped_unresolvable;
+        continue;
       }
       fs::Tag tag{};
       tag.len = candidate.len;
@@ -1173,6 +1225,11 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
         return VisitResult::Stopped;
       }
     }
+    if (reportSkippedCandidates("applet", batch,
+                                &probe_repair_attempted,
+                                &integrity_logged)) {
+      continue;
+    }
   }
 }
 
@@ -1194,15 +1251,23 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
   const VisitResult alias_scan =
       PersistentInventory::collectForeignAliasTargetsToPackageStatics(
           package_id, foreign_alias_targets);
-  if (alias_scan != VisitResult::Complete) return alias_scan;
+  if (alias_scan != VisitResult::Complete) {
+    logReadFailure("alias_chain", alias_scan);
+    return alias_scan;
+  }
 
   const VisitResult preflight =
       PersistentInventory::visitUnreachablePackageStaticTagsWithAliasTargets(
           package_id, heap, enumerate_roots, root_context,
           foreign_alias_targets, acceptAllCandidates, nullptr);
-  if (preflight != VisitResult::Complete) return preflight;
+  if (preflight != VisitResult::Complete) {
+    logReadFailure("root_scan", preflight);
+    return preflight;
+  }
 
   uint32_t erased = 0;
+  bool probe_repair_attempted = false;
+  bool integrity_logged = false;
   while (true) {
     if (FlashMemory_Handler::persistentWriteTransactionActive()) {
       if (erased_count != nullptr) *erased_count = erased;
@@ -1216,6 +1281,7 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
             foreign_alias_targets, collectCandidateBatch, &batch);
     if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
       if (erased_count != nullptr) *erased_count = erased;
+      logReadFailure("candidate_scan", scan);
       return scan;
     }
     if (scan == VisitResult::Stopped &&
@@ -1224,18 +1290,31 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
       return VisitResult::InvalidCursor;
     }
     if (batch.count == 0) {
+      if (reportSkippedCandidates("package", batch,
+                                  &probe_repair_attempted,
+                                  &integrity_logged)) {
+        continue;
+      }
       if (erased_count != nullptr) *erased_count = erased;
       return VisitResult::Complete;
     }
     sortCandidateBatch(batch);
+    if (reportSkippedCandidates("package", batch,
+                                &probe_repair_attempted,
+                                &integrity_logged)) {
+      continue;
+    }
+    batch.skipped_unresolvable = 0;
 
     for (uint8_t index = 0; index < batch.count; ++index) {
       const auto &candidate = batch.tags[index];
       if (candidate.len <= 4 || candidate.value[0] != 0x02 ||
           candidate.value[1] != package_id ||
           fs_exists(candidate.value, candidate.len) == 0) {
-        if (erased_count != nullptr) *erased_count = erased;
-        return VisitResult::ReadFailure;
+        if (batch.skipped_unresolvable == 0)
+          batch.first_unresolvable = candidate;
+        ++batch.skipped_unresolvable;
+        continue;
       }
       fs::Tag tag{};
       tag.len = candidate.len;
@@ -1250,6 +1329,11 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
         if (erased_count != nullptr) *erased_count = erased;
         return VisitResult::Stopped;
       }
+    }
+    if (reportSkippedCandidates("package", batch,
+                                &probe_repair_attempted,
+                                &integrity_logged)) {
+      continue;
     }
   }
 }

@@ -1,5 +1,21 @@
 # Issue knowledge base
 
+## One damaged persistent candidate blocking object deletion — scoped fix 2026-11-14
+
+Applet and package-static reclaimers now leave an enumerable but unresolved
+candidate intact and continue reclaiming the other candidates across bounded
+batches. They report the first bad tag once per invocation, avoiding a serial
+log line for every later batch. A weak filesystem hook lets the RP2350 overlay
+check its index and rebuild a pure probe-chain placement fault; after repair,
+the reclaimer restarts enumeration. Hash, record, and arena ambiguity is not
+mutated and remains an integrity failure to investigate. `ReadFailure` logs
+identify `alias_chain`, `root_scan`, or `candidate_scan`.
+
+Regression evidence: the fake-flash overlay suite repairs an orphaned probe
+slot and reclaims all 20 records; injected unresolved applet and package
+candidates remain present while the other 19 in each namespace are reclaimed.
+This does not establish long-run JCAlgTest behavior or physical acceptance.
+
 Compacted: 2026-11-11. Reusable diagnoses and fixes; current tasks live in
 [TODO](../TODO.md), device/build state in [HANDOFF](HANDOFF.md), and run history in
 [progress](../progress.md). A scoped fix does not close broader acceptance.
