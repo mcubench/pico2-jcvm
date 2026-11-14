@@ -1,3 +1,21 @@
+# Current handoff — MEM-01 reviewer check: leak fix lacks runtime proof — 2026-11-14 UTC
+
+Reviewer note (Claude Opus 5.5) on `af4659e9`..`c5706f78`. T1 (apart from the
+both-copies-invalid policy), T2, T3, T4 and T5 are done offline, and the T7 unit
+coverage is good. The T4/T5 alias-retrace fix is validated only by the 500×
+reassignment unit test and a 60-second VPCD run.
+
+That run (`20261114T063317Z`) stopped at sync seq ≈800. The leaking run failed
+at seq ≈1,750, about 5 minutes in. At equal seq the post-fix run has identical
+`files` counts and still-growing `bytes` (29,913 vs 36,297 at seq 800), so no
+plateau has been shown.
+
+Next, a 6–8 minute bounded run (not full option 2): stop at sync seq ≥2,500,
+log live records and live bytes after each compaction, and require no
+`FS_WRITE_FAIL`/`F205` and flat live bytes over the last 1,000 syncs. If the
+bytes still grow, find the growing prefix with
+`PICO2_GC_SCAN_DIAGNOSTICS=1 ALIAS_ROOT`. Then T6, then T8 (wipe boards first).
+
 # Current handoff — MEM-01 T1 bounded quarantine recovery — 2026-11-14 UTC
 
 T1 now recovers a CRC-valid v4 snapshot with one or more undecodable

@@ -29472,3 +29472,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The high-occupancy reclaimer/heap-graph offline case is covered. T7 remains open for runtime `alias-protect` evidence and unchanged JCAlgTest 1.8.5 option-2 VPCD acceptance; continue with offline MEM-01 items without a long emulator run.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t7-heap-graph-final.log`, `/tmp/mem01-t7-heap-transaction-final.log`; no hardware logs.
+
+## 2026-11-14 MEM-01 reviewer check of af4659e9..c5706f78 15 minutes
+
+- Step/experiment: `MEM-01-PROGRESS-REVIEW-2-20261114`
+- When: '2026-11-14 UTC' - '2026-11-14 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Reviewed 13 worker commits and progress records against T1–T8. Compared VPCD overlay sync telemetry of the leaking run (`20261114T055811Z`) with the post-fix 60-second run (`20261114T063317Z`) at equal sync seq. Added a reviewer status block to TODO.md MEM-01 and a top HANDOFF section. No source changes.
+- Validation: Log/commit inspection only. No builds, tests, emulator runs or hardware.
+- Result: Offline, T2–T5 are done; T1 is done except the policy for when neither snapshot copy validates; T7 offline coverage is broad (72.5% occupancy, 12 compactions, integrity check ≤1,024 µs, 5 publish cuts). The post-fix VPCD run stopped at sync seq ≈800, before the leak's failure point (seq ≈1,750, `bytes=94311`, ~5 min). At equal seq its `files` counts are identical to the leaking run and its `bytes` are only ~18% lower and still growing, so the leak fix has no plateau evidence.
+- Decision: Before T6/T8, run a bounded 6–8 min VPCD run to sync seq ≥2,500 and require no `FS_WRITE_FAIL`/`F205` and flat live bytes over the last 1,000 syncs.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`, `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z/emulator.log`.
