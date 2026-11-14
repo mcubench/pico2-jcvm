@@ -106,6 +106,7 @@ bool filesystem_payload_fits(size_t file_count, size_t bytes_used) {
 }
 bool overlay_integrity_valid(const char **failure_reason = nullptr,
                              uint16_t *failure_slot = nullptr);
+bool rebuild_overlay_probe_index(const char **failure_reason);
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -507,6 +508,7 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
   }
   overlay_file_count = header->file_count;
   overlay_bytes_used = header->bytes_used;
+  bool index_repaired = false;
   const char *integrity_reason = nullptr;
   uint16_t integrity_slot = UINT16_MAX;
   if (!overlay_integrity_valid(&integrity_reason, &integrity_slot)) {
@@ -515,12 +517,26 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
                 static_cast<unsigned>(integrity_slot),
                 static_cast<unsigned>(slot));
     std::fflush(stdout);
-    for (auto &entry : overlay) entry = OverlayFile{};
-    overlay_file_count = 0;
-    overlay_bytes_used = 0;
-    return false;
+    const char *repair_reason = nullptr;
+    if (integrity_reason == nullptr ||
+        std::strcmp(integrity_reason, "probe_chain") != 0 ||
+        !rebuild_overlay_probe_index(&repair_reason)) {
+      if (integrity_reason != nullptr &&
+          std::strcmp(integrity_reason, "probe_chain") == 0) {
+        std::printf("CHOUPI:FS_INTEGRITY_REPAIR_FAIL reason=%s\r\n",
+                    repair_reason == nullptr ? "unknown" : repair_reason);
+        std::fflush(stdout);
+      }
+      for (auto &entry : overlay) entry = OverlayFile{};
+      overlay_file_count = 0;
+      overlay_bytes_used = 0;
+      return false;
+    }
+    std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=probe_chain action=rehash\r\n");
+    std::fflush(stdout);
+    index_repaired = true;
   }
-  overlay_dirty = false;
+  overlay_dirty = index_repaired;
   filesystem_active_slot = migration_source ? 0xff : slot;
   filesystem_generation = header->generation;
   return true;
@@ -1035,6 +1051,136 @@ bool overlay_integrity_valid(const char **failure_reason,
   return expected_offset == overlay_bytes_used || fail("arena_tail");
 }
 
+// Repair only a pure open-addressing placement error. Every serialized record
+// must still reconstruct to its stored hash, all parent links must resolve,
+// and the byte arena must remain a contiguous non-overlapping sequence. The
+// serialized bytes are left in place; parent-slot references are remapped with
+// the index. Any ambiguity returns false so restore can try the other COW
+// generation instead of guessing which value to discard.
+bool rebuild_overlay_probe_index(const char **failure_reason) {
+  const auto fail = [&](const char *reason) {
+    if (failure_reason != nullptr) *failure_reason = reason;
+    return false;
+  };
+  if (failure_reason != nullptr) *failure_reason = "unknown";
+  size_t used_slots = 0;
+  size_t serialized_slots = 0;
+  size_t serialized_bytes = 0;
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const auto &file = overlay[slot];
+    if (!overlay_is_used(file)) continue;
+    ++used_slots;
+    if (!overlay_has_storage(file)) {
+      if (overlay_has_record(file)) return fail("record_without_storage");
+      continue;
+    }
+    const uint32_t offset = overlay_offset(file);
+    if (offset >= overlay_bytes_used || overlay_bytes_used - offset < 1)
+      return fail("offset_out_of_bounds");
+    const size_t key_length = overlay_bytes[offset] & 0x7fu;
+    if (key_length > overlay_bytes_used - offset - 1 ||
+        file.size > overlay_bytes_used - offset - 1 - key_length ||
+        (!overlay_has_record(file) && file.size != 0)) {
+      return fail("record_bounds_or_flags");
+    }
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length))
+      return fail("tag_reconstruction");
+    erase_bucket_next[serialized_slots++] = slot;
+    serialized_bytes += 1 + key_length + file.size;
+  }
+  if (used_slots != overlay_file_count || serialized_bytes != overlay_bytes_used)
+    return fail("count_or_bytes_used");
+  std::sort(erase_bucket_next, erase_bucket_next + serialized_slots,
+            [](uint16_t left, uint16_t right) {
+              return overlay_offset(overlay[left]) <
+                     overlay_offset(overlay[right]);
+            });
+  size_t expected_offset = 0;
+  for (size_t index = 0; index < serialized_slots; ++index) {
+    const auto &file = overlay[erase_bucket_next[index]];
+    if (overlay_offset(file) != expected_offset) return fail("overlap_or_gap");
+    expected_offset += 1 + (overlay_bytes[overlay_offset(file)] & 0x7fu) +
+                       file.size;
+  }
+  if (expected_offset != overlay_bytes_used) return fail("arena_tail");
+
+  auto *destination_bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
+  std::fill(destination_bitmap,
+            destination_bitmap + kFilesystemBitmapBytes, 0);
+  std::fill(erase_bucket_next, erase_bucket_next + kMaxOverlayFiles,
+            UINT16_MAX);
+  for (uint16_t old_slot = 0; old_slot < kMaxOverlayFiles; ++old_slot) {
+    const auto &file = overlay[old_slot];
+    if (!overlay_is_used(file)) continue;
+    size_t new_slot = file.hash % kMaxOverlayFiles;
+    while ((destination_bitmap[new_slot / 8] & (1u << (new_slot % 8))) != 0)
+      new_slot = (new_slot + 1) % kMaxOverlayFiles;
+    destination_bitmap[new_slot / 8] |=
+        static_cast<uint8_t>(1u << (new_slot % 8));
+    erase_bucket_next[old_slot] = static_cast<uint16_t>(new_slot);
+  }
+
+  constexpr uint16_t kMapVisited = 0x8000;
+  auto move_component = [&](uint16_t start) {
+    OverlayFile carried = overlay[start];
+    uint16_t current = start;
+    bool cycle_closed = false;
+    while (true) {
+      const uint16_t mapping = erase_bucket_next[current];
+      const uint16_t destination = mapping & ~kMapVisited;
+      const bool cycle_complete = destination == start;
+      std::swap(carried, overlay[destination]);
+      erase_bucket_next[current] = mapping | kMapVisited;
+      if (cycle_complete) {
+        cycle_closed = true;
+        break;
+      }
+      current = destination;
+      if (erase_bucket_next[current] == UINT16_MAX) break;
+    }
+    if (!cycle_closed) overlay[start] = OverlayFile{};
+  };
+  for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
+    const uint16_t mapping = erase_bucket_next[start];
+    if (mapping == UINT16_MAX || (mapping & kMapVisited) != 0 ||
+        (destination_bitmap[start / 8] & (1u << (start % 8))) != 0) {
+      continue;
+    }
+    move_component(start);
+  }
+  for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
+    const uint16_t mapping = erase_bucket_next[start];
+    if (mapping == UINT16_MAX || (mapping & kMapVisited) != 0) continue;
+    move_component(start);
+  }
+  for (uint16_t old_slot = 0; old_slot < kMaxOverlayFiles; ++old_slot) {
+    const uint16_t mapping = erase_bucket_next[old_slot];
+    if (mapping == UINT16_MAX) continue;
+    const uint16_t new_slot = mapping & ~kMapVisited;
+    auto &file = overlay[new_slot];
+    if ((file.flags & kOverlayParentTag) == 0) continue;
+    const uint32_t offset = overlay_offset(file);
+    const uint16_t old_parent = static_cast<uint16_t>(overlay_bytes[offset + 1]) |
+                                static_cast<uint16_t>(overlay_bytes[offset + 2] << 8);
+    if (old_parent >= kMaxOverlayFiles ||
+        erase_bucket_next[old_parent] == UINT16_MAX) {
+      return fail("parent_mapping");
+    }
+    const uint16_t new_parent =
+        erase_bucket_next[old_parent] & ~kMapVisited;
+    overlay_bytes[offset + 1] = static_cast<uint8_t>(new_parent);
+    overlay_bytes[offset + 2] = static_cast<uint8_t>(new_parent >> 8);
+  }
+  const char *post_rebuild_reason = nullptr;
+  if (!overlay_integrity_valid(&post_rebuild_reason, nullptr)) {
+    return fail(post_rebuild_reason == nullptr ? "post_rebuild_integrity"
+                                               : post_rebuild_reason);
+  }
+  return true;
+}
+
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                     uint32_t length) {
 #ifdef CHOUPI_DEBUG_CCID_APPLET
@@ -1234,6 +1380,21 @@ extern "C" uint8_t rp2350_fs_test_share_record_offset(
     return FS_STATUS_NO_SUCH_TAG;
   }
   set_overlay_offset(*target, overlay_offset(*source));
+  overlay_dirty = true;
+  return FS_STATUS_OK;
+}
+extern "C" uint8_t rp2350_fs_test_overlap_record_offset(
+    const uint8_t *source_tag, uint8_t source_tag_length,
+    const uint8_t *target_tag, uint8_t target_tag_length) {
+  auto *source = find_overlay(source_tag, source_tag_length);
+  auto *target = find_overlay(target_tag, target_tag_length);
+  if (source == nullptr || target == nullptr || source == target ||
+      !overlay_has_storage(*source) || !overlay_has_storage(*target)) {
+    return FS_STATUS_NO_SUCH_TAG;
+  }
+  const uint32_t overlapping_offset = overlay_offset(*source) + 1;
+  if (overlapping_offset >= overlay_bytes_used) return FS_STATUS_IO_UNKNOWN;
+  set_overlay_offset(*target, overlapping_offset);
   overlay_dirty = true;
   return FS_STATUS_OK;
 }
@@ -1548,13 +1709,17 @@ uint8_t compact_deleted_overlay_records() {
   auto move_mapping_component = [&](uint16_t start) {
     OverlayFile carried = overlay[start];
     uint16_t current = start;
+    bool cycle_closed = false;
     while (true) {
       const uint16_t mapping = erase_bucket_next[current];
       const uint16_t destination = mapping & ~kMapVisited;
       const bool cycle_complete = destination == start;
       std::swap(carried, overlay[destination]);
       erase_bucket_next[current] = mapping | kMapVisited;
-      if (cycle_complete) break;
+      if (cycle_complete) {
+        cycle_closed = true;
+        break;
+      }
       current = destination;
       // A path may terminate at an unmapped destination. A mapped source can
       // only lead to a previously visited source when closing at `start`,
@@ -1562,6 +1727,7 @@ uint8_t compact_deleted_overlay_records() {
       // injectivity. Thus this phase has no failure path after mutation starts.
       if (erase_bucket_next[current] == UINT16_MAX) break;
     }
+    if (!cycle_closed) overlay[start] = OverlayFile{};
   };
   for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
     const uint16_t mapping = erase_bucket_next[start];

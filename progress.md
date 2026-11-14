@@ -29353,6 +29353,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `/tmp/mem01-t1-republish.log`; no hardware logs.
 
+## 2026-11-14 MEM-01 rebuild orphaned overlay hash index and fix open-path relocation 19 minutes
+
+- Step/experiment: `MEM-01-T1-PROBE-INDEX-REBUILD-20261114`
+- When: '2026-11-14 07:29 UTC' - '2026-11-14 07:48 UTC'
+- Model: `GPT-6 Codex`
+- Change: Added recovery for a pure probe-chain placement error when every arena record still reconstructs and the arena remains contiguous. It rebuilds the hash table in place, remaps parent-slot references, and marks the RAM state dirty for the next COW sync. Testing exposed that open-path rehash relocation left a duplicate in its vacated source slot; both recovery rehash and compaction now clear that source, while leaving closed cycles intact. Added regressions for orphan placement with a parent-encoded child, hash-mismatch fallback, and overlapping-record fallback, with value checks after compaction/reload. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; it emitted `FS_INTEGRITY_REPAIR reason=probe_chain action=rehash`, and confirmed values/parent references after sync, compaction and reload. `./tools/build arm` and `./tools/build riscv` passed. No long emulator campaign or physical board access.
+- Result: A reconstructable probe-chain fault can be repaired without discarding the newest records. Hash/overlap corruption still falls back to a valid prior COW generation; no-prior-generation record salvage remains open.
+- Decision: Continue T1 with quarantine rules for unreconstructable entries and a recovery outcome when neither full snapshot validates. Keep T7 full JCAlgTest run open, but do not repeat a long emulator campaign due its measured runtime cost.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-rehash-final.log`; no hardware logs.
+
 ## 2026-11-14 MEM-01 persist and verify COW self-repair 9 minutes
 
 - Step/experiment: `MEM-01-T1-COW-REPAIR-20261114`

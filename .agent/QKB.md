@@ -138,15 +138,24 @@ Evidence: [E360](QKB_INDEX.md#e360), [E089](QKB_INDEX.md#e089), [E288](QKB_INDEX
 in `overlay_integrity_valid()` catch index/arena inconsistencies that can still
 exist in an otherwise self-consistent snapshot. The restore path rejects that
 generation and tries the older copy-on-write slot. It emits one concise
-`CHOUPI:FS_INTEGRITY_FAIL reason=... slot=... snapshot=...` line, then republishes
-the known-good generation over the rejected slot (the good source remains
-intact until the replacement validates). Tests inject an unreachable probe-
-chain entry and a stored-hash mismatch into the newest generation, then confirm
-values survive, a second initialization is clean, and compaction works. This
-does not salvage newer valid records individually when the newest arena is
-damaged. Do not call T1 complete until safe per-record rebuild/quarantine (or a
-documented no-safe-recovery outcome) is implemented and overlap corruption is
-exercised.
+`CHOUPI:FS_INTEGRITY_FAIL reason=... slot=... snapshot=...` line. If all arena
+records still reconstruct and only the hash-table probe chain is broken, it
+rebuilds table placement from the verified record metadata, remaps parent
+indices and marks the repaired RAM image dirty for the next sync. The open-path
+rehash must clear the vacated source slot; failing to do so left duplicate
+entries and broke probe reachability. This clear is now present in both repair
+and compaction rehash and is covered by compaction/reload checks with a
+parent-encoded child. For hash mismatch or overlapping record bounds, startup
+rejects the generation and republishes the valid prior COW generation. This
+does not salvage individual valid records from a damaged arena. T1 remains open
+for per-record quarantine and no-valid-prior-generation recovery.
+
+The repair regression found why a probe rehash could itself remain invalid: the
+open-path relocation copied the carried entry into its destination but left a
+duplicate in the vacated source slot. Clear that source when a path terminates;
+do not clear it when closing a permutation cycle. Apply this to both index
+repair and the existing compaction rehash. Coverage with a parent-encoded child
+now verifies the parent-slot remap and value survival after compaction/reload.
 
 Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
 

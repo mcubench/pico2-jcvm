@@ -40,6 +40,9 @@ extern "C" uint8_t rp2350_fs_test_integrity_valid(void);
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
     const uint8_t *target_tag, uint8_t target_tag_length);
+extern "C" uint8_t rp2350_fs_test_overlap_record_offset(
+    const uint8_t *source_tag, uint8_t source_tag_length,
+    const uint8_t *target_tag, uint8_t target_tag_length);
 extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
     const uint8_t *tag, uint8_t tag_length);
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
@@ -2837,13 +2840,19 @@ int main() {
          "filesystem_restore_rejects_integrity_failure_and_uses_previous_snapshot");
 
   // A self-consistent snapshot envelope can still contain an unreachable
-  // index slot. Reject that newest generation, restore the previous COW copy,
-  // and republish the known-good copy over the rejected slot.
+  // index slot while all serialized records remain intact. Rebuild the hash
+  // placement from their canonical tags, then publish the repaired index.
   fake_flash.fill(0xff);
   std::array<uint8_t, sizeof(shared_offset_value_a)> restored_orphan_a{};
   std::array<uint8_t, sizeof(shared_offset_value_b)> restored_orphan_b{};
-  bool orphan_snapshot_fallback =
+  std::array<uint8_t, hashed_child_value.size()> restored_parent_child{};
+  bool repaired_probe_chain =
       fs_init() == FS_STATUS_OK &&
+      fs_write(hashed_parent_a.data(), hashed_parent_a.size(), nullptr, 0) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_write_parent_encoded(
+          hashed_child.data(), hashed_child.size(), hashed_child_value.data(),
+          hashed_child_value.size()) == FS_STATUS_OK &&
       fs_write(shared_offset_a, sizeof(shared_offset_a),
                shared_offset_value_a, sizeof(shared_offset_value_a)) ==
           FS_STATUS_OK &&
@@ -2854,7 +2863,8 @@ int main() {
       rp2350_fs_test_move_slot_beyond_probe_gap(
           shared_offset_b, sizeof(shared_offset_b)) == FS_STATUS_OK &&
       rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
-      fs_init() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_integrity_valid() == 1 &&
+      fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
       rp2350_fs_test_integrity_valid() == 1 &&
       fs_read(shared_offset_a, sizeof(shared_offset_a),
               restored_orphan_a.data(), restored_orphan_a.size()) ==
@@ -2862,13 +2872,31 @@ int main() {
       fs_read(shared_offset_b, sizeof(shared_offset_b),
               restored_orphan_b.data(), restored_orphan_b.size()) ==
           FS_STATUS_OK &&
+      fs_read(hashed_child.data(), hashed_child.size(),
+              restored_parent_child.data(), restored_parent_child.size()) ==
+          FS_STATUS_OK &&
       std::memcmp(restored_orphan_a.data(), shared_offset_value_a,
                   restored_orphan_a.size()) == 0 &&
       std::memcmp(restored_orphan_b.data(), shared_offset_value_b,
                   restored_orphan_b.size()) == 0 &&
-      rp2350_fs_test_compact() == FS_STATUS_OK;
-  expect(orphan_snapshot_fallback,
-         "filesystem_restore_recovers_probe_chain_corruption_from_previous_snapshot");
+      restored_parent_child == hashed_child_value &&
+      rp2350_fs_test_compact() == FS_STATUS_OK &&
+      fs_read(shared_offset_a, sizeof(shared_offset_a),
+              restored_orphan_a.data(), restored_orphan_a.size()) ==
+          FS_STATUS_OK &&
+      fs_read(shared_offset_b, sizeof(shared_offset_b),
+              restored_orphan_b.data(), restored_orphan_b.size()) ==
+          FS_STATUS_OK &&
+      fs_read(hashed_child.data(), hashed_child.size(),
+              restored_parent_child.data(), restored_parent_child.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(restored_orphan_a.data(), shared_offset_value_a,
+                  restored_orphan_a.size()) == 0 &&
+      std::memcmp(restored_orphan_b.data(), shared_offset_value_b,
+                  restored_orphan_b.size()) == 0 &&
+      restored_parent_child == hashed_child_value;
+  expect(repaired_probe_chain,
+         "filesystem_restore_rebuilds_probe_chain_index_from_records");
 
   // A stored hash mismatch is detected before any tag lookup is trusted. The
   // older COW snapshot remains usable after the damaged generation is
@@ -2894,6 +2922,37 @@ int main() {
       rp2350_fs_test_compact() == FS_STATUS_OK;
   expect(hash_snapshot_fallback,
          "filesystem_restore_recovers_hash_corruption_from_previous_snapshot");
+
+  fake_flash.fill(0xff);
+  std::array<uint8_t, sizeof(shared_offset_value_a)> restored_overlap_a{};
+  std::array<uint8_t, sizeof(shared_offset_value_b)> restored_overlap_b{};
+  const bool overlap_snapshot_fallback =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+          FS_STATUS_OK &&
+      fs_write(shared_offset_b, sizeof(shared_offset_b),
+               shared_offset_value_b, sizeof(shared_offset_value_b)) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_overlap_record_offset(
+          shared_offset_a, sizeof(shared_offset_a), shared_offset_b,
+          sizeof(shared_offset_b)) == FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK &&
+      fs_read(shared_offset_a, sizeof(shared_offset_a),
+              restored_overlap_a.data(), restored_overlap_a.size()) ==
+          FS_STATUS_OK &&
+      fs_read(shared_offset_b, sizeof(shared_offset_b),
+              restored_overlap_b.data(), restored_overlap_b.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(restored_overlap_a.data(), shared_offset_value_a,
+                  restored_overlap_a.size()) == 0 &&
+      std::memcmp(restored_overlap_b.data(), shared_offset_value_b,
+                  restored_overlap_b.size()) == 0 &&
+      rp2350_fs_test_compact() == FS_STATUS_OK;
+  expect(overlap_snapshot_fallback,
+         "filesystem_restore_recovers_overlapping_records_from_previous_snapshot");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
