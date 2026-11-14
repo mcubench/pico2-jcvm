@@ -1,28 +1,32 @@
 # Handoff — next steps only
 
-Replace this file, do not append. Keep ≤ 60 lines. Task criteria are in
-`TODO.md`, history in `progress.md`, recurring diagnoses in `.agent/QKB.md`.
-
 Updated: 2026-11-14.
 
 ## Next actions
-1. **MEM-01 T7:** perform the bounded VPCD option-2 proof through sync sequence
-   ≥2,500. The previous post-fix run stopped at ≈800; this bounded overlay run
-   reaches the target more cheaply than a full physical campaign. Log live
-   record/byte counts at each compaction and alias-root counts.
-2. **HOST-01:** inspect why the D92 final response stayed queued with an idle
-   IN endpoint (`pending=1`, `in_busy=0`, no submit errors or completion) and why
-   no wait/recovery telemetry appeared. Avoid another long physical run until
-   the state transition is understood or instrumented.
-3. **MEM-01 T8:** after T7, use the no-debug acceptance image and an empty-card
-   image before the option-2/option-1 runs. Keep one identified board per run.
+1. **MEM-01 T7:** complete bounded overlay-backed VPCD option-2 proof through
+   sync sequence ≥2,500. Record live record/byte counts at compaction and alias
+   roots. A previous post-fix run stopped near 800.
+2. **HOST-01:** inspect why D92's final CCID response stayed queued with an idle
+   IN endpoint (`pending=1`, `in_busy=0`, no submit errors/completion) and why
+   wait/recovery telemetry was absent. Do not start another long physical run
+   until the transition is understood or instrumented.
+3. **MEM-01 T8:** use the newly prepared no-debug acceptance image and empty
+   card for option-2/option-1 physical runs after T7/HOST-01. Preserve results
+   separately per identified board.
 
-## Board state (volatile; re-enumerate before physical work)
+## External test image ready
+- UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ba7e4aa1.uf2`
+- SHA-256: `88e620964a0a52a6d061f2a3c14f538227f11ba0962d6f32972d6bc534545b6e`
+- Windows package: `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ba7e4aa1.zip`
+- Package SHA-256: `ea11fb0fd6274af68c9f7840c4ba2dc13dcae5a8eb2b9ea79997028c193ddeec`
+- ARM max_crypto acceptance build; object deletion ON, all debug flags OFF;
+  empty persistent storage. Build and package checks passed; no hardware test.
+- User reports two boards reinserted in BOOTSEL. They were not enumerated or
+  accessed during image preparation; do not infer physical visibility.
+
+## D92 exploratory run
 - D92 `D92E743D5F640C0F`: diagnostic image SHA-256
-  `079ae6883c60b2fe12013c3e84bac0f5a25f35554f1215ddb96304d67c01225a`; option-2
-  stopped on `SCARD_E_NOT_TRANSACTED` at AES-192. Firmware stayed USB-visible.
-- 8E `8E464F4E2BBC0A19` and 2BED `2BED26ED20556535`: runtime USB devices; prior
-  option-2 sessions also stalled. All three runtime USB devices were visible
-  after D92's failure, but PC/SC listed no physical reader after the approved
-  helper refresh. No BOOTSEL device was visible then.
-- Logs: `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.
+  `079ae6883c60b2fe12013c3e84bac0f5a25f35554f1215ddb96304d67c01225a`; option 2
+  stopped at AES-192 with `SCARD_E_NOT_TRANSACTED` after 121 method groups and
+  289 rows. No storage exhaustion/fault indicators; final CCID response stayed
+  pending. See `.agent/EXT_REQUESTS.md` and `progress.md`.

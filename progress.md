@@ -29794,3 +29794,39 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CAP
   SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`;
   `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.
+
+## 2026-11-14 max_crypto no-debug external image 9
+
+- Step-Id: `20261114-2138-maxcrypto-external-empty-nodebug`
+- When: '2026-11-14 21:38 CET' - '2026-11-14 21:47 CET'
+- Model: `gpt-6`
+- Change: Built ARM `max_crypto` acceptance firmware with object deletion ON,
+  all debug flags OFF, and serial wait 0 ms. Generated an empty-card UF2 and a
+  Windows test package with the unchanged upstream JCAlgTest 1.8.4/jc305 CAP,
+  supplied 1.8.5 host client, GPPro, and exact flashing/install/test commands.
+  Updated `EXT_REQUESTS.md` and replaced the short next-actions handoff.
+- Validation: `./tools/build-pc --profile max_crypto --rp2350-overlay` completed
+  successfully (`ROMMASK:PASS`, generation SHA-256
+  `184d27941c7181cc2b767b7f0ba4bde5b8c2d2be35900ae877adbc15ff66d809`).
+  `PICO2_ENABLE_OBJECT_DELETION=1 PICO2_DEBUG_HEAP_GC=0
+  PICO2_DEBUG_CCID_APPLET=0 PICO2_DEBUG_PERSISTENT_GC=0
+  PICO2_DEBUG_SERIAL_WAIT_MS=0 ./tools/build arm --profile max_crypto` passed;
+  provenance confirms `mode=acceptance`. `tools/package-empty-card-uf2` passed
+  with 3,960 firmware blocks plus 4,096 erased-storage blocks. Package checksums
+  and ZIP integrity passed. No physical flashing or hardware validation was
+  performed. Global `git diff --check` reports pre-existing CRLF whitespace in
+  unrelated source changes; this step did not edit those sources.
+- Result: UF2 is 4,125,184 bytes, SHA-256
+  `88e620964a0a52a6d061f2a3c14f538227f11ba0962d6f32972d6bc534545b6e`.
+  Linked end `0x100f770c`, 35,060 bytes remain before storage. Windows package
+  SHA-256 `ea11fb0fd6274af68c9f7840c4ba2dc13dcae5a8eb2b9ea79997028c193ddeec`.
+  Source HEAD `ba7e4aa1ba660952f4d7db5fc0321df70b9f5b0c`; worktree was dirty
+  (tracked diff SHA-256 `510115b3e04821e22126223a9c180ccd9da9050bb6d5de1bd53c897e81b1f287`),
+  disclosed in packaged provenance.
+- Decision: Use the new package for external Windows testing; prior
+  `0e67df89` image is superseded. Continue MEM-01 T7 and HOST-01 before another
+  long physical campaign.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ba7e4aa1.uf2`;
+  `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ba7e4aa1.zip`;
+  `.agent/EXT_REQUESTS.md`.

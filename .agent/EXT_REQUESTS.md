@@ -1,9 +1,42 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-NODEBUG-0E67DF89 — Test current no-debug firmware
+## WIN-OBJECT-DELETION-NODEBUG-BA7E4AA1 — Test fresh max_crypto acceptance image
 
-Created 2026-11-13 15:27 UTC. Please use this fresh current-checkout image for
-the Windows object-deletion campaign. It is an empty-card ARM `max_crypto`
+Created 2026-11-14 21:43 CET. Please use this fresh ARM `max_crypto` image for
+Windows object-deletion testing. It has object deletion enabled, all debug
+logging disabled, serial wait 0 ms, and an empty persistent-storage region.
+The card has no preinstalled applet; install the unchanged upstream JCAlgTest
+CAP explicitly after PC/SC enumeration.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ba7e4aa1.uf2)
+- UF2 SHA-256: `88e620964a0a52a6d061f2a3c14f538227f11ba0962d6f32972d6bc534545b6e`
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ba7e4aa1.zip)
+- Package SHA-256: `ea11fb0fd6274af68c9f7840c4ba2dc13dcae5a8eb2b9ea79997028c193ddeec`
+- Package instructions: [README](../build/external-test/object-deletion-nodebug-ba7e4aa1/README.md)
+- Source HEAD: `ba7e4aa1ba660952f4d7db5fc0321df70b9f5b0c`, with dirty tracked
+  diffs; see packaged `BUILD-PROVENANCE.txt`. CPLC source ID is
+  `0xBA7E4AA1BA660952`.
+- Linked firmware ends at `0x100f770c`; 35,060 bytes remain before the
+  firmware storage limit. The empty-card UF2 is 4,125,184 bytes because it
+  includes erased 1 MiB persistent storage.
+- Build provenance: profile `max_crypto`; object deletion ON; debug CCID,
+  heap-GC and persistent-GC OFF; serial wait 0 ms; mode `acceptance`.
+- Exercise CAP: unchanged upstream JCAlgTest 1.8.4 / jc305, SHA-256
+  `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+- Host client: supplied JCAlgTest 1.8.5, SHA-256
+  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
+
+Use the README for exact PowerShell hash verification, BOOTSEL copying,
+GPPro installation and serial capture. Run option 2 on one identified token;
+use a second token for option 1 if available. Return complete results, serial
+logs, Windows version, reader/ATR, chip ID, and exact UF2 hash. This package
+has passed the ARM build, empty-storage packaging checks, checksum verification
+and ZIP integrity check. It has not been flashed or tested on hardware.
+
+## Superseded: WIN-OBJECT-DELETION-NODEBUG-0E67DF89
+
+Created 2026-11-13 15:27 UTC. This earlier image is superseded by
+`WIN-OBJECT-DELETION-NODEBUG-BA7E4AA1` above. It is an empty-card ARM `max_crypto`
 image with object deletion enabled and all CCID, heap-GC, and persistent-GC
 debug logging disabled (serial wait 0 ms). The build provenance says
 `mode=diagnostic` because object deletion is enabled; it does not indicate
