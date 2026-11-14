@@ -7,8 +7,8 @@ profile's enabled capabilities plus the current asymmetric selections.
 ## Files
 
 The generated archive `build/external-test/pico2-jcvm-windows-test.zip`
-contains both UF2 images, the upstream AlgTest 1.8.4 CAP, GPPro, the official
-JCAlgTest 1.8.4 client, expected support CSVs, a CSV comparator, and this
+contains both UF2 images, the upstream AlgTest 1.8.4 CAP, GPPro, the JCAlgTest
+1.8.5 host client, expected support CSVs, a CSV comparator, and this
 run sheet. Check `SHA256SUMS.txt` before use.
 
 ## Flash and check PC/SC
@@ -82,10 +82,11 @@ For the second profile, repeat BOOTSEL flashing with
 with `asymm_crypto` in the output path and card name, and use
 `expected-support-asymm_crypto.csv`.
 
-The current asymmetric profile has 145 declared positive entries. With the
-unchanged upstream 1.8.4 CAP, the physical comparison is expected to show
-143/145: the CAP labels two RSA/RSA-CRT 3072 key-pair probes as 3072 but sends
-4096. Preserve the upstream CAP and record these two known query mismatches;
+The current asymmetric profile has 145 declared positive entries. The physical
+comparison is expected to show 143/145. The JCAlgTest host client (1.8.3–1.8.5)
+labels two RSA/RSA-CRT key-pair probes as 3072 but sends 4096 (0x1000); the
+CAP only passes that length through. Preserve the upstream client and CAP and
+record these two known query mismatches;
 independent 3072-bit generation checks passed on hardware. Do not treat this
 known comparator result as a failed package or alter the CAP to hide it.
 
@@ -99,7 +100,11 @@ known comparator result as a failed package or alter the CAP to hide it.
 - This test checks Windows PC/SC enumeration and the standard client flow. It
   does not establish Windows driver behavior for other host configurations.
 
-This package selects applet 1.8.4_jc305. The supplied versioned client
-identifies itself internally as 1.8.3 and needs the adjacent tools/lib directory.
+This package ships the JCAlgTest **1.8.5** host client (SHA-256
+`b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`) as
+`tools\AlgTestJClient.jar`, with applet 1.8.4_jc305. Older clients do not
+deliver the card-reset/object-deletion APDU. The client needs the adjacent
+tools/lib directory. The CSV's embedded client version is unreliable; report
+the JAR hash.
 Historical profile outcomes require a fresh run against this baseline; the
 migration alone does not establish the expected firmware support results.

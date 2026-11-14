@@ -1,5 +1,11 @@
 # Board
 
+> **Repository note (2026-11-14):** these are generic RP2350 notes. In this
+> repository, build only with the wrappers (`tools/build`, `tools/cycle`), never
+> run `picotool erase` (forbidden by `AGENTS.md`), and wipe a card by flashing
+> an empty-card UF2 (`tools/package-empty-card-uf2` + `tools/flash`). The erase
+> and raw `cmake` examples below are not the repository workflow.
+
 Premises. Verify once per piece of hardware; everything downstream inherits them.
 **A wrong board definition compiles cleanly and then drives the wrong pins** —
 that failure looks like broken hardware, never like a config error.

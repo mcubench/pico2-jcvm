@@ -6,7 +6,8 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
 ## Change discipline
 
 - Preserve every pre-existing worktree change, especially the provided
-  `choupi/` and `AlgTest_JavaCard/` trees.
+  `choupi/` tree. The original `AlgTest_JavaCard/` tree is archived under
+  `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
 - Keep each implementation change to one coherent step. Validate it with the
   available build, test, or inspection, append to root `progress.md`, and make a
   new commit containing the step. Do not amend earlier commits.
@@ -14,9 +15,9 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   flashed and its finite serial log inspected. Physical pool availability is
   volatile: refresh the authorized reader helper immediately before hardware
   work, and treat the current HANDOFF as the source for the last observed
-  state. On 2026-11-01 the helper reported zero Pico readers; continue offline
-  until a board is enumerated, then follow root `AGENTS.md` build gates and
-  record bounded logs.
+  state. List readers with `./tools/list-readers`; when a board is enumerated,
+  use it under the root `AGENTS.md` build gates and record bounded logs. Old
+  "no hardware / boards disconnected" notes are never standing rules.
 - Treat multiple identified physical Pico 2 devices as a failover pool. If one
   becomes unavailable, fails to enumerate, or stops responding, record its
   board-level failure and continue on another usable board without waiting for
@@ -48,10 +49,9 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   or implement algorithms in test or upstream CAP files. Existing CAPs may be
   run to test native API behavior.
 
-- The planned target is RP2350 Cortex-M33. The plan lists RISC-V as out of
-  scope, while repository `AGENTS.md` includes a RISC-V build workflow; follow
-  the more specific plan when choosing implementation scope and report any
-  unavoidable divergence.
+- The target is RP2350 Cortex-M33. RISC-V is out of scope (user decision
+  2026-11-14): there is no RISC-V build gate and no RISC-V measurement.
+  `AGENTS.md` and `plan.md` agree.
 - Preserve the user-provided source and CAP artifacts. Do not replace the
   supplied AlgTest version without inspecting and recording its provenance.
 - The pinned CHOUPI OS and Java Card SDK dependencies are submodules declared
@@ -60,4 +60,4 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
 
 ## Active validation inputs
 
-The user authorized full testing-data migration on 7 November 2026. JCAlgTest 1.8.4 / jc305 is now the selected baseline, superseding historical 1.8.2 instructions. Use `tools/fixture-path` and `tests/fixtures/manifest.json`. Test code is under `tests/`; the supplied original tree is archived, not discarded. Preserve legacy results as historical evidence and require new version-specific acceptance.
+The user authorized full testing-data migration on 7 November 2026. The JCAlgTest 1.8.4 / jc305 CAP with the 1.8.5 host client is the selected baseline (client per `AGENTS.md`), superseding historical 1.8.2 instructions. Use `tools/fixture-path` and `tests/fixtures/manifest.json`. Test code is under `tests/`; the supplied original tree is archived, not discarded. Preserve legacy results as historical evidence and require new version-specific acceptance.

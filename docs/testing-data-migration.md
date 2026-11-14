@@ -35,9 +35,10 @@ and three additional historical reference CSVs. No input was downloaded.
 JCAlgTest 1.8.4 CAP SHA-256:
 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
 
-The versioned JCAlgTest client and independent API client have different
-hashes and are not interchangeable. The supplied versioned client identifies
-itself internally as 1.8.3; its bundled simulator applet reports 1.8.4_jc305.
+The versioned (historical 1.8.4) JCAlgTest client and independent API client
+have different hashes and are not interchangeable. New runs use the 1.8.5 host
+client instead (user directive 2026-11-14; see `AGENTS.md`). The historical
+versioned client identifies itself internally as 1.8.3; its bundled simulator applet reports 1.8.4_jc305.
 The new simulator reference was generated with that client on 7 November via
 `tools/run-jcalgtest --simulator -op ALG_SUPPORT_EXTENDED -fresh`.
 Simulator-specific unsupported/error rows are retained, not rewritten. This

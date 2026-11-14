@@ -197,6 +197,14 @@ provenance_file="${build_dir}/build-provenance.txt"
       printf 'mode=diagnostic\nimage=%s\n' \
         "pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
       sha256sum "${build_dir}/pico2_choupi_debug_serial_wait_${debug_serial_wait_ms}ms.uf2"
+    elif [[ "${enable_object_deletion}" == ON && \
+            "${debug_persistent_gc}" == OFF && \
+            "${debug_heap_gc}" == OFF && \
+            "${debug_ccid_applet}" == OFF ]]; then
+      # Object deletion ON with all debug OFF is the acceptance image for
+      # MEM-01/RESOURCE/PERSIST campaigns (user decision 2026-11-14).
+      printf 'mode=acceptance\nimage=pico2_choupi.uf2\n'
+      sha256sum "${build_dir}/pico2_choupi.uf2"
     elif [[ "${enable_object_deletion}" == ON || \
             "${debug_persistent_gc}" == ON || \
             "${debug_heap_gc}" == ON || \
@@ -219,5 +227,5 @@ if [[ "${arch}" == arm && "${debug_serial_wait_ms}" != 0 ]]; then
 fi
 printf 'BUILD:PROVENANCE path=%s serial_wait_ms=%s mode=%s object_deletion=%s debug_persistent_gc=%s\n' \
   "${provenance_file#${repo_root}/}" "${debug_serial_wait_ms}" \
-  "$([[ "${debug_serial_wait_ms}" == 0 && "${enable_object_deletion}" == OFF && "${debug_persistent_gc}" == OFF && "${debug_heap_gc}" == OFF && "${debug_ccid_applet}" == OFF ]] && echo normal || echo diagnostic)" \
+  "$(if [[ "${debug_serial_wait_ms}" != 0 || "${debug_persistent_gc}" == ON || "${debug_heap_gc}" == ON || "${debug_ccid_applet}" == ON ]]; then echo diagnostic; elif [[ "${enable_object_deletion}" == ON ]]; then echo acceptance; else echo normal; fi)" \
   "${enable_object_deletion}" "${debug_persistent_gc}"

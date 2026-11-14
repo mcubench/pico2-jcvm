@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Bounded PC/SC reader listing. Use this instead of `pcsc_scan`, which has
+# previously hung at high CPU or produced unbounded output when pcscd was
+# unavailable. Prints "<one-based index>\t<exact reader name>" per reader.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: PICO2_HOST_USB_ACCESS=1 tools/list-readers [--timeout SECONDS] [--pico-only]
+
+Lists PC/SC readers through javax.smartcardio within a hard timeout
+(default 20 s). --pico-only keeps only readers whose name contains "Pico".
+Exit status: 0 listed (possibly empty), 4 pcscd not running, 5 PC/SC error,
+124 timeout. Run with elevated host access as required by AGENTS.md.
+EOF
+}
+
+timeout_seconds=20
+pico_only=false
+while (($#)); do
+  case "$1" in
+    --timeout)
+      [[ $# -ge 2 && "$2" =~ ^[1-9][0-9]*$ ]] || die "--timeout requires a positive integer"
+      timeout_seconds="$2"
+      shift 2
+      ;;
+    --pico-only) pico_only=true; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) usage >&2; die "unknown argument: $1" ;;
+  esac
+done
+
+require_host_usb_access
+require_command timeout
+if ! pgrep -x pcscd >/dev/null 2>&1; then
+  echo "READERS:ERROR pcscd is not running; refresh it with the approved helper (sudo -n /usr/local/sbin/pico2-pcsc-reader)" >&2
+  exit 4
+fi
+
+index_build="${repo_root}/build/jcalgtest-reader-index"
+mkdir -p "$index_build"
+if [[ ! -f "${index_build}/JCAlgTestReaderIndex.class" || \
+      "${repo_root}/tools/JCAlgTestReaderIndex.java" -nt "${index_build}/JCAlgTestReaderIndex.class" ]]; then
+  "${repo_root}/tools/env" javac -d "$index_build" "${repo_root}/tools/JCAlgTestReaderIndex.java"
+fi
+
+set +e
+listing="$(timeout --kill-after=5 "${timeout_seconds}" \
+  "${repo_root}/tools/env" java -cp "$index_build" JCAlgTestReaderIndex --list)"
+status=$?
+set -e
+if ((status == 124 || status == 137)); then
+  echo "READERS:ERROR listing timed out after ${timeout_seconds} s" >&2
+  exit 124
+fi
+((status == 0)) || exit "$status"
+if [[ "$pico_only" == true ]]; then
+  listing="$(grep -i 'pico' <<<"$listing" || true)"
+fi
+[[ -z "$listing" ]] || printf '%s\n' "$listing"
+printf 'READERS:COUNT %s\n' "$(grep -c . <<<"$listing" || true)"

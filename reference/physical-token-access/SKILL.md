@@ -41,15 +41,16 @@ lsusb -d 2e8a:000f
 - If `lsusb` sees the running device but PC/SC does not, check pcscd and reader
   permissions. Restart the service (reload fails when it is inactive), then
   run the bounded reader scan again.
-- If the configured helper is available, have the user run
-  `sudo -n /usr/local/sbin/pico2-pcsc-reader`. It grants pcscd access to the
+- If the configured helper is available, run it yourself with elevated
+  execution, exactly as `sudo -n /usr/local/sbin/pico2-pcsc-reader` (no
+  prefix or extra arguments; see `AGENTS.md` sudo exceptions). It grants pcscd access to the
   current USB device node. Replugging changes the bus/device number, so an ACL
   applied to an old `/dev/bus/usb/...` path may no longer help.
 - If PC/SC lists only `Virtual PCD` readers, the physical Pico is still
-  unavailable. Do not treat VPCD visibility as hardware validation. Avoid
-  `pcsc_scan`; it has previously remained running at high CPU after a timed
-  invocation. Use a bounded repository Java PC/SC probe or the requested
-  JCAlgTest command instead.
+  unavailable. Do not treat VPCD visibility as hardware validation. Never use
+  `pcsc_scan` for physical readers; it has previously remained running at high
+  CPU after a timed invocation. List readers with the bounded
+  `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers [--pico-only]`.
 - `libusb -99` or picotool initialization errors mean direct USB access is
   unavailable in the current host/VM context, even if another layer reported
   the device. Restore guest USB passthrough and recheck before flashing.

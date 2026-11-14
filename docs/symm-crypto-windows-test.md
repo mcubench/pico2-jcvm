@@ -81,7 +81,11 @@ The expected CSV lists the 46 capabilities selected for this profile. A
 complete Windows enumeration and client run must be performed on the target
 Windows system; this package itself does not claim that result.
 
-This package selects applet 1.8.4_jc305. The supplied versioned client
-identifies itself internally as 1.8.3 and needs the adjacent tools/lib directory.
+This package ships the JCAlgTest **1.8.5** host client (SHA-256
+`b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`) as
+`tools\AlgTestJClient.jar`, with applet 1.8.4_jc305. Older clients do not
+deliver the card-reset/object-deletion APDU. The client needs the adjacent
+tools/lib directory. The CSV's embedded client version is unreliable; report
+the JAR hash.
 Historical profile outcomes require a fresh run against this baseline; the
 migration alone does not establish the expected firmware support results.

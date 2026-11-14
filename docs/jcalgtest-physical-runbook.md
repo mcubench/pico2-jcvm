@@ -22,6 +22,9 @@ have been seen to report an embedded client version of 1.8.4 even with the
 ```sh
 # Verify the pinned CAP, clients, API corpus and simulator reference.
 ./tools/fixture-path --verify
+# `--verify` does not cover the 1.8.5 client; check its hash separately.
+client_jar=tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar
+echo "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3  $client_jar" | sha256sum -c -
 
 # Build and flash CHOUPI with the `base` profile to a Pico 2. It enables the
 # minimum crypto needed by JCAlgTest's eager startup allocations, plus all
@@ -36,8 +39,9 @@ cp build/javacard-support/jcalgtest-supported.csv \
   artifacts/results/base-alg-support/expected.csv
 
 # Grant pcscd access after USB re-enumeration, then confirm the physical reader.
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
-PICO2_HOST_USB_ACCESS=1 pcsc_scan -r
+# (Run the helper with elevated execution, exactly in this form.)
+sudo -n /usr/local/sbin/pico2-pcsc-reader
+PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only
 
 # Use the exact Pico reader name printed above.
 reader_name='REPLACE_WITH_EXACT_BASE_PCSC_READER_NAME'
@@ -53,7 +57,7 @@ PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro
   --install tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap
 
 # Retrieve the extended algorithm support report.
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/base-alg-support
 
@@ -65,12 +69,14 @@ mkdir -p artifacts/results/baseline-alg-support
 cp build/javacard-support/jcalgtest-supported.csv \
   artifacts/results/baseline-alg-support/expected.csv
 reader_name_baseline='REPLACE_WITH_EXACT_BASELINE_PCSC_READER_NAME'
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name_baseline" \
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name_baseline" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/baseline-alg-support
 
 # Compare each report to the same jCardSim reference, with the expected support
-# set captured from the matching firmware build.
+# set captured from the matching firmware build. NOTE: this reference was
+# generated with the older client; until it is regenerated with 1.8.5 (TODO
+# REF-185-01), treat it as a mixed-client comparison.
 ./tools/compare-jcalgtest-support.py \
   artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
   tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv \
@@ -87,7 +93,7 @@ diff -u artifacts/results/base-alg-support/expected.csv \
   artifacts/results/baseline-alg-support/expected.csv
 
 # Run the static performance suite.
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name" \
   -op ALG_PERFORMANCE_STATIC -fresh \
   -outpath artifacts/results/physical-perf-static
 ```

@@ -41,8 +41,14 @@ selector_count=0
 [[ -z "$usb_path" ]] || ((selector_count += 1))
 ((selector_count <= 1)) || die "choose only one of --serial, --chipid, or --usb-path"
 require_host_usb_access
-"${repo_root}/tools/build" arm --profile "${support_profile}"
-"${repo_root}/tools/build" riscv --profile "${support_profile}"
+# RISC-V is out of scope (user decision 2026-11-14): build only the
+# architecture that is flashed. `choupi` is the full JCVM; `arm`/`riscv` flash
+# the smoke-test image only.
+if [[ "${arch}" == riscv ]]; then
+  "${repo_root}/tools/build" riscv --profile "${support_profile}"
+else
+  "${repo_root}/tools/build" arm --profile "${support_profile}"
+fi
 if [[ "${arch}" == choupi ]]; then
   image="${repo_root}/build/arm/pico2_choupi.uf2"
 else

@@ -8,16 +8,17 @@ require_command unzip
 require_command sha256sum
 
 # Use the repository wrappers and the exact capability profile included in the
-# package. RISC-V is a build gate only; the archive contains the ARM image.
+# package. RISC-V is out of scope; the archive contains the ARM image.
 "${repo_root}/tools/build" arm --profile symm_crypto
-"${repo_root}/tools/build" riscv --profile symm_crypto
 
 package_dir="${repo_root}/build/external-test/symm-only-package"
 archive="${repo_root}/build/external-test/symm-crypto-windows-test.zip"
 firmware="${repo_root}/build/arm/pico2_choupi.uf2"
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client_jar="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
+# Always ship the 1.8.5 host client (user directive 2026-11-14); the
+# fixture catalog default is the historical 1.8.4 client.
+client_jar="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
 expected_csv="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
 reference_csv="$("${repo_root}/tools/fixture-path" jcalgtest.reference)"
 
@@ -27,6 +28,10 @@ for input in "${firmware}" "${cap}" "${gp_jar}" "${client_jar}" \
              "${repo_root}/docs/symm-crypto-windows-test.md"; do
   [[ -s "${input}" ]] || die "required package input is missing: ${input}"
 done
+
+client_hash="$(sha256sum "${client_jar}" | cut -d ' ' -f 1)"
+[[ "${client_hash}" == "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3" ]] || \
+  die "the supplied JCAlgTest 1.8.5 client hash changed: ${client_hash}"
 
 # Never edit the upstream CAP; verify its pinned identity before copying it.
 cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
@@ -44,7 +49,8 @@ install -m 0644 "${cap}" \
 install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
 install -m 0644 "${client_jar}" \
   "${package_dir}/tools/AlgTestJClient.jar"
-cp -R "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
+# client/lib is a relative symlink to the 1.8.4 dependencies; dereference it.
+cp -RL "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
 install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
   "${package_dir}/tools/compare-jcalgtest-support.py"
 install -m 0644 "${expected_csv}" \

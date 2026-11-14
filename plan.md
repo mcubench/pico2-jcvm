@@ -264,7 +264,7 @@ The \[rp2350-skills](https://github.com/mcubench/rp2350-skills) repo (commit `c9
 
 | Test without hardware; I/O behind a two-function vtable; pty pairs (`method.md`) | WP4, WP7 | The APDU transport is `get\_apdu` / `put\_response`, with a host build over a pty or socket feeding \[vsmartcard](https://github.com/frankmorgner/vsmartcard) `vpcd`. The real `AlgTestJClient` therefore runs against the host build before hardware CCID exists. |
 
-| Bounded build-flash-capture loop; `./tools/build`, `./tools/cycle`, `./tools/monitor`, `./tools/doctor` (`AGENTS.md`) | WP1 | Create these wrappers in the port repo, with the effective configuration printed. ARM only is the default; RISC-V builds of platform-independent code are kept warning-free where cheap. |
+| Bounded build-flash-capture loop; `./tools/build`, `./tools/cycle`, `./tools/monitor`, `./tools/doctor` (`AGENTS.md`) | WP1 | Create these wrappers in the port repo, with the effective configuration printed. ARM only. RISC-V is out of scope (user decision 2026-11-14): no RISC-V build gate or measurements. |
 
 | Small commits, append-only `progress.md`, `.agent/HANDOFF.md` (`AGENTS.md`) | All | Every work-package task closes with a commit and a progress record, so multiple agent sessions can continue the work. |
 

@@ -34,14 +34,19 @@ by Java Card.
 - Extended-length APDUs and T=1 waiting-time extension are not implemented.
 - Logical channels and general multi-applet contexts/firewall semantics are
   not implemented.
-- `JCSystem.requestObjectDeletion()` is unsupported; persistent-object
-  reclamation remains disabled pending safe power-loss recovery validation.
+- `JCSystem.requestObjectDeletion()` is unsupported in the **default** build;
+  persistent-object reclamation is disabled there pending MEM-01 T8 and
+  PERSIST-01 acceptance. The `max_crypto` acceptance image built with
+  `PICO2_ENABLE_OBJECT_DELETION=1` (`mode=acceptance`) supports it and is used
+  for campaigns. The default flips to ON once that gate passes.
 - Optional API packages absent from the ROM mask, including
   `javacardx.external`, are rejected when CAP imports are resolved.
 - The optional `max_crypto` profile does not enable RSA or RSA-CRT 4096-bit
-  key-pair generation. The historical JCAlgTest 1.8.2 CAP mislabels its 3072-bit
-  generation probes as 4096-bit requests; this profile does not alter the CAP
-  or claim those requests as supported.
+  key-pair generation. The JCAlgTest host clients (1.8.3–1.8.5) send RSA/RSA-CRT
+  key-pair probes labelled 3072 with length 4096 (0x1000), and their
+  4096-labelled probes with 64. The applet CAPs (1.8.2 and 1.8.4) pass the
+  length through unchanged. This profile does not alter the client or CAP, and
+  does not claim those requests as supported.
 - `MessageDigest.update()` currently retains the complete message in a
   2,046-byte transient buffer. The cumulative bytes passed through `update()`
   and `doFinal()` must not exceed 2,046; larger inputs fail with
@@ -59,6 +64,7 @@ with VPCD results. The full API contract still needs broader per-method tests,
 and acceptance still needs repeatable clean-flash runs, Windows PC/SC
 validation, and actual USB power-cycle recovery.
 
-The selected acceptance baseline is now JCAlgTest 1.8.4 / jc305. Earlier
+The selected acceptance baseline is now the JCAlgTest 1.8.4 / jc305 CAP run
+with the 1.8.5 host client. Earlier
 1.8.2 results and exclusions above require revalidation against that CAP;
 this migration does not establish firmware acceptance for 1.8.4.

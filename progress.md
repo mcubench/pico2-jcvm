@@ -29675,3 +29675,35 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Have the CTO daily report count new backfill-style commits to
   check compliance.
 - Artifacts/logs: none
+
+## 2026-11-14 Apply rule-conflict decisions: tooling and procedure docs 45
+
+- Step-Id: `20261114-1945-conflicts-tooling`
+- Task: user decision sheet `docs/archive/jcvm_rule-conflicts_opus55_20261114.md` (items 1, 8–16, 18–19, 22–23)
+- When: '2026-11-14 19:05 CET' - '2026-11-14 19:45 CET'
+- Model: `claude-opus-5-5`
+- Change: RISC-V is now out of scope. `tools/cycle` builds only the flashed
+  architecture, the packagers' RISC-V gate is dropped, and AGENTS, plan and
+  SESSION_CONTINUITY agree. `AGENTS.md` documents `cycle choupi` as the JCVM
+  flash path (`arm`/`riscv` are smoke-only), a volatile-board-state rule,
+  agent-run sudo helper, an acceptance image / empty-card / object-deletion
+  default-flip rule, and JAR SHA-256 as client identity. `tools/build` labels
+  object deletion ON with debug OFF as `mode=acceptance`. New bounded
+  `tools/list-readers` replaces `pcsc_scan` for physical readers. Windows
+  packagers ship the hash-checked 1.8.5 client with dereferenced lib. The
+  runbook passes `--client-jar` in every command. The skill references,
+  supported-profile, README and Windows docs were updated. The RSA 3072/4096
+  mislabel is corrected to a host-client bug (1.8.3–1.8.5 send 0x1000 for
+  3072-labelled probes; the CAPs pass the length through).
+- Validation: `bash -n` on all edited scripts passed. The `tools/build` mode
+  label was tested in isolation for 5 flag combinations
+  (normal/acceptance/diagnostic). `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers`
+  listed 3 readers (2 VPCD, D92) and exited 0, and refuses without the marker.
+  The RSA claim was verified via identical `javap -c` of `SingleModeTest` in
+  the 1.8.4 and 1.8.5 JARs plus `progress.md` 2026-10-28 query `B07519000301100000`.
+  No real build or package run was done, because a worker campaign on D92 was
+  active and shares `build/`.
+- Result: Instructions and tooling are consistent for these items.
+- Decision: TODO/STATUS/EXT_REQUESTS/doc archiving follow in the next step. The
+  first worker build after this should confirm the `mode=acceptance` provenance.
+- Artifacts/logs: none

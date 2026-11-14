@@ -12,7 +12,9 @@ package_dir="${package_root}/windows-profile-package"
 archive="${package_root}/pico2-jcvm-windows-test.zip"
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client_jar="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
+# Always ship the 1.8.5 host client (user directive 2026-11-14); the
+# fixture catalog default is the historical 1.8.4 client.
+client_jar="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
 reference_csv="$("${repo_root}/tools/fixture-path" jcalgtest.reference)"
 
 for input in "${cap}" "${gp_jar}" "${client_jar}" "${reference_csv}" \
@@ -20,6 +22,10 @@ for input in "${cap}" "${gp_jar}" "${client_jar}" "${reference_csv}" \
              "${repo_root}/docs/windows-asymm-symm-test.md"; do
   [[ -s "${input}" ]] || die "required package input is missing: ${input}"
 done
+
+client_hash="$(sha256sum "${client_jar}" | cut -d ' ' -f 1)"
+[[ "${client_hash}" == "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3" ]] || \
+  die "the supplied JCAlgTest 1.8.5 client hash changed: ${client_hash}"
 
 # Keep the upstream exercise CAP and its provenance unchanged.
 cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
@@ -40,15 +46,14 @@ for profile in symm_crypto asymm_crypto; do
   install -m 0644 "${repo_root}/build/javacard-support/jcalgtest-supported.csv" \
     "${package_dir}/expected/expected-support-${profile}.csv"
 
-  # The RISC-V image is not distributed; keep its repository build gate.
-  "${repo_root}/tools/build" riscv --profile "${profile}"
 done
 
 install -m 0644 "${cap}" \
   "${package_dir}/applet/AlgTest_v1.8.4_jc305.cap"
 install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
 install -m 0644 "${client_jar}" "${package_dir}/tools/AlgTestJClient.jar"
-cp -R "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
+# client/lib is a relative symlink to the 1.8.4 dependencies; dereference it.
+cp -RL "$(dirname "${client_jar}")/lib" "${package_dir}/tools/lib"
 install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
   "${package_dir}/tools/compare-jcalgtest-support.py"
 install -m 0644 "${reference_csv}" \

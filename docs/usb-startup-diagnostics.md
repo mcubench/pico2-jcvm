@@ -95,7 +95,8 @@ DTR ends the diagnostic wait; this is intentional for early-log capture.
    USB enumeration, driver startup, PC/SC listing, and application readiness.
    Use a Windows USB trace if a substantial delay remains. Opening a serial
    monitor during this measurement can hide the original bug.
-5. Record results and remaining limitations in progress/handoff. Keep HOST-02
+5. Record results and remaining limitations in a `progress.md` record with a
+   Step-Id; update HANDOFF only when next steps or blockers change. Keep HOST-02
    open until normal startup and diagnostic behavior pass their own gates.
 
 ### Windows no-console reconnect measurement

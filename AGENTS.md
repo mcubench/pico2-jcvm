@@ -2,10 +2,10 @@
 
 The target is a Raspberry Pi Pico 2 with an RP2350 connected by its USB port.
 
-Supported CPU architectures:
-
-- ARM Cortex-M33: `rp2350-arm-s`
-- Hazard3 RISC-V: `rp2350-riscv`
+Target CPU architecture: ARM Cortex-M33 (`rp2350-arm-s`). Hazard3 RISC-V
+(`rp2350-riscv`) is **out of scope** (user decision 2026-11-14): no RISC-V build
+gate, no RISC-V runtime or physical measurements. The `riscv` wrapper target may
+remain for ad-hoc checks only.
 
 Use the repository wrappers; do not invoke compiler binaries directly.
 
@@ -19,10 +19,14 @@ Java Card runtime boundary:
   modify CAP files to implement algorithms. Use existing upstream CAPs only to
   exercise native API behavior.
 
-- Build ARM: `./tools/build arm`
-- Build RISC-V: `./tools/build riscv`
-- Build both, flash, and capture logs: `./tools/cycle arm` or `./tools/cycle riscv`
+- Build ARM: `./tools/build arm [--profile P]`
+- Build, flash the **full JCVM** and capture logs:
+  `./tools/cycle choupi [--profile P] --serial ID` (or `--chipid`/`--usb-path`).
+  `./tools/cycle arm` / `riscv` flash only the **smoke-test** firmware. Never use
+  them to validate JCVM behavior; their `CYCLE:PASS` says nothing about the VM.
 - Capture finite serial output: `./tools/monitor --seconds 8`
+- List PC/SC readers (bounded): `./tools/list-readers [--pico-only]`. Do not use
+  `pcsc_scan`; it has hung at high CPU and produced unbounded output.
 - Diagnose the host setup: `./tools/doctor`
 
 For the long JCAlgTest client campaigns, run `2 -> PERFORMANCE TEST` (1–3
@@ -31,11 +35,11 @@ tokens when possible. Keep each token's result directory and serial telemetry
 separate, record its chip ID and firmware hash, and continue on another
 available token if one becomes unavailable or stalls.
 
-After changing platform-independent source:
+After changing source:
 
-1. Build ARM and RISC-V.
+1. Build ARM.
 2. Fix all errors and warnings.
-3. Flash the requested architecture.
+3. Flash the full JCVM (`./tools/cycle choupi`).
 4. Inspect serial output.   
 5. Treat `TEST:FAIL`, `FAULT`, a timeout, or any nonzero command status as failure.
 6. Diagnose, edit, and repeat until the hardware test passes.
@@ -48,12 +52,16 @@ Safety constraints:
 - Run every USB/PCSC operation (`lsusb`, attached-device `picotool`, serial monitor, raw CCID, or physical SmartcardIO) through the host-access execution path from its first attempt. For repository wrappers, pass `PICO2_HOST_USB_ACCESS=1` on that single command and invoke it with `sandbox_permissions: "require_escalated"`; both are required, and the wrapper refuses to reach libusb/PCSC without them. For direct system commands, use `sandbox_permissions: "require_escalated"` on the command itself. Never probe one of these commands in the default restricted context or retry there after a failure. If host access is unavailable, stop hardware work and continue offline.
 - Do not use `sudo` from an autonomous coding cycle except exceptions listed in section 'sudo exception'.
 - Do not modify files outside this repository.
-- Do not flash unless both architectures currently build, unless explicitly investigating an architecture-specific failure.
+- Do not flash unless the ARM build currently passes without errors or warnings.
+- Physical board availability is volatile. Never treat an old "boards disconnected / no hardware work" note as standing. Before hardware work, refresh access with the approved helper, list readers with `./tools/list-readers`, and use whatever identified board is available (failover pool).
 
 ## sudo exceptions
 ```
 sudo -n /usr/local/sbin/pico2-pcsc-reader
 ```
+The agent runs this helper itself, with elevated execution, in exactly this form
+(no `PICO2_HOST_USB_ACCESS=1` prefix or other additions). It is not a user-only
+step.
 
 ## .git/index.lock read-only failure 
 When git add or git commit fails because the sandbox
@@ -158,6 +166,13 @@ Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible 
 - Prioritize client option `2` (all JC API methods, 256-byte data; estimated 1–3 hours) and option `1` (all algorithms; estimated 5–8 hours). These runs exercise periodic `INS_CARD_RESET` / `JCSystem.requestObjectDeletion()` behavior.
 - Use a different identified Pico 2 for the second campaign when possible. Keep per-device results, reader name, chip ID, firmware hash, and serial telemetry separate. If one device disappears or stalls, continue on another available device rather than waiting for it.
 - Do not claim either run started until the physical reader is enumerated in PC/SC and the client is connected to that exact reader.
+- Record the client JAR's SHA-256 (1.8.5: `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`) with every result. The JAR hash is the authoritative client identity: the client version embedded in result CSVs is unreliable (a 1.8.5 run reported 1.8.4). A result without a recorded JAR hash does not count as acceptance.
+
+### Acceptance image and card state (user decision 2026-11-14)
+- **Acceptance and campaign runs** (MEM-01 T8, RESOURCE-01/02, PERSIST, AC, option 1/2 campaigns) use the **acceptance image**: `max_crypto` with object deletion ON (`PICO2_ENABLE_OBJECT_DELETION=1`) and all debug/trace switches OFF. `tools/build` labels this combination `mode=acceptance`. Any debug switch ON is `mode=diagnostic` and is not acceptance evidence.
+- Acceptance runs start from an **empty card**: wipe with an empty-card UF2 (built by `tools/package-empty-card-uf2`, flashed with `tools/flash` to the identified board), then install the unchanged CAP. Never use `picotool erase`.
+- **Development cycles** (`./tools/cycle choupi`) preserve installed storage. PERSIST power-loss tests create their own state on a freshly wiped acceptance image rather than relying on older stores.
+- Object deletion stays **OFF in the default build** until MEM-01 T8 and PERSIST-01 pass. At that gate, flip the default to ON, rerun the acceptance suite on the default image, and update `README.md` and `docs/supported-profile.md`.
 
 ### Long simulator/emulator runs (user directive 2026-11-14)
 Long VPCD/simulator runs are permitted. This replaces the earlier "stop long emulator runs" instruction. Each long run must have a stated reason and an expected benefit. Before starting one, think first:
