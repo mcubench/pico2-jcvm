@@ -62,6 +62,15 @@ bytes; peak handles 309; integrity average 370 µs / max 1,296 µs. This models
 the former historical-body growth pattern at high occupancy and remains a
 fake-flash regression, not long-run client acceptance.
 
+The on-device reclaimer also stopped allocating the full reachable-alias
+diagnostic list unless PC/VPCD scan diagnostics request it. A `Tag` is 129
+bytes, so 280 targets represent at least 36,120 bytes of vector elements
+(before vector capacity slack). Actual alias resolution and heap extension are
+unchanged. Persistent transaction, inventory and overlay suites pass; ARM and
+RISC-V max_crypto builds with deletion enabled pass. This capacity reduction
+is inferred from the fixed element size and test workload, not measured on a
+physical board. Full option-2 client and physical acceptance remain open.
+
 T7 still lacks runtime `alias-protect` event evidence and the unchanged JCAlgTest
 1.8.5 option-2 VPCD campaign. The latter remains intentionally unrun because of
 the user's instruction to stop long emulator campaigns. Continue offline with

@@ -559,7 +559,13 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
       alias_diagnostic_samples.emplace_back(source_tag, target);
     }
 #endif
-    if (!hasTagPrefixRoot(target, *context.targets)) {
+    // Keep the expanded target list only for PC/VPCD scan diagnostics. The
+    // target list does not control tracing or candidate retention: the heap
+    // mark check below prevents re-enqueueing already resolved bodies. On
+    // RP2350, retaining one 129-byte Tag slot per alias can consume tens of
+    // KiB during the same collection that is meant to recover memory.
+    if (context.targets != nullptr &&
+        !hasTagPrefixRoot(target, *context.targets)) {
       context.targets->push_back(target);
     }
     if (fs_read_inplace(target.value, target.len, &data, &length) != 0 ||
@@ -576,7 +582,7 @@ bool collectReachableAliasTarget(const Tag &source_tag, void *opaque) {
 using ReachableTagScanner = VisitResult (*)(uint8_t, TagVisitor, void *);
 
 VisitResult collectReachableAliasTargets(const uint8_t owner, Heap &heap,
-                                         std::vector<Tag> &targets,
+                                         std::vector<Tag> *targets,
                                          ReachableTagScanner scanner) {
   std::vector<jref_t> references;
 #ifdef PC_VERSION
@@ -588,10 +594,10 @@ VisitResult collectReachableAliasTargets(const uint8_t owner, Heap &heap,
       references.clear();
 #ifdef PC_VERSION
       reference_tags.clear();
-      ReachableAliasTargetContext context{&heap, &targets, &references,
+      ReachableAliasTargetContext context{&heap, targets, &references,
                                           &reference_tags};
 #else
-      ReachableAliasTargetContext context{&heap, &targets, &references};
+      ReachableAliasTargetContext context{&heap, targets, &references};
 #endif
       const VisitResult result = scanner(owner, collectReachableAliasTarget,
                                          &context);
@@ -733,8 +739,10 @@ static VisitResult visitUnreachableAppletTagsWithAliasTargets(
   std::vector<Tag> reachable_alias_targets;
   if (summary.persistent_tagged_arrays != 0 ||
       summary.persistent_tagged_instances != 0) {
+    std::vector<Tag> *diagnostic_targets =
+        scan_summary == nullptr ? nullptr : &reachable_alias_targets;
     const VisitResult alias_scan = collectReachableAliasTargets(
-        applet_owner, heap, reachable_alias_targets, visitApplet);
+        applet_owner, heap, diagnostic_targets, visitApplet);
     if (alias_scan != VisitResult::Complete) return alias_scan;
 #ifdef PC_VERSION
   if (scan_summary != nullptr) {
@@ -866,7 +874,6 @@ struct PackageStaticCandidateContext {
   TagVisitor visitor;
   void *visitor_context;
   const std::vector<Tag> *foreign_alias_targets;
-  const std::vector<Tag> *reachable_alias_targets;
 };
 
 bool visitUnreachablePackageStaticTag(const Tag &tag, void *opaque) {
@@ -898,17 +905,15 @@ VisitResult visitUnreachablePackageStaticTagsWithAliasTargets(
       heap.traceReachableFrom(enumerate_roots, root_context);
   if (!summary.complete) return VisitResult::IncompleteReachability;
 
-  std::vector<Tag> reachable_alias_targets;
   if (summary.persistent_tagged_arrays != 0 ||
       summary.persistent_tagged_instances != 0) {
     const VisitResult alias_scan = collectReachableAliasTargets(
-        package_id, heap, reachable_alias_targets, visitPackageStatics);
+        package_id, heap, nullptr, visitPackageStatics);
     if (alias_scan != VisitResult::Complete) return alias_scan;
   }
 
   PackageStaticCandidateContext context{
-      &heap, candidate_visitor, candidate_context, &foreign_alias_targets,
-      &reachable_alias_targets};
+      &heap, candidate_visitor, candidate_context, &foreign_alias_targets};
   return visitPackageStatics(package_id, visitUnreachablePackageStaticTag,
                              &context);
 }

@@ -1075,3 +1075,19 @@ lines 3527–3580 and 14062+; 8E OOM at line 12905 of
 - Diagnostics: `PICO2_GC_SCAN_DIAGNOSTICS=1` prints `ALIAS_ROOT` counts per
   prefix. The prefix with a growing count is the leak.
 - Evidence: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`.
+
+## Reclaimer diagnostic alias-list memory — bounded on firmware
+
+`collectReachableAliasTargets()` previously retained a `std::vector<Tag>` for
+every expanded alias target during collection. `Tag` is 129 bytes, and the
+280-child high-occupancy graph therefore represents at least 36,120 bytes of
+target elements, before vector capacity slack. On firmware this list did not
+affect heap tracing or candidate deletion; it served diagnostics. The reclaimer
+now populates it only when PC/VPCD scan diagnostics request the summary;
+normal tests and ARM/RISC-V firmware pass a null list while retaining alias
+resolution and `Heap::extendReachableFrom()`.
+
+Validation: persistent transaction, persistent inventory and RP2350 overlay
+suites pass; ARM and RISC-V `max_crypto` builds with object deletion enabled
+pass. No physical heap delta was measured; 36,120 bytes is the element payload
+for 280 fixed-size Tags, not runtime allocator usage or vector capacity.

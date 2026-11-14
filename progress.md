@@ -29496,3 +29496,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Before T6/T8, run a bounded 6–8 min VPCD run to sync seq ≥2,500 and require no `FS_WRITE_FAIL`/`F205` and flat live bytes over the last 1,000 syncs.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`, `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z/emulator.log`.
+
+## 2026-11-14 MEM-01 bound reclaimer alias-list RAM 19 minutes
+
+- Step/experiment: `MEM-01-RECLAIMER-DIAGNOSTIC-ALIAS-LIST-20261114`
+- When: '2026-11-14 09:56 UTC' - '2026-11-14 10:15 UTC'
+- Model: `GPT-6 Codex`
+- Change: Avoid allocating the expanded reachable-alias `std::vector<Tag>` during normal applet/package-static reclamation. Keep it only when PC/VPCD scan diagnostics explicitly request summary detail. Alias resolution, extension of heap roots and reclamation decisions are unchanged. Updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-persistent-transaction`, `./tools/test-persistent-inventory`, and `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). `PICO2_ENABLE_OBJECT_DELETION=1 ./tools/build arm --profile max_crypto` and the RISC-V equivalent passed. The first test compile caught a stale package-static context initializer after removing its unused alias-list member; fixed before the passing runs. `git diff --check` passed. No hardware or emulator run.
+- Result: Each fixed `Tag` element occupies 129 bytes; 280 targets imply at least 36,120 bytes of vector elements previously retained during firmware collection, with implementation-dependent vector capacity slack. This is a static allocation bound, not measured physical free-heap improvement. The high-occupancy alias reassignment regression remains green.
+- Decision: Keep host diagnostics opt-in and preserve all traversal. Physical free-heap delta and long option-2 acceptance remain unverified; do not run the slow emulator campaign.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-alias-alloc-transaction.log`, `/tmp/mem01-alias-alloc-inventory.log`, `/tmp/mem01-alias-alloc-overlay.log`, `/tmp/mem01-alias-alloc-arm.log`, `/tmp/mem01-alias-alloc-riscv.log`; no hardware logs.
