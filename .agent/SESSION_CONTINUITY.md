@@ -35,8 +35,11 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   firmware hash and chip ID for each run.
 - Do not invoke compiler binaries directly. Use the repository build wrappers
   once available.
-- Keep `.agent/HANDOFF.md` current with completed work, blockers, and the next
-  concrete action. Never replace or remove earlier `progress.md` records.
+- Keep `.agent/HANDOFF.md` as next steps only: blockers, current board state and
+  the next concrete actions, ≤ 60 lines. **Overwrite it; never append a new
+  "Current handoff" block.** Do not copy task definitions from `TODO.md` or
+  completed-work narratives (those go to `progress.md`). Never replace or
+  remove earlier `progress.md` records.
 
 ## Source and dependency handling
 
