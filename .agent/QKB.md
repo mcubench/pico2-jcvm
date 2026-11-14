@@ -1219,3 +1219,20 @@ pending final response does not transition when the endpoint is idle; keep the
 host transport failure separate from MEM-01.
 
 Logs: `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.
+
+
+## Direct PC VPCD tests need elevated localhost sockets — 2026-11-14
+
+**Symptom:** The command `tools/test-cap-malformed-vpcd --mutation external-superclass-without-import`
+in the restricted execution context failed
+before VPCD startup with `[Errno 1] Operation not permitted`; the outer test
+then tried to read a result log that had not been created. This was sandbox
+loopback denial, not a CAP or VM failure.
+
+**Viable response:** Run direct local VPCD socket integration wrappers with
+elevated execution from the first attempt. The elevated focused test passed and
+reported `ERROR: PC CAP LOAD data rejected` plus
+`CAP_LOAD_VALIDATION:PASS missing_required_import_rejected_before_store`; no
+CAP-registry sidecar was created. This test path is local VPCD and does not
+require physical USB access, but its startup installation path does not prove
+a GlobalPlatform LOAD APDU status or subsequent DELETE behavior.

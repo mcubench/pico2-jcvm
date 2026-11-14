@@ -30028,3 +30028,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `74b27919ac2165b750734eb2fae7bd29c87bdf536ee225fea8f896bdad5f20da`; Windows ZIP SHA-256 `8ea646a8e2d637f7b69f50ed1fc6e4a7a9dc343a61487a26f9772a9ce4c9218d`. Source HEAD `219c1d1f62277bf3`; dirty root diff SHA-256 `99938a657a68be0618b38c3c6ebcdf97d3b46b4a3f8f53eac115b8c4e40c9792`; details in package provenance.
 - Decision: Provide this normal-mode empty-card image for external Windows testing; it has object deletion enabled. Physical acceptance remains open.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-219c1d1f-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-219c1d1f-dirty.zip`; package directory of the same stem.
+
+## 2026-11-14 Verify external-superclass missing-Import rejection 8 minutes
+
+- Step-Id: `20261114-2238-capin01-vpcd-super-no-import`
+- Task: CAPIN-01 malformed external superclass without Import
+- When: '2026-11-14 22:38 UTC' - '2026-11-14 22:46 UTC'
+- Model: `GPT-6`
+- Change: Ran the generated hostile CAP through the direct PC VPCD startup-install path. Updated CAPIN-01 and handoff with the observed acceptance boundary, and added a QKB entry for sandbox loopback denial and the elevated VPCD invocation that works.
+- Validation: `./tools/test-cap-malformed-vpcd --mutation external-superclass-without-import` passed under elevated execution: `CAP_LOAD_VALIDATION:PASS missing_required_import_rejected_before_store registry_saved_packages=-1`. Log `artifacts/logs/rv28-malformed-external-superclass-without-import-vpcd-20261106.log` contains `ERROR: PC CAP LOAD data rejected`; `build/tests/jcalgtest/algtest-v184-vpcd-flash.bin.cap-registry` is absent. The corresponding restricted attempt failed before VPCD startup with `Operation not permitted`; no source or device operation occurred in that attempt. Physical reader inventory separately timed out; no hardware acceptance was claimed.
+- Result: The generated input is rejected by CAP load before registry publication in the PC VPCD startup path. The harness does not expose GP LOAD's APDU status or continue after this expected startup failure, so `6A80`, GET STATUS/no package, and unrelated DELETE `9000` remain unverified.
+- Decision: Keep CAPIN-01 open for APDU-level and physical checks; run this local VPCD path elevated in future.
+- Artifacts/logs: `build/rv28-malformed-external-superclass-without-import-load-code.bin`; `artifacts/logs/rv28-malformed-external-superclass-without-import-vpcd-20261106.log`; generated from upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.

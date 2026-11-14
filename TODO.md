@@ -336,11 +336,17 @@ task:
      verifies repeated recovery is idempotent.
   Fixtures: extra tag-12 component; library with Export but no Class plus an
   importer; class with external superclass and no Import. The exact
-  `external-superclass-without-import` mutation is now generated from the
-  unchanged JCAlgTest CAP (external superclass ref `8203`, Import removed);
-  offline construction passes, but the VPCD status/no-store assertion has not
-  run because PC/SC is unavailable. Expect `6A80` at LOAD, no slot consumed,
-  and DELETE of an unrelated package still `9000`.
+  `external-superclass-without-import` mutation is generated from unchanged
+  JCAlgTest CAP bytes (external superclass ref `8203`, Import removed). On
+  2026-11-14 the direct PC VPCD startup path reported
+  `ERROR: PC CAP LOAD data rejected`; the harness printed
+  `CAP_LOAD_VALIDATION:PASS missing_required_import_rejected_before_store`,
+  and no CAP-registry sidecar was created. This startup path does not
+  expose a GlobalPlatform LOAD APDU status or continue to test unrelated DELETE.
+  Still require APDU status `6A80`, no slot/package in card-manager status, and
+  DELETE of an unrelated package returning `9000`. The bounded PC/SC reader
+  listing separately timed out; the direct VPCD socket test ran under elevated
+  execution and does not establish physical acceptance.
   External superclass package-token range validation is covered by
   `external-superclass-import-token-out-of-range`; transitive library
   dependency closure is covered by `missing-library-dependency`. Export
