@@ -18,6 +18,10 @@ flash_runtime_identity_matches() {
   return 1
 }
 
+flash_target_is_bootsel() {
+  [[ "$target_product" == 000f ]]
+}
+
 flash_read_bootsel_chipid() {
   local device="$1"
   local bus address info

@@ -29601,3 +29601,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Mark the idle CDC-1200 entry path validated for 8E. Keep BOOTSEL-01 open for long-operation reset and resolve USB visibility of the other boards before multi-device acceptance.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261114T120343Z.log`; resulting ARM UF2 SHA-256 `0e29248928dda42a3079a9097866b790ad64ed45f0b337eb6f66cf9f52952d30`.
+
+## 2026-11-14 BOOTSEL-01 remove duplicate device probe and bound polling by wall time 7 minutes
+
+- Step/experiment: `BOOTSEL-01-POLL-DEADLINE-20261114`
+- When: '2026-11-14 12:05 UTC' - '2026-11-14 12:12 UTC'
+- Model: `GPT-6 Codex`
+- Change: `is_bootsel()` now trusts the product ID from the already identity-validated target refresh instead of invoking picotool a second time. BOOTSEL and RP USB waits use `SECONDS` deadlines so slow device probes count against elapsed wait time. Added selector classification cases; updated TODO, QKB and HANDOFF.
+- Validation: `./tools/test-flash-target-selection` passed 21/21 and Bash syntax checks passed. Object-deletion-enabled ARM and RISC-V `max_crypto` builds passed. Physical `cycle choupi` on 8E passed a full verified flash and finite 18-second runtime monitor (`TEST:SUMMARY pass=1 fail=0`).
+- Result: The board remained healthy after the polling change. Image SHA-256 `92a603fb041259b6028360290f17f0fb9bc55ab2aac78ebe8b2739969609984d`; remaining firmware window 35,060 bytes. The other reported devices were not guest-enumerated.
+- Decision: Keep the one-probe, wall-time-bound poll. BOOTSEL-01 remains open for CDC reset during a long synchronous APDU; idle CDC reset passed separately in `BOOTSEL-01-CDC1200-IDLE-8E-20261114`.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261114T121025Z.log`; image hash above.

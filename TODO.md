@@ -145,8 +145,10 @@ pre-`92c91943` data) — use the empty-card UF2.
   remains untested. Additional 2026-11-14 idle-path evidence: direct CDC-1200
   on 8E entered BOOTSEL for the same chip in 3,119 ms; the image was restored
   through the wrapper, ARM/RISC-V builds passed, and the 18-second monitor
-  passed. Offline checks were refreshed: reset/CCID progress 30/30
-  and identity-pinned target-selection 18/18. See
+  passed. The poller now uses a wall-clock deadline and avoids a duplicate
+  picotool probe; the refreshed identity-pinned target-selection suite passes
+  21/21, and another 18-second cycle on 8E passed. Offline reset/CCID progress
+  remains 30/30. See
   `BOOTSEL-01-FLASH-RECOVERY-20261114` in `progress.md`.
 
 ### BUILD-DBG-01

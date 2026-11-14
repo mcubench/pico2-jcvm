@@ -21,6 +21,14 @@ The max_crypto image was then restored through `tools/cycle`; ARM/RISC-V
 builds and the finite runtime monitor passed. This does not cover a reset
 request during a long synchronous APDU.
 
+The BOOTSEL polling loop previously ran `picotool info` once during USB target
+identity validation and a second time in `is_bootsel()` for each poll. This
+duplicate call increased contention and made the loop's counter-based timeout
+longer than wall time. The poller now relies on the validated product ID and
+uses a wall-clock deadline. `tools/test-flash-target-selection` covers
+runtime-vs-BOOTSEL classification; 8E cycle passed after the change. The
+identity-pinned loop no longer spends a second Picotool timeout on each probe.
+
 ## One damaged persistent candidate blocking object deletion — scoped fix 2026-11-14
 
 Applet and package-static reclaimers now leave an enumerable but unresolved

@@ -105,6 +105,13 @@ target_expected_usb_serial=""
 target_expected_chipid=""
 expect "$(! flash_runtime_identity_matches AAAAAAAAAAAAAAAA && echo true || echo false)" \
   "runtime_reenumeration_without_pinned_identity_is_rejected"
+target_product="000f"
+expect "$(flash_target_is_bootsel && echo true || echo false)" \
+  "verified_bootsel_product_is_recognized_without_second_probe"
+target_product="0009"
+expect "$(! flash_target_is_bootsel && echo true || echo false)" \
+  "runtime_product_is_not_classified_as_bootsel"
+target_product=""
 
 # An absent explicit serial must not fall back to the only other Pico.
 reset_selection

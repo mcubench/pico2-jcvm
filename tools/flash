@@ -91,19 +91,19 @@ rp_usb_present() {
 
 wait_for_rp_usb() {
   local limit="$1"
-  local elapsed
-  for ((elapsed = 0; elapsed <= limit; elapsed++)); do
+  local started="$SECONDS"
+  local deadline=$((SECONDS + limit))
+  while ((SECONDS <= deadline)); do
     if rp_usb_present; then
-      printf 'FLASH:USB RP-series device detected wait_seconds=%s\n' "${elapsed}"
+      printf 'FLASH:USB RP-series device detected wait_seconds=%s\n' "$((SECONDS - started))"
       return 0
     fi
     [[ -z "$target_identity_error" ]] || die "$target_identity_error"
-    if ((elapsed == 0)); then
+    if ((SECONDS == started)); then
       printf 'FLASH:USB RP-series device absent; waiting up to %s seconds for re-enumeration\n' "${limit}"
     fi
-    if ((elapsed < limit)); then
-      sleep 1
-    fi
+    ((SECONDS < deadline)) || break
+    sleep 1
   done
   printf 'FLASH:USB device wait timed out after %s seconds\n' "${limit}"
   return 1
@@ -144,32 +144,24 @@ wait_for_runtime() {
 }
 
 is_bootsel() {
-  local info
   refresh_target_usb || return 1
-  set_target_selector
-  if ! info="$(timeout --signal=TERM --kill-after=2s 4s picotool info "${selector_args[@]}" -a 2>&1)"; then
-    return 1
-  fi
-  if [[ -n "$chipid" ]] &&
-      ! grep -Eqi "^[[:space:]]*chipid:[[:space:]]*0x?${chipid}[[:space:]]*$" <<<"$info"; then
-    printf 'FLASH:TARGET_ID_MISMATCH expected=%s\n' "$chipid"
-    return 1
-  fi
-  grep -Eq 'boot type:[[:space:]]*bootsel' <<<"${info}"
+  # refresh_target_usb validates the BOOTSEL ROM chip ID before setting
+  # target_product. Avoid a second picotool invocation for the same poll.
+  flash_target_is_bootsel
 }
 
 wait_for_bootsel() {
   local limit="$1"
-  local elapsed
-  for ((elapsed = 0; elapsed <= limit; elapsed++)); do
+  local started="$SECONDS"
+  local deadline=$((SECONDS + limit))
+  while ((SECONDS <= deadline)); do
     if is_bootsel; then
-      printf 'FLASH:BOOTSEL detected wait_seconds=%s\n' "${elapsed}"
+      printf 'FLASH:BOOTSEL detected wait_seconds=%s\n' "$((SECONDS - started))"
       return 0
     fi
     [[ -z "$target_identity_error" ]] || die "$target_identity_error"
-    if ((elapsed < limit)); then
-      sleep 1
-    fi
+    ((SECONDS < deadline)) || break
+    sleep 1
   done
   printf 'FLASH:BOOTSEL wait timed out after %s seconds\n' "${limit}"
   return 1

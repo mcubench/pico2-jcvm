@@ -12,8 +12,7 @@ builds passed. The target-selection suite passes 18/18 and Bash syntax checks
 pass. 8E (`8E464F4E2BBC0A19`) entered BOOTSEL via picotool, was flashed, passed
 full flash verification, and passed an 18-second cycle monitor and a separate
 8-second monitor (`TEST:PASS`, `TEST:SUMMARY pass=1 fail=0`). Cycle log:
-`artifacts/logs/cycle-choupi-20261114T115519Z.log`. ARM UF2 SHA-256:
-`17c40320e1d271b194801a9c8880eec9de98d53330be5aa72c5b6ed2aef2e1a0`.
+`artifacts/logs/cycle-choupi-20261114T115519Z.log`.
 
 Board discrepancy: the host saw one BOOTSEL board, D92 (`D92E743D5F640C0F`),
 and one runtime board, 8E, despite the user's report of three boards in
@@ -28,9 +27,12 @@ long synchronous applet operation and capture latency. The idle CDC-1200 path
 was exercised after the first commit: direct 1200-baud reset on 8E entered
 BOOTSEL for the same chip in 3,119 ms (9 polling attempts). `cycle choupi`
 then rebuilt ARM/RISC-V, restored the same board, and passed its 18-second
-serial monitor (`artifacts/logs/cycle-choupi-20261114T120343Z.log`). Current
-UF2 SHA-256 is
-`0e29248928dda42a3079a9097866b790ad64ed45f0b337eb6f66cf9f52952d30`.
+serial monitor (`artifacts/logs/cycle-choupi-20261114T120343Z.log`). The flash
+poller was then changed to use wall-clock deadlines and skip its redundant
+second identity probe. Its 21/21 offline selection suite passes, both builds
+pass, and a further 8E cycle passes
+(`artifacts/logs/cycle-choupi-20261114T121025Z.log`). Current UF2 SHA-256 is
+`92a603fb041259b6028360290f17f0fb9bc55ab2aac78ebe8b2739969609984d`.
 User should be told the physical visibility mismatch if hardware work is next.
 No long emulator run was started.
 
