@@ -1,5 +1,41 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-NODEBUG-CCID-DEADLINE-805420E6 — Retest long-run CCID fix
+
+Created 2026-11-14 22:14 CET. Please use this fresh Windows package for the
+next max_crypto object-deletion campaign. It contains a no-debug ARM acceptance
+image with object deletion ON, serial wait 0 ms, and empty persistent storage.
+It includes the fix for the long-uptime CCID response-retry deadline defect
+described below. The JCAlgTest applet is not preinstalled; install the unchanged
+upstream CAP explicitly with GPPro.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ccid-deadline-805420e6.uf2)
+- UF2 SHA-256: `5fa91117aeb6b2ac1c6ebb537447090016b27f0717bd14e528cd5d9437e4a6de`
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ccid-deadline-805420e6.zip)
+- Package SHA-256: `6a3e343eda7f88c6f845939cf94d71a5ca13d67dbc2b5d268bc1a64ccc0f8bf0`
+- Package instructions: [README](../build/external-test/object-deletion-nodebug-ccid-deadline-805420e6/README.md)
+- Source HEAD: `805420e631276d5079c103ff281cf6b2f91fa149`; worktree was dirty.
+  Packaged provenance includes tracked-diff and submodule hashes.
+- Build provenance: ARM `max_crypto`, object deletion ON, all debug flags OFF,
+  serial wait 0 ms, `mode=acceptance`; CPLC source ID `0x805420E631276D50`.
+- Exercise CAP: unchanged JCAlgTest 1.8.4/jc305, SHA-256
+  `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+- Host client: supplied JCAlgTest 1.8.5, SHA-256
+  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
+
+Use the README for exact hash verification, BOOTSEL copying, PC/SC checks,
+GPPro installation, campaign choices and serial capture. Run option 2 on one
+identified token and option 1 on another if available. Return complete results,
+serial logs, Windows version, reader/ATR, chip ID and UF2 hash. The ARM build,
+empty-card packaging, package checksums and ZIP integrity passed. No hardware
+flash or physical test was performed here.
+
+## Superseded: WIN-OBJECT-DELETION-NODEBUG-BA7E4AA1
+
+The image and package below are superseded by
+`WIN-OBJECT-DELETION-NODEBUG-CCID-DEADLINE-805420E6`; use the new acceptance
+image for further campaigns.
+
 ## WIN-OBJECT-DELETION-NODEBUG-BA7E4AA1 — Test fresh max_crypto acceptance image
 
 Created 2026-11-14 21:43 CET. Please use this fresh ARM `max_crypto` image for

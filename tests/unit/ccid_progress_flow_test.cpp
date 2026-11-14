@@ -53,6 +53,26 @@ struct FakeProgressHooks {
 } // namespace
 
 int main() {
+  constexpr uint32_t long_uptime_us = 0x90000000U;
+  check(!choupi::pending_ccid_retry_deadline_waiting(
+            false, long_uptime_us, 0),
+        "unarmed zero retry deadline is immediately due after signed horizon");
+  const uint32_t long_uptime_deadline = long_uptime_us + 1000U;
+  check(choupi::pending_ccid_retry_deadline_waiting(
+            true, long_uptime_us, long_uptime_deadline),
+        "armed retry deadline waits at long uptime");
+  check(!choupi::pending_ccid_retry_deadline_waiting(
+            true, long_uptime_deadline, long_uptime_deadline),
+        "armed retry deadline is due at deadline");
+  constexpr uint32_t wraparound_now_us = 0xfffffff0U;
+  constexpr uint32_t wraparound_deadline_us = wraparound_now_us + 1000U;
+  check(choupi::pending_ccid_retry_deadline_waiting(
+            true, wraparound_now_us, wraparound_deadline_us),
+        "armed retry deadline waits across clock wraparound");
+  check(!choupi::pending_ccid_retry_deadline_waiting(
+            true, wraparound_deadline_us, wraparound_deadline_us),
+        "retry deadline becomes due after clock wraparound");
+
   volatile bool bootsel_pending = false;
   bool line_coding_callback_active = false;
   bool native_work_active = true;

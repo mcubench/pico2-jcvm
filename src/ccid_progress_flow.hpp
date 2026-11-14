@@ -9,6 +9,13 @@ namespace choupi {
 inline constexpr uint8_t kMaxPendingCcidSubmitFailures = 32;
 inline constexpr uint32_t kStaleCcidExtensionCompletionUs = 100000U;
 
+inline constexpr bool pending_ccid_retry_deadline_waiting(
+    const bool deadline_armed, const uint32_t now_us,
+    const uint32_t retry_after_us) {
+  return deadline_armed &&
+         static_cast<int32_t>(now_us - retry_after_us) < 0;
+}
+
 inline bool stale_ccid_extension_completion(const bool final_response_pending,
                                            const bool extension_in_flight,
                                            const bool endpoint_busy,

@@ -29895,3 +29895,45 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: The user decides whether to align the tooling with INV-24 and
   whether to reference `SPEC.md` from `AGENTS.md`.
 - Artifacts/logs: `docs/archive/SPEC_draft_opus55_20261114.md`
+
+## 2026-11-14 HOST-01 long-uptime CCID retry fix 23
+
+- Step-Id: `20261114-2157-host01-ccid-retry-deadline`
+- Task: `HOST-01; MEM-01 T8 campaign image`
+- When: '2026-11-14 21:56 CET' - '2026-11-14 22:19 CET'
+- Model: `gpt-6`
+- Change: Replaced the implicit zero retry-deadline sentinel with an explicit
+  armed flag. A newly queued CCID response now retries immediately regardless
+  of `time_us_32()` uptime; subsequent 1 ms deadlines retain wrap-safe signed
+  comparison. Added tests for unarmed deadline after the signed half-range,
+  long-uptime deadlines, and 32-bit wraparound. Built and packaged a fresh
+  no-debug `max_crypto` acceptance image with object deletion ON and empty card
+  storage; refreshed EXT_REQUESTS, QKB and HANDOFF. `TODO.md` has current image
+  and HOST-01 edits in the working tree; it also contains pre-existing staged
+  SPEC changes, so it was deliberately excluded from this commit.
+- Validation: `./tools/test-ccid-progress-flow` passed `TEST:SUMMARY pass=35
+  fail=0`. `PICO2_ENABLE_OBJECT_DELETION=1
+  PICO2_DEBUG_HEAP_GC=0 PICO2_DEBUG_CCID_APPLET=0
+  PICO2_DEBUG_PERSISTENT_GC=0 PICO2_DEBUG_SERIAL_WAIT_MS=0
+  ./tools/build arm --profile max_crypto` passed with object deletion ON,
+  `mode=acceptance`, debug flags OFF, and `FLASH_LAYOUT:PASS`. The full ARM
+  build emits existing packed-member warnings in CHOUPI CAP headers and legacy
+  Java Card/Maven converter warnings; per the hardware gate, no flash was
+  attempted. `tools/package-empty-card-uf2` passed with 3,960 firmware and
+  4,096 erased-storage blocks. Final package `sha256sum --check` and ZIP
+  integrity checks passed. The approved reader helper granted three USB node
+  ACLs, but `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers` timed out after 20 s;
+  no physical flash or run was started.
+- Result: The D92 ≈45-minute `pending=1, in_busy=0, submit_errors=0` trace
+  matches the prior zero-deadline path after 2^31 us (35m 47.483648s), which
+  also returned before response-wait telemetry. Unit and build evidence
+  validate the fix; physical confirmation remains open.
+- Decision: Send the new image for external Windows option-2 testing; keep
+  HOST-01 open until a sustained fixed-image run passes. Continue MEM-01 T7
+  offline while PC/SC remains unavailable.
+- Artifacts/logs: UF2
+  `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ccid-deadline-805420e6.uf2`,
+  SHA-256 `5fa91117aeb6b2ac1c6ebb537447090016b27f0717bd14e528cd5d9437e4a6de`;
+  package `build/external-test/pico2-jcvm-object-deletion-nodebug-windows-ccid-deadline-805420e6.zip`,
+  SHA-256 `6a3e343eda7f88c6f845939cf94d71a5ca13d67dbc2b5d268bc1a64ccc0f8bf0`;
+  `.agent/EXT_REQUESTS.md`; unit output `TEST:SUMMARY pass=35 fail=0`.

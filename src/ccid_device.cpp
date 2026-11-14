@@ -92,6 +92,7 @@ bool pending_final_response = false;
 uint8_t pending_final_response_rhport = 0;
 uint16_t pending_final_response_length = 0;
 uint32_t pending_response_retry_after_us = 0;
+bool pending_response_retry_deadline_armed = false;
 uint8_t pending_response_submit_failures = 0;
 constexpr uint32_t kPendingResponseRetryIntervalUs = 1000;
 bool pending_out_rearm = false;
@@ -364,7 +365,11 @@ void service_pending_out_rearm() {
 
 void service_pending_final_response() {
   const uint32_t now = time_us_32();
-  if (static_cast<int32_t>(now - pending_response_retry_after_us) < 0) return;
+  if (choupi::pending_ccid_retry_deadline_waiting(
+          pending_response_retry_deadline_armed, now,
+          pending_response_retry_after_us))
+    return;
+  pending_response_retry_deadline_armed = true;
   pending_response_retry_after_us = now + kPendingResponseRetryIntervalUs;
   const bool endpoint_busy =
       usbd_edpt_busy(pending_final_response_rhport, ep_in);
@@ -533,6 +538,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   pending_final_response_length = transfer_length;
   pending_final_response = true;
   pending_response_submit_failures = 0;
+  pending_response_retry_deadline_armed = false;
   pending_response_retry_after_us = 0;
   service_pending_final_response();
 }
@@ -1160,6 +1166,7 @@ void driver_init() {
   pending_final_response_length = 0;
   pending_response_submit_failures = 0;
   pending_response_retry_after_us = 0;
+  pending_response_retry_deadline_armed = false;
   pending_out_rearm = false;
   pending_out_rearm_rhport = 0;
   pending_out_rearm_after_us = 0;
@@ -1189,6 +1196,7 @@ bool driver_deinit() {
   pending_final_response_length = 0;
   pending_response_submit_failures = 0;
   pending_response_retry_after_us = 0;
+  pending_response_retry_deadline_armed = false;
   pending_out_rearm = false;
   pending_out_rearm_after_us = 0;
   choupi_reader_led_set_reader_mode(false);
@@ -1207,6 +1215,7 @@ void driver_reset(uint8_t) {
   pending_final_response_length = 0;
   pending_response_submit_failures = 0;
   pending_response_retry_after_us = 0;
+  pending_response_retry_deadline_armed = false;
   pending_out_rearm = false;
   pending_out_rearm_rhport = 0;
   pending_out_rearm_after_us = 0;
@@ -1308,6 +1317,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     pending_final_response = false;
     pending_final_response_length = 0;
     pending_response_submit_failures = 0;
+    pending_response_retry_deadline_armed = false;
     native_extension_in_flight = false;
     native_extension_submitted_at_us = 0;
     queue_out(rhport);

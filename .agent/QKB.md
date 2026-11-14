@@ -128,6 +128,18 @@ Do not restart PC/SC while another test is active; service restart can interrupt
 
 Evidence: [E002](QKB_INDEX.md#e002), [E032](QKB_INDEX.md#e032), [E425](QKB_INDEX.md#e425), [E006](QKB_INDEX.md#e006).
 
+2026-11-14 HOST-01 code-level cause/fix for the D92 late-run queued response:
+`service_pending_final_response()` used a zero retry timestamp to mean
+"immediately due", then checked it with signed `time_us_32()` subtraction. At
+uptime ≥2^31 µs (35m 47.483648s), zero compares as a future deadline. A newly
+queued response therefore returns before submission; the response-wait trace
+below the same guard also never runs. This matches D92's ≈45-minute failure
+and `pending=1, in_busy=0, submit_errors=0`. The driver now tracks whether the
+retry deadline is armed explicitly; tests cover long uptime and timer wraparound
+(35/35 pass). This is a source-level diagnosis with strong trace correspondence,
+not yet physical confirmation. Validate the fresh acceptance UF2 in
+`EXT_REQUESTS.md` during a sustained option-2 run before closing HOST-01.
+
 2026-11-14 21:53 CET: the approved helper granted ACL access to three nodes
 (`/dev/bus/usb/001/074`, `/001/078`, `/001/077`), but the required bounded
 `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers` call timed out after 20 seconds
