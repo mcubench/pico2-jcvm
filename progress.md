@@ -30079,3 +30079,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Use the 1.8.5-generated reference for new comparisons; preserve the old CSV for historical reproducibility. REF-185-01 is complete.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv`; `artifacts/results/jcardsim-alg-support-1.8.5-reference/ALGTEST_log_1794698919589.log`; `artifacts/logs/jcardsim-alg-support-1.8.5-reference.log`; `artifacts/logs/jcardsim-alg-support-reference-comparison-20261115.txt`.
+
+## 2026-11-15 Refresh deletion-enabled Windows package 7 minutes
+
+- Step-Id: `20261115-0047-win-object-deletion-current`
+- Task: Prepare fresh external-test ARM `max_crypto` image with object deletion enabled
+- When: '2026-11-15 00:40 CET' - '2026-11-15 00:47 CET'
+- Model: `GPT-6`
+- Change: Rebuilt current source into a normal-mode ARM image with object deletion ON and all debug switches OFF; generated the empty-card UF2 and refreshed the external Windows package, provenance, checksums, request, and handoff. Source worktree remains dirty; unrelated changes were preserved.
+- Validation: `./tools/build arm --profile max_crypto` passed; `./tools/package-empty-card-uf2` passed; `./tools/fixture-path --verify` passed (`files=83`); package file checksum checks passed; `unzip -t` passed. No physical flash was attempted because no reader was enumerated in this step.
+- Result: UF2 SHA-256 `049b4eadf11a40ccae797a6564f4fb4baaeeb5eb017ec89bc8758497a4d2c5c5`; package SHA-256 `a60883c36effa810c54a392df1c7241ac03c3ecc332abbf0a95f4e888f8e3556`. Firmware end `0x100f7744`, 35,004 bytes remain. Build provenance confirms `object_deletion=ON`, `mode=normal`, zero wait, and debug OFF.
+- Decision: Use this package for external Windows validation; the older 7a396462 package is superseded. Physical/device acceptance remains open.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-2ba049c8-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-2ba049c8-dirty.zip`; `.agent/EXT_REQUESTS.md`.
