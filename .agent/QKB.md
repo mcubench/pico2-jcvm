@@ -128,6 +128,15 @@ Do not restart PC/SC while another test is active; service restart can interrupt
 
 Evidence: [E002](QKB_INDEX.md#e002), [E032](QKB_INDEX.md#e032), [E425](QKB_INDEX.md#e425), [E006](QKB_INDEX.md#e006).
 
+2026-11-14 21:53 CET: the approved helper granted ACL access to three nodes
+(`/dev/bus/usb/001/074`, `/001/078`, `/001/077`), but the required bounded
+`PICO2_HOST_USB_ACCESS=1 ./tools/list-readers` call timed out after 20 seconds
+with exit 124 and printed no inventory. No PC/SC client campaign was started,
+and no physical token was reset or flashed. This is the same distinction as
+the earlier events: granted USB-node access does not establish PC/SC reader
+publication. Continue offline and re-enumerate through the host path before
+any physical or VPCD PC/SC run; do not repeatedly poll the hanging service.
+
 2026-11-14 sustained-run reproduction on 8E (`8E464F4E2BBC0A19`): the
 physical option-2 client run lasted about 32 minutes and reached
 `TYPE_DES LENGTH_DES3_3KEY ALG_DES_ECB_ISO9797_M2 Cipher_init()`. JCAlgTest

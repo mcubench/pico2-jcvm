@@ -21,8 +21,12 @@ Updated: 2026-11-14.
 - Package SHA-256: `ea11fb0fd6274af68c9f7840c4ba2dc13dcae5a8eb2b9ea79997028c193ddeec`
 - ARM max_crypto acceptance build; object deletion ON, all debug flags OFF;
   empty persistent storage. Build and package checks passed; no hardware test.
-- User reports two boards reinserted in BOOTSEL. They were not enumerated or
-  accessed during image preparation; do not infer physical visibility.
+- User reports two boards reinserted in BOOTSEL. On 2026-11-14 the approved
+  helper granted three USB nodes, but `tools/list-readers` timed out after 20 s
+  with no inventory. No token was reset or flashed. Re-enumerate before any
+  hardware operation; node ACL access is not proof of a PC/SC reader.
+- `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0` in this session.
+  The VPCD JCAlgTest run was not started because bounded PC/SC enumeration hung.
 
 ## D92 exploratory run
 - D92 `D92E743D5F640C0F`: diagnostic image SHA-256

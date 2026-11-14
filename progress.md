@@ -29847,3 +29847,27 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Proceed with MEM-01 T7 before treating the image as T8 acceptance.
 - Artifacts/logs: `TODO.md`; UF2 SHA-256
   `88e620964a0a52a6d061f2a3c14f538227f11ba0962d6f32972d6bc534545b6e`.
+
+## 2026-11-14 MEM-01 T7 overlay regression refresh 4
+
+- Step-Id: `20261114-2153-mem01-t7-overlay-refresh`
+- Task: `MEM-01 T7; HOST-01 reader-publication evidence`
+- When: '2026-11-14 21:52 CET' - '2026-11-14 21:56 CET'
+- Model: `gpt-6`
+- Change: Re-ran the RP2350 fake-flash overlay suite against the current
+  worktree, and recorded the resulting PC/SC visibility blocker in QKB,
+  HANDOFF and TODO. The synthetic suite remains separate from VPCD/physical
+  JCAlgTest acceptance.
+- Validation: `./tools/test-rp2350-fs-overlay` completed with
+  `TEST:SUMMARY fail=0`. The approved `sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` helper reported access to three USB nodes;
+  `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers` (elevated host path) timed out
+  after 20 seconds with exit 124 and no reader inventory. No PC/SC client run,
+  token reset or flash was started.
+- Result: Overlay safety regressions pass; this does not satisfy T7's unchanged
+  JCAlgTest option-2 run to sync sequence 2,500. ACL access did not yield a
+  bounded reader listing, consistent with the unresolved HOST-01 failure class.
+- Decision: Continue offline source/overlay work; retry PC/SC only after a
+  concrete host/service state change, then run T7's exact VPCD client scenario.
+- Artifacts/logs: `build/tests/unit/rp2350-fs-overlay/`; reader-list command
+  output was `READERS:ERROR listing timed out after 20 s`, exit 124.
