@@ -1,3 +1,30 @@
+# Current handoff — MEM-01 T4/T5 reopened: prefix keep leaks — 2026-11-14 UTC
+
+Reviewer note (Claude Opus 5.5). The worker's VPCD harness on the RP2350 overlay
+backend (uncommitted) works, and it found a real leak. On a clean store, option 2
+fills the 96 KiB arena (`FS_WRITE_FAIL bytes=98287/98304`, then `F205`). Scans
+show `candidates=0`, and `reachable_alias` grows under one live object prefix.
+
+The cause is the prefix-wide alias subtree keep from T4/T5. My review wrote it
+as "protect every tag with prefix B". That retains superseded bodies under a
+live object forever (M12, see review doc §7). TODO.md T4/T5 are unticked and
+marked REOPENED.
+
+The worker's uncommitted `persistent_inventory.cpp` change is the correct
+direction: it removes the prefix keep and re-traces from alias targets. It is
+unvalidated, because its only run (`20261114T062133Z`) died after 75 lines in a
+Rust emulator ptrace panic (`stopsig 2`). That looks like an interrupted or
+host-side failure, not a VM verdict.
+
+Next:
+1. Rerun option 2 to completion with this change.
+2. Add a 500× field-reassignment regression.
+3. Keep the T4 missing-edge regression green.
+4. Commit the harness and the fix separately, with artifact paths.
+
+Do not run long hardware campaigns on `6c8e494b`..`HEAD` firmware until this is
+fixed. T1 repair and T2 logging remain open behind it.
+
 # Current handoff — MEM-01 T7 churn-test review — 2026-11-14 UTC
 
 Reviewer note (Claude Opus 5.5) on `93b6fef4`: the 1,030×8 overlay churn test is

@@ -306,3 +306,35 @@ fixtures.
 T1 → T2 → T7 → T3 → T4 → T5 → T6 → T8. T1/T2/T3 remove the permanent
 failure modes; T7 provides offline proof; T4/T5/T6 close live-data-loss
 risks; T8 is physical acceptance.
+
+## 7. Addendum 2026-11-14 — T4 as written causes a storage leak
+
+The T7 VPCD harness on the RP2350 overlay backend (unchanged JCAlgTest option 2)
+showed that the T4 suggestion "protect every tag with prefix `B`" is wrong.
+A live persistent object keeps its own prefix reachable. When one of its fields
+is reassigned, the superseded body (`field ‖ FF FE ‖ old id`) stays under that
+prefix, so a prefix-wide keep retains it forever. Evidence:
+`artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`
+- reclaimer scans with `candidates=0` and `reachable_alias` growing 18 → 76;
+- the overlay arena full at `98287/98304` bytes with 2,212 records (index only
+  27% used);
+- then `FS_WRITE_FAIL`, `6F00`, and repeated `F205`.
+
+This adds a twelfth defect:
+
+| # | Defect | Introduced by | Effect |
+|---|---|---|---|
+| M12 | Prefix-wide alias subtree keep retains superseded bodies under any live prefix | T4/T5 implementation (`6c8e494b`, `b219daf2`) following this review | Monotonic arena growth on a clean store; F205 after ~1,250 option-2 tests |
+
+Corrected T4/T5 rule:
+- Never protect by prefix. Use only "add `B` to the trace roots and re-trace."
+- Resolve each alias reachable from marked fields into a heap reference, then
+  extend marking from it.
+- After that, only unmarked tags are candidates, including old bodies under a
+  live prefix.
+- The direct body guard (`reachableAliasTargetsBody`) may stay as a cheap
+  backstop for the exact target only.
+
+Required regression: a live object whose object-field is reassigned 500 times
+with reclamation each time. The record count and bytes must stay constant, and
+the current body and its children must read back intact.

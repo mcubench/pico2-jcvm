@@ -923,3 +923,19 @@ Evidence: `docs/review_memory_analysis_opus55_20261113.md`;
 `artifacts/results/jcalgtest-1.8.5-ccid-recovery-20261113/D92E743D5F640C0F/serial.log`
 lines 3527–3580 and 14062+; 8E OOM at line 12905 of
 `artifacts/results/jcalgtest-1.8.4-resource01-20261112/8E464F4E2BBC0A19/option1-all-algorithms/serial.log`.
+
+## 2026-11-14 MEM-01: prefix-wide alias keep fills the arena on a clean store
+
+- Symptom: on the VPCD build with the RP2350 overlay backend
+  (`CHOUPI_PC_RP2350_FS_OVERLAY`), option 2 stops after ~1,256 CSV lines.
+  - The log shows `CHOUPI:FS_WRITE_FAIL … bytes=98287/98304`, then `6F00`, then
+    repeated `F205`.
+  - `OBJECT_DELETION:SCAN` always reports `candidates=0`, while
+    `reachable_alias` keeps growing.
+- Cause: the T4/T5 prefix keep (`hasTagPrefixRoot(tag, reachable_alias_targets)`).
+  It retains superseded bodies under a live object prefix forever.
+- Viable fix (pending validation): protect alias targets by re-tracing from
+  them (`extendReachableFrom`), never by prefix.
+- Diagnostics: `PICO2_GC_SCAN_DIAGNOSTICS=1` prints `ALIAS_ROOT` counts per
+  prefix. The prefix with a growing count is the leak.
+- Evidence: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`.

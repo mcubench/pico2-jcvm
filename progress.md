@@ -29292,3 +29292,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Extend the synthetic test (high occupancy, real graphs, integrity assert every cycle, ≥10 compactions with integrity-check timing, interrupted publish) alongside the VPCD wiring; T7 acceptance still requires unchanged JCAlgTest option 2 on the overlay backend.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: none.
+
+## 2026-11-14 MEM-01 VPCD overlay evidence review: T4/T5 prefix keep leaks 25 minutes
+
+- Step/experiment: `MEM-01-VPCD-REVIEW-20261114`
+- When: '2026-11-14 UTC' - '2026-11-14 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Reviewed the worker's uncommitted T7 VPCD overlay harness and its runs `artifacts/results/jcalgtest-support-vpcd-20261113T211216Z`..`20261114T062133Z`. Added review doc §7 (M12), reopened T4/T5 in TODO.md with a new status paragraph, and added a QKB entry and a top HANDOFF section. No source changes. Worker's uncommitted files were left untouched.
+- Validation: Log inspection only (`emulator.log`, `client.log`, CSV line counts). No builds, tests or hardware.
+- Result: On a clean store, option 2 on the RP2350 overlay backend fills the arena (`files=2212/8192 bytes=98287/98304`) after ~1,256 CSV lines, then `6F00` and 177–256 `F205`. Scans show `candidates=0`, and `reachable_alias` grows under live prefix `03013894FFFFFE000000420004FFFE0000004E`. Cause: the prefix-wide alias subtree keep (T4/T5 as specified by the review). The worker's uncommitted re-trace fix is unvalidated, because its only run ended in an emulator ptrace panic after 75 lines.
+- Decision: The T4/T5 prefix keep must be replaced with alias re-trace. Validate with a full option-2 VPCD run and a 500× field-reassignment regression before hardware campaigns. Order: T4/T5 rework → T7 commit → T1 repair → T2 remainder → T6 → T8.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261114T055811Z/emulator.log`.
