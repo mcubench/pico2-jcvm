@@ -34,6 +34,9 @@ extern "C" uint32_t rp2350_fs_test_live_record_count(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
     const uint8_t *tag, uint8_t tag_length, uint8_t header);
+extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
+    const uint8_t *tag, uint8_t tag_length);
+extern "C" uint8_t rp2350_fs_test_integrity_valid(void);
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
     const uint8_t *target_tag, uint8_t target_tag_length);
@@ -2832,6 +2835,62 @@ int main() {
                   restored_shared_b.size()) == 0;
   expect(corrupt_snapshot_fallback,
          "filesystem_restore_rejects_integrity_failure_and_uses_previous_snapshot");
+
+  // A self-consistent snapshot envelope can still contain an unreachable
+  // index slot. Reject that newest generation and restore the previous COW
+  // copy without discarding either serialized value.
+  fake_flash.fill(0xff);
+  std::array<uint8_t, sizeof(shared_offset_value_a)> restored_orphan_a{};
+  std::array<uint8_t, sizeof(shared_offset_value_b)> restored_orphan_b{};
+  bool orphan_snapshot_fallback =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+          FS_STATUS_OK &&
+      fs_write(shared_offset_b, sizeof(shared_offset_b),
+               shared_offset_value_b, sizeof(shared_offset_value_b)) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_move_slot_beyond_probe_gap(
+          shared_offset_b, sizeof(shared_offset_b)) == FS_STATUS_OK &&
+      rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK &&
+      fs_read(shared_offset_a, sizeof(shared_offset_a),
+              restored_orphan_a.data(), restored_orphan_a.size()) ==
+          FS_STATUS_OK &&
+      fs_read(shared_offset_b, sizeof(shared_offset_b),
+              restored_orphan_b.data(), restored_orphan_b.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(restored_orphan_a.data(), shared_offset_value_a,
+                  restored_orphan_a.size()) == 0 &&
+      std::memcmp(restored_orphan_b.data(), shared_offset_value_b,
+                  restored_orphan_b.size()) == 0 &&
+      rp2350_fs_test_compact() == FS_STATUS_OK;
+  expect(orphan_snapshot_fallback,
+         "filesystem_restore_recovers_probe_chain_corruption_from_previous_snapshot");
+
+  // A stored hash mismatch is detected before any tag lookup is trusted. The
+  // older COW snapshot remains usable after the damaged generation is rejected.
+  fake_flash.fill(0xff);
+  std::array<uint8_t, sizeof(shared_offset_value_a)> restored_hash_value{};
+  const bool hash_snapshot_fallback =
+      fs_init() == FS_STATUS_OK &&
+      fs_write(shared_offset_a, sizeof(shared_offset_a),
+               shared_offset_value_a, sizeof(shared_offset_value_a)) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK &&
+      rp2350_fs_test_corrupt_record_hash(
+          shared_offset_a, sizeof(shared_offset_a)) == FS_STATUS_OK &&
+      rp2350_fs_test_integrity_valid() == 0 && fs_sync() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK &&
+      fs_read(shared_offset_a, sizeof(shared_offset_a),
+              restored_hash_value.data(), restored_hash_value.size()) ==
+          FS_STATUS_OK &&
+      std::memcmp(restored_hash_value.data(), shared_offset_value_a,
+                  restored_hash_value.size()) == 0 &&
+      rp2350_fs_test_compact() == FS_STATUS_OK;
+  expect(hash_snapshot_fallback,
+         "filesystem_restore_recovers_hash_corruption_from_previous_snapshot");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the

@@ -104,7 +104,8 @@ size_t overlay_byte_limit(size_t file_count) {
 bool filesystem_payload_fits(size_t file_count, size_t bytes_used) {
   return bytes_used <= overlay_byte_limit(file_count);
 }
-bool overlay_integrity_valid();
+bool overlay_integrity_valid(const char **failure_reason = nullptr,
+                             uint16_t *failure_slot = nullptr);
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -506,7 +507,14 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
   }
   overlay_file_count = header->file_count;
   overlay_bytes_used = header->bytes_used;
-  if (!overlay_integrity_valid()) {
+  const char *integrity_reason = nullptr;
+  uint16_t integrity_slot = UINT16_MAX;
+  if (!overlay_integrity_valid(&integrity_reason, &integrity_slot)) {
+    std::printf("CHOUPI:FS_INTEGRITY_FAIL reason=%s slot=%u snapshot=%u\r\n",
+                integrity_reason == nullptr ? "unknown" : integrity_reason,
+                static_cast<unsigned>(integrity_slot),
+                static_cast<unsigned>(slot));
+    std::fflush(stdout);
     for (auto &entry : overlay) entry = OverlayFile{};
     overlay_file_count = 0;
     overlay_bytes_used = 0;
@@ -640,7 +648,8 @@ bool overlay_compresses_tag(const OverlayFile &file) {
 
 bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
                         uint8_t tag_length);
-bool overlay_integrity_valid();
+bool overlay_integrity_valid(const char **failure_reason,
+                             uint16_t *failure_slot);
 
 OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
                           size_t *found_slot = nullptr);
@@ -921,7 +930,15 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
 // Validate the index against the serialized arena before it is used for
 // reads, mutation, or compaction. The slot-order scratch array is safe here:
 // integrity checks run during restore and at compaction boundaries only.
-bool overlay_integrity_valid() {
+bool overlay_integrity_valid(const char **failure_reason,
+                             uint16_t *failure_slot) {
+  const auto fail = [&](const char *reason, uint16_t slot = UINT16_MAX) {
+    if (failure_reason != nullptr) *failure_reason = reason;
+    if (failure_slot != nullptr) *failure_slot = slot;
+    return false;
+  };
+  if (failure_reason != nullptr) *failure_reason = "unknown";
+  if (failure_slot != nullptr) *failure_slot = UINT16_MAX;
   size_t used_slots = 0;
   size_t serialized_slots = 0;
   size_t serialized_bytes = 0;
@@ -930,13 +947,13 @@ bool overlay_integrity_valid() {
     if (!overlay_is_used(file)) continue;
     ++used_slots;
     if (!overlay_has_storage(file)) {
-      if (overlay_has_record(file)) return false;
+      if (overlay_has_record(file)) return fail("record_without_storage", slot);
       continue;
     }
     ++serialized_slots;
     const uint32_t offset = overlay_offset(file);
     if (offset >= overlay_bytes_used || overlay_bytes_used - offset < 1) {
-      return false;
+      return fail("offset_out_of_bounds", slot);
     }
     const uint8_t header = overlay_bytes[offset];
     const size_t key_length = header & 0x7fu;
@@ -945,11 +962,12 @@ bool overlay_integrity_valid() {
         key_length > overlay_bytes_used - offset - 1 ||
         file.size > overlay_bytes_used - offset - 1 - key_length ||
         (!overlay_has_record(file) && file.size != 0)) {
-      return false;
+      return fail("record_bounds_or_flags", slot);
     }
     uint8_t tag[kMaxOverlayTagLength]{};
     uint8_t tag_length = 0;
-    if (!reconstruct_overlay_tag(slot, tag, &tag_length)) return false;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length))
+      return fail("tag_reconstruction", slot);
 
     // Every used slot must be reachable by ordinary linear probing from its
     // home bucket; an empty slot before it makes the entry invisible.
@@ -963,7 +981,7 @@ bool overlay_integrity_valid() {
       }
       probe = (probe + 1) % kMaxOverlayFiles;
     }
-    if (!reached) return false;
+    if (!reached) return fail("probe_chain", slot);
 
     // Multiple live records for one canonical tag make lookup dependent on
     // offsets and can hide a valid value behind a stale slot.
@@ -979,13 +997,13 @@ bool overlay_integrity_valid() {
       }
       probe = (probe + 1) % kMaxOverlayFiles;
     }
-    if (live_matches > 1) return false;
+    if (live_matches > 1) return fail("duplicate_live_tag", slot);
 
     erase_bucket_next[serialized_slots - 1] = slot;
     serialized_bytes += 1 + key_length + file.size;
   }
   if (used_slots != overlay_file_count || serialized_bytes != overlay_bytes_used)
-    return false;
+    return fail("count_or_bytes_used");
 
   std::sort(erase_bucket_next, erase_bucket_next + serialized_slots,
             [](uint16_t left, uint16_t right) {
@@ -995,11 +1013,12 @@ bool overlay_integrity_valid() {
   size_t expected_offset = 0;
   for (size_t index = 0; index < serialized_slots; ++index) {
     const auto &file = overlay[erase_bucket_next[index]];
-    if (overlay_offset(file) != expected_offset) return false;
+    if (overlay_offset(file) != expected_offset)
+      return fail("overlap_or_gap", erase_bucket_next[index]);
     expected_offset += 1 + (overlay_bytes[overlay_offset(file)] & 0x7fu) +
                        file.size;
   }
-  return expected_offset == overlay_bytes_used;
+  return expected_offset == overlay_bytes_used || fail("arena_tail");
 }
 
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
@@ -1180,6 +1199,16 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
   overlay_bytes[overlay_offset(*file)] = header;
   return FS_STATUS_OK;
 }
+extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
+    const uint8_t *tag, uint8_t tag_length) {
+  OverlayFile *file = find_overlay(tag, tag_length);
+  if (file == nullptr) return FS_STATUS_NO_SUCH_TAG;
+  file->hash ^= 0x0101;
+  return FS_STATUS_OK;
+}
+extern "C" uint8_t rp2350_fs_test_integrity_valid(void) {
+  return overlay_integrity_valid() ? 1 : 0;
+}
 extern "C" uint8_t rp2350_fs_test_share_record_offset(
     const uint8_t *source_tag, uint8_t source_tag_length,
     const uint8_t *target_tag, uint8_t target_tag_length) {
@@ -1280,7 +1309,13 @@ uint8_t compact_deleted_overlay_records() {
     return status;
   };
 #endif
-  if (!overlay_integrity_valid()) {
+  const char *integrity_reason = nullptr;
+  uint16_t integrity_slot = UINT16_MAX;
+  if (!overlay_integrity_valid(&integrity_reason, &integrity_slot)) {
+    std::printf("CHOUPI:FS_INTEGRITY_FAIL reason=%s slot=%u stage=compact\r\n",
+                integrity_reason == nullptr ? "unknown" : integrity_reason,
+                static_cast<unsigned>(integrity_slot));
+    std::fflush(stdout);
     return reject(FS_STATUS_IO_UNKNOWN, "overlay_integrity");
   }
   auto *bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);

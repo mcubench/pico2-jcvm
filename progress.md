@@ -29328,3 +29328,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep T7 unchecked until an appropriately bounded run demonstrates steady-state storage and completes the relevant client option; proceed offline to T1/T2 implementation in the meantime.
 - Commit: See Git commit containing this record (self-reference omitted).
 - Artifacts/logs: `build/choupi-pc-rp2350-overlay/choupi`, `artifacts/results/jcalgtest-support-vpcd-20261114T063317Z/emulator.log`.
+
+## 2026-11-14 MEM-01 T1 integrity diagnostics and COW fallback regressions 15 minutes
+
+- Step/experiment: `MEM-01-T1-INTEGRITY-FALLBACK-20261114`
+- When: '2026-11-14 07:05 UTC' - '2026-11-14 07:20 UTC'
+- Model: `GPT-6 Codex`
+- Change: `overlay_integrity_valid()` now reports invariant and slot details; restore and compaction emit one concise `FS_INTEGRITY_FAIL` diagnostic. Added regressions that corrupt the newest snapshot's probe-chain placement and stored hash, then confirm startup rejects that snapshot, restores the prior COW copy, retains the original values, and compacts successfully. Updated TODO, QKB and HANDOFF. Individual-record arena rebuild/quarantine remains incomplete.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; its generated CMake flags included `CHOUPI_PC_RP2350_FS_OVERLAY=1` because a pre-existing dirty `flashmemory.cpp` change guards the test reset symbol with that macro. `./tools/build arm` and `./tools/build riscv` passed. No emulator campaign or hardware access. The initially generated test build without that macro failed to link the pre-existing reset hook; it was corrected in the ignored build directory only.
+- Result: Semantic corruption in the latest snapshot is identified and safely falls back to the previous COW generation. Recovery does not yet reconstruct newer valid records from a damaged arena; T1 remains open.
+- Decision: Continue T1 with safe per-record salvage/quarantine and overlapping-record injection before moving to T2. Keep long VPCD campaigns stopped per user request.
+- Commit: See Git commit containing this record (self-reference omitted).
+- Artifacts/logs: `/tmp/mem01-t1-overlay.log`; no hardware logs.

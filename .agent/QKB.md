@@ -132,6 +132,22 @@ paths beyond this matrix.
 
 Evidence: [E360](QKB_INDEX.md#e360), [E089](QKB_INDEX.md#e089), [E288](QKB_INDEX.md#e288), [E297](QKB_INDEX.md#e297), [E342](QKB_INDEX.md#e342).
 
+## RP2350 overlay snapshot semantic corruption — fallback is safe but repair is incomplete
+
+`filesystem_slot_valid()` checks the snapshot envelope and CRC; semantic checks
+in `overlay_integrity_valid()` catch index/arena inconsistencies that can still
+exist in an otherwise self-consistent snapshot. The restore path rejects that
+generation and tries the older copy-on-write slot. It now emits one concise
+`CHOUPI:FS_INTEGRITY_FAIL reason=... slot=... snapshot=...` line. Tests inject
+an unreachable probe-chain entry and a stored-hash mismatch into the newest
+generation, then confirm values survive from the prior snapshot and compaction
+works. This protects the valid previous generation; it does not salvage newer
+valid records individually when the newest arena is damaged. Do not call T1
+complete until safe per-record rebuild/quarantine (or a documented no-safe-
+recovery outcome) is implemented and overlap corruption is exercised.
+
+Evidence: MEM-01 T1 regression and validation record in [progress](../progress.md).
+
 ## CAP Class external references — validate Import token bounds before storage
 
 External superclass references in Class records and external superinterface
