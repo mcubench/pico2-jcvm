@@ -419,8 +419,10 @@ int main(const int argc, char **argv) {
     uint32_t bytes_used = 0;
     uint32_t capacity = 0;
     choupi_persistent_memory_usage(&file_count, &bytes_used, &capacity);
-    std::printf("OVERLAY_INSPECT:PASS files=%u bytes=%u capacity=%u available=%u\n",
-                file_count, bytes_used, capacity,
+    const uint32_t live_record_count = rp2350_fs_test_live_record_count();
+    std::printf("OVERLAY_INSPECT:PASS slots=%u live_records=%u bytes=%u "
+                "capacity=%u available=%u\n",
+                file_count, live_record_count, bytes_used, capacity,
                 choupi_available_persistent_memory_bytes());
 
     fs_tag_next_request_t cursor{};
@@ -455,10 +457,10 @@ int main(const int argc, char **argv) {
       ++records;
       payload_bytes += length;
     }
-    if (records != file_count) {
+    if (records != live_record_count) {
       std::fprintf(stderr,
                    "OVERLAY_INSPECT:FAIL enumerated=%u expected=%u\n",
-                   records, file_count);
+                   records, live_record_count);
       return 1;
     }
     std::printf("OVERLAY_INSPECT:SUMMARY records=%u payload_bytes=%llu\n",

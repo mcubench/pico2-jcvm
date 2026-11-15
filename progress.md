@@ -30457,3 +30457,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 4,127,232 bytes, SHA-256 `91288e4963b1baa3d6959dcf1da30178c4d5ffbac5c22d83e7a0c1a45c931e96`; ZIP SHA-256 `63fbae1ce480594952452533f78b6b71029adf0bcd49a6100745f827c4260a02`. Linked end `0x100f7b08`, 34,040 bytes remain. CPLC source ID is `D508CAE82A46CF51`; worktree/submodule dirty state is disclosed in package provenance.
 - Decision: Deliver this as the current external Windows test candidate with object deletion ON and empty card. It includes the tag-prefix storage change but is not physical acceptance evidence. Continue the separate fresh-client VPCD option-2 run and await external Windows results for this exact hash.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d508cae8-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-d508cae8.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8`.
+
+## 2026-11-15 VPCD memory-headroom checkpoint and overlay inspection 25 minutes
+
+- Step-Id: `20261115-1400-mem01-vpcd-peak`
+- Task: `MEM-01 T7/T10`
+- When: '2026-11-15 13:35 CET' - '2026-11-15 14:00 CET'
+- Model: `gpt-6`
+- Change: Ran the unchanged 1.8.5 JCAlgTest client and 1.8.4/jc305 CAP against fresh deletion-enabled VPCD + RP2350 overlay through the previous F205 point. Corrected the host overlay inspector to compare its cursor enumeration with live records, rather than all hash/index slots (which include tombstones). Updated TODO and QKB with results and the remaining acceptance scope.
+- Validation: The previous failing RSA-CRT-private 2048 / ISO14888 `Cipher_doFinal()` and `Cipher_init()` both returned `9000`. Four `AUTO_TRIGGER` / `AUTO_COMPACT status=0 erased=8` cycles peaked at 77,865–78,075 / 98,304 bytes (79.2–79.4%). Post-stop `./tools/inspect-rp2350-overlay artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/rp2350-overlay.flash` passed integrity and enumerated 1,514 live records; 1,847 index slots, 73,245 bytes used, 58,385 payload bytes, 25,059 available. ARM/overlay regression validation is in the prior step record.
+- Result: The previous resource failure did not recur through its exact failing APDUs, and measured trigger peaks stayed below 80%. The client had completed 4,014 object-deletion service calls. I interrupted at a later RSA-public-3072 case to stop the bounded diagnostic; client removal/`IllegalArgumentException`, `F105` during teardown, and the emulator ptrace panic followed interruption. No `F205` or `FS_WRITE_FAIL` preceded it. This is partial VPCD evidence only, not hardware acceptance or a complete option-2 plateau run.
+- Decision: The memory-headroom fix clears the previously observed failure point in VPCD and demonstrates reclaim/compaction under load. Keep MEM-01 T7/T10 open for longer live-byte plateau telemetry and physical T8; use the current D508CAE8 external image for Windows testing.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/{client.log,emulator.log,rp2350-overlay.flash}`; `OVERLAY_INSPECT` output `/tmp/vpcd-overlay-post.log`.
