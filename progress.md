@@ -30223,3 +30223,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `740801210d2601891a5610e4cae5e67da516b49a50d30723cb918e96a0b43b97`; Windows ZIP SHA-256 `398b13dcf3248bcadd52006c29b197ae7fb154e6739ad1404760a53c72135e21`. Package provenance captures HEAD `252162925b44b32675b2f57bd5ed5bb3b94c712d` plus tracked dirty diff and dependency commits.
 - Decision: Hand this exact image to external Windows testing; require hash confirmation, empty-card/reader check, explicit CAP installation, and separate per-device option-2/option-1 campaign artifacts. This is build/package validation, not physical acceptance.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-25216292-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-25216292-dirty.zip`; package README and `BUILD-PROVENANCE.txt`.
+
+## 2026-11-15 MEM-01 reviewer check: leak fix evidence and headroom risk 20 minutes
+
+- Step-Id: `20261115-0900-mem01-review-headroom`
+- Task: `MEM-01 review (T7/T8, new T10)`
+- When: '2026-11-15 UTC' - '2026-11-15 UTC'
+- Model: `Claude Opus 5.5 (claude-opus-5-5)`
+- Change: Reviewed 38 commits since the previous reviewer check (`8a59986a`), the MEM-01 progress records (8E partial T8, D92 stress trace, captured-APDU overlay replays, watermark runs), and the reclaim trigger sites in `choupi/src/main.cpp`. Added a reviewer note and new task T10 (M13 exhaustion headroom) to TODO.md MEM-01, and one HANDOFF next-action item. No source changes.
+- Validation: Inspection of commits, progress records, `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/emulator.log`, `choupi/src/main.cpp` and `persistent_inventory.hpp`. No builds, tests, emulator or hardware.
+- Result: The post-cleanup store is stable at 367 files / 15.3–15.5 KB across replay cycles, so the T4/T5 leak is fixed at the VM/storage level. The pre-cleanup peak is 81,775 / 98,304 bytes (≈83%). Reclaim runs only on applet request, at 8 records per APDU, with no reclaim-on-exhaustion path. The 8E partial physical run (668 rows) had no F205 and ended on PC/SC reader loss (HOST-01).
+- Decision: The fresh-client T7 run and T8 stay the gates. Record the peak watermark in them, and add exhaustion-triggered reclaim (T10) after the T7 run, or earlier if a run hits the limit.
+- Artifacts/logs: `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
