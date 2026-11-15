@@ -30333,3 +30333,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The four-device guard remains intact; no exact physical reader identity is available. Continue offline while waiting for reader enumeration to recover.
 - Decision: Do not bypass the helper or operate on an unidentified device. Resume PC/SC client and physical campaigns only after bounded enumeration succeeds.
 - Artifacts/logs: `.agent/EXT_REQUESTS.md` request `HOST01-READER-COUNT-20261115`; `.agent/QKB.md` PC/SC helper limit entry.
+
+## 2026-11-15 Build current deletion-enabled external image 8 minutes
+
+- Step-Id: `20261115-0927-build-maxcrypto-deletion`
+- Task: `MEM-01 T7` external test preparation
+- When: '2026-11-15 09:27 CET' - '2026-11-15 09:35 CET'
+- Model: `gpt-6`
+- Change: Rebuilt the ARM `max_crypto` firmware from current HEAD `e9c4deb3` plus the existing tracked worktree changes. Packaged it as a no-debug, normal-mode, object-deletion-enabled, empty-card UF2 and refreshed its Windows test package, provenance, checksums, and external request.
+- Validation: `./tools/build arm --profile max_crypto` passed; linked end `0x100f7920`, 34,528 bytes remain. `./tools/package-empty-card-uf2` passed with 3,962 firmware blocks and 4,096 erased storage blocks. `./tools/fixture-path --verify`, package manifest checksums, and ZIP integrity passed. No physical device was flashed or tested.
+- Result: UF2 SHA-256 `8615f92c94a902e04af14f9690fc7032609ae61fc476ad4526c2b949d0cba273` (4,126,208 bytes); package ZIP SHA-256 `f9ef8641dd7bbd888aa0c1c32f822f4baa4489653cc491114eafd2fd9f4d74bf`. The package contains unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied 1.8.5 client. It includes the low-watermark compaction fix.
+- Decision: Use this UF2 for the next external option-2 run. This is build/package validation only, not device acceptance; source worktree was dirty and is fully identified in `BUILD-PROVENANCE.txt`.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-e9c4deb3-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-e9c4deb3.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3` in `.agent/EXT_REQUESTS.md`.

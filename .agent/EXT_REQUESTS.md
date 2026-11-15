@@ -1,5 +1,34 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3 — Test current deletion-enabled image
+
+Created 2026-11-15 09:30 CET. This request supersedes
+`WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F` for new uploads. Use the fresh
+normal ARM `max_crypto` image built from current HEAD `e9c4deb3` plus the
+tracked worktree changes. Object deletion and low-watermark compaction are ON;
+all debug/trace flags and startup wait are OFF. Persistent storage is erased,
+and no applet is preinstalled.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-e9c4deb3-current.uf2)
+- UF2 SHA-256: `8615f92c94a902e04af14f9690fc7032609ae61fc476ad4526c2b949d0cba273`; size 4,126,208 bytes.
+- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-e9c4deb3.zip)
+- ZIP SHA-256: `f9ef8641dd7bbd888aa0c1c32f822f4baa4489653cc491114eafd2fd9f4d74bf`.
+- Exact source/submodule/build identities and input hashes are in the package's `BUILD-PROVENANCE.txt`.
+- ARM build passed; linked end `0x100f7920`, leaving 34,528 bytes. Empty-card packaging and ZIP integrity passed. No physical flash or Windows test was performed here.
+
+Unzip the package and follow its `README.md`: verify the UF2 hash in PowerShell,
+flash through BOOTSEL, confirm the empty card, and explicitly install the
+unchanged upstream JCAlgTest 1.8.4/jc305 CAP with GPPro. Run option 2 with the
+included supplied 1.8.5 client. Return the full result directory and serial
+log, Windows version, reader/ATR, chip ID, exact firmware hash, and any
+disconnects, resets, stalls, or timeouts.
+
+## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F
+
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3` above for new testing. Its
+image predates the current checkout and should be retained only as historical
+evidence.
+
 ## HOST01-READER-COUNT-20261115 — Restore bounded Pico reader inventory
 
 Created 2026-11-15 09:25 CET. The approved helper currently detects four matching `2e8a:0009 Pico2 JCVM CCID` devices, exceeds its supported 1–3 device range, and refuses ACL changes. The subsequent bounded reader listing times out, so no device can be safely identified for the fresh-client or physical test.
