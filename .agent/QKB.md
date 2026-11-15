@@ -1268,3 +1268,20 @@ missing inventory output as a successful count of object roots. Either adjust
 the diagnostic predicate to cover vector-root graphs or obtain alias-root
 telemetry through the unchanged-client VPCD run. Reader enumeration remains
 blocked separately.
+
+## 2026-11-15 Captured option-2 reader-loss sequence succeeds in VPCD replay
+
+The complete 1,972-command APDU transcript from physical 2BED's option-2
+session was replayed from an empty card through the PC emulator with object
+deletion enabled and the RP2350 filesystem overlay backend. The first 1,968
+responses matched the source except for the two known pre-selection GET DATA
+differences. The four commands that had no source response completed as reset
+`9000`, measure `AA9000`, reset `9000`, and prepare `AA9000`. Replay logged no
+F205/NO_RESOURCE, filesystem failure, alias-protection warning, unexpected
+status, or VM fault; all sampled overlay syncs succeeded. This means the
+captured applet/storage sequence does not reproduce the physical failure in
+the emulator. It cannot test USB bulk-IN completion, CCID endpoint recovery,
+or Windows/Linux PC/SC publication, so it does not close HOST-01 or MEM-01
+acceptance. Preserve the physical transport diagnosis as unresolved rather
+than attributing the reader loss to those applet commands. Evidence:
+`artifacts/results/t7-option2-aes192-full-capture-20261115/`.

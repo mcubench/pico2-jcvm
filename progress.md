@@ -30139,3 +30139,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Repeated captured traffic reaches real overlay sync, deletion, compaction and heap-root code paths without an observed resource failure, but it is synthetic replay and ends before the original session's unrecorded failing tail. It does not satisfy fresh-client T7 or physical T8 acceptance.
 - Decision: Keep T7/T8 open. Use a fresh unchanged-client option-2 VPCD campaign when reader enumeration works; preserve cyclic and same-phase measurements as diagnostic evidence only.
 - Artifacts/logs: `build/tests/jcalgtest/option2-1.8.5-2bed-1968-apdu-loop3.log` SHA-256 `c077a5923f3f04b6644472860cd0c6b1820b4a13be419e5c69fa122709bf68f3`; `artifacts/results/t7-option2-aes192-loop3-20261115/emulator.log`; `artifacts/results/resource01-apdu-replay-vpcd-20261115T002517Z/replay.log`.
+
+## 2026-11-15 Replay complete captured T7 failure sequence 11 minutes
+
+- Step-Id: `20261115-0144-mem01-t7-full-replay`
+- Task: MEM-01 T7 diagnostic replay of the physical option-2 failure point
+- When: '2026-11-15 01:44 CET' - '2026-11-15 01:55 CET'
+- Model: `GPT-6`
+- Change: Replayed the complete captured 2BED option-2 APDU sequence from a fresh empty-card emulator state through the RP2350 filesystem overlay, including the four commands whose physical responses were lost. Updated TODO, QKB and handoff with the result and transport limitation. The replay modified no firmware or CAP source.
+- Validation: Bounded at APDU 1972 with 60-second per-APDU and 1,200-second suite limits. All 1,972 commands completed; the first 1,968 captured responses matched except two known pre-selection GET DATA differences. The final four commands returned reset `9000`, measure `AA9000`, reset `9000`, prepare `AA9000`. There were zero F205/NO_RESOURCE, FS_WRITE_FAIL, FS_COMPACT_REJECT, alias-protect, unexpected status or FAULT markers; all 29 sampled overlay syncs returned status 0. Deletion logged 1,127 calls/status rows and erased 2,260 applet tags (maximum batch 8). This was local VPCD replay, not physical USB/CCID/PCSC testing.
+- Result: The captured applet/storage workload does not reproduce the physical failure in this emulator state. This narrows the issue but does not identify the physical transport cause or establish a fresh-client campaign.
+- Decision: Keep T7 live-client and T8 physical acceptance open. Next obtain bounded reader enumeration, then run a fresh option-2 client session; do not infer CCID success from VPCD.
+- Artifacts/logs: `artifacts/results/t7-option2-aes192-full-capture-20261115/replay-summary.txt`, `emulator.log`, `source-client.log`, `overlay.flash`; source log SHA-256 `f8877260315b953ef01684cc3323fdddffeff2b8ee8e09e952a51770fc65e1f5`.

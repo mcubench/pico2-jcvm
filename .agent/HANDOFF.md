@@ -13,7 +13,7 @@ Updated: 2026-11-15.
 
 ## Next actions
 1. Await the external Windows run. Match every result to the UF2 hash; collect Windows version, reader/ATR, chip ID, complete client results and serial log.
-2. MEM-01 T7 live-client VPCD and T8 physical acceptance remain open. A synthetic replay of a captured 1,968-APDU option-2 prefix ran three times (5,904 APDUs) through the RP2350 overlay with no resource/FS errors and repeated reclamation; byte use is cyclic with same-phase peaks ~79.5, 81.8 and 82.7 KiB, but this is not the fresh-client gate. See TODO and replay artifacts for exact bounds.
+2. MEM-01 T7 live-client VPCD and T8 physical acceptance remain open. The full 1,972-command 2BED option-2 transcript was replayed from an empty card through the RP2350 overlay; the four commands lacking source responses all succeeded, with no VM/storage failures. This does not exercise CCID/PCSC transport. The three-loop synthetic replay also showed repeated reclamation and similar same-phase peaks (~79.5, 81.8, 82.7 KiB) but not flat raw bytes. See TODO and `artifacts/results/t7-option2-aes192-full-capture-20261115/`.
 3. CAPIN-01 APDU-level PC VPCD validation passed: malformed LOAD returned `6A80`, GET STATUS excluded it while retaining the control package, and control DELETE returned `9000`. Physical acceptance remains open.
 
 ## Hardware access
