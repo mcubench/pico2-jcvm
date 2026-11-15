@@ -1356,3 +1356,18 @@ now leaves the deletion request pending until both the stack is empty and
 policy coverage checks no request, live Java frames, active transaction, and a
 safe boundary. This is a safety prerequisite for MEM-01 T10, not automatic
 low-watermark reclamation or a retry of a failed write.
+
+## Automatic object deletion must compact arena tombstones — 2026-11-15
+
+The RP2350 overlay records `fs_erase()` as deleted index entries until the
+arena is compacted. A safe-point low-watermark sweep that only erases object
+records can therefore keep the live object count bounded while raw arena use
+continues to climb. At an empty-stack APDU boundary, when no persistent-write
+transaction is active, the automatic deletion path now compacts deleted
+records while an automatic sweep is pending and free space remains at or below
+20 KiB. The fake-flash overlay regression created 8,240 unreachable objects
+in 1,030 APDUs; it reclaimed all 8,240 after allocation stopped and the pending
+sweep drained over 695 boundaries. The live root survived; max raw use was
+77,852/98,304 bytes (79.2%). This is not physical proof; still validate on
+hardware with an unchanged long JCAlgTest run. Direct failed-write retry is
+still unsafe from the live Java stack and remains a separate design task.

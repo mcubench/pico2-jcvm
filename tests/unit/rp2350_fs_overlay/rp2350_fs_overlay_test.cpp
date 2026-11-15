@@ -2,6 +2,7 @@
 #include "cap_store.hpp"
 #include "flash_layout.hpp"
 #include "vm_filesystem.h"
+#include "object_deletion_policy.hpp"
 #include "gp_lifecycle_recovery.hpp"
 #include "jc_handlers/flashmemory.hpp"
 #include "persistent_inventory.hpp"
@@ -1536,10 +1537,10 @@ int main() {
   std::printf("TEST:METRIC persistent_reclamation_orphan_tags=%zu cuts=1000\n",
               reclamation_candidate_records.size());
 
-  // Drive object deletion repeatedly through the RP2350 overlay backend.
-  // The PC emulator uses a different Rust filesystem, so this focused run
-  // validates that the production overlay snapshot/compaction path itself
-  // reaches a stable live-record count under sustained object churn.
+  // Simulate automatic low-watermark object deletion on the RP2350 overlay.
+  // The producer never calls requestObjectDeletion(): it adds persistent
+  // garbage once per APDU, while the runtime policy requests a bounded batch
+  // only after the available arena falls below its low-watermark.
   fake_flash.fill(0xff);
   constexpr uint8_t overlay_churn_owner = 0x4a;
   constexpr uint8_t overlay_churn_root_tag[] = {
@@ -1548,13 +1549,22 @@ int main() {
   constexpr uint32_t overlay_churn_cycles = 1030;
   constexpr uint8_t overlay_churn_objects_per_cycle = 8;
   bool overlay_churn_ok = fs_init() == FS_STATUS_OK;
-  size_t overlay_churn_plateau_live_records = 0;
+  size_t overlay_churn_expected_live_records = 0;
   size_t overlay_churn_final_index_slots = 0;
   size_t overlay_churn_min_available =
       std::numeric_limits<size_t>::max();
+  size_t overlay_churn_peak_bytes = 0;
+  size_t overlay_churn_peak_files = 0;
+  uint32_t overlay_churn_auto_requests = 0;
+  uint32_t overlay_churn_erased = 0;
+  bool overlay_churn_deletion_pending = false;
+  bool overlay_churn_auto_active = false;
+  pico2_jcvm::AutomaticObjectDeletionThrottle overlay_churn_throttle;
   for (uint32_t cycle = 0; cycle < overlay_churn_cycles && overlay_churn_ok;
        ++cycle) {
+    size_t bytes_before_reclaim = 0;
     try {
+      overlay_churn_throttle.on_apdu_boundary();
       jcvm::Context context(overlay_churn_owner, overlay_churn_owner);
       const auto previous_context = jcvm::Context::setActiveContext(&context);
       auto &heap = context.getHeap();
@@ -1580,8 +1590,6 @@ int main() {
             getPersistentField_ReferenceStrict(root_tag, heap);
       }
 
-      std::vector<std::array<uint8_t, 6>> garbage_tags;
-      garbage_tags.reserve(overlay_churn_objects_per_cycle);
       for (uint8_t index = 0; index < overlay_churn_objects_per_cycle;
            ++index) {
         const auto garbage_reference =
@@ -1591,50 +1599,69 @@ int main() {
         garbage->setByteEntry(1, index);
         garbage->setByteEntry(2, static_cast<uint8_t>(~cycle));
         garbage->setByteEntry(3, static_cast<uint8_t>(~index));
-        garbage_tags.push_back(
-            {0x03, overlay_churn_owner, 0x30,
-             static_cast<uint8_t>(cycle >> 8), static_cast<uint8_t>(cycle),
-             index});
+        const std::array<uint8_t, 6> garbage_tag{
+            0x03, overlay_churn_owner, 0x30,
+            static_cast<uint8_t>(cycle >> 8), static_cast<uint8_t>(cycle),
+            index};
         jcvm::fs::Tag tag{};
-        tag.len = garbage_tags.back().size();
-        std::memcpy(tag.value, garbage_tags.back().data(), tag.len);
+        tag.len = garbage_tag.size();
+        std::memcpy(tag.value, garbage_tag.data(), tag.len);
         jcvm::FlashMemory_Handler::setPersistentField_Array(tag, *garbage,
                                                             heap);
       }
 
+      bytes_before_reclaim = rp2350_fs_test_overlay_bytes_used();
+      const size_t files_before_reclaim =
+          rp2350_fs_test_overlay_file_count();
+      overlay_churn_peak_bytes =
+          std::max(overlay_churn_peak_bytes, bytes_before_reclaim);
+      overlay_churn_peak_files =
+          std::max(overlay_churn_peak_files, files_before_reclaim);
+      const uint32_t available_before_reclaim =
+          choupi_available_persistent_memory_bytes();
+      if (pico2_jcvm::should_request_automatic_object_deletion(
+              available_before_reclaim, overlay_churn_deletion_pending, true,
+              false, overlay_churn_throttle.cooldown_apdus == 0)) {
+        overlay_churn_deletion_pending = true;
+        overlay_churn_auto_active = true;
+        ++overlay_churn_auto_requests;
+      }
+
       const std::vector<jcvm::jref_t> roots{root_reference};
       ReclaimerRootContext root_context{&roots};
-      std::vector<jcvm::PersistentInventory::Tag> candidates;
-      const auto inventory =
-          jcvm::PersistentInventory::visitUnreachableAppletTags(
-              overlay_churn_owner, heap, enumerate_reclaimer_roots,
-              &root_context, collect_reclaimer_candidate, &candidates);
-      uint32_t erased = 0;
-      const auto reclaimed =
-          inventory == jcvm::PersistentInventory::VisitResult::Complete &&
-                  !candidates.empty()
-              ? jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
-                    overlay_churn_owner, heap, enumerate_reclaimer_roots,
-                    &root_context, &erased)
-              : jcvm::PersistentInventory::VisitResult::InvalidArgument;
-      overlay_churn_ok = inventory ==
-              jcvm::PersistentInventory::VisitResult::Complete &&
-          !candidates.empty() &&
-          reclaimed == jcvm::PersistentInventory::VisitResult::Complete &&
-          erased == candidates.size() && fs_sync() == FS_STATUS_OK;
-      if (!overlay_churn_ok) {
-        std::printf("TEST:INFO rp2350_overlay_object_deletion stage=reclaim cycle=%u inventory=%u candidates=%zu result=%u erased=%u\n",
-                    static_cast<unsigned>(cycle),
-                    static_cast<unsigned>(inventory), candidates.size(),
-                    static_cast<unsigned>(reclaimed),
-                    static_cast<unsigned>(erased));
-      }
-      if (overlay_churn_ok) {
-        for (const auto &candidate : candidates) {
-          overlay_churn_ok = overlay_churn_ok &&
-              fs_exists(candidate.value, candidate.len) == 0;
+      uint32_t erased_this_cycle = 0;
+      if (overlay_churn_deletion_pending) {
+        const auto batch =
+            jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+                overlay_churn_owner, overlay_churn_owner, heap,
+                enumerate_reclaimer_roots, &root_context,
+                jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
+        erased_this_cycle = batch.erasedTotal();
+        overlay_churn_erased += erased_this_cycle;
+        if (overlay_churn_auto_active && erased_this_cycle != 0 &&
+            available_before_reclaim <=
+                pico2_jcvm::kObjectDeletionLowWatermarkBytes &&
+            choupi_compact_persistent_memory() != FS_STATUS_OK) {
+          overlay_churn_ok = false;
+        }
+        if (batch.complete()) {
+          overlay_churn_deletion_pending = false;
+          overlay_churn_auto_active = false;
+          overlay_churn_throttle.completed(erased_this_cycle);
+        } else if (batch.erased_applet == 0 && batch.erased_package == 0 &&
+                   batch.applet_result !=
+                       jcvm::PersistentInventory::VisitResult::Stopped &&
+                   batch.package_result !=
+                       jcvm::PersistentInventory::VisitResult::Stopped) {
+          overlay_churn_ok = false;
+          std::printf("TEST:INFO rp2350_overlay_object_deletion "
+                      "stage=batch_failure cycle=%u applet=%u package=%u\n",
+                      static_cast<unsigned>(cycle),
+                      static_cast<unsigned>(batch.applet_result),
+                      static_cast<unsigned>(batch.package_result));
         }
       }
+      overlay_churn_ok = overlay_churn_ok && fs_sync() == FS_STATUS_OK;
       if (overlay_churn_ok) {
         auto root = heap.getArray(root_reference);
         overlay_churn_ok = root != nullptr &&
@@ -1659,27 +1686,92 @@ int main() {
           std::min(overlay_churn_min_available, available);
       overlay_churn_final_index_slots =
           rp2350_fs_test_overlay_file_count();
-      if (cycle == 0) overlay_churn_plateau_live_records = live_records;
-      overlay_churn_ok = live_records == overlay_churn_plateau_live_records &&
-          available != 0;
+      overlay_churn_expected_live_records =
+          1 + (static_cast<size_t>(cycle) + 1) *
+                  overlay_churn_objects_per_cycle -
+          overlay_churn_erased;
+      overlay_churn_ok =
+          live_records == overlay_churn_expected_live_records &&
+          available != 0 &&
+          bytes_before_reclaim <= (96u * 1024u * 9u) / 10u;
       if (!overlay_churn_ok) {
-        std::printf("TEST:INFO rp2350_overlay_object_deletion stage=plateau cycle=%u expected_live=%zu actual_live=%zu index_slots=%zu available=%zu\n",
+        std::printf("TEST:INFO rp2350_overlay_object_deletion "
+                    "stage=watermark cycle=%u expected_live=%zu "
+                    "actual_live=%zu index_slots=%zu available=%zu "
+                    "bytes=%zu\n",
                     static_cast<unsigned>(cycle),
-                    overlay_churn_plateau_live_records, live_records,
-                    overlay_churn_final_index_slots, available);
+                    overlay_churn_expected_live_records, live_records,
+                    overlay_churn_final_index_slots, available,
+                    bytes_before_reclaim);
       }
     }
   }
-  overlay_churn_ok = overlay_churn_ok && fs_init() == FS_STATUS_OK &&
+  uint32_t overlay_churn_drain_cycles = 0;
+  for (; overlay_churn_deletion_pending && overlay_churn_ok &&
+         overlay_churn_drain_cycles < 2048;
+       ++overlay_churn_drain_cycles) {
+    try {
+      overlay_churn_throttle.on_apdu_boundary();
+      jcvm::Context context(overlay_churn_owner, overlay_churn_owner);
+      const auto previous_context = jcvm::Context::setActiveContext(&context);
+      jcvm::fs::Tag root_tag{};
+      root_tag.len = sizeof(overlay_churn_root_tag);
+      std::memcpy(root_tag.value, overlay_churn_root_tag, root_tag.len);
+      const auto root_reference =
+          jcvm::FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root_tag, context.getHeap());
+      const std::vector<jcvm::jref_t> roots{root_reference};
+      ReclaimerRootContext root_context{&roots};
+      const auto batch =
+          jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+              overlay_churn_owner, overlay_churn_owner, context.getHeap(),
+              enumerate_reclaimer_roots, &root_context,
+              jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
+      overlay_churn_erased += batch.erasedTotal();
+      if (batch.erasedTotal() != 0 &&
+          choupi_available_persistent_memory_bytes() <=
+              pico2_jcvm::kObjectDeletionLowWatermarkBytes) {
+        overlay_churn_ok =
+            choupi_compact_persistent_memory() == FS_STATUS_OK;
+      }
+      if (batch.complete()) {
+        overlay_churn_deletion_pending = false;
+        overlay_churn_auto_active = false;
+        overlay_churn_throttle.completed(batch.erasedTotal());
+      } else if (batch.erasedTotal() == 0 &&
+                 batch.applet_result !=
+                     jcvm::PersistentInventory::VisitResult::Stopped &&
+                 batch.package_result !=
+                     jcvm::PersistentInventory::VisitResult::Stopped) {
+        overlay_churn_ok = false;
+      }
+      overlay_churn_ok = overlay_churn_ok && fs_sync() == FS_STATUS_OK;
+      jcvm::Context::setActiveContext(previous_context);
+    } catch (...) {
+      overlay_churn_ok = false;
+    }
+  }
+  overlay_churn_expected_live_records = 1;
+  overlay_churn_ok = overlay_churn_ok && overlay_churn_auto_requests != 0 &&
+      overlay_churn_erased != 0 && !overlay_churn_deletion_pending &&
+      fs_init() == FS_STATUS_OK &&
       rp2350_fs_test_live_record_count() ==
-          overlay_churn_plateau_live_records;
+          overlay_churn_expected_live_records;
   expect(overlay_churn_ok,
-         "rp2350_overlay_object_deletion_1030_cycles_reclaims_and_plateaus");
-  std::printf("TEST:METRIC rp2350_overlay_object_deletion cycles=%u objects_per_cycle=%u live_records=%zu min_available_bytes=%zu\n",
+         "rp2350_overlay_low_watermark_reclaims_without_applet_request");
+  std::printf("TEST:METRIC rp2350_overlay_auto_reclaim cycles=%u "
+              "objects_per_cycle=%u live_records=%zu erased=%u "
+              "triggers=%u min_available_bytes=%zu peak_bytes=%zu "
+              "peak_files=%zu\n",
               static_cast<unsigned>(overlay_churn_cycles),
               static_cast<unsigned>(overlay_churn_objects_per_cycle),
-              overlay_churn_plateau_live_records,
-              overlay_churn_min_available);
+              overlay_churn_expected_live_records,
+              static_cast<unsigned>(overlay_churn_erased),
+              static_cast<unsigned>(overlay_churn_auto_requests),
+              overlay_churn_min_available, overlay_churn_peak_bytes,
+              overlay_churn_peak_files);
+  std::printf("TEST:METRIC rp2350_overlay_auto_reclaim_drain cycles=%u\n",
+              static_cast<unsigned>(overlay_churn_drain_cycles));
   std::printf("TEST:METRIC rp2350_overlay_object_deletion index_slots=%zu\n",
               overlay_churn_final_index_slots);
 

@@ -2139,6 +2139,20 @@ extern "C" uint32_t choupi_available_persistent_memory_bytes(void) {
              : static_cast<uint32_t>(limit - overlay_bytes_used);
 }
 
+extern "C" void choupi_persistent_memory_usage(
+    uint32_t *files_used, uint32_t *bytes_used, uint32_t *byte_capacity) {
+  if (files_used != nullptr)
+    *files_used = static_cast<uint32_t>(overlay_file_count);
+  if (bytes_used != nullptr)
+    *bytes_used = static_cast<uint32_t>(overlay_bytes_used);
+  if (byte_capacity != nullptr)
+    *byte_capacity = static_cast<uint32_t>(overlay_byte_limit(overlay_file_count));
+}
+
+extern "C" uint8_t choupi_compact_persistent_memory(void) {
+  return compact_deleted_overlay_records();
+}
+
 extern "C" uint8_t fs_init(void) {
   for (auto &file : overlay) {
     file = OverlayFile{};

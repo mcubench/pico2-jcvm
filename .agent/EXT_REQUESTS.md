@@ -1,5 +1,33 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-LOW-WATERMARK-D3061DDD — Test low-watermark deletion
+
+Created 2026-11-15 08:11 CET. This package supersedes
+`WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292`. It contains a no-debug ARM
+`max_crypto` image with object deletion ON and erased persistent storage (empty
+card). Source is HEAD `d3061ddd8392e6d1e1712378991eb9806778d770` plus a dirty
+worktree; full source and submodule hashes are in the package provenance.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-20261115.uf2)
+- UF2 SHA-256: `83423ee4f68e7c16b88741b09a6d126cf33f2ba86d407f5b00675968a45c3f1d`
+- Size: 4,126,208 bytes; linked end `0x100f7928`, 34,520 bytes remain.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-on-windows-d3061ddd-dirty.zip)
+- ZIP SHA-256: `c1aed51f971aa17d22feafb69427e340e5014fca086d0e97b6f3b382ea94ecb3`
+- ARM build, empty-card UF2, 13 policy checks, filesystem overlay suite,
+  package checksums and ZIP integrity pass. Fake-flash low-watermark test
+  reclaimed 8,240/8,240 garbage objects and peaked at 79.2% arena use. No
+  hardware test was performed here.
+
+Flash and run JCAlgTest option 2 with the unchanged supplied 1.8.5 client.
+Install the unchanged upstream 1.8.4/jc305 CAP explicitly after confirming
+the card is empty. Return per-device result folders and serial logs, plus
+Windows version, reader/ATR, chip ID, firmware hash, USB/PCSC errors, timeouts,
+and stalls. If available, run option 1 on another identified token.
+
+## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292
+
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D3061DDD` above for new external runs.
+
 ## WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292 — Test current deletion and memory fixes
 
 Created 2026-11-15 06:56 CET. This package supersedes the `6547EC4E`

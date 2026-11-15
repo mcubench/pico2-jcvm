@@ -30261,3 +30261,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep MEM-01 T10 open. Next establish pre-cleanup watermark acceptance and design bounded preemptive reclaim at a safe boundary; do not claim this guard fixes memory exhaustion by itself.
 - Commit: See Git history for this progress record.
 - Artifacts/logs: `tools/test-object-deletion-policy`; ARM/RISC-V images under `build/arm/` and `build/riscv/` (not flashed).
+
+## 2026-11-15 Automatic low-watermark object deletion and external image 23 minutes
+
+- Step-Id: `20261115-mem01-low-watermark-compaction-external-image`
+- Task: MEM-01 T10 automatic low-space reclamation and deletion-enabled Windows test image
+- When: '2026-11-15 07:48 CET' - '2026-11-15 08:11 CET'
+- Model: `GPT-6`
+- Change: Added per-applet automatic reclaim triggering at a 20 KiB safe-point watermark and compaction of deleted overlay records while the automatic sweep is pending under low-space pressure. Extended the RP2350 fake-flash simulation to stop producing garbage and drain the bounded deletion backlog. Prepared a no-debug `max_crypto` ARM empty-card image and Windows package; updated TODO, QKB, EXT_REQUESTS, and HANDOFF.
+- Validation: `./tools/test-object-deletion-policy` passed (13 checks). `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), with 1,030 production cycles, 8,240 unreachable objects created and reclaimed, 695 drain cycles, and live record count 1 after reload. Peak raw overlay use was 77,852 / 98,304 bytes (79.2%). `./tools/build arm --profile max_crypto` passed with object deletion ON, debug OFF, linked end `0x100f7928`, and 34,520 bytes remaining. Empty-card UF2 creation, every package SHA256SUMS entry, and ZIP integrity passed. No physical flash/test was performed; the reader-list response was not available in this environment.
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-20261115.uf2`, SHA-256 `83423ee4f68e7c16b88741b09a6d126cf33f2ba86d407f5b00675968a45c3f1d` (4,126,208 bytes). Windows ZIP `build/external-test/pico2-jcvm-object-deletion-on-windows-d3061ddd-dirty.zip`, SHA-256 `c1aed51f971aa17d22feafb69427e340e5014fca086d0e97b6f3b382ea94ecb3`. Built from HEAD `d3061ddd8392e6d1e1712378991eb9806778d770` plus the dirty worktree; package provenance records tracked diff and submodule hashes. An initial test without compaction showed 90.02% peak and failed; adding compaction under pending low-space reclamation reduced the final peak to 79.2% and passed.
+- Decision: Provide the package for external Windows testing, while keeping T7/T8 physical/client acceptance open and T10 direct failed-write retry unimplemented. The image is diagnostic evidence, not physical acceptance.
+- Commit: See Git history for this progress record.
+- Artifacts/logs: `artifacts/logs/rp2350-fs-overlay-low-watermark-20261115.log`; package `BUILD-PROVENANCE.txt`, README and `SHA256SUMS.txt`.

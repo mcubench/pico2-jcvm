@@ -13,6 +13,13 @@ uint8_t fs_sync(void);
 uint8_t fs_erase_prefix(const uint8_t *prefix, uint8_t prefix_length);
 uint8_t fs_erase_package_state(uint8_t package_id);
 
+// RP2350 filesystem usage snapshot for bounded low-space reclamation and
+// telemetry. Each output pointer is optional.
+void choupi_persistent_memory_usage(uint32_t *files_used,
+                                    uint32_t *bytes_used,
+                                    uint32_t *byte_capacity);
+uint8_t choupi_compact_persistent_memory(void);
+
 #ifdef __cplusplus
 }
 #endif

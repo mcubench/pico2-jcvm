@@ -62,6 +62,13 @@
 #if defined(CHOUPI_ENABLE_OBJECT_DELETION)
 extern "C" jcvm::Context *choupi_take_object_deletion_request_context() noexcept;
 #endif
+#if !defined(PC_VERSION) && defined(CHOUPI_ENABLE_OBJECT_DELETION)
+extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
+extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
+                                                uint32_t *bytes_used,
+                                                uint32_t *byte_capacity);
+extern "C" uint8_t choupi_compact_persistent_memory(void);
+#endif
 
 #ifdef PC_VERSION
 extern int main_pc(int argc, char *argv[]);
@@ -416,10 +423,45 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
   // by reclaiming at most one fixed-size batch before returning to the host.
   // The request remains latched while either namespace still has work, so a
   // later APDU safely resumes the sweep.
-  const bool request_pending = context.isObjectDeletionRequested();
+  static std::array<pico2_jcvm::AutomaticObjectDeletionThrottle, 256>
+      automatic_deletion_throttle{};
+  static std::array<bool, 256> automatic_deletion_pending{};
+  const uint8_t owner = static_cast<uint8_t>(context.getAppletID());
+  auto &throttle = automatic_deletion_throttle[owner];
+  throttle.on_apdu_boundary();
+
+  bool request_pending = context.isObjectDeletionRequested();
   const bool stack_empty = context.getStack().empty();
   const bool transaction_active =
       jcvm::FlashMemory_Handler::persistentWriteTransactionActive();
+  bool automatic_request = false;
+  if (!request_pending && !transaction_active && stack_empty) {
+    const uint32_t available_bytes =
+        choupi_available_persistent_memory_bytes();
+    if (pico2_jcvm::should_request_automatic_object_deletion(
+            available_bytes, request_pending, stack_empty,
+            transaction_active, throttle.cooldown_apdus == 0)) {
+      context.requestObjectDeletion();
+      request_pending = true;
+      automatic_request = true;
+      automatic_deletion_pending[owner] = true;
+      uint32_t files_used = 0;
+      uint32_t bytes_used = 0;
+      uint32_t byte_capacity = 0;
+      choupi_persistent_memory_usage(&files_used, &bytes_used,
+                                     &byte_capacity);
+      std::printf("OBJECT_DELETION:AUTO_TRIGGER package=%u owner=%u "
+                  "available=%lu watermark=%u files=%lu bytes=%lu/%lu\r\n",
+                  static_cast<unsigned>(context.getAppletPackageID()),
+                  static_cast<unsigned>(owner),
+                  static_cast<unsigned long>(available_bytes),
+                  static_cast<unsigned>(
+                      pico2_jcvm::kObjectDeletionLowWatermarkBytes),
+                  static_cast<unsigned long>(files_used),
+                  static_cast<unsigned long>(bytes_used),
+                  static_cast<unsigned long>(byte_capacity));
+    }
+  }
   if (!pico2_jcvm::may_service_object_deletion(
           request_pending, stack_empty, transaction_active)) {
     // Keep the request latched. It will be retried at a later safe boundary;
@@ -492,7 +534,26 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
               deletion_batch.erased_applet, deletion_batch.erased_package,
               roots.static_roots, roots.applet_roots,
               complete ? 0u : 1u);
-  if (complete) context.clearObjectDeletionRequest();
+  if (automatic_deletion_pending[owner] &&
+      deletion_batch.erasedTotal() != 0 &&
+      choupi_available_persistent_memory_bytes() <=
+          pico2_jcvm::kObjectDeletionLowWatermarkBytes) {
+    const uint8_t compact_status = choupi_compact_persistent_memory();
+    std::printf("OBJECT_DELETION:AUTO_COMPACT package=%u owner=%u "
+                "status=%u erased=%u\r\n",
+                static_cast<unsigned>(context.getAppletPackageID()),
+                static_cast<unsigned>(owner),
+                static_cast<unsigned>(compact_status),
+                deletion_batch.erasedTotal());
+    if (compact_status != 0) return;
+  }
+  if (complete) {
+    context.clearObjectDeletionRequest();
+    automatic_deletion_pending[owner] = false;
+  }
+  if (complete && automatic_request) {
+    throttle.completed(deletion_batch.erasedTotal());
+  }
 }
 #endif
 

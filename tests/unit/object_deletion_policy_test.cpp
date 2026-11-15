@@ -24,6 +24,40 @@ int main() {
         "active_persistent_transaction");
   check(pico2_jcvm::may_service_object_deletion(true, true, false),
         "safe_apdu_boundary");
+  check(!pico2_jcvm::should_request_automatic_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, false, true,
+            false, true),
+        "automatic_request_above_watermark");
+  check(pico2_jcvm::should_request_automatic_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes, false, true, false,
+            true),
+        "automatic_request_at_watermark");
+  check(!pico2_jcvm::should_request_automatic_object_deletion(
+            0, true, true, false, true),
+        "automatic_request_does_not_replace_pending_request");
+  check(!pico2_jcvm::should_request_automatic_object_deletion(
+            0, false, false, false, true),
+        "automatic_request_requires_empty_stack");
+  check(!pico2_jcvm::should_request_automatic_object_deletion(
+            0, false, true, true, true),
+        "automatic_request_defers_during_transaction");
+  check(!pico2_jcvm::should_request_automatic_object_deletion(
+            0, false, true, false, false),
+        "automatic_request_honors_retry_cooldown");
+  pico2_jcvm::AutomaticObjectDeletionThrottle throttle;
+  throttle.completed(0);
+  check(throttle.cooldown_apdus ==
+            pico2_jcvm::kObjectDeletionRetryCooldownApdus,
+        "empty_reclaim_starts_retry_cooldown");
+  for (uint8_t index = 0;
+       index < pico2_jcvm::kObjectDeletionRetryCooldownApdus; ++index) {
+    throttle.on_apdu_boundary();
+  }
+  check(throttle.cooldown_apdus == 0,
+        "retry_cooldown_expires_after_bounded_apdus");
+  throttle.completed(1);
+  check(throttle.cooldown_apdus == 0,
+        "successful_reclaim_does_not_delay_followup");
   std::printf("TEST:PASS object_deletion_policy checks=%u\n", checks);
   return EXIT_SUCCESS;
 }
