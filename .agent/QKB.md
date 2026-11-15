@@ -1252,6 +1252,11 @@ Follow-up at 2026-11-15 01:39 CET: the approved helper again granted three USB
 node ACLs, but the same 8-second `./tools/list-readers --timeout 8` invocation
 timed out with no names. This repeats the enumeration blocker; no board identity
 or PC/SC campaign can be inferred from the granted nodes.
+Later on 2026-11-15, the helper again granted three USB-node ACLs (`001/074`,
+`001/078`, `001/077`), but bounded elevated `PICO2_HOST_USB_ACCESS=1
+./tools/list-readers --timeout 8` again timed out after 8 s with no readers.
+The local VPCD regressions remain usable; the helper's ACL count establishes
+neither physical token identity nor PC/SC reader availability.
 
 
 ## 2026-11-15 T7 heap inventory diagnostic filter excludes the overlay fixture

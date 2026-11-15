@@ -363,6 +363,22 @@ task:
   `external-superclass-import-token-out-of-range`; transitive library
   dependency closure is covered by `missing-library-dependency`. Export
   consistency remains open.
+  - 2026-11-15 validation refresh: `./tools/test-cap-malformed-vpcd
+    --mutation external-superclass-without-import` passed the raw LOAD APDU
+    rejection (`6A80`), absence from GET STATUS, and unrelated control-package
+    DELETE (`9000`). The adjacent CAPIN-02 test
+    `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage
+    --cap-import-policy` passed the expected INSTALL denial (`6982`) for the
+    forbidden native-bridge import. Restarted malformed stored-CAP tests for
+    missing Import and Class each passed `TEST:SUMMARY pass=5 fail=0`: applet
+    SELECT failed closed with `6F00`, then Card Manager SELECT succeeded.
+    `./tools/test-pc-vpcd-applet --passes 1 --select-only` also loaded and
+    selected the unchanged JCAlgTest CAP (`9000`) on the Descriptor-free path.
+    Current CAP helper suites pass: Export/import validation 61/61, method
+    header bounds 7/7, and method-body bounds including Descriptor-free
+    structural starts 11/11. No physical acceptance; bounded reader listing
+    still times out. Remaining CAPIN-01 work includes physical validation and
+    broader Export consistency.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#capin-01).
 

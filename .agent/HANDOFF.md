@@ -14,7 +14,7 @@ Updated: 2026-11-15.
 ## Next actions
 1. Await external option-2 results matched to this UF2 hash; obtain Windows version, reader/ATR, chip ID, full client outputs and serial telemetry. Option 1 can run on another identified token.
 2. MEM-01 T7 live-client VPCD and T8 physical acceptance remain open. Captured APDU replay completed 1,972 commands without VM/storage failure; repeated overlay replays show stable post-compaction live set but do not exercise CCID/PCSC or satisfy fresh-client acceptance. See TODO and `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
-3. CAPIN-01 APDU-level PC VPCD validation passed: malformed LOAD returned `6A80`, GET STATUS excluded it while retaining the control package, and control DELETE returned `9000`. Physical acceptance remains open.
+3. CAPIN-01 offline coverage was refreshed: malformed external-superclass LOAD returned `6A80`, forbidden native-bridge Import INSTALL returned `6982`, stored missing Import/Class CAPs fail applet SELECT with `6F00` while Card Manager remains selectable, and unchanged JCAlgTest Descriptor-free install/select returns `9000`. Physical validation and broader Export consistency remain open.
 
 ## Hardware access
 - Last reader attempt: approved helper granted USB ACLs but bounded elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out; no usable inventory was obtained. Refresh with the helper and bounded reader listing before hardware work.
