@@ -27,6 +27,15 @@ chip ID, full option-2 performance result and serial log. If possible, run
 option 1 on another identified token. Include PC/SC/USB errors, timeouts,
 resets, stalls and complete per-device result directories. Install the
 unchanged CAP explicitly with GPPro after confirming the card is empty.
+Targeted follow-up to the supplied 2026-11-15 report: the older `805420e6`
+image lost PC/SC communication during the 50-iteration RSA-1984 NOPAD
+`Cipher_doFinal()` measurement. Capture serial telemetry through that operation
+on this current image and include the board chip ID. Use the pinned 1.8.5
+client from the package/repository; the JAR in the prior report differs in
+three classes from the pinned artifact. If the full option-2 run is already
+underway, retain it and do not restart solely for this request. The reported
+`0x8010002f` is a PC/SC communication-loss code, not an APDU status or proof of
+an on-card memory fault.
 
 ## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E
 

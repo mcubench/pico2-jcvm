@@ -30235,3 +30235,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The post-cleanup store is stable at 367 files / 15.3–15.5 KB across replay cycles, so the T4/T5 leak is fixed at the VM/storage level. The pre-cleanup peak is 81,775 / 98,304 bytes (≈83%). Reclaim runs only on applet request, at 8 records per APDU, with no reclaim-on-exhaustion path. The 8E partial physical run (668 rows) had no F205 and ended on PC/SC reader loss (HOST-01).
 - Decision: The fresh-client T7 run and T8 stay the gates. Record the peak watermark in them, and add exhaustion-triggered reclaim (T10) after the T7 run, or earlier if a run hits the limit.
 - Artifacts/logs: `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
+
+## 2026-11-15 Triage external RSA-1984 PC/SC loss 10 minutes
+
+- Step-Id: `20261115-host01-external-rsa1984-triage`
+- Task: Classify the supplied Windows RSA-1984 measurement failure and define a current-image reproduction
+- When: '2026-11-15 07:14 CET' - '2026-11-15 07:24 CET'
+- Model: `GPT-6`
+- Change: Compared the incoming AlgTest JAR with the pinned 1.8.5 JAR, traced the failure APDU and timing context, and recorded the finding/follow-up in HOST-01, QKB, EXT_REQUESTS and HANDOFF. No firmware source changed.
+- Validation: Archive comparison found identical entry names (66) but three different class contents (`AlgTestJClient`, `CardMngr`, `PerformanceTesting`); `javap` confirmed the performance calculation differs. Inspected the full failure tail and CSV; one RSA-1984 NOPAD baseline returned `AA9000`, then the 50-operation `B043000016` measurement ended in `0x8010002f`, followed by `0x1f` and `SCARD_E_SERVICE_STOPPED`. No tests/build/hardware run; no serial log or chip ID was supplied.
+- Result: The incoming run used superseded firmware hash `5fa91117aeb6b2ac1c6ebb537447090016b27f0717bd14e528cd5d9437e4a6de` and a non-pinned client JAR hash `2a0bcf839fee03fc66215e50ce5bba9fa6378bb20475b15d79f876a39b6d47ab`. PC/SC communication loss is evidenced; firmware reset, CCID failure and memory exhaustion are not distinguished.
+- Decision: Reproduce on current image `25216292` with the pinned 1.8.5 client and bounded serial telemetry. Do not count this incomplete, changed-client run as acceptance or as proof of a memory defect.
+- Commit: See Git history for this progress record.
+- Artifacts/logs: `inbox/maxcrypto_20261114_805420e6/`; details in `.agent/QKB.md` and HOST-01 in `TODO.md`.

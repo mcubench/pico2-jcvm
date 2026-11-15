@@ -993,6 +993,20 @@ review.
   thread reported 1.6% CPU); this is a daemon-side/no-response observation, not
   proof of a specific USB driver fault. Trace:
   `artifacts/logs/smartcardio-list-readers-strace-20261115.log`.
+  2026-11-15 external Windows report: the superseded `805420e6` image (UF2
+  SHA-256 `5fa91117aeb6b2ac1c6ebb537447090016b27f0717bd14e528cd5d9437e4a6de`)
+  reached a 50-iteration RSA-1984 NOPAD `Cipher_doFinal()` measurement after
+  its one-operation baseline APDU returned `AA9000`; the repeated measurement
+  then ended in Windows PC/SC `0x8010002f` (`SCARD_E_COMM_DATA_LOST`), followed
+  by `0x1f` on SELECT and `SCARD_E_SERVICE_STOPPED`. The report's client JAR
+  differs from the pinned 1.8.5 JAR in 3 of 66 classes (`AlgTestJClient`,
+  `CardMngr`, `PerformanceTesting`). No serial log or chip ID was provided, so
+  firmware reset/fault versus host/CCID transport loss cannot be distinguished.
+  This was the superseded image; current-image evidence is required. Exact hashes
+  and timing are in `.agent/QKB.md`; raw evidence is under
+  `inbox/maxcrypto_20261114_805420e6/`. Next: repeat RSA-1984 NOPAD on the
+  current 25216292 image with the pinned client and serial telemetry. Keep this
+  separate from MEM-01 storage exhaustion unless such a fault is observed.
   Acceptance: identify a reproducible cause/fix or a concrete host limitation;
   never attribute absent enumeration to crypto or a reader-count firmware limit.
   Follow AGENTS host-access rules from the first USB/PCSC operation, use exact

@@ -1310,3 +1310,36 @@ This supports a stable live set across repeated synthetic cycles while raw
 overlay use rises between compactions. It is still not a fresh live-client or
 physical test. See `artifacts/results/t7-option2-aes192-post5904-loop2-20261115/`
 and `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
+
+## 2026-11-15 Windows RSA-1984 measurement loses PC/SC communication
+
+Incoming report and artifacts are in `inbox/maxcrypto_20261114_805420e6/`.
+The run used the superseded no-debug, deletion-enabled image
+`pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ccid-deadline-805420e6.uf2`
+(SHA-256 `5fa91117aeb6b2ac1c6ebb537447090016b27f0717bd14e528cd5d9437e4a6de`)
+on Windows, reader `Pico2 JCVM CCID 0`, ATR `3b 80 01 81`. A one-operation
+RSA-1984 NOPAD baseline returned `AA9000`; the subsequent 50-operation
+`B043000016` measurement ended with PC/SC `0x8010002f`, followed by `0x1f`
+on applet SELECT and `SCARD_E_SERVICE_STOPPED`. `0x8010002f` is a PC/SC
+communication-loss code, not a card status word and not proof of a VM memory
+failure.
+
+The supplied `AlgTestJClient.jar` is not the pinned 1.8.5 artifact (pinned
+SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`);
+its SHA-256 is `2a0bcf839fee03fc66215e50ce5bba9fa6378bb20475b15d79f876a39b6d47ab`.
+Both archives contain 66 entries, but 3 class files differ:
+`AlgTestJClient`, `CardMngr`, and `PerformanceTesting`. PerformanceTesting
+bytecode differs in repeated-measurement/statistics calculation, so do not
+count this as the pinned-client acceptance run. The CSV is incomplete at
+RSA-1984 (SHA-256 `5dfa1a7446b59e5aeaa94400739e77f008d6c1147d0eb5982fe945132329d3f2`);
+the raw log SHA-256 is `39ac9f6762982741c3ebbb0c2fb46025555533a3a5a4b1a7aa49aaca187134fc`.
+No chip ID or serial log was supplied. The log shows a successful single
+operation (`AA9000`, about 2.5 seconds), then no card reply for the 50-operation
+APDU. It does not show whether the board reset/faulted or Windows/CCID lost the
+response.
+
+Next: use the current empty-card image in
+`WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292` with the pinned 1.8.5 client,
+capture serial telemetry and board ID, and retain the exact failing APDU. Only
+attribute this to memory exhaustion if the new run yields a memory/storage
+diagnostic or reproducible firmware fault; present evidence is transport-only.
