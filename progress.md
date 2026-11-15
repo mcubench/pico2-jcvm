@@ -30393,3 +30393,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Source and fake-flash harness again enforce the 96 KiB invariant. The previously created 112 KiB package must not be used; it will be superseded by a compliant 96 KiB package.
 - Decision: Keep T10 focused on safe reclamation/heap-reference diagnosis within INV-28. If a larger overlay becomes the selected solution, request explicit user approval through `.agent/EXT_REQUESTS.md` before changing the invariant.
 - Artifacts/logs: source restored from pre-capacity revision `a63bfc4a`; tests and ARM build outputs under `build/`.
+
+## 2026-11-15 Reissue compliant deletion-enabled test image 7 minutes
+
+- Step-Id: `20261115-1230-spec28-image-reissue`
+- Task: `MEM-01 T7` external option-2 test preparation
+- When: '2026-11-15 12:23 CET' - '2026-11-15 12:30 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt and repackaged a normal `max_crypto` image with object deletion ON, debug OFF, empty storage, and the INV-28 96 KiB / 8,192-slot limit. Updated the external request and current-image records; the withdrawn 112 KiB package is explicitly not for use.
+- Validation: `./tools/build arm --profile max_crypto` passed after the INV-28 restoration. `./tools/package-empty-card-uf2` passed (3,962 firmware blocks + 4,096 erased-storage blocks); package manifest checksums and `unzip -t` passed; archive root contains `README.md`, `firmware/`, and `tools/`. `./tools/fixture-path --verify` passed in the preceding package validation. No physical flash or Windows run was performed.
+- Result: UF2 SHA-256 `80840af050b8a6e7f32c540a56b18421415143d4093c491bf9efcd41859d326c`, 4,126,208 bytes; package SHA-256 `5ef963a3bd654d449813d499e687c5040487c15a9251c10d1ce99261a6ab3ebe`. Build CPLC source ID is `0xD11307325F4ECCB0`; firmware end `0x100f7920`, 34,528 bytes remain.
+- Decision: This is the current compliant external candidate. Continue T10 within the declared storage bound; no larger limit is authorized.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d1130732-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-d1130732.zip`; EXT request `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732`.
