@@ -9,6 +9,7 @@ Updated: 2026-11-15.
 - Request `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732` in `.agent/EXT_REQUESTS.md`; README has exact Windows flashing and JCAlgTest steps. Overlay tests, ARM build and package checks pass; no physical flash or Windows run yet. This candidate respects the 96 KiB INV-28 limit.
 
 ## Next actions and blockers
+- LONGOP-01 (P0 under HOST-01): every option-2 campaign dies at the first RSA-1984 private ×50 APDU. The confirmed defect is no CCID time extension during modexp; a RAM out-of-memory panic is suspected. Start with TODO LONGOP-01 T1 (offline heap measurement) and T2 (Linux physical, with the `__already_measured.list` resume trick). External serial evidence is requested as `WIN-RSA1984-X50-SERIAL-20261115`.
 - Fresh-client VPCD T7 failed: option 2 reached sync 6,300, then persistent allocation returned `F205` at 98,246/98,304 bytes. Do not increase that limit without user approval; INV-28 fixes it at 96 KiB. See `TODO.md` and `artifacts/results/jcalgtest-support-vpcd-20261115T084412Z/`.
 - Continue MEM-01 T10: diagnose why nearly all stored records are marked reachable; make reachability/reclamation more effective within INV-28, then prove live data survives and allocations continue in the no-deletion-request fake-flash/VPCD case.
 - Await the external option-2 result for the exact UF2 hash above; this package is a test candidate, not acceptance evidence.

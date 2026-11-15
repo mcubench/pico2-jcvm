@@ -11,7 +11,7 @@ run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are histori
 0. **MEM-01 (the only P0, user directive 2026-11-13): fix persistent/RAM memory-exhaustion defects from [review_memory_analysis_opus55_20261113](docs/review_memory_analysis_opus55_20261113.md).** See [MEM-01](#mem-01).
 1. **BOOTSEL-01 (P1):** finish the remaining BOOTSEL acceptance opportunistically, when a board is already in hand.
 2. RESOURCE-01 and RESOURCE-02 are gated on MEM-01; their physical evidence comes from MEM-01 T8.
-3. HOST-01 owns all CCID stalls and PC/SC reader loss (a T8 blocker). Also: HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
+3. HOST-01 owns all CCID stalls and PC/SC reader loss (a T8 blocker). Its sub-task [LONGOP-01](#longop-01) (deterministic RSA-1984 ×50 reader loss / panic) is P0 because it stops every option-2 campaign. Also: HOST-02 Windows timings; CTX-01/03 SIO/firewall/context acceptance.
 4. STORE-01, PERSIST-01/02/03, API-01/03, GP-01 and AC-01/02 integration gates.
 5. HMAC-01 acceptance and JC-RESET-01 diagnosis (feeds evidence to HOST-01).
 6. CAPIN-01 then CAPIN-03/04; relative priority against resource work remains the user's decision.
@@ -1012,10 +1012,10 @@ review.
   `CardMngr`, `PerformanceTesting`). No serial log or chip ID was provided, so
   firmware reset/fault versus host/CCID transport loss cannot be distinguished.
   This was the superseded image; current-image evidence is required. Exact hashes
-  and timing are in `.agent/QKB.md`; raw evidence is under
-  `inbox/maxcrypto_20261114_805420e6/`. Next: repeat RSA-1984 NOPAD on the
-  current 25216292 image with the pinned client and serial telemetry. Keep this
-  separate from MEM-01 storage exhaustion unless such a fault is observed.
+  and timing are in `.agent/QKB.md`; raw evidence was archived from `inbox/` to
+  `artifacts/results/windows-maxcrypto-20261114-805420e6/`. The follow-up on
+  `25216292-dirty` reproduced it; diagnosis and fix are tracked in
+  [LONGOP-01](#longop-01).
   Acceptance: identify a reproducible cause/fix or a concrete host limitation;
   never attribute absent enumeration to crypto or a reader-count firmware limit.
   Follow AGENTS host-access rules from the first USB/PCSC operation, use exact
@@ -1023,6 +1023,41 @@ review.
   Evidence: QKB USB/PCSC records. Old available/empty-card states are not current.
 
 [Detailed cases and prior evidence](.agent/archive/2026-11-11-todo-compaction/TODO.md#host-01).
+
+### LONGOP-01
+
+- [ ] **P0 sub-task of HOST-01 (T8 blocker): the RSA-1984 private-key ×50 measure APDU loses the reader every time.** Opened 2026-11-15.
+  **Symptom.** In JCAlgTest option 2, the first RSA-1984 private-key `B043000016` with 50 repetitions (`… 00 32 00 01 00`) fails with Windows `0x8010002f`. This happened 3 times out of 3, on `805420e6` (NOPAD) and twice on `25216292-dirty` (PKCS1), including once from a fresh boot after only SELECT, `B031` and five baselines.
+  - Afterwards, applet SELECT gives `0x1f` or `0x8010002f`, and in 2 of 3 runs the reader disappears (`SCARD_E_SERVICE_STOPPED`). A replug restores the reader, and applet SELECT returns `9000`. No persistent damage was observed.
+  - Single-op baselines of the same operation pass (`AA 9000`, 2.2–3.6 s). ×50 loops up to RSA-1536 pass (≈23.7 s). A 44.3 s RSA-1984 keygen APDU passes; keygen sends extensions through its RNG callback.
+  - Expected duration of the failing APDU is ≈43–50 s (1984 non-CRT ≈0.8–0.95 s/op, extrapolated from 152/267/430 ms at 1024/1280/1536).
+  - Serial (attempt 1 only): the last record is the `B0E2` that preceded the ×50 APDU, then `*** PANIC ***` with no message. Panic messages are lost because USB is no longer serviced after the panic.
+  - Evidence: `artifacts/results/windows-maxcrypto-20261114-805420e6/` and `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/` (`readme.txt` is the authoritative report; client JAR unverified or not pinned, so not acceptance). Analysis: QKB "RSA-1984 ×50 measure APDU".
+  **Confirmed defect (D1, no time extension in modexp).** RSA modexp (`choupi/src/native_rsa_cipher.cpp` `modExp` / `rsaCrtModExp` → `mbedtls_mpi_exp_mod`) has no `choupi_native_crypto_progress()` call. The interpreter calls `choupi_vm_cooperative_progress()` only every 4096 bytecodes (`choupi/src/interpretor.cpp`), and a JCAlgTest ×N loop runs far fewer. Result: no CCID time extensions and no USB servicing for the whole APDU, contrary to SPEC "Deliberately unspecified" (long native operations cooperate with CCID time extension and the watchdog). The watchdog is kicked per bytecode, so it is not hit at ≈1 s/op.
+  **Suspected defect (D2, RAM).** `doFinalRsaCipher` allocates a new `heap.addArray(modulusLength)` per call that lives until object deletion. Mbed TLS bignum temporaries and growth of the `arrays` handle vector add to it. The Pico SDK `PICO_MALLOC_PANIC=1` (default) turns a failed malloc into `panic("Out of memory")` (earlier precedent: 8E run, TODO RESOURCE-01). Malloc arena is ≈188 KB (`end` 0x20051e74 → `__StackLimit` 0x20080000 in `build/arm/pico2_choupi.elf.map`). Not yet established whether the panic is out-of-memory or a consequence of the host abort or reset during D1.
+  **Fast reproduction (no 80-minute campaign).** Use the client's resume list `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/pico2_maxcrypto_20261115_25216292-dirty____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list`. Its last entry is RSA-1984 NOPAD `Cipher_init()`, so the next measured operation is RSA-1984 PKCS1 `Cipher_doFinal()`.
+  - Copy it next to the client and rename the prefix to the card name you will type at "Specify type of your card". Answer `y` to "use it".
+  - Keep a pristine copy; the client updates the list.
+  - The failure is reached in ≈2 min (SELECT, `B031` keygen ≤45 s, 5 baselines, ×50).
+  - Debug only: partial CSV, not campaign evidence.
+  - [ ] **T1 Offline heap measurement (D2).** Run the PC/VPCD build with the unchanged 1.8.4/jc305 CAP and the pinned 1.8.5 client (`--client-jar`, SHA-256 `b6a753be…`), using the resume list or `tools/test-jcalgtest-apdu-replay-vpcd` with the exact APDU sequence from the archived log. Record peak C-heap bytes and live JC array/handle counts before, during and after the ×50 APDU, and also for RSA-1536 ×50 as the passing control. Decide whether the ×50 peak can exceed the ≈188 KB Pico arena. Record per AGENTS "Long simulator runs" rules (target scenario, why the list beats a full run).
+  - [ ] **T2 Physical reproduction on Linux.** Use a normal current image, empty-card UF2 then GPPro install of the unchanged CAP, the pinned client, the resume list and timestamped serial for the whole run. Record the chip ID, image hash and JAR hash. Decide between:
+    - card completes (`CCID_RESPONSE apdu=B043000016 len=3 sw=9000` after ≈45 s) and the host gives up (D1 only);
+    - `*** PANIC ***` / reboot banner (D2 or a reset-handling bug);
+    - success on libccid, which shows host-dependent tolerance.
+    Note `USB_PROGRESS extensions=` for the APDU (expected absent/0 before the fix).
+  - [ ] **T3 Fix D1.** Make long native work cooperate with CCID and the watchdog without per-bytecode cost.
+    - (a) Make cooperative progress time-based: also call it after any native API return when ≥≈500 ms passed since the last call.
+    - (b) Make it reach inside single long modexps. Options: an Mbed TLS-compatible way to get callbacks during `exp_mod`, splitting the exponentiation in native glue using vetted Mbed TLS primitives (INV-04: no hand-written crypto beyond glue), or an equivalent bounded service point.
+    - Core 1 offload or heartbeat is **not allowed without a user-approved design** (INV-05).
+    - Add unit coverage in `tests/unit/ccid_progress_flow_test.cpp` (or a new test). Show `extensions>0` and a completed ×50 APDU on hardware.
+  - [ ] **T4 Fix D2 if T1/T2 confirm it (and per INV-16 regardless).** Stop allocating a JC heap array per RSA `doFinal`: write into a reused native or session buffer, then copy to `output` after length checks. Check that the same pattern is absent from the RSA signature, OAEP and other per-call native paths. Determine whether the array is persistent; if so, it violates INV-16 today. Evaluate turning allocation failure in native crypto into a controlled CryptoException or `6F00` instead of an SDK panic. Do not simply disable `PICO_MALLOC_PANIC` without an audited failure path.
+  - [ ] **T5 Related long-op audit.** `gp --uninstall` of JCAlgTest after the failure took exactly 15 s 11 ms and then returned `0x1f`, which matches the 15 s watchdog. Check DELETE and other flash-heavy card-manager paths for watchdog and time-extension cooperation. One observation only; reproduce before fixing.
+  - [ ] **T6 Acceptance.**
+    - Linux physical, then Windows external (request `WIN-RSA1984-X50-SERIAL-20261115`): resume-list reproduction passes RSA-1984 and RSA-2048 private ×50 Cipher and Signature operations with the reader retained.
+    - A timestamped serial log shows extensions, no panic and no reboot.
+    - Then a full option-2 run (MEM-01 T8) passes this section.
+    - Normal `max_crypto` image only (INV-24); record image, JAR and CAP hashes and the chip ID.
 
 ### HOST-02
 

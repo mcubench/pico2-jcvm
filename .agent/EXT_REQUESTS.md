@@ -24,6 +24,44 @@ included supplied 1.8.5 client. Return the full result directory and serial
 log, Windows version, reader/ATR, chip ID, exact firmware hash, and any
 disconnects, resets, stalls, or timeouts.
 
+## WIN-RSA1984-X50-SERIAL-20261115 — Capture serial evidence of the RSA-1984 ×50 failure
+
+Created 2026-11-15 12:35 CET. Diagnostic run (not acceptance) for TODO
+LONGOP-01. It needs only about 5 minutes per attempt. If the full option-2
+run under `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732` is in progress, let it
+finish first. Neither image contains a LONGOP-01 fix, so both should fail at
+this operation.
+
+1. Flash the current empty-card UF2 from `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732`
+   (SHA-256 `80840af0…d326c`). Install the unchanged JCAlgTest CAP with GPPro.
+   Use the pinned 1.8.5 client and report its SHA-256; it must be
+   `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
+2. Copy `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/pico2_maxcrypto_20261115_25216292-dirty____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list`
+   next to the client. Keep an untouched copy and restore it before each
+   attempt. Start option 2, type the card name `pico2_maxcrypto_20261115_25216292-dirty`
+   exactly, and answer `y`. The next measured operation is RSA-1984 PKCS1
+   `Cipher_doFinal()`.
+3. Before starting the client, open the board's COM port at **115200 baud
+   (never 1200)** in a terminal that writes a file with a timestamp on every
+   line (for example Tera Term Log with timestamps). Check that `rx_events`
+   in the `CHOUPI:CCID` lines rises with each APDU. Confirm the COM port and
+   the reader are the same board: their Device Manager instance paths end in
+   the same serial (chip ID).
+4. Keep logging until 2 minutes after the client reports the error. Do not
+   press `r`/`s` until then. Then record `certutil -scinfo`, `sc query SCardSvr`,
+   `Get-PnpDevice -Class SmartCardReader | fl FriendlyName,Status,Problem,InstanceId`,
+   and System event log entries from the failure window.
+5. Repeat once from a fresh replug.
+
+Return the complete timestamped COM log (the whole file, not excerpts), the
+client log and CSV, the PowerShell outputs, the UF2 and JAR hashes, and the
+chip ID. The key question is what the serial log shows during the ≈45 s ×50
+APDU and right after it:
+- a `CCID_RESPONSE apdu=B043000016 len=3 sw=9000` record;
+- `*** PANIC ***` and its message;
+- a boot banner;
+- nothing.
+
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3
 
 Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732` above for new testing. The
@@ -120,15 +158,9 @@ chip ID, full option-2 performance result and serial log. If possible, run
 option 1 on another identified token. Include PC/SC/USB errors, timeouts,
 resets, stalls and complete per-device result directories. Install the
 unchanged CAP explicitly with GPPro after confirming the card is empty.
-Targeted follow-up to the supplied 2026-11-15 report: the older `805420e6`
-image lost PC/SC communication during the 50-iteration RSA-1984 NOPAD
-`Cipher_doFinal()` measurement. Capture serial telemetry through that operation
-on this current image and include the board chip ID. Use the pinned 1.8.5
-client from the package/repository; the JAR in the prior report differs in
-three classes from the pinned artifact. If the full option-2 run is already
-underway, retain it and do not restart solely for this request. The reported
-`0x8010002f` is a PC/SC communication-loss code, not an APDU status or proof of
-an on-card memory fault.
+Fulfilled 2026-11-15: this image reproduced the RSA-1984 ×50 failure; results
+are archived in `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/`.
+The RSA-1984 follow-up continues as `WIN-RSA1984-X50-SERIAL-20261115`.
 
 ## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E
 

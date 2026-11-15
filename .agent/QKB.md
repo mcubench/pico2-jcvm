@@ -1313,8 +1313,9 @@ and `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
 
 ## 2026-11-15 Windows RSA-1984 measurement loses PC/SC communication
 
-Incoming report and artifacts are in `inbox/maxcrypto_20261114_805420e6/`.
-The run used the superseded no-debug, deletion-enabled image
+Incoming report and artifacts were archived from `inbox/` to
+`artifacts/results/windows-maxcrypto-20261114-805420e6/` (with `SHA256SUMS`).
+Superseded diagnosis: see "RSA-1984 ×50 measure APDU" below. The run used the superseded no-debug, deletion-enabled image
 `pico2-jcvm-max_crypto-object-deletion-nodebug-empty-card-ccid-deadline-805420e6.uf2`
 (SHA-256 `5fa91117aeb6b2ac1c6ebb537447090016b27f0717bd14e528cd5d9437e4a6de`)
 on Windows, reader `Pico2 JCVM CCID 0`, ATR `3b 80 01 81`. A one-operation
@@ -1399,3 +1400,45 @@ enumeration returns an exact name. Separately, direct localhost VPCD replay
 failed with `EPERM` in the restricted sandbox; invoking the same bounded replay
 through the host-access/elevated path succeeded. Use that path for direct VPCD
 socket tests in this environment.
+
+## 2026-11-15 RSA-1984 ×50 measure APDU: deterministic reader loss / panic (LONGOP-01)
+
+**Issue.** JCAlgTest option 2 loses the card at the first RSA-1984 private-key
+`B043000016` with 50 repetitions. Windows reports `0x8010002f`, then `0x1f` or
+`0x8010002f` on SELECT, and often `SCARD_E_SERVICE_STOPPED` as the reader
+disappears. 3/3 runs: `805420e6` (NOPAD) and `25216292-dirty` (PKCS1, twice).
+Attempt 2 failed from a fresh session (SELECT, `B031`, 5 baselines, ×50), so no
+long-run accumulation is needed.
+
+**Not the cause.**
+- Persistent damage: after a replug, applet SELECT returns `9000` and later APDUs work.
+- The `time_us_32` 2^31/2^32 uptime bug: that fix is in both images, and a wrap passed mid-run without errors.
+- Keygen: 44.3 s keygen APDUs pass because the `randomBytes()` RNG callback
+  (`choupi/src/native_ec_keypair.cpp`) calls `choupi_native_crypto_progress()`.
+- Card status words: `0x8010002f` is PC/SC data loss.
+
+**Known contributors.**
+- No CCID time extension or USB servicing during modexp loops (D1, confirmed in code).
+- Per-`doFinal` `heap.addArray` plus Mbed TLS temporaries against the ≈188 KB malloc
+  arena with `PICO_MALLOC_PANIC` (D2, suspected).
+- One serial excerpt shows `*** PANIC ***` right before the ×50 APDU, message lost.
+
+**Pitfalls when reading the evidence.**
+- An LED heartbeat or serial status after the failure only shows the firmware
+  is running now. It does not show the firmware never rebooted.
+- Status records that stop changing while the client still gets responses
+  mean the serial capture is stale or belongs to another board. Verify
+  `rx_events` keeps rising, and match COM port and reader by USB instance serial.
+- `rx_events` (`src/ccid_device.cpp`) increments on every CCID OUT transfer
+  without exception.
+
+**Viable technique: reach the failing operation in minutes.** The JCAlgTest
+client skips operations listed in
+`<cardname>____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list`
+when you type the same card name and answer `y`. The archived list in
+`artifacts/results/windows-maxcrypto-20261115-25216292-dirty/` stops right
+before RSA-1984 PKCS1 `Cipher_doFinal()`. Keep a pristine copy, because the
+client updates it. Results are partial and debug-only.
+
+Tasks: TODO [LONGOP-01](../TODO.md#longop-01). External request:
+`WIN-RSA1984-X50-SERIAL-20261115`.

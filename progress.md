@@ -30405,3 +30405,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `80840af050b8a6e7f32c540a56b18421415143d4093c491bf9efcd41859d326c`, 4,126,208 bytes; package SHA-256 `5ef963a3bd654d449813d499e687c5040487c15a9251c10d1ce99261a6ab3ebe`. Build CPLC source ID is `0xD11307325F4ECCB0`; firmware end `0x100f7920`, 34,528 bytes remain.
 - Decision: This is the current compliant external candidate. Continue T10 within the declared storage bound; no larger limit is authorized.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d1130732-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-d1130732.zip`; EXT request `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732`.
+
+## 2026-11-15 Analyze RSA-1984 ×50 Windows failures and define LONGOP-01 75 minutes
+
+- Step-Id: `20261115-1235-longop01-rsa1984-x50-tasks`
+- Task: `HOST-01` / new `LONGOP-01`
+- When: '2026-11-15 11:20 CET' - '2026-11-15 12:40 CET'
+- Model: `claude-opus-5-5`
+- Change: Archived two external Windows reports from `inbox/` and the shared VM folder into `artifacts/results/windows-maxcrypto-20261114-805420e6/` and `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/`, each with `SHA256SUMS` (`artifacts/results/` is gitignored, so the archives are not in this commit). Analyzed the client logs, CSVs and the user's `readme.txt` against the firmware source. Added TODO LONGOP-01 (T1–T6), a QKB entry, external request `WIN-RSA1984-X50-SERIAL-20261115` and a HANDOFF pointer. Replaced stale `inbox/` paths in TODO HOST-01 and QKB, and marked the older RSA-1984 follow-up as fulfilled. No source changed.
+- Validation: Inspection only. No build, test, flash or hardware run. Archive copies were verified against the source by SHA-256. `25216292-dirty` UF2 SHA-256 `740801210d2601891a5610e4cae5e67da516b49a50d30723cb918e96a0b43b97` matches the packaged image. Its client JAR was not supplied, and the `805420e6` run used a non-pinned JAR (`2a0bcf83…`), so neither run is acceptance evidence.
+- Result: 3/3 failures occur at the first RSA-1984 private `B043000016` ×50 APDU. One failure came from a fresh session after only SELECT, `B031` and 5 baselines.
+  - Single-op baselines (`AA9000`), ≤RSA-1536 ×50 loops (≈23.7 s) and a 44.3 s RSA-1984 keygen APDU all pass.
+  - One serial excerpt ends with `*** PANIC ***` right before the ×50 APDU, message lost. After a replug, applet SELECT returns `9000`, so no persistent damage was shown.
+  - Confirmed code defect: RSA modexp has no progress hook and interpreter progress runs only every 4096 bytecodes, so the card sends no CCID time extension during the ≈45 s APDU.
+  - Suspected: a per-`doFinal` `heap.addArray` plus Mbed TLS temporaries exhausting the ≈188 KB malloc arena (`PICO_MALLOC_PANIC`). Panic cause not established.
+  - HEAD `5259374b` does not change these paths.
+- Decision: LONGOP-01 is P0 under HOST-01. Next: T1 offline heap measurement and T2 Linux physical reproduction with timestamped serial, both using the client's `__already_measured.list` resume trick (≈2 min to the failing APDU). Then fix D1 (time-based and in-modexp progress, no core 1 without an approved design) and D2 if confirmed.
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261114-805420e6/`; `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/` (incl. `readme.txt` SHA-256 `8b4375f1263673eab9b17b71d2436dedb9ec02c1c23f6829fd4c99dc560a4d70` and the `__already_measured.list`).
