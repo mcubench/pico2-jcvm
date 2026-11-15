@@ -30357,3 +30357,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 is 4,126,208 bytes, SHA-256 `2a6a71be9ff9cf4fcf98fedebf56dd41d74be91132ae169ad8d3d66998b1068c`; package ZIP SHA-256 `32008fa05456b4dd927b5323e8d956beb2363d0e7f79708bc3e3f13928f6f1ad`. Separately, fresh 1.8.5-client VPCD option 2 failed at sync 6,300 with `F205`/`SystemException_NO_RESOURCE` after persistent storage reached 98,246/98,304 bytes. This disproves T7 acceptance and triggers T10; details are in `TODO.md` and the result logs.
 - Decision: The new image is ready for external reproduction with object deletion ON, but it is not acceptance evidence. Continue with T10 diagnosis of persistent roots and exhaustion-safe reclamation while awaiting Windows results.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-72cbeedc-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-72cbeedc.zip`; `artifacts/results/jcalgtest-support-vpcd-20261115T084412Z/`.
+
+## 2026-11-15 Expand bounded overlay capacity 20 minutes
+
+- Step-Id: `20261115-1218-mem01-overlay-capacity`
+- Task: `MEM-01 T10` (persistent storage exhaustion headroom)
+- When: '2026-11-15 11:58 CET' - '2026-11-15 12:18 CET'
+- Model: `gpt-6.1-sol`
+- Change: Raised the RP2350 filesystem overlay payload ceiling from 96 KiB to 112 KiB, retaining the actual slot/index-based bound. Added large-payload persistence, restore, compaction, and reload coverage; made the churn test compact explicitly under the larger watermark. Chose 112 KiB rather than 140 KiB to preserve dynamic RAM for cryptographic workloads.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`, including the new payload-above-96-KiB cases, automatic reclamation, mixed-live-set compaction, and full-index package deletion. `./tools/build arm --profile max_crypto` passed as a normal build with object deletion ON and debug OFF. Linked firmware ends at `0x100f7920` (34,528 flash bytes remain). Linker map `.bss` ends at `0x20055e74`, leaving 172,428 bytes to the RAM heap limit. Physical validation was not run; PC/SC inventory remains unresolved.
+- Result: The fake-flash tests now validate stores larger than the old ceiling. The memory tradeoff is 16 KiB more static arena than the previous 96 KiB image; VPCD fresh-client and physical acceptance remain open.
+- Decision: Commit this bounded capacity step, then generate the external deletion-ON empty-card image from the resulting commit and request an option-2 rerun. Do not claim memory-exhaustion acceptance from synthetic tests alone.
+- Artifacts/logs: ARM map `build/arm/pico2_choupi.elf.map`; test output summarized from the successful `./tools/test-rp2350-fs-overlay` run.

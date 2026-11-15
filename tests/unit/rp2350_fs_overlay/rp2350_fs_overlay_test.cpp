@@ -3124,7 +3124,7 @@ int main() {
 
   // Exercise repeated delete-and-replace compaction with the long compressed
   // tags and 4-byte values used by persistent Java Card metadata. This keeps
-  // the arena near its 96 KiB ceiling while forcing compaction across offsets
+  // the arena near its snapshot-slot ceiling while forcing compaction across
   // above 64 KiB, where the physical card previously rejected overlapping
   // records.
   fake_flash.fill(0xff);
@@ -3217,6 +3217,11 @@ int main() {
                     static_cast<unsigned long>(
                         rp2350_fs_test_overlay_file_count()));
       }
+    }
+    if (churn_ok && rp2350_fs_test_compact() != FS_STATUS_OK) {
+      std::printf("TEST:INFO filesystem_churn stage=compact cycle=%lu\n",
+                  static_cast<unsigned long>(cycle));
+      churn_ok = false;
     }
     live_churn_ids.erase(live_churn_ids.begin(),
                          live_churn_ids.begin() + churn_records_per_cycle);
@@ -3908,6 +3913,62 @@ int main() {
   fake_flash.fill(0xff);
   expect(fs_init() == FS_STATUS_OK,
          "filesystem_reinitializes_after_tombstone_fail_closed_recovery");
+
+  // JCAlgTest option 2 reached the prior fixed 96 KiB ceiling with a live
+  // object graph. The COW slot can hold a larger payload while file-count
+  // metadata remains bounded, so exercise 112 KiB of records through persist,
+  // restore, compaction, and another restore.
+  fake_flash.fill(0xff);
+  constexpr uint16_t large_payload_record_count = 220;
+  constexpr uint32_t large_payload_record_size = 512;
+  constexpr uint8_t large_payload_prefix[] = {0xb3, 0x96};
+  std::vector<uint8_t> large_payload(large_payload_record_size);
+  auto make_large_payload_tag = [](uint16_t id) {
+    return std::array<uint8_t, 6>{
+        0xb3, 0x96, static_cast<uint8_t>(id >> 8),
+        static_cast<uint8_t>(id), 0x01, 0x02};
+  };
+  auto fill_large_payload = [&large_payload](uint16_t id) {
+    for (size_t index = 0; index < large_payload.size(); ++index) {
+      large_payload[index] = static_cast<uint8_t>(
+          (index * 17u + (index >> 8) * 29u + id * 13u) & 0xffu);
+    }
+  };
+  bool large_payload_survives_restore = fs_init() == FS_STATUS_OK;
+  for (uint16_t id = 0; id < large_payload_record_count &&
+                        large_payload_survives_restore; ++id) {
+    const auto tag = make_large_payload_tag(id);
+    fill_large_payload(id);
+    large_payload_survives_restore =
+        fs_write(tag.data(), tag.size(), large_payload.data(),
+                 large_payload_record_size) == FS_STATUS_OK;
+  }
+  large_payload_survives_restore = large_payload_survives_restore &&
+      rp2350_fs_test_overlay_bytes_used() > 96 * 1024 &&
+      fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK;
+  for (uint16_t id = 0; id < large_payload_record_count &&
+                        large_payload_survives_restore; ++id) {
+    const auto tag = make_large_payload_tag(id);
+    fill_large_payload(id);
+    const uint8_t *restored_large_payload = nullptr;
+    uint32_t restored_large_payload_length = 0;
+    large_payload_survives_restore =
+        fs_read_inplace(tag.data(), tag.size(), &restored_large_payload,
+                        &restored_large_payload_length) == FS_STATUS_OK &&
+        restored_large_payload != nullptr &&
+        restored_large_payload_length == large_payload.size() &&
+        std::equal(large_payload.begin(), large_payload.end(),
+                   restored_large_payload);
+  }
+  expect(large_payload_survives_restore,
+         "filesystem_v4_persists_payload_above_previous_96_kib_limit");
+  const bool large_payload_compacts_and_reloads =
+      fs_erase_prefix(large_payload_prefix, sizeof(large_payload_prefix)) ==
+          FS_STATUS_OK &&
+      rp2350_fs_test_compact() == FS_STATUS_OK && fs_sync() == FS_STATUS_OK &&
+      fs_init() == FS_STATUS_OK && rp2350_fs_test_overlay_file_count() == 0;
+  expect(large_payload_compacts_and_reloads,
+         "filesystem_v4_compacts_large_payload_and_reloads");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
