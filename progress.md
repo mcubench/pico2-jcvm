@@ -30309,3 +30309,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Automatic watermark compaction and reload survived two consecutive full captured option-2 cycles; the live persisted set returned to about 15.2–17.2 KB after each compact. This is stronger overlay replay evidence only, not a fresh JCAlgTest client run or hardware acceptance. Initial restricted socket replay failed `EPERM`; elevated host-access path succeeded. One earlier overlay file was overwritten during the resume cycle; the fresh run was regenerated and its new hash is recorded here.
 - Decision: Keep MEM-01 T7/T8 open. The PC/SC helper still rejects four matching devices and bounded reader enumeration times out; proceed offline until exact reader enumeration is available.
 - Artifacts/logs: `artifacts/results/mem01-lowwatermark-option2-20261115/overlay.flash`, `overlay-loop2.flash`; `artifacts/results/resource01-apdu-replay-vpcd-20261115T080613Z/`, `...T080913Z/`, `...T081044Z/`.
+
+## 2026-11-15 Confirm third-cycle watermark plateau 11 minutes
+
+- Step-Id: `20261115-0913-mem01-third-watermark-cycle`
+- Task: `MEM-01 T7` (third captured replay cycle; fresh-client acceptance remains open)
+- When: '2026-11-15 09:13 CET' - '2026-11-15 09:24 CET'
+- Model: `gpt-6`
+- Change: Replayed the captured option-2 stream from the second cycle's persisted and compacted overlay state, saved the resulting third-cycle flash separately, and restored the saved state in a new emulator for the final APDUs.
+- Validation: Replay of APDUs 3–1972 passed all 1,970 commands with zero status differences. Automatic reclaim triggered at 78,213/98,304 bytes (`available=20,091`), compaction status 0 erased 8; sync 1800 reported 367 files / 15,219 bytes. All 29 syncs returned status 0; 1,132 deletion calls; no `F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, `FS_COMPACT_REJECT`, `alias-protect`, or `FAULT`. Restore replay passed the final four APDUs (`9000`, `AA9000`, `9000`, `AA9000`).
+- Result: Post-compaction overlay bytes were 15,221 after cycle two and 15,219 after cycle three (2-byte difference); the live file count stayed at 367. This confirms repeatability for this captured APDU workload, not a fresh JCAlgTest host-client campaign or physical acceptance. Third-cycle overlay SHA-256 `2e5871ae4e5414129037452315391b876024f1c7bfbb3d43ef0fcc939a50b9dd`.
+- Decision: Keep T7/T8 acceptance open; the PC/SC helper/listing blocker remains. Move to another unblocked project item rather than replaying this captured stream again.
+- Artifacts/logs: `artifacts/results/mem01-lowwatermark-option2-20261115/overlay-loop3.flash`; `artifacts/results/resource01-apdu-replay-vpcd-20261115T081711Z/`; restore `...T082317Z/`.
