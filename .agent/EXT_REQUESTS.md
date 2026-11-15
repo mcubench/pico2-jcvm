@@ -1,6 +1,30 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D — Test current deletion-enabled image
+
+Created 2026-11-15 12:45 CET. This is the current test candidate and supersedes
+`WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732`. Use the normal ARM `max_crypto`
+image built from HEAD `afe8ed5d` plus its dirty worktree. Object deletion is ON;
+debug/trace switches are OFF; persistent storage is erased; no applet is
+preinstalled. The persistent overlay remains at the INV-28 limit of 96 KiB /
+8,192 slots.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-afe8ed5d-current.uf2)
+- UF2 SHA-256: `7d44ec93552fe1acad4824c0014109a47260064dd51df5935a272f169f607df0`; size 4,126,208 bytes.
+- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-afe8ed5d.zip)
+- ZIP SHA-256: `f509456710e7527ca3545b763492c8e07e80bea446f5641800b6ddaacfc7f053`.
+- Build and source/submodule identities are in `BUILD-PROVENANCE.txt`. ARM build passed in normal mode; linked end `0x100f7920`, leaving 34,528 bytes. Fixture verification and package checksums/ZIP integrity passed. No physical flash or Windows run was performed here.
+
+Unzip and follow the included README: verify the UF2 hash, flash through
+BOOTSEL, confirm the card is empty, explicitly install the unchanged supplied
+JCAlgTest 1.8.4/jc305 CAP with included GPPro, then run option 2 with the
+included 1.8.5 client. Return the complete result folder and serial log,
+Windows version, reader/ATR, chip ID, image/JAR hashes, and any disconnects,
+resets, stalls or timeouts.
+
 ## WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732 — Test deletion-enabled image within declared storage limit
+
+Superseded by `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` for new runs.
 
 Created 2026-11-15 12:30 CET. This supersedes the withdrawn D73E3411 image,
 the 72CBEEDC image, and earlier E9C4DEB3 candidate. Use the normal ARM
@@ -9,6 +33,9 @@ tracked worktree changes. Object deletion and automatic low-watermark
 reclaim/compaction are ON; all debug/trace flags and startup wait are OFF. The
 overlay remains at the INV-28 limit of 96 KiB / 8,192 slots. Persistent storage
 is erased, and no applet is preinstalled.
+
+This request is now superseded by `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D`;
+retain only for results already collected against its old hash.
 
 - [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d1130732-current.uf2)
 - UF2 SHA-256: `80840af050b8a6e7f32c540a56b18421415143d4093c491bf9efcd41859d326c`; size 4,126,208 bytes.
@@ -28,12 +55,12 @@ disconnects, resets, stalls, or timeouts.
 
 Created 2026-11-15 12:35 CET. Diagnostic run (not acceptance) for TODO
 LONGOP-01. It needs only about 5 minutes per attempt. If the full option-2
-run under `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732` is in progress, let it
-finish first. Neither image contains a LONGOP-01 fix, so both should fail at
-this operation.
+run under `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` is in progress, let it
+finish first. The current image does not contain a LONGOP-01 fix, so it may
+still fail at this operation.
 
-1. Flash the current empty-card UF2 from `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732`
-   (SHA-256 `80840af0…d326c`). Install the unchanged JCAlgTest CAP with GPPro.
+1. Flash the current empty-card UF2 from `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D`
+   (SHA-256 `7d44ec93…f607df0`). Install the unchanged JCAlgTest CAP with GPPro.
    Use the pinned 1.8.5 client and report its SHA-256; it must be
    `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
 2. Copy `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/pico2_maxcrypto_20261115_25216292-dirty____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list`
@@ -64,13 +91,13 @@ APDU and right after it:
 
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732` above for new testing. The
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` above for new testing. The
 intermediate D73E3411 candidate changed the declared overlay limit and is
 withdrawn; do not flash it.
 
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732` above for new testing. Its
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` above for new testing. Its
 image predates the current checkout and should be retained only as historical
 evidence.
 

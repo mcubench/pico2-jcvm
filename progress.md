@@ -30422,3 +30422,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - HEAD `5259374b` does not change these paths.
 - Decision: LONGOP-01 is P0 under HOST-01. Next: T1 offline heap measurement and T2 Linux physical reproduction with timestamped serial, both using the client's `__already_measured.list` resume trick (≈2 min to the failing APDU). Then fix D1 (time-based and in-modexp progress, no core 1 without an approved design) and D2 if confirmed.
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261114-805420e6/`; `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/` (incl. `readme.txt` SHA-256 `8b4375f1263673eab9b17b71d2436dedb9ec02c1c23f6829fd4c99dc560a4d70` and the `__already_measured.list`).
+## 2026-11-15 Build deletion-enabled external image 7 minutes
+
+- Step-Id: `20261115-1245-maxcrypto-deletion-image`
+- Task: `MEM-01 T7` external option-2 test preparation
+- When: '2026-11-15 12:38 CET' - '2026-11-15 12:45 CET'
+- Model: `gpt-6`
+- Change: Rebuilt ARM `max_crypto` from HEAD `afe8ed5d` plus the pre-existing dirty worktree, packaged an erased-storage empty-card UF2, and refreshed the Windows package with the unchanged 1.8.4/jc305 CAP and supplied 1.8.5 client. Updated the current-image table, external request and handoff. No source changes were made.
+- Validation: `./tools/build arm --profile max_crypto` passed in normal mode (`object_deletion=ON`, all debug options OFF); linked end `0x100f7920`, 34,528 bytes remain. `./tools/package-empty-card-uf2` passed with 3,962 firmware blocks and 4,096 erased-storage blocks. `./tools/fixture-path --verify` passed (83 files). Package `SHA256SUMS.txt` and `unzip -t` passed. Physical flashing and Windows testing were not performed.
+- Result: Empty-card UF2 is 4,126,208 bytes, SHA-256 `7d44ec93552fe1acad4824c0014109a47260064dd51df5935a272f169f607df0`; package ZIP SHA-256 `f509456710e7527ca3545b763492c8e07e80bea446f5641800b6ddaacfc7f053`. Package provenance records the dirty source diff SHA-256 and dirty submodules.
+- Decision: This is the current external test candidate, not acceptance evidence. Request a Windows option-2 run against this exact UF2 hash; preserve prior results under their respective image hashes.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-afe8ed5d-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-afe8ed5d.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D`.
