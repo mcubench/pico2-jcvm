@@ -30151,3 +30151,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The captured applet/storage workload does not reproduce the physical failure in this emulator state. This narrows the issue but does not identify the physical transport cause or establish a fresh-client campaign.
 - Decision: Keep T7 live-client and T8 physical acceptance open. Next obtain bounded reader enumeration, then run a fresh option-2 client session; do not infer CCID success from VPCD.
 - Artifacts/logs: `artifacts/results/t7-option2-aes192-full-capture-20261115/replay-summary.txt`, `emulator.log`, `source-client.log`, `overlay.flash`; source log SHA-256 `f8877260315b953ef01684cc3323fdddffeff2b8ee8e09e952a51770fc65e1f5`.
+
+## 2026-11-15 Refresh focused memory and persistence regressions 3 minutes
+
+- Step-Id: `20261115-0155-mem01-offline-regressions`
+- Task: MEM-01 current-source offline regression refresh
+- When: '2026-11-15 01:55 CET' - '2026-11-15 01:58 CET'
+- Model: `GPT-6`
+- Change: Rebuilt and ran the focused RP2350 overlay, persistent transaction, persistent inventory and RMI registry suites against the current shared source state; recorded the result under MEM-01. No code changes were made.
+- Validation: `./tools/test-rp2350-fs-overlay`, `./tools/test-persistent-transaction`, `./tools/test-persistent-inventory`, and `./tools/test-rmi-registry` all exited 0. Overlay, transaction and inventory emitted `TEST:SUMMARY fail=0`; RMI emitted passing registry assertions. The overlay's many `persist_reject` records are expected fault-injection output and its end-of-run power-cut and full-index compaction cases passed.
+- Result: Current offline persistence, object-deletion and context-root regressions pass. Reader enumeration remains unavailable and no physical acceptance is inferred.
+- Decision: Keep T7/T8 open; continue offline until reader enumeration is restored.
+- Artifacts/logs: Test output was observed in command results and not separately archived; generated builds are under `build/tests/`.
