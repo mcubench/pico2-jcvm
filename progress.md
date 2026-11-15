@@ -30321,3 +30321,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Post-compaction overlay bytes were 15,221 after cycle two and 15,219 after cycle three (2-byte difference); the live file count stayed at 367. This confirms repeatability for this captured APDU workload, not a fresh JCAlgTest host-client campaign or physical acceptance. Third-cycle overlay SHA-256 `2e5871ae4e5414129037452315391b876024f1c7bfbb3d43ef0fcc939a50b9dd`.
 - Decision: Keep T7/T8 acceptance open; the PC/SC helper/listing blocker remains. Move to another unblocked project item rather than replaying this captured stream again.
 - Artifacts/logs: `artifacts/results/mem01-lowwatermark-option2-20261115/overlay-loop3.flash`; `artifacts/results/resource01-apdu-replay-vpcd-20261115T081711Z/`; restore `...T082317Z/`.
+
+## 2026-11-15 Document PC/SC reader-count blocker 3 minutes
+
+- Step-Id: `20261115-0925-host01-reader-count`
+- Task: `HOST-01` / `MEM-01 T7` hardware prerequisite
+- When: '2026-11-15 09:24 CET' - '2026-11-15 09:27 CET'
+- Model: `gpt-6`
+- Change: Added external request `HOST01-READER-COUNT-20261115` asking for no more than three intended Pico JCVM readers to be visible to the VM, or confirmation that four are intentional. Added the exact approved helper and bounded reader-list commands. No firmware or system configuration was changed.
+- Validation: Read-only attempt of `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported four matching Pico CCID devices, outside its supported 1–3 limit, and exited 1 without changing ACLs. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out with exit 124 and no inventory. Physical work was skipped.
+- Result: The four-device guard remains intact; no exact physical reader identity is available. Continue offline while waiting for reader enumeration to recover.
+- Decision: Do not bypass the helper or operate on an unidentified device. Resume PC/SC client and physical campaigns only after bounded enumeration succeeds.
+- Artifacts/logs: `.agent/EXT_REQUESTS.md` request `HOST01-READER-COUNT-20261115`; `.agent/QKB.md` PC/SC helper limit entry.

@@ -1,5 +1,18 @@
 # External validation requests
 
+## HOST01-READER-COUNT-20261115 — Restore bounded Pico reader inventory
+
+Created 2026-11-15 09:25 CET. The approved helper currently detects four matching `2e8a:0009 Pico2 JCVM CCID` devices, exceeds its supported 1–3 device range, and refuses ACL changes. The subsequent bounded reader listing times out, so no device can be safely identified for the fresh-client or physical test.
+
+Please make no more than three intended Pico 2 JCVM readers visible to this VM (for example, detach an unintended extra VirtualBox USB attachment). If all four are intentional, report that; do not change firmware. Then run from the repo root and return both outputs:
+
+```bash
+sudo -n /usr/local/sbin/pico2-pcsc-reader
+PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8
+```
+
+No firmware flashing is requested. This request only restores bounded reader enumeration so the agent can identify an exact reader before any hardware operation.
+
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-D3061DDD
 
 Use the newer `WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F` package below.

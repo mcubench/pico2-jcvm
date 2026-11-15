@@ -19,6 +19,6 @@ Updated: 2026-11-15.
 - T7 fresh unchanged-client option 2 and T8 physical option 2/option 1 remain open. T10 write-failure retry remains open.
 
 ## Hardware/PCSC state
-- Latest approved helper attempt found four matching Pico CCID devices, outside its 1–3-device limit, and refused ACL changes. Bounded elevated `./tools/list-readers --timeout 8` then timed out (exit 124); no exact reader was identified. Do not flash or claim a fresh client run from this state.
+- Latest approved helper attempt found four matching Pico CCID devices, outside its 1–3-device limit, and refused ACL changes. External request `HOST01-READER-COUNT-20261115` asks to restore a bounded reader pool and return the helper/listing outputs. Bounded elevated `./tools/list-readers --timeout 8` then timed out (exit 124); no exact reader was identified. Do not flash or claim a fresh client run from this state.
 - A restricted direct VPCD socket run failed with `EPERM`; the same bounded replay succeeded via the elevated host-access path. Use that path for direct VPCD replay in this VM.
 - Retry hardware work only after the approved helper and bounded reader enumeration succeed; use exact identified reader names and fail over across identified boards.
