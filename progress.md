@@ -30103,3 +30103,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: T7 VPCD/physical client validation remains blocked on reader enumeration, not on an identified firmware fault.
 - Decision: Continue offline and do not repeat unbounded polling; use the current `2ba049c8-dirty` image pointer.
 - Artifacts/logs: `TODO.md`; `.agent/QKB.md`; `.agent/HANDOFF.md`; reader command output only (not separately archived).
+
+## 2026-11-15 Diagnose T7 heap inventory filter 6 minutes
+
+- Step-Id: `20261115-0101-t7-diagnostic-filter`
+- Task: MEM-01 T7 diagnostic coverage
+- When: '2026-11-15 00:55 CET' - '2026-11-15 01:01 CET'
+- Model: `GPT-6`
+- Change: Investigated why `PICO2_GC_SCAN_DIAGNOSTICS=1` emitted no heap inventory for the offline high-occupancy reclaimer graph. Updated T7 status, QKB and handoff with the compiled-out/filter cause. The temporary test compile changes used to confirm the diagnostic code path were reverted; no source changes remain from the experiment.
+- Validation: A temporary `PC_VERSION` build of `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`; its heap-graph metric was `roots=20 children=280 slots=581 bytes=67458 available_floor=30752 compactions=12 erased=108 last_candidates=9 ram_handle_peak=309 integrity_avg_us=315 integrity_max_us=361`. No `HEAP_INVENTORY` appeared because the code requires `static_roots >= 20`, while the fixture enumerates vector roots. The reader enumeration independently timed out; no VPCD client run occurred.
+- Result: Existing offline heap/reclaimer coverage is strong for this scenario, but it does not supply requested inventory/alias telemetry. Missing diagnostic output is explained by its filter and is not evidence that the objects were absent.
+- Decision: Keep T7 open. Adjust the diagnostic predicate or obtain the evidence from the unchanged-client VPCD option-2 run after reader access returns.
+- Artifacts/logs: `artifacts/logs/t7-overlay-gc-scan-diagnostics-20261115.log`; `.agent/QKB.md`.

@@ -1248,3 +1248,19 @@ after its 8-second bound with `READERS:ERROR listing timed out after 8 s`.
 No reader names were returned. This does not identify the USB nodes as JCVM
 readers and does not justify repeating scans. VPCD/physical campaigns remain
 blocked until bounded reader enumeration works; proceed with offline work.
+
+
+## 2026-11-15 T7 heap inventory diagnostic filter excludes the overlay fixture
+
+`PICO2_GC_SCAN_DIAGNOSTICS=1` produced no `OBJECT_DELETION:HEAP_INVENTORY` in
+the high-occupancy overlay test. The test calls `Heap::traceReachableFrom` with
+an explicit vector of 20 root references and reaches 300 arrays, but does not
+populate `static_reference_roots`. The optional inventory is compiled only
+under `PC_VERSION` and its guard requires both `arrays_reachable >= 100` and
+`static_roots >= 20`; therefore the high-occupancy T7 fixture does not meet
+the filter even when that diagnostic block is compiled in. The overlay test
+passed (`TEST:SUMMARY fail=0`, 12 compactions, peak handles 309). Do not treat
+missing inventory output as a successful count of object roots. Either adjust
+the diagnostic predicate to cover vector-root graphs or obtain alias-root
+telemetry through the unchanged-client VPCD run. Reader enumeration remains
+blocked separately.
