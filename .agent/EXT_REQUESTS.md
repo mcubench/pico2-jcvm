@@ -5,7 +5,40 @@
 Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-2BA049C8` package below; it
 was rebuilt from the latest checkout after subsequent memory-management fixes.
 
-## WIN-OBJECT-DELETION-NORMAL-DIRTY-2BA049C8 — External deletion-enabled test
+## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-2BA049C8
+
+Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61` package below. This
+replacement includes the latest dirty-source bugfix state.
+
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61 — External deletion-enabled test
+
+Created 2026-11-15 01:36 CET. ARM RP2350 `max_crypto`, normal mode, object
+deletion ON, all debug/trace OFF, zero startup wait, empty persistent storage,
+and no preinstalled applet. Built from HEAD `c3309a61987c674c` plus dirty
+tracked changes; exact root and CHOUPI OS diff hashes are in package
+provenance.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-c3309a61-dirty.uf2)
+- UF2 SHA-256: `12fc079ec6927e13aad2cc59acf41adade7cfc955f4bdceb81cf9cfdb41f679d`
+- Size: 4,125,184 bytes
+- [Complete Windows package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-c3309a61-dirty.zip)
+- Package SHA-256: `c543d8e739b6e5d73e954e95e0d36dff431f27f00abdfdb934a786e14d79f9c5`
+- [Instructions](../build/external-test/pico2-jcvm-object-deletion-normal-windows-c3309a61-dirty/README.md)
+- Build provenance records tracked diff and submodule identities, build flags,
+  ROM mask, input hashes and firmware size. Firmware ends at `0x100f7744`,
+  leaving 35,004 bytes before the configured limit.
+- ARM build, empty-card UF2 creation, fixture verification and ZIP integrity
+  passed. No physical flash or local hardware test was performed.
+- Test assets are unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied
+  1.8.5 client.
+
+Flash the provided UF2, record its exact hash, Windows version, reader
+name/ATR, chip ID, complete client results and serial log. Run option 2 on one
+board and option 1 on another identified board when available. Confirm the
+card is empty before explicitly installing the supplied CAP with GPPro. Return
+all per-device results and telemetry.
+
+## Superseded external test details: WIN-OBJECT-DELETION-NORMAL-DIRTY-2BA049C8
 
 Created 2026-11-15 00:47 CET. ARM RP2350 `max_crypto`, normal mode, object
 deletion ON, all debug/trace OFF, zero startup wait, empty persistent storage,

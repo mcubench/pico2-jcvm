@@ -30115,3 +30115,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Existing offline heap/reclaimer coverage is strong for this scenario, but it does not supply requested inventory/alias telemetry. Missing diagnostic output is explained by its filter and is not evidence that the objects were absent.
 - Decision: Keep T7 open. Adjust the diagnostic predicate or obtain the evidence from the unchanged-client VPCD option-2 run after reader access returns.
 - Artifacts/logs: `artifacts/logs/t7-overlay-gc-scan-diagnostics-20261115.log`; `.agent/QKB.md`.
+
+## 2026-11-15 Build external deletion-enabled image from latest worktree 12 minutes
+
+- Step-Id: `20261115-0125-win-object-deletion-c3309a61`
+- Task: Prepare external Windows `max_crypto` image with object deletion enabled and current bugfix state
+- When: '2026-11-15 01:25 CET' - '2026-11-15 01:37 CET'
+- Model: `GPT-6`
+- Change: Rebuilt ARM `max_crypto` from HEAD `c3309a61` plus its existing dirty tracked worktree, generated a blank-storage/empty-card UF2, and refreshed external-test package, provenance, checksum list, README, EXT request, current-image index and handoff. No source edits were made; unrelated user/session worktree changes were preserved.
+- Validation: `./tools/build arm --profile max_crypto` passed without compiler warnings or errors; build provenance says `mode=normal`, `object_deletion=ON`, all three debug flags OFF and serial wait 0 ms. `./tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed. `./tools/package-empty-card-uf2` passed (3,960 firmware blocks + 4,096 erased storage blocks). `./tools/fixture-path --verify` passed (`files=83`). Package `sha256sum --check` and `unzip -t` passed. No physical operation was attempted.
+- Result: UF2 SHA-256 `12fc079ec6927e13aad2cc59acf41adade7cfc955f4bdceb81cf9cfdb41f679d`; ZIP SHA-256 `c543d8e739b6e5d73e954e95e0d36dff431f27f00abdfdb934a786e14d79f9c5`. Firmware ends `0x100f7744`, leaving 35,004 bytes. Exact root and CHOUPI OS dirty-diff hashes are recorded in `BUILD-PROVENANCE.txt`; the image was not flashed or hardware-tested here.
+- Decision: Offer the new package for external deletion testing and treat the older `2ba049c8-dirty` package as superseded. Physical acceptance remains open.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-c3309a61-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-c3309a61-dirty.zip`; `.agent/EXT_REQUESTS.md`.
