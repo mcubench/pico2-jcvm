@@ -970,6 +970,14 @@ review.
   visible; `pcsc_scan -r` did not enumerate a reader after the approved helper
   refresh. The run showed no memory exhaustion statuses. See QKB D92 response
   stall entry and `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.
+  2026-11-15 PC/SC trace: USB enumeration showed three `2e8a:0009 Pico2
+  JCVM CCID` devices. SmartcardIO connected successfully to
+  `/run/pcscd/pcscd.comm` and sent its PC/SC requests, then blocked waiting for
+  the response to the reader-list request until the eight-second client bound
+  killed it. `pcscd` remained alive about 1:20 after the client exited (main
+  thread reported 1.6% CPU); this is a daemon-side/no-response observation, not
+  proof of a specific USB driver fault. Trace:
+  `artifacts/logs/smartcardio-list-readers-strace-20261115.log`.
   Acceptance: identify a reproducible cause/fix or a concrete host limitation;
   never attribute absent enumeration to crypto or a reader-count firmware limit.
   Follow AGENTS host-access rules from the first USB/PCSC operation, use exact

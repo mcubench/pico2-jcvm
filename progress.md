@@ -30199,3 +30199,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Current source retains malformed CAP fail-closed behavior across LOAD, INSTALL, persisted restart and descriptor-free method entry. This closes those specific offline regression checks, not CAPIN-01 physical acceptance or all Export invariants.
 - Decision: Keep CAPIN-01 open for remaining Export consistency and physical acceptance. Keep T7/T8 memory acceptance open; local reader enumeration remains unavailable.
 - Artifacts/logs: `artifacts/logs/cap-missing-import-apdu-20261115T011714Z.log` SHA-256 `c9a7879faa1f8b0092dfc19a7bdbda0eb33fd248ba7e8eba1160d332ba38eb30`; `artifacts/logs/host-vpcd-multipackage-apdu-20261115T012501Z.log` SHA-256 `9531b793ebf76e0e9ffcbcbf15a67f7dadffcf0cfd74479f31ffd5a19b8e4e06`; emulator transcript appended to `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
+
+## 2026-11-15 Trace the stalled PC/SC reader-list request 11 minutes
+
+- Step-Id: `20261115-0637-host01-pcsc-trace`
+- Task: HOST-01 layer-specific diagnosis for reader enumeration timeout
+- When: '2026-11-15 06:37 CET' - '2026-11-15 06:48 CET'
+- Model: `GPT-6`
+- Change: Traced one bounded SmartcardIO reader-list request and inspected the socket-activated PC/SC daemon and USB inventory. Recorded the newly isolated request/response stall in HOST-01, QKB and the handoff. No firmware or service configuration was changed.
+- Validation: Elevated `lsusb -d 2e8a:` showed three `2e8a:0009 Pico2 Pico2 JCVM CCID` devices. A bounded 8 s `JCAlgTestReaderIndex --list` trace shows successful connection to `/run/pcscd/pcscd.comm`, two outbound PC/SC request frames (8 and 12 bytes), then indefinite `poll(POLLIN)` for the response until timeout. A separate read-only `ps` check observed socket-activated `pcscd` still alive around 1:20 after client timeout; its main thread showed 1.6% CPU. The trace does not identify which internal PC/SC or USB-driver operation withheld the response. Do not infer firmware/APDU failure from the reader listing timeout.
+- Result: The observed timeout is after SmartcardIO connects and sends the reader-list request, in the PC/SC reply path; USB enumeration alone does not establish reader publication. No physical reader was available for a JCVM operation.
+- Decision: Keep HOST-01, MEM-01 T7/T8 and all physical acceptance open. Continue with offline work; a future daemon/driver diagnostic must identify the server-side wait before a host-side fix is claimed.
+- Artifacts/logs: `artifacts/logs/smartcardio-list-readers-strace-20261115.log` SHA-256 `2ec963a0dd001fc2f94f56b74bcf1db05ed9d4b78c6cf459c5d6f9f378356df3`; focused trace shows client connection/request followed by unanswered list request.

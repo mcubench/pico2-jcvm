@@ -1257,6 +1257,16 @@ Later on 2026-11-15, the helper again granted three USB-node ACLs (`001/074`,
 ./tools/list-readers --timeout 8` again timed out after 8 s with no readers.
 The local VPCD regressions remain usable; the helper's ACL count establishes
 neither physical token identity nor PC/SC reader availability.
+Another read-only trace confirmed all three nodes enumerate as
+`2e8a:0009 Pico2 JCVM CCID`. SmartcardIO successfully connected to
+`/run/pcscd/pcscd.comm`, sent its context and reader-list requests, and blocked
+on `poll(POLLIN)` awaiting the daemon reply until the 8 s timeout. `pcscd`
+remained alive around 1:20 after the client timed out, with the main thread
+observed at 1.6% CPU. This localizes the observed stall to the PC/SC request
+response path; it does not establish whether the daemon is blocked in a USB
+driver, a reader probe or another internal operation. Trace:
+`artifacts/logs/smartcardio-list-readers-strace-20261115.log` (SHA-256
+`2ec963a0dd001fc2f94f56b74bcf1db05ed9d4b78c6cf459c5d6f9f378356df3`).
 
 
 ## 2026-11-15 T7 heap inventory diagnostic filter excludes the overlay fixture

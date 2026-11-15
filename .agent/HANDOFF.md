@@ -17,5 +17,6 @@ Updated: 2026-11-15.
 3. CAPIN-01 offline coverage was refreshed: malformed external-superclass LOAD returned `6A80`, forbidden native-bridge Import INSTALL returned `6982`, stored missing Import/Class CAPs fail applet SELECT with `6F00` while Card Manager remains selectable, and unchanged JCAlgTest Descriptor-free install/select returns `9000`. Physical validation and broader Export consistency remain open.
 
 ## Hardware access
-- Last reader attempt: approved helper granted USB ACLs but bounded elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out; no usable inventory was obtained. Refresh with the helper and bounded reader listing before hardware work.
+- Latest reader check: helper granted three ACLs and USB lists three `2e8a:0009 Pico2 JCVM CCID` devices. SmartcardIO connects to pcscd but blocks awaiting the list-readers reply; no PC/SC inventory is available. See `artifacts/logs/smartcardio-list-readers-strace-20261115.log`. Do not attribute this to VM/APDU behavior.
+- Refresh with the approved helper and a bounded reader listing before hardware work; keep testing offline while the PC/SC reply stalls.
 - Do not claim physical acceptance without reader enumeration, identity, flash and finite serial logs.
