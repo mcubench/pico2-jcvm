@@ -1,5 +1,33 @@
 # External validation requests
 
+## WIN-MEM01-EMPTY-NODEBUG-5ABADB7D — Test current deletion-enabled build
+
+Created 2026-11-15 14:47 CET. This is the current external candidate and
+supersedes `WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY` for new runs. It is a
+normal ARM `max_crypto` image with persistent object deletion ON, all debug and
+trace switches OFF, 0 ms startup wait, an erased 1 MiB storage region, and no
+preinstalled applet. It includes the schema-v5 persistent tag-prefix storage
+headroom change and stays within the INV-28 96 KiB / 8,192-slot limit.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5abadb7d-dirty.uf2)
+- UF2 SHA-256: `b939546c33be122e0d4d82072001ebc1f1e07ea75f7bb1872869889d89730801`; size 4,127,232 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-nodebug-empty-card-5abadb7d-dirty.zip)
+- ZIP SHA-256: `3fbdc2be502f78e4b2c3ae85d92ac8f36b561de30444eeeffade25bb8b9c2e83`.
+- Source HEAD `5abadb7d` plus dirty worktree/submodules; see package `BUILD-PROVENANCE.txt`. CPLC source ID: `0x5ABADB7D9497425E`.
+- ARM build passed, normal mode, object deletion ON, debug OFF. Linked end `0x100f7b08`, with 34,040 bytes remaining. Physical flash and Windows testing were not performed here.
+
+The package README gives exact PowerShell hash verification and BOOTSEL
+flashing commands. Confirm the card is empty, then install the included
+unchanged JCAlgTest 1.8.4/jc305 CAP with GPPro and run option 2 using the
+included 1.8.5 client. Return the complete result folder and serial log,
+Windows version, reader and ATR, chip ID, firmware and client hashes, and any
+USB/PCSC errors, resets, stalls or timeouts.
+
+## Superseded: WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY
+
+Use `WIN-MEM01-EMPTY-NODEBUG-5ABADB7D` above for new tests. Keep the old image
+only for results already collected against its hash.
+
 ## WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY — Test current deletion-enabled image
 
 Created 2026-11-15 14:10 CET. This supersedes D508CAE8 for new tests. Use the

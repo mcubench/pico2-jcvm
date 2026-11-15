@@ -30481,3 +30481,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 is 4,127,232 bytes; SHA-256 `11da9cebad8c04884084e95bbd40f5b7282a65a579e18abfb72abbeb8d81d98f`. The underlying firmware UF2 SHA-256 is `c64abbe582c661b89c3563b3177e36292597f2f5c27555131006fd8e6db2270a`. CPLC source ID is `0x54BBA2B3DF957F7D`.
 - Decision: This is the image to use for new external deletion-enabled testing. It is a build artifact, not physical acceptance evidence; source identity includes uncommitted worktree changes not represented by CPLC's base-HEAD identifier.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-54bba2b3-dirty.uf2`; `build/arm/build-provenance.txt`; request `WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY`.
+
+## 2026-11-15 Rebuild deletion-enabled external test package 4 minutes
+
+- Step-Id: `20261115-1448-mem01-external-build-5abadb7d`
+- Task: `MEM-01 T10` external option-2 test preparation
+- When: '2026-11-15 14:44 CET' - '2026-11-15 14:48 CET'
+- Model: `gpt-6`
+- Change: Rebuilt the current checkout as normal ARM `max_crypto` with the schema-v5 persistent tag-prefix storage headroom change, object deletion ON, all debug/trace switches OFF, 0 ms startup wait, and a fully erased empty-card storage region. Refreshed the external Windows package, TODO current-image row, external request and handoff. No physical token was flashed.
+- Validation: `./tools/build arm --profile max_crypto` passed; provenance confirms `mode=normal`, `object_deletion=ON`, and all debug flags OFF. `./tools/package-empty-card-uf2` passed (3,964 firmware blocks + 4,096 erased-storage blocks). `./tools/fixture-path --verify` passed (83 files); package SHA256SUMS and `unzip -t` passed; scoped `git diff --check` passed. No PC/SC or physical validation was run.
+- Result: Empty-card UF2 SHA-256 `b939546c33be122e0d4d82072001ebc1f1e07ea75f7bb1872869889d89730801`, 4,127,232 bytes. Firmware UF2 SHA-256 `5d26b0e25cf0e86a21dfe0060f40ab46194ec7e0074dd53dae9ec7aa6c61994c`; linked end `0x100f7b08`, 34,040 bytes remain. ZIP SHA-256 `3fbdc2be502f78e4b2c3ae85d92ac8f36b561de30444eeeffade25bb8b9c2e83`. Build CPLC source ID `0x5ABADB7D9497425E`; tracked worktree and submodules were dirty and are detailed in package provenance.
+- Decision: `WIN-MEM01-EMPTY-NODEBUG-5ABADB7D` is the current external test candidate. The card is empty; install the unchanged 1.8.4/jc305 CAP explicitly with GPPro and run the included 1.8.5 client. This build is not hardware acceptance evidence.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5abadb7d-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-nodebug-empty-card-5abadb7d-dirty.zip`; `build/arm/build-provenance.txt`.
