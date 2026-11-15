@@ -83,11 +83,10 @@ static_assert(sizeof(FilesystemRecordV4) == 8,
               "v4 filesystem snapshot index record must be 8 bytes");
 constexpr size_t kFilesystemBitmapBytes = (kMaxOverlayFiles + 7) / 8;
 // Version 4 replaces each 16-bit slot number with a 1-bit index in a fixed
-// 1 KiB occupancy bitmap. The physical RP2350 copy-on-write slot is 160 KiB;
-// let low-index-count stores use a 112 KiB payload ceiling. overlay_byte_limit
-// also subtracts the header and the actual index size, so highly fragmented
-// stores receive a smaller payload limit when their index needs more room.
-constexpr size_t kMaxOverlayBytes = 112 * 1024;
+// 1 KiB occupancy bitmap. Together with compact entries this frees about
+// 15 KiB at full index occupancy, enabling a 96 KiB data arena in the
+// existing 160 KiB copy-on-write slots.
+constexpr size_t kMaxOverlayBytes = 96 * 1024;
 constexpr uint32_t kOverlayOffsetHighBit = 0x10000;
 constexpr uint32_t kOverlayOffsetHigh2Bit = 0x20000;
 static_assert(kMaxOverlayBytes <= 0x3ffff,

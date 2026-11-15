@@ -30381,3 +30381,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `14fce03c058c92f76b6677134412aab8c4ca96718d0607a79612be51003b4138`, 4,126,208 bytes. Package SHA-256 `d7fe6bbeda10357a61b79cfb44a9ba0e2fb80146a6f9264bceb7a80438f3ed07`. Flash end `0x100f7920`, 34,528 bytes remain. Package source tree was dirty due unrelated pre-existing work; exact status and submodule identities are documented inside.
 - Decision: Request an external option-2 run on this exact hash. This candidate includes the 112 KiB overlay headroom change but is not acceptance evidence; the safe-point exhaustion-triggered reclaim in T10 remains unimplemented.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d73e3411-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-d73e3411.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-D73E3411`.
+
+## 2026-11-15 Restore INV-28 overlay limit 5 minutes
+
+- Step-Id: `20261115-1228-spec28-restore-overlay-limit`
+- Task: `SPEC INV-28` compliance correction
+- When: '2026-11-15 12:23 CET' - '2026-11-15 12:28 CET'
+- Model: `gpt-6.1-sol`
+- Change: Reverted the just-added 112 KiB overlay ceiling and its above-limit test after the completion audit found it contradicted user-confirmed INV-28 (96 KiB / 8,192 slots; limit changes require user decision). The 112 KiB external candidate is withdrawn. No other worktree changes were reverted.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0` at the specified 96 KiB limit; `./tools/build arm --profile max_crypto` passed as normal mode with object deletion ON and all debug switches OFF. Linked end `0x100f7920`, 34,528 bytes remain. No hardware validation was performed.
+- Result: Source and fake-flash harness again enforce the 96 KiB invariant. The previously created 112 KiB package must not be used; it will be superseded by a compliant 96 KiB package.
+- Decision: Keep T10 focused on safe reclamation/heap-reference diagnosis within INV-28. If a larger overlay becomes the selected solution, request explicit user approval through `.agent/EXT_REQUESTS.md` before changing the invariant.
+- Artifacts/logs: source restored from pre-capacity revision `a63bfc4a`; tests and ARM build outputs under `build/`.
