@@ -1,5 +1,21 @@
 # External validation requests
 
+## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-D3061DDD
+
+Use the newer `WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F` package below.
+
+## WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F — Test automatic low-watermark reclaim fix
+
+Created 2026-11-15 08:38 CET. This package supersedes the D3061DDD low-watermark build. It is a fresh no-debug ARM `max_crypto` image with persistent object deletion ON, automatic low-watermark reclaim plus tombstone compaction, and erased persistent storage (empty card). Source HEAD is `45ec828ff2acd098689ab4f3d72566745678c4b7` plus dirty worktree; see package provenance for tracked-diff and submodule hashes.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-45ec828f-low-watermark.uf2)
+- UF2 SHA-256: `47c0e5f194139e3720e43292f4a47468cbb6892990c9e1724813389b469117b9`; size 4,126,208 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-low-watermark-45ec828f.zip)
+- ZIP SHA-256: `6f17e5b1006537178560e082f2a073eedc55171a475754f214095c02e05616bf`.
+- ARM build passed (linked end `0x100f7920`; 34,528 bytes remain); fixture manifest verification and ZIP integrity passed. The RP2350 overlay VPCD test passed 515/515 APDUs over 512 persistent-array replacements, preserved the live root, and observed one automatic trigger plus compaction. No physical or Windows validation was performed.
+
+Flash with BOOTSEL, verify the hash, confirm the card is empty, then install the unchanged upstream 1.8.4/jc305 CAP explicitly with included GPPro. Run option 2 using the included supplied 1.8.5 client and capture serial telemetry. Return per-device result files, serial log, Windows version, reader/ATR, chip ID, firmware hash, and all disconnects or stalls.
+
 ## WIN-OBJECT-DELETION-LOW-WATERMARK-D3061DDD — Test low-watermark deletion
 
 Created 2026-11-15 08:11 CET. This package supersedes

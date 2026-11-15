@@ -30274,3 +30274,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Provide the package for external Windows testing, while keeping T7/T8 physical/client acceptance open and T10 direct failed-write retry unimplemented. The image is diagnostic evidence, not physical acceptance.
 - Commit: See Git history for this progress record.
 - Artifacts/logs: `artifacts/logs/rp2350-fs-overlay-low-watermark-20261115.log`; package `BUILD-PROVENANCE.txt`, README and `SHA256SUMS.txt`.
+
+## 2026-11-15 Fix automatic low-watermark compaction 15 minutes
+
+- Step-Id: `20261115-0823-mem01-vpcd-auto-gc-firmware`
+- Task: `MEM-01 T7` (focused regression only; acceptance remains open)
+- When: '2026-11-15 08:23 CET' - '2026-11-15 08:38 CET'
+- Model: `gpt-6`
+- Change: Captured pre-reclaim free space for the automatic-deletion trigger and tombstone-compaction decision in both physical and PC VPCD/RP2350-overlay paths. Added a fixture case that repeatedly abandons persistent arrays without requesting deletion, checks the retained root, and a VPCD auto-GC runner mode. Prepared a fresh no-debug max_crypto empty-card external package.
+- Validation: `PICO2_HOST_USB_ACCESS=1 PICO2_VPCD_RP2350_OVERLAY=1 ./tools/test-object-deletion-vpcd 512 auto-gc` passed (515/515 APDUs; one AUTO_TRIGGER and one AUTO_COMPACT; no FS_WRITE_FAIL/F205/NO_RESOURCE/FAULT); `./tools/build arm --profile max_crypto` passed (linked end `0x100f7920`, 34,528 bytes remain); `./tools/fixture-path --verify` passed (83 files); empty-card UF2 and ZIP integrity checks passed. Physical validation intentionally not performed.
+- Result: The runner previously used post-batch available space; erased objects could move it above the watermark before compaction. The pre-batch snapshot now correctly requests compaction. External UF2 SHA-256 `47c0e5f194139e3720e43292f4a47468cbb6892990c9e1724813389b469117b9`; package SHA-256 `6f17e5b1006537178560e082f2a073eedc55171a475754f214095c02e05616bf`.
+- Decision: External Windows option-2 validation may proceed using `WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F`; unchanged-client T7 and physical T8 remain open.
+- Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261115T073454Z.log`; `build/external-test/pico2-jcvm-maxcrypto-deletion-low-watermark-45ec828f/`

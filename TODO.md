@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Latest diagnostic external image (`max_crypto`, deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-20261115.uf2` | `83423ee4f68e7c16b88741b09a6d126cf33f2ba86d407f5b00675968a45c3f1d` | source HEAD `d3061ddd` plus dirty working tree; fake-flash watermark test passes; no physical validation |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-on-windows-d3061ddd-dirty.zip` | `c1aed51f971aa17d22feafb69427e340e5014fca086d0e97b6f3b382ea94ecb3` | EXT `WIN-OBJECT-DELETION-LOW-WATERMARK-D3061DDD`; provenance and diagnostic limitations are in package |
+| Latest external image (`max_crypto`, deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-45ec828f-low-watermark.uf2` | `47c0e5f194139e3720e43292f4a47468cbb6892990c9e1724813389b469117b9` | source HEAD `45ec828f` plus dirty tree; VPCD auto-GC test passes; no physical validation |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-low-watermark-45ec828f.zip` | `6f17e5b1006537178560e082f2a073eedc55171a475754f214095c02e05616bf` | EXT `WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F`; VPCD/fake-flash evidence only |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01
@@ -153,6 +153,8 @@ Superseded reviewer/status blocks are archived in `.agent/archive/2026-11-14-tod
   `BUILD-DBG-01-NODEBUG-MARKERS` in `progress.md`.
 
 ## Resource lifecycle
+
+- 2026-11-15 low-watermark auto-GC VPCD regression: after each APDU boundary, PC_VPCD with the RP2350 overlay detected low free space, requested deletion automatically, erased abandoned persistent arrays, and compacted tombstones based on free space captured before the erase batch. The run performed 512 replacements plus a live-root read: 515/515 APDUs passed, one AUTO_TRIGGER and one AUTO_COMPACT were logged, and no FS_WRITE_FAIL/F205/NO_RESOURCE/FAULT occurred. This is focused fixture evidence only; unchanged-client option 2, RAM-handle bounds, alias-protect telemetry, multi-compaction steady-state stress, and physical T8 remain open. Log: `artifacts/logs/object-deletion-vpcd-20261115T073454Z.log`.
 
 ### RESOURCE-02
 

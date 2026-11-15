@@ -7,21 +7,28 @@ iterations="${1:-8}"
 mode="${2:-byte-array}"
 key_bits="${3:-512}"
 apdu_timeout="${PICO2_VPCD_APDU_TIMEOUT:-20}"
+rp2350_overlay="${PICO2_VPCD_RP2350_OVERLAY:-0}"
 if ! [[ "${iterations}" =~ ^[1-9][0-9]*$ ]] || \
   ((iterations < 1 || iterations > 512)); then
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
+  die "usage: $0 [iterations 1..512] [byte-array|auto-gc|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
 fi
 if ! [[ "${apdu_timeout}" =~ ^[1-9][0-9]{0,3}$ ]]; then
   die "PICO2_VPCD_APDU_TIMEOUT must be an integer from 1 to 9999 seconds"
 fi
-[[ "${mode}" == "byte-array" || "${mode}" == "rsa-public" || \
+[[ "${rp2350_overlay}" == 0 || "${rp2350_overlay}" == 1 ]] || \
+  die "PICO2_VPCD_RP2350_OVERLAY must be 0 or 1"
+[[ "${mode}" == "byte-array" || "${mode}" == "auto-gc" || \
+   "${mode}" == "rsa-public" || \
    "${mode}" == "rsa-live-static" || "${mode}" == "rsa-batch" ]] || \
-  die "usage: $0 [iterations 1..512] [byte-array|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
+  die "usage: $0 [iterations 1..512] [byte-array|auto-gc|rsa-public|rsa-live-static|rsa-batch] [rsa-bits for rsa-public]"
 [[ "${key_bits}" == 512 || "${key_bits}" == 1024 || \
    "${key_bits}" == 2048 || "${key_bits}" == 4096 ]] || \
   die "RSA key size must be 512, 1024, 2048, or 4096 bits"
 if [[ "${mode}" != "rsa-public" && "${key_bits}" != 512 ]]; then
   die "RSA key size selection is available only in rsa-public mode"
+fi
+if [[ "${mode}" == "auto-gc" && "${rp2350_overlay}" != 1 ]]; then
+  die "auto-gc requires PICO2_VPCD_RP2350_OVERLAY=1"
 fi
 rsa_size_code=0
 case "${key_bits}" in
@@ -30,19 +37,26 @@ case "${key_bits}" in
   4096) rsa_size_code=3 ;;
 esac
 
-"${repo_root}/tools/build-pc" --profile max_crypto
+build_directory="${repo_root}/build/choupi-pc"
+build_args=(--profile max_crypto)
+if [[ "${rp2350_overlay}" == 1 ]]; then
+  build_args+=(--rp2350-overlay)
+  build_directory="${repo_root}/build/choupi-pc-rp2350-overlay"
+fi
+"${repo_root}/tools/build-pc" "${build_args[@]}"
 "${repo_root}/tools/build-persistent-reclaimer-probe"
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 flash_copy="${repo_root}/build/persistent-reclaimer-probe/vpcd-object-deletion-${stamp}.bin"
+overlay_flash="${repo_root}/build/persistent-reclaimer-probe/rp2350-overlay-${stamp}.flash"
 log="${repo_root}/artifacts/logs/object-deletion-vpcd-${stamp}.log"
 mkdir -p "${repo_root}/artifacts/logs"
 
 probe_args=(
   --apdu-timeout "${apdu_timeout}"
-  --emulator "${repo_root}/build/choupi-pc/choupi"
+  --emulator "${build_directory}/choupi"
   --cap-code "${repo_root}/build/persistent-reclaimer-probe/load-code.bin"
-  --rom-mask "${repo_root}/build/choupi-pc/flash"
+  --rom-mask "${build_directory}/flash"
   --applet-aid A000000062030201 --package-id 57 --passes 1
   --flash-copy "${flash_copy}" --log "${log}"
 )
@@ -72,6 +86,10 @@ else
         --apdu 00000B0000 --expect-apdu-response 019000
         --apdu 00000B0000 --expect-apdu-response 019000
       )
+    elif [[ "${mode}" == "auto-gc" ]]; then
+      probe_args+=(
+        --apdu 00000F0000 --expect-apdu-response 5A9000
+      )
     else
       probe_args+=(
         --apdu 0000010000 --expect-apdu-response 2A9000
@@ -79,6 +97,9 @@ else
       )
     fi
   done
+  if [[ "${mode}" == "auto-gc" ]]; then
+    probe_args+=(--apdu 0000100000 --expect-apdu-response 5A9000)
+  fi
 fi
 if [[ "${mode}" == "rsa-batch" ]]; then
   total_records=$((iterations * 10))
@@ -90,12 +111,35 @@ if [[ "${mode}" == "rsa-batch" ]]; then
     probe_args+=(--apdu 00000D0000 --expect-apdu-response 009000)
   done
 fi
-probe_args+=(--apdu 0000050000 --expect-apdu-response 009000)
+if [[ "${mode}" != "auto-gc" ]]; then
+  probe_args+=(--apdu 0000050000 --expect-apdu-response 009000)
+fi
 
-PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 \
-  "${repo_root}/tools/env" python3 \
-  "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
-  "${probe_args[@]}"
+if [[ "${rp2350_overlay}" == 1 ]]; then
+  PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 \
+    PICO2_RP2350_OVERLAY_FLASH="${overlay_flash}" \
+    "${repo_root}/tools/env" python3 \
+    "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
+    "${probe_args[@]}"
+else
+  PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 \
+    "${repo_root}/tools/env" python3 \
+    "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
+    "${probe_args[@]}"
+fi
+
+if [[ "${mode}" == "auto-gc" ]]; then
+  grep -Fq 'OBJECT_DELETION:AUTO_TRIGGER ' "${log}" || \
+    die "automatic deletion was not triggered by low space; see ${log}"
+  grep -Fq 'OBJECT_DELETION:AUTO_COMPACT ' "${log}" || \
+    die "automatic deletion did not compact tombstones; see ${log}"
+  if grep -Eq 'FS_WRITE_FAIL|F205|NO_RESOURCE|FAULT' "${log}"; then
+    die "automatic deletion stress emitted a storage/runtime failure; see ${log}"
+  fi
+  printf 'OBJECT_DELETION_VPCD:PASS mode=auto-gc allocations=%s log=%s\n' \
+    "${iterations}" "${log#${repo_root}/}"
+  exit 0
+fi
 
 grep -Eq '^OBJECT_DELETION: .*erased_package=0 ' "${log}" || \
   die "unexpected package-static erase in this owner-only fixture; see ${log}"

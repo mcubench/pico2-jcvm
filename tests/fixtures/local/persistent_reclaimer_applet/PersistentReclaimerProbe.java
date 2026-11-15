@@ -129,6 +129,22 @@ public final class PersistentReclaimerProbe extends Applet {
         retainedRsaKey = null;
         buffer[0] = 0;
         break;
+      case 15: {
+        // Replace one retained persistent array per APDU without requesting
+        // object deletion. The previous array should become reclaimable at
+        // the safe point after this APDU returns.
+        retained = new byte[240];
+        retained[0] = 0x5a;
+        retained[(short)(retained.length - 1)] = 0x6b;
+        buffer[0] = retained[0];
+        break;
+      }
+      case 16:
+        buffer[0] = retained != null && retained[0] == 0x5a &&
+                            retained[(short)(retained.length - 1)] == 0x6b
+                        ? (byte)0x5a
+                        : 0;
+        break;
       default:
         ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
     }

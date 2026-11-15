@@ -1371,3 +1371,17 @@ sweep drained over 695 boundaries. The live root survived; max raw use was
 77,852/98,304 bytes (79.2%). This is not physical proof; still validate on
 hardware with an unchanged long JCAlgTest run. Direct failed-write retry is
 still unsafe from the live Java stack and remains a separate design task.
+
+
+## Low-watermark sweep must compact using pre-sweep free-space — 2026-11-15
+
+When an automatic deletion sweep erases unreachable records, `fs_erase()` can
+raise the reported available byte count above the 20 KiB trigger before the
+service decides whether to compact tombstones. Comparing the post-sweep value
+therefore skipped compaction even though the sweep began under the watermark.
+Capture available bytes at the safe point before the reclaim batch and use that
+snapshot for both the trigger and post-batch compaction decision. Apply this to
+both physical ARM and PC VPCD/RP2350-overlay paths. Focused auto-GC VPCD test
+passed 512 array replacements (515/515 APDUs), with one automatic trigger and
+one compaction, retaining the live root. This does not close unchanged-client
+T7 or physical T8 acceptance.
