@@ -35,6 +35,9 @@ extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" uint32_t rp2350_fs_test_live_record_count(void);
 extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
+extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
+                                                  uint32_t *bytes_used,
+                                                  uint32_t *byte_capacity);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_header(
     const uint8_t *tag, uint8_t tag_length, uint8_t header);
 extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
@@ -226,7 +229,7 @@ uint32_t test_crc32(const uint8_t *data, size_t length) {
 void convert_v4_snapshot_to_legacy(uint32_t offset, uint16_t version) {
   auto *header = reinterpret_cast<FilesystemHeaderTest *>(
       fake_flash.data() + offset);
-  if (header->version != 4 || version < 2 || version > 3) std::abort();
+  if (header->version != 5 || version < 2 || version > 3) std::abort();
   const uint8_t *source = fake_flash.data() + offset + 4096;
   size_t output_length = 0;
   uint32_t restored_count = 0;
@@ -260,7 +263,8 @@ void convert_v4_snapshot_to_legacy(uint32_t offset, uint16_t version) {
 bool make_v4_snapshot_record_offsets_overlap(const uint32_t offset) {
   auto *header = reinterpret_cast<FilesystemHeaderTest *>(
       fake_flash.data() + offset);
-  if (header->version != 4 || header->file_count < 2 ||
+  if ((header->version != 4 && header->version != 5) ||
+      header->file_count < 2 ||
       header->payload_length > filesystem_snapshot_scratch.size()) {
     return false;
   }
@@ -293,7 +297,8 @@ bool make_v4_snapshot_record_offsets_overlap(const uint32_t offset) {
 bool v4_snapshot_checksums_valid(const uint32_t offset) {
   const auto *header = reinterpret_cast<const FilesystemHeaderTest *>(
       fake_flash.data() + offset);
-  if (header->magic != 0x3253464a || header->version != 4 ||
+  if (header->magic != 0x3253464a ||
+      (header->version != 4 && header->version != 5) ||
       header->payload_length > flash_layout::filesystem_slot_size - 4096) {
     return false;
   }
@@ -387,7 +392,83 @@ std::pair<std::array<uint8_t, 3>, std::array<uint8_t, 3>> colliding_tags() {
 }
 } // namespace
 
-int main() {
+int main(const int argc, char **argv) {
+  if (argc == 3 && std::strcmp(argv[1], "--inspect-flash") == 0) {
+    FILE *input = std::fopen(argv[2], "rb");
+    if (input == nullptr) {
+      std::fprintf(stderr, "OVERLAY_INSPECT:FAIL open=%s\n", argv[2]);
+      return 2;
+    }
+    const size_t bytes_read = std::fread(fake_flash.data(), 1,
+                                         fake_flash.size(), input);
+    const bool exact_size = bytes_read == fake_flash.size() &&
+                            std::fgetc(input) == EOF;
+    const bool closed = std::fclose(input) == 0;
+    if (!exact_size || !closed) {
+      std::fprintf(stderr,
+                   "OVERLAY_INSPECT:FAIL size expected=%zu actual=%zu\n",
+                   fake_flash.size(), bytes_read);
+      return 2;
+    }
+    if (fs_init() != FS_STATUS_OK || rp2350_fs_test_integrity_valid() != 1) {
+      std::fprintf(stderr, "OVERLAY_INSPECT:FAIL snapshot_init_or_integrity\n");
+      return 1;
+    }
+
+    uint32_t file_count = 0;
+    uint32_t bytes_used = 0;
+    uint32_t capacity = 0;
+    choupi_persistent_memory_usage(&file_count, &bytes_used, &capacity);
+    std::printf("OVERLAY_INSPECT:PASS files=%u bytes=%u capacity=%u available=%u\n",
+                file_count, bytes_used, capacity,
+                choupi_available_persistent_memory_bytes());
+
+    fs_tag_next_request_t cursor{};
+    uint8_t empty_prefix = 0;
+    uint32_t records = 0;
+    uint64_t payload_bytes = 0;
+    while (true) {
+      const uint8_t status = fs_next_tag(&empty_prefix, 0, &cursor);
+      if (status == 1) break;
+      if (status != 0) {
+        std::fprintf(stderr,
+                     "OVERLAY_INSPECT:FAIL enumeration status=%u after=%u\n",
+                     static_cast<unsigned>(status), records);
+        return 1;
+      }
+      const uint8_t tag_length = cursor.tag[0];
+      const uint8_t *tag = cursor.tag + 1;
+      const uint8_t *data = nullptr;
+      uint32_t length = 0;
+      if (fs_read_inplace(tag, tag_length, &data, &length) != FS_STATUS_OK ||
+          (length != 0 && data == nullptr)) {
+        std::fprintf(stderr,
+                     "OVERLAY_INSPECT:FAIL read tag_length=%u\n",
+                     static_cast<unsigned>(tag_length));
+        return 1;
+      }
+      std::printf("OVERLAY_RECORD tag=");
+      for (uint8_t index = 0; index < tag_length; ++index) {
+        std::printf("%02X", tag[index]);
+      }
+      std::printf(" length=%u\n", length);
+      ++records;
+      payload_bytes += length;
+    }
+    if (records != file_count) {
+      std::fprintf(stderr,
+                   "OVERLAY_INSPECT:FAIL enumerated=%u expected=%u\n",
+                   records, file_count);
+      return 1;
+    }
+    std::printf("OVERLAY_INSPECT:SUMMARY records=%u payload_bytes=%llu\n",
+                records, static_cast<unsigned long long>(payload_bytes));
+    return 0;
+  }
+  if (argc != 1) {
+    std::fprintf(stderr, "usage: rp2350_fs_overlay_test [--inspect-flash FILE]\n");
+    return 2;
+  }
   fake_flash.fill(0xff);
   expect(fs_init() == 0, "filesystem_initializes");
 
@@ -761,6 +842,81 @@ int main() {
                      sizeof(actual)) == 0 &&
              actual[0] == second_value[0],
          "compress_16_bit_class_array_element_tag");
+
+  // New V5 parent-prefix keys store arbitrary suffix bytes. The child tag is
+  // much longer than its existing parent and is not eligible for equal-pair
+  // compression, so this checks the production fs_write path and its byte
+  // savings rather than only the test-only legacy encoder.
+  std::array<uint8_t, 20> prefix_parent{};
+  prefix_parent[0] = 0x02;
+  prefix_parent[1] = 0xe7;
+  prefix_parent[2] = 0xa1;
+  for (size_t index = 3; index < prefix_parent.size(); ++index) {
+    prefix_parent[index] = static_cast<uint8_t>(0x31u + index * 7u);
+  }
+  std::array<uint8_t, 35> prefix_child{};
+  std::copy(prefix_parent.begin(), prefix_parent.end(), prefix_child.begin());
+  for (size_t index = prefix_parent.size(); index < prefix_child.size();
+       ++index) {
+    prefix_child[index] = static_cast<uint8_t>(0x91u + index * 11u);
+  }
+  constexpr uint8_t prefix_parent_value[] = {0x51};
+  constexpr uint8_t prefix_child_value[] = {0xa1, 0xb2, 0xc3, 0xd4};
+  std::array<uint8_t, sizeof(prefix_child_value)> prefix_child_actual{};
+  const uint32_t prefix_bytes_before = rp2350_fs_test_overlay_bytes_used();
+  const bool prefix_parent_written =
+      fs_write(prefix_parent.data(), prefix_parent.size(),
+               prefix_parent_value, sizeof(prefix_parent_value)) ==
+      FS_STATUS_OK;
+  const uint32_t prefix_bytes_after_parent =
+      rp2350_fs_test_overlay_bytes_used();
+  const bool prefix_child_written =
+      fs_write(prefix_child.data(), prefix_child.size(), prefix_child_value,
+               sizeof(prefix_child_value)) == FS_STATUS_OK;
+  const uint32_t prefix_child_bytes = rp2350_fs_test_overlay_bytes_used() -
+                                      prefix_bytes_after_parent;
+  const uint8_t prefix_child_read_status =
+      fs_read(prefix_child.data(), prefix_child.size(),
+              prefix_child_actual.data(), prefix_child_actual.size());
+  std::printf("TEST:INFO arbitrary_prefix written=%u parent_bytes=%lu "
+              "child_delta=%lu expected_delta=%lu read_status=%u "
+              "value_match=%u\n",
+              static_cast<unsigned>(prefix_child_written),
+              static_cast<unsigned long>(prefix_bytes_after_parent -
+                                         prefix_bytes_before),
+              static_cast<unsigned long>(prefix_child_bytes),
+              static_cast<unsigned long>(1u + 3u +
+                  (prefix_child.size() - prefix_parent.size()) +
+                  sizeof(prefix_child_value)),
+              static_cast<unsigned>(prefix_child_read_status),
+              static_cast<unsigned>(std::memcmp(
+                  prefix_child_actual.data(), prefix_child_value,
+                  sizeof(prefix_child_value)) == 0));
+  expect(prefix_parent_written && prefix_child_written &&
+             prefix_bytes_after_parent >= prefix_bytes_before &&
+             prefix_child_bytes ==
+                 1u + 3u + (prefix_child.size() - prefix_parent.size()) +
+                     sizeof(prefix_child_value) &&
+             prefix_child_read_status == FS_STATUS_OK &&
+             std::memcmp(prefix_child_actual.data(), prefix_child_value,
+                         sizeof(prefix_child_value)) == 0,
+         "arbitrary_prefix_encoding_saves_tag_bytes_and_reads_child");
+  expect(fs_sync() == FS_STATUS_OK &&
+             fs_erase(prefix_parent.data(), prefix_parent.size()) ==
+                 FS_STATUS_OK &&
+             rp2350_fs_test_compact() == FS_STATUS_OK &&
+             fs_read(prefix_child.data(), prefix_child.size(),
+                     prefix_child_actual.data(),
+                     prefix_child_actual.size()) == FS_STATUS_OK &&
+             std::memcmp(prefix_child_actual.data(), prefix_child_value,
+                         sizeof(prefix_child_value)) == 0 &&
+             fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+             fs_read(prefix_child.data(), prefix_child.size(),
+                     prefix_child_actual.data(),
+                     prefix_child_actual.size()) == FS_STATUS_OK &&
+             std::memcmp(prefix_child_actual.data(), prefix_child_value,
+                         sizeof(prefix_child_value)) == 0,
+         "arbitrary_prefix_child_survives_parent_erase_compaction_and_restore");
 
   // Start the snapshot-slot fallback test from a known generation. Earlier
   // contract checks intentionally committed a snapshot to cover sync.
@@ -1816,9 +1972,18 @@ int main() {
       for (size_t index = 0; index < value.size(); ++index) {
         value[index] = static_cast<uint8_t>(suffix * 31u + index * 17u);
       }
-      mixed_live_ok = rp2350_fs_test_write_parent_encoded(
-                          child_tag.data(), child_tag.size(), value.data(),
-                          value.size()) == FS_STATUS_OK;
+      const uint8_t child_status = rp2350_fs_test_write_parent_encoded(
+          child_tag.data(), child_tag.size(), value.data(), value.size());
+      if (child_status != FS_STATUS_OK) {
+        std::printf("TEST:INFO mixed_live_child_write parent=%u child=%u "
+                    "status=%u files=%u bytes=%lu\n",
+                    static_cast<unsigned>(parent_id),
+                    static_cast<unsigned>(child_index),
+                    static_cast<unsigned>(child_status),
+                    static_cast<unsigned>(rp2350_fs_test_overlay_file_count()),
+                    static_cast<unsigned long>(rp2350_fs_test_overlay_bytes_used()));
+      }
+      mixed_live_ok = child_status == FS_STATUS_OK;
       if (mixed_live_ok) {
         MixedLiveRecord record;
         record.tag.assign(child_tag.begin(), child_tag.end());
@@ -1857,6 +2022,11 @@ int main() {
       mixed_live_initial_bytes <= 75 * 1024 &&
       mixed_live_initial_available > 8000 &&
       rp2350_fs_test_integrity_valid() == 1 && fs_sync() == FS_STATUS_OK;
+  std::printf("TEST:INFO mixed_live_setup ok=%u records=%zu slots=%zu "
+              "bytes=%zu available=%zu\n",
+              static_cast<unsigned>(mixed_live_ok), mixed_live_records.size(),
+              mixed_live_initial_slots, mixed_live_initial_bytes,
+              mixed_live_initial_available);
   uint64_t integrity_check_total_us = 0;
   uint64_t integrity_check_max_us = 0;
   size_t mixed_live_min_available = mixed_live_initial_available;
@@ -1950,6 +2120,10 @@ int main() {
     }
     return true;
   };
+  if (mixed_live_records.empty()) {
+    expect(false, "rp2350_overlay_mixed_live_interrupted_snapshots_restore_old_or_new_state");
+    return failures == 0 ? 0 : 1;
+  }
   std::vector<uint8_t> changed_first_record = mixed_live_records.front().value;
   changed_first_record[0] ^= 0x5a;
   committed_flash = fake_flash;
@@ -2962,8 +3136,8 @@ int main() {
   constexpr uint8_t v3_value[] = {0x48, 0x57};
   expect(fs_write(v3_tag, sizeof(v3_tag), v3_value, sizeof(v3_value)) == 0 &&
              fs_sync() == 0 &&
-             fake_flash[flash_layout::filesystem_slot(0) + 4] == 4,
-         "filesystem_first_write_migrates_snapshot_to_v4");
+             fake_flash[flash_layout::filesystem_slot(0) + 4] == 5,
+         "filesystem_first_write_migrates_snapshot_to_v5");
   uint8_t v3_actual[sizeof(v3_value)]{};
   expect(fs_init() == 0 &&
              fs_read(v2_tag, sizeof(v2_tag), v2_actual,
@@ -2973,6 +3147,33 @@ int main() {
                      sizeof(v3_actual)) == 0 &&
              std::memcmp(v3_actual, v3_value, sizeof(v3_value)) == 0,
          "filesystem_v4_migration_restores_v2_and_new_records");
+
+  constexpr uint8_t v4_compatibility_tag[] = {0xe0, 0x04, 0x05};
+  constexpr uint8_t v4_compatibility_value[] = {0x19, 0x28, 0x37};
+  bool v4_compatibility_seeded =
+      fs_write(v4_compatibility_tag, sizeof(v4_compatibility_tag),
+               v4_compatibility_value, sizeof(v4_compatibility_value)) ==
+          FS_STATUS_OK &&
+      fs_sync() == FS_STATUS_OK;
+  for (const uint32_t slot : {flash_layout::filesystem_slot(0),
+                              flash_layout::filesystem_slot(1)}) {
+    auto *header = reinterpret_cast<FilesystemHeaderTest *>(
+        fake_flash.data() + slot);
+    if (header->magic == 0x3253464a && header->version == 5) {
+      header->version = 4;
+      header->header_crc32 = test_crc32(
+          reinterpret_cast<const uint8_t *>(header),
+          offsetof(FilesystemHeaderTest, header_crc32));
+    }
+  }
+  uint8_t v4_compatibility_actual[sizeof(v4_compatibility_value)]{};
+  expect(v4_compatibility_seeded && fs_init() == FS_STATUS_OK &&
+             fs_read(v4_compatibility_tag, sizeof(v4_compatibility_tag),
+                     v4_compatibility_actual,
+                     sizeof(v4_compatibility_actual)) == FS_STATUS_OK &&
+             std::memcmp(v4_compatibility_actual, v4_compatibility_value,
+                         sizeof(v4_compatibility_value)) == 0,
+         "filesystem_v4_bitmap_snapshot_remains_readable");
 
   // Force a record above 64 KiB, requiring the high offset bit. Commit and
   // restore it, then compact earlier records and verify its shifted offset.

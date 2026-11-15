@@ -7,47 +7,67 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 Usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-jcalgtest-support-vpcd
 
 Runs an unchanged JCAlgTest operation against an empty PC/SC-published VPCD
-reader. Set JCALGTEST_OPERATION (default ALG_SUPPORT_EXTENDED),
+reader. Set JCALGTEST_OPERATION to ALG_SUPPORT_BASIC, ALG_SUPPORT_EXTENDED,
+ALG_PERFORMANCE_STATIC, or ALG_PERFORMANCE_VARIABLE (default ALG_SUPPORT_EXTENDED),
 JCALGTEST_OBJECT_DELETION=1, JCALGTEST_VPCD_READER, and JCALGTEST_VPCD_ENDPOINT
 as needed. Set JCALGTEST_SUPPORT_TIMEOUT_SECONDS to choose a timeout from 1 to
-3600 seconds. Full logs and intermediate artifacts go under artifacts/results/.
+10800 seconds. Full logs and intermediate artifacts go under artifacts/results/.
 USAGE
   exit 0
 fi
+
+operation="${JCALGTEST_OPERATION:-ALG_SUPPORT_EXTENDED}"
+case "${operation}" in
+  ALG_SUPPORT_BASIC|ALG_SUPPORT_EXTENDED|ALG_PERFORMANCE_STATIC|ALG_PERFORMANCE_VARIABLE)
+    ;;
+  *)
+    die "unsupported JCAlgTest operation '${operation}' (choose ALG_SUPPORT_BASIC, ALG_SUPPORT_EXTENDED, ALG_PERFORMANCE_STATIC, or ALG_PERFORMANCE_VARIABLE)"
+    ;;
+esac
 
 require_host_usb_access
 require_command timeout
 require_command grep
 require_command stdbuf
-require_command pcsc_scan
+require_command sha256sum
 "${repo_root}/tools/build-jcalgtest-load-code" >/dev/null
 
 reader="${JCALGTEST_VPCD_READER:-Virtual PCD 00 00}"
 endpoint="${JCALGTEST_VPCD_ENDPOINT:-127.0.0.1:35963}"
-support_timeout="${JCALGTEST_SUPPORT_TIMEOUT_SECONDS:-3600}"
 object_deletion="${JCALGTEST_OBJECT_DELETION:-0}"
-operation="${JCALGTEST_OPERATION:-ALG_SUPPORT_EXTENDED}"
+support_timeout="${JCALGTEST_SUPPORT_TIMEOUT_SECONDS:-3600}"
 [[ "${support_timeout}" =~ ^[1-9][0-9]*$ ]] ||
   die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must be a positive integer"
-(( support_timeout <= 3600 )) ||
-  die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must not exceed 3600"
+(( support_timeout <= 10800 )) ||
+  die "JCALGTEST_SUPPORT_TIMEOUT_SECONDS must not exceed 10800"
 [[ "${object_deletion}" == 0 || "${object_deletion}" == 1 ]] ||
   die "JCALGTEST_OBJECT_DELETION must be 0 or 1"
-[[ "${operation}" =~ ^[A-Z0-9_]+$ ]] ||
-  die "JCALGTEST_OPERATION must contain only uppercase letters, digits, and underscores"
 applet_aid="4A43416C675465737431"
 emulator="${JCALGTEST_VPCD_EMULATOR:-${repo_root}/build/choupi-pc/choupi}"
 rom_mask="${JCALGTEST_VPCD_ROM_MASK:-${repo_root}/build/choupi-pc/flash}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client="${JCALGTEST_CLIENT_JAR:-$("${repo_root}/tools/fixture-path" jcalgtest.client)}"
+client="${JCALGTEST_CLIENT_JAR:-${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar}"
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv"
 expected="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
+rp2350_overlay="${JCALGTEST_RP2350_OVERLAY:-0}"
+[[ "${rp2350_overlay}" == 0 || "${rp2350_overlay}" == 1 ]] ||
+  die "JCALGTEST_RP2350_OVERLAY must be 0 or 1"
+build_directory="${repo_root}/build/choupi-pc"
+if [[ "${rp2350_overlay}" == 1 ]]; then
+  build_directory="${repo_root}/build/choupi-pc-rp2350-overlay"
+  "${repo_root}/tools/build-pc" --profile max_crypto --rp2350-overlay >/dev/null
+fi
+emulator="${JCALGTEST_VPCD_EMULATOR:-${build_directory}/choupi}"
+rom_mask="${JCALGTEST_VPCD_ROM_MASK:-${build_directory}/flash}"
 
 for input in "${emulator}" "${rom_mask}" "${gp_jar}" "${client}" "${cap}" \
     "${reference}" "${expected}"; do
   [[ -s "${input}" ]] || die "required input is missing: ${input}"
 done
+client_hash="$(sha256sum "${client}" | cut -d ' ' -f 1)"
+[[ "${client_hash}" == "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3" ]] ||
+  die "the supplied JCAlgTest client must be 1.8.5 (expected hash pinned in tests/README.md): ${client_hash}"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out_dir="${repo_root}/artifacts/results/jcalgtest-support-vpcd-${timestamp}"
@@ -63,7 +83,7 @@ reader_found=false
 for attempt in 1 2 3; do
   inventory="${out_dir}/reader-inventory-${attempt}.log"
   timeout --signal=TERM --kill-after=2s 20s \
-    stdbuf -oL -eL "${repo_root}/tools/env" pcsc_scan -r \
+    env PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/list-readers" --timeout 15 \
     > "${inventory}" 2>&1 || true
   if grep -Fq "${reader}" "${inventory}"; then
     reader_found=true
@@ -80,12 +100,6 @@ done
   die "VPCD PC/SC reader was not published: ${reader}"
 }
 
-timeout --signal=TERM --kill-after=2s 3600s \
-  stdbuf -oL -eL "${repo_root}/tools/env" pcsc_scan \
-  > "${out_dir}/pcsc-keepalive.log" 2>&1 &
-pcsc_keepalive_pid=$!
-sleep 1
-
 PICO2_RP2350_OVERLAY_FLASH="${overlay_flash}" \
 PICO2_TEST_OBJECT_DELETION="${object_deletion}" \
   "${repo_root}/tools/env" "${emulator}" -m "${memory}" -s \
@@ -98,10 +112,6 @@ cleanup() {
   if kill -0 "${emulator_pid}" 2>/dev/null; then
     kill -TERM "${emulator_pid}" 2>/dev/null || true
     wait "${emulator_pid}" 2>/dev/null || true
-  fi
-  if kill -0 "${pcsc_keepalive_pid}" 2>/dev/null; then
-    kill -TERM "${pcsc_keepalive_pid}" 2>/dev/null || true
-    wait "${pcsc_keepalive_pid}" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT INT TERM
@@ -157,6 +167,18 @@ if ! JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
   cat "${emulator_log}" >&2
   die "JCAlgTest operation ${operation} failed; see ${out_dir}"
 fi
+
+if grep -Eq 'ERROR: unknown option|ERROR: Unexpected exception|ERROR: Unable to measure|Exception in thread' \
+    "${client_log}"; then
+  cat "${client_log}" >&2
+  die "JCAlgTest client reported an operation or runtime failure; see ${out_dir}"
+fi
+mapfile -t result_csvs < <(find "${out_dir}" -maxdepth 1 -type f \
+  -iname '*.csv' -print)
+(( ${#result_csvs[@]} > 0 )) || {
+  cat "${client_log}" >&2
+  die "JCAlgTest produced no CSV result; see ${out_dir}"
+}
 
 if [[ "${operation}" == ALG_SUPPORT_EXTENDED ]]; then
   mapfile -t reports < <(find "${out_dir}" -maxdepth 1 -type f \

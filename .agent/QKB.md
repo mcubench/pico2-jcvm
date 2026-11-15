@@ -1442,3 +1442,11 @@ client updates it. Results are partial and debug-only.
 
 Tasks: TODO [LONGOP-01](../TODO.md#longop-01). External request:
 `WIN-RSA1984-X50-SERIAL-20261115`.
+
+## Persistent overlay tag-prefix storage (2026-11-15)
+
+**Finding.** The option-2 overlay snapshot near exhaustion stored many related persistent tags as full canonical byte strings. Their common tag ancestry is long, and the old parent encoding only represented a repeated two-byte suffix. On the 1,393-record failure snapshot, modeling arbitrary suffixes under existing serialized prefixes predicted about 35.6 KiB of tag-byte savings without changing the 96 KiB / 8,192-slot INV-28 limit.
+
+**Implementation in progress.** Snapshot schema v5 stores parent slot + suffix length + arbitrary suffix bytes; v2/v3 and v4 bitmap snapshots remain readable, and legacy three-byte repeated-suffix parent records remain supported. Fake-flash regression verifies canonical reads, parent deletion, compaction, sync and reload. A clean overlay-suite pass and ARM normal `max_crypto` build were observed. A fresh option-2 VPCD run with object deletion enabled is active at `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`; at the latest check it had reached RSA-768 operations with no `F205` or `FS_WRITE_FAIL` in its log. This does not establish that the earlier RSA-3072 failure or the 90% peak gate is fixed. Physical T8 remains required.
+
+**When rechecking.** Recompute peak and post-compaction usage from a quiescent overlay image (a copy taken during APDU writes can contain mismatched metadata/arena bytes). Continue with another available identified Pico 2 if one board disappears; VPCD evidence is diagnostic only.

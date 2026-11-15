@@ -30433,3 +30433,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 is 4,126,208 bytes, SHA-256 `7d44ec93552fe1acad4824c0014109a47260064dd51df5935a272f169f607df0`; package ZIP SHA-256 `f509456710e7527ca3545b763492c8e07e80bea446f5641800b6ddaacfc7f053`. Package provenance records the dirty source diff SHA-256 and dirty submodules.
 - Decision: This is the current external test candidate, not acceptance evidence. Request a Windows option-2 run against this exact UF2 hash; preserve prior results under their respective image hashes.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-afe8ed5d-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-afe8ed5d.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D`.
+
+## 2026-11-15 Persistent tag-prefix storage headroom 18 minutes
+
+- Step-Id: `20261115-1340-mem01-prefix-tags`
+- Task: `MEM-01 T10`
+- When: '2026-11-15 13:22 CET' - '2026-11-15 13:40 CET'
+- Model: `gpt-6`
+- Change: Added schema-v5 parent-prefix tag encoding with arbitrary suffix bytes, retaining v2/v3 and v4 bitmap snapshot compatibility and the INV-28 96 KiB / 8,192-slot limit. Added fake-flash regressions for space savings, child survival after parent erase/compaction/reload, and v4 snapshot reads. Tightened the VPCD runner to require an explicit supported operation, pinned 1.8.5 client hash, and actual CSV/runtime success. Updated TODO and QKB with the finding and remaining acceptance gates.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); mixed-live fixture used 71,274/98,304 bytes with 27,030 available and passed 12 compactions (integrity average/max 230/521 µs on the final run). New 35-byte child with 20-byte existing prefix uses a 23-byte record instead of 40 bytes. `./tools/test-persistent-inventory` and `./tools/test-persistent-transaction` passed. `./tools/build arm --profile max_crypto` passed normal mode, object deletion ON, debug OFF; firmware end `0x100f7b08`, 34,040 bytes remain. Scoped `git diff --check` passed.
+- Result: Fresh 1.8.5 client / unchanged 1.8.4 CAP option-2 VPCD run with object deletion and RP2350 overlay is still active in `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`. At record time it had passed RSA-2048 `Cipher_doFinal()` groups and 1,824 deletion requests, with no `F205`, `SystemException_NO_RESOURCE`, `FS_WRITE_FAIL`, or `FAULT` in the logs. This is diagnostic emulator evidence only; the previous run failed later at RSA-3072 and no quiescent post-run overlay measurement is available yet.
+- Decision: The encoding change is validated offline and in the ARM build. Keep MEM-01 T7/T10 open pending the fresh-client run through the prior failure point, peak-usage analysis, and physical T8. Build the external image from the committed source step with object deletion ON and an empty card.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`; overlay image regression and metrics in `tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`.

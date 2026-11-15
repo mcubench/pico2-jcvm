@@ -50,9 +50,10 @@ constexpr uint32_t kFilesystemHeaderSize = FLASH_SECTOR_SIZE;
 constexpr uint32_t kFilesystemPayloadOffset = kFilesystemHeaderSize;
 constexpr uint32_t kFilesystemXipBase = 0x10000000;
 constexpr uint32_t kFilesystemMagic = 0x3253464a; // "JFS2"
-constexpr uint16_t kFilesystemVersion = 4;
+constexpr uint16_t kFilesystemVersion = 5;
 constexpr uint16_t kFilesystemLegacyVersion = 2;
 constexpr uint16_t kFilesystemPreviousVersion = 3;
+constexpr uint16_t kFilesystemBitmapVersion = 4;
 
 struct OverlayFile {
   uint16_t hash = 0;
@@ -247,6 +248,7 @@ bool filesystem_header_valid(const FilesystemHeader &header) {
   const bool supported_version =
       header.version == kFilesystemLegacyVersion ||
       header.version == kFilesystemPreviousVersion ||
+      header.version == kFilesystemBitmapVersion ||
       header.version == kFilesystemVersion;
   const uint32_t maximum_bytes = header.version == kFilesystemLegacyVersion
                                     ? UINT16_MAX
@@ -254,10 +256,11 @@ bool filesystem_header_valid(const FilesystemHeader &header) {
                                           kFilesystemPreviousVersion
                                     ? 77824
                                     : kMaxOverlayBytes;
-  const uint32_t record_size = header.version == kFilesystemVersion
+  const bool bitmap_format = header.version >= kFilesystemBitmapVersion;
+  const uint32_t record_size = bitmap_format
                                    ? sizeof(FilesystemRecordV4)
                                    : sizeof(FilesystemRecord);
-  const uint32_t bitmap_size = header.version == kFilesystemVersion
+  const uint32_t bitmap_size = bitmap_format
                                    ? kFilesystemBitmapBytes
                                    : 0;
   return header.magic == kFilesystemMagic &&
@@ -278,8 +281,8 @@ bool filesystem_slot_valid(uint32_t offset, uint32_t slot_size,
   const auto *header = filesystem_slot_header(offset);
   if (!filesystem_header_valid(*header) ||
       kFilesystemPayloadOffset + header->payload_length > slot_size ||
-      (require_v4 ? header->version != kFilesystemVersion
-                  : header->version >= kFilesystemVersion)) {
+      (require_v4 ? header->version < kFilesystemBitmapVersion
+                  : header->version >= kFilesystemBitmapVersion)) {
     return false;
   }
   const uint8_t *payload = filesystem_slot_data(offset) + kFilesystemPayloadOffset;
@@ -451,7 +454,7 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
   const auto *header = filesystem_slot_header(offset);
   const uint8_t *payload = filesystem_slot_data(offset) + kFilesystemPayloadOffset;
   bool valid = true;
-  if (header->version == kFilesystemVersion) {
+  if (header->version >= kFilesystemBitmapVersion) {
     const uint8_t *bitmap = payload;
     payload += kFilesystemBitmapBytes;
     uint32_t restored_count = 0;
@@ -722,63 +725,162 @@ bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
 bool overlay_integrity_valid(const char **failure_reason,
                              uint16_t *failure_slot);
 
+uint8_t parent_tag_suffix_length(const uint8_t *stored,
+                                 uint8_t key_length) {
+  if (stored == nullptr) return 0;
+  if (key_length == 3) return 2; // legacy repeated-byte suffix
+  if (key_length < 4 || stored[2] == 0 ||
+      static_cast<unsigned>(stored[2]) + 3u != key_length) {
+    return 0;
+  }
+  return stored[2];
+}
+
 OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
                           size_t *found_slot = nullptr);
 
-bool find_parent_slot(const uint8_t *tag, uint8_t tag_length,
-                      uint16_t *parent_slot) {
+struct ParentTagEncoding {
+  uint16_t slot = 0;
+  uint8_t prefix_length = 0;
+  uint8_t suffix_length = 0;
+  bool legacy_repeated_suffix = false;
+};
+
+bool find_parent_encoding(const uint8_t *tag, uint8_t tag_length,
+                          ParentTagEncoding *encoding) {
   const uint8_t root_length = tag_root_length(tag, tag_length);
-  if (root_length == 0 || tag_length < root_length + 2 ||
-      tag[tag_length - 2] != tag[tag_length - 1]) {
+  if (root_length == 0 || tag_length <= root_length || encoding == nullptr) {
     return false;
   }
-  size_t slot = 0;
-  if (find_overlay(tag, tag_length - 2, &slot) == nullptr) {
-    return false;
+
+  // Longer existing prefixes produce a shorter key. The reverse walk also
+  // caps the lookup work at 32 hashes for the longest supported CAP tags.
+  const uint8_t shortest_prefix = static_cast<uint8_t>(
+      std::max<unsigned>(root_length,
+                         tag_length > 32 ? tag_length - 32 : root_length));
+  for (uint8_t prefix_length = tag_length - 1;
+       prefix_length >= shortest_prefix; --prefix_length) {
+    const uint8_t suffix_length =
+        static_cast<uint8_t>(tag_length - prefix_length);
+    const bool legacy_repeated_suffix =
+        suffix_length == 2 && tag[prefix_length] == tag[prefix_length + 1];
+    const uint8_t key_length = legacy_repeated_suffix
+                                   ? 3
+                                   : static_cast<uint8_t>(3 + suffix_length);
+    if (key_length >= tag_length) continue;
+    size_t slot = 0;
+    OverlayFile *parent = find_overlay(tag, prefix_length, &slot);
+    if (parent == nullptr || !overlay_has_storage(*parent)) continue;
+
+    // Keep parent chains within reconstruct_overlay_tag()'s recursion bound.
+    uint16_t ancestor_slot = static_cast<uint16_t>(slot);
+    uint8_t depth = 0;
+    while ((overlay[ancestor_slot].flags & kOverlayParentTag) != 0) {
+      if (++depth >= 63) break;
+      const uint32_t offset = overlay_offset(overlay[ancestor_slot]);
+      if (offset >= overlay_bytes_used ||
+          overlay_bytes_used - offset < 4 ||
+          (overlay_bytes[offset] & 0x80u) == 0) {
+        depth = 63;
+        break;
+      }
+      ancestor_slot = static_cast<uint16_t>(overlay_bytes[offset + 1]) |
+                      static_cast<uint16_t>(overlay_bytes[offset + 2] << 8);
+      if (ancestor_slot >= kMaxOverlayFiles ||
+          !overlay_is_used(overlay[ancestor_slot]) ||
+          !overlay_has_storage(overlay[ancestor_slot])) {
+        depth = 63;
+        break;
+      }
+    }
+    if (depth >= 63) continue;
+    encoding->slot = static_cast<uint16_t>(slot);
+    encoding->prefix_length = prefix_length;
+    encoding->suffix_length = suffix_length;
+    encoding->legacy_repeated_suffix = legacy_repeated_suffix;
+    return true;
   }
-  if (!overlay_has_record(overlay[slot])) {
-    return false;
-  }
-  *parent_slot = static_cast<uint16_t>(slot);
-  return true;
+  return false;
 }
 
 uint8_t encoded_tag_length(const uint8_t *tag, uint8_t tag_length) {
-  if (!is_compressible_tag(tag, tag_length)) {
-    return tag_length;
+  uint8_t encoded_length = tag_length;
+  if (is_compressible_tag(tag, tag_length)) {
+    const uint8_t root_length = tag_root_length(tag, tag_length);
+    encoded_length = static_cast<uint8_t>(
+        root_length + (tag_length - root_length) / 2);
   }
-  const uint8_t root_length = tag_root_length(tag, tag_length);
-  return static_cast<uint8_t>(root_length + (tag_length - root_length) / 2);
+  ParentTagEncoding parent{};
+  if (find_parent_encoding(tag, tag_length, &parent)) {
+    const uint8_t parent_length = parent.legacy_repeated_suffix
+                                      ? 3
+                                      : static_cast<uint8_t>(
+                                            3 + parent.suffix_length);
+    encoded_length = std::min(encoded_length, parent_length);
+  }
+  return encoded_length;
 }
 
-uint8_t overlay_key_length(const OverlayFile &file) {
-  if ((file.flags & kOverlayParentTag) != 0) {
-    return 3;
+void configure_tag_encoding(OverlayFile &file, const uint8_t *tag,
+                            uint8_t tag_length) {
+  file.flags &= static_cast<uint8_t>(
+      ~(kOverlayCompressedTag | kOverlayParentTag));
+  const uint8_t root_length = tag_root_length(tag, tag_length);
+  const uint8_t pair_length = is_compressible_tag(tag, tag_length)
+                                  ? static_cast<uint8_t>(
+                                        root_length +
+                                        (tag_length - root_length) / 2)
+                                  : tag_length;
+  ParentTagEncoding parent{};
+  if (find_parent_encoding(tag, tag_length, &parent)) {
+    const uint8_t parent_length = parent.legacy_repeated_suffix
+                                      ? 3
+                                      : static_cast<uint8_t>(
+                                            3 + parent.suffix_length);
+    if (parent_length < pair_length) {
+      file.flags |= kOverlayParentTag;
+      return;
+    }
   }
-  if (overlay_compresses_tag(file)) {
-    const uint8_t root_length = tag_root_length(
-        overlay_bytes + overlay_offset(file) + 1, file.tag_length);
-    return static_cast<uint8_t>(root_length + (file.tag_length - root_length) / 2);
+  if (is_compressible_tag(tag, tag_length)) {
+    file.flags |= kOverlayCompressedTag;
   }
-  return file.tag_length;
 }
 
 bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
                         uint8_t tag_length) {
   const uint32_t offset = overlay_offset(file);
+  if (offset >= overlay_bytes_used ||
+      overlay_bytes_used - offset < 1) {
+    return false;
+  }
   const uint8_t header = overlay_bytes[offset];
+  const uint8_t key_length = header & 0x7fu;
+  if (key_length > overlay_bytes_used - offset - 1 ||
+      file.size > overlay_bytes_used - offset - 1 - key_length) {
+    return false;
+  }
   const uint8_t *stored = overlay_bytes + offset + 1;
   if ((header & 0x80) != 0) {
+    const uint8_t suffix_length =
+        parent_tag_suffix_length(stored, key_length);
     const uint16_t parent_slot = static_cast<uint16_t>(stored[0]) |
                                  static_cast<uint16_t>(stored[1] << 8);
-    if (tag_length < 2 || parent_slot >= kMaxOverlayFiles ||
-        !overlay_has_record(overlay[parent_slot]) ||
-        overlay[parent_slot].tag_length != tag_length - 2 ||
-        tag[tag_length - 2] != tag[tag_length - 1] ||
-        stored[2] != tag[tag_length - 1]) {
+    if (suffix_length == 0 || suffix_length >= tag_length ||
+        parent_slot >= kMaxOverlayFiles ||
+        !overlay_is_used(overlay[parent_slot]) ||
+        !overlay_has_storage(overlay[parent_slot]) ||
+        overlay[parent_slot].tag_length != tag_length - suffix_length ||
+        (key_length == 3 &&
+         (tag[tag_length - 2] != tag[tag_length - 1] ||
+          stored[2] != tag[tag_length - 1])) ||
+        (key_length != 3 &&
+         !tags_equal(stored + 3, suffix_length,
+                     tag + tag_length - suffix_length, suffix_length))) {
       return false;
     }
-    return stored_tag_matches(overlay[parent_slot], tag, tag_length - 2);
+    return stored_tag_matches(overlay[parent_slot], tag,
+                              static_cast<uint8_t>(tag_length - suffix_length));
   }
   if (!overlay_compresses_tag(file)) {
     return tags_equal(stored, file.tag_length, tag, tag_length);
@@ -854,16 +956,12 @@ OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
 }
 
 OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
-  if (tag_length > 128 ||
-      (tag_length > 127 && !is_compressible_tag(tag, tag_length))) {
+  if (tag_length > 128 || encoded_tag_length(tag, tag_length) > 127) {
     return nullptr;
   }
   if (auto *file = find_overlay(tag, tag_length)) {
     if (!overlay_has_record(*file)) {
-      file->flags &= static_cast<uint8_t>(~kOverlayParentTag);
-      if (is_compressible_tag(tag, tag_length)) {
-        file->flags |= kOverlayCompressedTag;
-      }
+      configure_tag_encoding(*file, tag, tag_length);
     }
     return file;
   }
@@ -876,9 +974,7 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
       file.flags = kOverlayUsed;
       file.hash = hash;
       file.tag_length = tag_length;
-      if (is_compressible_tag(tag, tag_length)) {
-        file.flags |= kOverlayCompressedTag;
-      }
+      configure_tag_encoding(file, tag, tag_length);
       ++overlay_file_count;
       return &file;
     }
@@ -958,7 +1054,9 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
   }
   const uint8_t *stored = overlay_bytes + offset + 1;
   if ((header & 0x80) != 0) {
-    if (key_length != 3 || file.tag_length < 2) {
+    const uint8_t suffix_length =
+        parent_tag_suffix_length(stored, key_length);
+    if (suffix_length == 0 || suffix_length >= file.tag_length) {
       return fail("parent_header");
     }
     const uint16_t parent_slot = static_cast<uint16_t>(stored[0]) |
@@ -969,11 +1067,15 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
                                  report_failure, verify_hash)) {
       return fail("parent_reconstruction", parent_slot, parent_length);
     }
-    if (parent_length + 2 != file.tag_length) {
+    if (parent_length + suffix_length != file.tag_length) {
       return fail("parent_length", parent_slot, parent_length);
     }
-    tag[parent_length] = stored[2];
-    tag[parent_length + 1] = stored[2];
+    if (key_length == 3) {
+      tag[parent_length] = stored[2];
+      tag[parent_length + 1] = stored[2];
+    } else {
+      std::memcpy(tag + parent_length, stored + 3, suffix_length);
+    }
     return finish();
   }
 
@@ -1427,8 +1529,16 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   };
 #endif
   const bool parent_tag = (file.flags & kOverlayParentTag) != 0;
+  ParentTagEncoding parent_encoding{};
+  if (parent_tag &&
+      !find_parent_encoding(tag, file.tag_length, &parent_encoding)) {
+    return reject("parent_missing", length);
+  }
   const uint8_t key_length = parent_tag
-                                 ? 3
+                                 ? (parent_encoding.legacy_repeated_suffix
+                                        ? 3
+                                        : static_cast<uint8_t>(
+                                              3 + parent_encoding.suffix_length))
                                  : (overlay_compresses_tag(file)
                                         ? static_cast<uint8_t>(
                                               tag_root_length(tag, file.tag_length) +
@@ -1477,13 +1587,18 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   overlay_bytes[new_offset] = static_cast<uint8_t>(
       key_length | (parent_tag ? 0x80 : 0));
   if (parent_tag) {
-    uint16_t parent_slot = 0;
-    if (!find_parent_slot(tag, file.tag_length, &parent_slot)) {
-      return reject("parent_missing", new_used);
+    overlay_bytes[new_offset + 1] =
+        static_cast<uint8_t>(parent_encoding.slot);
+    overlay_bytes[new_offset + 2] =
+        static_cast<uint8_t>(parent_encoding.slot >> 8);
+    if (parent_encoding.legacy_repeated_suffix) {
+      overlay_bytes[new_offset + 3] = tag[file.tag_length - 1];
+    } else {
+      overlay_bytes[new_offset + 3] = parent_encoding.suffix_length;
+      std::memcpy(overlay_bytes + new_offset + 4,
+                  tag + parent_encoding.prefix_length,
+                  parent_encoding.suffix_length);
     }
-    overlay_bytes[new_offset + 1] = static_cast<uint8_t>(parent_slot);
-    overlay_bytes[new_offset + 2] = static_cast<uint8_t>(parent_slot >> 8);
-    overlay_bytes[new_offset + 3] = tag[file.tag_length - 1];
   } else if (overlay_compresses_tag(file)) {
     const uint8_t root_length = tag_root_length(tag, file.tag_length);
     std::memcpy(overlay_bytes + new_offset + 1, tag, root_length);
@@ -1822,9 +1937,11 @@ uint8_t compact_deleted_overlay_records() {
       const auto &child = overlay[child_slot];
       if ((child.flags & kOverlayParentTag) == 0) break;
       const uint32_t offset = overlay_offset(child);
+      const uint8_t key_length =
+          offset < overlay_bytes_used ? overlay_bytes[offset] & 0x7fu : 0;
       if (offset >= overlay_bytes_used ||
-          (overlay_bytes[offset] & 0x7fu) != 3 ||
-          overlay_bytes_used - offset < 4) {
+          key_length < 3 ||
+          overlay_bytes_used - offset < 1u + key_length) {
         return reject(FS_STATUS_IO_UNKNOWN, "parent_record_bounds");
       }
       const uint16_t parent_slot =
@@ -2368,12 +2485,13 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
   const auto report_failure_path = [](const char *) {};
 #endif
   auto *file = find_overlay(tag, tag_length);
+  if (file != nullptr) {
+    configure_tag_encoding(*file, tag, tag_length);
+  }
   auto can_write = [&]() {
     const size_t old_record_size =
         file == nullptr ? 0 : 1 + stored_tag_length(*file) + file->size;
-    const size_t record_key_length =
-        file == nullptr ? encoded_tag_length(tag, tag_length)
-                        : overlay_key_length(*file);
+    const size_t record_key_length = encoded_tag_length(tag, tag_length);
     const size_t new_file_count =
         overlay_file_count + (file == nullptr ? 1u : 0u);
     const size_t new_bytes_used =
