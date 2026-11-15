@@ -4,12 +4,12 @@ Updated: 2026-11-15.
 
 ## Current external test image
 - ARM `max_crypto`, normal mode; object deletion ON; debug/trace OFF; serial wait 0 ms; empty card.
-- UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-6547ec4e-dirty.uf2`
-- UF2 SHA-256: `0011be75271a035ea945fa7ba68fbd3f1f98ab3a4bc4160d9eec540169e2c3f8`
-- Windows package: `build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty.zip`
-- ZIP SHA-256: `668f703c3c7b23232a3ab698ddd791b5ddda83a4029592b5061c6e1eeaaeb3d4`
-- External request: `WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E` in `.agent/EXT_REQUESTS.md`.
-- Built from HEAD `6547ec4e88e365120248df08f32fca9d96ae4bf8` plus dirty worktree. ARM build, fixture verification, package checksums and ZIP integrity pass; 35,004 bytes remain. No physical flash/test was performed.
+- UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-25216292-dirty.uf2`
+- UF2 SHA-256: `740801210d2601891a5610e4cae5e67da516b49a50d30723cb918e96a0b43b97`
+- Windows package: `build/external-test/pico2-jcvm-object-deletion-normal-windows-25216292-dirty.zip`
+- ZIP SHA-256: `398b13dcf3248bcadd52006c29b197ae7fb154e6739ad1404760a53c72135e21`
+- External request: `WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292` in `.agent/EXT_REQUESTS.md`.
+- Built from HEAD `252162925b44b32675b2f57bd5ed5bb3b94c712d` plus dirty worktree. ARM build, fixture verification, empty-card packaging, package checksums and ZIP integrity pass; 35,004 bytes remain. No physical flash/test was performed.
 
 ## Next actions
 1. Await external option-2 results matched to this UF2 hash; obtain Windows version, reader/ATR, chip ID, full client outputs and serial telemetry. Option 1 can run on another identified token.

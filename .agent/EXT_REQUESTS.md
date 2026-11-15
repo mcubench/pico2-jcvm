@@ -1,31 +1,37 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E — Retest current deletion and memory fixes
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292 — Test current deletion and memory fixes
 
-Created 2026-11-15 02:18 CET. This supersedes the `C3309A61` package below.
-The fresh ARM RP2350 `max_crypto` image has object deletion ON, debug/trace OFF,
-serial wait 0 ms, and erased persistent storage (empty card). The package was
-rebuilt from HEAD `6547ec4e88e365120248df08f32fca9d96ae4bf8` plus the current
-dirty worktree; exact tracked-diff and submodule identities are in its
-provenance.
+Created 2026-11-15 06:56 CET. This package supersedes the `6547EC4E`
+package below. The fresh ARM RP2350 `max_crypto` image has object deletion ON,
+debug/trace OFF, serial wait 0 ms, and erased persistent storage (empty card).
+It was rebuilt from HEAD `252162925b44b32675b2f57bd5ed5bb3b94c712d` plus the
+current dirty worktree; exact tracked-diff and submodule identities are in the
+package provenance. The build includes the current persistent-memory and CCID
+fix source state.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-6547ec4e-dirty.uf2)
-- UF2 SHA-256: `0011be75271a035ea945fa7ba68fbd3f1f98ab3a4bc4160d9eec540169e2c3f8`
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-25216292-dirty.uf2)
+- UF2 SHA-256: `740801210d2601891a5610e4cae5e67da516b49a50d30723cb918e96a0b43b97`
 - Size: 4,125,184 bytes
-- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty.zip)
-- ZIP SHA-256: `668f703c3c7b23232a3ab698ddd791b5ddda83a4029592b5061c6e1eeaaeb3d4`
-- [Package instructions](../build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty/README.md)
-- Build passed with linked image end `0x100f7744`, leaving 35,004 bytes.
-  Empty-card packaging, fixture manifest verification, all package checksums,
-  and ZIP integrity passed. No physical flash or local hardware test was run.
-- Test inputs are unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied
-  1.8.5 client.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-25216292-dirty.zip)
+- ZIP SHA-256: `398b13dcf3248bcadd52006c29b197ae7fb154e6739ad1404760a53c72135e21`
+- [Package instructions](../build/external-test/pico2-jcvm-object-deletion-normal-windows-25216292-dirty/README.md)
+- ARM build passed with linked image end `0x100f7744`, leaving 35,004 bytes.
+  Empty-card packaging, fixture verification, package checksums and ZIP
+  integrity passed. No physical flash/test was done here.
+- Inputs are unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied 1.8.5
+  client.
 
 Flash this UF2 and report its exact hash, Windows version, reader name/ATR,
 chip ID, full option-2 performance result and serial log. If possible, run
 option 1 on another identified token. Include PC/SC/USB errors, timeouts,
 resets, stalls and complete per-device result directories. Install the
 unchanged CAP explicitly with GPPro after confirming the card is empty.
+
+## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E
+
+Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292` package above for
+external testing. Its CPLC source identifier and firmware hash differ.
 
 ## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-7A396462
 

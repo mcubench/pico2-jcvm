@@ -30211,3 +30211,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The observed timeout is after SmartcardIO connects and sends the reader-list request, in the PC/SC reply path; USB enumeration alone does not establish reader publication. No physical reader was available for a JCVM operation.
 - Decision: Keep HOST-01, MEM-01 T7/T8 and all physical acceptance open. Continue with offline work; a future daemon/driver diagnostic must identify the server-side wait before a host-side fix is claimed.
 - Artifacts/logs: `artifacts/logs/smartcardio-list-readers-strace-20261115.log` SHA-256 `2ec963a0dd001fc2f94f56b74bcf1db05ed9d4b78c6cf459c5d6f9f378356df3`; focused trace shows client connection/request followed by unanswered list request.
+
+## 2026-11-15 Package latest empty-card deletion-enabled ARM image 4 minutes
+
+- Step-Id: `20261115-0656-external-maxcrypto-image`
+- Task: Build a fresh external Windows test image with object deletion enabled and current memory/CCID fixes
+- When: '2026-11-15 06:56 CET' - '2026-11-15 07:00 CET'
+- Model: `GPT-6`
+- Change: Rebuilt ARM `max_crypto` from the current dirty tree (object deletion ON, debug/trace OFF, serial wait 0 ms), generated erased-storage empty-card UF2, and prepared an external Windows package with unchanged upstream JCAlgTest CAP, supplied 1.8.5 client, GPPro and flashing/test instructions. Updated TODO current-image table, external request and session handoff; superseded the prior 6547EC4E package.
+- Validation: `./tools/build arm --profile max_crypto` passed; linked end `0x100f7744`, 35,004 bytes remain. `./tools/fixture-path --verify` passed (83 files). `./tools/package-empty-card-uf2` produced 4,125,184-byte UF2. All package SHA256SUMS entries passed and `unzip -t` passed. No hardware flash/test was performed because the PC/SC reader-list response is stalled; no separate runtime test was run.
+- Result: UF2 SHA-256 `740801210d2601891a5610e4cae5e67da516b49a50d30723cb918e96a0b43b97`; Windows ZIP SHA-256 `398b13dcf3248bcadd52006c29b197ae7fb154e6739ad1404760a53c72135e21`. Package provenance captures HEAD `252162925b44b32675b2f57bd5ed5bb3b94c712d` plus tracked dirty diff and dependency commits.
+- Decision: Hand this exact image to external Windows testing; require hash confirmation, empty-card/reader check, explicit CAP installation, and separate per-device option-2/option-1 campaign artifacts. This is build/package validation, not physical acceptance.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-25216292-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-25216292-dirty.zip`; package README and `BUILD-PROVENANCE.txt`.

@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Acceptance (normal `max_crypto`: object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-6547ec4e-dirty.uf2` | `0011be75271a035ea945fa7ba68fbd3f1f98ab3a4bc4160d9eec540169e2c3f8` | rebuilt with current dirty worktree; no physical validation; T7/HOST-01 hardware acceptance remains open |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty.zip` | `668f703c3c7b23232a3ab698ddd791b5ddda83a4029592b5061c6e1eeaaeb3d4` | EXT `WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E`; dirty source state and submodule are disclosed in package provenance |
+| Acceptance (normal `max_crypto`: object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-25216292-dirty.uf2` | `740801210d2601891a5610e4cae5e67da516b49a50d30723cb918e96a0b43b97` | current persistent-memory/CCID source state; no physical validation; T7/HOST-01 hardware acceptance remains open |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-normal-windows-25216292-dirty.zip` | `398b13dcf3248bcadd52006c29b197ae7fb154e6739ad1404760a53c72135e21` | EXT `WIN-OBJECT-DELETION-NORMAL-DIRTY-25216292`; dirty source state and submodule identities are disclosed in package provenance |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01
@@ -959,7 +959,8 @@ review.
   2026-11-14 8E option-2 `SCARD_E_NOT_TRANSACTED` → `SCARD_E_READER_UNAVAILABLE`).
   Status: reader loss has occurred after flashes, long APDUs and reconnects;
   an absent guest USB device is distinct from visible USB with no PCSC reader,
-  and from an APDU returning a card error. No common cause is established.
+  and from an APDU returning a card error. No common cause for reader
+  publication is established; a response-retry defect is now identified.
   Remaining: capture exact board/image, USB visibility, PCSC registration,
   firmware APDU telemetry and bounded failure/recovery evidence per layer.
   New 2026-11-14 D92 evidence: on the debug ARM image, `B043000016` completed
@@ -970,6 +971,16 @@ review.
   visible; `pcsc_scan -r` did not enumerate a reader after the approved helper
   refresh. The run showed no memory exhaustion statuses. See QKB D92 response
   stall entry and `artifacts/results/jcalgtest-1.8.5-physical-20261114-ccid-debug/D92E743D5F640C0F/option2-performance/`.
+  2026-11-14 follow-up: `service_pending_final_response()` used a zero retry
+  timestamp as "immediately due" but compared it with signed `time_us_32()`
+  arithmetic. At uptime ≥2^31 us (35m 47.483648s), `int32_t(now - 0) < 0`, so
+  a new response returns before submission and before response-wait telemetry.
+  D92's ≈45-minute failure and pending/idle/no-submit-error trace match this
+  path. Replaced the zero sentinel with an explicit armed flag; unit checks
+  cover long uptime and 32-bit wraparound (35/35 pass), and ARM acceptance build
+  passes. Fresh no-debug, deletion-enabled image is `WIN-OBJECT-DELETION-NODEBUG-CCID-DEADLINE-805420E6` in
+  `.agent/EXT_REQUESTS.md`. Source-level diagnosis and fix are not yet physical
+  confirmation; leave HOST-01 open through a sustained fixed-image option-2 run.
   2026-11-15 PC/SC trace: USB enumeration showed three `2e8a:0009 Pico2
   JCVM CCID` devices. SmartcardIO connected successfully to
   `/run/pcscd/pcscd.comm` and sent its PC/SC requests, then blocked waiting for
