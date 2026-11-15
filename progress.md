@@ -30469,3 +30469,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The previous resource failure did not recur through its exact failing APDUs, and measured trigger peaks stayed below 80%. The client had completed 4,014 object-deletion service calls. I interrupted at a later RSA-public-3072 case to stop the bounded diagnostic; client removal/`IllegalArgumentException`, `F105` during teardown, and the emulator ptrace panic followed interruption. No `F205` or `FS_WRITE_FAIL` preceded it. This is partial VPCD evidence only, not hardware acceptance or a complete option-2 plateau run.
 - Decision: The memory-headroom fix clears the previously observed failure point in VPCD and demonstrates reclaim/compaction under load. Keep MEM-01 T7/T10 open for longer live-byte plateau telemetry and physical T8; use the current D508CAE8 external image for Windows testing.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/{client.log,emulator.log,rp2350-overlay.flash}`; `OVERLAY_INSPECT` output `/tmp/vpcd-overlay-post.log`.
+
+## 2026-11-15 Rebuild deletion-enabled external image 6 minutes
+
+- Step-Id: `20261115-1411-maxcrypto-delete-image-dirty`
+- Task: `MEM-01 T7` external option-2 test preparation
+- When: '2026-11-15 14:05 CET' - '2026-11-15 14:11 CET'
+- Model: `gpt-6`
+- Change: Rebuilt the current worktree as normal ARM `max_crypto`, packaged a full erased-storage empty-card UF2, and updated the external request and handoff to replace the older D508CAE8 candidate. The working tree and submodules were already dirty; the image is therefore marked with base HEAD `54bba2b3` plus `dirty`.
+- Validation: `./tools/build arm --profile max_crypto` passed with `mode=normal`, object deletion ON, all debug switches OFF, and serial wait 0 ms. `./tools/package-empty-card-uf2` passed with 3,964 firmware blocks and 4,096 erased-storage blocks. The linked end is `0x100f7b08`, with 34,040 bytes remaining. No hardware flash or external Windows test was run.
+- Result: UF2 is 4,127,232 bytes; SHA-256 `11da9cebad8c04884084e95bbd40f5b7282a65a579e18abfb72abbeb8d81d98f`. The underlying firmware UF2 SHA-256 is `c64abbe582c661b89c3563b3177e36292597f2f5c27555131006fd8e6db2270a`. CPLC source ID is `0x54BBA2B3DF957F7D`.
+- Decision: This is the image to use for new external deletion-enabled testing. It is a build artifact, not physical acceptance evidence; source identity includes uncommitted worktree changes not represented by CPLC's base-HEAD identifier.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-54bba2b3-dirty.uf2`; `build/arm/build-provenance.txt`; request `WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY`.

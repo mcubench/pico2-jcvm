@@ -3,9 +3,8 @@
 Updated: 2026-11-15.
 
 ## Current external-test image
-- Package: `build/external-test/pico2-jcvm-maxcrypto-deletion-d508cae8.zip` (ZIP SHA-256 `63fbae1ce480594952452533f78b6b71029adf0bcd49a6100745f827c4260a02`).
-- Standalone empty-card UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d508cae8-current.uf2` (SHA-256 `91288e4963b1baa3d6959dcf1da30178c4d5ffbac5c22d83e7a0c1a45c931e96`).
-- Normal ARM `max_crypto`, deletion ON, debug OFF; source commit `d508cae8` plus tracked dirty worktree and dirty submodules are identified in the package provenance. Firmware end `0x100f7b08`, 34,040 bytes remain. Empty persistent storage; no applet preinstalled. Request `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8` contains Windows steps. No physical flash or Windows test here.
+- Standalone empty-card UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-54bba2b3-dirty.uf2` (SHA-256 `11da9cebad8c04884084e95bbd40f5b7282a65a579e18abfb72abbeb8d81d98f`, 4,127,232 bytes).
+- Fresh normal ARM `max_crypto`, deletion ON, debug OFF; built from base HEAD `54bba2b3` plus dirty worktree/submodules. Build provenance: `build/arm/build-provenance.txt`. Firmware end `0x100f7b08`, 34,040 bytes remain. Empty persistent storage; no applet preinstalled. External instructions: `WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY`. No physical flash or Windows test here.
 
 ## Active diagnostics and next steps
 - Fresh 1.8.5-client / unchanged 1.8.4 CAP `ALG_PERFORMANCE_STATIC` VPCD run stopped after the previous F205 point: RSA-CRT-private 2048 / ISO14888 `Cipher_doFinal()` and `Cipher_init()` both returned `9000`. Four auto-compactions peaked at 78,075/98,304 bytes and erased 8 records each. The quiescent saved overlay passes integrity: 1,847 slots, 1,514 live records, 73,245 used, 25,059 available. Stop was intentional at a later RSA-public-3072 case; resulting reader removal and ptrace shutdown panic are interruption noise. Full plateau telemetry and physical T8 remain open. Logs: `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`.

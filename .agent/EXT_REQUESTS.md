@@ -1,5 +1,32 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY — Test current deletion-enabled image
+
+Created 2026-11-15 14:10 CET. This supersedes D508CAE8 for new tests. Use the
+fresh normal ARM `max_crypto` empty-card image below. Object deletion is ON;
+all debug/trace switches and startup wait are OFF. The persistent-storage
+region is erased and no applet is preinstalled. The source tree had unrelated
+dirty worktree and submodule changes at build time; CPLC identifies base HEAD
+`54bba2b3` and build provenance is in `build/arm/build-provenance.txt`.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-54bba2b3-dirty.uf2)
+- UF2 SHA-256: `11da9cebad8c04884084e95bbd40f5b7282a65a579e18abfb72abbeb8d81d98f`; size 4,127,232 bytes.
+- ARM build passed with `mode=normal`, object deletion ON, and every debug
+  option OFF. The linked image ends at `0x100f7b08`, leaving 34,040 bytes in the
+  1 MiB firmware window. No physical flash or Windows test was performed here.
+
+Flash in BOOTSEL by copying this UF2 to the `RPI-RP2` drive. Verify the exact
+hash before copying. After the reader enumerates, use GPPro to install the
+unchanged upstream JCAlgTest 1.8.4/jc305 CAP explicitly, then run option 2 with
+the pinned 1.8.5 client. Return the complete result folder and serial log,
+Windows version, reader/ATR, chip ID, image and client hashes, and any
+disconnects, resets, stalls or timeouts.
+
+## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8
+
+Use `WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY` above for new tests. Retain
+the old image and request only as evidence for results already collected.
+
 ## WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8 — Test current deletion-enabled image
 
 Created 2026-11-15 13:40 CET. This supersedes the AFE8ED5D candidate for new
