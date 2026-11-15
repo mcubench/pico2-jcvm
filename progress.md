@@ -30345,3 +30345,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `8615f92c94a902e04af14f9690fc7032609ae61fc476ad4526c2b949d0cba273` (4,126,208 bytes); package ZIP SHA-256 `f9ef8641dd7bbd888aa0c1c32f822f4baa4489653cc491114eafd2fd9f4d74bf`. The package contains unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied 1.8.5 client. It includes the low-watermark compaction fix.
 - Decision: Use this UF2 for the next external option-2 run. This is build/package validation only, not device acceptance; source worktree was dirty and is fully identified in `BUILD-PROVENANCE.txt`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-e9c4deb3-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-e9c4deb3.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3` in `.agent/EXT_REQUESTS.md`.
+
+## 2026-11-15 Refresh deletion-enabled external test image 12 minutes
+
+- Step-Id: `20261115-1157-build-maxcrypto-deletion`
+- Task: `MEM-01 T7 external test preparation; T10 activated by fresh-client failure`
+- When: '2026-11-15 10:15 CET' - '2026-11-15 11:57 CET' (12 minutes active; user interruption excluded)
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt the ARM `max_crypto` normal image from HEAD `72cbeedc` plus the existing tracked worktree changes, generated an empty-card UF2, and prepared a Windows package containing the upstream 1.8.4/jc305 CAP and supplied 1.8.5 client. Updated the current-image table, external request and handoff. Recorded the newly observed fresh-client T7 failure and promoted T10 to the next implementation step.
+- Validation: `./tools/build arm --profile max_crypto` passed with object deletion ON and all debug/trace flags OFF; linked end `0x100f7920`, leaving 34,528 bytes. `./tools/package-empty-card-uf2` passed (3,962 firmware blocks plus 4,096 erased-storage blocks). `./tools/fixture-path --verify` passed (83 files). ZIP integrity passed. No physical flash or Windows test was run.
+- Result: Empty-card UF2 is 4,126,208 bytes, SHA-256 `2a6a71be9ff9cf4fcf98fedebf56dd41d74be91132ae169ad8d3d66998b1068c`; package ZIP SHA-256 `32008fa05456b4dd927b5323e8d956beb2363d0e7f79708bc3e3f13928f6f1ad`. Separately, fresh 1.8.5-client VPCD option 2 failed at sync 6,300 with `F205`/`SystemException_NO_RESOURCE` after persistent storage reached 98,246/98,304 bytes. This disproves T7 acceptance and triggers T10; details are in `TODO.md` and the result logs.
+- Decision: The new image is ready for external reproduction with object deletion ON, but it is not acceptance evidence. Continue with T10 diagnosis of persistent roots and exhaustion-safe reclamation while awaiting Windows results.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-72cbeedc-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-72cbeedc.zip`; `artifacts/results/jcalgtest-support-vpcd-20261115T084412Z/`.

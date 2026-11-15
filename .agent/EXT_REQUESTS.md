@@ -1,18 +1,18 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3 — Test current deletion-enabled image
+## WIN-OBJECT-DELETION-LOW-WATERMARK-72CBEEDC — Test latest deletion-enabled image
 
-Created 2026-11-15 09:30 CET. This request supersedes
-`WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F` for new uploads. Use the fresh
-normal ARM `max_crypto` image built from current HEAD `e9c4deb3` plus the
-tracked worktree changes. Object deletion and low-watermark compaction are ON;
-all debug/trace flags and startup wait are OFF. Persistent storage is erased,
-and no applet is preinstalled.
+Created 2026-11-15 10:20 CET. This package supersedes the earlier E9C4DEB3
+image for new uploads. Use the fresh normal ARM `max_crypto` image built from
+current HEAD `72cbeedc` plus the tracked worktree changes. Object deletion and
+automatic low-watermark reclaim/compaction are ON; all debug/trace flags and
+startup wait are OFF. Persistent storage is erased, and no applet is
+preinstalled.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-e9c4deb3-current.uf2)
-- UF2 SHA-256: `8615f92c94a902e04af14f9690fc7032609ae61fc476ad4526c2b949d0cba273`; size 4,126,208 bytes.
-- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-e9c4deb3.zip)
-- ZIP SHA-256: `f9ef8641dd7bbd888aa0c1c32f822f4baa4489653cc491114eafd2fd9f4d74bf`.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-72cbeedc-current.uf2)
+- UF2 SHA-256: `2a6a71be9ff9cf4fcf98fedebf56dd41d74be91132ae169ad8d3d66998b1068c`; size 4,126,208 bytes.
+- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-72cbeedc.zip)
+- ZIP SHA-256: `32008fa05456b4dd927b5323e8d956beb2363d0e7f79708bc3e3f13928f6f1ad`.
 - Exact source/submodule/build identities and input hashes are in the package's `BUILD-PROVENANCE.txt`.
 - ARM build passed; linked end `0x100f7920`, leaving 34,528 bytes. Empty-card packaging and ZIP integrity passed. No physical flash or Windows test was performed here.
 
@@ -23,9 +23,15 @@ included supplied 1.8.5 client. Return the full result directory and serial
 log, Windows version, reader/ATR, chip ID, exact firmware hash, and any
 disconnects, resets, stalls, or timeouts.
 
+## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3
+
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-72CBEEDC` above for new testing. This
+image was rebuilt after the fresh-client VPCD T7 run and is the current test
+candidate; prior Windows results do not apply to it.
+
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3` above for new testing. Its
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-72CBEEDC` above for new testing. Its
 image predates the current checkout and should be retained only as historical
 evidence.
 
