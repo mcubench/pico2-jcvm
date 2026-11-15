@@ -30286,3 +30286,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The runner previously used post-batch available space; erased objects could move it above the watermark before compaction. The pre-batch snapshot now correctly requests compaction. External UF2 SHA-256 `47c0e5f194139e3720e43292f4a47468cbb6892990c9e1724813389b469117b9`; package SHA-256 `6f17e5b1006537178560e082f2a073eedc55171a475754f214095c02e05616bf`.
 - Decision: External Windows option-2 validation may proceed using `WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F`; unchanged-client T7 and physical T8 remain open.
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261115T073454Z.log`; `build/external-test/pico2-jcvm-maxcrypto-deletion-low-watermark-45ec828f/`
+
+## 2026-11-15 Validate low-watermark fix on captured option-2 stream 22 minutes
+
+- Step-Id: `20261115-0838-mem01-watermark-captured-replay`
+- Task: `MEM-01 T7` (offline captured replay; fresh-client acceptance remains open)
+- When: '2026-11-15 08:38 CET' - '2026-11-15 09:00 CET'
+- Model: `gpt-6`
+- Change: Replayed the full captured JCAlgTest option-2 APDU stream against the latest PC emulator linked to the RP2350 filesystem overlay, with automatic object deletion and sync diagnostics enabled. Persisted the fake flash and restored it in a new emulator for the final four APDUs. Updated TODO/QKB/HANDOFF with replay results and current PC/SC discovery state.
+- Validation: Fresh replay passed 1,972 APDUs; two known pre-selection GET DATA status differences, no other unexpected statuses. Low-watermark trigger at 77,889/98,304 bytes; compaction status 0 erased 8; sampled sync seq 1900 was 428 files / 17,177 bytes. All 29 sampled syncs returned 0; 1,127 deletion/heap-GC service records; no `F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, `FS_COMPACT_REJECT`, `alias-protect`, or `FAULT`. Restored saved overlay/registry and the final four APDUs returned `9000`, `AA9000`, `9000`, `AA9000`. Re-ran `./tools/test-object-deletion-policy` (13 checks), `./tools/test-persistent-transaction`, `./tools/test-persistent-inventory`, and `./tools/test-rp2350-fs-overlay`; all passed, with overlay `TEST:SUMMARY fail=0`. Reader refresh found four Pico CCID USB nodes and refused ACL changes; bounded reader listing timed out. Physical testing was not attempted.
+- Result: The existing option-2 transcript now exercises the automatic low-watermark path successfully and survives emulator storage restoration. This remains replay evidence, not a fresh JCAlgTest client run or physical acceptance. Overlay flash SHA-256 `c04dac08cf016c297ca6ebf4158dc9946b7bc52b822f7b384aec2e53ef33b6c9`; logs are under `artifacts/results/mem01-lowwatermark-option2-20261115/` and `artifacts/results/resource01-apdu-replay-vpcd-20261115T075744Z/` / `T080057Z/`.
+- Decision: Keep MEM-01 T7/T8 open. Next attempt fresh unchanged-client option 2 only after PC/SC reader enumeration works; continue offline meanwhile.

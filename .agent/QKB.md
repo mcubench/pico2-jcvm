@@ -1385,3 +1385,17 @@ both physical ARM and PC VPCD/RP2350-overlay paths. Focused auto-GC VPCD test
 passed 512 array replacements (515/515 APDUs), with one automatic trigger and
 one compaction, retaining the live root. This does not close unchanged-client
 T7 or physical T8 acceptance.
+
+
+## PC/SC helper limit and direct VPCD socket sandbox — 2026-11-15
+
+A fresh approved `sudo -n /usr/local/sbin/pico2-pcsc-reader` call found four
+matching Pico CCID USB devices while its supported range is one to three, so it
+refused to change ACLs. The bounded elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` then timed out with
+no reader inventory. Do not bypass the helper's device-count guard or flash an
+unidentified device. Reattempt only after the count is in range and reader
+enumeration returns an exact name. Separately, direct localhost VPCD replay
+failed with `EPERM` in the restricted sandbox; invoking the same bounded replay
+through the host-access/elevated path succeeded. Use that path for direct VPCD
+socket tests in this environment.
