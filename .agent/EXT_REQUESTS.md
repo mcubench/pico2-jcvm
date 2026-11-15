@@ -1,19 +1,19 @@
 # External validation requests
 
-## WIN-MEM01-EMPTY-NODEBUG-5ABADB7D — Test current deletion-enabled build
+## WIN-MEM01-EMPTY-NODEBUG-B6CCF96C — Test current deletion-enabled build
 
-Created 2026-11-15 14:47 CET. This is the current external candidate and
-supersedes `WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY` for new runs. It is a
-normal ARM `max_crypto` image with persistent object deletion ON, all debug and
-trace switches OFF, 0 ms startup wait, an erased 1 MiB storage region, and no
-preinstalled applet. It includes the schema-v5 persistent tag-prefix storage
-headroom change and stays within the INV-28 96 KiB / 8,192-slot limit.
+Created 2026-11-15 18:47 CET. This fresh package supersedes
+`WIN-MEM01-EMPTY-NODEBUG-5ABADB7D` for new runs. It is a normal ARM
+`max_crypto` image with persistent object deletion ON, all debug and trace
+switches OFF, 0 ms startup wait, an erased 1 MiB storage region, and no
+preinstalled applet. Build identity includes the dirty worktree/submodules;
+see package provenance.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5abadb7d-dirty.uf2)
-- UF2 SHA-256: `b939546c33be122e0d4d82072001ebc1f1e07ea75f7bb1872869889d89730801`; size 4,127,232 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-nodebug-empty-card-5abadb7d-dirty.zip)
-- ZIP SHA-256: `3fbdc2be502f78e4b2c3ae85d92ac8f36b561de30444eeeffade25bb8b9c2e83`.
-- Source HEAD `5abadb7d` plus dirty worktree/submodules; see package `BUILD-PROVENANCE.txt`. CPLC source ID: `0x5ABADB7D9497425E`.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-b6ccf96c-dirty.uf2)
+- UF2 SHA-256: `eeabd990b3ec2586cc7f165318425f003ffd6ce4b7a4865d1ecb9e328c9c1a99`; size 4,127,232 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-b6ccf96c-dirty.zip)
+- ZIP SHA-256: `a8cb6420e91d4c1a7832dd3e165527e011a47e80b881eda0a0691c8f63e493c3`.
+- Source HEAD `b6ccf96c` plus dirty worktree/submodules; see package `BUILD-PROVENANCE.txt`. CPLC source ID: `0xB6CCF96C2FB3AA90`.
 - ARM build passed, normal mode, object deletion ON, debug OFF. Linked end `0x100f7b08`, with 34,040 bytes remaining. Physical flash and Windows testing were not performed here.
 
 The package README gives exact PowerShell hash verification and BOOTSEL
@@ -25,8 +25,8 @@ USB/PCSC errors, resets, stalls or timeouts.
 
 ## Superseded: WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY
 
-Use `WIN-MEM01-EMPTY-NODEBUG-5ABADB7D` above for new tests. Keep the old image
-only for results already collected against its hash.
+Use `WIN-MEM01-EMPTY-NODEBUG-B6CCF96C` above for new tests. Keep prior images
+only for results already collected against their hashes.
 
 ## WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY — Test current deletion-enabled image
 

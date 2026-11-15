@@ -30493,3 +30493,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 SHA-256 `b939546c33be122e0d4d82072001ebc1f1e07ea75f7bb1872869889d89730801`, 4,127,232 bytes. Firmware UF2 SHA-256 `5d26b0e25cf0e86a21dfe0060f40ab46194ec7e0074dd53dae9ec7aa6c61994c`; linked end `0x100f7b08`, 34,040 bytes remain. ZIP SHA-256 `3fbdc2be502f78e4b2c3ae85d92ac8f36b561de30444eeeffade25bb8b9c2e83`. Build CPLC source ID `0x5ABADB7D9497425E`; tracked worktree and submodules were dirty and are detailed in package provenance.
 - Decision: `WIN-MEM01-EMPTY-NODEBUG-5ABADB7D` is the current external test candidate. The card is empty; install the unchanged 1.8.4/jc305 CAP explicitly with GPPro and run the included 1.8.5 client. This build is not hardware acceptance evidence.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5abadb7d-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-nodebug-empty-card-5abadb7d-dirty.zip`; `build/arm/build-provenance.txt`.
+
+## 2026-11-15 Refresh deletion-enabled external test image 9 minutes
+
+- Step-Id: `20261115-1847-maxcrypto-delete-b6cc`
+- Task: `MEM-01 T10` external Windows test package refresh
+- When: '2026-11-15 18:38 CET' - '2026-11-15 18:47 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt the current dirty checkout as normal ARM `max_crypto` and packaged a fresh empty-card UF2 and Windows test bundle so external testing uses the current source state with persistent object deletion enabled.
+- Validation: `./tools/build arm --profile max_crypto` passed with `mode=normal`, `object_deletion=ON`, all debug flags OFF, 0 ms serial wait, linked end `0x100f7b08` and 34,040 bytes remaining. `./tools/package-empty-card-uf2` produced 3,964 firmware blocks plus 4,096 erased-storage blocks. Package SHA256SUMS and `unzip -t` passed. No hardware or Windows test was run.
+- Result: Empty-card UF2 SHA-256 `eeabd990b3ec2586cc7f165318425f003ffd6ce4b7a4865d1ecb9e328c9c1a99` (4,127,232 bytes); underlying firmware UF2 SHA-256 `9deeafa736a7ca29414ced8f933cbbeae8d78ea27e4870ff011adb28d4610068`; ZIP SHA-256 `a8cb6420e91d4c1a7832dd3e165527e011a47e80b881eda0a0691c8f63e493c3`. CPLC source ID `0xB6CCF96C2FB3AA90` identifies base HEAD `b6ccf96c` plus dirty worktree/submodules, detailed in package provenance.
+- Decision: Use `WIN-MEM01-EMPTY-NODEBUG-B6CCF96C` for new external deletion testing. It ships with no applet; install the unchanged JCAlgTest 1.8.4/jc305 CAP explicitly with GPPro and use the bundled 1.8.5 client. This is not physical acceptance evidence.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-b6ccf96c-dirty.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-b6ccf96c-dirty.zip`; `.agent/EXT_REQUESTS.md`.

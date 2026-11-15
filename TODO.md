@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated: 2026-11-14 (rule-conflict decisions applied). Active backlog for `plan.md`. Implementation and acceptance
+Updated: 2026-11-15 (rule-conflict decisions applied). Active backlog for `plan.md`. Implementation and acceptance
 are separate: keep tasks open while required validation is missing. Follow
 `AGENTS.md` for native API boundaries, unchanged fixtures, build/hardware gates
 and commits. Use the unchanged JCAlgTest **1.8.4 / jc305 CAP** with the **1.8.5 host client** for all new runs (see `AGENTS.md`; older entries below that say "1.8.4 client" are historical);
@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Latest external image (`max_crypto`, deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5abadb7d-dirty.uf2` | `b939546c33be122e0d4d82072001ebc1f1e07ea75f7bb1872869889d89730801` | source HEAD `5abadb7d` plus dirty worktree/submodules; schema-v5 tag-prefix storage; INV-28 96 KiB / 8,192-slot overlay; ARM normal build passed; no physical validation |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-d508cae8.zip` | `63fbae1ce480594952452533f78b6b71029adf0bcd49a6100745f827c4260a02` | EXT `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8`; package includes flash/test steps |
+| Latest external image (`max_crypto`, deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-b6ccf96c-dirty.uf2` | `eeabd990b3ec2586cc7f165318425f003ffd6ce4b7a4865d1ecb9e328c9c1a99` | source HEAD `b6ccf96c` plus dirty worktree/submodules; normal ARM build passed; no physical validation |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-b6ccf96c-dirty.zip` | `a8cb6420e91d4c1a7832dd3e165527e011a47e80b881eda0a0691c8f63e493c3` | EXT `WIN-MEM01-EMPTY-NODEBUG-B6CCF96C`; package includes flash/test steps |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01
