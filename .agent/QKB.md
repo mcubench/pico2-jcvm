@@ -1285,3 +1285,13 @@ or Windows/Linux PC/SC publication, so it does not close HOST-01 or MEM-01
 acceptance. Preserve the physical transport diagnosis as unresolved rather
 than attributing the reader loss to those applet commands. Evidence:
 `artifacts/results/t7-option2-aes192-full-capture-20261115/`.
+
+The same persistent overlay was then exercised for another two captured
+1,968-APDU loops plus a 200-command continuation. Every replay completed with
+no resource/FS/VM failure. The observed pre-compaction peak was 81,775 bytes;
+post-compaction restores returned to 367 files and 14,687–15,510 bytes across
+sampled cycle boundaries (next process began at 367 files / 15,456 bytes).
+This supports a stable live set across repeated synthetic cycles while raw
+overlay use rises between compactions. It is still not a fresh live-client or
+physical test. See `artifacts/results/t7-option2-aes192-post5904-loop2-20261115/`
+and `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.

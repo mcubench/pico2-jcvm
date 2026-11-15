@@ -30163,3 +30163,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Current offline persistence, object-deletion and context-root regressions pass. Reader enumeration remains unavailable and no physical acceptance is inferred.
 - Decision: Keep T7/T8 open; continue offline until reader enumeration is restored.
 - Artifacts/logs: Test output was observed in command results and not separately archived; generated builds are under `build/tests/`.
+
+## 2026-11-15 Extend T7 captured overlay cycles through another cleanup 10 minutes
+
+- Step-Id: `20261115-0158-mem01-t7-watermark`
+- Task: MEM-01 T7 repeated-cycle post-compaction live-set check
+- When: '2026-11-15 01:58 CET' - '2026-11-15 02:08 CET'
+- Model: `GPT-6`
+- Change: Resumed a copy of the 5,904-command RP2350 overlay state, replayed two more captured 1,968-APDU cycles, then ran a 200-command continuation to sample the post-cleanup state. Updated TODO, QKB and handoff with the added watermark evidence. Source and upstream CAP files were not modified.
+- Validation: The resumed 3,936-command replay completed with `resource_failure=0`, `changed_statuses=0`, 49 sampled syncs all status 0, 2,259 deletion status rows, 4,610 applet tags erased, and maximum batch 8. The 200-command continuation also completed with `resource_failure=0`, `changed_statuses=0`, 12 sampled syncs all status 0, and no F205/NO_RESOURCE/FS_WRITE_FAIL/FS_COMPACT_REJECT/alias-protect/FAULT markers. At the preceding post-cleanup boundary the store had 367 files / 15,510 bytes; after the resumed two cycles it returned to 367 / 15,456 bytes, with another sampled cleanup at 367 / 15,275 bytes. Between cleanups it rose to 2,467 files / 81,775 bytes at sync 3,900. These are captured-transcript VPCD tests with saved overlay persistence, not fresh-client or hardware acceptance.
+- Result: The post-compaction live store remains within 769 bytes across the observed clean boundaries, while pre-cleanup raw use sawtooths to about 81.8 KiB. No retained growth or resource failure appeared in these additional synthetic cycles.
+- Decision: Keep the fresh unchanged-client T7 and physical T8 gates open; use the stable watermarks as offline diagnostic evidence only.
+- Artifacts/logs: `artifacts/results/t7-option2-aes192-post5904-loop2-20261115/replay.log` SHA-256 `cf1b48233a7c7070fd2a87630ef1d49dd5a2995abe4a5bd931ed51ab32d7b8dc`; `emulator.log` SHA-256 `619332c1c4f6a0baea74ff146c9215675e4e9970746c9c6cc18949b2ca6bae81`; continuation logs in `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
