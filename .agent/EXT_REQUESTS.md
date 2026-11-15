@@ -1,20 +1,20 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-LOW-WATERMARK-72CBEEDC — Test latest deletion-enabled image
+## WIN-OBJECT-DELETION-LOW-WATERMARK-D73E3411 — Test deletion-enabled image with added storage headroom
 
-Created 2026-11-15 10:20 CET. This package supersedes the earlier E9C4DEB3
-image for new uploads. Use the fresh normal ARM `max_crypto` image built from
-current HEAD `72cbeedc` plus the tracked worktree changes. Object deletion and
-automatic low-watermark reclaim/compaction are ON; all debug/trace flags and
-startup wait are OFF. Persistent storage is erased, and no applet is
-preinstalled.
+Created 2026-11-15 12:20 CET. This supersedes the 72CBEEDC image and earlier
+E9C4DEB3 candidate. Use the normal ARM `max_crypto` image built from commit
+`d73e3411` plus pre-existing unrelated tracked worktree changes. Object
+deletion and automatic low-watermark reclaim/compaction are ON; all debug/trace
+flags and startup wait are OFF. The overlay payload ceiling is 112 KiB (up
+from 96 KiB). Persistent storage is erased, and no applet is preinstalled.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-72cbeedc-current.uf2)
-- UF2 SHA-256: `2a6a71be9ff9cf4fcf98fedebf56dd41d74be91132ae169ad8d3d66998b1068c`; size 4,126,208 bytes.
-- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-72cbeedc.zip)
-- ZIP SHA-256: `32008fa05456b4dd927b5323e8d956beb2363d0e7f79708bc3e3f13928f6f1ad`.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d73e3411-current.uf2)
+- UF2 SHA-256: `14fce03c058c92f76b6677134412aab8c4ca96718d0607a79612be51003b4138`; size 4,126,208 bytes.
+- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-d73e3411.zip)
+- ZIP SHA-256: `d7fe6bbeda10357a61b79cfb44a9ba0e2fb80146a6f9264bceb7a80438f3ed07`.
 - Exact source/submodule/build identities and input hashes are in the package's `BUILD-PROVENANCE.txt`.
-- ARM build passed; linked end `0x100f7920`, leaving 34,528 bytes. Empty-card packaging and ZIP integrity passed. No physical flash or Windows test was performed here.
+- ARM build passed; linked end `0x100f7920`, leaving 34,528 bytes. Overlay tests, empty-card packaging, fixture verification and ZIP integrity passed. No physical flash or Windows test was performed here.
 
 Unzip the package and follow its `README.md`: verify the UF2 hash in PowerShell,
 flash through BOOTSEL, confirm the empty card, and explicitly install the
@@ -25,13 +25,13 @@ disconnects, resets, stalls, or timeouts.
 
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-72CBEEDC` above for new testing. This
-image was rebuilt after the fresh-client VPCD T7 run and is the current test
-candidate; prior Windows results do not apply to it.
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D73E3411` above for new testing. The
+112 KiB overlay capacity increase has not yet been tested with a fresh client
+or on physical hardware.
 
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-72CBEEDC` above for new testing. Its
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D73E3411` above for new testing. Its
 image predates the current checkout and should be retained only as historical
 evidence.
 

@@ -30369,3 +30369,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The fake-flash tests now validate stores larger than the old ceiling. The memory tradeoff is 16 KiB more static arena than the previous 96 KiB image; VPCD fresh-client and physical acceptance remain open.
 - Decision: Commit this bounded capacity step, then generate the external deletion-ON empty-card image from the resulting commit and request an option-2 rerun. Do not claim memory-exhaustion acceptance from synthetic tests alone.
 - Artifacts/logs: ARM map `build/arm/pico2_choupi.elf.map`; test output summarized from the successful `./tools/test-rp2350-fs-overlay` run.
+
+## 2026-11-15 Package deletion-enabled image with expanded storage headroom 5 minutes
+
+- Step-Id: `20261115-1223-windows-maxcrypto-112k`
+- Task: `MEM-01 T10` external option-2 retest preparation
+- When: '2026-11-15 12:18 CET' - '2026-11-15 12:23 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt at committed source `d73e3411` so CPLC encodes the same commit, generated an erased-storage/empty-card UF2, and refreshed the Windows package, provenance, hashes, external request, current-image table, and handoff. The external package retains the unchanged JCAlgTest 1.8.4/jc305 CAP and supplied 1.8.5 client.
+- Validation: `./tools/build arm --profile max_crypto` passed in normal mode with object deletion ON and debug OFF. `./tools/package-empty-card-uf2` passed (3,962 firmware blocks + 4,096 erased-storage blocks). `./tools/fixture-path --verify` passed (83 files); package `SHA256SUMS.txt` and `unzip -t` passed. No physical flash or Windows run was performed.
+- Result: UF2 SHA-256 `14fce03c058c92f76b6677134412aab8c4ca96718d0607a79612be51003b4138`, 4,126,208 bytes. Package SHA-256 `d7fe6bbeda10357a61b79cfb44a9ba0e2fb80146a6f9264bceb7a80438f3ed07`. Flash end `0x100f7920`, 34,528 bytes remain. Package source tree was dirty due unrelated pre-existing work; exact status and submodule identities are documented inside.
+- Decision: Request an external option-2 run on this exact hash. This candidate includes the 112 KiB overlay headroom change but is not acceptance evidence; the safe-point exhaustion-triggered reclaim in T10 remains unimplemented.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d73e3411-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-d73e3411.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-D73E3411`.
