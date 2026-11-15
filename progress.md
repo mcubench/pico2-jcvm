@@ -30175,3 +30175,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The post-compaction live store remains within 769 bytes across the observed clean boundaries, while pre-cleanup raw use sawtooths to about 81.8 KiB. No retained growth or resource failure appeared in these additional synthetic cycles.
 - Decision: Keep the fresh unchanged-client T7 and physical T8 gates open; use the stable watermarks as offline diagnostic evidence only.
 - Artifacts/logs: `artifacts/results/t7-option2-aes192-post5904-loop2-20261115/replay.log` SHA-256 `cf1b48233a7c7070fd2a87630ef1d49dd5a2995abe4a5bd931ed51ab32d7b8dc`; `emulator.log` SHA-256 `619332c1c4f6a0baea74ff146c9215675e4e9970746c9c6cc18949b2ca6bae81`; continuation logs in `artifacts/results/t7-option2-aes192-post5904-watermark-20261115/`.
+
+## 2026-11-15 Rebuild deletion-enabled external image with current fixes 8 minutes
+
+- Step-Id: `20261115-0212-external-delete-image`
+- Task: MEM-01 external Windows test package refresh
+- When: '2026-11-15 02:12 CET' - '2026-11-15 02:20 CET'
+- Model: `GPT-6`
+- Change: Built a fresh ARM `max_crypto` normal image from HEAD `6547ec4e` plus the current dirty worktree, with object deletion enabled, all debug switches off, and 0 ms serial wait. Generated an empty-card UF2 and complete Windows package with explicit upstream CAP/client, GPPro, source provenance and flashing/test instructions. Marked the previous C3309A61 package superseded.
+- Validation: `./tools/build arm --profile max_crypto` passed; ROM mask/JNI manifests verified; `FLASH_LAYOUT:PASS` with image end `0x100f7744` and 35,004 bytes remaining. `./tools/fixture-path --verify` passed (83 files). Empty-card generation passed (3,960 firmware blocks plus 4,096 erased storage blocks). All package SHA256 entries and `unzip -t` passed. No hardware was flashed.
+- Result: UF2 SHA-256 `0011be75271a035ea945fa7ba68fbd3f1f98ab3a4bc4160d9eec540169e2c3f8`; ZIP SHA-256 `668f703c3c7b23232a3ab698ddd791b5ddda83a4029592b5061c6e1eeaaeb3d4`. Package source HEAD `6547ec4e88e365120248df08f32fca9d96ae4bf8`, dirty root diff SHA-256 `1f55eab79e8436e16716097bfd36d28f8453c743980ed337be390bf0b5a0da7c`.
+- Decision: This is the current external candidate. Await results specifically matched to its UF2 hash; firmware behavior is not physically validated here.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-6547ec4e-dirty.uf2`; `build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty.zip`; package provenance and `SHA256SUMS.txt` in the extracted package directory.

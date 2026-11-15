@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Acceptance (normal `max_crypto`: object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-c3309a61-dirty.uf2` | `12fc079ec6927e13aad2cc59acf41adade7cfc955f4bdceb81cf9cfdb41f679d` | rebuilt from current dirty worktree; no physical validation; T7/HOST-01 hardware acceptance remains open |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-normal-windows-c3309a61-dirty.zip` | `c543d8e739b6e5d73e954e95e0d36dff431f27f00abdfdb934a786e14d79f9c5` | EXT `WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61`; dirty source state and submodule are disclosed in package provenance |
+| Acceptance (normal `max_crypto`: object deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-6547ec4e-dirty.uf2` | `0011be75271a035ea945fa7ba68fbd3f1f98ab3a4bc4160d9eec540169e2c3f8` | rebuilt with current dirty worktree; no physical validation; T7/HOST-01 hardware acceptance remains open |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty.zip` | `668f703c3c7b23232a3ab698ddd791b5ddda83a4029592b5061c6e1eeaaeb3d4` | EXT `WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E`; dirty source state and submodule are disclosed in package provenance |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01

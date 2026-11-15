@@ -1,5 +1,32 @@
 # External validation requests
 
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E — Retest current deletion and memory fixes
+
+Created 2026-11-15 02:18 CET. This supersedes the `C3309A61` package below.
+The fresh ARM RP2350 `max_crypto` image has object deletion ON, debug/trace OFF,
+serial wait 0 ms, and erased persistent storage (empty card). The package was
+rebuilt from HEAD `6547ec4e88e365120248df08f32fca9d96ae4bf8` plus the current
+dirty worktree; exact tracked-diff and submodule identities are in its
+provenance.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-normal-empty-card-6547ec4e-dirty.uf2)
+- UF2 SHA-256: `0011be75271a035ea945fa7ba68fbd3f1f98ab3a4bc4160d9eec540169e2c3f8`
+- Size: 4,125,184 bytes
+- [Complete Windows test package](../build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty.zip)
+- ZIP SHA-256: `668f703c3c7b23232a3ab698ddd791b5ddda83a4029592b5061c6e1eeaaeb3d4`
+- [Package instructions](../build/external-test/pico2-jcvm-object-deletion-normal-windows-6547ec4e-dirty/README.md)
+- Build passed with linked image end `0x100f7744`, leaving 35,004 bytes.
+  Empty-card packaging, fixture manifest verification, all package checksums,
+  and ZIP integrity passed. No physical flash or local hardware test was run.
+- Test inputs are unchanged upstream JCAlgTest 1.8.4/jc305 CAP and supplied
+  1.8.5 client.
+
+Flash this UF2 and report its exact hash, Windows version, reader name/ATR,
+chip ID, full option-2 performance result and serial log. If possible, run
+option 1 on another identified token. Include PC/SC/USB errors, timeouts,
+resets, stalls and complete per-device result directories. Install the
+unchanged CAP explicitly with GPPro after confirming the card is empty.
+
 ## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-7A396462
 
 Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-2BA049C8` package below; it
@@ -10,7 +37,11 @@ was rebuilt from the latest checkout after subsequent memory-management fixes.
 Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61` package below. This
 replacement includes the latest dirty-source bugfix state.
 
-## WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61 — External deletion-enabled test
+## Superseded: WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61
+
+Use the newer `WIN-OBJECT-DELETION-NORMAL-DIRTY-6547EC4E` package above.
+
+## WIN-OBJECT-DELETION-NORMAL-DIRTY-C3309A61 — External deletion-enabled test (superseded)
 
 Created 2026-11-15 01:36 CET. ARM RP2350 `max_crypto`, normal mode, object
 deletion ON, all debug/trace OFF, zero startup wait, empty persistent storage,
