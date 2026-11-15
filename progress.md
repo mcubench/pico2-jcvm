@@ -30445,3 +30445,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Fresh 1.8.5 client / unchanged 1.8.4 CAP option-2 VPCD run with object deletion and RP2350 overlay is still active in `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`. At record time it had passed RSA-2048 `Cipher_doFinal()` groups and 1,824 deletion requests, with no `F205`, `SystemException_NO_RESOURCE`, `FS_WRITE_FAIL`, or `FAULT` in the logs. This is diagnostic emulator evidence only; the previous run failed later at RSA-3072 and no quiescent post-run overlay measurement is available yet.
 - Decision: The encoding change is validated offline and in the ARM build. Keep MEM-01 T7/T10 open pending the fresh-client run through the prior failure point, peak-usage analysis, and physical T8. Build the external image from the committed source step with object deletion ON and an empty card.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`; overlay image regression and metrics in `tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`.
+
+## 2026-11-15 External deletion-ON empty-card image 6 minutes
+
+- Step-Id: `20261115-1346-maxcrypto-d508-image`
+- Task: `MEM-01 T10` external test candidate
+- When: '2026-11-15 13:40 CET' - '2026-11-15 13:46 CET'
+- Model: `gpt-6`
+- Change: Rebuilt the committed schema-v5 memory-headroom change as normal ARM `max_crypto`, generated an erased-storage empty-card UF2, packaged it with the unchanged upstream JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5 client, GPPro and Windows instructions. Updated the current-image table, external request and session handoff.
+- Validation: `./tools/build arm --profile max_crypto` passed; provenance says `mode=normal`, `object_deletion=ON`, debug switches OFF. `./tools/package-empty-card-uf2` passed (3,964 firmware blocks + 4,096 erased storage blocks). `./tools/fixture-path --verify` passed (83 files). Package SHA256SUMS verification and `unzip -t` passed. No physical flash or Windows test was performed.
+- Result: UF2 4,127,232 bytes, SHA-256 `91288e4963b1baa3d6959dcf1da30178c4d5ffbac5c22d83e7a0c1a45c931e96`; ZIP SHA-256 `63fbae1ce480594952452533f78b6b71029adf0bcd49a6100745f827c4260a02`. Linked end `0x100f7b08`, 34,040 bytes remain. CPLC source ID is `D508CAE82A46CF51`; worktree/submodule dirty state is disclosed in package provenance.
+- Decision: Deliver this as the current external Windows test candidate with object deletion ON and empty card. It includes the tag-prefix storage change but is not physical acceptance evidence. Continue the separate fresh-client VPCD option-2 run and await external Windows results for this exact hash.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d508cae8-current.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-d508cae8.zip`; request `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8`.

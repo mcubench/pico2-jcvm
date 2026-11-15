@@ -2,17 +2,14 @@
 
 Updated: 2026-11-15.
 
-## External deletion test
-- Current package: `build/external-test/pico2-jcvm-maxcrypto-deletion-afe8ed5d.zip`.
-- Current no-debug, normal-mode, empty-card ARM UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-afe8ed5d-current.uf2`.
-- UF2 SHA-256: `7d44ec93552fe1acad4824c0014109a47260064dd51df5935a272f169f607df0`; ZIP SHA-256: `f509456710e7527ca3545b763492c8e07e80bea446f5641800b6ddaacfc7f053`.
-- Request `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` in `.agent/EXT_REQUESTS.md`; package README has Windows flashing/JCAlgTest steps. ARM build, empty-card packaging, fixture verification, package checksums and ZIP integrity pass; no physical flash or Windows run yet. INV-28 remains 96 KiB / 8,192 slots.
+## Current external-test image
+- Package: `build/external-test/pico2-jcvm-maxcrypto-deletion-d508cae8.zip` (ZIP SHA-256 `63fbae1ce480594952452533f78b6b71029adf0bcd49a6100745f827c4260a02`).
+- Standalone empty-card UF2: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d508cae8-current.uf2` (SHA-256 `91288e4963b1baa3d6959dcf1da30178c4d5ffbac5c22d83e7a0c1a45c931e96`).
+- Normal ARM `max_crypto`, deletion ON, debug OFF; source commit `d508cae8` plus tracked dirty worktree and dirty submodules are identified in the package provenance. Firmware end `0x100f7b08`, 34,040 bytes remain. Empty persistent storage; no applet preinstalled. Request `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8` contains Windows steps. No physical flash or Windows test here.
 
-## Next actions and blockers
-- LONGOP-01 (P0 under HOST-01): every option-2 campaign dies at the first RSA-1984 private ×50 APDU. The confirmed defect is no CCID time extension during modexp; a RAM out-of-memory panic is suspected. Start with TODO LONGOP-01 T1 (offline heap measurement) and T2 (Linux physical, with the `__already_measured.list` resume trick). External serial evidence is requested as `WIN-RSA1984-X50-SERIAL-20261115`.
-- Fresh-client VPCD T7 failed: option 2 reached sync 6,300, then persistent allocation returned `F205` at 98,246/98,304 bytes. Do not increase that limit without user approval; INV-28 fixes it at 96 KiB. See `TODO.md` and `artifacts/results/jcalgtest-support-vpcd-20261115T084412Z/`.
-- Continue MEM-01 T10: diagnose why nearly all stored records are marked reachable; make reachability/reclamation more effective within INV-28, then prove live data survives and allocations continue in the no-deletion-request fake-flash/VPCD case.
-- Await the external option-2 result for the exact UF2 hash above; this package is a test candidate, not acceptance evidence.
-- Local reader prerequisite is unresolved: approved helper previously found four matching devices and refused; bounded reader listing timed out. See `HOST01-READER-COUNT-20261115` in `.agent/EXT_REQUESTS.md`; retry only after enumeration is restored.
-- MEM-01 T7 and physical T8 remain open. Three captured option-2 replay cycles passed, but the fresh-client run failed and replay evidence is not client or hardware acceptance.
-- Preserve all existing dirty source/test changes. The current image was built from committed HEAD `afe8ed5d` plus a dirty worktree; inspect package `BUILD-PROVENANCE.txt` before attributing behavior to a clean checkout.
+## Active diagnostics and next steps
+- Fresh 1.8.5-client / unchanged 1.8.4 CAP `ALG_PERFORMANCE_STATIC` VPCD run, object deletion ON, is active at `artifacts/results/jcalgtest-support-vpcd-20261115T123504Z/`. Latest check reached RSA-public-3072 `Cipher_doFinal()` after 2,627 reset/deletion calls, with no `F205`, `SystemException_NO_RESOURCE`, `FS_WRITE_FAIL`, or `FAULT`. Continue through the old RSA-private-3072 failure point; then inspect only a quiescent overlay snapshot and record peak bytes/records.
+- `MEM-01 T7/T10` remains open until fresh-client run clears its prior failure and physical T8 acceptance passes. Preserve the 96 KiB / 8,192-slot INV-28 limit.
+- Source step `20261115-1340-mem01-prefix-tags` is committed as `d508cae8`; overlay, transaction, inventory suites and normal ARM build passed. Continue with the next concrete T10 acceptance/test gap after the active run.
+- Physical USB/PCSC availability is not freshly confirmed. Before hardware work, run the approved helper and bounded reader listing through the required elevated host-access path; use the identified-board failover pool.
+- LONGOP-01 serial evidence request is `WIN-RSA1984-X50-SERIAL-20261115`; its Windows test instructions now point at the current D508CAE8 image.

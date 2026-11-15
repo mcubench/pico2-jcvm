@@ -1,19 +1,19 @@
 # External validation requests
 
-## WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D — Test current deletion-enabled image
+## WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8 — Test current deletion-enabled image
 
-Created 2026-11-15 12:45 CET. This is the current test candidate and supersedes
-`WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732`. Use the normal ARM `max_crypto`
-image built from HEAD `afe8ed5d` plus its dirty worktree. Object deletion is ON;
+Created 2026-11-15 13:40 CET. This supersedes the AFE8ED5D candidate for new
+runs. Use the normal ARM `max_crypto` image from source commit `d508cae8` plus
+the tracked dirty worktree recorded in the package provenance. Schema-v5
+arbitrary-prefix persistent tag encoding is included. Object deletion is ON;
 debug/trace switches are OFF; persistent storage is erased; no applet is
-preinstalled. The persistent overlay remains at the INV-28 limit of 96 KiB /
-8,192 slots.
+preinstalled. The overlay remains at the INV-28 limit of 96 KiB / 8,192 slots.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-afe8ed5d-current.uf2)
-- UF2 SHA-256: `7d44ec93552fe1acad4824c0014109a47260064dd51df5935a272f169f607df0`; size 4,126,208 bytes.
-- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-afe8ed5d.zip)
-- ZIP SHA-256: `f509456710e7527ca3545b763492c8e07e80bea446f5641800b6ddaacfc7f053`.
-- Build and source/submodule identities are in `BUILD-PROVENANCE.txt`. ARM build passed in normal mode; linked end `0x100f7920`, leaving 34,528 bytes. Fixture verification and package checksums/ZIP integrity passed. No physical flash or Windows run was performed here.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d508cae8-current.uf2)
+- UF2 SHA-256: `91288e4963b1baa3d6959dcf1da30178c4d5ffbac5c22d83e7a0c1a45c931e96`; size 4,127,232 bytes.
+- [Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-d508cae8.zip)
+- ZIP SHA-256: `63fbae1ce480594952452533f78b6b71029adf0bcd49a6100745f827c4260a02`.
+- ARM build passed in normal mode; linked end `0x100f7b08`, leaving 34,040 bytes. Package checksums and ZIP integrity pass. No physical flash or Windows run was performed here.
 
 Unzip and follow the included README: verify the UF2 hash, flash through
 BOOTSEL, confirm the card is empty, explicitly install the unchanged supplied
@@ -24,7 +24,7 @@ resets, stalls or timeouts.
 
 ## WIN-OBJECT-DELETION-LOW-WATERMARK-D1130732 — Test deletion-enabled image within declared storage limit
 
-Superseded by `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` for new runs.
+Superseded by `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8` for new runs.
 
 Created 2026-11-15 12:30 CET. This supersedes the withdrawn D73E3411 image,
 the 72CBEEDC image, and earlier E9C4DEB3 candidate. Use the normal ARM
@@ -34,7 +34,7 @@ reclaim/compaction are ON; all debug/trace flags and startup wait are OFF. The
 overlay remains at the INV-28 limit of 96 KiB / 8,192 slots. Persistent storage
 is erased, and no applet is preinstalled.
 
-This request is now superseded by `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D`;
+This request is now superseded by `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8`;
 retain only for results already collected against its old hash.
 
 - [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d1130732-current.uf2)
@@ -55,12 +55,12 @@ disconnects, resets, stalls, or timeouts.
 
 Created 2026-11-15 12:35 CET. Diagnostic run (not acceptance) for TODO
 LONGOP-01. It needs only about 5 minutes per attempt. If the full option-2
-run under `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` is in progress, let it
+run under `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8` is in progress, let it
 finish first. The current image does not contain a LONGOP-01 fix, so it may
 still fail at this operation.
 
-1. Flash the current empty-card UF2 from `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D`
-   (SHA-256 `7d44ec93…f607df0`). Install the unchanged JCAlgTest CAP with GPPro.
+1. Flash the current empty-card UF2 from `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8`
+   (SHA-256 `91288e49…c931e96`). Install the unchanged JCAlgTest CAP with GPPro.
    Use the pinned 1.8.5 client and report its SHA-256; it must be
    `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
 2. Copy `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/pico2_maxcrypto_20261115_25216292-dirty____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list`
@@ -91,13 +91,13 @@ APDU and right after it:
 
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-E9C4DEB3
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` above for new testing. The
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8` above for new testing. The
 intermediate D73E3411 candidate changed the declared overlay limit and is
 withdrawn; do not flash it.
 
 ## Superseded: WIN-OBJECT-DELETION-LOW-WATERMARK-45EC828F
 
-Use `WIN-OBJECT-DELETION-LOW-WATERMARK-AFE8ED5D` above for new testing. Its
+Use `WIN-OBJECT-DELETION-LOW-WATERMARK-D508CAE8` above for new testing. Its
 image predates the current checkout and should be retained only as historical
 evidence.
 
