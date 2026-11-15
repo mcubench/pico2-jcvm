@@ -46,6 +46,7 @@
 #include "../../src/vm_lifecycle.h"
 #include "../../src/vm_applet_context.hpp"
 #include "../../src/vm_diagnostics.h"
+#include "../../src/object_deletion_policy.hpp"
 
 #include <cerrno>
 #include <cstdio>
@@ -415,7 +416,16 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
   // by reclaiming at most one fixed-size batch before returning to the host.
   // The request remains latched while either namespace still has work, so a
   // later APDU safely resumes the sweep.
-  if (!context.isObjectDeletionRequested()) return;
+  const bool request_pending = context.isObjectDeletionRequested();
+  const bool stack_empty = context.getStack().empty();
+  const bool transaction_active =
+      jcvm::FlashMemory_Handler::persistentWriteTransactionActive();
+  if (!pico2_jcvm::may_service_object_deletion(
+          request_pending, stack_empty, transaction_active)) {
+    // Keep the request latched. It will be retried at a later safe boundary;
+    // collecting during a transaction could invalidate its rollback journal.
+    return;
+  }
   const auto heap_result = jcvm::Context::collectRetainedHeaps();
   if (!heap_result.complete) {
     std::printf("OBJECT_DELETION:SKIP package=%u owner=%u "
@@ -734,7 +744,14 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
 #elif !defined(CHOUPI_ENABLE_OBJECT_DELETION)
   return;
 #endif
-  if (!context.isObjectDeletionRequested()) return;
+  const bool request_pending = context.isObjectDeletionRequested();
+  const bool stack_empty = context.getStack().empty();
+  const bool transaction_active =
+      jcvm::FlashMemory_Handler::persistentWriteTransactionActive();
+  if (!pico2_jcvm::may_service_object_deletion(
+          request_pending, stack_empty, transaction_active)) {
+    return;
+  }
 
   try {
     const auto heap_result = jcvm::Context::collectRetainedHeaps();

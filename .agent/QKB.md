@@ -1343,3 +1343,16 @@ Next: use the current empty-card image in
 capture serial telemetry and board ID, and retain the exact failing APDU. Only
 attribute this to memory exhaustion if the new run yields a memory/storage
 diagnostic or reproducible firmware fault; present evidence is transport-only.
+
+## 2026-11-15 Defer object deletion during persistent transactions
+
+`Context::collectHeaps()` rejects a non-empty Java stack, so coordinated
+collection already runs only at an empty-stack safe point. The post-APDU
+deletion service previously did not check whether the persistent-write
+transaction was still active. Reclaiming then could erase an unreachable
+record that a transaction rollback later restores as a reference. The service
+now leaves the deletion request pending until both the stack is empty and
+`FlashMemory_Handler::persistentWriteTransactionActive()` is false. Focused
+policy coverage checks no request, live Java frames, active transaction, and a
+safe boundary. This is a safety prerequisite for MEM-01 T10, not automatic
+low-watermark reclamation or a retry of a failed write.

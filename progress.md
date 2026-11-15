@@ -30248,3 +30248,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Reproduce on current image `25216292` with the pinned 1.8.5 client and bounded serial telemetry. Do not count this incomplete, changed-client run as acceptance or as proof of a memory defect.
 - Commit: See Git history for this progress record.
 - Artifacts/logs: `inbox/maxcrypto_20261114_805420e6/`; details in `.agent/QKB.md` and HOST-01 in `TODO.md`.
+
+## 2026-11-15 Defer object deletion during active transactions 12 minutes
+
+- Step-Id: `20261115-mem01-deletion-transaction-guard`
+- Task: MEM-01 T10 safe-point prerequisite
+- When: '2026-11-15 07:24 CET' - '2026-11-15 07:36 CET'
+- Model: `GPT-6`
+- Change: Added a shared object-deletion policy requiring a pending request, empty Java stack and no active persistent-write transaction. Both physical and PC/VPCD post-APDU deletion paths now leave the request pending while a transaction is active. Added four focused policy checks and updated TODO/QKB/HANDOFF.
+- Validation: `./tools/test-object-deletion-policy` passed (`checks=4`). `./tools/build arm` and `./tools/build riscv` passed; ARM image end `0x100dcd90`, 143,984 bytes remain. Source emitted existing packed-member warnings during full compilation; no new warning came from the guard. No physical flash or runtime transaction scenario was run.
+- Result: GC/reclaimer work can no longer invalidate a persistent-write rollback journal through these post-APDU service paths. Automatic low-watermark reclaim and failed-write retry remain unimplemented; direct `fs_write` retry is unsafe while Java frames are active.
+- Decision: Keep MEM-01 T10 open. Next establish pre-cleanup watermark acceptance and design bounded preemptive reclaim at a safe boundary; do not claim this guard fixes memory exhaustion by itself.
+- Commit: See Git history for this progress record.
+- Artifacts/logs: `tools/test-object-deletion-policy`; ARM/RISC-V images under `build/arm/` and `build/riscv/` (not flashed).
