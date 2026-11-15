@@ -13,10 +13,9 @@ Updated: 2026-11-15.
 
 ## Next actions
 1. Await the external Windows run. Match every result to the UF2 hash; collect Windows version, reader/ATR, chip ID, complete client results and serial log.
-2. MEM-01 T7 VPCD and T8 physical acceptance remain open. Use the supplied 1.8.5 client with unchanged 1.8.4/jc305 CAP.
-   The offline overlay heap graph passes (68.6% live occupancy, 12 compactions, 309 peak handles), but its vector roots do not satisfy the optional heap-inventory diagnostic static-root threshold; see QKB before changing diagnostics.
+2. MEM-01 T7 live-client VPCD and T8 physical acceptance remain open. A synthetic replay of a captured 1,968-APDU option-2 prefix ran three times (5,904 APDUs) through the RP2350 overlay with no resource/FS errors and repeated reclamation; byte use is cyclic with same-phase peaks ~79.5, 81.8 and 82.7 KiB, but this is not the fresh-client gate. See TODO and replay artifacts for exact bounds.
 3. CAPIN-01 APDU-level PC VPCD validation passed: malformed LOAD returned `6A80`, GET STATUS excluded it while retaining the control package, and control DELETE returned `9000`. Physical acceptance remains open.
 
 ## Hardware access
-- At 2026-11-15 00:51 CET, the approved helper granted ACLs for three USB nodes and `pcscd.service` was active, but elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` timed out. No usable reader inventory was obtained. Do not attribute USB nodes to JCVM boards without bounded enumeration.
+- At 2026-11-15 01:39 CET, the approved helper granted ACLs for three USB nodes, but elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 8` again timed out. No usable reader inventory was obtained. Do not attribute USB nodes to JCVM boards without bounded enumeration.
 - Do not claim physical acceptance without reader enumeration, identity, flash, and finite serial logs.

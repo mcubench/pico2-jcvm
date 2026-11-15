@@ -1248,6 +1248,10 @@ after its 8-second bound with `READERS:ERROR listing timed out after 8 s`.
 No reader names were returned. This does not identify the USB nodes as JCVM
 readers and does not justify repeating scans. VPCD/physical campaigns remain
 blocked until bounded reader enumeration works; proceed with offline work.
+Follow-up at 2026-11-15 01:39 CET: the approved helper again granted three USB
+node ACLs, but the same 8-second `./tools/list-readers --timeout 8` invocation
+timed out with no names. This repeats the enumeration blocker; no board identity
+or PC/SC campaign can be inferred from the granted nodes.
 
 
 ## 2026-11-15 T7 heap inventory diagnostic filter excludes the overlay fixture

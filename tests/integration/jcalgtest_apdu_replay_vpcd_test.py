@@ -75,8 +75,11 @@ def start_emulator(memory: Path, log_path: Path, cap_code: Path,
                    rom_mask: Path, listener: socket.socket,
                    restore: tuple[int, int, bytes, bytes] | None):
     host, port = listener.getsockname()
+    overlay_enabled = os.environ.get("JCALGTEST_RP2350_OVERLAY") == "1"
+    build_dir = ROOT / ("build/choupi-pc-rp2350-overlay" if overlay_enabled
+                        else "build/choupi-pc")
     command = [
-        str(ROOT / "tools/env"), str(ROOT / "build/choupi-pc/choupi"),
+        str(ROOT / "tools/env"), str(build_dir / "choupi"),
         "-m", str(memory), "-s", "--vpcd", f"{host}:{port}",
         "--applet-aid", APPLET_AID.hex(), "--rom-mask", str(rom_mask),
     ]
@@ -115,10 +118,14 @@ def run(args: argparse.Namespace) -> int:
     source_log = args.client_log.resolve()
     if not source_log.is_file() or not source_log.stat().st_size:
         raise RuntimeError(f"JCAlgTest client log is missing or empty: {source_log}")
-    stop_hex = re.sub(r"\s+", "", args.stop_after_apdu).upper()
-    if not re.fullmatch(r"[0-9A-F]{10,510}", stop_hex):
-        raise ValueError("--stop-after-apdu must be a complete APDU hex string")
-    stop_bytes = bytes.fromhex(stop_hex)
+    stop_bytes = None
+    if args.stop_after_apdu is not None:
+        stop_hex = re.sub(r"\s+", "", args.stop_after_apdu).upper()
+        if not re.fullmatch(r"[0-9A-F]{10,510}", stop_hex):
+            raise ValueError("--stop-after-apdu must be a complete APDU hex string")
+        stop_bytes = bytes.fromhex(stop_hex)
+    if args.stop_after_apdu_index is not None and args.stop_after_apdu_index < 1:
+        raise ValueError("--stop-after-apdu-index must be at least 1")
 
     load_image = ensure_algtest_load_code(ROOT)
     parsed_code, package_aid, applets = vpcd.load_code(args.cap)
@@ -162,8 +169,11 @@ def run(args: argparse.Namespace) -> int:
     source_copy = args.out_dir / "source-client.log"
     source_copy.write_bytes(source_log.read_bytes())
 
-    emulator = ROOT / "build/choupi-pc/choupi"
-    rom_mask = ROOT / "build/choupi-pc/flash"
+    overlay_enabled = os.environ.get("JCALGTEST_RP2350_OVERLAY") == "1"
+    build_dir = ROOT / ("build/choupi-pc-rp2350-overlay" if overlay_enabled
+                        else "build/choupi-pc")
+    emulator = build_dir / "choupi"
+    rom_mask = build_dir / "flash"
     for required in (emulator, rom_mask, args.cap, load_image):
         if not required.is_file() or not required.stat().st_size:
             raise RuntimeError(f"required VPCD replay input is missing: {required}")
@@ -248,7 +258,8 @@ def run(args: argparse.Namespace) -> int:
                     f"sw={sw:04X}{suffix}",
                     flush=True,
                 )
-                if command == stop_bytes:
+                if ((stop_bytes is not None and command == stop_bytes) or
+                        replayed == args.stop_after_apdu_index):
                     target_seen = True
                 if sw == 0xF205:
                     resource_failure = True
@@ -287,7 +298,10 @@ def run(args: argparse.Namespace) -> int:
                 flush=True,
             )
             if not target_seen:
-                raise RuntimeError(f"target APDU not found: {stop_hex}")
+                target = (f"APDU index {args.stop_after_apdu_index}"
+                          if args.stop_after_apdu_index is not None
+                          else f"APDU {stop_hex}")
+                raise RuntimeError(f"target {target} not found")
             if resource_failure:
                 raise RuntimeError("replayed workload returned F205/NO_RESOURCE")
             if unexpected_statuses:
@@ -314,7 +328,9 @@ def run(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--client-log", type=Path, required=True)
-    parser.add_argument("--stop-after-apdu", required=True)
+    stop_group = parser.add_mutually_exclusive_group(required=True)
+    stop_group.add_argument("--stop-after-apdu")
+    stop_group.add_argument("--stop-after-apdu-index", type=int)
     parser.add_argument("--cap", type=Path, default=ROOT / "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap")
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--start-at-apdu", type=int, default=1)

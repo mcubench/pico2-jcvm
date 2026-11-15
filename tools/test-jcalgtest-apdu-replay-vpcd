@@ -7,7 +7,7 @@ if (($# == 0)); then
   cat >&2 <<'EOF'
 Usage:
   tools/test-jcalgtest-apdu-replay-vpcd \
-    --client-log PATH --stop-after-apdu HEX [--cap PATH]
+    --client-log PATH (--stop-after-apdu HEX | --stop-after-apdu-index N) [--cap PATH]
 
 Replay an unchanged JCAlgTest client APDU transcript over the repository's
 direct VPCD socket integration path. The emulator and upstream CAP are run
