@@ -528,11 +528,28 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
   }
 
   const auto deletion_batch =
-      jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
-          static_cast<uint8_t>(context.getAppletID()),
-          context.getAppletPackageID(), context.getHeap(),
-          enumerate_physical_object_deletion_roots, &roots,
-          jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
+      [&]() {
+        uint32_t files_used = 0;
+        uint32_t bytes_used = 0;
+        uint32_t byte_capacity = 0;
+        choupi_persistent_memory_usage(&files_used, &bytes_used,
+                                      &byte_capacity);
+        std::printf("OBJECT_DELETION:PRE_CLEANUP package=%u owner=%u "
+                    "reason=%s available=%lu files=%lu bytes=%lu/%lu\r\n",
+                    static_cast<unsigned>(context.getAppletPackageID()),
+                    static_cast<unsigned>(owner),
+                    automatic_deletion_pending[owner] ? "automatic" : "applet",
+                    static_cast<unsigned long>(available_before_reclaim),
+                    static_cast<unsigned long>(files_used),
+                    static_cast<unsigned long>(bytes_used),
+                    static_cast<unsigned long>(byte_capacity));
+        std::fflush(stdout);
+        return jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+            static_cast<uint8_t>(context.getAppletID()),
+            context.getAppletPackageID(), context.getHeap(),
+            enumerate_physical_object_deletion_roots, &roots,
+            jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
+      }();
   const bool complete = deletion_batch.complete();
   std::printf("OBJECT_DELETION: package=%u owner=%u applet_result=%u "
               "package_result=%u erased_applet=%u erased_package=%u "
@@ -918,6 +935,19 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
     }
 
     PersistentRootVector root_vector{std::move(roots.references)};
+    uint32_t pre_cleanup_files = 0;
+    uint32_t pre_cleanup_bytes = 0;
+    uint32_t pre_cleanup_capacity = 0;
+    choupi_persistent_memory_usage(&pre_cleanup_files, &pre_cleanup_bytes,
+                                  &pre_cleanup_capacity);
+    std::fprintf(stderr,
+                 "OBJECT_DELETION:PRE_CLEANUP package=%u owner=%u "
+                 "reason=%s available=%u files=%u bytes=%u/%u\n",
+                 static_cast<unsigned>(context.getAppletPackageID()),
+                 static_cast<unsigned>(owner),
+                 automatic_deletion_pending[owner] ? "automatic" : "applet",
+                 available_before_reclaim, pre_cleanup_files,
+                 pre_cleanup_bytes, pre_cleanup_capacity);
     const auto deletion_batch =
         jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
             static_cast<uint8_t>(context.getAppletID()),

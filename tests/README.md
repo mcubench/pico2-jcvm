@@ -60,6 +60,14 @@ Run physical commands through elevated host execution as required by
 version, chip ID and firmware hash. Do not interrupt existing campaigns merely
 to change their client; keep their original provenance.
 
+With object deletion enabled, runtime emits one
+`OBJECT_DELETION:PRE_CLEANUP` line before each persistent reclamation pass.
+It records the current raw file count and bytes/capacity for both applet-
+requested and automatic requests. `tools/check-object-deletion-headroom.py`
+aggregates the peak and fails if telemetry is absent, malformed, inconsistent,
+or ever exceeds 90% of the arena. The VPCD JCAlgTest runner invokes this gate
+when `JCALGTEST_OBJECT_DELETION=1` and saves its summary as `headroom.log`.
+
 Scripts and the catalog are unchanged: `fixture-path jcalgtest.client` still
 selects 1.8.4, so pass the explicit override above. Any wrapper lacking a client
 override still uses its old default; do not label its output as a 1.8.5 run.

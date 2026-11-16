@@ -159,10 +159,21 @@ grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" ||
 }
 
 client_args=(-op "${operation}" -fresh -outpath "${out_dir}")
-if ! JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
+client_status=0
+JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
     "${repo_root}/tools/run-jcalgtest" --client-jar "${client}" \
     --reader-name "${reader}" \
-    "${client_args[@]}" > "${client_log}" 2>&1; then
+    "${client_args[@]}" > "${client_log}" 2>&1 || client_status=$?
+if [[ "${object_deletion}" == 1 ]]; then
+  python3 "${repo_root}/tools/check-object-deletion-headroom.py" \
+    "${emulator_log}" > "${out_dir}/headroom.log" 2>&1 || {
+      cat "${out_dir}/headroom.log" >&2
+      cat "${client_log}" >&2
+      die "object-deletion headroom acceptance failed; see ${out_dir}"
+    }
+  cat "${out_dir}/headroom.log"
+fi
+if (( client_status != 0 )); then
   cat "${client_log}" >&2
   cat "${emulator_log}" >&2
   die "JCAlgTest operation ${operation} failed; see ${out_dir}"

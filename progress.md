@@ -30530,3 +30530,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 is 4,126,720 bytes, SHA-256 `e1210b1afdf20afa335e32b188541804384ada64f5e4e074311b03e06e7595d8`; build UF2 SHA-256 `ae367e073157eb373a4bbd357359c2f5416fe678d46168516b484a8aa9aadf4d`; ZIP SHA-256 `327b6454fce940bb972e1f50474d798dff964ec0ecc552acd84b843aa85505a4`. Linked end `0x100f7af0`, with 34,064 bytes remaining. CPLC source ID is `0x98FCB15176729161`; the image uses the committed fix plus pre-existing unrelated dirty worktree/submodule state, detailed in package provenance.
 - Decision: Use `WIN-MEM01-EMPTY-NODEBUG-98FCB151` for new external testing. This is a fresh build artifact, not hardware acceptance evidence.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-98fcb151.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-98fcb151.zip`; `.agent/EXT_REQUESTS.md`.
+
+
+## 2026-11-16 Add pre-cleanup storage headroom telemetry and gate 23 minutes
+
+- Step-Id: `20261116-0825-mem01-precleanup-headroom`
+- Task: `MEM-01 T10`
+- When: '2026-11-16 08:02 CET' - '2026-11-16 08:25 CET'
+- Model: `gpt-6.1-sol`
+- Change: Emit pre-cleanup raw file-count and byte/capacity telemetry for every object-deletion batch, regardless of whether the request is applet-originated or automatic. Add a fail-closed 90% headroom checker to the VPCD runner and Windows serial capture, plus parser and threshold unit coverage.
+- Validation: `./tools/build arm --profile max_crypto` passed (normal mode, deletion ON, debug OFF); `./tools/build-pc --profile max_crypto --rp2350-overlay` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 8E464F4E2BBC0A19` passed with `TEST:SUMMARY pass=1 fail=0`; elevated `PICO2_HOST_USB_ACCESS=1 PICO2_VPCD_RP2350_OVERLAY=1 ./tools/test-object-deletion-vpcd 512 auto-gc` passed 515/515 APDUs; `python3 tests/unit/test_object_deletion_headroom.py` passed 5 tests. The PC build reports pre-existing SDK/Rust/ROM-mask warnings; ARM build emitted no compile warnings. PowerShell capture changes were not executed because PowerShell is unavailable in this environment. A clean, unchanged-client option-2 VPCD campaign is still running; no completion is claimed.
+- Result: Focused VPCD telemetry had 44 samples and peaked at 78,027/98,304 bytes (79.37%), with no storage/runtime failure. Running campaign is `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/`; latest check at 1,647 pre-cleanup samples peaked at 42,006/98,304 bytes (42.73%). The unchanged 1.8.5 client JAR SHA-256 is `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CAP is unchanged 1.8.4/jc305 SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+- Decision: Missing T10 telemetry and its numerical gate are implemented. T7/T8 acceptance, safe-point exhaustion retry, and garbage allocation without applet deletion remain open. The full option-2 campaign must finish with its pass marker and remain ≤90% before T7 can close.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261116T071225Z.log`; `artifacts/logs/object-deletion-vpcd-20261116T071715Z.log`; `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/{client.log,emulator.log,headroom.log}`.
