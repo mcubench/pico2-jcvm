@@ -131,7 +131,7 @@ fi
 if [[ "${mode}" == "auto-gc" ]]; then
   grep -Fq 'OBJECT_DELETION:AUTO_TRIGGER ' "${log}" || \
     die "automatic deletion was not triggered by low space; see ${log}"
-  grep -Fq 'OBJECT_DELETION:AUTO_COMPACT ' "${log}" || \
+  grep -Fq 'OBJECT_DELETION:LOW_WATERMARK_COMPACT ' "${log}" || \
     die "automatic deletion did not compact tombstones; see ${log}"
   if grep -Eq 'FS_WRITE_FAIL|F205|NO_RESOURCE|FAULT' "${log}"; then
     die "automatic deletion stress emitted a storage/runtime failure; see ${log}"

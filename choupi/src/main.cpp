@@ -544,12 +544,10 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
               deletion_batch.erased_applet, deletion_batch.erased_package,
               roots.static_roots, roots.applet_roots,
               complete ? 0u : 1u);
-  if (automatic_deletion_pending[owner] &&
-      deletion_batch.erasedTotal() != 0 &&
-      available_before_reclaim <=
-          pico2_jcvm::kObjectDeletionLowWatermarkBytes) {
+  if (pico2_jcvm::should_compact_after_object_deletion(
+          available_before_reclaim, deletion_batch.erasedTotal())) {
     const uint8_t compact_status = choupi_compact_persistent_memory();
-    std::printf("OBJECT_DELETION:AUTO_COMPACT package=%u owner=%u "
+    std::printf("OBJECT_DELETION:LOW_WATERMARK_COMPACT package=%u owner=%u "
                 "status=%u erased=%u\r\n",
                 static_cast<unsigned>(context.getAppletPackageID()),
                 static_cast<unsigned>(owner),
@@ -939,13 +937,11 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
                  static_cast<unsigned>(deletion_batch.erased_package),
                  roots.static_roots, roots.applet_roots);
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
-    if (automatic_deletion_pending[owner] &&
-        deletion_batch.erasedTotal() != 0 &&
-        available_before_reclaim <=
-            pico2_jcvm::kObjectDeletionLowWatermarkBytes) {
+    if (pico2_jcvm::should_compact_after_object_deletion(
+            available_before_reclaim, deletion_batch.erasedTotal())) {
       const uint8_t compact_status = choupi_compact_persistent_memory();
       std::fprintf(stderr,
-                   "OBJECT_DELETION:AUTO_COMPACT package=%u owner=%u "
+                   "OBJECT_DELETION:LOW_WATERMARK_COMPACT package=%u owner=%u "
                    "status=%u erased=%u\n",
                    static_cast<unsigned>(context.getAppletPackageID()),
                    static_cast<unsigned>(owner),

@@ -1388,6 +1388,25 @@ one compaction, retaining the live root. This does not close unchanged-client
 T7 or physical T8 acceptance.
 
 
+## Applet-requested deletion also needs low-watermark compaction — 2026-11-16
+
+The safe-point compaction guard was still gated by
+`automatic_deletion_pending`. That missed tombstones created by explicit
+`JCSystem.requestObjectDeletion()` batches: they could erase records while
+free space was below 20 KiB without compacting the arena. In the pre-fix
+unchanged-client VPCD run, 4,974 deletion calls erased 11,752 records but only
+one compaction occurred; raw use reached 95,253/98,304 bytes (96.9%).
+
+**Viable fix:** compact after any non-empty deletion batch when the free-space
+snapshot taken before that batch is at or below the watermark. Keep the
+transaction and empty-stack safety guards unchanged. Policy and RP2350 overlay
+regressions, normal ARM build and 512-replacement VPCD stress pass. A clean
+post-fix option-2 run recorded 31 successful compactions, max automatic
+trigger use 79,308/98,304 bytes (80.7%), and no storage/runtime failure, but
+the client process ended before suite completion and the last 1,000-sync
+window still grew. Do not claim T7 acceptance from this partial run.
+
+
 ## PC/SC helper limit and direct VPCD socket sandbox — 2026-11-15
 
 A fresh approved `sudo -n /usr/local/sbin/pico2-pcsc-reader` call found four

@@ -44,6 +44,17 @@ int main() {
   check(!pico2_jcvm::should_request_automatic_object_deletion(
             0, false, true, false, false),
         "automatic_request_honors_retry_cooldown");
+  check(!pico2_jcvm::should_compact_after_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, 8),
+        "deletion_does_not_compact_above_low_watermark");
+  check(!pico2_jcvm::should_compact_after_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes, 0),
+        "deletion_does_not_compact_without_erased_records");
+  check(pico2_jcvm::should_compact_after_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes, 1),
+        "applet_or_automatic_deletion_compacts_at_low_watermark");
+  check(pico2_jcvm::should_compact_after_object_deletion(0, 8),
+        "deletion_compacts_below_low_watermark");
   pico2_jcvm::AutomaticObjectDeletionThrottle throttle;
   throttle.completed(0);
   check(throttle.cooldown_apdus ==

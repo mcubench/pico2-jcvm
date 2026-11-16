@@ -24,6 +24,16 @@ constexpr bool should_request_automatic_object_deletion(
          available_bytes <= kObjectDeletionLowWatermarkBytes;
 }
 
+// Once there is little persistent space left, remove tombstones produced by
+// any deletion batch. The request may come from the applet or from the
+// automatic low-watermark policy; both paths can erase records that require
+// compaction to return their bytes to the arena.
+constexpr bool should_compact_after_object_deletion(
+    const uint32_t available_bytes, const uint32_t erased_records) {
+  return erased_records != 0 &&
+         available_bytes <= kObjectDeletionLowWatermarkBytes;
+}
+
 struct AutomaticObjectDeletionThrottle {
   uint8_t cooldown_apdus = 0;
 

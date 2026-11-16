@@ -1716,7 +1716,6 @@ int main(const int argc, char **argv) {
   uint32_t overlay_churn_auto_requests = 0;
   uint32_t overlay_churn_erased = 0;
   bool overlay_churn_deletion_pending = false;
-  bool overlay_churn_auto_active = false;
   pico2_jcvm::AutomaticObjectDeletionThrottle overlay_churn_throttle;
   for (uint32_t cycle = 0; cycle < overlay_churn_cycles && overlay_churn_ok;
        ++cycle) {
@@ -1781,7 +1780,6 @@ int main(const int argc, char **argv) {
               available_before_reclaim, overlay_churn_deletion_pending, true,
               false, overlay_churn_throttle.cooldown_apdus == 0)) {
         overlay_churn_deletion_pending = true;
-        overlay_churn_auto_active = true;
         ++overlay_churn_auto_requests;
       }
 
@@ -1796,15 +1794,13 @@ int main(const int argc, char **argv) {
                 jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
         erased_this_cycle = batch.erasedTotal();
         overlay_churn_erased += erased_this_cycle;
-        if (overlay_churn_auto_active && erased_this_cycle != 0 &&
-            available_before_reclaim <=
-                pico2_jcvm::kObjectDeletionLowWatermarkBytes &&
+        if (pico2_jcvm::should_compact_after_object_deletion(
+                available_before_reclaim, erased_this_cycle) &&
             choupi_compact_persistent_memory() != FS_STATUS_OK) {
           overlay_churn_ok = false;
         }
         if (batch.complete()) {
           overlay_churn_deletion_pending = false;
-          overlay_churn_auto_active = false;
           overlay_churn_throttle.completed(erased_this_cycle);
         } else if (batch.erased_applet == 0 && batch.erased_package == 0 &&
                    batch.applet_result !=
@@ -1886,15 +1882,14 @@ int main(const int argc, char **argv) {
               enumerate_reclaimer_roots, &root_context,
               jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
       overlay_churn_erased += batch.erasedTotal();
-      if (batch.erasedTotal() != 0 &&
-          choupi_available_persistent_memory_bytes() <=
-              pico2_jcvm::kObjectDeletionLowWatermarkBytes) {
+      if (pico2_jcvm::should_compact_after_object_deletion(
+              choupi_available_persistent_memory_bytes(),
+              batch.erasedTotal())) {
         overlay_churn_ok =
             choupi_compact_persistent_memory() == FS_STATUS_OK;
       }
       if (batch.complete()) {
         overlay_churn_deletion_pending = false;
-        overlay_churn_auto_active = false;
         overlay_churn_throttle.completed(batch.erasedTotal());
       } else if (batch.erasedTotal() == 0 &&
                  batch.applet_result !=
