@@ -30543,3 +30543,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Focused VPCD telemetry had 44 samples and peaked at 78,027/98,304 bytes (79.37%), with no storage/runtime failure. Running campaign is `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/`; latest check at 1,647 pre-cleanup samples peaked at 42,006/98,304 bytes (42.73%). The unchanged 1.8.5 client JAR SHA-256 is `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CAP is unchanged 1.8.4/jc305 SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
 - Decision: Missing T10 telemetry and its numerical gate are implemented. T7/T8 acceptance, safe-point exhaustion retry, and garbage allocation without applet deletion remain open. The full option-2 campaign must finish with its pass marker and remain ≤90% before T7 can close.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261116T071225Z.log`; `artifacts/logs/object-deletion-vpcd-20261116T071715Z.log`; `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/{client.log,emulator.log,headroom.log}`.
+
+
+## 2026-11-16 Record interrupted VPCD option-2 checkpoint 3 minutes
+
+- Step-Id: `20261116-0828-mem01-vpcd-interrupt-checkpoint`
+- Task: `MEM-01 T7/T10` partial long-run evidence
+- When: '2026-11-16 08:25 CET' - '2026-11-16 08:28 CET'
+- Model: `gpt-6.1-sol`
+- Change: Stopped the active VPCD option-2 campaign at the user's request, preserved partial logs and overlay, and recorded the emulator's SIGINT shutdown limitation in QKB/HANDOFF.
+- Validation: `python3 tools/check-object-deletion-headroom.py artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/emulator.log` passed 1,935 samples, peak 55,414/98,304 bytes (56.37%). `./tools/inspect-rp2350-overlay artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/rp2350-overlay.flash` passed integrity inspection with 4,544 slots and 663 live records. The campaign did not complete; no `JCALGTEST_VPCD:PASS` marker.
+- Result: SIGINT made the PC emulator abort with `Unknown ptrace signal received: 2` at `src/arch/host/emulator.rs:743`. The client then reported card removal during RSA private 1536 `ALG_RSA_ISO14888 Cipher_doFinal()`; attribute this to interrupted host transport, not a verified card-side failure. No `F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, or `FAULT` appeared before shutdown. A matching `.cap-registry` was not saved, so do not resume from this directory.
+- Decision: Headroom was below threshold at interruption, but T7/T8 remain open pending a complete run. Restart option 2 from fresh state and allow the bounded run to finish; no graceful mid-suite shutdown has been established.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/{client.log,emulator.log,rp2350-overlay.flash,headroom.log}`; overlay SHA-256 and complete test output were not measured in this checkpoint.

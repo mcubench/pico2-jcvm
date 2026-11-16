@@ -1,5 +1,18 @@
 # Issue knowledge base
 
+## Ctrl-C aborts the VPCD emulator ptrace shim — 2026-11-16
+
+Interrupting `tools/test-jcalgtest-support-vpcd` with Ctrl-C while the
+JCAlgTest client is active can propagate SIGINT into the PC emulator, which
+panics in `src/arch/host/emulator.rs:743` with `Unknown ptrace signal received`
+(the current trace showed signal 2). The wrapper then reports a card removal
+and the client may fail during its current APDU. Treat that as an interrupted
+host run, not a card-side failure or a pass. Preserve the logs and inspect the
+RP2350 overlay; do not resume unless the matching PC memory file and
+`.cap-registry` are both present and validated. No graceful mid-suite shutdown
+procedure has been verified. For acceptance, start from fresh state and allow
+the bounded suite to finish rather than using Ctrl-C.
+
 ## Picotool aborts after verified flash — identity-pinned runtime recovery — 2026-11-14
 
 Picotool can abort with `picoboot::connection_error` / status 134 after its
