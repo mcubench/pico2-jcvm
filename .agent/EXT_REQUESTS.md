@@ -1,31 +1,35 @@
 # External validation requests
 
-## WIN-MEM01-EMPTY-NODEBUG-B6CCF96C — Test current deletion-enabled build
+## WIN-MEM01-EMPTY-NODEBUG-98FCB151 — Test current deletion-enabled build
 
-Created 2026-11-15 18:47 CET. This fresh package supersedes
-`WIN-MEM01-EMPTY-NODEBUG-5ABADB7D` for new runs. It is a normal ARM
+Created 2026-11-16 08:02 CET. This fresh package supersedes
+`WIN-MEM01-EMPTY-NODEBUG-B6CCF96C` for new runs. It is a normal ARM
 `max_crypto` image with persistent object deletion ON, all debug and trace
 switches OFF, 0 ms startup wait, an erased 1 MiB storage region, and no
-preinstalled applet. Build identity includes the dirty worktree/submodules;
-see package provenance.
+preinstalled applet. Its source is commit `98fcb151` plus the pre-existing
+dirty worktree/submodule state recorded in the package provenance.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-b6ccf96c-dirty.uf2)
-- UF2 SHA-256: `eeabd990b3ec2586cc7f165318425f003ffd6ce4b7a4865d1ecb9e328c9c1a99`; size 4,127,232 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-b6ccf96c-dirty.zip)
-- ZIP SHA-256: `a8cb6420e91d4c1a7832dd3e165527e011a47e80b881eda0a0691c8f63e493c3`.
-- Source HEAD `b6ccf96c` plus dirty worktree/submodules; see package `BUILD-PROVENANCE.txt`. CPLC source ID: `0xB6CCF96C2FB3AA90`.
-- ARM build passed, normal mode, object deletion ON, debug OFF. Linked end `0x100f7b08`, with 34,040 bytes remaining. Physical flash and Windows testing were not performed here.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-98fcb151.uf2)
+- UF2 SHA-256: `e1210b1afdf20afa335e32b188541804384ada64f5e4e074311b03e06e7595d8`; size 4,126,720 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-98fcb151.zip)
+- ZIP SHA-256: `327b6454fce940bb972e1f50474d798dff964ec0ecc552acd84b843aa85505a4`.
+- CPLC source identifier: `0x98FCB15176729161`; ARM build passed in `normal` mode, object deletion ON, debug OFF. Linked end `0x100f7af0`; 34,064 bytes remain. Physical flash and Windows testing were not performed here.
+- The package contains the unchanged JCAlgTest 1.8.4/jc305 CAP and the supplied 1.8.5 host client. Their hashes are recorded in `BUILD-PROVENANCE.txt` and `SHA256SUMS.txt`.
 
-The package README gives exact PowerShell hash verification and BOOTSEL
-flashing commands. Confirm the card is empty, then install the included
-unchanged JCAlgTest 1.8.4/jc305 CAP with GPPro and run option 2 using the
-included 1.8.5 client. Return the complete result folder and serial log,
-Windows version, reader and ATR, chip ID, firmware and client hashes, and any
-USB/PCSC errors, resets, stalls or timeouts.
+Follow the package README to verify and flash through BOOTSEL, confirm the card
+is empty, install the CAP explicitly with GPPro, and run option 2. Return the
+complete result directory and serial log, Windows version, reader and ATR, chip
+ID, firmware and client hashes, and any USB/PCSC errors, resets, stalls or
+timeouts.
+
+## Superseded: WIN-MEM01-EMPTY-NODEBUG-B6CCF96C
+
+Use `WIN-MEM01-EMPTY-NODEBUG-98FCB151` above for new tests. Retain the old image
+only for results already collected against its hash.
 
 ## Superseded: WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY
 
-Use `WIN-MEM01-EMPTY-NODEBUG-B6CCF96C` above for new tests. Keep prior images
+Use `WIN-MEM01-EMPTY-NODEBUG-98FCB151` above for new tests. Keep prior images
 only for results already collected against their hashes.
 
 ## WIN-OBJECT-DELETION-MAXCRYPTO-54BBA2B3-DIRTY — Test current deletion-enabled image

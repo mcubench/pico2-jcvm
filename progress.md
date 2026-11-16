@@ -30517,3 +30517,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The incomplete clean VPCD run logged 31 `LOW_WATERMARK_COMPACT` events (all status 0, 248 records erased), eight automatic triggers, max trigger usage 79,308/98,304 bytes (80.7%), and zero `F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, `FS_COMPACT_REJECT`, `FAULT`, deletion skips, or alias-protection events. Its last 1,000-sync sample grew from 33,457 to 45,525 bytes, so the plateau requirement remains unmet. The final overlay contains 1,767 slots, 988 live records, 45,517 bytes used, and 52,787 bytes available. The test used the pinned client JAR SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3` and unchanged upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
 - Decision: This fixes the missing compaction on explicit applet deletion requests, with focused and long partial VPCD evidence. It does not close T7/T8 or T10: the client suite ended without a pass, the plateau and >90% runner gate are not implemented, and safe-point reclaim/retry on failed writes remains open. Build a fresh external empty-card image from this fix before new Windows testing.
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261115T211419Z.log`; `artifacts/results/jcalgtest-support-vpcd-20261115T211711Z/{client.log,emulator.log,rp2350-overlay.flash}`; inspection summary `/tmp/pico2-vpcd-incomplete-overlay.log`.
+
+
+## 2026-11-16 Refresh deletion-enabled external image 3 minutes
+
+- Step-Id: `20261116-0802-mem01-external-98fcb151`
+- Task: `MEM-01 T10` external Windows test package refresh
+- When: '2026-11-16 07:59 CET' - '2026-11-16 08:02 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt and packaged a fresh normal ARM `max_crypto` empty-card image after the low-watermark deletion compaction fix. Updated the current-image table, external request, and handoff. Package includes the unchanged JCAlgTest 1.8.4/jc305 CAP and supplied 1.8.5 host client; no applet is preinstalled.
+- Validation: `./tools/build arm --profile max_crypto` passed; provenance confirms object deletion ON, debug flags OFF and `mode=normal`. `./tools/package-empty-card-uf2` passed with 3,963 firmware blocks plus 4,096 erased-storage blocks. ZIP integrity passed with `unzip -t`. No physical flash or Windows test was performed.
+- Result: Empty-card UF2 is 4,126,720 bytes, SHA-256 `e1210b1afdf20afa335e32b188541804384ada64f5e4e074311b03e06e7595d8`; build UF2 SHA-256 `ae367e073157eb373a4bbd357359c2f5416fe678d46168516b484a8aa9aadf4d`; ZIP SHA-256 `327b6454fce940bb972e1f50474d798dff964ec0ecc552acd84b843aa85505a4`. Linked end `0x100f7af0`, with 34,064 bytes remaining. CPLC source ID is `0x98FCB15176729161`; the image uses the committed fix plus pre-existing unrelated dirty worktree/submodule state, detailed in package provenance.
+- Decision: Use `WIN-MEM01-EMPTY-NODEBUG-98FCB151` for new external testing. This is a fresh build artifact, not hardware acceptance evidence.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-98fcb151.uf2`; `build/external-test/pico2-jcvm-maxcrypto-deletion-98fcb151.zip`; `.agent/EXT_REQUESTS.md`.

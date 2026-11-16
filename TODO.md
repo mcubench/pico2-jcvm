@@ -26,8 +26,8 @@ USB enumeration alone does not establish API/PCSC acceptance.
 
 | Purpose | Image | SHA-256 | Notes |
 |---|---|---|---|
-| Latest external image (`max_crypto`, deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-b6ccf96c-dirty.uf2` | `eeabd990b3ec2586cc7f165318425f003ffd6ce4b7a4865d1ecb9e328c9c1a99` | source HEAD `b6ccf96c` plus dirty worktree/submodules; normal ARM build passed; no physical validation |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-b6ccf96c-dirty.zip` | `a8cb6420e91d4c1a7832dd3e165527e011a47e80b881eda0a0691c8f63e493c3` | EXT `WIN-MEM01-EMPTY-NODEBUG-B6CCF96C`; package includes flash/test steps |
+| Latest external image (`max_crypto`, deletion ON, debug OFF, empty card) | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-98fcb151.uf2` | `e1210b1afdf20afa335e32b188541804384ada64f5e4e074311b03e06e7595d8` | source HEAD `98fcb151` plus dirty worktree/submodules; normal ARM build passed; no physical validation |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-98fcb151.zip` | `327b6454fce940bb972e1f50474d798dff964ec0ecc552acd84b843aa85505a4` | EXT `WIN-MEM01-EMPTY-NODEBUG-98FCB151`; package includes flash/test steps |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01
