@@ -60,6 +60,8 @@ option(CHOUPI_JCVM_DEBUG "Build choupi with debug output" OFF)
 
 option(CHOUPI_TARGET_PC "PC Version" ON)
 option(CHOUPI_TARGET_STM32 "STM32 Version" OFF)
+option(CHOUPI_PC_RP2350_FS_OVERLAY
+       "Route PC/VPCD filesystem calls through the RP2350 overlay backend" OFF)
 set(CHOUPI_JAVA8_HOME "" CACHE PATH
     "Java 8 installation used to compile Java Card API sources")
 
@@ -320,8 +322,7 @@ if(CHOUPI_TARGET_PC)
                 "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-rom-metadata.h"
     VERBATIM)
   add_custom_target(rommask
-    DEPENDS "${CHOUPI_ROMMASK_STAMP}" "${CMAKE_BINARY_DIR}/flash"
-            "${CMAKE_BINARY_DIR}/jni.hpp")
+    DEPENDS "${CHOUPI_ROMMASK_STAMP}")
 elseif(CHOUPI_TARGET_STM32)
   set(CHOUPI_ROMMASK_STAMP "${CMAKE_BINARY_DIR}/rommask/.rommask-built")
   add_custom_command(

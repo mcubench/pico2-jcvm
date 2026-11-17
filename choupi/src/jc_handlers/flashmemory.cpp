@@ -578,7 +578,7 @@ extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
   return persistent_write_transaction_active ? 1u : 0u;
 }
 
-#ifdef RP2350_FS_OVERLAY_TEST
+#ifdef CHOUPI_PC_RP2350_FS_OVERLAY
 extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void) {
   persistent_write_snapshots.clear();
   persistent_write_transaction_active = false;
@@ -617,10 +617,19 @@ bool FlashMemory_Handler::beginAppletWriteTransaction() noexcept {
 bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
   if (!persistent_write_transaction_active ||
       persistent_write_recovery_required) {
+#ifdef CHOUPI_PC_RP2350_FS_OVERLAY
+    std::fprintf(stderr,
+                 "RP2350_OVERLAY:commit_reject active=%u recovery=%u\n",
+                 persistent_write_transaction_active ? 1u : 0u,
+                 persistent_write_recovery_required ? 1u : 0u);
+#endif
     return false;
   }
   persistent_write_transaction_active = false;
   if (fs_sync() != 0) {
+#ifdef RP2350_FS_OVERLAY_TEST
+    std::fprintf(stderr, "RP2350_OVERLAY:commit_sync_failed\n");
+#endif
     persistent_write_transaction_active = true;
     const bool restored_persistent_records =
         !persistent_write_snapshots.empty();

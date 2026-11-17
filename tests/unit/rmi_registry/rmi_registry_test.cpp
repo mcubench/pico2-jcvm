@@ -540,11 +540,19 @@ void verify_context_retains_sibling_instance_state() {
   constexpr uint8_t first_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x01};
   constexpr uint8_t second_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x02};
   assert(package_context.setAppletAID(first_aid, sizeof(first_aid)));
+  assert(!package_context.canAllocateDeselectTransientArray());
+  package_context.setAppletInstallationActive(true);
+  assert(package_context.canAllocateDeselectTransientArray());
+  package_context.setAppletInstallationActive(false);
+  package_context.setAppletActive(true);
+  assert(package_context.canAllocateDeselectTransientArray());
   const auto first_root = make_reference(30);
   package_context.setAppletAIDObjectRef(first_root);
   assert(package_context.activateAppletInstance(8, second_aid,
                                                  sizeof(second_aid)));
   assert(package_context.getAppletID() == 8);
+  assert(!package_context.isAppletActive());
+  assert(package_context.canAllocateDeselectTransientArray());
   uint8_t active_aid[16]{};
   uint8_t active_aid_length = 0;
   assert(package_context.copyAppletAID(active_aid, active_aid_length));
@@ -584,6 +592,11 @@ void verify_context_retains_sibling_instance_state() {
   assert(package_context.activateAppletInstance(8, second_aid,
                                                  sizeof(second_aid)));
   assert(package_context.wasAppletRegistered());
+  assert(package_context.canAllocateDeselectTransientArray());
+  assert(package_context.activateAppletInstance(7, first_aid,
+                                                 sizeof(first_aid)));
+  package_context.setAppletActive(false);
+  assert(!package_context.canAllocateDeselectTransientArray());
   VisitedReferences roots;
   package_context.visitRootReferences(record_reference, &roots);
   assert(contains(roots, first_root));

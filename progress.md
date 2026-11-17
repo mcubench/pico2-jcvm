@@ -30616,3 +30616,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Telemetry format unchanged on the PC-overlay path; on firmware `reason` is always `applet` (no automatic-trigger state there). Not flashed.
 - Decision: Commit runtime group A next.
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 3c: commit runtime group A 20
+
+- Step-Id: `20261117-1445-tidy03c-runtime-group-a`
+- Task: MEM-01 (pre-existing uncommitted runtime work from earlier sessions)
+- When: '2026-11-17 14:20' - '2026-11-17 14:45'
+- Model: `claude-sonnet-5-5`
+- Change: Committed `choupi/src/heap.{cpp,hpp}`, `jc_bytecodes/bc_invoke.cpp`, `jc_handlers/flashmemory.cpp`, `main_pc.cpp`, `choupi/CMakeLists.txt`, `src/cap_load.cpp` and `tests/unit/rmi_registry/rmi_registry_test.cpp` as they stood in the worktree; their diffs were not reviewed line by line in this step.
+- Validation: `./tools/build arm` rc=0 with these changes in the tree. `test-rmi-registry` rc=0 (RMI_REGISTRY:PASS lines); `test-rp2350-fs-overlay`, `test-persistent-transaction`, `test-persistent-inventory` rc=0 with `TEST:SUMMARY fail=0` (FAIL/FAULT lines present are the intentional corruption/rejection scenarios). No flash, VPCD or hardware run.
+- Result: Host-side unit evidence only; not physical or campaign acceptance.
+- Decision: MEM-01 T7/T8/T10 stay open. Continue tidy-up (probe artifacts, fixture symlink, docs).
+- Artifacts/logs: scratchpad logs only (not retained)

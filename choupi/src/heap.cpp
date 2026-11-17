@@ -33,6 +33,10 @@
 #include "../../src/vm_diagnostics.h"
 
 #include <cstring>
+#include <cstdio>
+#ifdef PC_VERSION
+#include <cstdlib>
+#endif
 #if defined(CHOUPI_DEBUG_HEAP_GC)
 #include <cstdio>
 #endif
@@ -771,33 +775,6 @@ jref_t Heap::addGlobalAIDObject(const uint8_t *aid, const uint8_t aid_length,
     throw;
   }
   return object_reference;
-}
-
-void Heap::releaseGlobalAIDObject(const uint8_t *aid,
-                                 const uint8_t aid_length) noexcept {
-  if (aid == nullptr || aid_length < 5 || aid_length > 16) return;
-  Heap &heap = globalArrayHeap();
-  for (GlobalAIDObject &entry : heap.global_aid_objects) {
-    if (!entry.reference.isGlobalInstance() ||
-        entry.aid_length != aid_length ||
-        !std::equal(aid, aid + aid_length, entry.aid.begin())) {
-      continue;
-    }
-    jref_t bytes_reference;
-    try {
-      const auto object = getGlobalInstance(entry.reference);
-      if (object->getNumberOfFields() == 1) {
-        bytes_reference = object->getField_Reference(0);
-      }
-    } catch (...) {
-      // Drop the canonical handle even if a damaged cached object cannot be
-      // inspected; a later lookup can rebuild it from the installed registry.
-    }
-    const jref_t object_reference = entry.reference;
-    releaseGlobalArray(bytes_reference);
-    releaseGlobalInstance(object_reference);
-    return;
-  }
 }
 
 bool Heap::describeGlobalAIDObject(const jref_t reference, uint8_t aid[16],
@@ -1759,6 +1736,57 @@ Heap::ReachabilitySummary Heap::traceAndMark(
                                        ? 1u
                                        : 0u;
   }
+#ifdef PC_VERSION
+  const char *gc_diagnostics = std::getenv("PICO2_GC_SCAN_DIAGNOSTICS");
+  static bool dumped_reachable_object_inventory = false;
+  if (!dumped_reachable_object_inventory && gc_diagnostics != nullptr &&
+      std::strcmp(gc_diagnostics, "1") == 0 &&
+      summary.arrays_reachable >= 100 && summary.static_roots >= 20) {
+    dumped_reachable_object_inventory = true;
+    std::fprintf(stderr,
+                 "OBJECT_DELETION:HEAP_INVENTORY arrays=%u instances=%u "
+                 "static_roots=%u\n",
+                 summary.arrays_reachable, summary.instances_reachable,
+                 summary.static_roots);
+    std::size_t index = 0;
+    for (const auto &instance : this->shared_storage->instances) {
+      ++index;
+      if (!instance || instance->heap_mark == 0) continue;
+      const fs::Tag tag = instance->hasPersistentTag()
+                              ? instance->getPersistentTag()
+                              : fs::Tag{};
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:HEAP_INSTANCE slot=%zu package=%u "
+                   "class=%u persistent=%u tag=",
+                   index, static_cast<unsigned>(instance->getPackageID()),
+                   static_cast<unsigned>(instance->getClassIndex()),
+                   instance->hasPersistentTag() ? 1u : 0u);
+      for (uint8_t tag_index = 0; tag_index < tag.len; ++tag_index) {
+        std::fprintf(stderr, "%02X", tag.value[tag_index]);
+      }
+      std::fprintf(stderr, "\n");
+    }
+    index = 0;
+    for (const auto &array : this->shared_storage->arrays) {
+      ++index;
+      if (!array || array->heap_mark == 0) continue;
+      const fs::Tag tag = array->hasPersistentTag()
+                              ? array->getPersistentTag()
+                              : fs::Tag{};
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:HEAP_ARRAY slot=%zu type=%u size=%u "
+                   "persistent=%u transient=%u tag=",
+                   index, static_cast<unsigned>(array->getType()),
+                   static_cast<unsigned>(array->size()),
+                   array->hasPersistentTag() ? 1u : 0u,
+                   array->isTransientArray() ? 1u : 0u);
+      for (uint8_t tag_index = 0; tag_index < tag.len; ++tag_index) {
+        std::fprintf(stderr, "%02X", tag.value[tag_index]);
+      }
+      std::fprintf(stderr, "\n");
+    }
+  }
+#endif
   this->shared_storage->reachability_complete = summary.complete;
   return summary;
 }

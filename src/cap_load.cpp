@@ -20,6 +20,7 @@ bool test_fail_install_journal_clear_sync_armed = false;
 bool test_fail_install_journal_clear_sync_injected = false;
 } // namespace
 
+#ifndef CHOUPI_PC_RP2350_FS_OVERLAY
 extern "C" uint8_t fs_sync(void) {
   if (test_fail_install_journal_clear_sync_armed) {
     test_fail_install_journal_clear_sync_armed = false;
@@ -34,13 +35,14 @@ extern "C" uint8_t choupi_fs_erase_prefix(const uint8_t *prefix,
                                            uint8_t prefix_length);
 extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
                                     uint8_t prefix_length) {
-  return fs_erase(prefix, prefix_length);
+  return choupi_fs_erase_prefix(prefix, prefix_length);
 }
 extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
   const uint8_t static_package_prefix[] = {0x02, package_id};
   return choupi_fs_erase_prefix(static_package_prefix,
                                 sizeof(static_package_prefix));
 }
+#endif
 #endif
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_class.hpp"
@@ -296,8 +298,9 @@ bool clear_install_journal(uint8_t package_id) noexcept {
   }
 #endif
   const auto tag = lifecycle_tag(package_id, kInstallJournalKind);
-  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction())
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
     return false;
+  }
   if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) {
     (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
     return false;
@@ -430,8 +433,12 @@ bool clear_orphaned_dynamic_persistent_state() noexcept {
     }
   }
   if (!has_orphans) return true;
-  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction())
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+#ifdef PC_VERSION
+    std::fprintf(stderr, "VPCD:ORPHAN_CLEANUP_FAILED stage=begin\n");
+#endif
     return false;
+  }
   bool success = true;
   for (uint8_t package_id = kFirstDynamicPackageId;
        package_id < kFirstDynamicPackageId + kDynamicPackageCount;
@@ -442,6 +449,11 @@ bool clear_orphaned_dynamic_persistent_state() noexcept {
       continue;
     }
     if (!clear_package_static_state(package_id)) {
+#ifdef PC_VERSION
+      std::fprintf(stderr,
+                   "VPCD:ORPHAN_CLEANUP_FAILED stage=erase package=%u\n",
+                   static_cast<unsigned>(package_id));
+#endif
       success = false;
       break;
     }
@@ -452,18 +464,37 @@ bool clear_orphaned_dynamic_persistent_state() noexcept {
     return false;
   }
   if (fs_sync() != 0) {
+#ifdef PC_VERSION
+    std::fprintf(stderr, "VPCD:ORPHAN_CLEANUP_FAILED stage=sync\n");
+#endif
     (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
     (void)fs_sync();
     return false;
   }
-  if (!jcvm::FlashMemory_Handler::commitPersistentWriteTransaction())
+  if (!jcvm::FlashMemory_Handler::commitPersistentWriteTransaction()) {
+#ifdef PC_VERSION
+    std::fprintf(stderr, "VPCD:ORPHAN_CLEANUP_FAILED stage=commit\n");
+#endif
     return false;
+  }
   return true;
 }
 
 bool recover_pending_lifecycle_state() noexcept {
-  return recover_pending_install_journals() &&
-         gp::recover_dynamic_lifecycle_state();
+  const bool journals_recovered = recover_pending_install_journals();
+  if (!journals_recovered) {
+#ifdef PC_VERSION
+    std::fprintf(stderr, "VPCD:RECOVERY_FAILED stage=install_journals\n");
+#endif
+    return false;
+  }
+  const bool lifecycle_recovered = gp::recover_dynamic_lifecycle_state();
+  if (!lifecycle_recovered) {
+#ifdef PC_VERSION
+    std::fprintf(stderr, "VPCD:RECOVERY_FAILED stage=dynamic_lifecycle\n");
+#endif
+  }
+  return lifecycle_recovered;
 }
 
 bool clear_lifecycle_markers(uint8_t package_id) {
@@ -1151,19 +1182,41 @@ bool CapLoadSession::finishLoad() noexcept {
   }
   uint8_t cap_package_aid[16]{};
   uint8_t cap_package_aid_length = 0;
-  if (!validate_cap_code(load_data_ + offset, code_length, cap_package_aid,
-                         cap_package_aid_length, applet_aid_,
-                         applet_aid_length_) ||
+  const bool code_valid =
+      validate_cap_code(load_data_ + offset, code_length,
+                        cap_package_aid, cap_package_aid_length, applet_aid_,
+                        applet_aid_length_);
+  // GP LOAD identifies the package independently of the CAP payload. Reject
+  // a mismatch before cleanup, slot allocation, or persistence so an invalid
+  // transfer cannot consume a package slot under the caller-supplied AID.
+  if (!code_valid ||
       !aid_matches(load_package_aid_, load_package_aid_length_,
-                   cap_package_aid, cap_package_aid_length) ||
-      !recover_pending_lifecycle_state() ||
-      !clear_orphaned_dynamic_persistent_state() ||
-      cap_store_find_package(load_package_aid_, load_package_aid_length_,
-                             package_id_) ||
-      !allocate_dynamic_package_id(package_id_) ||
+                   cap_package_aid, cap_package_aid_length)) {
+    return false;
+  }
+  if (!recover_pending_lifecycle_state() ||
+      !clear_orphaned_dynamic_persistent_state()) {
+    return false;
+  }
+  const bool package_exists = cap_store_find_package(
+      load_package_aid_, load_package_aid_length_, package_id_);
+  const bool orphan_state_cleared = !package_exists;
+  const bool package_id_allocated =
+      orphan_state_cleared && allocate_dynamic_package_id(package_id_);
+  const bool package_stored =
+      package_id_allocated &&
       choupi_store_cap_package(package_id_, load_package_aid_,
                                load_package_aid_length_, load_data_ + offset,
-                               static_cast<uint32_t>(code_length)) != 0) {
+                               static_cast<uint32_t>(code_length)) == 0;
+  if (package_exists || !orphan_state_cleared || !package_id_allocated ||
+      !package_stored) {
+#ifdef PC_VERSION
+    std::fprintf(stderr,
+                 "VPCD:CAP_LOAD_REJECT valid=%u exists=%u orphan_clear=%u "
+                 "slot=%u stored=%u length=%zu\n",
+                 code_valid, package_exists, orphan_state_cleared,
+                 package_id_allocated, package_stored, code_length);
+#endif
     return false;
   }
   if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
@@ -1451,9 +1504,10 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
   if (!delete_package &&
       !cap_store_applet_owner(instance_aid_, instance_aid_length_,
                               applet_owner)) return 0x6581;
-  if (!delete_package &&
-      choupi_vm_has_foreign_reference_to_applet(package_id_, applet_owner)) {
-    return 0x6985;
+  if (!delete_package) {
+    const uint8_t blocked =
+        choupi_vm_has_foreign_reference_to_applet(package_id_, applet_owner);
+    if (blocked) return 0x6985;
   }
 
   struct DeleteBackend {

@@ -1349,9 +1349,14 @@ void Bytecodes::bc_invokeinterface() {
     if (const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
         trace_setting != nullptr && std::strcmp(trace_setting, "1") == 0) {
       std::fprintf(stderr,
-                   "CHOUPI:SIO_SERVER_RESULT status=%04X uncaught_ref=%04X "
+                   "CHOUPI:SIO_SERVER_RESULT status=%04X exception=%u "
+                   "reason=%u opcode=%02X pc=%08X uncaught_ref=%04X "
                    "uncaught_owner=%u server_owner=%u\n",
                    static_cast<unsigned>(status),
+                   static_cast<unsigned>(server_interpretor.lastExceptionId()),
+                   static_cast<unsigned>(server_interpretor.lastExceptionReason()),
+                   static_cast<unsigned>(server_interpretor.lastExceptionOpcode()),
+                   static_cast<unsigned>(server_interpretor.lastExceptionPc()),
                    static_cast<unsigned>(
                        server_interpretor.lastUncaughtExceptionReference()),
                    static_cast<unsigned>(

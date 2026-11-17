@@ -517,7 +517,11 @@ bool cap_store_package_instance_at(uint8_t package_id, uint8_t index,
 }
 
 bool cap_store_initialize() noexcept {
-  return !host_cap_packages.empty() || !vpcd_cap_code.empty();
+  // In --resume mode, host_cap_packages is reconstructed by
+  // choupi_pc_initialize_storage() after the persisted filesystem becomes
+  // available. Permit that bootstrap phase to initialize the overlay first.
+  return vpcd_registry_resume_requested || !host_cap_packages.empty() ||
+         !vpcd_cap_code.empty();
 }
 
 bool cap_store_write(const uint8_t *data, size_t length) noexcept {
@@ -818,11 +822,22 @@ bool load_host_cap_registry(const uint8_t *package_bits,
     return false;
   }
   uint32_t image_crc = 0;
-  if (!read_u32(data, offset, image_crc) ||
-      image_crc != host_registry_crc32(flash, flash_length) ||
-      offset >= crc_offset) {
+  if (!read_u32(data, offset, image_crc)) {
+    std::fprintf(stderr, "ERROR: truncated VPCD CAP registry image checksum\n");
+    return false;
+  }
+  const uint32_t memory_crc = host_registry_crc32(flash, flash_length);
+  if (image_crc != memory_crc) {
     std::fprintf(stderr,
-                 "ERROR: VPCD CAP registry does not match saved memory image\n");
+                 "ERROR: VPCD CAP registry image checksum mismatch "
+                 "registry=%08X memory=%08X length=%u\n",
+                 static_cast<unsigned>(image_crc),
+                 static_cast<unsigned>(memory_crc),
+                 static_cast<unsigned>(flash_length));
+    return false;
+  }
+  if (offset >= crc_offset) {
+    std::fprintf(stderr, "ERROR: truncated VPCD CAP registry package count\n");
     return false;
   }
   const uint8_t package_count = data[offset++];
