@@ -30832,3 +30832,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The JCVM on EE11 is published through PC/SC. No APDU was sent: card presence, ATR, GPPro and JCAlgTest are untested on this machine. The other three boards remain in BOOTSEL / other firmware and were not touched.
 - Decision: Run a bounded PC/SC smoke test (ATR / GP SELECT) on EE11 next, before any campaign.
 - Artifacts/logs: none
+
+## 2026-11-17 PC/SC smoke test on token EE11 10
+
+- Step-Id: `20261117-1945-pcsc-smoke-ee11`
+- Task: physical token bring-up
+- When: '2026-11-17 19:31' - '2026-11-17 19:45'
+- Model: `claude-sonnet-5-5`
+- Change: Ran `PICO2_HOST_USB_ACCESS=1 PICO2_APDU_TIMEOUT_SECONDS=20 ./tools/probe-gp-get-data` (elevated, bounded) against reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`, then re-ran `GPGetDataApduProbe` with `PICO2_EXPECTED_CPLC_COMMIT_PREFIX=0xF62AD98FF3BFC3B8`. No repo files changed except HANDOFF.
+- Validation: ATR `3B800181`; SELECT default ISD `9000` (`6F0A8408A000000151000000`); GET DATA card recognition, CPLC and applications `9000` in clear and under SCP03 (INITIALIZE UPDATE / EXTERNAL AUTHENTICATE `9000`, `SCP03:AUTHENTICATED level=C-MAC`); `TEST:PASS gp_get_data_open_and_authenticated`, rc=0. CPLC personalization id `F62AD98F` equals the image's recorded `cplc_source_id=0xF62AD98FF3BFC3B8` (build at `f62ad98f`).
+- Result: First run of the stock probe exited 1 only because it compares the card's CPLC id with the current HEAD (`0x07DCC96D…`, HEAD moved after the build), not because of a card error. The card/PC-SC path works on this machine with the Arm GNU 14.2.1 build. Image `build/arm/pico2_choupi.uf2` SHA-256 `1185b718…028401`. Not tested: applet install/GPPro, JCAlgTest, long runs; no other token was used.
+- Decision: Next hardware step: an empty-card wipe and unchanged-CAP install, then the option-2 campaign per `AGENTS.md`, with the user's go-ahead.
+- Artifacts/logs: none retained (probe output only)
