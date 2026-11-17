@@ -27,10 +27,10 @@ printf 'JCALGTEST_CAP_VERSION 1.8.4_jc305 SHA256 %s\n' \
 printf 'APDU_SEQUENCE_SOURCE_JAR_SHA256 b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3\n' | tee -a "$client_log"
 
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/monitor" \
-  --serial "$chip_id" --seconds 150 >"$serial_log" 2>&1 &
+  --serial "$chip_id" --seconds 200 >"$serial_log" 2>&1 &
 monitor_pid=$!
 set +e
-timeout --signal=TERM --kill-after=5s 140s \
+timeout --signal=TERM --kill-after=5s 180s \
   "${repo_root}/tools/env" java -cp "$build_dir" \
   JCAlgTestRsa1984PhysicalProbe "$reader_name" >>"$client_log" 2>&1
 client_status=$?
@@ -48,20 +48,19 @@ import sys
 from pathlib import Path
 
 lines = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace").splitlines()
-last_progress = None
 measure_found = False
 measure_responses = 0
-valid_b043_extensions = []
 memory_samples = []
-active_profile = None
-profile_extensions = {}
+active_sample = None
+sample_extensions = {}
 for line in lines:
     if "CHOUPI:USB_PROGRESS " in line:
         fields = dict(re.findall(r"([a-z_]+)=([0-9]+)", line))
         if "extensions" in fields and "completed" in fields:
-            last_progress = (int(fields["extensions"]), int(fields["completed"]))
-            if active_profile is not None and last_progress[0] > 0 and last_progress[0] == last_progress[1]:
-                profile_extensions[active_profile] = last_progress
+            if active_sample is not None:
+                sample_extensions[active_sample] = (
+                    int(fields["extensions"]), int(fields["completed"]))
+                active_sample = None
     if "CHOUPI:CCID_RESPONSE apdu=B043000016" in line and "sw=9000" in line:
         measure_found = True
         measure_responses += 1
@@ -70,18 +69,18 @@ for line in lines:
         required = {"profile", "start_free", "min_free", "end_free", "delta", "samples", "elapsed_us"}
         if required.issubset(fields):
             memory_samples.append({key: int(fields[key], 16) if key == "profile" else int(fields[key]) for key in required})
-            active_profile = int(fields["profile"], 16)
+            active_sample = len(memory_samples) - 1
 if not measure_found:
     raise SystemExit("PHYSICAL:FAIL finite serial log did not contain successful B043 response")
-if measure_responses < 4:
-    raise SystemExit("PHYSICAL:FAIL expected RSA-1984 and RSA-1536 B043 responses")
-if len(memory_samples) < 2:
-    raise SystemExit("PHYSICAL:FAIL both RSA B043 target allocator samples are required")
-for expected_profile in (0x0a, 0x0d):
-    memory_sample = next((sample for sample in memory_samples
-                          if sample["profile"] == expected_profile), None)
-    if memory_sample is None:
-        raise SystemExit(f"PHYSICAL:FAIL target allocator sample missing profile={expected_profile:02X}")
+if measure_responses < 6:
+    raise SystemExit("PHYSICAL:FAIL expected RSA-1984, RSA-1536 and RSA-2048 B043 responses")
+if len(memory_samples) < 3:
+    raise SystemExit("PHYSICAL:FAIL all three RSA B043 target allocator samples are required")
+expected_profiles = (0x0a, 0x0d, 0x0a)
+for sample_index, expected_profile in enumerate(expected_profiles):
+    memory_sample = memory_samples[sample_index]
+    if memory_sample["profile"] != expected_profile:
+        raise SystemExit(f"PHYSICAL:FAIL target allocator sample {sample_index + 1} profile={expected_profile:02X}, got={memory_sample['profile']:02X}")
     if (memory_sample["samples"] < 2 or memory_sample["elapsed_us"] <= 0 or
             memory_sample["min_free"] > memory_sample["start_free"] or
             memory_sample["min_free"] > memory_sample["end_free"]):
@@ -89,18 +88,21 @@ for expected_profile in (0x0a, 0x0d):
     print("PHYSICAL:MEMORY " + " ".join(
         f"{key}={memory_sample[key]:02X}" if key == "profile" else f"{key}={memory_sample[key]}"
         for key in sorted(memory_sample)))
-    extensions = profile_extensions.get(expected_profile)
-    if expected_profile == 0x0a:
+    extensions = sample_extensions.get(sample_index)
+    if sample_index in (0, 2):
         if extensions is None:
-            raise SystemExit(f"PHYSICAL:FAIL completed CCID extensions missing profile={expected_profile:02X}")
-        print(f"PHYSICAL:TELEMETRY B043 profile={expected_profile:02X} extensions={extensions[0]} completed={extensions[1]}")
+            raise SystemExit(f"PHYSICAL:FAIL completed CCID extensions missing B043 sample={sample_index + 1}")
+        print(f"PHYSICAL:TELEMETRY B043 sample={sample_index + 1} profile={expected_profile:02X} extensions={extensions[0]} completed={extensions[1]}")
     elif extensions is None:
-        print(f"PHYSICAL:TELEMETRY B043 profile={expected_profile:02X} extensions=0 control=completed-without-extension")
+        print(f"PHYSICAL:TELEMETRY B043 sample={sample_index + 1} profile={expected_profile:02X} extensions=0 control=completed-without-extension")
     else:
-        print(f"PHYSICAL:TELEMETRY B043 profile={expected_profile:02X} extensions={extensions[0]} completed={extensions[1]}")
+        print(f"PHYSICAL:TELEMETRY B043 sample={sample_index + 1} profile={expected_profile:02X} extensions={extensions[0]} completed={extensions[1]}")
 PY
-grep -Fq 'TEST:PASS RSA1984_PRIVATE_PKCS1_X50' "$client_log" || \
-  die "physical probe did not report its final pass marker"
-grep -Fq 'TEST:PASS RSA1536_PRIVATE_ISO14888_X50' "$client_log" || \
-  die "physical probe did not report the RSA-1536 control pass marker"
+for marker in \
+  'TEST:PASS RSA1984_PRIVATE_PKCS1_X50' \
+  'TEST:PASS RSA1536_PRIVATE_ISO14888_X50' \
+  'TEST:PASS RSA2048_PRIVATE_PKCS1_X50' \
+  'TEST:PASS RSA2048_SHA_PKCS1_SIGNATURE_SIGN'; do
+  grep -Fq "$marker" "$client_log" || die "physical probe did not report $marker"
+done
 printf 'PHYSICAL:PASS result_dir=%s\n' "${result_dir#${repo_root}/}"

@@ -6,7 +6,7 @@ import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
 import java.util.List;
 
-/** Run archived JCAlgTest RSA-1984 and RSA-1536 private ×50 APDU paths. */
+/** Run archived JCAlgTest RSA-1984/1536/2048 private and RSA signature paths. */
 public final class JCAlgTestRsa1984PhysicalProbe {
   private static String hex(byte[] bytes) {
     StringBuilder text = new StringBuilder(bytes.length * 2);
@@ -68,6 +68,22 @@ public final class JCAlgTestRsa1984PhysicalProbe {
         0x00, (byte) 0xff, (byte) 0xff, 0x00, 0x02, 0x00,
         0x32, 0x00, 0x01
     };
+    byte[] rsa2048CipherConfig = new byte[] {
+        0x00, 0x11, 0x00, 0x0a, (byte) 0xff, (byte) 0xff,
+        0x00, 0x05, 0x08, 0x00, 0x00, 0x07, 0x00, (byte) 0x80,
+        (byte) 0xff, (byte) 0xff, 0x00, 0x01, 0x00, 0x32, 0x00,
+        0x01
+    };
+    byte[] rsa2048SignaturePrepareConfig = new byte[] {
+        0x00, 0x12, 0x00, 0x0a, 0x00, 0x01, 0x00, 0x05, 0x08,
+        0x00, 0x00, 0x0a, 0x01, 0x00, (byte) 0xff, (byte) 0xff,
+        (byte) 0xff, (byte) 0xff, 0x00, 0x32, 0x00, 0x01
+    };
+    byte[] rsa2048SignatureMeasureConfig = new byte[] {
+        0x00, 0x12, 0x00, 0x0a, 0x00, 0x01, 0x00, 0x05, 0x08,
+        0x00, 0x00, 0x0a, 0x01, 0x00, (byte) 0xff, (byte) 0xff,
+        (byte) 0xff, (byte) 0xff, 0x00, 0x00, 0x00, 0x01
+    };
 
     Card card = selected.connect("*");
     try {
@@ -88,8 +104,22 @@ public final class JCAlgTestRsa1984PhysicalProbe {
       transmit(channel, "RSA1536_PRIVATE_ISO14888_X50_B043",
                command(0x43, rsa1536Config), 0xaa);
       transmit(channel, "GC_AFTER_RSA1536_MEASURE", command(0xe2, new byte[0]), -1);
+      transmit(channel, "RSA2048_PRIVATE_PKCS1_PREPARE_B031",
+               command(0x31, rsa2048CipherConfig), 0xaa);
+      transmit(channel, "GC_BEFORE_RSA2048_CIPHER", command(0xe2, new byte[0]), -1);
+      transmit(channel, "RSA2048_PRIVATE_PKCS1_X50_B043",
+               command(0x43, rsa2048CipherConfig), 0xaa);
+      transmit(channel, "GC_AFTER_RSA2048_CIPHER", command(0xe2, new byte[0]), -1);
+      transmit(channel, "RSA2048_SHA_PKCS1_SIGNATURE_PREPARE_B032",
+               command(0x32, rsa2048SignaturePrepareConfig), 0xaa);
+      transmit(channel, "GC_BEFORE_RSA2048_SIGNATURE", command(0xe2, new byte[0]), -1);
+      transmit(channel, "RSA2048_SHA_PKCS1_SIGNATURE_SIGN_B049",
+               command(0x49, rsa2048SignatureMeasureConfig), 0xaa);
+      transmit(channel, "GC_AFTER_RSA2048_SIGNATURE", command(0xe2, new byte[0]), -1);
       System.out.println("TEST:PASS RSA1984_PRIVATE_PKCS1_X50");
       System.out.println("TEST:PASS RSA1536_PRIVATE_ISO14888_X50");
+      System.out.println("TEST:PASS RSA2048_PRIVATE_PKCS1_X50");
+      System.out.println("TEST:PASS RSA2048_SHA_PKCS1_SIGNATURE_SIGN");
     } finally {
       card.disconnect(false);
     }

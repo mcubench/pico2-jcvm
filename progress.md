@@ -31130,3 +31130,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Run on `c050a193` (predates `2f1aac2d`): RSA-1984 NOPAD ×50 passed; RSA-1984 PKCS1 ×50 B043 failed with `0x8010002f`; serial ends with `*** PANIC ***` / `Out of memory` after a `B0E2` (PRE_CLEANUP available 33,060–33,506 B, arrays_live=201, arrays_reclaimed=0). Points to D2 (RAM), not only D1. Differs from F42D newer-image run (no panic, 82,696 B min). Client JAR hash not supplied, so not acceptance.
 - Decision: Do not implement; T7 (panic site / replay), T8 (external retest of current image), T9 (fragmentation) queued in TODO.md.
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261117-c050a193-deletion/` (SHA256SUMS inside)
+
+## 2026-11-17 Extend LONGOP-01 physical RSA matrix 14
+
+- Step-Id: `20261117-1811-longop01-rsa-matrix`
+- Task: HOST-01 LONGOP-01 T1/T6 focused physical diagnostics
+- When: '2026-11-17 17:57 CET' - '2026-11-17 18:11 CET'
+- Model: `gpt-6.1-sol`
+- Change: Corrected the serial validator to associate each RSA low-water sample with only its immediately following USB progress summary. Extended the physical SmartcardIO probe to cover RSA-2048 private PKCS1 ×50 and SHA-PKCS1 signature paths alongside RSA-1984 and the RSA-1536 control. Updated LONGOP-01 evidence and handoff; confirmed QKB's no-JCVM-firmware diagnosis and current recovery state.
+- Validation: Java probe compiled through `./tools/env javac`; wrapper syntax passed; `./tools/test-ccid-progress-flow` passed (43/43); `git -c core.whitespace=cr-at-eol diff --check` passed before documentation updates. Refreshed approved PC/SC access and enumerated exact reader F42DD9D07D6D2B07. Physical wrapper returned `PHYSICAL:PASS`; all APDUs returned `AA9000`, all four `TEST:PASS` markers appeared, and finite serial capture showed no fault/reboot.
+- Result: RSA-1984 PKCS1 ×50 48.775 s, 47/47 extensions, available memory 105,912→70,120→105,760 B. RSA-1536 ISO14888 control ×50 1.721 s, 0 extensions, 106,448→106,184→106,448 B. RSA-2048 PKCS1 ×50 49.174 s, 47/47 extensions, 105,688→69,488→105,688 B. RSA-2048 SHA-PKCS1 sign 2.278 s. Image SHA-256 `61c2d449ec5402b88c5735237eae076ae6a933820897e38371e9f5c7f4afa4f7`; supplied 1.8.4/jc305 CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; APDU source client JAR identity is pinned 1.8.5 SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
+- Decision: Direct physical API paths pass and parser telemetry is correctly associated. This does not close T6: the unchanged-client resume-list run and full option-2 acceptance remain. Keep T1/D2 open because 250 ms aggregate samples do not capture brief peaks or fragmentation.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T170835Z/F42DD9D07D6D2B07/`.

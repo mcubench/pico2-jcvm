@@ -1045,6 +1045,7 @@ review.
     - A timestamped serial log shows extensions, no panic and no reboot.
     - Then a full option-2 run (MEM-01 T8) passes this section.
     - Normal `max_crypto` image only (INV-24); record image, JAR and CAP hashes and the chip ID.
+    - 2026-11-17 focused physical direct-APDU matrix on F42DD9D07D6D2B07 passed: RSA-1984 PKCS1 private ×50 (`AA9000`, 48.775 s, 47/47 extensions; available memory 105,912→70,120→105,760 B); RSA-1536 ISO14888 control ×50 (`AA9000`, 1.721 s, 0 extensions; 106,448→106,184→106,448 B); RSA-2048 PKCS1 private ×50 (`AA9000`, 49.174 s, 47/47 extensions; 105,688→69,488→105,688 B); RSA-2048 SHA-PKCS1 signature prepare/sign (`AA9000`, sign 2.278 s). No fault or reboot in the 200 s serial capture. This is direct SmartcardIO replay of archived APDUs, not the unchanged-client resume-list acceptance or full option-2 campaign. Firmware SHA-256 `61c2d449ec5402b88c5735237eae076ae6a933820897e38371e9f5c7f4afa4f7`; unchanged CAP 1.8.4/jc305 SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; APDU source client JAR 1.8.5 SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`. The serial parser now associates each RSA_MEMORY sample only with the immediately following USB_PROGRESS summary. Artifact: `artifacts/results/longop01-rsa1984-physical-20261117T170835Z/F42DD9D07D6D2B07/`.
 
 ### HOST-02
 

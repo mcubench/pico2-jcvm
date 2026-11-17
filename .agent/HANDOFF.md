@@ -3,15 +3,12 @@
 Updated: 2026-11-17.
 
 ## Current state
-- LONGOP-01 T3 D1 implementation and focused physical criterion passed on F42DD9D07D6D2B07. Exact RSA-1984 PKCS1 ×50 APDU returned `AA9000` in 48.521 s; serial captured 47/47 CCID progress extensions. Artifact: `artifacts/results/longop01-rsa1984-physical-20261117T162912Z/F42DD9D07D6D2B07/`.
-- Commit `2f1aac2d` rebuilt and passed full JCVM cycle on F42D. Normal `max_crypto`, object deletion ON, debug OFF, 35,904 bytes flash headroom; CPLC source ID `0x2F1AAC2DFFD54762`; UF2 SHA-256 `a13a27df22b0bf6002eef3f55beb3e82abe8b7e4cbf0ede3ed47c27686aa1fb8`. Log: `artifacts/logs/cycle-choupi-20261117T163736Z.log`.
-- The earlier “no boards” report meant no attached board was running JCVM firmware. QKB documents identification from BOOTSEL/USB layers and full `cycle choupi` recovery. F42D was subsequently flashed and enumerated.
-- A pinned 1.8.5 client diagnostic session completed four RSA-1984 ×50 samples, then hit its 300 s bound during the next sample; it is not option-2 acceptance.
-- Current working image sampled available transient memory during RSA-1984 ×50: 119,360 bytes at entry, 82,696 minimum over 191 samples, 118,336 at return. The B043 response was `AA9000` in 48.507 s with 47/47 extensions. Aggregate periodic sampling misses sub-250 ms peaks and largest-free-block data; target RSA-1536 control remains open. Artifact: `artifacts/results/longop01-rsa1984-physical-20261117T164222Z/F42DD9D07D6D2B07/`.
-- RSA-1536 private ISO14888 ×50 physical control also returned `AA9000` (1.491 s); target free space 117,688→117,432→117,688 over 3 samples, 131 live arrays / 34 instances at surrounding GC boundaries. RSA-1984 GC reclaimed 51 result arrays and ended at the same 131/34. Full paired logs: `artifacts/results/longop01-rsa1984-physical-20261117T165449Z/F42DD9D07D6D2B07/`. T1 remains open because sampling is periodic/aggregate.
-- LONGOP-01 T1/D2, full T2 reproduction, T5 audit, T6 acceptance, MEM-01 T7 live option-2, and T8 physical campaigns remain open.
+- QKB.md was reread: “no boards” meant no attached board was running JCVM, not no hardware. Approved helper + `./tools/list-readers --pico-only` currently identify F42DD9D07D6D2B07 as a JCVM reader.
+- LONGOP-01 T3 cooperative CCID progress is implemented and its focused physical RSA-1984 path passes.
+- A direct physical APDU matrix passed on F42D with normal `max_crypto` firmware SHA-256 `61c2d449ec5402b88c5735237eae076ae6a933820897e38371e9f5c7f4afa4f7`: RSA-1984 PKCS1 ×50 (48.775 s, 47/47 extensions, min available memory 70,120 B); RSA-1536 ISO14888 ×50 control (1.721 s, 0 extensions); RSA-2048 PKCS1 ×50 (49.174 s, 47/47 extensions, min 69,488 B); RSA-2048 SHA-PKCS1 sign (`AA9000`, 2.278 s). All APDUs returned `AA9000`, and serial contained no fault/reboot. Artifact: `artifacts/results/longop01-rsa1984-physical-20261117T170835Z/F42DD9D07D6D2B07/`.
+- This direct probe is not the unchanged-client resume-list acceptance or full option-2 campaign. LONGOP-01 T1/D2, T2, T5, T6 and MEM-01 T7/T8 remain open. Periodic free-memory samples do not measure sub-250 ms peaks or largest contiguous block.
 
 ## Next actions
-1. Improve target peak/fragmentation evidence and associate JC heap counts with each RSA profile; keep T1/D2 open meanwhile.
-2. Reproduce the full Linux resume-list RSA-1984 and RSA-2048 private ×50 Cipher/Signature paths with the pinned client, retaining separate logs and serial telemetry. The prior client attempt completed four RSA-1984 samples but timed out; it is partial.
-3. Audit flash-heavy DELETE paths for watchdog/progress service. Then pursue unchanged-client option-2 and MEM-01 T8 campaigns when board capacity allows.
+1. Reproduce the resume-list RSA-1984/RSA-2048 Cipher and Signature paths with the pinned JCAlgTest 1.8.5 client; preserve pristine list, per-run logs and serial telemetry. Direct APDU matrix is supporting evidence only.
+2. Audit flash-heavy DELETE paths for watchdog and CCID progress service.
+3. Continue target peak/fragmentation investigation, then pursue normal-image empty-card option-2 acceptance when the board is available.
