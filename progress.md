@@ -30760,3 +30760,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Policy is documented; it is only picked up when the skill file is read.
 - Decision: User to confirm the fourth token's identity; then name it in the QKB roster.
 - Artifacts/logs: none
+
+## 2026-11-17 Add physical token rule to AGENTS.md 3
+
+- Step-Id: `20261117-1805-agents-token-rule`
+- Task: documentation (user request)
+- When: '2026-11-17 17:56' - '2026-11-17 17:59'
+- Model: `claude-sonnet-5-5`
+- Change: Added one bullet to `AGENTS.md` safety constraints, after the "Physical board availability is volatile" bullet: identify tokens by chip ID, keep one working token, switch only when unavailable, use two only for comparison or parallel runs, never mix evidence, with pointers to `reference/physical-token-access/SKILL.md` and the `.agent/QKB.md` roster. The earlier failover wording in `AGENTS.md` and `SESSION_CONTINUITY.md` was left unchanged.
+- Validation: Inspection of the diff only.
+- Result: The rule is now visible to every session; details stay in the skill and QKB.
+- Decision: none
+- Artifacts/logs: none

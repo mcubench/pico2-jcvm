@@ -54,6 +54,7 @@ Safety constraints:
 - Do not modify files outside this repository.
 - Do not flash unless the ARM build currently passes without errors or warnings.
 - Physical board availability is volatile. Never treat an old "boards disconnected / no hardware work" note as standing. Before hardware work, refresh access with the approved helper, list readers with `./tools/list-readers`, and use whatever identified board is available (failover pool).
+- Physical tokens (several may be attached): identify each by its 16-hex chip ID and select by that ID, never by reader index or bus number. Keep using one working token for development and tests as long as it is usable; switch only when it is unavailable (record the failure and the switch in `progress.md`). Use two tokens only for a deliberate comparison or to parallelise independent long runs, stating which. Never mix evidence across tokens. Procedure: `reference/physical-token-access/SKILL.md`; roster: `.agent/QKB.md`.
 
 ## sudo exceptions
 ```
