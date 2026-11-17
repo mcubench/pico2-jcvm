@@ -31000,3 +31000,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Non-atomic array copy now reaches the filesystem range-edit path and case 89 survives transaction abort without `NO_RESOURCE`. ARM UF2 SHA-256: `160fdb864a5b0b90fbd803ba556a8dce66008a958502fb2ffee798a77dba83e8`.
 - Decision: Keep the fix. Physical validation remains open until a Pico 2 is enumerated; MEM-01 T7/T8 work remains independent.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261117T152916Z.log`, `build/choupi-pc-rp2350-overlay/`, `build/arm/pico2_choupi.uf2`.
+
+## 2026-11-17 Replay T7 transcript after range-write change 3
+
+- Step-Id: `20261117-1633-t7-post-range-replay`
+- Task: MEM-01 T7 regression check
+- When: '2026-11-17 16:30 CET' - '2026-11-17 16:33 CET'
+- Model: `gpt-6.1-sol`
+- Change: Replayed the captured unchanged-client option-2 APDU transcript after the case-89 non-atomic range-write change to check the shared persistent-array path for regressions.
+- Validation: `PICO2_TEST_OBJECT_DELETION=1 JCALGTEST_RP2350_OVERLAY=1 ./tools/test-jcalgtest-apdu-replay-vpcd --client-log artifacts/results/resource01-apdu-replay-vpcd-20261117T151055Z/source-client.log --stop-after-apdu-index 1590` passed via the approved elevated VPCD socket path. It processed 1,590 commands with zero resource failures. The four unsupported Cipher probes returned `03 9000`; two known pre-applet GET DATA response differences remain. Client JAR identity remains the pinned 1.8.5 hash `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; this was transcript replay, not a fresh client run.
+- Result: The case-89 change did not regress the captured T7 APDU sequence. Overlay emulator SHA-256 `d2f94ec11fbe6abef98db7765b1051ea52b3a25ee70fe122480a4f31ab1bc350`; ROM mask SHA-256 `ab55f462bb535c9d90fb49b4aa9c40c6c45e26c8183ff2d4f22fdb1d1ff30925`.
+- Decision: Keep T7 open for unchanged-client long-run telemetry and T8 physical acceptance; PC/SC and physical readers are unavailable at this host.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T153211Z/`.
