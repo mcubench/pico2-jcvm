@@ -1260,3 +1260,31 @@ physical boards were attached. Identify USB state/chip IDs and flash the full
 JCVM to an identified BOOTSEL or non-JCVM board with the approved wrapper,
 then refresh the helper and list readers. The 2026-11-17 run verified this on
 F42D. Never diagnose PC/SC from an old roster; board state is volatile.
+
+
+## Near-capacity GlobalPlatform INSTALL timing — 2026-11-17
+
+Recreated the 94,479-byte / 160-file overlay on F42D using the filesystem
+capacity fixture, then ran a normal `max_crypto` full JCVM cycle to clear
+volatile RAM while preserving storage. GPPro created a second instance of the
+same local applet with a distinct instance AID. The encrypted E6 INSTALL APDU
+returned `9000` in 2.950 s; the complete GPPro operation took 4.155 s. Serial
+showed the overlay at 94,479 bytes and repeated compaction records, then the
+matching E6 response. No `USB_PROGRESS` time extension, `PANIC`, `FAULT`, or
+`TEST:FAIL` appeared. Cleanup deleted the second instance, first instance and
+local package; the unchanged JCAlgTest package remains installed. Firmware UF2
+SHA-256 `9baf1cfcda50bfcc44cb4639fd83bf77ec0b087ca752c411a92e58f906d63e9d`;
+fixture CAP SHA-256
+`01cc0fefe6edc03a0a3e398fd2f5ab444cb5f42d6cf93c8030d7b9834696b6a1`.
+Artifacts: `artifacts/results/filesystem-capacity-physical-20261117T175220Z/`
+and `artifacts/results/filesystem-capacity-install-20261117T1757Z/`.
+
+Source trace: card-manager E6 dispatch in `src/ccid_device.cpp` does not use
+`NativeOperationScope`; it synchronously calls
+`CapLoadSession::installAndMakeSelectable()`, including the applet install
+method. Successful persistent installation commits the filesystem journal,
+publishes CAP owner metadata through `cap_store.cpp`'s separate
+`flash_safe_execute(..., 5000)`, then commits another filesystem snapshot to
+clear the journal. The observed E6 is below the 15 s watchdog, but this path
+has no cooperative CCID progress service and remains an audit candidate for
+applets with expensive install methods or larger state.

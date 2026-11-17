@@ -31202,3 +31202,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Initial overlay was 94,479 B / 160 files (96.1% of 98,304 B). Applet E4 took 2.673 s (whole GPPro command 3.859 s); package E4 took 1.696 s (whole command 1.895 s). Serial showed compaction and both `9000` responses with no time extension, panic, fault or `TEST:FAIL`. Probe package was removed; the existing JCAlgTest package remained. Firmware UF2 SHA-256 `fe9b190c073170a15d99626366872c89e2f6ca0e9a01c8da1fea0f199f808255`.
 - Decision: Near-capacity DELETE timing is established and does not reproduce the earlier 15 s Windows delay. Keep T5 open for other synchronous flash-heavy card-manager paths and the prior Windows discrepancy.
 - Artifacts/logs: `artifacts/results/filesystem-capacity-physical-20261117T174318Z/F42DD9D07D6D2B07/`; `artifacts/results/filesystem-capacity-delete-20261117T1748Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T174614Z.log`.
+
+## 2026-11-17 Measure near-capacity GlobalPlatform INSTALL 10
+
+- Step-Id: `20261117-1859-longop01-t5-install`
+- Task: HOST-01 LONGOP-01 T5 physical audit
+- When: '2026-11-17 18:49 CET' - '2026-11-17 18:59 CET'
+- Model: `gpt-6.1-sol`
+- Change: Extended the near-capacity card-manager audit to applet INSTALL and traced its synchronous persistence path; updated TODO, QKB and handoff.
+- Validation: Recreated the 94,479-byte / 160-file persistent state with the local fixture; full `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed and preserved storage. GPPro created a second local applet instance on the enumerated F42D reader; E6 returned `9000`. Removed both instances and the local package; GPPro listing confirms the unchanged JCAlgTest package remains installed. `git -c core.whitespace=cr-at-eol diff --check` and handoff line-count check passed.
+- Result: E6 took 2.950 s; complete GPPro command took 4.155 s. Serial showed `FS_COMPACT` and matching `CHOUPI:CCID_RESPONSE apdu=84E60C002A ... sw=9000`, with no `USB_PROGRESS`, `PANIC`, `FAULT` or `TEST:FAIL`. Firmware UF2 SHA-256 `9baf1cfcda50bfcc44cb4639fd83bf77ec0b087ca752c411a92e58f906d63e9d`; fixture CAP SHA-256 `01cc0fefe6edc03a0a3e398fd2f5ab444cb5f42d6cf93c8030d7b9834696b6a1`.
+- Decision: Near-capacity INSTALL is below the 15 s watchdog for this local applet. Source path lacks `NativeOperationScope` and success commits a journal snapshot, separate CAP metadata flash callback, then another snapshot to clear the journal. Keep T5 open for other long paths and the earlier Windows discrepancy.
+- Artifacts/logs: `artifacts/results/filesystem-capacity-physical-20261117T175220Z/F42DD9D07D6D2B07/`; `artifacts/results/filesystem-capacity-install-20261117T1757Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T175510Z.log`.
