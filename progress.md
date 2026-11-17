@@ -30712,3 +30712,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: doctor and the build wrappers agree on the SDK path.
 - Decision: Remaining tidy-up: docs/reviews/root `.md` relocation (deferred by user), `.agent` archive/QKB consolidation (needs approval).
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 11: remove superseded HANDOFF snapshots from .agent 10
+
+- Step-Id: `20261117-1700-tidy11-agent-archive`
+- Task: repository tidy-up plan, `.agent` archive consolidation (approved by the user)
+- When: '2026-11-17 16:36' - '2026-11-17 17:00'
+- Model: `claude-sonnet-5-5`
+- Change: Removed two old HANDOFF narrative snapshots, `.agent/archive/2026-10-29-pre-compaction/HANDOFF.md` (822,610 bytes) and `.agent/history/handoff-archive-20261114.md` (917,858 bytes), about 27,300 lines. Only each other, a manifest and a README referenced them; completed-work narrative belongs in `progress.md`/git per `SESSION_CONTINUITY.md`. Updated the 2026-10-29 `README.md` and `manifest.json` and added `.agent/history/README.md` with sizes, hashes and recovery commands. Kept: both QKB snapshots (686 links from `QKB_INDEX.md`), the 2026-11-11 QKB/TODO compaction archives (linked ~20 times from `TODO.md`, `QKB.md`), the commit map and the small 2026-11-01/02/14/17 archives (referenced by `docs/`, which are deferred).
+- Validation: `git show c3d79e2d:<path> | sha256sum` reproduces both removed files; `.agent` shrank from 3.8 MB to 2.2 MB. No build or hardware run.
+- Result: Both files remain recoverable at `c3d79e2d`. QKB.md was NOT compacted in this step; see Decision.
+- Decision: QKB compaction (1,500 lines, 64 sections) needs an agreed selection of sections; archives are cross-linked so nothing else was moved or deleted.
+- Artifacts/logs: none

@@ -7,6 +7,7 @@
   "HANDOFF.md": {
     "bytes": 822610,
     "lines": 12383,
-    "sha256": "e51b30867f2c3495f3cea2377e4217df60aacf2cdf2bc1bdccba4d402d0b751a"
+    "sha256": "e51b30867f2c3495f3cea2377e4217df60aacf2cdf2bc1bdccba4d402d0b751a",
+    "removed": "2026-11-17; recover with: git show c3d79e2d:.agent/archive/2026-10-29-pre-compaction/HANDOFF.md"
   }
 }
