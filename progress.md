@@ -31024,3 +31024,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The synthetic gaps previously listed under T7 are covered by current overlay tests; transcript replay supplies bounded runtime-path telemetry but is not a fresh client campaign. T7 remains open for unchanged-client option-2 completion and T8 for hardware acceptance.
 - Decision: Keep the existing harness; do not claim live-client acceptance until PC/SC exposes the VPCD reader and the unchanged 1.8.5 client completes.
 - Artifacts/logs: `artifacts/logs/rp2350-fs-overlay-20261117T1533Z.log`, `artifacts/results/resource01-apdu-replay-vpcd-20261117T153211Z/`.
+
+## 2026-11-17 Reproduce RSA-1984 ×50 APDU in VPCD 5
+
+- Step-Id: `20261117-1639-longop01-rsa1984-vpcd`
+- Task: HOST-01 LONGOP-01 T1 (bounded reproduction)
+- When: '2026-11-17 16:37 CET' - '2026-11-17 16:39 CET'
+- Model: `gpt-6.1-sol`
+- Change: Extracted the archived JCAlgTest RSA-1984 private PKCS1 prepare/measure configuration into a three-command VPCD replay (applet SELECT, `B031` prepare, `B043` ×50 measure) to reach the failure scenario without an 80-minute option-2 campaign.
+- Validation: `PICO2_HOST_USB_ACCESS=1 PICO2_TEST_OBJECT_DELETION=1 JCALGTEST_RP2350_OVERLAY=1 ./tools/test-jcalgtest-apdu-replay-vpcd --client-log artifacts/results/longop01-rsa1984-vpcd-20261117/rsa1984-x50-apdus.log --stop-after-apdu-index 3 --out-dir artifacts/results/longop01-rsa1984-vpcd-20261117/run2` passed through the elevated loopback-socket path. SELECT, prepare and measure returned `9000`; prepare and measure payloads were `AA`. End-to-end command completed in under five seconds including fresh CAP installation. The first attempt omitted applet SELECT and returned `6982`; corrected run passed.
+- Result: The exact RSA-1984 ×50 applet path completes in VPCD. The host emulator does not measure RP2350 C-heap use; peak allocator bytes and live array/handle counts were not measured, and the RSA-1536 control was not run. This is a focused reproduction, not pinned-client acceptance or evidence against target RAM exhaustion.
+- Decision: Retain D2 as unconfirmed. Use an allocator-instrumented PC probe or a physical target to determine peak memory; keep T1 open. This direct APDU sequence is substantially cheaper than the full option-2 campaign for reaching the target method.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-vpcd-20261117/rsa1984-x50-apdus.log`, `artifacts/results/longop01-rsa1984-vpcd-20261117/run2/`; emulator SHA-256 `d2f94ec11fbe6abef98db7765b1051ea52b3a25ee70fe122480a4f31ab1bc350`.
