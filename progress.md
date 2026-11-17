@@ -30928,3 +30928,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The overlay host build no longer depends on a manually injected linker cache flag. Built PC binary SHA-256: `4fd35962baf48a2a783a0305c6e8e19e3bb700b7e0ffda951b93d8c781e68024`; ARM UF2 SHA-256: `20493fbb3028058d28ae10a39520fff55672a82a038e717a308e22e32dd39e8b`.
 - Decision: Commit the CMake fix. The full JCVM cycle remains unverified until an identified Pico 2 is available; continue T7 exception-handler regression analysis offline.
 - Artifacts/logs: `build/choupi-pc-rp2350-overlay/choupi`, `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
+
+## 2026-11-17 Recheck replay under max_crypto and correct comparison 6
+
+- Step-Id: `20261117-1543-t7-maxcrypto-replay-check`
+- Task: MEM-01 T7
+- When: '2026-11-17 15:37 CET' - '2026-11-17 15:43 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt the PC RP2350 overlay with the required `max_crypto` support profile, replayed both the current and historical 1.8.5 client transcripts, and corrected the earlier comparison that called them the same transcript.
+- Validation: `./tools/build-pc --profile max_crypto --rp2350-overlay` passed and linked the 3fa22bc8 wrapper-root fix. Replays against current binary SHA-256 `d45561837614829be4c9a8814b61b434b7dd6b9fd5dbe2a34d4c7a122101d3c3` failed at APDUs 1584/1586/1588/1590 with expected `9000`, actual `6F00`, for both captures. The logs are distinct: current capture source line 4751 and prior capture source line 13161. Historical pass used ROM mask SHA-256 `184d2794…`; current build ROM mask is `ab55f462…`, so that pass is not a same-build baseline. CAP inspection maps the active handler to methods offset 15578..15698 and its synthetic store/rethrow handler to offset 15701. No runtime source change was made.
+- Result: T7 fails on the tested current max_crypto emulator. The earlier “new regression versus the same transcript” conclusion was too strong; this confirms a current option-2 failure but does not establish when it was introduced. PC/SC remains unavailable; the unchanged-client PC/SC campaign did not start.
+- Decision: Keep T7 open. Determine the exact algorithm/settings and exception conversion path for these APDUs; compare ROM-mask contents before changing exception dispatch.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T144120Z/`, `artifacts/results/resource01-apdu-replay-vpcd-20261117T144244Z/`, `build/choupi-pc-rp2350-overlay/choupi`
