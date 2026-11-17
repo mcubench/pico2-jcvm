@@ -30676,3 +30676,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Open requirements of T7, T8 and T10 are unchanged. The status block is a new summary written from HANDOFF and the archived bullets, not a verbatim copy.
 - Decision: Remaining long sections (CAPIN-01 about 180 lines, HOST-01, GP-01) are candidates for a later pass. Next: relocate reviews and docs.
 - Artifacts/logs: `.agent/archive/2026-11-17-todo-compaction/`
+
+## 2026-11-17 Tidy-up step 8: refresh HANDOFF after host move 5
+
+- Step-Id: `20261117-1600-tidy08-handoff`
+- Task: repository tidy-up plan; session continuity
+- When: '2026-11-17 15:51' - '2026-11-17 16:00'
+- Model: `claude-sonnet-5-5`
+- Change: Overwrote `.agent/HANDOFF.md` (next steps only, under 60 lines): host move and new toolchain, what was and was not re-verified on this host, the intentionally dirty `choupi/os` submodule and its patch, compiler change, interrupted VPCD run, pending tidy-up items and the unchanged MEM-01 next actions.
+- Validation: Inspection only; no build or hardware run.
+- Result: Board state is explicitly stated as not refreshed this session.
+- Decision: Continue with the normal max_crypto build headroom check.
+- Artifacts/logs: none
