@@ -30940,3 +30940,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: T7 fails on the tested current max_crypto emulator. The earlier “new regression versus the same transcript” conclusion was too strong; this confirms a current option-2 failure but does not establish when it was introduced. PC/SC remains unavailable; the unchanged-client PC/SC campaign did not start.
 - Decision: Keep T7 open. Determine the exact algorithm/settings and exception conversion path for these APDUs; compare ROM-mask contents before changing exception dispatch.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T144120Z/`, `artifacts/results/resource01-apdu-replay-vpcd-20261117T144244Z/`, `build/choupi-pc-rp2350-overlay/choupi`
+
+## 2026-11-17 Identify unsupported Cipher case and transaction-test failure 5
+
+- Step-Id: `20261117-1548-t7-alg18-catch-path`
+- Task: MEM-01 T7 and T10 follow-up
+- When: '2026-11-17 15:43 CET' - '2026-11-17 15:48 CET'
+- Model: `gpt-6.1-sol`
+- Change: Mapped the failing APDU setting to Java Card Cipher algorithm 18 and compared its unsupported-algorithm exception path with same-context JCSystem CryptoException tests. Isolated a separate existing transaction integration failure.
+- Validation: `javacardx.crypto.Cipher.java` defines algorithm 18 as deprecated `ALG_AES_BLOCK_192_CBC_NOPAD`; `native_cipher.cpp` correctly rejects it with `CryptoException.NO_SUCH_ALGORITHM`. Historical transcript replay on current `max_crypto` returned 6F00 at APDUs 1584/1586/1588/1590 where the recorded response is data `03` plus `9000`; its prior pass used a different ROM-mask hash. `./tools/test-jcsystem-transaction-applet` passed the unsupported-digest and 50-CryptoException catch cases, then failed at separate case 89. Isolated `--case 89` reproduces `6F00`/SystemException. Emulator trace shows a 32,793-byte write request against a 65,536-byte sector holding 32,793 bytes; defragmentation leaves no replacement capacity. No source edits were made.
+- Result: The JCAlgTest issue is exception/result handling for an unsupported cross-package Cipher request, not a reason to implement deprecated algorithm 18. Case 89 is a distinct persistent array write-capacity failure under transaction load.
+- Decision: Keep T7 open and preserve the correct NO_SUCH_ALGORITHM behavior. Investigate cross-package exception capture and the separate non-atomic arrayCopy storage behavior before changing runtime code.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T144120Z/`, `...T144244Z/`; `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261117T144708Z.log`
