@@ -73,6 +73,8 @@ approved helper (`count=1`). Verified: F42D flashed from BOOTSEL, reader
 `Pico 2 CHOUPI CCID [JCVM CCID] (F42DD9D07D6D2B07) 00 00` listed. Do not debug
 pcscd/libccid first when no board runs JCVM firmware.
 
+**Fresh USB refresh (2026-11-17 18:35 UTC, elevated bounded `lsusb` + `picotool info -a`):** F42D is running the full JCVM (`2e8a:0009`) and is the single enumerated PC/SC reader. 07E7 (`07E74C5D7A038DEC`) and EE11 (`EE116F37C7E4A04E`) are identified in BOOTSEL (`2e8a:000f`), available to provision for a later campaign. A second runtime `2e8a:0009` product "Raspberry Pi Pico" was visible but its chip ID was not captured; do not assign it to the old 22A9 identity without checking. The live option-2 run is on F42D, so do not flash another board until it finishes; 07E7 is the identified candidate for the separate all-algorithms run.
+
 **Boards from the old machine (not attached here as of 2026-11-17):** 8E
 `8E464F4E2BBC0A19`, D92 `D92E743D5F640C0F`, 2BED `2BED26ED20556535`, and an unnamed
 `48E9A50BB405634E`. Old campaign results refer to these IDs; do not compare them with

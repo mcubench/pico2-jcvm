@@ -31286,3 +31286,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Interactive stdin is now reaching the Java client; the active physical attempt emits JCAlgTest APDUs and PC/SC responses. The long option-2 run is not yet complete.
 - Decision: Keep the running option-2 campaign under observation; do not treat menu entry or partial CSV rows as campaign acceptance.
 - Artifacts/logs: `tools/run-jcalgtest`; `artifacts/results/option2-acceptance-20261117T1830Z/F42DD9D07D6D2B07/client-attempt2.log`; `.agent/QKB.md`.
+
+## 2026-11-17 Refresh board roster for second campaign 4 minutes
+
+- Step-Id: `20261117-1940-board-roster-option2`
+- Task: HOST-01 LONGOP-01 / separate physical JCAlgTest tokens
+- When: '2026-11-17 19:36 CET' - '2026-11-17 19:40 CET'
+- Model: `gpt-6.1-sol`
+- Change: Recorded a fresh USB/chip-ID roster so the second long campaign can use a different identified Pico 2.
+- Validation: Elevated bounded `lsusb` showed F42D running the JCVM, plus BOOTSEL devices; elevated `picotool info -a --bus 1 --address 29` and `--address 35` identified the two BOOTSEL boards.
+- Result: 07E74C5D7A038DEC (07E7) and EE116F37C7E4A04E (EE11) are in BOOTSEL. F42DD9D07D6D2B07 remains the only PC/SC reader running JCVM. One additional `2e8a:0009` Raspberry Pi Pico runtime device was not chip-ID checked and remains unassigned.
+- Decision: Leave the live F42D option-2 run undisturbed; provision 07E7 for the separate all-algorithms campaign after F42D completes.
+- Artifacts/logs: `.agent/QKB.md`; live option-2 result directory `artifacts/results/option2-acceptance-20261117T1830Z/F42DD9D07D6D2B07/`.
