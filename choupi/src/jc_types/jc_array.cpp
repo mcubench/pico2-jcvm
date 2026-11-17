@@ -50,9 +50,8 @@ namespace {
 constexpr jpackage_ID_t kNoGlobalReferenceOwner = 0xff;
 constexpr jpackage_ID_t kJCREGlobalReferenceOwner = 0xfe;
 
-bool same_tag(const fs::Tag &left, const fs::Tag &right) noexcept {
-  return left.len == right.len &&
-         std::memcmp(left.value, right.value, left.len) == 0;
+std::vector<uint8_t> compactTag(const fs::Tag &tag) {
+  return std::vector<uint8_t>(tag.value, tag.value + tag.len);
 }
 
 void checkArrayEntryIndex(const JC_Array &array, const uint16_t index) {
@@ -157,7 +156,7 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
       clear(event), global_reference_owners(),
       reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? length : 0,
                              kNoGlobalReferenceOwner) {
-  this->persistent_tag = tag;
+  this->persistent_tag = compactTag(tag);
   this->has_persistent_tag = true;
   this->has_live_data_for_recovery = isTransientArray;
   this->persistent_rollback_generation =
@@ -181,7 +180,11 @@ JC_Array::~JC_Array() noexcept = default;
  */
 fs::Tag JC_Array::computeTag() const noexcept {
   if (this->has_persistent_tag) {
-    return this->persistent_tag;
+    fs::Tag out;
+    out.len = static_cast<uint8_t>(this->persistent_tag.size());
+    std::copy(this->persistent_tag.begin(), this->persistent_tag.end(),
+              out.value);
+    return out;
   }
 
   fs::Tag out;
@@ -195,8 +198,8 @@ fs::Tag JC_Array::computeTag() const noexcept {
   return out;
 }
 
-void JC_Array::setPersistentTag(const fs::Tag &tag) noexcept {
-  this->persistent_tag = tag;
+void JC_Array::setPersistentTag(const fs::Tag &tag) {
+  this->persistent_tag = compactTag(tag);
   this->has_persistent_tag = true;
   this->persistent_metadata_valid = false;
   this->persistent_rollback_generation =
@@ -216,14 +219,15 @@ void JC_Array::releaseCommittedLiveData() {
       !this->has_persistent_tag) {
     return;
   }
-  const fs::Tag &tag = this->persistent_tag;
-  const uint16_t backing_length = restoredArrayBackingLength(tag.len, 0);
+  const std::vector<uint8_t> &tag = this->persistent_tag;
+  const uint8_t tag_length = static_cast<uint8_t>(tag.size());
+  const uint16_t backing_length = restoredArrayBackingLength(tag_length, 0);
   if (this->array.size() == backing_length) return;
   JCVMArray<uint8_t> compact(backing_length, new uint8_t[backing_length]{},
                              true);
-  compact[0] = tag.len;
-  for (uint8_t idx = 0; idx < tag.len; idx++) {
-    compact[static_cast<uint16_t>(idx + 1)] = tag.value[idx];
+  compact[0] = tag_length;
+  for (uint8_t idx = 0; idx < tag_length; idx++) {
+    compact[static_cast<uint16_t>(idx + 1)] = tag[idx];
   }
   this->array = std::move(compact);
   // Like a restored array: a missing body can no longer be rebuilt from RAM.
@@ -343,13 +347,11 @@ uint16_t JC_Array::size() const {
     if (this->persistent_metadata_valid &&
         this->persistent_metadata_generation == generation &&
         this->persistent_metadata_array_type == this->type &&
-        this->persistent_metadata_field_type == expected_field_type &&
-        same_tag(this->persistent_metadata_tag, tag)) {
+        this->persistent_metadata_field_type == expected_field_type) {
       return this->persistent_metadata_length;
     }
     const uint16_t array_length = FlashMemory_Handler::readPersistentArrayLength(
         tag, expected_field_type, element_width, this->reference_type);
-    this->persistent_metadata_tag = tag;
     this->persistent_metadata_generation = generation;
     this->persistent_metadata_array_type = this->type;
     this->persistent_metadata_field_type = expected_field_type;
@@ -374,7 +376,7 @@ void JC_Array::recoverMissingPersistentBody() const {
   const uint32_t generation =
       FlashMemory_Handler::persistentWriteRollbackGeneration();
   if (this->persistent_rollback_generation == generation) return;
-  const fs::Tag tag = this->persistent_tag;
+  const fs::Tag tag = this->computeTag();
   if (fs_exists(tag.value, tag.len) != 0) {
     this->persistent_rollback_generation = generation;
     return;

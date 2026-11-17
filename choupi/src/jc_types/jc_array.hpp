@@ -68,7 +68,9 @@ private:
   /// Data
   JCVMArray<uint8_t> array;
   /// Canonical flash identity once this array is serialized persistently.
-  fs::Tag persistent_tag;
+  /// Stored at its exact length: a full fs::Tag is 129 bytes, while typical
+  /// identities are 7-25 bytes and every live array carries one.
+  std::vector<uint8_t> persistent_tag;
   bool has_persistent_tag = false;
   bool has_live_data_for_recovery = true;
   mutable uint32_t persistent_rollback_generation = 0;
@@ -80,7 +82,8 @@ private:
   mutable FieldType persistent_metadata_field_type =
       FieldType::FIELD_TYPE_UNINITIALIZED;
   mutable uint16_t persistent_metadata_length = 0;
-  mutable fs::Tag persistent_metadata_tag{};
+  // The cached metadata needs no tag copy: the identity never changes once
+  // set, and setPersistentTag() invalidates the cache.
   /// When to clear data
   ClearEvent clear;
   /// Applet package owning each non-global reference stored in a JCRE global
@@ -226,7 +229,7 @@ public:
   /// Get the backing tag for a persistent array.
   fs::Tag getPersistentTag() const noexcept { return this->computeTag(); }
   /// Assign the persistent tag after first successful serialization.
-  void setPersistentTag(const fs::Tag &tag) noexcept;
+  void setPersistentTag(const fs::Tag &tag);
   /// Drop the volatile element copy once the persistent body is durable
   /// outside any write transaction. The backing then has the same
   /// [tag length, tag] layout as an array restored from flash.

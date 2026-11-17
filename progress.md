@@ -31382,3 +31382,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The cost of regenerating the keys in-session fell from 2,024 B (118,688 → 116,664) to 480 B (118,688 → 118,208), a saving of 1,544 B for one RSA-1984 key-pair set. The saving scales with the size of arrays created and committed in the session (key components, applet `new byte[]`), not with restored objects. This is not empty-card acceptance evidence; F42D keeps its installed JCAlgTest state.
 - Decision: H2 is fixed for arrays committed outside transactions. Each `JC_Array` still carries two 129-byte `fs::Tag` members (`persistent_tag`, `persistent_metadata_tag`), about 258 B per array, which is the next RAM reduction candidate. Still open: H3 tombstone compaction and an empty-card option-2 rerun.
 - Artifacts/logs: `artifacts/results/h2-backing-physical-20261117T201644Z-old/`, `artifacts/results/h2-backing-physical-20261117T202007Z-new/` (exploratory pre-A/B run: `artifacts/results/h2-backing-physical-20261117T201312Z-new/`); firmware SHA-256 `610de8e1a051b6cb3af36e3b942ecea85973b7054388a152279035478fed752e`
+
+## 2026-11-17 Store JC_Array persistent tag at exact length 10
+
+- Step-Id: `20261117-2140-array-tag-shrink`
+- Task: HOST-01 LONGOP-01 T1/D2 (H2 follow-up: per-array tag buffers)
+- When: '2026-11-17 21:30 CET' - '2026-11-17 21:40 CET'
+- Model: `claude-opus-5-5`
+- Change: `JC_Array::persistent_tag` is now a `std::vector<uint8_t>` holding only the tag bytes instead of a 129-byte `fs::Tag`. `persistent_metadata_tag` (129 B) is removed: it only re-checked the array's own identity, which never changes once set, and `setPersistentTag()` already invalidates the metadata cache. `computeTag()` rebuilds an `fs::Tag` on demand. `setPersistentTag()` lost `noexcept` because it now allocates. Only `jc_array.{hpp,cpp}` changed.
+- Validation: ARM `max_crypto` build passed with no C++ warnings, mode=normal, 35,868 B flash remaining; the PC build passed. VPCD `test-jcsystem-transaction-applet` passed 99/99 and `test-object-deletion-vpcd 8 byte-array` passed 19/19. `tools/cycle choupi` on F42DD9D07D6D2B07 passed with 0 FAULT/FAIL/PANIC (`artifacts/logs/cycle-choupi-20261117T203259Z.log`). `JCAlgTestRsaArrayBackingProbe` and `tools/test-longop01-rsa1984-physical` ran; all 18 APDUs returned 9000 with no PANIC/FAULT.
+- Result: At the same 129 arrays / 33 instances, free transient memory at the RSA-1984 B043 went from 118,688 B (`7ca591e6` firmware, `h2-backing-physical-20261117T202007Z-new`) to 146,072 B: +27,384 B, about 212 B per array. The cost of in-session key regeneration is unchanged (−464 B vs −480 B). RSA-1984 ×50: start 145,584, minimum 140,408.
+- Decision: The per-array tag overhead is removed. `JC_Instance` already uses a 68-byte inline tag plus overflow. Still open: H3 tombstone compaction and an empty-card option-2 rerun for acceptance.
+- Artifacts/logs: `artifacts/results/tagshrink-physical-20261117T203334Z/`, `artifacts/results/longop01-rsa1984-physical-20261117T203613Z/`; firmware SHA-256 `3a3cc15ca595e288d9879db462b04b14afda071ea449a686de1abacad4e231f2`
