@@ -31334,3 +31334,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: By design the applet keeps at most the field set alive, so ≈5,100 persistent files on the Windows card point to VM-side retention or non-reclamation, not applet growth.
 - Decision: Next: tag-prefix histogram of persistent files, per-prepare file/array diff, reachability check of replaced field values. No implementation.
 - Artifacts/logs: none
+
+## 2026-11-17 Static review of RSA-1984 OOM (LONGOP-01 T7) 45
+
+- Step-Id: `20261117-2050-longop01-t7-oom-review`
+- Task: HOST-01 LONGOP-01 T7 (review document only)
+- When: '2026-11-17 20:00 CET' - '2026-11-17 20:50 CET'
+- Model: `claude-opus-5-5`
+- Change: Added `docs/review_rsa1984_oom_opus55_20261117.md`, which holds the review brief verbatim plus a static source/log analysis of the Windows c050a193 option-2 `Out of memory` panic.
+- Validation: Source and log reading only; no build, no hardware run.
+- Result: The brief's premises were wrong. PRE_CLEANUP `available` is overlay headroom, not mallinfo. `files` includes tombstones. The Windows card did reclaim 8+8+4=20 records after the prepare. The panic came on the first ×50 B043, after five ×0 baselines passed. Leading cause: `doFinalRsaCipher` allocates one JC heap array per call (`native_rsa_cipher.cpp:587` at c050a193, `:617` at HEAD). It is only collected after the APDU, about 700 B per call (35.7 KB for 51 calls measured on target, progress.md:31108). The Windows card also had less headroom (201/73 live arrays/instances vs 131/34). `PICO_MALLOC_PANIC=1` turns any OOM into a hard panic.
+- Decision: Next, choose between fixing the per-call result allocation (native buffer) and first capturing allocator telemetry on a physical card. No implementation in this step.
+- Artifacts/logs: `docs/review_rsa1984_oom_opus55_20261117.md`
