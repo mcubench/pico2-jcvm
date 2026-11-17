@@ -31073,6 +31073,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Close T3. Keep LONGOP-01 T1/D2, T2 full reproduction, T5 audit, T6 acceptance, and MEM-01 option-2/T8 acceptance open. Rebuild after commit and refresh hardware access before any further cycle.
 - Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T162912Z/F42DD9D07D6D2B07/`; partial client log `artifacts/results/longop01-rsa1984-physical-20261117/F42DD9D07D6D2B07/ALGTest_log_1794932230136.log`; image SHA-256 before commit `db17b24ec67e7ded9da673d196bb9868b1e1ea79877974d16cad8a8de5e9bb6b`.
 
+## 2026-11-17 Validate committed LONGOP-01 firmware 4
+
+- Step-Id: `20261117-1740-longop01-commit-cycle`
+- Task: HOST-01 LONGOP-01 T3 post-commit validation
+- When: '2026-11-17 17:35 CET' - '2026-11-17 17:40 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt the committed T3 firmware and cycled the full JCVM on the refreshed identified board to bind the physical result to commit `2f1aac2d`.
+- Validation: `./tools/build arm --profile max_crypto` passed normal mode, object deletion ON, debug switches OFF, flash headroom 35,904 bytes. After approved helper refresh and reader enumeration (`F42DD9D07D6D2B07`), `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed. The wrapper recovered from the initial runtime-mode picotool connection rejection via CDC-1200, then loaded and verified the UF2. Finite serial log has repeated `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and no `TEST:FAIL` or `FAULT`.
+- Result: Committed firmware CPLC source ID is `0x2F1AAC2DFFD54762`; UF2 SHA-256 `a13a27df22b0bf6002eef3f55beb3e82abe8b7e4cbf0ede3ed47c27686aa1fb8`. This cycle validates the committed build; it does not run JCAlgTest campaigns.
+- Decision: Keep T3 closed. Continue with embedded allocator high-water/D2 investigation and the remaining HOST-01/MEM-01 acceptance work.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261117T163736Z.log`; `build/arm/build-provenance.txt`.
+
 - Step-Id: `20261117-1735-longop01-d1-progress`
 - Task: HOST-01 LONGOP-01 T3
 - When: '2026-11-17 17:04 CET' - '2026-11-17 17:35 CET'
