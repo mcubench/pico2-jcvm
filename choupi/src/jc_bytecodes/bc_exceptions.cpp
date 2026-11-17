@@ -467,42 +467,41 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
 
   // An exception with no matching handler must not look like normal method
   // completion to the interpreter.
-  if (exception_package.getPackageID() == 0) {
-    const auto *package_info = exception_package.getCap().getHeader();
-    static constexpr uint8_t framework_aid[] = {
-        0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
-    if (package_info->package.AID_length == sizeof(framework_aid) &&
-        std::memcmp(package_info->package.AID, framework_aid,
-                    sizeof(framework_aid)) == 0) {
-      // Resolve ISOException through the generated JC305-to-ROM token map.
-      // The ROM-mask API order changes with its selected capabilities, so a
-      // fixed export token can alias a different exception class.
-      constexpr uint8_t jc305_iso_exception_token = 7;
-      constexpr uint8_t iso_exception_export_token =
-          jc305_javacard_framework_class_tokens[
-              jc305_iso_exception_token];
-      const uint16_t iso_exception_index = HTONS(
-          Export_Handler(exception_package)
-              .getExportedClassOffset(iso_exception_export_token));
-      // The ROM Class component keeps a runtime-owned ISOException class
-      // record 34 bytes after the public exported class record. Derive its
-      // location from the export offset because optional providers shift the
-      // Class component in each support profile.
-      const jclass_index_t iso_exception_rom_offset =
-          static_cast<jclass_index_t>(iso_exception_index + 34);
-      const auto iso_exception_class = exception_cp.resolveClassref(
-          exception_cp.getClassRefFromClassIndex(iso_exception_index));
-      const bool is_iso_exception =
-          exception->getClassIndex() == iso_exception_index ||
-          exception->getClassIndex() == iso_exception_rom_offset ||
-          Class_Handler::docheckcast(exception_class, iso_exception_class);
-      if (is_iso_exception) {
-        // ISOException inherits CardRuntimeException.reason, a short stored
-        // as the first instance field in the embedded Java Card API layout.
-        const uint16_t status_word = static_cast<uint16_t>(
-            exception->getField_Short(0));
-        throw ISOExceptionStatusWord{status_word};
-      }
+  const auto *package_info = exception_package.getCap().getHeader();
+  static constexpr uint8_t framework_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
+  if (package_info != nullptr &&
+      package_info->package.AID_length == sizeof(framework_aid) &&
+      std::memcmp(package_info->package.AID, framework_aid,
+                  sizeof(framework_aid)) == 0) {
+    // Resolve ISOException through the generated JC305-to-ROM token map.
+    // The ROM-mask API order changes with its selected capabilities, so a
+    // fixed export token can alias a different exception class.
+    constexpr uint8_t jc305_iso_exception_token = 7;
+    constexpr uint8_t iso_exception_export_token =
+        jc305_javacard_framework_class_tokens[jc305_iso_exception_token];
+    const uint16_t iso_exception_index = HTONS(
+        Export_Handler(exception_package)
+            .getExportedClassOffset(iso_exception_export_token));
+    // The ROM Class component keeps a runtime-owned ISOException class
+    // record 34 bytes after the public exported class record. Derive its
+    // location from the export offset because optional providers shift the
+    // Class component in each support profile. Split framework ROM packages
+    // retain the same runtime-owned record, but their package id is not zero.
+    const jclass_index_t iso_exception_rom_offset =
+        static_cast<jclass_index_t>(iso_exception_index + 34);
+    const auto iso_exception_class = exception_cp.resolveClassref(
+        exception_cp.getClassRefFromClassIndex(iso_exception_index));
+    const bool is_iso_exception =
+        exception->getClassIndex() == iso_exception_index ||
+        exception->getClassIndex() == iso_exception_rom_offset ||
+        Class_Handler::docheckcast(exception_class, iso_exception_class);
+    if (is_iso_exception) {
+      // ISOException inherits CardRuntimeException.reason, a short stored
+      // as the first instance field in the embedded Java Card API layout.
+      const uint16_t status_word =
+          static_cast<uint16_t>(exception->getField_Short(0));
+      throw ISOExceptionStatusWord{status_word};
     }
   }
 

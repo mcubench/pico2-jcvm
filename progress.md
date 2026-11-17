@@ -30976,3 +30976,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: T7 is narrowed to why the CAP's rethrow at offset 15705 is uncaught at the applet entry boundary. This trace does not justify changing algorithm support or exception-boundary semantics without identifying the method/caller path.
 - Decision: Keep T7 open; map the relevant CAP method and stack boundary next. Hardware remains unavailable.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T145515Z/`; updated `.agent/HANDOFF.md`.
+
+## 2026-11-17 Convert split-package ISOException status 13
+
+- Step-Id: `20261117-1612-t7-iso-status-conversion`
+- Task: MEM-01 T7
+- When: '2026-11-17 15:59 CET' - '2026-11-17 16:12 CET'
+- Model: `gpt-6.1-sol`
+- Change: Extended uncaught ISOException detection to framework ROM packages by AID, not just combined package ID 0. The unchanged CAP catches the unsupported Cipher exception, writes reason `03`, throws `ISOException(0x9000)`, and the applet rethrows it; package 6 previously fell through to `SecurityException`/`6F00`.
+- Validation: `./tools/build-pc --profile max_crypto --rp2350-overlay` passed (existing Rust warnings only; no link failures). `./tools/build arm --profile max_crypto` passed in normal mode, object deletion ON, debug OFF, no C++ warnings; 36,016 bytes remain. Final replay command used `PICO2_TEST_OBJECT_DELETION=1`, the RP2350 overlay, and stopped at APDU 1,590: all captured statuses matched except the two already-known GET DATA differences before applet SELECT; the four affected Cipher probes return `03 9000`. `./tools/fixture-path --verify` passed (83 files); the 1.8.5 JAR hash is `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`, and the unchanged 1.8.4/jc305 CAP hash is `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`. `git -c core.whitespace=cr-at-eol diff --check` passed. Hardware refresh found 0 Pico 2 devices and PC/SC `list() failed`, so no full JCVM cycle or flash was attempted.
+- Result: The focused T7 transcript failure is fixed. Final PC overlay SHA-256 `ad8b0f45c71dc3b3401e9fa4363e14620d786499bce1ef4b5618a14d2d62af94`; ARM UF2 SHA-256 `d5d914ce51a0c011904bb1213e151727a20aa194fea7bd33d78c83d4cbfe3794`. Replay summary: 1,590 APDUs, resource failure 0, changed statuses 2 (known pre-applet GET DATA differences).
+- Decision: Keep MEM-01 T7 open for the unchanged-client long VPCD run under telemetry and T8 open for physical acceptance. Continue the independent case-89 persistent non-atomic write investigation while hardware is unavailable.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T151055Z/`, `build/t7-final-replay.log`, `build/t7-final-arm-build.log`, `.agent/HANDOFF.md`.

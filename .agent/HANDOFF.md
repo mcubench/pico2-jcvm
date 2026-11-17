@@ -3,16 +3,15 @@
 Updated: 2026-11-17.
 
 ## Current state
-- Latest step commit `686332ec` corrects the native `ArrayLogic.arrayCopyRepackNonAtomic` path to pass `atomic=false`. ARM `max_crypto` build passed normal mode, object deletion ON, debug OFF; 36,008 bytes remain. UF2 SHA-256 `535253e22dc3088af894a4348f58fca1e86c18b82d78d2c91e1dbfc49aba14ce`.
-- The full JCVM hardware cycle was not run: approved helper found 0 Pico 2 devices and elevated `./tools/list-readers --pico-only` returned `list() failed`. Refresh before any hardware work.
-- T7 VPCD replay on max_crypto fails APDUs 1584/1586/1588/1590 (expected `9000`, actual `6F00`). Failing setting is unsupported Cipher algorithm 18 (`ALG_AES_BLOCK_192_CBC_NOPAD`); preserve `NO_SUCH_ALGORITHM`. In a bounded replay with `CHOUPI_VM_TRACE_EXCEPTIONS=1`, the native exception is correctly class-matched and caught by the CAP handler, then the handler rethrows at bytecode offset 15705. The final uncaught Java object has package 2 / class 102 (`SecurityException`) and APDU returns `6F00`. Trace: `artifacts/results/resource01-apdu-replay-vpcd-20261117T145515Z/emulator.log`; replay summary at `.../replay.log`.
-- The trace shows `doThrow()` falls back to `SecurityException` when no handler matches and `enforce_exception_boundary` is false. Determine why the CAP rethrow is uncaught in this applet entry path before changing boundary semantics; do not equate this yet with the expected result behavior.
-- Historical Nov 15 replay used a different ROM-mask hash (`184d2794…`) than current `ab55f462…`; this is not a proven same-build regression.
-- Separate transaction case 89 still fails: `Util.arrayCopyNonAtomic()` tries a 32,793-byte persistent write while a 65,536-byte sector already holds 32,793 bytes; defrag leaves no replacement space. It uses the bytecode-intercepted Util path, not the just-corrected native ArrayLogic path. Trace: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261117T144708Z.log`.
-- RP2350 overlay linker roots are committed in `3fa22bc8`; current PC overlay hash before latest unrelated JNI edit was `d45561837614829be4c9a8814b61b434b7dd6b9fd5dbe2a34d4c7a122101d3c3`.
+- ARM `max_crypto` normal build passes with object deletion ON, debug switches OFF, no C++ warnings, and 36,016 bytes remaining. UF2 SHA-256 `d5d914ce51a0c011904bb1213e151727a20aa194fea7bd33d78c83d4cbfe3794`.
+- The focused T7 exception bug is fixed: `doThrow()` recognizes ISOException by framework AID in split ROM package IDs as well as package 0. The CAP catches unsupported Cipher algorithm 18, writes `03`, then throws ISOException `9000`; the applet rethrows it. The old path converted package-6 ISOException into SecurityException/`6F00`.
+- Final max_crypto RP2350 overlay replay passed all 1,590 APDUs with `PICO2_TEST_OBJECT_DELETION=1`; the four formerly failing Cipher probes return `039000`. Two status differences are the known GET DATA differences before applet SELECT. Emulator SHA-256 `ad8b0f45c71dc3b3401e9fa4363e14620d786499bce1ef4b5618a14d2d62af94`; ROM mask `ab55f462bb535c9d90fb49b4aa9c40c6c45e26c8183ff2d4f22fdb1d1ff30925`. Inputs verified: 1.8.5 JAR SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`, unchanged 1.8.4/jc305 CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+- T7's unchanged-client long VPCD run and physical T8 acceptance remain open. Approved helper found 0 Pico 2 devices; elevated reader listing returned `list() failed`, so no hardware cycle was run. Refresh before hardware work.
+- Separate transaction case 89 still fails: bytecode-intercepted `Util.arrayCopyNonAtomic()` requests a 32,793-byte persistent write in a 65,536-byte sector already holding 32,793 bytes. See `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261117T144708Z.log` and TODO.md.
+- The RP2350 overlay CMake linker roots are committed in `3fa22bc8`; fixture verification passed.
 
 ## Next actions
-1. Explain CAP method and entry/caller stack at the synthetic rethrow (method offset 15705) and why no outer handler catches it; replay the same prefix with narrow tracing after any runtime fix.
-2. Analyze the independent persistent Util non-atomic write exhaustion against RV-20261106-50 without weakening semantics.
-3. Refresh the approved helper and reader list, then run a full `./tools/cycle choupi --profile max_crypto --chipid ID` only when an identified board is available.
-4. Restart unchanged-client option 2 from fresh state when PC/SC works; physical options 2 and 1 remain acceptance gates. Host/token troubleshooting and external Windows action are tracked in `.agent/EXT_REQUESTS.md` and `.agent/QKB.md`.
+1. Start unchanged-client option 2 from fresh state when PC/SC works, with telemetry gate and `PICO2_TEST_OBJECT_DELETION=1`; then physical option 2 and option 1 on identified tokens when available.
+2. Continue separate case-89 / RV-20261106-50 investigation without weakening non-atomic semantics.
+3. Refresh the approved helper and reader list before running `./tools/cycle choupi --profile max_crypto --chipid ID`.
+4. External Windows action and host/token troubleshooting remain in `.agent/EXT_REQUESTS.md` and `.agent/QKB.md`.
