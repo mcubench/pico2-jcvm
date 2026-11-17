@@ -31106,3 +31106,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: D1 is fixed and its focused hardware criterion passes on F42DD9D07D6D2B07. A pinned 1.8.5 client diagnostic session produced four successful ×50 samples but hit its 300 s bound before completing; it is not a full option-2 campaign. Earlier “no boards” was a no-JCVM-firmware state, per QKB; the board was flashed from BOOTSEL and enumerated.
 - Decision: Close T3. Keep LONGOP-01 T1/D2, T2 full reproduction, T5 audit, T6 acceptance, and MEM-01 option-2/T8 acceptance open. Rebuild after commit and refresh hardware access before any further cycle.
 - Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T162912Z/F42DD9D07D6D2B07/`; partial client log `artifacts/results/longop01-rsa1984-physical-20261117/F42DD9D07D6D2B07/ALGTest_log_1794932230136.log`; image SHA-256 before commit `db17b24ec67e7ded9da673d196bb9868b1e1ea79877974d16cad8a8de5e9bb6b`.
+
+## 2026-11-17 Archive external c050a193 RSA-1984 OOM evidence and queue TODO 12
+
+- Step-Id: `20261117-1815-longop01-c050a193-oom`
+- Task: HOST-01 LONGOP-01 (evidence analysis, TODO only)
+- When: '2026-11-17 17:50 CET' - '2026-11-17 18:15 CET'
+- Model: `claude-sonnet-5-5`
+- Change: Archived the external Windows run from `inbox/` with readme and SHA256SUMS; added LONGOP-01 evidence note and TODO items T7–T9. No source changes.
+- Validation: Inspection only (logs, serial). No build, flash or hardware run.
+- Result: Run on `c050a193` (predates `2f1aac2d`): RSA-1984 NOPAD ×50 passed; RSA-1984 PKCS1 ×50 B043 failed with `0x8010002f`; serial ends with `*** PANIC ***` / `Out of memory` after a `B0E2` (PRE_CLEANUP available 33,060–33,506 B, arrays_live=201, arrays_reclaimed=0). Points to D2 (RAM), not only D1. Differs from F42D newer-image run (no panic, 82,696 B min). Client JAR hash not supplied, so not acceptance.
+- Decision: Do not implement; T7 (panic site / replay), T8 (external retest of current image), T9 (fragmentation) queued in TODO.md.
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261117-c050a193-deletion/` (SHA256SUMS inside)
