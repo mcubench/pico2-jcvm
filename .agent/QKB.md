@@ -1,5 +1,25 @@
 # Issue knowledge base
 
+## Physical token roster — 2026-11-17
+
+Roster of known tokens (RP2350 chip ID; nickname used in logs). Selection policy
+and the "one working token, switch only when unavailable" rule are in
+`reference/physical-token-access/SKILL.md`. Chip ID is stable across replugs; the
+USB bus/device number and reader index are not.
+
+| Nickname | Chip ID | Notes |
+| --- | --- | --- |
+| 8E | `8E464F4E2BBC0A19` | seen in option-1/2 campaigns |
+| D92 | `D92E743D5F640C0F` | seen in option-2 campaigns |
+| 2BED | `2BED26ED20556535` | seen in option-2 campaigns |
+| (unnamed) | `48E9A50BB405634E` | appears once in the repo; not yet identified or named |
+
+Four tokens are now attached, but the approved helper `pico2-pcsc-reader` supports
+1–3 matching devices and refuses ACL changes when it finds four. If it does so,
+detach one token, or ask for the helper limit to be raised
+(`.agent/EXT_REQUESTS.md`). Do not infer a roster from this table without
+re-listing; devices change.
+
 ## Repository moved to a new host (agentdev, Debian 12) — build broke — 2026-11-17
 
 **Viable solution (applied).** After moving the repo from `/home/claude/Projects/pico2-jcvm`

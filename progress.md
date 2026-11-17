@@ -30748,3 +30748,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Real edits to javacard-api or rommask tracked files would still be reported; only untracked build output is hidden there. For `choupi/os`, tracked-file edits are hidden because the patch keeps it dirty by design; use `git -C choupi/os status` to inspect.
 - Decision: Tidy-up complete except the docs/reviews/root `.md` relocation deferred by the user.
 - Artifacts/logs: none
+
+## 2026-11-17 Physical token selection guidance 10
+
+- Step-Id: `20261117-1755-token-selection-guidance`
+- Task: documentation (user request)
+- When: '2026-11-17 17:41' - '2026-11-17 17:55'
+- Model: `claude-sonnet-5-5`
+- Change: Added "Choosing and keeping a token" to `reference/physical-token-access/SKILL.md` (identify by chip ID, stay on one working token, switch only when unavailable, two tokens only for comparison or parallel runs, never mix evidence, refresh access each session) and extended its description. Added "Physical token roster" to `.agent/QKB.md` with the four chip IDs seen in the repo (8E, D92, 2BED and one unnamed `48E9A50B…`) and the helper's 1-3 device limit. At the user's direction the rule lives in the skill file only; `AGENTS.md` was not changed and the earlier failover wording in `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` is unchanged.
+- Validation: Inspection only. The unnamed chip ID and whether the helper limit still applies are unconfirmed.
+- Result: Policy is documented; it is only picked up when the skill file is read.
+- Decision: User to confirm the fourth token's identity; then name it in the QKB roster.
+- Artifacts/logs: none
