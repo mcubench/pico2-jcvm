@@ -121,12 +121,15 @@ linker_flags=""
 arm_newlib_include=""
 arm_newlib_dir=""
 if [[ "${arch}" == arm ]]; then
-  arm_newlib_dir="${tool_root}/usr/lib/arm-none-eabi/newlib/thumb/v8-m.main+fp/softfp"
-  arm_newlib_include="${tool_root}/usr/include/newlib"
-  [[ -f "${arm_newlib_dir}/libc.a" && -f "${arm_newlib_dir}/libg.a" ]] || \
-    die "ARM Newlib libraries not found under ${arm_newlib_dir}"
-  [[ -f "${arm_newlib_include}/assert.h" ]] || die "ARM Newlib headers not found under ${arm_newlib_include}"
-  linker_flags="-L${arm_newlib_dir}"
+  if [[ -z "${TOOLCHAIN_ARM_GNU}" ]]; then
+    # Prebuilt root tree: Newlib is packaged separately from the compiler.
+    arm_newlib_dir="${tool_root}/usr/lib/arm-none-eabi/newlib/thumb/v8-m.main+fp/softfp"
+    arm_newlib_include="${tool_root}/usr/include/newlib"
+    [[ -f "${arm_newlib_dir}/libc.a" && -f "${arm_newlib_dir}/libg.a" ]] || \
+      die "ARM Newlib libraries not found under ${arm_newlib_dir}"
+    [[ -f "${arm_newlib_include}/assert.h" ]] || die "ARM Newlib headers not found under ${arm_newlib_include}"
+    linker_flags="-L${arm_newlib_dir}"
+  fi
 fi
 cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -U CMAKE_C_FLAGS -U CMAKE_CXX_FLAGS \

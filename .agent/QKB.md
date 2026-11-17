@@ -1,5 +1,24 @@
 # Issue knowledge base
 
+## Repository moved to a new host (agentdev, Debian 12) — build broke — 2026-11-17
+
+**Viable solution (applied).** After moving the repo from `/home/claude/Projects/pico2-jcvm`
+(newer distro) to `/home/agentdev/projects/pico2-jcvm` (Debian 12, glibc 2.36):
+- `.local-toolchain/root` binaries (cmake 4.2.3, ninja, gcc 14.2.1) need glibc >= 2.38 and
+  do not run. `tools/toolchain-path.sh` now probes the local cmake and otherwise uses the
+  host cmake/ninja; install the Arm GNU Toolchain 14.2.rel1 tarball to
+  `.local-toolchain/toolchain/arm-gnu-14.2` (preferred, self-contained newlib).
+- Host needs a JDK >= 11 (`openjdk-17-jdk-headless`; capmap-free classes are version 55) and
+  Apache Ant (unpacked to `.local-toolchain/ant`).
+- Every CMake cache under `build/` embedded `/home/claude/...` and was rejected. Move such
+  dirs aside (they were moved to `build/_stale-claude-paths/`) and rebuild; in
+  `build/choupi-pc/generation.sha256` the path prefix was rewritten, hashes unchanged.
+- `~/.bashrc` exports `PICO_SDK_PATH=$HOME/pico/pico-sdk` (unpatched TinyUSB, no
+  `tud_task_budgeted`). The wrappers now ignore the ambient variable; override only with
+  `PICO2_SDK_PATH`.
+- Compiler is now whatever `arm-gnu-14.2` provides; record compiler/host in provenance when
+  comparing timings with pre-move campaigns.
+
 ## Ctrl-C aborts the VPCD emulator ptrace shim — 2026-11-16
 
 Interrupting `tools/test-jcalgtest-support-vpcd` with Ctrl-C while the

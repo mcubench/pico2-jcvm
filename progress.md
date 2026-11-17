@@ -30592,3 +30592,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Syntax-only validation; behavior of these changes is not re-verified here.
 - Decision: Continue with step 3 (runtime group A) after build and unit suites.
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 3a: host-migration toolchain wrappers 60
+
+- Step-Id: `20261117-1420-tidy03a-toolchain-wrappers`
+- Task: repository tidy-up plan; host migration fix
+- When: '2026-11-17 14:00' - '2026-11-17 14:20'
+- Model: `claude-sonnet-5-5`
+- Change: Added `tools/toolchain-path.sh` (shared PATH selection used by `tools/env` and `tools/common.sh`): prefers `.local-toolchain/toolchain/arm-gnu-14.2` (gcc 14.2.1, own newlib), uses the prebuilt `.local-toolchain/root` tree only if its cmake runs, otherwise host cmake/ninja, picks up `.local-toolchain/ant`. `tools/build` sets the separate-newlib flags only without the Arm GNU toolchain. `tools/env`/`tools/common.sh` ignore an ambient `PICO_SDK_PATH` (override: `PICO2_SDK_PATH`). Added a QKB entry. Stale CMake build dirs with `/home/claude` paths were moved to `build/_stale-claude-paths/` (git-ignored).
+- Validation: `./tools/build arm` rc=0 (baseline profile, mode=normal, object_deletion=ON, FLASH_LAYOUT:PASS 110,480 bytes remaining, 0 warnings from repo sources); needed the `main.cpp` fix in step 3b. Not flashed; no hardware run.
+- Result: Compiler changed from the pre-move host's toolchain to Arm GNU 14.2.rel1 (gcc 14.2.1) on Debian 12; host Java is OpenJDK 17.
+- Decision: Commit 3b (main.cpp fix) and 3c (runtime group A) next.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
