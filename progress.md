@@ -31322,3 +31322,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Filesystem uses only fixed static storage and in-place compaction (no heap), so file count does not by itself reduce heap. JCAlgTest constructor allocates only 4 objects; RSA key pairs are lazily cached (2 per type/length) and evicted, other keypairs/ciphers are per test. The ≈4,650 extra persistent files on the Windows card are therefore unexplained by the applet's design.
 - Decision: Next, read `write_filesystem_snapshot` stack use, then replay with a panic hook and per-`B0E2` counters plus a persistent-file tag histogram. No implementation yet.
 - Artifacts/logs: none
+
+## 2026-11-17 Correct T7 (g2): JCAlgTest bounded set is its class attributes 2
+
+- Step-Id: `20261117-2010-longop01-t7-g2-fields`
+- Task: HOST-01 LONGOP-01 T7 (TODO only)
+- When: '2026-11-17 20:05 CET' - '2026-11-17 20:10 CET'
+- Model: `claude-sonnet-5-5`
+- Change: Rewrote T7 (g2) after user clarification: JCAlgTest reuses objects via `AlgPerformanceTest` fields (about 100), not constructor allocation.
+- Validation: Source reading only; no build or hardware run.
+- Result: By design the applet keeps at most the field set alive, so ≈5,100 persistent files on the Windows card point to VM-side retention or non-reclamation, not applet growth.
+- Decision: Next: tag-prefix histogram of persistent files, per-prepare file/array diff, reachability check of replaced field values. No implementation.
+- Artifacts/logs: none
