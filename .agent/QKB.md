@@ -1119,3 +1119,16 @@ After `sudo -n /usr/local/sbin/pico2-pcsc-reader`, the approved helper reported
 availability observation, not a firmware result. Do not retry USB access in a
 restricted shell; refresh the helper and enumerate again at the next hardware
 session. Continue offline while no device is exposed.
+
+## Safe retry point after persistent `NO_RESOURCE` — 2026-11-17
+
+In `write_persistent_tag_or_throw`, `FS_STATUS_OUT_OF_FLASH` becomes a Java
+Card `SystemException.NO_RESOURCE`. The interpreter then unwinds; after the
+interpreter scope ends, the post-APDU path aborts any open applet transaction
+and only then invokes safe-point heap/object reclamation. This ordering
+provides a reclamation point but no way to resume the failed Java operation.
+Replaying the entire APDU may repeat volatile applet side effects. Retrying a
+single persistent write outside its enclosing Java Card transaction would
+violate transaction atomicity. Do not implement either shortcut; define an
+explicit replay contract first. Existing offline garbage-churn coverage
+tests 1,030 cycles × 8 allocations without applet deletion requests.

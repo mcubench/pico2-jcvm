@@ -30892,3 +30892,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `e469c2a40339f59962c3a9265f6ce30522e85a3d288ec55f90df8b6f3172fd28`; CPLC source ID `0x8FC710A24549A154`. Physical runtime remains unverified.
 - Decision: Retry identified full JCVM cycle once an enumerated board is available; continue MEM-01 T10 offline work meanwhile.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
+
+## 2026-11-17 Confirm automatic reclaim without applet requests and map retry safety 8
+
+- Step-Id: `20261117-1527-t10-safe-retry-analysis`
+- Task: MEM-01 T10
+- When: '2026-11-17 15:19 CET' - '2026-11-17 15:27 CET'
+- Model: `gpt-6.1-sol`
+- Change: Traced persistent write exhaustion through `NO_RESOURCE`, interpreter unwind, transaction abort, and post-APDU reclamation. Updated T10 to record the existing no-applet-request garbage churn result and the retry safety boundary.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). Automatic-reclaim metrics: 1,030 cycles × 8 garbage objects, 8,240 erased, 1 trigger, 20,564 bytes minimum available, 77,852 bytes peak arena use, one live record preserved; pending sweep drained over 695 boundaries. Mixed-live compaction and interrupted-snapshot recovery also passed (12 compactions; 30,759-byte available floor; 5 snapshot cut positions).
+- Result: `FS_STATUS_OUT_OF_FLASH` maps to `SystemException.NO_RESOURCE`; APDU interpreter execution unwinds before post-APDU recovery. Retrying the whole APDU could duplicate volatile side effects; retrying only the persistent write outside its transaction breaks atomicity. No retry implementation is safe without a defined replay contract.
+- Decision: Mark offline no-request garbage allocation coverage complete; keep T10 open for unchanged-client acceptance and replay-contract design. Do not add a write retry based on current hooks.
+- Artifacts/logs: RP2350 fake-flash test output; no persistent log file
