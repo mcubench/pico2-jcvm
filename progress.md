@@ -31298,3 +31298,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 07E74C5D7A038DEC (07E7) and EE116F37C7E4A04E (EE11) are in BOOTSEL. F42DD9D07D6D2B07 remains the only PC/SC reader running JCVM. One additional `2e8a:0009` Raspberry Pi Pico runtime device was not chip-ID checked and remains unassigned.
 - Decision: Leave the live F42D option-2 run undisturbed; provision 07E7 for the separate all-algorithms campaign after F42D completes.
 - Artifacts/logs: `.agent/QKB.md`; live option-2 result directory `artifacts/results/option2-acceptance-20261117T1830Z/F42DD9D07D6D2B07/`.
+
+## 2026-11-17 Add filesystem-compaction OOM lead to LONGOP-01 T7 2
+
+- Step-Id: `20261117-1905-longop01-t7-fscompact`
+- Task: HOST-01 LONGOP-01 T7 (TODO only)
+- When: '2026-11-17 19:00 CET' - '2026-11-17 19:05 CET'
+- Model: `claude-sonnet-5-5`
+- Change: Added T7 item (g) to TODO.md: unverified lead that the OOM comes from filesystem compaction/snapshot memory scaling with persistent file count, with the checks to run.
+- Validation: Inspection of worker `progress.md` records and archived logs; no build or hardware run.
+- Result: Two OOM panics (GPPro preflight with 534 files; Windows RSA run with 5,116 files) both coincide with large persistent state and compaction; clean Linux RSA runs do not panic.
+- Decision: Verify by reading compaction allocation and replaying a ≈5,000-file card with a panic hook; no implementation yet.
+- Artifacts/logs: none
