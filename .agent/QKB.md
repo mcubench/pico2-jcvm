@@ -1,5 +1,26 @@
 # Issue knowledge base
 
+## GPPro DELETE preflight can encounter an earlier JCVM out-of-memory panic — 2026-11-17
+
+On F42DD9D07D6D2B07, after the focused RSA physical matrix, the bounded
+`gp.jar --delete 4A43416C675465737431` check returned
+`SCARD_E_NOT_TRANSACTED` after 16 seconds. The serial capture shows GPPro's
+initial `00A4040000` ISD SELECT, repeated filesystem compaction messages and
+`*** PANIC *** / Out of memory`; it contains no `E4` DELETE APDU. Therefore
+this is not evidence that DELETE itself stalled or hit the watchdog. The exact
+capture is `artifacts/results/longop01-delete-audit-20261117T1815Z/F42DD9D07D6D2B07/`.
+
+**Recovery verified.** Rebuild the normal ARM `max_crypto` image, then use the
+identity-pinned full JCVM wrapper `./tools/cycle choupi --profile max_crypto
+--serial F42DD9D07D6D2B07`. The 2026-11-17 recovery passed with
+`TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL`/`FAULT`, and re-enumerated the same
+chip ID as a PC/SC reader. The image hash was
+`6e645547bd70fbd8fad6fd65d7b9506ab7989964eaa1ab8af532b858e3e21f67` (normal,
+object deletion ON, debug OFF). Storage was preserved. Before diagnosing this
+as a DELETE regression, establish that the preceding focused RSA work and
+filesystem compaction have not exhausted transient memory; retain serial from
+before the first GPPro SELECT.
+
 ## Physical token roster — 2026-11-17
 
 Selection policy ("one working token, switch only when unavailable") is in

@@ -31154,3 +31154,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: E4 is handled synchronously without `NativeOperationScope`; persistent commit reaches `fs_sync()` and the full inactive filesystem snapshot writer inside `flash_safe_execute` with a 5,000 ms timeout. The main-loop watchdog update (15,000 ms) follows `choupi_ccid_task()` return. This is a source-level cause candidate, not measured evidence of a DELETE timeout or watchdog reset.
 - Decision: Keep T5 open. Reproduce DELETE on current normal firmware with serial timing and fault/watchdog evidence before changing the path; include other flash-heavy card-manager work in the check.
 - Artifacts/logs: none (source inspection only).
+
+## 2026-11-17 Recover Pico after GPPro preflight OOM 7
+
+- Step-Id: `20261117-1822-longop01-delete-recovery`
+- Task: HOST-01 LONGOP-01 T5 physical preflight/recovery
+- When: '2026-11-17 18:15 CET' - '2026-11-17 18:22 CET'
+- Model: `gpt-6.1-sol`
+- Change: Attempted a bounded JCAlgTest applet DELETE preflight with serial capture. The command failed before E4; rebuilt and restored the same identified board with the full normal JCVM cycle. Added the failure boundary and recovery procedure to QKB, TODO and handoff.
+- Validation: `./tools/build arm --profile max_crypto` passed with no warnings, normal mode, object deletion ON, debug switches OFF, 35,404 bytes flash headroom. After authorized helper refresh and exact F42D reader enumeration, `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed. Finite cycle log contains repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL`/`FAULT`; approved helper and `list-readers --pico-only` then re-enumerated the same chip ID.
+- Result: GPPro `--delete 4A43416C675465737431` returned `SCARD_E_NOT_TRANSACTED` after 16 s. Captured serial shows initial `00A4040000` ISD SELECT, repeated filesystem compaction, then `*** PANIC *** / Out of memory`; no E4 command is present. This does not validate DELETE timing or watchdog cooperation. Recovery image SHA-256 `6e645547bd70fbd8fad6fd65d7b9506ab7989964eaa1ab8af532b858e3e21f67`; storage was preserved by cycle.
+- Decision: Keep T5 open and treat the earlier OOM as the next blocker. Diagnose preflight memory/compaction from a fresh capture before retrying DELETE. Do not infer watchdog reset from this attempt.
+- Artifacts/logs: `artifacts/results/longop01-delete-audit-20261117T1815Z/F42DD9D07D6D2B07/`; cycle log `artifacts/logs/cycle-choupi-20261117T171632Z.log`; build provenance `build/arm/build-provenance.txt`.
