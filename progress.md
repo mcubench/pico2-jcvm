@@ -31166,3 +31166,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: GPPro `--delete 4A43416C675465737431` returned `SCARD_E_NOT_TRANSACTED` after 16 s. Captured serial shows initial `00A4040000` ISD SELECT, repeated filesystem compaction, then `*** PANIC *** / Out of memory`; no E4 command is present. This does not validate DELETE timing or watchdog cooperation. Recovery image SHA-256 `6e645547bd70fbd8fad6fd65d7b9506ab7989964eaa1ab8af532b858e3e21f67`; storage was preserved by cycle.
 - Decision: Keep T5 open and treat the earlier OOM as the next blocker. Diagnose preflight memory/compaction from a fresh capture before retrying DELETE. Do not infer watchdog reset from this attempt.
 - Artifacts/logs: `artifacts/results/longop01-delete-audit-20261117T1815Z/F42DD9D07D6D2B07/`; cycle log `artifacts/logs/cycle-choupi-20261117T171632Z.log`; build provenance `build/arm/build-provenance.txt`.
+
+## 2026-11-17 Add card-state and reset analysis to LONGOP-01 T7 3
+
+- Step-Id: `20261117-1840-longop01-t7-notes`
+- Task: HOST-01 LONGOP-01 T7 (TODO only)
+- When: '2026-11-17 18:25 CET' - '2026-11-17 18:40 CET'
+- Model: `claude-sonnet-5-5`
+- Change: Added T7 items (e) and (f) to TODO.md: Linux vs Windows card-state comparison (free memory, files, live arrays/instances) and evidence that `B0E2` reaches the card but reclaims nothing.
+- Validation: Inspection of archived logs and `choupi_available_transient_memory_bytes`; no build or hardware run.
+- Result: Same free-memory metric on both sides; Windows card had ~49 KB less free, ~4,650 more files. 1,879 `B0E2` sent, 1,874 `9000`; visible deletion passes reclaim 0.
+- Decision: Next is reading the persistent-store RAM cost, then a same-state replay on a Linux token. No implementation yet.
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261117-c050a193-deletion/`
