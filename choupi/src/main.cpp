@@ -935,19 +935,35 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
     }
 
     PersistentRootVector root_vector{std::move(roots.references)};
-    uint32_t pre_cleanup_files = 0;
-    uint32_t pre_cleanup_bytes = 0;
-    uint32_t pre_cleanup_capacity = 0;
-    choupi_persistent_memory_usage(&pre_cleanup_files, &pre_cleanup_bytes,
-                                  &pre_cleanup_capacity);
-    std::fprintf(stderr,
-                 "OBJECT_DELETION:PRE_CLEANUP package=%u owner=%u "
-                 "reason=%s available=%u files=%u bytes=%u/%u\n",
-                 static_cast<unsigned>(context.getAppletPackageID()),
-                 static_cast<unsigned>(owner),
-                 automatic_deletion_pending[owner] ? "automatic" : "applet",
-                 available_before_reclaim, pre_cleanup_files,
-                 pre_cleanup_bytes, pre_cleanup_capacity);
+#if (defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)) || \
+    (!defined(PC_VERSION) && defined(CHOUPI_ENABLE_OBJECT_DELETION))
+    {
+      uint32_t pre_cleanup_files = 0;
+      uint32_t pre_cleanup_bytes = 0;
+      uint32_t pre_cleanup_capacity = 0;
+      choupi_persistent_memory_usage(&pre_cleanup_files, &pre_cleanup_bytes,
+                                     &pre_cleanup_capacity);
+#if defined(PC_VERSION)
+      const uint8_t pre_cleanup_owner =
+          static_cast<uint8_t>(context.getAppletID());
+      const char *pre_cleanup_reason =
+          automatic_deletion_pending[pre_cleanup_owner] ? "automatic"
+                                                        : "applet";
+#else
+      // Firmware has no automatic-trigger bookkeeping; every request here
+      // originates from the applet.
+      const char *pre_cleanup_reason = "applet";
+#endif
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:PRE_CLEANUP package=%u owner=%u "
+                   "reason=%s available=%u files=%u bytes=%u/%u\n",
+                   static_cast<unsigned>(context.getAppletPackageID()),
+                   static_cast<unsigned>(context.getAppletID()),
+                   pre_cleanup_reason, available_before_reclaim,
+                   pre_cleanup_files, pre_cleanup_bytes,
+                   pre_cleanup_capacity);
+    }
+#endif
     const auto deletion_batch =
         jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
             static_cast<uint8_t>(context.getAppletID()),

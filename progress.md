@@ -30604,3 +30604,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Compiler changed from the pre-move host's toolchain to Arm GNU 14.2.rel1 (gcc 14.2.1) on Debian 12; host Java is OpenJDK 17.
 - Decision: Commit 3b (main.cpp fix) and 3c (runtime group A) next.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
+
+## 2026-11-17 Tidy-up step 3b: guard PRE_CLEANUP telemetry in main.cpp 15
+
+- Step-Id: `20261117-1435-tidy03b-precleanup-guard`
+- Task: MEM-01 T10 telemetry (follow-up to `1a28fa98`)
+- When: '2026-11-17 14:05' - '2026-11-17 14:20'
+- Model: `claude-sonnet-5-5`
+- Change: In `choupi/src/main.cpp` the `OBJECT_DELETION:PRE_CLEANUP` block used `owner`, `automatic_deletion_pending` and `choupi_persistent_memory_usage` in the shared path, but they exist only for PC+RP2350-overlay and firmware-with-object-deletion builds. The plain PC build (prerequisite of `tools/build arm`) failed to compile. The block is now guarded the same way; firmware reports `reason=applet`.
+- Validation: `./tools/build arm` rc=0 (plain PC build and ARM image compile). Overlay, transaction and inventory suites later passed with `TEST:SUMMARY fail=0` (step 3c).
+- Result: Telemetry format unchanged on the PC-overlay path; on firmware `reason` is always `applet` (no automatic-trigger state there). Not flashed.
+- Decision: Commit runtime group A next.
+- Artifacts/logs: none
