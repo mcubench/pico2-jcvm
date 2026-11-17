@@ -30736,3 +30736,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The pre-compaction QKB is recoverable from git (parent commit of this step).
 - Decision: `.agent` consolidation is complete for now. Remaining tidy-up: docs/reviews/root `.md` relocation (deferred by the user).
 - Artifacts/logs: `.agent/archive/2026-11-17-qkb-compaction/`
+
+## 2026-11-17 Tidy-up step 13: submodule status noise 10
+
+- Step-Id: `20261117-1740-tidy13-submodule-noise`
+- Task: repository tidy-up plan (submodule noise)
+- When: '2026-11-17 17:21' - '2026-11-17 17:40'
+- Model: `claude-sonnet-5-5`
+- Change: Diagnosis: `choupi/os`, `choupi/javacard-sdk/javacard-api` and `choupi/javacard-sdk/rommask` are tracked gitlinks whose full clones (own `.git` directories) sit at exactly the recorded commits. `git submodule status` showed `-` because the clones were copied with the repo and never registered in the parent's `.git/config`; `git status` showed `m`/`?` for local-only content: the intentional `choupi/os` patch (`tools/patches/choupi-os-fs-broken-tail.patch`), an untracked `sdks` in javacard-api, and an untracked `capmap-free` plus Maven `target/` in rommask. Fix: ran `git submodule init` (local `.git/config` only) and set `ignore = dirty` for `choupi/os` and `ignore = untracked` for the other two in `.gitmodules`. A moved commit pointer in any of them still shows in `git status`.
+- Validation: `git submodule status` shows all three initialized at the recorded commits (b10fded, 0532cf3, 9efd14e); `git status --short` is clean apart from this change; `./tools/apply-choupi-os-patches` still reports `already-applied`. No build or hardware run.
+- Result: Real edits to javacard-api or rommask tracked files would still be reported; only untracked build output is hidden there. For `choupi/os`, tracked-file edits are hidden because the patch keeps it dirty by design; use `git -C choupi/os status` to inspect.
+- Decision: Tidy-up complete except the docs/reviews/root `.md` relocation deferred by the user.
+- Artifacts/logs: none
