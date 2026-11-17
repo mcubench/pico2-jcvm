@@ -209,6 +209,27 @@ void JC_Array::setPersistentTag(const fs::Tag &tag) noexcept {
   }
 }
 
+void JC_Array::releaseCommittedLiveData() {
+  // Only non-transient arrays read and write their elements through flash
+  // once persistent. Transient arrays keep their contents in RAM by design.
+  if (this->isTransientArray() || !this->isPersistent() ||
+      !this->has_persistent_tag) {
+    return;
+  }
+  const fs::Tag &tag = this->persistent_tag;
+  const uint16_t backing_length = restoredArrayBackingLength(tag.len, 0);
+  if (this->array.size() == backing_length) return;
+  JCVMArray<uint8_t> compact(backing_length, new uint8_t[backing_length]{},
+                             true);
+  compact[0] = tag.len;
+  for (uint8_t idx = 0; idx < tag.len; idx++) {
+    compact[static_cast<uint16_t>(idx + 1)] = tag.value[idx];
+  }
+  this->array = std::move(compact);
+  // Like a restored array: a missing body can no longer be rebuilt from RAM.
+  this->has_live_data_for_recovery = false;
+}
+
 /**
  * Get the array entry size.
  *

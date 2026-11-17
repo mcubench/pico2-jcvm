@@ -227,6 +227,10 @@ public:
   fs::Tag getPersistentTag() const noexcept { return this->computeTag(); }
   /// Assign the persistent tag after first successful serialization.
   void setPersistentTag(const fs::Tag &tag) noexcept;
+  /// Drop the volatile element copy once the persistent body is durable
+  /// outside any write transaction. The backing then has the same
+  /// [tag length, tag] layout as an array restored from flash.
+  void releaseCommittedLiveData();
   /// Whether this array already has a canonical persistent identity.
   bool hasPersistentTag() const noexcept { return this->has_persistent_tag; }
 

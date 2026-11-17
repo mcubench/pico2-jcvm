@@ -982,6 +982,13 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
   // instead of allocating another body identity.
   array.setPersistentTag(tag);
 
+  // A body written outside a write transaction cannot be erased by a later
+  // rollback, so the RAM element copy kept for rollback recovery is no longer
+  // needed. Inside a transaction keep it so rollback recovery still has its
+  // source data.
+  if (!persistent_write_transaction_active) {
+    array.releaseCommittedLiveData();
+  }
 }
 ///
 ///        Compute tag to access to persistant data
