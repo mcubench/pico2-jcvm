@@ -1326,3 +1326,22 @@ callback, then commits a separate full filesystem snapshot to enable the
 package. At this state the observed operation remained well below the 15 s
 watchdog. Keep the earlier Windows timing discrepancy and interrupted lifecycle
 recovery paths separate from this successful current-image result.
+
+
+## API CAP package persistence across full JCVM cycle — 2026-11-17
+
+On F42DD9D07D6D2B07, loaded the unchanged `AlgTestApiCore_305.cap` on the
+normal `max_crypto` image (CAP SHA-256
+`9c6b348ef1206c45459bfe0899fcc74f755f7a946fc71f65508dd94dfb13026e`). Then
+ran `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07`; it
+passed and preserved card storage. After helper refresh and exact reader
+enumeration, GPPro GET STATUS/list showed package
+`4A43416C6754657374417069` still loaded. Authenticated package E4 DELETE
+returned `9000` in 881 ms. Final GPPro list contained only the pre-existing
+JCAlgTest package. The finite cycle/serial and operation logs are under
+`artifacts/results/cap-lifecycle-cycle-20261117T1813Z/F42DD9D07D6D2B07/`;
+cycle log: `artifacts/logs/cycle-choupi-20261117T181422Z.log`.
+
+This is package-level persistence over a normal full-JCVM cycle. It does not
+exercise reset/power loss between install-journal publication, CAP owner-map
+update and journal clear, so interrupted lifecycle recovery remains unverified.

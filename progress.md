@@ -31238,3 +31238,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 42 E8 blocks; final E8 returned `9000` in 2.534 s; whole GPPro LOAD took 2.803 s. Serial showed `FS_COMPACT`, matching E8 success, no `USB_PROGRESS`, `PANIC`, `FAULT` or `TEST:FAIL`. CAP SHA-256 `9c6b348ef1206c45459bfe0899fcc74f755f7a946fc71f65508dd94dfb13026e`; firmware SHA-256 `a221bd40b8ed0059d934a25451988862061b23fcdfee1cf096f77e137a5930d6`.
 - Decision: Near-capacity E4/E6/E8 paths remain below the observed 15 s watchdog on this normal image; no timing fix is indicated. Continue with lifecycle recovery and the historical Windows discrepancy.
 - Artifacts/logs: `artifacts/results/filesystem-capacity-physical-20261117T180244Z/F42DD9D07D6D2B07/`; `artifacts/results/filesystem-capacity-load-20261117T1807Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T180536Z.log`.
+
+## 2026-11-17 Verify loaded package survives JCVM cycle 4
+
+- Step-Id: `20261117-1915-longop01-t5-cycle-persist`
+- Task: HOST-01 LONGOP-01 T5 lifecycle persistence check
+- When: '2026-11-17 19:11 CET' - '2026-11-17 19:15 CET'
+- Model: `gpt-6.1-sol`
+- Change: Verified package-level persistence of an unchanged supplied API CAP across a full normal JCVM cycle; indexed the result and its limits.
+- Validation: After approved helper refresh and F42D enumeration, loaded the 1.8.5-independent supplied API Core CAP. Full `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed. Refreshed reader access/list afterward; GPPro GET STATUS showed the same package AID, authenticated E4 DELETE returned `9000`, and final list showed only JCAlgTest.
+- Result: `AlgTestApiCore_305` package persisted across the normal firmware cycle. Package DELETE took 881 ms. No `PANIC`, `FAULT` or `TEST:FAIL` appeared. Firmware SHA-256 recorded in the run metadata.
+- Decision: Basic package persistence is verified; this does not test power loss between lifecycle journal, CAP owner-map and journal-clear commits. Continue with interrupted-recovery analysis and historical Windows delay.
+- Artifacts/logs: `artifacts/results/cap-lifecycle-cycle-20261117T1813Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T181422Z.log`.
