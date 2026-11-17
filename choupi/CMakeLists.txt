@@ -424,6 +424,9 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
+  # Matches the firmware targets, which already suppress this warning for the
+  # packed CAP structures.
+  target_compile_options(choupi PRIVATE -Wno-address-of-packed-member)
 
   if(CHOUPI_PC_RP2350_FS_OVERLAY)
     target_sources(choupi PRIVATE

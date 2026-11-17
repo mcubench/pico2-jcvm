@@ -30688,3 +30688,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Board state is explicitly stated as not refreshed this session.
 - Decision: Continue with the normal max_crypto build headroom check.
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 9: restore max_crypto flash headroom on the Arm GNU toolchain 25
+
+- Step-Id: `20261117-1625-tidy09-maxcrypto-headroom`
+- Task: repository tidy-up plan (build headroom check); MEM-01 acceptance image prerequisite
+- When: '2026-11-17 16:01' - '2026-11-17 16:25'
+- Model: `claude-sonnet-5-5`
+- Change: (1) New `src/cxx_terminate.cpp`, added to the `pico2_choupi` sources: defines `__gnu_cxx::__verbose_terminate_handler()` as `std::abort()`. The Arm GNU libstdc++ otherwise links `vterminate.o` and the C++ demangler `cp-demangle.o` (82 new symbols, about 33 KB) that the old toolchain's libstdc++ did not. (2) `choupi/CMakeLists.txt`: `target_compile_options(choupi PRIVATE -Wno-address-of-packed-member)` for the host PC `choupi` target (matches the firmware targets' existing suppression); removes 104 warnings seen when the max_crypto profile rebuilt `build/choupi-pc`.
+- Validation: `./tools/build arm --profile max_crypto`: rc=0, `mode=normal`, `object_deletion=ON`. Before: `FLASH_LAYOUT:PASS firmware_end=0x100ffa38 remaining=1480` (`.text` 1,051,192 vs 1,018,824 for the pre-move max_crypto ELF); after: `firmware_end=0x100f7348 remaining=36024`, 0 repo-source warnings, no `d_print_comp_inner` in the ELF. Symbol diff against `build/_stale-claude-paths/arm/pico2_choupi.elf` identified the demangler. Not flashed; no hardware, VPCD or serial run, so runtime behavior on a board is unverified (uncaught C++ exception now aborts silently instead of printing a libstdc++ message).
+- Result: 36,024 bytes headroom vs 34,064 recorded for the `98fcb151` package (different compiler/libraries and source, so not a like-for-like comparison).
+- Decision: Run `./tools/cycle choupi` once a board is enumerated before relying on this image. Continue with root cleanup and the `tools/doctor` SDK-path alignment.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
