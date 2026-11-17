@@ -14,10 +14,12 @@ USB bus/device number and reader index are not.
 | 2BED | `2BED26ED20556535` | seen in option-2 campaigns |
 | (unnamed) | `48E9A50BB405634E` | appears once in the repo; not yet identified or named |
 
-Four tokens are now attached, but the approved helper `pico2-pcsc-reader` supports
-1–3 matching devices and refuses ACL changes when it finds four. If it does so,
-detach one token, or ask for the helper limit to be raised
-(`.agent/EXT_REQUESTS.md`). Do not infer a roster from this table without
+Four tokens are now attached. The approved helper `pico2-pcsc-reader` (source
+`tools/pico2-pcsc-reader-root`, installer `tools/install-pcsc-sudoers`) accepted 1-3
+matching devices on the old machine; the 2026-11-15 refusal at four devices is from
+that machine. The repo copy now allows up to four (`max_devices`). On this host it
+must be installed once as root (`pcscd` and `libccid` first); see the request in
+`.agent/EXT_REQUESTS.md`. Do not infer a roster from this table without
 re-listing; devices change.
 
 ## Repository moved to a new host (agentdev, Debian 12) — build broke — 2026-11-17

@@ -30772,3 +30772,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The rule is now visible to every session; details stay in the skill and QKB.
 - Decision: none
 - Artifacts/logs: none
+
+## 2026-11-17 PC/SC access helper: diagnose and prepare install on the new machine 15
+
+- Step-Id: `20261117-1820-pcsc-helper-install-request`
+- Task: physical token access (host move)
+- When: '2026-11-17 18:00' - '2026-11-17 18:20'
+- Model: `claude-sonnet-5-5`
+- Change: Ran `sudo -n /usr/local/sbin/pico2-pcsc-reader` (the AGENTS.md exception) with elevated execution: exit 1, `sudo: a password is required`; `/usr/local/sbin/pico2-pcsc-reader` does not exist and `/etc/sudoers.d` has no rule for it. Host check: `setfacl`, `visudo`, `systemctl` present, but `pcscd`/`libccid` are not installed (no `pcscd` account). The helper source `tools/pico2-pcsc-reader-root` and installer `tools/install-pcsc-sudoers` were already in the repo. Raised the helper's accepted device count from 3 to 4 (`max_devices=4`) because four tokens are attached. Added request `HOST-PCSC-HELPER-INSTALL-20261117` to `.agent/EXT_REQUESTS.md` (apt packages, installer, verification) and updated the QKB roster note.
+- Validation: `bash -n tools/pico2-pcsc-reader-root`. The helper was not installed or run (needs root); no USB or PC/SC access, flash or reader listing was performed.
+- Result: Hardware work stays blocked until the user runs the install steps. The 2026-11-15 "refuses at four devices" observation is from the old machine and no longer applies.
+- Decision: After the user confirms the install, run the helper, list readers, record chip IDs and choose the working token.
+- Artifacts/logs: none

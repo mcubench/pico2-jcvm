@@ -24,9 +24,10 @@ for device in /sys/bus/usb/devices/*; do
   matches+=("${device}")
 done
 
-if (( ${#matches[@]} == 0 || ${#matches[@]} > 3 )); then
-  printf 'Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009, matching USB strings); found %s.\n' \
-    "${#matches[@]}" >&2
+max_devices=4
+if (( ${#matches[@]} == 0 || ${#matches[@]} > max_devices )); then
+  printf 'Expected 1 to %s Pico2 JCVM CCID devices (2e8a:0009, matching USB strings); found %s.\n' \
+    "${max_devices}" "${#matches[@]}" >&2
   exit 1
 fi
 

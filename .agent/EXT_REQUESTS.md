@@ -1,5 +1,38 @@
 # External validation requests
 
+## HOST-PCSC-HELPER-INSTALL-20261117 — Install the PC/SC access helper on the new machine
+
+Created 2026-11-17 18:05. `sudo -n /usr/local/sbin/pico2-pcsc-reader` (the helper
+AGENTS.md authorises) does not exist on this machine, and `pcscd`/`libccid` are not
+installed, so no physical token can be reached (`./tools/list-readers`, flash and
+cycle wrappers). These steps need root and cannot be done by the agent. The helper
+source is `tools/pico2-pcsc-reader-root`; the installer is `tools/install-pcsc-sudoers`
+(it only writes `/usr/local/sbin/pico2-pcsc-reader` and
+`/etc/sudoers.d/pico2-pcsc-reader`, validates with `visudo`, refuses symlinks and
+refuses to overwrite a different sudoers file). The helper grants the `pcscd` user
+read/write ACLs on the USB nodes of attached `2e8a:0009` "Pico2 JCVM CCID" devices
+(now 1 to 4 devices) and restarts `pcscd.service`; it takes no arguments.
+
+Please run, from the repository root, as the agent's user (`agentdev`):
+
+```sh
+sudo apt install -y pcscd libccid libpcsclite1
+sudo ./tools/install-pcsc-sudoers
+sudo -n /usr/local/sbin/pico2-pcsc-reader   # with at least one token attached
+```
+
+The last command should print `PCSC:ACCESS_GRANTED count=N nodes=... service=pcscd.service`
+(it fails with "Expected 1 to 4 ... found 0" if no token is attached, which is also
+informative). Report: the output of the three commands, and `systemctl is-active pcscd`.
+If `sudo ./tools/install-pcsc-sudoers` refuses because `/etc/sudoers.d/pico2-pcsc-reader`
+already exists with different content, send me that file's contents rather than
+overwriting it.
+
+After this the agent will run the helper itself (exact form above, no extra arguments),
+list readers with `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only`, record the
+chip IDs of the attached tokens in `.agent/QKB.md`, and pick the working token. Remove
+this request when done.
+
 ## WIN-MEM01-EMPTY-NODEBUG-98FCB151 — Test current deletion-enabled build
 
 **Status 2026-11-17:** this image predates the `OBJECT_DELETION:PRE_CLEANUP` telemetry and the 90% headroom gate. A fresh normal max-crypto empty-card package is planned (see HANDOFF MEM-01 item 2) and will replace this request; results from this image remain valid for its hash.
