@@ -1155,3 +1155,8 @@ The wrapper's expected revision now matches the root gitlink (`f12c597`), and
 its existing broken-tail patch is idempotently recognized as already applied.
 The ARM build then passed in normal `max_crypto` mode. If a later OS commit
 advances the gitlink, update and validate this wrapper pin in the same step.
+
+
+## Host allocator telemetry in VPCD worker thread — 2026-11-17
+
+`LD_PRELOAD` malloc/operator-new probes did not observe the VM worker thread reliably, and Valgrind Massif aborted on an unknown interpreter call before VPCD connection. For focused PC/VPCD diagnostics, sample `mallinfo2().uordblks` at the native RSA VM boundary and pair it with `Heap` live-array counts; this produced stable per-call observations. Treat it only as sampled host telemetry: it does not capture allocator intra-call high-water and cannot establish Pico arena usage. Do not use these host byte totals to close target RAM findings; collect embedded allocator/arena telemetry on a physical board.

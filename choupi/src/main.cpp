@@ -58,6 +58,10 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#if defined(PC_VERSION) && defined(__GLIBC__) && \
+    (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 33))
+#include <malloc.h>
+#endif
 
 #if defined(CHOUPI_ENABLE_OBJECT_DELETION)
 extern "C" jcvm::Context *choupi_take_object_deletion_request_context() noexcept;
@@ -902,6 +906,20 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
                  static_cast<unsigned>(heap_result.instances_reclaimed),
                  static_cast<unsigned>(heap_result.arrays_reachable),
                  static_cast<unsigned>(heap_result.instances_reachable));
+#if defined(PC_VERSION) && defined(__GLIBC__) && \
+    (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 33))
+    const char *rsa_heap_diagnostics =
+        std::getenv("PICO2_RSA_HEAP_DIAGNOSTICS");
+    if (rsa_heap_diagnostics != nullptr && rsa_heap_diagnostics[0] == '1' &&
+        rsa_heap_diagnostics[1] == '\0') {
+      std::fprintf(stderr,
+                   "RSA_HEAP_DIAGNOSTICS phase=post_gc c_heap_used=%zu "
+                   "arrays=%u instances=%u\n",
+                   static_cast<std::size_t>(mallinfo2().uordblks),
+                   static_cast<unsigned>(heap_result.arrays_reachable),
+                   static_cast<unsigned>(heap_result.instances_reachable));
+    }
+#endif
     PersistentInventoryCounts roots;
     // Each package must have one retained heap/handle namespace. Peer package
     // contexts may cache cross-package static references or retain server

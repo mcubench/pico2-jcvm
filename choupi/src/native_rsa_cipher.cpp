@@ -19,6 +19,11 @@
 #include <memory>
 #include <random>
 #include <vector>
+#ifdef PC_VERSION
+#include <cstdio>
+#include <cstdlib>
+#include <malloc.h>
+#endif
 
 #ifndef PC_VERSION
 #include "pico/rand.h"
@@ -42,6 +47,17 @@ constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kRsaCrtTransientReset = 24;
 constexpr uint8_t kRsaCrtTransientDeselect = 25;
 constexpr jbyte_t kCipherKeyWorkspaceMarker = static_cast<jbyte_t>(0xA5);
+
+#ifdef PC_VERSION
+size_t nativeHeapBytesUsed() noexcept {
+#if defined(__GLIBC__) && \
+    (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 33))
+  return static_cast<size_t>(mallinfo2().uordblks);
+#else
+  return 0;
+#endif
+}
+#endif
 
 bool rsaCrtKeyType(uint8_t type) {
   return type == kRsaCrtPrivate || type == kRsaCrtTransientReset ||
@@ -584,9 +600,33 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
   const jshort_t modulusLength = cipher->getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH);
   Heap &heap = Context::getActiveContext().getHeap();
+#ifdef PC_VERSION
+  const char *heap_diagnostics = std::getenv("PICO2_RSA_HEAP_DIAGNOSTICS");
+  const bool report_heap = heap_diagnostics != nullptr &&
+                           heap_diagnostics[0] == '1' &&
+                           heap_diagnostics[1] == '\0';
+  if (report_heap) {
+    std::fprintf(stderr,
+                 "RSA_HEAP_DIAGNOSTICS phase=before modulus=%u slots=%zu "
+                 "live=%zu c_heap_used=%zu\n",
+                 static_cast<unsigned>(modulusLength),
+                 heap.arrayHandleSlots(), heap.liveArrayHandles(),
+                 nativeHeapBytesUsed());
+  }
+#endif
   const jref_t resultReference = heap.addArray(
       static_cast<uint16_t>(modulusLength), JAVA_ARRAY_T_BYTE);
   auto result = heap.getArray(resultReference);
+#ifdef PC_VERSION
+  if (report_heap) {
+    std::fprintf(stderr,
+                 "RSA_HEAP_DIAGNOSTICS phase=allocated modulus=%u slots=%zu "
+                 "live=%zu c_heap_used=%zu\n",
+                 static_cast<unsigned>(modulusLength),
+                 heap.arrayHandleSlots(), heap.liveArrayHandles(),
+                 nativeHeapBytesUsed());
+  }
+#endif
   const bool privateOperation = cipher->getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION) != 0;
   const jshort_t resultLength = transformRsa(
@@ -599,6 +639,17 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
       cipher->getNativeSessionField_Short(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH),
       result);
+#ifdef PC_VERSION
+  if (report_heap) {
+    std::fprintf(stderr,
+                 "RSA_HEAP_DIAGNOSTICS phase=transformed modulus=%u "
+                 "result=%d slots=%zu live=%zu c_heap_used=%zu\n",
+                 static_cast<unsigned>(modulusLength),
+                 static_cast<int>(resultLength),
+                 heap.arrayHandleSlots(), heap.liveArrayHandles(),
+                 nativeHeapBytesUsed());
+  }
+#endif
   checkArray(output, outputOffset, resultLength);
   for (jshort_t i = 0; i < resultLength; ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i),

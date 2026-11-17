@@ -40,6 +40,7 @@
 
 #include <memory>
 #include <array>
+#include <cstddef>
 #include <vector>
 
 namespace jcvm {
@@ -305,6 +306,10 @@ public:
       noexcept
 #endif /* JCVM_SECURE_HEAP_ACCESS */
       ;
+
+  /// Diagnostic inventory for native API memory probes.
+  std::size_t arrayHandleSlots() const noexcept;
+  std::size_t liveArrayHandles() const noexcept;
 
   /// Getting instance from the transient heap.
   std::shared_ptr<JC_Instance> getInstance(const jref_t objectref)

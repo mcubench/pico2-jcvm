@@ -2046,6 +2046,16 @@ std::shared_ptr<JC_Array> Heap::getArray(const jref_t objectref)
   return array;
 }
 
+std::size_t Heap::arrayHandleSlots() const noexcept {
+  return this->shared_storage->arrays.size();
+}
+
+std::size_t Heap::liveArrayHandles() const noexcept {
+  return static_cast<std::size_t>(std::count_if(
+      this->shared_storage->arrays.begin(), this->shared_storage->arrays.end(),
+      [](const auto &array) { return static_cast<bool>(array); }));
+}
+
 /*
  * Getting instance from heap.
  *

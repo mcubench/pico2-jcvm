@@ -31048,3 +31048,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: ARM firmware is buildable from the root's committed OS gitlink. The authorized helper found 0 matching boards, and elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only` returned `list() failed`; no hardware cycle or flash was attempted.
 - Decision: Keep the revision pin aligned with the submodule commit. Run `./tools/cycle choupi --profile max_crypto` only after an identified board becomes available.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`; no serial log because no board was enumerated.
+
+
+## 2026-11-17 LONGOP-01 focused RSA heap telemetry 7
+
+- Step-Id: `20261117-1700-longop01-heap-profile`
+- Task: HOST-01 LONGOP-01 T1 (partial offline measurement)
+- When: '2026-11-17 16:53 CET' - '2026-11-17 17:00 CET'
+- Model: `gpt-6.1-sol`
+- Change: Added PC-only, environment-gated diagnostics sampling host `mallinfo2` around RSA `doFinal` and post-GC, plus JC heap array slot/live counts. Updated T1 evidence and QKB limitations.
+- Validation: `./tools/build arm --profile max_crypto` passed (`BUILD:PASS`, normal mode, object deletion ON, debug switches OFF, flash headroom 35,976 bytes). Focused RSA-1984 and RSA-1536 VPCD APDU replays each passed with `9000`; each measure path called `doFinal` 51 times and live arrays rose 112→163 then returned to 112 after cleanup. Sampled host C-heap: RSA-1984 331,168 before / 370,336 sampled peak / 340,000 after cleanup; RSA-1536 326,400 / 365,360 / 335,008.
+- Result: Host samples show roughly 39 KB increase and 8.6–8.8 KB retained after cleanup. They are sampled host-process values, not allocator intra-call high-water or Pico arena measurements; D2 remains unconfirmed. Hardware refresh found zero boards and PC/SC listing failed, so no flash/cycle was attempted. `git diff --check` uses CRLF sources; validate with `git -c core.whitespace=cr-at-eol diff --check`.
+- Decision: Keep LONGOP-01 T1 open; next obtain embedded arena high-water from an identified board, then rerun full JCVM cycle.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-vpcd-20261117/heap-stats-rsa1984-aftergc/emulator.log`, `.../heap-stats-rsa1536-aftergc/emulator.log`; ARM image `build/arm/pico2_choupi.uf2`.
