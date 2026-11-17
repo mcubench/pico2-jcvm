@@ -30652,3 +30652,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The fix is now repo-owned and survives a fresh checkout. The submodule working tree remains "dirty" by design (patch applied).
 - Decision: Continue with `.agent/EXT_REQUESTS.md` pruning, `TODO.md` compaction and the docs relocation.
 - Artifacts/logs: `tools/patches/choupi-os-fs-broken-tail.patch`
+
+## 2026-11-17 Tidy-up step 6: prune .agent/EXT_REQUESTS.md 10
+
+- Step-Id: `20261117-1525-tidy06-ext-requests-prune`
+- Task: repository tidy-up plan (AGENTS.md: remove obsolete external requests)
+- When: '2026-11-17 15:11' - '2026-11-17 15:25'
+- Model: `claude-sonnet-5-5`
+- Change: `.agent/EXT_REQUESTS.md` reduced from 655 to about 65 lines. Kept `WIN-MEM01-EMPTY-NODEBUG-98FCB151` (current; marked as predating the PRE_CLEANUP telemetry) and `WIN-RSA1984-X50-SERIAL-20261115` (LONGOP-01 diagnostic; its image references now point to the 98FCB151 package instead of superseded D508CAE8). Removed all superseded Windows image requests and the resolved/closed or VirtualBox-specific USB/PC/SC requests (HOST01-READER-COUNT, PCSC-BOOTSEL-RECOVERY, EXT-USB-VM-REATTACH, and the 2026-11-11/12 resolved entries), obsolete after the host move. Full prior file archived at `.agent/archive/2026-11-17-ext-requests-prune/EXT_REQUESTS-before-prune.md`.
+- Validation: Verified the referenced 98FCB151 UF2 and ZIP and the RSA-1984 input `.list` exist on disk. No build or hardware run.
+- Result: Two active external requests remain. Request content other than the two image references and the status note is unchanged.
+- Decision: Next, compact `TODO.md` (move dated MEM-01 status bullets out) and relocate docs.
+- Artifacts/logs: `.agent/archive/2026-11-17-ext-requests-prune/`
