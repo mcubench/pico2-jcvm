@@ -30640,3 +30640,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Working tree has no pending tracked changes except submodule state (`choupi/os` dirty; `javacard-api`, `rommask` uninitialized).
 - Decision: Next: submodule state check, then `.agent/EXT_REQUESTS.md` pruning, `TODO.md` compaction and docs relocation.
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 5: preserve choupi/os broken-tail fix as a repo patch 15
+
+- Step-Id: `20261117-1510-tidy05-choupi-os-patch`
+- Task: repository tidy-up plan (submodule state); filesystem recovery safety
+- When: '2026-11-17 14:56' - '2026-11-17 15:10'
+- Model: `claude-sonnet-5-5`
+- Change: The `choupi/os` submodule (pinned `9efd14e`, third-party origin) carried 35 uncommitted lines in `src/fs/mod.rs` and `src/fs/tests.rs`: after `erase_invalid_data()` recovers a damaged sector tail, `next_block[id] = sector.len()` so the zero-programmed tail is never appended to until defragmentation, plus a regression test. Saved as `tools/patches/choupi-os-fs-broken-tail.patch`; added `tools/apply-choupi-os-patches` (idempotent, pin-checked, modeled on `apply-tinyusb-event-budget`) and call it from `tools/build`.
+- Validation: `cargo test --offline --no-default-features --features host,big_ram fs::` in `choupi/os` (local rustc 1.99): 36 passed, 0 failed, 2 ignored. With the `mod.rs` hunk reverted the new test `does_not_append_into_a_tail_erased_during_malformed_record_recovery` fails at `src/fs/tests.rs:300` (assertion left == right), so it guards the fix. Apply script verified in both states (`already-applied`; `applied` after reverting the patch). No flash or hardware run.
+- Result: The fix is now repo-owned and survives a fresh checkout. The submodule working tree remains "dirty" by design (patch applied).
+- Decision: Continue with `.agent/EXT_REQUESTS.md` pruning, `TODO.md` compaction and the docs relocation.
+- Artifacts/logs: `tools/patches/choupi-os-fs-broken-tail.patch`

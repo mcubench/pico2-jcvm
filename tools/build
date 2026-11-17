@@ -67,6 +67,7 @@ build_lock_file="${repo_root}/build/.tools-build.lock"
 source "${repo_root}/tools/lib/build_lock.sh"
 acquire_build_lock "${build_lock_file}" "${arch} profile=${support_profile}"
 "${repo_root}/tools/apply-tinyusb-event-budget"
+"${repo_root}/tools/apply-choupi-os-patches"
 build_jobs="${PICO_BUILD_JOBS:-2}"
 [[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO_BUILD_JOBS must be a positive integer"

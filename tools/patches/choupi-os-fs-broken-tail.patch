@@ -1,0 +1,57 @@
+diff --git a/src/fs/mod.rs b/src/fs/mod.rs
+index 0c99f88..ec3e4f0 100644
+--- a/src/fs/mod.rs
++++ b/src/fs/mod.rs
+@@ -552,6 +552,13 @@ impl<'a> FileSystem<'a> {
+                     Err(ParseNoBlock::Broken) => {
+                         debug!("    Found broken block at {:x}, erasing", next_block[id]);
+                         get!(erase_invalid_data(flash, sector, next_block[id]));
++                        // The recovery routine programs every non-erased byte
++                        // in the damaged tail to zero. Flash cannot later
++                        // change those zero bits back to one, so this region
++                        // is not appendable even though it was excluded from
++                        // valid_size. Keep the sector full until defrag copies
++                        // its surviving live files into an erased sector.
++                        next_block[id] = sector.len();
+                         continue 'nextsector;
+                     }
+                     Err(ParseNoBlock::Erased(size)) => {
+diff --git a/src/fs/tests.rs b/src/fs/tests.rs
+index 6394a04..18db2aa 100644
+--- a/src/fs/tests.rs
++++ b/src/fs/tests.rs
+@@ -282,6 +282,34 @@ speculate! {
+             assert_eq!(fs.read(&maximum_tag).unwrap_err(), Error::NoSuchTag);
+         }
+ 
++        it "does not append into a tail erased during malformed-record recovery" {
++            let prior_tag = b"prior";
++            let recovered_tag: Vec<u8> = (1..=43).collect();
++            fs.write(prior_tag, b"survives recovery").unwrap();
++            let damaged_offset = fs.next_block(SectorID(1));
++            fs_sectors[1]
++                .with_writer(&flash, damaged_offset, 4, |mut bytes| {
++                    // Invalid extended-tag header followed by programmed
++                    // bytes, as can remain after an interrupted write.
++                    bytes.write_block(0, &[0x7C, 0x12, 0x34, 0x56]).unwrap();
++                })
++                .unwrap();
++
++            drop(fs);
++            fs = FileSystem::new(&flash, &fs_sectors, defragsector, appletsector).unwrap();
++            assert_eq!(fs.next_block(SectorID(1)), fs_sectors[1].len());
++            assert_eq!(&*fs.read(prior_tag).unwrap(), b"survives recovery");
++
++            fs.write(&recovered_tag, b"fresh tag after recovery").unwrap();
++            assert_eq!(&*fs.read(&recovered_tag).unwrap(), b"fresh tag after recovery");
++            assert_ne!(fs.files.get(&recovered_tag[..]).unwrap().sector, SectorID(1));
++
++            drop(fs);
++            fs = FileSystem::new(&flash, &fs_sectors, defragsector, appletsector).unwrap();
++            assert_eq!(&*fs.read(prior_tag).unwrap(), b"survives recovery");
++            assert_eq!(&*fs.read(&recovered_tag).unwrap(), b"fresh tag after recovery");
++        }
++
+         it "rejects tags above the shared maximum length" {
+             let oversized_tag = vec![0x02; 129];
+             assert_eq!(fs.write(&oversized_tag, b"value"), Err(Error::InvalidLengthForTag));

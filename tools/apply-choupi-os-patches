@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Idempotently apply repo-owned patches to the third-party choupi/os submodule.
+# The submodule's origin is not ours to push to, so local fixes live in
+# tools/patches/choupi-os-*.patch and are applied to its working tree here.
+set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+os_dir="${repo_root}/choupi/os"
+expected_commit=9efd14e3848b142cd323e0ad510ce0378886e9dd
+
+[[ -d "${os_dir}/.git" || -f "${os_dir}/.git" ]] || {
+  printf 'ERROR: choupi/os submodule missing at %s\n' "${os_dir}" >&2
+  exit 1
+}
+actual_commit="$(git -C "${os_dir}" rev-parse HEAD)"
+[[ "${actual_commit}" == "${expected_commit}" ]] || {
+  printf 'ERROR: choupi/os revision mismatch: expected %s, found %s\n' \
+    "${expected_commit}" "${actual_commit}" >&2
+  exit 1
+}
+shopt -s nullglob
+for patch in "${repo_root}"/tools/patches/choupi-os-*.patch; do
+  name="$(basename "${patch}")"
+  if git -C "${os_dir}" apply --reverse --check "${patch}" 2>/dev/null; then
+    printf 'CHOUPI_OS_PATCH:already-applied %s\n' "${name}"
+    continue
+  fi
+  git -C "${os_dir}" apply --check "${patch}"
+  git -C "${os_dir}" apply "${patch}"
+  printf 'CHOUPI_OS_PATCH:applied %s\n' "${name}"
+done
