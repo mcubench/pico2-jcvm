@@ -2,7 +2,7 @@
 
 ## WIN-MEM01-MAXCRYPTO-C050A193 — Test current deletion-enabled max_crypto build (with telemetry)
 
-Created 2026-11-17 20:00 CET. This supersedes `WIN-MEM01-MAXCRYPTO-C050A193` for new
+Created 2026-11-17 20:00 CET. This supersedes the former request for the 98FCB151 image for new
 runs (keep that image's results for its own hash). Normal ARM `max_crypto` image built
 from clean commit `c050a193` with Arm GNU 14.2.1: object deletion ON, all debug and trace
 switches OFF, 0 ms startup wait, erased 1 MiB storage region, no preinstalled applet. It

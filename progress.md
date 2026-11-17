@@ -30856,3 +30856,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-c050a193.uf2` SHA-256 `345f64fc4d1052151be523c89a57fffa56d83dd8acb52abd7c666b6e6ef2762b` (4,123,136 bytes); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-c050a193.zip` SHA-256 `e18800a248784293714807009a2c7467122d5b82980bbf26b65b98edcfedcc22`; client JAR `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`, CAP `cac42cd3…dbfad`, GPPro `38b464de…908c`. Compiler: Arm GNU 14.2.1; timings are not comparable with pre-move campaigns.
 - Decision: User to run the Windows test. The package cites `c050a193`; later documentation commits do not change it. Local commits are not pushed.
 - Artifacts/logs: `build/external-test/pico2-jcvm-maxcrypto-deletion-c050a193/` and `.zip`; `artifacts/firmware/` UF2 above
+
+## 2026-11-17 Fix self-reference in the C050A193 request 2
+
+- Step-Id: `20261117-2005-ext-request-fix`
+- Task: documentation correction
+- When: '2026-11-17 20:01' - '2026-11-17 20:05'
+- Model: `claude-sonnet-5-5`
+- Change: In `.agent/EXT_REQUESTS.md` a global rename made `WIN-MEM01-MAXCRYPTO-C050A193` "supersede" itself; it now says it supersedes the former 98FCB151 request. No other content changed.
+- Validation: Inspection only.
+- Result: Request text is consistent.
+- Decision: none
+- Artifacts/logs: none
