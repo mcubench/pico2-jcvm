@@ -1109,3 +1109,13 @@ absence instead of a shell error. `./tools/test-flash-target-selection`
 passes 22/22. The failed hardware attempt did not transfer firmware, so retry
 only after the authorized helper and reader enumeration, and inspect a fresh
 finite serial log before claiming runtime success.
+
+## No Pico 2 devices visible after access refresh — 2026-11-17
+
+After `sudo -n /usr/local/sbin/pico2-pcsc-reader`, the approved helper reported
+`found 0` matching Pico 2 JCVM CCID devices. The elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only` then failed with
+`Cannot enumerate PC/SC readers: list() failed`. This is a current host/board
+availability observation, not a firmware result. Do not retry USB access in a
+restricted shell; refresh the helper and enumerate again at the next hardware
+session. Continue offline while no device is exposed.

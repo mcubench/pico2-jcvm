@@ -30880,3 +30880,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The previous full cycle on EE116F37C7E4A04E failed before firmware transfer; log `artifacts/logs/cycle-choupi-20261117T141248Z.log`. No runtime evidence was produced. Current worktree also has unrelated untracked `tools/package-maxcrypto-windows-test`; it is excluded from this step.
 - Decision: Commit the host tooling fix, then refresh authorized USB access and enumerate readers before retrying the full JCVM cycle.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261117T141248Z.log`
+
+## 2026-11-17 Rebuild max_crypto and refresh hardware availability 2
+
+- Step-Id: `20261117-1519-maxcrypto-build-no-reader`
+- Task: MEM-01 T10 hardware validation prerequisite
+- When: '2026-11-17 15:17 CET' - '2026-11-17 15:19 CET'
+- Model: `gpt-6.1-sol`
+- Change: Rebuilt the full ARM `max_crypto` image after committing the flash wrapper fix; refreshed the approved PC/SC helper and reader enumeration. Updated handoff and QKB with current board availability.
+- Validation: `./tools/build arm --profile max_crypto` passed (`BUILD:PASS target=choupi`); provenance says `mode=normal`, `object_deletion=ON`, debug options OFF. Flash window remaining: 36,024 bytes. Helper returned `found 0`; elevated `./tools/list-readers --pico-only` could not enumerate PC/SC readers. No flash attempted.
+- Result: UF2 SHA-256 `e469c2a40339f59962c3a9265f6ce30522e85a3d288ec55f90df8b6f3172fd28`; CPLC source ID `0x8FC710A24549A154`. Physical runtime remains unverified.
+- Decision: Retry identified full JCVM cycle once an enumerated board is available; continue MEM-01 T10 offline work meanwhile.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
