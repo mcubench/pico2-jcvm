@@ -30904,3 +30904,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: `FS_STATUS_OUT_OF_FLASH` maps to `SystemException.NO_RESOURCE`; APDU interpreter execution unwinds before post-APDU recovery. Retrying the whole APDU could duplicate volatile side effects; retrying only the persistent write outside its transaction breaks atomicity. No retry implementation is safe without a defined replay contract.
 - Decision: Mark offline no-request garbage allocation coverage complete; keep T10 open for unchanged-client acceptance and replay-contract design. Do not add a write retry based on current hooks.
 - Artifacts/logs: RP2350 fake-flash test output; no persistent log file
+
+## 2026-11-17 T7 replay regression diagnosis 15
+
+- Step-Id: `20261117-1535-t7-replay-regression`
+- Task: MEM-01 T7, T8 and T10 follow-up
+- When: '2026-11-17 15:20 CET' - '2026-11-17 15:35 CET'
+- Model: `gpt-6.1-sol`
+- Change: Compared fresh unchanged-client option-2 transcript replay behavior across the RP2350 overlay emulator and regular emulator, and refreshed the handoff with the new failure and PC/SC blocker.
+- Validation: Replayed transcript through APDU 1,590 on both emulators. Both report unexpected `6F00` instead of expected `9000` at APDUs 1584, 1586, 1588 and 1590. Exception trace shows CryptoException reason 3 matches the package-56 CAP handler, which then rethrows and exits as SecurityException 29; no `NO_RESOURCE` occurred. Earlier Nov 15 replay logs show 1,972 APDUs with zero unexpected status changes. Fresh option-2 VPCD client did not start because PC/SC returned `list() failed`; approved helper and reader listing found no physical Pico 2. No firmware source edits were made, so no ARM build or hardware cycle was run.
+- Result: T7 replay acceptance is blocked by a newly observed runtime regression requiring method bytecode/handler offset comparison. T8 hardware remains unavailable. A local CMake cache workaround linked the overlay emulator, but is not a persistent repository fix.
+- Decision: Keep T7/T8 open. Inspect exception handler bytecode and the Nov 15 passing replay/build evidence before changing VM behavior; then make the overlay CMake link roots persistent and restart unchanged-client testing when PC/SC is available.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T142939Z/`, `artifacts/results/resource01-apdu-replay-vpcd-20261117T143248Z/`, `artifacts/results/jcalgtest-support-vpcd-20261117T142620Z/`
