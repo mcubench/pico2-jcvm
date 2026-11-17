@@ -31358,3 +31358,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Actual duration of the OOM static review: 7 minutes.
 - Decision: Record measured work time only, never an estimated window.
 - Artifacts/logs: none
+
+## 2026-11-17 Remove per-call JC result array from RSA Cipher.doFinal 8
+
+- Step-Id: `20261117-2101-rsa-dofinal-native-result`
+- Task: HOST-01 LONGOP-01 T1/D2 (H1 of `docs/review_rsa1984_oom_opus55_20261117.md`)
+- When: '2026-11-17 20:53 CET' - '2026-11-17 21:01 CET'
+- Model: `claude-opus-5-5`
+- Change: `doFinalRsaCipher` no longer allocates a JC heap array per call for the transform result. `transformRsa` now returns the result in a zeroized native `std::vector` and the caller copies it into `output`. Before this, each call left a dead array that only the post-APDU collector freed, so a JCAlgTest ×50 measure held 51 dead arrays inside one APDU. The PC-only `RSA_HEAP_DIAGNOSTICS` kept its `before`/`transformed` phases; `allocated` was dropped.
+- Validation: `./tools/build arm --profile max_crypto` passed with no C++ warnings, mode=normal, 35,540 B flash remaining. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07`: `CYCLE:PASS`, 0 FAULT/TEST:FAIL/PANIC (`artifacts/logs/cycle-choupi-20261117T195635Z.log`). Physical probe `tools/test-longop01-rsa1984-physical` on F42D, which keeps its installed JCAlgTest (not an empty-card acceptance run).
+- Result: RSA-1984 PKCS1 ×50 returned `AA9000` in 48.4 s. Transient free memory was 120,336 at start, 115,160 at minimum (−5,176 B) and 120,336 at end. Before the fix (progress.md:31108) it was 117,064 → 81,376 (−35,688 B). The GC after the measure reclaimed 0 arrays (was 51), and live objects stayed at 123 arrays / 31 instances across every B0E2 pass. RSA-1536 ×50: −256 B, flat. The probe exited 124 on its own 180 s wall-clock bound during the later RSA-2048 step (prepare 68.5 s, then the ×50 measure). No PANIC or FAULT was seen and the reader was still listed afterwards; the RSA-2048 result was not captured.
+- Decision: H1 is fixed and validated on hardware. Still open: H2 (RAM backing kept by flash-backed arrays), tombstone compaction (H3), the RSA-2048 probe time bound, and a rerun of option 2 on an empty-card normal image for acceptance.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T195718Z/F42DD9D07D6D2B07/`; firmware SHA-256 `153159c6a81fc6965ac8dc4d3ba3ed65d4e1f449422aacf4ce8310f96ed25f0a`

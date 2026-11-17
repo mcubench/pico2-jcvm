@@ -219,20 +219,19 @@ static jshort_t transformRsa(
     std::shared_ptr<JC_Array> modulusArray,
     std::shared_ptr<JC_Array> exponentArray,
     std::shared_ptr<JC_Array> inputArray, jshort_t inputLength,
-    std::shared_ptr<JC_Array> outputArray) {
-  if (!modulusArray || !exponentArray || !inputArray || !outputArray)
+    std::vector<unsigned char> &output) {
+  if (!modulusArray || !exponentArray || !inputArray)
     throw Exceptions::NullPointerException;
   checkArray(*modulusArray);
   checkArray(*exponentArray);
   checkArray(*inputArray);
-  checkArray(*outputArray);
   const uint16_t keyLength = modulusArray->size();
   const uint16_t crtPartLength = static_cast<uint16_t>((keyLength + 1U) / 2U);
   const bool crtPrivate = privateOperation &&
       exponentArray->size() == static_cast<uint32_t>(crtPartLength) * 5U;
   if (keyLength < 64 ||
       (exponentArray->size() != keyLength && !crtPrivate) || inputLength < 0 ||
-      inputLength > inputArray->size() || outputArray->size() < keyLength)
+      inputLength > inputArray->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint8_t pad = static_cast<uint8_t>(padding);
   const bool nopad = pad == 1;
@@ -304,9 +303,11 @@ static jshort_t transformRsa(
       resultLength = result.size();
     }
   }
-  for (size_t i = 0; i < resultLength; ++i)
-    outputArray->setByteEntry(static_cast<uint16_t>(i),
-                              static_cast<jbyte_t>(result[i]));
+  // Hand back a native buffer; the caller zeroizes it. A JC heap array here
+  // would be garbage until the post-APDU collector runs, so a loop of N
+  // doFinal calls inside one APDU would hold N dead result arrays.
+  output.assign(result.begin(),
+                result.begin() + static_cast<std::ptrdiff_t>(resultLength));
   return static_cast<jshort_t>(resultLength);
 }
 
@@ -597,10 +598,10 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
   appendInput(*cipher, input, inputOffset, inputLength);
+#ifdef PC_VERSION
   const jshort_t modulusLength = cipher->getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH);
   Heap &heap = Context::getActiveContext().getHeap();
-#ifdef PC_VERSION
   const char *heap_diagnostics = std::getenv("PICO2_RSA_HEAP_DIAGNOSTICS");
   const bool report_heap = heap_diagnostics != nullptr &&
                            heap_diagnostics[0] == '1' &&
@@ -614,19 +615,8 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
                  nativeHeapBytesUsed());
   }
 #endif
-  const jref_t resultReference = heap.addArray(
-      static_cast<uint16_t>(modulusLength), JAVA_ARRAY_T_BYTE);
-  auto result = heap.getArray(resultReference);
-#ifdef PC_VERSION
-  if (report_heap) {
-    std::fprintf(stderr,
-                 "RSA_HEAP_DIAGNOSTICS phase=allocated modulus=%u slots=%zu "
-                 "live=%zu c_heap_used=%zu\n",
-                 static_cast<unsigned>(modulusLength),
-                 heap.arrayHandleSlots(), heap.liveArrayHandles(),
-                 nativeHeapBytesUsed());
-  }
-#endif
+  std::vector<unsigned char> result;
+  RsaSensitiveBufferGuard resultGuard(result);
   const bool privateOperation = cipher->getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION) != 0;
   const jshort_t resultLength = transformRsa(
@@ -653,7 +643,7 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
   checkArray(output, outputOffset, resultLength);
   for (jshort_t i = 0; i < resultLength; ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i),
-                         result->getByteEntry(static_cast<uint16_t>(i)));
+                         static_cast<jbyte_t>(result[static_cast<size_t>(i)]));
   clearInput(*cipher);
   return resultLength;
 }
