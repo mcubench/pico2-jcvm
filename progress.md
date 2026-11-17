@@ -31455,3 +31455,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The long option-1 campaign is underway on a clean state. It reuses the 07E7 token from option 2 only because F42D is currently unavailable; therefore this run is exploratory and does not satisfy the preferred separate-token T8 setup. T7 also remains blocked by the missing host VPCD PC/SC driver.
 - Decision: Monitor attempt4 to completion or the 8-hour bound. Do not refresh PC/SC while it is live. Retry T7 only after `HOST-VPCD-PCSC-01` is resolved; obtain a separate token for acceptance if one becomes available.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/`; active client and serial logs under `attempt4/`. The aborted F42D attempt remains under `artifacts/results/option1-acceptance-20261117T2257Z/F42DD9D07D6D2B07/`.
+
+
+## 2026-11-18 Verify physical option-2 retained-storage plateau 9
+
+- Step-Id: `20261118-0022-mem01-opt2-plateau`
+- Task: MEM-01 T8 exploratory resource trend review
+- When: '2026-11-18 00:21 CET' - '2026-11-18 00:22 CET'
+- Model: `gpt-6-codex`
+- Change: Reanalyzed the complete 07E7 option-2 pre-cleanup telemetry in fixed windows to distinguish initial per-family allocation from sustained retained-resource growth. Corrected the reported compaction count from 25 to the 24 explicit successful `LOW_WATERMARK_COMPACT` lines in the authoritative serial log.
+- Validation: All 2,951 telemetry samples parse; the aggregate headroom gate remains `HEADROOM:PASS`, peak 689 files / 14,601 of 98,304 bytes (14.852%). Window means for samples 1,501–2,000, 2,001–2,500 and 2,501–2,951 were respectively 513.5/12,045 B, 510.9/11,983 B and 501.8/12,017 B. Each of the 24 explicit compaction events reported `status=0`. The run's 4,826 observed APDU replies remain all `9000`; client output ends with `Testing complete.`
+- Result: Across the late 1,451 samples, retained storage fluctuates around 500–514 files and 12 KB rather than continuing to climb. Largest late-window peaks were 13,451 and 13,433 B; the overall 14,601 B peak occurred earlier in that span. This is strong bounded-run evidence for a late plateau, but remains exploratory because T7 has not passed.
+- Decision: Preserve the option-2 run as exploratory evidence; keep T7/T8/T10 open. Continue monitoring the separate clean option-1 run on 07E7, currently in progress, and do not restart PC/SC while it runs.
+- Artifacts/logs: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt4/serial.log`; client log and CSV in `attempt5/client-output/`.

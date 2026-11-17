@@ -1428,7 +1428,7 @@ A complete unchanged-client physical option-2 run on empty-card normal-image
 Pico 2 `07E74C5D7A038DEC` completed in 4,660 seconds. Its serial log recorded
 2,951 `OBJECT_DELETION:PRE_CLEANUP` samples. The headroom gate passed with a
 peak of 689 files / 14,601 of 98,304 bytes (14.852%, against a 90% threshold)
-and 25 compactions. There were 4,826 captured APDU responses, all `9000`, and
+and 24 explicitly logged `LOW_WATERMARK_COMPACT` events (all `status=0`). There were 4,826 captured APDU responses, all `9000`, and
 no `TEST:FAIL`, `FAULT`, `PANIC` or `HEADROOM:FAIL`. These measurements show
 bounded arena use over this campaign; they do not prove all future applet object
 patterns plateau, and the run remains exploratory until T7 VPCD acceptance
@@ -1483,3 +1483,23 @@ attempt under that attempt's result directory; do not delete or reuse another
 campaign's list.
 
 Current clean failover attempt is `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.
+
+
+### Option-2 retained-storage plateau and compaction-count correction — 2026-11-18
+
+A fixed-window reanalysis of the complete 2,951-sample physical option-2
+serial trace confirms the late-run retained-record/byte envelope is stable
+after initial algorithm-family setup. Samples 1,501–2,000 averaged 513.5 files /
+12,045 B; 2,001–2,500 averaged 510.9 files / 11,983 B; 2,501–2,951 averaged
+501.8 files / 12,017 B. The window end values were respectively 546/12,179,
+395/11,261 and 499/12,125. The total peak (689 files / 14,601 B) occurred in
+the first of those late windows; the later two peaks were 660/13,451 and
+661/13,433. This shows bounded sawtooth behavior over the measured campaign,
+not monotonic growth; it does not establish all possible applet workloads.
+
+Correction: the serial log contains **24**, not 25, explicit
+`OBJECT_DELETION:LOW_WATERMARK_COMPACT` records; all 24 report `status=0`.
+Earlier notes counted one extra. The campaign still has 2,951 telemetry
+samples and passes the 90% headroom gate.
+
+Source: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt4/serial.log`.
