@@ -31494,3 +31494,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The client does initialize additional live heap objects while moving through new algorithm families, then reaches a stable count across the final 100 cleanup boundaries. Together with late storage-window means near 12 KB, the completed option-2 run shows bounded reuse/cleanup rather than continuous growth. It does not measure byte-level transient RAM high-water and is still exploratory until T7 passes.
 - Decision: Keep T7/T8/T10 open. Continue the full option-1 campaign and compare its completed tail after all algorithm families.
 - Artifacts/logs: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt4/serial.log`; client log `attempt5/client-resume.log`.
+
+## 2026-11-18 Record option-1 live resource and telemetry checkpoint 23
+
+- Step-Id: `20261118-0052-mem01-opt1-live-checkpoint`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 00:49 CET' - '2026-11-18 00:52 CET'
+- Model: `gpt-6-codex`
+- Change: Captured a live option-1 checkpoint after the earlier stable 92-method snapshot, checking whether additional algorithm families kept raising retained objects and whether the T10 telemetry remained parseable.
+- Validation: Client session 53642 and serial session 91350 remained live. At 218 method groups, 754 PRE_CLEANUP and 647 HEAP_GC records parse; storage peak is 722 files / 17,298 of 98,304 bytes (17.60%). Last 100 parseable storage samples range 362–722 files / 10,399–17,298 bytes. Live arrays reached 141 and instances 42. The full headroom parser fails closed on two malformed PRE_CLEANUP lines (9848, 9982). Four RSA Cipher probes returned SW=F105 / `CryptoException_ILLEGAL_USE`; no TEST:FAIL, FAULT, PANIC, NO_RESOURCE or transport marker found.
+- Result: Storage remains below the 90% arena limit in the parseable sample, but the T10 run is invalid because raw serial diagnostics overlap. Live object counts rose as additional families initialized; the campaign has not reached a final tail, so this does not yet prove sustained leakage or plateau.
+- Decision: Keep the client and PC/SC session undisturbed through completion or the 8-hour bound. Do not count this run for T10; repair diagnostic output serialization and repeat the gate. Assess RSA F105 results against the support baseline separately.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.

@@ -1467,6 +1467,29 @@ Evidence: `artifacts/results/option1-acceptance-20261117T2257Z/F42DD9D07D6D2B07/
 `artifacts/results/jcalgtest-support-vpcd-20261117T230259Z/reader-inventory-*.log`.
 
 
+## Physical option-1 diagnostics overlap and invalidate telemetry gate — 2026-11-18
+
+During the active 07E7 option-1 run, the original raw serial log contains
+interleaved firmware records. For example, a `HEAP_GC` line ends with
+`instances_live=OUPI:FS_COMPACT`, and the next line begins with a truncated
+`LETION:PRE_CLEANUP`; another `CCID_COMMANDS` record overlaps `RSA_MEMORY`.
+`tools/check-object-deletion-headroom.py` rejects two malformed PRE_CLEANUP
+records (log lines 9848 and 9982). Since this reproduces in the live original,
+it is not a snapshot-copy race. The current run cannot satisfy T10 even though
+the parseable samples peak at 17.60% of the arena.
+
+**Viable control:** none established yet. Preserve the client/serial logs and
+finish the active campaign without restarting PC/SC. Before counting a later
+run for T10, find and serialize all firmware diagnostic output paths (including
+runtime cleanup, filesystem compaction, USB progress and CCID status), then
+build/cycle and verify that telemetry lines remain whole under USB traffic.
+Rerun the fail-closed gate on the entire capture. The client has four `SW=F105`
+`CryptoException_ILLEGAL_USE` RSA Cipher results in this campaign; review them
+against the support baseline separately from transport or memory failures.
+
+Evidence: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/serial.log` and `client.log`.
+
+
 ## JCAlgTest option 1 can read a stale working-directory resume list — 2026-11-18
 
 The long all-algorithms performance path is top-level menu `2` then submenu
