@@ -31310,3 +31310,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Two OOM panics (GPPro preflight with 534 files; Windows RSA run with 5,116 files) both coincide with large persistent state and compaction; clean Linux RSA runs do not panic.
 - Decision: Verify by reading compaction allocation and replaying a ≈5,000-file card with a panic hook; no implementation yet.
 - Artifacts/logs: none
+
+## 2026-11-17 Correct LONGOP-01 T7 (g): filesystem is heap-free; JCAlgTest reuse check 4
+
+- Step-Id: `20261117-1950-longop01-t7-g-correct`
+- Task: HOST-01 LONGOP-01 T7 (TODO only)
+- When: '2026-11-17 19:35 CET' - '2026-11-17 19:50 CET'
+- Model: `claude-sonnet-5-5`
+- Change: Replaced T7 (g) with a corrected lead and added (g2)/(g3). Read `src/pico_filesystem.cpp` allocation/compaction code and the JCAlgTest `AlgPerformanceTest.java` constructor and key-pair caching.
+- Validation: Source reading only; no build or hardware run.
+- Result: Filesystem uses only fixed static storage and in-place compaction (no heap), so file count does not by itself reduce heap. JCAlgTest constructor allocates only 4 objects; RSA key pairs are lazily cached (2 per type/length) and evicted, other keypairs/ciphers are per test. The ≈4,650 extra persistent files on the Windows card are therefore unexplained by the applet's design.
+- Decision: Next, read `write_filesystem_snapshot` stack use, then replay with a panic hook and per-`B0E2` counters plus a persistent-file tag histogram. No implementation yet.
+- Artifacts/logs: none
