@@ -1140,6 +1140,17 @@ when you type the same card name and answer `y`. The archived list in
 before RSA-1984 PKCS1 `Cipher_doFinal()`. Keep a pristine copy, because the
 client updates it. Results are partial and debug-only.
 
+**Windows uninstall timing context (2026-11-17 recheck).** The archived
+`artifacts/results/windows-maxcrypto-20261115-25216292-dirty/readme.txt` places
+`gp --uninstall jcalgtest.cap` after the RSA-1984 ×50 failure, failed applet
+reconnect/SELECT, and a successful `gp --list`. GPPro logs the E4 APDU, then
+reports `SCardTransmit` failed with `0x1f` after 15 s 11 ms. No serial capture
+covers this uninstall, so this is the Windows-side transmit wait, not proof that
+E4 reached/completed in firmware or that the JCVM watchdog fired. Current Linux
+physical E4 measurements, including near-capacity DELETE, completed in 0.7–2.7 s;
+they do not reproduce the Windows condition. Keep T5 open and require a
+synchronized serial/APDU capture to attribute the historical stall.
+
 Tasks: TODO [LONGOP-01](../TODO.md#longop-01). External request:
 `WIN-RSA1984-X50-SERIAL-20261115`.
 

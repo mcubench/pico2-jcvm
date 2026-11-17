@@ -31262,3 +31262,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Deferred recovery returns `6F00`; new-process recovery clears/replays the journal and applet SELECT returns `9000` in all four modes. No firmware source changed. Physical power-cut evidence is still open under PERSIST-03.
 - Decision: Keep T5 open for the historical Windows 15 s observation; current-image near-capacity E4/E6/E8 measurements remain below watchdog duration.
 - Artifacts/logs: `artifacts/logs/filesystem-install-recovery-local-20261117T1823Z.log`; `artifacts/logs/filesystem-install-publication-recovery-local-20261117T1823Z.log`; `artifacts/logs/filesystem-install-metadata-recovery-local-20261117T1823Z.log`; `artifacts/logs/filesystem-install-clear-recovery-local-20261117T1823Z.log`.
+
+## 2026-11-17 Reclassify archived Windows DELETE delay 8 minutes
+
+- Step-Id: `20261117-1930-longop01-t5-windows-context`
+- Task: HOST-01 LONGOP-01 T5
+- When: '2026-11-17 19:22 CET' - '2026-11-17 19:30 CET'
+- Model: `gpt-6.1-sol`
+- Change: Re-read the archived Windows report and corrected TODO/QKB/HANDOFF wording: the 15 s 11 ms value is a host `SCardTransmit` failure after the RSA-1984 PC/SC loss, not evidence by itself that the JCVM watchdog fired or E4 completed.
+- Validation: Inspected `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/readme.txt`, its SHA256SUMS, TODO and QKB chronology; `git diff --check` passed. Refreshed host USB/PCSC access using the approved helper; it granted one device and `./tools/list-readers --pico-only` identified F42DD9D07D6D2B07 as the available JCVM reader. No flash or card mutation was performed.
+- Result: Archived trace orders RSA-1984 ×50 reader loss and failed reconnect/SELECT before successful `gp --list` and the later E4 uninstall attempt. GPPro logs the E4 command, then host transmit fails after 15,011 ms with `0x1f`; no serial capture covers that operation. Current normal-image local-fixture E4 measurements (0.726–2.673 s) do not reproduce it. Cause remains unresolved.
+- Decision: Keep T5 open; next reproduction must capture timestamped serial and APDU logs across the RSA-loss → list → uninstall sequence. Do not infer a firmware watchdog timeout from the Windows transmit duration.
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/readme.txt`; `.agent/QKB.md`; `TODO.md`; `.agent/HANDOFF.md`.
