@@ -31142,3 +31142,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: RSA-1984 PKCS1 ×50 48.775 s, 47/47 extensions, available memory 105,912→70,120→105,760 B. RSA-1536 ISO14888 control ×50 1.721 s, 0 extensions, 106,448→106,184→106,448 B. RSA-2048 PKCS1 ×50 49.174 s, 47/47 extensions, 105,688→69,488→105,688 B. RSA-2048 SHA-PKCS1 sign 2.278 s. Image SHA-256 `61c2d449ec5402b88c5735237eae076ae6a933820897e38371e9f5c7f4afa4f7`; supplied 1.8.4/jc305 CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; APDU source client JAR identity is pinned 1.8.5 SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
 - Decision: Direct physical API paths pass and parser telemetry is correctly associated. This does not close T6: the unchanged-client resume-list run and full option-2 acceptance remain. Keep T1/D2 open because 250 ms aggregate samples do not capture brief peaks or fragmentation.
 - Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T170835Z/F42DD9D07D6D2B07/`.
+
+## 2026-11-17 Audit card-manager DELETE progress path 3
+
+- Step-Id: `20261117-1814-longop01-delete-audit`
+- Task: HOST-01 LONGOP-01 T5 source audit
+- When: '2026-11-17 18:11 CET' - '2026-11-17 18:14 CET'
+- Model: `gpt-6.1-sol`
+- Change: Traced GlobalPlatform E4 DELETE from CCID dispatch through persistent transaction commit and Pico filesystem snapshot publication. Recorded the path and remaining reproduction requirement in TODO and handoff.
+- Validation: Source inspection only: `src/ccid_device.cpp`, `src/cap_load.cpp`, `src/gp_delete.hpp`, `choupi/src/jc_handlers/flashmemory.cpp`, `src/pico_filesystem.cpp`, and `src/choupi_pico2.cpp`. No build or hardware DELETE run was performed in this audit step.
+- Result: E4 is handled synchronously without `NativeOperationScope`; persistent commit reaches `fs_sync()` and the full inactive filesystem snapshot writer inside `flash_safe_execute` with a 5,000 ms timeout. The main-loop watchdog update (15,000 ms) follows `choupi_ccid_task()` return. This is a source-level cause candidate, not measured evidence of a DELETE timeout or watchdog reset.
+- Decision: Keep T5 open. Reproduce DELETE on current normal firmware with serial timing and fault/watchdog evidence before changing the path; include other flash-heavy card-manager work in the check.
+- Artifacts/logs: none (source inspection only).
