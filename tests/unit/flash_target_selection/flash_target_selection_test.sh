@@ -83,6 +83,11 @@ add_device() {
 
 source "${repo_root}/tools/lib/flash_usb_target.sh"
 
+flash_prepare_load_command force /tmp/card.uf2 --bus 1 --address 34
+expect "$([[ "$(printf '%s ' "${flash_load_command[@]}")" == \
+  'picotool load -f --bus 1 --address 34 -v /tmp/card.uf2 ' ]] && echo true || echo false)" \
+  "picotool_load_selector_precedes_positional_uf2"
+
 # A picotool disconnect after full verification is recoverable only when the
 # output contains the verification milestone and the expected runtime identity
 # returns. Loading progress alone is not evidence that flash contents match.
@@ -207,6 +212,19 @@ selected=false
 refresh_target_usb "$root" && selected=true
 expect "$([[ "$selected" == false && -z "$target_identity_error" ]] && echo true || echo false)" \
   "selected_target_disconnect_waits_without_falling_back"
+
+# A USB device may disappear after the vendor attribute is read but before
+# product/bus/address attributes are read. Treat that as a transient absence,
+# not an unhandled sysfs read failure.
+reset_selection
+chipid="AAAAAAAAAAAAAAAA"
+add_device "1-3" 0009 AAAAAAAAAAAAAAAA 1 3 AAAAAAAAAAAAAAAA
+refresh_target_usb "$root"
+rm -f "${root}/1-3/idProduct"
+selected=false
+refresh_target_usb "$root" && selected=true
+expect "$([[ "$selected" == false && -z "$target_identity_error" ]] && echo true || echo false)" \
+  "selected_target_partial_sysfs_disappearance_is_transient"
 
 # A direct serial request in BOOTSEL is resolvable only when it names the
 # sixteen-digit chip ID reported by the ROM.

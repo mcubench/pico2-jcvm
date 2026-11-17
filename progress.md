@@ -30868,3 +30868,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Request text is consistent.
 - Decision: none
 - Artifacts/logs: none
+
+## 2026-11-17 Correct picotool targeting and tolerate USB re-enumeration 16
+
+- Step-Id: `20261117-1517-flash-selector-sysfs-recovery`
+- Task: MEM-01 T10 hardware tooling prerequisite
+- When: '2026-11-17 15:01 CET' - '2026-11-17 15:17 CET'
+- Model: `gpt-6.1-sol`
+- Change: Corrected `tools/flash` to put `picotool load` device selectors before the positional UF2 path. Added guarded sysfs attribute reads so USB removal during CDC-1200 re-enumeration is treated as transient absence. Added regression checks and documented the failure in TODO/QKB.
+- Validation: Prior ARM `max_crypto` normal build passed; `./tools/test-flash-target-selection` passed 22/22; `bash -n tools/flash tools/lib/flash_usb_target.sh tests/unit/flash_target_selection/flash_target_selection_test.sh` and `git diff --check` passed. A safe parser probe confirmed selectors-after-image fail with `unexpected option: --bus` and selectors-before-image reach device discovery.
+- Result: The previous full cycle on EE116F37C7E4A04E failed before firmware transfer; log `artifacts/logs/cycle-choupi-20261117T141248Z.log`. No runtime evidence was produced. Current worktree also has unrelated untracked `tools/package-maxcrypto-windows-test`; it is excluded from this step.
+- Decision: Commit the host tooling fix, then refresh authorized USB access and enumerate readers before retrying the full JCVM cycle.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261117T141248Z.log`

@@ -22,6 +22,21 @@ flash_target_is_bootsel() {
   [[ "$target_product" == 000f ]]
 }
 
+flash_read_usb_attribute() {
+  local path="$1" output_name="$2" value
+  [[ -r "$path" ]] || return 1
+  IFS= read -r value < "$path" || return 1
+  printf -v "$output_name" '%s' "$value"
+}
+
+flash_prepare_load_command() {
+  local mode="$1" image="$2"
+  shift 2
+  flash_load_command=(picotool load)
+  [[ "$mode" != force ]] || flash_load_command+=(-f)
+  flash_load_command+=("$@" -v "$image")
+}
+
 flash_read_bootsel_chipid() {
   local device="$1"
   local bus address info
@@ -42,14 +57,17 @@ flash_set_identity_error() {
 
 capture_usb_device() {
   local device="$1"
-  local observed_serial=""
+  local observed_serial="" vendor product bus address
+  flash_read_usb_attribute "${device}/idVendor" vendor || return 1
+  flash_read_usb_attribute "${device}/idProduct" product || return 1
+  flash_read_usb_attribute "${device}/busnum" bus || return 1
+  flash_read_usb_attribute "${device}/devnum" address || return 1
+  [[ "$vendor" == 2e8a ]] || return 1
   target_sysfs_path="${device##*/}"
-  target_bus="$(<"${device}/busnum")"
-  target_address="$(<"${device}/devnum")"
-  target_product="$(<"${device}/idProduct")"
-  if [[ -r "${device}/serial" ]]; then
-    observed_serial="$(<"${device}/serial")"
-  fi
+  target_bus="$bus"
+  target_address="$address"
+  target_product="$product"
+  flash_read_usb_attribute "${device}/serial" observed_serial || observed_serial=""
 
   if ((target_selected == 0)); then
     target_expected_usb_serial="${observed_serial^^}"
@@ -151,8 +169,10 @@ refresh_target_usb() {
 
   if [[ -n "$target_sysfs_path" ]]; then
     device="${sysfs_root}/${target_sysfs_path}"
-    if [[ -r "${device}/idVendor" && "$(<"${device}/idVendor")" == 2e8a ]]; then
-      if [[ "$(<"${device}/idProduct")" == 000f ]]; then
+    local vendor product
+    if flash_read_usb_attribute "${device}/idVendor" vendor && [[ "$vendor" == 2e8a ]] && \
+       flash_read_usb_attribute "${device}/idProduct" product; then
+      if [[ "$product" == 000f ]]; then
         if ! flash_validate_bootsel_device "$device"; then
           if [[ -n "$usb_path" || -z "$target_expected_chipid" ]]; then
             return 1
@@ -172,8 +192,7 @@ refresh_target_usb() {
         fi
       fi
       if ((selected_path_stale == 0)); then
-        capture_usb_device "$device"
-        return 0
+        capture_usb_device "$device" && return 0
       fi
     fi
     if [[ -n "$usb_path" ]]; then
@@ -213,8 +232,7 @@ refresh_target_usb() {
       flash_set_identity_error "chip ID ${chipid} matches multiple runtime devices"
       return 1
     elif ((${#chipid_runtime_devices[@]} == 1)); then
-      capture_usb_device "${chipid_runtime_devices[0]}"
-      return 0
+      capture_usb_device "${chipid_runtime_devices[0]}" && return 0
     fi
   fi
 
@@ -223,8 +241,7 @@ refresh_target_usb() {
       flash_set_identity_error "serial ${serial} matches multiple runtime devices"
       return 1
     elif ((${#serial_devices[@]} == 1)); then
-      capture_usb_device "${serial_devices[0]}"
-      return 0
+      capture_usb_device "${serial_devices[0]}" && return 0
     elif [[ ! "$serial" =~ ^[[:xdigit:]]{16}$ ]]; then
       flash_set_identity_error "requested serial ${serial} is not connected"
       return 1
@@ -246,8 +263,7 @@ refresh_target_usb() {
       return 1
     elif ((${#matching_bootsel_devices[@]} == 1)); then
       target_expected_chipid="$expected_chipid"
-      capture_usb_device "${matching_bootsel_devices[0]}"
-      return 0
+      capture_usb_device "${matching_bootsel_devices[0]}" && return 0
     fi
     if ((selected_path_stale != 0)) &&
         ((target_selected != 0)) && [[ -n "$target_expected_chipid" ]]; then
@@ -275,12 +291,10 @@ refresh_target_usb() {
     device="${bootsel_devices[0]}"
     observed_chipid="$(flash_read_bootsel_chipid "$device")" || return 1
     target_expected_chipid="$observed_chipid"
-    capture_usb_device "$device"
-    return 0
+    capture_usb_device "$device" && return 0
   fi
   if ((${#rp_devices[@]} == 1)); then
-    capture_usb_device "${rp_devices[0]}"
-    return 0
+    capture_usb_device "${rp_devices[0]}" && return 0
   fi
   return 1
 }

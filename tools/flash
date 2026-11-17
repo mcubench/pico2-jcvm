@@ -234,20 +234,18 @@ run_load() {
   local load_capture
   local load_status
   local normalized_load
-  local -a load_command=(picotool load)
+  local -a load_command
   # Always pin picotool to the identified device; without a selector it fails
   # as soon as a second RP-series device is attached.
   set_target_selector
   load_capture="$(mktemp)"
   last_load_failure=unknown
-  if [[ "${mode}" == force ]]; then
-    load_command+=(-f)
-  fi
-  # picotool 2.3.1 requires the file before the device-selection options. Do not
-  # pass -x: with several RP-series devices attached its post-load reboot fails
-  # with "Command requires a single RP-series device to be targeted" even when
+  # Device-selection switches must precede the positional UF2 path. Do not pass
+  # -x: with several RP-series devices attached its post-load reboot fails with
+  # "Command requires a single RP-series device to be targeted" even when
   # --bus/--address select one device. Reboot explicitly below instead.
-  load_command+=(-v "${image}" "${selector_args[@]}")
+  flash_prepare_load_command "$mode" "$image" "${selector_args[@]}"
+  load_command=("${flash_load_command[@]}")
   printf 'FLASH:LOAD mode=%s\n' "${mode}"
   set +e
   timeout --signal=TERM --kill-after=5s 60s "${load_command[@]}" 2>&1 | tee "${load_capture}"

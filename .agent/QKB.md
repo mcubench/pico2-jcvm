@@ -1096,3 +1096,16 @@ Tasks: TODO [LONGOP-01](../TODO.md#longop-01). External request:
 **Implementation and partial runtime evidence.** Snapshot schema v5 stores parent slot + suffix length + arbitrary suffix bytes; v2/v3 and v4 bitmap snapshots remain readable, and legacy three-byte repeated-suffix parent records remain supported. Fake-flash regression verifies canonical reads, parent deletion, compaction, sync and reload. The normal ARM `max_crypto` build passes. A fresh option-2 VPCD run with object deletion enabled passed the earlier `F205` point: RSA-CRT-private 2048 / ISO14888 `Cipher_doFinal()` and `Cipher_init()` returned `9000`. Four automatic compactions triggered at 77,865–78,075 / 98,304 bytes and erased eight records each. A quiescent saved overlay passed integrity with 1,847 slots, 1,514 live records, 73,245 bytes used and 25,059 free. The client run was intentionally interrupted at a later RSA-public-3072 case; the resulting reader-removal/client exception and PC-emulator ptrace shutdown panic are interruption noise, not memory evidence. Full option-2 plateau telemetry and physical T8 remain required.
 
 **When rechecking.** Recompute peak and post-compaction usage from a quiescent overlay image (a copy taken during APDU writes can contain mismatched metadata/arena bytes). Continue with another available identified Pico 2 if one board disappears; VPCD evidence is diagnostic only.
+
+## Picotool selector ordering and USB sysfs hot-unplug — 2026-11-17
+
+`picotool load` 2.3.1 parses target selectors such as `--bus` and `--address`
+before the positional UF2 path. Placing them after the image returns
+`unexpected option: --bus`. `tools/flash` now constructs the command with
+selectors first; the unit suite asserts the exact argv order. During CDC-1200
+re-enumeration, sysfs attributes can disappear between reads, so
+`tools/lib/flash_usb_target.sh` treats a partial attribute read as transient
+absence instead of a shell error. `./tools/test-flash-target-selection`
+passes 22/22. The failed hardware attempt did not transfer firmware, so retry
+only after the authorized helper and reader enumeration, and inspect a fresh
+finite serial log before claiming runtime success.
