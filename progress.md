@@ -30916,3 +30916,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: T7 replay acceptance is blocked by a newly observed runtime regression requiring method bytecode/handler offset comparison. T8 hardware remains unavailable. A local CMake cache workaround linked the overlay emulator, but is not a persistent repository fix.
 - Decision: Keep T7/T8 open. Inspect exception handler bytecode and the Nov 15 passing replay/build evidence before changing VM behavior; then make the overlay CMake link roots persistent and restart unchanged-client testing when PC/SC is available.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T142939Z/`, `artifacts/results/resource01-apdu-replay-vpcd-20261117T143248Z/`, `artifacts/results/jcalgtest-support-vpcd-20261117T142620Z/`
+
+## 2026-11-17 Retain RP2350 overlay wrappers under LTO 3
+
+- Step-Id: `20261117-1537-pc-overlay-link-roots`
+- Task: MEM-01 T7 host harness prerequisite
+- When: '2026-11-17 15:34 CET' - '2026-11-17 15:37 CET'
+- Model: `gpt-6.1-sol`
+- Change: Added explicit linker undefined roots for the three RP2350 overlay wrappers used through indirect/native dispatch, so LTO does not discard them from the PC/VPCD overlay executable.
+- Validation: `./tools/build arm --profile max_crypto` passed with normal mode, object deletion ON, debug switches OFF, no C++ warnings, and 36,024 bytes remaining. Refreshed approved board access and enumerated readers; helper found 0 devices and `./tools/list-readers --pico-only` returned `list() failed`, so no hardware cycle was attempted. Cleared ignored `CMAKE_EXE_LINKER_FLAGS` from the overlay build cache, then `./tools/build-pc --rp2350-overlay` linked successfully. Confirmed the cache flag is empty and `nm` lists all three `__wrap_fs_*` symbols. The PC support build emitted existing Java 7 bootstrap/deprecation and converter export-file warnings; no link errors occurred. `git diff --check` passed.
+- Result: The overlay host build no longer depends on a manually injected linker cache flag. Built PC binary SHA-256: `4fd35962baf48a2a783a0305c6e8e19e3bb700b7e0ffda951b93d8c781e68024`; ARM UF2 SHA-256: `20493fbb3028058d28ae10a39520fff55672a82a038e717a308e22e32dd39e8b`.
+- Decision: Commit the CMake fix. The full JCVM cycle remains unverified until an identified Pico 2 is available; continue T7 exception-handler regression analysis offline.
+- Artifacts/logs: `build/choupi-pc-rp2350-overlay/choupi`, `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`

@@ -444,6 +444,13 @@ if(CHOUPI_TARGET_PC)
         fs_drop fs_sync fs_erase_prefix fs_erase_package_state)
       target_link_options(choupi PRIVATE "LINKER:--wrap=${fs_symbol}")
     endforeach()
+    # LTO can discard wrappers that are reached only through function
+    # pointers/native dispatch. Keep the persistent transaction wrappers
+    # available for those indirect calls in the VPCD overlay build.
+    foreach(fs_wrapper IN ITEMS
+        __wrap_fs_sync __wrap_fs_erase_prefix __wrap_fs_erase_package_state)
+      target_link_options(choupi PRIVATE "LINKER:-u,${fs_wrapper}")
+    endforeach()
     target_compile_definitions(choupi PRIVATE CHOUPI_PC_RP2350_FS_OVERLAY=1)
   endif()
 
