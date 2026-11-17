@@ -31214,3 +31214,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: E6 took 2.950 s; complete GPPro command took 4.155 s. Serial showed `FS_COMPACT` and matching `CHOUPI:CCID_RESPONSE apdu=84E60C002A ... sw=9000`, with no `USB_PROGRESS`, `PANIC`, `FAULT` or `TEST:FAIL`. Firmware UF2 SHA-256 `9baf1cfcda50bfcc44cb4639fd83bf77ec0b087ca752c411a92e58f906d63e9d`; fixture CAP SHA-256 `01cc0fefe6edc03a0a3e398fd2f5ab444cb5f42d6cf93c8030d7b9834696b6a1`.
 - Decision: Near-capacity INSTALL is below the 15 s watchdog for this local applet. Source path lacks `NativeOperationScope` and success commits a journal snapshot, separate CAP metadata flash callback, then another snapshot to clear the journal. Keep T5 open for other long paths and the earlier Windows discrepancy.
 - Artifacts/logs: `artifacts/results/filesystem-capacity-physical-20261117T175220Z/F42DD9D07D6D2B07/`; `artifacts/results/filesystem-capacity-install-20261117T1757Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T175510Z.log`.
+
+## 2026-11-17 Record GPPro inspection host boundary 2
+
+- Step-Id: `20261117-1901-hostpcsc-gppro-capinfo`
+- Task: HOST-01 QKB host-access diagnosis
+- When: '2026-11-17 18:59 CET' - '2026-11-17 19:01 CET'
+- Model: `gpt-6.1-sol`
+- Change: Recorded that GPPro `--cap <file> --info` may initialize PC/SC even for intended offline CAP inspection; documented archive utilities or approved host access as the safe route.
+- Validation: Command returned `SCARD_E_NO_SERVICE` at `SCardEstablishContext`; no reader was contacted and no APDU was issued. No retry was made. `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: GPPro CLI invocation is not a reliable offline CAP parser in this host environment.
+- Decision: Use ZIP/component inspection for offline CAP metadata and route any SmartcardIO-capable GPPro command through the approved host-access path from the first attempt.
+- Artifacts/logs: command output only; no hardware artifact.

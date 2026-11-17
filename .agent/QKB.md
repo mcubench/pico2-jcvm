@@ -1288,3 +1288,12 @@ publishes CAP owner metadata through `cap_store.cpp`'s separate
 clear the journal. The observed E6 is below the 15 s watchdog, but this path
 has no cooperative CCID progress service and remains an audit candidate for
 applets with expensive install methods or larger state.
+
+## GPPro CAP inspection still initializes PC/SC — 2026-11-17
+
+Invoking `gp.jar --cap <file> --info` in the restricted shell unexpectedly
+attempted `SCardEstablishContext` and failed with `SCARD_E_NO_SERVICE`, before
+reading card state or issuing APDUs. Do not use GPPro for offline CAP inspection
+in a restricted context; inspect CAP ZIP/component contents with non-PCSC archive
+utilities. If a GPPro operation might initialize SmartcardIO, use the approved
+host-access execution path from its first attempt.
