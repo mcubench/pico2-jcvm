@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# Assemble the external Windows test package for the current normal max_crypto
+# ARM build: empty-card UF2, unchanged JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5
+# client, GPPro, capture script, README, provenance and checksums.
+#
+# Usage: ./tools/package-maxcrypto-windows-test
+# Preconditions: ./tools/build arm --profile max_crypto was run from the
+# current HEAD (the CPLC personalizer id must match HEAD); no hardware needed.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_command zip
+require_command python3
+[[ $# -eq 0 ]] || die "usage: ./tools/package-maxcrypto-windows-test"
+
+build_dir="${repo_root}/build/arm"
+firmware="${build_dir}/pico2_choupi.uf2"
+provenance="${build_dir}/build-provenance.txt"
+elf="${build_dir}/pico2_choupi.elf"
+[[ -s "${firmware}" && -s "${provenance}" && -s "${elf}" ]] || \
+  die "run ./tools/build arm --profile max_crypto first"
+
+head_full="$(git -C "${repo_root}" rev-parse HEAD)"
+head_short="${head_full:0:8}"
+cplc_id="$(awk -F= '$1=="cplc_source_id"{print $2}' "${provenance}")"
+expected_prefix="$(printf '0x%s' "$(printf '%s' "${head_full:0:8}" | tr 'a-f' 'A-F')")"
+[[ "${cplc_id}" == "${expected_prefix}"* ]] || \
+  die "build CPLC id ${cplc_id} does not match HEAD ${head_short}; rebuild from HEAD"
+grep -qx 'profile=max_crypto' "${provenance}" || die "build is not the max_crypto profile"
+grep -qx 'mode=normal' "${provenance}" || die "build is not in normal mode"
+grep -qx 'object_deletion=ON' "${provenance}" || die "object deletion is not ON"
+for flag in debug_heap_gc debug_ccid_applet debug_persistent_gc; do
+  grep -qx "${flag}=OFF" "${provenance}" || die "${flag} is not OFF"
+done
+
+name="pico2-jcvm-maxcrypto-deletion-${head_short}"
+stage_root="${repo_root}/build/external-test"
+stage="${stage_root}/${name}"
+zip_path="${stage_root}/${name}.zip"
+uf2_name="pico2-jcvm-max_crypto-object-deletion-on-empty-card-${head_short}.uf2"
+uf2_artifact="${repo_root}/artifacts/firmware/${uf2_name}"
+
+cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
+client="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
+client_lib="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/lib"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+capture_ps1="${repo_root}/tools/capture-object-deletion.ps1"
+for f in "${cap}" "${client}" "${gp_jar}" "${capture_ps1}"; do
+  [[ -s "${f}" ]] || die "missing input: ${f}"
+done
+[[ -d "${client_lib}" ]] || die "missing client lib directory: ${client_lib}"
+
+"${repo_root}/tools/fixture-path" --verify >/dev/null
+"${repo_root}/tools/package-empty-card-uf2" "${firmware}" "${uf2_artifact}" >/dev/null
+
+rm -rf -- "${stage}" "${zip_path}"
+mkdir -p "${stage}/firmware" "${stage}/tools/lib"
+cp "${uf2_artifact}" "${stage}/firmware/${uf2_name}"
+cp "${cap}" "${stage}/applet.cap"
+cp "${client}" "${stage}/tools/AlgTestJClient_v1.8.5.jar"
+cp "${gp_jar}" "${stage}/tools/gp.jar"
+cp "${capture_ps1}" "${stage}/tools/capture-object-deletion.ps1"
+cp -L "${client_lib}"/*.jar "${stage}/tools/lib/"
+
+sha() { sha256sum "$1" | cut -d' ' -f1; }
+uf2_sha="$(sha "${stage}/firmware/${uf2_name}")"
+uf2_size="$(stat -c %s "${stage}/firmware/${uf2_name}")"
+cap_sha="$(sha "${stage}/applet.cap")"
+client_sha="$(sha "${stage}/tools/AlgTestJClient_v1.8.5.jar")"
+gp_sha="$(sha "${stage}/tools/gp.jar")"
+fw_build_sha="$(sha "${firmware}")"
+nm_tool="$(command -v arm-none-eabi-nm)"
+linked_end="$("${nm_tool}" "${elf}" | awk '$3=="__flash_binary_end"{print $1}')"
+[[ -n "${linked_end}" ]] || die "cannot read __flash_binary_end from ${elf}"
+linked_end_dec=$((16#${linked_end}))
+remaining=$((0x10100000 - linked_end_dec))
+printf -v linked_end_hex '0x%08x' "${linked_end_dec}"
+compiler="$(arm-none-eabi-gcc --version | head -1)"
+worktree_diff_sha="$(git -C "${repo_root}" diff --ignore-submodules=all HEAD | sha256sum | cut -d' ' -f1)"
+worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=all | awk '{print $2}' | paste -sd, -)"
+
+{
+  cat "${provenance}"
+  printf 'source_head=%s\n' "${head_full}"
+  printf 'tracked_worktree_diff_sha256=%s\n' "${worktree_diff_sha}"
+  printf 'tracked_worktree_changes_outside_submodules=%s\n' "${worktree_files:-none}"
+  printf 'submodule_status:\n'
+  git -C "${repo_root}" submodule status
+  printf '\nfirmware_build_uf2_sha256=%s\n' "${fw_build_sha}"
+  printf 'firmware_linked_end=%s\n' "${linked_end_hex}"
+  printf 'firmware_window_remaining_bytes=%s\n' "${remaining}"
+  printf 'persistent_overlay=96_KiB_8192_slots\n'
+  printf 'empty_card_storage_range=0x10100000-0x101FFFFF\n'
+  printf 'empty_card_uf2_sha256=%s\n' "${uf2_sha}"
+  printf 'compiler=%s\n' "${compiler}"
+  printf 'telemetry=OBJECT_DELETION:PRE_CLEANUP (serial), 90%% arena gate checked by tools/check-object-deletion-headroom.py\n'
+  printf 'jcalgtest_cap=1.8.4_jc305_unchanged\n'
+  printf 'jcalgtest_cap_sha256=%s\n' "${cap_sha}"
+  printf 'jcalgtest_client=1.8.5\n'
+  printf 'jcalgtest_client_sha256=%s\n' "${client_sha}"
+  printf 'gppro_sha256=%s\n' "${gp_sha}"
+  printf 'physical_flash=not_performed_for_this_exact_uf2 (earlier build from the same firmware sources, differing only in CPLC source id, passed a PC/SC smoke test on a Linux host; see progress.md)\n'
+  printf 'windows_test=not_performed\n'
+} > "${stage}/BUILD-PROVENANCE.txt"
+
+cat > "${stage}/README.md" <<EOF
+# Pico 2 JCVM max_crypto — object deletion ON, empty card
+
+RP2350 ARM normal-mode firmware built from commit \`${head_full}\`. Object deletion is ON, debug/trace flags are OFF, startup wait is 0 ms, and the empty-card image contains a fully erased 1 MiB persistent-storage region. No applet is preinstalled. Compared with earlier packages this image adds the \`OBJECT_DELETION:PRE_CLEANUP\` serial telemetry (files and bytes used before each cleanup) and was built with ${compiler}.
+
+This package is prepared for external Windows testing. This exact UF2 has not been flashed or tested in this environment. An earlier build from the same firmware sources (differing only in the embedded CPLC source identifier) was flashed to a physical token on Linux and answered PC/SC and SCP03 GET DATA probes (see \`progress.md\`); nothing was tested on Windows or through JCAlgTest. Treat results as candidate evidence.
+
+## Exact inputs
+
+- Firmware: \`firmware/${uf2_name}\`
+- UF2 SHA-256: \`${uf2_sha}\`
+- UF2 size: ${uf2_size} bytes (firmware plus erased persistent storage)
+- Profile: \`max_crypto\`; build mode: \`normal\`; object deletion: ON; debug/trace: OFF
+- CPLC source identifier: \`${cplc_id}\`
+- Linked firmware end: \`${linked_end_hex}\`; remaining firmware window: ${remaining} bytes
+- CAP: unchanged upstream JCAlgTest 1.8.4 / jc305 (\`applet.cap\`), SHA-256 \`${cap_sha}\`
+- Host client: supplied JCAlgTest 1.8.5 (\`tools/AlgTestJClient_v1.8.5.jar\`), SHA-256 \`${client_sha}\`
+- GPPro: \`tools/gp.jar\`
+
+## Flash from Windows
+
+1. Put the Pico 2 into BOOTSEL and connect it. Extract this ZIP, open PowerShell in the extracted directory, and verify/copy the image:
+
+\`\`\`powershell
+\$image = '.\\firmware\\${uf2_name}'
+\$expected = '${uf2_sha}'
+\$actual = (Get-FileHash \$image -Algorithm SHA256).Hash.ToLowerInvariant()
+if (\$actual -ne \$expected) { throw "Firmware hash mismatch: \$actual" }
+\$volume = Get-Volume | Where-Object FileSystemLabel -eq 'RPI-RP2' | Select-Object -First 1
+if (-not \$volume -or -not \$volume.DriveLetter) { throw 'RPI-RP2 BOOTSEL drive not found' }
+Copy-Item \$image -Destination (\$volume.DriveLetter + ':\\')
+\`\`\`
+
+2. Wait for \`Pico2 JCVM CCID 0\`. The flashed card should be empty. Install the unchanged CAP explicitly with GPPro:
+
+\`\`\`powershell
+java -jar .\\tools\\gp.jar --reader 'Pico2 JCVM CCID 0' --list
+java -jar .\\tools\\gp.jar --reader 'Pico2 JCVM CCID 0' --install .\\applet.cap
+java -jar .\\tools\\gp.jar --reader 'Pico2 JCVM CCID 0' --list
+\`\`\`
+
+3. Run \`tools\\AlgTestJClient_v1.8.5.jar\` with the supplied CAP and select option \`2 -> PERFORMANCE TEST\` (1–3 hours) or \`1 -> All algorithms\` (5–8 hours). The 1.8.5 JAR hash above is authoritative; report it with results. Capture the board's serial output using \`tools\\capture-object-deletion.ps1\` and keep the whole file: it contains the \`OBJECT_DELETION:PRE_CLEANUP\` lines.
+
+Return the complete client result directory and serial log, Windows version, reader name and ATR, chip ID, firmware/JAR hashes, and any USB/PC/SC disconnects, resets, stalls, exceptions or timeouts. Keep each physical device's results separate.
+
+The project's all-zero GPPro test key is for educational testing only.
+EOF
+
+(
+  cd "${stage}"
+  find . -type f ! -name SHA256SUMS.txt | sort | sed 's|^\./||' | \
+    while read -r f; do printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$f"; done
+) > "${stage}/SHA256SUMS.txt"
+
+( cd "${stage_root}" && zip -qr "${zip_path}" "${name}" )
+zip_sha="$(sha "${zip_path}")"
+printf 'PACKAGE:PASS zip=%s\n' "${zip_path}"
+printf 'PACKAGE:ZIP_SHA256 %s\n' "${zip_sha}"
+printf 'PACKAGE:UF2 %s sha256=%s size=%s\n' "${uf2_artifact}" "${uf2_sha}" "${uf2_size}"
+printf 'PACKAGE:FIRMWARE end=%s remaining=%s cplc=%s head=%s\n' \
+  "${linked_end_hex}" "${remaining}" "${cplc_id}" "${head_short}"

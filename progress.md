@@ -30844,3 +30844,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: First run of the stock probe exited 1 only because it compares the card's CPLC id with the current HEAD (`0x07DCC96D…`, HEAD moved after the build), not because of a card error. The card/PC-SC path works on this machine with the Arm GNU 14.2.1 build. Image `build/arm/pico2_choupi.uf2` SHA-256 `1185b718…028401`. Not tested: applet install/GPPro, JCAlgTest, long runs; no other token was used.
 - Decision: Next hardware step: an empty-card wipe and unchanged-CAP install, then the option-2 campaign per `AGENTS.md`, with the user's go-ahead.
 - Artifacts/logs: none retained (probe output only)
+
+## 2026-11-17 Build external Windows test package (max_crypto, commit c050a193) 25
+
+- Step-Id: `20261117-2000-package-maxcrypto-c050a193`
+- Task: MEM-01 T8 prerequisite (external Windows evidence)
+- When: '2026-11-17 19:46' - '2026-11-17 20:00'
+- Model: `claude-sonnet-5-5`
+- Change: Rebuilt `./tools/build arm --profile max_crypto` from clean HEAD `c050a193` (CPLC source id `0xC050A193E8141DBF`; the build reports `SOURCE_TREE_STATE dirty` only because its strict check counts the intentionally patched `choupi/os` and ignored build outputs in submodules, plus an unrelated uncommitted edit by someone else to `tools/lib/flash_usb_target.sh`, which is host tooling and not part of the firmware). Added `tools/package-maxcrypto-windows-test` (reproducible package assembly: checks the build matches HEAD, profile/mode/flags, builds the empty-card UF2, copies unchanged CAP/1.8.5 client/GPPro/capture script, writes README, BUILD-PROVENANCE and SHA256SUMS, zips). Replaced the superseded request 98FCB151 with `WIN-MEM01-MAXCRYPTO-C050A193` in `.agent/EXT_REQUESTS.md`; updated HANDOFF.
+- Validation: build rc=0, 0 repo-source warnings, `FLASH_LAYOUT:PASS` end `0x100f7348`, remaining 36,024 bytes. Package: `PACKAGE:PASS`, `unzip -t` no errors, `sha256sum -c SHA256SUMS.txt` all OK after extraction, `./tools/fixture-path --verify` PASS. No firmware-source change between `f62ad98f` (the build flashed to EE11) and `c050a193`, so the images differ only in the CPLC id. This exact UF2 was not flashed; not tested on Windows or with JCAlgTest.
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-c050a193.uf2` SHA-256 `345f64fc4d1052151be523c89a57fffa56d83dd8acb52abd7c666b6e6ef2762b` (4,123,136 bytes); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-c050a193.zip` SHA-256 `e18800a248784293714807009a2c7467122d5b82980bbf26b65b98edcfedcc22`; client JAR `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`, CAP `cac42cd3…dbfad`, GPPro `38b464de…908c`. Compiler: Arm GNU 14.2.1; timings are not comparable with pre-move campaigns.
+- Decision: User to run the Windows test. The package cites `c050a193`; later documentation commits do not change it. Local commits are not pushed.
+- Artifacts/logs: `build/external-test/pico2-jcvm-maxcrypto-deletion-c050a193/` and `.zip`; `artifacts/firmware/` UF2 above

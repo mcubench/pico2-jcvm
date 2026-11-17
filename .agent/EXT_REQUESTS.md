@@ -1,40 +1,42 @@
 # External validation requests
 
-## WIN-MEM01-EMPTY-NODEBUG-98FCB151 — Test current deletion-enabled build
+## WIN-MEM01-MAXCRYPTO-C050A193 — Test current deletion-enabled max_crypto build (with telemetry)
 
-**Status 2026-11-17:** this image predates the `OBJECT_DELETION:PRE_CLEANUP` telemetry and the 90% headroom gate. A fresh normal max-crypto empty-card package is planned (see HANDOFF MEM-01 item 2) and will replace this request; results from this image remain valid for its hash.
+Created 2026-11-17 20:00 CET. This supersedes `WIN-MEM01-MAXCRYPTO-C050A193` for new
+runs (keep that image's results for its own hash). Normal ARM `max_crypto` image built
+from clean commit `c050a193` with Arm GNU 14.2.1: object deletion ON, all debug and trace
+switches OFF, 0 ms startup wait, erased 1 MiB storage region, no preinstalled applet. It
+adds the `OBJECT_DELETION:PRE_CLEANUP` serial telemetry and the libstdc++ demangler is
+dropped (36,024 bytes of firmware window remain).
 
-Created 2026-11-16 08:02 CET. This fresh package supersedes
-`WIN-MEM01-EMPTY-NODEBUG-B6CCF96C` for new runs. It is a normal ARM
-`max_crypto` image with persistent object deletion ON, all debug and trace
-switches OFF, 0 ms startup wait, an erased 1 MiB storage region, and no
-preinstalled applet. Its source is commit `98fcb151` plus the pre-existing
-dirty worktree/submodule state recorded in the package provenance.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-c050a193.uf2)
+- UF2 SHA-256: `345f64fc4d1052151be523c89a57fffa56d83dd8acb52abd7c666b6e6ef2762b`; size 4,123,136 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-c050a193.zip)
+- ZIP SHA-256: `e18800a248784293714807009a2c7467122d5b82980bbf26b65b98edcfedcc22`.
+- CPLC source identifier `0xC050A193E8141DBF`; linked end `0x100f7348`. Built by
+  `tools/package-maxcrypto-windows-test`; `BUILD-PROVENANCE.txt` and `SHA256SUMS.txt` are in the ZIP.
+- The ZIP also holds the unchanged JCAlgTest 1.8.4/jc305 CAP, the supplied 1.8.5 client
+  (SHA-256 `b6a753be…eacec3`), GPPro and the serial capture script.
+- Validation here: ARM build, host unit suites, ZIP integrity and checksum check. This exact
+  UF2 was not flashed; an earlier build from the same firmware sources (differing only in the
+  CPLC id) ran on a Linux host and passed PC/SC and SCP03 probes. Not tested on Windows.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-98fcb151.uf2)
-- UF2 SHA-256: `e1210b1afdf20afa335e32b188541804384ada64f5e4e074311b03e06e7595d8`; size 4,126,720 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-98fcb151.zip)
-- ZIP SHA-256: `327b6454fce940bb972e1f50474d798dff964ec0ecc552acd84b843aa85505a4`.
-- CPLC source identifier: `0x98FCB15176729161`; ARM build passed in `normal` mode, object deletion ON, debug OFF. Linked end `0x100f7af0`; 34,064 bytes remain. Physical flash and Windows testing were not performed here.
-- The package contains the unchanged JCAlgTest 1.8.4/jc305 CAP and the supplied 1.8.5 host client. Their hashes are recorded in `BUILD-PROVENANCE.txt` and `SHA256SUMS.txt`.
-
-Follow the package README to verify and flash through BOOTSEL, confirm the card
-is empty, install the CAP explicitly with GPPro, and run option 2. Return the
-complete result directory and serial log, Windows version, reader and ATR, chip
-ID, firmware and client hashes, and any USB/PCSC errors, resets, stalls or
-timeouts.
-
+Unzip, follow `README.md` (verify the UF2 hash, flash through BOOTSEL, confirm the card is
+empty, install the CAP explicitly with GPPro, run option 2 and capture serial). Return the
+complete result directory and the whole serial log (it contains the `PRE_CLEANUP` lines),
+Windows version, reader name and ATR, chip ID, firmware and client hashes, and any
+USB/PCSC errors, resets, stalls or timeouts.
 
 ## WIN-RSA1984-X50-SERIAL-20261115 — Capture serial evidence of the RSA-1984 ×50 failure
 
 Created 2026-11-15 12:35 CET. Diagnostic run (not acceptance) for TODO
 LONGOP-01. It needs only about 5 minutes per attempt. If the full option-2
-run under `WIN-MEM01-EMPTY-NODEBUG-98FCB151` is in progress, let it
+run under `WIN-MEM01-MAXCRYPTO-C050A193` is in progress, let it
 finish first. The current image does not contain a LONGOP-01 fix, so it may
 still fail at this operation.
 
-1. Flash the current empty-card UF2 from `WIN-MEM01-EMPTY-NODEBUG-98FCB151`
-   (SHA-256 `e1210b1a…e7595d8`). Install the unchanged JCAlgTest CAP with GPPro.
+1. Flash the current empty-card UF2 from `WIN-MEM01-MAXCRYPTO-C050A193`
+   (SHA-256 `345f64fc…2762b`). Install the unchanged JCAlgTest CAP with GPPro.
    Use the pinned 1.8.5 client and report its SHA-256; it must be
    `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
 2. Copy `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/pico2_maxcrypto_20261115_25216292-dirty____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list`
