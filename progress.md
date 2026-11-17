@@ -31346,3 +31346,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The brief's premises were wrong. PRE_CLEANUP `available` is overlay headroom, not mallinfo. `files` includes tombstones. The Windows card did reclaim 8+8+4=20 records after the prepare. The panic came on the first ×50 B043, after five ×0 baselines passed. Leading cause: `doFinalRsaCipher` allocates one JC heap array per call (`native_rsa_cipher.cpp:587` at c050a193, `:617` at HEAD). It is only collected after the APDU, about 700 B per call (35.7 KB for 51 calls measured on target, progress.md:31108). The Windows card also had less headroom (201/73 live arrays/instances vs 131/34). `PICO_MALLOC_PANIC=1` turns any OOM into a hard panic.
 - Decision: Next, choose between fixing the per-call result allocation (native buffer) and first capturing allocator telemetry on a physical card. No implementation in this step.
 - Artifacts/logs: `docs/review_rsa1984_oom_opus55_20261117.md`
+
+## 2026-11-17 Correct duration of OOM static review record 1
+
+- Step-Id: `20261117-2055-oom-review-duration-fix`
+- Task: HOST-01 LONGOP-01 T7 (bookkeeping correction)
+- When: '2026-11-17 20:54 CET' - '2026-11-17 20:55 CET'
+- Model: `claude-opus-5-5`
+- Change: User correction. The record `20261117-2050-longop01-t7-oom-review` gave 45 minutes and a 20:00–20:50 window. The user states the work took 7 minutes; the exact start time was not recorded. The earlier record is left unchanged under the append-only rule; this record supersedes its duration.
+- Validation: none (bookkeeping only).
+- Result: Actual duration of the OOM static review: 7 minutes.
+- Decision: Record measured work time only, never an estimated window.
+- Artifacts/logs: none
