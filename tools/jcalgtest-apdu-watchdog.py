@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--apdu-timeout", type=float)
     parser.add_argument("--suite-timeout", type=float, required=True)
     parser.add_argument("--input-line", action="append", default=[])
+    parser.add_argument("--reader-index")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if ((args.apdu_timeout is not None and args.apdu_timeout <= 0) or
@@ -62,6 +63,7 @@ def main() -> int:
     output_closed = False
     reason: str | None = None
     pending_inputs = list(args.input_line)
+    reader_answer_pending = args.reader_index
     transcript = ""
     prompt_cursor = 0
     partial_line = ""
@@ -78,12 +80,18 @@ def main() -> int:
             process.stdin.close()
 
     def answer_ready_prompts() -> None:
-        nonlocal transcript, prompt_cursor
+        nonlocal transcript, prompt_cursor, reader_answer_pending
         for pattern in prompt_patterns:
             match = pattern.search(transcript, prompt_cursor)
-            if match is None or not pending_inputs:
+            if match is None:
                 continue
-            answer = pending_inputs.pop(0)
+            if pattern is prompt_patterns[0] and reader_answer_pending is not None:
+                answer = reader_answer_pending
+                reader_answer_pending = None
+            elif pattern is not prompt_patterns[0] and pending_inputs:
+                answer = pending_inputs.pop(0)
+            else:
+                continue
             process.stdin.write((answer + "\n").encode())
             process.stdin.flush()
             prompt_cursor = match.end()

@@ -31418,3 +31418,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `f40bb1b56c9603456a1c97c86b07723feb0b9290f0ed4046e0adfdac09514b3b` (4,123,648 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-de729d28.zip` SHA-256 `8c162d009b58875779156f3417c791a1a52990907964c3de0fd8fb22cad298ad`. On the fresh card, RSA-1984 PKCS1 ×50 took 48.0 s with transient RAM 117,224 → minimum 112,056 B; RSA-2048 PKCS1 ×50 took 48.9 s.
 - Decision: waiting for the Windows option-2 result. A local empty-card option-2 run on 07E7 or EE11 would be independent Linux evidence.
 - Artifacts/logs: `artifacts/results/windows-package-smoke-de729d28-20261117T210324Z/07E74C5D7A038DEC/`, `artifacts/results/longop01-rsa1984-physical-20261117T210419Z/07E74C5D7A038DEC/`
+
+## 2026-11-17 Fix JCAlgTest reader prompt routing 12 minutes
+
+- Step-Id: `20261117-2225-jcalgtest-reader-input`
+- Task: MEM-01 T8 option-2 acceptance preparation
+- When: '2026-11-17 22:13 CET' - '2026-11-17 22:25 CET'
+- Model: `gpt-6-codex`
+- Change: The watchdog now routes the exact-reader-name-derived terminal selector only to JCAlgTest's reader-selection prompt; scripted menu answers remain ordered for the client menu prompts. Updated TODO, QKB and HANDOFF with the failed attempts and next acceptance procedure.
+- Validation: `bash -n tools/run-jcalgtest`, `python3 -m py_compile tools/jcalgtest-apdu-watchdog.py`, and `git diff --check` passed. Hardware confirmation: the client log shows `Test option number: 2`, reader slot resolved from exact 07E7 name, selected card `07E74C5D7A038DEC`, then performance submenu choice 2. The client session ended early and is not a completed campaign.
+- Result: Attempt 3 recorded 37 pre-cleanup samples, peak 340 files and 9,739 / 98,304 bytes (9.91%). This short run does not establish a resource plateau. Attempt 2 had briefly selected option 1 on F42D due the input-order bug and was stopped after initial metadata and DES probing; all attempts remain separated under `artifacts/results/option2-acceptance-20261117T2113Z/`.
+- Decision: Reset 07E7 with the normal empty-card UF2, reinstall the unchanged CAP, verify identities, then restart the bounded option-2 campaign. T7, T8 and T10 remain open.
+- Artifacts/logs: `tools/run-jcalgtest`, `tools/jcalgtest-apdu-watchdog.py`, `.agent/QKB.md`, `.agent/HANDOFF.md`, `TODO.md`; `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt3/`

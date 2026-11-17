@@ -1401,3 +1401,23 @@ answers in advance: separate Scanner instances can buffer later lines.
 The initial stopped prompt was terminated before any performance option ran;
 its partial log is kept separate from the active attempt under
 `artifacts/results/option2-acceptance-20261117T1830Z/F42DD9D07D6D2B07/`.
+
+## JCAlgTest watchdog must route reader selection by prompt — 2026-11-17
+
+With multiple PC/SC readers, `tools/run-jcalgtest` resolves the supplied exact
+reader name (including the chip ID) to the current SunPCSC reader slot. The
+watchdog previously queued that slot before scripted main-menu inputs, although
+the client asks for the main-menu choice first. This shifted every answer: an
+intended option-2 run selected option 1 and, after another shifted answer,
+connected to F42D instead of the requested 07E7.
+
+**Viable fix.** Pass the identity-resolved slot separately as `--reader-index`
+to `jcalgtest-apdu-watchdog.py`. The watchdog answers it only when the exact
+reader-selection prompt appears; `--input-line` remains in order for menu
+prompts. The physical confirmation log at
+`artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt3/client.log`
+shows menu 2, reader 1, and the selected 07E7 card before performance submenu
+2. The run ended early and is not acceptance. Use a fresh empty-card start for
+the next acceptance run and verify the `Used reader` identity before counting
+any results. `bash -n`, Python bytecode compilation, and `git diff --check`
+passed for the wrapper change.

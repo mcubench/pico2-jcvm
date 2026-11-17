@@ -116,7 +116,7 @@ if [[ -n "$apdu_timeout" || ${#extra_input_lines[@]} -gt 0 ]]; then
     watchdog_args+=(--apdu-timeout "$apdu_timeout")
   fi
   if (( reader_count > 1 )); then
-    watchdog_args+=(--input-line "$reader_index")
+    watchdog_args+=(--reader-index "$reader_index")
   fi
   for line in "${extra_input_lines[@]}"; do
     watchdog_args+=(--input-line "$line")
