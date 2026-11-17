@@ -1497,6 +1497,12 @@ the first of those late windows; the later two peaks were 660/13,451 and
 661/13,433. This shows bounded sawtooth behavior over the measured campaign,
 not monotonic growth; it does not establish all possible applet workloads.
 
+The same 2,951-sample trace has 2,951 parseable `HEAP_GC` samples. Live arrays
+rose from 30 at startup to 115 while new algorithm families were initialized;
+the final 100 samples are exactly 115 arrays / 30 instances each. Thus the
+initial increase is bounded and the final repeated cleanup window is stable.
+This is a count of Java heap objects, not a byte-level RAM high-water measure.
+
 Correction: the serial log contains **24**, not 25, explicit
 `OBJECT_DELETION:LOW_WATERMARK_COMPACT` records; all 24 report `status=0`.
 Earlier notes counted one extra. The campaign still has 2,951 telemetry

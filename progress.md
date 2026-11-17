@@ -31481,3 +31481,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: At this checkpoint the array heap count is not continuously increasing; storage has local rises and cleanup drops and remains well below the 90% limit. This is early evidence only: option 1 has not completed and additional algorithm families may change live counts.
 - Decision: Keep the long client run active and keep T7/T8/T10 open. Do not refresh PC/SC while it is running.
 - Artifacts/logs: Stable snapshots `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/analysis-snapshot-20261118T0029CET-{serial,client}.log`; active originals `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.
+
+
+## 2026-11-18 Confirm physical option-2 heap counts plateau after initialization 5
+
+- Step-Id: `20261118-0030-mem01-opt2-heap-tail`
+- Task: MEM-01 T8 exploratory heap reuse/resource analysis
+- When: '2026-11-18 00:29 CET' - '2026-11-18 00:30 CET'
+- Model: `gpt-6-codex`
+- Change: Parsed all object-deletion heap-GC samples from the completed physical option-2 serial capture, separately from storage arena bytes/files, to test whether live object counts kept rising across method cleanup boundaries.
+- Validation: All 2,951 `HEAP_GC` lines parsed. Live arrays range from 30 at startup to 115 after algorithm-family initialization; live instances range 16–30. The final 100 cleanup samples are exactly `(arrays_live=115, instances_live=30)`. The complete-run storage headroom gate remains PASS at 14.852% peak; the client completion marker and prior APDU result checks remain intact.
+- Result: The client does initialize additional live heap objects while moving through new algorithm families, then reaches a stable count across the final 100 cleanup boundaries. Together with late storage-window means near 12 KB, the completed option-2 run shows bounded reuse/cleanup rather than continuous growth. It does not measure byte-level transient RAM high-water and is still exploratory until T7 passes.
+- Decision: Keep T7/T8/T10 open. Continue the full option-1 campaign and compare its completed tail after all algorithm families.
+- Artifacts/logs: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt4/serial.log`; client log `attempt5/client-resume.log`.
