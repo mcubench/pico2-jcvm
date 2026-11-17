@@ -31097,6 +31097,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep D2 unconfirmed and T1 open. Continue with target control/handle-count instrumentation and the full RSA-1984/RSA-2048 Cipher/Signature resume-list reproduction; then resume option-2 acceptance work.
 - Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T164222Z/F42DD9D07D6D2B07/` (probe/serial); UF2 SHA-256 `766f724f91a38927672c72b837e3e4d9a62629dd5a6cf6fb3130a2f29846c1be`; cycle log `artifacts/logs/cycle-choupi-20261117T164130Z.log`.
 
+## 2026-11-17 Measure RSA-1536 target control 10
+
+- Step-Id: `20261117-1757-longop01-rsa1536-control`
+- Task: HOST-01 LONGOP-01 T1 target control
+- When: '2026-11-17 17:47 CET' - '2026-11-17 17:57 CET'
+- Model: `gpt-6.1-sol`
+- Change: Extended the physical JCAlgTest APDU probe to run the archived RSA-1536 private ISO14888 ×50 control alongside the RSA-1984 PKCS1 case. Added a profile tag to target memory telemetry and validator checks for both profiles.
+- Validation: `./tools/test-ccid-progress-flow` passed (43/43), Java hardware probe compiled via `./tools/env javac`, and `bash -n tools/test-longop01-rsa1984-physical` passed. Normal ARM `max_crypto` build passed with 35,404 bytes flash headroom; approved helper/list refreshed F42DD9D07D6D2B07; full JCVM `cycle choupi` passed (`TEST:PASS`, `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL`/`FAULT`). The first focused wrapper attempt rejected the RSA-1536 control because the checker incorrectly required a time extension; corrected the assertion, verified it on the captured serial log, and reran the full wrapper successfully (`PHYSICAL:PASS`).
+- Result: RSA-1984 PKCS1 ×50 returned `AA9000` in 48.527 s; available transient bytes 117,064 at entry, 81,376 minimum over 191 samples, 117,016 on return; CCID extensions 47/47. RSA-1536 ISO14888 ×50 returned `AA9000` in 1.491 s; 117,688 at entry, 117,432 minimum over 3 samples, and 117,688 on return; no extension was submitted for the completed control. GC boundaries showed 131 arrays / 34 instances live before and after; RSA-1984 GC reclaimed 51 result arrays. Aggregate free-space samples miss brief peaks/fragmentation and GC counts are boundary observations; D2 is weakened but not ruled out.
+- Decision: Keep T1/D2 open for more direct high-water/fragmentation evidence. Continue with the RSA-1984/RSA-2048 Cipher/Signature resume-list matrix and the flash-heavy DELETE watchdog audit, then return to unchanged-client option-2 acceptance.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T165449Z/F42DD9D07D6D2B07/`; firmware SHA-256 `e1e02cbfc474e0d1756dc2902855e3072aa1e5b2fd1c5cd64f340f987fff7f34`; cycle log `artifacts/logs/cycle-choupi-20261117T165002Z.log`.
+
 - Step-Id: `20261117-1735-longop01-d1-progress`
 - Task: HOST-01 LONGOP-01 T3
 - When: '2026-11-17 17:04 CET' - '2026-11-17 17:35 CET'

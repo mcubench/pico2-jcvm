@@ -6,7 +6,7 @@ import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
 import java.util.List;
 
-/** Run the archived JCAlgTest RSA-1984 private PKCS1 ×50 APDU path once. */
+/** Run archived JCAlgTest RSA-1984 and RSA-1536 private ×50 APDU paths. */
 public final class JCAlgTestRsa1984PhysicalProbe {
   private static String hex(byte[] bytes) {
     StringBuilder text = new StringBuilder(bytes.length * 2);
@@ -62,6 +62,12 @@ public final class JCAlgTestRsa1984PhysicalProbe {
         0x7c, (byte) 0xff, (byte) 0xff, 0x00, 0x01, 0x00,
         0x32, 0x00, 0x01
     };
+    byte[] rsa1536Config = new byte[] {
+        0x00, 0x11, 0x00, 0x0d, (byte) 0xff, (byte) 0xff,
+        0x00, 0x0f, 0x00, (byte) 0x80, 0x00, 0x04, 0x01,
+        0x00, (byte) 0xff, (byte) 0xff, 0x00, 0x02, 0x00,
+        0x32, 0x00, 0x01
+    };
 
     Card card = selected.connect("*");
     try {
@@ -77,7 +83,13 @@ public final class JCAlgTestRsa1984PhysicalProbe {
       transmit(channel, "RSA1984_PRIVATE_PKCS1_X50_B043",
                command(0x43, config), 0xaa);
       transmit(channel, "GC_AFTER_MEASURE", command(0xe2, new byte[0]), -1);
+      transmit(channel, "RSA1536_PREPARE_B031", command(0x31, rsa1536Config), 0xaa);
+      transmit(channel, "GC_BEFORE_RSA1536_MEASURE", command(0xe2, new byte[0]), -1);
+      transmit(channel, "RSA1536_PRIVATE_ISO14888_X50_B043",
+               command(0x43, rsa1536Config), 0xaa);
+      transmit(channel, "GC_AFTER_RSA1536_MEASURE", command(0xe2, new byte[0]), -1);
       System.out.println("TEST:PASS RSA1984_PRIVATE_PKCS1_X50");
+      System.out.println("TEST:PASS RSA1536_PRIVATE_ISO14888_X50");
     } finally {
       card.disconnect(false);
     }

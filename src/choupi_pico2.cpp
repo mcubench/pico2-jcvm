@@ -140,6 +140,7 @@ namespace {
 choupi::MemoryLowWater rsa_apdu_memory_low_water;
 uint32_t rsa_apdu_memory_started_us = 0;
 uint32_t rsa_apdu_memory_last_sample_us = 0;
+uint8_t rsa_apdu_memory_profile = 0;
 
 void sample_rsa_apdu_memory(const uint32_t now_us, const bool force) {
   if (!rsa_apdu_memory_low_water.active ||
@@ -154,11 +155,13 @@ void sample_rsa_apdu_memory(const uint32_t now_us, const bool force) {
 } // namespace
 
 extern "C" void choupi_target_memory_operation_begin(uint8_t cla,
-                                                       uint8_t ins) {
+                                                       uint8_t ins,
+                                                       uint8_t profile) {
   if (cla != 0xb0 || ins != 0x43) return;
   const uint32_t now_us = time_us_32();
   rsa_apdu_memory_started_us = now_us;
   rsa_apdu_memory_last_sample_us = now_us;
+  rsa_apdu_memory_profile = profile;
   rsa_apdu_memory_low_water.begin(
       choupi_available_transient_memory_bytes());
 }
@@ -178,8 +181,9 @@ extern "C" void choupi_target_memory_operation_end(void) {
   const uint32_t samples = rsa_apdu_memory_low_water.samples;
   const uint32_t elapsed_us = now_us - rsa_apdu_memory_started_us;
   rsa_apdu_memory_low_water.finish();
-  std::printf("CHOUPI:RSA_MEMORY apdu=B043 start_free=%lu min_free=%lu "
+  std::printf("CHOUPI:RSA_MEMORY apdu=B043 profile=%02X start_free=%lu min_free=%lu "
               "end_free=%lu delta=%ld samples=%lu elapsed_us=%lu\r\n",
+              static_cast<unsigned>(rsa_apdu_memory_profile),
               static_cast<unsigned long>(initial_available),
               static_cast<unsigned long>(minimum_available),
               static_cast<unsigned long>(

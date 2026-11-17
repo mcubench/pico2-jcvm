@@ -29,7 +29,8 @@
 
 namespace {
 extern "C" void choupi_target_memory_operation_begin(uint8_t cla,
-                                                       uint8_t ins);
+                                                       uint8_t ins,
+                                                       uint8_t profile);
 extern "C" void choupi_target_memory_operation_end(void);
 
 constexpr uint8_t kCcidInterface = 2;
@@ -550,7 +551,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
 class NativeOperationScope {
 public:
   NativeOperationScope(uint8_t rhport, uint8_t sequence, uint8_t cla,
-                       uint8_t ins) {
+                       uint8_t ins, uint8_t profile) {
     native_operation_active = true;
     native_operation_rhport = rhport;
     native_operation_sequence = sequence;
@@ -558,7 +559,7 @@ public:
     native_progress_stats = {};
     native_progress_stats.sequence = sequence;
     native_progress_report_pending = false;
-    choupi_target_memory_operation_begin(cla, ins);
+    choupi_target_memory_operation_begin(cla, ins, profile);
   }
   ~NativeOperationScope() {
     native_operation_active = false;
@@ -1055,8 +1056,9 @@ void process_message(uint8_t rhport) {
             std::fflush(stdout);
             uint16_t process_status = 0xffff;
             {
-              NativeOperationScope operation(rhport, rx_buffer[6], apdu[0],
-                                             apdu[1]);
+              NativeOperationScope operation(
+                  rhport, rx_buffer[6], apdu[0], apdu[1],
+                  apdu_length > 8 ? apdu[8] : 0);
               process_status = choupi_vm_process_applet(
                   apdu, static_cast<uint16_t>(apdu_length), response,
                   static_cast<uint16_t>(sizeof(response)),
@@ -1096,7 +1098,9 @@ void process_message(uint8_t rhport) {
       choupi_reader_led_activity();
       uint16_t status = 0xffff;
       {
-        NativeOperationScope operation(rhport, rx_buffer[6], apdu[0], apdu[1]);
+        NativeOperationScope operation(
+            rhport, rx_buffer[6], apdu[0], apdu[1],
+            apdu_length > 8 ? apdu[8] : 0);
         status = choupi_vm_process_applet(
             apdu, static_cast<uint16_t>(apdu_length), response,
             static_cast<uint16_t>(sizeof(response)), &applet_response_length);
