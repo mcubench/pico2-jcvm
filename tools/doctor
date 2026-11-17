@@ -54,9 +54,14 @@ report_command mvn yes
 report_command picotool no
 
 printf '\nPico SDK\n'
-sdk_path="${PICO_SDK_PATH:-}"
-if [[ -z "${sdk_path}" && -x "${repo_root}/tools/env" ]]; then
+# Report the SDK the repo wrappers will use; tools/env ignores an ambient
+# PICO_SDK_PATH (override: PICO2_SDK_PATH), so do not read the ambient value here.
+sdk_path=""
+if [[ -x "${repo_root}/tools/env" ]]; then
   sdk_path="$(${repo_root}/tools/env bash -c 'printf %s "${PICO_SDK_PATH:-}"' 2>/dev/null || true)"
+fi
+if [[ -n "${PICO_SDK_PATH:-}" && "${PICO_SDK_PATH}" != "${sdk_path}" ]]; then
+  printf 'NOTE        ambient PICO_SDK_PATH=%s is ignored by the repo wrappers\n' "${PICO_SDK_PATH}"
 fi
 if [[ -n "${sdk_path}" ]]; then
   report_path PICO_SDK_PATH "${sdk_path}" yes

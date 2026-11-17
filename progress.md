@@ -30700,3 +30700,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 36,024 bytes headroom vs 34,064 recorded for the `98fcb151` package (different compiler/libraries and source, so not a like-for-like comparison).
 - Decision: Run `./tools/cycle choupi` once a board is enumerated before relying on this image. Continue with root cleanup and the `tools/doctor` SDK-path alignment.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`
+
+## 2026-11-17 Tidy-up step 10: doctor SDK path and root backup cleanup 5
+
+- Step-Id: `20261117-1635-tidy10-doctor-sdk-path`
+- Task: repository tidy-up plan, items 3 and 4
+- When: '2026-11-17 16:26' - '2026-11-17 16:35'
+- Model: `claude-sonnet-5-5`
+- Change: `tools/doctor` now reports the SDK that `tools/env` selects and prints a NOTE when an ambient `PICO_SDK_PATH` differs (the wrappers ignore it since `f951d035`). Deleted the git-ignored root `progress.md.bak` after verifying that all 1,300 unique record headings in it are present in `progress.md`. The `perf_tips.md` redirect stub was NOT removed: `docs/PICO2_PRACTICAL_DEVELOPMENT_GUIDE.md` still links it in five places; it goes with the deferred docs pass.
+- Validation: `bash -n tools/doctor`; `./tools/doctor` exit 0, reports `.local-toolchain/sdk` and the ambient-override NOTE. No build or hardware run.
+- Result: doctor and the build wrappers agree on the SDK path.
+- Decision: Remaining tidy-up: docs/reviews/root `.md` relocation (deferred by user), `.agent` archive/QKB consolidation (needs approval).
+- Artifacts/logs: none
