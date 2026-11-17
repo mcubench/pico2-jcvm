@@ -30724,3 +30724,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Both files remain recoverable at `c3d79e2d`. QKB.md was NOT compacted in this step; see Decision.
 - Decision: QKB compaction (1,500 lines, 64 sections) needs an agreed selection of sections; archives are cross-linked so nothing else was moved or deleted.
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 12: compact QKB.md 20
+
+- Step-Id: `20261117-1720-tidy12-qkb-compaction`
+- Task: repository tidy-up plan, QKB consolidation (option chosen by the user: archive dated incidents)
+- When: '2026-11-17 17:01' - '2026-11-17 17:20'
+- Model: `claude-sonnet-5-5`
+- Change: Moved 16 dated 2026-11-12..16 incident sections (474 lines) verbatim from `.agent/QKB.md` to `.agent/archive/2026-11-17-qkb-compaction/QKB-archived-sections.md`, with `MIGRATION.md` (heading, original line range, archive line) and `SHA256SUMS`. `QKB.md` keeps a one-line pointer per archived entry (`## Archived incident entries`). QKB.md went from 1,504 to 1,051 lines. Kept in QKB.md: the 2026-11-17 host-move entry, all viable-fix/invariant sections, and still-open items (LONGOP-01 RSA-1984 x50, D92 queued-response/HOST-01 entries, the deletion/compaction design rules). Selection was a judgment call by section: any entry wrongly judged "resolved" is one line away in the archive.
+- Validation: `sha256sum -c SHA256SUMS` OK; section boundary parse asserted exactly 16 matches; `git grep 'QKB.md#'` found no links to removed anchors (remaining hits cite the untouched 2026-11-11 archive or plain-text line numbers). `QKB_INDEX.md` was not changed (it indexes the older QKB archives only). No build or hardware run.
+- Result: The pre-compaction QKB is recoverable from git (parent commit of this step).
+- Decision: `.agent` consolidation is complete for now. Remaining tidy-up: docs/reviews/root `.md` relocation (deferred by the user).
+- Artifacts/logs: `.agent/archive/2026-11-17-qkb-compaction/`
