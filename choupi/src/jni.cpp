@@ -474,7 +474,7 @@ int32_t readSignedArrayElement(JC_Array &array, const uint16_t index) {
 
 jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
                         const jshort_t length, const jref_t destinationRef,
-                        const jshort_t destinationOffset) {
+                        const jshort_t destinationOffset, const bool atomic) {
   Heap &heap = Context::getActiveContext().getHeap();
   auto source = heap.getArray(sourceRef);
   auto destination = heap.getArray(destinationRef);
@@ -492,7 +492,7 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
                                  elements.data());
   destination->copyPrimitiveEntriesFrom(
       static_cast<uint16_t>(destinationOffset),
-      static_cast<uint16_t>(length), elements.data(), true);
+      static_cast<uint16_t>(length), elements.data(), atomic);
 
   return static_cast<jshort_t>(destinationOffset + length);
 }
@@ -537,14 +537,14 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
     const jref_t source, const jshort_t sourceOffset, const jshort_t length,
     const jref_t destination, const jshort_t destinationOffset) {
   return copyArrayRange(source, sourceOffset, length, destination,
-                        destinationOffset);
+                        destinationOffset, true);
 };
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepackNonAtomic(
     const jref_t source, const jshort_t sourceOffset, const jshort_t length,
     const jref_t destination, const jshort_t destinationOffset) {
   return copyArrayRange(source, sourceOffset, length, destination,
-                        destinationOffset);
+                        destinationOffset, false);
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(

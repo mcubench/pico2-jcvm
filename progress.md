@@ -30952,3 +30952,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The JCAlgTest issue is exception/result handling for an unsupported cross-package Cipher request, not a reason to implement deprecated algorithm 18. Case 89 is a distinct persistent array write-capacity failure under transaction load.
 - Decision: Keep T7 open and preserve the correct NO_SUCH_ALGORITHM behavior. Investigate cross-package exception capture and the separate non-atomic arrayCopy storage behavior before changing runtime code.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T144120Z/`, `...T144244Z/`; `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261117T144708Z.log`
+
+## 2026-11-17 Correct non-atomic native repack dispatch 4
+
+- Step-Id: `20261117-1554-jni-nonatomic-repack`
+- Task: RV-20261106-50 follow-up
+- When: '2026-11-17 15:50 CET' - '2026-11-17 15:54 CET'
+- Model: `gpt-6.1-sol`
+- Change: Passed the atomicity mode through the shared native ArrayLogic repack helper, so `arrayCopyRepackNonAtomic` reaches persistent array storage with `atomic=false` while the atomic entry point remains `true`.
+- Validation: `./tools/build arm --profile max_crypto` passed in normal mode, object deletion ON, debug switches OFF, and no compiler warnings; flash headroom is 36,008 bytes. `git -c core.whitespace=cr-at-eol diff --check` passed. Approved reader refresh found 0 Pico 2 devices; `./tools/list-readers --pico-only` returned `list() failed`, so the required full JCVM hardware cycle could not run. The separate transaction case 89 failure remains in the bytecode-intercepted `Util.arrayCopyNonAtomic` path and is not fixed by this change.
+- Result: Native ArrayLogic API dispatch now preserves its atomic/non-atomic distinction. ARM firmware hash: `535253e22dc3088af894a4348f58fca1e86c18b82d78d2c91e1dbfc49aba14ce`.
+- Decision: Keep the change; continue independent analysis of cross-package exception propagation (MEM-01 T7) and persistent `Util.arrayCopyNonAtomic` capacity failure (RV-20261106-50). Retry full JCVM cycle when an identified board is available.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; hardware unavailable during this check.
