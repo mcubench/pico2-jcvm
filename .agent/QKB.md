@@ -48,6 +48,22 @@ Do not infer a roster from this table without re-listing; devices change.
 - `~/.bashrc` exports `PICO_SDK_PATH=$HOME/pico/pico-sdk` (unpatched TinyUSB, no
   `tud_task_budgeted`). The wrappers now ignore the ambient variable; override only with
   `PICO2_SDK_PATH`.
+- **Flashing with several RP boards attached:** `tools/flash` never set picotool's
+  `--bus/--address` selector (`set_target_selector` had no caller), so `picotool load`
+  failed with "Command requires a single RP-series device to be targeted" as soon as a
+  second RP-series board was present. Fixed: the selector is set before load and
+  BOOTSEL requests, the file precedes the selectors, and `-x` is replaced by an explicit
+  `picotool reboot --bus --address` (`-x` fails the same way with several devices).
+  `picotool reboot -F -u` from a running JCVM can still fail the same way; the wrapper
+  then falls back to the CDC-1200 touch, which works.
+- **Cached Java 21 classes:** `build/jcalgtest-reader-index/*.class` was compiled by the old
+  host's Java 21 and fails on Java 17 (`UnsupportedClassVersionError 65.0`). Delete such
+  cached classes (moved to `build/_stale-claude-paths/java21-classes/`) to force a rebuild.
+- **Reader not published (`SCARD_E_NO_READERS_AVAILABLE`):** this host's
+  `/etc/libccid_Info.plist` (libccid 1.5.2) has no `0x2E8A:0x0009` entry, unlike the old
+  machine's patched table. Install it once as root with `sudo ./tools/install-libccid-pico2`
+  (edits a backup-protected copy, validates it, restarts pcscd). Debian runs `pcscd` as root,
+  so there is no `pcscd` account and the helper's ACL grant is skipped (`acl=not-needed`).
 - Compiler is now whatever `arm-gnu-14.2` provides; record compiler/host in provenance when
   comparing timings with pre-move campaigns.
 

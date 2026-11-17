@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# One-time root install: teach libccid about the Pico 2 CHOUPI CCID reader
+# (USB 2e8a:0009) so pcscd publishes it. Backs up the plist, edits a copy with
+# tools/libccid_add_pico2.py, validates it, installs it and restarts pcscd.
+# Usage: sudo ./tools/install-libccid-pico2
+set -euo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+(( EUID == 0 )) || { printf 'Run with sudo: sudo %s\n' "$0" >&2; exit 1; }
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+editor="${script_dir}/libccid_add_pico2.py"
+plist=/etc/libccid_Info.plist
+backup=/etc/libccid_Info.plist.pico2-backup
+
+[[ -f "${editor}" && ! -L "${editor}" ]] || { printf 'Missing editor script: %s\n' "${editor}" >&2; exit 1; }
+[[ -f "${plist}" && ! -L "${plist}" ]] || { printf 'Missing or symlinked %s\n' "${plist}" >&2; exit 1; }
+
+work="$(mktemp -d)"
+trap 'rm -rf -- "${work}"' EXIT
+/usr/bin/python3 -I "${editor}" "${plist}" "${work}/Info.plist"
+if cmp -s "${plist}" "${work}/Info.plist"; then
+  printf 'No change needed: %s already lists 0x2E8A:0x0009.\n' "${plist}"
+else
+  [[ -e "${backup}" ]] || install -o root -g root -m 0644 "${plist}" "${backup}"
+  install -o root -g root -m 0644 "${work}/Info.plist" "${plist}"
+  printf 'Updated %s (backup: %s).\n' "${plist}" "${backup}"
+fi
+systemctl restart pcscd.service
+printf 'pcscd restarted. Replug or reset the Pico if its reader does not appear.\n'

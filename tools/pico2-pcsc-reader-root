@@ -31,9 +31,10 @@ if (( ${#matches[@]} == 0 || ${#matches[@]} > max_devices )); then
   exit 1
 fi
 
-if ! getent passwd pcscd >/dev/null; then
-  printf 'The pcscd service account does not exist.\n' >&2
-  exit 1
+# Debian runs pcscd as root, so no pcscd account exists and no ACL is needed.
+pcscd_account=0
+if getent passwd pcscd >/dev/null; then
+  pcscd_account=1
 fi
 
 usb_nodes=()
@@ -62,9 +63,11 @@ for device in "${matches[@]}"; do
   usb_nodes+=("${usb_node}")
 done
 
-for usb_node in "${usb_nodes[@]}"; do
-  /usr/bin/setfacl -m u:pcscd:rw "${usb_node}"
-done
+if (( pcscd_account )); then
+  for usb_node in "${usb_nodes[@]}"; do
+    /usr/bin/setfacl -m u:pcscd:rw "${usb_node}"
+  done
+fi
 /usr/bin/systemctl restart pcscd.service
-printf 'PCSC:ACCESS_GRANTED count=%s nodes=%s service=pcscd.service\n' \
-  "${#usb_nodes[@]}" "${usb_nodes[*]}"
+printf 'PCSC:ACCESS_GRANTED count=%s nodes=%s service=pcscd.service acl=%s\n' \
+  "${#usb_nodes[@]}" "${usb_nodes[*]}" "$( ((pcscd_account)) && echo applied || echo not-needed-pcscd-runs-as-root )"

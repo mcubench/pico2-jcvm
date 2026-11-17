@@ -30808,3 +30808,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: HANDOFF no longer claims the board state was not refreshed.
 - Decision: Choose the working token with the user, then flash.
 - Artifacts/logs: none
+
+## 2026-11-17 First JCVM flash on the new machine (token EE116F37C7E4A04E) 60
+
+- Step-Id: `20261117-1920-first-flash-ee11`
+- Task: physical token bring-up; fix `tools/flash` for several attached RP boards
+- When: '2026-11-17 18:51' - '2026-11-17 19:20'
+- Model: `claude-sonnet-5-5`
+- Change: At the user's choice, flashed the normal `max_crypto` JCVM to working token EE11 (`EE116F37C7E4A04E`, previously blank in BOOTSEL). Found and fixed `tools/flash`: `set_target_selector` had no caller, so `picotool load`/`reboot` ran without `--bus/--address` and failed with "Command requires a single RP-series device to be targeted" once four RP boards were attached; the selector is now set before BOOTSEL request and load, the file precedes the selectors, and `-x` (which fails the same way) is replaced by an explicit `picotool reboot` with selectors. Also: `tools/pico2-pcsc-reader-root` no longer requires a `pcscd` account (Debian runs pcscd as root; ACL grant skipped); new `tools/install-libccid-pico2` + `tools/libccid_add_pico2.py` to add `0x2E8A:0x0009` to `/etc/libccid_Info.plist`; request `HOST-LIBCCID-PICO2-20261117`; QKB entries.
+- Validation: `./tools/test-flash-target-selection` `TEST:SUMMARY fail=0`. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid EE116F37C7E4A04E`: `FLASH:PASS` (picotool verify 100%, "rebooted into application mode"), `MONITOR` 18 s, repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, 0 FAULT/FAIL/PANIC lines, `CYCLE:PASS`, log `artifacts/logs/cycle-choupi-20261117T140036Z.log`. Image `build/arm/pico2_choupi.uf2` SHA-256 `1185b7184698357e674ec8567f02ce9389d57f54222ec88820b5b8f86c028401` (profile max_crypto, mode=normal, object_deletion=ON, built with Arm GNU 14.2.1). Earlier attempts in this step failed before writing flash (picotool selector error) or after a CDC-1200 BOOTSEL fallback (sysfs race in `tools/lib/flash_usb_target.sh:47` while the board re-enumerated; not fixed).
+- Result: Firmware runs on EE11 (USB `Pico2 JCVM CCID`, serial = chip ID). PC/SC reader NOT yet visible: `list-readers` -> `SCARD_E_NO_READERS_AVAILABLE` because libccid 1.5.2 lacks the 2E8A:0009 entry; blocked on the root request above. No APDU/PC/SC test, VPCD campaign or JCAlgTest run was done. `list-readers` first failed on a cached Java 21 class (moved aside).
+- Decision: After the user runs the request, list readers, then smoke-test via PC/SC (GPPro/SmartcardIO) before any campaign. Working token: EE11.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261117T140036Z.log`

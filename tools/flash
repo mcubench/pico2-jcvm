@@ -170,6 +170,7 @@ wait_for_bootsel() {
 request_bootsel() {
   local attempt="$1"
   printf 'FLASH:BOOTSEL request attempt=%s method=picotool\n' "${attempt}"
+  set_target_selector
   if timeout --signal=TERM --kill-after=2s 8s picotool reboot "${selector_args[@]}" -F -u; then
     return 0
   fi
@@ -234,12 +235,19 @@ run_load() {
   local load_status
   local normalized_load
   local -a load_command=(picotool load)
+  # Always pin picotool to the identified device; without a selector it fails
+  # as soon as a second RP-series device is attached.
+  set_target_selector
   load_capture="$(mktemp)"
   last_load_failure=unknown
   if [[ "${mode}" == force ]]; then
     load_command+=(-f)
   fi
-  load_command+=("${selector_args[@]}" -v -x "${image}")
+  # picotool 2.3.1 requires the file before the device-selection options. Do not
+  # pass -x: with several RP-series devices attached its post-load reboot fails
+  # with "Command requires a single RP-series device to be targeted" even when
+  # --bus/--address select one device. Reboot explicitly below instead.
+  load_command+=(-v "${image}" "${selector_args[@]}")
   printf 'FLASH:LOAD mode=%s\n' "${mode}"
   set +e
   timeout --signal=TERM --kill-after=5s 60s "${load_command[@]}" 2>&1 | tee "${load_capture}"
@@ -265,9 +273,17 @@ run_load() {
     fi
     return 1
   fi
+  if grep -Eq 'Loading into Flash:.*100%' <<<"${normalized_load}" && \
+      flash_load_output_verified "${normalized_load}"; then
+    local reboot_output
+    reboot_output="$(timeout --signal=TERM --kill-after=2s 20s \
+      picotool reboot "${selector_args[@]}" 2>&1 || true)"
+    printf '%s\n' "${reboot_output}"
+    normalized_load+=$'\n'"${reboot_output}"
+  fi
   if ! grep -Eq 'Loading into Flash:.*100%' <<<"${normalized_load}" || \
       ! flash_load_output_verified "${normalized_load}" || \
-      ! grep -q 'The device was rebooted to start the application' <<<"${normalized_load}"; then
+      ! grep -Eq 'The device was rebooted (to start the application|into application mode)' <<<"${normalized_load}"; then
     printf 'FLASH:LOAD returned without a confirmed 100%% flash verification and application reboot\n'
     return 1
   fi

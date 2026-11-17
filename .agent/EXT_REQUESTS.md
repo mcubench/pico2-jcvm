@@ -1,5 +1,26 @@
 # External validation requests
 
+## HOST-LIBCCID-PICO2-20261117 — Teach libccid the Pico 2 CHOUPI CCID reader
+
+Created 2026-11-17 19:15. The JCVM firmware is flashed and running on token
+`EE116F37C7E4A04E` (USB `2e8a:0009`, "Pico2 JCVM CCID"), but PC/SC lists no reader
+(`SCARD_E_NO_READERS_AVAILABLE`): libccid 1.5.2 on this machine has no entry for
+`0x2E8A:0x0009` in `/etc/libccid_Info.plist` (the old machine had a locally patched
+table). This needs root. Please run from any directory:
+
+```sh
+sudo /home/agentdev/projects/pico2-jcvm/tools/install-libccid-pico2
+sudo env SUDO_USER=agentdev /home/agentdev/projects/pico2-jcvm/tools/install-pcsc-sudoers
+```
+
+- The first script appends one entry (`0x2E8A`, `0x0009`, "Pico 2 CHOUPI CCID") to each of the
+  three parallel arrays in `/etc/libccid_Info.plist`, validates the result, keeps a backup at
+  `/etc/libccid_Info.plist.pico2-backup`, installs it and restarts `pcscd`. It is idempotent.
+  The edit logic is `tools/libccid_add_pico2.py` (a test run on a copy added exactly three lines).
+- The second command re-installs the (updated) PC/SC helper: Debian runs `pcscd` as root, so
+  the old helper's "pcscd service account does not exist" check is removed.
+- Reply when done; I will run the helper and `./tools/list-readers --pico-only`.
+
 ## WIN-MEM01-EMPTY-NODEBUG-98FCB151 — Test current deletion-enabled build
 
 **Status 2026-11-17:** this image predates the `OBJECT_DELETION:PRE_CLEANUP` telemetry and the 90% headroom gate. A fresh normal max-crypto empty-card package is planned (see HANDOFF MEM-01 item 2) and will replace this request; results from this image remain valid for its hash.
