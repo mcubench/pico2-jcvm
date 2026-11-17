@@ -1297,3 +1297,32 @@ reading card state or issuing APDUs. Do not use GPPro for offline CAP inspection
 in a restricted context; inspect CAP ZIP/component contents with non-PCSC archive
 utilities. If a GPPro operation might initialize SmartcardIO, use the approved
 host-access execution path from its first attempt.
+
+
+## Near-capacity GlobalPlatform LOAD timing — 2026-11-17
+
+On F42DD9D07D6D2B07, recreated the near-capacity persistent overlay (94,479
+bytes / 160 files, 3,820 bytes persistent free), then ran a normal full-JCVM
+cycle to reset volatile RAM. GPPro loaded the unchanged supplied
+`AlgTestApiCore_305.cap` (SHA-256
+`9c6b348ef1206c45459bfe0899fcc74f755f7a946fc71f65508dd94dfb13026e`,
+70,253-byte archive). It sent 42 E8 blocks; the final E8 block returned
+`9000` in 2.534 s. The full GPPro LOAD operation took 2.803 s, returned status
+0, and GET STATUS/list showed package AID `4A43416C6754657374417069` loaded.
+The finite serial log showed `FS_COMPACT` at 94,479 bytes and matching E8
+responses, with no `USB_PROGRESS`, `PANIC`, `FAULT`, or `TEST:FAIL`. Cleanup
+removed the supplied API package and local filler instance/package; only the
+unchanged JCAlgTest package remained. Firmware UF2 SHA-256
+`a221bd40b8ed0059d934a25451988862061b23fcdfee1cf096f77e137a5930d6`.
+Artifacts: `artifacts/results/filesystem-capacity-physical-20261117T180244Z/`
+and `artifacts/results/filesystem-capacity-load-20261117T1807Z/`.
+`./tools/fixture-path --verify` passed (83 files, JCAlgTest 1.8.4 CAP baseline,
+48 Java Card API CAPs).
+
+Source trace: only the final E8 block calls `finishLoad()`; card-manager E8
+dispatch is synchronous and not wrapped in `NativeOperationScope`. It writes
+the package CAP slot through `choupi_store_cap_package()`'s `flash_safe_execute`
+callback, then commits a separate full filesystem snapshot to enable the
+package. At this state the observed operation remained well below the 15 s
+watchdog. Keep the earlier Windows timing discrepancy and interrupted lifecycle
+recovery paths separate from this successful current-image result.

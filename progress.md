@@ -31226,3 +31226,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: GPPro CLI invocation is not a reliable offline CAP parser in this host environment.
 - Decision: Use ZIP/component inspection for offline CAP metadata and route any SmartcardIO-capable GPPro command through the approved host-access path from the first attempt.
 - Artifacts/logs: command output only; no hardware artifact.
+
+## 2026-11-17 Measure near-capacity GlobalPlatform LOAD 11
+
+- Step-Id: `20261117-1911-longop01-t5-load`
+- Task: HOST-01 LONGOP-01 T5 physical audit
+- When: '2026-11-17 19:00 CET' - '2026-11-17 19:11 CET'
+- Model: `gpt-6.1-sol`
+- Change: Measured the final GlobalPlatform LOAD block at near-capacity persistent-store occupancy and traced CAP slot publication plus package enable; updated TODO, QKB and handoff.
+- Validation: `./tools/fixture-path --verify` passed (83 files). Recreated the 94,479-byte/160-file overlay on F42D, ran the full normal JCVM cycle successfully, then used the identified reader to load the unchanged `AlgTestApiCore_305.cap`. GPPro exited 0, GET STATUS/list showed the package loaded. Deleted the API package and local filler; final list retains only unchanged JCAlgTest. No firmware sources changed.
+- Result: 42 E8 blocks; final E8 returned `9000` in 2.534 s; whole GPPro LOAD took 2.803 s. Serial showed `FS_COMPACT`, matching E8 success, no `USB_PROGRESS`, `PANIC`, `FAULT` or `TEST:FAIL`. CAP SHA-256 `9c6b348ef1206c45459bfe0899fcc74f755f7a946fc71f65508dd94dfb13026e`; firmware SHA-256 `a221bd40b8ed0059d934a25451988862061b23fcdfee1cf096f77e137a5930d6`.
+- Decision: Near-capacity E4/E6/E8 paths remain below the observed 15 s watchdog on this normal image; no timing fix is indicated. Continue with lifecycle recovery and the historical Windows discrepancy.
+- Artifacts/logs: `artifacts/results/filesystem-capacity-physical-20261117T180244Z/F42DD9D07D6D2B07/`; `artifacts/results/filesystem-capacity-load-20261117T1807Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T180536Z.log`.
