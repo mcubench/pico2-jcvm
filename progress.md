@@ -30664,3 +30664,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Two active external requests remain. Request content other than the two image references and the status note is unchanged.
 - Decision: Next, compact `TODO.md` (move dated MEM-01 status bullets out) and relocate docs.
 - Artifacts/logs: `.agent/archive/2026-11-17-ext-requests-prune/`
+
+## 2026-11-17 Tidy-up step 7: compact TODO.md MEM-01 section 20
+
+- Step-Id: `20261117-1550-tidy07-todo-mem01-compaction`
+- Task: repository tidy-up plan; TODO.md maintenance
+- When: '2026-11-17 15:26' - '2026-11-17 15:50'
+- Model: `claude-sonnet-5-5`
+- Change: In `TODO.md` the MEM-01 section had its checklist items (T1-T8, T10) interleaved with about 38 dated 2026-11-14..16 status bullets. The checklist items are kept verbatim in task order (T1-T6, T7, T8, T10, plus the board-state rule). A new five-line "current status (2026-11-17)" block summarizes implemented work, the interrupted VPCD run, the host move and the pointer to HANDOFF. The dated bullets and the old consolidated header are moved verbatim to `.agent/archive/2026-11-17-todo-compaction/TODO-mem01-dated-status-log.md`. TODO.md went from 1,304 to 1,270 lines (177 KB to 150 KB).
+- Validation: Inspection only (line accounting of the 50 original lines 71-120: 38 moved, 10 kept, header/pointer replaced). No build, test or hardware run. Other TODO sections were not changed.
+- Result: Open requirements of T7, T8 and T10 are unchanged. The status block is a new summary written from HANDOFF and the archived bullets, not a verbatim copy.
+- Decision: Remaining long sections (CAPIN-01 about 180 lines, HOST-01, GP-01) are candidates for a later pass. Next: relocate reviews and docs.
+- Artifacts/logs: `.agent/archive/2026-11-17-todo-compaction/`
