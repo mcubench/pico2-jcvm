@@ -31442,3 +31442,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The sustained run shows arena usage stayed far below the fail-closed threshold and was periodically compacted. It does not establish T8 acceptance because the required unchanged-client VPCD T7 gate has not passed; it is exploratory physical evidence only. A full option-1 attempt was started on separate identified token F42DD9D07D6D2B07, then interrupted by the PC/SC service restart described above; a complete option-1 campaign remains outstanding.
 - Decision: Keep MEM-01 T7/T8/T10 open. T7 requires host restoration of the Virtual PCD PC/SC reader. Resume F42D option 1 from its saved progress list only if that token is again PC/SC available; otherwise record the required failover and restart from empty state on another token.
 - Artifacts/logs: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt5/`; result log SHA-256 `4b69d0696b8471fe2b0a3765e7af8f4a4c3919ce53efe55713731c9320e096d6`; result CSV SHA-256 `92f4e0865ab9a48ff088c9232ebb38822619ee205972627336a85a74ed8cf530`; corrected per-attempt identity `campaign-identity.txt`.
+
+
+## 2026-11-18 Restart option 1 on the available failover token 10
+
+- Step-Id: `20261118-0014-mem01-opt1-failover`
+- Task: MEM-01 T8 exploratory option-1 campaign startup
+- When: '2026-11-18 00:05 CET' - '2026-11-18 00:14 CET'
+- Model: `gpt-6-codex`
+- Change: F42DD9D07D6D2B07 dropped from the PC/SC reader list after the host service restart. With only 07E74C5D7A038DEC available, documented the failover, reflashed it with the current normal empty-card UF2 (SHA-256 `525d85a955db3aaf02fff4650d7c9a20a9d3d2cc88637b41dc5db88a3bb41d25`), confirmed the card empty, and installed the unchanged 1.8.4/jc305 CAP. Kept the mistaken short support probe and stale-list setup failure in separate attempt folders. Started the proper `2 -> PERFORMANCE TEST -> 1` run from an isolated working directory with unique card name and serial capture.
+- Validation: `./tools/fixture-path --verify` passed (83 files; JCAlgTest CAP 1.8.4). Exact reader selection and both menu choices appear in `attempt4/client.log`; `Used reader` names chip ID 07E74C5D7A038DEC. At 00:14 CET, 12 method groups were recorded and `tools/check-object-deletion-headroom.py` passed with 25 samples, peak 311 files / 9,200 of 98,304 bytes (9.358%). No TEST:FAIL, FAULT, PANIC or headroom failure at this checkpoint. Client session 53642 and serial monitor session 91350 remain active.
+- Result: The long option-1 campaign is underway on a clean state. It reuses the 07E7 token from option 2 only because F42D is currently unavailable; therefore this run is exploratory and does not satisfy the preferred separate-token T8 setup. T7 also remains blocked by the missing host VPCD PC/SC driver.
+- Decision: Monitor attempt4 to completion or the 8-hour bound. Do not refresh PC/SC while it is live. Retry T7 only after `HOST-VPCD-PCSC-01` is resolved; obtain a separate token for acceptance if one becomes available.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/`; active client and serial logs under `attempt4/`. The aborted F42D attempt remains under `artifacts/results/option1-acceptance-20261117T2257Z/F42DD9D07D6D2B07/`.
