@@ -23,7 +23,8 @@ target_compile_options(rp2350_fs_overlay_test PRIVATE
   -Wno-unused-parameter -Wno-format -Wno-ignored-qualifiers
   -Wno-address-of-packed-member)
 target_compile_definitions(rp2350_fs_overlay_test PRIVATE
-  RP2350_FS_OVERLAY_TEST=1)
+  RP2350_FS_OVERLAY_TEST=1
+  CHOUPI_PC_RP2350_FS_OVERLAY=1)
 target_include_directories(rp2350_fs_overlay_test PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/fake_include"
   "${REPO_ROOT}/choupi/src"

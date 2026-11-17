@@ -4142,6 +4142,15 @@ int main(const int argc, char **argv) {
   expect(namespace_seeded, "full_overlay_cleanup_namespace_seeded");
 
   constexpr std::array<uint8_t, 16> fill_payload = {};
+  constexpr uint8_t preserved_unrelated_tag[] = {0xb3, 0x01, 0x7a};
+  constexpr std::array<uint8_t, 4> preserved_unrelated_value = {
+      0x19, 0x28, 0x37, 0x46};
+  uint8_t preserved_unrelated_readback[preserved_unrelated_value.size()]{};
+  uint32_t preserved_unrelated_length = 0;
+  const bool unrelated_value_seeded =
+      fs_write(preserved_unrelated_tag, sizeof(preserved_unrelated_tag),
+               preserved_unrelated_value.data(),
+               preserved_unrelated_value.size()) == FS_STATUS_OK;
   bool overlay_capacity_reached = false;
   for (uint32_t value = 0; value <= 0xffff; ++value) {
     const std::array<uint8_t, 3> tag = {
@@ -4154,13 +4163,49 @@ int main(const int argc, char **argv) {
     }
   }
   expect(overlay_capacity_reached, "full_overlay_cleanup_reaches_capacity");
+  const bool unrelated_value_survives_exhaustion = unrelated_value_seeded &&
+      fs_length(preserved_unrelated_tag, sizeof(preserved_unrelated_tag),
+                &preserved_unrelated_length) == FS_STATUS_OK &&
+      preserved_unrelated_length == preserved_unrelated_value.size() &&
+      fs_read(preserved_unrelated_tag, sizeof(preserved_unrelated_tag),
+              preserved_unrelated_readback,
+              sizeof(preserved_unrelated_readback)) == FS_STATUS_OK &&
+      std::equal(preserved_unrelated_value.begin(),
+                 preserved_unrelated_value.end(),
+                 preserved_unrelated_readback);
   constexpr uint8_t full_overlay_prefix[] = {0xb0, 0x01};
-  expect(fs_erase_prefix(full_overlay_prefix, sizeof(full_overlay_prefix)) == 0,
+  const bool namespace_erased =
+      fs_erase_prefix(full_overlay_prefix, sizeof(full_overlay_prefix)) == 0;
+  expect(namespace_erased && unrelated_value_survives_exhaustion,
          "full_overlay_cleanup_reclaims_payload_before_empty_record");
   expect(fs_exists(empty_namespace_tag.data(), empty_namespace_tag.size()) == 0 &&
              fs_exists(payload_namespace_tag.data(),
                        payload_namespace_tag.size()) == 0,
          "full_overlay_cleanup_erases_all_namespace_records");
+  const std::array<uint8_t, 3> post_cleanup_tag = {0xb4, 0x01, 0x01};
+  constexpr std::array<uint8_t, 4> post_cleanup_value = {
+      0xa1, 0xb2, 0xc3, 0xd4};
+  expect(namespace_erased &&
+             fs_write(preserved_unrelated_tag,
+                      sizeof(preserved_unrelated_tag),
+                      preserved_unrelated_value.data(),
+                      preserved_unrelated_value.size()) == FS_STATUS_OK &&
+             fs_write(post_cleanup_tag.data(), post_cleanup_tag.size(),
+                      post_cleanup_value.data(), post_cleanup_value.size()) ==
+                 FS_STATUS_OK &&
+             fs_read(preserved_unrelated_tag,
+                     sizeof(preserved_unrelated_tag),
+                     preserved_unrelated_readback,
+                     sizeof(preserved_unrelated_readback)) == FS_STATUS_OK &&
+             std::equal(preserved_unrelated_value.begin(),
+                        preserved_unrelated_value.end(),
+                        preserved_unrelated_readback) &&
+             fs_read(post_cleanup_tag.data(), post_cleanup_tag.size(),
+                     preserved_unrelated_readback,
+                     sizeof(preserved_unrelated_readback)) == FS_STATUS_OK &&
+             std::equal(post_cleanup_value.begin(), post_cleanup_value.end(),
+                        preserved_unrelated_readback),
+         "full_overlay_cleanup_preserves_existing_and_accepts_following_writes");
 
   fake_flash.fill(0xff);
   bool package_delete_reclaims_overlay_slots = fs_init() == 0;

@@ -30556,3 +30556,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: SIGINT made the PC emulator abort with `Unknown ptrace signal received: 2` at `src/arch/host/emulator.rs:743`. The client then reported card removal during RSA private 1536 `ALG_RSA_ISO14888 Cipher_doFinal()`; attribute this to interrupted host transport, not a verified card-side failure. No `F205`, `NO_RESOURCE`, `FS_WRITE_FAIL`, or `FAULT` appeared before shutdown. A matching `.cap-registry` was not saved, so do not resume from this directory.
 - Decision: Headroom was below threshold at interruption, but T7/T8 remain open pending a complete run. Restart option 2 from fresh state and allow the bounded run to finish; no graceful mid-suite shutdown has been established.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/{client.log,emulator.log,rp2350-overlay.flash,headroom.log}`; overlay SHA-256 and complete test output were not measured in this checkpoint.
+
+## 2026-11-17 Verify overlay recovery after capacity exhaustion 18 minutes
+
+- Step-Id: `20261117-1130-mem01-overlay-exhaustion-recovery`
+- Task: `MEM-01 T10`
+- When: '2026-11-17 11:30 CET' - '2026-11-17 11:49 CET'
+- Model: `gpt-6.1-sol`
+- Change: Extend the RP2350 overlay capacity regression to preserve a seeded unrelated persistent value through arena exhaustion, reclaim the test namespace, then verify existing and new writes/readbacks. Define `CHOUPI_PC_RP2350_FS_OVERLAY` for the test target so the transaction reset hook supplied by the dirty flashmemory source is linked.
+- Validation: Built and ran using the system CMake via `./tools/env` with scoped PATH override and a fresh build directory: `cmake -S tests/unit/rp2350_fs_overlay -B build/tests/unit/rp2350-fs-overlay-codex`; build target `rp2350_fs_overlay_test`; ran the binary. Result: all six `full_overlay_cleanup_*` assertions passed and `TEST:SUMMARY fail=0`.
+- Result: Filesystem-level recovery after freeing namespace records is verified in fake-flash tests. This does not implement VM safe-point reachability reclaim-and-retry and is not physical acceptance evidence.
+- Decision: Keep MEM-01 T10 open for safe-point exhaustion handling and full VPCD/physical campaign gates.
+- Artifacts/logs: `/tmp/rp2350-fs-overlay-codex.log`; build at `build/tests/unit/rp2350-fs-overlay-codex`.
