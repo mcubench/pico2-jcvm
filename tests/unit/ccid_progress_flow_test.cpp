@@ -53,6 +53,27 @@ struct FakeProgressHooks {
 } // namespace
 
 int main() {
+  check(!choupi::target_memory_sample_due(1249999U, 1000000U),
+        "target allocator sample skips before 250 ms");
+  check(choupi::target_memory_sample_due(1250000U, 1000000U),
+        "target allocator sample is due at 250 ms");
+  check(choupi::target_memory_sample_due(0x00040000U, 0xffff0000U),
+        "target allocator sampling interval handles timer wraparound");
+  choupi::MemoryLowWater memory_low_water;
+  memory_low_water.begin(180000U);
+  memory_low_water.observe(175000U);
+  memory_low_water.observe(179000U);
+  check(memory_low_water.initial_available == 180000U &&
+            memory_low_water.minimum_available == 175000U &&
+            memory_low_water.samples == 3 && memory_low_water.active,
+        "target allocator low-water tracks minimum free bytes and samples");
+  memory_low_water.finish();
+  memory_low_water.observe(1000U);
+  check(!memory_low_water.active &&
+            memory_low_water.minimum_available == 175000U &&
+            memory_low_water.samples == 3,
+        "target allocator low-water ignores samples after completion");
+
   check(!choupi::native_api_progress_due(1499999U, 1000000U),
         "native API return skips progress before 500 ms");
   check(choupi::native_api_progress_due(1500000U, 1000000U),

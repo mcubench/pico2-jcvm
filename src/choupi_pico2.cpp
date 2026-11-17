@@ -24,6 +24,8 @@ extern "C" char __StackLimit;
 extern "C" void choupi_ccid_task(void);
 extern "C" void choupi_ccid_native_crypto_progress(void);
 extern "C" bool choupi_vm_native_progress(void);
+extern "C" uint32_t choupi_available_transient_memory_bytes(void);
+extern "C" void choupi_target_memory_sample_progress(void);
 
 namespace {
 uint32_t last_native_api_progress_us = 0;
@@ -35,6 +37,7 @@ volatile bool usb_bootsel_requested = false;
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
 extern "C" void choupi_vm_cooperative_progress(void) {
+  choupi_target_memory_sample_progress();
   watchdog_update();
   (void)choupi::service_usb_then_bootsel_reset(
       usb_bootsel_requested,
@@ -131,6 +134,61 @@ extern "C" uint32_t choupi_available_transient_memory_bytes(void) {
 #endif
   return available > UINT32_MAX ? UINT32_MAX
                                 : static_cast<uint32_t>(available);
+}
+
+namespace {
+choupi::MemoryLowWater rsa_apdu_memory_low_water;
+uint32_t rsa_apdu_memory_started_us = 0;
+uint32_t rsa_apdu_memory_last_sample_us = 0;
+
+void sample_rsa_apdu_memory(const uint32_t now_us, const bool force) {
+  if (!rsa_apdu_memory_low_water.active ||
+      (!force && !choupi::target_memory_sample_due(
+                     now_us, rsa_apdu_memory_last_sample_us))) {
+    return;
+  }
+  rsa_apdu_memory_low_water.observe(
+      choupi_available_transient_memory_bytes());
+  rsa_apdu_memory_last_sample_us = now_us;
+}
+} // namespace
+
+extern "C" void choupi_target_memory_operation_begin(uint8_t cla,
+                                                       uint8_t ins) {
+  if (cla != 0xb0 || ins != 0x43) return;
+  const uint32_t now_us = time_us_32();
+  rsa_apdu_memory_started_us = now_us;
+  rsa_apdu_memory_last_sample_us = now_us;
+  rsa_apdu_memory_low_water.begin(
+      choupi_available_transient_memory_bytes());
+}
+
+extern "C" void choupi_target_memory_sample_progress(void) {
+  sample_rsa_apdu_memory(time_us_32(), false);
+}
+
+extern "C" void choupi_target_memory_operation_end(void) {
+  if (!rsa_apdu_memory_low_water.active) return;
+  const uint32_t now_us = time_us_32();
+  sample_rsa_apdu_memory(now_us, true);
+  const uint32_t initial_available =
+      rsa_apdu_memory_low_water.initial_available;
+  const uint32_t minimum_available =
+      rsa_apdu_memory_low_water.minimum_available;
+  const uint32_t samples = rsa_apdu_memory_low_water.samples;
+  const uint32_t elapsed_us = now_us - rsa_apdu_memory_started_us;
+  rsa_apdu_memory_low_water.finish();
+  std::printf("CHOUPI:RSA_MEMORY apdu=B043 start_free=%lu min_free=%lu "
+              "end_free=%lu delta=%ld samples=%lu elapsed_us=%lu\r\n",
+              static_cast<unsigned long>(initial_available),
+              static_cast<unsigned long>(minimum_available),
+              static_cast<unsigned long>(
+                  choupi_available_transient_memory_bytes()),
+              static_cast<long>(minimum_available) -
+                  static_cast<long>(initial_available),
+              static_cast<unsigned long>(samples),
+              static_cast<unsigned long>(elapsed_us));
+  std::fflush(stdout);
 }
 
 int main_arm(void) {

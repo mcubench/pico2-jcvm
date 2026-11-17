@@ -9,6 +9,35 @@ namespace choupi {
 inline constexpr uint8_t kMaxPendingCcidSubmitFailures = 32;
 inline constexpr uint32_t kStaleCcidExtensionCompletionUs = 100000U;
 inline constexpr uint32_t kNativeApiProgressIntervalUs = 500000U;
+inline constexpr uint32_t kTargetMemorySampleIntervalUs = 250000U;
+
+struct MemoryLowWater {
+  uint32_t initial_available = 0;
+  uint32_t minimum_available = 0;
+  uint32_t samples = 0;
+  bool active = false;
+
+  void begin(const uint32_t available) {
+    initial_available = available;
+    minimum_available = available;
+    samples = 1;
+    active = true;
+  }
+
+  void observe(const uint32_t available) {
+    if (!active) return;
+    if (available < minimum_available) minimum_available = available;
+    ++samples;
+  }
+
+  void finish() { active = false; }
+};
+
+inline constexpr bool target_memory_sample_due(const uint32_t now_us,
+                                               const uint32_t last_sample_us) {
+  return static_cast<uint32_t>(now_us - last_sample_us) >=
+         kTargetMemorySampleIntervalUs;
+}
 
 inline constexpr bool native_api_progress_due(const uint32_t now_us,
                                               const uint32_t last_progress_us) {

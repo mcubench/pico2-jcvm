@@ -31085,6 +31085,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep T3 closed. Continue with embedded allocator high-water/D2 investigation and the remaining HOST-01/MEM-01 acceptance work.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261117T163736Z.log`; `build/arm/build-provenance.txt`.
 
+## 2026-11-17 Measure target RSA free-memory low-water 14
+
+- Step-Id: `20261117-1746-longop01-memory-lowwater`
+- Task: HOST-01 LONGOP-01 T1/T2 (target diagnostic)
+- When: '2026-11-17 17:40 CET' - '2026-11-17 17:46 CET'
+- Model: `gpt-6.1-sol`
+- Change: Added a throttled target transient-memory low-water sampler around CCID applet APDUs, active only for B0 43. It samples the existing target available-memory estimate every 250 ms during native progress and reports entry/minimum/exit values at APDU completion. Extended the focused physical probe validator and unit-tested its timer/low-water logic.
+- Validation: `./tools/test-ccid-progress-flow` passed (43/43); shell syntax and `git -c core.whitespace=cr-at-eol diff --check` passed. `./tools/build arm --profile max_crypto` passed normal mode, object deletion ON, debug OFF, flash headroom 35,452 bytes. Refreshed the approved reader helper, enumerated F42DD9D07D6D2B07, and `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed with finite serial `TEST:PASS` / `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL` or `FAULT`. The focused physical RSA-1984 PKCS1 ×50 probe returned `AA9000` in 48.507 s with 47/47 extensions.
+- Result: Target sampled available transient memory was 119,360 bytes at B043 entry, 82,696 minimum across 191 samples, and 118,336 at native operation return (−36,664 minimum delta). No panic/fault occurred. This weakens D2 as an explanation for the fixed-path failure but does not exclude sub-250 ms peaks or fragmentation; RSA-1536 target control and target JC handle counts remain unmeasured, so T1 stays open.
+- Decision: Keep D2 unconfirmed and T1 open. Continue with target control/handle-count instrumentation and the full RSA-1984/RSA-2048 Cipher/Signature resume-list reproduction; then resume option-2 acceptance work.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T164222Z/F42DD9D07D6D2B07/` (probe/serial); UF2 SHA-256 `766f724f91a38927672c72b837e3e4d9a62629dd5a6cf6fb3130a2f29846c1be`; cycle log `artifacts/logs/cycle-choupi-20261117T164130Z.log`.
+
 - Step-Id: `20261117-1735-longop01-d1-progress`
 - Task: HOST-01 LONGOP-01 T3
 - When: '2026-11-17 17:04 CET' - '2026-11-17 17:35 CET'
