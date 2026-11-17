@@ -31274,3 +31274,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Archived trace orders RSA-1984 ×50 reader loss and failed reconnect/SELECT before successful `gp --list` and the later E4 uninstall attempt. GPPro logs the E4 command, then host transmit fails after 15,011 ms with `0x1f`; no serial capture covers that operation. Current normal-image local-fixture E4 measurements (0.726–2.673 s) do not reproduce it. Cause remains unresolved.
 - Decision: Keep T5 open; next reproduction must capture timestamped serial and APDU logs across the RSA-loss → list → uninstall sequence. Do not infer a firmware watchdog timeout from the Windows transmit duration.
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261115-25216292-dirty/readme.txt`; `.agent/QKB.md`; `TODO.md`; `.agent/HANDOFF.md`.
+
+## 2026-11-17 Fix interactive JCAlgTest menu input 5 minutes
+
+- Step-Id: `20261117-1935-jcalgtest-tty`
+- Task: HOST-01 LONGOP-01 / physical JCAlgTest runner
+- When: '2026-11-17 19:30 CET' - '2026-11-17 19:35 CET'
+- Model: `gpt-6.1-sol`
+- Change: Updated the interactive TTY branch of `tools/run-jcalgtest` to call GNU `timeout --foreground`, preserving the client in the terminal foreground process group. Documented the failure and viable fix in QKB/HANDOFF.
+- Validation: `bash -n tools/run-jcalgtest` and `git diff --check` passed. On the identified F42D reader, the pinned 1.8.5 client accepted main-menu option 2 and performance submenu option 2 after this change, then began live APDU measurements. The prior attempt had printed the prompt but Java entered stopped state `Tl`; it was terminated before a performance option began and its logs remain separate.
+- Result: Interactive stdin is now reaching the Java client; the active physical attempt emits JCAlgTest APDUs and PC/SC responses. The long option-2 run is not yet complete.
+- Decision: Keep the running option-2 campaign under observation; do not treat menu entry or partial CSV rows as campaign acceptance.
+- Artifacts/logs: `tools/run-jcalgtest`; `artifacts/results/option2-acceptance-20261117T1830Z/F42DD9D07D6D2B07/client-attempt2.log`; `.agent/QKB.md`.

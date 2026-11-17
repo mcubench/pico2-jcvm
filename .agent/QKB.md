@@ -1379,3 +1379,23 @@ and `artifacts/logs/filesystem-install-clear-recovery-local-20261117T1823Z.log`.
 The unprivileged run returned `Operation not permitted` before creating a VPCD
 log because the sandbox blocked loopback bind; elevated execution permitted the
 local socket. This test path uses no USB or PC/SC.
+
+
+## Interactive JCAlgTest runner stalls at menu under GNU timeout — 2026-11-17
+
+When `tools/run-jcalgtest` was launched interactively with an exact reader, its
+TTY menu printed but input was not consumed. The Java client entered stopped
+state (`STAT=Tl`) when Scanner read from the terminal because GNU `timeout`
+placed it outside the foreground process group. No test option had started.
+
+**Viable fix.** In the TTY-preserving branch only, use
+`timeout --foreground --signal=TERM --kill-after=5s`. This leaves the client in
+the terminal's foreground group while retaining the finite suite timeout. The
+change in `tools/run-jcalgtest` passed `bash -n`; the physical 1.8.5 client then
+accepted the main menu choice `2`, the performance submenu choice `2`, and
+started APDU measurements on the exact selected reader. Avoid sending scripted
+answers in advance: separate Scanner instances can buffer later lines.
+
+The initial stopped prompt was terminated before any performance option ran;
+its partial log is kept separate from the active attempt under
+`artifacts/results/option2-acceptance-20261117T1830Z/F42DD9D07D6D2B07/`.

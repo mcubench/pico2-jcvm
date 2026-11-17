@@ -130,7 +130,7 @@ fi
 # supplied. The client creates multiple Scanner instances; piping several
 # answers at once can let the first Scanner buffer later answers.
 if [[ -t 0 && ${#extra_input_lines[@]} -eq 0 ]]; then
-  exec timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+  exec timeout --foreground --signal=TERM --kill-after=5s "${timeout_seconds}s" \
     "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
 fi
 
