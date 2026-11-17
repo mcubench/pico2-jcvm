@@ -1145,3 +1145,13 @@ When rebuilding the RP2350 PC overlay after changing the Rust library, compare
 the generated `choupi` executable and `libjavacard_os.a` timestamps. CMake may
 report the target built while leaving the old executable because the library
 is a custom-target byproduct; `./tools/env cmake --build build/choupi-pc-rp2350-overlay --target choupi --clean-first -j2` reliably relinks it. Confirm behavior with the focused VPCD case after relinking.
+
+## OS patch wrapper pinned to prior submodule commit — 2026-11-17
+
+After committing the range-write change in `choupi/os` as `f12c597`,
+`./tools/build arm --profile max_crypto` initially stopped before compilation:
+`tools/apply-choupi-os-patches` still required its parent commit `9efd14e`.
+The wrapper's expected revision now matches the root gitlink (`f12c597`), and
+its existing broken-tail patch is idempotently recognized as already applied.
+The ARM build then passed in normal `max_crypto` mode. If a later OS commit
+advances the gitlink, update and validate this wrapper pin in the same step.

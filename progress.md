@@ -31036,3 +31036,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The exact RSA-1984 ×50 applet path completes in VPCD. The host emulator does not measure RP2350 C-heap use; peak allocator bytes and live array/handle counts were not measured, and the RSA-1536 control was not run. This is a focused reproduction, not pinned-client acceptance or evidence against target RAM exhaustion.
 - Decision: Retain D2 as unconfirmed. Use an allocator-instrumented PC probe or a physical target to determine peak memory; keep T1 open. This direct APDU sequence is substantially cheaper than the full option-2 campaign for reaching the target method.
 - Artifacts/logs: `artifacts/results/longop01-rsa1984-vpcd-20261117/rsa1984-x50-apdus.log`, `artifacts/results/longop01-rsa1984-vpcd-20261117/run2/`; emulator SHA-256 `d2f94ec11fbe6abef98db7765b1051ea52b3a25ee70fe122480a4f31ab1bc350`.
+
+## 2026-11-17 Align OS patch wrapper with committed submodule 2
+
+- Step-Id: `20261117-1641-build-os-revision-pin`
+- Task: ARM build validation
+- When: '2026-11-17 16:39 CET' - '2026-11-17 16:41 CET'
+- Model: `gpt-6.1-sol`
+- Change: Updated `tools/apply-choupi-os-patches` to pin the committed `choupi/os` head `f12c59797c24e86af9419ebdf5b00df4132b749c`, and recorded the revision-pin failure and repair in QKB. The wrapper recognizes the pre-existing broken-tail patch as already applied.
+- Validation: First `./tools/build arm --profile max_crypto` correctly refused the stale `9efd14e` pin before compiling. After updating the pin, the same wrapper build passed: `BUILD:PASS target=choupi`, normal mode, object deletion ON, all debug switches OFF, flash headroom 36,000 bytes. `git diff --check` passed. UF2 SHA-256: `526ac1039d6c91e8e2b8a6d72af5a9ceb7cfd9d92139e5dea4c04345ca80fd6c`.
+- Result: ARM firmware is buildable from the root's committed OS gitlink. The authorized helper found 0 matching boards, and elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only` returned `list() failed`; no hardware cycle or flash was attempted.
+- Decision: Keep the revision pin aligned with the submodule commit. Run `./tools/cycle choupi --profile max_crypto` only after an identified board becomes available.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/build-provenance.txt`; no serial log because no board was enumerated.

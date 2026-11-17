@@ -5,7 +5,7 @@
 set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 os_dir="${repo_root}/choupi/os"
-expected_commit=9efd14e3848b142cd323e0ad510ce0378886e9dd
+expected_commit=f12c59797c24e86af9419ebdf5b00df4132b749c
 
 [[ -d "${os_dir}/.git" || -f "${os_dir}/.git" ]] || {
   printf 'ERROR: choupi/os submodule missing at %s\n' "${os_dir}" >&2
