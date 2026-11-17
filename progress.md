@@ -30568,3 +30568,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Filesystem-level recovery after freeing namespace records is verified in fake-flash tests. This does not implement VM safe-point reachability reclaim-and-retry and is not physical acceptance evidence.
 - Decision: Keep MEM-01 T10 open for safe-point exhaustion handling and full VPCD/physical campaign gates.
 - Artifacts/logs: `/tmp/rp2350-fs-overlay-codex.log`; build at `build/tests/unit/rp2350-fs-overlay-codex`.
+
+## 2026-11-17 Tidy-up step 1: remove stray root/artifact files 5
+
+- Step-Id: `20261117-1355-tidy01-stray-files`
+- Task: repository tidy-up plan, step 1
+- When: '2026-11-17 13:50' - '2026-11-17 13:55'
+- Model: `claude-sonnet-5-5`
+- Change: On user decision, deleted the untracked JCAlgTest resume files `Virtual PCD 00 00____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED__already_measured.list` and `.list.old` (repo root) and `artifacts/sha256-reset-client-javap{,-lines}.txt` (1.4 MB javap output). Grep found no references to them in docs, tools or tests. Added `/Virtual PCD*.list*` to `.gitignore`.
+- Validation: `git status` shows only the `.gitignore` change from this step; no other files touched.
+- Result: The interrupted option-2 VPCD run was already non-resumable (missing cap-registry), so the deleted resume state has no remaining use.
+- Decision: Continue with step 2 (campaign tooling group B).
+- Artifacts/logs: none
