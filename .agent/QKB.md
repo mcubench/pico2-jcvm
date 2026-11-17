@@ -2,25 +2,35 @@
 
 ## Physical token roster — 2026-11-17
 
-Roster of known tokens (RP2350 chip ID; nickname used in logs). Selection policy
-and the "one working token, switch only when unavailable" rule are in
-`reference/physical-token-access/SKILL.md`. Chip ID is stable across replugs; the
-USB bus/device number and reader index are not.
+Selection policy ("one working token, switch only when unavailable") is in
+`reference/physical-token-access/SKILL.md`. Chip ID is stable across replugs and
+equals the USB serial (verified with `picotool info -a`, `chipid: 0xee116f37c7e4a04e`
+for serial `EE116F37C7E4A04E`); the USB bus/device number and reader index are not stable.
 
-| Nickname | Chip ID | Notes |
+**Attached to the new machine (observed 2026-11-17 18:30 via `lsusb` and sysfs):**
+
+| Nickname | Chip ID | State when first seen |
 | --- | --- | --- |
-| 8E | `8E464F4E2BBC0A19` | seen in option-1/2 campaigns |
-| D92 | `D92E743D5F640C0F` | seen in option-2 campaigns |
-| 2BED | `2BED26ED20556535` | seen in option-2 campaigns |
-| (unnamed) | `48E9A50BB405634E` | appears once in the repo; not yet identified or named |
+| EE11 | `EE116F37C7E4A04E` | BOOTSEL (`2e8a:000f`), no program loaded |
+| 07E7 | `07E74C5D7A038DEC` | BOOTSEL (`2e8a:000f`) |
+| F42D | `F42DD9D07D6D2B07` | BOOTSEL (`2e8a:000f`) |
+| 22A9 | `22A9DEAAA3D09795` | running a non-JCVM program (`2e8a:0009`, product "Pico", mfr "Raspberry Pi") |
 
-Four tokens are now attached. The approved helper `pico2-pcsc-reader` (source
-`tools/pico2-pcsc-reader-root`, installer `tools/install-pcsc-sudoers`) accepted 1-3
-matching devices on the old machine; the 2026-11-15 refusal at four devices is from
-that machine. The repo copy now allows up to four (`max_devices`). On this host it
-must be installed once as root (`pcscd` and `libccid` first); see the request in
-`.agent/EXT_REQUESTS.md`. Do not infer a roster from this table without
-re-listing; devices change.
+Nicknames are the first four hex digits (proposed, not confirmed by the user). None of
+these is a JCVM CCID device yet, so the approved helper reports `found 0`.
+
+**Boards from the old machine (not attached here as of 2026-11-17):** 8E
+`8E464F4E2BBC0A19`, D92 `D92E743D5F640C0F`, 2BED `2BED26ED20556535`, and an unnamed
+`48E9A50BB405634E`. Old campaign results refer to these IDs; do not compare them with
+runs on the new boards without noting the token.
+
+**Helper:** `pico2-pcsc-reader` (source `tools/pico2-pcsc-reader-root`, installer
+`tools/install-pcsc-sudoers`) is installed on this machine and accepts 1-4 matching
+`2e8a:0009` "Pico2 JCVM CCID" devices. Running it with no JCVM firmware attached prints
+`Expected 1 to 4 ... found 0`, which is expected, not a failure of the helper. The
+2026-11-15 "refuses at four devices" observation was the old machine's 1-3 limit.
+
+Do not infer a roster from this table without re-listing; devices change.
 
 ## Repository moved to a new host (agentdev, Debian 12) — build broke — 2026-11-17
 

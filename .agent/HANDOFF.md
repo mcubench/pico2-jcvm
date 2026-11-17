@@ -9,6 +9,7 @@ Updated: 2026-11-17.
 - **Compiler changed** (pre-move host toolchain to Arm GNU 14.2.1): note it when comparing timings with earlier campaigns.
 - Low-watermark deletion compaction (`98fcb151`), pre-cleanup telemetry and the 90% gate (`1a28fa98`) are committed; the `PRE_CLEANUP` block was guarded for plain-PC and firmware builds in `c26477ef`.
 - The 1.8.5 option-2 VPCD run was interrupted at RSA private 1536 (user request); partial run `artifacts/results/jcalgtest-support-vpcd-20261116T071855Z/` (peak 56.37%, no `F205`/`NO_RESOURCE`/`FS_WRITE_FAIL`/`FAULT`). Not resumable (missing `.cap-registry`). Do not Ctrl-C a running campaign (QKB).
+- **Tokens (2026-11-17):** PC/SC helper installed and working on this machine. Four boards attached, none running JCVM firmware yet: `EE116F37C7E4A04E`, `07E74C5D7A038DEC`, `F42DD9D07D6D2B07` (BOOTSEL, blank) and `22A9DEAAA3D09795` (other program). Working token not chosen yet. Roster and rules: `.agent/QKB.md`, `reference/physical-token-access/SKILL.md`.
 - External requests: `.agent/EXT_REQUESTS.md` (98FCB151 Windows test; RSA-1984 x50 serial capture). The 98FCB151 image predates the telemetry.
 
 ## Tidy-up in progress

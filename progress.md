@@ -30784,3 +30784,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Hardware work stays blocked until the user runs the install steps. The 2026-11-15 "refuses at four devices" observation is from the old machine and no longer applies.
 - Decision: After the user confirms the install, run the helper, list readers, record chip IDs and choose the working token.
 - Artifacts/logs: none
+
+## 2026-11-17 PC/SC helper works; token inventory on the new machine 10
+
+- Step-Id: `20261117-1845-token-inventory`
+- Task: physical token access
+- When: '2026-11-17 18:21' - '2026-11-17 18:45'
+- Model: `claude-sonnet-5-5`
+- Change: After the user installed `pcscd` and the helper (run as `agentdev`, `sudo env SUDO_USER=agentdev ... tools/install-pcsc-sudoers`, after fixing a mode on an unrelated `/etc/sudoers.d` file), ran `sudo -n /usr/local/sbin/pico2-pcsc-reader` with elevated execution: exit 1, `Expected 1 to 4 ... found 0` (no JCVM CCID device attached). `lsusb -d 2e8a:` showed four RP2350 boards; sysfs descriptors and one read-only `picotool info -a --bus 1 --address 28` (chipid 0xee116f37c7e4a04e = USB serial; BOOTSEL, no program) identified them: `EE116F37C7E4A04E`, `07E74C5D7A038DEC`, `F42DD9D07D6D2B07` in BOOTSEL and `22A9DEAAA3D09795` running a non-JCVM program. None match the old-machine IDs. Updated the QKB roster, removed the fulfilled request `HOST-PCSC-HELPER-INSTALL-20261117` and noted the tokens in HANDOFF.
+- Validation: helper exit code and message, `lsusb`, sysfs reads and one `picotool info` (read-only). No flash, no PC/SC reader listing, no firmware run.
+- Result: Hardware access path works; no board is running JCVM firmware, so no PC/SC reader exists yet.
+- Decision: Choose a working token and flash the full JCVM (`./tools/cycle choupi --chipid ID`) after user confirmation.
+- Artifacts/logs: none
