@@ -54,3 +54,22 @@ USB/PC/SC errors, resets, stalls or timeouts with their times. Key questions:
   with no `*** PANIC ***`?
 - Do the `OBJECT_DELETION:PRE_CLEANUP files=` values stay bounded (hundreds, not
   thousands), with `OBJECT_DELETION:LOW_WATERMARK_COMPACT … tombstones=` lines appearing?
+
+
+## HOST-VPCD-PCSC-01 — Restore the local Virtual PCD PC/SC reader
+
+Created 2026-11-18 00:12 CET. The unchanged-client MEM-01 T7 VPCD option-2
+acceptance cannot start because the local PC/SC inventory lists only physical
+Pico 2 readers and does not publish `Virtual PCD 00 00`. The VPCD test wrapper
+stopped before client startup. The host has no VPCD driver file under
+`/usr/lib/pcsc` and no `vpcd` or `vicc` executable in PATH.
+
+Please restore or install the host's Virtual PCD PC/SC driver/service without
+interrupting physical card campaigns, then report the setup command/package and
+confirm that `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --timeout 15` lists
+`Virtual PCD 00 00`. The emulator endpoint expected by this repo is
+`127.0.0.1:35963`. No changes to firmware, physical flash, or security settings
+are requested.
+
+Evidence: `artifacts/results/jcalgtest-support-vpcd-20261117T230259Z/reader-inventory-1.log`
+through `reader-inventory-3.log`; runner exited before connecting the client.

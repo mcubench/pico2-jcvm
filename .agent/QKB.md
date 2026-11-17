@@ -1421,3 +1421,47 @@ shows menu 2, reader 1, and the selected 07E7 card before performance submenu
 the next acceptance run and verify the `Used reader` identity before counting
 any results. `bash -n`, Python bytecode compilation, and `git diff --check`
 passed for the wrapper change.
+
+## Rising resource use in the full physical JCAlgTest option-2 run — 2026-11-18
+
+A complete unchanged-client physical option-2 run on empty-card normal-image
+Pico 2 `07E74C5D7A038DEC` completed in 4,660 seconds. Its serial log recorded
+2,951 `OBJECT_DELETION:PRE_CLEANUP` samples. The headroom gate passed with a
+peak of 689 files / 14,601 of 98,304 bytes (14.852%, against a 90% threshold)
+and 25 compactions. There were 4,826 captured APDU responses, all `9000`, and
+no `TEST:FAIL`, `FAULT`, `PANIC` or `HEADROOM:FAIL`. These measurements show
+bounded arena use over this campaign; they do not prove all future applet object
+patterns plateau, and the run remains exploratory until T7 VPCD acceptance
+passes. The client shell exit status was unavailable after its process handle
+expired; the explicit `Testing complete.` marker, total time and final result
+files are preserved. The parent identity file names an older firmware because
+an intervening cycle rebuilt/flashed the latest image; use the per-attempt
+`campaign-identity.txt` for actual campaign provenance.
+
+Artifacts: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt5/`;
+headroom summary from `attempt4/serial.log`.
+
+
+## PC/SC helper refresh interrupts a live JCAlgTest run; VPCD reader is unavailable — 2026-11-18
+
+The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper restarts
+`pcscd.service`. Running it while option 1 was active on F42D interrupted the
+client at a cleanup boundary: `SCARD_F_COMM_ERROR`, followed by
+`SCARD_E_NO_SERVICE`, then an uncaught `NoSuchElementException` after the
+client's reconnect/retry prompt. No firmware fault or memory failure appeared.
+
+**Viable control:** refresh PC/SC before starting a campaign; do not run the
+helper during a live PC/SC campaign. If a session is interrupted, preserve its
+`already_measured.list`, result and serial logs, diagnose exact token availability,
+and resume on that same token when available. If it is unavailable, record the
+switch and use another empty-card token.
+
+The unchanged-client VPCD runner also failed before client startup because
+bounded reader discovery listed only Pico tokens, not `Virtual PCD 00 00`. This
+environment currently has no VPCD driver or `vpcd`/`vicc` executable in PATH or
+`/usr/lib/pcsc`. The emulator wrapper cannot publish a SmartcardIO reader by
+itself. Restore the host VPCD PC/SC service before retrying T7; see external
+request `HOST-VPCD-PCSC-01`.
+
+Evidence: `artifacts/results/option1-acceptance-20261117T2257Z/F42DD9D07D6D2B07/attempt1/client-output/ALGTEST_log_1794956298016.log`;
+`artifacts/results/jcalgtest-support-vpcd-20261117T230259Z/reader-inventory-*.log`.
