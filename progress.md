@@ -30988,3 +30988,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The focused T7 transcript failure is fixed. Final PC overlay SHA-256 `ad8b0f45c71dc3b3401e9fa4363e14620d786499bce1ef4b5618a14d2d62af94`; ARM UF2 SHA-256 `d5d914ce51a0c011904bb1213e151727a20aa194fea7bd33d78c83d4cbfe3794`. Replay summary: 1,590 APDUs, resource failure 0, changed statuses 2 (known pre-applet GET DATA differences).
 - Decision: Keep MEM-01 T7 open for the unchanged-client long VPCD run under telemetry and T8 open for physical acceptance. Continue the independent case-89 persistent non-atomic write investigation while hardware is unavailable.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T151055Z/`, `build/t7-final-replay.log`, `build/t7-final-arm-build.log`, `.agent/HANDOFF.md`.
+
+## 2026-11-17 Journal non-atomic persistent array range updates 16
+
+- Step-Id: `20261117-1630-persist-nonatomic-range`
+- Task: RV-20261106-50 / case 89
+- When: '2026-11-17 16:14 CET' - '2026-11-17 16:30 CET'
+- Model: `gpt-6.1-sol`
+- Change: Added a bulk filesystem range-write API and routed native non-atomic persistent-array copies through it. Rust `edit_at` now stages an oversized replacement through the reserved defrag sector when copy-on-write cannot fit, retaining the existing F0/E0/C0 power-loss recovery protocol. Added the matching RP2350 VPCD overlay wrapper and an environment-selectable PC build directory in the transaction integration runner.
+- Validation: Focused filesystem regression passed with a 32,767-byte value and four simulated interruption points; recovery produced only complete old/new records. Filesystem test group passed (37 passed, 2 ignored). Final VPCD case 89 passed: APDU response `01 5A 9000`; summary `pass=3 fail=0`. `./tools/build arm --profile max_crypto` passed in normal mode, object deletion ON, debug switches OFF, with 36,000 bytes remaining. `./tools/build-pc --profile max_crypto --rp2350-overlay` passed; its generated emulator was clean-relinked because CMake did not relink after the Rust library byproduct changed. Existing Rust warnings remain. Full OS suite was attempted but aborted in its MPU access test in this host environment. `git -c core.whitespace=cr-at-eol diff --check` passed. Approved board refresh found 0 devices; elevated Pico-only reader enumeration returned `list() failed`, so no hardware cycle/flash was run.
+- Result: Non-atomic array copy now reaches the filesystem range-edit path and case 89 survives transaction abort without `NO_RESOURCE`. ARM UF2 SHA-256: `160fdb864a5b0b90fbd803ba556a8dce66008a958502fb2ffee798a77dba83e8`.
+- Decision: Keep the fix. Physical validation remains open until a Pico 2 is enumerated; MEM-01 T7/T8 work remains independent.
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261117T152916Z.log`, `build/choupi-pc-rp2350-overlay/`, `build/arm/pico2_choupi.uf2`.

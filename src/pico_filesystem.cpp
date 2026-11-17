@@ -2834,6 +2834,12 @@ extern "C" uint8_t fs_write_1b_at(const uint8_t *tag, uint8_t tag_length,
   return write_at(tag, tag_length, offset, &value, sizeof(value));
 }
 
+extern "C" uint8_t fs_write_range(const uint8_t *tag, uint8_t tag_length,
+                                  uint32_t offset, const uint8_t *data,
+                                  uint32_t length) {
+  return write_at(tag, tag_length, offset, data, length);
+}
+
 extern "C" uint8_t fs_write_2b_at(const uint8_t *tag, uint8_t tag_length,
                                   uint32_t offset, uint16_t value) {
   if (offset > UINT32_MAX / 2u) return FS_STATUS_IO_OUT_OF_BOUNDS;

@@ -4,6 +4,7 @@
 
 #define fs_init rp2350_overlay_fs_init
 #define fs_write rp2350_overlay_fs_write
+#define fs_write_range rp2350_overlay_fs_write_range
 #define fs_write_applet rp2350_overlay_fs_write_applet
 #define fs_erase rp2350_overlay_fs_erase
 #define fs_erase_applet rp2350_overlay_fs_erase_applet
@@ -26,6 +27,7 @@
 
 #undef fs_init
 #undef fs_write
+#undef fs_write_range
 #undef fs_write_applet
 #undef fs_erase
 #undef fs_erase_applet
@@ -185,6 +187,13 @@ extern "C" uint8_t __wrap_fs_init(void) {
 extern "C" uint8_t __wrap_fs_write(const uint8_t *tag, uint8_t tag_length,
                                     const uint8_t *data, uint32_t length) {
   return rp2350_overlay_fs_write(tag, tag_length, data, length);
+}
+extern "C" uint8_t __wrap_fs_write_range(const uint8_t *tag,
+                                          uint8_t tag_length,
+                                          uint32_t offset,
+                                          const uint8_t *data,
+                                          uint32_t length) {
+  return rp2350_overlay_fs_write_range(tag, tag_length, offset, data, length);
 }
 extern "C" void __wrap_fs_write_applet(const uint8_t *tag,
                                         uint8_t tag_length,

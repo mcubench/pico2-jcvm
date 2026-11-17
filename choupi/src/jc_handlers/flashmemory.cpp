@@ -2564,8 +2564,8 @@ void FlashMemory_Handler::writePersistentArrayRange(
   if (atomic) {
     write_persistent_tag_or_throw(tag, updated.data(), record_length);
   } else {
-    const uint8_t status = fs_write(tag.value, tag.len, updated.data(),
-                                    record_length);
+    const uint8_t status = fs_write_range(
+        tag.value, tag.len, byte_offset, source, byte_length);
     throw_persistent_write_status(status);
     preserve_non_atomic_array_range_in_snapshot(
         tag, byte_offset, byte_length, source);

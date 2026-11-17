@@ -94,10 +94,13 @@ def main() -> int:
     if args.light_install and args.install_params is not None:
         parser.error("--light-install cannot be combined with --install-params")
     build = repo / "build/jcsystem-transaction-probe"
-    emulator = repo / "build/choupi-pc/choupi"
+    pc_build = Path(os.environ.get("PICO2_JCVM_PC_BUILD_DIR", "build/choupi-pc"))
+    if not pc_build.is_absolute():
+        pc_build = repo / pc_build
+    emulator = pc_build / "choupi"
     memory = args.memory.resolve()
     cap_code = args.cap_code.resolve() if args.cap_code else build / "load-code.bin"
-    rom_mask = repo / "build/choupi-pc/flash"
+    rom_mask = pc_build / "flash"
     for path in (emulator, cap_code, rom_mask):
         if not path.is_file():
             raise SystemExit(f"required input is missing: {path}; run tools/build-jcsystem-transaction-probe")

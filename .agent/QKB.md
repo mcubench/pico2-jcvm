@@ -1132,3 +1132,16 @@ single persistent write outside its enclosing Java Card transaction would
 violate transaction atomicity. Do not implement either shortcut; define an
 explicit replay contract first. Existing offline garbage-churn coverage
 tests 1,030 cycles × 8 allocations without applet deletion requests.
+
+## Rust OS filesystem tests in the local toolchain — 2026-11-17
+
+Use `./tools/env` to activate the repository-local Rust toolchain before the
+OS Make target or a focused cargo test. Plain `make -C choupi/os test` fails
+because cargo is not on the environment PATH. The full host test suite also
+aborted at an MPU access test in this environment; running the filesystem
+group directly succeeded (37 passed, 2 ignored). Focused command:
+`./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host fs::tests::`.
+When rebuilding the RP2350 PC overlay after changing the Rust library, compare
+the generated `choupi` executable and `libjavacard_os.a` timestamps. CMake may
+report the target built while leaving the old executable because the library
+is a custom-target byproduct; `./tools/env cmake --build build/choupi-pc-rp2350-overlay --target choupi --clean-first -j2` reliably relinks it. Confirm behavior with the focused VPCD case after relinking.
