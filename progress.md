@@ -31012,3 +31012,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The case-89 change did not regress the captured T7 APDU sequence. Overlay emulator SHA-256 `d2f94ec11fbe6abef98db7765b1051ea52b3a25ee70fe122480a4f31ab1bc350`; ROM mask SHA-256 `ab55f462bb535c9d90fb49b4aa9c40c6c45e26c8183ff2d4f22fdb1d1ff30925`.
 - Decision: Keep T7 open for unchanged-client long-run telemetry and T8 physical acceptance; PC/SC and physical readers are unavailable at this host.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T153211Z/`.
+
+## 2026-11-17 Audit MEM-01 T7 overlay evidence 5
+
+- Step-Id: `20261117-1636-mem01-t7-overlay-evidence`
+- Task: MEM-01 T7
+- When: '2026-11-17 16:31 CET' - '2026-11-17 16:36 CET'
+- Model: `gpt-6.1-sol`
+- Change: Reran the full RP2350 filesystem overlay harness, measured the existing high-occupancy/recovery coverage, and updated T7 to distinguish completed synthetic evidence from the still-required live unchanged-client option-2 run.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). Mixed-live coverage retained 300 records / 320 slots at 71,274 bytes and 27,030 bytes available floor across 12 compactions, with five interrupted snapshot cuts over 157,184 fake-flash mutations. The persistent graph case retained 20 roots / 280 children at 67,458 bytes, ran 12 compactions, erased 108 records, peaked at 309 RAM handles, checked integrity each cycle and reloaded every four cycles. Automatic deletion churn erased 8,240 records in 1,030 × 8-object cycles and drained after 695 cycles. Re-parsed the latest 1,590-APDU replay: 894 cleanup and heap-GC boundaries, no `SKIP`, compaction reject, alias-protect, resource or fault events; pre-cleanup bytes ranged 8,909–23,241 of 98,304, arrays 30–105 and instances 16–24. Fresh `./tools/list-readers` still returned `list() failed`, preventing a client connection.
+- Result: The synthetic gaps previously listed under T7 are covered by current overlay tests; transcript replay supplies bounded runtime-path telemetry but is not a fresh client campaign. T7 remains open for unchanged-client option-2 completion and T8 for hardware acceptance.
+- Decision: Keep the existing harness; do not claim live-client acceptance until PC/SC exposes the VPCD reader and the unchanged 1.8.5 client completes.
+- Artifacts/logs: `artifacts/logs/rp2350-fs-overlay-20261117T1533Z.log`, `artifacts/results/resource01-apdu-replay-vpcd-20261117T153211Z/`.
