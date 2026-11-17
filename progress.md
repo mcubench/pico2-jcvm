@@ -31468,3 +31468,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Across the late 1,451 samples, retained storage fluctuates around 500–514 files and 12 KB rather than continuing to climb. Largest late-window peaks were 13,451 and 13,433 B; the overall 14,601 B peak occurred earlier in that span. This is strong bounded-run evidence for a late plateau, but remains exploratory because T7 has not passed.
 - Decision: Preserve the option-2 run as exploratory evidence; keep T7/T8/T10 open. Continue monitoring the separate clean option-1 run on 07E7, currently in progress, and do not restart PC/SC while it runs.
 - Artifacts/logs: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt4/serial.log`; client log and CSV in `attempt5/client-output/`.
+
+
+## 2026-11-18 Check option-1 heap stability during early all-algorithm run 8
+
+- Step-Id: `20261118-0029-mem01-opt1-heap-checkpoint`
+- Task: MEM-01 T8 exploratory option-1 resource checkpoint
+- When: '2026-11-18 00:22 CET' - '2026-11-18 00:29 CET'
+- Model: `gpt-6-codex`
+- Change: Took a stable snapshot of the live 07E7 option-1 client/serial logs and measured live heap counts separately from persistent overlay use, addressing whether reuse causes counts to rise through repeated cleanup boundaries.
+- Validation: At 92 completed method groups, the snapshot contained 329 parseable `HEAP_GC` records and 370 pre-cleanup storage samples. `tools/check-object-deletion-headroom.py /tmp/pico2-option1-current-serial.log` passed at peak 616 files / 12,613 of 98,304 bytes (12.830%). Live arrays rose from 95 to 103 during initial setup, then were exactly 103 over the latest 100 heap-GC samples; instance counts in those samples were 2 or 22. Last 100 storage samples ranged 332–599 files and 9,943–12,501 bytes. No TEST:FAIL, FAULT, PANIC, F205, NO_RESOURCE, or transport error was found in the snapshot.
+- Result: At this checkpoint the array heap count is not continuously increasing; storage has local rises and cleanup drops and remains well below the 90% limit. This is early evidence only: option 1 has not completed and additional algorithm families may change live counts.
+- Decision: Keep the long client run active and keep T7/T8/T10 open. Do not refresh PC/SC while it is running.
+- Artifacts/logs: Stable snapshots `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/analysis-snapshot-20261118T0029CET-{serial,client}.log`; active originals `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.

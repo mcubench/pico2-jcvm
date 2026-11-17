@@ -1503,3 +1503,19 @@ Earlier notes counted one extra. The campaign still has 2,951 telemetry
 samples and passes the 90% headroom gate.
 
 Source: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC/attempt4/serial.log`.
+
+
+### Early option-1 heap and storage checkpoint — 2026-11-18
+
+A stable copy of the active 07E7 option-1 telemetry after 92 method groups
+contains 329 parseable heap-GC samples. `arrays_live` rose from 95 to 103 in
+initial setup, then remained exactly 103 over the last 100 cleanup samples;
+`instances_live` alternated between 2 and 22 in that tail. Of 370 pre-cleanup
+samples in the snapshot, storage peaked at 616 files / 12,613 of 98,304 bytes
+(12.830%); the last 100 samples ranged 332–599 files and 9,943–12,501 bytes.
+No error/fault marker was present. This is an early exploratory checkpoint, not
+a full-run plateau or acceptance result; more algorithm families remain.
+
+Snapshot was copied to `analysis-snapshot-20261118T0029CET-serial.log` and
+`analysis-snapshot-20261118T0029CET-client.log`; live originals remain in
+`artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.
