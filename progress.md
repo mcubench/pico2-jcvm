@@ -30964,3 +30964,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Native ArrayLogic API dispatch now preserves its atomic/non-atomic distinction. ARM firmware hash: `535253e22dc3088af894a4348f58fca1e86c18b82d78d2c91e1dbfc49aba14ce`.
 - Decision: Keep the change; continue independent analysis of cross-package exception propagation (MEM-01 T7) and persistent `Util.arrayCopyNonAtomic` capacity failure (RV-20261106-50). Retry full JCVM cycle when an identified board is available.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; hardware unavailable during this check.
+
+## 2026-11-17 Trace T7 uncaught exception boundary 4
+
+- Step-Id: `20261117-1558-t7-uncaught-trace`
+- Task: MEM-01 T7
+- When: '2026-11-17 15:54 CET' - '2026-11-17 15:58 CET'
+- Model: `gpt-6.1-sol`
+- Change: Replayed the bounded 1.8.5 APDU transcript with exception tracing and updated the handoff with the now-localized propagation path.
+- Validation: Elevated local VPCD replay used the current `max_crypto` overlay and stopped after 1,590 APDUs. It reproduced the 4 unexpected statuses at APDUs 1584/1586/1588/1590. Trace shows package-7 CryptoException class 419 / reason 3 matches the CAP catch type; a later CAP `athrow` at method offset 15705 has no matching handler and exits as package-2 class-102 SecurityException / `6F00`. Default sandbox replay could not create its local socket (`EPERM`), so the same bounded replay ran through the approved elevated execution path; no USB or PC/SC was accessed.
+- Result: T7 is narrowed to why the CAP's rethrow at offset 15705 is uncaught at the applet entry boundary. This trace does not justify changing algorithm support or exception-boundary semantics without identifying the method/caller path.
+- Decision: Keep T7 open; map the relevant CAP method and stack boundary next. Hardware remains unavailable.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261117T145515Z/`; updated `.agent/HANDOFF.md`.
