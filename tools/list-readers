@@ -11,8 +11,9 @@ Usage: PICO2_HOST_USB_ACCESS=1 tools/list-readers [--timeout SECONDS] [--pico-on
 
 Lists PC/SC readers through javax.smartcardio within a hard timeout
 (default 20 s). --pico-only keeps only readers whose name contains "Pico".
-Exit status: 0 listed (possibly empty), 4 pcscd not running, 5 PC/SC error,
-124 timeout. Run with elevated host access as required by AGENTS.md.
+Exit status: 0 listed (possibly empty), 5 PC/SC error, 124 timeout. The
+PC/SC query may trigger systemd socket activation for pcscd. Run with elevated
+host access as required by AGENTS.md.
 EOF
 }
 
@@ -33,10 +34,6 @@ done
 
 require_host_usb_access
 require_command timeout
-if ! pgrep -x pcscd >/dev/null 2>&1; then
-  echo "READERS:ERROR pcscd is not running; refresh it with the approved helper (sudo -n /usr/local/sbin/pico2-pcsc-reader)" >&2
-  exit 4
-fi
 
 index_build="${repo_root}/build/jcalgtest-reader-index"
 mkdir -p "$index_build"
@@ -45,11 +42,29 @@ if [[ ! -f "${index_build}/JCAlgTestReaderIndex.class" || \
   "${repo_root}/tools/env" javac -d "$index_build" "${repo_root}/tools/JCAlgTestReaderIndex.java"
 fi
 
+query_timeout="${timeout_seconds}"
+if ! pgrep -x pcscd >/dev/null 2>&1 && ((timeout_seconds > 5)); then
+  # On this system pcscd is socket-activated. The first SmartcardIO query can
+  # start it but time out while the service initializes; leave the rest of the
+  # caller's deadline for one retry against the now-running daemon.
+  query_timeout=5
+fi
+
 set +e
-listing="$(timeout --kill-after=5 "${timeout_seconds}" \
+listing="$(timeout --kill-after=2 "${query_timeout}" \
   "${repo_root}/tools/env" java -cp "$index_build" JCAlgTestReaderIndex --list)"
 status=$?
 set -e
+if ((status == 124 || status == 137)) && \
+   ((query_timeout < timeout_seconds)) && pgrep -x pcscd >/dev/null 2>&1; then
+  retry_timeout=$((timeout_seconds - query_timeout))
+  echo "READERS:RETRY socket-activated pcscd started; retrying for ${retry_timeout} s" >&2
+  set +e
+  listing="$(timeout --kill-after=2 "${retry_timeout}" \
+    "${repo_root}/tools/env" java -cp "$index_build" JCAlgTestReaderIndex --list)"
+  status=$?
+  set -e
+fi
 if ((status == 124 || status == 137)); then
   echo "READERS:ERROR listing timed out after ${timeout_seconds} s" >&2
   exit 124

@@ -9,11 +9,16 @@ require_command timeout
 reader_name="$1"
 build_dir="${repo_root}/build/symm-crypto-probe"
 vectors="${build_dir}/physical-vectors.tsv"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+package_aid="A000000151000201"
+applet_aid="A00000015100020101"
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
 log_dir="${repo_root}/artifacts/logs"
 log_file="${log_dir}/symm-crypto-kat-pcsc-$(date -u +%Y%m%dT%H%M%SZ).log"
 timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-120}"
 [[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
 [[ -f "${build_dir}/output/symm-crypto-probe.cap" ]] || die "probe CAP missing; run ./tools/build-symm-crypto-probe"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
 
 python3 - "${repo_root}" "${vectors}" <<'PY'
 import importlib.util
@@ -41,15 +46,72 @@ with output.open("w", encoding="ascii") as stream:
         }.items() for mode in ("encrypt", "decrypt")
     ]
     mac_labels = []
-    for algorithm in (2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 47, 48, 49):
+    for algorithm in (2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 47, 48):
         mac_labels.extend((f"mac_{algorithm}_sign", f"mac_{algorithm}_verify_valid",
                            f"mac_{algorithm}_verify_invalid"))
+    mac_labels.extend((
+        "mac_3_long_repeated_sign",
+        "mac_3_long_update_then_sign",
+        "mac_49_cmac_sign",
+        "mac_49_cmac_verify_valid",
+        "mac_49_cmac_verify_invalid",
+        "mac_2_iv_sign",
+        "mac_2_iv_verify",
+        "mac_6_iv_sign",
+        "mac_6_iv_verify",
+        "mac_18_iv_sign",
+        "mac_18_iv_verify",
+    ))
     for (command, expected, _), label in zip(vectors, labels + mac_labels):
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
-if len(vectors) != 71:
-    raise SystemExit(f"expected 71 vectors, got {len(vectors)}")
+if len(vectors) != 79 or len(labels) + len(mac_labels) != len(vectors):
+    raise SystemExit(f"expected 79 labeled vectors, got {len(vectors)}")
 print(f"VECTORS:PASS count={len(vectors)} file={output}")
 PY
+
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+gp_list="${build_dir}/physical-gp-list-$(date -u +%Y%m%dT%H%M%SZ).log"
+timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${gp_list}" 2>&1 || \
+  die "GPPro list failed; see ${gp_list}"
+if grep -Fq "APP: ${applet_aid} " "${gp_list}" || \
+   grep -Fq "PKG: ${package_aid} " "${gp_list}"; then
+  die "symmetric probe AID is already present; refusing to replace existing card data"
+fi
+
+installed_here=0
+cleanup() {
+  local status=$?
+  local cleanup_status=0
+  trap - EXIT
+  if (( installed_here )); then
+    local list="${build_dir}/physical-gp-cleanup-$(date -u +%Y%m%dT%H%M%SZ).log"
+    if timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${list}" 2>&1; then
+      if grep -Fq "APP: ${applet_aid} " "${list}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${applet_aid}" >>"${log_file}" 2>&1 || cleanup_status=1
+      fi
+      if grep -Fq "PKG: ${package_aid} " "${list}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${package_aid}" >>"${log_file}" 2>&1 || cleanup_status=1
+      fi
+    else
+      cleanup_status=1
+    fi
+  fi
+  if (( cleanup_status != 0 )); then
+    status=1
+    printf 'PCSC:CLEANUP_FAIL package=%s list=%s\n' \
+      "${package_aid}" "${list:-unavailable}" | tee -a "${log_file}"
+  elif (( installed_here )); then
+    printf 'PCSC:CLEANUP_PASS package=%s\n' "${package_aid}" | tee -a "${log_file}"
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+installed_here=1
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" \
+  --install "${build_dir}/output/symm-crypto-probe.cap" >"${build_dir}/physical-install-$(date -u +%Y%m%dT%H%M%SZ).log" 2>&1 || \
+  die "GPPro install failed; inspect build/symm-crypto-probe/physical-install-*.log"
 
 "${repo_root}/tools/env" javac -d "${build_dir}" \
   "${repo_root}/tests/hardware/SymmCryptoPcscProbe.java"

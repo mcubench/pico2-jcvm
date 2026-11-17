@@ -11,7 +11,12 @@ reader. Set JCALGTEST_OPERATION to ALG_SUPPORT_BASIC, ALG_SUPPORT_EXTENDED,
 ALG_PERFORMANCE_STATIC, or ALG_PERFORMANCE_VARIABLE (default ALG_SUPPORT_EXTENDED),
 JCALGTEST_OBJECT_DELETION=1, JCALGTEST_VPCD_READER, and JCALGTEST_VPCD_ENDPOINT
 as needed. Set JCALGTEST_SUPPORT_TIMEOUT_SECONDS to choose a timeout from 1 to
-10800 seconds. Full logs and intermediate artifacts go under artifacts/results/.
+10800 seconds. To resume a prior RP2350 overlay, set
+JCALGTEST_VPCD_RESUME_DIR to its result directory and
+JCALGTEST_VPCD_RESUME_MEMORY_DIR to a result directory containing a matching
+empty-card.bin and empty-card.bin.cap-registry pair. Provide client prompt
+answers in JCALGTEST_STDIN_LINES (newline-separated). Full logs and intermediate
+artifacts go under artifacts/results/.
 USAGE
   exit 0
 fi
@@ -50,6 +55,17 @@ client="${JCALGTEST_CLIENT_JAR:-${repo_root}/tests/fixtures/external/jcalgtest/1
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv"
 expected="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
+resume_dir="${JCALGTEST_VPCD_RESUME_DIR:-}"
+resume_memory_dir="${JCALGTEST_VPCD_RESUME_MEMORY_DIR:-}"
+if [[ -n "${resume_dir}" ]]; then
+  [[ -s "${resume_dir}/rp2350-overlay.flash" ]] ||
+    die "resume overlay is missing: ${resume_dir}/rp2350-overlay.flash"
+  [[ -s "${resume_memory_dir}/empty-card.bin" && \
+     -s "${resume_memory_dir}/empty-card.bin.cap-registry" ]] ||
+    die "resume requires a saved PC memory/registry pair; set JCALGTEST_VPCD_RESUME_MEMORY_DIR"
+elif [[ -n "${resume_memory_dir}" ]]; then
+  die "JCALGTEST_VPCD_RESUME_MEMORY_DIR requires JCALGTEST_VPCD_RESUME_DIR"
+fi
 rp2350_overlay="${JCALGTEST_RP2350_OVERLAY:-0}"
 [[ "${rp2350_overlay}" == 0 || "${rp2350_overlay}" == 1 ]] ||
   die "JCALGTEST_RP2350_OVERLAY must be 0 or 1"
@@ -76,8 +92,14 @@ memory="${out_dir}/empty-card.bin"
 overlay_flash="${JCALGTEST_OVERLAY_FLASH:-${out_dir}/rp2350-overlay.flash}"
 client_log="${out_dir}/client.log"
 emulator_log="${out_dir}/emulator.log"
-: > "${memory}"
 cp "${expected}" "${out_dir}/expected-support.csv"
+if [[ -n "${resume_dir}" ]]; then
+  cp "${resume_dir}/rp2350-overlay.flash" "${overlay_flash}"
+  cp "${resume_memory_dir}/empty-card.bin" "${memory}"
+  cp "${resume_memory_dir}/empty-card.bin.cap-registry" "${memory}.cap-registry"
+else
+  : > "${memory}"
+fi
 
 reader_found=false
 for attempt in 1 2 3; do
@@ -100,13 +122,19 @@ done
   die "VPCD PC/SC reader was not published: ${reader}"
 }
 
+emulator_args=(-m "${memory}" -s --vpcd "${endpoint}"
+  --vpcd-idle-timeout 3600 --applet-aid "${applet_aid}"
+  --rom-mask "${rom_mask}")
+if [[ -n "${resume_dir}" ]]; then
+  emulator_args+=(--resume)
+else
+  emulator_args+=(--package-id 63
+    --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin")
+fi
 PICO2_RP2350_OVERLAY_FLASH="${overlay_flash}" \
 PICO2_TEST_OBJECT_DELETION="${object_deletion}" \
-  "${repo_root}/tools/env" "${emulator}" -m "${memory}" -s \
-  --vpcd "${endpoint}" --vpcd-idle-timeout 3600 \
-  --applet-aid "${applet_aid}" --package-id 63 \
-  --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin" \
-  --rom-mask "${rom_mask}" > "${emulator_log}" 2>&1 &
+  "${repo_root}/tools/env" "${emulator}" "${emulator_args[@]}" \
+  > "${emulator_log}" 2>&1 &
 emulator_pid=$!
 cleanup() {
   if kill -0 "${emulator_pid}" 2>/dev/null; then
@@ -132,33 +160,51 @@ gp_timeout() {
     "${repo_root}/tools/env" java -jar "${gp_jar}" \
     --reader "${reader}" "$@"
 }
-gp_timeout --list > "${out_dir}/list-before.log" 2>&1 || {
-  cat "${out_dir}/list-before.log" >&2
-  die "GPPro could not list the empty VPCD card"
-}
-if grep -Fq 'PKG: 4A43416C6754657374 ' "${out_dir}/list-before.log" ||
-   grep -Fq 'APP: 4A43416C675465737431 ' "${out_dir}/list-before.log"; then
-  cat "${out_dir}/list-before.log" >&2
-  die "fresh VPCD card unexpectedly contains JCAlgTest"
+if [[ -n "${resume_dir}" ]]; then
+  gp_timeout --list > "${out_dir}/list-resumed.log" 2>&1 || {
+    cat "${out_dir}/list-resumed.log" >&2
+    die "GPPro could not list the resumed VPCD card"
+  }
+  grep -Fq 'PKG: 4A43416C6754657374 (LOADED)' "${out_dir}/list-resumed.log" || {
+    cat "${out_dir}/list-resumed.log" >&2
+    die "resumed JCAlgTest package is not listed as loaded"
+  }
+  grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-resumed.log" || {
+    cat "${out_dir}/list-resumed.log" >&2
+    die "resumed JCAlgTest applet is not listed as selectable"
+  }
+else
+  gp_timeout --list > "${out_dir}/list-before.log" 2>&1 || {
+    cat "${out_dir}/list-before.log" >&2
+    die "GPPro could not list the empty VPCD card"
+  }
+  if grep -Fq 'PKG: 4A43416C6754657374 ' "${out_dir}/list-before.log" ||
+     grep -Fq 'APP: 4A43416C675465737431 ' "${out_dir}/list-before.log"; then
+    cat "${out_dir}/list-before.log" >&2
+    die "fresh VPCD card unexpectedly contains JCAlgTest"
+  fi
+  gp_timeout --install "${cap}" > "${out_dir}/install.log" 2>&1 || {
+    cat "${out_dir}/install.log" >&2
+    die "GPPro LOAD/INSTALL of upstream JCAlgTest failed"
+  }
+  gp_timeout --list > "${out_dir}/list-after.log" 2>&1 || {
+    cat "${out_dir}/list-after.log" >&2
+    die "GPPro could not list the card after installation"
+  }
+  grep -Fq 'PKG: 4A43416C6754657374 (LOADED)' "${out_dir}/list-after.log" || {
+    cat "${out_dir}/list-after.log" >&2
+    die "JCAlgTest package is not listed as loaded"
+  }
+  grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" || {
+    cat "${out_dir}/list-after.log" >&2
+    die "JCAlgTest applet is not listed as selectable"
+  }
 fi
-gp_timeout --install "${cap}" > "${out_dir}/install.log" 2>&1 || {
-  cat "${out_dir}/install.log" >&2
-  die "GPPro LOAD/INSTALL of upstream JCAlgTest failed"
-}
-gp_timeout --list > "${out_dir}/list-after.log" 2>&1 || {
-  cat "${out_dir}/list-after.log" >&2
-  die "GPPro could not list the card after installation"
-}
-grep -Fq 'PKG: 4A43416C6754657374 (LOADED)' "${out_dir}/list-after.log" || {
-  cat "${out_dir}/list-after.log" >&2
-  die "JCAlgTest package is not listed as loaded"
-}
-grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" || {
-  cat "${out_dir}/list-after.log" >&2
-  die "JCAlgTest applet is not listed as selectable"
-}
 
-client_args=(-op "${operation}" -fresh -outpath "${out_dir}")
+client_args=(-op "${operation}" -outpath "${out_dir}")
+if [[ -z "${resume_dir}" ]]; then
+  client_args+=(-fresh)
+fi
 client_status=0
 JCALGTEST_TIMEOUT_SECONDS="${support_timeout}" \
     "${repo_root}/tools/run-jcalgtest" --client-jar "${client}" \

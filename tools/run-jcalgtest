@@ -23,6 +23,12 @@ mode=""
 reader_name=""
 client_args=()
 client_jar="$("${repo_root}/tools/fixture-path" jcalgtest.client)"
+extra_input_lines=()
+if [[ -n "${JCALGTEST_STDIN_LINES:-}" ]]; then
+  while IFS= read -r line; do
+    extra_input_lines+=("$line")
+  done <<< "${JCALGTEST_STDIN_LINES}"
+fi
 while (($#)); do
   case "$1" in
     --client-jar)
@@ -102,12 +108,17 @@ apdu_timeout="${JCALGTEST_APDU_TIMEOUT_SECONDS:-}"
 if [[ -n "$apdu_timeout" ]]; then
   [[ "$apdu_timeout" =~ ^[1-9][0-9]{0,3}$ ]] || \
     die "JCALGTEST_APDU_TIMEOUT_SECONDS must be an integer from 1 to 9999"
+  extra_watchdog_args=()
+  for line in "${extra_input_lines[@]}"; do
+    extra_watchdog_args+=(--input-line "$line")
+  done
   exec python3 "${repo_root}/tools/jcalgtest-apdu-watchdog.py" \
     --apdu-timeout "$apdu_timeout" --suite-timeout "$timeout_seconds" \
-    --input-line "$reader_index" --input-line "$reader_name" -- \
+    --input-line "$reader_index" \
+    "${extra_watchdog_args[@]}" -- \
     "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
 fi
-{
-  printf '%s\n%s\n' "$reader_index" "${reader_name}"
-} | timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+input_lines=("$reader_index" "${extra_input_lines[@]}")
+printf '%s\n' "${input_lines[@]}" | \
+  timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
   "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"

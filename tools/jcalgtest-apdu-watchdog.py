@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import queue
+import re
+import os
 import subprocess
 import sys
 import threading
@@ -34,21 +36,20 @@ def main() -> int:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
+        bufsize=0,
     )
     assert process.stdin is not None
     assert process.stdout is not None
-    for line in args.input_line:
-        process.stdin.write(line + "\n")
-    process.stdin.close()
 
     lines: queue.Queue[str | None] = queue.Queue()
 
     def read_output() -> None:
         try:
-            for output_line in process.stdout:
-                lines.put(output_line)
+            while True:
+                output_chunk = os.read(process.stdout.fileno(), 4096)
+                if not output_chunk:
+                    break
+                lines.put(output_chunk)
         finally:
             lines.put(None)
 
@@ -59,6 +60,34 @@ def main() -> int:
     command_line = ""
     output_closed = False
     reason: str | None = None
+    pending_inputs = list(args.input_line)
+    transcript = ""
+    prompt_cursor = 0
+    partial_line = ""
+    prompt_patterns = (
+        re.compile(r"Select index of target reader[^\r\n]*?:", re.IGNORECASE),
+        re.compile(r"Specify type of your card[^\r\n]*?:", re.IGNORECASE),
+        re.compile(r"\(y/n\)", re.IGNORECASE),
+        re.compile(r"'r' to retry[^\r\n]*'s' to skip", re.IGNORECASE),
+    )
+
+    def close_stdin() -> None:
+        if process.stdin is not None and not process.stdin.closed:
+            process.stdin.close()
+
+    def answer_ready_prompts() -> None:
+        nonlocal transcript, prompt_cursor
+        for pattern in prompt_patterns:
+            match = pattern.search(transcript, prompt_cursor)
+            if match is None or not pending_inputs:
+                continue
+            answer = pending_inputs.pop(0)
+            process.stdin.write((answer + "\n").encode())
+            process.stdin.flush()
+            prompt_cursor = match.end()
+            if not pending_inputs:
+                close_stdin()
+            return
 
     while not output_closed or process.poll() is None:
         now = time.monotonic()
@@ -78,16 +107,28 @@ def main() -> int:
         if output_line is None:
             output_closed = True
             continue
-        sys.stdout.write(output_line)
+        decoded = output_line.decode(errors="replace")
+        sys.stdout.write(decoded)
         sys.stdout.flush()
-        if "CommmandAPDU:" in output_line or "CommandAPDU:" in output_line:
-            pending_apdu = time.monotonic()
-            command_line = output_line
-        elif "ResponseAPDU:" in output_line:
-            pending_apdu = None
+        transcript += decoded
+        if len(transcript) > 16384:
+            trim = len(transcript) - 8192
+            transcript = transcript[trim:]
+            prompt_cursor = max(0, prompt_cursor - trim)
+        answer_ready_prompts()
+
+        partial_line += decoded
+        while "\n" in partial_line:
+            output_line_text, partial_line = partial_line.split("\n", 1)
+            if "CommmandAPDU:" in output_line_text or "CommandAPDU:" in output_line_text:
+                pending_apdu = time.monotonic()
+                command_line = output_line_text
+            elif "ResponseAPDU:" in output_line_text:
+                pending_apdu = None
 
     if reason is not None:
         print(f"JCALGTEST_WATCHDOG:TIMEOUT {reason}", flush=True)
+        close_stdin()
         process.terminate()
         try:
             process.wait(timeout=5)
@@ -97,6 +138,7 @@ def main() -> int:
         reader.join(timeout=1)
         return 124
 
+    close_stdin()
     return process.wait()
 
 

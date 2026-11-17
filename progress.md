@@ -30580,3 +30580,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The interrupted option-2 VPCD run was already non-resumable (missing cap-registry), so the deleted resume state has no remaining use.
 - Decision: Continue with step 2 (campaign tooling group B).
 - Artifacts/logs: none
+
+## 2026-11-17 Tidy-up step 2: commit campaign tooling changes 5
+
+- Step-Id: `20261117-1400-tidy02-campaign-tooling`
+- Task: repository tidy-up plan, step 2 (group B)
+- When: '2026-11-17 13:56' - '2026-11-17 14:00'
+- Model: `claude-sonnet-5-5`
+- Change: Committed pre-existing uncommitted tooling work from earlier sessions: `tools/run-jcalgtest` (`JCALGTEST_STDIN_LINES` extra client input; watchdog path no longer passes the reader name as an input line), `tools/jcalgtest-apdu-watchdog.py`, `tools/test-jcalgtest-support-vpcd`, `tools/list-readers` (no pcscd pre-check / exit 4; one retry for socket-activated pcscd), `tools/test-symm-crypto-pcsc`, `tests/hardware/SymmCryptoPcscProbe.java`, and the new `tools/inspect-rp2350-overlay`.
+- Validation: `bash -n` on all shell tools and `py_compile` on the watchdog passed. No VPCD, PC/SC or hardware run was performed in this step.
+- Result: Syntax-only validation; behavior of these changes is not re-verified here.
+- Decision: Continue with step 3 (runtime group A) after build and unit suites.
+- Artifacts/logs: none
