@@ -33,6 +33,9 @@
 namespace jcvm {
 
 extern void callJCNativeMethod(Context &, jshort_t);
+#ifndef PC_VERSION
+extern "C" void choupi_native_api_return_progress(void);
+#endif
 
 namespace {
 uint16_t last_native_method_index = 0xFFFF;
@@ -97,6 +100,12 @@ void Bytecodes::bc_impdep1() {
   index = stack.pop_Short();
   last_native_method_index = static_cast<uint16_t>(index);
   callJCNativeMethod(this->context, index);
+#ifndef PC_VERSION
+  // Native APIs can run much longer than the interpreter's bytecode cadence.
+  // Service CCID and USB after a long native call without adding work to every
+  // bytecode or refreshing the applet execution deadline.
+  choupi_native_api_return_progress();
+#endif
 
   return;
 }

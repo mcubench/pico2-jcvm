@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Apply the repository-owned fixed-cadence progress hook to the pinned Mbed TLS.
+set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+mbedtls_dir="${repo_root}/.local-toolchain/sdk/lib/mbedtls"
+patch_file="${repo_root}/tools/patches/mbedtls-exp-mod-progress.patch"
+expected_commit=0bebf8b8c7f07abe3571ded48a11aa907a1ffb20
+
+[[ -d "${mbedtls_dir}/.git" || -f "${mbedtls_dir}/.git" ]] || {
+  printf 'ERROR: pinned Mbed TLS checkout missing at %s\n' "${mbedtls_dir}" >&2
+  exit 1
+}
+actual_commit="$(git -C "${mbedtls_dir}" rev-parse HEAD)"
+[[ "${actual_commit}" == "${expected_commit}" ]] || {
+  printf 'ERROR: Mbed TLS revision mismatch: expected %s, found %s\n' \
+    "${expected_commit}" "${actual_commit}" >&2
+  exit 1
+}
+[[ -s "${patch_file}" ]] || {
+  printf 'ERROR: exponentiation progress patch missing: %s\n' "${patch_file}" >&2
+  exit 1
+}
+
+source="${mbedtls_dir}/library/bignum_core.c"
+if grep -q 'choupi_mbedtls_exp_mod_progress' "${source}"; then
+  grep -q '++processed_bits & 31U' "${source}" || {
+    printf 'ERROR: Mbed TLS progress patch is only partially applied\n' >&2
+    exit 1
+  }
+  printf 'MBEDTLS:EXP_MOD_PROGRESS already-applied revision=%s\n' "${actual_commit}"
+  exit 0
+fi
+
+git -C "${mbedtls_dir}" apply --check "${patch_file}"
+git -C "${mbedtls_dir}" apply "${patch_file}"
+grep -q '++processed_bits & 31U' "${source}"
+printf 'MBEDTLS:EXP_MOD_PROGRESS applied revision=%s\n' "${actual_commit}"

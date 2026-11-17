@@ -19,6 +19,22 @@ for serial `EE116F37C7E4A04E`); the USB bus/device number and reader index are n
 Nicknames are the first four hex digits (proposed, not confirmed by the user). None of
 these is a JCVM CCID device yet, so the approved helper reports `found 0`.
 
+**Do not assume any attached board already runs the JCVM.** The attached Pico 2 boards
+may be in BOOTSEL, running JCVM firmware, or running some other firmware (smoke test,
+stock/other program). A board only appears in PC/SC after the full JCVM is flashed.
+"No boards" / `list() failed` / helper `found 0` / `SCARD_E_NO_READERS_AVAILABLE` therefore
+means "no board is running the JCVM", not "no hardware" or a broken pcscd.
+
+**Viable solution (2026-11-17, verified).** Diagnose by layer: `lsusb` (`2e8a:000f` =
+BOOTSEL, `2e8a:0009` = running; `lsusb -v -d 2e8a:0009` must show a CCID interface, class
+11, for JCVM; CDC + vendor-only means other firmware), then `picotool info -a --bus N
+--address M` for chip IDs of BOOTSEL boards. If no board runs the JCVM, flash one:
+`PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial <CHIPID>` (works from BOOTSEL or
+other firmware), then `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only` and the
+approved helper (`count=1`). Verified: F42D flashed from BOOTSEL, reader
+`Pico 2 CHOUPI CCID [JCVM CCID] (F42DD9D07D6D2B07) 00 00` listed. Do not debug
+pcscd/libccid first when no board runs JCVM firmware.
+
 **Boards from the old machine (not attached here as of 2026-11-17):** 8E
 `8E464F4E2BBC0A19`, D92 `D92E743D5F640C0F`, 2BED `2BED26ED20556535`, and an unnamed
 `48E9A50BB405634E`. Old campaign results refer to these IDs; do not compare them with
@@ -1160,3 +1176,23 @@ advances the gitlink, update and validate this wrapper pin in the same step.
 ## Host allocator telemetry in VPCD worker thread — 2026-11-17
 
 `LD_PRELOAD` malloc/operator-new probes did not observe the VM worker thread reliably, and Valgrind Massif aborted on an unknown interpreter call before VPCD connection. For focused PC/VPCD diagnostics, sample `mallinfo2().uordblks` at the native RSA VM boundary and pair it with `Heap` live-array counts; this produced stable per-call observations. Treat it only as sampled host telemetry: it does not capture allocator intra-call high-water and cannot establish Pico arena usage. Do not use these host byte totals to close target RAM findings; collect embedded allocator/arena telemetry on a physical board.
+
+## Board availability and JCAlgTest prompt routing — 2026-11-17
+
+The earlier `found 0` / `list() failed` snapshot meant no attached board was
+running JCVM firmware; it did not mean that the physical boards were absent or
+that PC/SC itself was broken. Following the layer-by-layer procedure above,
+the refreshed board F42DD9D07D6D2B07 was flashed from BOOTSEL with the full
+JCVM and then appeared as `Pico 2 CHOUPI CCID [JCVM CCID]
+(F42DD9D07D6D2B07) 00 00`. This confirms availability is volatile and that
+firmware state must be checked before diagnosing reader enumeration.
+
+For `tools/run-jcalgtest`, do not send a reader index when PC/SC has exactly one
+terminal: the client auto-selects it, and the extra line is consumed as the
+main menu choice. With multiple terminals, send the selected index. Also avoid
+piping all menu/card/resume answers at once: separate Java `Scanner` instances
+can buffer later lines. The runner now routes scripted lines through the
+prompt-aware watchdog, and leaves an un-scripted TTY interactive. A fake
+multi-prompt flow validated ordered delivery. The real pinned 1.8.5 session
+reached RSA-1984 ×50 and logged four successful samples before the bounded
+session timed out; it was partial diagnostic work, not option-2 acceptance.

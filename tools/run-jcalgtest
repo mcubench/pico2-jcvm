@@ -99,26 +99,43 @@ mkdir -p "$index_build"
 "${repo_root}/tools/env" javac -d "$index_build" \
   "${repo_root}/tools/JCAlgTestReaderIndex.java"
 reader_index="$("${repo_root}/tools/env" java -cp "$index_build" JCAlgTestReaderIndex "$reader_name")"
+reader_count="$("${repo_root}/tools/env" java -cp "$index_build" JCAlgTestReaderIndex --count)"
 if [[ "$has_cardname" == false ]]; then
   client_args+=("-cardname" "$reader_name")
 fi
 
 printf 'JCAlgTest target reader: %s (index %s)\n' "$reader_name" "$reader_index" >&2
 apdu_timeout="${JCALGTEST_APDU_TIMEOUT_SECONDS:-}"
-if [[ -n "$apdu_timeout" ]]; then
-  [[ "$apdu_timeout" =~ ^[1-9][0-9]{0,3}$ ]] || \
-    die "JCALGTEST_APDU_TIMEOUT_SECONDS must be an integer from 1 to 9999"
-  extra_watchdog_args=()
+if [[ -n "$apdu_timeout" || ${#extra_input_lines[@]} -gt 0 ]]; then
+  if [[ -n "$apdu_timeout" ]]; then
+    [[ "$apdu_timeout" =~ ^[1-9][0-9]{0,3}$ ]] || \
+      die "JCALGTEST_APDU_TIMEOUT_SECONDS must be an integer from 1 to 9999"
+  fi
+  watchdog_args=(--suite-timeout "$timeout_seconds")
+  if [[ -n "$apdu_timeout" ]]; then
+    watchdog_args+=(--apdu-timeout "$apdu_timeout")
+  fi
+  if (( reader_count > 1 )); then
+    watchdog_args+=(--input-line "$reader_index")
+  fi
   for line in "${extra_input_lines[@]}"; do
-    extra_watchdog_args+=(--input-line "$line")
+    watchdog_args+=(--input-line "$line")
   done
   exec python3 "${repo_root}/tools/jcalgtest-apdu-watchdog.py" \
-    --apdu-timeout "$apdu_timeout" --suite-timeout "$timeout_seconds" \
-    --input-line "$reader_index" \
-    "${extra_watchdog_args[@]}" -- \
+    "${watchdog_args[@]}" -- \
     "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
 fi
-input_lines=("$reader_index" "${extra_input_lines[@]}")
+
+# Preserve an interactive terminal when no scripted prompt answers were
+# supplied. The client creates multiple Scanner instances; piping several
+# answers at once can let the first Scanner buffer later answers.
+if [[ -t 0 && ${#extra_input_lines[@]} -eq 0 ]]; then
+  exec timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+    "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"
+fi
+
+input_lines=()
+if (( reader_count > 1 )); then input_lines+=("$reader_index"); fi
 printf '%s\n' "${input_lines[@]}" | \
   timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
   "${repo_root}/tools/env" java -jar "$client_jar" "${client_args[@]}"

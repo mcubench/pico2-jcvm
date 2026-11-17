@@ -3,13 +3,13 @@
 Updated: 2026-11-17.
 
 ## Current state
-- Latest `./tools/build arm --profile max_crypto` passed in normal mode, object deletion ON, debug switches OFF; flash headroom is 35,976 bytes.
-- Latest authorized hardware refresh found 0 Pico 2 boards; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only` returned `list() failed`. No flash or cycle was attempted.
-- LONGOP-01 T1 now has focused VPCD telemetry for RSA-1984 and RSA-1536 ×50: 51 native `doFinal` calls, live arrays 112→163→112 for each. Host `mallinfo2` sampled increases are ~39 KB; this does not measure Pico arena high-water. T1/D2 remain open pending target telemetry. Logs are under `artifacts/results/longop01-rsa1984-vpcd-20261117/`.
-- T7 synthetic overlay harness and 1,590-APDU transcript replay passed; unchanged-client option 2 and physical T8 acceptance remain open.
+- LONGOP-01 T3 D1 implementation and focused physical criterion passed on F42DD9D07D6D2B07. Exact RSA-1984 PKCS1 ×50 APDU returned `AA9000` in 48.521 s; serial captured 47/47 CCID progress extensions. Artifact: `artifacts/results/longop01-rsa1984-physical-20261117T162912Z/F42DD9D07D6D2B07/`.
+- The earlier “no boards” report meant no attached board was running JCVM firmware. QKB documents identification from BOOTSEL/USB layers and full `cycle choupi` recovery. F42D was subsequently flashed and enumerated.
+- A pinned 1.8.5 client diagnostic session completed four RSA-1984 ×50 samples, then hit its 300 s bound during the next sample; it is not option-2 acceptance.
+- LONGOP-01 T1/D2, full T2 reproduction, T5 audit, T6 acceptance, MEM-01 T7 live option-2, and T8 physical campaigns remain open.
 
 ## Next actions
-1. Add embedded allocator/arena high-water telemetry for the RSA ×50 path or collect it on an identified physical Pico 2; rebuild ARM, then run the full JCVM cycle and inspect finite serial output.
-2. Continue LONGOP-01 triage with the archived D1 failure log: distinguish card/reader stall from target panic/reset and retain D2 open until measured.
-3. When PC/SC is available, run the unchanged 1.8.5 client option 2 and physical acceptance with per-device identity, hashes, result directories and telemetry.
-4. Preserve existing uncommitted nested `choupi/os` worktree changes and root untracked SDK submodules.
+1. Run focused unit/syntax/diff validations after documentation edits, inspect the complete staged diff and preserve unrelated work.
+2. Commit this coherent T3 implementation/evidence step with its progress record and Step-Id trailer.
+3. Rebuild normal ARM `max_crypto`, then refresh the approved hardware helper and PC/SC reader list before any post-commit full JCVM cycle. Capture and inspect finite serial output; record the resulting firmware identity.
+4. Continue LONGOP-01 by instrumenting embedded allocator/arena high-water for RSA ×50, then audit flash-heavy DELETE paths and pursue full option-2/T8 acceptance when a board is ready.

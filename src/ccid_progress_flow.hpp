@@ -8,6 +8,13 @@ namespace choupi {
 
 inline constexpr uint8_t kMaxPendingCcidSubmitFailures = 32;
 inline constexpr uint32_t kStaleCcidExtensionCompletionUs = 100000U;
+inline constexpr uint32_t kNativeApiProgressIntervalUs = 500000U;
+
+inline constexpr bool native_api_progress_due(const uint32_t now_us,
+                                              const uint32_t last_progress_us) {
+  return static_cast<uint32_t>(now_us - last_progress_us) >=
+         kNativeApiProgressIntervalUs;
+}
 
 inline constexpr bool pending_ccid_retry_deadline_waiting(
     const bool deadline_armed, const uint32_t now_us,

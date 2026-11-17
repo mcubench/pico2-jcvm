@@ -31061,3 +31061,24 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Host samples show roughly 39 KB increase and 8.6–8.8 KB retained after cleanup. They are sampled host-process values, not allocator intra-call high-water or Pico arena measurements; D2 remains unconfirmed. Hardware refresh found zero boards and PC/SC listing failed, so no flash/cycle was attempted. `git diff --check` uses CRLF sources; validate with `git -c core.whitespace=cr-at-eol diff --check`.
 - Decision: Keep LONGOP-01 T1 open; next obtain embedded arena high-water from an identified board, then rerun full JCVM cycle.
 - Artifacts/logs: `artifacts/results/longop01-rsa1984-vpcd-20261117/heap-stats-rsa1984-aftergc/emulator.log`, `.../heap-stats-rsa1536-aftergc/emulator.log`; ARM image `build/arm/pico2_choupi.uf2`.
+## 2026-11-17 Service CCID during native RSA exponentiation 31
+
+- Step-Id: `20261117-1735-longop01-d1-progress`
+- Task: HOST-01 LONGOP-01 T3
+- When: '2026-11-17 17:04 CET' - '2026-11-17 17:35 CET'
+- Model: `gpt-6.1-sol`
+- Change: Added bounded cooperative progress inside pinned Mbed TLS modular exponentiation (every 32 public exponent-loop bits) and a 500 ms native API return gate. Added wrap-safe unit coverage, patch/build integration, a focused physical APDU probe, and prompt-aware JCAlgTest scripted input. Updated LONGOP-01, QKB and handoff records.
+- Validation: `./tools/test-ccid-progress-flow` passed (38/38); fake prompt flow passed; Java probe/helper compilation, `bash -n`, `./tools/build-pc --profile max_crypto --rp2350-overlay`, normal `./tools/build arm --profile max_crypto`, and full `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed. The focused physical `B043000016` RSA-1984 PKCS1 ×50 returned `AA9000` in 48.521 s with `USB_PROGRESS extensions=47 completed=47`; finite serial capture had no fault. `git -c core.whitespace=cr-at-eol diff --check` passed before final documentation updates.
+- Result: D1 is fixed and its focused hardware criterion passes on F42DD9D07D6D2B07. A pinned 1.8.5 client diagnostic session produced four successful ×50 samples but hit its 300 s bound before completing; it is not a full option-2 campaign. Earlier “no boards” was a no-JCVM-firmware state, per QKB; the board was flashed from BOOTSEL and enumerated.
+- Decision: Close T3. Keep LONGOP-01 T1/D2, T2 full reproduction, T5 audit, T6 acceptance, and MEM-01 option-2/T8 acceptance open. Rebuild after commit and refresh hardware access before any further cycle.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T162912Z/F42DD9D07D6D2B07/`; partial client log `artifacts/results/longop01-rsa1984-physical-20261117/F42DD9D07D6D2B07/ALGTest_log_1794932230136.log`; image SHA-256 before commit `db17b24ec67e7ded9da673d196bb9868b1e1ea79877974d16cad8a8de5e9bb6b`.
+
+- Step-Id: `20261117-1735-longop01-d1-progress`
+- Task: HOST-01 LONGOP-01 T3
+- When: '2026-11-17 17:04 CET' - '2026-11-17 17:35 CET'
+- Model: `gpt-6.1-sol`
+- Change: Added bounded cooperative progress inside pinned Mbed TLS modular exponentiation (every 32 public exponent-loop bits) and a 500 ms native API return gate. Added wrap-safe unit coverage, patch/build integration, a focused physical APDU probe, and prompt-aware JCAlgTest scripted input. Updated LONGOP-01, QKB and handoff records.
+- Validation: `./tools/test-ccid-progress-flow` passed (38/38); fake prompt flow passed; Java probe/helper compilation, `bash -n`, `./tools/build-pc --profile max_crypto --rp2350-overlay`, normal `./tools/build arm --profile max_crypto`, and full `./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` passed. The focused physical `B043000016` RSA-1984 PKCS1 ×50 returned `AA9000` in 48.521 s with `USB_PROGRESS extensions=47 completed=47`; finite serial capture had no fault. `git -c core.whitespace=cr-at-eol diff --check` passed before final documentation updates.
+- Result: D1 is fixed and its focused hardware criterion passes on F42DD9D07D6D2B07. A pinned 1.8.5 client diagnostic session produced four successful ×50 samples but hit its 300 s bound before completing; it is not a full option-2 campaign. Earlier “no boards” was a no-JCVM-firmware state, per QKB; the board was flashed from BOOTSEL and enumerated.
+- Decision: Close T3. Keep LONGOP-01 T1/D2, T2 full reproduction, T5 audit, T6 acceptance, and MEM-01 option-2/T8 acceptance open. Rebuild after commit and refresh hardware access before any further cycle.
+- Artifacts/logs: `artifacts/results/longop01-rsa1984-physical-20261117T162912Z/F42DD9D07D6D2B07/`; partial client log `artifacts/results/longop01-rsa1984-physical-20261117/F42DD9D07D6D2B07/ALGTest_log_1794932230136.log`; image SHA-256 before commit `db17b24ec67e7ded9da673d196bb9868b1e1ea79877974d16cad8a8de5e9bb6b`.

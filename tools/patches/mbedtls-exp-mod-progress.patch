@@ -1,0 +1,37 @@
+diff --git a/library/bignum_core.c b/library/bignum_core.c
+index 8091694..5c76edf 100644
+--- a/library/bignum_core.c
++++ b/library/bignum_core.c
+@@ -22,6 +22,12 @@
+ #include "bn_mul.h"
+ #include "constant_time_internal.h"
++
++#if defined(__GNUC__)
++__attribute__((weak)) void choupi_mbedtls_exp_mod_progress(void) {}
++#else
++void choupi_mbedtls_exp_mod_progress(void) {}
++#endif
++
+ size_t mbedtls_mpi_core_clz(mbedtls_mpi_uint a)
+ {
+ #if defined(__has_builtin)
+@@ -900,6 +906,7 @@ static void mbedtls_mpi_core_exp_mod_optionally_safe(mbedtls_mpi_uint *X,
+      * window_bits can go up to wsize. */
+     size_t window_bits = 0;
+     mbedtls_mpi_uint window = 0;
++    size_t processed_bits = 0;
++
+     do {
+         /* Square */
+@@ -912,6 +919,11 @@ static void mbedtls_mpi_core_exp_mod_optionally_safe(mbedtls_mpi_uint *X,
+         } else {
+             --E_bit_index;
+         }
++        /* The fixed cadence depends only on the public loop position, not
++         * exponent bit values, so it preserves the constant-time schedule. */
++        if ((++processed_bits & 31U) == 0U) {
++            choupi_mbedtls_exp_mod_progress();
++        }
+         /* Insert next exponent bit into window */
+         ++window_bits;
+         window <<= 1;

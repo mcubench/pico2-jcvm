@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_host_usb_access
+
+[[ $# -eq 2 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-longop01-rsa1984-physical <chip-id> '<exact PC/SC reader name>'"
+chip_id="$1"
+reader_name="$2"
+[[ "$chip_id" =~ ^[A-Fa-f0-9]{8,32}$ ]] || die "chip ID must be hexadecimal"
+[[ "$reader_name" == *"$chip_id"* ]] || die "reader name does not contain the selected chip ID"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+result_dir="${repo_root}/artifacts/results/longop01-rsa1984-physical-${timestamp}/${chip_id}"
+mkdir -p "$result_dir"
+client_log="${result_dir}/probe.log"
+serial_log="${result_dir}/serial.log"
+build_dir="${repo_root}/build/longop01-rsa1984-probe"
+mkdir -p "$build_dir"
+
+"${repo_root}/tools/env" javac -d "$build_dir" \
+  "${repo_root}/tests/hardware/JCAlgTestRsa1984PhysicalProbe.java"
+printf 'PHYSICAL:IDENTITY chip_id=%s reader=%s\n' "$chip_id" "$reader_name" | tee "$client_log"
+printf 'FIRMWARE_SHA256 %s\n' \
+  "$(sha256sum "${repo_root}/build/arm/pico2_choupi.uf2" | awk '{print $1}')" | tee -a "$client_log"
+printf 'JCALGTEST_CAP_VERSION 1.8.4_jc305 SHA256 %s\n' \
+  "$(sha256sum "${repo_root}/tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap" | awk '{print $1}')" | tee -a "$client_log"
+printf 'APDU_SEQUENCE_SOURCE_JAR_SHA256 b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3\n' | tee -a "$client_log"
+
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/monitor" \
+  --serial "$chip_id" --seconds 150 >"$serial_log" 2>&1 &
+monitor_pid=$!
+set +e
+timeout --signal=TERM --kill-after=5s 140s \
+  "${repo_root}/tools/env" java -cp "$build_dir" \
+  JCAlgTestRsa1984PhysicalProbe "$reader_name" >>"$client_log" 2>&1
+client_status=$?
+wait "$monitor_pid"
+monitor_status=$?
+set -e
+cat "$client_log"
+cat "$serial_log"
+(( client_status == 0 )) || die "physical APDU probe failed with status ${client_status}; see ${client_log}"
+(( monitor_status == 0 )) || die "finite serial monitor failed with status ${monitor_status}; see ${serial_log}"
+
+python3 - "$serial_log" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+lines = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace").splitlines()
+last_progress = None
+measure_found = False
+last_b043_extensions = None
+for line in lines:
+    if "CHOUPI:USB_PROGRESS " in line:
+        fields = dict(re.findall(r"([a-z_]+)=([0-9]+)", line))
+        if "extensions" in fields and "completed" in fields:
+            last_progress = (int(fields["extensions"]), int(fields["completed"]))
+    if "CHOUPI:CCID_RESPONSE apdu=B043000016" in line and "sw=9000" in line:
+        measure_found = True
+        if last_progress is not None and last_progress[0] > 0 and last_progress[0] == last_progress[1]:
+            last_b043_extensions = last_progress
+if not measure_found:
+    raise SystemExit("PHYSICAL:FAIL finite serial log did not contain successful B043 response")
+if last_b043_extensions is None:
+    raise SystemExit("PHYSICAL:FAIL B043 response lacked completed CCID extension telemetry")
+print(f"PHYSICAL:TELEMETRY B043 extensions={last_b043_extensions[0]} completed={last_b043_extensions[1]}")
+PY
+grep -Fq 'TEST:PASS RSA1984_PRIVATE_PKCS1_X50' "$client_log" || \
+  die "physical probe did not report its final pass marker"
+printf 'PHYSICAL:PASS result_dir=%s\n' "${result_dir#${repo_root}/}"

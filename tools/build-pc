@@ -33,6 +33,7 @@ require_command date
 source "${repo_root}/tools/lib/build_lock.sh"
 acquire_build_lock "${repo_root}/build/.tools-build.lock" \
   "pc profile=${support_profile} rp2350_overlay=${rp2350_overlay}"
+"${repo_root}/tools/apply-mbedtls-exp-mod-progress"
 cplc_source_id="$("${repo_root}/tools/cplc-source-id")"
 personalizer_id="0x${cplc_source_id:2:8}"
 prepersonalizer_id="0x${cplc_source_id:10:8}"

@@ -15,12 +15,13 @@ import time
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--apdu-timeout", type=float, required=True)
+    parser.add_argument("--apdu-timeout", type=float)
     parser.add_argument("--suite-timeout", type=float, required=True)
     parser.add_argument("--input-line", action="append", default=[])
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
-    if args.apdu_timeout <= 0 or args.suite_timeout <= 0:
+    if ((args.apdu_timeout is not None and args.apdu_timeout <= 0) or
+            args.suite_timeout <= 0):
         parser.error("timeouts must be positive")
     if args.command and args.command[0] == "--":
         args.command = args.command[1:]
@@ -66,6 +67,7 @@ def main() -> int:
     partial_line = ""
     prompt_patterns = (
         re.compile(r"Select index of target reader[^\r\n]*?:", re.IGNORECASE),
+        re.compile(r"Test option number:\s*", re.IGNORECASE),
         re.compile(r"Specify type of your card[^\r\n]*?:", re.IGNORECASE),
         re.compile(r"\(y/n\)", re.IGNORECASE),
         re.compile(r"'r' to retry[^\r\n]*'s' to skip", re.IGNORECASE),
@@ -94,7 +96,8 @@ def main() -> int:
         if now - start >= args.suite_timeout:
             reason = f"suite exceeded {args.suite_timeout:g}s"
             break
-        if pending_apdu is not None and now - pending_apdu >= args.apdu_timeout:
+        if (pending_apdu is not None and args.apdu_timeout is not None and
+                now - pending_apdu >= args.apdu_timeout):
             reason = (
                 f"APDU exceeded {args.apdu_timeout:g}s: "
                 f"{command_line.strip()}"

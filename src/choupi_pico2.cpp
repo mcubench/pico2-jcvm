@@ -17,12 +17,17 @@
 #include "vm_lifecycle.h"
 #include "vm_diagnostics.h"
 #include "usb_task_budget.hpp"
+#include "ccid_progress_flow.hpp"
 
 extern "C" char __StackLimit;
 
 extern "C" void choupi_ccid_task(void);
 extern "C" void choupi_ccid_native_crypto_progress(void);
 extern "C" bool choupi_vm_native_progress(void);
+
+namespace {
+uint32_t last_native_api_progress_us = 0;
+}
 
 namespace {
 volatile bool usb_bootsel_requested = false;
@@ -40,6 +45,16 @@ extern "C" bool choupi_native_crypto_progress(void) {
   const bool within_budget = choupi_vm_native_progress();
   choupi_vm_cooperative_progress();
   return within_budget;
+}
+extern "C" void choupi_native_api_return_progress(void) {
+  const uint32_t now = time_us_32();
+  if (!choupi::native_api_progress_due(now, last_native_api_progress_us))
+    return;
+  last_native_api_progress_us = now;
+  choupi_vm_cooperative_progress();
+}
+extern "C" void choupi_mbedtls_exp_mod_progress(void) {
+  choupi_vm_cooperative_progress();
 }
 extern "C" uint32_t choupi_time_us_32(void) { return time_us_32(); }
 extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,

@@ -53,6 +53,13 @@ struct FakeProgressHooks {
 } // namespace
 
 int main() {
+  check(!choupi::native_api_progress_due(1499999U, 1000000U),
+        "native API return skips progress before 500 ms");
+  check(choupi::native_api_progress_due(1500000U, 1000000U),
+        "native API return services progress at 500 ms");
+  check(choupi::native_api_progress_due(0x00080000U, 0xffff0000U),
+        "native API progress interval handles timer wraparound");
+
   constexpr uint32_t long_uptime_us = 0x90000000U;
   check(!choupi::pending_ccid_retry_deadline_waiting(
             false, long_uptime_us, 0),
