@@ -31178,3 +31178,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Same free-memory metric on both sides; Windows card had ~49 KB less free, ~4,650 more files. 1,879 `B0E2` sent, 1,874 `9000`; visible deletion passes reclaim 0.
 - Decision: Next is reading the persistent-store RAM cost, then a same-state replay on a Linux token. No implementation yet.
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261117-c050a193-deletion/`
+
+## 2026-11-17 Measure authenticated GlobalPlatform DELETE 12
+
+- Step-Id: `20261117-1834-longop01-delete-measure`
+- Task: HOST-01 LONGOP-01 T5 physical audit
+- When: '2026-11-17 18:22 CET' - '2026-11-17 18:34 CET'
+- Model: `gpt-6.1-sol`
+- Change: Isolated card-manager DELETE from GPPro's initial SELECT failure, then ran authenticated applet/package DELETE and unchanged CAP reinstall on normal firmware. Recorded direct unauthenticated E4 rejection separately. Updated T5 evidence, QKB and handoff.
+- Validation: Transient SmartcardIO probe compiled via `./tools/env javac` and reached E4, which returned expected `6982` without deleting the applet. After approved helper/list refresh, GPPro `--debug --delete` applet and package commands both exited 0; unchanged JCAlgTest 1.8.4/jc305 CAP reinstall exited 0. A 100 s finite serial capture finished successfully. `git -c core.whitespace=cr-at-eol diff --check` passed before the documentation updates.
+- Result: Earlier full snapshot 19,985 bytes / 534 files compacted during authenticated E4 deletion to 134 files then 2; both E4 responses were `9000`. A subsequent GPPro debug measurement from a smaller 4,247-byte state measured applet E4 at 1.057 s and package E4 at 726 ms (whole command runs 1.487 s and 938 ms). No E4 CCID time-extension record, `PANIC`, `FAULT`, or `TEST:FAIL` appeared. The initial pre-cycle OOM attempt is separate and did not reach E4. Current measured state is below the 96 KiB overlay limit.
+- Decision: Authenticated DELETE and reinstall pass at the captured normal-image state; no immediate firmware fix is indicated by this measurement. Keep T5 open for near-capacity filesystem state, other flash-heavy card-manager paths, and the discrepancy with the earlier 15 s Windows result.
+- Artifacts/logs: `artifacts/results/longop01-delete-authenticated-20261117T1728Z/F42DD9D07D6D2B07/`; `artifacts/results/longop01-delete-measure-20261117T1732Z/F42DD9D07D6D2B07/`; unauthenticated probe `artifacts/results/longop01-delete-direct-20261117T172536Z/F42DD9D07D6D2B07/`.

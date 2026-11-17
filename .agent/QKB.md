@@ -21,6 +21,23 @@ as a DELETE regression, establish that the preceding focused RSA work and
 filesystem compaction have not exhausted transient memory; retain serial from
 before the first GPPro SELECT.
 
+**Follow-up result (2026-11-17).** After the normal cycle, an unauthenticated
+SmartcardIO `80 E4` correctly returned `6982` without mutation. GPPro then
+completed authenticated applet and package DELETE on the same image and
+reinstalled the unchanged 1.8.4/jc305 CAP. The first successful run started
+with a 19,985-byte / 534-file filesystem snapshot and serial compaction showed
+`534->134` files, then `134->2`; both encrypted E4 commands returned `9000`.
+A second GPPro `--debug` measurement on the smaller post-reinstall state timed
+applet E4 at 1.057 s and package E4 at 726 ms (whole command invocations 1.487 s
+and 938 ms). The capture had no `FAULT`, `PANIC`, or `TEST:FAIL`, and no
+`CHOUPI:USB_PROGRESS` time-extension record for E4. Artifacts:
+`artifacts/results/longop01-delete-authenticated-20261117T1728Z/F42DD9D07D6D2B07/`
+and `artifacts/results/longop01-delete-measure-20261117T1732Z/F42DD9D07D6D2B07/`.
+This confirms the earlier panic was cleared by a normal cycle and authenticated
+DELETE works at the observed data size. It does not validate a full 96 KiB
+overlay or explain the earlier 15 s Windows observation; retain T5 for a
+large-store measurement and the other synchronous card-manager flash paths.
+
 ## Physical token roster — 2026-11-17
 
 Selection policy ("one working token, switch only when unavailable") is in
