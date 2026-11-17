@@ -343,16 +343,15 @@ def run_emulator(
                                     len(args.applet_aid)))
                     select += args.applet_aid + b"\x00"
                     send_message(connection, select)
-                    skipped_select = receive_message(connection)
-                    if skipped_select[-2:] != b"\x6a\x82":
+                    deferred_select = receive_message(connection)
+                    if deferred_select[-2:] != b"\x6f\x00":
                         raise RuntimeError(
-                            "applet should remain unregistered until install "
-                            "journal recovery; expected SELECT 6A82, got "
-                            f"{skipped_select.hex().upper()}"
+                            "deferred install journal recovery must fail "
+                            "closed; expected SELECT 6F00, got "
+                            f"{deferred_select.hex().upper()}"
                         )
                     print(
-                        "TEST:PASS pre-recovery SELECT reports applet not "
-                        "registered (6A82)"
+                        "TEST:PASS pre-recovery SELECT fails closed (6F00)"
                     )
                     return
 

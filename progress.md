@@ -31250,3 +31250,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: `AlgTestApiCore_305` package persisted across the normal firmware cycle. Package DELETE took 881 ms. No `PANIC`, `FAULT` or `TEST:FAIL` appeared. Firmware SHA-256 recorded in the run metadata.
 - Decision: Basic package persistence is verified; this does not test power loss between lifecycle journal, CAP owner-map and journal-clear commits. Continue with interrupted-recovery analysis and historical Windows delay.
 - Artifacts/logs: `artifacts/results/cap-lifecycle-cycle-20261117T1813Z/F42DD9D07D6D2B07/`; `artifacts/logs/cycle-choupi-20261117T181422Z.log`.
+
+## 2026-11-17 Correct install recovery VPCD assertion and verify 6
+
+- Step-Id: `20261117-1921-longop01-install-recovery`
+- Task: HOST-01 LONGOP-01 T5 / PERSIST-03 lifecycle recovery
+- When: '2026-11-17 19:15 CET' - '2026-11-17 19:21 CET'
+- Model: `gpt-6.1-sol`
+- Change: Corrected the VPCD recovery test's pre-restart SELECT assertion: deliberate recovery deferral returns fail-closed `6F00`, not absent-applet `6A82`. Documented the four recovery results and physical-cut limitation.
+- Validation: `python3 -m py_compile tests/integration/pc_vpcd_applet_test.py` passed. All four bounded `tools/test-pc-vpcd-applet` local-CAP fault modes passed: pending journal before/after publication, metadata publication error, and journal-clear sync failure; each fresh-process recovery selected the applet with `9000`. Normal local-CAP SELECT baseline passed. `git -c core.whitespace=cr-at-eol diff --check` passed. Initial unprivileged VPCD call was denied at loopback bind; elevated local-socket execution passed. No USB/PCSC was used.
+- Result: Deferred recovery returns `6F00`; new-process recovery clears/replays the journal and applet SELECT returns `9000` in all four modes. No firmware source changed. Physical power-cut evidence is still open under PERSIST-03.
+- Decision: Keep T5 open for the historical Windows 15 s observation; current-image near-capacity E4/E6/E8 measurements remain below watchdog duration.
+- Artifacts/logs: `artifacts/logs/filesystem-install-recovery-local-20261117T1823Z.log`; `artifacts/logs/filesystem-install-publication-recovery-local-20261117T1823Z.log`; `artifacts/logs/filesystem-install-metadata-recovery-local-20261117T1823Z.log`; `artifacts/logs/filesystem-install-clear-recovery-local-20261117T1823Z.log`.

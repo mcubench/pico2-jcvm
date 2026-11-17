@@ -1345,3 +1345,26 @@ cycle log: `artifacts/logs/cycle-choupi-20261117T181422Z.log`.
 This is package-level persistence over a normal full-JCVM cycle. It does not
 exercise reset/power loss between install-journal publication, CAP owner-map
 update and journal clear, so interrupted lifecycle recovery remains unverified.
+
+
+## Install journal VPCD recovery expectation — 2026-11-17
+
+The first local journal-recovery test failed before restart because
+`tests/integration/pc_vpcd_applet_test.py` expected `6A82` after deliberately
+skipping recovery once. `vpcd_restore_applet()` returns `RestoreStatus::Failed`
+for that injection, which correctly maps to `6F00`; `6A82` means the applet is
+not registered and was the wrong assertion. The test now expects fail-closed
+`6F00`, terminates the emulator, then validates fresh-process recovery and
+SELECT `9000`. No VM source change was needed.
+
+All four bounded PC/VPCD cases pass with the local capacity applet (not the
+JCAlgTest host client): pending journal before CAP registry publication,
+pending journal after publication, metadata publication error, and journal-clear
+sync failure. Each fresh process recovered and selected the applet. Results are
+in `artifacts/logs/filesystem-install-recovery-local-20261117T1823Z.log`,
+`artifacts/logs/filesystem-install-publication-recovery-local-20261117T1823Z.log`,
+`artifacts/logs/filesystem-install-metadata-recovery-local-20261117T1823Z.log`,
+and `artifacts/logs/filesystem-install-clear-recovery-local-20261117T1823Z.log`.
+The unprivileged run returned `Operation not permitted` before creating a VPCD
+log because the sandbox blocked loopback bind; elevated execution permitted the
+local socket. This test path uses no USB or PC/SC.
