@@ -30820,3 +30820,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Firmware runs on EE11 (USB `Pico2 JCVM CCID`, serial = chip ID). PC/SC reader NOT yet visible: `list-readers` -> `SCARD_E_NO_READERS_AVAILABLE` because libccid 1.5.2 lacks the 2E8A:0009 entry; blocked on the root request above. No APDU/PC/SC test, VPCD campaign or JCAlgTest run was done. `list-readers` first failed on a cached Java 21 class (moved aside).
 - Decision: After the user runs the request, list readers, then smoke-test via PC/SC (GPPro/SmartcardIO) before any campaign. Working token: EE11.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261117T140036Z.log`
+
+## 2026-11-17 PC/SC reader visible for token EE11 3
+
+- Step-Id: `20261117-1930-pcsc-reader-visible`
+- Task: physical token bring-up
+- When: '2026-11-17 19:21' - '2026-11-17 19:30'
+- Model: `claude-sonnet-5-5`
+- Change: After the user ran `tools/install-libccid-pico2` (libccid plist entry for 2E8A:0009) and reinstalled the helper, ran `sudo -n /usr/local/sbin/pico2-pcsc-reader` and `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only --timeout 20`, both with elevated execution. Removed the fulfilled request `HOST-LIBCCID-PICO2-20261117`; updated HANDOFF.
+- Validation: Helper rc=0: `PCSC:ACCESS_GRANTED count=1 nodes=/dev/bus/usb/001/034 service=pcscd.service acl=not-needed-pcscd-runs-as-root`. list-readers rc=0: `1	Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`, `READERS:COUNT 1`.
+- Result: The JCVM on EE11 is published through PC/SC. No APDU was sent: card presence, ATR, GPPro and JCAlgTest are untested on this machine. The other three boards remain in BOOTSEL / other firmware and were not touched.
+- Decision: Run a bounded PC/SC smoke test (ATR / GP SELECT) on EE11 next, before any campaign.
+- Artifacts/logs: none
