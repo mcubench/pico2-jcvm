@@ -10,6 +10,8 @@ Updated: 2026-11-17.
 - LONGOP-01 T1/D2, T2, T5, T6 and MEM-01 T7/T8 remain open. Four VPCD journal-recovery fault modes now pass with a local CAP. Physical power-cut acceptance remains PERSIST-03; the archived 15 s Windows uninstall followed the RSA PC/SC loss; no serial was captured during E4, so firmware watchdog attribution is unproven. Near-capacity E4/E6/E8 and package cycle persistence pass.
 - T6 direct RSA APDUs are not unchanged-client resume-list acceptance or full option-2. The prior pinned 1.8.5 resume-list attempt timed out at 300 s before RSA-2048.
 
+- 2026-11-17 22:08: RSA OOM fix series committed (`d20ede50` doFinal scratch array, `7ca591e6` array RAM copy, `c3565e67` exact-length array tags, `de729d28` tombstone compaction in applet-requested deletion only, per user directive: no GC/compaction without an external request). Windows package for `de729d28` is ready (`WIN-MEM01-MAXCRYPTO-DE729D28` in `.agent/EXT_REQUESTS.md`). Board state: 07E74C5D7A038DEC runs that exact empty-card UF2 with JCAlgTest installed and one RSA probe run; F42DD9D07D6D2B07 runs a `de729d28`-equivalent dev build with long-run JCAlgTest state; EE116F37C7E4A04E is in BOOTSEL. The earlier F42D option-2 attempt (`option2-acceptance-20261117T1830Z`, attempt 2) stopped at 20:40 and was not resumed.
+
 ## Next actions
 1. Monitor the active F42D campaign to client completion or its 10,800 s bound, then inspect the 1.8.5 result, telemetry and headroom gate; keep the output separate from the failed menu-only attempt.
 2. Run the `1 -> All algorithms` campaign on another identified Pico 2 if one is available, with its own empty-card image, result directory and serial log.

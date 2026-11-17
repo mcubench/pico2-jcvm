@@ -106,9 +106,9 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
 cat > "${stage}/README.md" <<EOF
 # Pico 2 JCVM max_crypto — object deletion ON, empty card
 
-RP2350 ARM normal-mode firmware built from commit \`${head_full}\`. Object deletion is ON, debug/trace flags are OFF, startup wait is 0 ms, and the empty-card image contains a fully erased 1 MiB persistent-storage region. No applet is preinstalled. Compared with earlier packages this image adds the \`OBJECT_DELETION:PRE_CLEANUP\` serial telemetry (files and bytes used before each cleanup) and was built with ${compiler}.
+RP2350 ARM normal-mode firmware built from commit \`${head_full}\`. Object deletion is ON, debug/trace flags are OFF, startup wait is 0 ms, and the empty-card image contains a fully erased 1 MiB persistent-storage region. No applet is preinstalled. It was built with ${compiler}. Changes since earlier packages are listed in the repository's \`progress.md\` and \`.agent/EXT_REQUESTS.md\` for this commit.
 
-This package is prepared for external Windows testing. This exact UF2 has not been flashed or tested in this environment. An earlier build from the same firmware sources (differing only in the embedded CPLC source identifier) was flashed to a physical token on Linux and answered PC/SC and SCP03 GET DATA probes (see \`progress.md\`); nothing was tested on Windows or through JCAlgTest. Treat results as candidate evidence.
+This package is prepared for external Windows testing. Validation of this exact UF2 in the Linux development environment, if any, is recorded in \`.agent/EXT_REQUESTS.md\`; nothing in this package was tested on Windows. Treat results as candidate evidence until they are reviewed.
 
 ## Exact inputs
 

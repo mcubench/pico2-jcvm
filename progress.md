@@ -31406,3 +31406,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: In the 20-cycle probe, compaction fired twice, at 257 and 261 tombstones, both inside requested B0E2 passes. Files went 744→487 and 748→486 (previously they only dropped once free space reached ≤20 KB, about 5,000 files on the Windows card). B0E2 latency after a compaction (1,812 and 1,836 ms) matched the median for the same position (1,839 ms), so the compaction cost is below this measurement's resolution of about 50 ms. Boot-time `FS_COMPACT` lines before the first APDU also appear with the previous firmware; they are not from this change.
 - Decision: H3 is fixed for applet-requested deletion. Open for a user decision: whether the post-APDU heap GC and the automatic low-watermark deletion should also be gated on an external request. Next: an empty-card option-2 acceptance run on this firmware.
 - Artifacts/logs: `artifacts/results/h3-tombstone-physical-20261117T205812Z/`, `artifacts/results/longop01-rsa1984-physical-20261117T205422Z/`; firmware SHA-256 `ad38504940b2f7430a84d2cbb5f8c5d2c3a49c6bc9c0fa12d46da365228e155f`
+
+## 2026-11-17 Prepare de729d28 Windows test package 6
+
+- Step-Id: `20261117-2209-win-package-de729d28`
+- Task: MEM-01 / LONGOP-01 external Windows validation (`WIN-MEM01-MAXCRYPTO-DE729D28`)
+- When: '2026-11-17 22:02 CET' - '2026-11-17 22:08 CET'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt ARM `max_crypto` normal from HEAD `de729d28` and packaged it with `tools/package-maxcrypto-windows-test`. The packager's README text claimed that the image adds `PRE_CLEANUP` telemetry and that the UF2 was never flashed; it now points to `progress.md` and `.agent/EXT_REQUESTS.md` for changes and validation status. `.agent/EXT_REQUESTS.md` now holds a single new request; the c050a193 option-2 request (results returned) and the RSA-1984 serial-capture request (unfixed image) were removed as obsolete. The handoff records the board state.
+- Validation: the build passed with no C++ warnings, mode=normal, object deletion ON, 35,748 B remaining. It reports `state=dirty` only because of three untracked non-source files. `unzip -t` reported no errors. The packaged empty-card UF2 was flashed with `tools/flash --chipid 07E74C5D7A038DEC`. GPPro listed an empty card, installed the unchanged 1.8.4/jc305 CAP (applet SELECTABLE), and `tools/test-longop01-rsa1984-physical` passed all 18 APDUs with no PANIC/FAULT.
+- Result: UF2 SHA-256 `f40bb1b56c9603456a1c97c86b07723feb0b9290f0ed4046e0adfdac09514b3b` (4,123,648 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-de729d28.zip` SHA-256 `8c162d009b58875779156f3417c791a1a52990907964c3de0fd8fb22cad298ad`. On the fresh card, RSA-1984 PKCS1 ×50 took 48.0 s with transient RAM 117,224 → minimum 112,056 B; RSA-2048 PKCS1 ×50 took 48.9 s.
+- Decision: waiting for the Windows option-2 result. A local empty-card option-2 run on 07E7 or EE11 would be independent Linux evidence.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-de729d28-20261117T210324Z/07E74C5D7A038DEC/`, `artifacts/results/longop01-rsa1984-physical-20261117T210419Z/07E74C5D7A038DEC/`
