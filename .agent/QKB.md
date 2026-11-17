@@ -1234,3 +1234,29 @@ prompt-aware watchdog, and leaves an un-scripted TTY interactive. A fake
 multi-prompt flow validated ordered delivery. The real pinned 1.8.5 session
 reached RSA-1984 ×50 and logged four successful samples before the bounded
 session timed out; it was partial diagnostic work, not option-2 acceptance.
+
+## Near-capacity authenticated DELETE timing — 2026-11-17
+
+The physical capacity fixture in `tests/fixtures/local/fs_capacity_applet/`
+creates three rooted 30,000-byte persistent arrays and reports remaining
+persistent/transient memory. On F42DD9D07D6D2B07 it reached 3,820 bytes
+persistent free and 88,232 bytes transient free. A normal `max_crypto` full
+JCVM cycle preserved the state and reset volatile RAM. Firmware UF2 SHA-256:
+`fe9b190c073170a15d99626366872c89e2f6ca0e9a01c8da1fea0f199f808255`; fixture
+CAP SHA-256: `34fbf10a49fa67da486640d9b323938e86c759597597f47e758c1873de64d816`.
+
+Authenticated GPPro applet DELETE took 2.673 s at E4 (3.859 s whole command),
+and package DELETE took 1.696 s at E4 (1.895 s whole command). Both returned
+`9000`. Serial showed the initial 94,479-byte / 160-file overlay (96.1% of
+98,304 bytes), compaction during deletion, and successful E4 responses with
+no CCID time extension, panic, fault or `TEST:FAIL`. The unchanged JCAlgTest
+package remained installed. Logs:
+`artifacts/results/filesystem-capacity-physical-20261117T174318Z/F42DD9D07D6D2B07/`
+and `artifacts/results/filesystem-capacity-delete-20261117T1748Z/F42DD9D07D6D2B07/`.
+
+For board availability, reread the **Physical token roster** entry above:
+`found 0` means no enumerated board was running JCVM firmware, not that no
+physical boards were attached. Identify USB state/chip IDs and flash the full
+JCVM to an identified BOOTSEL or non-JCVM board with the approved wrapper,
+then refresh the helper and list readers. The 2026-11-17 run verified this on
+F42D. Never diagnose PC/SC from an old roster; board state is volatile.

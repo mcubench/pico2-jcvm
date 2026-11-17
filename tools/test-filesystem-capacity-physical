@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_host_usb_access
+
+[[ $# -eq 2 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-filesystem-capacity-physical <chip-id> '<exact PC/SC reader name>'"
+chip_id="$1"
+reader_name="$2"
+[[ "$chip_id" =~ ^[A-Fa-f0-9]{8,32}$ ]] || die "chip ID must be hexadecimal"
+[[ "$reader_name" == *"$chip_id"* ]] || die "reader name does not contain selected chip ID"
+
+"${repo_root}/tools/build-filesystem-capacity-probe"
+cap="${repo_root}/build/filesystem-capacity-probe/output/FilesystemCapacityProbe.cap"
+host_build="${repo_root}/build/filesystem-capacity-probe/physical-client"
+mkdir -p "$host_build"
+"${repo_root}/tools/env" javac -d "$host_build" \
+  "${repo_root}/tests/hardware/FilesystemCapacityPhysicalProbe.java"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+result_dir="${repo_root}/artifacts/results/filesystem-capacity-physical-${timestamp}/${chip_id}"
+mkdir -p "$result_dir"
+client_log="${result_dir}/probe.log"
+serial_log="${result_dir}/serial.log"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+probe_package_aid="A0000000620305"
+probe_applet_aid="A000000062030501"
+gp=("${repo_root}/tools/env" java -jar "$gp_jar" --reader "$reader_name")
+
+printf 'PHYSICAL:IDENTITY chip_id=%s reader=%s\n' "$chip_id" "$reader_name" | tee "$client_log"
+printf 'FIRMWARE_SHA256 %s\n' \
+  "$(sha256sum "${repo_root}/build/arm/pico2_choupi.uf2" | awk '{print $1}')" | tee -a "$client_log"
+printf 'CAP_SHA256 %s\n' "$(sha256sum "$cap" | awk '{print $1}')" | tee -a "$client_log"
+PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 30s \
+  "${gp[@]}" --list >"${result_dir}/gp-before.log" 2>&1 || \
+  die "GPPro list failed; see ${result_dir}/gp-before.log"
+if grep -Eiq "(APP|PKG):[[:space:]]+(${probe_package_aid}|${probe_applet_aid})" \
+    "${result_dir}/gp-before.log"; then
+  die "capacity probe package is already installed; refusing to replace it"
+fi
+
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/monitor" \
+  --serial "$chip_id" --seconds 150 >"$serial_log" 2>&1 &
+monitor_pid=$!
+set +e
+PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 90s \
+  "${gp[@]}" --install "$cap" >"${result_dir}/install.log" 2>&1
+install_status=$?
+if (( install_status == 0 )); then
+  PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 90s \
+    "${repo_root}/tools/env" java -cp "$host_build" \
+    FilesystemCapacityPhysicalProbe "$reader_name" \
+    >>"$client_log" 2>&1
+  probe_status=$?
+else
+  probe_status=125
+fi
+wait "$monitor_pid"
+monitor_status=$?
+set -e
+cat "$client_log"
+cat "${result_dir}/install.log"
+(( install_status == 0 )) || die "capacity probe install failed with status $install_status"
+(( probe_status == 0 )) || die "capacity probe failed with status $probe_status; fixture may remain installed: $result_dir"
+(( monitor_status == 0 )) || die "finite serial capture failed: $serial_log"
+if grep -Eq '(^|[[:space:]])FAULT|\*\*\* PANIC \*\*\*|TEST:FAIL' "$serial_log"; then
+  die "serial capture contains a runtime failure: $serial_log"
+fi
+grep -Fq 'TEST:PASS FILESYSTEM_CAPACITY_STATE_READY' "$client_log" || \
+  die "probe did not confirm the target store state"
+printf 'PHYSICAL:STATE_READY result_dir=%s\n' "${result_dir#${repo_root}/}"
