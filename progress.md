@@ -30796,3 +30796,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Hardware access path works; no board is running JCVM firmware, so no PC/SC reader exists yet.
 - Decision: Choose a working token and flash the full JCVM (`./tools/cycle choupi --chipid ID`) after user confirmation.
 - Artifacts/logs: none
+
+## 2026-11-17 HANDOFF corrections after token inventory 3
+
+- Step-Id: `20261117-1850-handoff-token-state`
+- Task: session continuity
+- When: '2026-11-17 18:46' - '2026-11-17 18:50'
+- Model: `claude-sonnet-5-5`
+- Change: Updated `.agent/HANDOFF.md`: max_crypto build result, submodule registration, tidy-up status (done, docs deferred), and MEM-01 item 1 now points at flashing the chosen working token.
+- Validation: Inspection only.
+- Result: HANDOFF no longer claims the board state was not refreshed.
+- Decision: Choose the working token with the user, then flash.
+- Artifacts/logs: none
