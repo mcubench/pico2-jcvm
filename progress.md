@@ -30628,3 +30628,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Host-side unit evidence only; not physical or campaign acceptance.
 - Decision: MEM-01 T7/T8/T10 stay open. Continue tidy-up (probe artifacts, fixture symlink, docs).
 - Artifacts/logs: scratchpad logs only (not retained)
+
+## 2026-11-17 Tidy-up step 4: review probes and 1.8.5 lib symlink 5
+
+- Step-Id: `20261117-1455-tidy04-probes-symlink`
+- Task: repository tidy-up plan, groups C and D
+- When: '2026-11-17 14:46' - '2026-11-17 14:55'
+- Model: `claude-sonnet-5-5`
+- Change: (C) Committed the pending `artifacts/reviews/review_20261103/{CMakeLists.txt,persistence_probe.cpp,run-probes.py}` changes as-is, at the user's direction; they were not built or run in this step. (D) Restored the tracked symlink `tests/fixtures/external/jcalgtest/1.8.5/client/lib -> ../../1.8.4/client/lib`, replacing an untracked real directory of 9 jars that `diff -rq` showed byte-identical to the 1.8.4 jars.
+- Validation: `./tools/fixture-path --verify` -> `FIXTURES:PASS files=83 jcalgtest=1.8.4 api_caps=48`. Probes: not built or run.
+- Result: Working tree has no pending tracked changes except submodule state (`choupi/os` dirty; `javacard-api`, `rommask` uninitialized).
+- Decision: Next: submodule state check, then `.agent/EXT_REQUESTS.md` pruning, `TODO.md` compaction and docs relocation.
+- Artifacts/logs: none
