@@ -35,6 +35,7 @@ extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" uint32_t rp2350_fs_test_live_record_count(void);
 extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
+extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
                                                   uint32_t *bytes_used,
                                                   uint32_t *byte_capacity);
@@ -1695,6 +1696,56 @@ int main(const int argc, char **argv) {
   std::printf("TEST:METRIC persistent_reclamation_orphan_tags=%zu cuts=1000\n",
               reclamation_candidate_records.size());
 
+  // H3: tombstones left by erased records must trigger compaction well
+  // above the low watermark, and the counter must restart after compaction.
+  fake_flash.fill(0xff);
+  {
+    bool tombstone_ok = fs_init() == FS_STATUS_OK &&
+                        choupi_persistent_tombstones_since_compaction() == 0;
+    constexpr uint16_t tombstone_records = 300;
+    const uint8_t tombstone_value[] = {0x5a};
+    const auto tombstone_tag = [](const uint16_t id) {
+      return std::array<uint8_t, 6>{0x03, 0x4b, 0x38, 0x01,
+                                    static_cast<uint8_t>(id >> 8),
+                                    static_cast<uint8_t>(id)};
+    };
+    for (uint16_t id = 0; id < tombstone_records && tombstone_ok; ++id) {
+      const auto tag = tombstone_tag(id);
+      tombstone_ok = fs_write(tag.data(), tag.size(), tombstone_value,
+                              sizeof(tombstone_value)) == FS_STATUS_OK;
+    }
+    const uint32_t files_with_records = rp2350_fs_test_overlay_file_count();
+    for (uint16_t id = 0; id < tombstone_records && tombstone_ok; ++id) {
+      const auto tag = tombstone_tag(id);
+      tombstone_ok = fs_erase(tag.data(), tag.size()) == FS_STATUS_OK;
+    }
+    const uint32_t tombstones = choupi_persistent_tombstones_since_compaction();
+    const uint32_t available = choupi_available_persistent_memory_bytes();
+    tombstone_ok = tombstone_ok && tombstones == tombstone_records &&
+                   rp2350_fs_test_overlay_file_count() == files_with_records &&
+                   available > pico2_jcvm::kObjectDeletionLowWatermarkBytes &&
+                   pico2_jcvm::should_compact_after_object_deletion(
+                       available, 8, tombstones) &&
+                   !pico2_jcvm::should_compact_after_object_deletion(
+                       available, 8,
+                       pico2_jcvm::kObjectDeletionTombstoneCompactThreshold -
+                           1) &&
+                   choupi_compact_persistent_memory() == FS_STATUS_OK &&
+                   choupi_persistent_tombstones_since_compaction() == 0 &&
+                   rp2350_fs_test_overlay_file_count() ==
+                       files_with_records - tombstone_records &&
+                   fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+                   rp2350_fs_test_live_record_count() ==
+                       files_with_records - tombstone_records;
+    std::printf("TEST:METRIC rp2350_overlay_tombstone_compaction "
+                "tombstones=%u files_before=%u files_after=%u\n",
+                static_cast<unsigned>(tombstones),
+                static_cast<unsigned>(files_with_records),
+                static_cast<unsigned>(rp2350_fs_test_overlay_file_count()));
+    expect(tombstone_ok,
+           "rp2350_overlay_tombstones_trigger_compaction_above_watermark");
+  }
+
   // Simulate automatic low-watermark object deletion on the RP2350 overlay.
   // The producer never calls requestObjectDeletion(): it adds persistent
   // garbage once per APDU, while the runtime policy requests a bounded batch
@@ -1795,7 +1846,8 @@ int main(const int argc, char **argv) {
         erased_this_cycle = batch.erasedTotal();
         overlay_churn_erased += erased_this_cycle;
         if (pico2_jcvm::should_compact_after_object_deletion(
-                available_before_reclaim, erased_this_cycle) &&
+                available_before_reclaim, erased_this_cycle,
+                choupi_persistent_tombstones_since_compaction()) &&
             choupi_compact_persistent_memory() != FS_STATUS_OK) {
           overlay_churn_ok = false;
         }
@@ -1884,7 +1936,8 @@ int main(const int argc, char **argv) {
       overlay_churn_erased += batch.erasedTotal();
       if (pico2_jcvm::should_compact_after_object_deletion(
               choupi_available_persistent_memory_bytes(),
-              batch.erasedTotal())) {
+              batch.erasedTotal(),
+              choupi_persistent_tombstones_since_compaction())) {
         overlay_churn_ok =
             choupi_compact_persistent_memory() == FS_STATUS_OK;
       }

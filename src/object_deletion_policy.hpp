@@ -24,14 +24,22 @@ constexpr bool should_request_automatic_object_deletion(
          available_bytes <= kObjectDeletionLowWatermarkBytes;
 }
 
-// Once there is little persistent space left, remove tombstones produced by
-// any deletion batch. The request may come from the applet or from the
-// automatic low-watermark policy; both paths can erase records that require
-// compaction to return their bytes to the arena.
+// Erased records leave tombstones that keep their hash slot and key bytes
+// until compaction. Compact after a deletion batch that erased records when
+// persistent space is low, or when enough tombstones have accumulated since
+// the last compaction. Without the second trigger, a long-running applet that
+// creates and drops objects (JCAlgTest re-assigning its cached fields) builds
+// up thousands of tombstones, inflating the file count and shrinking usable
+// space, until the low watermark is reached.
+inline constexpr uint32_t kObjectDeletionTombstoneCompactThreshold = 256;
+
 constexpr bool should_compact_after_object_deletion(
-    const uint32_t available_bytes, const uint32_t erased_records) {
+    const uint32_t available_bytes, const uint32_t erased_records,
+    const uint32_t tombstones_since_compaction) {
   return erased_records != 0 &&
-         available_bytes <= kObjectDeletionLowWatermarkBytes;
+         (available_bytes <= kObjectDeletionLowWatermarkBytes ||
+          tombstones_since_compaction >=
+              kObjectDeletionTombstoneCompactThreshold);
 }
 
 struct AutomaticObjectDeletionThrottle {

@@ -19,6 +19,8 @@ void choupi_persistent_memory_usage(uint32_t *files_used,
                                     uint32_t *bytes_used,
                                     uint32_t *byte_capacity);
 uint8_t choupi_compact_persistent_memory(void);
+// Tombstones created since the last successful compaction.
+uint32_t choupi_persistent_tombstones_since_compaction(void);
 
 #ifdef __cplusplus
 }

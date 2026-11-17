@@ -72,6 +72,7 @@ extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
                                                 uint32_t *bytes_used,
                                                 uint32_t *byte_capacity);
 extern "C" uint8_t choupi_compact_persistent_memory(void);
+extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 #endif
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
@@ -79,6 +80,7 @@ extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
                                                 uint32_t *bytes_used,
                                                 uint32_t *byte_capacity);
 extern "C" uint8_t choupi_compact_persistent_memory(void);
+extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 #endif
 
 #ifdef PC_VERSION
@@ -565,15 +567,24 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
               deletion_batch.erased_applet, deletion_batch.erased_package,
               roots.static_roots, roots.applet_roots,
               complete ? 0u : 1u);
+  // Tombstone-driven compaction only runs inside a deletion the applet asked
+  // for (JCSystem.requestObjectDeletion), never in the automatic low-watermark
+  // pass, so unrequested APDUs keep a deterministic duration.
+  const uint32_t tombstones =
+      automatic_deletion_pending[owner]
+          ? 0u
+          : choupi_persistent_tombstones_since_compaction();
   if (pico2_jcvm::should_compact_after_object_deletion(
-          available_before_reclaim, deletion_batch.erasedTotal())) {
+          available_before_reclaim, deletion_batch.erasedTotal(),
+          tombstones)) {
     const uint8_t compact_status = choupi_compact_persistent_memory();
     std::printf("OBJECT_DELETION:LOW_WATERMARK_COMPACT package=%u owner=%u "
-                "status=%u erased=%u\r\n",
+                "status=%u erased=%u tombstones=%lu\r\n",
                 static_cast<unsigned>(context.getAppletPackageID()),
                 static_cast<unsigned>(owner),
                 static_cast<unsigned>(compact_status),
-                deletion_batch.erasedTotal());
+                deletion_batch.erasedTotal(),
+                static_cast<unsigned long>(tombstones));
     if (compact_status != 0) return;
   }
   if (complete) {
@@ -1001,16 +1012,23 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
                  static_cast<unsigned>(deletion_batch.erased_package),
                  roots.static_roots, roots.applet_roots);
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
+    // As on the target: tombstone compaction only in applet-requested passes.
+    const uint32_t tombstones =
+        automatic_deletion_pending[owner]
+            ? 0u
+            : choupi_persistent_tombstones_since_compaction();
     if (pico2_jcvm::should_compact_after_object_deletion(
-            available_before_reclaim, deletion_batch.erasedTotal())) {
+            available_before_reclaim, deletion_batch.erasedTotal(),
+            tombstones)) {
       const uint8_t compact_status = choupi_compact_persistent_memory();
       std::fprintf(stderr,
                    "OBJECT_DELETION:LOW_WATERMARK_COMPACT package=%u owner=%u "
-                   "status=%u erased=%u\n",
+                   "status=%u erased=%u tombstones=%lu\n",
                    static_cast<unsigned>(context.getAppletPackageID()),
                    static_cast<unsigned>(owner),
                    static_cast<unsigned>(compact_status),
-                   deletion_batch.erasedTotal());
+                   deletion_batch.erasedTotal(),
+                   static_cast<unsigned long>(tombstones));
       if (compact_status != 0) return;
     }
 #endif

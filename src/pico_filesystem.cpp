@@ -179,6 +179,10 @@ alignas(FLASH_PAGE_SIZE) uint8_t overlay_bytes[kMaxOverlayBytes];
 uint16_t erase_bucket_head[kMaxOverlayTagLength + 1][17];
 uint16_t erase_bucket_next[kMaxOverlayFiles];
 size_t overlay_bytes_used = 0;
+// Tombstones still present after the last successful compaction. Those that
+// remain must stay (they hide ROM records or are parents of kept records), so
+// the compaction trigger counts only tombstones created since then.
+size_t tombstones_after_last_compaction = 0;
 bool overlay_dirty = false;
 bool filesystem_layout_available = false;
 uint8_t filesystem_active_slot = 0xff;
@@ -714,6 +718,18 @@ bool overlay_has_record(const OverlayFile &file) {
 
 bool overlay_has_storage(const OverlayFile &file) {
   return (file.flags & kOverlaySerialized) != 0;
+}
+
+size_t count_overlay_tombstones() {
+  size_t count = 0;
+  for (const auto &file : overlay) {
+    if ((file.flags & kOverlayUsed) != 0 &&
+        (file.flags & (kOverlayHasRecord | kOverlayDeleted)) ==
+            (kOverlayHasRecord | kOverlayDeleted)) {
+      ++count;
+    }
+  }
+  return count;
 }
 
 bool overlay_compresses_tag(const OverlayFile &file) {
@@ -2151,6 +2167,7 @@ uint8_t compact_deleted_overlay_records() {
   overlay_file_count = rebuilt_count;
   overlay_bytes_used = write_offset;
   overlay_dirty = true;
+  tombstones_after_last_compaction = count_overlay_tombstones();
 #ifndef RP2350_FS_OVERLAY_TEST
   std::printf("CHOUPI:FS_COMPACT files=%u->%u bytes=%lu->%lu\r\n",
               static_cast<unsigned>(files_before),
@@ -2268,6 +2285,13 @@ extern "C" void choupi_persistent_memory_usage(
 
 extern "C" uint8_t choupi_compact_persistent_memory(void) {
   return compact_deleted_overlay_records();
+}
+
+extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void) {
+  const size_t count = count_overlay_tombstones();
+  return count > tombstones_after_last_compaction
+             ? static_cast<uint32_t>(count - tombstones_after_last_compaction)
+             : 0u;
 }
 
 extern "C" uint8_t fs_init(void) {

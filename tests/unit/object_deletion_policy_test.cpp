@@ -45,15 +45,27 @@ int main() {
             0, false, true, false, false),
         "automatic_request_honors_retry_cooldown");
   check(!pico2_jcvm::should_compact_after_object_deletion(
-            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, 8),
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, 8, 0),
         "deletion_does_not_compact_above_low_watermark");
   check(!pico2_jcvm::should_compact_after_object_deletion(
-            pico2_jcvm::kObjectDeletionLowWatermarkBytes, 0),
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, 8,
+            pico2_jcvm::kObjectDeletionTombstoneCompactThreshold - 1),
+        "deletion_does_not_compact_below_tombstone_threshold");
+  check(pico2_jcvm::should_compact_after_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, 8,
+            pico2_jcvm::kObjectDeletionTombstoneCompactThreshold),
+        "deletion_compacts_at_tombstone_threshold_above_watermark");
+  check(!pico2_jcvm::should_compact_after_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes + 1, 0,
+            pico2_jcvm::kObjectDeletionTombstoneCompactThreshold),
+        "tombstone_threshold_requires_erased_records");
+  check(!pico2_jcvm::should_compact_after_object_deletion(
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes, 0, 0),
         "deletion_does_not_compact_without_erased_records");
   check(pico2_jcvm::should_compact_after_object_deletion(
-            pico2_jcvm::kObjectDeletionLowWatermarkBytes, 1),
+            pico2_jcvm::kObjectDeletionLowWatermarkBytes, 1, 0),
         "applet_or_automatic_deletion_compacts_at_low_watermark");
-  check(pico2_jcvm::should_compact_after_object_deletion(0, 8),
+  check(pico2_jcvm::should_compact_after_object_deletion(0, 8, 0),
         "deletion_compacts_below_low_watermark");
   pico2_jcvm::AutomaticObjectDeletionThrottle throttle;
   throttle.completed(0);
