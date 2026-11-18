@@ -1603,3 +1603,15 @@ the original serial stream. The current run has 753 strictly complete heap
 records whose last 50 remain 225 arrays / 84 instances, while the last 300
 complete storage samples rose 804→918 files and 20,804→37,953 bytes with
 compaction drops. Global peak is 40,137/98,304 bytes (40.83%).
+
+At 395 method-name records (2026-11-18 04:12 CET), the same run has 1,327
+strictly complete PRE_CLEANUP records and 921 complete HEAP_GC records. The
+last 50 heap samples remain 225 arrays / 84 instances. Persistent storage
+continues to rise between cleanup batches, but cleanup produces large drops:
+the last 100 complete samples moved 1,039→897 files and 39,001→38,049 bytes;
+the last 300 ended at 897 files / 38,049 bytes from 916 / 37,939. The peak is
+still 1,139 files / 40,137 of 98,304 bytes (40.83%). Six malformed
+PRE_CLEANUP lines now invalidate T10 (9848, 9982, 16502, 25115, 26890,
+27673); an earlier partial OBJECT_DELETION record at line 1156 is also
+interleaved with exception diagnostics. These results show reclamation during
+the run but do not prove a final persistent-store plateau or acceptance.

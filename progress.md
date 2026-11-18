@@ -31566,3 +31566,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Heap count remains stable within the current family, but storage continues to grow. Interleaved firmware diagnostics now demonstrably include RSA_MEMORY output and invalidate the T10 gate.
 - Decision: Continue the full run without restarting PC/SC; keep T10 invalid and repair diagnostic serialization before a later gate run.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+
+## 2026-11-18 Option-1 resource reuse checkpoint 12
+
+- Step-Id: `20261118-0412-mem01-opt1-resource-checkpoint`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 03:04 CET' - '2026-11-18 04:12 CET'
+- Model: `gpt-6-codex`
+- Change: Refreshed the live physical option-1 resource evidence, distinguishing the stable live-heap count from persistent-store usage and recording repeated reclamation drops. Updated TODO, QKB and handoff with this new checkpoint.
+- Validation: Inspected the active client/serial logs and ran `tools/check-object-deletion-headroom.py` on the original capture. At 395 `method name:` records, strict parsing found 1,327 complete PRE_CLEANUP and 921 complete HEAP_GC records. Last 50 heap samples are all 225 arrays / 84 instances. Peak storage is 1,139 files / 40,137 of 98,304 bytes (40.83%). The last 100 complete storage samples fell 1,039→897 files and 39,001→38,049 bytes; the last 300 ended at 897 files / 38,049 bytes from 916 / 37,939, despite rises between cleanups. Checker fails closed on six malformed PRE_CLEANUP lines: 9848, 9982, 16502, 25115, 26890, 27673. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or PC/SC transport marker. No tests/build run; source unchanged.
+- Result: Cleanup does reclaim persistent records, but between-batch growth remains visible and a final store plateau is not established. T10 is invalid for this capture because serial diagnostics interleave. The client remains active under its existing eight-hour bound.
+- Decision: Preserve the active campaign; do not restart PC/SC. After it completes, repair diagnostic serialization and repeat the headroom gate.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
