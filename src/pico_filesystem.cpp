@@ -39,7 +39,6 @@ uint8_t rp2350_fs_test_sync_failures = 0;
 uint8_t rp2350_fs_test_hidden_tag[128]{};
 uint8_t rp2350_fs_test_hidden_tag_length = 0;
 #endif
-constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
 constexpr uint8_t kFirstDynamicPackageId = 56;
 constexpr uint8_t kDynamicPackageCount = 8;
@@ -1648,11 +1647,13 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
 #else
   const size_t image_size =
       static_cast<size_t>(choupi_rommask_end - choupi_rommask_start);
-  if (image_size <= kRomFsOffset) {
+  // The embedded image holds only the ROM filesystem record chain, extracted
+  // from offset 0x20000 of the host ROM-mask dump by tools/extract-rom-filesystem.
+  if (image_size == 0) {
     return false;
   }
 
-  size_t position = kRomFsOffset;
+  size_t position = 0;
   while (position < image_size) {
     const uint8_t header = choupi_rommask_start[position++];
     if (header == 0 || (header & 0x40) == 0) {

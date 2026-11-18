@@ -194,11 +194,26 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(NOT EXISTS "${CHOUPI_ROMMASK_IMAGE}")
     message(FATAL_ERROR "Missing CHOUPI ROM-mask image: ${CHOUPI_ROMMASK_IMAGE}")
   endif()
+  # Embed only the ROM filesystem record chain. The host image is a fixed
+  # 512 KiB flash dump whose remaining ~489 KB is zero padding the firmware
+  # never reads; the extractor fails closed if that padding ever holds data.
+  find_program(CHOUPI_PYTHON3 python3 REQUIRED)
+  set(CHOUPI_ROMFS_IMAGE "${CMAKE_CURRENT_BINARY_DIR}/choupi_romfs.bin")
+  add_custom_command(
+    OUTPUT "${CHOUPI_ROMFS_IMAGE}"
+    COMMAND "${CHOUPI_PYTHON3}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/extract-rom-filesystem"
+      "${CHOUPI_ROMMASK_IMAGE}" "${CHOUPI_ROMFS_IMAGE}"
+    DEPENDS "${CHOUPI_ROMMASK_IMAGE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/extract-rom-filesystem"
+    COMMENT "Extracting CHOUPI ROM filesystem"
+    VERBATIM)
+  add_custom_target(choupi_romfs DEPENDS "${CHOUPI_ROMFS_IMAGE}")
   configure_file(src/choupi_rommask.S.in
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S" @ONLY)
   set_source_files_properties(
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
-    PROPERTIES OBJECT_DEPENDS "${CHOUPI_ROMMASK_IMAGE}")
+    PROPERTIES OBJECT_DEPENDS "${CHOUPI_ROMFS_IMAGE}")
   add_executable(pico2_choupi
     choupi/src/main.cpp
     src/choupi_pico2.cpp
@@ -359,5 +374,6 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   set_target_properties(pico_stdio_usb PROPERTIES
     INTERFACE_SOURCES "${PICO_STDIO_USB_SOURCES}")
   pico_enable_stdio_uart(pico2_choupi 0)
+  add_dependencies(pico2_choupi choupi_romfs)
   pico_add_extra_outputs(pico2_choupi)
 endif()
