@@ -31837,3 +31837,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: After-state breakdown: ROM filesystem 35,045 B (was 524,300), GP/card management + CCID 25,495 B (was 91,995), other components unchanged. `.data` 10,800 B, `.bss` 324,444 B, static RAM 335,532 B (unchanged).
 - Decision: Pending: physical GP LOAD/INSTALL/DELETE check on this image once a token is in PC/SC and no campaign is live.
 - Artifacts/logs: `docs/review_firmware_size_20261118.md`.
+
+## 2026-11-18 Correct timing of firmware size review document record 1
+
+- Step-Id: `20261118-1515-size-doc-timing-fix`
+- Task: progress-log accuracy
+- When: '2026-11-18 15:14' - '2026-11-18 15:15'
+- Model: `claude-opus-5-5`
+- Change: The record for Step-Id `20261118-1519-firmware-size-review-doc` gives "15:13 – 15:19" and 6 minutes; the 15:19 end was written before it was measured. `date` at commit time read 15:14, so the measured work was 15:13–15:14 (about 1 minute of logged wall time after re-measurement started). The Step-Id itself stays unchanged.
+- Validation: Inspection of `date` output at commit.
+- Result: Correction only; no other content changes.
+- Decision: None.
+- Artifacts/logs: none.
