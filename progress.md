@@ -31704,3 +31704,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - Await the Windows option-2 result.
   - The PC/SC helper restarts `pcscd.service` unconditionally; it must not run during live campaigns. The user asked about this, and changing the helper is the user's call (it is outside the repo).
 - Artifacts/logs: `artifacts/results/deletion-pass-ab-20261118/07E74C5D7A038DEC/{C-cycle.log,C-flash-retry.log,C-apdu.log,C-serial.log}`, `artifacts/results/windows-package-smoke-853543d6-20261118T062616Z/07E74C5D7A038DEC/`, `artifacts/results/longop01-rsa1984-physical-20261118T062707Z/` (budget stop), `artifacts/results/longop01-rsa1984-physical-20261118T063041Z/` (pass).
+
+## 2026-11-18 Token docs: avoid PC/SC refresh and reader listing during campaigns 4
+
+- Step-Id: `20261118-0741-pcsc-campaign-warning`
+- Task: user directive 2026-11-18 (token usage documentation)
+- When: '2026-11-18 07:38' - '2026-11-18 07:42'
+- Model: `claude-opus-5-5`
+- Change: Updated `.agent/SESSION_CONTINUITY.md`, the QKB "PC/SC helper refresh interrupts a live JCAlgTest run" entry and `reference/physical-token-access/SKILL.md`:
+  - Use `tools/list-readers` only when necessary.
+  - Warn that `sudo -n /usr/local/sbin/pico2-pcsc-reader` always restarts `pcscd.service` and aborts every live PC/SC campaign, including other sessions'.
+  - Check `pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'` first.
+  - Identify tokens from `lsusb -v -d 2e8a:0009` (`iSerial` = chip ID) and the exact reader name pattern.
+  - Note that pcscd hotplug picked up a re-enumerated token without the helper.
+- Validation: Inspection only. Read the helper source (`/usr/local/sbin/pico2-pcsc-reader`: unconditional `systemctl restart pcscd.service`) and `tools/list-readers` (query only; may socket-activate pcscd).
+- Result: Documentation only; no code change.
+- Decision: Root `AGENTS.md` still says to refresh with the helper and list readers before hardware work (line 56); it was left unchanged pending the user's decision.
+- Artifacts/logs: none.

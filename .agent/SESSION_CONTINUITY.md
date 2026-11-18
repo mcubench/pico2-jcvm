@@ -13,11 +13,29 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   new commit containing the step. Do not amend earlier commits.
 - Do not claim hardware validation unless an attached Pico 2 was actually
   flashed and its finite serial log inspected. Physical pool availability is
-  volatile: refresh the authorized reader helper immediately before hardware
-  work, and treat the current HANDOFF as the source for the last observed
-  state. List readers with `./tools/list-readers`; when a board is enumerated,
-  use it under the root `AGENTS.md` build gates and record bounded logs. Old
-  "no hardware / boards disconnected" notes are never standing rules.
+  volatile; treat the current HANDOFF as the source for the last observed
+  state and use an enumerated board under the root `AGENTS.md` build gates
+  with bounded logs. Old "no hardware / boards disconnected" notes are never
+  standing rules.
+- **PC/SC discovery can abort other campaigns (user directive 2026-11-18).**
+  Several sessions share one pcscd. Before any PC/SC step, check for live runs:
+  `pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'` and the
+  HANDOFF.
+  - **Never** run `sudo -n /usr/local/sbin/pico2-pcsc-reader` while any
+    campaign is live. It always ends with `systemctl restart pcscd.service`,
+    which drops every open PC/SC session on every token. This aborted the F42D
+    option-1 run on 2026-11-17.
+  - Use `./tools/list-readers` only when it is necessary, e.g. no exact reader
+    name is known yet. Warning: it can socket-activate pcscd, and if combined
+    with the helper it aborts other sessions' campaigns.
+  - Identify tokens without PC/SC instead. The USB serial is the chip ID:
+    `PICO2_HOST_USB_ACCESS=1 lsusb -v -d 2e8a:0009 | grep -E 'iSerial|iProduct'`.
+    The exact reader name is
+    `Pico 2 CHOUPI CCID [JCVM CCID] (<CHIPID>) 00 00`.
+  - pcscd picks up a re-enumerated token by hotplug: 07E7 reappeared after
+    every reflash on 2026-11-18 without the helper. Run the helper only when a
+    token is on USB but missing from PC/SC **and** no campaign is running.
+    Record the refresh in `progress.md`.
 - Treat multiple identified physical Pico 2 devices as a failover pool. If one
   becomes unavailable, fails to enumerate, or stops responding, record its
   board-level failure and continue on another usable board without waiting for

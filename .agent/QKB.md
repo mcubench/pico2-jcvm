@@ -1450,8 +1450,18 @@ client at a cleanup boundary: `SCARD_F_COMM_ERROR`, followed by
 `SCARD_E_NO_SERVICE`, then an uncaught `NoSuchElementException` after the
 client's reconnect/retry prompt. No firmware fault or memory failure appeared.
 
-**Viable control:** refresh PC/SC before starting a campaign; do not run the
-helper during a live PC/SC campaign. If a session is interrupted, preserve its
+**Viable control (updated 2026-11-18, user directive):** do not refresh PC/SC
+or list readers unless necessary.
+- The helper source ends with an unconditional `systemctl restart
+  pcscd.service`. On Debian pcscd runs as root, so the ACL step is skipped and
+  the restart is its only effect.
+- Never run the helper while any campaign is live (check
+  `pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'`).
+- Use `tools/list-readers` only when a reader name must be confirmed.
+- Identify tokens with `lsusb -v -d 2e8a:0009` (`iSerial` = chip ID).
+- pcscd hotplug picked up re-enumerated 07E7 after each reflash on 2026-11-18
+  without the helper. Exception still open: F42D was visible on USB but not in
+  PC/SC. If a session is interrupted, preserve its
 `already_measured.list`, result and serial logs, diagnose exact token availability,
 and resume on that same token when available. If it is unavailable, record the
 switch and use another empty-card token.

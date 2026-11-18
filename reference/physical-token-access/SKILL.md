@@ -38,19 +38,27 @@ lsusb -d 2e8a:000f
   device. If guest `lsusb` cannot see it, detach and reattach it from the VM's
   USB device menu, then check guest `lsusb` again. Do not start flash retries
   while the guest cannot enumerate the Pico.
-- If `lsusb` sees the running device but PC/SC does not, check pcscd and reader
-  permissions. Restart the service (reload fails when it is inactive), then
-  run the bounded reader scan again.
-- If the configured helper is available, run it yourself with elevated
-  execution, exactly as `sudo -n /usr/local/sbin/pico2-pcsc-reader` (no
-  prefix or extra arguments; see `AGENTS.md` sudo exceptions). It grants pcscd access to the
-  current USB device node. Replugging changes the bus/device number, so an ACL
+- **Warning: restarting pcscd or running the helper aborts every live PC/SC
+  campaign on every token, including other sessions' runs.** First check
+  `pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'` and the
+  HANDOFF. If anything is running, do not touch pcscd; wait or use another path.
+- If `lsusb` sees the running device but PC/SC does not, and no campaign is
+  running, check pcscd and reader permissions. Restart the service (reload
+  fails when it is inactive), then run the bounded reader scan again.
+- If the configured helper is available and no campaign is running, run it
+  yourself with elevated execution, exactly as
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` (no prefix or extra arguments;
+  see `AGENTS.md` sudo exceptions). It grants pcscd access to the current USB
+  device node and then **always** runs `systemctl restart pcscd.service`. Replugging changes the bus/device number, so an ACL
   applied to an old `/dev/bus/usb/...` path may no longer help.
 - If PC/SC lists only `Virtual PCD` readers, the physical Pico is still
   unavailable. Do not treat VPCD visibility as hardware validation. Never use
   `pcsc_scan` for physical readers; it has previously remained running at high
-  CPU after a timed invocation. List readers with the bounded
-  `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers [--pico-only]`.
+  CPU after a timed invocation. When a reader listing is really needed, use
+  the bounded `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers [--pico-only]`.
+  Otherwise identify tokens from `lsusb -v -d 2e8a:0009` (`iSerial` is the
+  chip ID) and use the exact reader name
+  `Pico 2 CHOUPI CCID [JCVM CCID] (<CHIPID>) 00 00`.
 - `libusb -99` or picotool initialization errors mean direct USB access is
   unavailable in the current host/VM context, even if another layer reported
   the device. Restore guest USB passthrough and recheck before flashing.
@@ -99,11 +107,15 @@ Preferred use:
    token produces new evidence; do not splice runs across tokens. Do not assume
    one token's stored state matches another's; acceptance runs still start
    from an empty card (see `AGENTS.md`).
-6. **Refresh, don't trust old notes.** Board availability is volatile. At the
-   start of hardware work refresh access with the approved helper and list
-   readers with the bounded `./tools/list-readers --pico-only` (both through
-   the host-access path above), then confirm the working token is still the one
-   enumerated.
+6. **Re-check, don't trust old notes, and don't disturb other runs.** Board
+   availability is volatile. At the start of hardware work, confirm the working
+   token with `lsusb -v -d 2e8a:0009` (`iSerial` = chip ID), through the
+   host-access path.
+   - Run `./tools/list-readers --pico-only` only when a PC/SC reader name must
+     be confirmed.
+   - Run the approved helper only when a token is on USB but missing from PC/SC
+     **and** no campaign (yours or another session's) is live. The helper
+     restarts pcscd and aborts all running PC/SC campaigns.
 
 ## Evidence
 
