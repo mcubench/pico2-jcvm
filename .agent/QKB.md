@@ -1582,3 +1582,15 @@ Storage has a 39,789/98,304-byte peak (40.48%, 1,097 files); the last 100
 samples range 30,840–39,789 bytes. It is still rising gradually. T10 remains
 unusable on this run due to malformed serial output at lines 9848, 9982 and
 16502.
+
+### Option-1 persistent-store growth despite stable heap count — 2026-11-18 02:35 CET
+
+At 317 method groups, the last 50 strictly complete HEAP_GC records remain
+225 live arrays / 84 live instances. Yet the last 300 complete PRE_CLEANUP
+samples show store usage rising from 612 to 1,016 files and 17,374 to 38,809
+bytes, with several compaction drops between those endpoints. The observed peak
+is 1,137 files / 40,137 of 98,304 bytes (40.83%). Thus heap object reuse does
+not imply persistent-store plateau; continue the run and determine whether the
+store plateaus after the full algorithm suite or continues toward the T10 gate.
+The three malformed serial records (lines 9848, 9982, 16502) still invalidate
+this campaign for T10.

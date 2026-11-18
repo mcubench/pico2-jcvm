@@ -31542,3 +31542,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Heap counts plateau within the current family after increasing at family transitions. Storage continues to rise gradually but remains below the 90% stop threshold. This is not a completed-suite plateau, and serial corruption still disqualifies the run for T10.
 - Decision: Continue the full client run with the existing PC/SC session; preserve T10 as invalid and use a later telemetry-safe run after output serialization is fixed.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+## 2026-11-18 Record option-1 persistent-store trend under stable heap 9
+
+- Step-Id: `20261118-0235-mem01-opt1-store-trend`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 02:26 CET' - '2026-11-18 02:35 CET'
+- Model: `gpt-6-codex`
+- Change: Separated persistent-store growth from live Java heap counts at 317 method groups, extending the prior 304-group family-level checkpoint.
+- Validation: Client and serial sessions remained active. Strict whole-line parsing found 718 HEAP_GC and 1,055 PRE_CLEANUP records. The last 50 complete heap samples remain exactly 225 arrays / 84 instances. In the last 300 complete storage samples, files increased 612→1,016 and bytes 17,374→38,809 with compaction drops; observed peak is 1,137 files / 40,137 of 98,304 bytes (40.83%). The fail-closed T10 checker rejects three malformed PRE_CLEANUP records (9848, 9982, 16502).
+- Result: Heap use plateaus within the current family, but the persistent store continues to grow across the measured methods despite compaction. The full suite is incomplete, so it remains unknown whether this growth plateaus or approaches exhaustion later.
+- Decision: Continue the existing client session without restarting PC/SC. Keep T10 invalid for this run and monitor whether store growth plateaus or crosses the 90% threshold.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
