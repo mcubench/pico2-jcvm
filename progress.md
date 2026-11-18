@@ -32055,3 +32055,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Physical option-1 serial showed `erased_applet=2` after every RSA decrypt-mode `B043` measure APDU (two replaced exponent arrays); this change removes that per-APDU garbage.
 - Decision: Continue with fix B (reachable tag index RAM cliff) and fix A (deletion drain budget). Hardware validation pending.
 - Artifacts/logs: `artifacts/logs/resource02-vpcd-20261118T173006Z/`
+
+## 2026-11-18 Shrink the deletion reachable-tag index to 8-byte digests 20
+
+- Step-Id: `20261118-1855-tag-index-digests`
+- Task: `MEM-01 T10 / PERF (object-deletion pass time); JCAlgTest baseline skew fix B`
+- When: '2026-11-18 18:36 CET' - '2026-11-18 18:56 CET'
+- Model: `claude-opus-5-5`
+- Change: The reachable-tag index used by object deletion copied every marked tag's bytes plus a 4-byte offset. Late in physical option 1 (07E7, `artifacts/results/option1-exploratory-20261118T1322CET/.../serial.log`) its last accepted size was 18,110 B; from serial line 36179 on the build was refused (`tag_index_refused=1`, free RAM < needed + 16 KiB margin) and every pass fell back to the linear walk: `reclaim_us` rose from ~1.25 s to 9.46 s and `total_us` to 10.33 s, so each `B0E2` took ~12.6 s on the client (15 s APDU watchdog). The index now stores sorted 64-bit FNV-1a digests of marked tags (`exact`) plus the few distinct digests of 5/6-byte applet-instance root prefixes that some marked tag strictly extends (`extensions`), 8 B per entry with a 16-entry reserve. A digest collision can only answer "reachable", preserving a record; it cannot make a reachable record deletable (INV-15). Digests are two `uint32_t` halves to avoid arm-none-eabi `-Wpsabi` notes from sorting 64-bit elements.
+- Validation: `./tools/test-persistent-transaction` (includes `reachable_tag_index_matches_linear_walk`: 248 queries, 66 positives, 0 mismatches, 272 B index) `TEST:SUMMARY fail=0`; `./tools/test-persistent-inventory` and `./tools/test-rp2350-fs-overlay` `TEST:SUMMARY fail=0`; `./tools/build arm --profile max_crypto` BUILD:PASS, mode normal, 0 warnings/notes. Not flashed (live campaign; offline-only request).
+- Result: For the ~520 marked tagged objects seen at the refusal point the index needs about (520 + 16) × 8 ≈ 4.3 KB instead of > 18 KB, so it fits the RAM margin again. The on-target pass time was not measured.
+- Decision: Next, fix A (drain deletion work within the requesting APDU). Hardware timing validation pending on an idle token.
+- Artifacts/logs: none beyond the unit-test console output.

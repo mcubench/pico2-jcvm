@@ -1923,9 +1923,30 @@ uint32_t Heap::takeTraceStats(uint32_t *elapsed_us) noexcept {
 }
 
 namespace {
-// Sorted identities of the marked tagged objects of one heap. Entries are
-// [length][bytes] records in `blob`; `offsets` lists them in lexicographic
-// order, so every tag that extends a prefix sorts right after the prefix.
+// Hashed identities of the marked tagged objects of one heap. `exact` holds
+// the sorted 64-bit digests of every marked tag; `extensions` holds the
+// distinct digests of the 5- and 6-byte applet-instance root prefixes that
+// some marked tag strictly extends. Storing 8-byte digests instead of the tag
+// bytes keeps the index small enough for late-suite heaps with long nested
+// tags (a byte copy exceeded the free RAM margin and forced the linear path,
+// about 5x slower per deletion pass).
+//
+// A digest collision can only answer "reachable" for an unreachable record,
+// which preserves that record; it can never declare a reachable record
+// unreachable, so deletion stays reachability-safe (INV-15).
+// Two 32-bit halves rather than uint64_t: sorting 64-bit elements makes
+// arm-none-eabi GCC emit -Wpsabi parameter-passing notes for every helper.
+struct TagDigest {
+  uint32_t high = 0;
+  uint32_t low = 0;
+  bool operator<(const TagDigest &other) const noexcept {
+    return high != other.high ? high < other.high : low < other.low;
+  }
+  bool operator==(const TagDigest &other) const noexcept {
+    return high == other.high && low == other.low;
+  }
+};
+
 struct ReachableTagIndex {
   uint32_t scope_depth = 0;
   bool built = false;
@@ -1934,8 +1955,8 @@ struct ReachableTagIndex {
   uint32_t epoch = 0;
   std::size_t arrays = 0;
   std::size_t instances = 0;
-  std::vector<uint8_t> blob;
-  std::vector<uint32_t> offsets;
+  std::vector<TagDigest> exact;
+  std::vector<TagDigest> extensions;
   uint32_t peak_bytes = 0;
   uint32_t refused = 0;
 
@@ -1943,8 +1964,8 @@ struct ReachableTagIndex {
     built = false;
     unusable = false;
     storage = nullptr;
-    std::vector<uint8_t>().swap(blob);
-    std::vector<uint32_t>().swap(offsets);
+    std::vector<TagDigest>().swap(exact);
+    std::vector<TagDigest>().swap(extensions);
   }
 };
 
@@ -1957,13 +1978,29 @@ constexpr std::size_t kReachableTagIndexMaxBytes = 24u * 1024u;
 constexpr uint32_t kReachableTagIndexHeapMarginBytes = 16u * 1024u;
 #endif
 
-int compareTagBytes(const uint8_t *left, uint8_t left_length,
-                    const uint8_t *right, uint8_t right_length) noexcept {
-  const uint8_t common = left_length < right_length ? left_length
-                                                      : right_length;
-  const int order = common == 0 ? 0 : std::memcmp(left, right, common);
-  if (order != 0) return order;
-  return static_cast<int>(left_length) - static_cast<int>(right_length);
+constexpr uint8_t kTagDigestExact = 0x45;
+constexpr uint8_t kTagDigestExtension = 0x58;
+
+// FNV-1a over a domain byte, the length and the tag bytes.
+TagDigest tagDigest(uint8_t domain, const uint8_t *bytes,
+                    uint8_t length) noexcept {
+  uint64_t hash = 0xcbf29ce484222325ull;
+  const auto mix = [&hash](uint8_t byte) {
+    hash ^= byte;
+    hash *= 0x100000001b3ull;
+  };
+  mix(domain);
+  mix(length);
+  for (uint8_t index = 0; index < length; ++index) mix(bytes[index]);
+  return TagDigest{static_cast<uint32_t>(hash >> 32),
+                   static_cast<uint32_t>(hash)};
+}
+
+// Same predicate as the applet_instance_root_prefix rule in
+// linearReachablePersistentTagPrefix(), applied to a query tag.
+bool appletInstanceRootPrefix(const uint8_t *bytes, uint8_t length) noexcept {
+  return (length == 5 || length == 6) && bytes[0] == 0x03 &&
+         bytes[1] != 0xfe && bytes[1] != 0xff && bytes[length - 1] == 0xff;
 }
 } // namespace
 
@@ -2015,26 +2052,25 @@ bool Heap::indexedReachablePersistentTagPrefix(const fs::Tag &tag,
     index.epoch = mark_epoch;
     index.arrays = storage.arrays.size();
     index.instances = storage.instances.size();
-    // First pass: size the copy, so an over-budget index is refused before
+    // First pass: size the index, so an over-budget index is refused before
     // any allocation (a failed malloc panics on the target).
-    std::size_t blob_bytes = 0;
     std::size_t entries = 0;
     for (const auto &array : storage.arrays) {
-      if (!array || array->heap_mark == 0 || !array->hasPersistentTag()) {
-        continue;
+      if (array && array->heap_mark != 0 && array->hasPersistentTag()) {
+        ++entries;
       }
-      blob_bytes += 1u + array->getPersistentTag().len;
-      ++entries;
     }
     for (const auto &instance : storage.instances) {
-      if (!instance || instance->heap_mark == 0 || !instance->isPersistent() ||
-          !instance->hasPersistentTag()) {
-        continue;
+      if (instance && instance->heap_mark != 0 && instance->isPersistent() &&
+          instance->hasPersistentTag()) {
+        ++entries;
       }
-      blob_bytes += 1u + instance->getPersistentTag().len;
-      ++entries;
     }
-    const std::size_t needed = blob_bytes + entries * sizeof(uint32_t);
+    // Distinct root prefixes are few (one or two per applet instance); the
+    // reserve below covers them without a second sizing walk.
+    constexpr std::size_t kExtensionReserve = 16;
+    const std::size_t needed =
+        (entries + kExtensionReserve) * sizeof(TagDigest);
     bool fits = needed <= kReachableTagIndexMaxBytes;
 #ifndef PC_VERSION
     fits = fits && choupi_available_transient_memory_bytes() >=
@@ -2048,16 +2084,24 @@ bool Heap::indexedReachablePersistentTagPrefix(const fs::Tag &tag,
     if (needed > index.peak_bytes) {
       index.peak_bytes = static_cast<uint32_t>(needed);
     }
-    index.blob.reserve(blob_bytes);
-    index.offsets.reserve(entries);
+    index.exact.reserve(entries);
+    index.extensions.reserve(kExtensionReserve);
     const auto append = [&index](const fs::Tag &object_tag) {
       if (object_tag.len == 0 || object_tag.len > sizeof(object_tag.value)) {
         return;
       }
-      index.offsets.push_back(static_cast<uint32_t>(index.blob.size()));
-      index.blob.push_back(object_tag.len);
-      index.blob.insert(index.blob.end(), object_tag.value,
-                        object_tag.value + object_tag.len);
+      const uint8_t length = static_cast<uint8_t>(object_tag.len);
+      index.exact.push_back(
+          tagDigest(kTagDigestExact, object_tag.value, length));
+      for (uint8_t prefix = 5; prefix <= 6 && prefix < length; ++prefix) {
+        if (!appletInstanceRootPrefix(object_tag.value, prefix)) continue;
+        const TagDigest digest =
+            tagDigest(kTagDigestExtension, object_tag.value, prefix);
+        if (std::find(index.extensions.begin(), index.extensions.end(),
+                      digest) == index.extensions.end()) {
+          index.extensions.push_back(digest);
+        }
+      }
     };
     for (const auto &array : storage.arrays) {
       if (array && array->heap_mark != 0 && array->hasPersistentTag()) {
@@ -2070,31 +2114,20 @@ bool Heap::indexedReachablePersistentTagPrefix(const fs::Tag &tag,
         append(instance->getPersistentTag());
       }
     }
-    const uint8_t *base = index.blob.data();
-    std::sort(index.offsets.begin(), index.offsets.end(),
-              [base](uint32_t left, uint32_t right) {
-                return compareTagBytes(base + left + 1, base[left],
-                                       base + right + 1, base[right]) < 0;
-              });
+    std::sort(index.exact.begin(), index.exact.end());
+    std::sort(index.extensions.begin(), index.extensions.end());
+    const std::size_t used =
+        (index.exact.size() + index.extensions.size()) * sizeof(TagDigest);
+    if (used > index.peak_bytes) {
+      index.peak_bytes = static_cast<uint32_t>(used);
+    }
     index.built = true;
   }
   if (index.unusable || !index.built) return false;
 
-  const uint8_t *base = index.blob.data();
-  // First entry not ordered before (bytes, length).
-  const auto lower = [&](const uint8_t *bytes, uint8_t length) {
-    return std::lower_bound(
-        index.offsets.begin(), index.offsets.end(), 0u,
-        [&](uint32_t entry, uint32_t) {
-          return compareTagBytes(base + entry + 1, base[entry], bytes,
-                                 length) < 0;
-        });
-  };
-  const auto contains = [&](const uint8_t *bytes, uint8_t length) {
-    const auto found = lower(bytes, length);
-    return found != index.offsets.end() &&
-           compareTagBytes(base + *found + 1, base[*found], bytes, length) ==
-               0;
+  const auto contains = [&index](const uint8_t *bytes, uint8_t length) {
+    return std::binary_search(index.exact.begin(), index.exact.end(),
+                              tagDigest(kTagDigestExact, bytes, length));
   };
 
   answered = true;
@@ -2104,20 +2137,11 @@ bool Heap::indexedReachablePersistentTagPrefix(const fs::Tag &tag,
       contains(tag.value, static_cast<uint8_t>(tag.len - sizeof(uint16_t)))) {
     return true;
   }
-  const bool applet_instance_root_prefix =
-      (tag.len == 5 || tag.len == 6) && tag.value[0] == 0x03 &&
-      tag.value[1] != 0xfe && tag.value[1] != 0xff &&
-      tag.value[tag.len - 1] == 0xff;
-  if (applet_instance_root_prefix) {
-    for (auto entry = lower(tag.value, static_cast<uint8_t>(tag.len));
-         entry != index.offsets.end(); ++entry) {
-      const uint8_t length = base[*entry];
-      if (length < tag.len ||
-          std::memcmp(base + *entry + 1, tag.value, tag.len) != 0) {
-        break;
-      }
-      if (length > tag.len) return true;
-    }
+  const uint8_t length = static_cast<uint8_t>(tag.len);
+  if (appletInstanceRootPrefix(tag.value, length)) {
+    return std::binary_search(
+        index.extensions.begin(), index.extensions.end(),
+        tagDigest(kTagDigestExtension, tag.value, length));
   }
   return false;
 }
