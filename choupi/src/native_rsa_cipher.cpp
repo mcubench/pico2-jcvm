@@ -215,7 +215,7 @@ std::vector<unsigned char> oaepDecode(
 } // namespace
 
 static jshort_t transformRsa(
-    jbyte_t padding, jbool_t privateOperation,
+    jbyte_t padding, jbool_t privateOperation, bool crtPrivate,
     std::shared_ptr<JC_Array> modulusArray,
     std::shared_ptr<JC_Array> exponentArray,
     std::shared_ptr<JC_Array> inputArray, jshort_t inputLength,
@@ -227,11 +227,15 @@ static jshort_t transformRsa(
   checkArray(*inputArray);
   const uint16_t keyLength = modulusArray->size();
   const uint16_t crtPartLength = static_cast<uint16_t>((keyLength + 1U) / 2U);
-  const bool crtPrivate = privateOperation &&
-      exponentArray->size() == static_cast<uint32_t>(crtPartLength) * 5U;
-  if (keyLength < 64 ||
-      (exponentArray->size() != keyLength && !crtPrivate) || inputLength < 0 ||
-      inputLength > inputArray->size())
+  // The exponent workspace is sized for the CRT layout (5 * ceil(k/2) bytes)
+  // whatever the key type, so alternating public/private/CRT keys on one
+  // Cipher reuses it. A plain exponent occupies its first keyLength bytes.
+  const uint32_t exponentLength =
+      crtPrivate ? static_cast<uint32_t>(crtPartLength) * 5U : keyLength;
+  if (crtPrivate && !privateOperation)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  if (keyLength < 64 || exponentArray->size() < exponentLength ||
+      inputLength < 0 || inputLength > inputArray->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint8_t pad = static_cast<uint8_t>(padding);
   const bool nopad = pad == 1;
@@ -242,7 +246,8 @@ static jshort_t transformRsa(
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   auto modulus = readBytes(*modulusArray, keyLength);
   RsaSensitiveBufferGuard modulusGuard(modulus);
-  auto exponent = readBytes(*exponentArray, exponentArray->size());
+  auto exponent = readBytes(*exponentArray,
+                            static_cast<uint16_t>(exponentLength));
   RsaSensitiveBufferGuard exponentGuard(exponent);
   auto input = readBytes(*inputArray, static_cast<uint16_t>(inputLength));
   RsaSensitiveBufferGuard inputGuard(input);
@@ -313,6 +318,9 @@ static jshort_t transformRsa(
 
 namespace {
 constexpr uint8_t kModeDecrypt = 1;
+// CIPHER_PRIVATEOPERATION session values: 0 public, 1 plain private, 2 CRT.
+constexpr jbyte_t kPrivateOperationPlain = 1;
+constexpr jbyte_t kPrivateOperationCrt = 2;
 constexpr uint8_t kModeEncrypt = 2;
 
 std::shared_ptr<JC_Instance> rsaKeyInstance(const jref_t reference) {
@@ -368,7 +376,8 @@ void allocateTransientCipherArray(JC_Instance &cipher, const uint16_t field,
     auto current = Context::getActiveContext().getHeap().getArray(
         currentReference);
     if (current && current->getType() == JAVA_ARRAY_T_BYTE &&
-        current->isTransientArray() && current->size() == length) {
+        current->isTransientArray() && current->getClearEvent() == event &&
+        current->size() == length) {
       return;
     }
   }
@@ -498,13 +507,15 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
   // Key components are reconstructed from the Key on each init and live only
   // in clear-on-reset session workspaces. Persisting public-key copies here
   // both duplicates durable key material and leaks a new body on every init.
+  // The exponent workspace always has the CRT size, which exceeds keyLength,
+  // so switching between plain and CRT keys of one size reuses it instead of
+  // replacing it (each replacement leaves a dead array identity record).
   allocateTransientCipherArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS,
       keyLength, keyClearEvent);
   allocateTransientCipherArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT,
-      rsaCrtKeyType(type) ? static_cast<uint16_t>(5U * crtPartLength)
-                          : keyLength, keyClearEvent);
+      static_cast<uint16_t>(5U * crtPartLength), keyClearEvent);
   allocateTransientCipherArray(*cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA, 1,
       keyClearEvent);
@@ -550,6 +561,12 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
     loadKeyComponent(*key,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT, 1,
         *exponent, 0, keyLength);
+    // Clear any CRT components left by an earlier private-key init.
+    const std::vector<uint8_t> zeros(exponent->size() - keyLength, 0);
+    if (!zeros.empty())
+      exponent->copyByteEntriesFrom(keyLength,
+                                    static_cast<uint16_t>(zeros.size()),
+                                    zeros.data());
   }
   cipher->setNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
@@ -560,7 +577,8 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE, requestedMode);
   cipher->setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION,
-      privateKey ? 1 : 0);
+      rsaCrtKeyType(type) ? kPrivateOperationCrt
+                          : (privateKey ? kPrivateOperationPlain : 0));
   cipher->setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED, 1);
 }
@@ -617,12 +635,14 @@ jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
 #endif
   std::vector<unsigned char> result;
   RsaSensitiveBufferGuard resultGuard(result);
-  const bool privateOperation = cipher->getNativeSessionField_Byte(
-      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION) != 0;
+  const jbyte_t privateOperationKind = cipher->getNativeSessionField_Byte(
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION);
+  const bool privateOperation = privateOperationKind != 0;
   const jshort_t resultLength = transformRsa(
       cipher->getField_Byte(
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM),
       privateOperation ? TRUE : FALSE,
+      privateOperationKind == kPrivateOperationCrt,
       getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS),
       getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT),
       getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED),

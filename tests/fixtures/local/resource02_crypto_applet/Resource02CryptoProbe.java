@@ -7,6 +7,7 @@ import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
 import javacard.security.AESKey;
 import javacard.security.KeyBuilder;
+import javacard.security.KeyPair;
 import javacard.security.RSAPublicKey;
 import javacardx.crypto.Cipher;
 
@@ -18,6 +19,8 @@ public final class Resource02CryptoProbe extends Applet {
   private static final byte INS_INIT_RSA = (byte)0x33;
   private static final byte INS_SETUP_ALIAS = (byte)0x34;
   private static final byte INS_REPEAT_ALIAS = (byte)0x35;
+  private static final byte INS_SETUP_RSA_ALTERNATE = (byte)0x36;
+  private static final byte INS_REPEAT_RSA_ALTERNATE = (byte)0x37;
 
   private static final byte[] AES_KEY_BYTES = {
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -29,6 +32,10 @@ public final class Resource02CryptoProbe extends Applet {
   private static Cipher aesCipher;
   private static RSAPublicKey rsaKey;
   private static Cipher rsaCipher;
+  private static KeyPair alternateKeyPair;
+  private static Cipher alternateCipher;
+  private static byte[] alternatePlain;
+  private static byte[] alternateCipherText;
 
   private byte[] aliasTarget;
   private byte[] aliasA;
@@ -64,6 +71,12 @@ public final class Resource02CryptoProbe extends Applet {
         break;
       case INS_REPEAT_ALIAS:
         repeatAliases(count);
+        break;
+      case INS_SETUP_RSA_ALTERNATE:
+        setupRsaAlternate();
+        break;
+      case INS_REPEAT_RSA_ALTERNATE:
+        repeatRsaAlternate(count);
         break;
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
@@ -106,6 +119,34 @@ public final class Resource02CryptoProbe extends Applet {
       ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
     for (short i = 0; i < count; i++)
       rsaCipher.init(rsaKey, Cipher.MODE_ENCRYPT);
+  }
+
+  /** JCAlgTest decrypt-measurement shape: public encrypt, then CRT decrypt. */
+  private static void setupRsaAlternate() {
+    alternateKeyPair = new KeyPair(KeyPair.ALG_RSA_CRT, KeyBuilder.LENGTH_RSA_512);
+    alternateKeyPair.genKeyPair();
+    alternateCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
+    alternatePlain = JCSystem.makeTransientByteArray((short)16,
+        JCSystem.CLEAR_ON_RESET);
+    alternateCipherText = JCSystem.makeTransientByteArray((short)64,
+        JCSystem.CLEAR_ON_RESET);
+    alternateRound();
+  }
+
+  private static void alternateRound() {
+    alternateCipher.init(alternateKeyPair.getPublic(), Cipher.MODE_ENCRYPT);
+    alternateCipher.doFinal(alternatePlain, (short)0, (short)16,
+        alternateCipherText, (short)0);
+    alternateCipher.init(alternateKeyPair.getPrivate(), Cipher.MODE_DECRYPT);
+    if (alternateCipher.doFinal(alternateCipherText, (short)0, (short)64,
+            alternatePlain, (short)0) != 16)
+      ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+  }
+
+  private static void repeatRsaAlternate(byte count) {
+    if (alternateCipher == null || count <= 0)
+      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+    for (short i = 0; i < count; i++) alternateRound();
   }
 
   private void setupAliases() {

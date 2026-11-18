@@ -66,4 +66,8 @@ run_case aliases 8034000000 803500 \
   A00000015100020401
 run_case rsa 8032000000 803300 \
   A00000015100020401
+# Alternating public/CRT-private keys on one Cipher (JCAlgTest decrypt shape)
+# must reuse the RSA key workspace instead of replacing it on every init.
+run_case rsa_alternate 8036000000 803700 \
+  A00000015100020401
 printf 'RESOURCE02:ARTIFACTS path=%s\n' "${log_dir}"

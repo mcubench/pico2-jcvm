@@ -32043,3 +32043,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 1,510 complete PRE_CLEANUP and 843 HEAP_GC records; storage peak/latest 67,905/98,304 bytes (69.1%), 1,674 files. Latest heap level is 397 arrays / 144 instances, up from 379/138 as additional RSA methods loaded. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors.
 - Decision: Continue the campaign within its 8-hour and 90% bounds. A full-suite persistent-storage plateau and post-initialization object reuse are not established yet; this non-empty-card run remains exploratory, not T8/T10 acceptance.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
+
+## 2026-11-18 Reuse the RSA cipher key workspace across key types 25
+
+- Step-Id: `20261118-1835-rsa-workspace-reuse`
+- Task: `MEM-01 / RESOURCE-02 (INV-16 allocation discipline); JCAlgTest baseline skew fix C`
+- When: '2026-11-18 18:10 CET' - '2026-11-18 18:35 CET'
+- Model: `claude-opus-5-5`
+- Change: `initializeRsaCipher` now always sizes the transient exponent workspace for the CRT layout (5 * ceil(k/2) bytes, larger than k), so alternating public, plain-private and CRT-private keys of one size reuse it instead of replacing it on every init. Plain exponents occupy the first k bytes and the tail is zeroed; the CRT/plain choice moved from the array length to the `CIPHER_PRIVATEOPERATION` session byte (0 public, 1 plain private, 2 CRT). Reuse also now requires a matching clear event. Added a repository probe case (`8036`/`8037`: KeyPair RSA_CRT 512, PKCS1 encrypt with the public key then decrypt with the CRT key, the JCAlgTest decrypt-measure shape) to `tools/test-resource02-crypto-leaks-vpcd`.
+- Validation: `./tools/build-pc --profile max_crypto` PASS; `./tools/test-asymm-crypto-vpcd` `TEST:SUMMARY pass=107 fail=0`; `RESOURCE02_PASSES=16 ./tools/test-resource02-crypto-leaks-vpcd` (emulator only) PASS for aes/aliases/rsa/rsa_alternate. Negative control with the previous `native_rsa_cipher.cpp`: rsa_alternate FAILS with global records 72→104 (+32 = 2 per round × 16). `./tools/build arm --profile max_crypto` BUILD:PASS, mode normal, 0 warnings. Not flashed (live option-1 campaign on 07E7; user asked for offline work only).
+- Result: Physical option-1 serial showed `erased_applet=2` after every RSA decrypt-mode `B043` measure APDU (two replaced exponent arrays); this change removes that per-APDU garbage.
+- Decision: Continue with fix B (reachable tag index RAM cliff) and fix A (deletion drain budget). Hardware validation pending.
+- Artifacts/logs: `artifacts/logs/resource02-vpcd-20261118T173006Z/`
