@@ -31983,3 +31983,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Post-compaction readings (files / bytes) were 421/11,716; 403/11,391; 520/15,760; 624/19,884; 831/30,982; 936/38,851; 1,120/46,181; 1,246/51,737; and 1,318/55,016. Latest strict total is 1,350 PRE_CLEANUP / 1,057 HEAP_GC; latest 1,494 files / 56,623 bytes and peak 1,572 / 57,579 (58.6%). The final 50 heap samples remain at 343 arrays / 126 instances. No runtime or transport failure markers.
 - Decision: Store growth continues across different methods even after tombstone compaction. This does not prove repeated-same-method leakage because the option-1 suite is still loading algorithm cases; retain the issue as open until campaign completion and compare the final baseline/high-water mark. Continue within the existing 8-hour and 90% arena limits. This remains exploratory and does not count for T8/T10 acceptance.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
+
+## 2026-11-18 Observe option 1 compaction cycle 10
+
+- Step-Id: `20261118-1745-mem01-compaction-cycle10`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 17:42 CET' - '2026-11-18 17:45 CET'
+- Model: `gpt-6-codex`
+- Change: Recorded the tenth successful tombstone compaction in the live option-1 campaign and compared the resulting baseline with the prior cycle.
+- Validation: Polled the campaign process and parsed complete PRE_CLEANUP and HEAP_GC rows around `OBJECT_DELETION:LOW_WATERMARK_COMPACT`; no test, build, flash, or PC/SC operation.
+- Result: At serial line 37161, compaction reduced storage from 1,632 files / 60,751 bytes to 1,376 / 58,357. Peak is 60,895/98,304 bytes (62.0%). This post-compaction baseline is 58 files / 3,341 bytes above cycle 9. The last 50 heap samples stay at 361 arrays / 132 instances. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors.
+- Decision: Keep the campaign running within its eight-hour and 90% limits. The periodic reduction is real, but baseline growth across method families remains unresolved until the client completes. The run is exploratory and does not qualify for T8/T10 acceptance.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
