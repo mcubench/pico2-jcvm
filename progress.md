@@ -31721,3 +31721,8 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Documentation only; no code change.
 - Decision: Root `AGENTS.md` still says to refresh with the helper and list readers before hardware work (line 56); it was left unchanged pending the user's decision.
 - Artifacts/logs: none.
+
+## 2026-11-18 Correction: time of step 20261118-0741-pcsc-campaign-warning
+
+- Step-Id: `20261118-0825-time-correction`
+- Change: The record for Step-Id `20261118-0741-pcsc-campaign-warning` gives "07:38–07:42", which was estimated, not measured. `date` at commit time read 08:24:53 CET; the start time was not measured. The duration in that heading (4 minutes) is likewise unverified.
