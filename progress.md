@@ -1922,6 +1922,7 @@
 - Decision: Continue with independent host-side build work while PC/SC is restored.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
+
 ## 2026-10-14 — Verify offline CHOUPI host-build dependencies
 
 - Step/experiment: `host-vm-offline-dependency-check-20261014`
@@ -31861,3 +31862,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 `de7e858a726f4752691668dc9cc90ce5c3f1a963f34833a082b7e6a082fa1e51` (3,019,776 B; previous package 4,131,328 B). ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-58b01075.zip` SHA-256 `b4cf2d09ff3b5cf7855f708615dd15dba834086aed18dcf12c6bb76bc8e79e7a` (18,252,291 B). Not tested: GPPro list/install and any APDU on this image. A bounded `tools/list-readers --pico-only` after the flash listed only 07E7, and pcscd was not refreshed because the 07E7 option-1 campaign is live. F42D now holds this image on an empty card.
 - Decision: Hand the ZIP to the external tester per `WIN-SIZE-MAXCRYPTO-58B01075`. Locally, run GPPro list/install on F42D once it is in PC/SC and no campaign is live.
 - Artifacts/logs: `artifacts/results/windows-package-smoke-58b01075-20261118T1424Z/`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-58b01075.uf2` (gitignored); ZIP under `build/external-test/` (gitignored).
+
+## 2026-11-18 Exploratory option 1 live memory checkpoint 50
+
+- Step-Id: `20261118-1612-mem01-opt1-live-checkpoint`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 15:22' - '2026-11-18 16:12'
+- Model: `gpt-6-codex`
+- Change: Recorded an intermediate measurement from the active fixed-image option 1 campaign on token 07E7. The card remains non-empty from option 2, so this is exploratory evidence only.
+- Validation: Inspected the live client and serial logs; strictly parsed complete PRE_CLEANUP and HEAP_GC records. No test/build/flash or headroom-gate run was performed during the active campaign.
+- Result: 910 complete PRE_CLEANUP records; peak 1,178 files / 41,094 of 98,304 bytes (41.76%), latest 1,056 files / 40,085 bytes. 658 complete HEAP_GC records; the last 15 all report 235 arrays / 90 instances. One collection reclaimed 10 arrays while returning to the same live count. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD error markers. Option 1 is still active and suite-wide store stability is unproven.
+- Decision: Keep the existing campaign running within its 28,800-second bound. Do not count this non-empty-card run toward T8/T10 acceptance; preserve the identified token and separate logs.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/client.log`, `serial.log`; `.agent/HANDOFF.md`.
