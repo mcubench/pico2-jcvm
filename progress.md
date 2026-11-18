@@ -32116,3 +32116,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: No further leak found. AES/DES/SHA/HMAC contexts are stack-only and freed before throws. RSA modExp, CRT modExp, RSA signature, RSA key generation (`ScopedRsaValues`), EC key generation (`ScopedGroup`/`ScopedKeyPair`), EC key agreement and ECDSA free every MPI/point before throwing (array bounds are validated before allocation). Signature/Cipher message buffers grow at most once and are then reused; key workspaces are reused when the size matches; key arrays are allocated only in `buildKey`; no growing static containers. Only `h` on run-time-built curves was wrong, and secp128r1/secp160r1 are the only such curves. Residual notes (not leaks): `ecdsaSignatureSignHash` would leak `r`/`s` only if `encodeDer`'s exact-size `mbedtls_mpi_write_binary` failed (unreachable); symmetric `allocateKeyWorkspace` reuses an array without comparing its clear event (same nit fixed for RSA in `0018e47f`).
 - Decision: The live 07E7 option-1 run (853543d6) remains exposed to the EC_FP_128/160 leak. Hardware validation of `0018e47f`, `f0b277d1`, `b9d8fd73`, `5e95a982` pending on an idle token.
 - Artifacts/logs: none
+
+## 2026-11-18 Package the Windows test image with the leak and deletion fixes 10
+
+- Step-Id: `20261118-2050-win-package-a418afef`
+- Task: `External Windows JCAlgTest validation (replaces WIN-SIZE-MAXCRYPTO-4BDED540)`
+- When: '2026-11-18 20:38 CET' - '2026-11-18 20:50 CET'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt normal ARM `max_crypto` from HEAD `a418afef` (contains `0018e47f`, `f0b277d1`, `b9d8fd73`, `5e95a982` on top of the 4bded540 size reductions) and packaged it with `tools/package-maxcrypto-windows-test`. Replaced the open external request with `WIN-MAXCRYPTO-FIXES-A418AFEF` (option 1 from an empty card, serial capture, key questions on EC_FP_128/160, first-baseline skew, deletion `pending`/`tag_index_refused`, and the RSA-CRT-1280 NOPAD transport loss).
+- Validation: `./tools/build arm --profile max_crypto` exit 0, `BUILD:PASS`, mode normal, CPLC `0xA418AFEF790D3E76`, 0 C/C++ warnings (generation-step javac-os/converter warnings unchanged); `PACKAGE:PASS` incl. `fixture-path --verify`. Not flashed here and not tested on Windows.
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-a418afef.uf2` SHA-256 `60b764e7b3b1922372039e09df9a334e20f2730c80cb17fa5e588b12ace5fc97` (2,939,392 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-a418afef.zip` SHA-256 `0d8d7c64a2a44b43c8d3674ed53c8b69ada46d2947160feb755128f6cede766f` (18,218,877 B); linked end `0x10066b40`, headroom 627,904 B.
+- Decision: Await the Windows option-1 result; local hardware validation still pending an idle token.
+- Artifacts/logs: paths above.
