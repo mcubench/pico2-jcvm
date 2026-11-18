@@ -31635,3 +31635,30 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - Local unchanged baseline: on the other session's live 07E7 run (same firmware), B0E2 medians match Windows within 1%. They reached 13.9 s at CRT-1984 (0.81 s at RSA-512).
 - Decision: Validate on hardware. Fill the RSA cache on a free token with the new probe, compare B0E2 timing and check the watchdog/CCID behaviour. F42D is free on USB, but another session's serial monitor (PID 3171344, until about 07:58) still holds its port; stopping it was not allowed automatically. Do not disturb the 07E7 campaign; it is the unfixed baseline approaching the 15 s line.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T053831Z/` (baseline), `…T054122Z/` (index), `…T054439Z/` (index + trace counters), `…T054748Z/` (index + trace reuse); `artifacts/logs/object-deletion-vpcd-20261118T0552{21,25,26,42}Z.log`.
+
+## 2026-11-18 Deletion-pass fix on hardware: local reproduction and A/B on 07E7 9
+
+- Step-Id: `20261118-0702-deletion-pass-hw-ab`
+- Task: `MEM-01 / LONGOP-01`
+- When: '2026-11-18 06:53' - '2026-11-18 07:02'
+- Model: `claude-opus-5-5`
+- Change: Added `tests/hardware/ApduTimer.java`, a PC/SC APDU sender with per-APDU timing for an exact reader. Reflashed 07E7 with the `25c39cd7` image (UF2 SHA-256 `597d9ac04d9bf5e23dd196cb3d19aec06832efac40648fe82e9ca51a3b541ac4`) via `tools/cycle choupi`, preserving storage. No VM source change.
+- Validation:
+  - Local reproduction on the unfixed image (`00048e16`-based, de729d28-equivalent): the other session's 07E7 "performance → all algorithms" run (attempt4) failed at TYPE_RSA_CRT_PRIVATE 2048 NOPAD.
+    - The preceding B0E2s took about 10.4 s with 8-record batches pending. The next B0E2 got SCARD_E_NOT_TRANSACTED, then SCARD_W_REMOVED_CARD, and the client exited.
+    - The serial log ends mid-line inside that deletion pass, right after its PRE_CLEANUP (387 arrays / 138 instances, 1,568 files). The board re-enumerated by itself (USB address 092 → 093).
+  - A, unfixed image, same state: SELECT, then B0E2 ×3 → 14,870 ms (an erasing pass, 6 records), 10,205 ms, 10,204 ms. Serial shows 1 progress call and 0 CCID time extensions per B0E2.
+  - B, fixed image, same state: B0E2 ×3 → 3,113, 3,048 and 3,049 ms. Then PREPARE CRT-3072 (keygen, `AA9000`) 64,543 ms; B0E2 ×3 → 4,531, 4,553, 4,856 ms; MEASURE CRT-3072 `AA9000` 5,357 ms; B0E2 ×2 → 4,853, 3,331 ms.
+  - `OBJECT_DELETION:TIMING` for the fixed image: total pass 2.18–2.54 s, of which heap 0.83–0.92 s and reclaim 1.27–1.59 s. 3 traces totalling 1.60–1.84 s, with 1–4 reused. Tag index 20,782–21,870 B, never refused.
+  - About 41 progress calls and 2 completed CCID time extensions per B0E2. No PANIC, FAULT or watchdog reset; every APDU returned 9000.
+- Result:
+  - The deletion pass is about 4.6× faster on target: 10.2 s → 2.2 s pass, B0E2 round trip 10.2 → 3.05 s at the failing state.
+  - The state now also includes the CRT-3072 entry, beyond where the Windows and local campaigns died: the pass takes 2.5 s and the round trip ≤ 4.9 s.
+  - The pass now refreshes the watchdog and sends CCID time extensions.
+  - New observation: the post-APDU heap GC (`CHOUPI:HEAP_GC_TIMING`) runs after every APDU and takes 0.86–0.96 s at 387–405 live arrays. This is unrequested per-APDU work. It is not a watchdog risk but adds about 1 s to every APDU late in the run.
+  - Limitation: the 21.9 KB index is close to its 24 KiB cap. A larger live set would fall back to the linear walk: slow, but now watchdog/CCID-safe.
+- Decision:
+  - The fix addresses the reproduced failure mode.
+  - Next: a full option-2 "all algorithms" run on an empty card with the fixed image (local, then a Windows package).
+  - Separately, decide with the user whether the per-APDU heap GC should run only on an external request (user preference stated 2026-11-17).
+- Artifacts/logs: `artifacts/results/deletion-pass-ab-20261118/07E74C5D7A038DEC/{A-old-apdu.log,A-old-serial.log,B-cycle.log,B-new-apdu.log,B-new-serial.log}`; failing campaign logs in `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.
