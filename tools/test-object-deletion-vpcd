@@ -30,6 +30,11 @@ fi
 if [[ "${mode}" == "auto-gc" && "${rp2350_overlay}" != 1 ]]; then
   die "auto-gc requires PICO2_VPCD_RP2350_OVERLAY=1"
 fi
+# Per-pass record budget, read from the firmware so the test follows it.
+batch_limit="$(sed -n 's/^constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = \([0-9][0-9]*\);$/\1/p' \
+  "${repo_root}/choupi/src/persistent_inventory.hpp")"
+[[ "${batch_limit}" =~ ^[1-9][0-9]*$ ]] || \
+  die "cannot read kObjectDeletionMaxRecordsPerApdu from persistent_inventory.hpp"
 rsa_size_code=0
 case "${key_bits}" in
   1024) rsa_size_code=1 ;;
@@ -103,7 +108,7 @@ else
 fi
 if [[ "${mode}" == "rsa-batch" ]]; then
   total_records=$((iterations * 10))
-  deletion_calls=$((total_records / 8 + 1))
+  deletion_calls=$((total_records / batch_limit + 1))
   # APDU 000008 above starts the deletion request; APDU 00000D above is
   # already the first continuation. Use status-only APDUs for any remaining
   # batches so the harness does not create a fresh empty deletion request.
@@ -143,16 +148,16 @@ fi
 
 grep -Eq '^OBJECT_DELETION: .*erased_package=0 ' "${log}" || \
   die "unexpected package-static erase in this owner-only fixture; see ${log}"
-awk '
+awk -v limit="${batch_limit}" '
   /^OBJECT_DELETION: package=/ {
     match($0, /erased_applet=[0-9]+/)
     applet = substr($0, RSTART + 14, RLENGTH - 14) + 0
     match($0, /erased_package=[0-9]+/)
     package = substr($0, RSTART + 15, RLENGTH - 15) + 0
-    if (applet + package > 8) failed = 1
+    if (applet + package > limit) failed = 1
   }
   END { if (failed) exit 1 }
-' "${log}" || die "a physical-equivalent batch exceeded eight records; see ${log}"
+' "${log}" || die "a physical-equivalent batch exceeded ${batch_limit} records; see ${log}"
 call_count="$(grep -c '^OBJECT_DELETION: package=' "${log}" || true)"
 reclaim_count="$(grep -Ec \
   '^OBJECT_DELETION: package=.*applet_result=0 package_result=0 erased_applet=[1-9][0-9]* ' \
@@ -170,7 +175,7 @@ fi
   die "expected ${expected_calls} collector calls, got ${call_count}; see ${log}"
 expected_reclaims="${iterations}"
 if [[ "${mode}" == "rsa-batch" ]]; then
-  expected_reclaims=$((total_records % 8 == 0 ? 0 : 1))
+  expected_reclaims=$((total_records % batch_limit == 0 ? 0 : 1))
 fi
 [[ "${reclaim_count}" -eq "${expected_reclaims}" ]] || \
   die "expected ${expected_reclaims} completed request-triggered reclamations, got ${reclaim_count}; see ${log}"
@@ -188,7 +193,7 @@ elif [[ "${mode}" == "rsa-public" ]]; then
   [[ "${erased_total}" -eq $((iterations * 10)) ]] || \
     die "expected ten applet-owned records per RSA replacement, got ${erased_total}; see ${log}"
 else
-  awk -v expected="${iterations}" '
+  awk -v expected="${iterations}" -v limit="${batch_limit}" '
     /^OBJECT_DELETION: package=/ {
       match($0, /erased_applet=[0-9]+/)
       value = substr($0, RSTART + 14, RLENGTH - 14) + 0
@@ -196,16 +201,23 @@ else
       static_value = substr($0, RSTART + 13, RLENGTH - 13) + 0
       calls++
       slot = (calls - 1) % 3
+      # Slot 0: the live static root keeps all ten records. Slots 1-2: the
+      # root was cleared; the ten records drain within the per-pass budget
+      # (one pass when the budget is at least ten).
       if (slot == 0) {
         if (value != 0 || static_value != 1) failed = 1
+        cycle = 0
       } else {
-        if (value == 0 || static_value != 0 || value > 8) failed = 1
+        if (static_value != 0 || value > limit) failed = 1
+        if (slot == 1 && value == 0) failed = 1
+        cycle += value
+        if (slot == 2 && cycle != 10) failed = 1
       }
       total += value
       match($0, /erased_package=[0-9]+/)
       package_value = substr($0, RSTART + 15, RLENGTH - 15) + 0
       if (package_value != 0) failed = 1
-      if (value > 8) failed = 1
+      if (value > limit) failed = 1
     }
     END {
       if (calls != expected * 3 || total != expected * 10 || failed) exit 1

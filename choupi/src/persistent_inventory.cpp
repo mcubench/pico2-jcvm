@@ -1115,7 +1115,8 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     const uint8_t applet_owner, Heap &heap,
     const PersistentInventory::RootReferenceEnumerator enumerate_roots,
     void *root_context, uint32_t *erased_count,
-    const uint32_t max_erased_count) {
+    const uint32_t max_erased_count,
+    const ObjectDeletionDeadline *deadline) {
   using PersistentInventory::VisitResult;
   if (erased_count != nullptr) *erased_count = 0;
   if (enumerate_roots == nullptr || max_erased_count == 0) {
@@ -1274,7 +1275,8 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
         return VisitResult::EraseFailure;
       }
       ++erased;
-      if (erased >= max_erased_count) {
+      if (erased >= max_erased_count ||
+          (deadline != nullptr && deadline->expired())) {
         if (erased_count != nullptr) *erased_count = erased;
         return VisitResult::Stopped;
       }
@@ -1291,7 +1293,8 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     const uint8_t package_id, Heap &heap,
     const PersistentInventory::RootReferenceEnumerator enumerate_roots,
     void *root_context, uint32_t *erased_count,
-    const uint32_t max_erased_count) {
+    const uint32_t max_erased_count,
+    const ObjectDeletionDeadline *deadline) {
   using PersistentInventory::VisitResult;
   if (erased_count != nullptr) *erased_count = 0;
   if (enumerate_roots == nullptr || max_erased_count == 0) {
@@ -1379,7 +1382,8 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
         return VisitResult::EraseFailure;
       }
       ++erased;
-      if (erased >= max_erased_count) {
+      if (erased >= max_erased_count ||
+          (deadline != nullptr && deadline->expired())) {
         if (erased_count != nullptr) *erased_count = erased;
         return VisitResult::Stopped;
       }
@@ -1395,7 +1399,8 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
 ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
     const uint8_t applet_owner, const uint8_t package_id, Heap &heap,
     const PersistentInventory::RootReferenceEnumerator enumerate_roots,
-    void *root_context, const uint32_t max_erased_count) {
+    void *root_context, const uint32_t max_erased_count,
+    const ObjectDeletionDeadline *deadline) {
   // Each candidate record is checked against the marked heap; answer those
   // checks from one sorted tag copy instead of a walk over all live objects.
   const Heap::ReachableTagIndexScope tag_index_scope;
@@ -1405,7 +1410,7 @@ ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
   ObjectDeletionBatchResult result;
   result.applet_result = reclaimUnreachableAppletTags(
       applet_owner, heap, enumerate_roots, root_context,
-      &result.erased_applet, max_erased_count);
+      &result.erased_applet, max_erased_count, deadline);
   if (result.applet_result != PersistentInventory::VisitResult::Complete) {
     result.package_result = result.applet_result;
     return result;
@@ -1413,15 +1418,17 @@ ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
 
   const uint32_t remaining_budget =
       max_erased_count - result.erased_applet;
-  if (remaining_budget == 0) {
-    // The applet namespace consumed the whole budget. Defer even an empty
+  if (remaining_budget == 0 ||
+      (result.erased_applet != 0 && deadline != nullptr &&
+       deadline->expired())) {
+    // The applet namespace consumed the record or time budget. Defer even an empty
     // package namespace check so this call has a strict upper bound.
     result.package_result = PersistentInventory::VisitResult::Stopped;
     return result;
   }
   result.package_result = reclaimUnreachablePackageStaticTags(
       package_id, heap, enumerate_roots, root_context,
-      &result.erased_package, remaining_budget);
+      &result.erased_package, remaining_budget, deadline);
   return result;
 }
 } // namespace PersistentReclaimer

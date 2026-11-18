@@ -557,11 +557,17 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
                     static_cast<unsigned long>(bytes_used),
                     static_cast<unsigned long>(byte_capacity));
         std::fflush(stdout);
+        // Drain the request within this pass where possible, so leftover
+        // work is not serviced after (and charged to) the next APDU.
+        const jcvm::PersistentReclaimer::ObjectDeletionDeadline deadline{
+            choupi_time_us_32, choupi_time_us_32(),
+            jcvm::PersistentReclaimer::kObjectDeletionReclaimBudgetUs};
         return jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
             static_cast<uint8_t>(context.getAppletID()),
             context.getAppletPackageID(), context.getHeap(),
             enumerate_physical_object_deletion_roots, &roots,
-            jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
+            jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu,
+            &deadline);
       }();
   const uint32_t reclaim_done_us = choupi_time_us_32();
   const uint32_t prefix_queries = jcvm::Heap::takeReachablePrefixQueryCount();

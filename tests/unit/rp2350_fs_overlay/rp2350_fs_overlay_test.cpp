@@ -1912,6 +1912,12 @@ int main(const int argc, char **argv) {
       }
     }
   }
+  // With the per-pass budget above the per-cycle garbage, the automatic pass
+  // catches up and completes during churn; garbage created afterwards stays
+  // until the next low-watermark trigger. Drain that residue with one final
+  // request so the end state (only the live root) is still verified.
+  const uint32_t overlay_churn_erased_during_churn = overlay_churn_erased;
+  overlay_churn_deletion_pending = true;
   uint32_t overlay_churn_drain_cycles = 0;
   for (; overlay_churn_deletion_pending && overlay_churn_ok &&
          overlay_churn_drain_cycles < 2048;
@@ -1959,7 +1965,8 @@ int main(const int argc, char **argv) {
   }
   overlay_churn_expected_live_records = 1;
   overlay_churn_ok = overlay_churn_ok && overlay_churn_auto_requests != 0 &&
-      overlay_churn_erased != 0 && !overlay_churn_deletion_pending &&
+      overlay_churn_erased_during_churn != 0 &&
+      !overlay_churn_deletion_pending &&
       fs_init() == FS_STATUS_OK &&
       rp2350_fs_test_live_record_count() ==
           overlay_churn_expected_live_records;
@@ -1976,8 +1983,10 @@ int main(const int argc, char **argv) {
               static_cast<unsigned>(overlay_churn_auto_requests),
               overlay_churn_min_available, overlay_churn_peak_bytes,
               overlay_churn_peak_files);
-  std::printf("TEST:METRIC rp2350_overlay_auto_reclaim_drain cycles=%u\n",
-              static_cast<unsigned>(overlay_churn_drain_cycles));
+  std::printf("TEST:METRIC rp2350_overlay_auto_reclaim_drain cycles=%u "
+              "erased_during_churn=%u\n",
+              static_cast<unsigned>(overlay_churn_drain_cycles),
+              static_cast<unsigned>(overlay_churn_erased_during_churn));
   std::printf("TEST:METRIC rp2350_overlay_object_deletion index_slots=%zu\n",
               overlay_churn_final_index_slots);
 

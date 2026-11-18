@@ -141,7 +141,28 @@ VisitResult visitUnreachablePackageStaticTags(
 
 namespace PersistentReclaimer {
 
-constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = 8;
+// Records one deletion pass may erase. A requested deletion normally leaves
+// a few dozen dead records (JCAlgTest option 1: at most 37 except one 107);
+// with the former budget of 8 the remainder was serviced after the next
+// APDU, adding a whole deletion pass to a measured command. The bound still
+// keeps a pathological backlog (one unbounded sweep erased 1,417 records and
+// lost the transport) spread over several APDUs, together with the wall-clock
+// budget below.
+constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = 64;
+
+// Wall-clock budget for the erase phase of one pass, checked after each
+// erasure so every pass still makes progress.
+constexpr uint32_t kObjectDeletionReclaimBudgetUs = 3000000;
+
+struct ObjectDeletionDeadline {
+  uint32_t (*now_us)() = nullptr;
+  uint32_t start_us = 0;
+  uint32_t budget_us = 0;
+
+  bool expired() const noexcept {
+    return now_us != nullptr && now_us() - start_us >= budget_us;
+  }
+};
 
 struct ObjectDeletionBatchResult {
   PersistentInventory::VisitResult applet_result =
@@ -166,7 +187,8 @@ struct ObjectDeletionBatchResult {
 ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
     uint8_t applet_owner, uint8_t package_id, Heap &heap,
     PersistentInventory::RootReferenceEnumerator enumerate_roots,
-    void *root_context, uint32_t max_erased_count);
+    void *root_context, uint32_t max_erased_count,
+    const ObjectDeletionDeadline *deadline = nullptr);
 
 /// Remove owner-scoped persistent records that a complete strict reachability
 /// walk proves unreachable. This primitive is deliberately not wired into the
@@ -182,7 +204,8 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     uint8_t applet_owner, Heap &heap,
     PersistentInventory::RootReferenceEnumerator enumerate_roots,
     void *root_context, uint32_t *erased_count = nullptr,
-    uint32_t max_erased_count = UINT32_MAX);
+    uint32_t max_erased_count = UINT32_MAX,
+    const ObjectDeletionDeadline *deadline = nullptr);
 
 /// Remove unreachable records in one package-static namespace after a strict
 /// root trace and external-alias scan. Direct static slots are preserved.
@@ -191,7 +214,8 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     uint8_t package_id, Heap &heap,
     PersistentInventory::RootReferenceEnumerator enumerate_roots,
     void *root_context, uint32_t *erased_count = nullptr,
-    uint32_t max_erased_count = UINT32_MAX);
+    uint32_t max_erased_count = UINT32_MAX,
+    const ObjectDeletionDeadline *deadline = nullptr);
 
 } // namespace PersistentReclaimer
 } // namespace jcvm
