@@ -32079,3 +32079,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Offline, requested deletions of ≤64 records complete in the requesting APDU's pass. On-target timing (pass duration with B, first-baseline outlier gone) was not measured.
 - Decision: Hardware validation on an idle token after the live campaign: flash normal max_crypto, run a short JCAlgTest option-1 subset (e.g. RSA-CRT-1984 Cipher) and check `pending=0` after every `B0E2`, `tag_index_refused=0`, first vs later baselines within noise, and B0E2 duration.
 - Artifacts/logs: `artifacts/logs/object-deletion-vpcd-20261118T1733*Z.log`, `artifacts/logs/object-deletion-vpcd-20261118T173447Z.log`
+
+## 2026-11-18 Replay the external option-1 transcript with fixes A–C 10
+
+- Step-Id: `20261118-1945-option1-replay-fixes`
+- Task: `MEM-01 T10 / JCAlgTest baseline skew (A–C) integration check`
+- When: '2026-11-18 19:35 CET' - '2026-11-18 19:45 CET'
+- Model: `claude-opus-5-5`
+- Change: None to source. Replayed the first 3,582 APDUs of the external 1.8.5-client option-1 log (`inbox/maxcrypto_20261118_853543d6/ALGTEST_log_1794949797462.log`, through RSA_PRIVATE 1984) on the RP2350-overlay emulator with object deletion enabled, unchanged 1.8.4/jc305 CAP, at tip `b9d8fd73`; then repeated it with the five changed sources restored from `3d3e1dcb` as a control.
+- Validation: `JCALGTEST_RP2350_OVERLAY=1 PICO2_TEST_OBJECT_DELETION=1 tools/test-jcalgtest-apdu-replay-vpcd --stop-after-apdu-index 3582`. Emulator only.
+- Result: With fixes: 1,787 deletion passes, max 29 records erased in one pass (≤ 64, so every request drained in its own pass), no resource failure; replay exits FAIL on 38 unexpected status words, all `TYPE_RSA_PRIVATE` (non-CRT) + `ALG_RSA_PKCS1_OAEP` measure APDUs flipping between 9000 and F105 (CryptoException ILLEGAL_USE). Control without the fixes: 34 unexpected statuses in the same algorithm family but at different APDUs, and the original physical card also returned F105 on some of them. So this is a pre-existing, run-to-run random (data/padding dependent) OAEP failure on plain RSA private keys, not caused by A–C. The emulator does not reproduce target RAM limits, so B's on-target benefit is not shown here.
+- Decision: A–C show no replay regression. Open a separate item: intermittent F105 for RSA_PRIVATE (non-CRT) OAEP decrypt/init in JCAlgTest. Hardware timing validation of A–C remains pending.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T173714Z/` (with fixes), `artifacts/results/resource01-apdu-replay-vpcd-20261118T173833Z/` (control)
