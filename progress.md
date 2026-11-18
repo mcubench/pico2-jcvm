@@ -32128,3 +32128,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-a418afef.uf2` SHA-256 `60b764e7b3b1922372039e09df9a334e20f2730c80cb17fa5e588b12ace5fc97` (2,939,392 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-a418afef.zip` SHA-256 `0d8d7c64a2a44b43c8d3674ed53c8b69ada46d2947160feb755128f6cede766f` (18,218,877 B); linked end `0x10066b40`, headroom 627,904 B.
 - Decision: Await the Windows option-1 result; local hardware validation still pending an idle token.
 - Artifacts/logs: paths above.
+
+## 2026-11-18 Stop option 1 after resource panic 5
+
+- Step-Id: `20261118-1852-mem01-option1-stop-oom`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 18:47 CET' - '2026-11-18 18:52 CET'
+- Model: `gpt-6-codex`
+- Change: Stopped the long option-1 client at the user's direction, verified the execution session terminated, and recorded the terminal evidence in TODO and QKB.
+- Validation: Polled and interrupted only the existing run handle; confirmed it was no longer available, the client/monitor processes were absent, and the captured logs had stopped changing. No USB/PCSC operation, build, flash, or tests.
+- Result: The client did not complete. During RSA-3072 CRT NOPAD Cipher_init it reported `SCARD_E_NOTRANSACTED` and `SCARD_W_REMOVED_CARD`, then `NoSuchElementException`. The serial capture ends in `*** PANIC *** / Out of memory`; the preceding cleanup APDU returned `9000` and deletion took 12.356 s. Latest complete PRE_CLEANUP was 1,745 files / 73,174 bytes, high-water 1,759 / 73,369 of 98,304 bytes (74.6%). Heap level was 415 arrays / 150 instances; 12 compactions occurred. No `TEST:FAIL` marker, but the OOM panic is a failure. Causality between panic and reader removal is unknown.
+- Decision: This is not an acceptance run and does not prove a suite-wide plateau. Pause further campaign work; inspect the captured RSA/OOM path offline before considering another bounded run.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/{serial.log,client.log,campaign-identity.txt}`.

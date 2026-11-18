@@ -1,5 +1,24 @@
 # Issue knowledge base
 
+## Exploratory option-1 campaign ended in OOM below the persistent-store gate — 2026-11-18
+
+The 07E7 option-1 run on the normal `max_crypto` image from source `853543d6`
+was stopped at the user's direction before suite completion. Near the end, the
+1.8.5 client was testing `TYPE_RSA_CRT_PRIVATE LENGTH_RSA_3072
+ALG_RSA_NOPAD Cipher_init()` and reported `SCARD_E_NOTRANSACTED`, then
+`SCARD_W_REMOVED_CARD`, followed by `NoSuchElementException`. The final serial
+capture ends with `*** PANIC *** / Out of memory`; immediately preceding clean
+telemetry was 1,745 files / 73,174 of 98,304 bytes, high-water 73,369 bytes
+(74.6%), and 415 live arrays / 150 instances. Twelve compactions were logged.
+The applet cleanup APDU immediately before the panic returned `9000`; its
+deletion timing was 12.356 s. This run did not pass or complete. It shows
+resource exhaustion below the persistent-store 90% gate, but does not identify
+whether heap, native, or another resource exhausted, nor establish whether the
+panic caused the reader removal. Do not resume this exploratory run. Analyze
+the captured serial/client context and relevant RSA cipher allocation paths
+offline before planning a new bounded validation. Artifacts:
+`artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/`.
+
 ## GPPro DELETE preflight can encounter an earlier JCVM out-of-memory panic — 2026-11-17
 
 On F42DD9D07D6D2B07, after the focused RSA physical matrix, the bounded
