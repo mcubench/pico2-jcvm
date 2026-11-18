@@ -225,6 +225,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     src/cap_store.cpp
     src/gp_lifecycle_recovery.cpp
     src/scp03.cpp
+    src/pico_stdio_stream.c
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
     "${PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
@@ -278,6 +279,11 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     -Wno-format)
   # pico_rand also supplies SCP03 host challenge randomness, so it remains a
   # mandatory card-management dependency even when Java Card RandomData is off.
+  # Send the VM's std::fprintf(stderr, ...) diagnostics to the SDK printf
+  # instead of linking newlib's float-capable vfprintf (src/pico_stdio_stream.c).
+  target_link_options(pico2_choupi PRIVATE
+    "LINKER:--wrap=fprintf"
+    "LINKER:--wrap=vfprintf")
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
     hardware_pwm pico_usb_reset
     pico_mbedtls_headers)

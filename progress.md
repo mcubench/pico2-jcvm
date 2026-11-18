@@ -31886,3 +31886,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 1,182 PRE_CLEANUP and 889 HEAP_GC records. Latest persistent store: 1,348 files / 50,437 of 98,304 bytes; peak: 1,375 files / 50,601 bytes. In the last 300 samples, bytes rose 38,957→50,437 and files 956→1,348 despite 72 downward compaction steps. The last 100 HEAP_GC samples alternate only between 289 arrays / 108 instances and 307 / 114. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors. Suite-wide plateau remains unproven.
 - Decision: Continue the existing campaign to its bound. This shows heap-level reuse while persistent-store usage continues to increase across methods; it is exploratory evidence only because the card was not empty, and does not satisfy T8/T10.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/client.log`, `serial.log`.
+
+## 2026-11-18 Route VM fprintf diagnostics to the Pico SDK printf 8
+
+- Step-Id: `20261118-1719-fprintf-wrap`
+- Task: firmware size reduction (follow-up to `docs/review_firmware_size_20261118.md`)
+- When: '2026-11-18 17:19' - '2026-11-18 17:27'
+- Model: `claude-opus-5-5`
+- Change: Added `src/pico_stdio_stream.c` with `__wrap_fprintf`/`__wrap_vfprintf` (stdout/stderr → SDK `vprintf`; other streams fail closed with EBADF) and `--wrap=fprintf --wrap=vfprintf` link options for `pico2_choupi` only. The shared VM sources and the host build are unchanged. Newlib's `fprintf` had linked its float-capable `_vfprintf_r` (8,876 B), `_dtoa_r` (4,092 B), mprec helpers, `__sfvwrite_r` and locale code next to the SDK printf.
+- Validation: `./tools/build arm --profile max_crypto`: exit 0, 0 warnings, `FLASH_LAYOUT:PASS remaining=607260`. `nm` shows no `fprintf`, `_vfprintf_r`, `_dtoa_r` or `__sfvwrite_r`; `__wrap_fprintf` present. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07`: `CYCLE:PASS`, 18× `TEST:PASS`/`TEST:SUMMARY pass=1 fail=0`, `CHOUPI:STATUS sw=9000`, no FAULT/TEST:FAIL. The 07E7 option 1 campaign was not touched.
+- Result: firmware binary 460,868 → 441,316 B (−19,552); headroom 587,708 → 607,260 B. UF2 SHA-256 `52c36035c32309591f4979726f9c7f1a7584b88218e1fd296fad6d6cfb1b6fca` (development cycle image, storage preserved; F42D card still empty). Format-visible difference: `%p` now prints 8 uppercase hex digits without `0x` (only in VM_PROGRESS, CLASS_CAST/INTERFACE_CHECK and OBJECT_DELETION:POST_APDU pointer fields; no tool parses them). **Not tested:** the OBJECT_DELETION telemetry lines that use fprintf only fire on APDU traffic; F42D is still not in PC/SC and pcscd cannot be refreshed during the 07E7 campaign.
+- Decision: Keep. Next: mbedTLS user config (unused curves, SHA-3).
+- Artifacts/logs: `artifacts/results/flash-size-opt-20261118/step3-fprintf-wrap/` (build.log, cycle.log, cycle-choupi-20261118T162633Z.log, build-provenance.txt).
