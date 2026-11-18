@@ -1148,9 +1148,10 @@ void collect_heap_after_apdu() {
   const bool inventory_once = inventory_setting != nullptr &&
                               std::strcmp(inventory_setting, "once") == 0;
   static std::array<bool, 256> inventory_reported{};
+  jcvm::Context *request_context = nullptr;
 #if defined(CHOUPI_ENABLE_OBJECT_DELETION)
-  if (jcvm::Context *request_context =
-          choupi_take_object_deletion_request_context()) {
+  request_context = choupi_take_object_deletion_request_context();
+  if (request_context != nullptr) {
     std::fprintf(stderr,
                  "OBJECT_DELETION:POST_APDU request_context=%p "
                  "selected_context=%p same_context=%u requested=%u "
@@ -1213,9 +1214,16 @@ void collect_heap_after_apdu() {
         inventory_reported[owner] = true;
       }
     }
+    // As on the target: collect only for an applet deletion request, unless
+    // a diagnostic switch asks for tracing or collection.
+    const bool collection_requested =
+        context.isObjectDeletionRequested() || &context == request_context;
 #if defined(PC_VERSION) || defined(CHOUPI_ENABLE_OBJECT_DELETION)
     service_object_deletion_request_if_enabled(context);
 #endif
+    if (!collection_requested && !collect_all_contexts && !trace_enabled) {
+      return;
+    }
 
     const unsigned long passes = trace_enabled ? repeat_count : 1;
     for (unsigned long pass = 1; pass <= passes; ++pass) {
@@ -1334,9 +1342,17 @@ void collect_heap_after_apdu() {
     return;
   }
 
+  // The heap is collected only when the applet asked for it
+  // (JCSystem.requestObjectDeletion). Collecting after every APDU made each
+  // command's duration depend on the live-object count (about 0.9 s late in a
+  // JCAlgTest run). Builds without object deletion keep the per-APDU
+  // collection, their only collector.
 #ifdef CHOUPI_ENABLE_OBJECT_DELETION
-  if (jcvm::Context *request_context =
-          choupi_take_object_deletion_request_context()) {
+  jcvm::Context *const request_context =
+      choupi_take_object_deletion_request_context();
+  const bool collection_requested =
+      request_context != nullptr || context.isObjectDeletionRequested();
+  if (request_context != nullptr) {
     std::printf("OBJECT_DELETION:POST_APDU request_context=%p "
                 "selected_context=%p same_context=%u requested=%u "
                 "stack_empty=%u package=%u owner=%u\r\n",
@@ -1358,7 +1374,13 @@ void collect_heap_after_apdu() {
   } else {
     service_physical_object_deletion_request(context);
   }
+#else
+  const bool collection_requested = true;
 #endif
+  if (!collection_requested) {
+    (void)jcvm::Heap::reclaimTransientGlobalArrays();
+    return;
+  }
 
   SelectedAppletRootContext roots{&context, nullptr, nullptr};
   try {

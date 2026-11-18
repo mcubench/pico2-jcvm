@@ -31662,3 +31662,23 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - Next: a full option-2 "all algorithms" run on an empty card with the fixed image (local, then a Windows package).
   - Separately, decide with the user whether the per-APDU heap GC should run only on an external request (user preference stated 2026-11-17).
 - Artifacts/logs: `artifacts/results/deletion-pass-ab-20261118/07E74C5D7A038DEC/{A-old-apdu.log,A-old-serial.log,B-cycle.log,B-new-apdu.log,B-new-serial.log}`; failing campaign logs in `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.
+
+## 2026-11-18 Post-APDU heap GC only on an applet deletion request 8
+
+- Step-Id: `20261118-0723-gc-on-request`
+- Task: `MEM-01` (user directive 2026-11-18: run the per-APDU GC only on request)
+- When: '2026-11-18 07:19' - '2026-11-18 07:27'
+- Model: `claude-opus-5-5`
+- Change: `collect_heap_after_apdu()` (target and PC) now collects the selected applet heap, and rotates inactive heaps, only when that APDU carries a `JCSystem.requestObjectDeletion` request (taken request context or latched flag).
+  - Other APDUs only reclaim transient global arrays (JCRE per-APDU semantics).
+  - Builds without object deletion keep the per-APDU collection, their only collector. The PC diagnostic switches `PICO2_HEAP_GC`/`PICO2_HEAP_TRACE` still force tracing.
+  - Measured motivation: at 387–405 live arrays the post-APDU GC cost 0.86–0.96 s on every APDU (step `20261118-0702-deletion-pass-hw-ab`).
+  - The automatic low-watermark persistent cleanup and boot-time FS compaction are unchanged.
+- Validation:
+  - ARM `max_crypto` and the PC RP2350-overlay build: no warnings.
+  - Unit tests: persistent-transaction 168/168, rp2350-fs-overlay 152/152, persistent-inventory 22/22, object-deletion-policy 20 checks.
+  - VPCD overlay `test-object-deletion-vpcd`: byte-array 16, rsa-live-static 16, rsa-batch 16 and auto-gc 512, all PASS.
+  - Windows de729d28 transcript replay (APDUs 1–5995): same end state as before (333 arrays / 120 instances), no 6F00 and no resource failure. The only differences from the transcript are the known random F105 (86 + 14) and 2 known GET DATA 6982. Hardware follows in the packaging step.
+- Result: Garbage RAM objects now live until the applet's next requestObjectDeletion. JCAlgTest requests one before every measurement.
+- Decision: Flash, check on hardware, and package for Windows.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T062227Z/`; `artifacts/logs/object-deletion-vpcd-20261118T0622{13,14,16,18}Z.log`.
