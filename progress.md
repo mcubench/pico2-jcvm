@@ -31959,3 +31959,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: TODO now reflects the executed policy and the nine observed compaction events in the active option-1 serial log.
 - Decision: No runtime behavior changed. T10 acceptance remains open pending valid full-run telemetry and exhaustion-headroom evidence.
 - Artifacts/logs: `TODO.md`; source references above; active run under `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/`.
+
+## 2026-11-18 Record missing VPCD host dependency 0
+
+- Step-Id: `20261118-1738-host-vpcd-request`
+- Task: `MEM-01 T7 blocker`
+- When: '2026-11-18 17:37 CET' - '2026-11-18 17:38 CET'
+- Model: `gpt-6-codex`
+- Change: Added `HOST-VPCD-PCSC-01` to `.agent/EXT_REQUESTS.md`, requesting restoration of the missing host VPCD PC/SC service and the evidence needed to resume unchanged-client T7. No VPCD driver or `vpcd`/`vicc` binary is currently present per the QKB investigation.
+- Validation: Checked that no existing external request already covered this blocker; confirmed `.agent/QKB.md` documents the exact missing `Virtual PCD 00 00` reader and prior inventory evidence. This was a documentation-only action; no PC/SC operation was attempted while the physical campaign is active.
+- Result: The T7 external prerequisite and safe return evidence are now explicit. The live option-1 run on `07E74C5D7A038DEC` remains undisturbed.
+- Decision: Continue physical option 1; when the VPCD service is restored, verify reader publication and then resume T7 with the required 1.8.5 client.
+- Artifacts/logs: `.agent/EXT_REQUESTS.md`; `.agent/QKB.md`.

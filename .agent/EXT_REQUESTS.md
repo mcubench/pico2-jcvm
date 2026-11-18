@@ -68,3 +68,16 @@ Key questions:
 - Does option 2 reach the end with no reader loss and no `*** PANIC ***`?
 - Do the `OBJECT_DELETION:TIMING … total_us=` values stay well below 15,000,000 (expected
   about 2–3 s late in the run)?
+
+## HOST-VPCD-PCSC-01 — Restore the host VPCD PC/SC reader
+
+Created 2026-11-18 17:38 CET. This is the current blocker for MEM-01 T7's unchanged-client VPCD run; the full evidence and prior checks are in `.agent/QKB.md` under “PC/SC helper refresh interrupts a live JCAlgTest run; VPCD reader is unavailable.”
+
+Please restore or install a VPCD PC/SC service on this host so the PC/VPCD JCVM emulator is published through PC/SC as exactly `Virtual PCD 00 00`. The emulator wrapper cannot publish this reader on its own, and the current host has no `vpcd`/`vicc` executable in PATH or `/usr/lib/pcsc`.
+
+After restoring it, provide:
+- `./tools/list-readers` output showing `Virtual PCD 00 00` (use the required host-access path if this performs PC/SC access);
+- the service/driver name and version, plus any configuration or startup command needed to keep it available;
+- confirmation that a SmartcardIO client can open that reader.
+
+Do not restart `pcscd` while the physical option-1 campaign is live; its client is currently running on token `07E74C5D7A038DEC`. Once a safe maintenance window is available, notify the agent so it can check reader publication and resume T7 using the pinned 1.8.5 client.
