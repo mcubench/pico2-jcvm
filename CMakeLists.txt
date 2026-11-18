@@ -58,6 +58,20 @@ if(TARGET pico_mbedtls_headers)
   # Pico wrapper includes the header without the mbedtls/ prefix.
   target_include_directories(pico_mbedtls_headers SYSTEM INTERFACE
     "${PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
+  # Drop Mbed TLS features no native algorithm reaches (unused named curves,
+  # SHA-3, and MD5/RIPEMD-160 unless their HMAC is selected). The definition
+  # is on the interface target so every firmware translation unit that
+  # includes Mbed TLS headers sees the same configuration.
+  target_compile_definitions(pico_mbedtls_headers INTERFACE
+    "MBEDTLS_USER_CONFIG_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/src/choupi_mbedtls_user_config.h\"")
+  if(JC_SUPPORT_SIGNATURE_HMAC_MD5)
+    target_compile_definitions(pico_mbedtls_headers INTERFACE
+      CHOUPI_MBEDTLS_KEEP_MD5=1)
+  endif()
+  if(JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160)
+    target_compile_definitions(pico_mbedtls_headers INTERFACE
+      CHOUPI_MBEDTLS_KEEP_RIPEMD160=1)
+  endif()
 endif()
 
 add_executable(pico2_jcvm_smoke src/board_smoke.c)
