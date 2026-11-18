@@ -75,6 +75,8 @@ pcscd/libccid first when no board runs JCVM firmware.
 
 **Fresh USB refresh (2026-11-17 18:35 UTC, elevated bounded `lsusb` + `picotool info -a`):** F42D is running the full JCVM (`2e8a:0009`) and is the single enumerated PC/SC reader. 07E7 (`07E74C5D7A038DEC`) and EE11 (`EE116F37C7E4A04E`) are identified in BOOTSEL (`2e8a:000f`), available to provision for a later campaign. A second runtime `2e8a:0009` product "Raspberry Pi Pico" was visible but its chip ID was not captured; do not assign it to the old 22A9 identity without checking. The live option-2 run is on F42D, so do not flash another board until it finishes; 07E7 is the identified candidate for the separate all-algorithms run.
 
+**F42D USB-visible but absent from PC/SC (reconfirmed 2026-11-18 13:17 CET).** Bounded elevated `lsusb -v -d 2e8a:0009` identified 22A9 as generic Pico firmware, plus `F42DD9D07D6D2B07` and `07E74C5D7A038DEC` as `Pico2 JCVM CCID`. With no campaign live, `tools/list-readers --pico-only` socket-activated `pcscd` but did not return a reader. The approved helper then reported `ACCESS_GRANTED count=2` for the two JCVM USB nodes; the subsequent bounded reader list still contained only 07E7. Thus F42D is not available for SmartcardIO even though it is USB-visible and has a CCID interface. Do not claim it as a campaign token. No firmware was flashed. 07E7 is the only currently confirmed PC/SC token; keep using it for exploratory work until another exact reader appears. The `pcscd` refresh was performed with no campaigns live.
+
 **Boards from the old machine (not attached here as of 2026-11-17):** 8E
 `8E464F4E2BBC0A19`, D92 `D92E743D5F640C0F`, 2BED `2BED26ED20556535`, and an unnamed
 `48E9A50BB405634E`. Old campaign results refer to these IDs; do not compare them with

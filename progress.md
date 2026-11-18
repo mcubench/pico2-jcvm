@@ -31789,3 +31789,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Across the final 100 cleanup samples, storage alternated between 398 files / 11,379 bytes and 554 files / 12,527 bytes; arrays remained 115 while live instances varied between 3 and 30. Global storage peak was 707 files / 15,148 bytes (15.409%). Repeated `SWALGS SWAlgs_AES()` APDUs took 117.192–117.288 s and returned `9000`; serial telemetry showed 105 CCID time extensions per observed long call. The client completed without reconnects. This supports bounded memory/storage after family setup for option 2; it is exploratory physical evidence, not T8 acceptance.
 - Decision: T7 VPCD is still blocked by missing `Virtual PCD 00 00`; keep T7, T8 and T10 open. Next, attempt option 1 on a different identified token if available, without disturbing another campaign.
 - Artifacts/logs: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/{attempt1,attempt2,combined-serial.log}`.
+
+## 2026-11-18 Second JCVM token unavailable through PC/SC 8
+
+- Step-Id: `20261118-1320-mem01-f42d-pcsc`
+- Task: MEM-01 T8 token failover; ARM max_crypto build readiness
+- When: '2026-11-18 13:12 CET' - '2026-11-18 13:20 CET'
+- Model: `gpt-6-codex`
+- Change: Re-identified attached boards before the next campaign. USB showed generic Pico `22A9DEAAA3D09795` and JCVM CCID chips `F42DD9D07D6D2B07` and `07E74C5D7A038DEC`. With no campaign live, the approved PC/SC helper granted access to two USB nodes; a subsequent bounded `list-readers --pico-only` still exposed only 07E7. Built the current ARM `max_crypto` image for verification but did not flash.
+- Validation: Elevated host-access `lsusb -v -d 2e8a:0009`; `PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only`; exact approved helper `sudo -n /usr/local/sbin/pico2-pcsc-reader`; `./tools/build arm --profile max_crypto` exited 0 with `BUILD:PASS` and provenance `mode=normal object_deletion=ON debug_persistent_gc=OFF`. The build emitted warnings, including 60 `javac-os` Rust warnings, so the new image is not eligible for flashing under the no-warning gate. No firmware was flashed and no source changed.
+- Result: F42D is USB-visible as JCVM CCID but unavailable as a PC/SC reader after refresh. 07E7 remains the only confirmed PC/SC token. The new build image SHA-256 is `ce131357446b476def6c2d16741dfc2efa2418cca373674bc4273408030fb85f`; 07E7 continues to run the previously tested image SHA-256 `89a744ca32134e838c38f9ff020ea7080305d76a0113757939432e2b9545d770`.
+- Decision: Do not flash. Continue exploratory option 1 on 07E7 only if needed, in a separate result directory; its card is not empty, so the run cannot count as T8 acceptance. Keep T7/T8/T10 open.
+- Artifacts/logs: `.agent/QKB.md`; `artifacts/results/token-check-option1-20261118T1317CET/arm-build.log`; `build/arm/build-provenance.txt`.
