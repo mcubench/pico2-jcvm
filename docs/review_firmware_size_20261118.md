@@ -4,7 +4,10 @@ Scope: the full JCVM firmware `pico2_choupi` for the Pico 2 (RP2350, ARM
 Cortex-M33), normal `max_crypto` profile (object deletion ON, debug OFF).
 This review asked how much flash each part of the firmware uses. The goal was
 to see whether more cryptographic implementations would fit. Two defects used
-more than half of the flash; both were fixed.
+more than half of the flash; both were fixed. Two follow-up reductions (newlib
+`fprintf`, Mbed TLS configuration) are described in
+[Follow-up reductions](#follow-up-reductions); after them the image is
+420,396 B with 628,180 B of headroom.
 
 | | Before | After |
 |---|---|---|
@@ -180,12 +183,72 @@ Logs: `artifacts/results/flash-size-opt-20261118/step1-romfs-trim/` and
 - These are development images, not acceptance evidence. INV-27 requires an
   empty-card normal image and unchanged external clients.
 
+## Follow-up reductions
+
+Two further items from the opportunity list were implemented on the same day.
+Both were validated with a 0-warning build and `CYCLE:PASS` (18× `TEST:PASS`)
+on F42D (`F42DD9D07D6D2B07`).
+
+| | After the fix | After step 3 | After step 4 |
+|---|---:|---:|---:|
+| Commit | `7adbe5cc` | `6e640e32` | `e17d25dc` |
+| Image (`pico2_choupi.bin`) | 460,868 B | 441,316 B | **420,396 B** |
+| Free space in the firmware window | 587,708 B | 607,260 B | **628,180 B** |
+| UF2 SHA-256 | `5c4d068d…` | `52c36035…6fb6fca` | `1f57b78b…fcc7b01b` |
+
+### Step 3 — VM `fprintf` sent to the SDK printf (`6e640e32`, Step-Id `20261118-1719-fprintf-wrap`)
+
+Before: the shared VM sources write diagnostics and object-deletion telemetry
+with `std::fprintf(stderr, …)` (interpreter, JNI, `bc_invoke`, `bc_object`,
+`jc_class`, `jc_method`, `main.cpp`). That linked newlib's float-capable
+`_vfprintf_r` (8,876 B), `_dtoa_r` (4,092 B), the mprec helpers,
+`__sfvwrite_r` and locale code, next to the Pico SDK printf already in the
+image. The earlier estimate said "two calls in `interpretor.cpp`"; there are
+more, so replacing call sites one by one was the wrong approach.
+
+Fix: `src/pico_stdio_stream.c` defines `__wrap_fprintf` and `__wrap_vfprintf`.
+They pass stdout/stderr output to the SDK `vprintf` and fail other streams with
+`EBADF`; the device has no other `FILE` stream. `CMakeLists.txt` links
+`pico2_choupi` with `--wrap=fprintf --wrap=vfprintf`. The VM sources and the
+host build are unchanged, and both streams already ended in the same USB serial
+sink.
+
+After: −19,552 B. The only visible format change is `%p`: 8 uppercase hex
+digits without `0x` instead of `0x…` in lowercase. It occurs only in pointer
+fields of `CHOUPI:VM_PROGRESS`, `CLASS_CAST_TYPES`/`INTERFACE_CHECK` and
+`OBJECT_DELETION:POST_APDU`, which no tool parses.
+
+### Step 4 — firmware Mbed TLS user configuration (`e17d25dc`, Step-Id `20261118-1727-mbedtls-user-config`)
+
+Before: the firmware used the SDK's default `mbedtls_config.h` with all 13
+named curves and SHA-3, although `native_ec_group.hpp` loads only
+secp192/224/256/384/521r1. Other EC sizes use explicit domain parameters.
+
+Fix: `src/choupi_mbedtls_user_config.h` is set as `MBEDTLS_USER_CONFIG_FILE` on
+the `pico_mbedtls_headers` interface target. All 176 firmware translation units
+that use the Mbed TLS config get it. It removes secp192k1/224k1/256k1,
+brainpoolP256r1/384r1/512r1, Curve25519/448 and SHA-3. MD5 and RIPEMD-160 are
+removed only when the profile does not select HMAC_MD5/HMAC_RIPEMD160.
+`MBEDTLS_ECP_MAX_BITS` stays 521, and no native code uses `MBEDTLS_MD_MAX_*`.
+The host config `choupi/src/mbedtls_config_pc.h` is unchanged. Support
+reporting comes from the profile (INV-08).
+
+Correction to the first version of this review: `max_crypto` **does** enable
+HMAC (SHA-1/256/384/512, MD5, RIPEMD-160). MD5 and RIPEMD-160 therefore stay in
+`max_crypto`, and the saving is 20,920 B rather than about 25 KB.
+
+### Not tested for steps 3 and 4
+
+The boot self-test does not run ECDSA, ECDH, EC key generation or HMAC. The
+object-deletion telemetry lines that now use the wrapped `fprintf` print only
+during APDU traffic. Neither could be exercised locally: F42D is not listed by
+pcscd, and pcscd was not refreshed during the live 07E7 campaign. A JCAlgTest
+option 2 run on an image with these commits covers both.
+
 ## Remaining reduction opportunities (not implemented)
 
 | Opportunity | Estimated saving | Notes |
 |---|---:|---|
-| Replace the two unconditional `std::fprintf(stderr, …)` calls in `choupi/src/interpretor.cpp` (VM entry exception paths) with `printf` | about 19 KB | They link newlib's full `vfprintf` with float formatting (`dtoa`, `mprec`, `fvwrite`, locale…). Pico's own printf is already linked. |
-| Custom mbedTLS configuration | about 25 KB | Uses the SDK default config: all 13 curves. `native_ec_group.hpp` loads only secp192/224/256/384/521r1. The k1 curves, brainpool curves and Curve25519/448 cost about 15–16 KB. RIPEMD-160, MD5 and SHA-3 (about 9.4 KB) come in through `md.c`, and `max_crypto` enables no HMAC. Support reporting is unaffected (INV-08). |
 | mbedTLS precomputed point tables off for the curves in use | about 13 KB | Slower ECC. |
 | Diagnostic strings and their formatting code | about 7–13 KB | **INV-24 check needed:** the normal image contains strings such as `CHOUPI:INTERFACE_CHECK …`, `CHOUPI:CHECKCAST …` and `VPCD:APPLET_PROCESS …`. INV-24 says non-diagnostic images contain no debug strings. Decide which strings are required telemetry (e.g. `PRE_CLEANUP` for the headroom checker). |
 | Link-time optimization | unknown, roughly 5–10% of code | Re-check the `.bss` placement of `cap_load_session` afterwards. |

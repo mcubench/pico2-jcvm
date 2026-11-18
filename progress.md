@@ -31923,3 +31923,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: firmware binary 441,316 → 420,396 B (−20,920); headroom 607,260 → 628,180 B. UF2 SHA-256 `1f57b78bf345234ca35d8748544a8d0f49f9abbf077935d081c6f769fcc7b01b` (development cycle image, storage preserved). **Not tested:** the boot self-test does not exercise ECDSA/ECDH/EC keygen or HMAC; no APDU traffic was possible (F42D not in PC/SC, no pcscd refresh during the 07E7 campaign). A JCAlgTest option 2 run is needed to cover these paths.
 - Decision: Keep. Precomputed fixed-point tables (`MBEDTLS_ECP_FIXED_POINT_OPTIM`, ~13 KB) were deliberately left on because removing them slows ECC.
 - Artifacts/logs: `artifacts/results/flash-size-opt-20261118/step4-mbedtls-config/` (build.log, cycle.log, cycle-choupi-20261118T162827Z.log, build-provenance.txt).
+
+## 2026-11-18 Document fprintf and Mbed TLS reductions in the size review 2
+
+- Step-Id: `20261118-1729-size-doc-followups`
+- Task: firmware size reduction documentation
+- When: '2026-11-18 17:29' - '2026-11-18 17:31'
+- Model: `claude-opus-5-5`
+- Change: Added a "Follow-up reductions" section to `docs/review_firmware_size_20261118.md` with a before/after table and fix description for steps 3 (`6e640e32`) and 4 (`e17d25dc`), plus what is untested. Removed both rows from the remaining-opportunities table. Corrected the earlier wrong statement that `max_crypto` enables no HMAC.
+- Validation: Inspection; all numbers are from the step 3/4 build logs and progress records.
+- Result: Document only; no firmware change.
+- Decision: The external request `WIN-SIZE-MAXCRYPTO-58B01075` still points at the 58b01075 image without steps 3/4; repackaging awaits user decision.
+- Artifacts/logs: none.
