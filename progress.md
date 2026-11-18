@@ -31947,3 +31947,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: At serial line 34512, compaction reduced the pre-cleanup reading from 1,572 files / 57,478 bytes to 1,318 / 55,016 on the next complete sample; latest is 1,320 / 54,987. Peak is 57,579/98,304 bytes (58.6%). Latest heap samples rose to 343 arrays / 126 instances as another family loaded. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors. The decrease confirms tombstone reclamation; the higher post-compaction baseline versus earlier cycles means suite-wide resource stability remains open.
 - Decision: Continue the bounded option-1 run and track later post-compaction baselines and the final resource high-water marks. The non-empty-card run is exploratory, not T8/T10 acceptance.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
+
+## 2026-11-18 Correct T10 compaction policy note 3
+
+- Step-Id: `20261118-1736-mem01-t10-policy-doc`
+- Task: `MEM-01 T10`
+- When: '2026-11-18 17:34 CET' - '2026-11-18 17:36 CET'
+- Model: `gpt-6-codex`
+- Change: Corrected the T10 TODO description, which had said every automatic deletion batch compacts. It now distinguishes applet-requested tombstone-threshold compaction from automatic low-watermark compaction.
+- Validation: Compared the note with `src/object_deletion_policy.hpp` and the target caller in `choupi/src/main.cpp`: the 256-tombstone count is zeroed on automatic passes, while the 20 KiB availability check remains active for both. `git diff --check` passed. No build or test was run for this documentation correction.
+- Result: TODO now reflects the executed policy and the nine observed compaction events in the active option-1 serial log.
+- Decision: No runtime behavior changed. T10 acceptance remains open pending valid full-run telemetry and exhaustion-headroom evidence.
+- Artifacts/logs: `TODO.md`; source references above; active run under `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/`.
