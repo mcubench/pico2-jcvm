@@ -32203,3 +32203,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The package README now has one copy-paste block covering both test modes.
 - Decision: Rebuild max_crypto from this HEAD and repackage (next step).
 - Artifacts/logs: none
+
+## 2026-11-18 Package Windows test 621ba60c with 1.8.5 CAP and one-block run 10
+
+- Step-Id: `20261118-2135-win-package-621ba60c`
+- Task: user request (rebuild external testing package)
+- When: '2026-11-18 21:25' - '2026-11-18 21:35'
+- Model: `claude-opus-5-5`
+- Change: Built normal max_crypto from HEAD `621ba60c` and packaged it. Fixed the packager README heredoc, which had run `` `PATH` `` as a command substitution. Replaced `WIN-MAXCRYPTO-FIXES-A418AFEF` with `WIN-MAXCRYPTO-CAP185-621BA60C` in `.agent/EXT_REQUESTS.md`.
+- Validation: `./tools/build arm --profile max_crypto` rc=0, 0 lines containing "warning"; provenance mode=normal, object_deletion=ON, CPLC `0x621BA60C4E29EFA2`; `PACKAGE:PASS`. Package `applet.cap` SHA-256 `fa64582e…b48fb` (1.8.5), client JAR `b6a753be…cec3`. The README block is byte-identical to `run-test.ps1`. Not flashed; PowerShell not executed (none available here).
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-621ba60c.uf2` SHA-256 `616b2d7b364ee18cf47e2b11aafc2003cbb1dffafa1a346fb9edd584155824f1` (2,939,392 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-621ba60c.zip` SHA-256 `49409c218aae7f3a43ffefa91c180432af3c78af16203c6c69554c4a52fe4052` (18,224,413 B); linked end 0x10066b40, headroom 627,904 B.
+- Decision: Waiting on the Windows run; first use of the PowerShell block is there.
+- Artifacts/logs: paths above

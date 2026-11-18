@@ -128,7 +128,7 @@ This package is prepared for external Windows testing. Validation of this exact 
 
 ## Run the test from Windows (one block)
 
-Requirements: Java 8 or newer on `PATH`, Windows PowerShell 5.1 or PowerShell 7, and only this Pico 2 attached as a smart-card reader. If any other reader is present, the client asks for a reader number.
+Requirements: Java 8 or newer on \`PATH\`, Windows PowerShell 5.1 or PowerShell 7, and only this Pico 2 attached as a smart-card reader. If any other reader is present, the client asks for a reader number.
 
 1. Extract this ZIP and open PowerShell in the extracted directory.
 2. Hold BOOTSEL while you connect the Pico 2, so that the \`rp2350\` drive appears.

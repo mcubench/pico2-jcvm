@@ -1,79 +1,62 @@
 # External validation requests
 
-## WIN-MAXCRYPTO-FIXES-A418AFEF — JCAlgTest option 1 on the leak/deletion-fix image
+## WIN-MAXCRYPTO-CAP185-621BA60C — JCAlgTest 1.8.5 CAP performance run, one-block script
 
-Created 2026-11-18 20:45 CET. This replaces `WIN-SIZE-MAXCRYPTO-4BDED540` (not returned); the new
-image contains all of its size reductions plus the fixes below. A run already in progress on the
-853543d6 or 4bded540 image may be finished and returned; it stays valid evidence for that image,
-but it will crash at the EC_FP_128/160 signatures (see fix 1).
+Created 2026-11-18 21:35 CET. This replaces `WIN-MAXCRYPTO-FIXES-A418AFEF` (not returned). The firmware
+source is unchanged from a418afef: it has the same fixes for the EC_FP_128/160 leak, the 64-record /
+3 s deletion pass, the digest tag index and RSA workspace reuse. Only the CPLC id differs. A run
+already in progress on a418afef may be finished and returned; it stays valid evidence for that image.
 
-Normal ARM `max_crypto` image from commit `a418afef` (Arm GNU 14.2.1): object deletion ON, all
-debug and trace switches OFF, 0 ms startup wait, erased 1 MiB storage region, no preinstalled
-applet. `state=dirty` refers only to uncommitted non-firmware files (HANDOFF, inbox, lists).
+What is new in the package:
+- The CAP is the user-built JCAlgTest **1.8.5/jc305** (`applet.cap`, SHA-256
+  `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`). Its RSA NOPAD setup input
+  no longer exceeds the modulus, so the random `F105` on RSA NOPAD should be gone.
+- `README.md` has one PowerShell block (also `run-test.ps1`). It does the following:
+  - flashes through the BOOTSEL volume labelled `rp2350`;
+  - waits for `Pico2 JCVM CCID 0`, reads the chip ID and COM port, and starts the serial capture;
+  - installs the CAP and runs the client;
+  - stops the capture when the client exits and packs `results\<mode>_<timestamp>.zip`.
 
-Runtime changes compared with 853543d6 (beyond the 4bded540 size reductions; `progress.md`
-Step-Ids `20261118-1835-rsa-workspace-reuse`, `20261118-1855-tag-index-digests`,
-`20261118-1910-deletion-drain-budget`, `20261118-2010-ec-small-curve-leak`):
-1. EC_FP 128/160-bit curves no longer leak about 168 bytes of RAM per ECDSA sign/verify/init,
-   KeyPair generation or KeyAgreement call. This caused the `*** PANIC *** Out of memory` at
-   `EC_FP_128 ECDSA_SHA Signature_init()` in your 853543d6 option-1 run.
-2. A requested object deletion now erases up to 64 records in one pass (3 s erase budget, was 8
-   records). Leftover cleanup no longer runs inside the next measured APDU, which inflated the first
-   baseline of most methods (up to +7.4 s for RSA-CRT-1984) and made 40 results negative.
-3. The deletion pass's reachability index is about 4x smaller, so it should no longer be refused
-   late in the run (`tag_index_refused=1`), where each `B0E2` took 10–12 s.
-4. An RSA Cipher alternating public and CRT-private keys reuses its key workspace instead of
-   leaving two dead records per measurement APDU.
+  Modes:
+  - `$mode = 'all'` is `2 -> PERFORMANCE TEST -> 1` (5–8 h). It runs purely from the command line:
+    `-op ALG_PERFORMANCE_STATIC -cardname … -fresh -outpath …`.
+  - `$mode = 'symmetric'` is `2 -> 2` (1–3 h). The 1.8.5 client has no switch for this, so the
+    block answers both menu prompts once each appears in the client log.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-a418afef.uf2)
-- UF2 SHA-256: `60b764e7b3b1922372039e09df9a334e20f2730c80cb17fa5e588b12ace5fc97`; size 2,939,392 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-a418afef.zip)
-- ZIP SHA-256: `0d8d7c64a2a44b43c8d3674ed53c8b69ada46d2947160feb755128f6cede766f`; size 18,218,877 bytes.
-- CPLC source identifier `0xA418AFEF790D3E76`; linked end `0x10066b40`, firmware-window headroom
-  627,904 bytes. Built by `tools/package-maxcrypto-windows-test`; `BUILD-PROVENANCE.txt` and
-  `SHA256SUMS.txt` are in the ZIP. The ZIP also holds the unchanged JCAlgTest 1.8.4/jc305 CAP,
-  the supplied 1.8.5 client (SHA-256
-  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`), GPPro and the serial
-  capture script.
-- Validation here (Linux, not acceptance):
-  - `./tools/build arm --profile max_crypto` from HEAD `a418afef`: exit 0, 0 C/C++ warnings
-    (the ROM/API generation step still prints its known javac-os Rust and Java Card converter
-    warnings); `PACKAGE:PASS` (includes `fixture-path --verify`).
-  - Emulator/unit: `tools/test-native-ec-group` (no leak, all curves), `test-asymm-crypto-vpcd`
-    107/107, `test-resource02-crypto-leaks-vpcd`, all `test-object-deletion-vpcd` modes,
-    persistent-store unit suites, and a replay of your first 3,582 option-1 APDUs (deletion passes
-    drain in one pass; the only status differences are a pre-existing random F105 on
-    RSA_PRIVATE non-CRT OAEP, also present on your card).
-  - **Not tested here:** this UF2 was not flashed to any board (the only PC/SC token is running
-    a long campaign). Step 1 is the first CAP install on this image.
-  - Not tested on Windows.
+Normal ARM `max_crypto` image from commit `621ba60c` (Arm GNU 14.2.1): object deletion ON, all debug
+and trace switches OFF, 0 ms startup wait, erased 1 MiB storage region, no preinstalled applet. The
+package README text includes one later packager fix that only escapes `PATH` in Markdown.
+
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-621ba60c.uf2)
+- UF2 SHA-256: `616b2d7b364ee18cf47e2b11aafc2003cbb1dffafa1a346fb9edd584155824f1`; size 2,939,392 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-621ba60c.zip)
+- ZIP SHA-256: `49409c218aae7f3a43ffefa91c180432af3c78af16203c6c69554c4a52fe4052`; size 18,224,413 bytes.
+- CPLC source identifier `0x621BA60C4E29EFA2`; linked end `0x10066b40`, firmware-window headroom
+  627,904 bytes. Client JAR 1.8.5 SHA-256
+  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
+- Validation here: `./tools/build arm --profile max_crypto` exit 0 with 0 warning lines;
+  `PACKAGE:PASS` (includes `fixture-path --verify`). The UF2 was not flashed here, and the
+  PowerShell block has not been run here: no PowerShell is available and it has not been tried on
+  Windows. The 1.8.5 CAP was checked only in the emulator (install, GETVERSION `1.8.5_jc305`).
 
 Steps:
-1. Unzip and follow `README.md`: verify the UF2 hash, flash through BOOTSEL, confirm the card is
-   empty (`gp --list` shows only the ISD), install the CAP explicitly with GPPro, and list again.
-   If list or install fails, stop and return the GPPro output and serial log.
-2. Run option `2 -> PERFORMANCE TEST -> 1 (all algorithms)` from the start, with a new card name.
-3. Capture the board's serial output for the whole run with `tools\capture-object-deletion.ps1`
-   (115200 baud, never 1200). Set `-Seconds` longer than the run (e.g. 43200); the default is
-   3600. Please do not use a terminal program with a limited scrollback.
-4. If the reader disappears, note whether the board came back by itself and keep the capture
-   running across the reconnect.
+1. Unzip, open PowerShell in the extracted folder, hold BOOTSEL while connecting the Pico 2.
+2. Set `$mode` (`all` first, if only one run is possible) and paste the README block.
+3. If the block stops with an error, return the `results\<mode>_<timestamp>` folder as it is.
 
 Return:
-- GPPro output from step 1 (list before install, install, list after install);
-- the complete client result directory (log, CSV, `already_measured.list`) and the whole serial log;
-- Windows version, reader name and ATR, chip ID, UF2 and client JAR hashes;
+- each `results\<mode>_<timestamp>.zip`: client log/CSV, `serial.log`, GPPro output and `run-identity.txt`;
 - any USB/PC/SC errors, resets, stalls or timeouts, with their times.
 
 Key questions:
-- Does the run pass the EC_FP_128/160 Signature, KeyPair and KeyAgreement methods with no
+- Do the RSA NOPAD Cipher methods (all key lengths, public and private) now complete without
+  `F105`?
+- Does `all` pass the EC_FP_128/160 Signature, KeyPair and KeyAgreement methods with no
   `*** PANIC ***` and no reader loss, and reach the end?
-- Is the first of the five baseline values now close to the other four (the CSV `CHECK` marks and
-  negative `avg op` values should largely disappear)?
-- Do all `OBJECT_DELETION: … pending=0` lines follow each `B0E2`, with `tag_index_refused=0` and
-  `OBJECT_DELETION:TIMING … total_us=` well below 15,000,000?
-- Does the RSA_CRT_PRIVATE 1280 NOPAD `Cipher_doFinal()` transport loss (PCSC 0x1f) from the
-  853543d6 run recur? If so, the serial log around it is the key evidence.
+- Is the first of the five baseline values close to the other four?
+- Is every `OBJECT_DELETION … pending=0` with `tag_index_refused=0`? Is the `HEADROOM:` verdict at
+  the end of `serial-capture-console.txt` PASS?
+- Does the RSA_CRT_PRIVATE 1280 NOPAD transport loss (PCSC 0x1f) recur?
 
 ## HOST-VPCD-PCSC-01 — Restore the host VPCD PC/SC reader
 
