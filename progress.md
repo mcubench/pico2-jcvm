@@ -32104,3 +32104,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Root cause for the EC_FP_128 Signature OOM identified and fixed offline. The separate RSA_CRT_PRIVATE 1280 NOPAD transport loss (PCSC 0x1f) in the same external client log has no matching serial capture and is not explained by this leak.
 - Decision: The live 07E7 option-1 run (firmware 853543d6) is expected to hit the same OOM when it reaches EC_FP_128 signatures. Hardware validation of this fix and of A–C pending on an idle token.
 - Artifacts/logs: `inbox/maxcrypto_20261118_853543d6/com_serial_2.txt`
+
+## 2026-11-18 Audit native crypto for per-call memory leaks 20
+
+- Step-Id: `20261118-2035-native-crypto-leak-audit`
+- Task: `Follow-up to 5e95a982 (EC small-curve leak); user request to check all remaining algorithms`
+- When: '2026-11-18 20:15 CET' - '2026-11-18 20:35 CET'
+- Model: `claude-opus-5-5`
+- Change: None to source (review only). The external client log confirms the EC crash came on prepare `B032` for `EC_FP_128 ECDSA_SHA Signature_init()` (PCSC 0x1f, then reader gone) after the 128-bit sign/verify measurements, consistent with cumulative leakage from `loadSmallCurve`'s `h = 1` (fixed in `5e95a982`); the earlier progress record that named the measure `B049` was wrong about the APDU.
+- Validation: Reviewed every `choupi/src/native_*.cpp/.hpp` for (1) mbedTLS objects that allocate (mpi, ecp group/point, ecdsa/keypair contexts) and a C++ throw between init and free, (2) the static-table flag misuse, (3) Java Card heap objects allocated per call rather than per instance, (4) growing static caches or raw malloc/new. Also confirmed the mbedTLS exp_mod progress hook (`choupi_mbedtls_exp_mod_progress` → `choupi_vm_cooperative_progress`) cannot throw through mbedTLS frames.
+- Result: No further leak found. AES/DES/SHA/HMAC contexts are stack-only and freed before throws. RSA modExp, CRT modExp, RSA signature, RSA key generation (`ScopedRsaValues`), EC key generation (`ScopedGroup`/`ScopedKeyPair`), EC key agreement and ECDSA free every MPI/point before throwing (array bounds are validated before allocation). Signature/Cipher message buffers grow at most once and are then reused; key workspaces are reused when the size matches; key arrays are allocated only in `buildKey`; no growing static containers. Only `h` on run-time-built curves was wrong, and secp128r1/secp160r1 are the only such curves. Residual notes (not leaks): `ecdsaSignatureSignHash` would leak `r`/`s` only if `encodeDer`'s exact-size `mbedtls_mpi_write_binary` failed (unreachable); symmetric `allocateKeyWorkspace` reuses an array without comparing its clear event (same nit fixed for RSA in `0018e47f`).
+- Decision: The live 07E7 option-1 run (853543d6) remains exposed to the EC_FP_128/160 leak. Hardware validation of `0018e47f`, `f0b277d1`, `b9d8fd73`, `5e95a982` pending on an idle token.
+- Artifacts/logs: none
