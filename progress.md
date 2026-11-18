@@ -31506,3 +31506,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Storage remains below the 90% arena limit in the parseable sample, but the T10 run is invalid because raw serial diagnostics overlap. Live object counts rose as additional families initialized; the campaign has not reached a final tail, so this does not yet prove sustained leakage or plateau.
 - Decision: Keep the client and PC/SC session undisturbed through completion or the 8-hour bound. Do not count this run for T10; repair diagnostic output serialization and repeat the gate. Assess RSA F105 results against the support baseline separately.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+## 2026-11-18 Record option-1 family-growth checkpoint 11
+
+- Step-Id: `20261118-0123-mem01-opt1-growth-checkpoint`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 01:18 CET' - '2026-11-18 01:23 CET'
+- Model: `gpt-6-codex`
+- Change: Rechecked the active option-1 campaign at a later algorithm-family boundary and tightened parsing to require complete HEAP_GC and PRE_CLEANUP records, separating real telemetry from interleaved output.
+- Validation: Client remained live at 265 method groups. The fail-closed headroom checker rejects three malformed PRE_CLEANUP records (lines 9848, 9982, 16502). Among strictly complete records, 914 PRE_CLEANUP samples peak at 981 files / 31,286 of 98,304 bytes (31.83%); last 100 range 697–981 files / 21,752–31,286 bytes. Of 618 complete HEAP_GC samples, live counts reached 201 arrays / 72 instances; last 100 include five family-level count pairs from (153,48) through (201,72). Four RSA Cipher probes report F105 / CryptoException_ILLEGAL_USE; no TEST:FAIL, FAULT, PANIC, NO_RESOURCE or transport marker found.
+- Result: Current storage is below the stop threshold, but its use continues to rise as new algorithm families are loaded; live object counts also rise by family. This is not enough to decide whether counts plateau after the full suite. Telemetry remains invalid for T10 due to overlapping output.
+- Decision: Continue the live campaign without restarting PC/SC; do not count it for T10. Investigate output serialization and post-suite heap plateau before acceptance.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.

@@ -1473,10 +1473,10 @@ During the active 07E7 option-1 run, the original raw serial log contains
 interleaved firmware records. For example, a `HEAP_GC` line ends with
 `instances_live=OUPI:FS_COMPACT`, and the next line begins with a truncated
 `LETION:PRE_CLEANUP`; another `CCID_COMMANDS` record overlaps `RSA_MEMORY`.
-`tools/check-object-deletion-headroom.py` rejects two malformed PRE_CLEANUP
-records (log lines 9848 and 9982). Since this reproduces in the live original,
+`tools/check-object-deletion-headroom.py` rejects three malformed PRE_CLEANUP
+records (log lines 9848, 9982 and 16502). Since this reproduces in the live original,
 it is not a snapshot-copy race. The current run cannot satisfy T10 even though
-the parseable samples peak at 17.60% of the arena.
+the complete parseable samples currently peak at 31,286/98,304 bytes (31.83%).
 
 **Viable control:** none established yet. Preserve the client/serial logs and
 finish the active campaign without restarting PC/SC. Before counting a later
@@ -1485,7 +1485,11 @@ runtime cleanup, filesystem compaction, USB progress and CCID status), then
 build/cycle and verify that telemetry lines remain whole under USB traffic.
 Rerun the fail-closed gate on the entire capture. The client has four `SW=F105`
 `CryptoException_ILLEGAL_USE` RSA Cipher results in this campaign; review them
-against the support baseline separately from transport or memory failures.
+against the support baseline separately from transport or memory failures. At
+265 method groups, complete HEAP_GC records reached 201 live arrays / 72 live
+instances; the final 100 complete samples still vary across 153–201 arrays and
+48–72 instances as families continue loading. This is not yet a post-suite
+plateau measurement.
 
 Evidence: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/serial.log` and `client.log`.
 
