@@ -32031,3 +32031,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Document only; no firmware change.
 - Decision: None new; external results are still pending.
 - Artifacts/logs: none (analysis inputs are the build tree ELF/map).
+
+## 2026-11-18 Option 1 resource checkpoint 2
+
+- Step-Id: `20261118-1825-mem01-option1-checkpoint`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 18:23 CET' - '2026-11-18 18:25 CET'
+- Model: `gpt-6-codex`
+- Change: Updated the MEM-01/T10 status with a new snapshot from the live physical option-1 exploratory campaign.
+- Validation: Re-read the active serial/client files and strictly parsed complete PRE_CLEANUP and HEAP_GC telemetry. Confirmed the existing session remains active. No build, test, flash, or PC/SC operation.
+- Result: 1,510 complete PRE_CLEANUP and 843 HEAP_GC records; storage peak/latest 67,905/98,304 bytes (69.1%), 1,674 files. Latest heap level is 397 arrays / 144 instances, up from 379/138 as additional RSA methods loaded. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors.
+- Decision: Continue the campaign within its 8-hour and 90% bounds. A full-suite persistent-storage plateau and post-initialization object reuse are not established yet; this non-empty-card run remains exploratory, not T8/T10 acceptance.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
