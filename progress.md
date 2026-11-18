@@ -31579,3 +31579,26 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Cleanup does reclaim persistent records, but between-batch growth remains visible and a final store plateau is not established. T10 is invalid for this capture because serial diagnostics interleave. The client remains active under its existing eight-hour bound.
 - Decision: Preserve the active campaign; do not restart PC/SC. After it completes, repair diagnostic serialization and repeat the headroom gate.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+## 2026-11-18 Windows de729d28 option-2 result: fails later, at RSA-CRT-1280 6
+
+- Step-Id: `20261118-0612-win-de729d28-result`
+- Task: `MEM-01 / LONGOP-01`; external request `WIN-MEM01-MAXCRYPTO-DE729D28` (returned)
+- When: '2026-11-18 06:06' - '2026-11-18 06:12'
+- Model: `claude-opus-5-5`
+- Change: Archived the returned Windows run unchanged to `artifacts/results/windows-maxcrypto-20261117-de729d28-deletion/` with `readme.txt` and `SHA256SUMS`, and analysed it statically. Removed the fulfilled request from `.agent/EXT_REQUESTS.md`. No source change.
+- Validation: Parsed the client log (6,004 APDUs, 2,997 B0E2, 465 methods) and the serial log. Compared B0E2 latency per method family with the c050a193 run. Read the JCAlgTest 1.8.4 source (`AlgPerformanceTest.getKeyPairObject`) and the firmware deletion path (`main.cpp` `service_physical_object_deletion_request`, `Heap::hasReachablePersistentTagPrefix`, `persistent_inventory.cpp` `visitUnreachableTag`). No build or hardware run; 07E7 is busy with another session's option-1 campaign.
+- Result:
+  - Old failure gone. RSA-1984 PKCS1 ×50 and all TYPE_RSA_PRIVATE and TYPE_RSA_PUBLIC sizes up to 3072 passed with no PANIC. RSA-4096 prepare returned NO_SUCH_ALGORITHM in 1.3 s; not investigated.
+  - New failure: the card was lost at the 3rd B043 of TYPE_RSA_CRT_PRIVATE 1280 NOPAD `Cipher_doFinal()`. PC/SC reported `0x1f`, then READER_UNAVAILABLE, then SERVICE_STOPPED, so the device left USB (reboot or hang).
+  - Serial does not cover the failure. It is not from our capture script, holds only CCID tasks 6002..6174, and ends mid-line about 7 APDUs (~50 s) earlier. It contains no PANIC or FAULT. Last values: transient RAM free 47,664 B (minimum 43,008 B during RSA), overlay 55,599/98,304 B, 1,452 files.
+  - Live heap grows by design. JCAlgTest caches two key pairs for each RSA type and length (44 slots) and drops them only after SystemException on allocation. Each new CRT size added +18 arrays and +6 instances (297→315→333 / 108→114→120) with arrays_reclaimed=0. This is correct retention, not a leak.
+  - B0E2 latency grows with the cache. Medians: 0.42 s (SHA), 0.81 s (RSA-512), 3.67 s (RSA-3072 to PUBLIC, flat because the key pairs are reused), 6.5 s (CRT-512), 10.3 s (CRT-1024). The last two B0E2 took 11.5 s.
+  - The cost is O(files × live objects). For every applet record, `hasReachablePersistentTagPrefix` walks all live arrays and instances and rebuilds a 129-byte tag each time.
+  - de729d28 is 25–40% slower per step than c050a193 (RSA-1984 private median 2.86 s vs 2.16 s). Likely cause: `getPersistentTag()` now rebuilds the `fs::Tag` from the compact vector on every call. Not measured.
+  - The whole pass (`collectRetainedHeaps` + static roots + reclaim) feeds neither the 15 s watchdog (`watchdog_enable(15000)`) nor USB/CCID time extensions.
+- Decision:
+  - Leading hypothesis, not proven: a timing reset. The unfed deletion pass, approaching 15 s, or the watchdog after a hang. The failing APDU was a B043, not a B0E2, so direct evidence is missing.
+  - Proposed fixes: index live persistent tags once per pass (sorted set) instead of a linear walk per record; return a cached `fs::Tag` reference; feed the watchdog and CCID progress inside long scans.
+  - Before a rerun: reproduce locally with a B031 RSA prepare sweep (fills the cache) while timing B0E2.
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261117-de729d28-deletion/` (`SHA256SUMS` inside).
