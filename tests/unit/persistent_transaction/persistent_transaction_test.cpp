@@ -2522,6 +2522,36 @@ int main() {
   }
 
   {
+    constexpr uint8_t owner = 0x06;
+    jcvm::Heap heap(owner);
+    jcvm::jref_t root = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    const auto enumerate_root = [](jcvm::Heap::ReferenceVisitor visitor,
+                                   void *visitor_context,
+                                   void *root_context) {
+      visitor(*static_cast<jcvm::jref_t *>(root_context), visitor_context);
+      return true;
+    };
+    std::size_t repeated_traces = 0;
+    bool summaries_match = false;
+    {
+      const jcvm::Heap::TraceReuseScope scope;
+      const auto first = heap.traceReachableFrom(enumerate_root, &root);
+      const auto reused = heap.traceReachableFrom(enumerate_root, &root);
+      repeated_traces = jcvm::Heap::takeReusedTraceCount();
+      const auto before_add = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      const auto after_add = heap.traceReachableFrom(enumerate_root, &root);
+      summaries_match = first.complete && reused.complete &&
+                        after_add.complete && first.arrays_reachable == 1 &&
+                        reused.arrays_reachable == 1 &&
+                        after_add.arrays_reachable == 1 &&
+                        before_add.isArray();
+    }
+    expect(repeated_traces == 1 && summaries_match &&
+               jcvm::Heap::takeReusedTraceCount() == 0,
+           "trace_reuse_requires_stable_heap_shape_and_expires_at_scope_end");
+  }
+
+  {
     constexpr uint8_t owner = 0x45;
     constexpr uint8_t source_package = 0x61;
     const uint8_t source_static_tag[] = {0x02, source_package, 0x01};

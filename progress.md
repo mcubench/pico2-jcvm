@@ -31705,6 +31705,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - The PC/SC helper restarts `pcscd.service` unconditionally; it must not run during live campaigns. The user asked about this, and changing the helper is the user's call (it is outside the repo).
 - Artifacts/logs: `artifacts/results/deletion-pass-ab-20261118/07E74C5D7A038DEC/{C-cycle.log,C-flash-retry.log,C-apdu.log,C-serial.log}`, `artifacts/results/windows-package-smoke-853543d6-20261118T062616Z/07E74C5D7A038DEC/`, `artifacts/results/longop01-rsa1984-physical-20261118T062707Z/` (budget stop), `artifacts/results/longop01-rsa1984-physical-20261118T063041Z/` (pass).
 
+## 2026-11-18 Trace reuse invalidation regression 5
+
+- Step-Id: `20261118-1153-mem01-trace-reuse-test`
+- Task: MEM-01 / LONGOP-01 regression coverage
+- When: '2026-11-18 11:49 CET' - '2026-11-18 11:53 CET'
+- Model: `gpt-6-codex`
+- Change: Added a persistent-transaction regression that proves a complete trace is reused for an identical heap/root set, and that adding a heap object invalidates reuse before the scope ends. Also removed a range-loop copy warning and made sibling-tag test mutation explicitly guarded.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; incremental test build emitted no warnings. Firmware build/flash was not repeated because this step changes only host test code; current firmware HEAD `853543d6` was already built and physically validated in the preceding steps.
+- Result: Trace reuse is now directly covered for the stable and changed-heap cases; no firmware behavior changed in this step.
+- Decision: Keep the test-only regression separate from the already validated firmware change; the stable-root trace-reuse optimization is now covered against heap-shape invalidation.
+- Artifacts/logs: `tests/unit/persistent_transaction/persistent_transaction_test.cpp`.
+
 ## 2026-11-18 Token docs: avoid PC/SC refresh and reader listing during campaigns 4
 
 - Step-Id: `20261118-0741-pcsc-campaign-warning`
