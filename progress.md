@@ -31935,3 +31935,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Document only; no firmware change.
 - Decision: The external request `WIN-SIZE-MAXCRYPTO-58B01075` still points at the 58b01075 image without steps 3/4; repackaging awaits user decision.
 - Artifacts/logs: none.
+
+## 2026-11-18 Observe option 1 compaction cycle 9
+
+- Step-Id: `20261118-1732-mem01-compaction-cycle`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 17:29 CET' - '2026-11-18 17:32 CET'
+- Model: `gpt-6-codex`
+- Change: Updated the option-1 resource checkpoint with the next tombstone compaction and the resulting storage decrease.
+- Validation: Polled the live campaign session and inspected complete serial lines around compaction event 9. Strict PRE_CLEANUP and HEAP_GC parsing was used; no build, flash, or PC/SC operation was run.
+- Result: At serial line 34512, compaction reduced the pre-cleanup reading from 1,572 files / 57,478 bytes to 1,318 / 55,016 on the next complete sample; latest is 1,320 / 54,987. Peak is 57,579/98,304 bytes (58.6%). Latest heap samples rose to 343 arrays / 126 instances as another family loaded. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors. The decrease confirms tombstone reclamation; the higher post-compaction baseline versus earlier cycles means suite-wide resource stability remains open.
+- Decision: Continue the bounded option-1 run and track later post-compaction baselines and the final resource high-water marks. The non-empty-card run is exploratory, not T8/T10 acceptance.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
