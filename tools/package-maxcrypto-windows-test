@@ -99,7 +99,7 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
   printf 'jcalgtest_client=1.8.5\n'
   printf 'jcalgtest_client_sha256=%s\n' "${client_sha}"
   printf 'gppro_sha256=%s\n' "${gp_sha}"
-  printf 'physical_flash=not_performed_for_this_exact_uf2 (earlier build from the same firmware sources, differing only in CPLC source id, passed a PC/SC smoke test on a Linux host; see progress.md)\n'
+  printf 'local_validation=recorded_after_packaging_in_.agent/EXT_REQUESTS.md_and_progress.md_for_this_commit (not asserted at package time)\n'
   printf 'windows_test=not_performed\n'
 } > "${stage}/BUILD-PROVENANCE.txt"
 

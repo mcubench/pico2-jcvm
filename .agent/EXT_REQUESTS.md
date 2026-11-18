@@ -1,57 +1,55 @@
 # External validation requests
 
-## WIN-MEM01-MAXCRYPTO-853543D6 — JCAlgTest option 2 on the deletion-pass fix build
+## WIN-SIZE-MAXCRYPTO-58B01075 — JCAlgTest option 2 on the reduced-size image
 
-Created 2026-11-18 07:35 CET. The previous request `WIN-MEM01-MAXCRYPTO-DE729D28` was returned
-(`artifacts/results/windows-maxcrypto-20261117-de729d28-deletion/`): it passed RSA-1984 ×50 but
-lost the card at RSA-CRT-1280 NOPAD, and the board rebooted itself.
+Created 2026-11-18 15:24 CET. This replaces `WIN-MEM01-MAXCRYPTO-853543D6`, which had not been
+returned. This image contains every runtime change of 853543d6 (faster object-deletion pass,
+watchdog feeding and CCID time extensions during long deletion loops, heap GC only on B0E2),
+plus two flash-size fixes. If a Windows run on 853543d6 is already in progress, please finish
+it and return it too; it remains valid evidence for that image.
 
-Cause, reproduced locally: JCAlgTest keeps two RSA key pairs per type and length, so every B0E2
-(object deletion) scanned a growing live set. The pass grew to 10–15 s and ran without feeding
-the 15 s watchdog or sending CCID time extensions.
-
-Normal ARM `max_crypto` image from commit `853543d6` (Arm GNU 14.2.1): object deletion ON, all
+Normal ARM `max_crypto` image from commit `58b01075` (Arm GNU 14.2.1): object deletion ON, all
 debug and trace switches OFF, 0 ms startup wait, erased 1 MiB storage region, no preinstalled
-applet. The build reports `state=dirty` only because of untracked non-source files in the
-working copy; no tracked file differs from `853543d6`.
+applet. The build reports `state=dirty` only because of untracked/uncommitted non-firmware files
+(other session's HANDOFF, packaging script edit); firmware sources equal commit `7adbe5cc`.
 
-Changes since de729d28 (`progress.md` Step-Ids `20261118-0653-deletion-pass-speed`,
-`20261118-0702-deletion-pass-hw-ab`, `20261118-0723-gc-on-request`):
-- The object-deletion pass uses a sorted index of live object tags and reuses one heap trace per
-  batch. On the failing card state, the pass went from 10.2 s to 2.2 s and B0E2 from 10.2 s to
-  3.05 s.
-- Long deletion and heap loops feed the watchdog and send CCID time extensions.
-- The heap is garbage-collected only on JCSystem.requestObjectDeletion (B0E2), no longer after
-  every APDU. The old per-APDU collection cost about 0.9 s per APDU late in the run.
-- New serial lines `OBJECT_DELETION:TIMING …` and `CHOUPI:HEAP_GC_TIMING …` give per-pass timing.
+Changes since 853543d6 (`progress.md` Step-Ids `20261118-1500-romfs-trim`,
+`20261118-1503-cap-load-session-bss`; overview in `docs/review_firmware_size_20261118.md`):
+- The firmware now embeds only the 35,045-byte ROM filesystem (Java Card API + GP packages)
+  instead of the 512 KiB host ROM-mask dump; lookups start at offset 0. Record bytes unchanged.
+- The 66 KB CAP-load session object is zero-initialized in RAM (`.bss`) instead of carrying a
+  flash copy. Values and RAM use unchanged.
+- Firmware 1,016,636 → 460,868 bytes; firmware-window headroom 31.9 KB → 587,708 bytes.
+- These fixes change where the ROM API packages are read from and how the GP LOAD/INSTALL/DELETE
+  session object is initialized. Those paths are what this run should exercise.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-853543d6.uf2)
-- UF2 SHA-256: `d0701dbfe103cb25bad3a05c38efdf8838e38747302a364a00d553b0c4e0fc8a`; size 4,131,328 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-853543d6.zip)
-- ZIP SHA-256: `b38adc3bcdf5459457768dc26336b6525a5fc4326fdc9cc3db47727bdcd84299`; size 18,271,719 bytes.
-- CPLC source identifier `0x853543D636539904`; linked end `0x100f833c` (31,940 bytes of
-  firmware window remain). Built by `tools/package-maxcrypto-windows-test`;
-  `BUILD-PROVENANCE.txt` and `SHA256SUMS.txt` are in the ZIP.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-58b01075.uf2)
+- UF2 SHA-256: `de7e858a726f4752691668dc9cc90ce5c3f1a963f34833a082b7e6a082fa1e51`; size 3,019,776 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-58b01075.zip)
+- ZIP SHA-256: `b4cf2d09ff3b5cf7855f708615dd15dba834086aed18dcf12c6bb76bc8e79e7a`; size 18,252,291 bytes.
+- CPLC source identifier `0x58B01075F6632556`; linked end `0x10070844` (587,708 bytes of firmware
+  window remain). Built by `tools/package-maxcrypto-windows-test`; `BUILD-PROVENANCE.txt` and
+  `SHA256SUMS.txt` are in the ZIP.
 - The ZIP also holds the unchanged JCAlgTest 1.8.4/jc305 CAP, the supplied 1.8.5 client
   (SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`), GPPro and
   the serial capture script.
 - Validation here (Linux, not acceptance):
-  - This exact UF2 was flashed with `tools/flash` to token 07E74C5D7A038DEC.
-  - GPPro listed an empty card (ISD only), installed the unchanged CAP, and the applet was SELECTABLE.
-  - `tools/test-longop01-rsa1984-physical` passed 18/18 APDUs: RSA-1984 PKCS1 ×50 47.9 s,
-    RSA-2048 ×50 48.6 s, no PANIC or FAULT.
-  - The first attempt stopped at the probe's own 180 s budget after a 66.6 s RSA-2048 key
-    generation; this was not a firmware failure.
-  - The same code on 07E7, with the RSA key cache filled through CRT-3072 (beyond both failing
-    runs), kept every B0E2 ≤ 4.9 s with no reset.
-  - Logs: `artifacts/results/windows-package-smoke-853543d6-20261118T062616Z/`,
-    `artifacts/results/longop01-rsa1984-physical-20261118T063041Z/`,
-    `artifacts/results/deletion-pass-ab-20261118/`.
-  - Not tested on Windows; no full option-2 run on this image yet.
+  - `./tools/build arm --profile max_crypto` from HEAD `58b01075`: exit 0, 0 warnings,
+    `FLASH_LAYOUT:PASS remaining=587708`.
+  - This exact UF2 was flashed with `tools/flash` to token F42DD9D07D6D2B07 (storage wiped);
+    serial showed 18× `TEST:PASS choupi_runtime`, `CHOUPI:STATUS sw=9000`, no FAULT/TEST:FAIL.
+    The boot self-test runs the ROM starter package from the trimmed ROM filesystem.
+  - **Not tested here:** GPPro list/install of the CAP and any APDU traffic. F42D is not listed
+    by pcscd, and pcscd could not be refreshed during a live campaign on another token.
+    Step 1 below is therefore the first CAP install on this image.
+  - Logs: `artifacts/results/windows-package-smoke-58b01075-20261118T1424Z/`,
+    `artifacts/results/flash-size-opt-20261118/`.
+  - Not tested on Windows.
 
 Steps:
 1. Unzip and follow `README.md`: verify the UF2 hash, flash through BOOTSEL, confirm the card is
-   empty, and install the CAP explicitly with GPPro.
+   empty (`gp --list` shows only the ISD), install the CAP explicitly with GPPro, and list again.
+   If list or install fails, stop and return the GPPro output and serial log.
 2. Run option `2 -> PERFORMANCE TEST -> 1 (all algorithms)` from the start, with a new card name.
 3. Capture the board's serial output for the whole run with `tools\capture-object-deletion.ps1`
    (115200 baud, never 1200). Set `-Seconds` longer than the run (e.g. 43200); the default is
@@ -60,12 +58,13 @@ Steps:
    running across the reconnect.
 
 Return:
+- GPPro output from step 1 (list before install, install, list after install);
 - the complete client result directory (log, CSV, `already_measured.list`) and the whole serial log;
 - Windows version, reader name and ATR, chip ID, UF2 and client JAR hashes;
 - any USB/PC/SC errors, resets, stalls or timeouts, with their times.
 
 Key questions:
-- Does the run get past RSA-CRT-1280 NOPAD and reach the end of option 2 with no reader loss and
-  no `*** PANIC ***`?
+- Do the empty-card list, CAP install and applet SELECT work on this image?
+- Does option 2 reach the end with no reader loss and no `*** PANIC ***`?
 - Do the `OBJECT_DELETION:TIMING … total_us=` values stay well below 15,000,000 (expected
   about 2–3 s late in the run)?

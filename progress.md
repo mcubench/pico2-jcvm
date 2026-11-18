@@ -31849,3 +31849,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Correction only; no other content changes.
 - Decision: None.
 - Artifacts/logs: none.
+
+## 2026-11-18 Package reduced-size image for external Windows test 3
+
+- Step-Id: `20261118-1525-ext-test-58b01075`
+- Task: external test preparation (user request)
+- When: '2026-11-18 15:22' - '2026-11-18 15:25'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt normal `max_crypto` from HEAD `58b01075` (firmware sources equal `7adbe5cc`) and packaged it with `tools/package-maxcrypto-windows-test`. The script wrote a fixed provenance line claiming that an earlier build of the same sources had passed a PC/SC smoke test, which was false for this package. It now writes `local_validation=recorded_after_packaging_…` and validation is recorded in EXT_REQUESTS/progress instead. `.agent/EXT_REQUESTS.md`: new `WIN-SIZE-MAXCRYPTO-58B01075` replaces the unreturned `WIN-MEM01-MAXCRYPTO-853543D6` (this image contains all of its runtime changes).
+- Validation: `./tools/build arm --profile max_crypto` exit 0, 0 warnings, CPLC `0x58B01075F6632556`, `mode=normal`, `FLASH_LAYOUT:PASS remaining=587708`. `PACKAGE:PASS` (it runs `fixture-path --verify`). The exact empty-card UF2 was flashed with `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial F42DD9D07D6D2B07` (`FLASH:PASS`, storage wiped). An 18 s `tools/monitor` capture showed 18× `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, `CHOUPI:STATUS sw=9000`, no FAULT/TEST:FAIL. The repackaged UF2 is byte-identical to the flashed one.
+- Result: Empty-card UF2 `de7e858a726f4752691668dc9cc90ce5c3f1a963f34833a082b7e6a082fa1e51` (3,019,776 B; previous package 4,131,328 B). ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-58b01075.zip` SHA-256 `b4cf2d09ff3b5cf7855f708615dd15dba834086aed18dcf12c6bb76bc8e79e7a` (18,252,291 B). Not tested: GPPro list/install and any APDU on this image. A bounded `tools/list-readers --pico-only` after the flash listed only 07E7, and pcscd was not refreshed because the 07E7 option-1 campaign is live. F42D now holds this image on an empty card.
+- Decision: Hand the ZIP to the external tester per `WIN-SIZE-MAXCRYPTO-58B01075`. Locally, run GPPro list/install on F42D once it is in PC/SC and no campaign is live.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-58b01075-20261118T1424Z/`; `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-58b01075.uf2` (gitignored); ZIP under `build/external-test/` (gitignored).
