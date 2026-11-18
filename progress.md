@@ -31682,3 +31682,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Garbage RAM objects now live until the applet's next requestObjectDeletion. JCAlgTest requests one before every measurement.
 - Decision: Flash, check on hardware, and package for Windows.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T062227Z/`; `artifacts/logs/object-deletion-vpcd-20261118T0622{13,14,16,18}Z.log`.
+
+## 2026-11-18 Windows package for 853543d6 and empty-card smoke test 12
+
+- Step-Id: `20261118-0735-win-package-853543d6`
+- Task: `MEM-01 / LONGOP-01`; external request `WIN-MEM01-MAXCRYPTO-853543D6`
+- When: '2026-11-18 07:23' - '2026-11-18 07:35'
+- Model: `claude-opus-5-5`
+- Change: Built the normal `max_crypto` image from HEAD `853543d6` and packaged it with `tools/package-maxcrypto-windows-test`. Replaced the returned de729d28 request in `.agent/EXT_REQUESTS.md` with `WIN-MEM01-MAXCRYPTO-853543D6`, which asks for a capture longer than the 3600 s default and no limited-scrollback terminal. Updated HANDOFF.
+- Validation:
+  - On 07E7 with the HEAD image, storage preserved:
+    - The first `tools/cycle choupi` hit a re-enumeration race (`/sys/bus/usb/devices/1-2/serial` missing). `tools/flash --chipid` then passed.
+    - Serial shows heap GC only on B0E2; 16 garbage arrays from B031/B043 were reclaimed at the next B0E2.
+    - SELECT 637 → 20 ms; CRT-1280 measure a steady 1.81 s; B0E2 3.2–4.5 s; deletion pass 2.2–2.35 s.
+  - Package UF2 smoke test on 07E7:
+    - `tools/flash --chipid` the empty-card UF2; GPPro `--list` shows ISD only; `--install` of the unchanged CAP leaves the applet SELECTABLE.
+    - `tools/test-longop01-rsa1984-physical`, first run: RSA-1984 ×50 passed in 48.0 s, then the probe hit its own 180 s budget after a 66.6 s RSA-2048 keygen (exit 124). Keygen time is nondeterministic (user note); this is not a firmware failure.
+    - Second run: 18/18 APDUs, RSA-1984 ×50 47.9 s (RAM 112,040 → minimum 106,864 B), RSA-2048 ×50 48.6 s; no PANIC or FAULT.
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-853543d6.uf2`, SHA-256 `d0701dbfe103cb25bad3a05c38efdf8838e38747302a364a00d553b0c4e0fc8a` (4,131,328 B). ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-853543d6.zip`, SHA-256 `b38adc3bcdf5459457768dc26336b6525a5fc4326fdc9cc3db47727bdcd84299`. Linked end `0x100f833c`, 31,940 B of firmware window left.
+- Decision:
+  - Await the Windows option-2 result.
+  - The PC/SC helper restarts `pcscd.service` unconditionally; it must not run during live campaigns. The user asked about this, and changing the helper is the user's call (it is outside the repo).
+- Artifacts/logs: `artifacts/results/deletion-pass-ab-20261118/07E74C5D7A038DEC/{C-cycle.log,C-flash-retry.log,C-apdu.log,C-serial.log}`, `artifacts/results/windows-package-smoke-853543d6-20261118T062616Z/07E74C5D7A038DEC/`, `artifacts/results/longop01-rsa1984-physical-20261118T062707Z/` (budget stop), `artifacts/results/longop01-rsa1984-physical-20261118T063041Z/` (pass).
