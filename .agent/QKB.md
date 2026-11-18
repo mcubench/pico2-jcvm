@@ -1594,3 +1594,12 @@ not imply persistent-store plateau; continue the run and determine whether the
 store plateaus after the full algorithm suite or continues toward the T10 gate.
 The three malformed serial records (lines 9848, 9982, 16502) still invalidate
 this campaign for T10.
+
+At 329 method groups, a fourth malformed PRE_CLEANUP record appeared at line
+25115. Its expected `available=... files=... bytes=.../98304` telemetry was
+replaced by `free=... end_free=... delta=... samples=... elapsed_us=...`, fields
+from `RSA_MEMORY`. This confirms multiple firmware diagnostics interleave in
+the original serial stream. The current run has 753 strictly complete heap
+records whose last 50 remain 225 arrays / 84 instances, while the last 300
+complete storage samples rose 804→918 files and 20,804→37,953 bytes with
+compaction drops. Global peak is 40,137/98,304 bytes (40.83%).

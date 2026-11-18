@@ -31554,3 +31554,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Heap use plateaus within the current family, but the persistent store continues to grow across the measured methods despite compaction. The full suite is incomplete, so it remains unknown whether this growth plateaus or approaches exhaustion later.
 - Decision: Continue the existing client session without restarting PC/SC. Keep T10 invalid for this run and monitor whether store growth plateaus or crosses the 90% threshold.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+## 2026-11-18 Record option-1 telemetry overlap and continued store growth 10
+
+- Step-Id: `20261118-0245-mem01-opt1-overlap-growth`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 02:40 CET' - '2026-11-18 02:45 CET'
+- Model: `gpt-6-codex`
+- Change: Extended the live option-1 resource trend to 329 method groups and inspected the newly rejected serial record to identify the overlapping diagnostic source.
+- Validation: Client remains active. Strict complete records include 753 HEAP_GC and 1,099 PRE_CLEANUP; last 50 heap counts are exactly 225 arrays / 84 instances. Last 300 storage samples rose 804→918 files and 20,804→37,953 bytes with compaction drops; peak is 1,137 files / 40,137 of 98,304 bytes (40.83%). The headroom checker now rejects four malformed lines: 9848, 9982, 16502 and 25115. Line 25115 contains RSA_MEMORY fields where PRE_CLEANUP fields should be. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or transport failure marker found.
+- Result: Heap count remains stable within the current family, but storage continues to grow. Interleaved firmware diagnostics now demonstrably include RSA_MEMORY output and invalidate the T10 gate.
+- Decision: Continue the full run without restarting PC/SC; keep T10 invalid and repair diagnostic serialization before a later gate run.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
