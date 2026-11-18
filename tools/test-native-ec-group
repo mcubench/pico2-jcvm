@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="${repo_root}/build/tests/unit/native-ec-group"
+
+"${repo_root}/tools/env" cmake -S "${repo_root}/tests/unit/native_ec_group" \
+  -B "${build_dir}"
+"${repo_root}/tools/env" cmake --build "${build_dir}" \
+  --target native_ec_group_test
+# LeakSanitizer must stay enabled: the test exists to catch a group leak.
+ASAN_OPTIONS=detect_leaks=1 "${build_dir}/native_ec_group_test"

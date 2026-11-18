@@ -51,7 +51,11 @@ inline int loadSmallCurve(mbedtls_ecp_group &group, uint16_t bits) {
   group.id = MBEDTLS_ECP_DP_NONE;
   group.pbits = mbedtls_mpi_bitlen(&group.P);
   group.nbits = mbedtls_mpi_bitlen(&group.N);
-  group.MBEDTLS_PRIVATE(h) = 1;
+  // h = 1 tells mbedtls_ecp_group_free() that P/A/B/G/N are static constant
+  // tables and must not be freed. These curves are read into heap-allocated
+  // MPIs above, so h must stay 0 (set by mbedtls_ecp_group_init); otherwise
+  // every load leaks about 160 bytes of RAM.
+  group.MBEDTLS_PRIVATE(h) = 0;
   return 0;
 }
 
