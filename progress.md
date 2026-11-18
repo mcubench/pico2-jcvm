@@ -31518,3 +31518,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Current storage is below the stop threshold, but its use continues to rise as new algorithm families are loaded; live object counts also rise by family. This is not enough to decide whether counts plateau after the full suite. Telemetry remains invalid for T10 due to overlapping output.
 - Decision: Continue the live campaign without restarting PC/SC; do not count it for T10. Investigate output serialization and post-suite heap plateau before acceptance.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+## 2026-11-18 Record option-1 within-family reuse checkpoint 8
+
+- Step-Id: `20261118-0140-mem01-opt1-reuse-checkpoint`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 01:34 CET' - '2026-11-18 01:40 CET'
+- Model: `gpt-6-codex`
+- Change: Rechecked the live option-1 capture after another method-family increase, testing whether cleanup counts remain steady across repeated operations within the current family.
+- Validation: Client session 53642 remains active at 276 method groups. Strict whole-line parsing finds 643 HEAP_GC and 944 PRE_CLEANUP records; the fail-closed T10 gate still rejects three malformed PRE_CLEANUP lines (9848, 9982, 16502). Live heap peak is 213 arrays / 78 instances; last 100 heap samples show five family levels, with repeated samples at the latest level stable. Storage peak is 1,064 files / 35,520 of 98,304 bytes (36.13%); the last 100 samples range 740–1,064 files and 25,218–35,520 bytes. Client results so far include six CryptoException_ILLEGAL_USE and two CryptoException_ILLEGAL_VALUE cases. No runtime fault or transport marker found.
+- Result: Within-family cleanup is stable at the latest heap level, while each new family increases retained counts. The full suite has not completed, so final plateau remains unproven; malformed serial output prevents T10 acceptance.
+- Decision: Continue the live client without PC/SC restart. Preserve T10 as invalid for this run and review crypto exception results after completion.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.

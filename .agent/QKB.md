@@ -1552,3 +1552,19 @@ a full-run plateau or acceptance result; more algorithm families remain.
 Snapshot was copied to `analysis-snapshot-20261118T0029CET-serial.log` and
 `analysis-snapshot-20261118T0029CET-client.log`; live originals remain in
 `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/`.
+
+
+### Option-1 follow-up heap reuse checkpoint — 2026-11-18 01:40 CET
+
+At 276 method groups, strictly complete records contain 643 HEAP_GC samples and
+944 PRE_CLEANUP samples. Live counts reached 213 arrays / 78 instances as new
+families initialized. The final 100 complete HEAP_GC samples include five
+family levels (165/54 through 213/78), and repeated cleanup samples at the
+latest level remain stable. This supports reuse within the current family; it
+does not establish a plateau after the full option-1 suite. Storage peaked at
+1,064 files / 35,520 of 98,304 bytes (36.13%); the last 100 samples range
+740–1,064 files / 25,218–35,520 bytes. The fail-closed headroom check rejects
+three malformed PRE_CLEANUP lines elsewhere in the original serial capture, so
+this campaign remains invalid for T10. It has six `CryptoException_ILLEGAL_USE`
+and two `CryptoException_ILLEGAL_VALUE` records so far; review the completed
+results against the support baseline.
