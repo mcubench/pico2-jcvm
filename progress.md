@@ -31971,3 +31971,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The T7 external prerequisite and safe return evidence are now explicit. The live option-1 run on `07E74C5D7A038DEC` remains undisturbed.
 - Decision: Continue physical option 1; when the VPCD service is restored, verify reader publication and then resume T7 with the required 1.8.5 client.
 - Artifacts/logs: `.agent/EXT_REQUESTS.md`; `.agent/QKB.md`.
+
+## 2026-11-18 Compare option 1 post-compaction baselines 40
+
+- Step-Id: `20261118-1740-mem01-compaction-baselines`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 17:38 CET' - '2026-11-18 17:40 CET'
+- Model: `gpt-6-codex`
+- Change: Added a cycle-by-cycle comparison of the option-1 serial store readings immediately before and after all nine successful compactions.
+- Validation: Parsed complete PRE_CLEANUP lines and successful LOW_WATERMARK_COMPACT events from the active serial log; polled the client session and confirmed it remains live. No tests, flash, or PC/SC operation was performed.
+- Result: Post-compaction readings (files / bytes) were 421/11,716; 403/11,391; 520/15,760; 624/19,884; 831/30,982; 936/38,851; 1,120/46,181; 1,246/51,737; and 1,318/55,016. Latest strict total is 1,350 PRE_CLEANUP / 1,057 HEAP_GC; latest 1,494 files / 56,623 bytes and peak 1,572 / 57,579 (58.6%). The final 50 heap samples remain at 343 arrays / 126 instances. No runtime or transport failure markers.
+- Decision: Store growth continues across different methods even after tombstone compaction. This does not prove repeated-same-method leakage because the option-1 suite is still loading algorithm cases; retain the issue as open until campaign completion and compare the final baseline/high-water mark. Continue within the existing 8-hour and 90% arena limits. This remains exploratory and does not count for T8/T10 acceptance.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
