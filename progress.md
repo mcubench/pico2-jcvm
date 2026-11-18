@@ -32164,3 +32164,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Hypothesis not confirmed: no modulus with MSB 0 in 256 keys. External 853543d6 CSV outcome for private NOPAD methods: plain RSA 7 F105 / 13 ok / 2 none (4096), CRT 1 F105 / 19 ok / 2 none; 8/40 = 20 % overall, consistent with the ~26 % expectation. The plain-vs-CRT imbalance is not significant per method, because the applet reuses one key pair per algorithm/size across `doFinal()` and `init()` (failures cluster per key).
 - Decision: The F105 cause stays as recorded in `20261118-2125-rsa-nopad-f105` (random prepare data ≥ n in the setup NOPAD encryption); no firmware change.
 - Artifacts/logs: `artifacts/logs/rsa-modulus-msb-vpcd-20261118T180743Z.log`
+
+## 2026-11-18 Test the RSA NOPAD F105 mechanism on the emulator 35
+
+- Step-Id: `20261118-2245-rsa-nopad-f105-emulator`
+- Task: `Follow-up to 20261118-2205-rsa-modulus-msb (user: ~50 % suggests a one-bit cause)`
+- When: '2026-11-18 22:10 CET' - '2026-11-18 22:45 CET'
+- Model: `claude-opus-5-5`
+- Change: None committed to source. A synthetic client log (unchanged 1.8.4/jc305 CAP) repeats prepare (`B031`) plus first baseline (`B043`) for RSA-512 NOPAD, plain (`TYPE_RSA_PRIVATE`) and CRT, `doFinal()` and `init()`, 150 times each, on the RP2350-overlay emulator with object deletion. A temporary PC-only print in `modExp` (input/modulus top bytes and the ≥ comparison) was used for one run and then reverted.
+- Validation: Six fresh emulator sessions (one cached key pair per type per session): per-key F105 rate 12–41 %; `doFinal()` and `init()` equal within noise (plain 300/900 vs 250/900, CRT 228/900 vs 242/900). Diagnostic run: 600 setup encryptions, 69 F105, every F105 had input ≥ n and every success input < n (0 inconsistent); key n=0xDF22… expected 12.8 % / observed 14.7 %, key 0xE44F… expected 10.8 % / observed 8.3 %. `generateData` uses `get_rand_32` (target) / `std::random_device` (PC).
+- Result: The F105 mechanism is confirmed and its rate is 1 − n/2^k per key (0–50 %, mean 26 % for our moduli), not a one-bit 50 % effect. Overall hardware rate 20–25 % agrees. Unexplained: on hardware, plain-RSA `init()` methods fail more often than `doFinal()` methods with the same cached key (pooled over four runs 15/37 vs 4/35, P≈0.004 under the shared-key model; the 853543d6 run alone 7/10 vs 0/10, P≈0.0003). The emulator does not reproduce this skew. Card-only differences remain candidates: the 8-record deletion leftover running inside the first measured APDU on 853543d6/de729d28/07E7 images, and the hardware RNG path.
+- Decision: No firmware change. Check whether the skew persists on the a418afef image (leftover removed) from the Windows run or a local idle token; if it does, instrument the setup NOPAD encryption on target.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T18*`
