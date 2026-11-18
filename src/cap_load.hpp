@@ -10,6 +10,11 @@ extern "C" uint8_t choupi_cap_package_applet_aid(
 
 class CapLoadSession {
 public:
+  // Defined out of line (not constexpr): the firmware's ~66 KB global session
+  // is then zero-filled in .bss and its few non-zero defaults are set at
+  // startup. Constant initialization would instead store the whole, almost
+  // entirely zero object image in flash (.data).
+  CapLoadSession() noexcept;
   void reset() noexcept;
   void abortTransfer() noexcept;
 

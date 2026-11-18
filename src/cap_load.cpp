@@ -1089,6 +1089,8 @@ bool find_cap_applet_install_offset(const uint8_t *code, size_t length,
 }
 } // namespace
 
+CapLoadSession::CapLoadSession() noexcept = default;
+
 void CapLoadSession::reset() noexcept {
   load_package_aid_length_ = 0;
   applet_aid_length_ = 0;
