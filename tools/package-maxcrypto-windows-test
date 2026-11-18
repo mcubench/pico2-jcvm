@@ -45,7 +45,8 @@ client="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClie
 client_lib="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/lib"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 capture_ps1="${repo_root}/tools/capture-object-deletion.ps1"
-for f in "${cap}" "${client}" "${gp_jar}" "${capture_ps1}"; do
+run_template="${repo_root}/tools/templates/maxcrypto-windows-run.ps1.in"
+for f in "${cap}" "${client}" "${gp_jar}" "${capture_ps1}" "${run_template}"; do
   [[ -s "${f}" ]] || die "missing input: ${f}"
 done
 [[ -d "${client_lib}" ]] || die "missing client lib directory: ${client_lib}"
@@ -103,6 +104,9 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
   printf 'windows_test=not_performed\n'
 } > "${stage}/BUILD-PROVENANCE.txt"
 
+run_block="$(sed -e "s|@UF2_NAME@|${uf2_name}|g" -e "s|@UF2_SHA@|${uf2_sha}|g" -e "s|@HEAD_SHORT@|${head_short}|g" "${run_template}")"
+printf '%s\n' "${run_block}" > "${stage}/run-test.ps1"
+
 cat > "${stage}/README.md" <<EOF
 # Pico 2 JCVM max_crypto — object deletion ON, empty card
 
@@ -122,31 +126,33 @@ This package is prepared for external Windows testing. Validation of this exact 
 - Host client: supplied JCAlgTest 1.8.5 (\`tools/AlgTestJClient_v1.8.5.jar\`), SHA-256 \`${client_sha}\`
 - GPPro: \`tools/gp.jar\`
 
-## Flash from Windows
+## Run the test from Windows (one block)
 
-1. Put the Pico 2 into BOOTSEL and connect it. Extract this ZIP, open PowerShell in the extracted directory, and verify/copy the image:
+Requirements: Java 8 or newer on `PATH`, Windows PowerShell 5.1 or PowerShell 7, and only this Pico 2 attached as a smart-card reader. If any other reader is present, the client asks for a reader number.
+
+1. Extract this ZIP and open PowerShell in the extracted directory.
+2. Hold BOOTSEL while you connect the Pico 2, so that the \`rp2350\` drive appears.
+3. Set \`\$mode\` in the first lines, then paste the whole block. The same code is in \`run-test.ps1\`.
+
+| \`\$mode\` | JCAlgTest menu equivalent | Duration | How the client is driven |
+|---|---|---|---|
+| \`all\` | \`2 -> PERFORMANCE TEST\` -> \`1 -> All algorithms\` | 5–8 hours | command line: \`-op ALG_PERFORMANCE_STATIC -cardname <name> -fresh -outpath <dir>\` |
+| \`symmetric\` | \`2 -> PERFORMANCE TEST\` -> \`2 -> Only algorithms WITHOUT asymmetric cryptography\` | 1–3 hours | the 1.8.5 client has no switch for this; the block starts it with \`-cardname\` and \`-outpath\` and types \`2\`, \`2\` after each prompt appears in the client log |
+
+The block does the following:
+- Verifies the firmware hash and flashes the empty-card image.
+- Waits for the reader, then finds the chip ID and serial COM port.
+- Starts the serial capture and installs \`applet.cap\` with GPPro.
+- Runs the client and stops the capture when the client exits.
+- Writes \`run-identity.txt\` and packs everything into \`results\\<mode>_<timestamp>.zip\`.
+
+Run each mode on a freshly flashed card. The block reflashes the empty image each time.
 
 \`\`\`powershell
-\$image = '.\\firmware\\${uf2_name}'
-\$expected = '${uf2_sha}'
-\$actual = (Get-FileHash \$image -Algorithm SHA256).Hash.ToLowerInvariant()
-if (\$actual -ne \$expected) { throw "Firmware hash mismatch: \$actual" }
-\$volume = Get-Volume | Where-Object FileSystemLabel -eq 'RPI-RP2' | Select-Object -First 1
-if (-not \$volume -or -not \$volume.DriveLetter) { throw 'RPI-RP2 BOOTSEL drive not found' }
-Copy-Item \$image -Destination (\$volume.DriveLetter + ':\\')
+${run_block}
 \`\`\`
 
-2. Wait for \`Pico2 JCVM CCID 0\`. The flashed card should be empty. Install the unchanged CAP explicitly with GPPro:
-
-\`\`\`powershell
-java -jar .\\tools\\gp.jar --reader 'Pico2 JCVM CCID 0' --list
-java -jar .\\tools\\gp.jar --reader 'Pico2 JCVM CCID 0' --install .\\applet.cap
-java -jar .\\tools\\gp.jar --reader 'Pico2 JCVM CCID 0' --list
-\`\`\`
-
-3. Run \`tools\\AlgTestJClient_v1.8.5.jar\` with the supplied CAP and select option \`2 -> PERFORMANCE TEST\` (1–3 hours) or \`1 -> All algorithms\` (5–8 hours). The 1.8.5 JAR hash above is authoritative; report it with results. Capture the board's serial output using \`tools\\capture-object-deletion.ps1\` and keep the whole file: it contains the \`OBJECT_DELETION:PRE_CLEANUP\` lines.
-
-Return the complete client result directory and serial log, Windows version, reader name and ATR, chip ID, firmware/JAR hashes, and any USB/PC/SC disconnects, resets, stalls, exceptions or timeouts. Keep each physical device's results separate.
+Return each \`results\\<mode>_<timestamp>.zip\` (client CSV/log, \`serial.log\`, GPPro output, \`run-identity.txt\`), and report any USB/PC/SC disconnects, resets, stalls, exceptions or timeouts. Keep each physical device's results separate.
 
 The project's all-zero GPPro test key is for educational testing only.
 EOF

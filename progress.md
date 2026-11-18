@@ -32188,3 +32188,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: All active tooling and instructions select the 1.8.5/jc305 CAP. The jCardSim 1.8.5-client reference CSV was generated with the 1.8.4 CAP; support rows are expected to match (only perf code changed), noted in its README.
 - Decision: New campaigns (option 1/2, Windows packages) use this CAP; previous results with the 1.8.4 CAP stay historical. The already-built a418afef Windows ZIP still contains the 1.8.4 CAP; rebuild the package if the external test should use 1.8.5.
 - Artifacts/logs: `artifacts/logs/rsa-modulus-msb-vpcd-20261118T195816Z.log`
+
+## 2026-11-18 Windows package: single-block PowerShell run with CLI-driven JCAlgTest 25
+
+- Step-Id: `20261118-2125-win-run-block`
+- Task: user request (rebuild external package; one copy-paste block; `rp2350` BOOTSEL label; command-line JCAlgTest)
+- When: '2026-11-18 21:00' - '2026-11-18 21:25'
+- Model: `claude-opus-5-5`
+- Change: New `tools/templates/maxcrypto-windows-run.ps1.in`, filled in by `tools/package-maxcrypto-windows-test` (UF2 name/hash, HEAD). It is shipped as `run-test.ps1` and embedded in the package README as one `& { ... }` block, so a failure stops the whole paste. The block: hash check → flash to the volume labelled `rp2350` → wait for reader `Pico2 JCVM CCID 0` with GPPro → chip ID and COM port from PnP (`VID_2E8A&PID_0009`) → background serial capture → GPPro install of `applet.cap` → client → stop capture → `run-identity.txt` and results ZIP. `tools/capture-object-deletion.ps1` gains an optional `-StopFile`, so the capture ends with the client and still prints its summary and headroom verdict. Client CLI, read from the 1.8.5 JAR (`Args`, `PerformanceTesting.testPerformance`, `selectTargetReader` bytecode and `--help` text):
+  - `-op ALG_PERFORMANCE_STATIC` runs non-interactively with both symmetric and asymmetric enabled, exactly menu `2 -> 1 All algorithms` (5–8 h).
+  - There is no switch for `2 -> 2` (without asymmetric, 1–3 h). The block therefore starts the client with `-cardname`/`-outpath` only and writes `2` after each prompt appears in the unbuffered `ALGTEST_log_*.log`. A single pipe would not work: the client opens two `Scanner`s on stdin and the first buffers both answers.
+  - With exactly one reader the reader is chosen automatically; with several the client prompts for a reader number.
+- Validation: `bash -n` on the packager; local client run (`-simulator -cardname probe -outpath DIR`, stdin `2`) confirmed both `CHOOSE` prompts are written to `DIR/ALGTEST_log_*.log`. PowerShell is not available here, so the block was reviewed by reading only; it has not been executed on Windows.
+- Result: The package README now has one copy-paste block covering both test modes.
+- Decision: Rebuild max_crypto from this HEAD and repackage (next step).
+- Artifacts/logs: none

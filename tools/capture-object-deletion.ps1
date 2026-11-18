@@ -1,7 +1,9 @@
 param(
   [Parameter(Mandatory = $true)] [string] $Port,
   [int] $Seconds = 3600,
-  [string] $OutFile = ".\object-deletion-serial.log"
+  [string] $OutFile = ".\object-deletion-serial.log",
+  # Optional: stop early (and still summarize) once this file exists.
+  [string] $StopFile = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,6 +31,7 @@ try {
   Write-Host "SERIAL_CAPTURE:START port=$Port seconds=$Seconds file=$OutFile"
   $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
   while ([DateTime]::UtcNow -lt $deadline) {
+    if ($StopFile -and (Test-Path -LiteralPath $StopFile)) { break }
     try {
       $line = $serial.ReadLine().TrimEnd([char]13)
       $writer.WriteLine($line)
