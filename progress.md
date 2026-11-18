@@ -31874,3 +31874,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 910 complete PRE_CLEANUP records; peak 1,178 files / 41,094 of 98,304 bytes (41.76%), latest 1,056 files / 40,085 bytes. 658 complete HEAP_GC records; the last 15 all report 235 arrays / 90 instances. One collection reclaimed 10 arrays while returning to the same live count. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD error markers. Option 1 is still active and suite-wide store stability is unproven.
 - Decision: Keep the existing campaign running within its 28,800-second bound. Do not count this non-empty-card run toward T8/T10 acceptance; preserve the identified token and separate logs.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/client.log`, `serial.log`; `.agent/HANDOFF.md`.
+
+## 2026-11-18 Exploratory option 1 resource trend checkpoint 10
+
+- Step-Id: `20261118-1720-mem01-opt1-growth-checkpoint`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 17:15 CET' - '2026-11-18 17:20 CET'
+- Model: `gpt-6-codex`
+- Change: Added an updated checkpoint from the live option 1 run on the non-empty 07E7 token, separating live heap counts from persistent-store growth.
+- Validation: Confirmed the campaign client session remains live; strictly parsed complete PRE_CLEANUP and HEAP_GC records from the serial capture and checked runtime/transport failure markers. No build, flash, or PC/SC operation was run.
+- Result: 1,182 PRE_CLEANUP and 889 HEAP_GC records. Latest persistent store: 1,348 files / 50,437 of 98,304 bytes; peak: 1,375 files / 50,601 bytes. In the last 300 samples, bytes rose 38,957→50,437 and files 956→1,348 despite 72 downward compaction steps. The last 100 HEAP_GC samples alternate only between 289 arrays / 108 instances and 307 / 114. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors. Suite-wide plateau remains unproven.
+- Decision: Continue the existing campaign to its bound. This shows heap-level reuse while persistent-store usage continues to increase across methods; it is exploratory evidence only because the card was not empty, and does not satisfy T8/T10.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/client.log`, `serial.log`.
