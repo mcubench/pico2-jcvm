@@ -1442,6 +1442,32 @@ Artifacts: `artifacts/results/option2-acceptance-20261117T2113Z/07E74C5D7A038DEC
 headroom summary from `attempt4/serial.log`.
 
 
+## Fixed-image physical option-2 completion and long AES enumeration APDU — 2026-11-18
+
+The fixed normal `max_crypto` image (`853543d6`, deletion ON/debug OFF) completed
+the unchanged-client option-2 performance run on chip `07E74C5D7A038DEC` after
+resuming with the same-cardname `already_measured.list`. The 1.8.5 JAR hash was
+`b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; the
+unchanged 1.8.4/jc305 CAP hash was
+`cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`. The
+client reported `Testing complete`, 610 seconds for the resumed portion, zero
+errors, zero reconnects and zero human resets. Combined serial telemetry passes
+the 90% headroom gate with 2,953 samples and peak use of 707 files / 15,148 of
+98,304 bytes (15.409%). Over the last 100 samples, live arrays stayed at 115,
+instances varied between 3 and 30, and raw storage alternated between 398 files
+/ 11,379 bytes and 554 files / 12,527 bytes. No continued array growth was
+observed after family setup. This is exploratory physical evidence, not T8
+acceptance until T7 VPCD passes.
+
+Several repeated `B0 A5 00 00 16` calls in the `SWALGS SWAlgs_AES()` portion
+took 117.192–117.288 seconds and returned `9000`; serial telemetry showed CCID
+time extensions (105 per observed long call) and the card stayed connected.
+This was a legitimate long synchronous APDU, not a transport failure. A client
+log line with no response for roughly two minutes must be correlated with the
+complete serial capture before stopping the campaign. Keep the suite timeout at
+the planned bound and do not use an APDU timeout shorter than this measured
+latency. Artifacts: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/`.
+
 ## PC/SC helper refresh interrupts a live JCAlgTest run; VPCD reader is unavailable — 2026-11-18
 
 The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper restarts

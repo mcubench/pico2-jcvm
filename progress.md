@@ -31777,3 +31777,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Documentation only.
 - Decision: none.
 - Artifacts/logs: none.
+
+## 2026-11-18 Fixed-image physical option-2 completion 35
+
+- Step-Id: `20261118-1313-mem01-opt2-complete`
+- Task: MEM-01 T8 exploratory option 2; T10 telemetry observation
+- When: '2026-11-18 12:38 CET' - '2026-11-18 13:13 CET'
+- Model: `gpt-6-codex`
+- Change: Continued the fresh normal-image option-2 campaign on chip `07E74C5D7A038DEC` by resuming with the unchanged client's same-cardname `already_measured.list`. No firmware source changed. Firmware was normal `max_crypto` from `853543d6`, object deletion ON/debug OFF, UF2 SHA-256 `89a744ca32134e838c38f9ff020ea7080305d76a0113757939432e2b9545d770`. The supplied client JAR was 1.8.5 SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CAP was unchanged 1.8.4/jc305 SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+- Validation: Client menu `2 -> PERFORMANCE TEST -> 2`, exact 07E7 reader confirmed, resumed list accepted, client exit status 0 and `Testing complete`. Resumed segment reported 610 s, zero errors, zero reconnects and zero human reset interventions. Combined the time-ordered serial captures and ran `./tools/check-object-deletion-headroom.py`: `HEADROOM:PASS samples=2953 peak_files=707 peak_bytes=15148/98304 peak_percent=15.409 threshold=90%`. No malformed PRE_CLEANUP samples or `TEST:FAIL`, `FAULT`, `PANIC`, `NO_RESOURCE`, or `SCARD_E_` markers. Build and flash were intentionally skipped because no firmware source changed and the identified board already had the verified image.
+- Result: Across the final 100 cleanup samples, storage alternated between 398 files / 11,379 bytes and 554 files / 12,527 bytes; arrays remained 115 while live instances varied between 3 and 30. Global storage peak was 707 files / 15,148 bytes (15.409%). Repeated `SWALGS SWAlgs_AES()` APDUs took 117.192–117.288 s and returned `9000`; serial telemetry showed 105 CCID time extensions per observed long call. The client completed without reconnects. This supports bounded memory/storage after family setup for option 2; it is exploratory physical evidence, not T8 acceptance.
+- Decision: T7 VPCD is still blocked by missing `Virtual PCD 00 00`; keep T7, T8 and T10 open. Next, attempt option 1 on a different identified token if available, without disturbing another campaign.
+- Artifacts/logs: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/{attempt1,attempt2,combined-serial.log}`.
