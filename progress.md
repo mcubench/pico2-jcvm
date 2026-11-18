@@ -31898,3 +31898,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: firmware binary 460,868 → 441,316 B (−19,552); headroom 587,708 → 607,260 B. UF2 SHA-256 `52c36035c32309591f4979726f9c7f1a7584b88218e1fd296fad6d6cfb1b6fca` (development cycle image, storage preserved; F42D card still empty). Format-visible difference: `%p` now prints 8 uppercase hex digits without `0x` (only in VM_PROGRESS, CLASS_CAST/INTERFACE_CHECK and OBJECT_DELETION:POST_APDU pointer fields; no tool parses them). **Not tested:** the OBJECT_DELETION telemetry lines that use fprintf only fire on APDU traffic; F42D is still not in PC/SC and pcscd cannot be refreshed during the 07E7 campaign.
 - Decision: Keep. Next: mbedTLS user config (unused curves, SHA-3).
 - Artifacts/logs: `artifacts/results/flash-size-opt-20261118/step3-fprintf-wrap/` (build.log, cycle.log, cycle-choupi-20261118T162633Z.log, build-provenance.txt).
+
+## 2026-11-18 Trace option 1 tombstone compaction 8
+
+- Step-Id: `20261118-1729-mem01-tombstone-trend`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 17:24 CET' - '2026-11-18 17:29 CET'
+- Model: `gpt-6-codex`
+- Change: Recorded source and serial evidence explaining the rising persistent file count during option 1: unreachable records become tombstones and are compacted at a threshold.
+- Validation: Inspected `src/object_deletion_policy.hpp`, target compaction path in `choupi/src/main.cpp`, and the live serial log. The 256-tombstone trigger is documented in source, and eight successful `OBJECT_DELETION:LOW_WATERMARK_COMPACT` events appear in the log. The campaign client session was polled and remains live.
+- Result: 1,263 strict PRE_CLEANUP and 970 HEAP_GC records; latest 1,406 files / 53,241 of 98,304 bytes, peak 53,305. After the last logged compaction (serial line 31815), the next PRE_CLEANUP was 1,246 files / 51,737 bytes; 160 erased records have since accumulated, below the 256 threshold. Last 50 heap samples are all 325 arrays / 120 instances. No runtime or transport failure markers. The post-compaction live baseline is still trending across distinct algorithms, so suite-wide plateau is not yet established.
+- Decision: Continue the active run and compare the next post-compaction baseline; do not treat intermediate tombstone growth as evidence of an unbounded leak, and do not claim the final retained baseline is stable yet. The non-empty-card run remains exploratory and is not T8/T10 acceptance.
+- Artifacts/logs: `src/object_deletion_policy.hpp`, `choupi/src/main.cpp`, `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`.
