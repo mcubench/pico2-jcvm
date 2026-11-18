@@ -31825,3 +31825,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Firmware end 0x10080c14 → 0x10070844. `FLASH_LAYOUT:PASS remaining=587708 bytes`. `pico2_choupi.bin` is now 460,868 bytes (1,016,636 before both steps). UF2 SHA-256 `5c4d068d0116c877e4373bbebd72c836e21e1a899702a993a8802c1d713c2a38`, normal `max_crypto`, dirty tree at HEAD `e582a6e3` (other session's files only). Not tested: physical GP LOAD/INSTALL/DELETE, the code paths that use `cap_load_session`. A bounded `tools/list-readers --pico-only` after the reflash listed only 07E7, so F42D is still absent from PC/SC. pcscd was not refreshed because the 07E7 option-1 campaign is live.
 - Decision: Both flash fixes are done and boot-validated on F42D. When no campaign is live and F42D (or another token) is in PC/SC, run a physical CAP load/install/delete check (e.g. the unchanged JCAlgTest CAP install) on this image. If link-time optimization is ever enabled, re-check that `cap_load_session` stays in `.bss`.
 - Artifacts/logs: `artifacts/results/flash-size-opt-20261118/step2-cap-load-session-bss/`.
+
+## 2026-11-18 Firmware size review document 6
+
+- Step-Id: `20261118-1519-firmware-size-review-doc`
+- Task: firmware flash-size reduction documentation (user request)
+- When: '2026-11-18 15:13' - '2026-11-18 15:19'
+- Model: `claude-opus-5-5`
+- Change: Added `docs/review_firmware_size_20261118.md`. It covers the size state before the fixes (component breakdown, both defects), the two fixes (`e582a6e3`, `7adbe5cc`), and the measured state after, validation, open items and remaining opportunities.
+- Validation: Re-measured the image now in `build/arm` (UF2 `5c4d068d…`, built from the step-2 sources) with the same map attribution. Component sums are 461,139 B vs 460,868 B real binary (alignment residual). Section sizes come from `arm-none-eabi-size -A`. No build, flash or hardware step was run for this documentation step.
+- Result: After-state breakdown: ROM filesystem 35,045 B (was 524,300), GP/card management + CCID 25,495 B (was 91,995), other components unchanged. `.data` 10,800 B, `.bss` 324,444 B, static RAM 335,532 B (unchanged).
+- Decision: Pending: physical GP LOAD/INSTALL/DELETE check on this image once a token is in PC/SC and no campaign is live.
+- Artifacts/logs: `docs/review_firmware_size_20261118.md`.
