@@ -32007,3 +32007,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 `a0b46b33b48f13ffe9cb48debeddce7bad46fb1ba8911e0fc0ff28618b3fe6e9` (2,938,880 B). ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-4bded540.zip` SHA-256 `be4b32f66c30bf78d3a282c8ce48116e487e9bf7c35c54456a0615bcbc7afa73` (18,218,734 B). Not tested: GPPro list/install, APDU traffic, ECC, HMAC, object deletion (F42D not in PC/SC; no pcscd refresh while the 07E7 campaign is live; reader list not re-run).
 - Decision: Hand the ZIP to the external tester per `WIN-SIZE-MAXCRYPTO-4BDED540`. F42D now holds this image on an empty card.
 - Artifacts/logs: `artifacts/results/windows-package-smoke-4bded540-20261118T1648Z/` (build.log, package.log, flash.log, mon.log, build-provenance.txt); UF2 under `artifacts/firmware/` and ZIP under `build/external-test/` (gitignored).
+
+## 2026-11-18 Record option 1 compaction cycle eleven 5
+
+- Step-Id: `20261118-1805-mem01-compaction-cycle11`
+- Task: `MEM-01 T10 exploratory evidence`
+- When: '2026-11-18 18:02 CET' - '2026-11-18 18:05 CET'
+- Model: `gpt-6-codex`
+- Change: Recorded the eleventh tombstone compaction in the option-1 physical run and its watchdog timing.
+- Validation: Confirmed the JCAlgTest process remains live; parsed the PRE_CLEANUP, object-deletion summary, filesystem compaction and timing lines around serial line 39691. No build, flash or PC/SC operation.
+- Result: 257 tombstones were compacted; filesystem files fell 1,695→1,438 and bytes 64,661→62,273. The deletion+compaction APDU took 10.325 s, below the 15 s watchdog. Next PRE_CLEANUP was 1,442 / 62,321. Relative to cycle 10's post-compaction level (1,376 / 58,357), retained storage is up 62 files / 3,916 bytes during RSA-1984 methods. Peak is 64,853/98,304 bytes (66.0%) and 1,695 files. Latest 50 heap records hold at 379 arrays / 138 instances. No runtime/transport failure markers.
+- Decision: Continue the existing run. Compaction bounds tombstone accumulation and stayed below the watchdog, but retained storage still grows as new algorithms are exercised; assess the terminal suite baseline before determining whether the reuse concern is resolved. This non-empty-card run is exploratory only.
+- Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
