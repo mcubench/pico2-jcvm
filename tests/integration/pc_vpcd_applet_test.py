@@ -449,9 +449,9 @@ def run_emulator(
                     bytes.fromhex("B0E1000000"),
                     "JCAlgTest GETVERSION APDU",
                 )
-                if version[:-2] != b"1.8.4_jc305":
+                if version[:-2] != b"1.8.5_jc305":
                     raise RuntimeError(
-                        "GETVERSION response is not exactly 1.8.4_jc305: "
+                        "GETVERSION response is not exactly 1.8.5_jc305: "
                         f"{version.hex().upper()}"
                     )
 

@@ -16,7 +16,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[2]
 CAP_PATH = fixture_path("jcalgtest.cap", ROOT)
 EXPECTED_CAP_SHA256 = (
-    "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad"
+    "fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb"
 )
 APPLET_AID = bytes.fromhex("4A43416C675465737431")
 PROCESS_METHOD_OFFSET = 0x3E63

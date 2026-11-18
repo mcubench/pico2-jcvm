@@ -2,9 +2,9 @@
   "schema": 1,
   "active": {
     "jcalgtest": {
-      "version": "1.8.4",
+      "version": "1.8.5",
       "java_card": "3.0.5",
-      "expected_version": "1.8.4_jc305"
+      "expected_version": "1.8.5_jc305"
     },
     "javacard-api": {
       "snapshot": "provided-20261107",
@@ -20,7 +20,8 @@
   },
   "provenance": "User-supplied local distribution; bytes preserved, no download or CAP modification. Upstream notices retained where supplied; no new license assertion. The API client differs from the JCAlgTest 1.8.4 client.",
   "assets": {
-    "jcalgtest.cap": "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap",
+    "jcalgtest.cap": "tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap",
+    "jcalgtest.cap.1.8.4": "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap",
     "jcalgtest.client": "tests/fixtures/external/jcalgtest/1.8.4/client/AlgTestJClient_v1.8.4.jar",
     "api.caps": "tests/fixtures/external/javacard-api/provided-20261107/caps",
     "api.client": "tests/fixtures/external/javacard-api/provided-20261107/client/AlgTestJClient.jar",
@@ -41,6 +42,12 @@
       "sha256": "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad",
       "size": 131595,
       "provided_path": "AlgTest_JavaCard/AlgTest_v1.8.4_jc305.cap"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap",
+      "sha256": "fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb",
+      "size": 131590,
+      "provided_path": "inbox/AlgTest_v1.8.5_jc305.cap (user-built 2026-11-18)"
     },
     {
       "path": "tests/fixtures/external/jcalgtest/1.8.4/client/AlgTestJClient_v1.8.4.jar",

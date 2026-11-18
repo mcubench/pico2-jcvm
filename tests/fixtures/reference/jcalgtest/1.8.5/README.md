@@ -17,3 +17,7 @@ The 1.8.4-generated reference remains preserved in the sibling `1.8.4/`
 directory as historical evidence. Comparing yes/no algorithm statuses between
 the two simulator CSVs yields 4,406 rows each and no differences; performance
 timings are expected to vary between runs.
+
+This reference predates the 1.8.5/jc305 CAP (2026-11-18). That CAP changes
+only performance-test code and the version string, so algorithm support rows
+are expected to match; regenerate it if a support comparison shows otherwise.

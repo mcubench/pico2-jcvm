@@ -10,12 +10,12 @@ wrapper builds the ARM image before flashing the CHOUPI image (RISC-V is out of 
 Replace the example serials and reader names below with the identities from
 that authorized discovery. Keep per-board results separate.
 
-`tools/run-jcalgtest` resolves the JCAlgTest 1.8.4 / jc305 CAP through
+`tools/run-jcalgtest` resolves the JCAlgTest 1.8.5 / jc305 CAP through
 `tests/fixtures/manifest.json`. Its default client is still the historical 1.8.4
 one, so **always pass the 1.8.5 client explicitly**:
 `--client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar`.
 Add this to every `run-jcalgtest` command below. The independent API suite
-client must not be substituted. The applet reports 1.8.4_jc305. Output CSVs
+client must not be substituted. The applet reports 1.8.5_jc305. Output CSVs
 have been seen to report an embedded client version of 1.8.4 even with the
 1.8.5 JAR, so record the JAR SHA-256 as the authoritative client identity.
 
@@ -51,10 +51,10 @@ reader_name='REPLACE_WITH_EXACT_BASE_PCSC_READER_NAME'
 # power removal; its output explicitly leaves that check unverified.
 PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
 
-# Install the supplied JCAlgTest 1.8.4 JC305 CAP (skip if already installed).
+# Install the supplied JCAlgTest 1.8.5 JC305 CAP (skip if already installed).
 PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
   --reader "$reader_name" \
-  --install tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap
+  --install tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap
 
 # Retrieve the extended algorithm support report.
 PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name" \

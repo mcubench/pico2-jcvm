@@ -162,8 +162,9 @@ provenance. Building with `PICO2_ENABLE_OBJECT_DELETION=0` is diagnostic.
 - Every result records the image SHA-256, chip ID and reader name.
 
 **INV-26 Reference test inputs.**
-- Use the unchanged supplied JCAlgTest 1.8.4/jc305 CAP with the 1.8.5 host
-  client, identified by its JAR SHA-256.
+- Use the unchanged user-supplied JCAlgTest 1.8.5/jc305 CAP (user directive
+  2026-11-18; SHA-256 `fa64582e…b48fb`) with the 1.8.5 host client,
+  identified by its JAR SHA-256. 1.8.4/jc305 CAP results are historical.
 - Supplied CAP and JAR bytes are never modified.
 
 **INV-27 Acceptance definition.**

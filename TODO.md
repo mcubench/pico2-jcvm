@@ -3,7 +3,7 @@
 Updated: 2026-11-18 (fixed-image physical option 2 completed as exploratory; VPCD T7 remains blocked on host service). Active backlog for `plan.md`. Implementation and acceptance
 are separate: keep tasks open while required validation is missing. Follow
 `AGENTS.md` for native API boundaries, unchanged fixtures, build/hardware gates
-and commits. Use the unchanged JCAlgTest **1.8.4 / jc305 CAP** with the **1.8.5 host client** for all new runs (see `AGENTS.md`; older entries below that say "1.8.4 client" are historical);
+and commits. Use the unchanged JCAlgTest **1.8.5 / jc305 CAP** (user-supplied 2026-11-18) with the **1.8.5 host client** for all new runs (see `AGENTS.md`; older entries below that say "1.8.4 client" or "1.8.4/jc305 CAP" are historical);
 run `./tools/fixture-path --verify` before acceptance. 1.8.2 results are historical.
 
 ## Priorities and evidence

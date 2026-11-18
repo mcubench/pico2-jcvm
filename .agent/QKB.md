@@ -789,7 +789,7 @@ Evidence: [E300](QKB_INDEX.md#e300), [E072](QKB_INDEX.md#e072), [E079](QKB_INDEX
 
 ## Acceptance evidence — version, backend and completion matter
 
-Use the unchanged supplied JCAlgTest **1.8.4 / jc305 CAP** with the **1.8.5 host client** (explicit `--client-jar`; the catalog default is still 1.8.4) and `tools/fixture-path --verify`. Entries below that mention running "the unchanged 1.8.4 client" are historical; do not repeat them with that client.
+Use the unchanged supplied JCAlgTest **1.8.5 / jc305 CAP** (since 2026-11-18; earlier entries citing the 1.8.4 CAP are historical) with the **1.8.5 host client** (explicit `--client-jar`; the catalog default is still 1.8.4) and `tools/fixture-path --verify`. Entries below that mention running "the unchanged 1.8.4 client" are historical; do not repeat them with that client.
 The supplied Java Card API validation suite is separate. Legacy 1.8.2 reports stay historical.
 Record exact image/profile/hash, chip/reader identity, ordered commands, exit status, duration and cleanup result.
 An API heartbeat, isolated probe, incomplete CSV or timed-out matrix is not full-suite acceptance.

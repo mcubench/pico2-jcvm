@@ -7,7 +7,7 @@ profile's enabled capabilities plus the current asymmetric selections.
 ## Files
 
 The generated archive `build/external-test/pico2-jcvm-windows-test.zip`
-contains both UF2 images, the upstream AlgTest 1.8.4 CAP, GPPro, the JCAlgTest
+contains both UF2 images, the user-supplied AlgTest 1.8.5/jc305 CAP, GPPro, the JCAlgTest
 1.8.5 host client, expected support CSVs, a CSV comparator, and this
 run sheet. Check `SHA256SUMS.txt` before use.
 
@@ -57,7 +57,7 @@ if ($listing -match '(?m)^(APP|PKG):') {
 }
 
 # Upload the unchanged upstream CAP only after the empty-card check.
-java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.4_jc305.cap
+java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.5_jc305.cap
 if ($LASTEXITCODE -ne 0) { throw 'GPPro LOAD/INSTALL failed' }
 java -jar .\tools\AlgTestJClient.jar -op ALG_SUPPORT_EXTENDED -fresh -cardname "CHOUPI_symm_crypto" -outpath .\results\symm_crypto
 if ($LASTEXITCODE -ne 0) { throw 'JCAlgTest client failed' }
@@ -102,7 +102,7 @@ known comparator result as a failed package or alter the CAP to hide it.
 
 This package ships the JCAlgTest **1.8.5** host client (SHA-256
 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`) as
-`tools\AlgTestJClient.jar`, with applet 1.8.4_jc305. Older clients do not
+`tools\AlgTestJClient.jar`, with applet 1.8.5_jc305. Older clients do not
 deliver the card-reset/object-deletion APDU. The client needs the adjacent
 tools/lib directory. The CSV's embedded client version is unreliable; report
 the JAR hash.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Assemble the external Windows test package for the current normal max_crypto
-# ARM build: empty-card UF2, unchanged JCAlgTest 1.8.4/jc305 CAP, supplied 1.8.5
+# ARM build: empty-card UF2, pinned user-supplied JCAlgTest 1.8.5/jc305 CAP, supplied 1.8.5
 # client, GPPro, capture script, README, provenance and checksums.
 #
 # Usage: ./tools/package-maxcrypto-windows-test
@@ -94,7 +94,7 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
   printf 'empty_card_uf2_sha256=%s\n' "${uf2_sha}"
   printf 'compiler=%s\n' "${compiler}"
   printf 'telemetry=OBJECT_DELETION:PRE_CLEANUP (serial), 90%% arena gate checked by tools/check-object-deletion-headroom.py\n'
-  printf 'jcalgtest_cap=1.8.4_jc305_unchanged\n'
+  printf 'jcalgtest_cap=1.8.5_jc305_unchanged\n'
   printf 'jcalgtest_cap_sha256=%s\n' "${cap_sha}"
   printf 'jcalgtest_client=1.8.5\n'
   printf 'jcalgtest_client_sha256=%s\n' "${client_sha}"
@@ -118,7 +118,7 @@ This package is prepared for external Windows testing. Validation of this exact 
 - Profile: \`max_crypto\`; build mode: \`normal\`; object deletion: ON; debug/trace: OFF
 - CPLC source identifier: \`${cplc_id}\`
 - Linked firmware end: \`${linked_end_hex}\`; remaining firmware window: ${remaining} bytes
-- CAP: unchanged upstream JCAlgTest 1.8.4 / jc305 (\`applet.cap\`), SHA-256 \`${cap_sha}\`
+- CAP: unchanged user-supplied JCAlgTest 1.8.5 / jc305 (\`applet.cap\`), SHA-256 \`${cap_sha}\`
 - Host client: supplied JCAlgTest 1.8.5 (\`tools/AlgTestJClient_v1.8.5.jar\`), SHA-256 \`${client_sha}\`
 - GPPro: \`tools/gp.jar\`
 

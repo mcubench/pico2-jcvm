@@ -16,7 +16,7 @@ class FixtureCatalogTest(unittest.TestCase):
         self.assertGreater(paths.verify(), 48)
         self.assertNotEqual(paths.fixture_path("jcalgtest.client").read_bytes(),
                             paths.fixture_path("api.client").read_bytes())
-        self.assertIn("1.8.4", str(paths.fixture_path("jcalgtest.cap")))
+        self.assertIn("1.8.5", str(paths.fixture_path("jcalgtest.cap")))
 
     def test_corruption_and_path_escape(self):
         with tempfile.TemporaryDirectory() as directory:

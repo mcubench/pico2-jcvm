@@ -78,4 +78,4 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
 
 ## Active validation inputs
 
-The user authorized full testing-data migration on 7 November 2026. The JCAlgTest 1.8.4 / jc305 CAP with the 1.8.5 host client is the selected baseline (client per `AGENTS.md`), superseding historical 1.8.2 instructions. Use `tools/fixture-path` and `tests/fixtures/manifest.json`. Test code is under `tests/`; the supplied original tree is archived, not discarded. Preserve legacy results as historical evidence and require new version-specific acceptance.
+The user authorized full testing-data migration on 7 November 2026. The JCAlgTest 1.8.5 / jc305 CAP (user-supplied 2026-11-18; 1.8.4 CAP results are historical) with the 1.8.5 host client is the selected baseline (CAP and client per `AGENTS.md`), superseding historical 1.8.2 instructions. Use `tools/fixture-path` and `tests/fixtures/manifest.json`. Test code is under `tests/`; the supplied original tree is archived, not discarded. Preserve legacy results as historical evidence and require new version-specific acceptance.

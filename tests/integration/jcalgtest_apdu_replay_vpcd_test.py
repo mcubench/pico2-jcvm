@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tests/integration"))
 import pc_vpcd_multipackage_test as vpcd  # noqa: E402
 from cap_load_code import ensure_algtest_load_code  # noqa: E402
+from fixture_paths import fixture_path  # noqa: E402
 
 APPLET_AID = bytes.fromhex("4A43416C675465737431")
 ISD_AID = vpcd.ISD_AID
@@ -221,7 +222,7 @@ def run(args: argparse.Namespace) -> int:
                 scp.authenticate()
                 vpcd.load_package(scp, parsed_code, package_aid)
                 vpcd.install_applet(scp, package_aid, APPLET_AID, APPLET_AID)
-                print("REPLAY:INSTALL upstream JCAlgTest 1.8.4/jc305 complete",
+                print("REPLAY:INSTALL JCAlgTest 1.8.5/jc305 complete",
                       flush=True)
             else:
                 select_applet = (bytes.fromhex("00A404000A") + APPLET_AID +
@@ -331,7 +332,7 @@ def main() -> int:
     stop_group = parser.add_mutually_exclusive_group(required=True)
     stop_group.add_argument("--stop-after-apdu")
     stop_group.add_argument("--stop-after-apdu-index", type=int)
-    parser.add_argument("--cap", type=Path, default=ROOT / "tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap")
+    parser.add_argument("--cap", type=Path, default=fixture_path("jcalgtest.cap", ROOT))
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--start-at-apdu", type=int, default=1)
     parser.add_argument("--resume-card", type=Path,

@@ -22,8 +22,8 @@ mkdir -p "$build_dir"
 printf 'PHYSICAL:IDENTITY chip_id=%s reader=%s\n' "$chip_id" "$reader_name" | tee "$client_log"
 printf 'FIRMWARE_SHA256 %s\n' \
   "$(sha256sum "${repo_root}/build/arm/pico2_choupi.uf2" | awk '{print $1}')" | tee -a "$client_log"
-printf 'JCALGTEST_CAP_VERSION 1.8.4_jc305 SHA256 %s\n' \
-  "$(sha256sum "${repo_root}/tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap" | awk '{print $1}')" | tee -a "$client_log"
+printf 'JCALGTEST_CAP_VERSION 1.8.5_jc305 SHA256 %s\n' \
+  "$(sha256sum "$("${repo_root}/tools/fixture-path" jcalgtest.cap)" | awk '{print $1}')" | tee -a "$client_log"
 printf 'APDU_SEQUENCE_SOURCE_JAR_SHA256 b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3\n' | tee -a "$client_log"
 
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/monitor" \

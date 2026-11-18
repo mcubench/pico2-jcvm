@@ -33,8 +33,11 @@ runtime, native API implementation, or external CAP/JAR/runner bytes changed.
 `tests/fixtures/manifest.json` records 83 files with byte counts and SHA-256
 hashes: 78 supplied suite/legacy assets, two simulator references and three
 additional historical reference CSVs. No input was downloaded.
-JCAlgTest 1.8.4 CAP SHA-256:
+JCAlgTest 1.8.4 CAP SHA-256 (historical):
 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
+On 2026-11-18 the user supplied the JCAlgTest 1.8.5/jc305 CAP, now the active
+baseline (SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`,
+`tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap`).
 
 The versioned (historical 1.8.4) JCAlgTest client and independent API client
 have different hashes and are not interchangeable. New runs use the 1.8.5 host

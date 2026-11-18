@@ -6,7 +6,9 @@ Repository-owned applet/fixture sources live in `fixtures/local/`.
 
 `fixtures/external/` contains immutable, supplied validation assets:
 
-- JCAlgTest **1.8.4** CAP, Java Card Classic 3.0.5, with its historical 1.8.4 client,
+- JCAlgTest **1.8.5** CAP (`external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap`,
+  Java Card Classic 3.0.5, user-supplied 2026-11-18), the only CAP to use for new runs;
+  the historical 1.8.4 CAP and 1.8.4 client (evidence only),
   and the supplied **1.8.5 host client**, which is the only client to use for new runs
   (see "Worker instruction" below).
 - The independent Java Card API validation suite, snapshot
@@ -22,7 +24,7 @@ Run `tools/run-api-test --list` to inspect the supplied API suite's plan.
 Keep input CAP/JAR bytes unchanged. Extracted LOAD components, compiled tests,
 generated test CAPs and card images belong under ignored `build/` directories.
 Logs, measurements and result CSVs belong under `artifacts/`; old results keep
-their original applet version and do not establish 1.8.4 acceptance.
+their original applet version and do not establish 1.8.5 CAP acceptance.
 Legacy 1.8.2 assets/reference CSVs are explicitly under
 `fixtures/external/jcalgtest/legacy/1.8.2/`, never selected by default.
 
@@ -34,8 +36,9 @@ source, older artifact, or result is discarded. See
 
 Simulator/card comparison input lives under `fixtures/reference/`. Both 1.8.4-
 and 1.8.5-client simulator references are preserved under versioned directories;
-new comparisons use the 1.8.5-generated reference with the unchanged 1.8.4_jc305
-applet. The CSV self-reported client version is not authoritative; identify the
+new comparisons use the 1.8.5-client reference (generated with the 1.8.4_jc305
+applet; the 1.8.5 CAP changes only performance-test code and the version
+string, not algorithm support probing). The CSV self-reported client version is not authoritative; identify the
 host JAR by its pinned hash in the fixture manifest.
 The original distribution is preserved at
 `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
@@ -47,7 +50,9 @@ Use the supplied 1.8.5 host client for every new JCAlgTest run: option 1 (all
 algorithms), option 2 (performance), and short or focused, VPCD and physical
 runs. The historical 1.8.4 client is evidence only. Its
 `INS_CARD_RESET` did not reach the card (negative APDU length bug), so object
-deletion was never triggered. Keep the unchanged 1.8.4/jc305 CAP. Select the client explicitly:
+deletion was never triggered. Use the unchanged user-supplied 1.8.5/jc305 CAP
+(user directive 2026-11-18), which `./tools/fixture-path jcalgtest.cap` now resolves; the
+1.8.4/jc305 CAP (`jcalgtest.cap.1.8.4`) is historical evidence only. Select the client explicitly:
 
 ```bash
 PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest \

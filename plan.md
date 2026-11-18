@@ -10,7 +10,7 @@ Oct 9, 2026 · @PetrS
 
 
 
-The port is done when the supplied JCAlgTest v1.8.4 applet CAP is loaded onto a Raspberry Pi Pico 2 running CHOUPI, and the supplied JCAlgTest v1.8.5 host client, run on a PC, completes the "supported algorithms" test and writes a results file. The plan gets there in phases, and each phase leaves a runnable, testable state behind.
+The port is done when the supplied JCAlgTest v1.8.5 applet CAP is loaded onto a Raspberry Pi Pico 2 running CHOUPI, and the supplied JCAlgTest v1.8.5 host client, run on a PC, completes the "supported algorithms" test and writes a results file. The plan gets there in phases, and each phase leaves a runnable, testable state behind.
 
 
 
@@ -48,9 +48,9 @@ Acceptance criteria:
 
 \- \[ ] AC1: `gp --list` (GlobalPlatformPro) on the host lists the Pico 2 card's ISD over PC/SC, without custom drivers on Linux and Windows.
 
-\- \[ ] AC2: The supplied JCAlgTest v1.8.4 CAP (supported-algorithms applet, Java Card version variant compatible with CHOUPI) installs via `gp --install`, and is selectable by AID.
+\- \[ ] AC2: The supplied JCAlgTest v1.8.5 CAP (supported-algorithms applet, Java Card version variant compatible with CHOUPI) installs via `gp --install`, and is selectable by AID.
 
-\- \[ ] AC3: The JCAlgTest v1.8.5 host client's (with the v1.8.4 CAP) "supported algorithms" mode runs to completion against the Pico 2 with no transport errors.
+\- \[ ] AC3: The JCAlgTest v1.8.5 host client's (with the v1.8.5 CAP) "supported algorithms" mode runs to completion against the Pico 2 with no transport errors.
 
 \- \[ ] AC4: The produced results CSV matches what CHOUPI really implements, cross-checked against a reference simulator run (jCardSim) for the same algorithm list.
 
@@ -120,29 +120,29 @@ The toolchain is also stale. It needs Rust nightly-2020-03-10 with `xargo`, and 
 
 
 
-\## What JCAlgTest v1.8.4 needs from the card
+\## What JCAlgTest v1.8.5 needs from the card
 
 
 
-Use the supplied `tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap` selected by `tests/fixtures/manifest.json` (CAP baseline selected by the user on 7 November 2026), run with the supplied 1.8.5 host client `tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar` passed explicitly via `--client-jar` (user directive 2026-11-14; the catalog's 1.8.4 client is historical only). Inspect this CAP's header/imports and verify its hash before acceptance; old 1.8.2 sources, results and compatibility conclusions do not establish 1.8.4 behavior.
+Use the user-supplied `tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap` selected by `tests/fixtures/manifest.json` (CAP baseline selected by the user on 18 November 2026, superseding the 1.8.4/jc305 CAP selected on 7 November 2026), run with the supplied 1.8.5 host client `tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar` passed explicitly via `--client-jar` (user directive 2026-11-14; the catalog's 1.8.4 client is historical only). Inspect this CAP's header/imports and verify its hash before acceptance; old 1.8.2 sources, results and compatibility conclusions do not establish 1.8.5 CAP behavior.
 
 The independent Java Card API CAP suite is retained under `tests/fixtures/external/javacard-api/provided-20261107/`. Test entrypoints remain in `tools/`; implementations and data are described in `tests/README.md`.
 
-| Property | Value in the supplied v1.8.4 artifact | CHOUPI today |
+| Property | Value in the supplied v1.8.5 artifact (identical to v1.8.4 in these properties) | CHOUPI today |
 
 | --- | --- | --- |
 
-| CAP file format | Must be read from the supplied v1.8.4 CAP before linking | CHOUPI currently parses format 2.1 |
+| CAP file format | Must be read from the supplied v1.8.5 CAP before linking | CHOUPI currently parses format 2.1 |
 
 | Package AID | `4A43416C6754657374` ("JCAlgTest") | Needs a package registry and an on-card loader |
 
 | Applet AID selected by client | `4A43416C675465737431` ("JCAlgTest1"), legacy fallback `6D7970616330303031` | No applet registry or SELECT handling |
 
-| Imports | Must be read from the supplied v1.8.4 CAP before linking | Verify exact AIDs and versions against the ROM mask |
+| Imports | Must be read from the supplied v1.8.5 CAP before linking | Verify exact AIDs and versions against the ROM mask |
 
 | Size | CAP file is about 129 KB; component size must be measured by the CAP parser | Target reports 2 MiB flash; confirm partition budget before loading |
 
-| Transient RAM | Measure from the v1.8.4 applet path before setting the acceptance budget | Transient arrays not implemented |
+| Transient RAM | Measure from the v1.8.5 applet path before setting the acceptance budget | Transient arrays not implemented |
 
 | Extended APDU | Not used (the `ExtendedLength` import is commented out) | Not needed |
 
@@ -492,7 +492,7 @@ Implement the Issuer Security Domain natively in C++ inside the JCRE. This is fa
 
 
 
-Exit criterion: `gp --list`, `gp --install tests/fixtures/external/jcalgtest/1.8.4/AlgTest_v1.8.4_jc305.cap` and `gp --delete` succeed on the PC build through vpcd, then on the Pico 2 through CCID.
+Exit criterion: `gp --list`, `gp --install tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap` and `gp --delete` succeed on the PC build through vpcd, then on the Pico 2 through CCID.
 
 
 

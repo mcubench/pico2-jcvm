@@ -102,7 +102,7 @@ The compatibility target is **Java Card Classic 3.0.5**, with the following cove
 
 Supported marks the listed implemented path, not full specification conformance. Exact cryptographic capability flags are in [the profile configuration](config/javacard-support.json); these declarations do not prove that every API method or workload passes.
 
-Full specification conformance and complete per-method coverage are not established. The JCAlgTest **1.8.4 / jc305 CAP with the 1.8.5 host client** is the acceptance baseline; full acceptance remains open, including persistent-storage exhaustion, diagnostic object deletion, and completion of the physical all-algorithms and performance campaigns. Partial campaign results are not suite passes. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
+Full specification conformance and complete per-method coverage are not established. The JCAlgTest **1.8.5 / jc305 CAP with the 1.8.5 host client** is the acceptance baseline; full acceptance remains open, including persistent-storage exhaustion, diagnostic object deletion, and completion of the physical all-algorithms and performance campaigns. Partial campaign results are not suite passes. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)
@@ -111,4 +111,4 @@ Full specification conformance and complete per-method coverage are not establis
 
 ## Test organization
 
-See [tests/README.md](tests/README.md) for unit/integration/hardware tests and immutable external fixtures. Verify supplied inputs with `./tools/fixture-path --verify`. JCAlgTest (1.8.4 CAP, 1.8.5 client) and the independent API CAP suite have separate pinned clients; historical 1.8.2 evidence is not current acceptance.
+See [tests/README.md](tests/README.md) for unit/integration/hardware tests and immutable external fixtures. Verify supplied inputs with `./tools/fixture-path --verify`. JCAlgTest (1.8.5 CAP, 1.8.5 client) and the independent API CAP suite have separate pinned clients; historical 1.8.2 evidence is not current acceptance.

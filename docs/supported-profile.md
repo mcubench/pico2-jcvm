@@ -63,7 +63,8 @@ with VPCD results. The full API contract still needs broader per-method tests,
 and acceptance still needs repeatable clean-flash runs, Windows PC/SC
 validation, and actual USB power-cycle recovery.
 
-The selected acceptance baseline is now the JCAlgTest 1.8.4 / jc305 CAP run
-with the 1.8.5 host client. Earlier
+The selected acceptance baseline is now the JCAlgTest 1.8.5 / jc305 CAP
+(user-supplied 2026-11-18; 1.8.4 / jc305 results are historical) run with the
+1.8.5 host client. Earlier
 1.8.2 results and exclusions above require revalidation against that CAP;
 this migration does not establish firmware acceptance for 1.8.4.

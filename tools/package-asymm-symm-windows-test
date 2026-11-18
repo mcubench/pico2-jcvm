@@ -29,8 +29,8 @@ client_hash="$(sha256sum "${client_jar}" | cut -d ' ' -f 1)"
 
 # Keep the upstream exercise CAP and its provenance unchanged.
 cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
-[[ "${cap_hash}" == "cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad" ]] || \
-  die "the supplied upstream JCAlgTest CAP hash changed: ${cap_hash}"
+[[ "${cap_hash}" == "fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb" ]] || \
+  die "the pinned JCAlgTest 1.8.5 CAP hash changed: ${cap_hash}"
 
 rm -rf -- "${package_dir}"
 mkdir -p "${package_dir}/firmware" "${package_dir}/applet" \
@@ -49,7 +49,7 @@ for profile in symm_crypto asymm_crypto; do
 done
 
 install -m 0644 "${cap}" \
-  "${package_dir}/applet/AlgTest_v1.8.4_jc305.cap"
+  "${package_dir}/applet/AlgTest_v1.8.5_jc305.cap"
 install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
 install -m 0644 "${client_jar}" "${package_dir}/tools/AlgTestJClient.jar"
 # client/lib is a relative symlink to the 1.8.4 dependencies; dereference it.

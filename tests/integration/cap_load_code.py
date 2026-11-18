@@ -21,7 +21,7 @@ COMPONENTS = (
 
 
 def build_algtest_load_code(repo_root: Path) -> Path:
-    """Extract the upstream AlgTest 1.8.4 CAP's ordered load components.
+    """Extract the pinned JCAlgTest CAP (1.8.5_jc305)'s ordered load components.
 
     Preserve the CAP archive unchanged. Descriptor is required because uploaded
     method execution uses its method-body ranges.
