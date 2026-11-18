@@ -1,11 +1,11 @@
 # Handoff — next steps only
 
-Updated: 2026-11-18 11:57 CET.
+Updated: 2026-11-18 12:27 CET.
 
 ## Current run
 - Physical exploratory JCAlgTest option 2 is active on chip `07E74C5D7A038DEC`, exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 00 00`. Client log shows menu `2 -> PERFORMANCE TEST -> 2` and `Used reader` confirms that exact token. This is not T8 acceptance until VPCD T7 passes.
 - Firmware is normal `max_crypto`, source commit `853543d6`, object deletion ON/debug OFF. Firmware UF2 SHA-256 `89a744ca32134e838c38f9ff020ea7080305d76a0113757939432e2b9545d770`; empty-card UF2 SHA-256 `d0701dbfe103cb25bad3a05c38efdf8838e38747302a364a00d553b0c4e0fc8a`. Fresh empty flash verified, GPPro showed ISD only, unchanged 1.8.4/jc305 CAP installed and selectable. Client JAR 1.8.5 SHA-256 `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`; CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.
-- At 11:58 CET: 62 method groups, 445 clean PRE_CLEANUP and TIMING records. Peak 607 files / 12,517 of 98,304 bytes; latest 378 / 10,466. Last 100 samples range 348–607 files / 10,061–12,517 bytes. Live heap rose from 30 arrays / 16 instances at startup to 103 / 22; last 100 samples hold at 103 / 22. No malformed telemetry, TEST:FAIL, FAULT, PANIC, NO_RESOURCE or PC/SC errors. Watch through completion or the 14,400 s wrapper bound; stop early on >90% storage or any failure/transport marker.
+- At 12:27 CET: 262 method groups, 3,872 APDU responses, 2,267 clean PRE_CLEANUP/TIMING records. Peak 707 files / 15,148 of 98,304 bytes; latest 617 / 13,151. No malformed telemetry, TEST:FAIL, FAULT, PANIC, NO_RESOURCE or PC/SC errors. Live heap has risen from 30 arrays / 16 instances at startup to 111 / 26; the last 100 samples hold at 111 / 26. This is still family setup; no full-suite plateau claim. Watch through completion or the 14,400 s wrapper bound; stop early on >90% storage or any failure/transport marker.
 - Serial session is finite at 15,000 s. Artifacts: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/attempt1/`.
 - JCAlgTest wrote `pico2_maxcrypto_20261118_07E74C5D7A038DEC_fixed_option2____PERFORMANCE_SYMMETRIC_DATAFIXED__already_measured.list` at repository root. Preserve it while the client is active; move it into the attempt folder after exit.
 

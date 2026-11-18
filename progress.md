@@ -31729,6 +31729,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Continue through completion or the 14,400-second bound, stopping on >90% arena use, runtime fault, client failure or transport loss. Do not restart/list PC/SC during the run. After completion, run the full headroom checker and preserve any malformed diagnostics as invalid T10 evidence.
 - Artifacts/logs: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/attempt1/`; source image `build/arm/pico2_choupi.uf2` SHA-256 `89a744ca32134e838c38f9ff020ea7080305d76a0113757939432e2b9545d770`; empty-card UF2 SHA-256 `d0701dbfe103cb25bad3a05c38efdf8838e38747302a364a00d553b0c4e0fc8a`.
 
+## 2026-11-18 Fixed-image option-2 resource envelope checkpoint 12
+
+- Step-Id: `20261118-1227-mem01-opt2-checkpoint2`
+- Task: MEM-01 T8 exploratory option-2 monitoring
+- When: '2026-11-18 11:58 CET' - '2026-11-18 12:27 CET'
+- Model: `gpt-6-codex`
+- Change: Continued the same isolated physical option-2 campaign on 07E7 without disturbing PC/SC. Refreshed TODO and HANDOFF with the later method-family/resource checkpoint.
+- Validation: Re-read the live client and original serial log. At 262 method groups and 3,872 APDU responses, strict parsing found 2,267 complete PRE_CLEANUP/TIMING records and no malformed records. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or PC/SC transport marker. Client and serial sessions remain live; no final status or result CSV is claimed.
+- Result: Global storage peak increased modestly to 707 files / 15,148 of 98,304 bytes (15.40%); latest sample was 617 / 13,151. The live heap rose from 30 arrays / 16 instances at startup to 111 / 26 as more API families loaded, then remained at 111 / 26 for the last 100 samples. Store samples continue to show cleanup drops and rises between methods. This is intermediate, bounded headroom evidence; suite-wide plateau remains unproven.
+- Decision: Continue to client completion or the 14,400 s bound; stop on >90%, failure or transport loss. T7 remains blocked on `HOST-VPCD-PCSC-01`, so the physical campaign stays exploratory.
+- Artifacts/logs: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/attempt1/{campaign-identity.txt,client.log,serial.log}`.
+
 ## 2026-11-18 Token docs: avoid PC/SC refresh and reader listing during campaigns 4
 
 - Step-Id: `20261118-0741-pcsc-campaign-warning`
