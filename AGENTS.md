@@ -25,8 +25,9 @@ Java Card runtime boundary:
   `./tools/cycle arm` / `riscv` flash only the **smoke-test** firmware. Never use
   them to validate JCVM behavior; their `CYCLE:PASS` says nothing about the VM.
 - Capture finite serial output: `./tools/monitor --seconds 8`
-- List PC/SC readers (bounded): `./tools/list-readers [--pico-only]`. Do not use
-  `pcsc_scan`; it has hung at high CPU and produced unbounded output.
+- List PC/SC readers (bounded): `./tools/list-readers [--pico-only]`, only when
+  necessary (see the PC/SC warning below). Do not use `pcsc_scan`; it has hung
+  at high CPU and produced unbounded output.
 - Diagnose the host setup: `./tools/doctor`
 
 For the long JCAlgTest client campaigns, run `2 -> PERFORMANCE TEST` (1–3
@@ -53,7 +54,10 @@ Safety constraints:
 - Do not use `sudo` from an autonomous coding cycle except exceptions listed in section 'sudo exception'.
 - Do not modify files outside this repository.
 - Do not flash unless the ARM build currently passes without errors or warnings.
-- Physical board availability is volatile. Never treat an old "boards disconnected / no hardware work" note as standing. Before hardware work, refresh access with the approved helper, list readers with `./tools/list-readers`, and use whatever identified board is available (failover pool).
+- Physical board availability is volatile. Never treat an old "boards disconnected / no hardware work" note as standing. Before hardware work, identify the available boards by chip ID with `PICO2_HOST_USB_ACCESS=1 lsusb -v -d 2e8a:0009` (`iSerial` is the chip ID) and use whatever identified board is available (failover pool). The exact PC/SC reader name is `Pico 2 CHOUPI CCID [JCVM CCID] (<CHIPID>) 00 00`.
+- **Warning: PC/SC refresh and reader listing can abort other campaigns.** Several sessions share one pcscd. Before any PC/SC step, check for live runs (`pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'` and `.agent/HANDOFF.md`).
+  - The approved helper `sudo -n /usr/local/sbin/pico2-pcsc-reader` always restarts `pcscd.service`, dropping every open PC/SC session on every token. Never run it while any campaign (yours or another session's) is live. Run it only when a token is on USB but missing from PC/SC and nothing is running. pcscd normally picks up re-enumerated tokens by hotplug.
+  - Use `./tools/list-readers` only when a reader name must be confirmed, not as a routine step.
 - Physical tokens (several may be attached): identify each by its 16-hex chip ID and select by that ID, never by reader index or bus number. Keep using one working token for development and tests as long as it is usable; switch only when it is unavailable (record the failure and the switch in `progress.md`). Use two tokens only for a deliberate comparison or to parallelise independent long runs, stating which. Never mix evidence across tokens. Procedure: `reference/physical-token-access/SKILL.md`; roster: `.agent/QKB.md`.
 
 ## sudo exceptions
@@ -63,6 +67,8 @@ sudo -n /usr/local/sbin/pico2-pcsc-reader
 The agent runs this helper itself, with elevated execution, in exactly this form
 (no `PICO2_HOST_USB_ACCESS=1` prefix or other additions). It is not a user-only
 step.
+It restarts `pcscd.service` and aborts all live PC/SC sessions; run it only when
+needed and never during a live campaign (see Safety constraints).
 
 ## .git/index.lock read-only failure 
 When git add or git commit fails because the sandbox

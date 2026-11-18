@@ -31726,3 +31726,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 
 - Step-Id: `20261118-0825-time-correction`
 - Change: The record for Step-Id `20261118-0741-pcsc-campaign-warning` gives "07:38–07:42", which was estimated, not measured. `date` at commit time read 08:24:53 CET; the start time was not measured. The duration in that heading (4 minutes) is likewise unverified.
+
+## 2026-11-18 AGENTS.md: PC/SC refresh and reader listing only when necessary 1
+
+- Step-Id: `20261118-0827-agents-pcsc-warning`
+- Task: user directive 2026-11-18 (update AGENTS.md too)
+- When: '2026-11-18 08:27:02' - '2026-11-18 08:27:40' (from `date`)
+- Model: `claude-opus-5-5`
+- Change: In `AGENTS.md`:
+  - Replaced "before hardware work, refresh access with the approved helper, list readers" with chip-ID identification via `lsusb -v -d 2e8a:0009` and the exact reader name pattern.
+  - Added a Safety warning: the helper always restarts `pcscd.service` and aborts every live PC/SC campaign. Check `pgrep` and HANDOFF first. Never run the helper during a live campaign. Use `tools/list-readers` only when necessary.
+  - Noted the same in the sudo-exception section and the reader-listing command line.
+- Validation: Inspection; consistent with `.agent/SESSION_CONTINUITY.md`, the QKB entry and `reference/physical-token-access/SKILL.md` (Step-Id `20261118-0741-pcsc-campaign-warning`).
+- Result: Documentation only.
+- Decision: none.
+- Artifacts/logs: none.
