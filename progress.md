@@ -31995,3 +31995,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: At serial line 37161, compaction reduced storage from 1,632 files / 60,751 bytes to 1,376 / 58,357. Peak is 60,895/98,304 bytes (62.0%). This post-compaction baseline is 58 files / 3,341 bytes above cycle 9. The last 50 heap samples stay at 361 arrays / 132 instances. No TEST:FAIL, FAULT, PANIC, NO_RESOURCE or SCARD errors.
 - Decision: Keep the campaign running within its eight-hour and 90% limits. The periodic reduction is real, but baseline growth across method families remains unresolved until the client completes. The run is exploratory and does not qualify for T8/T10 acceptance.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
+
+## 2026-11-18 Repackage external Windows test with fprintf and Mbed TLS reductions 2
+
+- Step-Id: `20261118-1747-ext-test-4bded540`
+- Task: external test preparation (user request)
+- When: '2026-11-18 17:47' - '2026-11-18 17:49'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt normal `max_crypto` from HEAD `4bded540` (firmware sources equal `e17d25dc`; commits since `8d603b96` touch only EXT_REQUESTS/TODO/progress) and packaged it with `tools/package-maxcrypto-windows-test`. `.agent/EXT_REQUESTS.md`: `WIN-SIZE-MAXCRYPTO-4BDED540` replaces the unreturned `WIN-SIZE-MAXCRYPTO-58B01075`, adds EC/HMAC and telemetry questions; the other session's `HOST-VPCD-PCSC-01` is unchanged.
+- Validation: build exit 0, 0 warnings, `mode=normal`, CPLC `0x4BDED5401CDE0EC4`, `FLASH_LAYOUT:PASS remaining=628180`; `PACKAGE:PASS`. The exact empty-card UF2 was flashed with `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial F42DD9D07D6D2B07` (`FLASH:PASS`, storage wiped); an 18 s `tools/monitor` capture showed 18× `TEST:PASS`, `TEST:SUMMARY pass=1 fail=0`, 18× `CHOUPI:STATUS sw=9000`, no FAULT/TEST:FAIL/PANIC. ZIP provenance carries no local-validation claim.
+- Result: Empty-card UF2 `a0b46b33b48f13ffe9cb48debeddce7bad46fb1ba8911e0fc0ff28618b3fe6e9` (2,938,880 B). ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-4bded540.zip` SHA-256 `be4b32f66c30bf78d3a282c8ce48116e487e9bf7c35c54456a0615bcbc7afa73` (18,218,734 B). Not tested: GPPro list/install, APDU traffic, ECC, HMAC, object deletion (F42D not in PC/SC; no pcscd refresh while the 07E7 campaign is live; reader list not re-run).
+- Decision: Hand the ZIP to the external tester per `WIN-SIZE-MAXCRYPTO-4BDED540`. F42D now holds this image on an empty card.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-4bded540-20261118T1648Z/` (build.log, package.log, flash.log, mon.log, build-provenance.txt); UF2 under `artifacts/firmware/` and ZIP under `build/external-test/` (gitignored).
