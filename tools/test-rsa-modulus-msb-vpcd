@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Generate RSA key pairs on the PC emulator (KeyPair ALG_RSA and ALG_RSA_CRT,
+# 512/736/1024/1984 bits) and check every modulus has its full byte length and
+# most significant bit set. Emulator only; no PC/SC or USB access.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+per_case="${RSA_MODULUS_SAMPLES:-32}"
+[[ "${per_case}" =~ ^[1-9][0-9]?$ ]] || die "RSA_MODULUS_SAMPLES must be 1..99"
+
+"${repo_root}/tools/build-pc" --profile max_crypto >/dev/null
+"${repo_root}/tools/build-resource02-crypto-probe" >/dev/null
+
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${repo_root}/artifacts/logs/rsa-modulus-msb-vpcd-${stamp}.log"
+mkdir -p "${repo_root}/artifacts/logs"
+args=()
+for algorithm in 1 2; do
+  for size in 0 1 2 3; do
+    for ((i = 0; i < per_case; ++i)); do
+      args+=(--apdu "80380${algorithm}0${size}00" --expect-apdu-status 9000)
+    done
+  done
+done
+"${repo_root}/tools/env" python3 "${repo_root}/tests/integration/pc_vpcd_applet_test.py" \
+  --passes 1 --emulator "${repo_root}/build/choupi-pc/choupi" \
+  --cap-code "${repo_root}/build/resource02-crypto-probe/load-code.bin" \
+  --rom-mask "${repo_root}/build/choupi-pc/flash" --apdu-timeout 600 \
+  --applet-aid A00000015100020401 --package-id 57 "${args[@]}" > "${log}" 2>&1 || \
+  die "probe run failed; see ${log}"
+
+"${repo_root}/tools/env" python3 - "${log}" "${per_case}" <<'PY'
+import re, sys
+log, per_case = sys.argv[1], int(sys.argv[2])
+sizes = [512, 736, 1024, 1984]
+rows = [re.search(r"response=([0-9A-F]+)", line).group(1)
+        for line in open(log) if "TEST:PASS custom APDU" in line]
+if len(rows) != 2 * len(sizes) * per_case:
+    sys.exit(f"RSA_MODULUS:FAIL expected {2 * len(sizes) * per_case} responses, got {len(rows)}")
+failed = False
+for index, hex_response in enumerate(rows):
+    data = bytes.fromhex(hex_response)[:-2]
+    algorithm = "RSA" if index < len(sizes) * per_case else "RSA_CRT"
+    bits = sizes[(index % (len(sizes) * per_case)) // per_case]
+    modulus = data[1:1 + data[0]]
+    if data[0] != bits // 8 or len(modulus) != bits // 8 or modulus[0] < 0x80:
+        print(f"RSA_MODULUS:FAIL {algorithm} {bits} length={data[0]} top={modulus[:1].hex()}")
+        failed = True
+if failed:
+    sys.exit(1)
+print(f"RSA_MODULUS:PASS keys={len(rows)} all moduli full length with MSB set")
+PY
+printf 'RSA_MODULUS:LOG %s\n' "${log#${repo_root}/}"

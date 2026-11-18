@@ -32152,3 +32152,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: External 853543d6 CSV: 8 of 20 `TYPE_RSA_PRIVATE … ALG_RSA_NOPAD` methods and 1 of the listed `TYPE_RSA_CRT_PRIVATE … ALG_RSA_NOPAD` methods (1984 doFinal) end as `CryptoException_ILLEGAL_USE`; which ones fail differs per run. The firmware's RSA math is correct; rejecting a raw RSA input ≥ modulus is a legitimate Java Card behaviour (ILLEGAL_USE covers unsupported input to a non-padding cipher). The randomness comes from the unchanged JCAlgTest applet's test data.
 - Decision: No firmware change proposed by default (silently reducing the input mod n would return a result for a value the caller did not supply). Treat RSA NOPAD F105 as a known non-deterministic JCAlgTest outcome when comparing runs; user decision requested on whether to emulate a different card behaviour.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T173714Z/replay.log`, `inbox/maxcrypto_20261118_853543d6/*.csv`
+
+## 2026-11-18 Measure generated RSA modulus MSB (user hypothesis) 20
+
+- Step-Id: `20261118-2205-rsa-modulus-msb`
+- Task: `Follow-up to 20261118-2125-rsa-nopad-f105`
+- When: '2026-11-18 21:45 CET' - '2026-11-18 22:05 CET'
+- Model: `claude-opus-5-5`
+- Change: The user suspected that generated RSA moduli have a zero top bit in about half the cases, which would make random NOPAD inputs ≥ n far more likely. Added probe instruction `0x38` to the repository `Resource02CryptoProbe` (generate a KeyPair `ALG_RSA` or `ALG_RSA_CRT` and return `[length][modulus]`) and `tools/test-rsa-modulus-msb-vpcd` (emulator only), which checks full byte length and MSB = 1 for 512/736/1024/1984-bit keys.
+- Validation: `./tools/test-rsa-modulus-msb-vpcd` → `RSA_MODULUS:PASS keys=256` (32 per algorithm × size). Source check agrees: `mbedtls_mpi_gen_prime` makes p, q ≥ √2·2^(b−1), and `generateRsaPair` (the only RSA generator, used for both `ALG_RSA` and `ALG_RSA_CRT`) retries unless `bitlen(n) == bits`. Observed top bytes 0x83–0xF5; estimated P(random 1st byte makes x ≥ n) 0.24–0.30 per key.
+- Result: Hypothesis not confirmed: no modulus with MSB 0 in 256 keys. External 853543d6 CSV outcome for private NOPAD methods: plain RSA 7 F105 / 13 ok / 2 none (4096), CRT 1 F105 / 19 ok / 2 none; 8/40 = 20 % overall, consistent with the ~26 % expectation. The plain-vs-CRT imbalance is not significant per method, because the applet reuses one key pair per algorithm/size across `doFinal()` and `init()` (failures cluster per key).
+- Decision: The F105 cause stays as recorded in `20261118-2125-rsa-nopad-f105` (random prepare data ≥ n in the setup NOPAD encryption); no firmware change.
+- Artifacts/logs: `artifacts/logs/rsa-modulus-msb-vpcd-20261118T180743Z.log`

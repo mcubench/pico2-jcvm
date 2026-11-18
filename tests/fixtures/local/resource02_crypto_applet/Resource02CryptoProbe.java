@@ -21,6 +21,7 @@ public final class Resource02CryptoProbe extends Applet {
   private static final byte INS_REPEAT_ALIAS = (byte)0x35;
   private static final byte INS_SETUP_RSA_ALTERNATE = (byte)0x36;
   private static final byte INS_REPEAT_RSA_ALTERNATE = (byte)0x37;
+  private static final byte INS_GENERATE_RSA_MODULUS = (byte)0x38;
 
   private static final byte[] AES_KEY_BYTES = {
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -78,6 +79,9 @@ public final class Resource02CryptoProbe extends Applet {
       case INS_REPEAT_RSA_ALTERNATE:
         repeatRsaAlternate(count);
         break;
+      case INS_GENERATE_RSA_MODULUS:
+        generateRsaModulus(apdu, buffer[ISO7816.OFFSET_P1], count);
+        return;
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }
@@ -147,6 +151,28 @@ public final class Resource02CryptoProbe extends Applet {
     if (alternateCipher == null || count <= 0)
       ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
     for (short i = 0; i < count; i++) alternateRound();
+  }
+
+  /**
+   * Generate a fresh RSA key pair and return [modulus length][modulus].
+   * P1: 1 = ALG_RSA, 2 = ALG_RSA_CRT. P2: 0 = 512, 1 = 736, 2 = 1024, 3 = 1984.
+   */
+  private static void generateRsaModulus(APDU apdu, byte algorithm, byte size) {
+    short bits;
+    switch (size) {
+      case 0: bits = KeyBuilder.LENGTH_RSA_512; break;
+      case 1: bits = KeyBuilder.LENGTH_RSA_736; break;
+      case 2: bits = KeyBuilder.LENGTH_RSA_1024; break;
+      case 3: bits = KeyBuilder.LENGTH_RSA_1984; break;
+      default: ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2); return;
+    }
+    KeyPair pair = new KeyPair(
+        algorithm == 2 ? KeyPair.ALG_RSA_CRT : KeyPair.ALG_RSA, bits);
+    pair.genKeyPair();
+    byte[] buffer = apdu.getBuffer();
+    short length = ((RSAPublicKey)pair.getPublic()).getModulus(buffer, (short)1);
+    buffer[0] = (byte)length;
+    apdu.setOutgoingAndSend((short)0, (short)(length + 1));
   }
 
   private void setupAliases() {
