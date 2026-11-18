@@ -32019,3 +32019,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 257 tombstones were compacted; filesystem files fell 1,695→1,438 and bytes 64,661→62,273. The deletion+compaction APDU took 10.325 s, below the 15 s watchdog. Next PRE_CLEANUP was 1,442 / 62,321. Relative to cycle 10's post-compaction level (1,376 / 58,357), retained storage is up 62 files / 3,916 bytes during RSA-1984 methods. Peak is 64,853/98,304 bytes (66.0%) and 1,695 files. Latest 50 heap records hold at 379 arrays / 138 instances. No runtime/transport failure markers.
 - Decision: Continue the existing run. Compaction bounds tombstone accumulation and stayed below the watchdog, but retained storage still grows as new algorithms are exercised; assess the terminal suite baseline before determining whether the reuse concern is resolved. This non-empty-card run is exploratory only.
 - Artifacts/logs: `artifacts/results/option1-exploratory-20261118T1322CET/07E74C5D7A038DEC/attempt1/serial.log`, `client.log`.
+
+## 2026-11-18 Update firmware size review to the current state 3
+
+- Step-Id: `20261118-1805-size-doc-current-state`
+- Task: firmware size reduction documentation (user request)
+- When: '2026-11-18 18:05' - '2026-11-18 18:08'
+- Model: `claude-opus-5-5`
+- Change: `docs/review_firmware_size_20261118.md` now opens with a current-state summary: a before / steps 1–2 / current table, a per-step commit/Step-Id/saving table, and the conclusion that flash no longer limits new crypto and RAM is the tighter resource. Added a current per-component breakdown, a "what fits now" note (re-enabling Curve25519 if X25519/Ed25519 are added), invariant checks (INV-08/24/27/28), the external test section (`WIN-SIZE-MAXCRYPTO-4BDED540`, hashes, status pending), validation rows for steps 3–4, open items covering all four steps, and the current RAM figure.
+- Validation: Re-ran the map attribution on the `4bded540` ELF (merged-string scaling 0.489): component sum 420,667 B vs binary 420,396 B. Sections `.text` 312,648, `.rodata` 71,024, `.data` 10,432, `.bss` 324,444; static RAM 335,164 B. Other figures come from earlier step records.
+- Result: Document only; no firmware change.
+- Decision: None new; external results are still pending.
+- Artifacts/logs: none (analysis inputs are the build tree ELF/map).

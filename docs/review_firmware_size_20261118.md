@@ -3,21 +3,40 @@
 Scope: the full JCVM firmware `pico2_choupi` for the Pico 2 (RP2350, ARM
 Cortex-M33), normal `max_crypto` profile (object deletion ON, debug OFF).
 This review asked how much flash each part of the firmware uses. The goal was
-to see whether more cryptographic implementations would fit. Two defects used
-more than half of the flash; both were fixed. Two follow-up reductions (newlib
-`fprintf`, Mbed TLS configuration) are described in
-[Follow-up reductions](#follow-up-reductions); after them the image is
-420,396 B with 628,180 B of headroom.
+to see whether more cryptographic implementations would fit.
 
-| | Before | After |
-|---|---|---|
-| Source | `c0270a65` (docs tip; sources as of `a746c295`) | `7adbe5cc` |
-| Commits | – | `e582a6e3` (ROM filesystem trim), `7adbe5cc` (`cap_load_session` in `.bss`) |
-| Image (`pico2_choupi.bin`) | 1,016,636 B | **460,868 B** |
-| Firmware end | `0x100f8328` | `0x10070844` |
-| Free space in the 1 MiB firmware window (INV-28) | 31.9 KB | **587,708 B** |
-| UF2 SHA-256 | `ce131357…30fb85f` (never flashed) | `5c4d068d…1d713c2a38` |
-| Static RAM (`.data` + `.bss`) | 335,536 B | 335,532 B (unchanged) |
+Summary of the current state (updated 2026-11-18 18:10 CET):
+
+- Two defects used more than half of the flash: the embedded 512 KiB ROM-mask
+  dump and a 66 KB zero buffer in `.data`. Both are fixed (steps 1–2).
+- Two follow-up reductions are also done: newlib `fprintf` (step 3) and the
+  Mbed TLS configuration (step 4).
+- The image shrank from 1,016,636 B to **420,396 B** (−58.6%). Free space in
+  the 1 MiB firmware window grew from 31.9 KB to **628,180 B** (≈613 KiB).
+- Flash no longer limits new cryptographic implementations; RAM is now the
+  tighter resource (see [RAM, for context](#ram-for-context)).
+- All four steps pass a 0-warning build and the boot self-test on hardware.
+  The code paths they change in GP card management, ECC, HMAC and
+  object-deletion telemetry have not yet been exercised with APDU traffic. An
+  external Windows run (`WIN-SIZE-MAXCRYPTO-4BDED540`) has been requested; see
+  [External test](#external-test).
+
+| | Before | After steps 1–2 | Current (steps 1–4) |
+|---|---|---|---|
+| Source | `c0270a65` (docs tip; sources as of `a746c295`) | `7adbe5cc` | `e17d25dc` (packaged at `4bded540`) |
+| Image (`pico2_choupi.bin`) | 1,016,636 B | 460,868 B | **420,396 B** |
+| Firmware end | `0x100f8328` | `0x10070844` | `0x10066a2c` |
+| Free space in the 1 MiB firmware window (INV-28) | 31.9 KB | 587,708 B | **628,180 B** |
+| Static RAM (`.data` + `.bss` + other RAM sections) | 335,536 B | 335,532 B | 335,164 B |
+| `.data` (initial image stored in flash) | 77,464 B | 10,800 B | 10,432 B |
+
+| Step | Commit | Step-Id | Saved |
+|---|---|---|---:|
+| 1. Embed only the ROM filesystem | `e582a6e3` | `20261118-1500-romfs-trim` | 489,255 B |
+| 2. `cap_load_session` in `.bss` | `7adbe5cc` | `20261118-1503-cap-load-session-bss` | 66,513 B |
+| 3. VM `fprintf` sent to the SDK printf | `6e640e32` | `20261118-1719-fprintf-wrap` | 19,552 B |
+| 4. Firmware Mbed TLS user configuration | `e17d25dc` | `20261118-1727-mbedtls-user-config` | 20,920 B |
+| External test package | `9963772e` | `20261118-1747-ext-test-4bded540` | – |
 
 The firmware window stays at 1 MiB. Using the freed space for other purposes,
 such as more CAP slots, would change INV-28 and so the specification.
@@ -132,20 +151,28 @@ or ML-DSA (about 20–60 KB) would not fit.
   `.bss`. The compiler could then see the constructor and constant-initialize
   the object again. That would only cost size, not correctness.
 
-## State after the fix
+## State after the fix (steps 1–2)
 
-| Component | Before (B) | After (B) | Change |
-|---|---:|---:|---:|
-| ROM filesystem (Java Card API + GP packages) | 524,300 | 35,045 | −489,255 |
-| GP / card management + CCID | 91,995 | 25,495 | −66,500 |
-| JCVM core | 156,392 | 156,392 | 0 |
-| mbedTLS + Pico hardware SHA/RNG | 83,530 | 83,530 | 0 |
-| Java Card crypto glue | 61,413 | 61,413 | 0 |
-| C/C++ runtime | 49,145 | 49,145 | 0 |
-| Platform | 32,208 | 32,200 | −8 |
-| USB stack | 9,157 | 9,157 | 0 |
-| Pico SDK runtime | 8,173 | 8,173 | 0 |
-| **Image** | **1,016,636** | **460,868** | **−555,768** |
+The "Current" column is the state after steps 3 and 4; see
+[Current state](#current-state-after-steps-14).
+
+| Component | Before (B) | After steps 1–2 (B) | Current (B) | Change, total |
+|---|---:|---:|---:|---:|
+| ROM filesystem (Java Card API + GP packages) | 524,300 | 35,045 | 35,045 | −489,255 |
+| GP / card management + CCID | 91,995 | 25,495 | 25,495 | −66,500 |
+| JCVM core | 156,392 | 156,392 | 156,363 | −29 |
+| mbedTLS + Pico hardware SHA/RNG | 83,530 | 83,530 | 62,612 | −20,918 |
+| Java Card crypto glue | 61,413 | 61,413 | 61,413 | 0 |
+| C/C++ runtime | 49,145 | 49,145 | 29,681 | −19,464 |
+| Platform | 32,208 | 32,200 | 32,200 | −8 |
+| USB stack | 9,157 | 9,157 | 9,157 | 0 |
+| Pico SDK runtime (incl. fill, linker stubs, wrapper) | 8,173 | 8,173 | 8,701 | +528 |
+| **Image** | **1,016,636** | **460,868** | **420,396** | **−596,240** |
+
+Component sums are taken from the map (string sections scaled); they differ
+from the binary size by up to about 270 B of alignment. The small JCVM-core and
+SDK-runtime differences after step 2 are attribution noise from the scaling of
+merged strings, not code changes.
 
 Sections after: `.text` 336,496; `.rodata` 87,280; `.ARM.extab` 17,248;
 `.ARM.exidx` 8,992; `.data` 10,800 (was 77,464); `.bss` 324,444 (was
@@ -165,22 +192,38 @@ interpreter (9.4%), mbedTLS ECC (9.2%) and the ROM filesystem (7.6%).
 | `./tools/test-rp2350-fs-overlay` | `TEST:SUMMARY fail=0` |
 | `./tools/build-pc --profile max_crypto --rp2350-overlay` | exit 0; host build compiles the changed `cap_load.cpp` |
 | `nm` | `cap_load_session` is `b` (`.bss`) |
-| `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` (after each step) | `CYCLE:PASS`, 18× `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, `CHOUPI:STATUS sw=9000`, no `TEST:FAIL`/`FAULT`. The boot self-test runs the ROM starter package, so ROM filesystem lookup works on hardware. |
+| `FLASH_LAYOUT` steps 3–4 | `PASS remaining=607260` (step 3) → `PASS remaining=628180` (step 4) |
+| `nm` steps 3–4 | no `fprintf`, `_vfprintf_r`, `_dtoa_r`, `__sfvwrite_r`; no Brainpool/k1/25519/448/SHA-3 symbols; `mbedtls_md5_finish`, `mbedtls_ripemd160_finish`, `mbedtls_md_hmac` present |
+| Mbed TLS config consistency | all 176 TUs with `MBEDTLS_CONFIG_FILE` also carry `MBEDTLS_USER_CONFIG_FILE` |
+| `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial F42DD9D07D6D2B07` (after each of steps 1–4) | `CYCLE:PASS`, 18× `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, `CHOUPI:STATUS sw=9000`, no `TEST:FAIL`/`FAULT`. The boot self-test runs the ROM starter package, so ROM filesystem lookup works on hardware. |
 
 Token: F42D (`F42DD9D07D6D2B07`), development cycle, storage preserved.
 Token 07E7 was not touched; it was running an option-1 campaign.
 
-Logs: `artifacts/results/flash-size-opt-20261118/step1-romfs-trim/` and
-`artifacts/results/flash-size-opt-20261118/step2-cap-load-session-bss/`.
+Logs: `artifacts/results/flash-size-opt-20261118/step1-romfs-trim/`,
+`step2-cap-load-session-bss/`, `step3-fprintf-wrap/` and
+`step4-mbedtls-config/` in the same directory.
 
 ### Open items
 
-- **Physical GP LOAD/INSTALL/DELETE check not yet done.** These are the only
-  code paths that use `cap_load_session`. F42D is visible on USB but missing
-  from PC/SC. pcscd was not refreshed because a live campaign shared it. Run
-  the check once a token with this image is in PC/SC and no campaign is live.
-  One option is installing the unchanged JCAlgTest 1.8.4/jc305 CAP.
-- These are development images, not acceptance evidence. INV-27 requires an
+These apply to all four steps.
+
+- **No APDU traffic on the reduced images yet.** Not exercised:
+  - GP LOAD/INSTALL/DELETE (`cap_load_session`, ROM package lookup during linking);
+  - ECDSA, ECDH and EC key generation (step 4);
+  - HMAC, including MD5 and RIPEMD-160 (step 4);
+  - the `OBJECT_DELETION:*` telemetry, which now goes through the wrapped `fprintf` (step 3).
+
+  F42D is on USB but missing from PC/SC. pcscd was not refreshed because the
+  07E7 option-1 campaign shared it. Once F42D is in PC/SC and no campaign is
+  live:
+  - run GPPro list/install of the unchanged JCAlgTest 1.8.4/jc305 CAP;
+  - run a JCAlgTest option 2 run with the 1.8.5 client.
+
+  The external test above covers the same paths.
+- F42D currently holds the empty-card external-test UF2 `a0b46b33…`, so a
+  local run can start from the same image.
+- The development cycles are not acceptance evidence. INV-27 requires an
   empty-card normal image and unchanged external clients.
 
 ## Follow-up reductions
@@ -241,11 +284,79 @@ HMAC (SHA-1/256/384/512, MD5, RIPEMD-160). MD5 and RIPEMD-160 therefore stay in
 
 The boot self-test does not run ECDSA, ECDH, EC key generation or HMAC. The
 object-deletion telemetry lines that now use the wrapped `fprintf` print only
-during APDU traffic. Neither could be exercised locally: F42D is not listed by
-pcscd, and pcscd was not refreshed during the live 07E7 campaign. A JCAlgTest
-option 2 run on an image with these commits covers both.
+during APDU traffic. See [Open items](#open-items) and
+[External test](#external-test).
+
+## Current state (after steps 1–4)
+
+Measured on `build/arm/pico2_choupi.elf` from `4bded540` (firmware sources
+`e17d25dc`), using the same method as above.
+
+| Component | Flash (B) | % | Main items |
+|---|---:|---:|---|
+| JCVM core | 156,363 | 37.2 | interpreter 43.1K, object model/heap 32.4K, persistent objects 21.8K, CAP/class linking 18.7K, `context.cpp` 15.5K, `jni.cpp` 12.9K, `main.cpp` 11.9K |
+| mbedTLS + Pico hardware SHA/RNG | 62,612 | 14.9 | ECC 23.9K (14.2K tables, was 29.6K), hashes/md 19.6K, bignum 9.1K, AES/DES 8.6K, HW SHA/RNG 1.5K |
+| Java Card crypto glue (`native_*.cpp`) | 61,413 | 14.6 | unchanged; RSA signature, signature, key, cipher, RSA cipher, ECDSA |
+| ROM filesystem | 35,045 | 8.3 | 21 records |
+| Platform | 32,200 | 7.7 | `choupi_pico2` 16.1K, flash filesystem/overlay 15.4K |
+| C/C++ runtime | 29,681 | 7.1 | libstdc++ EH/RTTI 9.6K, printf/stdio 8.5K (was 26.1K), malloc/string 6.4K, libgcc 5.2K |
+| GP / card management + CCID | 25,495 | 6.1 | CCID/APDU routing 10.1K, `cap_load` 9.8K, `cap_store` 3.9K, SCP03 1.4K |
+| USB stack | 9,157 | 2.2 | |
+| Pico SDK runtime (incl. fill, stubs, wrapper) | 8,701 | 2.1 | |
+
+Sections: `.text` 312,648; `.rodata` 71,024; `.ARM.extab` 17,248;
+`.ARM.exidx` 8,992; `.data` 10,432; `.bss` 324,444. C++ exception tables
+(26.2 KB) are still counted in the objects they belong to.
+
+Largest single flash users now: the Java Card crypto glue (14.6%), the
+bytecode interpreter (10.3%), the ROM filesystem (8.3%), the object model and
+heap (7.7%) and Mbed TLS ECC (5.7%).
+
+### What fits now
+
+With 628,180 B free, flash is no longer a constraint for new algorithms.
+These are rough estimates, not measured here: Ed25519/X25519 (about
+10–20 KB), ML-KEM or ML-DSA (about 20–60 KB each), or several of them
+together, would all fit. Note that step 4 removed the Mbed TLS Curve25519/448
+tables. Adding X25519 or Ed25519 later means re-enabling
+`MBEDTLS_ECP_DP_CURVE25519_ENABLED` in `src/choupi_mbedtls_user_config.h`
+(a few KB) or adding a separate implementation. The binding limit for
+large-state algorithms is RAM.
+
+### Specification invariants checked
+
+- INV-28: the firmware window is still 1 MiB; only the free space inside it grew.
+- INV-08: support reporting comes from the profile (`config/javacard-support.json`),
+  which is unchanged. Every algorithm the profile reports still has its
+  Mbed TLS backend; only unreachable curves and SHA-3 were removed.
+- INV-24: no debug strings were added. The existing telemetry strings are still
+  open (see the opportunity table).
+- INV-27: the development cycles are not acceptance evidence. The external test
+  package uses an empty-card normal image and the unchanged clients.
+
+## External test
+
+Request `WIN-SIZE-MAXCRYPTO-4BDED540` in `.agent/EXT_REQUESTS.md` (created
+2026-11-18 17:52 CET) asks for JCAlgTest option 2 on Windows. It replaces
+`WIN-SIZE-MAXCRYPTO-58B01075`, which shipped the steps 1–2 image and was not
+returned.
+
+| Item | Value |
+|---|---|
+| Image | normal `max_crypto`, built from `4bded540` (firmware sources `e17d25dc`), CPLC `0x4BDED5401CDE0EC4` |
+| Empty-card UF2 | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-4bded540.uf2`, SHA-256 `a0b46b33b48f13ffe9cb48debeddce7bad46fb1ba8911e0fc0ff28618b3fe6e9`, 2,938,880 B |
+| ZIP | `build/external-test/pico2-jcvm-maxcrypto-deletion-4bded540.zip`, SHA-256 `be4b32f66c30bf78d3a282c8ce48116e487e9bf7c35c54456a0615bcbc7afa73`, 18,218,734 B |
+| Clients | unchanged JCAlgTest 1.8.4/jc305 CAP, 1.8.5 client (SHA-256 `b6a753be…eacec3`), GPPro |
+| Local check | exact UF2 flashed to F42D (storage wiped): 18× `TEST:PASS`, `CHOUPI:STATUS sw=9000`, no FAULT |
+| Questions | Does the empty-card CAP install work? Does option 2 finish without reader loss or PANIC? Are the EC and HMAC results the same as on earlier images? Do `OBJECT_DELETION:TIMING` lines appear, below 15 s? |
+| Status | **pending**, no results yet |
+
+Logs: `artifacts/results/windows-package-smoke-4bded540-20261118T1648Z/`.
 
 ## Remaining reduction opportunities (not implemented)
+
+Implemented items (newlib `fprintf`, Mbed TLS curves and SHA-3) are removed
+from this list; see [Follow-up reductions](#follow-up-reductions).
 
 | Opportunity | Estimated saving | Notes |
 |---|---:|---|
@@ -257,7 +368,7 @@ option 2 run on an image with these commits covers both.
 
 ### RAM, for context
 
-Static RAM use is 335.5 KB of 512 KB. The remaining ~176 KB must hold the C
+Static RAM use is 335.2 KB of 512 KB (335,164 B; step 3 freed 368 B of newlib `.data`). The remaining ~176 KB must hold the C
 heap, the stack, mbedTLS big-number temporaries and the Java Card heap. This
 is the tighter resource for new algorithms with large working state, such as
 ML-DSA. Largest static users:
