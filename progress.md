@@ -32215,3 +32215,22 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-621ba60c.uf2` SHA-256 `616b2d7b364ee18cf47e2b11aafc2003cbb1dffafa1a346fb9edd584155824f1` (2,939,392 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-621ba60c.zip` SHA-256 `49409c218aae7f3a43ffefa91c180432af3c78af16203c6c69554c4a52fe4052` (18,224,413 B); linked end 0x10066b40, headroom 627,904 B.
 - Decision: Waiting on the Windows run; first use of the PowerShell block is there.
 - Artifacts/logs: paths above
+
+## 2026-11-18 First baseline: drain a prepare's garbage in one deletion pass 40
+
+- Step-Id: `20261118-2215-deletion-cap-512`
+- Task: user report (EC_FP_384 ECDSA sign/verify first baseline ~2x the others on 621ba60c, Windows run)
+- When: '2026-11-18 21:40' - '2026-11-18 22:20'
+- Model: `claude-opus-5-5`
+- Change: `kObjectDeletionMaxRecordsPerApdu` 64 → 512. On target the existing 3 s erase deadline is now the effective bound (~6–9 ms per record); the count still bounds the PC path, which has no deadline. Updated the constant's comment with the measured cause.
+- Cause (measured on 07E74C5D7A038DEC):
+  - The client sends `B0E2` before every baseline and every measurement. The baseline is the measure APDU with `numRepeatWholeOperation=0`.
+  - A replacing EC384 Signature prepare leaves 118–119 dead records. The first `B0E2` pass stopped at the 64-record cap (`erased_applet=64 pending=1`, 0.52 s). The remaining 55 (`reclaim_us=485136`) ran after the next APDU, the first baseline.
+  - Replay with `tests/hardware/ApduTimer.java` (one prepare, then 7 × (`B0E2`, baseline), then 3 × (`B0E2`, 5-op measure), for sign → verify → sign) on the 621ba60c empty-card image with the 1.8.5 CAP: first baseline 1449 ms vs 804–835 (verify), 1483 vs 820–833 (sign). After the very first prepare on the fresh card there was no skew (nothing to reclaim).
+- Validation:
+  - `./tools/build arm --profile max_crypto` rc=0 with 0 warnings.
+  - Unit/emulator: `test-rp2350-fs-overlay`, `test-persistent-inventory` and `test-object-deletion-policy` (20 checks) pass. `test-object-deletion-vpcd`: byte-array 8, rsa-public 4, rsa-live-static 4, rsa-batch 60 (600 records, 2 passes), plus overlay rsa-batch 60 and overlay auto-gc 512, all PASS.
+  - Hardware: `./tools/cycle choupi --profile max_crypto --serial 07E74C5D7A038DEC` CYCLE:PASS. Image SHA-256 `da180d195ff002de1f2252a63211cbaa13fb2d7d1afbb18138afc18649f7dbf9`, CPLC `0xBFEE385AC7CA9298`, normal mode, deletion ON.
+- Result: Same replay on the new image: first baseline 835 vs 819–839 ms (verify) and 770 vs 739–775 ms (sign). Every pass `pending=0`, with 118 records erased in one pass. The first `B0E2` now takes ~1.45–1.52 s, which JCAlgTest does not measure. The second `B0E2` (~0.92 s) erases the 1 record the first baseline left plus a filesystem compaction, also unmeasured. Sign/verify per-op times are unchanged (5 ops: ~1.6 s / ~3.3 s).
+- Decision: Fix confirmed on hardware for EC384. The running Windows 621ba60c package does not contain it; repackage on request. 07E7 now holds the cycle image with the 1.8.5 CAP installed (non-empty card).
+- Artifacts/logs: `artifacts/results/first-baseline-ec384-20261118/07E74C5D7A038DEC/{apdu-timer.log,serial.log}` (before), `.../cap512/{apdu-timer.log,serial.log}` (after); `artifacts/logs/cycle-choupi-20261118T210601Z.log`

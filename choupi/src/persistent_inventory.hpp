@@ -141,14 +141,16 @@ VisitResult visitUnreachablePackageStaticTags(
 
 namespace PersistentReclaimer {
 
-// Records one deletion pass may erase. A requested deletion normally leaves
-// a few dozen dead records (JCAlgTest option 1: at most 37 except one 107);
-// with the former budget of 8 the remainder was serviced after the next
-// APDU, adding a whole deletion pass to a measured command. The bound still
-// keeps a pathological backlog (one unbounded sweep erased 1,417 records and
-// lost the transport) spread over several APDUs, together with the wall-clock
-// budget below.
-constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = 64;
+// Records one deletion pass may erase. Any remainder is serviced after the
+// next APDU, which adds it to that command's measured time. One JCAlgTest
+// prepare can leave more than 100 dead records (EC_FP 384 Signature: 119
+// on 07E7, 2026-11-18): with a cap of 64, about 0.5 s of erasure landed in
+// the first baseline. On target the wall-clock budget below is the effective
+// bound (about 6-9 ms per record, so roughly 350-450 records in 3 s). This
+// count still bounds the PC path, which has no deadline. A pathological
+// backlog (one unbounded sweep erased 1,417 records and lost the transport)
+// is still spread over several APDUs.
+constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = 512;
 
 // Wall-clock budget for the erase phase of one pass, checked after each
 // erasure so every pass still makes progress.
