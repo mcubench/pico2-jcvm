@@ -31530,3 +31530,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Within-family cleanup is stable at the latest heap level, while each new family increases retained counts. The full suite has not completed, so final plateau remains unproven; malformed serial output prevents T10 acceptance.
 - Decision: Continue the live client without PC/SC restart. Preserve T10 as invalid for this run and review crypto exception results after completion.
 - Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.
+
+## 2026-11-18 Record option-1 sustained family-level heap checkpoint 6
+
+- Step-Id: `20261118-0226-mem01-opt1-sustained-reuse`
+- Task: MEM-01 T8/T10 exploratory option-1 monitoring
+- When: '2026-11-18 02:22 CET' - '2026-11-18 02:26 CET'
+- Model: `gpt-6-codex`
+- Change: Checked whether the new live-object level persisted across repeated cleanup boundaries and refreshed the complete-record storage trend during the active physical option-1 campaign.
+- Validation: Client remained active at 304 method groups. Strict whole-line parsing found 686 HEAP_GC samples and 1,007 PRE_CLEANUP samples. The last 100 HEAP_GC samples span five family levels, 177/60 through 225/84, with repeated cleanup records at the latest level. Storage peak is 1,097 files / 39,789 of 98,304 bytes (40.48%); last 100 samples range 824–1,097 files / 30,840–39,789 bytes. The fail-closed headroom checker still rejects malformed PRE_CLEANUP records at lines 9848, 9982 and 16502.
+- Result: Heap counts plateau within the current family after increasing at family transitions. Storage continues to rise gradually but remains below the 90% stop threshold. This is not a completed-suite plateau, and serial corruption still disqualifies the run for T10.
+- Decision: Continue the full client run with the existing PC/SC session; preserve T10 as invalid and use a later telemetry-safe run after output serialization is fixed.
+- Artifacts/logs: `artifacts/results/option1-acceptance-20261118T0009Z/07E74C5D7A038DEC/attempt4/{client,serial}.log`.

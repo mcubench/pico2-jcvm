@@ -1568,3 +1568,17 @@ three malformed PRE_CLEANUP lines elsewhere in the original serial capture, so
 this campaign remains invalid for T10. It has six `CryptoException_ILLEGAL_USE`
 and two `CryptoException_ILLEGAL_VALUE` records so far; review the completed
 results against the support baseline.
+
+
+### Option-1 sustained family-level heap checkpoint — 2026-11-18 02:26 CET
+
+At 304 method groups, strict whole-line parsing gives 686 HEAP_GC samples and
+1,007 PRE_CLEANUP samples. The final 100 HEAP_GC records span five successive
+family-level counts from 177 arrays / 60 instances to 225 / 84, with repeated
+cleanup records at 225 / 84. This is materially stronger evidence that the
+heap count is reused within a family while new families add retained objects;
+the full option-1 suite has not completed, so do not call it a final plateau.
+Storage has a 39,789/98,304-byte peak (40.48%, 1,097 files); the last 100
+samples range 30,840–39,789 bytes. It is still rising gradually. T10 remains
+unusable on this run due to malformed serial output at lines 9848, 9982 and
+16502.
