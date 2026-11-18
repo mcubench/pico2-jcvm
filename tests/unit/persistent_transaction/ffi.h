@@ -25,6 +25,9 @@ uint8_t fs_read_2b_at(const uint8_t *tag, uint8_t tag_length,
                       uint32_t offset, uint16_t *value);
 uint8_t fs_read_4b_at(const uint8_t *tag, uint8_t tag_length,
                       uint32_t offset, uint32_t *value);
+uint8_t fs_write_range(const uint8_t *tag, uint8_t tag_length,
+                       uint32_t offset, const uint8_t *data,
+                       uint32_t length);
 uint8_t fs_write_1b_at(const uint8_t *tag, uint8_t tag_length,
                        uint32_t offset, uint8_t value);
 uint8_t fs_write_2b_at(const uint8_t *tag, uint8_t tag_length,

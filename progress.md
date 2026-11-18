@@ -31602,3 +31602,36 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - Proposed fixes: index live persistent tags once per pass (sorted set) instead of a linear walk per record; return a cached `fs::Tag` reference; feed the watchdog and CCID progress inside long scans.
   - Before a rerun: reproduce locally with a B031 RSA prepare sweep (fills the cache) while timing B0E2.
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261117-de729d28-deletion/` (`SHA256SUMS` inside).
+
+## 2026-11-18 Object-deletion pass: tag index, trace reuse, watchdog/CCID progress 47
+
+- Step-Id: `20261118-0653-deletion-pass-speed`
+- Task: `MEM-01 / LONGOP-01` (Windows de729d28 reader loss at RSA-CRT-1280)
+- When: '2026-11-18 06:06' - '2026-11-18 06:53'
+- Model: `claude-opus-5-5`
+- Change: The B0E2 deletion pass grew with JCAlgTest's intended RSA key-pair cache: 11.5 s on Windows, and still 13.9 s locally at CRT-1984. It ran with no watchdog refresh (15 s watchdog), no USB servicing and no CCID time extension. Changes:
+  - `choupi/src/long_operation_progress.hpp`: a throttled `longOperationProgress()` (clock checked every 32 calls, hook at most every 20 ms) calls `choupi_vm_cooperative_progress()`. It is called from the heap mark loops, `hasReachablePersistentTagPrefix` and the `visitPrefix` record walk.
+  - `Heap::ReachableTagIndexScope`: during a deletion batch, reachable-tag queries use a sorted copy of the marked objects' tags (binary search) instead of a walk over every live object. The copy is rebuilt after any mark change or object-count change and capped at 24 KiB, plus a 16 KiB free-heap margin on target; otherwise the linear walk is used.
+  - `Heap::TraceReuseScope`: the repeated candidate scans in one batch (applet preflight, batch and confirm scans, and package scans) reuse the last complete trace for the same root set, while no marks were cleared and no objects were added or removed.
+  - Telemetry: `OBJECT_DELETION:TIMING` (heap/roots/reclaim/compact µs, prefix queries, index bytes and refusals, traces, trace µs, reused traces) and `CHOUPI:HEAP_GC_TIMING` for post-APDU GCs ≥ 250 ms.
+  - Weak host fallbacks for the hooks in unit-test builds. The persistent-transaction test stub gains `fs_write_range`; it had been broken since `2b3a87a1`.
+  - New raw-CCID probe `tests/hardware/jcalgtest_rsa_cache_deletion_probe.py`. It selects the token by chip ID, bypasses pcscd and sends the client's exact RSA B031/B0E2/B043 APDUs.
+- Validation:
+  - Replayed the Windows de729d28 transcript (APDUs 1–5995, through CRT-1280) on the PC RP2350-overlay emulator with deletion ON: `JCALGTEST_RP2350_OVERLAY=1 PICO2_TEST_OBJECT_DELETION=1 tools/test-jcalgtest-apdu-replay-vpcd ... --stop-after-apdu-index 5995`. The emulator reached the Windows state: 333 arrays, 120 instances, 1,442 files versus 1,452 on Windows.
+  - All replays report "failed" because of 85–95 F105 (CryptoException ILLEGAL_USE) status differences against the Windows transcript. These are present in the baseline too, their count varies run to run (95/65/60/95), and they are attributed to random RSA keys.
+  - Deletion decisions were identical to the baseline for the first 3,005 of 3,351 passes in every changed build; later drift follows the random F105 path. The final build's erased total matches the baseline at 6,669. The baseline binary was not run twice.
+  - Unit tests: `test-persistent-transaction` 168/168, including the new `reachable_tag_index_matches_linear_walk` (248 queries, 77 reachable, 0 mismatches). `test-rp2350-fs-overlay` 152/152. `test-persistent-inventory` 22/22. `test-object-deletion-policy` 20 checks.
+  - VPCD overlay `test-object-deletion-vpcd`: byte-array 16, rsa-live-static 16, rsa-batch 16 and auto-gc 512 all PASS. auto-gc with 16 iterations does not reach low space, so it fails its own precondition.
+  - `./tools/build arm --profile max_crypto`: normal mode, no warnings; UF2 SHA-256 `c409e22c3167eeaa96afffccde1451994fba3f57f51bba6a131bceef53f7f64e`. Hardware not yet run.
+- Result: Per pass on the PC at the CRT-1280 state:
+
+  | Build | Total | Heap traces |
+  |---|---|---|
+  | Baseline | 58.0 ms (heap 4.5 + reclaim 53.5) | 6 (22.5 ms) |
+  | Index only | 25.5 ms | 6 |
+  | Index + trace reuse | 11.8 ms (heap 4.5 + reclaim 7.1) | 3 |
+
+  The index peaked at 17,518 B. Expected on target: about 11.5 s → about 2.3 s at CRT-1280, with watchdog and CCID progress throughout.
+  - Local unchanged baseline: on the other session's live 07E7 run (same firmware), B0E2 medians match Windows within 1%. They reached 13.9 s at CRT-1984 (0.81 s at RSA-512).
+- Decision: Validate on hardware. Fill the RSA cache on a free token with the new probe, compare B0E2 timing and check the watchdog/CCID behaviour. F42D is free on USB, but another session's serial monitor (PID 3171344, until about 07:58) still holds its port; stopping it was not allowed automatically. Do not disturb the 07E7 campaign; it is the unfixed baseline approaching the 15 s line.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261118T053831Z/` (baseline), `…T054122Z/` (index), `…T054439Z/` (index + trace counters), `…T054748Z/` (index + trace reuse); `artifacts/logs/object-deletion-vpcd-20261118T0552{21,25,26,42}Z.log`.

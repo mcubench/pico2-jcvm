@@ -252,6 +252,23 @@ extern "C" uint8_t fs_erase_package_state(const uint8_t package_id) {
   return 0;
 }
 
+extern "C" uint8_t fs_write_range(const uint8_t *tag,
+                                   const uint8_t tag_length,
+                                   const uint32_t offset,
+                                   const uint8_t *data,
+                                   const uint32_t length) {
+  ++persistent_transaction_test::counted_fs_calls;
+  if (should_fail_write(tag, tag_length)) return 1;
+  const auto found = files.find(key_for(tag, tag_length));
+  if (found == files.end() || offset > found->second.size() ||
+      length > found->second.size() - offset ||
+      (length != 0 && data == nullptr)) {
+    return 2;
+  }
+  if (length != 0) std::memcpy(found->second.data() + offset, data, length);
+  return 0;
+}
+
 extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
                                    const uint8_t tag_length,
                                    const uint32_t offset,

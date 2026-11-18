@@ -26,6 +26,7 @@
 */
 
 #include "heap.hpp"
+#include "long_operation_progress.hpp"
 #include "context.hpp"
 #include "ffi.h"
 #include "jc_handlers/jc_cp.hpp"
@@ -42,6 +43,7 @@
 #endif
 
 #include <algorithm>
+#include <chrono>
 #include <new>
 #include <utility>
 
@@ -361,6 +363,8 @@ void Heap::visitForeignArrayReferencesForPackage(
 }
 
 void Heap::resetForeignSourceReachabilityMarks() noexcept {
+  ++mark_epoch;
+  ++mark_reset_epoch;
   auto &registry = foreignReferenceStorageRegistry();
   for (auto it = registry.begin(); it != registry.end();) {
     const auto storage = it->lock();
@@ -1498,12 +1502,35 @@ void Heap::visitChildReferences(const JC_Instance &instance,
   }
 }
 
+#ifndef PC_VERSION
+extern "C" uint32_t choupi_time_us_32(void);
+#endif
+namespace {
+uint32_t heapTraceClockUs() noexcept {
+#ifdef PC_VERSION
+  return static_cast<uint32_t>(
+      std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now().time_since_epoch())
+          .count());
+#else
+  return choupi_time_us_32();
+#endif
+}
+} // namespace
+
+Heap::TraceTimer::TraceTimer() noexcept : start_us(heapTraceClockUs()) {}
+Heap::TraceTimer::~TraceTimer() { trace_us += heapTraceClockUs() - start_us; }
+
 Heap::ReachabilitySummary Heap::traceAndMark(
     const RootReferenceEnumerator enumerate_roots, void *root_context,
     const bool reset_marks, const bool include_all_persistent) {
   ReachabilitySummary summary;
+  ++mark_epoch;
+  ++trace_count;
+  const TraceTimer trace_timer;
   this->shared_storage->reachability_complete = false;
   if (reset_marks) {
+    ++mark_reset_epoch;
     for (auto &array : this->shared_storage->arrays) {
       if (array) {
         array->heap_mark = 0;
@@ -1636,6 +1663,7 @@ Heap::ReachabilitySummary Heap::traceAndMark(
         continue;
       }
       (*array)->heap_mark = 2;
+      longOperationProgress();
 #if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
       ++scanned_arrays;
       if (scanned_arrays == 1 || (scanned_arrays % 16) == 0) {
@@ -1683,6 +1711,7 @@ Heap::ReachabilitySummary Heap::traceAndMark(
         continue;
       }
       (*instance)->heap_mark = 2;
+      longOperationProgress();
 #if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
       ++scanned_instances;
       if (scanned_instances == 1 || (scanned_instances % 16) == 0) {
@@ -1797,6 +1826,44 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
   return this->traceAndMark(enumerateVectorRoots, &root_context);
 }
 
+namespace {
+// Result of the last complete root trace inside a TraceReuseScope.
+struct TraceReuse {
+  uint32_t scope_depth = 0;
+  bool valid = false;
+  const void *storage = nullptr;
+  Heap::RootReferenceEnumerator enumerate_roots = nullptr;
+  const void *root_context = nullptr;
+  std::size_t arrays = 0;
+  std::size_t instances = 0;
+  uint32_t reset_epoch = 0;
+  Heap::ReachabilitySummary summary;
+  uint32_t reused = 0;
+};
+TraceReuse trace_reuse;
+} // namespace
+
+// Bumped whenever marks are cleared (a fresh trace or a coordinated reset).
+// Extending marks (alias resolution) keeps a reused trace valid: the next
+// scan extends the same marks to the same fixpoint.
+uint32_t Heap::mark_reset_epoch = 0;
+
+Heap::TraceReuseScope::TraceReuseScope() noexcept
+    : outermost(trace_reuse.scope_depth == 0) {
+  ++trace_reuse.scope_depth;
+}
+
+Heap::TraceReuseScope::~TraceReuseScope() {
+  --trace_reuse.scope_depth;
+  if (this->outermost) trace_reuse.valid = false;
+}
+
+uint32_t Heap::takeReusedTraceCount() noexcept {
+  const uint32_t reused = trace_reuse.reused;
+  trace_reuse.reused = 0;
+  return reused;
+}
+
 Heap::ReachabilitySummary Heap::traceReachableFrom(
     const RootReferenceEnumerator enumerate_roots, void *root_context) {
   ReachabilitySummary summary;
@@ -1805,7 +1872,30 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
     summary.root_enumeration_failures = 1;
     return summary;
   }
-  return this->traceAndMark(enumerate_roots, root_context);
+  auto &reuse = trace_reuse;
+  const auto &storage = *this->shared_storage;
+  if (reuse.scope_depth != 0 && reuse.valid && reuse.storage == &storage &&
+      reuse.enumerate_roots == enumerate_roots &&
+      reuse.root_context == root_context &&
+      reuse.arrays == storage.arrays.size() &&
+      reuse.instances == storage.instances.size() &&
+      reuse.reset_epoch == mark_reset_epoch) {
+    ++reuse.reused;
+    return reuse.summary;
+  }
+  summary = this->traceAndMark(enumerate_roots, root_context);
+  reuse.valid = false;
+  if (reuse.scope_depth != 0 && summary.complete) {
+    reuse.valid = true;
+    reuse.storage = &storage;
+    reuse.enumerate_roots = enumerate_roots;
+    reuse.root_context = root_context;
+    reuse.arrays = storage.arrays.size();
+    reuse.instances = storage.instances.size();
+    reuse.reset_epoch = mark_reset_epoch;
+    reuse.summary = summary;
+  }
+  return summary;
 }
 
 Heap::ReachabilitySummary Heap::extendReachableFrom(
@@ -1819,11 +1909,244 @@ Heap::ReachabilitySummary Heap::extendReachableFrom(
   return this->traceAndMark(enumerate_roots, root_context, false);
 }
 
+uint32_t Heap::reachable_prefix_queries = 0;
+uint32_t Heap::mark_epoch = 0;
+uint32_t Heap::trace_count = 0;
+uint32_t Heap::trace_us = 0;
+
+uint32_t Heap::takeTraceStats(uint32_t *elapsed_us) noexcept {
+  const uint32_t count = trace_count;
+  if (elapsed_us != nullptr) *elapsed_us = trace_us;
+  trace_count = 0;
+  trace_us = 0;
+  return count;
+}
+
+namespace {
+// Sorted identities of the marked tagged objects of one heap. Entries are
+// [length][bytes] records in `blob`; `offsets` lists them in lexicographic
+// order, so every tag that extends a prefix sorts right after the prefix.
+struct ReachableTagIndex {
+  uint32_t scope_depth = 0;
+  bool built = false;
+  bool unusable = false;
+  const void *storage = nullptr;
+  uint32_t epoch = 0;
+  std::size_t arrays = 0;
+  std::size_t instances = 0;
+  std::vector<uint8_t> blob;
+  std::vector<uint32_t> offsets;
+  uint32_t peak_bytes = 0;
+  uint32_t refused = 0;
+
+  void release() {
+    built = false;
+    unusable = false;
+    storage = nullptr;
+    std::vector<uint8_t>().swap(blob);
+    std::vector<uint32_t>().swap(offsets);
+  }
+};
+
+ReachableTagIndex reachable_tag_index;
+
+// The index is transient RAM taken during a deletion pass, when no crypto
+// operation runs. Keep it well below the free heap seen at that point.
+constexpr std::size_t kReachableTagIndexMaxBytes = 24u * 1024u;
+#ifndef PC_VERSION
+constexpr uint32_t kReachableTagIndexHeapMarginBytes = 16u * 1024u;
+#endif
+
+int compareTagBytes(const uint8_t *left, uint8_t left_length,
+                    const uint8_t *right, uint8_t right_length) noexcept {
+  const uint8_t common = left_length < right_length ? left_length
+                                                      : right_length;
+  const int order = common == 0 ? 0 : std::memcmp(left, right, common);
+  if (order != 0) return order;
+  return static_cast<int>(left_length) - static_cast<int>(right_length);
+}
+} // namespace
+
+#ifndef PC_VERSION
+extern "C" uint32_t choupi_available_transient_memory_bytes(void);
+
+// Weak fallbacks for host unit tests that build the VM sources without the
+// board layer; src/choupi_pico2.cpp provides the firmware definitions.
+extern "C" __attribute__((weak)) uint32_t
+choupi_available_transient_memory_bytes(void) {
+  return UINT32_MAX;
+}
+extern "C" __attribute__((weak)) uint32_t choupi_time_us_32(void) {
+  return 0;
+}
+extern "C" __attribute__((weak)) void choupi_vm_cooperative_progress(void) {}
+#endif
+
+Heap::ReachableTagIndexScope::ReachableTagIndexScope() noexcept
+    : outermost(reachable_tag_index.scope_depth == 0) {
+  ++reachable_tag_index.scope_depth;
+}
+
+Heap::ReachableTagIndexScope::~ReachableTagIndexScope() {
+  --reachable_tag_index.scope_depth;
+  if (this->outermost) reachable_tag_index.release();
+}
+
+uint32_t Heap::takeReachableTagIndexPeakBytes(uint32_t *refused) noexcept {
+  const uint32_t peak = reachable_tag_index.peak_bytes;
+  if (refused != nullptr) *refused = reachable_tag_index.refused;
+  reachable_tag_index.peak_bytes = 0;
+  reachable_tag_index.refused = 0;
+  return peak;
+}
+
+bool Heap::indexedReachablePersistentTagPrefix(const fs::Tag &tag,
+                                               bool &answered) const {
+  answered = false;
+  auto &index = reachable_tag_index;
+  if (index.scope_depth == 0) return false;
+  const auto &storage = *this->shared_storage;
+  const bool current = index.storage == &storage && index.epoch == mark_epoch &&
+                       index.arrays == storage.arrays.size() &&
+                       index.instances == storage.instances.size();
+  if (!current) {
+    index.release();
+    index.storage = &storage;
+    index.epoch = mark_epoch;
+    index.arrays = storage.arrays.size();
+    index.instances = storage.instances.size();
+    // First pass: size the copy, so an over-budget index is refused before
+    // any allocation (a failed malloc panics on the target).
+    std::size_t blob_bytes = 0;
+    std::size_t entries = 0;
+    for (const auto &array : storage.arrays) {
+      if (!array || array->heap_mark == 0 || !array->hasPersistentTag()) {
+        continue;
+      }
+      blob_bytes += 1u + array->getPersistentTag().len;
+      ++entries;
+    }
+    for (const auto &instance : storage.instances) {
+      if (!instance || instance->heap_mark == 0 || !instance->isPersistent() ||
+          !instance->hasPersistentTag()) {
+        continue;
+      }
+      blob_bytes += 1u + instance->getPersistentTag().len;
+      ++entries;
+    }
+    const std::size_t needed = blob_bytes + entries * sizeof(uint32_t);
+    bool fits = needed <= kReachableTagIndexMaxBytes;
+#ifndef PC_VERSION
+    fits = fits && choupi_available_transient_memory_bytes() >=
+                       needed + kReachableTagIndexHeapMarginBytes;
+#endif
+    if (!fits) {
+      index.unusable = true;
+      ++index.refused;
+      return false;
+    }
+    if (needed > index.peak_bytes) {
+      index.peak_bytes = static_cast<uint32_t>(needed);
+    }
+    index.blob.reserve(blob_bytes);
+    index.offsets.reserve(entries);
+    const auto append = [&index](const fs::Tag &object_tag) {
+      if (object_tag.len == 0 || object_tag.len > sizeof(object_tag.value)) {
+        return;
+      }
+      index.offsets.push_back(static_cast<uint32_t>(index.blob.size()));
+      index.blob.push_back(object_tag.len);
+      index.blob.insert(index.blob.end(), object_tag.value,
+                        object_tag.value + object_tag.len);
+    };
+    for (const auto &array : storage.arrays) {
+      if (array && array->heap_mark != 0 && array->hasPersistentTag()) {
+        append(array->getPersistentTag());
+      }
+    }
+    for (const auto &instance : storage.instances) {
+      if (instance && instance->heap_mark != 0 && instance->isPersistent() &&
+          instance->hasPersistentTag()) {
+        append(instance->getPersistentTag());
+      }
+    }
+    const uint8_t *base = index.blob.data();
+    std::sort(index.offsets.begin(), index.offsets.end(),
+              [base](uint32_t left, uint32_t right) {
+                return compareTagBytes(base + left + 1, base[left],
+                                       base + right + 1, base[right]) < 0;
+              });
+    index.built = true;
+  }
+  if (index.unusable || !index.built) return false;
+
+  const uint8_t *base = index.blob.data();
+  // First entry not ordered before (bytes, length).
+  const auto lower = [&](const uint8_t *bytes, uint8_t length) {
+    return std::lower_bound(
+        index.offsets.begin(), index.offsets.end(), 0u,
+        [&](uint32_t entry, uint32_t) {
+          return compareTagBytes(base + entry + 1, base[entry], bytes,
+                                 length) < 0;
+        });
+  };
+  const auto contains = [&](const uint8_t *bytes, uint8_t length) {
+    const auto found = lower(bytes, length);
+    return found != index.offsets.end() &&
+           compareTagBytes(base + *found + 1, base[*found], bytes, length) ==
+               0;
+  };
+
+  answered = true;
+  // Same rules as linearReachablePersistentTagPrefix().
+  if (contains(tag.value, static_cast<uint8_t>(tag.len))) return true;
+  if (tag.len > sizeof(uint16_t) &&
+      contains(tag.value, static_cast<uint8_t>(tag.len - sizeof(uint16_t)))) {
+    return true;
+  }
+  const bool applet_instance_root_prefix =
+      (tag.len == 5 || tag.len == 6) && tag.value[0] == 0x03 &&
+      tag.value[1] != 0xfe && tag.value[1] != 0xff &&
+      tag.value[tag.len - 1] == 0xff;
+  if (applet_instance_root_prefix) {
+    for (auto entry = lower(tag.value, static_cast<uint8_t>(tag.len));
+         entry != index.offsets.end(); ++entry) {
+      const uint8_t length = base[*entry];
+      if (length < tag.len ||
+          std::memcmp(base + *entry + 1, tag.value, tag.len) != 0) {
+        break;
+      }
+      if (length > tag.len) return true;
+    }
+  }
+  return false;
+}
+
+uint32_t Heap::takeReachablePrefixQueryCount() noexcept {
+  const uint32_t count = reachable_prefix_queries;
+  reachable_prefix_queries = 0;
+  return count;
+}
+
 bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
   if (tag.len == 0 || tag.len > sizeof(tag.value)) {
     return false;
   }
+  ++reachable_prefix_queries;
+  longOperationProgress();
+  bool answered = false;
+  try {
+    const bool reachable = this->indexedReachablePersistentTagPrefix(tag,
+                                                                     answered);
+    if (answered) return reachable;
+  } catch (...) {
+    reachable_tag_index.unusable = true;
+  }
+  return this->linearReachablePersistentTagPrefix(tag);
+}
 
+bool Heap::linearReachablePersistentTagPrefix(
+    const fs::Tag &tag) const noexcept {
   const auto owns_tag_or_direct_record = [&tag](const fs::Tag &object_tag) {
     if (object_tag.len == 0 || object_tag.len > sizeof(object_tag.value)) {
       return false;

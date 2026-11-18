@@ -854,7 +854,7 @@ int main() {
       }
       const auto summary = heap.collectUnreachableFrom({parent_reference});
       bool all_garbage_freed = true;
-      for (const auto reference : garbage) {
+      for (const auto &reference : garbage) {
         all_garbage_freed = all_garbage_freed &&
                             array_reference_was_reclaimed(heap, reference);
       }
@@ -2439,6 +2439,86 @@ int main() {
                heap.hasReachablePersistentTagPrefix(applet_root) &&
                !heap.hasReachablePersistentTagPrefix(other_applet_root),
            "reachable_applet_root_prefix_protects_nested_backing_record");
+  }
+
+  {
+    // The sorted tag index used during object deletion must give exactly the
+    // answers of the linear walk: exact identity, direct two-byte field
+    // records, applet-instance root prefixes, and nothing for unmarked
+    // objects or deeper descendants.
+    constexpr uint8_t owner = 0x05;
+    jcvm::Heap heap(owner);
+    std::vector<jcvm::jref_t> reachable;
+    std::vector<std::vector<uint8_t>> tags;
+    for (uint8_t index = 0; index < 24; ++index) {
+      std::vector<uint8_t> bytes{0x03, owner, 0x3a,
+                                 static_cast<uint8_t>(index % 3), 0xff,
+                                 static_cast<uint8_t>(index / 4),
+                                 static_cast<uint8_t>(index)};
+      if (index % 5 == 0) bytes.resize(5 + (index % 2));
+      if (index % 7 == 0) bytes.insert(bytes.end(), {0x00, 0x01, 0x02});
+      const auto reference = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      jcvm::fs::Tag tag{};
+      tag.len = static_cast<uint8_t>(bytes.size());
+      std::memcpy(tag.value, bytes.data(), bytes.size());
+      heap.getArray(reference)->setPersistentTag(tag);
+      tags.push_back(bytes);
+      if (index % 4 != 3) reachable.push_back(reference);
+    }
+    const auto reachability = heap.traceReachableFrom(reachable);
+    std::vector<jcvm::fs::Tag> queries;
+    const auto add_query = [&queries](const std::vector<uint8_t> &bytes) {
+      if (bytes.empty() || bytes.size() > 129) return;
+      jcvm::fs::Tag query{};
+      query.len = static_cast<uint8_t>(bytes.size());
+      std::memcpy(query.value, bytes.data(), bytes.size());
+      queries.push_back(query);
+    };
+    for (const auto &bytes : tags) {
+      add_query(bytes);
+      for (std::size_t cut = 1; cut < bytes.size(); ++cut) {
+        add_query(std::vector<uint8_t>(bytes.begin(), bytes.begin() + cut));
+      }
+      auto field = bytes;
+      field.insert(field.end(), {0x00, 0x04});
+      add_query(field);
+      auto deeper = field;
+      deeper.insert(deeper.end(), {0x00, 0x01});
+      add_query(deeper);
+      auto sibling = bytes;
+      if (!sibling.empty()) sibling.front() ^= 0x80;
+      add_query(sibling);
+    }
+    for (uint8_t applet = 0; applet < 4; ++applet) {
+      queries.push_back(
+          jcvm::FlashMemory_Handler::getAppletInstanceTag(owner, 0x3a, applet));
+    }
+    std::vector<bool> linear;
+    for (const auto &query : queries) {
+      linear.push_back(heap.hasReachablePersistentTagPrefix(query));
+    }
+    std::size_t mismatches = 0;
+    std::size_t positives = 0;
+    {
+      const jcvm::Heap::ReachableTagIndexScope scope;
+      for (std::size_t index = 0; index < queries.size(); ++index) {
+        const bool indexed =
+            heap.hasReachablePersistentTagPrefix(queries[index]);
+        mismatches += indexed != linear[index] ? 1u : 0u;
+        positives += indexed ? 1u : 0u;
+      }
+    }
+    uint32_t refused = 0;
+    const uint32_t index_bytes =
+        jcvm::Heap::takeReachableTagIndexPeakBytes(&refused);
+    std::printf("TEST:INFO reachable_tag_index queries=%zu positives=%zu "
+                "mismatches=%zu index_bytes=%u\n",
+                queries.size(), positives, mismatches,
+                static_cast<unsigned>(index_bytes));
+    expect(reachability.complete && queries.size() > 200 && positives > 20 &&
+               positives < queries.size() && mismatches == 0 &&
+               index_bytes > 0 && refused == 0,
+           "reachable_tag_index_matches_linear_walk");
   }
 
   {

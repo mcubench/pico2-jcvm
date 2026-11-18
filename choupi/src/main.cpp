@@ -41,6 +41,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_array_type.hpp"
 #include "persistent_inventory.hpp"
+#include "long_operation_progress.hpp"
 #include "../../src/short_apdu.hpp"
 #include "../../src/cap_store.hpp"
 #include "../../src/vm_lifecycle.h"
@@ -49,6 +50,7 @@
 #include "../../src/object_deletion_policy.hpp"
 
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
@@ -484,6 +486,9 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
     // collecting during a transaction could invalidate its rollback journal.
     return;
   }
+  const uint32_t pass_start_us = choupi_time_us_32();
+  (void)jcvm::Heap::takeReachablePrefixQueryCount();
+  (void)jcvm::Heap::takeTraceStats(nullptr);
   const auto heap_result = jcvm::Context::collectRetainedHeaps();
   if (!heap_result.complete) {
     std::printf("OBJECT_DELETION:SKIP package=%u owner=%u "
@@ -507,6 +512,7 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
               static_cast<unsigned>(heap_result.arrays_reachable),
               static_cast<unsigned>(heap_result.instances_reachable));
 
+  const uint32_t heap_done_us = choupi_time_us_32();
   PhysicalObjectDeletionRoots roots;
   if (!context.appendRetainedRootsForPackage(
           context.getAppletPackageID(), roots.references)) {
@@ -533,6 +539,7 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
     return;
   }
 
+  const uint32_t roots_done_us = choupi_time_us_32();
   const auto deletion_batch =
       [&]() {
         uint32_t files_used = 0;
@@ -556,6 +563,13 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
             enumerate_physical_object_deletion_roots, &roots,
             jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
       }();
+  const uint32_t reclaim_done_us = choupi_time_us_32();
+  const uint32_t prefix_queries = jcvm::Heap::takeReachablePrefixQueryCount();
+  uint32_t traces_us = 0;
+  const uint32_t traces = jcvm::Heap::takeTraceStats(&traces_us);
+  uint32_t tag_index_refused = 0;
+  const uint32_t tag_index_bytes =
+      jcvm::Heap::takeReachableTagIndexPeakBytes(&tag_index_refused);
   const bool complete = deletion_batch.complete();
   std::printf("OBJECT_DELETION: package=%u owner=%u applet_result=%u "
               "package_result=%u erased_applet=%u erased_package=%u "
@@ -587,6 +601,25 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
                 static_cast<unsigned long>(tombstones));
     if (compact_status != 0) return;
   }
+  const uint32_t pass_end_us = choupi_time_us_32();
+  std::printf("OBJECT_DELETION:TIMING package=%u owner=%u heap_us=%lu "
+              "roots_us=%lu reclaim_us=%lu compact_us=%lu total_us=%lu "
+              "prefix_queries=%lu tag_index_bytes=%lu "
+              "tag_index_refused=%lu traces=%lu trace_us=%lu "
+              "reused_traces=%lu\r\n",
+              static_cast<unsigned>(context.getAppletPackageID()),
+              static_cast<unsigned>(owner),
+              static_cast<unsigned long>(heap_done_us - pass_start_us),
+              static_cast<unsigned long>(roots_done_us - heap_done_us),
+              static_cast<unsigned long>(reclaim_done_us - roots_done_us),
+              static_cast<unsigned long>(pass_end_us - reclaim_done_us),
+              static_cast<unsigned long>(pass_end_us - pass_start_us),
+              static_cast<unsigned long>(prefix_queries),
+              static_cast<unsigned long>(tag_index_bytes),
+              static_cast<unsigned long>(tag_index_refused),
+              static_cast<unsigned long>(traces),
+              static_cast<unsigned long>(traces_us),
+              static_cast<unsigned long>(jcvm::Heap::takeReusedTraceCount()));
   if (complete) {
     context.clearObjectDeletionRequest();
     automatic_deletion_pending[owner] = false;
@@ -893,7 +926,15 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
   }
 
   try {
+#ifdef PC_VERSION
+    const auto pc_pass_start = std::chrono::steady_clock::now();
+    (void)jcvm::Heap::takeReachablePrefixQueryCount();
+    (void)jcvm::Heap::takeTraceStats(nullptr);
+#endif
     const auto heap_result = jcvm::Context::collectRetainedHeaps();
+#ifdef PC_VERSION
+    const auto pc_heap_done = std::chrono::steady_clock::now();
+#endif
     if (!heap_result.complete) {
       std::fprintf(stderr,
                    "OBJECT_DELETION:SKIP package=%u owner=%u "
@@ -993,6 +1034,9 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
                    pre_cleanup_capacity);
     }
 #endif
+#ifdef PC_VERSION
+    const auto pc_roots_done = std::chrono::steady_clock::now();
+#endif
     const auto deletion_batch =
         jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
             static_cast<uint8_t>(context.getAppletID()),
@@ -1000,6 +1044,34 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
             enumerate_persistent_root_vector, &root_vector,
             jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu);
     const bool complete = deletion_batch.complete();
+#ifdef PC_VERSION
+    {
+      const auto pc_reclaim_done = std::chrono::steady_clock::now();
+      uint32_t traces_us = 0;
+      const uint32_t traces = jcvm::Heap::takeTraceStats(&traces_us);
+      const auto us = [](auto from, auto to) {
+        return static_cast<unsigned long>(
+            std::chrono::duration_cast<std::chrono::microseconds>(to - from)
+                .count());
+      };
+      std::fprintf(stderr,
+                   "OBJECT_DELETION:TIMING package=%u heap_us=%lu roots_us=%lu "
+                   "reclaim_us=%lu prefix_queries=%lu tag_index_bytes=%lu "
+                   "traces=%lu trace_us=%lu reused_traces=%lu\n",
+                   static_cast<unsigned>(context.getAppletPackageID()),
+                   us(pc_pass_start, pc_heap_done),
+                   us(pc_heap_done, pc_roots_done),
+                   us(pc_roots_done, pc_reclaim_done),
+                   static_cast<unsigned long>(
+                       jcvm::Heap::takeReachablePrefixQueryCount()),
+                   static_cast<unsigned long>(
+                       jcvm::Heap::takeReachableTagIndexPeakBytes(nullptr)),
+                   static_cast<unsigned long>(traces),
+                   static_cast<unsigned long>(traces_us),
+                   static_cast<unsigned long>(
+                       jcvm::Heap::takeReusedTraceCount()));
+    }
+#endif
     std::fprintf(stderr,
                  "OBJECT_DELETION: package=%u owner=%u applet_result=%u "
                  "package_result=%u erased_applet=%u erased_package=%u "
@@ -1343,8 +1415,16 @@ void collect_heap_after_apdu() {
         static_cast<unsigned>(candidate_inventory_result));
     std::fflush(stdout);
 #endif
+    const uint32_t gc_start_us = choupi_time_us_32();
     const auto summary = context.getHeap().collectUnreachableFrom(
         enumerate_selected_applet_roots, &roots);
+    const uint32_t gc_elapsed_us = choupi_time_us_32() - gc_start_us;
+    if (gc_elapsed_us >= 250000u) {
+      std::printf("CHOUPI:HEAP_GC_TIMING us=%lu arrays=%lu instances=%lu\r\n",
+                  static_cast<unsigned long>(gc_elapsed_us),
+                  static_cast<unsigned long>(summary.arrays_reachable),
+                  static_cast<unsigned long>(summary.instances_reachable));
+    }
 #ifdef CHOUPI_DEBUG_HEAP_GC
     ++collection_sequence;
     if ((collection_sequence % 32) == 0 || !summary.complete) {

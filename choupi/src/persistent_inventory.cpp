@@ -1,4 +1,14 @@
 #include "persistent_inventory.hpp"
+#include "long_operation_progress.hpp"
+
+#ifndef PC_VERSION
+// Weak fallbacks for host unit tests that build the inventory without the
+// board layer; src/choupi_pico2.cpp provides the firmware definitions.
+extern "C" __attribute__((weak)) uint32_t choupi_time_us_32(void) {
+  return 0;
+}
+extern "C" __attribute__((weak)) void choupi_vm_cooperative_progress(void) {}
+#endif
 
 #include "heap.hpp"
 #include "ffi.h"
@@ -359,6 +369,7 @@ VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
       return VisitResult::InvalidTag;
     }
 
+    longOperationProgress();
     Tag tag{};
     tag.len = tag_length;
     std::memcpy(tag.value, request.tag + 1, tag_length);
@@ -1385,6 +1396,12 @@ ObjectDeletionBatchResult reclaimUnreachableObjectDeletionBatch(
     const uint8_t applet_owner, const uint8_t package_id, Heap &heap,
     const PersistentInventory::RootReferenceEnumerator enumerate_roots,
     void *root_context, const uint32_t max_erased_count) {
+  // Each candidate record is checked against the marked heap; answer those
+  // checks from one sorted tag copy instead of a walk over all live objects.
+  const Heap::ReachableTagIndexScope tag_index_scope;
+  // The applet and package scans below repeat the same root trace on an
+  // unchanged live heap; trace once per batch.
+  const Heap::TraceReuseScope trace_reuse_scope;
   ObjectDeletionBatchResult result;
   result.applet_result = reclaimUnreachableAppletTags(
       applet_owner, heap, enumerate_roots, root_context,

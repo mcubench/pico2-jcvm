@@ -109,6 +109,19 @@ private:
   static std::vector<std::weak_ptr<SharedStorage>> &
   foreignReferenceStorageRegistry() noexcept;
   std::shared_ptr<SharedStorage> shared_storage;
+  static uint32_t reachable_prefix_queries;
+  static uint32_t mark_epoch;
+  static uint32_t mark_reset_epoch;
+  static uint32_t trace_count;
+  static uint32_t trace_us;
+  struct TraceTimer {
+    TraceTimer() noexcept;
+    ~TraceTimer();
+    uint32_t start_us;
+  };
+  bool linearReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept;
+  bool indexedReachablePersistentTagPrefix(const fs::Tag &tag,
+                                           bool &answered) const;
 
   struct GlobalAIDObject {
     std::array<uint8_t, 16> aid{};
@@ -293,6 +306,46 @@ public:
   /// transient arrays with serialized identities; deeper descendants require
   /// their own marked object. Call only after a complete trace pass.
   bool hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept;
+  /// Number of hasReachablePersistentTagPrefix() calls since the last take
+  /// (deletion-pass telemetry).
+  static uint32_t takeReachablePrefixQueryCount() noexcept;
+  /// Heap traces (traceAndMark) and their total time since the last take.
+  static uint32_t takeTraceStats(uint32_t *elapsed_us) noexcept;
+  /// While an instance is alive, hasReachablePersistentTagPrefix() answers
+  /// from a sorted copy of the marked objects' tags instead of walking every
+  /// live object per query. The copy is rebuilt after any mark change and
+  /// freed when the scope ends. Without a scope, or when the copy would not
+  /// fit the RAM budget, queries use the linear walk.
+  class ReachableTagIndexScope {
+  public:
+    ReachableTagIndexScope() noexcept;
+    ~ReachableTagIndexScope();
+    ReachableTagIndexScope(const ReachableTagIndexScope &) = delete;
+    ReachableTagIndexScope &operator=(const ReachableTagIndexScope &) = delete;
+
+  private:
+    bool outermost;
+  };
+  /// While an instance is alive, traceReachableFrom(enumerator, context)
+  /// returns the previous complete trace for the same heap and root set if no
+  /// marks were cleared and no object was added or removed since. Used for
+  /// the repeated candidate scans of one object-deletion batch, which only
+  /// erase records already proven unreachable.
+  class TraceReuseScope {
+  public:
+    TraceReuseScope() noexcept;
+    ~TraceReuseScope();
+    TraceReuseScope(const TraceReuseScope &) = delete;
+    TraceReuseScope &operator=(const TraceReuseScope &) = delete;
+
+  private:
+    bool outermost;
+  };
+  /// Traces answered by TraceReuseScope since the last take.
+  static uint32_t takeReusedTraceCount() noexcept;
+  /// Largest index built since the last take and how many builds were
+  /// refused for the RAM budget (deletion-pass telemetry).
+  static uint32_t takeReachableTagIndexPeakBytes(uint32_t *refused) noexcept;
   /// Reclaim unmarked local slots only after a complete mark pass.
   ReachabilitySummary collectUnreachableFrom(
       const std::vector<jref_t> &roots);
