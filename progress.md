@@ -31717,6 +31717,18 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: Keep the test-only regression separate from the already validated firmware change; the stable-root trace-reuse optimization is now covered against heap-shape invalidation.
 - Artifacts/logs: `tests/unit/persistent_transaction/persistent_transaction_test.cpp`.
 
+## 2026-11-18 Fixed-image option-2 early resource checkpoint 9
+
+- Step-Id: `20261118-1158-mem01-opt2-fixed-image-checkpoint`
+- Task: MEM-01 T8 exploratory option-2 monitoring
+- When: '2026-11-18 11:49 CET' - '2026-11-18 11:58 CET'
+- Model: `gpt-6-codex`
+- Change: Reset identified token 07E74C5D7A038DEC with the normal `853543d6` empty-card UF2, verified the ISD-only state, installed the unchanged JCAlgTest 1.8.4/jc305 CAP, verified it SELECTABLE, and started the supplied 1.8.5 client option `2 -> PERFORMANCE TEST -> 2` with separate serial telemetry. Added exact campaign identity and resource checkpoint to TODO, QKB and HANDOFF.
+- Validation: Empty-card UF2 flash verified by `tools/flash`; exact reader was confirmed as `Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 00 00`; GPPro `--list` showed ISD only before install and SELECTABLE applet after. `./tools/fixture-path --verify` passed (83 files); client and CAP SHA-256 hashes match their pinned 1.8.5 / 1.8.4-jc305 values. At checkpoint, client log confirmed both menu choices and exact selected reader. Parsed 445 whole PRE_CLEANUP and TIMING records; no malformed lines or TEST:FAIL, FAULT, PANIC, NO_RESOURCE or PC/SC error. No build repeated because source firmware HEAD `853543d6` was already ARM-built and physically smoke-tested; the earlier targeted unit/overlay tests passed.
+- Result: After 62 method groups and 445 cleanup cycles, storage moved from 290 files / 8,909 bytes to a 607 / 12,517 peak (12.73%), with latest 378 / 10,466; last 100 samples range 348–607 files and 10,061–12,517 bytes. Heap live counts rose from 30 arrays / 16 instances during setup to 103 / 22 and held at 103 / 22 for the last 100 samples. This is early family-setup behavior, not a full-suite plateau. Campaign remains active and exploratory because T7 VPCD acceptance is open.
+- Decision: Continue through completion or the 14,400-second bound, stopping on >90% arena use, runtime fault, client failure or transport loss. Do not restart/list PC/SC during the run. After completion, run the full headroom checker and preserve any malformed diagnostics as invalid T10 evidence.
+- Artifacts/logs: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/attempt1/`; source image `build/arm/pico2_choupi.uf2` SHA-256 `89a744ca32134e838c38f9ff020ea7080305d76a0113757939432e2b9545d770`; empty-card UF2 SHA-256 `d0701dbfe103cb25bad3a05c38efdf8838e38747302a364a00d553b0c4e0fc8a`.
+
 ## 2026-11-18 Token docs: avoid PC/SC refresh and reader listing during campaigns 4
 
 - Step-Id: `20261118-0741-pcsc-campaign-warning`

@@ -1625,3 +1625,37 @@ PRE_CLEANUP lines now invalidate T10 (9848, 9982, 16502, 25115, 26890,
 27673); an earlier partial OBJECT_DELETION record at line 1156 is also
 interleaved with exception diagnostics. These results show reclamation during
 the run but do not prove a final persistent-store plateau or acceptance.
+
+
+## RSA-cache object-deletion pass starved the watchdog — fixed and A/B verified 2026-11-18
+
+The old physical option-1 run on 07E7 failed at `TYPE_RSA_CRT_PRIVATE` 2048
+NOPAD, on a `B0E2` request. Its serial capture ends inside the deletion pass and
+the board re-enumerated itself. This reproduces the Windows reader-loss point:
+the full object-deletion scan had no watchdog refresh, USB service or CCID time
+extension. It is a long-operation responsiveness failure, not persistent-store
+exhaustion.
+
+**Viable fix:** commits `25c39cd7` and `853543d6` build a bounded 24 KiB sorted
+index of marked persistent tags (linear fallback if the target RAM margin is
+not available), reuse complete stable-root traces within one deletion batch,
+and service watchdog/USB/CCID progress from the long scans. The automatic
+post-APDU heap GC now runs only when the applet requested deletion. On 07E7 at
+the reproduced cache state, A/B changed B0E2 from a 14.87 s worst measured old
+pass / 10.2 s repeat to 3.05 s, with `OBJECT_DELETION:TIMING` at 2.18–2.54 s,
+about 41 progress calls and two completed CCID extensions per pass. The new
+image prepared and measured CRT-3072 beyond the old failure point; every probe
+APDU returned `9000`, with no PANIC/FAULT/watchdog reboot. The index peaked at
+21,870 B, close to its cap; larger indexes safely fall back to the slower
+linear walk. This fixes the observed watchdog boundary; it does not prove the
+full all-algorithm campaign or storage plateau.
+
+A new normal-image exploratory option-2 run is now active on a freshly wiped
+07E7 with unchanged 1.8.4/jc305 CAP and pinned 1.8.5 client. At 62 method
+groups / 445 cleanup samples, storage reached 607 files / 12,517 of 98,304 B
+(12.73%) and then dropped to 378 / 10,466. Live heap rose from 30 arrays / 16
+instances to 103 / 22 during family setup and was stable at 103 / 22 over the
+last 100 samples. This is an early checkpoint, not a suite-wide plateau or
+acceptance. Do not list readers or restart PC/SC while the run is live.
+
+Artifact: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/attempt1/`.
