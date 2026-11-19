@@ -854,6 +854,12 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref,
     }
   }
 
+  // Storing the reference a field already holds (a native init that sets
+  // the same key again) cannot make any object unreachable.
+  if (field.value != static_cast<jword_t>(ref.compact()) ||
+      field.type != new_type) {
+    Heap::noteReachabilityChange();
+  }
   field.value = static_cast<jword_t>(ref.compact());
   field.type = new_type;
   field.reference_owner = foreign_reference

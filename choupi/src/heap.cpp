@@ -136,6 +136,7 @@ bool Heap::hasLiveObjects() const noexcept {
 }
 
 jref_t Heap::addGlobalArray(const uint16_t length, const jc_array_type type) {
+  noteReachabilityChange();
   Heap &heap = globalArrayHeap();
   constexpr ClearEvent clear_on_reset = ClearEvent::CLEAR_ON_RESET;
   std::shared_ptr<JC_Array> array;
@@ -174,6 +175,7 @@ jref_t Heap::addGlobalArray(const uint16_t length, const jc_array_type type) {
 
 jref_t Heap::addGlobalRetainedArray(const uint16_t length,
                                     const jc_array_type type) {
+  noteReachabilityChange();
   Heap &heap = globalArrayHeap();
   std::shared_ptr<JC_Array> array;
   if (type == JAVA_ARRAY_T_REFERENCE) {
@@ -682,6 +684,7 @@ bool Heap::hasForeignArrayReferenceToAppletOwner(
 
 jref_t Heap::addGlobalInstance(const jpackage_ID_t package_id,
                                const jclass_index_t class_index) {
+  noteReachabilityChange();
   Heap &heap = globalArrayHeap();
   uint16_t slot = 0;
   for (auto &existing : heap.shared_storage->instances) {
@@ -750,6 +753,7 @@ jref_t Heap::addGlobalAIDObject(const uint8_t *aid, const uint8_t aid_length,
   }
   const jref_t cached = findGlobalAIDObject(aid, aid_length);
   if (!cached.isNullPointer()) return cached;
+  noteReachabilityChange();
 
   Heap &heap = globalArrayHeap();
   const jref_t object_reference = addGlobalInstance(package_id, class_index);
@@ -810,6 +814,7 @@ bool Heap::describeGlobalAIDObject(const jref_t reference, uint8_t aid[16],
  * @return reference value.
  */
 jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type) {
+  noteReachabilityChange();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -845,6 +850,7 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type) {
  */
 jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
                       const jc_cp_offset_t reference_type) {
+  noteReachabilityChange();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -893,6 +899,9 @@ jref_t Heap::addTransientArray(const uint16_t nb_entry,
  * @return reference value.
  */
 jref_t Heap::addArray(JC_Array array) {
+  // An array reloaded from flash keeps its tag; only a new one changes
+  // reachability.
+  if (!array.hasPersistentTag()) noteReachabilityChange();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -919,6 +928,7 @@ jref_t Heap::addArray(JC_Array array) {
 }
 
 jref_t Heap::addTransientArrayResult(const JC_Array &array) {
+  noteReachabilityChange();
   jref_t ref;
   try {
     uint16_t offset = 0;
@@ -952,6 +962,7 @@ jref_t Heap::addTransientArrayResult(const JC_Array &array) {
  * Clear transient arrays associated with the given lifecycle event.
  */
 void Heap::clearTransientArrays(const ClearEvent event) {
+  noteReachabilityChange();
   for (auto &array : this->shared_storage->arrays) {
     if (array && array->isTransientArray() &&
         array->getClearEvent() == event) {
@@ -978,6 +989,7 @@ void Heap::clearTransientArrays(const ClearEvent event) {
  */
 jref_t Heap::addInstance(const jpackage_ID_t packageID,
                          const jclass_index_t instantiated_class) {
+  noteReachabilityChange();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -1023,6 +1035,7 @@ jref_t Heap::addInstance(const jpackage_ID_t packageID,
  * @param[instance] pointer to the new instance to add.
  */
 jref_t Heap::addInstance(JC_Instance &&instance) {
+  if (!instance.hasPersistentTag()) noteReachabilityChange();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -1147,6 +1160,7 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   const jref_t reference,
                                   const uint8_t reference_owner) {
+  noteReachabilityChange();
   for (StaticReferenceRoot &root : this->shared_storage->static_reference_roots) {
     if (root.package_id == package_id && root.field_number == field_number) {
       root.reference = reference;
@@ -1910,6 +1924,7 @@ Heap::ReachabilitySummary Heap::extendReachableFrom(
 }
 
 uint32_t Heap::reachable_prefix_queries = 0;
+uint32_t Heap::reachability_epoch = 0;
 uint32_t Heap::mark_epoch = 0;
 uint32_t Heap::trace_count = 0;
 uint32_t Heap::trace_us = 0;

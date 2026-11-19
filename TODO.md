@@ -55,9 +55,16 @@ plus temporary counters, EC384 Signature replay
   headroom first.
 - [ ] **FLASH-01c** Erase a batch of records without moving the arena tail and
   rescanning the 8,192-slot index per record (1.5 ms each).
-- [ ] **FLASH-01d** Cut steady deletion-pass work: avoid re-reconstructing
-  every tag in each of the ~4 full `fs_next_tag` scans per pass; evaluate
-  reusing the heap-GC trace for the persistent reclaim trace.
+- [x] **FLASH-01d** Skip a deletion pass when nothing can have become
+  unreachable since the owner's last complete pass (heap reachability epoch,
+  bumped by new objects, changed references, reference/new records, erases,
+  rollback, transient clears and applet deletion). Steady `B0E2` on 07E7:
+  193–234 → 62–63 ms; 8 of 10 passes per EC384 replay skipped.
+- [ ] **FLASH-01f** A deletion pass that reaches the tombstone compaction
+  threshold (256) compacts while its erasures are uncommitted, which forces a
+  full snapshot (61,440 B, ~1.4 s on a 45 KB store). Commit the pass's
+  erasures at the APDU boundary before compacting so compaction needs no
+  flash write.
 - [x] **FLASH-03 (P1, security)** OwnerPIN try counter (RV-20261106-04).
   Done: every try-counter write (`check` decrement, success reset, `reset`,
   `resetAndUnblock`, OwnerPINx `setTriesRemaining`) goes through native

@@ -108,6 +108,24 @@ int main
 }
 
 namespace {
+// Heap reachability epoch at the end of each owner's last complete deletion
+// pass. If it is unchanged, no object can have become unreachable since, so
+// another pass would find nothing: skipping it only defers work and never
+// deletes a reachable object. JCAlgTest requests deletion before every timed
+// command; most of those passes otherwise cost ~130 ms for nothing.
+std::array<uint32_t, 256> complete_pass_epoch{};
+std::array<bool, 256> complete_pass_valid{};
+
+bool reachability_unchanged_since_complete_pass(const uint8_t owner) {
+  return complete_pass_valid[owner] &&
+         complete_pass_epoch[owner] == jcvm::Heap::reachabilityEpoch();
+}
+
+void note_complete_deletion_pass(const uint8_t owner) {
+  complete_pass_epoch[owner] = jcvm::Heap::reachabilityEpoch();
+  complete_pass_valid[owner] = true;
+}
+
 std::unique_ptr<jcvm::Context> selected_applet_context;
 // The selected context plus this bounded inactive table cover the runtime's
 // configured applet-instance limit. Keeping contexts alive preserves transient
@@ -488,6 +506,20 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
     // collecting during a transaction could invalidate its rollback journal.
     return;
   }
+  if (reachability_unchanged_since_complete_pass(owner)) {
+    std::printf("OBJECT_DELETION:UNCHANGED package=%u owner=%u\r\n",
+                static_cast<unsigned>(context.getAppletPackageID()),
+                static_cast<unsigned>(owner));
+    context.clearObjectDeletionRequest();
+    automatic_deletion_pending[owner] = false;
+    if (automatic_request) {
+      throttle.completed(0);
+    } else {
+      choupi_fs_erase_journal_ahead(
+          jcvm::PersistentReclaimer::kJournalEraseAheadBytes);
+    }
+    return;
+  }
   const uint32_t pass_start_us = choupi_time_us_32();
   (void)jcvm::Heap::takeReachablePrefixQueryCount();
   (void)jcvm::Heap::takeTraceStats(nullptr);
@@ -631,6 +663,7 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
   if (complete) {
     context.clearObjectDeletionRequest();
     automatic_deletion_pending[owner] = false;
+    note_complete_deletion_pass(owner);
   }
   if (complete && automatic_request) {
     throttle.completed(deletion_batch.erasedTotal());
@@ -939,6 +972,20 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
           request_pending, stack_empty, transaction_active)) {
     return;
   }
+  {
+    const uint8_t pass_owner = static_cast<uint8_t>(context.getAppletID());
+    if (reachability_unchanged_since_complete_pass(pass_owner)) {
+      std::fprintf(stderr, "OBJECT_DELETION:UNCHANGED package=%u owner=%u\n",
+                   static_cast<unsigned>(context.getAppletPackageID()),
+                   static_cast<unsigned>(pass_owner));
+      context.clearObjectDeletionRequest();
+#if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
+      if (automatic_deletion_pending[owner]) throttle.completed(0);
+      automatic_deletion_pending[owner] = false;
+#endif
+      return;
+    }
+  }
 
   try {
 #ifdef PC_VERSION
@@ -1121,6 +1168,7 @@ void service_object_deletion_request_if_enabled(jcvm::Context &context) {
 #endif
     if (complete) {
       context.clearObjectDeletionRequest();
+      note_complete_deletion_pass(static_cast<uint8_t>(context.getAppletID()));
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
       const bool was_automatic = automatic_deletion_pending[owner];
       automatic_deletion_pending[owner] = false;
@@ -2036,6 +2084,7 @@ void choupi_vm_forget_deleted_applet_contexts(
   pending_apdu_response.queue(nullptr, 0);
   // A later instance may reuse a deleted applet's object tags.
   jcvm::OwnerPinNative::clearValidated();
+  jcvm::Heap::noteReachabilityChange();
   if (deleting_package != 0) {
     jcvm::Heap::clearGlobalArrayReferencesForPackage(package_id);
     jcvm::Heap::clearForeignArrayReferencesForPackage(package_id);

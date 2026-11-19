@@ -110,6 +110,7 @@ private:
   foreignReferenceStorageRegistry() noexcept;
   std::shared_ptr<SharedStorage> shared_storage;
   static uint32_t reachable_prefix_queries;
+  static uint32_t reachability_epoch;
   static uint32_t mark_epoch;
   static uint32_t mark_reset_epoch;
   static uint32_t trace_count;
@@ -311,6 +312,12 @@ public:
   static uint32_t takeReachablePrefixQueryCount() noexcept;
   /// Heap traces (traceAndMark) and their total time since the last take.
   static uint32_t takeTraceStats(uint32_t *elapsed_us) noexcept;
+  /// Changes whenever an object may have become unreachable: a new object, a
+  /// stored reference, a cleared transient, an erased or rolled-back record,
+  /// or an applet/package lifecycle change. A deletion pass that completed
+  /// at the current value would find nothing new, so it can be skipped.
+  static void noteReachabilityChange() noexcept { ++reachability_epoch; }
+  static uint32_t reachabilityEpoch() noexcept { return reachability_epoch; }
   /// While an instance is alive, hasReachablePersistentTagPrefix() answers
   /// from a sorted copy of the marked objects' tags instead of walking every
   /// live object per query. The copy is rebuilt after any mark change and

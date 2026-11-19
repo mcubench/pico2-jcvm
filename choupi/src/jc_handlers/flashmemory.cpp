@@ -242,8 +242,34 @@ bool snapshot_matching_persistent_tags(const uint8_t *prefix,
   }
 }
 
+// Whether a record holds only primitive values, so that rewriting it cannot
+// make an object unreachable.
+bool primitive_record(const uint8_t *data, const uint32_t length) noexcept {
+  if (data == nullptr || length == 0) return false;
+  const uint8_t type = data[0] & static_cast<uint8_t>(~0x40u); // transient
+  switch (type) {
+  case FieldType::FIELD_TYPE_BYTE:
+  case FieldType::FIELD_TYPE_BOOLEAN:
+  case FieldType::FIELD_TYPE_SHORT:
+  case FieldType::FIELD_TYPE_INT:
+  case FieldType::FIELD_TYPE_INT_LOW:
+  case FieldType::FIELD_TYPE_ARRAY_BYTE:
+  case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+  case FieldType::FIELD_TYPE_ARRAY_SHORT:
+  case FieldType::FIELD_TYPE_ARRAY_INT:
+    return true;
+  default:
+    return false;
+  }
+}
+
 uint8_t write_persistent_tag(const fs::Tag &tag, const uint8_t *data,
                              const uint32_t length) {
+  // A new record, or any record that may hold a reference, can change which
+  // objects are reachable (see Heap::reachabilityEpoch).
+  if (!primitive_record(data, length) || fs_exists(tag.value, tag.len) == 0) {
+    Heap::noteReachabilityChange();
+  }
   snapshot_persistent_tag(tag);
 #if defined(PC_VERSION) && defined(DEBUG)
   std::fprintf(stderr, "PC_FS:WRITE tag=");
@@ -290,6 +316,7 @@ void throw_persistent_write_status(const uint8_t status) {
 }
 
 bool rollback_persistent_writes() noexcept {
+  Heap::noteReachabilityChange();
   // Keep the journal and transaction guard until every restore and its sync
   // have succeeded. In particular, never publish a partially restored view.
   // Erase transaction-created records first so a nearly full filesystem can
@@ -721,6 +748,7 @@ bool FlashMemory_Handler::writePersistentRecord(
 }
 
 bool FlashMemory_Handler::erasePersistentTag(const fs::Tag &tag) noexcept {
+  Heap::noteReachabilityChange();
   if (tag.len == 0 || tag.len > TAG_MAX_LENGTH) {
     return false;
   }
@@ -737,6 +765,7 @@ bool FlashMemory_Handler::erasePersistentTag(const fs::Tag &tag) noexcept {
 
 bool FlashMemory_Handler::erasePersistentPrefix(
     const fs::Tag &prefix) noexcept {
+  Heap::noteReachabilityChange();
   if (prefix.len == 0 || prefix.len > TAG_MAX_LENGTH ||
       !snapshot_matching_persistent_tags(prefix.value, prefix.len, -1)) {
     return false;
@@ -746,6 +775,7 @@ bool FlashMemory_Handler::erasePersistentPrefix(
 
 bool FlashMemory_Handler::erasePersistentPackageState(
     const uint8_t package_id) noexcept {
+  Heap::noteReachabilityChange();
   const uint8_t empty_prefix = 0;
   if (!snapshot_matching_persistent_tags(&empty_prefix, 0, package_id)) {
     return false;
@@ -2579,6 +2609,8 @@ void FlashMemory_Handler::writePersistentArrayRange(
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
   if (count == 0) return;
+  const uint8_t type_byte = static_cast<uint8_t>(expected_type);
+  if (!primitive_record(&type_byte, 1)) Heap::noteReachabilityChange();
 
   auto [record_length, stored] = getDataInPlaceFromTag(tag);
   const uint32_t data_length =
@@ -2836,6 +2868,7 @@ const jref_t FlashMemory_Handler::getPersistentField_Array_Reference(
  */
 void FlashMemory_Handler::setPersistentField_Array_Reference(
     const fs::Tag &tag, const uint16_t index, const jref_t value, Heap &heap) {
+  Heap::noteReachabilityChange();
 
 #ifdef JCVM_SECURE_HEAP_ACCESS
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);

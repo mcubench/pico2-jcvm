@@ -865,6 +865,7 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
                                  Context &context,
                                  const jpackage_ID_t value_owner)
 {
+  Heap::noteReachabilityChange();
   checkArrayEntryIndex(*this, index);
   if (value.isGlobalArray()) {
     // A global array cannot be nested in another reference array.
