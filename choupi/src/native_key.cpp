@@ -8,6 +8,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_key_store.hpp"
 
 #include <algorithm>
 #include <array>
@@ -290,23 +291,7 @@ jref_t buildNativeKey(uint8_t type, uint16_t bits, bool encrypted) {
   const bool transient = transientType(type);
   const ClearEvent event = transient ? clearEvent(type) : ClearEvent::None;
   if (ecFpType(type)) {
-    const uint16_t bytes = static_cast<uint16_t>((bits + 7) / 8);
-    for (uint16_t i = 0; i < kEcComponentCount; ++i) {
-      const uint16_t capacity = i == 3 || i == 5
-          ? static_cast<uint16_t>(1 + 2 * bytes)
-          : (i == 4 ? static_cast<uint16_t>(bytes + 1) : bytes);
-      const jref_t componentRef =
-          allocateArray(heap, capacity, JAVA_ARRAY_T_BYTE, transient, event);
-      instance->setField_Reference(kEcComponentFields[i], componentRef);
-      auto component = heap.getArray(componentRef);
-      if (!component) throw Exceptions::RuntimeException;
-    }
-    const jref_t lengthsRef = allocateArray(
-        heap, kEcComponentCount, JAVA_ARRAY_T_SHORT, transient, event);
-    instance->setField_Reference(
-        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS, lengthsRef);
-    auto lengths = heap.getArray(lengthsRef);
-    if (!lengths) throw Exceptions::RuntimeException;
+    EcKeyStore::allocate(heap, *instance, bits, transient, event);
   } else if (!rsaType(type)) {
     const uint16_t bytes = bits / 8;
     instance->setField_Reference(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
@@ -425,39 +410,169 @@ void setEcComponent(JC_Instance &key, uint16_t component,
                     const std::shared_ptr<JC_Array> &source, jshort_t offset,
                     jshort_t length) {
   checkInput(source, offset, length);
-  auto destination = ecComponentArray(key, component);
-  if (length == 0 || static_cast<uint16_t>(length) > destination->size())
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
-  std::vector<uint8_t> contents(destination->size(), 0);
-  const uint16_t start = static_cast<uint16_t>(destination->size() - length);
+  if (length == 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
+  std::vector<uint8_t> contents(static_cast<size_t>(length));
   source->copyPrimitiveEntriesTo(static_cast<uint16_t>(offset),
                                  static_cast<uint16_t>(length),
-                                 contents.data() + start);
-  writeKeyBytes(destination, contents);
-  ecLengthsArray(key)->setShortEntry(component, length);
+                                 contents.data());
+  EcKeyStore::write(key, component, contents.data(),
+                    static_cast<uint16_t>(length));
 }
 jshort_t getEcComponent(JC_Instance &key, uint16_t component,
                         const std::shared_ptr<JC_Array> &destination,
                         jshort_t offset) {
   if (!destination) throw Exceptions::NullPointerException;
   if (destination->getType() != JAVA_ARRAY_T_BYTE) throw Exceptions::ArrayStoreException;
-  auto lengths = ecLengthsArray(key);
-  const jshort_t length = lengths->getShortEntry(component);
+  const jshort_t length = EcKeyStore::length(key, component);
   if (length <= 0) throwCryptoException(CryptoExceptionReason::UninitializedKey);
   if (offset < 0 || static_cast<uint32_t>(offset) > destination->size() ||
       static_cast<uint16_t>(length) > destination->size() - static_cast<uint32_t>(offset))
     throw Exceptions::ArrayIndexOutOfBoundsException;
-  auto source = ecComponentArray(key, component);
-  const uint16_t start = static_cast<uint16_t>(source->size() - length);
-  std::vector<uint8_t> contents(static_cast<size_t>(length));
-  source->copyPrimitiveEntriesTo(start, static_cast<uint16_t>(length),
-                                 contents.data());
+  const std::vector<uint8_t> contents = EcKeyStore::read(key, component);
   destination->copyPrimitiveEntriesFrom(static_cast<uint16_t>(offset),
                                         static_cast<uint16_t>(length),
                                         contents.data(), true);
   return length;
 }
 } // namespace
+
+namespace EcKeyStore {
+namespace {
+constexpr uint16_t kHeaderBytes = 2 * kComponentCount;
+
+uint16_t keyBits(JC_Instance &key) {
+  return static_cast<uint16_t>(key.getField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
+}
+
+uint16_t componentOffset(uint16_t bits, uint16_t component) noexcept {
+  uint16_t offset = kHeaderBytes;
+  for (uint16_t i = 0; i < component; ++i)
+    offset = static_cast<uint16_t>(offset + componentCapacity(bits, i));
+  return offset;
+}
+
+// Keys allocated by this firmware keep no ECLENGTHS array.
+bool combinedLayout(JC_Instance &key) {
+  return key.getField_Reference(
+             ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS)
+      .isNullPointer();
+}
+
+std::shared_ptr<JC_Array> combinedArray(JC_Instance &key) {
+  if (key.getField_Reference(
+             ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD)
+          .isNullPointer())
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  auto array = arrayField(
+      key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD,
+      JAVA_ARRAY_T_BYTE);
+  const uint16_t bits = keyBits(key);
+  if (array->size() != componentOffset(bits, kComponentCount))
+    throw Exceptions::ArrayStoreException;
+  return array;
+}
+
+void checkComponent(uint16_t component) {
+  if (component >= kComponentCount)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+}
+} // namespace
+
+uint16_t componentCapacity(uint16_t bits, uint16_t component) noexcept {
+  const uint16_t bytes = static_cast<uint16_t>((bits + 7) / 8);
+  if (component == 3 || component == 5)
+    return static_cast<uint16_t>(1 + 2 * bytes);
+  if (component == 4) return static_cast<uint16_t>(bytes + 1);
+  return bytes;
+}
+
+void allocate(Heap &heap, JC_Instance &key, uint16_t bits, bool transient,
+              ClearEvent event) {
+  const jref_t reference = allocateArray(
+      heap, componentOffset(bits, kComponentCount), JAVA_ARRAY_T_BYTE,
+      transient, event);
+  key.setField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD, reference);
+  if (!heap.getArray(reference)) throw Exceptions::RuntimeException;
+}
+
+jshort_t length(JC_Instance &key, uint16_t component) {
+  checkComponent(component);
+  if (!combinedLayout(key))
+    return ecLengthsArray(key)->getShortEntry(component);
+  auto array = combinedArray(key);
+  uint8_t header[2];
+  array->copyPrimitiveEntriesTo(static_cast<uint16_t>(2 * component), 2,
+                                header);
+  return static_cast<jshort_t>((header[0] << 8) | header[1]);
+}
+
+std::vector<uint8_t> read(JC_Instance &key, uint16_t component) {
+  const jshort_t stored = length(key, component);
+  std::shared_ptr<JC_Array> array;
+  uint16_t end = 0;
+  if (combinedLayout(key)) {
+    array = combinedArray(key);
+    const uint16_t bits = keyBits(key);
+    end = static_cast<uint16_t>(componentOffset(bits, component) +
+                                componentCapacity(bits, component));
+  } else {
+    array = ecComponentArray(key, component);
+    end = array->size();
+  }
+  if (stored <= 0 || static_cast<uint16_t>(stored) > end)
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  std::vector<uint8_t> bytes(static_cast<size_t>(stored));
+  array->copyPrimitiveEntriesTo(static_cast<uint16_t>(end - stored),
+                                static_cast<uint16_t>(stored), bytes.data());
+  return bytes;
+}
+
+void write(JC_Instance &key, uint16_t component, const uint8_t *bytes,
+           uint16_t byteLength) {
+  checkComponent(component);
+  if (!combinedLayout(key)) {
+    auto destination = ecComponentArray(key, component);
+    if (byteLength == 0 || byteLength > destination->size())
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+    std::vector<uint8_t> contents(destination->size(), 0);
+    std::copy(bytes, bytes + byteLength,
+              contents.begin() + (destination->size() - byteLength));
+    writeKeyBytes(destination, contents);
+    ecLengthsArray(key)->setShortEntry(component,
+                                       static_cast<jshort_t>(byteLength));
+    return;
+  }
+  auto array = combinedArray(key);
+  const uint16_t bits = keyBits(key);
+  const uint16_t capacity = componentCapacity(bits, component);
+  if (byteLength == 0 || byteLength > capacity)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  // Component and length change in one record write.
+  std::vector<uint8_t> contents(array->size());
+  array->copyPrimitiveEntriesTo(0, array->size(), contents.data());
+  const uint16_t offset = componentOffset(bits, component);
+  std::fill(contents.begin() + offset, contents.begin() + offset + capacity, 0);
+  std::copy(bytes, bytes + byteLength,
+            contents.begin() + offset + (capacity - byteLength));
+  contents[2 * component] = static_cast<uint8_t>(byteLength >> 8);
+  contents[2 * component + 1] = static_cast<uint8_t>(byteLength);
+  writeKeyBytes(array, contents);
+}
+
+void clear(JC_Instance &key) {
+  if (!combinedLayout(key)) {
+    for (uint16_t i = 0; i < kComponentCount; ++i) {
+      clearKeyBytes(ecComponentArray(key, i));
+      ecLengthsArray(key)->setShortEntry(i, 0);
+    }
+    return;
+  }
+  clearKeyBytes(combinedArray(key));
+}
+
+} // namespace EcKeyStore
 
 jref_t javacard_security_KeyBuilder_buildKey(jbyte_t type, jshort_t length,
                                               jbool_t encrypted) {
@@ -495,10 +610,9 @@ jbool_t javacard_security_NativeKey_isInitialized(jref_t receiver) {
     return lengths->getShortEntry(0) != 0 && lengths->getShortEntry(1) != 0 ? TRUE : FALSE;
   }
   if (ecFpType(type)) {
-    const auto lengths = ecLengthsArray(*key);
     for (uint16_t i : {0, 1, 2, 3, 4})
-      if (lengths->getShortEntry(i) <= 0) return FALSE;
-    if (lengths->getShortEntry(type == kEcFpPublic ? 5 : 6) <= 0)
+      if (EcKeyStore::length(*key, i) <= 0) return FALSE;
+    if (EcKeyStore::length(*key, type == kEcFpPublic ? 5 : 6) <= 0)
       return FALSE;
     return key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK) > 0
@@ -532,11 +646,7 @@ void javacard_security_NativeKey_clearKey(jref_t receiver) {
     return;
   }
   if (ecFpType(type)) {
-    for (uint16_t i = 0; i < kEcComponentCount; ++i) {
-      auto component = ecComponentArray(*key, i);
-      clearKeyBytes(component);
-      ecLengthsArray(*key)->setShortEntry(i, 0);
-    }
+    EcKeyStore::clear(*key);
     key->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK, 0);
     return;
   }
@@ -698,17 +808,9 @@ void javacard_security_NativeKey_copyDomainParametersFrom(jref_t receiver,
           from->getField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   for (uint16_t i = 0; i <= 4; ++i) {
-    const jshort_t length = ecLengthsArray(*from)->getShortEntry(i);
-    if (length <= 0) throwCryptoException(CryptoExceptionReason::UninitializedKey);
-    auto src = ecComponentArray(*from, i);
-    auto dst = ecComponentArray(*destination, i);
-    std::vector<uint8_t> contents(dst->size(), 0);
-    const uint16_t start = static_cast<uint16_t>(src->size() - length);
-    const uint16_t dstStart = static_cast<uint16_t>(dst->size() - length);
-    for (uint16_t j = 0; j < static_cast<uint16_t>(length); ++j)
-      contents[dstStart + j] = static_cast<uint8_t>(src->getByteEntry(start + j));
-    writeKeyBytes(dst, contents);
-    ecLengthsArray(*destination)->setShortEntry(i, length);
+    const std::vector<uint8_t> contents = EcKeyStore::read(*from, i);
+    EcKeyStore::write(*destination, i, contents.data(),
+                      static_cast<uint16_t>(contents.size()));
   }
   destination->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK,
       from->getField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK));

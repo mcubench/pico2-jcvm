@@ -5,6 +5,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_key_store.hpp"
 #include "native_ec_group.hpp"
 #include "native_signature_digest.hpp"
 
@@ -63,33 +64,7 @@ std::shared_ptr<JC_Instance> object(jref_t ref) {
 }
 
 std::vector<unsigned char> component(JC_Instance &key, uint16_t index) {
-  static constexpr uint16_t fields[] = {
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECA,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECB,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECG,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECR,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECW,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECS};
-  if (index >= 7) throwCryptoException(CryptoExceptionReason::IllegalValue);
-  const jref_t ref = key.getField_Reference(fields[index]);
-  if (ref.isNullPointer()) throwCryptoException(CryptoExceptionReason::UninitializedKey);
-  auto data = Context::getActiveContext().getHeap().getArray(ref);
-  const jref_t lengthsRef = key.getField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS);
-  if (!data || data->getType() != JAVA_ARRAY_T_BYTE || lengthsRef.isNullPointer())
-    throw Exceptions::ArrayStoreException;
-  auto lengths = Context::getActiveContext().getHeap().getArray(lengthsRef);
-  if (!lengths || lengths->getType() != JAVA_ARRAY_T_SHORT || lengths->size() <= index)
-    throw Exceptions::ArrayStoreException;
-  const jshort_t length = lengths->getShortEntry(index);
-  if (length <= 0 || static_cast<uint16_t>(length) > data->size())
-    throwCryptoException(CryptoExceptionReason::UninitializedKey);
-  std::vector<unsigned char> bytes(static_cast<size_t>(length));
-  const uint16_t start = static_cast<uint16_t>(data->size() - length);
-  for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    bytes[i] = static_cast<uint8_t>(data->getByteEntry(start + i));
-  return bytes;
+  return EcKeyStore::read(key, index);
 }
 
 int readMpi(mbedtls_mpi &out, const std::vector<unsigned char> &input) {

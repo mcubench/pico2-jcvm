@@ -6,6 +6,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_key_store.hpp"
 #include "native_ec_group.hpp"
 
 #include <cstdint>
@@ -94,32 +95,7 @@ struct Group {
 };
 
 std::vector<unsigned char> component(JC_Instance &key, uint16_t slot) {
-  static constexpr uint16_t refs[] = {
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECA,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECB,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECG,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECR,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECW,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECS};
-  const auto keyRef = key.getField_Reference(refs[slot]);
-  if (keyRef.isNullPointer())
-    throwCryptoException(CryptoExceptionReason::UninitializedKey);
-  auto array = Context::getActiveContext().getHeap().getArray(keyRef);
-  const auto lengthsRef = key.getField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS);
-  auto lengths = Context::getActiveContext().getHeap().getArray(lengthsRef);
-  if (!array || array->getType() != JAVA_ARRAY_T_BYTE || !lengths ||
-      lengths->getType() != JAVA_ARRAY_T_SHORT || lengths->size() <= slot)
-    throw Exceptions::ArrayStoreException;
-  const auto length = lengths->getShortEntry(slot);
-  if (length <= 0 || static_cast<uint16_t>(length) > array->size())
-    throwCryptoException(CryptoExceptionReason::UninitializedKey);
-  std::vector<unsigned char> result(static_cast<size_t>(length));
-  const uint16_t begin = static_cast<uint16_t>(array->size() - length);
-  array->copyPrimitiveEntriesTo(begin, static_cast<uint16_t>(length),
-                                result.data());
-  return result;
+  return EcKeyStore::read(key, slot);
 }
 
 void loadGroup(JC_Instance &key, mbedtls_ecp_group &group, uint16_t bits,

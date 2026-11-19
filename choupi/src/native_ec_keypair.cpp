@@ -7,6 +7,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_key_store.hpp"
 #include "native_ec_group.hpp"
 
 #include <algorithm>
@@ -238,29 +239,10 @@ struct ScopedKeyPair {
 
 void putComponent(const std::shared_ptr<JC_Instance> &key, uint16_t index,
                   const std::vector<unsigned char> &bytes) {
-  static constexpr uint16_t componentFields[] = {
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECA,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECB,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECG,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECR,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECW,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECS};
-  auto &heap = Context::getActiveContext().getHeap();
-  const jref_t arrayRef = key->getField_Reference(componentFields[index]);
-  const jref_t lengthsRef = key->getField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS);
-  auto array = heap.getArray(arrayRef);
-  auto lengths = heap.getArray(lengthsRef);
-  if (!array || array->getType() != JAVA_ARRAY_T_BYTE || !lengths ||
-      lengths->getType() != JAVA_ARRAY_T_SHORT || lengths->size() <= index ||
-      bytes.size() > array->size())
+  if (bytes.empty() || bytes.size() > UINT16_MAX)
     throw Exceptions::ArrayStoreException;
-  const uint16_t start = static_cast<uint16_t>(array->size() - bytes.size());
-  std::vector<uint8_t> contents(array->size(), 0);
-  std::copy(bytes.begin(), bytes.end(), contents.begin() + start);
-  array->copyPrimitiveEntriesFrom(0, array->size(), contents.data(), true);
-  lengths->setShortEntry(index, static_cast<jshort_t>(bytes.size()));
+  EcKeyStore::write(*key, index, bytes.data(),
+                    static_cast<uint16_t>(bytes.size()));
 }
 
 std::vector<unsigned char> mpiBytes(const mbedtls_mpi &value, size_t width) {
