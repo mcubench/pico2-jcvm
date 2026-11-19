@@ -1,14 +1,13 @@
 # Handoff — next steps only
 
-Updated: 2026-11-18 13:20 CET.
+Updated: 2026-11-19 22:59 CET.
 
-## Current hardware state
-- No JCAlgTest client or monitor is active. The fixed-image exploratory option 2 completed on 07E7; details, logs and hashes are in `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/`.
-- Last USB inventory: 22A9 is generic Pico firmware; F42D and 07E7 enumerate as JCVM CCID. The approved access helper granted USB access to both JCVM nodes, but the post-refresh `list-readers --pico-only` listed only `Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 00 00`. F42D is not currently usable through PC/SC. Do not restart pcscd again while campaigns are live.
-- 07E7 still runs the previously tested normal `max_crypto` image, source `853543d6`, deletion ON/debug OFF, UF2 SHA-256 `89a744ca32134e838c38f9ff020ea7080305d76a0113757939432e2b9545d770`; its option-2 applet/store is not empty.
-- A fresh ARM `max_crypto` build from docs tip `a746c295` completed with `BUILD:PASS` and mode normal; image SHA-256 `ce131357446b476def6c2d16741dfc2efa2418cca373674bc4273408030fb85f`. The build emitted warnings (including 60 `javac-os` Rust warnings); this new image was not flashed. Do not flash until the required warning-free build is established.
+## Current state
+- No campaign is live. 07E7 runs normal `max_crypto` from `c44967d9` (FLASH-01b/e/f journal, FLASH-01d deletion skip, FLASH-03 OwnerPIN), UF2 SHA-256 `1282101da6c95cd1e99e01f6c079b73a0e2bbf5a54b1387649a57599e6ec5fa8`. Card holds the JCAlgTest 1.8.5 CAP and the `JCTransactionProbe` CAP (installed with `--params 7f`); it is not an empty card.
+- Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
-## Next action
-- Option 1 exploratory run can continue on the sole confirmed 07E7 reader, with a unique card name/output path and separate serial capture. F42D is not a PC/SC failover token at this observation. This would use the existing non-empty option-2 card, so it cannot count as T8 acceptance.
-- Before any PC/SC action, check live processes and this handoff. If a new token becomes available, identify by chip ID and keep per-token evidence separate. T7 remains blocked on `Virtual PCD 00 00` (`HOST-VPCD-PCSC-01`); keep T7/T8/T10 open.
-- Preserve `.agent/code_review_instructions_memory_20261117.md`, `inbox/`, and the two pre-existing root `*_already_measured.list` files.
+## Next work
+- `.agent/EXT_REQUESTS.md` `WIN-MAXCRYPTO-BASELINE-5A537513` packages firmware older than FLASH-01/03; rebuild the Windows package from tip if the user wants the external run to cover them.
+- Open from this session: PERF-LAYOUT-01 (crypto timing depends on code placement), RV-20261106-04 cold power-cycle and persistent OwnerPINx cases.
+- F42D (2026-11-18): empty-card external-test UF2 `a0b46b33…`; was not visible through PC/SC. T7 remains blocked on missing `Virtual PCD 00 00` (`HOST-VPCD-PCSC-01`); keep T7/T8/T10 open.
+- Preserve `.agent/code_review_instructions_memory_20261117.md`, `inbox/`, and the pre-existing root `*_already_measured.list` files.

@@ -53,8 +53,11 @@ plus temporary counters, EC384 Signature replay
   `artifacts/results/flash01e-journal-slot-20261119/`). Evaluate running the
   bignum/ECP core from SRAM so timings are stable and faster; check RAM
   headroom first.
-- [ ] **FLASH-01c** Erase a batch of records without moving the arena tail and
-  rescanning the 8,192-slot index per record (1.5 ms each).
+- [x] **FLASH-01c (won't do, 2026-11-19)** Batched erase would save ~80 ms of
+  CPU per JCAlgTest prepare, only in the untimed `B0E2` (about a minute over
+  a 5–8 h campaign), but needs new arena-rewrite code in the storage core;
+  in-place tombstones would break the arena contiguity integrity rule. Not
+  worth the stability risk. Flash traffic is unaffected.
 - [x] **FLASH-01d** Skip a deletion pass when nothing can have become
   unreachable since the owner's last complete pass (heap reachability epoch,
   bumped by new objects, changed references, reference/new records, erases,

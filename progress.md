@@ -32473,3 +32473,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the compacting `B0E2` (run 5, 265 tombstones, 52 erased) took 433 ms with `synced=0 journaled=1 journal_bytes=2048 elided=1`; before (run 4 of FLASH-01d) 1,437 ms with a 61,440 B snapshot. No full snapshot in any of the five replays; 8 of 10 passes per replay skipped; no FAULT/PANIC. Correction: the previous record's end time is 22:31 (measured), not 22:29.
 - Decision: FLASH-01 flash traffic for the JCAlgTest pattern is now journal pages and on-demand sector erases only. Remaining in this objective: FLASH-01c (batched erase CPU cost), PERF-LAYOUT-01, final integration pass.
 - Artifacts/logs: `artifacts/results/flash01f-compact-after-commit-20261119/`
+
+## 2026-11-19 Integration check: JCAlgTest 1.8.5 support run on the FLASH-01/03 image 20
+
+- Step-Id: `20261119-2259-integration-support-basic`
+- Task: FLASH-01 / FLASH-03 integration; FLASH-01c decision
+- When: '2026-11-19 22:39' - '2026-11-19 22:59'
+- Model: `claude-opus-5-5`
+- Change: none to source. `TODO.md`: FLASH-01c closed as won't-do (batched erase would save ~80 ms CPU per prepare only in the untimed `B0E2`; in-place tombstones would break the arena contiguity rule; flash traffic unaffected). `.agent/HANDOFF.md` rewritten to the current state (the uncommitted 2026-11-18 option-1 "current run" text was stale; the still-relevant F42D/T7 notes are kept).
+- Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_TIMEOUT_SECONDS=1800 ./tools/run-jcalgtest --client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 00 00' -op ALG_SUPPORT_BASIC -fresh` with serial capture; client JAR SHA-256 `b6a753be…eacec3`, CAP 1.8.5/jc305 already installed, firmware UF2 `1282101d…5fa8` (`c44967d9`). Runner exit 0.
+- Result: CSV 4,532 lines, 161 `yes`, 4,284 `no`; the `yes` set equals the 2026-11-15 VPCD support reference (`artifacts/results/jcalgtest-support-vpcd-20261115T135649Z/`). Serial: 8,890 `FS_APDU` lines, 0 FAULT/PANIC/NO_RESOURCE, 0 `pending=1`; 174 deletion passes run and 4,270 skipped as unchanged; 2 full snapshots (65,536 B each, store ~48–50 KB); journal 243,456 B programmed, 237,568 B of journal sectors erased; 16 elided syncs.
+- Decision: no regression found in API support or deletion. Remaining open items from this session: PERF-LAYOUT-01 (needs heap-peak data before moving code to SRAM), RV-20261106-04 cold power-cycle and persistent OwnerPINx cases; the Windows package (`WIN-MAXCRYPTO-BASELINE-5A537513`) predates FLASH-01b..f and FLASH-03.
+- Artifacts/logs: `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/` (CSV, client log, runner.log, serial.log, identity.txt)
