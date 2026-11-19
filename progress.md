@@ -32389,3 +32389,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: documentation only.
 - Decision: none.
 - Artifacts/logs: none
+
+## 2026-11-19 Package Windows test 5a537513 (all slow-baseline steps) 20
+
+- Step-Id: `20261119-0820-win-package-5a537513`
+- Task: user request (rebuild the Windows testing package with steps 1–5 and the commit journal)
+- When: '2026-11-19 08:00' - '2026-11-19 08:20'
+- Model: `claude-opus-5-5`
+- Change: built normal max_crypto from HEAD `5a537513` and packaged it with `./tools/package-maxcrypto-windows-test`. Replaced `WIN-MAXCRYPTO-CAP185-621BA60C` with `WIN-MAXCRYPTO-BASELINE-5A537513` in `.agent/EXT_REQUESTS.md`.
+- Validation: `./tools/build arm --profile max_crypto` rc=0, 0 warning lines; provenance mode=normal, object_deletion=ON, CPLC `0x5A537513FC6C709D`; `PACKAGE:PASS`; README PowerShell block byte-identical to `run-test.ps1`; package `applet.cap` is the 1.8.5 CAP (`fa64582e…`). Hardware smoke on 07E74C5D7A038DEC: `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial 07E74C5D7A038DEC <package UF2>` FLASH:PASS (storage wiped); package `gp.jar` `--list` (empty card) and `--install applet.cap` rc=0, APP `4A43416C675465737431` SELECTABLE; EC384 Signature replay (prepare, 5 × (`B0E2`, baseline), 5 × (`B0E2`, op repeat 2)) twice: baselines 233–236 ms, ops 506–507 ms, every pass `pending=0` (run 2 erased 52); `tools/check-object-deletion-headroom.py` HEADROOM:PASS peak 15.1 %. PowerShell block not executed (none here).
+- Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5a537513.uf2` SHA-256 `77679509ad5d7bdb7124acf1cabe1e37e10ec2e604a2999c872f0c491de12bb0` (2,948,096 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-5a537513.zip` SHA-256 `4b70b8d7a1f2c877be2626d2b0ad1be08176c186c227e1285be52ee48eae165d` (18,228,829 B); linked end 0x10067c14, headroom 623,596 B.
+- Decision: waiting on the Windows run. 07E7 now holds this empty-card image plus the 1.8.5 CAP and the smoke-replay objects.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-5a537513-20261119T0716Z/` (build-provenance.txt, package.log, flash.log, gp-*.txt, run1/, run2/)
