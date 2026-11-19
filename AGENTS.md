@@ -82,6 +82,47 @@ Only escalate the required Git operation.
 Never use destructive Git commands or push without
 explicit authorization.
 
+## Persistence, atomicity and flash writes (user directive 2026-11-19)
+
+Goal: a stable cryptographic token that writes flash only when needed. Java
+Card does **not** make every operation atomic, so the VM must not pay for
+atomicity the platform does not promise. What the platform guarantees:
+
+- **Single data element.** One update of one persistent field, class field or
+  array element is atomic: after a tear it holds either the old or the new
+  value (JCRE spec, "Transactions and Atomicity").
+- **Block updates.** `Util.arrayCopy`, `Util.arrayFill` and `Util.setShort`
+  on a persistent destination are atomic. `Util.arrayCopyNonAtomic` and
+  `Util.arrayFillNonAtomic` do not use the transaction facility, even inside a
+  transaction; a tear may leave a partly changed array.
+- **Transactions.** Only updates between `JCSystem.beginTransaction()` and
+  `commitTransaction()` are all-or-nothing. A tear or `abortTransaction()`
+  rolls them back, and references to objects created inside an aborted
+  transaction become null.
+- **Transient arrays.** Their contents are never atomic, never in a
+  transaction and never written to flash.
+- **Outside transactions.** Several separate updates (several fields, several
+  array elements, the steps of one APDU) are **not** atomic as a group. An
+  applet that needs that must use a transaction; the card need not provide it.
+- **Explicit exceptions.** OwnerPIN's try counter, validated flag and blocking
+  state never take part in a transaction. The decrement must be durable
+  before the PIN comparison result can be observed.
+
+Rules for VM work:
+
+- Keep flash writes to what durability and the guarantees above require. Do
+  not add copies, journals or snapshots only to make non-transactional groups
+  of updates atomic.
+- The VM's **own** metadata (records that describe objects, references,
+  identities and the filesystem index) must stay internally consistent after
+  any tear. Grouping several records for that reason is required, and is a VM
+  integrity need, not an applet atomicity guarantee. State the reason in the
+  code when you group records.
+- SPEC INV-14 is interpreted per data element and per transaction, as listed
+  above; it is not weakened by this section.
+- Measure flash traffic (`CHOUPI:FS_APDU` `sync_bytes`, `journal_bytes`) for
+  any persistence change and record it in `progress.md`.
+
 ## Product specification
 
 `SPEC.md` holds the user-confirmed product invariants (`INV-xx`). Read it at

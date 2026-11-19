@@ -32401,3 +32401,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-5a537513.uf2` SHA-256 `77679509ad5d7bdb7124acf1cabe1e37e10ec2e604a2999c872f0c491de12bb0` (2,948,096 B); ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-5a537513.zip` SHA-256 `4b70b8d7a1f2c877be2626d2b0ad1be08176c186c227e1285be52ee48eae165d` (18,228,829 B); linked end 0x10067c14, headroom 623,596 B.
 - Decision: waiting on the Windows run. 07E7 now holds this empty-card image plus the 1.8.5 CAP and the smoke-replay objects.
 - Artifacts/logs: `artifacts/results/windows-package-smoke-5a537513-20261119T0716Z/` (build-provenance.txt, package.log, flash.log, gp-*.txt, run1/, run2/)
+
+## 2026-11-19 Java Card atomicity rule, flash-write profile and FLASH-01 plan 70
+
+- Step-Id: `20261119-2126-flash01-atomicity-rule`
+- Task: FLASH-01a (user directive 2026-11-19: only necessary flash writes; Java Card atomicity is per element and per transaction)
+- When: '2026-11-19 20:15' - '2026-11-19 21:26'
+- Model: `claude-opus-5-5`
+- Change: added "Persistence, atomicity and flash writes" to `AGENTS.md`: single-element atomicity, atomic `Util.arrayCopy`/`arrayFill`/`setShort`, non-atomic `*NonAtomic`, transaction-only group atomicity, transient arrays, OwnerPIN exception; VM metadata consistency stays required. Added FLASH-01 (b–d) and FLASH-03 (OwnerPIN, RV-20261106-04) to `TODO.md`. Sources: Oracle Java Card 3.0.5 `Util` and `JCSystem` javadoc (https://docs.oracle.com/cd/E59935_01/api/javacard/framework/Util.html, .../JCSystem.html); the JCRE "Transactions and Atomicity" chapter text could not be fetched here.
+- Validation: temporary on-target counters (patch kept at `artifacts/results/deletion-pass-profile-20261119/tmpprof.patch`, not committed), normal max_crypto build rc=0 without warnings, `tools/cycle choupi` on 07E74C5D7A038DEC CYCLE:PASS, EC384 Signature replay.
+- Result: prepare 1228 ms and first `B0E2` 943 ms are dominated by full snapshot rewrites (first `B0E2`: sync 669 ms, 40,960 B; deletion pass 239 ms of which 52 erases 80 ms = 1.5 ms each, `fs_next_tag` 65 ms over 4,395 calls). Steady `B0E2` 193 ms: deletion pass 134 ms = heap GC trace 41 ms + roots 6 ms + alias scans 20 ms + candidate scan 66 ms (persistent trace ~40 ms, tag scan ~25 ms); `fs_next_tag` 38 ms over 1,884 calls, `find_overlay` 6,489 calls.
+- Decision: earlier claim that the deletion scan costs ~85 ms per inventory scan was wrong; the heap traces dominate the steady pass and the snapshot rewrite dominates the first pass. Next FLASH-01b (journal large change sets).
+- Artifacts/logs: `artifacts/results/deletion-pass-profile-20261119/07E74C5D7A038DEC-run1/` (serial.log, apdu-timer.log)

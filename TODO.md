@@ -22,6 +22,40 @@ rule. Before hardware work, run the approved helper, list readers with
 HANDOFF board-state section records the last observation. A serial heartbeat or
 USB enumeration alone does not establish API/PCSC acceptance.
 
+### FLASH-01 — only necessary flash writes (user directive 2026-11-19)
+
+Goal: a stable token whose flash traffic is what durability and the Java Card
+atomicity guarantees require, nothing more (see `AGENTS.md`, "Persistence,
+atomicity and flash writes"). Baseline profile on 07E7, image `5a537513`
+plus temporary counters, EC384 Signature replay
+(`artifacts/results/deletion-pass-profile-20261119/`):
+
+| APDU | Wall | Main cost |
+|---|---|---|
+| prepare `B032` | 1228 ms | full snapshot rewrite (40 KB erase, ~0.67 s) |
+| first `B0E2` after prepare | 943 ms | full snapshot rewrite 669 ms; 52 erases 80 ms; deletion pass 239 ms |
+| steady `B0E2` | 193 ms | 2 heap traces 81 ms, alias scans 20 ms, tag scans ~25 ms |
+
+- [x] **FLASH-01a** Record the Java Card atomicity model and write-minimisation
+  rule in `AGENTS.md`.
+- [ ] **FLASH-01b** Commit large change sets to the journal as one atomic
+  multi-entry group instead of rewriting the 40 KB snapshot. The group is
+  required for the VM's own record consistency (coalesced change log), not
+  for applet atomicity. Target: first `B0E2` and prepare without a full
+  snapshot; snapshot only when the journal region is full.
+- [ ] **FLASH-01c** Erase a batch of records without moving the arena tail and
+  rescanning the 8,192-slot index per record (1.5 ms each).
+- [ ] **FLASH-01d** Cut steady deletion-pass work: avoid re-reconstructing
+  every tag in each of the ~4 full `fs_next_tag` scans per pass; evaluate
+  reusing the heap-GC trace for the persistent reclaim trace.
+- [ ] **FLASH-03 (P1, security)** OwnerPIN try counter (RV-20261106-04): the
+  decrement must be durable before the comparison and must not roll back on
+  `abortTransaction`; the validated flag must clear on reset. Today the ROM
+  `OwnerPIN` decrements an ordinary persistent field, which reaches flash only
+  at APDU end, so a timed power cut after the comparison restores the counter.
+  Implement through native VM state/dispatch with a forced durable journal
+  append; test tear-before-sync, abort, reset and OwnerPINx.
+
 ### Current images (update on every storage fix; the only place that names a "current" image)
 
 | Purpose | Image | SHA-256 | Notes |
