@@ -122,6 +122,9 @@ public:
 
   /// set byte or boolean field from object.
   void setField_Byte(const uint16_t index, const jbyte_t value);
+  /// Like setField_Byte, but outside any transaction and durable before
+  /// returning when the object is persistent.
+  void setField_ByteDurable(const uint16_t index, const jbyte_t value);
   /// set short field from object.
   void setField_Short(const uint16_t index, const jshort_t value);
 #ifdef JCVM_INT_SUPPORTED

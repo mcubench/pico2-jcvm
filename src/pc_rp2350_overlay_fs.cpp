@@ -21,6 +21,7 @@
 #define fs_length rp2350_overlay_fs_length
 #define fs_drop rp2350_overlay_fs_drop
 #define fs_sync rp2350_overlay_fs_sync
+#define fs_commit_tag rp2350_overlay_fs_commit_tag
 #define fs_erase_prefix rp2350_overlay_fs_erase_prefix
 #define fs_erase_package_state rp2350_overlay_fs_erase_package_state
 #include "pico_filesystem.cpp"
@@ -44,6 +45,7 @@
 #undef fs_length
 #undef fs_drop
 #undef fs_sync
+#undef fs_commit_tag
 #undef fs_erase_prefix
 #undef fs_erase_package_state
 
@@ -288,6 +290,10 @@ extern "C" uint8_t __wrap_fs_sync(void) {
                      : "<unset>");
   }
   return status;
+}
+extern "C" uint8_t __wrap_fs_commit_tag(const uint8_t *tag,
+                                        uint8_t tag_length) {
+  return rp2350_overlay_fs_commit_tag(tag, tag_length);
 }
 extern "C" uint8_t __wrap_fs_erase_prefix(const uint8_t *prefix,
                                             uint8_t prefix_length) {

@@ -10,6 +10,11 @@ extern "C" {
 // Backend extensions implemented by the repository's PC and RP2350
 // filesystem adapters. These are not exports from the pinned Rust OS FFI.
 uint8_t fs_sync(void);
+// Make one record's current value (or its absence) durable now, even while a
+// Java Card transaction defers fs_sync. Other uncommitted records stay
+// uncommitted. Used for state the Java Card API keeps out of transactions,
+// such as the OwnerPIN try counter. Returns 0 on success.
+uint8_t fs_commit_tag(const uint8_t *tag, uint8_t tag_length);
 uint8_t fs_erase_prefix(const uint8_t *prefix, uint8_t prefix_length);
 uint8_t fs_erase_package_state(uint8_t package_id);
 

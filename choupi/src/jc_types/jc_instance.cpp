@@ -606,6 +606,22 @@ void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
   }
 }
 
+void JC_Instance::setField_ByteDurable(const uint16_t index,
+                                       const jbyte_t value) {
+  if (this->isPersistent()) {
+    (void)this->getFields();
+  }
+  jc_field_t &field = this->fields->at(index);
+  require_field_type(field.type, FieldType::FIELD_TYPE_BYTE);
+  if (this->isPersistent()) {
+    fs::Tag tag =
+        FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
+    FlashMemory_Handler::setPersistentFieldDurable_Byte(tag, value);
+  }
+  field.type = FieldType::FIELD_TYPE_BYTE;
+  field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
+}
+
 /**
  * Set short field from object.
  *

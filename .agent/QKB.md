@@ -1706,3 +1706,28 @@ last 100 samples. This is an early checkpoint, not a suite-wide plateau or
 acceptance. Do not list readers or restart PC/SC while the run is live.
 
 Artifact: `artifacts/results/option2-exploratory-20261118T1049Z/07E74C5D7A038DEC/attempt1/`.
+
+## CRLF source files are silently converted by text-mode edits — 2026-11-19
+
+`choupi/src/jc_handlers/flashmemory.{cpp,hpp}`, `choupi/src/jc_types/jc_instance.hpp`
+and `javacard-api/src/javacard/framework/*.java` use CRLF line endings, and
+`choupi/src/jc_types/jc_instance.cpp` mixes CRLF and LF. A Python
+`open(p).read()` / `write()` edit converts every line to LF and turns a
+20-line change into a 6,000-line diff.
+
+**Viable fix:** edit these files with the Edit tool, or in Python read and
+write bytes and keep each line's ending; check `git diff --stat` before
+committing. To repair a converted file, re-apply only the inserted lines onto
+`git show HEAD:<file>` with the neighbouring line's ending.
+
+## New NativeImplementation natives must be appended at the end — 2026-11-19
+
+Inserting native methods in the middle of
+`javacard-api/src/fr/gouv/ssi/nativeimpl/NativeImplementation.java` shifted
+later method tokens; JCSystem's extended memory overloads then threw
+SecurityException (exception=29, `invokestatic`) and VPCD transaction case 10
+returned `6F00`, although the generated JNI dispatch rebuilt cleanly. Baseline
+without the change passed.
+
+**Viable fix:** always append new natives after the last existing method.
+Run the full `tools/test-jcsystem-transaction-applet` after any ROM API change.

@@ -21,6 +21,8 @@ bool test_fail_install_journal_clear_sync_injected = false;
 } // namespace
 
 #ifndef CHOUPI_PC_RP2350_FS_OVERLAY
+// Host records are written synchronously: already durable.
+extern "C" uint8_t fs_commit_tag(const uint8_t *, uint8_t) { return 0; }
 extern "C" uint8_t fs_sync(void) {
   if (test_fail_install_journal_clear_sync_armed) {
     test_fail_install_journal_clear_sync_armed = false;

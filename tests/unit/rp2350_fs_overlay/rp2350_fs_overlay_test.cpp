@@ -37,6 +37,7 @@ extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void);
 extern "C" void rp2350_fs_test_set_journal_enabled(uint8_t enabled);
 extern "C" uint32_t rp2350_fs_test_journal_next(void);
 extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes);
+extern "C" uint8_t fs_commit_tag(const uint8_t *tag, uint8_t tag_length);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
@@ -4886,6 +4887,91 @@ int main(const int argc, char **argv) {
                   fs_exists(child_a, sizeof(child_a)) == 0 &&
                   fs_exists(child_b, sizeof(child_b)) == 0 && state_is(4);
     expect(erase_group, "journal_group_replays_parent_and_child_erasure");
+  }
+
+  // fs_commit_tag makes one record durable at once, even while a Java Card
+  // transaction defers every other change (OwnerPIN try counter).
+  {
+    constexpr uint8_t counter[] = {0xf2, 0x60, 0x01};
+    constexpr uint8_t other[] = {0xf2, 0x60, 0x02};
+    constexpr uint8_t old_value[] = {0x05, 0x03};
+    constexpr uint8_t new_value[] = {0x05, 0x02};
+    constexpr uint8_t other_old[] = {0x11};
+    constexpr uint8_t other_new[] = {0x22};
+    const auto equals = [](const uint8_t *tag, size_t tag_length,
+                           const uint8_t *value, size_t length) {
+      std::array<uint8_t, 8> buffer{};
+      uint32_t stored = 0;
+      return fs_length(tag, static_cast<uint8_t>(tag_length), &stored) == 0 &&
+             stored == length &&
+             fs_read(tag, static_cast<uint8_t>(tag_length), buffer.data(),
+                     static_cast<uint32_t>(length)) == 0 &&
+             std::memcmp(buffer.data(), value, length) == 0;
+    };
+    fake_flash.fill(0xff);
+    reset_flash_failure();
+    bool ok = fs_init() == 0 &&
+              fs_write(counter, sizeof(counter), old_value,
+                       sizeof(old_value)) == 0 &&
+              fs_write(other, sizeof(other), other_old, sizeof(other_old)) ==
+                  0 &&
+              fs_sync() == 0;
+    const auto commit_base = fake_flash;
+    persistent_transaction_active = true;
+    ok = ok && fs_write(other, sizeof(other), other_new, sizeof(other_new)) ==
+                   0 &&
+         fs_write(counter, sizeof(counter), new_value, sizeof(new_value)) ==
+             0;
+    reset_flash_failure();
+    ok = ok && fs_commit_tag(counter, sizeof(counter)) == 0;
+    const size_t commit_mutations = flash_mutation_count;
+    persistent_transaction_active = false;
+    // A tear now: the counter is durable, the transactional write is not.
+    ok = ok && fs_init() == 0 &&
+         equals(counter, sizeof(counter), new_value, sizeof(new_value)) &&
+         equals(other, sizeof(other), other_old, sizeof(other_old));
+    expect(ok, "commit_tag_is_durable_inside_transaction_without_others");
+
+    bool every_cut = ok;
+    for (size_t cut = 0; every_cut && cut < commit_mutations; ++cut) {
+      fake_flash = commit_base;
+      reset_flash_failure();
+      persistent_transaction_active = true;
+      every_cut = fs_init() == 0 &&
+                  fs_write(other, sizeof(other), other_new,
+                           sizeof(other_new)) == 0 &&
+                  fs_write(counter, sizeof(counter), new_value,
+                           sizeof(new_value)) == 0;
+      reset_flash_failure(cut);
+      const bool committed = fs_commit_tag(counter, sizeof(counter)) == 0;
+      reset_flash_failure();
+      persistent_transaction_active = false;
+      const bool restored = fs_init() == 0;
+      const bool was_old =
+          equals(counter, sizeof(counter), old_value, sizeof(old_value));
+      const bool was_new =
+          equals(counter, sizeof(counter), new_value, sizeof(new_value));
+      every_cut = every_cut && restored && !committed && (was_old || was_new) &&
+                  equals(other, sizeof(other), other_old, sizeof(other_old));
+    }
+    expect(every_cut, "commit_tag_every_power_cut_is_atomic");
+
+    // Without a usable journal, a transaction cannot commit one record alone.
+    fake_flash = commit_base;
+    reset_flash_failure();
+    rp2350_fs_test_set_journal_enabled(0);
+    persistent_transaction_active = true;
+    bool refused = fs_init() == 0 &&
+                   fs_write(counter, sizeof(counter), new_value,
+                            sizeof(new_value)) == 0 &&
+                   fs_commit_tag(counter, sizeof(counter)) != 0;
+    persistent_transaction_active = false;
+    // Outside a transaction it falls back to a full commit.
+    refused = refused && fs_commit_tag(counter, sizeof(counter)) == 0 &&
+              fs_init() == 0 &&
+              equals(counter, sizeof(counter), new_value, sizeof(new_value));
+    rp2350_fs_test_set_journal_enabled(1);
+    expect(refused, "commit_tag_without_journal_refuses_inside_transaction");
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);

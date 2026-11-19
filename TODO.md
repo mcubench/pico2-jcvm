@@ -58,13 +58,20 @@ plus temporary counters, EC384 Signature replay
 - [ ] **FLASH-01d** Cut steady deletion-pass work: avoid re-reconstructing
   every tag in each of the ~4 full `fs_next_tag` scans per pass; evaluate
   reusing the heap-GC trace for the persistent reclaim trace.
-- [ ] **FLASH-03 (P1, security)** OwnerPIN try counter (RV-20261106-04): the
-  decrement must be durable before the comparison and must not roll back on
-  `abortTransaction`; the validated flag must clear on reset. Today the ROM
-  `OwnerPIN` decrements an ordinary persistent field, which reaches flash only
-  at APDU end, so a timed power cut after the comparison restores the counter.
-  Implement through native VM state/dispatch with a forced durable journal
-  append; test tear-before-sync, abort, reset and OwnerPINx.
+- [x] **FLASH-03 (P1, security)** OwnerPIN try counter (RV-20261106-04).
+  Done: every try-counter write (`check` decrement, success reset, `reset`,
+  `resetAndUnblock`, OwnerPINx `setTriesRemaining`) goes through native
+  `ownerPinSetTries`, which writes outside the transaction and commits that
+  one record to the flash journal (`fs_commit_tag`) before returning; inside a
+  transaction without a usable journal it throws SystemException.NO_RESOURCE
+  instead of comparing. The validated flag of persistent PINs lives in RAM
+  (cleared on card reset and applet deletion). PIN bytes are compared in
+  constant time. `update()` stays transactional, as its javadoc requires.
+  Verified: overlay unit tests (single-record commit inside a transaction, a
+  power cut at every mutation), VPCD cases 102/103 (abort keeps the
+  decrement, reset clears validation) on host and RP2350-overlay builds, and
+  the same cases on 07E7. Remaining: cold power-cycle and persistent OwnerPINx
+  variants (RV-20261106-04 below).
 
 ### Current images (update on every storage fix; the only place that names a "current" image)
 
@@ -1228,7 +1235,7 @@ Source corrections exist for R01/02/03/05/06/07/08/60; check the [review status 
 - [ ] **RV-20261106-01 — Contain opcode-fetch exceptions inside interpreter recovery.** Owner: HARD-01 / RV-20261103-28. Source fix and PC VPCD recovery pass: fall-through, truncated operand, and zero-length Descriptor method-body mutations each return a controlled status; manager reselection and subsequent GP GET DATA succeed (`9000`). Keep open for physical acceptance and remaining caller-state coverage. [R01](docs/review_20261106.md#r01--p1-opcode-fetch-failure-escapes-the-interpreters-exception-boundary)
 - [ ] **RV-20261106-02 — Correct nested frame unwinding direction.** Owner: CTX-01 / HARD-01. Preserve caller PCs/locals/roots when trimming nonzero-depth stacks; cover Java/ISO errors, allocation failure and timeout through multiple nested callbacks. Historical `pop_back()` versus `emplace_front()` defect; current source now uses front removal. [R02](docs/review_20261106.md#r02--p1-nested-failure-cleanup-removes-callers-instead-of-callees)
 - [ ] **RV-20261106-03 — Check local/stack bounds before metadata and pointer access.** Owner: HARD-01. Check complete two-word ranges before mutation; sanitize high local indices at nonzero frame bases and stack-capacity boundaries. Source-confirmed ordering defect; sanitizer reproducer pending. [R03](docs/review_20261106.md#r03--p1-local-metadata-is-indexed-before-the-local-variable-bounds-check)
-- [ ] **RV-20261106-04 — Give PIN validation/retry state its required native lifecycle.** Owner: PROFILE-01 / CTX-03 / PERSIST-02. Check wrong-PIN + abort, successful PIN + reset/cold restore, unblock + abort and OwnerPINx variants against the matching generated ROM. Retry decrements must survive applet abort; validation must clear on reset. Follow repository native C++ API policy. [R04](docs/review_20261106.md#r04--p1-ownerpin-validation-and-retry-state-use-ordinary-persistent-fields)
+- [ ] **RV-20261106-04 — Give PIN validation/retry state its required native lifecycle.** Implemented 2026-11-19 by FLASH-03 (durable non-transactional try counter, RAM validated flag cleared on reset, abort/reset VPCD and 07E7 checks). Still open: cold power-cycle restoration and persistent OwnerPINx/predecrement variants. Owner: PROFILE-01 / CTX-03 / PERSIST-02. Check wrong-PIN + abort, successful PIN + reset/cold restore, unblock + abort and OwnerPINx variants against the matching generated ROM. Retry decrements must survive applet abort; validation must clear on reset. Follow repository native C++ API policy. [R04](docs/review_20261106.md#r04--p1-ownerpin-validation-and-retry-state-use-ordinary-persistent-fields)
 - [ ] **RV-20261106-05 — Keep persistent field caches unchanged when a write fails.** Owner: PERSIST-03. Fault-inject capacity/allocation/serialization/backend errors for scalar/int/reference stores; catch and read immediately, commit, abort, collect and restore. Prove cache/storage agreement and preserved old roots, including failure before snapshot insertion. [R05](docs/review_20261106.md#r05--p1-failed-persistent-setters-publish-cache-changes-before-storage-succeeds)
 - [ ] **RV-20261106-06 — Validate field receiver assignability and access.** Owner: HARD-01 / PROFILE-01. Cover all getter/setter encodings, unrelated same-layout classes, imported/inherited fields and ROM API object receivers. Declared field-kind and owner checks alone are insufficient. [R06](docs/review_20261106.md#r06--p1-instance-field-resolution-does-not-verify-the-receivers-class)
 - [ ] **RV-20261106-07 — Bound every superclass traversal and reject cycles.** Owner: HARD-01. Audit allocation sizing, class casts, Object lookup and field flattening, including checked size accumulation. Test self/two-class cycles and deep chains with bounded same-process recovery on PC and hardware. Hostile-CAP reachability/physical timing remain unmeasured. [R07](docs/review_20261106.md#r07--p1-several-superclass-walks-can-loop-inside-one-native-operation)

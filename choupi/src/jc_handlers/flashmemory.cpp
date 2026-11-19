@@ -2153,6 +2153,33 @@ void FlashMemory_Handler::setPersistentField_Byte(const fs::Tag &tag,
   FlashMemory_Handler::setDataFromTag(tag, length, data);
 }
 
+void FlashMemory_Handler::setPersistentFieldDurable_Byte(const fs::Tag &tag,
+                                                         const jbyte_t value) {
+  if (persistent_write_recovery_required) {
+    throw Exceptions::IOException;
+  }
+  const uint8_t data[] = {FieldType::FIELD_TYPE_BYTE,
+                          static_cast<uint8_t>(value)};
+  // Not part of the transaction: if this record was already written inside
+  // it, make a rollback restore the new value (as for non-atomic array
+  // updates), instead of capturing a fresh snapshot.
+  for (auto &snapshot : persistent_write_snapshots) {
+    if (tags_equal(snapshot.tag, tag)) {
+      snapshot.existed = true;
+      snapshot.data.assign(data, data + sizeof(data));
+    }
+  }
+  throw_persistent_write_status(
+      fs_write(tag.value, tag.len, data, sizeof(data)));
+  if (fs_commit_tag(tag.value, tag.len) != 0) {
+    // The value could not be made durable now (no usable journal inside a
+    // transaction). Fail closed: callers must not continue as if it were.
+    Context::getActiveContext().setPendingSystemExceptionReason(
+        5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
+  }
+}
+
 /**
  * Get short data store in flash memory.
  *

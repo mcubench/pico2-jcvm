@@ -48,6 +48,7 @@
 #include "../../src/vm_applet_context.hpp"
 #include "../../src/vm_diagnostics.h"
 #include "../../src/object_deletion_policy.hpp"
+#include "native_owner_pin.hpp"
 
 #include <cerrno>
 #include <chrono>
@@ -1989,6 +1990,8 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
   }
 }
 void choupi_vm_clear_selected_applet(void) {
+  // OwnerPIN validated flags are CLEAR_ON_RESET.
+  jcvm::OwnerPinNative::clearValidated();
   // Reader reset implicitly deselects applets without calling deselect().
   // Only abort applet-owned work here; runtime-owned INSTALL transactions are
   // controlled by CapLoadSession and must not be consumed by this guard.
@@ -2031,6 +2034,8 @@ void choupi_vm_forget_deleted_applet_contexts(
     const uint8_t *aid, const uint8_t aid_length,
     const uint8_t package_id, const uint8_t deleting_package) {
   pending_apdu_response.queue(nullptr, 0);
+  // A later instance may reuse a deleted applet's object tags.
+  jcvm::OwnerPinNative::clearValidated();
   if (deleting_package != 0) {
     jcvm::Heap::clearGlobalArrayReferencesForPackage(package_id);
     jcvm::Heap::clearForeignArrayReferencesForPackage(package_id);

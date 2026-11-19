@@ -183,6 +183,11 @@ public:
   static const jbyte_t getPersistentField_Byte(const fs::Tag &tag);
   /// Set byte data store in flash memory.
   static void setPersistentField_Byte(const fs::Tag &tag, const jbyte_t value);
+  /// Write a byte field outside any Java Card transaction and make it
+  /// durable before returning (OwnerPIN try counter). An abort keeps the new
+  /// value. Use only for scalar state the API excludes from transactions.
+  static void setPersistentFieldDurable_Byte(const fs::Tag &tag,
+                                             const jbyte_t value);
   /// Get short data store in flash memory.
   static const jshort_t getPersistentField_Short(const fs::Tag &tag);
   /// Set short data store in flash memory.

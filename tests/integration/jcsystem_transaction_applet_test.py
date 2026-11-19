@@ -51,7 +51,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 99),
+        "--case", type=int, action="append", choices=range(1, 128),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -303,6 +303,8 @@ def main() -> int:
                     (90, b"\x43\x12", "non-atomic same-array write survives abort after atomic write"),
                     (91, b"\x11\x54", "non-atomic write to a different array survives while atomic array rolls back"),
                     (92, b"\x63\x12", "atomic write after non-atomic write rolls back to non-atomic baseline"),
+                    (102, bytes((2, 3, 1, 3, 1, 1, 3)), "OwnerPIN try counter and validated flag stay out of transactions"),
+                    (103, bytes((0, 3)), "card reset clears OwnerPIN validation and keeps the try counter"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -622,7 +624,7 @@ def main() -> int:
                         continue
                     if p1 == 31:
                         exchange(connection, select, "reselect applet for transient lifecycle check")
-                    if p1 == 33:
+                    if p1 in (33, 103):
                         send_message(connection, b"\x02")
                         exchange(connection, select, "reselect applet after card reset")
                     if p1 == 55:

@@ -281,6 +281,14 @@ extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
   return 0;
 }
 
+// The stub keeps records in memory; a durable single-record commit only
+// counts the request.
+size_t commit_tag_count = 0;
+extern "C" uint8_t fs_commit_tag(const uint8_t *, uint8_t) {
+  ++commit_tag_count;
+  return 0;
+}
+
 extern "C" uint8_t fs_sync(void) {
   ++sync_count;
   if (choupi_persistent_write_transaction_active() != 0) return 0;

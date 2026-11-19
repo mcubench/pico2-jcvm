@@ -5,18 +5,27 @@ import java.util.HexFormat;
 // time of each. Arguments after the reader are LABEL=HEX pairs; an optional
 // xN suffix on the label repeats the APDU (e.g. B0E2x3=B0E2000000).
 // A transport failure is printed as APDU:TRANSPORT_FAIL and ends the run
-// with exit status 1.
+// with exit status 1. The bare argument RESET resets the card (disconnect
+// with reset, then reconnect) and prints APDU:RESET.
 // Build: tools/env javac -d build/apdu-timer tests/hardware/ApduTimer.java
 // Run:   tools/env java -cp build/apdu-timer ApduTimer "<exact reader>" \
 //          SELECT=00A404000A4A43416C67546573743100 B0E2x3=B0E2000000
 public class ApduTimer {
   public static void main(String[] args) throws Exception {
-    Card card = TerminalFactory.getDefault().terminals().getTerminal(args[0])
-        .connect("*");
+    CardTerminal terminal =
+        TerminalFactory.getDefault().terminals().getTerminal(args[0]);
+    Card card = terminal.connect("*");
     CardChannel channel = card.getBasicChannel();
     int status = 0;
     outer:
     for (int index = 1; index < args.length; index++) {
+      if (args[index].equals("RESET")) {
+        card.disconnect(true);
+        card = terminal.connect("*");
+        channel = card.getBasicChannel();
+        System.out.println("APDU:RESET");
+        continue;
+      }
       String[] pair = args[index].split("=", 2);
       String label = pair[0];
       int repeat = 1;

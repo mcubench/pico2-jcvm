@@ -2989,6 +2989,59 @@ extern "C" uint8_t fs_sync(void) {
   return persist_overlay() ? FS_STATUS_OK : FS_STATUS_IO_UNKNOWN;
 }
 
+extern "C" uint8_t fs_commit_tag(const uint8_t *tag, uint8_t tag_length) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
+#ifdef RP2350_FS_OVERLAY_TEST
+  if (rp2350_fs_test_sync_failures != 0) {
+    --rp2350_fs_test_sync_failures;
+    return FS_STATUS_IO_UNKNOWN;
+  }
+#endif
+  const bool deferred =
+      choupi_persistent_write_transaction_active() != 0
+#ifdef RP2350_FS_OVERLAY_TEST
+      || rp2350_fs_test_manual_transaction_active() != 0
+#endif
+      ;
+  if (journal_next != 0 && filesystem_active_slot != 0xff
+#ifdef RP2350_FS_OVERLAY_TEST
+      && rp2350_fs_test_journal_enabled
+#endif
+  ) {
+    const uint8_t *data = nullptr;
+    uint32_t length = 0;
+    const bool exists = find_file(tag, tag_length, &data, &length);
+    if (!exists) length = 0;
+    JournalPacker sizing{true, journal_next, sizeof(JournalEntryHeader), 0,
+                         journal_sequence};
+    if (sizing.add(exists, tag, tag_length, data, length) &&
+        sizing.flush(false) &&
+        journal_next + sizing.total_padded <= journal_end) {
+      JournalPacker writer{false, journal_next, sizeof(JournalEntryHeader),
+                           0, journal_sequence};
+      if (writer.add(exists, tag, tag_length, data, length) &&
+          writer.flush(false)) {
+        journal_next = writer.position;
+        journal_sequence = writer.sequence;
+        ++apdu_stats.syncs_journaled;
+        apdu_stats.journal_bytes += writer.total_padded;
+        // The committed value of this tag changed: the change log can no
+        // longer prove an empty net change for this commit window. The
+        // slot stays dirty and is journaled again at the next sync.
+        change_log_untracked = true;
+        return FS_STATUS_OK;
+      }
+      journal_next = 0;
+    }
+  }
+  // No usable journal. Outside a transaction a full commit is allowed (Java
+  // Card does not require the other pending updates to stay uncommitted);
+  // inside one it would publish uncommitted transactional updates.
+  if (deferred) return FS_STATUS_IO_UNKNOWN;
+  return persist_overlay() ? FS_STATUS_OK : FS_STATUS_IO_UNKNOWN;
+}
+
 #ifdef RP2350_FS_OVERLAY_TEST
 // Tests about snapshot slot layout need every sync to write a snapshot.
 extern "C" void rp2350_fs_test_set_journal_enabled(uint8_t enabled) {

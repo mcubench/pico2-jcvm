@@ -7,6 +7,7 @@ import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
+import javacard.framework.OwnerPIN;
 import javacard.framework.OwnerPINBuilder;
 import javacard.framework.OwnerPINx;
 import javacard.framework.OwnerPINxWithPredecrement;
@@ -28,6 +29,7 @@ public final class JCTransactionProbe extends Applet {
   private static byte[] gcRehydrateAliasA;
   private static byte[] gcRehydrateAliasB;
   private Object globalArrayInstanceReference;
+  private OwnerPIN persistentPin;
   private byte value = 0x11;
   private byte selectCount;
   private byte deselectCount;
@@ -1226,6 +1228,50 @@ public final class JCTransactionProbe extends Applet {
       case 72: {
         selectingAppletProbeFlags = 0;
         buffer[0] = 0;
+        break;
+      }
+      case 102: {
+        // OwnerPIN state stays out of transactions (FLASH-03).
+        byte[] correct = {(byte)'1', (byte)'2', (byte)'3', (byte)'4'};
+        byte[] wrong = {(byte)'1', (byte)'2', (byte)'3', (byte)'5'};
+        if (persistentPin == null) {
+          persistentPin = new OwnerPIN((byte)3, (byte)4);
+        }
+        persistentPin.update(correct, (short)0, (byte)4);
+        JCSystem.beginTransaction();
+        persistentPin.check(wrong, (short)0, (byte)4);
+        JCSystem.abortTransaction();
+        buffer[0] = persistentPin.getTriesRemaining();
+        JCSystem.beginTransaction();
+        persistentPin.check(correct, (short)0, (byte)4);
+        JCSystem.abortTransaction();
+        buffer[1] = persistentPin.getTriesRemaining();
+        buffer[2] = (byte)(persistentPin.isValidated() ? 1 : 0);
+        persistentPin.check(wrong, (short)0, (byte)4);
+        JCSystem.beginTransaction();
+        persistentPin.resetAndUnblock();
+        JCSystem.abortTransaction();
+        buffer[3] = persistentPin.getTriesRemaining();
+        buffer[4] = (byte)(persistentPin.check(correct, (short)0, (byte)4)
+                               ? 1 : 0);
+        buffer[5] = (byte)(persistentPin.isValidated() ? 1 : 0);
+        // Leave the PIN validated for case 103.
+        persistentPin.check(wrong, (short)0, (byte)4);
+        persistentPin.check(correct, (short)0, (byte)4);
+        buffer[6] = persistentPin.getTriesRemaining();
+        length = 7;
+        break;
+      }
+      case 103: {
+        // After a card reset: not validated, try counter kept.
+        if (persistentPin == null) {
+          buffer[0] = (byte)0x7f;
+          buffer[1] = (byte)0x7f;
+        } else {
+          buffer[0] = (byte)(persistentPin.isValidated() ? 1 : 0);
+          buffer[1] = persistentPin.getTriesRemaining();
+        }
+        length = 2;
         break;
       }
       case 56: {
