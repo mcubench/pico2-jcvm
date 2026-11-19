@@ -30,6 +30,7 @@ public final class JCTransactionProbe extends Applet {
   private static byte[] gcRehydrateAliasB;
   private Object globalArrayInstanceReference;
   private OwnerPIN persistentPin;
+  private OwnerPINxWithPredecrement persistentPinX;
   private byte value = 0x11;
   private byte selectCount;
   private byte deselectCount;
@@ -1262,6 +1263,50 @@ public final class JCTransactionProbe extends Applet {
         length = 7;
         break;
       }
+      case 104: {
+        // Persistent OwnerPINx: presentation (decrementTriesRemaining)
+        // stays out of transactions, administration (setTriesRemaining)
+        // participates in them.
+        byte[] correct = {(byte)'1', (byte)'2', (byte)'3', (byte)'4'};
+        byte[] wrong = {(byte)'1', (byte)'2', (byte)'3', (byte)'5'};
+        if (persistentPinX == null) {
+          persistentPinX = (OwnerPINxWithPredecrement)
+              OwnerPINBuilder.buildOwnerPIN((byte)3, (byte)4,
+                  OwnerPINBuilder.OWNER_PIN_X_WITH_PREDECREMENT);
+        }
+        persistentPinX.update(correct, (short)0, (byte)4);
+        JCSystem.beginTransaction();
+        buffer[0] = persistentPinX.decrementTriesRemaining();
+        JCSystem.abortTransaction();
+        buffer[1] = persistentPinX.getTriesRemaining();
+        buffer[2] = (byte)(persistentPinX.check(wrong, (short)0, (byte)4)
+                               ? 1 : 0);
+        buffer[3] = persistentPinX.getTriesRemaining();
+        JCSystem.beginTransaction();
+        persistentPinX.setTriesRemaining((byte)1);
+        JCSystem.abortTransaction();
+        buffer[4] = persistentPinX.getTriesRemaining();
+        persistentPinX.setTriesRemaining((byte)3);
+        buffer[5] = persistentPinX.getTriesRemaining();
+        length = 6;
+        break;
+      }
+      case 105: {
+        // Leave one failed try recorded for a cold-restart check (case 103
+        // then reports 00 02).
+        byte[] correct = {(byte)'1', (byte)'2', (byte)'3', (byte)'4'};
+        byte[] wrong = {(byte)'1', (byte)'2', (byte)'3', (byte)'5'};
+        if (persistentPin == null) {
+          persistentPin = new OwnerPIN((byte)3, (byte)4);
+        }
+        persistentPin.update(correct, (short)0, (byte)4);
+        persistentPin.check(wrong, (short)0, (byte)4);
+        buffer[0] = (byte)(persistentPin.isValidated() ? 1 : 0);
+        buffer[1] = persistentPin.getTriesRemaining();
+        length = 2;
+        break;
+      }
+      case 106:
       case 103: {
         // After a card reset: not validated, try counter kept.
         if (persistentPin == null) {

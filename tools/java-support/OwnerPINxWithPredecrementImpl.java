@@ -5,6 +5,8 @@
 
 package javacard.framework;
 
+import fr.gouv.ssi.nativeimpl.NativeImplementation;
+
 /** Owner PIN implementation requiring a per-reset try predecrement. */
 public final class OwnerPINxWithPredecrementImpl extends OwnerPINxBase
     implements OwnerPINxWithPredecrement {
@@ -22,7 +24,9 @@ public final class OwnerPINxWithPredecrementImpl extends OwnerPINxBase
     setValidatedFlag(false);
     byte remaining = getTriesRemaining();
     if (remaining > 0) {
-      setTriesRemainingForSubclass((byte)(remaining - 1));
+      // PIN presentation: durable and outside any transaction before the
+      // comparison that follows.
+      NativeImplementation.ownerPinSetTries(this, (byte)(remaining - 1));
     }
     this.predecremented[0] = 1;
     return getTriesRemaining();
@@ -42,7 +46,7 @@ public final class OwnerPINxWithPredecrementImpl extends OwnerPINxBase
     // at zero and follows OwnerPIN's normal blocked behavior.
     byte remaining = getTriesRemaining();
     if (remaining > 0) {
-      setTriesRemainingForSubclass((byte)(remaining + 1));
+      NativeImplementation.ownerPinSetTries(this, (byte)(remaining + 1));
     }
     return checkPIN(pin, offset, length);
   }

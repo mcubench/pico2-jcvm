@@ -32485,3 +32485,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: CSV 4,532 lines, 161 `yes`, 4,284 `no`; the `yes` set equals the 2026-11-15 VPCD support reference (`artifacts/results/jcalgtest-support-vpcd-20261115T135649Z/`). Serial: 8,890 `FS_APDU` lines, 0 FAULT/PANIC/NO_RESOURCE, 0 `pending=1`; 174 deletion passes run and 4,270 skipped as unchanged; 2 full snapshots (65,536 B each, store ~48–50 KB); journal 243,456 B programmed, 237,568 B of journal sectors erased; 16 elided syncs.
 - Decision: no regression found in API support or deletion. Remaining open items from this session: PERF-LAYOUT-01 (needs heap-peak data before moving code to SRAM), RV-20261106-04 cold power-cycle and persistent OwnerPINx cases; the Windows package (`WIN-MAXCRYPTO-BASELINE-5A537513`) predates FLASH-01b..f and FLASH-03.
 - Artifacts/logs: `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/` (CSV, client log, runner.log, serial.log, identity.txt)
+
+## 2026-11-19 OwnerPINx administration stays transactional; cold-restart PIN checks 7
+
+- Step-Id: `20261119-2318-rv04-ownerpinx-cold`
+- Task: RV-20261106-04 (follow-up to FLASH-03)
+- When: '2026-11-19 22:59' - '2026-11-19 23:06'
+- Model: `claude-opus-5-5`
+- Change: the OwnerPINx contract says administrative updates (`setTriesRemaining`) participate in a transaction while PIN presentation does not; FLASH-03 had routed `setTriesRemainingForSubclass` through the durable non-transactional native. javacard-api `1387805` restores the ordinary (transactional) field write there; `tools/java-support/OwnerPINxWithPredecrementImpl.java` now calls `NativeImplementation.ownerPinSetTries` directly for its presentation-path updates (`decrementTriesRemaining`, the restore-one-try step of `check`), so no virtual method was added to `OwnerPIN`. Probe cases 104 (persistent OwnerPINx), 105 (record a failed try) and 106 (= 103 expecting `0002`) added.
+- Validation: `tools/test-jcsystem-transaction-applet` 104/104 on the host PC build and 104/104 on the `--rp2350-overlay` build; emulator cold restore (`--restore-existing` new process): after case 102 → case 103 `0003`, after case 105 → case 106 `0002`. ARM max_crypto rc=0, no C/C++ warnings, UF2 SHA-256 `38a6bb2669773bb44225ba972131a0c40283c452e43f020e4f7384727c1baeba`. 07E74C5D7A038DEC: `tools/cycle choupi` (CYCLE:PASS; one retry after the known USB path race), GPPro delete + reinstall of the probe CAP, then case 13 unchanged, 102 `02030103010103`, 104 `020200020203`; reboot (reflash); 103 `0003`, 105 `0002`; reboot; 106 `0002`.
+- Result: presentation counter updates survive abort and cold restart; the validated flag is cleared by reset and by a cold restart; administrative `setTriesRemaining` is rolled back by abort.
+- Decision: RV-20261106-04 closed. Not covered: an actual power cut during a PIN check on hardware (the fake-flash cut test covers `fs_commit_tag`).
+- Artifacts/logs: `artifacts/results/rv04-ownerpinx-cold-20261119/`

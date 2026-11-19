@@ -305,6 +305,9 @@ def main() -> int:
                     (92, b"\x63\x12", "atomic write after non-atomic write rolls back to non-atomic baseline"),
                     (102, bytes((2, 3, 1, 3, 1, 1, 3)), "OwnerPIN try counter and validated flag stay out of transactions"),
                     (103, bytes((0, 3)), "card reset clears OwnerPIN validation and keeps the try counter"),
+                    (104, bytes((2, 2, 0, 2, 2, 3)), "persistent OwnerPINx: presentation outside, administration inside transactions"),
+                    (105, bytes((0, 2)), "record one failed OwnerPIN try"),
+                    (106, bytes((0, 2)), "OwnerPIN try counter survives restore; validation cleared"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
