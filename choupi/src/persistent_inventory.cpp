@@ -20,6 +20,11 @@ extern "C" __attribute__((weak)) void choupi_vm_cooperative_progress(void) {}
 #include <cstdio>
 #include <cstring>
 #include <utility>
+#include <vector>
+
+#ifndef PC_VERSION
+extern "C" uint32_t choupi_available_transient_memory_bytes(void);
+#endif
 
 extern "C" uint8_t fs_repair_overlay_index_if_needed(void)
     __attribute__((weak));
@@ -1011,11 +1016,51 @@ VisitResult visitUnreachablePackageStaticTags(
 
 namespace PersistentReclaimer {
 namespace {
-constexpr uint8_t kTagBatchCapacity = 8;
+// Candidates erased per inventory scan. Every scan visits the whole owner
+// namespace (it is also the integrity preflight), so a small batch multiplies
+// full scans: 52 dead records with 8 per batch took ~9 scans of ~50 ms each.
+// The inline batch needs no allocation; more slots come from the heap only
+// when enough transient memory is free.
+constexpr size_t kInlineTagBatchCapacity = 8;
+constexpr size_t kMaxTagBatchCapacity = 64;
+#ifndef PC_VERSION
+constexpr uint32_t kTagBatchHeapMarginBytes = 16u * 1024u;
+#endif
 
 struct CandidateBatch {
-  std::array<PersistentInventory::Tag, kTagBatchCapacity> tags{};
-  uint8_t count = 0;
+  CandidateBatch() {
+    size_t capacity = kMaxTagBatchCapacity;
+#ifndef PC_VERSION
+    const uint32_t available = choupi_available_transient_memory_bytes();
+    const uint32_t spare = available > kTagBatchHeapMarginBytes
+                               ? available - kTagBatchHeapMarginBytes
+                               : 0;
+    capacity = std::min<size_t>(
+        capacity, spare / sizeof(PersistentInventory::Tag));
+#endif
+    if (capacity > kInlineTagBatchCapacity) {
+      extra.reserve(capacity);
+      tags = extra.data();
+      this->capacity = capacity;
+    }
+  }
+  CandidateBatch(const CandidateBatch &) = delete;
+  CandidateBatch &operator=(const CandidateBatch &) = delete;
+
+  // Prepare for the next scan; the storage is kept.
+  void reset() noexcept {
+    count = 0;
+    overflow = false;
+    skipped_unresolvable = 0;
+  }
+
+  std::array<PersistentInventory::Tag, kInlineTagBatchCapacity> inline_tags{};
+  std::vector<PersistentInventory::Tag> extra;
+  PersistentInventory::Tag *tags = inline_tags.data();
+  size_t capacity = kInlineTagBatchCapacity;
+  size_t count = 0;
+  // More candidates than `capacity` were seen; another scan is needed.
+  bool overflow = false;
   uint16_t skipped_unresolvable = 0;
   PersistentInventory::Tag first_unresolvable{};
 };
@@ -1080,7 +1125,12 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
     ++batch.skipped_unresolvable;
     return true;
   }
-  if (batch.count >= batch.tags.size()) return false;
+  // Keep visiting when the batch is full: the scan stays a complete
+  // validation of the namespace, and `overflow` asks for another pass.
+  if (batch.count >= batch.capacity) {
+    batch.overflow = true;
+    return true;
+  }
   batch.tags[batch.count++] = tag;
 #if defined(CHOUPI_DEBUG_HEAP_GC) && !defined(PC_VERSION)
   std::printf("OBJECT_DELETION:CANDIDATE stage=batch index=%u tag=",
@@ -1091,23 +1141,16 @@ bool collectCandidateBatch(const PersistentInventory::Tag &tag,
   std::printf("\r\n");
   std::fflush(stdout);
 #endif
-  return batch.count < batch.tags.size();
+  return true;
 }
 
+// Erase children (longer tags) before their parents.
 void sortCandidateBatch(CandidateBatch &batch) {
-  const uint8_t count = batch.count < kTagBatchCapacity
-                            ? batch.count
-                            : kTagBatchCapacity;
-  for (uint8_t index = 1; index < count; ++index) {
-    const PersistentInventory::Tag candidate = batch.tags[index];
-    uint8_t destination = index;
-    while (destination != 0 &&
-           batch.tags[destination - 1].len < candidate.len) {
-      batch.tags[destination] = batch.tags[destination - 1];
-      --destination;
-    }
-    batch.tags[destination] = candidate;
-  }
+  std::stable_sort(batch.tags, batch.tags + batch.count,
+                   [](const PersistentInventory::Tag &left,
+                      const PersistentInventory::Tag &right) {
+                     return left.len > right.len;
+                   });
 }
 } // namespace
 
@@ -1148,14 +1191,19 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
 #else
   PersistentInventory::CandidateScanSummary *scan_summary = nullptr;
 #endif
-  const VisitResult preflight =
-      PersistentInventory::visitUnreachableAppletTagsWithAliasTargets(
-          applet_owner, heap, enumerate_roots, root_context,
-          foreign_alias_targets, acceptAllCandidates, nullptr,
-          scan_summary);
-  if (preflight != VisitResult::Complete) {
-    logReadFailure("root_scan", preflight);
-    return preflight;
+  // Each candidate scan below visits the whole namespace before the first
+  // erase, so it is also the cursor preflight. A separate scan runs only to
+  // collect PC diagnostics.
+  if (scan_summary != nullptr) {
+    const VisitResult preflight =
+        PersistentInventory::visitUnreachableAppletTagsWithAliasTargets(
+            applet_owner, heap, enumerate_roots, root_context,
+            foreign_alias_targets, acceptAllCandidates, nullptr,
+            scan_summary);
+    if (preflight != VisitResult::Complete) {
+      logReadFailure("root_scan", preflight);
+      return preflight;
+    }
   }
 #ifdef PC_VERSION
   if (collect_diagnostics) {
@@ -1209,26 +1257,23 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
   uint32_t erased = 0;
   bool probe_repair_attempted = false;
   bool integrity_logged = false;
+  CandidateBatch batch;
   while (true) {
     if (FlashMemory_Handler::persistentWriteTransactionActive()) {
       if (erased_count != nullptr) *erased_count = erased;
       return VisitResult::TransactionActive;
     }
 
-    CandidateBatch batch;
+    batch.reset();
     const VisitResult scan =
         PersistentInventory::visitUnreachableAppletTagsWithAliasTargets(
             applet_owner, heap, enumerate_roots, root_context,
             foreign_alias_targets, collectCandidateBatch, &batch);
-    if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
+    if (scan != VisitResult::Complete) {
       if (erased_count != nullptr) *erased_count = erased;
       logReadFailure("candidate_scan", scan);
-      return scan;
-    }
-    if (scan == VisitResult::Stopped &&
-        batch.count != kTagBatchCapacity) {
-      if (erased_count != nullptr) *erased_count = erased;
-      return VisitResult::InvalidCursor;
+      // The collector never stops a scan, so Stopped means a broken cursor.
+      return scan == VisitResult::Stopped ? VisitResult::InvalidCursor : scan;
     }
     if (batch.count == 0) {
       if (reportSkippedCandidates("applet", batch,
@@ -1247,7 +1292,7 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
     }
     batch.skipped_unresolvable = 0;
 
-    for (uint8_t index = 0; index < batch.count; ++index) {
+    for (size_t index = 0; index < batch.count; ++index) {
       const auto &candidate = batch.tags[index];
       if (candidate.len < 2 || candidate.value[0] != 0x03 ||
           candidate.value[1] != applet_owner ||
@@ -1286,6 +1331,12 @@ PersistentInventory::VisitResult reclaimUnreachableAppletTags(
                                 &integrity_logged)) {
       continue;
     }
+    // A complete scan that fit in the batch found every candidate, and
+    // erasing records does not change reachability: no confirming rescan.
+    if (!batch.overflow) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::Complete;
+    }
   }
 }
 
@@ -1313,38 +1364,26 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     return alias_scan;
   }
 
-  const VisitResult preflight =
-      PersistentInventory::visitUnreachablePackageStaticTagsWithAliasTargets(
-          package_id, heap, enumerate_roots, root_context,
-          foreign_alias_targets, acceptAllCandidates, nullptr);
-  if (preflight != VisitResult::Complete) {
-    logReadFailure("root_scan", preflight);
-    return preflight;
-  }
-
   uint32_t erased = 0;
   bool probe_repair_attempted = false;
   bool integrity_logged = false;
+  CandidateBatch batch;
   while (true) {
     if (FlashMemory_Handler::persistentWriteTransactionActive()) {
       if (erased_count != nullptr) *erased_count = erased;
       return VisitResult::TransactionActive;
     }
 
-    CandidateBatch batch;
+    batch.reset();
     const VisitResult scan =
         PersistentInventory::visitUnreachablePackageStaticTagsWithAliasTargets(
             package_id, heap, enumerate_roots, root_context,
             foreign_alias_targets, collectCandidateBatch, &batch);
-    if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
+    if (scan != VisitResult::Complete) {
       if (erased_count != nullptr) *erased_count = erased;
       logReadFailure("candidate_scan", scan);
-      return scan;
-    }
-    if (scan == VisitResult::Stopped &&
-        batch.count != kTagBatchCapacity) {
-      if (erased_count != nullptr) *erased_count = erased;
-      return VisitResult::InvalidCursor;
+      // The collector never stops a scan, so Stopped means a broken cursor.
+      return scan == VisitResult::Stopped ? VisitResult::InvalidCursor : scan;
     }
     if (batch.count == 0) {
       if (reportSkippedCandidates("package", batch,
@@ -1363,7 +1402,7 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
     }
     batch.skipped_unresolvable = 0;
 
-    for (uint8_t index = 0; index < batch.count; ++index) {
+    for (size_t index = 0; index < batch.count; ++index) {
       const auto &candidate = batch.tags[index];
       if (candidate.len <= 4 || candidate.value[0] != 0x02 ||
           candidate.value[1] != package_id ||
@@ -1392,6 +1431,12 @@ PersistentInventory::VisitResult reclaimUnreachablePackageStaticTags(
                                 &probe_repair_attempted,
                                 &integrity_logged)) {
       continue;
+    }
+    // A complete scan that fit in the batch found every candidate, and
+    // erasing records does not change reachability: no confirming rescan.
+    if (!batch.overflow) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::Complete;
     }
   }
 }
