@@ -32263,3 +32263,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: document committed; user asked to implement steps 1, 2, 4 and 5 in order.
 - Decision: proceed with step 1 (instrumentation).
 - Artifacts/logs: none
+
+## 2026-11-19 Per-APDU filesystem telemetry (slow-baseline step 1) 25
+
+- Step-Id: `20261119-0730-fs-apdu-telemetry`
+- Task: slow-baseline plan step 1 (`docs/review_slowbaseline_20261119.md`)
+- When: '2026-11-19 06:50' - '2026-11-19 07:30'
+- Model: `claude-opus-5-5`
+- Change: `src/pico_filesystem.cpp` counts overlay record writes/bytes, erases, flash snapshot rewrites and their erased bytes; `choupi_fs_take_apdu_stats()` (declared in `src/vm_filesystem.h`) reads and resets them. `src/ccid_device.cpp` prints one `CHOUPI:FS_APDU ins vm_us sync_us writes write_bytes erases synced elided sync_bytes files bytes` line per applet APDU (`vm_us` includes post-APDU object deletion). `elided` is reserved for step 2.
+- Validation: `./tools/build arm --profile max_crypto` rc=0, 0 warnings; `./tools/test-rp2350-fs-overlay` fail=0; `./tools/cycle choupi --profile max_crypto --serial 07E74C5D7A038DEC` CYCLE:PASS (`artifacts/logs/cycle-choupi-20261119T052814Z.log`).
+- Result (EC384 sign replay, store 546 files / 15.2 KB):
+  - GETVERSION: vm 27.6 ms, no writes, no sync.
+  - Prepare `B032`: vm 704 ms, 246 writes / 6107 B, sync 519 ms (28,672 B erased+programmed).
+  - First `B0E2`: vm 831 ms (118 erases), sync 536 ms.
+  - Baseline `B049`: vm 295 ms for 25 writes / 72 B, sync 509–547 ms (28,672 B). Client-side 806–843 ms.
+  - Later `B0E2`: vm 301 ms, no writes, no sync.
+- Decision: the baseline cost is ~0.52 s whole-snapshot sync plus ~0.27 s of overlay rewrite work. `append_overlay` moves the overlay tail and scans all 8192 index slots twice for every rewrite of an existing record. Next: same-size in-place overwrite, then net-unchanged sync elision (step 2).
+- Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/step1-telemetry/{apdu-timer.log,serial.log}`

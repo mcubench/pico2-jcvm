@@ -183,6 +183,8 @@ size_t overlay_bytes_used = 0;
 // the compaction trigger counts only tombstones created since then.
 size_t tombstones_after_last_compaction = 0;
 bool overlay_dirty = false;
+// Per-APDU telemetry, read and reset by choupi_fs_take_apdu_stats().
+ChoupiFsApduStats apdu_stats{};
 bool filesystem_layout_available = false;
 uint8_t filesystem_active_slot = 0xff;
 uint32_t filesystem_generation = 0;
@@ -445,6 +447,8 @@ bool persist_overlay() {
   filesystem_active_slot = next_slot;
   filesystem_generation = next_generation;
   overlay_dirty = false;
+  ++apdu_stats.syncs_written;
+  apdu_stats.sync_bytes += erase_size;
   return true;
 }
 
@@ -2224,6 +2228,8 @@ uint8_t write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
     }
     std::memcpy(overlay_data(*file) + offset, data, length);
     overlay_dirty = true;
+    ++apdu_stats.writes;
+    apdu_stats.write_bytes += length;
     return FS_STATUS_OK;
   }
 
@@ -2248,6 +2254,8 @@ uint8_t write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
   }
   std::memcpy(overlay_data(*file) + offset, data, length);
   overlay_dirty = true;
+  ++apdu_stats.writes;
+  apdu_stats.write_bytes += length;
   return FS_STATUS_OK;
 }
 
@@ -2406,6 +2414,11 @@ extern "C" void rp2350_fs_test_hide_exists_tag(const uint8_t *tag,
 
 extern "C" void fs_drop(void) { (void)fs_sync(); }
 
+extern "C" void choupi_fs_take_apdu_stats(ChoupiFsApduStats *stats) {
+  if (stats != nullptr) *stats = apdu_stats;
+  apdu_stats = ChoupiFsApduStats{};
+}
+
 extern "C" uint8_t fs_exists(const uint8_t *tag, uint8_t tag_length) {
   if (validate_tag(tag, tag_length) != FS_STATUS_OK) return 0;
 #ifdef RP2350_FS_OVERLAY_TEST
@@ -2551,6 +2564,8 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
     return FS_STATUS_OUT_OF_FLASH;
   }
   overlay_dirty = true;
+  ++apdu_stats.writes;
+  apdu_stats.write_bytes += length;
 #ifdef CHOUPI_DEBUG_CCID_APPLET
   failure_path_reported = false;
 #endif
@@ -2639,6 +2654,7 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   file.size = 0;
   file.flags |= kOverlayHasRecord | kOverlayDeleted | kOverlaySerialized;
   overlay_dirty = true;
+  ++apdu_stats.erases;
   return FS_STATUS_OK;
 }
 } // namespace
@@ -2661,6 +2677,7 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
       return FS_STATUS_OUT_OF_FLASH;
     file->flags |= kOverlayHasRecord | kOverlayDeleted;
     overlay_dirty = true;
+    ++apdu_stats.erases;
     return FS_STATUS_OK;
   } else if (!overlay_has_record(*file)) {
     return FS_STATUS_NO_SUCH_TAG;

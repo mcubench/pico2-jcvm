@@ -22,6 +22,20 @@ uint8_t choupi_compact_persistent_memory(void);
 // Tombstones created since the last successful compaction.
 uint32_t choupi_persistent_tombstones_since_compaction(void);
 
+// RP2350 filesystem activity since the previous call: record writes and
+// erases in the RAM overlay, and flash snapshot rewrites (`syncs_written`,
+// `sync_bytes` erased and programmed) versus syncs skipped because the
+// overlay's net content equalled the committed snapshot (`syncs_elided`).
+struct ChoupiFsApduStats {
+  uint32_t writes;
+  uint32_t write_bytes;
+  uint32_t erases;
+  uint32_t syncs_written;
+  uint32_t syncs_elided;
+  uint32_t sync_bytes;
+};
+void choupi_fs_take_apdu_stats(struct ChoupiFsApduStats *stats);
+
 #ifdef __cplusplus
 }
 #endif

@@ -570,6 +570,29 @@ public:
   NativeOperationScope &operator=(const NativeOperationScope &) = delete;
 };
 
+// One line per applet APDU: VM time (including post-APDU object deletion),
+// end-of-APDU filesystem sync time, and the overlay activity behind it.
+void report_fs_apdu(uint8_t ins, uint32_t vm_us, uint32_t sync_us) {
+  ChoupiFsApduStats stats{};
+  choupi_fs_take_apdu_stats(&stats);
+  uint32_t files = 0;
+  uint32_t bytes = 0;
+  choupi_persistent_memory_usage(&files, &bytes, nullptr);
+  std::printf("CHOUPI:FS_APDU ins=%02X vm_us=%lu sync_us=%lu writes=%lu "
+              "write_bytes=%lu erases=%lu synced=%lu elided=%lu "
+              "sync_bytes=%lu files=%lu bytes=%lu\r\n",
+              static_cast<unsigned>(ins), static_cast<unsigned long>(vm_us),
+              static_cast<unsigned long>(sync_us),
+              static_cast<unsigned long>(stats.writes),
+              static_cast<unsigned long>(stats.write_bytes),
+              static_cast<unsigned long>(stats.erases),
+              static_cast<unsigned long>(stats.syncs_written),
+              static_cast<unsigned long>(stats.syncs_elided),
+              static_cast<unsigned long>(stats.sync_bytes),
+              static_cast<unsigned long>(files),
+              static_cast<unsigned long>(bytes));
+}
+
 void process_message(uint8_t rhport) {
   const uint8_t command = rx_buffer[0];
   debug_recent_commands[debug_recent_command_index] = command;
@@ -1097,6 +1120,8 @@ void process_message(uint8_t rhport) {
       uint16_t applet_response_length = 0;
       choupi_reader_led_activity();
       uint16_t status = 0xffff;
+      choupi_fs_take_apdu_stats(nullptr);
+      const uint32_t vm_started_us = time_us_32();
       {
         NativeOperationScope operation(
             rhport, rx_buffer[6], apdu[0], apdu[1],
@@ -1105,6 +1130,7 @@ void process_message(uint8_t rhport) {
             apdu, static_cast<uint16_t>(apdu_length), response,
             static_cast<uint16_t>(sizeof(response)), &applet_response_length);
       }
+      const uint32_t vm_elapsed_us = time_us_32() - vm_started_us;
 #ifdef CHOUPI_DEBUG_CCID_APPLET
       std::printf("CHOUPI:CCID_APPLET stage=vm_return status=%04X len=%u\r\n",
                   static_cast<unsigned>(status),
@@ -1118,7 +1144,10 @@ void process_message(uint8_t rhport) {
         std::fflush(stdout);
         const uint32_t fs_sync_started_us = time_us_32();
 #endif
+        const uint32_t sync_started_us = time_us_32();
         const uint8_t sync_status = fs_sync();
+        report_fs_apdu(apdu[1], vm_elapsed_us,
+                       time_us_32() - sync_started_us);
 #ifdef CHOUPI_DEBUG_CCID_APPLET
         const uint32_t fs_sync_elapsed_us =
             time_us_32() - fs_sync_started_us;
