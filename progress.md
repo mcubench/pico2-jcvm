@@ -32377,3 +32377,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - The prepare and the first `B0E2` still write full snapshots, now 40,960 B including the journal region (650–677 ms sync, was ~440–550 ms). JCAlgTest does not time either.
   - Reboot: after a reflash of the same image (storage kept), a repeat-2 op APDU was `elided=1`. The last full snapshot held repeat 50 and the journal held repeat 2, so the journal was replayed. (F104 = INVALID_INIT is expected: Signature init state does not survive reset.)
 - Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/step3-journal/{run1,run2-after-reboot,reboot-check}/`
+
+## 2026-11-19 Record commit-journal results in the slow-baseline review 5
+
+- Step-Id: `20261119-1135-review-slowbaseline-journal`
+- Task: slow-baseline plan step 3 (`docs/review_slowbaseline_20261119.md`)
+- When: '2026-11-19 11:25' - '2026-11-19 11:35'
+- Model: `claude-opus-5-5`
+- Change: review section 5 now lists step 3, its hardware result and the remaining limitations (the first-sample snapshot sync is no longer one; downgrade note added).
+- Validation: inspection; numbers from record `20261119-1125-fs-commit-journal`.
+- Result: documentation only.
+- Decision: none.
+- Artifacts/logs: none

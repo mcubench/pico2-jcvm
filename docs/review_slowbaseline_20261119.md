@@ -108,17 +108,24 @@ The steady baseline that remains is real applet work:
 | 4a | Store an EC key's components in one persistent record | 21 → 7 records per EC key; legacy layout still read/written |
 | 4b | Allocate Signature working buffers on first use | ECDSA Signature stores no IV / recovery-hash buffer |
 | 5 | Reclaim each deletion batch from one complete inventory scan | 52-record reclaim 285 → 169 ms |
+| 3 | Commit tracked changes to a flash journal instead of rewriting the snapshot | a real change commits in ~1 ms (256 B) instead of ~0.5 s |
+
+Step 3 (commit journal, 2026-11-19): with the journal, the first baseline
+and the first operation measurement of a method no longer pay a snapshot
+rewrite. Replay on 07E7: baselines 234–237 ms, operations (repeat 2)
+508–510 ms, all five samples equal; each first sample journals 256 B in about
+1 ms. Full snapshots, written only by a prepare or a deletion pass that
+erases many records, now also erase the 16 KB journal region (40 KB, about
+0.65 s); JCAlgTest does not time them. A reboot replays the journal (checked
+on 07E7). Power-cut atomicity is covered by unit tests that cut at every
+mutation of an append and during a full snapshot.
 
 Remaining limitations:
 
-- The first baseline and the first operation measurement of each method still
-  pay one full snapshot sync, because `numRepeatWholeOperation` really changes
-  (50 ↔ 0) and must be durable. Before step 2 every measurement paid it and
-  the baseline subtraction cancelled it. Now it lands in one of five operation
-  samples (~0.5 s at a 28 KB store, more on a larger one). Step 3
-  (incremental journal sync) removes this.
 - One inventory scan still costs ~85 ms for ~712 tags: `fs_next_tag`
   rebuilds and hash-verifies every used slot's tag. Each erase costs ~1.6 ms
   (`erase_overlay_slot` moves the arena tail and rescans the index).
 - Per EC384 prepare 52 records remain: 4 keys × 7, 2 KeyPairs × 5,
   2 Signatures × 6–8 (the message buffer is allocated by the first sign).
+- Firmware without the journal ignores journal entries and boots the last
+  snapshot, so a downgrade loses commits made since that snapshot.
