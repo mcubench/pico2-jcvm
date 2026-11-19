@@ -32461,3 +32461,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: steady `B0E2` 234 → 62–63 ms on this store (193 ms on the earlier 12.5 KB store); per replay 8 of 10 passes skipped, 2 full passes after the prepare (erasing 52 and 1 records), `pending=0`, no FAULT/PANIC; baselines 245–251 ms, ops 528–532 ms. Run 4's first `B0E2` took 1437 ms: the tombstone compaction ran with uncommitted erasures and forced a 61,440 B snapshot (FLASH-01f).
 - Decision: next FLASH-01f.
 - Artifacts/logs: `artifacts/results/flash01d-unchanged-epoch-20261119/` (07E74C5D7A038DEC/f1d-run3, f1d-run4, instrumented runs; VPCD logs)
+
+## 2026-11-19 Commit deletion erasures before compaction 8
+
+- Step-Id: `20261119-2239-flash01f-compact-after-commit`
+- Task: FLASH-01f
+- When: '2026-11-19 22:31' - '2026-11-19 22:39'
+- Model: `claude-opus-5-5`
+- Change: `choupi_compact_persistent_memory()` (used only by the deletion pass at an APDU boundary) commits pending changes with `persist_overlay()` before compacting, unless a transaction is active. Compaction renumbers slots and drops tombstones, so with pending erasures it used to force a full snapshot; now it changes only RAM and the APDU-end sync is elided.
+- Validation: `./tools/test-rp2350-fs-overlay` fail=0 incl. new `deletion_compaction_commits_erasures_without_snapshot`; `test-object-deletion-policy`, `test-persistent-inventory`, `test-persistent-transaction` pass; VPCD overlay auto-gc (512) and overlay rsa-batch (80 erased) pass. ARM max_crypto rc=0, no C/C++ warnings, UF2 SHA-256 `1282101da6c95cd1e99e01f6c079b73a0e2bbf5a54b1387649a57599e6ec5fa8`; `tools/cycle choupi` on 07E74C5D7A038DEC CYCLE:PASS on the second attempt (first: known USB path re-enumeration race); five EC384 replays.
+- Result: the compacting `B0E2` (run 5, 265 tombstones, 52 erased) took 433 ms with `synced=0 journaled=1 journal_bytes=2048 elided=1`; before (run 4 of FLASH-01d) 1,437 ms with a 61,440 B snapshot. No full snapshot in any of the five replays; 8 of 10 passes per replay skipped; no FAULT/PANIC. Correction: the previous record's end time is 22:31 (measured), not 22:29.
+- Decision: FLASH-01 flash traffic for the JCAlgTest pattern is now journal pages and on-demand sector erases only. Remaining in this objective: FLASH-01c (batched erase CPU cost), PERF-LAYOUT-01, final integration pass.
+- Artifacts/logs: `artifacts/results/flash01f-compact-after-commit-20261119/`

@@ -2874,6 +2874,18 @@ extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes) {
 }
 
 extern "C" uint8_t choupi_compact_persistent_memory(void) {
+  // Called by the deletion pass at an APDU boundary. Commit its erasures
+  // first (normally a small journal group): compaction renumbers slots and
+  // drops tombstones, so pending changes would otherwise force a full
+  // snapshot. After the commit, compaction changes only RAM.
+  const bool deferred = choupi_persistent_write_transaction_active() != 0
+#ifdef RP2350_FS_OVERLAY_TEST
+                        || rp2350_fs_test_manual_transaction_active() != 0
+#endif
+      ;
+  if (journal_dirty_count != 0 && !deferred && !persist_overlay()) {
+    return FS_STATUS_IO_UNKNOWN;
+  }
   return compact_deleted_overlay_records();
 }
 

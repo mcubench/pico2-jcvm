@@ -38,6 +38,7 @@ extern "C" void rp2350_fs_test_set_journal_enabled(uint8_t enabled);
 extern "C" uint32_t rp2350_fs_test_journal_next(void);
 extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes);
 extern "C" uint8_t fs_commit_tag(const uint8_t *tag, uint8_t tag_length);
+extern "C" uint8_t choupi_compact_persistent_memory(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
@@ -4887,6 +4888,35 @@ int main(const int argc, char **argv) {
                   fs_exists(child_a, sizeof(child_a)) == 0 &&
                   fs_exists(child_b, sizeof(child_b)) == 0 && state_is(4);
     expect(erase_group, "journal_group_replays_parent_and_child_erasure");
+  }
+
+  // The deletion pass's compaction commits pending erasures first, so the
+  // compaction itself needs no flash write (no full snapshot).
+  {
+    ChoupiFsApduStats stats{};
+    fake_flash.fill(0xff);
+    reset_flash_failure();
+    bool ok = fs_init() == 0;
+    constexpr uint8_t value[] = {0x01, 0x02, 0x03};
+    for (uint8_t index = 0; ok && index < 40; ++index) {
+      const uint8_t tag[] = {0xf2, 0x70, index};
+      ok = fs_write(tag, sizeof(tag), value, sizeof(value)) == 0;
+    }
+    ok = ok && fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    for (uint8_t index = 0; ok && index < 30; ++index) {
+      const uint8_t tag[] = {0xf2, 0x70, index};
+      ok = fs_erase(tag, sizeof(tag)) == 0;
+    }
+    ok = ok && choupi_compact_persistent_memory() == 0 && fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    ok = ok && stats.syncs_written == 0 && stats.syncs_journaled == 1 &&
+         stats.syncs_elided == 1 && fs_init() == 0;
+    for (uint8_t index = 0; ok && index < 40; ++index) {
+      const uint8_t tag[] = {0xf2, 0x70, index};
+      ok = (fs_exists(tag, sizeof(tag)) != 0) == (index >= 30);
+    }
+    expect(ok, "deletion_compaction_commits_erasures_without_snapshot");
   }
 
   // fs_commit_tag makes one record durable at once, even while a Java Card

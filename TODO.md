@@ -60,11 +60,10 @@ plus temporary counters, EC384 Signature replay
   bumped by new objects, changed references, reference/new records, erases,
   rollback, transient clears and applet deletion). Steady `B0E2` on 07E7:
   193–234 → 62–63 ms; 8 of 10 passes per EC384 replay skipped.
-- [ ] **FLASH-01f** A deletion pass that reaches the tombstone compaction
-  threshold (256) compacts while its erasures are uncommitted, which forces a
-  full snapshot (61,440 B, ~1.4 s on a 45 KB store). Commit the pass's
-  erasures at the APDU boundary before compacting so compaction needs no
-  flash write.
+- [x] **FLASH-01f** The deletion pass's compaction first commits its
+  erasures (journal) and then compacts RAM only. Compacting `B0E2` on 07E7
+  (45.8 KB store): 1,437–1,529 ms with a 61,440 B snapshot → 433 ms with a
+  2,048 B journal group and no snapshot.
 - [x] **FLASH-03 (P1, security)** OwnerPIN try counter (RV-20261106-04).
   Done: every try-counter write (`check` decrement, success reset, `reset`,
   `resetAndUnblock`, OwnerPINx `setTriesRemaining`) goes through native
