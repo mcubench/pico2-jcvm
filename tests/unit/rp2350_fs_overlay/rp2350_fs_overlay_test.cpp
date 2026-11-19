@@ -34,6 +34,8 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
 extern "C" uint32_t rp2350_fs_test_live_record_count(void);
 extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void);
+extern "C" void rp2350_fs_test_set_journal_enabled(uint8_t enabled);
+extern "C" uint32_t rp2350_fs_test_journal_next(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
@@ -924,6 +926,7 @@ int main(const int argc, char **argv) {
   // Start the snapshot-slot fallback test from a known generation. Earlier
   // contract checks intentionally committed a snapshot to cover sync.
   fake_flash.fill(0xff);
+  rp2350_fs_test_set_journal_enabled(0);
   expect(fs_init() == 0, "reset_before_snapshot_fallback_test");
   constexpr uint8_t persistent_tag[] = {0xa1, 0x22, 0x33};
   constexpr uint8_t persisted_first[] = {0x11, 0x22, 0x33, 0x44};
@@ -952,6 +955,7 @@ int main(const int argc, char **argv) {
              std::memcmp(persisted_actual, persisted_first,
                          sizeof(persisted_actual)) == 0,
          "filesystem_snapshot_falls_back_after_crc_failure");
+  rp2350_fs_test_set_journal_enabled(1);
 
   constexpr uint8_t transaction_tag_a[] = {0xa2, 0x10, 0x01};
   constexpr uint8_t transaction_tag_b[] = {0xa2, 0x10, 0x02};
@@ -3178,6 +3182,7 @@ int main(const int argc, char **argv) {
   // Keep a hand-downgraded v2 snapshot in a current COW slot readable, then
   // prove that the next committed generation uses the compact v4 format.
   fake_flash.fill(0xff);
+  rp2350_fs_test_set_journal_enabled(0);
   expect(fs_init() == 0, "filesystem_v2_migration_setup");
   constexpr uint8_t v2_tag[] = {0xe0, 0x01, 0x01};
   constexpr uint8_t v2_value[] = {0x19, 0x28, 0x37};
@@ -3233,6 +3238,7 @@ int main(const int argc, char **argv) {
              std::memcmp(v4_compatibility_actual, v4_compatibility_value,
                          sizeof(v4_compatibility_value)) == 0,
          "filesystem_v4_bitmap_snapshot_remains_readable");
+  rp2350_fs_test_set_journal_enabled(1);
 
   // Force a record above 64 KiB, requiring the high offset bit. Commit and
   // restore it, then compact earlier records and verify its shifted offset.
@@ -3881,6 +3887,7 @@ int main(const int argc, char **argv) {
   constexpr uint8_t ambiguous_snapshot_tag_b[] = {0xf2, 0x23, 0x02};
   constexpr uint8_t ambiguous_snapshot_value_a[] = {0x21, 0x22, 0x23};
   constexpr uint8_t ambiguous_snapshot_value_b[] = {0x31, 0x32, 0x33};
+  rp2350_fs_test_set_journal_enabled(0);
   const bool ambiguous_snapshots_seeded =
       fs_init() == FS_STATUS_OK &&
       fs_write(ambiguous_snapshot_tag_a, sizeof(ambiguous_snapshot_tag_a),
@@ -3906,6 +3913,7 @@ int main(const int argc, char **argv) {
       fs_init() != FS_STATUS_OK && fake_flash == ambiguous_snapshot_flash;
   expect(ambiguous_snapshots_fail_closed,
          "filesystem_restore_fails_closed_for_two_ambiguous_cow_copies_without_mutation");
+  rp2350_fs_test_set_journal_enabled(1);
 
   // A self-consistent snapshot envelope can still contain an unreachable
   // index slot while all serialized records remain intact. Rebuild the hash
@@ -4559,11 +4567,11 @@ int main(const int argc, char **argv) {
     ok = ok && fs_erase(elide_a, sizeof(elide_a)) == FS_STATUS_OK &&
          fs_write(elide_a, sizeof(elide_a), a1, sizeof(a1)) == FS_STATUS_OK &&
          fs_sync() == FS_STATUS_OK && take().syncs_elided == 1;
-    // A real change is written and survives a restore.
+    // A real change is committed (journaled) and survives a restore.
     std::array<uint8_t, sizeof(a3)> read_a{};
     ok = ok && fs_write(elide_a, sizeof(elide_a), a3, sizeof(a3)) ==
                    FS_STATUS_OK &&
-         fs_sync() == FS_STATUS_OK && take().syncs_written == 1 &&
+         fs_sync() == FS_STATUS_OK && take().syncs_journaled == 1 &&
          stats.syncs_elided == 0 && fs_init() == FS_STATUS_OK &&
          fs_read(elide_a, sizeof(elide_a), read_a.data(), read_a.size()) ==
              FS_STATUS_OK &&
@@ -4584,6 +4592,140 @@ int main(const int argc, char **argv) {
     ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_written == 1 &&
          stats.syncs_elided == 0;
     expect(ok, "sync_skips_flash_rewrite_when_net_change_is_empty");
+  }
+
+  // Commit journal: a tracked change is appended to the active slot's
+  // journal; reboot replays it. Every power-cut point of an append recovers
+  // the old or the new state, and a torn tail forces the next commit to be a
+  // full snapshot in the other slot.
+  {
+    constexpr uint8_t j_a[] = {0xf2, 0x40, 0x01};
+    constexpr uint8_t j_b[] = {0xf2, 0x40, 0x02};
+    constexpr uint8_t j_c[] = {0xf2, 0x40, 0x03};
+    constexpr uint8_t a_old[] = {0x01, 0x02};
+    constexpr uint8_t a_new[] = {0x0a, 0x0b, 0x0c};
+    constexpr uint8_t b_old[] = {0x21};
+    constexpr uint8_t c_new[] = {0x31, 0x32};
+    ChoupiFsApduStats stats{};
+    const auto read_equals = [](const uint8_t *tag, size_t tag_length,
+                                const uint8_t *value, size_t length) {
+      uint32_t stored = 0;
+      if (fs_length(tag, static_cast<uint8_t>(tag_length), &stored) != 0 ||
+          stored != length) {
+        return false;
+      }
+      std::array<uint8_t, 16> buffer{};
+      return fs_read(tag, static_cast<uint8_t>(tag_length), buffer.data(),
+                     static_cast<uint32_t>(length)) == 0 &&
+             std::memcmp(buffer.data(), value, length) == 0;
+    };
+    const auto old_state = [&]() {
+      return read_equals(j_a, sizeof(j_a), a_old, sizeof(a_old)) &&
+             read_equals(j_b, sizeof(j_b), b_old, sizeof(b_old)) &&
+             fs_exists(j_c, sizeof(j_c)) == 0;
+    };
+    const auto new_state = [&]() {
+      return read_equals(j_a, sizeof(j_a), a_new, sizeof(a_new)) &&
+             fs_exists(j_b, sizeof(j_b)) == 0 &&
+             read_equals(j_c, sizeof(j_c), c_new, sizeof(c_new));
+    };
+    const auto apply_change = [&]() {
+      return fs_write(j_a, sizeof(j_a), a_new, sizeof(a_new)) == 0 &&
+             fs_erase(j_b, sizeof(j_b)) == 0 &&
+             fs_write(j_c, sizeof(j_c), c_new, sizeof(c_new)) == 0;
+    };
+
+    fake_flash.fill(0xff);
+    reset_flash_failure();
+    bool ok = fs_init() == 0 &&
+              fs_write(j_a, sizeof(j_a), a_old, sizeof(a_old)) == 0 &&
+              fs_write(j_b, sizeof(j_b), b_old, sizeof(b_old)) == 0 &&
+              fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    ok = ok && stats.syncs_written == 1 && rp2350_fs_test_journal_next() != 0;
+    const auto base_flash = fake_flash;
+    // Measure one append.
+    ok = ok && apply_change();
+    reset_flash_failure();
+    ok = ok && fs_sync() == 0;
+    const size_t append_mutations = flash_mutation_count;
+    choupi_fs_take_apdu_stats(&stats);
+    ok = ok && stats.syncs_journaled == 1 && stats.syncs_written == 0 &&
+         append_mutations == 256 && fs_init() == 0 && new_state();
+    expect(ok, "journal_append_commits_tracked_change_and_replays");
+
+    bool every_cut_atomic = ok;
+    for (size_t cut = 0; every_cut_atomic && cut < append_mutations; ++cut) {
+      fake_flash = base_flash;
+      reset_flash_failure();
+      if (fs_init() != 0 || !apply_change()) {
+        every_cut_atomic = false;
+        break;
+      }
+      reset_flash_failure(cut);
+      const bool sync_ok = fs_sync() == 0;
+      reset_flash_failure();
+      if (fs_init() != 0) {
+        every_cut_atomic = false;
+        break;
+      }
+      const bool was_old = old_state();
+      const bool was_new = new_state();
+      // A cut append never reports success; the full-snapshot fallback that
+      // follows it in the same sync may still commit the new state.
+      if (!(was_old || was_new) || (sync_ok && !was_new)) {
+        every_cut_atomic = false;
+        break;
+      }
+      // The store keeps committing after any torn tail.
+      if (was_old) {
+        if (!apply_change() || fs_sync() != 0 || fs_init() != 0 ||
+            !new_state()) {
+          every_cut_atomic = false;
+        }
+      }
+    }
+    expect(every_cut_atomic, "journal_append_every_power_cut_is_atomic");
+
+    // Fill the journal: it falls back to a full snapshot when full, then
+    // journals again; the latest value always survives a restore.
+    fake_flash = base_flash;
+    reset_flash_failure();
+    bool filled = fs_init() == 0;
+    uint32_t written = 0;
+    uint32_t journaled = 0;
+    uint8_t value[2] = {0, 0};
+    for (uint16_t round = 0; filled && round < 200; ++round) {
+      value[0] = static_cast<uint8_t>(round);
+      value[1] = static_cast<uint8_t>(round >> 8);
+      filled = fs_write(j_a, sizeof(j_a), value, sizeof(value)) == 0 &&
+               fs_sync() == 0;
+      choupi_fs_take_apdu_stats(&stats);
+      written += stats.syncs_written;
+      journaled += stats.syncs_journaled;
+    }
+    filled = filled && written >= 2 && journaled >= 150 && fs_init() == 0 &&
+             read_equals(j_a, sizeof(j_a), value, sizeof(value));
+    expect(filled, "journal_full_falls_back_to_snapshot_and_resumes");
+
+    // A torn full snapshot falls back to the older slot plus its journal.
+    fake_flash = base_flash;
+    reset_flash_failure();
+    bool torn_snapshot = fs_init() == 0 && apply_change() && fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    torn_snapshot = torn_snapshot && stats.syncs_journaled == 1;
+    // An untracked change (index repair path) forces a full snapshot.
+    for (uint8_t index = 0; torn_snapshot && index < 70; ++index) {
+      const uint8_t tag[] = {0xf2, 0x41, index};
+      torn_snapshot = fs_write(tag, sizeof(tag), b_old, sizeof(b_old)) == 0;
+    }
+    reset_flash_failure(4096 + 64);
+    torn_snapshot = torn_snapshot && fs_sync() != 0;
+    reset_flash_failure();
+    const uint8_t first_extra[] = {0xf2, 0x41, 0x00};
+    torn_snapshot = torn_snapshot && fs_init() == 0 && new_state() &&
+                    fs_exists(first_extra, sizeof(first_extra)) == 0;
+    expect(torn_snapshot, "torn_full_snapshot_recovers_previous_slot_journal");
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);

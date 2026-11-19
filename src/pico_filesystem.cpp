@@ -214,6 +214,35 @@ bool filesystem_layout_available = false;
 uint8_t filesystem_active_slot = 0xff;
 uint32_t filesystem_generation = 0;
 
+// Commit journal. A full snapshot also erases up to kJournalRegionBytes of
+// its slot right after the snapshot's last erase sector. A later sync whose
+// changes are known from the change log appends one page-aligned entry there
+// (about 1 ms) instead of erasing and reprogramming the whole snapshot. Boot
+// restores the snapshot, then replays entries with this slot's generation and
+// consecutive sequence numbers, stopping at the first entry that is not
+// valid; an entry is all-or-nothing because of its CRC. A torn or unexpected
+// tail disables appends until the next full snapshot moves to the other slot.
+constexpr uint32_t kJournalMagic = 0x314c4e4a; // "JNL1"
+constexpr uint32_t kJournalRegionBytes = 16 * 1024;
+constexpr size_t kJournalMaxEntryBytes = 2048;
+constexpr uint8_t kJournalOpWrite = 1;
+constexpr uint8_t kJournalOpErase = 2;
+struct __attribute__((packed)) JournalEntryHeader {
+  uint32_t magic;
+  uint32_t generation;
+  uint32_t sequence;
+  uint16_t record_count;
+  uint16_t body_length;
+};
+static_assert(sizeof(JournalEntryHeader) == 16, "journal header layout");
+static_assert(kJournalMaxEntryBytes % FLASH_PAGE_SIZE == 0,
+              "journal entries are programmed in whole pages");
+// Absolute flash offset of the next entry; 0 when appends are disabled.
+uint32_t journal_next = 0;
+uint32_t journal_end = 0;
+uint32_t journal_sequence = 0;
+alignas(FLASH_PAGE_SIZE) uint8_t journal_buffer[kJournalMaxEntryBytes];
+
 uint32_t __not_in_flash_func(filesystem_crc32)(const uint8_t *data,
                                                size_t length) {
   uint32_t crc = 0xffffffffu;
@@ -426,6 +455,208 @@ bool overlay_matches_committed() {
   return true;
 }
 
+uint32_t journal_region_start(uint32_t slot_offset, uint32_t payload_length) {
+  const uint32_t programmed =
+      (payload_length + FLASH_PAGE_SIZE - 1) & ~(FLASH_PAGE_SIZE - 1);
+  return slot_offset +
+         ((kFilesystemPayloadOffset + programmed + FLASH_SECTOR_SIZE - 1) &
+          ~(FLASH_SECTOR_SIZE - 1));
+}
+
+uint32_t journal_region_end(uint32_t slot_offset, uint32_t start) {
+  return std::min<uint32_t>(start + kJournalRegionBytes,
+                            slot_offset + kFilesystemSlotSize);
+}
+
+uint32_t journal_padded_length(uint32_t length) {
+  return (length + FLASH_PAGE_SIZE - 1) & ~(FLASH_PAGE_SIZE - 1);
+}
+
+struct JournalWriteContext {
+  uint32_t offset;
+  uint32_t length;
+  bool success = false;
+};
+
+void __not_in_flash_func(write_journal_entry)(void *opaque) {
+  auto *context = static_cast<JournalWriteContext *>(opaque);
+  flash_range_program(context->offset, journal_buffer, context->length);
+  context->success = true;
+}
+
+// Append the records whose value differs from the committed state as one
+// journal entry. False leaves the committed state unchanged and asks the
+// caller for a full snapshot.
+#ifdef RP2350_FS_OVERLAY_TEST
+bool rp2350_fs_test_journal_enabled = true;
+#endif
+
+bool append_journal_entry() {
+#ifdef RP2350_FS_OVERLAY_TEST
+  if (!rp2350_fs_test_journal_enabled) return false;
+#endif
+  if (journal_next == 0 || change_log_untracked ||
+      filesystem_active_slot == 0xff) {
+    return false;
+  }
+  size_t used = sizeof(JournalEntryHeader);
+  uint16_t record_count = 0;
+  for (size_t index = 0; index < change_log_count; ++index) {
+    const ChangeLogEntry &entry = change_log[index];
+    const uint8_t *tag = change_log_pool + entry.pool_offset;
+    const uint8_t *data = nullptr;
+    uint32_t length = 0;
+    const bool exists = find_file(tag, entry.tag_length, &data, &length);
+    if (!exists) length = 0;
+    if (exists == entry.existed &&
+        (!exists ||
+         (length == entry.length &&
+          (length == 0 ||
+           std::memcmp(data, tag + entry.tag_length, length) == 0)))) {
+      continue;
+    }
+    const size_t needed = 4u + entry.tag_length + length;
+    if (used + needed + sizeof(uint32_t) > kJournalMaxEntryBytes) {
+      return false;
+    }
+    journal_buffer[used++] = exists ? kJournalOpWrite : kJournalOpErase;
+    journal_buffer[used++] = entry.tag_length;
+    std::memcpy(journal_buffer + used, tag, entry.tag_length);
+    used += entry.tag_length;
+    journal_buffer[used++] = static_cast<uint8_t>(length);
+    journal_buffer[used++] = static_cast<uint8_t>(length >> 8);
+    if (length != 0) std::memcpy(journal_buffer + used, data, length);
+    used += length;
+    ++record_count;
+  }
+  JournalEntryHeader header{kJournalMagic, filesystem_generation,
+                            journal_sequence, record_count,
+                            static_cast<uint16_t>(
+                                used - sizeof(JournalEntryHeader))};
+  std::memcpy(journal_buffer, &header, sizeof(header));
+  const uint32_t crc = filesystem_crc32(journal_buffer, used);
+  std::memcpy(journal_buffer + used, &crc, sizeof(crc));
+  used += sizeof(crc);
+  const uint32_t padded = journal_padded_length(static_cast<uint32_t>(used));
+  if (journal_next + padded > journal_end) return false;
+  std::fill(journal_buffer + used, journal_buffer + padded, 0xff);
+  JournalWriteContext context{journal_next, padded, false};
+  const int status = flash_safe_execute(write_journal_entry, &context, 5000);
+  if (status != PICO_OK || !context.success ||
+      std::memcmp(filesystem_slot_data(journal_next), journal_buffer, used) !=
+          0) {
+    // The pages may be partly programmed: never append over them. The full
+    // snapshot that follows moves to the other slot.
+    journal_next = 0;
+    return false;
+  }
+  journal_next += padded;
+  ++journal_sequence;
+  ++apdu_stats.syncs_journaled;
+  apdu_stats.journal_bytes += padded;
+  return true;
+}
+
+// Apply this slot's journal to the restored snapshot. Returns false only
+// when a CRC-valid entry cannot be applied, which fails closed.
+bool replay_journal() {
+  journal_next = 0;
+  journal_end = 0;
+  journal_sequence = 0;
+  if (filesystem_active_slot == 0xff) return true;
+  const uint32_t slot_offset =
+      filesystem_active_slot == 0 ? kFilesystemSlot0 : kFilesystemSlot1;
+  const FilesystemHeader *slot_header = filesystem_slot_header(slot_offset);
+  if (slot_header->version != kFilesystemVersion) return true;
+  const uint32_t start =
+      journal_region_start(slot_offset, slot_header->payload_length);
+  const uint32_t end = journal_region_end(slot_offset, start);
+  const bool repaired = overlay_dirty;
+  uint32_t position = start;
+  uint32_t sequence = 0;
+  bool clean_tail = true;
+  while (position + FLASH_PAGE_SIZE <= end) {
+    const uint8_t *entry = filesystem_slot_data(position);
+    JournalEntryHeader header{};
+    std::memcpy(&header, entry, sizeof(header));
+    if (header.magic == 0xffffffffu) break;
+    const uint32_t length = static_cast<uint32_t>(sizeof(header)) +
+                            header.body_length + sizeof(uint32_t);
+    uint32_t stored_crc = 0;
+    if (header.magic != kJournalMagic ||
+        header.generation != filesystem_generation ||
+        header.sequence != sequence || length > kJournalMaxEntryBytes ||
+        position + journal_padded_length(length) > end) {
+      clean_tail = false;
+      break;
+    }
+    std::memcpy(&stored_crc, entry + length - sizeof(uint32_t),
+                sizeof(stored_crc));
+    if (filesystem_crc32(entry, length - sizeof(uint32_t)) != stored_crc) {
+      clean_tail = false;
+      break;
+    }
+    // Parse a RAM copy of the CRC-checked bytes.
+    std::memcpy(journal_buffer, entry, length);
+    size_t cursor = sizeof(header);
+    const size_t body_end = length - sizeof(uint32_t);
+    for (uint16_t record = 0; record < header.record_count; ++record) {
+      if (cursor + 2 > body_end) return false;
+      const uint8_t op = journal_buffer[cursor++];
+      const uint8_t tag_length = journal_buffer[cursor++];
+      if (tag_length == 0 || cursor + tag_length + 2 > body_end) return false;
+      const uint8_t *tag = journal_buffer + cursor;
+      cursor += tag_length;
+      const uint16_t data_length = static_cast<uint16_t>(
+          journal_buffer[cursor] | (journal_buffer[cursor + 1] << 8));
+      cursor += 2;
+      if (cursor + data_length > body_end) return false;
+      if (op == kJournalOpWrite) {
+        if (fs_write(tag, tag_length, journal_buffer + cursor, data_length) !=
+            FS_STATUS_OK) {
+          return false;
+        }
+      } else if (op == kJournalOpErase) {
+        const uint8_t erased = fs_erase(tag, tag_length);
+        if (erased != FS_STATUS_OK && erased != FS_STATUS_NO_SUCH_TAG) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+      cursor += data_length;
+    }
+    if (cursor != body_end) return false;
+    position += journal_padded_length(length);
+    ++sequence;
+  }
+  // Appends program only erased pages: require the rest to be erased.
+  for (uint32_t offset = position; clean_tail && offset < end; ++offset) {
+    if (filesystem_slot_data(offset)[0] != 0xff) clean_tail = false;
+  }
+  overlay_dirty = false;
+  reset_change_log();
+  if (repaired) {
+    overlay_dirty = true;
+    note_untracked_change();
+  }
+  apdu_stats = ChoupiFsApduStats{};
+  if (clean_tail && end - position >= FLASH_PAGE_SIZE) {
+    journal_next = position;
+    journal_end = end;
+    journal_sequence = sequence;
+  }
+  if (sequence != 0 || !clean_tail) {
+    std::printf("CHOUPI:FS_JOURNAL_REPLAY generation=%lu entries=%lu "
+                "clean_tail=%u\r\n",
+                static_cast<unsigned long>(filesystem_generation),
+                static_cast<unsigned long>(sequence),
+                clean_tail ? 1u : 0u);
+    std::fflush(stdout);
+  }
+  return true;
+}
+
 bool persist_overlay() {
   if (!overlay_dirty) return true;
   if (overlay_matches_committed()) {
@@ -451,6 +682,11 @@ bool persist_overlay() {
 #endif
     return false;
   }
+  if (append_journal_entry()) {
+    overlay_dirty = false;
+    reset_change_log();
+    return true;
+  }
   const uint8_t next_slot = filesystem_active_slot == 0 ? 1 : 0;
   const uint32_t slot_offset =
       next_slot == 0 ? kFilesystemSlot0 : kFilesystemSlot1;
@@ -471,13 +707,17 @@ bool persist_overlay() {
 #endif
     return false;
   }
+  // Erase the new snapshot's journal region with it; the header is still
+  // programmed last, so a valid header implies an erased journal.
+  const uint32_t journal_start = slot_offset + erase_size;
+  const uint32_t journal_stop = journal_region_end(slot_offset, journal_start);
   FilesystemWriteContext context{next_generation,
                                  slot_offset,
                                  file_count,
                                  bytes_used,
                                  payload_length,
                                  filesystem_payload_crc32(bytes_used),
-                                 erase_size,
+                                 erase_size + (journal_stop - journal_start),
                                  false};
   const int status = flash_safe_execute(write_filesystem_snapshot, &context,
                                         5000);
@@ -500,8 +740,12 @@ bool persist_overlay() {
   filesystem_generation = next_generation;
   overlay_dirty = false;
   reset_change_log();
+  journal_next =
+      journal_stop - journal_start >= FLASH_PAGE_SIZE ? journal_start : 0;
+  journal_end = journal_stop;
+  journal_sequence = 0;
   ++apdu_stats.syncs_written;
-  apdu_stats.sync_bytes += erase_size;
+  apdu_stats.sync_bytes += erase_size + (journal_stop - journal_start);
   return true;
 }
 
@@ -2423,6 +2667,9 @@ extern "C" uint8_t fs_init(void) {
   overlay_bytes_used = 0;
   overlay_dirty = false;
   reset_change_log();
+  journal_next = 0;
+  journal_end = 0;
+  journal_sequence = 0;
   filesystem_layout_available = false;
   filesystem_active_slot = 0xff;
   filesystem_generation = 0;
@@ -2438,6 +2685,12 @@ extern "C" uint8_t fs_init(void) {
   const bool restored_current = restore_overlay_snapshot(
       kFilesystemSlot0, kFilesystemSlot1, kFilesystemSlotSize, false, true,
       &recovered_current_snapshot);
+  if (restored_current && !replay_journal()) {
+    std::printf("FAULT FS journal entry cannot be applied; preserve flash "
+                "for recovery\r\n");
+    std::fflush(stdout);
+    return 1;
+  }
   const bool restored_previous =
       !restored_current && restore_overlay_snapshot(
                                kFilesystemSlot0, kFilesystemSlot1,
@@ -2511,6 +2764,13 @@ extern "C" uint8_t fs_sync(void) {
 }
 
 #ifdef RP2350_FS_OVERLAY_TEST
+// Tests about snapshot slot layout need every sync to write a snapshot.
+extern "C" void rp2350_fs_test_set_journal_enabled(uint8_t enabled) {
+  rp2350_fs_test_journal_enabled = enabled != 0;
+}
+
+extern "C" uint32_t rp2350_fs_test_journal_next(void) { return journal_next; }
+
 extern "C" void rp2350_fs_test_fail_next_sync(void) {
   rp2350_fs_test_sync_failures = 1;
 }

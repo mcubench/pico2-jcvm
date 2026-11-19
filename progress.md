@@ -32355,3 +32355,25 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: steady EC384 baseline 806–843 → 229–236 ms; dead records per prepare 118 → 52; first `B0E2` 1494 → 729 ms.
 - Decision: step 3 (incremental journal sync) is the remaining fix for the first-operation sync and for flash wear; not started.
 - Artifacts/logs: none
+
+## 2026-11-19 Commit journal: append changed records instead of rewriting the snapshot (slow-baseline step 3) 75
+
+- Step-Id: `20261119-1125-fs-commit-journal`
+- Task: slow-baseline plan step 3 (`docs/review_slowbaseline_20261119.md`), user request
+- When: '2026-11-19 10:15' - '2026-11-19 11:25'
+- Model: `claude-opus-5-5`
+- Change (`src/pico_filesystem.cpp`):
+  - A full snapshot also erases a journal region of up to 16 KB in the same slot, directly after the snapshot's last erase sector (fewer bytes if the slot is nearly full; none if under one page). The header is still programmed last, so a valid header implies an erased journal.
+  - A sync whose changes are all tracked by the change log (step 2b) appends one page-aligned entry (`JNL1` magic, slot generation, sequence, write/erase records with full new values, CRC32) and verifies it by read-back, instead of rewriting the snapshot. Untracked changes, an entry over 2 KB, a full journal or a failed append fall back to a full snapshot in the other slot, which resets the journal.
+  - Boot restores the snapshot and replays entries with the slot's generation and consecutive sequence numbers, stopping at the first invalid entry. An entry is all-or-nothing through its CRC. A torn or non-erased tail disables appends until the next full snapshot. A CRC-valid entry that cannot be applied fails closed (`FAULT FS journal entry cannot be applied`). Only v5 slots carry a journal. Older firmware ignores the journal and would boot the last snapshot (a downgrade loses journaled commits).
+  - `CHOUPI:FS_APDU` gains `journaled` and `journal_bytes`.
+- Validation:
+  - `./tools/test-rp2350-fs-overlay` fail=0. New checks: `journal_append_commits_tracked_change_and_replays` (append = 256 programmed bytes), `journal_append_every_power_cut_is_atomic` (cut at each of the 256 mutations: old or new state after reboot, never a mix; a later commit then succeeds), `journal_full_falls_back_to_snapshot_and_resumes` (200 commits: ≥150 journaled, ≥2 snapshots, latest value restored), `torn_full_snapshot_recovers_previous_slot_journal`. Four existing slot-layout tests (CRC fallback, v2/v3/v4 migration, two ambiguous COW copies) disable the journal through the new test hook `rp2350_fs_test_set_journal_enabled` because they need every sync to write a snapshot. `sync_skips_flash_rewrite_when_net_change_is_empty` now expects the real change to be journaled. The existing 1000-cut randomized multi-record test still passes.
+  - `test-persistent-transaction`, `test-persistent-inventory` fail=0; `test-object-deletion-policy` 20 checks; `PICO2_VPCD_RP2350_OVERLAY=1 test-object-deletion-vpcd 60 rsa-batch` and `512 auto-gc` rc=0.
+  - `./tools/build arm --profile max_crypto` rc=0, 0 warnings. `./tools/cycle choupi --profile max_crypto --serial 07E74C5D7A038DEC` CYCLE:PASS (`artifacts/logs/cycle-choupi-20261119T070351Z.log`; two earlier attempts hit the known BOOTSEL re-enumeration race in the wrapper). The boot log's `CHOUPI:WATCHDOG_RECOVERY marker=494E5354 cause=other …` line is pre-existing (identical in earlier cycle logs from 2026-11-18 and today).
+- Result (EC384 sign: prepare, 5 × (`B0E2`, baseline), 5 × (`B0E2`, op repeat 2)):
+  - Baselines 234–237 ms, all five equal. The first now journals 256 B in 1.1 ms (it paid a ~0.5 s snapshot after step 2b).
+  - Operations 508–510 ms, all five equal. The first journals in 0.84 ms.
+  - The prepare and the first `B0E2` still write full snapshots, now 40,960 B including the journal region (650–677 ms sync, was ~440–550 ms). JCAlgTest does not time either.
+  - Reboot: after a reflash of the same image (storage kept), a repeat-2 op APDU was `elided=1`. The last full snapshot held repeat 50 and the journal held repeat 2, so the journal was replayed. (F104 = INVALID_INIT is expected: Signature init state does not survive reset.)
+- Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/step3-journal/{run1,run2-after-reboot,reboot-check}/`
