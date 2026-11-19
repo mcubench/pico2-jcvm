@@ -32497,3 +32497,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: presentation counter updates survive abort and cold restart; the validated flag is cleared by reset and by a cold restart; administrative `setTriesRemaining` is rolled back by abort.
 - Decision: RV-20261106-04 closed. Not covered: an actual power cut during a PIN check on hardware (the fake-flash cut test covers `fs_commit_tag`).
 - Artifacts/logs: `artifacts/results/rv04-ownerpinx-cold-20261119/`
+
+## 2026-11-19 Package Windows test a266b836 (flash journal, deletion skip, native OwnerPIN) 9
+
+- Step-Id: `20261119-2316-win-package-a266b836`
+- Task: external Windows test package refresh
+- When: '2026-11-19 23:06' - '2026-11-19 23:15'
+- Model: `claude-opus-5-5`
+- Change: built normal max_crypto from HEAD `a266b836` and packaged it with `./tools/package-maxcrypto-windows-test`. Replaced `WIN-MAXCRYPTO-BASELINE-5A537513` with `WIN-MAXCRYPTO-FLASH-A266B836` in `.agent/EXT_REQUESTS.md`.
+- Validation: build rc=0, no C/C++ warnings, mode=normal; `PACKAGE:PASS`; README block byte-identical to `run-test.ps1`; package `applet.cap` SHA-256 `fa64582e…b48fb`. 07E74C5D7A038DEC: `tools/flash` of the package UF2 (FLASH:PASS, storage wiped), package GPPro `--list` (empty) and `--install applet.cap` rc=0; EC384 replay twice; `tools/check-object-deletion-headroom.py` HEADROOM:PASS peak 15.14 %.
+- Result: UF2 SHA-256 `63abbf3d37dd9a86c37324ec72cedd06fee10204c84e59b646d793b726a99f8b` (2,956,288 B), ZIP SHA-256 `e92205e3f8b5e146ce3920198ee1d2c02a3c08472793dce5ceef033cd9ff4213` (18,232,580 B), end 0x10068c08, headroom 619,512 B. Replays: first prepare on the empty card 3,839 ms (5a537513: 4,014 ms; sync 605 → 249 ms), later prepare 565 ms, baselines 242–249 ms, measurements 522–526 ms, `B0E2` 62 ms after the first two passes (8 of 10 unchanged), `pending=0`, no full snapshot, no FAULT/PANIC.
+- Decision: waiting on the Windows run. 07E7 now holds this image plus the 1.8.5 CAP and the replay objects.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-a266b836-20261119T2207Z/`
