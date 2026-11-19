@@ -32343,3 +32343,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result (EC384 replay, 52 dead records): reclaim 285 → 169 ms (prefix queries 4,673 → 824), first `B0E2` client 823 → 729 ms; empty pass reclaim 108 → 85 ms (1,424 → 712 queries), steady `B0E2` 211 → 191 ms. Every pass `pending=0`.
 - Remaining cost: one scan still takes ~85 ms for ~712 visited tags because `fs_next_tag` rebuilds and hash-verifies the full tag of every used overlay slot, including slots outside the prefix; each erase costs ~1.6 ms (`erase_overlay_slot` moves the arena tail and rescans the 8192-slot index). Not changed here (the first is an integrity check).
 - Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/step5-reclaim/run1/{apdu-timer.log,serial.log}`
+
+## 2026-11-19 Record slow-baseline implementation results in the review 5
+
+- Step-Id: `20261119-1015-review-slowbaseline-results`
+- Task: slow-baseline plan (`docs/review_slowbaseline_20261119.md`)
+- When: '2026-11-19 10:05' - '2026-11-19 10:15'
+- Model: `claude-opus-5-5`
+- Change: added section 5 (before/after table, per-step effects, remaining limitations) to the review.
+- Validation: inspection; numbers from the step 1–5 records above.
+- Result: steady EC384 baseline 806–843 → 229–236 ms; dead records per prepare 118 → 52; first `B0E2` 1494 → 729 ms.
+- Decision: step 3 (incremental journal sync) is the remaining fix for the first-operation sync and for flash wear; not started.
+- Artifacts/logs: none

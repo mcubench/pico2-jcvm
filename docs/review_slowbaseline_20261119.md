@@ -81,3 +81,44 @@ Earlier first-baseline skew: `artifacts/results/first-baseline-ec384-20261118/`.
 
 Applet-side suggestions for a future JCAlgTest release (not applied): cache EC
 key pairs like RSA pairs; keep `TestSettings` in a transient array.
+
+## 5. Implementation results (2026-11-19)
+
+Steps 1, 2, 4 and 5 implemented; step 3 deferred. Same EC384 sign replay on
+07E74C5D7A038DEC (one prepare, then `B0E2` + baseline pairs), 1.8.5 CAP.
+
+| Measure | Before | After |
+|---|---|---|
+| Steady baseline (`B049`, repeat 0) | 806–843 ms | 229–236 ms |
+| First baseline after prepare | ~800 ms | ~705 ms |
+| Dead records per replacing prepare | 118 | 52 |
+| Prepare (`B032`) | 1230 ms | ~1000–1040 ms |
+| First `B0E2` after prepare | 1494 ms | 729 ms |
+| Steady `B0E2` | 349 ms | 191 ms |
+| Store after prepare | 545 files / 19.1 KB | 411 files / 14.9 KB |
+
+The steady baseline that remains is real applet work:
+`perftest_class_Signature` signs once before its loop even when repeat is 0.
+
+| Step | Commit subject | Effect |
+|---|---|---|
+| 1 | Print per-APDU filesystem write and sync telemetry | `CHOUPI:FS_APDU` line per applet APDU |
+| 2a | Rewrite same-size overlay records in place | no arena move / index rescan per field write |
+| 2b | Skip the flash snapshot rewrite when an APDU's net change is empty | baseline sync ~0.52 s → ~0.15 ms |
+| 4a | Store an EC key's components in one persistent record | 21 → 7 records per EC key; legacy layout still read/written |
+| 4b | Allocate Signature working buffers on first use | ECDSA Signature stores no IV / recovery-hash buffer |
+| 5 | Reclaim each deletion batch from one complete inventory scan | 52-record reclaim 285 → 169 ms |
+
+Remaining limitations:
+
+- The first baseline and the first operation measurement of each method still
+  pay one full snapshot sync, because `numRepeatWholeOperation` really changes
+  (50 ↔ 0) and must be durable. Before step 2 every measurement paid it and
+  the baseline subtraction cancelled it. Now it lands in one of five operation
+  samples (~0.5 s at a 28 KB store, more on a larger one). Step 3
+  (incremental journal sync) removes this.
+- One inventory scan still costs ~85 ms for ~712 tags: `fs_next_tag`
+  rebuilds and hash-verifies every used slot's tag. Each erase costs ~1.6 ms
+  (`erase_overlay_slot` moves the arena tail and rescans the index).
+- Per EC384 prepare 52 records remain: 4 keys × 7, 2 KeyPairs × 5,
+  2 Signatures × 6–8 (the message buffer is allocated by the first sign).
