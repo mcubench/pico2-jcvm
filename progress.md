@@ -32509,3 +32509,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `63abbf3d37dd9a86c37324ec72cedd06fee10204c84e59b646d793b726a99f8b` (2,956,288 B), ZIP SHA-256 `e92205e3f8b5e146ce3920198ee1d2c02a3c08472793dce5ceef033cd9ff4213` (18,232,580 B), end 0x10068c08, headroom 619,512 B. Replays: first prepare on the empty card 3,839 ms (5a537513: 4,014 ms; sync 605 → 249 ms), later prepare 565 ms, baselines 242–249 ms, measurements 522–526 ms, `B0E2` 62 ms after the first two passes (8 of 10 unchanged), `pending=0`, no full snapshot, no FAULT/PANIC.
 - Decision: waiting on the Windows run. 07E7 now holds this image plus the 1.8.5 CAP and the replay objects.
 - Artifacts/logs: `artifacts/results/windows-package-smoke-a266b836-20261119T2207Z/`
+
+## 2026-11-19 Decide PERF-LAYOUT-01 from heap low-water data 4
+
+- Step-Id: `20261119-2316-perf-layout-decision`
+- Task: PERF-LAYOUT-01
+- When: '2026-11-19 23:11' - '2026-11-19 23:15'
+- Model: `claude-opus-5-5`
+- Change: `TODO.md` only: PERF-LAYOUT-01 closed as "do not move crypto code to SRAM".
+- Validation: `readelf` of the current ELF: `.bss` ends at 0x20053d34, so ~180 KB lie between it and the stack limit, shared by the VM heap and mbedTLS. Minimum `CHOUPI:RSA_MEMORY min_free` across the 2026-11-17/18 option-1/2 serial logs: 6,992 B.
+- Result: moving the 20–30 KB bignum/ECP core into SRAM would exceed the observed worst-case free heap; the timing spread it would remove is ~4 %.
+- Decision: keep code in flash; a single small hot function remains possible later. Correction: the previous record's end time is 23:11 (measured), not 23:15.
+- Artifacts/logs: none new

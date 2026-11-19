@@ -47,12 +47,16 @@ plus temporary counters, EC384 Signature replay
   snapshot; timed baselines/ops never erase. 1,400 one-page commits in the
   unit test: 2 snapshots (was ~1 per 60 commits). Boot no longer compacts once
   per unused package slot (7 no-op compactions per power-on).
-- [ ] **PERF-LAYOUT-01** Crypto time depends on code placement: the same
-  source with mbedTLS shifted by 232 bytes gives EC384 sign baselines
-  239–244 vs 247–248 ms and ops 513 vs 535 ms on 07E7 (A/B in
-  `artifacts/results/flash01e-journal-slot-20261119/`). Evaluate running the
-  bignum/ECP core from SRAM so timings are stable and faster; check RAM
-  headroom first.
+- [x] **PERF-LAYOUT-01 (decided: do not move crypto code to SRAM, 2026-11-19)**
+  Crypto time depends on code placement (EC384 sign baselines 239–244 vs
+  247–248 ms, ops 513 vs 535 ms for mbedTLS shifted by 232 bytes; A/B in
+  `artifacts/results/flash01e-journal-slot-20261119/`). The bignum/ECP core is
+  20–30 KB, but the lowest free heap recorded in the 2026-11-17/18 campaigns
+  is 6,992 B (`CHOUPI:RSA_MEMORY min_free`), so placing it in SRAM risks
+  out-of-memory failures. Stability wins over a ~4 % timing spread. Reopen
+  only with a heap reduction that leaves margin, or for a single hot function
+  (e.g. `mbedtls_mpi_core_mla`, a few hundred bytes) via the existing mbedTLS
+  patch scripts.
 - [x] **FLASH-01c (won't do, 2026-11-19)** Batched erase would save ~80 ms of
   CPU per JCAlgTest prepare, only in the untimed `B0E2` (about a minute over
   a 5–8 h campaign), but needs new arena-rewrite code in the storage core;
