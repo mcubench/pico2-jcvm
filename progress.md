@@ -32234,3 +32234,20 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Same replay on the new image: first baseline 835 vs 819–839 ms (verify) and 770 vs 739–775 ms (sign). Every pass `pending=0`, with 118 records erased in one pass. The first `B0E2` now takes ~1.45–1.52 s, which JCAlgTest does not measure. The second `B0E2` (~0.92 s) erases the 1 record the first baseline left plus a filesystem compaction, also unmeasured. Sign/verify per-op times are unchanged (5 ops: ~1.6 s / ~3.3 s).
 - Decision: Fix confirmed on hardware for EC384. The running Windows 621ba60c package does not contain it; repackage on request. 07E7 now holds the cycle image with the 1.8.5 CAP installed (non-empty card).
 - Artifacts/logs: `artifacts/results/first-baseline-ec384-20261118/07E74C5D7A038DEC/{apdu-timer.log,serial.log}` (before), `.../cap512/{apdu-timer.log,serial.log}` (after); `artifacts/logs/cycle-choupi-20261118T210601Z.log`
+
+## 2026-11-19 Baseline cost = persistent writes + whole-store sync (analysis) 45
+
+- Step-Id: `20261119-0640-baseline-sync-cost`
+- Task: user question (why an EC384 prepare leaves 118 records; RSA-1280 Cipher baselines of 9.4–9.9 s in the running Windows 621ba60c run)
+- When: '2026-11-19 05:55' - '2026-11-19 06:40'
+- Model: `claude-opus-5-5`
+- Change: none (analysis and one hardware measurement).
+- Analysis:
+  - JCAlgTest 1.8.5 `getECCKeyPairObject()` runs `new KeyPair(...)` and `EC_Consts.ensureInitializedECCurve()` on every prepare; EC pairs are not cached (RSA pairs are, via `getKeyPairObject`). `prepare_class_Signature` also calls `Signature.getInstance` twice. `KeyPair.getPrivate/getPublic` only return the stored field (`native_ec_keypair.cpp`), so getters allocate nothing.
+  - Every persistent instance field and every persistent array is its own filesystem record (`JC_Instance::setField_*` → `FlashMemory_Handler::setPersistentField_*` → `fs_write`). A NativeKey has 22 fields; an EC key writes ~11 field records plus 8 arrays. 4 EC keys + 2 KeyPairs + 2 Signatures ≈ 110–120 records, matching the 118 reclaimed.
+  - Records live in the 96 KB RAM overlay; `fs_sync()` after every applet APDU (`ccid_device.cpp`) rewrites the whole snapshot (bitmap + index + all record bytes) into the other A/B flash slot when anything is dirty (`persist_overlay`). Cost therefore scales with total store size, not with what changed.
+  - `TestSettings.parse()` calls `clear()` then sets the fields of the persistent `m_testSettings`: ~26 persistent field writes per measure APDU, including baselines (`numRepeatWholeOperation=0`).
+- Validation: `ApduTimer` on 07E74C5D7A038DEC (image `da180d19…dbf9`, 1.8.5 CAP), store 546 files / 15.2 KB.
+- Result: GETVERSION (no persistent write) 25–27 ms ×10; EC384 sign baseline (`B049`, repeat 0) 810–825 ms ×4; prepare 1230 ms; first `B0E2` 1494 ms, later `B0E2` 349 ms. So ~0.79 s of each baseline is persistent-write + whole-store sync overhead, not applet work. The 9.4 s RSA-1280 baselines are consistent with the same overhead on a much larger store (cached RSA pairs), not yet confirmed: needs the Windows run's serial log or a debug `fs_sync_elapsed_us` replay. A first attempt without the Le byte returned F501 (APDUException ILLEGAL_USE from `setOutgoingAndSend`); it is an operator error, kept as `*-noLe-invalid.log`.
+- Decision: Plan proposed to user (instrument; skip net-unchanged writes at APDU commit; incremental journal sync; compact native-object encoding; cheaper reclaim). No code changed yet.
+- Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/{apdu-timer.log,serial.log,apdu-timer-noLe-invalid.log,serial-noLe-invalid.log}`
