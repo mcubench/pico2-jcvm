@@ -32425,3 +32425,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: prepare 1228 → 580 ms (sync 669 → 19 ms, 40,960 B erase+program → 5,888 B programmed); first `B0E2` 943 → 305 ms (2,048 B journaled in 8.6 ms); baselines 238–244 ms, ops 513–517 ms unchanged. Run 2: the 16 KB journal filled after ~16 KB of commits, so its first `B0E2` wrote a 40,960 B snapshot (938 ms).
 - Decision: next FLASH-01e (larger journal with on-demand sector erase).
 - Artifacts/logs: `artifacts/results/flash01b-journal-groups-20261119/07E74C5D7A038DEC/` (f1b-run1, f1b-run2, f1b-overlay.log)
+
+## 2026-11-19 Let the journal fill its slot with on-demand sector erase 50
+
+- Step-Id: `20261119-2200-flash01e-journal-slot`
+- Task: FLASH-01e
+- When: '2026-11-19 22:13' - '2026-11-19 23:03'
+- Model: `claude-opus-5-5`
+- Change: `src/pico_filesystem.cpp`: the journal extends to the end of the snapshot slot. A full snapshot erases its own sectors plus the first journal sector (was a fixed 16 KB region); appends erase each further 4 KB sector before first programming it (verified erased). Boot treats an invalid entry on a sector boundary as the journal end (that sector is erased before reuse: stale data of the slot's previous use or a torn group); inside a sector the rest must be erased, else appends stay disabled. New `choupi_fs_erase_journal_ahead()` keeps 8 KB erased ahead; `choupi/src/main.cpp` calls it after each applet-requested deletion pass (`PersistentReclaimer::kJournalEraseAheadBytes`). `fs_erase_package_state` compacts only when it erased something (boot lifecycle recovery ran 7 no-op compactions per power-on). `CHOUPI:FS_APDU` gains `journal_erase_bytes` (last field).
+- Validation: `./tools/test-rp2350-fs-overlay` fail=0 incl. new `journal_erase_ahead_moves_sector_erase_out_of_commit` and the fill test extended to 1,400 commits with a restore every 37 (2 snapshots, 352,256 B erased on demand, replay across stale sectors); `test-persistent-transaction`, `test-persistent-inventory`, `test-object-deletion-policy` pass. ARM max_crypto rc=0, 0 warnings, UF2 SHA-256 `76374a3f466993f01106eb641763016da09b0142f8cf4c318ab200c0accab212`; `tools/cycle choupi` on 07E74C5D7A038DEC CYCLE:PASS; five EC384 replays across this and the intermediate build.
+- Result: no full snapshot in any replay (before: one 40,960 B snapshot every ~16 KB of commits). Per replay: prepare 579–672 ms (19 ms sync without erase, 71 ms with one sector erase), first `B0E2` 396–412 ms (8 KB erase-ahead), baselines 244–250 ms, ops 533–536 ms, measured commands erase nothing. A/B against `c163a5a3` on the same board: baselines 239–244 / ops 513 there vs 247–248 / 535 here, explained by code placement (mbedTLS symbols moved +0xE8); recorded as PERF-LAYOUT-01.
+- Decision: FLASH-01 flash traffic for the JCAlgTest pattern is now page programs plus sector erases in untimed commands. Next FLASH-03 (OwnerPIN) or FLASH-01c/d.
+- Artifacts/logs: `artifacts/results/flash01e-journal-slot-20261119/07E74C5D7A038DEC/`

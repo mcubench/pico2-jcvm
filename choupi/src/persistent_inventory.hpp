@@ -152,6 +152,11 @@ namespace PersistentReclaimer {
 // is still spread over several APDUs.
 constexpr uint32_t kObjectDeletionMaxRecordsPerApdu = 512;
 
+// Erased journal space kept ready after an applet-requested deletion pass,
+// so the commits of the next timed commands need not erase a 4 KB sector
+// (about 50 ms each). An EC384 Signature prepare journals about 6 KB.
+constexpr uint32_t kJournalEraseAheadBytes = 8 * 1024;
+
 // Wall-clock budget for the erase phase of one pass, checked after each
 // erasure so every pass still makes progress.
 constexpr uint32_t kObjectDeletionReclaimBudgetUs = 3000000;

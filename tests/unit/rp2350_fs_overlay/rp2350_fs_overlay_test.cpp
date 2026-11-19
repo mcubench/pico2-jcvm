@@ -36,6 +36,7 @@ extern "C" uint32_t rp2350_fs_test_live_record_count(void);
 extern "C" uint32_t rp2350_fs_test_overlay_bytes_used(void);
 extern "C" void rp2350_fs_test_set_journal_enabled(uint8_t enabled);
 extern "C" uint32_t rp2350_fs_test_journal_next(void);
+extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
@@ -4706,7 +4707,12 @@ int main(const int argc, char **argv) {
     uint32_t written = 0;
     uint32_t journaled = 0;
     uint8_t value[2] = {0, 0};
-    for (uint16_t round = 0; filled && round < 200; ++round) {
+    // The journal fills the rest of each slot (about 530 one-page entries
+    // here). 1,400 commits cycle both slots more than once, so appends also
+    // reach sectors that still hold the slot's previous journal and must be
+    // erased first; a restore every 37 commits replays across them.
+    uint32_t journal_erased = 0;
+    for (uint16_t round = 0; filled && round < 1400; ++round) {
       value[0] = static_cast<uint8_t>(round);
       value[1] = static_cast<uint8_t>(round >> 8);
       filled = fs_write(j_a, sizeof(j_a), value, sizeof(value)) == 0 &&
@@ -4714,8 +4720,16 @@ int main(const int argc, char **argv) {
       choupi_fs_take_apdu_stats(&stats);
       written += stats.syncs_written;
       journaled += stats.syncs_journaled;
+      journal_erased += stats.journal_erase_bytes;
+      if (filled && round % 37 == 36) {
+        filled = fs_init() == 0 &&
+                 read_equals(j_a, sizeof(j_a), value, sizeof(value));
+      }
     }
-    filled = filled && written >= 2 && journaled >= 150 && fs_init() == 0 &&
+    std::fprintf(stderr, "journal_fill written=%u journaled=%u erased=%u\n",
+                 written, journaled, journal_erased);
+    filled = filled && written >= 2 && written <= 4 && journaled >= 1390 &&
+             journal_erased != 0 && fs_init() == 0 &&
              read_equals(j_a, sizeof(j_a), value, sizeof(value));
     expect(filled, "journal_full_falls_back_to_snapshot_and_resumes");
 
@@ -4799,6 +4813,21 @@ int main(const int argc, char **argv) {
     ok = ok && stats.syncs_journaled == 1 && stats.syncs_written == 0 &&
          stats.journal_bytes > 4096 && fs_init() == 0 && state_is(2);
     expect(ok, "journal_group_spans_entries_and_replays");
+
+    // Erasing ahead after a deletion pass leaves the next commit nothing to
+    // erase.
+    bool erase_ahead = ok && write_all(5);
+    choupi_fs_take_apdu_stats(&stats);
+    choupi_fs_erase_journal_ahead(8 * 1024);
+    choupi_fs_take_apdu_stats(&stats);
+    const uint32_t erased_ahead = stats.journal_erase_bytes;
+    erase_ahead = erase_ahead && fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    erase_ahead = erase_ahead && erased_ahead != 0 &&
+                  stats.syncs_journaled == 1 &&
+                  stats.journal_erase_bytes == 0 && fs_init() == 0 &&
+                  state_is(5);
+    expect(erase_ahead, "journal_erase_ahead_moves_sector_erase_out_of_commit");
 
     bool every_group_cut_atomic = ok;
     for (size_t cut = 0; every_group_cut_atomic && cut < group_mutations;

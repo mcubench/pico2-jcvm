@@ -25,7 +25,8 @@ uint32_t choupi_persistent_tombstones_since_compaction(void);
 // RP2350 filesystem activity since the previous call: record writes and
 // erases in the RAM overlay, and how syncs were committed: full flash
 // snapshot rewrites (`syncs_written`, `sync_bytes` erased and programmed),
-// journal appends (`syncs_journaled`, `journal_bytes` programmed), or
+// journal appends (`syncs_journaled`, `journal_bytes` programmed,
+// `journal_erase_bytes` of journal sectors erased on demand), or
 // skipped because the net content equalled the committed state
 // (`syncs_elided`).
 struct ChoupiFsApduStats {
@@ -37,8 +38,12 @@ struct ChoupiFsApduStats {
   uint32_t sync_bytes;
   uint32_t syncs_journaled;
   uint32_t journal_bytes;
+  uint32_t journal_erase_bytes;
 };
 void choupi_fs_take_apdu_stats(struct ChoupiFsApduStats *stats);
+// Erase journal sectors so at least `bytes` past the next append are ready.
+// Does nothing while appends are disabled.
+void choupi_fs_erase_journal_ahead(uint32_t bytes);
 
 #ifdef __cplusplus
 }

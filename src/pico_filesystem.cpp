@@ -227,14 +227,16 @@ bool filesystem_layout_available = false;
 uint8_t filesystem_active_slot = 0xff;
 uint32_t filesystem_generation = 0;
 
-// Commit journal. A full snapshot also erases up to kJournalRegionBytes of
-// its slot right after the snapshot's last erase sector. A later sync whose
-// changes are known from the change log appends one page-aligned entry there
-// (about 1 ms) instead of erasing and reprogramming the whole snapshot. Boot
-// restores the snapshot, then replays entries with this slot's generation and
-// consecutive sequence numbers, stopping at the first entry that is not
-// valid; an entry is all-or-nothing because of its CRC. A torn or unexpected
-// tail disables appends until the next full snapshot moves to the other slot.
+// Commit journal. A sync whose changes are known from the dirty set appends
+// page-aligned entries after the active snapshot (about 1 ms per page)
+// instead of erasing and reprogramming the whole snapshot. The journal fills
+// the rest of the slot. A full snapshot erases only its own sectors and the
+// first journal sector; an append erases each further 4 KB sector just before
+// it first programs there. Boot restores the snapshot, then replays entries
+// with this slot's generation and consecutive sequence numbers, stopping at
+// the first entry that is not valid; an entry is all-or-nothing because of
+// its CRC. A torn tail inside a sector disables appends until the next full
+// snapshot moves to the other slot.
 //
 // One commit may need several entries. All but the last carry the
 // continuation magic, and boot applies a group only when its last entry is
@@ -244,7 +246,6 @@ uint32_t filesystem_generation = 0;
 // missing, so the VM's own record consistency needs the group.
 constexpr uint32_t kJournalMagic = 0x314c4e4a; // "JNL1": last entry of a group
 constexpr uint32_t kJournalContinuedMagic = 0x324c4e4a; // "JNL2": more follow
-constexpr uint32_t kJournalRegionBytes = 16 * 1024;
 constexpr size_t kJournalMaxEntryBytes = 2048;
 constexpr uint8_t kJournalOpWrite = 1;
 constexpr uint8_t kJournalOpErase = 2;
@@ -261,6 +262,10 @@ static_assert(kJournalMaxEntryBytes % FLASH_PAGE_SIZE == 0,
 // Absolute flash offset of the next entry; 0 when appends are disabled.
 uint32_t journal_next = 0;
 uint32_t journal_end = 0;
+// [journal_next, journal_erased_end) is known to be erased. Beyond it a
+// sector may hold stale data from this slot's previous use and is erased
+// before the first program into it.
+uint32_t journal_erased_end = 0;
 uint32_t journal_sequence = 0;
 alignas(FLASH_PAGE_SIZE) uint8_t journal_buffer[kJournalMaxEntryBytes];
 
@@ -485,8 +490,7 @@ uint32_t journal_region_start(uint32_t slot_offset, uint32_t payload_length) {
 }
 
 uint32_t journal_region_end(uint32_t slot_offset, uint32_t start) {
-  return std::min<uint32_t>(start + kJournalRegionBytes,
-                            slot_offset + kFilesystemSlotSize);
+  return std::max<uint32_t>(start, slot_offset + kFilesystemSlotSize);
 }
 
 uint32_t journal_padded_length(uint32_t length) {
@@ -498,6 +502,35 @@ struct JournalWriteContext {
   uint32_t length;
   bool success = false;
 };
+
+void __not_in_flash_func(erase_journal_sector)(void *opaque) {
+  auto *context = static_cast<JournalWriteContext *>(opaque);
+  flash_range_erase(context->offset, FLASH_SECTOR_SIZE);
+  context->success = true;
+}
+
+uint32_t round_up_sector(uint32_t offset) {
+  return (offset + FLASH_SECTOR_SIZE - 1) & ~(FLASH_SECTOR_SIZE - 1);
+}
+
+// Erase sectors until [journal_erased_end, until) is erased.
+bool ensure_journal_erased(uint32_t until) {
+  while (journal_erased_end < until) {
+    JournalWriteContext context{journal_erased_end, FLASH_SECTOR_SIZE, false};
+    const int status =
+        flash_safe_execute(erase_journal_sector, &context, 5000);
+    if (status != PICO_OK || !context.success) return false;
+    for (uint32_t offset = 0; offset < FLASH_SECTOR_SIZE; offset += 4) {
+      uint32_t word = 0;
+      std::memcpy(&word, filesystem_slot_data(journal_erased_end + offset),
+                  sizeof(word));
+      if (word != 0xffffffffu) return false;
+    }
+    journal_erased_end += FLASH_SECTOR_SIZE;
+    apdu_stats.journal_erase_bytes += FLASH_SECTOR_SIZE;
+  }
+  return true;
+}
 
 void __not_in_flash_func(write_journal_entry)(void *opaque) {
   auto *context = static_cast<JournalWriteContext *>(opaque);
@@ -530,6 +563,10 @@ struct JournalPacker {
     const uint32_t padded =
         journal_padded_length(static_cast<uint32_t>(length));
     if (!dry_run) {
+      if (!ensure_journal_erased(position + padded)) {
+        failed = true;
+        return false;
+      }
       std::memcpy(journal_buffer, &header, sizeof(header));
       const uint32_t crc = filesystem_crc32(journal_buffer, used);
       std::memcpy(journal_buffer + used, &crc, sizeof(crc));
@@ -665,6 +702,7 @@ bool append_journal_entry() {
 bool replay_journal() {
   journal_next = 0;
   journal_end = 0;
+  journal_erased_end = 0;
   journal_sequence = 0;
   if (filesystem_active_slot == 0xff) return true;
   const uint32_t slot_offset =
@@ -740,10 +778,6 @@ bool replay_journal() {
     return cursor == body_end;
   };
   while (position + FLASH_PAGE_SIZE <= end) {
-    uint32_t first_magic = 0;
-    std::memcpy(&first_magic, filesystem_slot_data(position),
-                sizeof(first_magic));
-    if (first_magic == 0xffffffffu) break;
     // Find the end of this group before applying any of it: a group whose
     // last entry is missing or invalid was torn and is not applied.
     uint32_t group_end = position;
@@ -755,10 +789,7 @@ bool replay_journal() {
       group_end += journal_padded_length(length);
       ++group_sequence;
     }
-    if (!last) {
-      clean_tail = false;
-      break;
-    }
+    if (!last) break;
     for (uint32_t at = position; at < group_end;) {
       bool ignored = false;
       const uint32_t length = valid_entry(at, sequence, &ignored);
@@ -768,9 +799,19 @@ bool replay_journal() {
     }
     position = group_end;
   }
-  // Appends program only erased pages: require the rest to be erased.
-  for (uint32_t offset = position; clean_tail && offset < end; ++offset) {
-    if (filesystem_slot_data(offset)[0] != 0xff) clean_tail = false;
+  // The journal ends at `position`. Appends program only erased pages. A
+  // sector boundary is always safe: everything from there on follows the
+  // last complete group (stale data from the slot's previous use, or a torn
+  // group) and that sector is erased before reuse. Inside a sector the rest
+  // of that sector must already be erased; otherwise a torn entry sits
+  // there and appends stay disabled until the next full snapshot.
+  uint32_t erased_end = position;
+  if ((position & (FLASH_SECTOR_SIZE - 1)) != 0) {
+    erased_end = std::min(round_up_sector(position), end);
+    for (uint32_t offset = position; clean_tail && offset < erased_end;
+         ++offset) {
+      if (filesystem_slot_data(offset)[0] != 0xff) clean_tail = false;
+    }
   }
   overlay_dirty = false;
   reset_change_log();
@@ -782,6 +823,7 @@ bool replay_journal() {
   if (clean_tail && end - position >= FLASH_PAGE_SIZE) {
     journal_next = position;
     journal_end = end;
+    journal_erased_end = erased_end;
     journal_sequence = sequence;
   }
   if (sequence != 0 || !clean_tail) {
@@ -845,10 +887,13 @@ bool persist_overlay() {
 #endif
     return false;
   }
-  // Erase the new snapshot's journal region with it; the header is still
-  // programmed last, so a valid header implies an erased journal.
+  // Erase the first journal sector with the snapshot; the header is still
+  // programmed last, so a valid header implies an erased first sector. Later
+  // sectors are erased on demand by appends.
   const uint32_t journal_start = slot_offset + erase_size;
-  const uint32_t journal_stop = journal_region_end(slot_offset, journal_start);
+  const uint32_t journal_stop = std::min<uint32_t>(
+      journal_start + FLASH_SECTOR_SIZE,
+      journal_region_end(slot_offset, journal_start));
   FilesystemWriteContext context{next_generation,
                                  slot_offset,
                                  file_count,
@@ -880,7 +925,8 @@ bool persist_overlay() {
   reset_change_log();
   journal_next =
       journal_stop - journal_start >= FLASH_PAGE_SIZE ? journal_start : 0;
-  journal_end = journal_stop;
+  journal_end = journal_region_end(slot_offset, journal_start);
+  journal_erased_end = journal_stop;
   journal_sequence = 0;
   ++apdu_stats.syncs_written;
   apdu_stats.sync_bytes += erase_size + (journal_stop - journal_start);
@@ -2816,6 +2862,17 @@ extern "C" void choupi_persistent_memory_usage(
     *byte_capacity = static_cast<uint32_t>(overlay_byte_limit(overlay_file_count));
 }
 
+extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes) {
+  if (journal_next == 0 || journal_next >= journal_end) return;
+  const uint32_t target = std::min<uint32_t>(
+      journal_end, round_up_sector(journal_next + bytes));
+  if (!ensure_journal_erased(target)) {
+    // A failed erase leaves the sector state unknown: stop appending until
+    // the next full snapshot.
+    journal_next = 0;
+  }
+}
+
 extern "C" uint8_t choupi_compact_persistent_memory(void) {
   return compact_deleted_overlay_records();
 }
@@ -2837,6 +2894,7 @@ extern "C" uint8_t fs_init(void) {
   reset_change_log();
   journal_next = 0;
   journal_end = 0;
+  journal_erased_end = 0;
   journal_sequence = 0;
   filesystem_layout_available = false;
   filesystem_active_slot = 0xff;
@@ -3329,6 +3387,7 @@ extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
 }
 
 extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
+  const uint32_t erases_before = apdu_stats.erases;
   const uint8_t erase_status = erase_overlay_records([package_id](
       const uint8_t *tag, uint8_t length) {
     const bool static_field = length >= 2 && tag[0] == 0x02 &&
@@ -3340,6 +3399,9 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
     return static_field || applet_field || lifecycle;
   });
   if (erase_status != FS_STATUS_OK) return erase_status;
+  // Boot lifecycle recovery clears every unused package slot; compact only
+  // when this call created tombstones.
+  if (apdu_stats.erases == erases_before) return FS_STATUS_OK;
   return compact_deleted_overlay_records();
 }
 

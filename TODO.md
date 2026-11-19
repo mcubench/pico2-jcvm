@@ -41,10 +41,18 @@ plus temporary counters, EC384 Signature replay
 - [x] **FLASH-01b** Commit large change sets to the journal as one atomic
   multi-entry group instead of rewriting the 40 KB snapshot. Done: prepare
   1228 → 580 ms (5,888 B journaled), first `B0E2` 943 → 305 ms (2,048 B).
-- [ ] **FLASH-01e** The 16 KB journal fills after about two EC384 prepares and
-  then forces a 40 KB snapshot. Extend the journal to the rest of the slot
-  (~136 KB) and erase its 4 KB sectors on demand, so the snapshot itself
-  erases only its own sectors.
+- [x] **FLASH-01e** The journal now fills the rest of the slot (~136 KB) and
+  its 4 KB sectors are erased on demand, ahead of use after each
+  applet-requested deletion pass (8 KB). Five EC384 replays: no full
+  snapshot; timed baselines/ops never erase. 1,400 one-page commits in the
+  unit test: 2 snapshots (was ~1 per 60 commits). Boot no longer compacts once
+  per unused package slot (7 no-op compactions per power-on).
+- [ ] **PERF-LAYOUT-01** Crypto time depends on code placement: the same
+  source with mbedTLS shifted by 232 bytes gives EC384 sign baselines
+  239–244 vs 247–248 ms and ops 513 vs 535 ms on 07E7 (A/B in
+  `artifacts/results/flash01e-journal-slot-20261119/`). Evaluate running the
+  bignum/ECP core from SRAM so timings are stable and faster; check RAM
+  headroom first.
 - [ ] **FLASH-01c** Erase a batch of records without moving the arena tail and
   rescanning the 8,192-slot index per record (1.5 ms each).
 - [ ] **FLASH-01d** Cut steady deletion-pass work: avoid re-reconstructing

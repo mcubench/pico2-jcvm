@@ -75,6 +75,7 @@ extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
                                                 uint32_t *byte_capacity);
 extern "C" uint8_t choupi_compact_persistent_memory(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
+extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes);
 #endif
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
@@ -632,6 +633,13 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
   }
   if (complete && automatic_request) {
     throttle.completed(deletion_batch.erasedTotal());
+  }
+  // An applet-requested deletion (JCAlgTest sends one before every timed
+  // command) is a good place to erase journal sectors ahead of use, so the
+  // following commands' commits only program pages.
+  if (!automatic_request) {
+    choupi_fs_erase_journal_ahead(
+        jcvm::PersistentReclaimer::kJournalEraseAheadBytes);
   }
 }
 #endif

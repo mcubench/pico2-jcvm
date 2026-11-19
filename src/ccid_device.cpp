@@ -581,7 +581,7 @@ void report_fs_apdu(uint8_t ins, uint32_t vm_us, uint32_t sync_us) {
   std::printf("CHOUPI:FS_APDU ins=%02X vm_us=%lu sync_us=%lu writes=%lu "
               "write_bytes=%lu erases=%lu synced=%lu elided=%lu "
               "sync_bytes=%lu journaled=%lu journal_bytes=%lu files=%lu "
-              "bytes=%lu\r\n",
+              "bytes=%lu journal_erase_bytes=%lu\r\n",
               static_cast<unsigned>(ins), static_cast<unsigned long>(vm_us),
               static_cast<unsigned long>(sync_us),
               static_cast<unsigned long>(stats.writes),
@@ -593,7 +593,8 @@ void report_fs_apdu(uint8_t ins, uint32_t vm_us, uint32_t sync_us) {
               static_cast<unsigned long>(stats.syncs_journaled),
               static_cast<unsigned long>(stats.journal_bytes),
               static_cast<unsigned long>(files),
-              static_cast<unsigned long>(bytes));
+              static_cast<unsigned long>(bytes),
+              static_cast<unsigned long>(stats.journal_erase_bytes));
 }
 
 void process_message(uint8_t rhport) {
