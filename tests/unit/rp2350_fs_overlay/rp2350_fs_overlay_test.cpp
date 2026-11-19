@@ -4149,8 +4149,16 @@ int main(const int argc, char **argv) {
   // removed by salvage because doing so could resurrect that ROM value.
   fake_flash.fill(0xff);
   constexpr uint8_t quarantine_tombstone_tag[] = {0xf5, 0x21, 0x02};
+  // A created-then-erased record alone is a net-empty change and its sync is
+  // skipped; the extra record makes the first sync publish the tombstone.
+  constexpr uint8_t quarantine_tombstone_neighbour[] = {0xf5, 0x21, 0x03};
+  constexpr uint8_t quarantine_tombstone_neighbour_value[] = {0x01};
   bool malformed_tombstone_rejected =
       fs_init() == FS_STATUS_OK &&
+      fs_write(quarantine_tombstone_neighbour,
+               sizeof(quarantine_tombstone_neighbour),
+               quarantine_tombstone_neighbour_value,
+               sizeof(quarantine_tombstone_neighbour_value)) == FS_STATUS_OK &&
       fs_write(quarantine_tombstone_tag, sizeof(quarantine_tombstone_tag),
                nullptr, 0) == FS_STATUS_OK &&
       fs_erase(quarantine_tombstone_tag,
@@ -4509,6 +4517,73 @@ int main(const int argc, char **argv) {
          std::memcmp(read_a.data(), value_a2, sizeof(value_a2)) == 0 &&
          std::memcmp(read_b.data(), value_b, sizeof(value_b)) == 0;
     expect(ok, "same_size_rewrite_updates_record_in_place");
+  }
+
+  // A sync whose net change is empty (every touched record holds its
+  // committed value again) does not rewrite the flash snapshot; any real
+  // change, or more touched records than the change log holds, does.
+  {
+    fake_flash.fill(0xff);
+    constexpr uint8_t elide_a[] = {0xf2, 0x32, 0x01};
+    constexpr uint8_t elide_new[] = {0xf2, 0x32, 0x02};
+    constexpr uint8_t a1[] = {0x11, 0x12};
+    constexpr uint8_t a2[] = {0x00, 0x00};
+    constexpr uint8_t a3[] = {0x33, 0x34, 0x35};
+    ChoupiFsApduStats stats{};
+    const auto take = [&]() {
+      choupi_fs_take_apdu_stats(&stats);
+      return stats;
+    };
+    bool ok = fs_init() == FS_STATUS_OK &&
+              fs_write(elide_a, sizeof(elide_a), a1, sizeof(a1)) ==
+                  FS_STATUS_OK &&
+              fs_sync() == FS_STATUS_OK;
+    take();
+    // clear() then set back: same value, same size.
+    ok = ok && fs_write(elide_a, sizeof(elide_a), a2, sizeof(a2)) ==
+                   FS_STATUS_OK &&
+         fs_write(elide_a, sizeof(elide_a), a1, sizeof(a1)) == FS_STATUS_OK &&
+         fs_sync() == FS_STATUS_OK;
+    ok = ok && take().syncs_elided == 1 && stats.syncs_written == 0;
+    // Different size in between, then back.
+    ok = ok && fs_write(elide_a, sizeof(elide_a), a3, sizeof(a3)) ==
+                   FS_STATUS_OK &&
+         fs_write(elide_a, sizeof(elide_a), a1, sizeof(a1)) == FS_STATUS_OK &&
+         fs_sync() == FS_STATUS_OK && take().syncs_elided == 1;
+    // A record created and erased again.
+    ok = ok && fs_write(elide_new, sizeof(elide_new), a3, sizeof(a3)) ==
+                   FS_STATUS_OK &&
+         fs_erase(elide_new, sizeof(elide_new)) == FS_STATUS_OK &&
+         fs_sync() == FS_STATUS_OK && take().syncs_elided == 1;
+    // An existing record erased and rewritten with its value.
+    ok = ok && fs_erase(elide_a, sizeof(elide_a)) == FS_STATUS_OK &&
+         fs_write(elide_a, sizeof(elide_a), a1, sizeof(a1)) == FS_STATUS_OK &&
+         fs_sync() == FS_STATUS_OK && take().syncs_elided == 1;
+    // A real change is written and survives a restore.
+    std::array<uint8_t, sizeof(a3)> read_a{};
+    ok = ok && fs_write(elide_a, sizeof(elide_a), a3, sizeof(a3)) ==
+                   FS_STATUS_OK &&
+         fs_sync() == FS_STATUS_OK && take().syncs_written == 1 &&
+         stats.syncs_elided == 0 && fs_init() == FS_STATUS_OK &&
+         fs_read(elide_a, sizeof(elide_a), read_a.data(), read_a.size()) ==
+             FS_STATUS_OK &&
+         std::memcmp(read_a.data(), a3, sizeof(a3)) == 0;
+    // A change hidden behind a full change log is still written: touch more
+    // records than the log holds, restoring each, then change one.
+    take();
+    for (uint8_t index = 0; ok && index < 70; ++index) {
+      const uint8_t tag[] = {0xf2, 0x33, index};
+      ok = fs_write(tag, sizeof(tag), a1, sizeof(a1)) == FS_STATUS_OK;
+    }
+    ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_written == 1;
+    for (uint8_t index = 0; ok && index < 70; ++index) {
+      const uint8_t tag[] = {0xf2, 0x33, index};
+      ok = fs_write(tag, sizeof(tag), a2, sizeof(a2)) == FS_STATUS_OK &&
+           fs_write(tag, sizeof(tag), a1, sizeof(a1)) == FS_STATUS_OK;
+    }
+    ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_written == 1 &&
+         stats.syncs_elided == 0;
+    expect(ok, "sync_skips_flash_rewrite_when_net_change_is_empty");
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);

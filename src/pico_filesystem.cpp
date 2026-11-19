@@ -115,6 +115,10 @@ uint8_t repair_overlay_index_if_needed(void);
 bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
                              uint8_t *tag_length, uint8_t depth,
                              bool report_failure, bool verify_hash);
+bool find_file(const uint8_t *tag, uint8_t tag_length, const uint8_t **data,
+               uint32_t *length);
+void reset_change_log();
+void note_untracked_change();
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -185,6 +189,27 @@ size_t tombstones_after_last_compaction = 0;
 bool overlay_dirty = false;
 // Per-APDU telemetry, read and reset by choupi_fs_take_apdu_stats().
 ChoupiFsApduStats apdu_stats{};
+
+// Committed value of every record touched since the overlay last matched the
+// active flash snapshot. A JCAlgTest measure APDU clears and re-sets the same
+// persistent fields, so its net change is empty; persist_overlay() then skips
+// erasing and reprogramming the whole snapshot (~0.5 s for 28 KB). Mutations
+// that bypass the tracked write/erase paths, or a full log, force a write.
+constexpr size_t kChangeLogEntries = 64;
+constexpr size_t kChangeLogPoolBytes = 2048;
+struct ChangeLogEntry {
+  uint16_t pool_offset;
+  uint16_t length;
+  uint8_t tag_length;
+  bool existed;
+};
+ChangeLogEntry change_log[kChangeLogEntries];
+uint8_t change_log_pool[kChangeLogPoolBytes];
+size_t change_log_count = 0;
+size_t change_log_pool_used = 0;
+// True when the overlay may differ from flash in a way the log cannot prove
+// equal: an untracked mutation, a full log, or a failed restore.
+bool change_log_untracked = false;
 bool filesystem_layout_available = false;
 uint8_t filesystem_active_slot = 0xff;
 uint32_t filesystem_generation = 0;
@@ -382,8 +407,35 @@ void __not_in_flash_func(write_filesystem_snapshot)(void *opaque) {
   context->success = true;
 }
 
+bool overlay_matches_committed() {
+  if (change_log_untracked) return false;
+  for (size_t index = 0; index < change_log_count; ++index) {
+    const ChangeLogEntry &entry = change_log[index];
+    const uint8_t *tag = change_log_pool + entry.pool_offset;
+    const uint8_t *data = nullptr;
+    uint32_t length = 0;
+    const bool exists = find_file(tag, entry.tag_length, &data, &length);
+    if (exists != entry.existed) return false;
+    if (!exists) continue;
+    if (length != entry.length ||
+        (length != 0 &&
+         std::memcmp(data, tag + entry.tag_length, length) != 0)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool persist_overlay() {
   if (!overlay_dirty) return true;
+  if (overlay_matches_committed()) {
+    // Every record touched since the last commit holds its committed value
+    // again, so the active flash snapshot already describes this content.
+    overlay_dirty = false;
+    reset_change_log();
+    ++apdu_stats.syncs_elided;
+    return true;
+  }
   if (!filesystem_layout_available) {
 #ifdef RP2350_FS_OVERLAY_TEST
     std::fprintf(stderr, "RP2350_OVERLAY:persist_reject reason=layout\n");
@@ -447,6 +499,7 @@ bool persist_overlay() {
   filesystem_active_slot = next_slot;
   filesystem_generation = next_generation;
   overlay_dirty = false;
+  reset_change_log();
   ++apdu_stats.syncs_written;
   apdu_stats.sync_bytes += erase_size;
   return true;
@@ -573,6 +626,7 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot,
     index_repaired = true;
   }
   overlay_dirty = index_repaired;
+  if (index_repaired) note_untracked_change();
   filesystem_active_slot = migration_source ? 0xff : slot;
   filesystem_generation = header->generation;
   return true;
@@ -1517,6 +1571,7 @@ uint8_t repair_overlay_index_if_needed(void) {
   const char *repair_reason = nullptr;
   if (!rebuild_overlay_index(&repair_reason)) return 2;
   overlay_dirty = true;
+  note_untracked_change();
   std::printf("CHOUPI:FS_INTEGRITY_REPAIR reason=%s action=rehash\r\n",
               reason);
   std::fflush(stdout);
@@ -1729,6 +1784,7 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_hash(
   if (file == nullptr) return FS_STATUS_NO_SUCH_TAG;
   file->hash ^= 0x0101;
   overlay_dirty = true;
+  note_untracked_change();
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_corrupt_record_tag_length(
@@ -1738,6 +1794,7 @@ extern "C" uint8_t rp2350_fs_test_corrupt_record_tag_length(
     return FS_STATUS_NO_SUCH_TAG;
   file->tag_length = replacement_length;
   overlay_dirty = true;
+  note_untracked_change();
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_integrity_valid(void) {
@@ -1763,6 +1820,7 @@ extern "C" uint8_t rp2350_fs_test_share_record_offset(
   }
   set_overlay_offset(*target, overlay_offset(*source));
   overlay_dirty = true;
+  note_untracked_change();
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_overlap_record_offset(
@@ -1778,6 +1836,7 @@ extern "C" uint8_t rp2350_fs_test_overlap_record_offset(
   if (overlapping_offset >= overlay_bytes_used) return FS_STATUS_IO_UNKNOWN;
   set_overlay_offset(*target, overlapping_offset);
   overlay_dirty = true;
+  note_untracked_change();
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
@@ -1808,6 +1867,7 @@ extern "C" uint8_t rp2350_fs_test_move_slot_beyond_probe_gap(
   overlay[destination] = *file;
   *file = OverlayFile{};
   overlay_dirty = true;
+  note_untracked_change();
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_repoint_parent_encoded(
@@ -1858,6 +1918,7 @@ extern "C" uint8_t rp2350_fs_test_invalidate_parent_reference(
   overlay_bytes[offset + 1] = 0xff;
   overlay_bytes[offset + 2] = 0xff;
   overlay_dirty = true;
+  note_untracked_change();
   return FS_STATUS_OK;
 }
 extern "C" uint8_t rp2350_fs_test_compact(void) {
@@ -2204,6 +2265,49 @@ bool find_file(const uint8_t *tag, uint8_t tag_length,
   return find_rom_file(tag, tag_length, data, length);
 }
 
+void reset_change_log() {
+  change_log_count = 0;
+  change_log_pool_used = 0;
+  change_log_untracked = false;
+}
+
+void note_untracked_change() { change_log_untracked = true; }
+
+// Record a tag's committed value before its first mutation since the overlay
+// last matched flash. Call before every tracked overlay mutation.
+void note_tracked_change(const uint8_t *tag, uint8_t tag_length) {
+  if (change_log_untracked) return;
+  for (size_t index = 0; index < change_log_count; ++index) {
+    const ChangeLogEntry &entry = change_log[index];
+    if (entry.tag_length == tag_length &&
+        std::memcmp(change_log_pool + entry.pool_offset, tag, tag_length) ==
+            0) {
+      return;
+    }
+  }
+  const uint8_t *data = nullptr;
+  uint32_t length = 0;
+  const bool existed = find_file(tag, tag_length, &data, &length);
+  if (!existed) length = 0;
+  const size_t needed = static_cast<size_t>(tag_length) + length;
+  if (change_log_count == kChangeLogEntries ||
+      needed > kChangeLogPoolBytes - change_log_pool_used) {
+    change_log_untracked = true;
+    return;
+  }
+  ChangeLogEntry &entry = change_log[change_log_count++];
+  entry.pool_offset = static_cast<uint16_t>(change_log_pool_used);
+  entry.length = static_cast<uint16_t>(length);
+  entry.tag_length = tag_length;
+  entry.existed = existed;
+  std::memcpy(change_log_pool + change_log_pool_used, tag, tag_length);
+  if (length != 0) {
+    std::memcpy(change_log_pool + change_log_pool_used + tag_length, data,
+                length);
+  }
+  change_log_pool_used += needed;
+}
+
 uint8_t validate_tag(const uint8_t *tag, uint8_t tag_length) {
   return tag != nullptr && tag_length != 0 &&
                  tag_length <= kMaxOverlayTagLength
@@ -2227,6 +2331,7 @@ uint8_t write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
                               length, existing_length);
     return FS_STATUS_IO_OUT_OF_BOUNDS;
   }
+  note_tracked_change(tag, tag_length);
   auto *file = find_overlay(tag, tag_length);
   if (file != nullptr) {
     if (file->size != existing_length) {
@@ -2317,6 +2422,7 @@ extern "C" uint8_t fs_init(void) {
   overlay_file_count = 0;
   overlay_bytes_used = 0;
   overlay_dirty = false;
+  reset_change_log();
   filesystem_layout_available = false;
   filesystem_active_slot = 0xff;
   filesystem_generation = 0;
@@ -2347,6 +2453,7 @@ extern "C" uint8_t fs_init(void) {
     // preserving the selected source until the compact header validates.
     // Older pre-CAP3 snapshots occupy separate locations and remain untouched.
     overlay_dirty = true;
+    note_untracked_change();
     if (!persist_overlay()) return 1;
     std::printf("CHOUPI:FS_MIGRATE generation=%lu\r\n",
                 static_cast<unsigned long>(filesystem_generation));
@@ -2359,6 +2466,7 @@ extern "C" uint8_t fs_init(void) {
     // verified by persist_overlay(). A failed repair must not prevent booting
     // from the valid snapshot.
     overlay_dirty = true;
+    note_untracked_change();
     if (persist_overlay()) {
       std::printf("CHOUPI:FS_RECOVER source=previous action=replace_rejected_snapshot generation=%lu\r\n",
                   static_cast<unsigned long>(filesystem_generation));
@@ -2529,6 +2637,7 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
 #else
   const auto report_failure_path = [](const char *) {};
 #endif
+  note_tracked_change(tag, tag_length);
   auto *file = find_overlay(tag, tag_length);
   if (file != nullptr) {
     configure_tag_encoding(*file, tag, tag_length);
@@ -2605,6 +2714,7 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
   file->flags |= kOverlayParentTag;
   if (!append_overlay(*file, tag, data, length)) return 1;
   overlay_dirty = true;
+  note_untracked_change();
   return 0;
 }
 #endif
@@ -2617,6 +2727,16 @@ uint8_t erase_overlay_slot(uint16_t slot) {
       !overlay_has_storage(file) ||
       overlay_offset(file) >= overlay_bytes_used) {
     return FS_STATUS_IO_UNKNOWN;
+  }
+  {
+    uint8_t slot_tag[kMaxOverlayTagLength]{};
+    uint8_t slot_tag_length = 0;
+    if (reconstruct_overlay_tag(slot, slot_tag, &slot_tag_length, 0, false,
+                                true)) {
+      note_tracked_change(slot_tag, slot_tag_length);
+    } else {
+      note_untracked_change();
+    }
   }
 
   // Re-encode the existing key bytes verbatim. In particular, a compressed
@@ -2669,6 +2789,7 @@ uint8_t erase_overlay_slot(uint16_t slot) {
 extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
   const uint8_t tag_status = validate_tag(tag, tag_length);
   if (tag_status != FS_STATUS_OK) return tag_status;
+  note_tracked_change(tag, tag_length);
   auto *file = find_overlay(tag, tag_length);
   if (file == nullptr) {
     const uint8_t *ignored_data = nullptr;
