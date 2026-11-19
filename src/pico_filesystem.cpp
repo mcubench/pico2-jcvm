@@ -1571,7 +1571,13 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   const size_t old_record_size = overlay_has_storage(file)
                                      ? 1 + stored_tag_length(file) + file.size
                                      : 0;
-  if (old_record_size != 0) {
+  const size_t new_record_size = 1 + key_length + length;
+  // Rewriting a record with an encoding of the same size (a persistent field
+  // or a fixed-length array update) reuses its bytes in place. Moving the
+  // overlay tail and rescanning all index slots cost ~10 ms per write.
+  const bool in_place =
+      old_record_size != 0 && old_record_size == new_record_size;
+  if (old_record_size != 0 && !in_place) {
     const uint32_t old_offset = overlay_offset(file);
     for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
       if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
@@ -1580,13 +1586,12 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
       }
     }
   }
-  const size_t new_record_size = 1 + key_length + length;
   const size_t new_used = overlay_bytes_used - old_record_size + new_record_size;
   if (!filesystem_payload_fits(overlay_file_count, new_used)) {
     return reject("payload_capacity", new_used);
   }
   const size_t old_offset = overlay_offset(file);
-  if (old_record_size != 0) {
+  if (old_record_size != 0 && !in_place) {
     std::memmove(overlay_bytes + old_offset,
                  overlay_bytes + old_offset + old_record_size,
                  overlay_bytes_used - old_offset - old_record_size);
@@ -1600,8 +1605,10 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
       }
     }
   }
-  set_overlay_offset(file, static_cast<uint32_t>(overlay_bytes_used -
-                                                  old_record_size));
+  if (!in_place) {
+    set_overlay_offset(file, static_cast<uint32_t>(overlay_bytes_used -
+                                                    old_record_size));
+  }
   const uint32_t new_offset = overlay_offset(file);
   overlay_bytes[new_offset] = static_cast<uint8_t>(
       key_length | (parent_tag ? 0x80 : 0));

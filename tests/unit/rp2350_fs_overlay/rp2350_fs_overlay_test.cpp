@@ -4478,6 +4478,39 @@ int main(const int argc, char **argv) {
   expect(new_write_compacts_full_index,
          "new_write_compacts_deleted_records_at_full_index");
 
+  // A same-size rewrite reuses the record's bytes in place: arena usage and
+  // neighbouring records are unchanged, and the value survives a sync and a
+  // restore from flash.
+  {
+    fake_flash.fill(0xff);
+    constexpr uint8_t in_place_a[] = {0xf2, 0x31, 0x01};
+    constexpr uint8_t in_place_b[] = {0xf2, 0x31, 0x02};
+    constexpr uint8_t value_a1[] = {0x01, 0x02, 0x03};
+    constexpr uint8_t value_a2[] = {0x0a, 0x0b, 0x0c};
+    constexpr uint8_t value_b[] = {0x21, 0x22};
+    std::array<uint8_t, sizeof(value_a2)> read_a{};
+    std::array<uint8_t, sizeof(value_b)> read_b{};
+    bool ok = fs_init() == FS_STATUS_OK &&
+              fs_write(in_place_a, sizeof(in_place_a), value_a1,
+                       sizeof(value_a1)) == FS_STATUS_OK &&
+              fs_write(in_place_b, sizeof(in_place_b), value_b,
+                       sizeof(value_b)) == FS_STATUS_OK;
+    const uint32_t bytes_before = rp2350_fs_test_overlay_bytes_used();
+    ok = ok &&
+         fs_write(in_place_a, sizeof(in_place_a), value_a2,
+                  sizeof(value_a2)) == FS_STATUS_OK &&
+         rp2350_fs_test_overlay_bytes_used() == bytes_before &&
+         rp2350_fs_test_integrity_valid() != 0 &&
+         fs_sync() == FS_STATUS_OK && fs_init() == FS_STATUS_OK &&
+         fs_read(in_place_a, sizeof(in_place_a), read_a.data(),
+                 read_a.size()) == FS_STATUS_OK &&
+         fs_read(in_place_b, sizeof(in_place_b), read_b.data(),
+                 read_b.size()) == FS_STATUS_OK &&
+         std::memcmp(read_a.data(), value_a2, sizeof(value_a2)) == 0 &&
+         std::memcmp(read_b.data(), value_b, sizeof(value_b)) == 0;
+    expect(ok, "same_size_rewrite_updates_record_in_place");
+  }
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

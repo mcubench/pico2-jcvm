@@ -32280,3 +32280,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
   - Later `B0E2`: vm 301 ms, no writes, no sync.
 - Decision: the baseline cost is ~0.52 s whole-snapshot sync plus ~0.27 s of overlay rewrite work. `append_overlay` moves the overlay tail and scans all 8192 index slots twice for every rewrite of an existing record. Next: same-size in-place overwrite, then net-unchanged sync elision (step 2).
 - Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/step1-telemetry/{apdu-timer.log,serial.log}`
+
+## 2026-11-19 Same-size overlay record rewrite in place (slow-baseline step 2a) 20
+
+- Step-Id: `20261119-0745-overlay-inplace-rewrite`
+- Task: slow-baseline plan step 2 (`docs/review_slowbaseline_20261119.md`)
+- When: '2026-11-19 07:30' - '2026-11-19 07:45'
+- Model: `claude-opus-5-5`
+- Change: `append_overlay()` (`src/pico_filesystem.cpp`) rewrites a record whose new encoded size equals the old one in place, instead of moving the overlay tail and rescanning all 8192 index slots twice. Arena usage and other records' offsets are unchanged. The duplicate-offset defence stays in compaction and snapshot restore. New unit check `same_size_rewrite_updates_record_in_place`.
+- Validation: `./tools/test-rp2350-fs-overlay` fail=0 (new check passes); `./tools/test-persistent-transaction` and `./tools/test-persistent-inventory` fail=0; `./tools/build arm --profile max_crypto` rc=0, 0 warnings; `./tools/cycle choupi --profile max_crypto --serial 07E74C5D7A038DEC` CYCLE:PASS on the second attempt (first: wrapper reported "requested serial does not match USB path 1-2" after its CDC BOOTSEL request; the board was in BOOTSEL and the retry flashed it; `artifacts/logs/cycle-choupi-20261119T053320Z.log`).
+- Result (EC384 replay, same store): baseline VM 295 → 261 ms (25 writes), prepare VM 704 → 623 ms; client baseline 775–799 ms (was 806–843). Sync unchanged (~0.52 s, 28,672 B).
+- Decision: most of the remaining ~235 ms VM cost of 25 field writes is elsewhere; profiling the PC VM with callgrind before step 2b (sync elision).
+- Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/step2a-inplace/{apdu-timer.log,serial.log}`
