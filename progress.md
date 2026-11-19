@@ -32251,3 +32251,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: GETVERSION (no persistent write) 25–27 ms ×10; EC384 sign baseline (`B049`, repeat 0) 810–825 ms ×4; prepare 1230 ms; first `B0E2` 1494 ms, later `B0E2` 349 ms. So ~0.79 s of each baseline is persistent-write + whole-store sync overhead, not applet work. The 9.4 s RSA-1280 baselines are consistent with the same overhead on a much larger store (cached RSA pairs), not yet confirmed: needs the Windows run's serial log or a debug `fs_sync_elapsed_us` replay. A first attempt without the Le byte returned F501 (APDUException ILLEGAL_USE from `setOutgoingAndSend`); it is an operator error, kept as `*-noLe-invalid.log`.
 - Decision: Plan proposed to user (instrument; skip net-unchanged writes at APDU commit; incremental journal sync; compact native-object encoding; cheaper reclaim). No code changed yet.
 - Artifacts/logs: `artifacts/results/baseline-sync-cost-20261119/07E74C5D7A038DEC/{apdu-timer.log,serial.log,apdu-timer-noLe-invalid.log,serial-noLe-invalid.log}`
+
+## 2026-11-19 Store slow-baseline review document 5
+
+- Step-Id: `20261119-0650-review-slowbaseline-doc`
+- Task: user directive (store the performance/memory analysis)
+- When: '2026-11-19 06:45' - '2026-11-19 06:50'
+- Model: `claude-opus-5-5`
+- Change: added `docs/review_slowbaseline_20261119.md` (cause, measurements, plan steps 1–5).
+- Validation: inspection only.
+- Result: document committed; user asked to implement steps 1, 2, 4 and 5 in order.
+- Decision: proceed with step 1 (instrumentation).
+- Artifacts/logs: none
