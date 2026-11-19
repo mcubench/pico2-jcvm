@@ -1,9 +1,9 @@
 # Handoff — next steps only
 
-Updated: 2026-11-19 23:16 CET.
+Updated: 2026-11-19 23:46 CET.
 
 ## Current state
-- No campaign is live. 07E7 runs the Windows-package empty-card image `a266b836` (UF2 `63abbf3d…99f8b`), wiped then given the JCAlgTest 1.8.5 CAP and the EC384 replay objects.
+- No campaign is live. Exploratory option 2 on the `a266b836` image completed on 07E7 (exit 0, 26 min, no faults; `artifacts/results/option2-exploratory-a266b836-20261119T2212Z/07E74C5D7A038DEC/`). 07E7 holds that image, the 1.8.5 CAP and the option-2 state (not an empty card). F42D is currently visible in PC/SC as reader index 2.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work

@@ -32521,3 +32521,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: moving the 20–30 KB bignum/ECP core into SRAM would exceed the observed worst-case free heap; the timing spread it would remove is ~4 %.
 - Decision: keep code in flash; a single small hot function remains possible later. Correction: the previous record's end time is 23:11 (measured), not 23:15.
 - Artifacts/logs: none new
+
+## 2026-11-19 Exploratory option-2 run on the a266b836 image 28
+
+- Step-Id: `20261119-2346-option2-a266b836`
+- Task: MEM-01 T8 exploratory evidence / FLASH-01 and FLASH-03 long-run integration
+- When: '2026-11-19 23:13' - '2026-11-19 23:46'
+- Model: `claude-opus-5-5`
+- Change: none to source. Campaign identity in `artifacts/results/option2-exploratory-a266b836-20261119T2212Z/07E74C5D7A038DEC/campaign-identity.txt`.
+- Validation: 07E74C5D7A038DEC wiped with the Windows-package empty-card UF2 `63abbf3d…99f8b` (`a266b836`); GPPro listed no applet, installed the unchanged 1.8.5/jc305 CAP (`fa64582e…`), applet SELECTABLE; `./tools/fixture-path --verify` FIXTURES:PASS (84). Client 1.8.5 JAR `b6a753be…eacec3`, `JCALGTEST_STDIN_LINES=$'2\n2'` `./tools/run-jcalgtest … -fresh` (menu 2 → PERFORMANCE TEST → 2, reader index answered by the watchdog because F42D is also visible). Attempt 0 piped the reader index as the menu answer and exited at reader selection before any APDU (log kept as `client-attempt0-menu-input-failed.log`). Serial captured in parallel.
+- Result: client exit 0 after 26 min (2026-11-19 22:18–22:44 UTC) with "Total reconnects to card: 0"; CSV 2,428 lines (SHA-256 `ad3be06806a6a2eb2172aa89a838086c7b78fd7beef309aa735e685fc0f041b6`), no error rows; status rows (NO_SUCH_ALGORITHM/ILLEGAL_VALUE) match the 2026-11-18 run. Serial: 5,096 `FS_APDU`, 0 FAULT/PANIC/NO_RESOURCE/TEST:FAIL, 457 deletion passes (all `pending=0`, `tag_index_refused=0`, 5,737 records erased) and 2,090 answered UNCHANGED; HEADROOM:PASS peak 654 files / 13,201 B (13.43 %). Flash: 8 full snapshots (221,184 B; prepares and two `B0E2`), 1,189,376 B journal pages, 1,167,360 B journal sectors erased. The 2026-11-18 run of the same option on 853543d6 needed two attempts and more than 80 min.
+- Decision: no regression found over a full option-2 suite; still exploratory (T7 open). Option 1 (asymmetric, 5–8 h) not run in this step.
+- Artifacts/logs: `artifacts/results/option2-exploratory-a266b836-20261119T2212Z/07E74C5D7A038DEC/`
