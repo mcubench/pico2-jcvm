@@ -4576,21 +4576,32 @@ int main(const int argc, char **argv) {
          fs_read(elide_a, sizeof(elide_a), read_a.data(), read_a.size()) ==
              FS_STATUS_OK &&
          std::memcmp(read_a.data(), a3, sizeof(a3)) == 0;
-    // A change hidden behind a full change log is still written: touch more
-    // records than the log holds, restoring each, then change one.
+    // More records than the change log holds: the commit is still journaled
+    // (several entries in one group), not a full snapshot.
     take();
     for (uint8_t index = 0; ok && index < 70; ++index) {
       const uint8_t tag[] = {0xf2, 0x33, index};
       ok = fs_write(tag, sizeof(tag), a1, sizeof(a1)) == FS_STATUS_OK;
     }
-    ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_written == 1;
+    ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_journaled == 1 &&
+         stats.syncs_written == 0;
+    // A full change log cannot prove an empty net change, so the rewritten
+    // values are committed again instead of elided.
     for (uint8_t index = 0; ok && index < 70; ++index) {
       const uint8_t tag[] = {0xf2, 0x33, index};
       ok = fs_write(tag, sizeof(tag), a2, sizeof(a2)) == FS_STATUS_OK &&
            fs_write(tag, sizeof(tag), a1, sizeof(a1)) == FS_STATUS_OK;
     }
-    ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_written == 1 &&
-         stats.syncs_elided == 0;
+    ok = ok && fs_sync() == FS_STATUS_OK && take().syncs_journaled == 1 &&
+         stats.syncs_elided == 0 && stats.syncs_written == 0;
+    ok = ok && fs_init() == FS_STATUS_OK;
+    for (uint8_t index = 0; ok && index < 70; ++index) {
+      const uint8_t tag[] = {0xf2, 0x33, index};
+      std::array<uint8_t, sizeof(a1)> value{};
+      ok = fs_read(tag, sizeof(tag), value.data(), value.size()) ==
+               FS_STATUS_OK &&
+           std::memcmp(value.data(), a1, sizeof(a1)) == 0;
+    }
     expect(ok, "sync_skips_flash_rewrite_when_net_change_is_empty");
   }
 
@@ -4714,18 +4725,138 @@ int main(const int argc, char **argv) {
     bool torn_snapshot = fs_init() == 0 && apply_change() && fs_sync() == 0;
     choupi_fs_take_apdu_stats(&stats);
     torn_snapshot = torn_snapshot && stats.syncs_journaled == 1;
-    // An untracked change (index repair path) forces a full snapshot.
+    // Force the next commit to be a full snapshot and tear it.
     for (uint8_t index = 0; torn_snapshot && index < 70; ++index) {
       const uint8_t tag[] = {0xf2, 0x41, index};
       torn_snapshot = fs_write(tag, sizeof(tag), b_old, sizeof(b_old)) == 0;
     }
+    rp2350_fs_test_set_journal_enabled(0);
     reset_flash_failure(4096 + 64);
     torn_snapshot = torn_snapshot && fs_sync() != 0;
     reset_flash_failure();
+    rp2350_fs_test_set_journal_enabled(1);
     const uint8_t first_extra[] = {0xf2, 0x41, 0x00};
     torn_snapshot = torn_snapshot && fs_init() == 0 && new_state() &&
                     fs_exists(first_extra, sizeof(first_extra)) == 0;
     expect(torn_snapshot, "torn_full_snapshot_recovers_previous_slot_journal");
+  }
+
+  // A commit larger than one journal entry is written as one group of
+  // entries. Boot applies the group only when its last entry is valid, so a
+  // power cut anywhere in it recovers the old or the new state.
+  {
+    constexpr uint8_t kGroupRecords = 24;
+    ChoupiFsApduStats stats{};
+    const auto value_for = [](uint8_t index, uint8_t generation) {
+      std::array<uint8_t, 200> value{};
+      for (size_t byte = 0; byte < value.size(); ++byte) {
+        value[byte] = static_cast<uint8_t>(index * 7 + byte + generation);
+      }
+      return value;
+    };
+    const auto tag_for = [](uint8_t index) {
+      return std::array<uint8_t, 3>{0xf2, 0x50, index};
+    };
+    const auto write_all = [&](uint8_t generation) {
+      for (uint8_t index = 0; index < kGroupRecords; ++index) {
+        const auto tag = tag_for(index);
+        const auto value = value_for(index, generation);
+        if (fs_write(tag.data(), tag.size(), value.data(),
+                     static_cast<uint32_t>(value.size())) != 0) {
+          return false;
+        }
+      }
+      return true;
+    };
+    const auto state_is = [&](uint8_t generation) {
+      for (uint8_t index = 0; index < kGroupRecords; ++index) {
+        const auto tag = tag_for(index);
+        const auto expected = value_for(index, generation);
+        std::array<uint8_t, 200> value{};
+        uint32_t length = 0;
+        if (fs_length(tag.data(), tag.size(), &length) != 0 ||
+            length != value.size() ||
+            fs_read(tag.data(), tag.size(), value.data(),
+                    static_cast<uint32_t>(value.size())) != 0 ||
+            value != expected) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    fake_flash.fill(0xff);
+    reset_flash_failure();
+    bool ok = fs_init() == 0 && write_all(1) && fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    ok = ok && stats.syncs_written == 1;
+    const auto group_base = fake_flash;
+    ok = ok && write_all(2);
+    reset_flash_failure();
+    ok = ok && fs_sync() == 0;
+    const size_t group_mutations = flash_mutation_count;
+    choupi_fs_take_apdu_stats(&stats);
+    ok = ok && stats.syncs_journaled == 1 && stats.syncs_written == 0 &&
+         stats.journal_bytes > 4096 && fs_init() == 0 && state_is(2);
+    expect(ok, "journal_group_spans_entries_and_replays");
+
+    bool every_group_cut_atomic = ok;
+    for (size_t cut = 0; every_group_cut_atomic && cut < group_mutations;
+         cut += 13) {
+      fake_flash = group_base;
+      reset_flash_failure();
+      if (fs_init() != 0 || !write_all(2)) {
+        every_group_cut_atomic = false;
+        break;
+      }
+      reset_flash_failure(cut);
+      const bool sync_ok = fs_sync() == 0;
+      reset_flash_failure();
+      if (fs_init() != 0) {
+        every_group_cut_atomic = false;
+        break;
+      }
+      const bool was_old = state_is(1);
+      const bool was_new = state_is(2);
+      if (!(was_old || was_new) || (sync_ok && !was_new)) {
+        every_group_cut_atomic = false;
+        break;
+      }
+      // A torn group is never extended: the next commit still survives.
+      if (!write_all(3) || fs_sync() != 0 || fs_init() != 0 ||
+          !state_is(3)) {
+        every_group_cut_atomic = false;
+      }
+    }
+    expect(every_group_cut_atomic, "journal_group_every_power_cut_is_atomic");
+
+    // Erasing a parent and its children in one group replays children
+    // first, as the deletion pass does.
+    fake_flash = group_base;
+    reset_flash_failure();
+    constexpr uint8_t parent[] = {0xf2, 0x51};
+    constexpr uint8_t child_a[] = {0xf2, 0x51, 0x01, 0x01};
+    constexpr uint8_t child_b[] = {0xf2, 0x51, 0x02, 0x02};
+    constexpr uint8_t payload[] = {1, 2, 3};
+    bool erase_group = fs_init() == 0 &&
+                       fs_write(parent, sizeof(parent), payload,
+                                sizeof(payload)) == 0 &&
+                       fs_write(child_a, sizeof(child_a), payload,
+                                sizeof(payload)) == 0 &&
+                       fs_write(child_b, sizeof(child_b), payload,
+                                sizeof(payload)) == 0 &&
+                       fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    erase_group = erase_group && fs_erase(child_a, sizeof(child_a)) == 0 &&
+                  fs_erase(parent, sizeof(parent)) == 0 &&
+                  fs_erase(child_b, sizeof(child_b)) == 0 && write_all(4) &&
+                  fs_sync() == 0;
+    choupi_fs_take_apdu_stats(&stats);
+    erase_group = erase_group && stats.syncs_journaled == 1 &&
+                  fs_init() == 0 && fs_exists(parent, sizeof(parent)) == 0 &&
+                  fs_exists(child_a, sizeof(child_a)) == 0 &&
+                  fs_exists(child_b, sizeof(child_b)) == 0 && state_is(4);
+    expect(erase_group, "journal_group_replays_parent_and_child_erasure");
   }
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);

@@ -117,8 +117,11 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
                              bool report_failure, bool verify_hash);
 bool find_file(const uint8_t *tag, uint8_t tag_length, const uint8_t **data,
                uint32_t *length);
+bool overlay_is_used(const OverlayFile &file);
+bool overlay_has_record(const OverlayFile &file);
 void reset_change_log();
 void note_untracked_change();
+void mark_journal_dirty(const OverlayFile *file);
 static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
                   PICO_FLASH_SIZE_BYTES,
               "filesystem slots exceed RP2350 flash");
@@ -210,6 +213,16 @@ size_t change_log_pool_used = 0;
 // True when the overlay may differ from flash in a way the log cannot prove
 // equal: an untracked mutation, a full log, or a failed restore.
 bool change_log_untracked = false;
+// Overlay slots changed since the last commit. Unlike the change log above,
+// which keeps committed values so an empty net change can be elided, this
+// set is never full: it lets a commit of any size be journaled. Slot numbers
+// are stable until compaction, which therefore sets journal_untracked.
+uint8_t journal_dirty_slots[kMaxOverlayFiles / 8];
+size_t journal_dirty_count = 0;
+// True after a mutation the dirty set does not describe (index repair,
+// migration, compaction with pending changes, test corruption hooks): the
+// next commit must be a full snapshot.
+bool journal_untracked = false;
 bool filesystem_layout_available = false;
 uint8_t filesystem_active_slot = 0xff;
 uint32_t filesystem_generation = 0;
@@ -222,7 +235,15 @@ uint32_t filesystem_generation = 0;
 // consecutive sequence numbers, stopping at the first entry that is not
 // valid; an entry is all-or-nothing because of its CRC. A torn or unexpected
 // tail disables appends until the next full snapshot moves to the other slot.
-constexpr uint32_t kJournalMagic = 0x314c4e4a; // "JNL1"
+//
+// One commit may need several entries. All but the last carry the
+// continuation magic, and boot applies a group only when its last entry is
+// valid. Java Card itself does not require several updates outside a
+// transaction to be atomic, but the commit is a coalesced set of records:
+// applying part of it could leave a reference to an object whose records are
+// missing, so the VM's own record consistency needs the group.
+constexpr uint32_t kJournalMagic = 0x314c4e4a; // "JNL1": last entry of a group
+constexpr uint32_t kJournalContinuedMagic = 0x324c4e4a; // "JNL2": more follow
 constexpr uint32_t kJournalRegionBytes = 16 * 1024;
 constexpr size_t kJournalMaxEntryBytes = 2048;
 constexpr uint8_t kJournalOpWrite = 1;
@@ -484,76 +505,158 @@ void __not_in_flash_func(write_journal_entry)(void *opaque) {
   context->success = true;
 }
 
-// Append the records whose value differs from the committed state as one
-// journal entry. False leaves the committed state unchanged and asks the
-// caller for a full snapshot.
+// Append every record changed since the last commit as one journal group.
+// False leaves the committed state unchanged and asks the caller for a full
+// snapshot.
 #ifdef RP2350_FS_OVERLAY_TEST
 bool rp2350_fs_test_journal_enabled = true;
 #endif
+
+struct JournalPacker {
+  bool dry_run;
+  uint32_t position;    // flash offset of the entry being built
+  size_t used = sizeof(JournalEntryHeader);
+  uint16_t record_count = 0;
+  uint32_t sequence;
+  uint32_t total_padded = 0;
+  bool failed = false;
+
+  bool flush(bool continued) {
+    JournalEntryHeader header{
+        continued ? kJournalContinuedMagic : kJournalMagic,
+        filesystem_generation, sequence, record_count,
+        static_cast<uint16_t>(used - sizeof(JournalEntryHeader))};
+    const size_t length = used + sizeof(uint32_t);
+    const uint32_t padded =
+        journal_padded_length(static_cast<uint32_t>(length));
+    if (!dry_run) {
+      std::memcpy(journal_buffer, &header, sizeof(header));
+      const uint32_t crc = filesystem_crc32(journal_buffer, used);
+      std::memcpy(journal_buffer + used, &crc, sizeof(crc));
+      std::fill(journal_buffer + length, journal_buffer + padded, 0xff);
+      JournalWriteContext context{position, padded, false};
+      const int status =
+          flash_safe_execute(write_journal_entry, &context, 5000);
+      if (status != PICO_OK || !context.success ||
+          std::memcmp(filesystem_slot_data(position), journal_buffer,
+                      length) != 0) {
+        failed = true;
+        return false;
+      }
+    }
+    position += padded;
+    total_padded += padded;
+    ++sequence;
+    used = sizeof(JournalEntryHeader);
+    record_count = 0;
+    return true;
+  }
+
+  // Add one record. In the dry run the buffer only counts bytes.
+  bool add(bool exists, const uint8_t *tag, uint8_t tag_length,
+           const uint8_t *data, uint32_t length) {
+    const size_t needed = 4u + tag_length + length;
+    const size_t capacity =
+        kJournalMaxEntryBytes - sizeof(JournalEntryHeader) - sizeof(uint32_t);
+    if (needed > capacity || length > UINT16_MAX) return false;
+    if (used + needed + sizeof(uint32_t) > kJournalMaxEntryBytes &&
+        !flush(true)) {
+      return false;
+    }
+    if (!dry_run) {
+      journal_buffer[used] = exists ? kJournalOpWrite : kJournalOpErase;
+      journal_buffer[used + 1] = tag_length;
+      std::memcpy(journal_buffer + used + 2, tag, tag_length);
+      journal_buffer[used + 2 + tag_length] = static_cast<uint8_t>(length);
+      journal_buffer[used + 3 + tag_length] =
+          static_cast<uint8_t>(length >> 8);
+      if (length != 0) {
+        std::memcpy(journal_buffer + used + 4 + tag_length, data, length);
+      }
+    }
+    used += needed;
+    ++record_count;
+    return true;
+  }
+};
+
+// Emit the dirty records in replay order: erasures first, longest tag
+// first, so a child is removed while its parent still resolves; then writes,
+// shortest tag first, so a parent exists before its children are encoded.
+bool pack_journal_group(JournalPacker &packer, const uint16_t *order,
+                        size_t count) {
+  for (size_t index = 0; index < count; ++index) {
+    const uint16_t slot = order[index];
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length, 0, false, true)) {
+      return false;
+    }
+    const uint8_t *data = nullptr;
+    uint32_t length = 0;
+    const bool exists = find_file(tag, tag_length, &data, &length);
+    if (!exists) length = 0;
+    if (!packer.add(exists, tag, tag_length, data, length)) return false;
+  }
+  return packer.flush(false);
+}
 
 bool append_journal_entry() {
 #ifdef RP2350_FS_OVERLAY_TEST
   if (!rp2350_fs_test_journal_enabled) return false;
 #endif
-  if (journal_next == 0 || change_log_untracked ||
+  if (journal_next == 0 || journal_untracked ||
       filesystem_active_slot == 0xff) {
     return false;
   }
-  size_t used = sizeof(JournalEntryHeader);
-  uint16_t record_count = 0;
-  for (size_t index = 0; index < change_log_count; ++index) {
-    const ChangeLogEntry &entry = change_log[index];
-    const uint8_t *tag = change_log_pool + entry.pool_offset;
-    const uint8_t *data = nullptr;
-    uint32_t length = 0;
-    const bool exists = find_file(tag, entry.tag_length, &data, &length);
-    if (!exists) length = 0;
-    if (exists == entry.existed &&
-        (!exists ||
-         (length == entry.length &&
-          (length == 0 ||
-           std::memcmp(data, tag + entry.tag_length, length) == 0)))) {
+  // Only the content-preserving compaction or a no-op touched the overlay.
+  if (journal_dirty_count == 0) return true;
+  // erase_bucket_next is scratch outside erase and compaction passes.
+  uint16_t *order = erase_bucket_next;
+  size_t count = 0;
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    if ((journal_dirty_slots[slot / 8] & (1u << (slot % 8))) == 0) continue;
+    const OverlayFile &file = overlay[slot];
+    // A slot reserved by a write that failed before its payload was stored
+    // has no record and nothing to commit.
+    if (!overlay_is_used(file) || (file.flags & kOverlaySerialized) == 0) {
       continue;
     }
-    const size_t needed = 4u + entry.tag_length + length;
-    if (used + needed + sizeof(uint32_t) > kJournalMaxEntryBytes) {
-      return false;
-    }
-    journal_buffer[used++] = exists ? kJournalOpWrite : kJournalOpErase;
-    journal_buffer[used++] = entry.tag_length;
-    std::memcpy(journal_buffer + used, tag, entry.tag_length);
-    used += entry.tag_length;
-    journal_buffer[used++] = static_cast<uint8_t>(length);
-    journal_buffer[used++] = static_cast<uint8_t>(length >> 8);
-    if (length != 0) std::memcpy(journal_buffer + used, data, length);
-    used += length;
-    ++record_count;
+    order[count++] = slot;
   }
-  JournalEntryHeader header{kJournalMagic, filesystem_generation,
-                            journal_sequence, record_count,
-                            static_cast<uint16_t>(
-                                used - sizeof(JournalEntryHeader))};
-  std::memcpy(journal_buffer, &header, sizeof(header));
-  const uint32_t crc = filesystem_crc32(journal_buffer, used);
-  std::memcpy(journal_buffer + used, &crc, sizeof(crc));
-  used += sizeof(crc);
-  const uint32_t padded = journal_padded_length(static_cast<uint32_t>(used));
-  if (journal_next + padded > journal_end) return false;
-  std::fill(journal_buffer + used, journal_buffer + padded, 0xff);
-  JournalWriteContext context{journal_next, padded, false};
-  const int status = flash_safe_execute(write_journal_entry, &context, 5000);
-  if (status != PICO_OK || !context.success ||
-      std::memcmp(filesystem_slot_data(journal_next), journal_buffer, used) !=
-          0) {
-    // The pages may be partly programmed: never append over them. The full
-    // snapshot that follows moves to the other slot.
+  std::sort(order, order + count, [](uint16_t left, uint16_t right) {
+    const OverlayFile &a = overlay[left];
+    const OverlayFile &b = overlay[right];
+    const bool a_live = overlay_has_record(a);
+    const bool b_live = overlay_has_record(b);
+    if (a_live != b_live) return !a_live;
+    if (a.tag_length != b.tag_length) {
+      return a_live ? a.tag_length < b.tag_length
+                    : a.tag_length > b.tag_length;
+    }
+    return left < right;
+  });
+  if (count == 0) return true;
+
+  JournalPacker sizing{true, journal_next, sizeof(JournalEntryHeader), 0,
+                       journal_sequence};
+  if (!pack_journal_group(sizing, order, count) ||
+      journal_next + sizing.total_padded > journal_end) {
+    return false;
+  }
+  JournalPacker writer{false, journal_next, sizeof(JournalEntryHeader), 0,
+                       journal_sequence};
+  if (!pack_journal_group(writer, order, count)) {
+    // Pages may be partly programmed or a group left unterminated: never
+    // append after them. The full snapshot that follows moves to the other
+    // slot.
     journal_next = 0;
     return false;
   }
-  journal_next += padded;
-  ++journal_sequence;
+  journal_next = writer.position;
+  journal_sequence = writer.sequence;
   ++apdu_stats.syncs_journaled;
-  apdu_stats.journal_bytes += padded;
+  apdu_stats.journal_bytes += writer.total_padded;
   return true;
 }
 
@@ -575,29 +678,37 @@ bool replay_journal() {
   uint32_t position = start;
   uint32_t sequence = 0;
   bool clean_tail = true;
-  while (position + FLASH_PAGE_SIZE <= end) {
-    const uint8_t *entry = filesystem_slot_data(position);
+  // Length of a CRC-valid entry at `at` with sequence `expected`, or 0.
+  // `last` reports whether it ends its group.
+  const auto valid_entry = [&](uint32_t at, uint32_t expected,
+                               bool *last) -> uint32_t {
+    if (at + FLASH_PAGE_SIZE > end) return 0;
+    const uint8_t *entry = filesystem_slot_data(at);
     JournalEntryHeader header{};
     std::memcpy(&header, entry, sizeof(header));
-    if (header.magic == 0xffffffffu) break;
     const uint32_t length = static_cast<uint32_t>(sizeof(header)) +
                             header.body_length + sizeof(uint32_t);
-    uint32_t stored_crc = 0;
-    if (header.magic != kJournalMagic ||
+    if ((header.magic != kJournalMagic &&
+         header.magic != kJournalContinuedMagic) ||
         header.generation != filesystem_generation ||
-        header.sequence != sequence || length > kJournalMaxEntryBytes ||
-        position + journal_padded_length(length) > end) {
-      clean_tail = false;
-      break;
+        header.sequence != expected || length > kJournalMaxEntryBytes ||
+        at + journal_padded_length(length) > end) {
+      return 0;
     }
+    uint32_t stored_crc = 0;
     std::memcpy(&stored_crc, entry + length - sizeof(uint32_t),
                 sizeof(stored_crc));
     if (filesystem_crc32(entry, length - sizeof(uint32_t)) != stored_crc) {
-      clean_tail = false;
-      break;
+      return 0;
     }
-    // Parse a RAM copy of the CRC-checked bytes.
-    std::memcpy(journal_buffer, entry, length);
+    *last = header.magic == kJournalMagic;
+    return length;
+  };
+  // Apply the records of one CRC-checked entry.
+  const auto apply_entry = [&](uint32_t at, uint32_t length) -> bool {
+    std::memcpy(journal_buffer, filesystem_slot_data(at), length);
+    JournalEntryHeader header{};
+    std::memcpy(&header, journal_buffer, sizeof(header));
     size_t cursor = sizeof(header);
     const size_t body_end = length - sizeof(uint32_t);
     for (uint16_t record = 0; record < header.record_count; ++record) {
@@ -626,9 +737,36 @@ bool replay_journal() {
       }
       cursor += data_length;
     }
-    if (cursor != body_end) return false;
-    position += journal_padded_length(length);
-    ++sequence;
+    return cursor == body_end;
+  };
+  while (position + FLASH_PAGE_SIZE <= end) {
+    uint32_t first_magic = 0;
+    std::memcpy(&first_magic, filesystem_slot_data(position),
+                sizeof(first_magic));
+    if (first_magic == 0xffffffffu) break;
+    // Find the end of this group before applying any of it: a group whose
+    // last entry is missing or invalid was torn and is not applied.
+    uint32_t group_end = position;
+    uint32_t group_sequence = sequence;
+    bool last = false;
+    while (!last) {
+      const uint32_t length = valid_entry(group_end, group_sequence, &last);
+      if (length == 0) break;
+      group_end += journal_padded_length(length);
+      ++group_sequence;
+    }
+    if (!last) {
+      clean_tail = false;
+      break;
+    }
+    for (uint32_t at = position; at < group_end;) {
+      bool ignored = false;
+      const uint32_t length = valid_entry(at, sequence, &ignored);
+      if (length == 0 || !apply_entry(at, length)) return false;
+      at += journal_padded_length(length);
+      ++sequence;
+    }
+    position = group_end;
   }
   // Appends program only erased pages: require the rest to be erased.
   for (uint32_t offset = position; clean_tail && offset < end; ++offset) {
@@ -2484,6 +2622,9 @@ uint8_t compact_deleted_overlay_records() {
   overlay_file_count = rebuilt_count;
   overlay_bytes_used = write_offset;
   overlay_dirty = true;
+  // Compaction keeps the logical content but renumbers slots and drops
+  // tombstones, so pending changes can no longer be journaled.
+  if (journal_dirty_count != 0) journal_untracked = true;
   tombstones_after_last_compaction = count_overlay_tombstones();
 #ifndef RP2350_FS_OVERLAY_TEST
   std::printf("CHOUPI:FS_COMPACT files=%u->%u bytes=%lu->%lu\r\n",
@@ -2513,9 +2654,34 @@ void reset_change_log() {
   change_log_count = 0;
   change_log_pool_used = 0;
   change_log_untracked = false;
+  if (journal_dirty_count != 0) {
+    std::fill(journal_dirty_slots,
+              journal_dirty_slots + sizeof(journal_dirty_slots), 0);
+    journal_dirty_count = 0;
+  }
+  journal_untracked = false;
 }
 
-void note_untracked_change() { change_log_untracked = true; }
+void note_untracked_change() {
+  change_log_untracked = true;
+  journal_untracked = true;
+}
+
+// Add an overlay slot to the set the next commit journals. Call after every
+// tracked overlay mutation, once the record's slot is known.
+void mark_journal_dirty(const OverlayFile *file) {
+  if (file == nullptr || file < overlay || file >= overlay + kMaxOverlayFiles) {
+    journal_untracked = true;
+    return;
+  }
+  const size_t slot = static_cast<size_t>(file - overlay);
+  uint8_t &bits = journal_dirty_slots[slot / 8];
+  const uint8_t bit = static_cast<uint8_t>(1u << (slot % 8));
+  if ((bits & bit) == 0) {
+    bits |= bit;
+    ++journal_dirty_count;
+  }
+}
 
 // Record a tag's committed value before its first mutation since the overlay
 // last matched flash. Call before every tracked overlay mutation.
@@ -2584,6 +2750,7 @@ uint8_t write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
     }
     std::memcpy(overlay_data(*file) + offset, data, length);
     overlay_dirty = true;
+    mark_journal_dirty(file);
     ++apdu_stats.writes;
     apdu_stats.write_bytes += length;
     return FS_STATUS_OK;
@@ -2610,6 +2777,7 @@ uint8_t write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
   }
   std::memcpy(overlay_data(*file) + offset, data, length);
   overlay_dirty = true;
+  mark_journal_dirty(file);
   ++apdu_stats.writes;
   apdu_stats.write_bytes += length;
   return FS_STATUS_OK;
@@ -2940,6 +3108,7 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
     return FS_STATUS_OUT_OF_FLASH;
   }
   overlay_dirty = true;
+  mark_journal_dirty(file);
   ++apdu_stats.writes;
   apdu_stats.write_bytes += length;
 #ifdef CHOUPI_DEBUG_CCID_APPLET
@@ -3041,6 +3210,7 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   file.size = 0;
   file.flags |= kOverlayHasRecord | kOverlayDeleted | kOverlaySerialized;
   overlay_dirty = true;
+  mark_journal_dirty(&file);
   ++apdu_stats.erases;
   return FS_STATUS_OK;
 }
@@ -3065,6 +3235,7 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
       return FS_STATUS_OUT_OF_FLASH;
     file->flags |= kOverlayHasRecord | kOverlayDeleted;
     overlay_dirty = true;
+    mark_journal_dirty(file);
     ++apdu_stats.erases;
     return FS_STATUS_OK;
   } else if (!overlay_has_record(*file)) {

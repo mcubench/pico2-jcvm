@@ -38,11 +38,13 @@ plus temporary counters, EC384 Signature replay
 
 - [x] **FLASH-01a** Record the Java Card atomicity model and write-minimisation
   rule in `AGENTS.md`.
-- [ ] **FLASH-01b** Commit large change sets to the journal as one atomic
-  multi-entry group instead of rewriting the 40 KB snapshot. The group is
-  required for the VM's own record consistency (coalesced change log), not
-  for applet atomicity. Target: first `B0E2` and prepare without a full
-  snapshot; snapshot only when the journal region is full.
+- [x] **FLASH-01b** Commit large change sets to the journal as one atomic
+  multi-entry group instead of rewriting the 40 KB snapshot. Done: prepare
+  1228 → 580 ms (5,888 B journaled), first `B0E2` 943 → 305 ms (2,048 B).
+- [ ] **FLASH-01e** The 16 KB journal fills after about two EC384 prepares and
+  then forces a 40 KB snapshot. Extend the journal to the rest of the slot
+  (~136 KB) and erase its 4 KB sectors on demand, so the snapshot itself
+  erases only its own sectors.
 - [ ] **FLASH-01c** Erase a batch of records without moving the arena tail and
   rescanning the 8,192-slot index per record (1.5 ms each).
 - [ ] **FLASH-01d** Cut steady deletion-pass work: avoid re-reconstructing

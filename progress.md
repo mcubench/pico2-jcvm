@@ -32413,3 +32413,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: prepare 1228 ms and first `B0E2` 943 ms are dominated by full snapshot rewrites (first `B0E2`: sync 669 ms, 40,960 B; deletion pass 239 ms of which 52 erases 80 ms = 1.5 ms each, `fs_next_tag` 65 ms over 4,395 calls). Steady `B0E2` 193 ms: deletion pass 134 ms = heap GC trace 41 ms + roots 6 ms + alias scans 20 ms + candidate scan 66 ms (persistent trace ~40 ms, tag scan ~25 ms); `fs_next_tag` 38 ms over 1,884 calls, `find_overlay` 6,489 calls.
 - Decision: earlier claim that the deletion scan costs ~85 ms per inventory scan was wrong; the heap traces dominate the steady pass and the snapshot rewrite dominates the first pass. Next FLASH-01b (journal large change sets).
 - Artifacts/logs: `artifacts/results/deletion-pass-profile-20261119/07E74C5D7A038DEC-run1/` (serial.log, apdu-timer.log)
+
+## 2026-11-19 Journal commits of any size as one atomic entry group 45
+
+- Step-Id: `20261119-2140-flash01b-journal-groups`
+- Task: FLASH-01b
+- When: '2026-11-19 21:27' - '2026-11-19 22:12'
+- Model: `claude-opus-5-5`
+- Change: `src/pico_filesystem.cpp`: a dirty-slot bitmap (1 KB) records every overlay slot changed since the last commit; the 64-entry/2 KB change log now only proves empty net changes (elision). A commit is journaled as one group of ≤2 KB entries (`JNL2` = more follow, `JNL1` = last); boot validates the whole group before applying any of it, and a torn group disables appends until the next snapshot. Records are emitted erasures first (longest tag first), then writes (shortest first). Compaction with pending changes, index repair and migration still force a full snapshot. The group exists for VM record consistency (a coalesced commit could otherwise leave a reference without its object), not for applet atomicity (AGENTS.md rule).
+- Validation: `./tools/test-rp2350-fs-overlay` TEST:SUMMARY fail=0, with new `journal_group_spans_entries_and_replays`, `journal_group_every_power_cut_is_atomic` (cut every 13th of the group's flash mutations, then a further commit), `journal_group_replays_parent_and_child_erasure`; two elision/torn-snapshot expectations updated (70-record commits are now journaled). `test-persistent-transaction`, `test-persistent-inventory`, `test-object-deletion-policy` pass. `./tools/build arm --profile max_crypto` rc=0, 0 warnings (UF2 SHA-256 `f14c7adc9c448828e152a4b5e07b2621f4b0ddf630516262326a19037e20f754`, mode=normal). `tools/cycle choupi` on 07E74C5D7A038DEC CYCLE:PASS, EC384 replay twice.
+- Result: prepare 1228 → 580 ms (sync 669 → 19 ms, 40,960 B erase+program → 5,888 B programmed); first `B0E2` 943 → 305 ms (2,048 B journaled in 8.6 ms); baselines 238–244 ms, ops 513–517 ms unchanged. Run 2: the 16 KB journal filled after ~16 KB of commits, so its first `B0E2` wrote a 40,960 B snapshot (938 ms).
+- Decision: next FLASH-01e (larger journal with on-demand sector erase).
+- Artifacts/logs: `artifacts/results/flash01b-journal-groups-20261119/07E74C5D7A038DEC/` (f1b-run1, f1b-run2, f1b-overlay.log)
