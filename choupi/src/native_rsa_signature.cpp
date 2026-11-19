@@ -60,6 +60,10 @@ std::shared_ptr<JC_Instance> rsaKeyInstance(const jref_t reference) {
 }
 
 std::shared_ptr<JC_Array> byteArray(JC_Instance &instance, uint16_t field) {
+  if (field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR ||
+      field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER ||
+      field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH)
+    return signatureBuffer(instance, field);
   const jref_t reference = instance.getField_Reference(field);
   if (reference.isNullPointer()) throw Exceptions::NullPointerException;
   auto array = Context::getActiveContext().getHeap().getArray(reference);
@@ -206,12 +210,13 @@ std::vector<unsigned char> bufferedData(JC_Instance &signature) {
 }
 
 void clearMessage(JC_Instance &signature) {
-  auto buffer = byteArray(signature,
+  auto buffer = signatureBufferIfAllocated(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
   const uint16_t countField =
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
   const jshort_t count = signature.getNativeSessionField_Short(countField);
-  if (count < 0 || static_cast<uint16_t>(count) > buffer->size())
+  if (count < 0 ||
+      static_cast<uint16_t>(count) > (buffer ? buffer->size() : 0))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   for (jshort_t i = 0; i < count; ++i)
     buffer->setByteEntry(static_cast<uint16_t>(i), 0);
@@ -754,9 +759,9 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
   signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
-  auto recoveryHash = byteArray(signature,
+  auto recoveryHash = signatureBufferIfAllocated(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
-  for (uint16_t i = 0; i < recoveryHash->size(); ++i)
+  for (uint16_t i = 0; recoveryHash && i < recoveryHash->size(); ++i)
     recoveryHash->setByteEntry(i, 0);
   signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE,

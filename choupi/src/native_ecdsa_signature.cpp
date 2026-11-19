@@ -201,9 +201,7 @@ std::vector<unsigned char> readMessage(JC_Instance &signature,
     throw Exceptions::ArrayIndexOutOfBoundsException;
   const uint16_t bufferField = ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER;
   const uint16_t countField = ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
-  const jref_t bufferRef = signature.getField_Reference(bufferField);
-  auto buffer = Context::getActiveContext().getHeap().getArray(bufferRef);
-  if (!buffer || buffer->getType() != JAVA_ARRAY_T_BYTE) throw Exceptions::ArrayStoreException;
+  auto buffer = signatureBuffer(signature, bufferField);
   const jshort_t oldLength = signature.getNativeSessionField_Short(countField);
   if (oldLength < 0 || static_cast<uint32_t>(oldLength) + length > 32767)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
@@ -334,12 +332,9 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
   signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
-  auto recoveryHash = Context::getActiveContext().getHeap().getArray(
-      signature.getField_Reference(
-          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH));
-  if (!recoveryHash || recoveryHash->getType() != JAVA_ARRAY_T_BYTE)
-    throw Exceptions::ArrayStoreException;
-  for (uint16_t i = 0; i < recoveryHash->size(); ++i)
+  auto recoveryHash = signatureBufferIfAllocated(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  for (uint16_t i = 0; recoveryHash && i < recoveryHash->size(); ++i)
     recoveryHash->setByteEntry(i, 0);
   signature.setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE,

@@ -150,8 +150,15 @@ std::shared_ptr<JC_Instance> signatureInstance(const jref_t reference) {
   return instance;
 }
 
+bool isSignatureBufferField(uint16_t field) {
+  return field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR ||
+         field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER ||
+         field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH;
+}
+
 std::shared_ptr<JC_Array> byteArray(JC_Instance &instance,
                                     const uint16_t field) {
+  if (isSignatureBufferField(field)) return signatureBuffer(instance, field);
   const jref_t reference = instance.getField_Reference(field);
   if (reference.isNullPointer()) throw Exceptions::NullPointerException;
   auto array = Context::getActiveContext().getHeap().getArray(reference);
@@ -731,18 +738,6 @@ jref_t createSignature(uint8_t algorithm, uint8_t digest, uint8_t cipher,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, jref_t());
-  instance->setField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR,
-      heap.addTransientArray(16, JAVA_ARRAY_T_BYTE,
-                             ClearEvent::CLEAR_ON_RESET));
-  instance->setField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER,
-      heap.addTransientArray(64, JAVA_ARRAY_T_BYTE,
-                             ClearEvent::CLEAR_ON_RESET));
-  instance->setField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH,
-      heap.addTransientArray(64, JAVA_ARRAY_T_BYTE,
-                             ClearEvent::CLEAR_ON_RESET));
   instance->setNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
   return reference;
@@ -836,12 +831,13 @@ void appendMessage(JC_Instance &signature,
 }
 
 void clearMessage(JC_Instance &signature) {
-  auto message = byteArray(signature,
+  auto message = signatureBufferIfAllocated(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
   const uint16_t countField =
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
   const jshort_t length = signature.getNativeSessionField_Short(countField);
-  if (length < 0 || static_cast<uint16_t>(length) > message->size())
+  if (length < 0 ||
+      static_cast<uint16_t>(length) > (message ? message->size() : 0))
     throw Exceptions::ArrayIndexOutOfBoundsException;
   for (jshort_t i = 0; i < length; ++i)
     if (message->getByteEntry(static_cast<uint16_t>(i)) != 0)
@@ -851,9 +847,9 @@ void clearMessage(JC_Instance &signature) {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE;
   if (signature.getNativeSessionField_Byte(recoveryStateField) != 0)
     signature.setNativeSessionField_Byte(recoveryStateField, 0);
-  auto recoveryHash = byteArray(signature,
+  auto recoveryHash = signatureBufferIfAllocated(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
-  for (uint16_t i = 0; i < recoveryHash->size(); ++i)
+  for (uint16_t i = 0; recoveryHash && i < recoveryHash->size(); ++i)
     if (recoveryHash->getByteEntry(i) != 0)
       recoveryHash->setByteEntry(i, 0);
 }
@@ -956,6 +952,31 @@ std::vector<unsigned char> runMac(
 }
 
 } // namespace
+
+std::shared_ptr<JC_Array> signatureBufferIfAllocated(JC_Instance &signature,
+                                                     uint16_t field) {
+  const jref_t reference = signature.getField_Reference(field);
+  if (reference.isNullPointer()) return nullptr;
+  auto array = Context::getActiveContext().getHeap().getArray(reference);
+  if (!array || array->getType() != JAVA_ARRAY_T_BYTE)
+    throw Exceptions::ArrayStoreException;
+  return array;
+}
+
+std::shared_ptr<JC_Array> signatureBuffer(JC_Instance &signature,
+                                          uint16_t field) {
+  if (auto existing = signatureBufferIfAllocated(signature, field))
+    return existing;
+  const uint16_t length = field == ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR ? 16 : 64;
+  Heap &heap = Context::getActiveContext().getHeap();
+  const jref_t reference =
+      heap.addTransientArray(length, JAVA_ARRAY_T_BYTE,
+                             ClearEvent::CLEAR_ON_RESET);
+  signature.setField_Reference(field, reference);
+  auto array = heap.getArray(reference);
+  if (!array) throw Exceptions::RuntimeException;
+  return array;
+}
 
 bool signatureHasInitialDigest(JC_Instance &signature) {
   return static_cast<uint8_t>(signature.getNativeSessionField_Byte(
