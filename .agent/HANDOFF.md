@@ -3,7 +3,7 @@
 Updated: 2026-11-20 04:21 CET.
 
 ## Current state
-- **Live:** option-1 rerun on 07E7 with the a1639b68 image (smaller handles + 16 KB Java allocation reserve, OOM T9), started 04:21 CET 2026-11-20, bound 28,800 s; `artifacts/results/option1-a1639b68-20261120T0320Z/07E74C5D7A038DEC/`. Do not restart pcscd or use this reader until it ends. The previous option-1 run (a266b836) ended in Out of memory at RSA-3072 CRT (progress `20261120-0408-option1-a266b836-oom`).
+- **No live run.** Option-1 rerun on 07E7 (a1639b68) ended 14:23 at the 8 h bound in RSA-CRT Signature, no OOM/fault (progress `20261120-1426-option1-a1639b68`). 07E7 is free; next: smoke-test the `d7e90a18` package UF2 and run the ONESHOT-01 hardware checks there.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work

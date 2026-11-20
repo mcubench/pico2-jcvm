@@ -32666,3 +32666,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `6a49614f43242bfd6ad546381a7fcfa157abd27a165bb2e787f02535002ec1ff` (2,966,016 B), ZIP SHA-256 `4119c1028836f44b7d6000ed12758e6774ac08050ffe8ee05bcfa43502da070e` (18,235,064 B), end 0x10069f18, headroom 614,632 B, CPLC `0xD7E90A187DA2FB94`.
 - Decision: smoke-test this UF2 on 07E7 after the option-1 run together with the ONESHOT-01 hardware checks.
 - Artifacts/logs: `artifacts/results/windows-package-d7e90a18/`
+
+## 2026-11-20 Option-1 rerun on the a1639b68 image: no OOM through RSA-3072/4096 CRT, stopped by the 8 h bound
+
+- Step-Id: `20261120-1426-option1-a1639b68`
+- Task: OOM T9 end-to-end check / MEM-01 T8 exploratory evidence
+- When: '2026-11-20 04:21' - '2026-11-20 14:23' (campaign, checkpointed; recording 14:23–14:26). Duration in title omitted: the campaign ran unattended.
+- Model: `claude-opus-5-5`
+- Change: none to source.
+- Validation: 07E74C5D7A038DEC wiped with the a1639b68 empty-card UF2 (`db90e281…`), unchanged 1.8.5/jc305 CAP, client 1.8.5 (`b6a753be…`), menu 2 → PERFORMANCE TEST → 1. At 06:20 a user-installed VPCD driver restarted pcscd (`SCARD_F_COMM_ERROR`, no firmware fault); recovered by `tools/cycle choupi` of the same build (storage kept) and resumed without `-fresh` from the 375-entry measured list at 06:30; the resumed client hit the runner's 28,800 s bound (`JCALGTEST_WATCHDOG:TIMEOUT`, rc=124) at 14:23 while in RSA-CRT Signature tests.
+- Result: 375 + 822 methods measured, CSV 8,145 lines; 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL in both serial captures. At the old failure point (405 arrays / 144 instances live) free heap at RSA `B043` start was 61,416 B (old image ~11.6 KB); lowest `RSA_MEMORY min_free` 51,008 B. HEADROOM:PASS (first segment peak 40.78 %, resumed segment 1,774 files / 72,879 B = 74.14 %). Full snapshots: 9 of 5,050 `FS_APDU` and 26 of 7,977. Resumed segment: 4 deletion passes `pending=1`. The suite did not complete within 8 h: the reflash after the pcscd restart cost about 10 minutes and RSA-CRT signature tests are slow; a complete option 1 needs a longer bound.
+- Decision: the option-1 OOM is fixed on the physical token for the workload that failed twice. Remaining for T8: an uninterrupted option-1 run with a longer bound (e.g. 12 h) on a wiped card.
+- Artifacts/logs: `artifacts/results/option1-a1639b68-20261120T0320Z/07E74C5D7A038DEC/` (`client.log`, `client-resume*.log`, `serial.log`, `serial-resume.log`, `client-output/`)
