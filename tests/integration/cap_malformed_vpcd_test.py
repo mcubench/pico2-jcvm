@@ -275,7 +275,8 @@ def build_malformed_load_code(mutation: str) -> Path:
     mutable = bytearray(ordered)
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
-    if mutation == "external-superclass-import-token-out-of-range":
+    if mutation in ("external-superclass-import-token-out-of-range",
+                    "superclass-self-cycle"):
         class_data = parts["Class"][3:]
         class_offset = 0
         target_superclass = None
@@ -306,7 +307,11 @@ def build_malformed_load_code(mutation: str) -> Path:
             sum(len(parts[name]) for name, _ in COMPONENTS[:5])
             + 3 + class_offset + 1
         )
-        replacement = b"\xff\x00"  # external package token 127, class token 0
+        if mutation == "superclass-self-cycle":
+            # RV-20261106-07: the applet class names itself as superclass.
+            replacement = class_offset.to_bytes(2, "big")
+        else:
+            replacement = b"\xff\x00"  # external package token 127, class token 0
     elif mutation == "unknown-component-tag":
         mutation_index = len(mutable)
         replacement = bytes((12, 0, 1, 0))
@@ -745,6 +750,7 @@ def main() -> int:
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",
                                 "switch-into-operand",
+                                "superclass-self-cycle",
                                 *RECEIVER_CHECK_OPCODES),
         default="impdep1",
     )
@@ -799,7 +805,10 @@ def main() -> int:
     if args.mutation == "load-header-aid-mismatch":
         commands.extend(("--load-package-aid-override",
                          "4A43416C6754657375"))
-    if args.mutation not in load_rejection_mutations:
+    install_rejection_mutations = ("superclass-self-cycle",)
+    if args.mutation in install_rejection_mutations:
+        log.unlink(missing_ok=True)
+    if args.mutation not in load_rejection_mutations + install_rejection_mutations:
         commands.extend((
             "--expect-select-status", select_status,
             "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
@@ -814,7 +823,7 @@ def main() -> int:
             "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
         ))
     run_kwargs = {"cwd": ROOT, "check": False}
-    if args.mutation in load_rejection_mutations:
+    if args.mutation in load_rejection_mutations + install_rejection_mutations:
         # The inner generic VPCD runner correctly reports that no applet can
         # start after LOAD rejection. Capture that expected negative result so
         # the outer acceptance check is the only PASS/FAIL summary shown.
@@ -823,6 +832,21 @@ def main() -> int:
     result = subprocess.run(
         [str(ROOT / "tools/test-pc-vpcd-applet"), *commands], **run_kwargs
     )
+    if args.mutation in install_rejection_mutations:
+        # RV-20261106-07: every superclass walk is bounded, so a cyclic
+        # hierarchy must make INSTALL fail with SecurityException (6A80)
+        # instead of keeping the interpreter in one handler.
+        run_log = log.read_text(encoding="utf-8", errors="replace")
+        if not re.search(r"PC applet INSTALL failed stage=\d+ sw=6A80 vm=6F00 "
+                         r"exception=29\b", run_log):
+            if result.stdout:
+                print(result.stdout, file=sys.stderr, end="")
+            print(f"HIERARCHY_CYCLE:FAIL mutation={args.mutation}",
+                  file=sys.stderr)
+            return 1
+        print(f"HIERARCHY_CYCLE:PASS mutation={args.mutation} "
+              "install_rejected sw=6A80 exception=29")
+        return 0
     if args.mutation in load_rejection_mutations:
         run_log = log.read_text(encoding="utf-8", errors="replace")
         load_rejected = "ERROR: PC CAP LOAD data rejected" in run_log

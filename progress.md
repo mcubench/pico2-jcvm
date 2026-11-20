@@ -32858,3 +32858,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: RV-20261106-06 closed with crafted-CAP evidence.
 - Decision: remaining T4 question is mbedTLS allocation failure (still a panic via the wrapped malloc).
 - Artifacts/logs: `artifacts/logs/rv28-malformed-{getfield-rom,getfield-unrelated,putfield-unrelated}-receiver-vpcd-20261106.log`
+
+## 2026-11-20 RV-20261106-07 cyclic superclass fixture 3
+
+- Step-Id: `20261120-2125-rv07-hierarchy-cycle-fixture`
+- Task: RV-20261106-07
+- When: '2026-11-20 21:24 CET' - '2026-11-20 21:25 CET'
+- Model: `claude-opus-5-5`
+- Change: Source audit of all `super_class_ref` walks (jni.cpp exception classification and RMI, jc_class.cpp interface cast/method lookup/instance size, bc_invoke.cpp, bc_object_field.cpp): each is bounded (64 or 256) and fails closed. New `superclass-self-cycle` mutation in `tests/integration/cap_malformed_vpcd_test.py` rewrites the applet class's superclass reference to its own Class offset in a build copy of the unchanged CAP; the harness now expects `PC applet INSTALL failed ... sw=6A80 vm=6F00 exception=29` for install-rejection mutations.
+- Validation: `./tools/test-cap-malformed-vpcd --mutation superclass-self-cycle` `HIERARCHY_CYCLE:PASS` (install rejected at `new`, opcode 8F, run about 1 s); impdep1, external-superclass-import-token-out-of-range and invokespecial-global-receiver still rc=0.
+- Result: a cyclic hierarchy cannot hang the interpreter; the package is still accepted at LOAD.
+- Decision: LOAD-time cycle rejection belongs to CAPIN-07; keep RV-07 open for two-class cycles and physical timing. Correction: the previous record (`20261120-2128-rv06-field-receiver-fixtures`) ended at 21:24 per `date`, not 21:29.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-superclass-self-cycle-vpcd-20261106.log`
