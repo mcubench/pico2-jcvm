@@ -510,7 +510,10 @@ task:
     from an uploaded package on a field whose declaring class is a ROM class
     throws SecurityException; this also covers global instances (ROM classes).
     No crafted-CAP fixture yet (needs a hand-built InstanceFieldref into a ROM
-    class). Items 2–4 open.
+    class). Item 3 done 2026-11-20 (`20261120-1517-capin05-invokespecial`): from
+    uploaded code, invokespecial on a global instance or array throws
+    SecurityException, and an uploaded-package method needs an uploaded-class
+    receiver; no crafted-CAP fixture yet. Items 2 and 4 open.
   1. `getfield`/`putfield` (all variants) from a dynamic package on a global
      or JCRE-owned instance throws `SecurityException`.
   2. Load-time: reject external InstanceFieldrefs into ROM packages unless a

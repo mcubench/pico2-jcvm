@@ -731,6 +731,25 @@ void Bytecodes::bc_invokespecial() {
   if (context.isStaleShareableProxy(receiver)) {
     throw Exceptions::SecurityException;
   }
+  // CAPIN-05 (3): uploaded code may not run constructors or private/super
+  // methods on JCRE-owned objects (global instances, arrays), and a method of
+  // an uploaded package may only run on an instance of an uploaded class.
+  // Constructing a runtime class (e.g. new AID(...)) stays allowed: its
+  // receiver is the applet's own freshly created object.
+  if (FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID())) {
+    if (receiver.isGlobalInstance() || receiver.isArray()) {
+      throw Exceptions::SecurityException;
+    }
+    if (FlashMemory_Handler::isDynamicPackageID(
+            method_handler.getPackage().getPackageID())) {
+      const auto receiver_instance = context.getHeap().getInstance(receiver);
+      if (!receiver_instance ||
+          !FlashMemory_Handler::isDynamicPackageID(
+              receiver_instance->getPackageID())) {
+        throw Exceptions::SecurityException;
+      }
+    }
+  }
 
   // Calling the method after validating its receiver.
   method_handler.callVirtualMethod(method_offset);

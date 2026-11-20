@@ -32738,3 +32738,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: client `Testing complete`, 1,916 s, 0 `ERROR` lines, 0 reconnects; CSV 2,428 lines (SHA-256 `3e68172bb7742f3738da497f4412bcc4d548080cd7b3c5433f0f50cb3113ed67`). Serial: 5,096 `FS_APDU`, 8 full snapshots, 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL, 0 `pending=1`; HEADROOM:PASS 457 samples, peak 654 files / 13,201 B (13.43 %).
 - Decision: T8 option 2 accepted. T8 option 1 (07E7, 12 h bound) is still running; T10 headroom is covered for option 2.
 - Artifacts/logs: `artifacts/results/t8-option2-d7e90a18-20261120T1331Z/F42DD9D07D6D2B07/`
+
+## 2026-11-20 CAPIN-05 (3): invokespecial receiver checks for uploaded code 22
+
+- Step-Id: `20261120-1517-capin05-invokespecial`
+- Task: CAPIN-05 item 3
+- When: '2026-11-20 14:55' - '2026-11-20 15:17'
+- Model: `claude-opus-5-5`
+- Change: `bc_invokespecial` (after the existing proxy checks): when the executing package is an uploaded package, a global-instance or array receiver throws SecurityException, and if the resolved method belongs to an uploaded package the receiver must be an instance of an uploaded-package class. Constructing a runtime class (`new AID(...)`) keeps working because the receiver is the applet's own new object.
+- Validation: PC build; `test-jcsystem-transaction-applet` 113/113; `test-sio-cross-aid-vpcd` 59 PASS; `test-rmi-client-vpcd` 18/0; `test-rmi-arrays-vpcd` 45 PASS; `test-vpcd-multipackage` 45 PASS; `test-pc-vpcd-applet` 32/0; `test-same-cap-siblings` 6/0; `test-cap-malformed-vpcd` 7/0; `test-dup-x-vpcd` PASS; `test-asymm-crypto-vpcd` 109 PASS; JCAlgTest `ALG_SUPPORT_BASIC` over VPCD PASS on retry (first attempt hit the known GPPro INSTALL flake with an empty log). `test-symm-crypto-vpcd` did not run: the host Python lacks `cryptography.hazmat.decrepit` (environment, unrelated). ARM max_crypto rc=0, 0 C/C++ warnings.
+- Result: no regression in the suites; crafted misuse is refused.
+- Decision: CAPIN-05 items 2 and 4 and crafted-CAP fixtures for items 1 and 3 remain.
+- Artifacts/logs: scratch logs only (suite logs under `artifacts/logs/`)
