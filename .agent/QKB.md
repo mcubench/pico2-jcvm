@@ -1754,3 +1754,14 @@ list? (y/n)". The VPCD readers are now `Virtual PCD 00 00` and `00 01`
 **Viable fix:** also set `JCALGTEST_RP2350_OVERLAY=1` (rebuilds
 `build/choupi-pc-rp2350-overlay` from the current tree). Fixed by TOOL-VPCD-01: deletion runs now
 default to the overlay and refuse `JCALGTEST_RP2350_OVERLAY=0`.
+
+## GPPro with an empty reader name reaches another token (2026-11-20)
+
+A reader variable filled from `tools/list-readers | grep -o "...(<CHIPID>) .."`
+was empty because the token had not yet re-enumerated after `tools/flash`.
+`gp --reader=""` then still ran `--list` against another attached token that
+was in a live JCAlgTest campaign (SELECT ISD + INITIALIZE UPDATE), deselecting
+its applet; every later campaign APDU returned `6999`. **Viable fix:** poll
+`tools/list-readers` until the exact `(<CHIPID>)` name appears (bounded loop)
+and abort (`[ -n "$R" ] || exit`) before any GPPro/ApduTimer call; never pass
+an unchecked variable as `--reader`.

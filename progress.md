@@ -32750,3 +32750,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: no regression in the suites; crafted misuse is refused.
 - Decision: CAPIN-05 items 2 and 4 and crafted-CAP fixtures for items 1 and 3 remain.
 - Artifacts/logs: scratch logs only (suite logs under `artifacts/logs/`)
+
+## 2026-11-20 CAPIN-01 physical check passes; T8 option-1 run invalidated by my GPPro mistake and restarted
+
+- Step-Id: `20261120-1532-capin01-physical-t8-incident`
+- Task: CAPIN-01 physical validation; MEM-01 T8 option 1
+- When: '2026-11-20 15:17' - '2026-11-20 15:32'
+- Model: `claude-opus-5-5`
+- Change: none to source. Test CAPs `build/capin01-physical/jcalgtest185-missing-{RefLocation,Import,StaticField}.cap` = unchanged 1.8.5/jc305 CAP with one component removed (SHA-256 `a42d6388…`, `74f6dd8b…`, `5c4b765c…`).
+- Validation: F42DD9D07D6D2B07 wiped with the d7e90a18 empty-card UF2. GPPro `--load` of each malformed CAP: final LOAD `0x6A80`, GPPro rc=1, no package in the following `--list`. Control: unchanged CAP `--install` rc=0, applet SELECTABLE, SELECT `9000`; serial has no PANIC/FAULT.
+- Result: CAPIN-01 required-component rejection holds on hardware with the current image. **Incident:** my first attempt ran with an empty reader variable (F42D had not re-enumerated into PC/SC yet). GPPro then connected to 07E74C5D7A038DEC, the live T8 option-1 run (07E7 serial: `00A4040000`, `8050000008` mid-campaign). The JCAlgTest applet was deselected; from method 278 (RSA-2048 OAEP `doFinal`) every APDU returned `6999` and the client finished with 1,623 `CANT_BE_MEASURED` in 3,391 s. That run (`artifacts/results/t8-option1-d7e90a18-20261120T1331Z/07E74C5D7A038DEC/`) is invalid as T8 evidence (its first 277 methods were clean). The GPPro loads themselves did not reach any card ("Specify reader").
+- Decision: T8 option 1 restarted on a freshly wiped 07E7 at 14:30 UTC (`artifacts/results/t8-option1-rerun-d7e90a18-20261120T1430Z/07E74C5D7A038DEC/`, 12 h bound). Lesson in QKB: never run GPPro/APDU tools with a reader variable that can be empty. Corrections: the end times of `20261120-1515-t8-option2-pass` (15:15) and `20261120-1517-capin05-invokespecial` (15:17) were written before checking the clock; the clock read 15:14 at both commits.
+- Artifacts/logs: `artifacts/results/capin01-physical-d7e90a18-20261120T1427Z/F42DD9D07D6D2B07/`

@@ -3,7 +3,7 @@
 Updated: 2026-11-20 04:21 CET.
 
 ## Current state
-- **Live (MEM-01 T8 acceptance, started 14:31 CET 2026-11-20):** option 1 on 07E7 (bound 12 h) in `artifacts/results/t8-option1-d7e90a18-20261120T1331Z/07E74C5D7A038DEC/` (live); option 2 on F42D PASSED 15:03 (`20261120-1515-t8-option2-pass`), F42D is free; both wiped with the d7e90a18 empty-card UF2. Do not restart pcscd, install drivers or use these readers until both end.
+- **Live:** MEM-01 T8 option-1 RERUN on 07E7 (12 h bound, started 15:30 CET 2026-11-20) in `artifacts/results/t8-option1-rerun-d7e90a18-20261120T1430Z/07E74C5D7A038DEC/`; the first option-1 run was invalidated by a GPPro mistake (progress `20261120-1532-capin01-physical-t8-incident`). Option 2 passed on F42D. Do not touch 07E7 or pcscd until it ends; F42D is free (JCAlgTest installed).
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work
