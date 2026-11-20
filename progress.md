@@ -32690,3 +32690,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: OneShot and InitializedMessageDigest behave on the token as on the emulator and keep all their state in RAM (no flash writes). Note: a mistyped loop first sent probe cases 96–99/103/104 (harmless test cases on this test card); the reader name changed (`01 00` ↔ `00 00`) during the session, so exact names must be re-read after any re-enumeration.
 - Decision: ONESHOT-01 remaining: cross-context (SIO) test. The d7e90a18 package is smoke-tested.
 - Artifacts/logs: `artifacts/results/windows-package-smoke-d7e90a18-20261120T1324Z/07E74C5D7A038DEC/` (`serial.log`, `probe-cases.txt`, install logs)
+
+## 2026-11-20 Bind OneShot ownership to the caller's applet package; SIO dispatch anomaly found 22
+
+- Step-Id: `20261120-1500-oneshot-owner-package`
+- Task: ONESHOT-01 (b) cross-context check
+- When: '2026-11-20 14:37' - '2026-11-20 14:59'
+- Model: `claude-opus-5-5`
+- Change: OneShot ownership is now (VM `Context`, applet package of the nearest applet frame) via new `Stack::getNearestPackageID()`: `bc_invoke.cpp` runs a shareable-interface call in the same VM `Context` when client and server share it, so the Context pointer alone does not separate Java Card firewall contexts. Attempted test (reverted, not committed): `Probe.inspectForeignOneShot(Object)` appended to the SIO contract, server calls `getAlgorithm()` on the client's `MessageDigest.OneShot`. The call never reached the OneShot code: the client invoked interface token 1, which the server mapped to `isAppletActiveDuringSio` (returned its `0x6A4C`). Recorded as TODO SIO-DISPATCH-01. Also started the MEM-01 T8 acceptance runs (see HANDOFF): option 1 on 07E7 (12 h bound), option 2 on F42D (3 h), both on the d7e90a18 empty-card image.
+- Validation: `tools/test-sio-cross-aid-vpcd` (original fixture) 58 PASS, `tools/test-jcsystem-transaction-applet` 113/113 on the rebuilt PC emulator; ARM max_crypto rc=0, no warnings.
+- Result: ownership check covers same-Context shareable calls by construction; the cross-context behaviour itself is still untested because of SIO-DISPATCH-01.
+- Decision: investigate SIO-DISPATCH-01 next (it may affect any shareable interface with many methods). Correction: the previous record's end time 14:36 was right (UTC clock 13:36); my in-session note calling it wrong was mistaken.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261120T133724Z.log` (trace build, failing attempt)

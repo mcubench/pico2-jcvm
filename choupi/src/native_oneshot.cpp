@@ -27,6 +27,7 @@
 #include "heap.hpp"
 #include "javacard-rom-metadata.h"
 #include "javacard-support.h"
+#include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_export.hpp"
 #include "native_crypto_exception.hpp"
 
@@ -68,10 +69,31 @@ struct Slot {
   jref_t instance;  // runtime-wide temporary global instance, created once
   jref_t delegate;  // volatile object in the owner's heap, null when closed
   Context *owner = nullptr;
+  // Java Card firewall context of the opener: the applet package of the
+  // nearest applet frame. A shareable-interface call may run the server in
+  // the same VM Context, so the Context pointer alone is not enough.
+  jpackage_ID_t owner_package = 0xff;
   bool open = false;
 };
 
 std::array<Slot, kKinds * kSlotsPerKind> slots{};
+
+bool isAppletPackage(const jpackage_ID_t package) {
+  return FlashMemory_Handler::isDynamicPackageID(package);
+}
+
+jpackage_ID_t callerPackage(Context &context) {
+  jpackage_ID_t package = 0xff;
+  if (!context.getStack().getNearestPackageID(isAppletPackage, package)) {
+    package = 0xff; // runtime-only call chain
+  }
+  return package;
+}
+
+bool ownedByCaller(const Slot &slot) {
+  Context &context = Context::getActiveContext();
+  return slot.owner == &context && slot.owner_package == callerPackage(context);
+}
 
 uint16_t classOffset(const jpackage_ID_t package, const uint8_t token) {
   const uint16_t offset =
@@ -122,6 +144,7 @@ void releaseSlot(Slot &slot) noexcept {
   }
   slot.delegate = jref_t();
   slot.owner = nullptr;
+  slot.owner_package = 0xff;
   slot.open = false;
 }
 
@@ -140,9 +163,7 @@ Slot &slotFor(const jref_t reference) {
 Slot &checkedOpenSlot(const jref_t reference) {
   Slot &slot = slotFor(reference);
   if (!slot.open) throwCryptoException(CryptoExceptionReason::IllegalUse);
-  if (slot.owner != &Context::getActiveContext()) {
-    throw Exceptions::SecurityException;
-  }
+  if (!ownedByCaller(slot)) throw Exceptions::SecurityException;
   return slot;
 }
 
@@ -218,6 +239,7 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotOpen(
   }
   free_slot->delegate = delegate;
   free_slot->owner = &context;
+  free_slot->owner_package = callerPackage(context);
   free_slot->open = true;
   return free_slot->instance;
 }
@@ -231,9 +253,7 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotClose(
     const jref_t oneShot) {
   Slot &slot = slotFor(oneShot);
   if (!slot.open) return; // closing again does nothing
-  if (slot.owner != &Context::getActiveContext()) {
-    throw Exceptions::SecurityException;
-  }
+  if (!ownedByCaller(slot)) throw Exceptions::SecurityException;
   releaseSlot(slot);
 }
 

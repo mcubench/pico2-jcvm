@@ -990,4 +990,15 @@ bool Stack::getCurrentPackageID(jpackage_ID_t &package_id) const noexcept {
   return true;
 }
 
+bool Stack::getNearestPackageID(bool (*accept)(jpackage_ID_t),
+                                jpackage_ID_t &package_id) const noexcept {
+  for (const auto &frame : this->frames) {
+    if (accept(frame.getPackageID())) {
+      package_id = frame.getPackageID();
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace jcvm
