@@ -160,7 +160,16 @@ RECEIVER_CHECK_OPCODES = {
     "invokespecial-global-receiver": 0x8C,
     "invokevirtual-receiver-mismatch": 0x8B,
     "invokeinterface-array-receiver": 0x8E,
+    # RV-20261106-06: field receivers must be the declaring class or a
+    # subclass, for every get/put encoding.
+    "getfield-rom-receiver": 0x85,
+    "getfield-unrelated-receiver": 0x85,
+    "putfield-unrelated-receiver": 0x89,
 }
+
+# Internal InstanceFieldref (CP 6): a short field, token 2, of JCAlgTest class
+# offset 0x00C6, which is unrelated to the applet class (offset 0x0094).
+UNRELATED_SHORT_FIELD = bytes((0x02, 0x00, 0xC6, 0x02))
 
 
 def build_malformed_load_code(mutation: str) -> Path:
@@ -677,6 +686,22 @@ def build_malformed_load_code(mutation: str) -> Path:
         mutation_index = code_index
         replacement = (bytes((0x10, 0x04, 0x90, 0x0B, 0x8E, 0x01)) +
                        cp_index.to_bytes(2, "big") + bytes((0x01,)))
+    elif mutation in ("getfield-rom-receiver", "getfield-unrelated-receiver",
+                      "putfield-unrelated-receiver"):
+        cp_index = constant_pool_index(parts["ConstantPool"],
+                                       UNRELATED_SHORT_FIELD)
+        if cp_index > 0xFF:
+            raise ValueError("short-form field fixture needs a one-byte CP index")
+        mutation_index = code_index
+        if mutation == "getfield-rom-receiver":
+            # aload_1 (APDU object, a ROM class); getfield_s
+            replacement = bytes((0x19, 0x85, cp_index))
+        elif mutation == "getfield-unrelated-receiver":
+            # aload_0 (the applet); getfield_s of an unrelated class's field
+            replacement = bytes((0x18, 0x85, cp_index))
+        else:
+            # aload_0; sconst_0; putfield_s of an unrelated class's field
+            replacement = bytes((0x18, 0x03, 0x89, cp_index))
     else:
         raise ValueError(f"unsupported mutation: {mutation}")
     if mutation in RECEIVER_CHECK_OPCODES and process_length < len(replacement):

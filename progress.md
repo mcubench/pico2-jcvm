@@ -32846,3 +32846,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: CAPIN-05 item 3 now covers per-context JCRE-owned objects; CAPIN-06 receiver checks have crafted-CAP evidence.
 - Decision: after the campaign, restart pcscd and run the three pcscd-dependent VPCD suites against this change; remaining CAPIN-06 work is the loader mirror and a nargs-mismatch fixture.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-invoke*-vpcd-20261106.log` (harness fixed name)
+
+## 2026-11-20 RV-20261106-06 field receiver fixtures; MEM-01 T4 allocation audit 7
+
+- Step-Id: `20261120-2128-rv06-field-receiver-fixtures`
+- Task: RV-20261106-06, MEM-01 T4
+- When: '2026-11-20 21:22 CET' - '2026-11-20 21:29 CET'
+- Model: `claude-opus-5-5`
+- Change: Three more process()-start mutations in `tests/integration/cap_malformed_vpcd_test.py`, using internal InstanceFieldref CP 6 (short field, token 2, of JCAlgTest class 0x00C6, unrelated to the applet class 0x0094; kind taken from the Descriptor so the declared-kind check passes): `getfield-rom-receiver` (`aload_1; getfield_s`), `getfield-unrelated-receiver` (`aload_0; getfield_s`) and `putfield-unrelated-receiver` (`aload_0; sconst_0; putfield_s`). Source check: all 24 field bytecodes call `resolveInstanceFieldToken`, which enforces receiver assignability. TODO also records the MEM-01 T4 source audit: native crypto allocates Java arrays only in `getInstance`/`init` workspaces (transient, reused when size and clear event match); `doFinalRsaCipher` uses a temporary `std::vector` only, so no per-call JC array allocation remains.
+- Validation: each new mutation `RECEIVER_CHECK:PASS` with `VPCD:APPLET_PROCESS status=6F00 exception=29 opcode=85/85/89` and the harness' manager-recovery APDUs 7/7. No VM source changed in this step.
+- Result: RV-20261106-06 closed with crafted-CAP evidence.
+- Decision: remaining T4 question is mbedTLS allocation failure (still a panic via the wrapped malloc).
+- Artifacts/logs: `artifacts/logs/rv28-malformed-{getfield-rom,getfield-unrelated,putfield-unrelated}-receiver-vpcd-20261106.log`
