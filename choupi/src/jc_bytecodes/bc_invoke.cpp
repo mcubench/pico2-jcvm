@@ -480,6 +480,39 @@ void Bytecodes::bc_invokevirtual() {
   if (context.isStaleShareableProxy(receiver)) {
     throw Exceptions::SecurityException;
   }
+  // CAPIN-06: for code from an uploaded package, the receiver must be an
+  // instance of the method reference's class (or a subclass); an array may
+  // only receive methods of Object. Without this, a crafted CAP could run a
+  // method of one class on an object of an unrelated class.
+  if (FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID())) {
+    const auto declared_class =
+        cp_handler.classref2class(virtual_method_ref_info.class_ref);
+    if (receiver.isArray()) {
+      if (!declared_class.second->isObjectClass()) {
+        throw Exceptions::SecurityException;
+      }
+    } else {
+      const auto receiver_instance = context.getHeap().getInstance(receiver);
+      ConstantPool_Handler receiver_cp(
+          Package(receiver_instance->getPackageID()));
+      auto receiver_class = receiver_cp.classref2class(
+          receiver_cp.getClassRefFromClassIndex(
+              receiver_instance->getClassIndex()));
+      bool assignable = false;
+      for (size_t depth = 0; depth < 256; ++depth) {
+        if (receiver_class.first == declared_class.first &&
+            receiver_class.second == declared_class.second) {
+          assignable = true;
+          break;
+        }
+        if (receiver_class.second->isObjectClass()) break;
+        ConstantPool_Handler superclass_cp(receiver_class.first);
+        receiver_class = superclass_cp.classref2class(
+            receiver_class.second->super_class_ref);
+      }
+      if (!assignable) throw Exceptions::SecurityException;
+    }
+  }
 
   const auto method_offset = [&]() {
     if (receiver.isArray()) {

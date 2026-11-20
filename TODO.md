@@ -534,7 +534,10 @@ task:
 ### CAPIN-06
 
 - [ ] **P1: Check the receiver in virtual and interface dispatch.** Finding
-  A4 (pass-reported; reproduce first). `invokevirtual`: receiver assignable to
+  A4 (pass-reported; reproduce first). 2026-11-20 (`20261120-1635-capin06-invokevirtual`):
+  invokevirtual from uploaded code now requires the receiver to be an instance
+  of the reference's class or a subclass (arrays only for Object); remaining:
+  invokeinterface nargs/array checks, loader mirror, crafted-CAP fixtures. `invokevirtual`: receiver assignable to
   the reference's class (arrays only for `Object`); package tokens resolve only
   while the class's package equals the referencing package.
   `invokeinterface`: operand `nargs` equals the target header `nargs`; reject

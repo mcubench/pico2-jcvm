@@ -32774,3 +32774,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: no legitimate CAP in the suites references ROM instance fields; crafted ones are refused at install.
 - Decision: CAPIN-05 code complete; crafted-CAP fixtures for items 1–3 remain (TODO).
 - Artifacts/logs: suite logs under `artifacts/logs/`
+
+## 2026-11-20 CAPIN-06: invokevirtual receiver must be assignable to the referenced class 17
+
+- Step-Id: `20261120-1635-capin06-invokevirtual`
+- Task: CAPIN-06 (invokevirtual part)
+- When: '2026-11-20 16:18' - '2026-11-20 16:35'
+- Model: `claude-opus-5-5`
+- Change: `bc_invokevirtual` (after the proxy checks): for code from an uploaded package, an array receiver is accepted only when the method reference names `Object`; an instance receiver must be the referenced class or a subclass (superclass walk across packages, as in `resolveInstanceFieldToken`, depth-bounded), else SecurityException.
+- Validation: PC build; `test-jcsystem-transaction-applet` 113/113; `test-sio-cross-aid-vpcd` 60 PASS; `test-rmi-client-vpcd`, `test-rmi-arrays-vpcd`, `test-vpcd-multipackage`, `test-pc-vpcd-applet`, `test-cap-malformed-vpcd`, `test-asymm-crypto-vpcd`, `test-same-cap-siblings`, `test-dup-x-vpcd`, `test-hmac-vpcd`, `test-cipher-lifecycle-vpcd` all rc=0 with 0 FAIL; JCAlgTest `ALG_SUPPORT_BASIC` over VPCD PASS. ARM max_crypto rc=0, 0 C/C++ warnings.
+- Result: no legitimate dispatch rejected by the suites.
+- Decision: next the invokeinterface checks (array receivers, nargs equality).
+- Artifacts/logs: suite logs under `artifacts/logs/`
