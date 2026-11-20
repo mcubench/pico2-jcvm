@@ -3,4 +3,14 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "${repo_root}/tools/build-jcsystem-transaction-probe"
+# The probe covers OneShot Signature (HMAC-SHA-256) and other max_crypto
+# algorithms. Other VPCD suites rebuild the shared build/choupi-pc with the
+# default profile (test-dup-x-vpcd also with debug ON), so build the profile
+# this probe needs instead of testing whatever was built last.
+mkdir -p "${repo_root}/artifacts/logs"
+"${repo_root}/tools/build-pc" --profile max_crypto \
+  > "${repo_root}/artifacts/logs/build-pc-jcsystem-transaction.log" 2>&1 || {
+  echo "ERROR: max_crypto PC build failed; see artifacts/logs/build-pc-jcsystem-transaction.log" >&2
+  exit 1
+}
 exec python3 "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" "$@"

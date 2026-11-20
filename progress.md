@@ -32894,3 +32894,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Export cannot point into the middle of a class record or outside the Class component.
 - Decision: run the pcscd-dependent suites after the 07E7 campaign before claiming positive Export coverage; add an Export-mutation fixture then.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261120T203414Z.log` (intermittent failure)
+
+## 2026-11-20 Transaction probe builds its own max_crypto PC VM 5
+
+- Step-Id: `20261120-2141-tx-probe-profile`
+- Task: test infrastructure (VPCD suites)
+- When: '2026-11-20 21:37 CET' - '2026-11-20 21:42 CET'
+- Model: `claude-opus-5-5`
+- Change: `tools/test-jcsystem-transaction-applet` runs `tools/build-pc --profile max_crypto` before the probe. The case-115 failure recorded in `20261120-2137-capin07-export-class-offset` as intermittent was order-dependent: `test-rmi-client-vpcd` and `test-dup-x-vpcd` rebuild the shared `build/choupi-pc` with the default profile (dup-x with debug ON), where HMAC-SHA-256 is not supported, so `Signature.OneShot.open` threw CryptoException reason 3 (`CHOUPI_VM_TRACE_EXCEPTIONS=1`). QKB entry updated with the cause and fix. The same effect means suites in earlier regression scripts that ran after rmi-client/dup-x used a default-profile, debug PC VM; their results still exercise the same VM sources.
+- Validation: test-dup-x-vpcd, then test-jcsystem-transaction-applet: 113/113 (about 50 s including the rebuild). Before the fix the same order failed twice in a row.
+- Result: the probe no longer depends on which suite ran last.
+- Decision: apply the same pattern if another suite turns out to need a non-default profile.
+- Artifacts/logs: `artifacts/logs/build-pc-jcsystem-transaction.log`
