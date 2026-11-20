@@ -32786,3 +32786,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: no legitimate dispatch rejected by the suites.
 - Decision: next the invokeinterface checks (array receivers, nargs equality).
 - Artifacts/logs: suite logs under `artifacts/logs/`
+
+## 2026-11-20 CAPIN-06: invokeinterface rejects array receivers and nargs mismatches from uploaded code 64
+
+- Step-Id: `20261120-1739-capin06-invokeinterface`
+- Task: CAPIN-06 (invokeinterface part)
+- When: '2026-11-20 16:35' - '2026-11-20 17:39'
+- Model: `claude-opus-5-5`
+- Change: `bc_invokeinterface`: when the caller is an uploaded package, an array receiver throws SecurityException (the runtime-only array branch resolves the method through the caller's `this` class) and the operand `nargs` must equal the resolved method header's `nargs`. Runtime (ROM) callers keep the previous behaviour.
+- Validation: First version applied both checks to every caller: JCAlgTest `ALG_SUPPORT_BASIC` over VPCD failed three times (GPPro `--list` of the empty card, then INSTALL), while the same build without the change passed, so runtime card-manager/JCRE code relies on the old behaviour. Scoped version: JCAlgTest VPCD PASS three times (one earlier attempt hit the known INSTALL flake; a debug build showed neither check firing during install); `test-jcsystem-transaction-applet` 113/113; `test-sio-cross-aid-vpcd`, `test-rmi-client-vpcd`, `test-rmi-arrays-vpcd`, `test-vpcd-multipackage`, `test-pc-vpcd-applet`, `test-asymm-crypto-vpcd`, `test-javacardxsec-vpcd`, `test-cipher-lifecycle-vpcd` rc=0 with 0 FAIL. ARM max_crypto rc=0, 0 C/C++ warnings.
+- Result: uploaded code can no longer dispatch interface methods on arrays or with a wrong argument count. Not investigated: which runtime call relies on the array branch or a nargs difference (worth a later look).
+- Decision: CAPIN-06 remaining: loader-side mirror of these checks and crafted-CAP fixtures.
+- Artifacts/logs: suite logs under `artifacts/logs/`

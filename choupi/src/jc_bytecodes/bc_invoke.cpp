@@ -1496,7 +1496,16 @@ void Bytecodes::bc_invokeinterface() {
     throw Exceptions::SecurityException;
   }
 
-  if (objectref.isArray()) { // Is an array
+  const bool uploaded_caller =
+      FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID());
+  // CAPIN-06: Java Card arrays implement no interface. For code from an
+  // uploaded package, reject array receivers: the runtime-only branch below
+  // resolves the method through the caller's `this` class, which a crafted
+  // CAP could use to run its own method with an array as receiver.
+  if (objectref.isArray() && uploaded_caller) {
+    throw Exceptions::SecurityException;
+  }
+  if (objectref.isArray()) { // Is an array (runtime callers only)
     // class variable must point to Object class.
     jref_t thisref = stack.readLocal_Reference((uint8_t)0);
     auto instance = context.getHeap().getInstance(thisref);
@@ -1523,6 +1532,16 @@ void Bytecodes::bc_invokeinterface() {
                              .getImplementedInterfaceMethodOffset(
                                  classref, interface_ref, interface_method,
                                  false, context.getCurrentPackage());
+    // CAPIN-06: for code from an uploaded package, the operand nargs must
+    // match the resolved method's header, or the frame would be built from
+    // the wrong stack words.
+    if (uploaded_caller) {
+      Method_Handler resolved_handler(context);
+      resolved_handler.setPackage(method_offset.first);
+      if (resolved_handler.getArgumentCount(method_offset.second) != nargs) {
+        throw Exceptions::SecurityException;
+      }
+    }
     const auto sensitive_return =
         pinSensitiveReturn(context, interface_ref, interface_method);
     if (sensitive_return != Frame::SensitiveReturn::None) {
