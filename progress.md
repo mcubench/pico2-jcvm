@@ -32762,3 +32762,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: CAPIN-01 required-component rejection holds on hardware with the current image. **Incident:** my first attempt ran with an empty reader variable (F42D had not re-enumerated into PC/SC yet). GPPro then connected to 07E74C5D7A038DEC, the live T8 option-1 run (07E7 serial: `00A4040000`, `8050000008` mid-campaign). The JCAlgTest applet was deselected; from method 278 (RSA-2048 OAEP `doFinal`) every APDU returned `6999` and the client finished with 1,623 `CANT_BE_MEASURED` in 3,391 s. That run (`artifacts/results/t8-option1-d7e90a18-20261120T1331Z/07E74C5D7A038DEC/`) is invalid as T8 evidence (its first 277 methods were clean). The GPPro loads themselves did not reach any card ("Specify reader").
 - Decision: T8 option 1 restarted on a freshly wiped 07E7 at 14:30 UTC (`artifacts/results/t8-option1-rerun-d7e90a18-20261120T1430Z/07E74C5D7A038DEC/`, 12 h bound). Lesson in QKB: never run GPPro/APDU tools with a reader variable that can be empty. Corrections: the end times of `20261120-1515-t8-option2-pass` (15:15) and `20261120-1517-capin05-invokespecial` (15:17) were written before checking the clock; the clock read 15:14 at both commits.
 - Artifacts/logs: `artifacts/results/capin01-physical-d7e90a18-20261120T1427Z/F42DD9D07D6D2B07/`
+
+## 2026-11-20 CAPIN-05 (2): reject InstanceFieldrefs into ROM classes at install 15
+
+- Step-Id: `20261120-1618-capin05-load-fieldref`
+- Task: CAPIN-05 items 2 and 4
+- When: '2026-11-20 16:03' - '2026-11-20 16:18'
+- Model: `claude-opus-5-5`
+- Change: `src/cap_load.cpp` external-class-token validation: an external InstanceFieldref whose imported package is not an uploaded package (i.e. a ROM package) fails validation, so such a CAP is refused at INSTALL before it can run. Item 4 (AID backing arrays) needs no separate change: those arrays are reachable only through ROM-declared fields, which item 1 already blocks.
+- Validation: PC build; `test-cap-constant-pool-validation` 61/0; `test-cap-parser` PASS (4,208 checks, 100,000 fuzz inputs, 48 corpus CAPs); `test-jcsystem-transaction-applet` 113/113; `test-sio-cross-aid-vpcd` 59/0; `test-rmi-client-vpcd` 18/0; `test-rmi-arrays-vpcd` 45/0; `test-vpcd-multipackage` 45/0; `test-pc-vpcd-applet` 32/0; `test-cap-malformed-vpcd` 7/0; `test-asymm-crypto-vpcd` 109/0; JCAlgTest `ALG_SUPPORT_BASIC` over VPCD PASS (first attempt). ARM max_crypto rc=0, 0 C/C++ warnings.
+- Result: no legitimate CAP in the suites references ROM instance fields; crafted ones are refused at install.
+- Decision: CAPIN-05 code complete; crafted-CAP fixtures for items 1–3 remain (TODO).
+- Artifacts/logs: suite logs under `artifacts/logs/`

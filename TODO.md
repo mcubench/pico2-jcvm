@@ -512,7 +512,12 @@ task:
     class). Item 3 done 2026-11-20 (`20261120-1517-capin05-invokespecial`): from
     uploaded code, invokespecial on a global instance or array throws
     SecurityException, and an uploaded-package method needs an uploaded-class
-    receiver; no crafted-CAP fixture yet. Items 2 and 4 open.
+    receiver; no crafted-CAP fixture yet. Item 2 done 2026-11-20
+    (`20261120-1618-capin05-load-fieldref`): INSTALL-time import validation
+    rejects an external InstanceFieldref whose imported package is a ROM
+    package. Item 4 is covered by item 1: AID backing arrays are reachable
+    only through ROM-declared fields, which uploaded code can no longer read
+    or write. Remaining: crafted-CAP fixtures for items 1–3.
   1. `getfield`/`putfield` (all variants) from a dynamic package on a global
      or JCRE-owned instance throws `SecurityException`.
   2. Load-time: reject external InstanceFieldrefs into ROM packages unless a

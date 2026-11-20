@@ -812,6 +812,13 @@ CapImportValidation validate_cap_imports_single(uint8_t package_id) noexcept {
                 const jcvm::jc_cap_class_export_info &exported_class =
                     imported_exports.getExportedClass(class_token);
                 if (reference_kind == JC_CP_TAG_CONSTANT_INSTANCEFIELDREF) {
+                  // CAPIN-05 (2): instance fields of runtime (ROM) classes
+                  // are private JCRE state; an uploaded package may only
+                  // reference fields of other uploaded packages.
+                  if (!jcvm::FlashMemory_Handler::isDynamicPackageID(
+                          imported_id)) {
+                    return false;
+                  }
                   const auto class_component =
                       imported_runtime_package.getCap().getClass();
                   if (class_component == nullptr) return false;
