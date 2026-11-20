@@ -153,6 +153,15 @@ uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index,
   // The heap stores the complete inheritance chain in one flat field array,
   // so add the declared field count of each superclass before indexing it.
   const auto declaring_class = constant_pool.classref2class(field_ref.class_ref);
+  // CAPIN-05 (1): instance fields declared by runtime (ROM) classes are
+  // private JCRE state, e.g. native crypto objects, OneShot and AID objects.
+  // Code from an uploaded package must never read or write them, whatever
+  // field reference its constant pool carries.
+  if (FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID()) &&
+      !FlashMemory_Handler::isDynamicPackageID(
+          declaring_class.first.getPackageID())) {
+    throw Exceptions::SecurityException;
+  }
   validateDeclaredInstanceType(declaring_class, field_ref.token, expected);
 
   // A field token is meaningful only for instances whose concrete class is

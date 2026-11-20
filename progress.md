@@ -32714,3 +32714,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: ONESHOT-01 complete on emulator and hardware (cross-context on the emulator only).
 - Decision: none further for OneShot. Corrections: the previous record (`20261120-1500-oneshot-owner-package`) ended at 14:39 (commit time), not 14:59, and its Step-Id time is therefore also later than the real time.
 - Artifacts/logs: latest `artifacts/logs/sio-cross-aid-vpcd-*.log`
+
+## 2026-11-20 CAPIN-05 (1): uploaded code cannot access ROM-declared instance fields 13
+
+- Step-Id: `20261120-1453-capin05-rom-fields`
+- Task: CAPIN-05 item 1 (security backlog)
+- When: '2026-11-20 14:40' - '2026-11-20 14:53'
+- Model: `claude-opus-5-5`
+- Change: `choupi/src/jc_bytecodes/bc_object_field.cpp` `resolveInstanceFieldToken()`: when the executing package is an uploaded (dynamic) package and the field's declaring class is in a ROM package, throw SecurityException. Every getfield/putfield variant resolves through this function. Protects native crypto objects, OneShot and AID objects from crafted InstanceFieldrefs. `tests/integration/pc_vpcd_applet_test.py`: the JCAlgTest RandomData.OneShot ALG_SECURE_RANDOM probe now expects "supported" (changed by ONESHOT-01, not by this step).
+- Validation: PC build; `tools/test-jcsystem-transaction-applet` 113/113; `test-sio-cross-aid-vpcd` 59/0; `test-rmi-client-vpcd` JCRMI summary 18/0; `test-rmi-arrays-vpcd` 45/0; `test-vpcd-multipackage` 45/0; `test-pc-vpcd-applet` 32/0 (after the expectation update); `test-same-cap-siblings` 6/0; `test-cap-malformed-vpcd` 7/0; JCAlgTest `ALG_SUPPORT_BASIC` over VPCD PASS (manifest match). ARM max_crypto rc=0, no C/C++ warnings (the 85 `warning:` lines are the Rust/converter warnings of the embedded PC rebuild, present in every PC build).
+- Result: no legitimate path in the regression suites reads ROM-declared fields from applet code; crafted access is refused.
+- Decision: a crafted-CAP fixture for this check and CAPIN-05 items 2–4 remain.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T134350Z/`

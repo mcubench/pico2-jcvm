@@ -505,6 +505,12 @@ task:
 
 - [ ] **P1: Deny dynamic-package access to private state of JCRE-owned
   objects.** Finding A2.
+  - 2026-11-20 (`20261120-1453-capin05-rom-fields`): item 1 done at run time:
+    `getfield`/`putfield` (all variants, via `resolveInstanceFieldToken`)
+    from an uploaded package on a field whose declaring class is a ROM class
+    throws SecurityException; this also covers global instances (ROM classes).
+    No crafted-CAP fixture yet (needs a hand-built InstanceFieldref into a ROM
+    class). Items 2–4 open.
   1. `getfield`/`putfield` (all variants) from a dynamic package on a global
      or JCRE-owned instance throws `SecurityException`.
   2. Load-time: reject external InstanceFieldrefs into ROM packages unless a

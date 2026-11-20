@@ -568,15 +568,17 @@ def run_emulator(
                 random_oneshot = exchange(
                     connection,
                     bytes.fromhex("B0752B00010200"),
-                    "JCAlgTest unsupported RandomData.OneShot factory",
+                    "JCAlgTest RandomData.OneShot ALG_SECURE_RANDOM factory",
                 )
-                if random_oneshot[0] != 0x2B or random_oneshot[1] != 0x03:
+                # RandomData.OneShot is implemented since 2026-11-20
+                # (ONESHOT-01): it supports exactly getInstance's algorithms.
+                if random_oneshot[0] != 0x2B or random_oneshot[1] != 0x00:
                     raise RuntimeError(
-                        "unsupported RandomData.OneShot factory must report "
-                        "NO_SUCH_ALGORITHM (3): "
+                        "RandomData.OneShot ALG_SECURE_RANDOM must be "
+                        "reported supported (0): "
                         f"{random_oneshot.hex().upper()}"
                     )
-                print("TEST:PASS RandomData.OneShot reports NO_SUCH_ALGORITHM")
+                print("TEST:PASS RandomData.OneShot reports ALG_SECURE_RANDOM supported")
             finally:
                 if connection is not None:
                     connection.close()
