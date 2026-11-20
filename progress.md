@@ -32906,3 +32906,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the probe no longer depends on which suite ran last.
 - Decision: apply the same pattern if another suite turns out to need a non-default profile.
 - Artifacts/logs: `artifacts/logs/build-pc-jcsystem-transaction.log`
+
+## 2026-11-20 CAPIN-07 virtual table and interface index bounds 5
+
+- Step-Id: `20261120-2143-capin07-vtable-index-bounds`
+- Task: CAPIN-07
+- When: '2026-11-20 21:37 CET' - '2026-11-20 21:42 CET'
+- Model: `claude-opus-5-5`
+- Change: the stage-9 INSTALL validator in `src/cap_load.cpp` now rejects a class whose public or package virtual method table holds an offset other than 0xFFFF (inherited, as `Class_Handler::getMethodOffset` treats it) at or beyond the Method component size, or whose implemented-interface `index[]` names a token at or above `public_method_table_base + public_method_table_count`. Method_Handler still validates exact method starts at call time.
+- Validation: `./tools/build-pc --profile max_crypto`; test-pc-vpcd-applet 30/30, test-rmi-arrays-vpcd 3/3 (implements remote interfaces), test-rmi-client-vpcd and test-dup-x-vpcd rc=0, test-jcsystem-transaction-applet 113/113 (after the profile fix); malformed superclass-self-cycle, superclass-mid-record, impdep1, invokespecial-global-receiver, getfield-unrelated-receiver rc=0. `./tools/build arm --profile max_crypto` BUILD:PASS, 0 C/C++ warnings. No mutation fixture for the new table bounds yet; pcscd-dependent suites (SIO, multipackage, siblings) not run.
+- Result: out-of-range virtual method offsets and interface token maps are refused before execution.
+- Decision: run the pcscd-dependent suites after the 07E7 campaign; add table-mutation fixtures with CAPIN-07 completion.
+- Artifacts/logs: none beyond the suite logs.

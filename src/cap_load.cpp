@@ -638,9 +638,37 @@ bool validate_internal_class_references(
         return false;
       }
     }
+    // Virtual method tables hold offsets into the Method component info
+    // (0xFFFF: inherited). Method_Handler validates the exact method start
+    // at call time; this rejects offsets outside the component outright.
+    const auto *method_component = cap.getMethod();
+    const std::size_t method_info_size =
+        method_component == nullptr ? 0 : NTOHS(method_component->size);
+    const auto check_table = [&](const auto &table) {
+      for (uint16_t entry = 0; entry < table.size(); ++entry) {
+        const uint16_t method_offset = NTOHS(table.at(entry));
+        if (method_offset != 0xFFFF && method_offset >= method_info_size) {
+          return false;
+        }
+      }
+      return true;
+    };
+    if (!check_table(class_info->public_virtual_method_table()) ||
+        !check_table(class_info->package_virtual_method_table())) {
+      return false;
+    }
+    // Interface index[] maps interface method tokens to this class's public
+    // virtual method tokens, which end at base + count.
+    const unsigned public_token_limit =
+        static_cast<unsigned>(class_info->public_method_table_base) +
+        class_info->public_method_table_count;
     for (uint8_t interface_index = 0;
          interface_index < class_info->interface_count; ++interface_index) {
       const auto &implemented = class_info->interfaces(interface_index);
+      const auto indexes = implemented.indexes();
+      for (uint8_t entry = 0; entry < implemented.count; ++entry) {
+        if (indexes.at(entry) >= public_token_limit) return false;
+      }
       if (implemented.interface.isExternalClassRef()) continue;
       const std::size_t interface_offset =
           NTOHS(implemented.interface.internal_classref);
