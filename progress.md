@@ -32570,3 +32570,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: open work, in order: the two live runs (physical option 1 after the OOM fix, VPCD T7); then T8/T10 acceptance on two tokens; new Windows package; TOOL-VPCD-01; PERF-20261110-05; then the untouched P1 security backlog (CAPIN-01..06, RV-20261103-11/12/28, RV-20261106-*).
 - Decision: keep MEM-01 the only P0 until T7/T8 pass.
 - Artifacts/logs: none new
+
+## 2026-11-20 MEM-01 T7 passes: unchanged-client JCAlgTest over VPCD on the RP2350 overlay 27
+
+- Step-Id: `20261120-0751-mem01-t7-vpcd-pass`
+- Task: MEM-01 T7 (also T10 evidence for VPCD)
+- When: '2026-11-20 07:23' - '2026-11-20 07:51' (overlay run 07:23–07:50, recording to 07:51)
+- Model: `claude-opus-5-5`
+- Change: none to source. Run: `JCALGTEST_RP2350_OVERLAY=1 JCALGTEST_OPERATION=ALG_PERFORMANCE_STATIC JCALGTEST_OBJECT_DELETION=1 JCALGTEST_STDIN_LINES=2 PICO2_HOST_USB_ACCESS=1 ./tools/test-jcalgtest-support-vpcd`, emulator rebuilt from the `a1639b68` tree (`build/choupi-pc-rp2350-overlay/choupi` SHA-256 `61cc3f28f14d05e158560ad9399e05e5d65ef5b7047cd296954806fbeba089d7`), fresh empty virtual card, unchanged 1.8.5/jc305 CAP, client 1.8.5 JAR `b6a753be…eacec3`, reader `Virtual PCD 00 00` (VPCD driver installed by the user on 2026-11-20).
+- Validation: runner verdict `JCALGTEST_VPCD:PASS`, rc=0; headroom gate `HEADROOM:PASS samples=2645 peak_files=1774 peak_bytes=72879/98304 peak_percent=74.136`.
+- Result: client `Testing complete`, 1,574 s, 0 `ERROR` lines; CSV 11,343 lines (SHA-256 `38d8b1b0461420651f64656d2d268c5713df8ad738bd5ff4fd9d67d7c45a3e1e`). Emulator: 2,645 deletion passes, 0 `pending=1`, 8,284 answered UNCHANGED, 89 low-watermark compactions, no PANIC/FAULT/NO_RESOURCE/TEST:FAIL/SKIP/INTEGRITY lines. The operation covers symmetric and asymmetric algorithms, a superset of option 2. Two earlier attempts the same morning do not count: one on the stale plain-FS emulator (no `PRE_CLEANUP`, headroom gate failed after a full 2,680 s client run; TOOL-VPCD-01) and one overlay attempt that failed at GPPro INSTALL with an empty log (passed on retry).
+- Decision: MEM-01 T7 closed. T8 acceptance (physical options 1 and 2 on wiped tokens, two boards) may start once the live physical option-1 rerun on 07E7 finishes.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T062332Z/` (invalid attempts: `…20261120T052445Z/`, `…20261120T061342Z/`)
