@@ -25,7 +25,7 @@ reader_name="${1:-Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 [[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
 
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader_name}"
 
 mkdir -p "${repo_root}/artifacts/logs"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -37,7 +37,7 @@ for ((attempt = 1; attempt <= attempts; ++attempt)); do
   printf 'PERSISTENCE:REGISTRY_ATTEMPT attempt=%s/%s\n' \
     "${attempt}" "${attempts}" | tee -a "${log}"
   if [[ "${attempt}" != 1 ]]; then
-    PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+    pcsc_refresh_if_reader_missing "${reader_name}"
   fi
   listing=""
   list_status=0
@@ -66,7 +66,7 @@ for ((attempt = 1; attempt <= attempts; ++attempt)); do
   printf 'PERSISTENCE:APDU_ATTEMPT attempt=%s/%s timeout=%ss\n' \
     "${attempt}" "${attempts}" "${apdu_timeout}" | tee -a "${log}"
   if [[ "${attempt}" != 1 ]]; then
-    PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+    pcsc_refresh_if_reader_missing "${reader_name}"
   fi
   probe_status=0
   if PICO2_HOST_USB_ACCESS=1 \

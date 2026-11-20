@@ -102,7 +102,7 @@ trap cleanup EXIT
 exec > >(tee -a "${log}") 2>&1
 printf 'PERSISTENT_RECLAIMER:START reader=%s rsa_cycles=%s rsa_bits=%s\n' \
   "${reader_name}" "${rsa_cycles}" "${rsa_bits}"
-PICO2_HOST_USB_ACCESS=1 sudo -n "${reader_helper}"
+pcsc_refresh_if_reader_missing "${reader_name}" "${reader_helper}"
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
   >"${list_log}" 2>&1 || die "GPPro list failed; see ${list_log}"
 if grep -Fq "APP: ${applet_aid} " "${list_log}" || \

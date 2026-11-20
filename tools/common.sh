@@ -36,3 +36,26 @@ require_sdk() {
   [[ -f "${PICO_SDK_PATH}/external/pico_sdk_import.cmake" ]] || \
     die "Pico SDK not found at ${PICO_SDK_PATH} (set PICO_SDK_PATH or PICO_HOME)"
 }
+
+# Restart pcscd through the approved helper only when it is needed and safe.
+# The helper restarts pcscd.service, which drops every open PC/SC session on
+# every token, including other sessions' campaigns, and even a reader listing
+# can disturb them (AGENTS.md). While a JCAlgTest campaign or serial monitor
+# is live, do neither: the caller's first GPPro command reports a missing
+# reader. Otherwise list the readers and restart only if the exact reader is
+# absent.
+pcsc_refresh_if_reader_missing() {
+  local reader="$1"
+  local helper="${2:-/usr/local/sbin/pico2-pcsc-reader}"
+  local listing
+  if pgrep -f '[A]lgTestJClient|[j]calgtest-apdu-watchdog|tools/[m]onitor' \
+       >/dev/null 2>&1; then
+    printf 'PCSC:REFRESH_SKIPPED reason=live_campaign reader=%s\n' "${reader}" >&2
+    return 0
+  fi
+  listing="$("${repo_root}/tools/list-readers" 2>/dev/null || true)"
+  if cut -f2- <<<"${listing}" | grep -Fxq -- "${reader}"; then
+    return 0
+  fi
+  PICO2_HOST_USB_ACCESS=1 sudo -n "${helper}"
+}

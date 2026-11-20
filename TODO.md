@@ -636,7 +636,7 @@ task:
 
 ### RV-20261103-11
 
-- [ ] **P1: Cipher key copies survive original transient-key clearing.**
+- [x] **P1: Cipher key copies survive original transient-key clearing.** Physical acceptance passed 2026-11-20 on F42DD9D07D6D2B07 (d7e90a18 image): `./tools/test-cipher-lifecycle-pcsc` 36/36 across deselect and reader reset for AES and RSA transient keys, probe removed (`artifacts/logs/cipher-lifecycle-pcsc-20261120T200927Z.log`, Step-Id `20261120-2110-rv11-rv12-physical-pcsc-guard`).
   Owner: PROFILE-01, HARD-01. Evidence: Source; [review R11](docs/review_20261103.md#r11--cipher-copies-outlive-transient-key-clear-events).
   Acceptance: retain checked key identity and appropriate lifetime metadata, or use workspace that clears with the key. Test retained Cipher objects across deselect, reader reset and fresh restore for symmetric and RSA transient keys. Modification of a key after `init()` is separately unspecified; this finding concerns defined lifecycle clear events.
   Progress: AES and RSA private Cipher workspaces now allocate sensitive copies as transient arrays with the source key's clear event and validate a transient marker before use. The current `./tools/test-cipher-lifecycle-vpcd` run passes 31/31 across deselect, reader reset and fresh emulator-process restore; deselect returns `UNINITIALIZED_KEY` (`42`), while reset and fresh restore return `INVALID_INIT` (`44`). Physical runs on 2026-11-07 did not reach the Cipher cases: after GPPro installed the probe CAP, SELECT checks passed but open-channel card-manager GET DATA returned `6982` instead of `9000`. The physical probe now explicitly resets the card after GPPro installation to clear any prior SCP03 session before testing; this setup change compiled but could not be reverified because `pcsc_scan -r` no longer published readers. D92 and failover board 2BED were firmware-only reflashed and both passed finite serial checks; card storage was preserved. Keep RV-11 open for the corrected physical AES/RSA lifecycle run.
@@ -645,7 +645,7 @@ task:
 
 ### RV-20261103-12
 
-- [ ] **P1: Reset preserves deselect-cleared sensitive data.**
+- [x] **P1: Reset preserves deselect-cleared sensitive data.** Physical acceptance passed 2026-11-20 on F42DD9D07D6D2B07 (d7e90a18 image): `./tools/test-same-cap-transients-physical` load, two applets, `deselect_and_reset` PASS, cleanup PASS (`artifacts/logs/same-cap-transient-physical-20261120T200912Z.log`, same Step-Id).
   Owner: CTX-03, PERSIST-02. Evidence: Reproduced; [review R12](docs/review_20261103.md#r12--reset-does-not-clear-clear_on_deselect-arrays).
   Acceptance: reset must clear both classes across active and inactive contexts without invoking applet `deselect()` as a reset callback. Test reset directly from the active applet, inactive package contexts and transient-key flags.
   Progress: the runtime reset callback clears both event classes in selected and inactive applet heaps. Fixed a VPCD regression where selected-applet tracking had reintroduced `deselect()` calls on POWER_OFF, POWER_RESET and disconnect; those boundaries now drop selection and invoke reset cleanup directly. Standalone VPCD session tests pass 29/29 and the same-CAP transient regression passes 6/6, including active reset, inactive writer-context clearing, and an unchanged persistent deselect counter. Physical validation remains pending: three USB CCID devices enumerate, but only the two VPCD readers currently appear in PC/SC.

@@ -77,7 +77,7 @@ trap cleanup EXIT
 
 exec > >(tee -a "${log}") 2>&1
 printf 'JC_SYSTEM_PHYSICAL:START reader=%s\n' "${reader_name}"
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader_name}"
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
   >"${list_log}" 2>&1 || die "GPPro list failed; see ${list_log}"
 if grep -Fq "APP: ${applet_aid} " "${list_log}" || \
@@ -103,7 +103,7 @@ if (( cycle_board )); then
     --prepare-persistence
   PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/cycle" choupi \
     --profile symm_crypto --chipid "${chipid}"
-  PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+  pcsc_refresh_if_reader_missing "${reader_name}"
   timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
     >"${postcycle_list_log}" 2>&1 || die "GPPro list after board cycle failed; see ${postcycle_list_log}"
   grep -Fq "APP: ${applet_aid} " "${postcycle_list_log}" || \

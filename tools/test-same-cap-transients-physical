@@ -74,7 +74,7 @@ trap cleanup EXIT
 exec > >(tee -a "${log}") 2>&1
 
 printf 'SAME_CAP_TRANSIENT:START reader=%s package=%s\n' "${reader}" "${package_aid}"
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader}"
 gp --list >"${list_log}" 2>&1 || die "initial GPPro list failed; see ${list_log}"
 for aid in "${package_aid}" "${writer_aid}" "${reader_aid}"; do
   if grep -Fq "PKG: ${aid} " "${list_log}" || \

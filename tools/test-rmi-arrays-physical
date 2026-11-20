@@ -22,7 +22,7 @@ registry_log="${build_log_dir}/gppro-registry-${timestamp}.log"
 
 exec > >(tee "${log}") 2>&1
 printf 'RMI_PHYSICAL:START reader=%s\n' "${reader_name}"
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader_name}"
 
 gp=("${repo_root}/tools/env" java -jar "${gp_jar}" -d -r "${reader_name}")
 timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --list \

@@ -69,7 +69,7 @@ if len(vectors) != 79 or len(labels) + len(mac_labels) != len(vectors):
 print(f"VECTORS:PASS count={len(vectors)} file={output}")
 PY
 
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader_name}"
 gp_list="${build_dir}/physical-gp-list-$(date -u +%Y%m%dT%H%M%SZ).log"
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${gp_list}" 2>&1 || \
   die "GPPro list failed; see ${gp_list}"

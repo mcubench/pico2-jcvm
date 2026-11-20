@@ -57,7 +57,7 @@ trap cleanup EXIT
 
 exec > >(tee -a "${log}") 2>&1
 printf 'PHYSICAL:START reader=%s profile=asymm_crypto\n' "${reader_name}"
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader_name}"
 list="${build_dir}/physical-gp-list-${timestamp}.log"
 timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${list}" 2>&1 || \
   die "GPPro list failed; see ${list}"

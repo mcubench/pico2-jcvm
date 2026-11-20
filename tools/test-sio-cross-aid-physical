@@ -32,7 +32,7 @@ gp=("${root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
 
 exec > >(tee "${log}") 2>&1
 printf 'SIO_PHYSICAL:START reader=%s\n' "${reader_name}"
-PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+pcsc_refresh_if_reader_missing "${reader_name}"
 
 fixture_aids=(A000000151000002 A000000151000003 A00000015100000301 \
               A000000151000004 A00000015100000401)

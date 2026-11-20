@@ -32822,3 +32822,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: firmware UF2 SHA-256 `73f420699cc68a52774d72a64369575d8b1d6e9f59a966618f24982cd594166a` (development cycle, not acceptance). RAM free at the failing pass is unknown (old telemetry only logged persistent free space). Correction to Step-Id `20261120-1820-vpcd-wedged-capin06-correction` (commit 8838393d): its end time was 18:15, not 18:20.
 - Decision: T8 option 1 remains open; next run a fresh empty-card normal max_crypto option-1 campaign with this image on 07E7 and watch `ram=` and any `reason=allocation_failed`.
 - Artifacts/logs: `artifacts/results/t8-option1-rerun-d7e90a18-20261120T1430Z/07E74C5D7A038DEC/`, `artifacts/logs/cycle-choupi-20261120T200449Z.log`
+
+## 2026-11-20 RV-11/RV-12 physical pass; physical tests no longer restart pcscd unconditionally 4
+
+- Step-Id: `20261120-2110-rv11-rv12-physical-pcsc-guard`
+- Task: RV-20261103-11, RV-20261103-12
+- When: '2026-11-20 21:06 CET' - '2026-11-20 21:09 CET'
+- Model: `claude-opus-5-5`
+- Change: Ten physical test tools ran `sudo -n /usr/local/sbin/pico2-pcsc-reader` unconditionally, which restarts pcscd and drops every PC/SC session, including other sessions' campaigns (AGENTS.md forbids that while anything is live). New `pcsc_refresh_if_reader_missing` in `tools/common.sh`: if a JCAlgTest client, APDU watchdog or serial monitor is live it neither lists readers nor restarts (prints `PCSC:REFRESH_SKIPPED reason=live_campaign`); otherwise it lists readers and runs the helper only when the exact reader is absent. Used in test-cipher-lifecycle-pcsc, test-asymm/symm-crypto-pcsc, test-jcsystem-transaction-physical, test-sio-cross-aid-physical, test-pico-powerup, test-same-cap-siblings/transients-physical, test-rmi-arrays-physical and test-persistent-reclaimer-physical (keeps its own verified helper path).
+- Validation: `bash -n` on all edited scripts. With the 07E7 T8 option-1 campaign live, on F42DD9D07D6D2B07 (d7e90a18 image, JCAlgTest installed): `./tools/test-same-cap-transients-physical` PASS (load, 2 applets, `deselect_and_reset`, cleanup); `./tools/build-cipher-lifecycle-probe` then `./tools/test-cipher-lifecycle-pcsc` `TEST:SUMMARY pass=36 fail=0`, `PCSC:CLEANUP_PASS`. Both printed `PCSC:REFRESH_SKIPPED`; the 07E7 campaign kept running (method 50, no failure markers). A first RV-12 attempt used the stale reader name `... 01 00`; GPPro refused it (no APDU sent). The F42D reader is now `... (F42DD9D07D6D2B07) 00 00`.
+- Result: RV-20261103-11 and -12 physical acceptance closed. Correction: the previous record (`20261120-2058-oom-reclaim-recoverable-alloc`) gave 21:08 as end time; `date` at commit showed 21:05.
+- Decision: continue monitoring T8 option 1 on 07E7; after it ends restart pcscd (VPCD reader wedged) and rerun the CAPIN-06 runtime trace.
+- Artifacts/logs: `artifacts/logs/same-cap-transient-physical-20261120T200912Z.log`, `artifacts/logs/cipher-lifecycle-pcsc-20261120T200927Z.log`
