@@ -1,44 +1,39 @@
 # External validation requests
 
-## WIN-MAXCRYPTO-FLASH-A266B836 — JCAlgTest 1.8.5 run with minimal flash writes and native OwnerPIN
+## WIN-MAXCRYPTO-OOMFIX-981CDE78 — JCAlgTest 1.8.5 option 1 and 2 with the out-of-memory fix
 
-**Update 2026-11-20:** option 1 on this image panics with Out of memory at RSA-3072 CRT (fixed in `a1639b68`). Option-2 (`$mode = 'symmetric'`) results on a266b836 remain useful; a full option-1 run on it is expected to fail the same way. A replacement package will follow once the `a1639b68` campaigns pass.
-
-Created 2026-11-19 23:15 CET. This replaces `WIN-MAXCRYPTO-BASELINE-5A537513`. A run already in
-progress on 5a537513 may be finished and returned; it stays valid evidence for that image.
+Created 2026-11-20 09:28 CET. This replaces `WIN-MAXCRYPTO-FLASH-A266B836` (on that image option 1
+panics with `Out of memory` at RSA-3072 CRT). A run already in progress on a266b836 may be finished
+and returned; option-2 (`symmetric`) results from it remain valid evidence for that image.
 
 Same package layout, CAP (1.8.5/jc305, `applet.cap` SHA-256
 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`), client and one-block
 PowerShell run (`README.md` / `run-test.ps1`, `$mode = 'all'` or `'symmetric'`) as before.
-New since 5a537513 (records in `progress.md`, 2026-11-19 evening):
-- Commits of any size go to the flash journal as one atomic group; the journal fills the rest of
-  the snapshot slot and its sectors are erased in untimed `B0E2` commands. Full 40–64 KB snapshot
-  rewrites are now rare (2 in a 15-minute support run), and timed commands never erase flash.
-- A deletion request is answered without a heap trace when nothing can have become unreachable
-  since the last complete pass (`OBJECT_DELETION:UNCHANGED`): most `B0E2` take ~60 ms instead of
-  ~190 ms.
-- Compaction after a deletion pass no longer forces a full snapshot.
-- OwnerPIN: the try counter is written durably outside any transaction before the PIN comparison;
-  the validated flag lives in RAM and clears on reset; constant-time comparison.
-- Serial `CHOUPI:FS_APDU` gains `journal_erase_bytes` (last field).
+New since a266b836 (records in `progress.md`, 2026-11-20):
+- Each live Java object costs less RAM (array handle 84 → 52 B, instance 104 → 56 B; measured
+  176 → 144 B and 153 → 105 B of heap per object). At the old failure point (405 arrays /
+  144 instances live) free heap is ~61 KB instead of ~11 KB.
+- New Java objects are refused with `SystemException.NO_RESOURCE` when less than 16 KB of heap
+  would remain, so native crypto never hits the SDK `Out of memory` panic.
+- Deletion passes under memory pressure keep using the fast tag index (`tag_index_refused=0`).
+- Everything from a266b836 (flash journal, deletion skip, native OwnerPIN) is included.
 
-Normal ARM `max_crypto` image from commit `a266b836` (Arm GNU 14.2.1): object deletion ON, all
-debug and trace switches OFF, erased storage region, no preinstalled applet.
+Normal ARM `max_crypto` image from commit `981cde78` (firmware source identical to `a1639b68`;
+Arm GNU 14.2.1): object deletion ON, all debug and trace switches OFF, erased storage region, no
+preinstalled applet.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-a266b836.uf2)
-- UF2 SHA-256: `63abbf3d37dd9a86c37324ec72cedd06fee10204c84e59b646d793b726a99f8b`; size 2,956,288 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-a266b836.zip)
-- ZIP SHA-256: `e92205e3f8b5e146ce3920198ee1d2c02a3c08472793dce5ceef033cd9ff4213`; size 18,232,580 bytes.
-- CPLC source identifier `0xA266B8362C75CD36`; linked end `0x10068c08`, firmware-window headroom
-  619,512 bytes. Client JAR 1.8.5 SHA-256
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-981cde78.uf2)
+- UF2 SHA-256: `d175b84e0dfd43bb3f9f332c749aa019b18e4bb0513b6b361221c58113a96a28`; size 2,956,288 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-981cde78.zip)
+- ZIP SHA-256: `5d9dd84765b04cae633d757e768e5e9dc5d91534006f57ff148cc74855206507`; size 18,232,734 bytes.
+- CPLC source identifier `0x981CDE78CAFC2ED0`; linked end `0x10068c6c`, firmware-window headroom
+  619,412 bytes. Client JAR 1.8.5 SHA-256
   `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
-- Validation here: build exit 0, no C/C++ warnings; `PACKAGE:PASS`; README block byte-identical to
-  `run-test.ps1`. The exact UF2 was flashed to 07E74C5D7A038DEC (empty card); the package's GPPro
-  listed it and installed the package CAP; an EC384 Signature replay (prepare, 5 × baseline,
-  5 × measurement, twice) gave baselines 242–249 ms, measurements 522–526 ms, `B0E2` 62 ms after
-  the first two passes, every pass `pending=0`, no full snapshot, HEADROOM:PASS
-  (`artifacts/results/windows-package-smoke-a266b836-20261119T2207Z/`). The PowerShell block has not
-  been run (no PowerShell here).
+- Validation here: build exit 0, no warnings; `PACKAGE:PASS`. The exact UF2 was flashed to
+  F42DD9D07D6D2B07 and boots (`TEST:PASS choupi_runtime`). Same firmware source on 07E7:
+  MEM-01 T7 VPCD pass and a physical option-1 rerun past RSA-3072 CRT without faults (see
+  `progress.md`). A PC/SC install smoke test of this exact UF2 follows when the live 07E7 run ends.
+  The PowerShell block has not been run (no PowerShell here).
 
 Steps:
 1. Unzip, open PowerShell in the extracted folder, hold BOOTSEL while connecting the Pico 2.
@@ -50,9 +45,8 @@ Return:
 - any USB/PC/SC errors, resets, stalls or timeouts, with their times.
 
 Key questions:
-- Are the five baseline values of each method close to each other, and are RSA Cipher baselines
-  well under a second?
-- Is every `OBJECT_DELETION … pending=0` with `tag_index_refused=0`? Is the `HEADROOM:` verdict at
-  the end of `serial-capture-console.txt` PASS? How many `FS_APDU … synced=1` lines are there?
-- Does `all` reach the end with no `*** PANIC ***`, `FAULT` or reader loss?
-- Do the RSA NOPAD Cipher methods complete without `F105`?
+- Does `all` reach the end with no `*** PANIC ***`, `FAULT` or reader loss, in particular through
+  RSA-3072/4096 CRT?
+- Does the serial log show any `NO_RESOURCE`, or `OBJECT_DELETION … pending=1` / `tag_index_refused=1`?
+- Is the `HEADROOM:` verdict at the end of `serial-capture-console.txt` PASS? How many
+  `FS_APDU … synced=1` lines are there?

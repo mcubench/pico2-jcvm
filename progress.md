@@ -32594,3 +32594,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the failure mode that invalidated the first T7 attempt can no longer happen silently.
 - Decision: TOOL-VPCD-01 closed; the one-off GPPro INSTALL failure with an empty log stays noted in TODO.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T065109Z/`
+
+## 2026-11-20 Package Windows test 981cde78 with the out-of-memory fix 3
+
+- Step-Id: `20261120-0929-win-package-981cde78`
+- Task: external Windows test package refresh (user request)
+- When: '2026-11-20 09:26' - '2026-11-20 09:29'
+- Model: `claude-opus-5-5`
+- Change: built normal max_crypto from HEAD `981cde78` (firmware source identical to `a1639b68`) and packaged it with `./tools/package-maxcrypto-windows-test`. Replaced `WIN-MAXCRYPTO-FLASH-A266B836` with `WIN-MAXCRYPTO-OOMFIX-981CDE78` in `.agent/EXT_REQUESTS.md`; TODO images table updated.
+- Validation: build rc=0, 0 warnings, mode=normal; `PACKAGE:PASS`; package `applet.cap` SHA-256 `fa64582e…b48fb`. F42DD9D07D6D2B07: `tools/flash` of the package UF2 FLASH:PASS (storage wiped), serial `TEST:PASS choupi_runtime`. Not done: GPPro install / applet smoke over PC/SC — F42D is on USB but not in PC/SC, and the reader refresh helper would restart pcscd and kill the live option-1 run on 07E7.
+- Result: UF2 SHA-256 `d175b84e0dfd43bb3f9f332c749aa019b18e4bb0513b6b361221c58113a96a28` (2,956,288 B), ZIP SHA-256 `5d9dd84765b04cae633d757e768e5e9dc5d91534006f57ff148cc74855206507` (18,232,734 B), end 0x10068c6c, headroom 619,412 B, CPLC `0x981CDE78CAFC2ED0`.
+- Decision: run the PC/SC install smoke on F42D (and use F42D for T8) once the 07E7 run ends and pcscd may be refreshed.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-981cde78-20261120T0827Z/F42DD9D07D6D2B07/`
