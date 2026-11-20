@@ -3,7 +3,7 @@
 Updated: 2026-11-20 04:21 CET.
 
 ## Current state
-- **Live (MEM-01 T8 acceptance, started 14:31 CET 2026-11-20):** option 1 on 07E7 (bound 12 h) in `artifacts/results/t8-option1-d7e90a18-20261120T1331Z/07E74C5D7A038DEC/` and option 2 on F42D (bound 3 h) in `artifacts/results/t8-option2-d7e90a18-20261120T1331Z/F42DD9D07D6D2B07/`; both wiped with the d7e90a18 empty-card UF2. Do not restart pcscd, install drivers or use these readers until both end.
+- **Live (MEM-01 T8 acceptance, started 14:31 CET 2026-11-20):** option 1 on 07E7 (bound 12 h) in `artifacts/results/t8-option1-d7e90a18-20261120T1331Z/07E74C5D7A038DEC/` (live); option 2 on F42D PASSED 15:03 (`20261120-1515-t8-option2-pass`), F42D is free; both wiped with the d7e90a18 empty-card UF2. Do not restart pcscd, install drivers or use these readers until both end.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work

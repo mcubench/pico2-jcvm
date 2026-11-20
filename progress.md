@@ -32726,3 +32726,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: no legitimate path in the regression suites reads ROM-declared fields from applet code; crafted access is refused.
 - Decision: a crafted-CAP fixture for this check and CAPIN-05 items 2–4 remain.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T134350Z/`
+
+## 2026-11-20 MEM-01 T8: physical option 2 passes on F42D; README refreshed
+
+- Step-Id: `20261120-1515-t8-option2-pass`
+- Task: MEM-01 T8 (option 2) acceptance; README update (user request)
+- When: '2026-11-20 14:31' - '2026-11-20 15:15' (campaign 14:31–15:03 unattended; README and record 15:10–15:15)
+- Model: `claude-opus-5-5`
+- Change: none to source. `README.md`: v1.8.5 CAP baseline, ARM-only build (RISC-V out of scope), feature table dated 2026-11-20 (flash journal and atomicity scope, OwnerPIN, InitializedMessageDigest and OneShot, object-deletion campaign status), acceptance paragraph.
+- Validation: F42DD9D07D6D2B07 wiped with the d7e90a18 empty-card UF2 (`6a49614f…2ec1ff`, normal max_crypto, deletion ON, debug OFF), GPPro empty, unchanged 1.8.5/jc305 CAP installed, client 1.8.5 (`b6a753be…`), menu 2 → PERFORMANCE TEST → 2, `-fresh`, bound 10,800 s, serial captured; runs after T7 passed, on a separate board from option 1 (07E7).
+- Result: client `Testing complete`, 1,916 s, 0 `ERROR` lines, 0 reconnects; CSV 2,428 lines (SHA-256 `3e68172bb7742f3738da497f4412bcc4d548080cd7b3c5433f0f50cb3113ed67`). Serial: 5,096 `FS_APDU`, 8 full snapshots, 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL, 0 `pending=1`; HEADROOM:PASS 457 samples, peak 654 files / 13,201 B (13.43 %).
+- Decision: T8 option 2 accepted. T8 option 1 (07E7, 12 h bound) is still running; T10 headroom is covered for option 2.
+- Artifacts/logs: `artifacts/results/t8-option2-d7e90a18-20261120T1331Z/F42DD9D07D6D2B07/`

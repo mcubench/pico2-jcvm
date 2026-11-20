@@ -26,13 +26,13 @@ The implementation is based on [CHOUPI, an open-source Java Card Virtual Machine
 
 You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these downloads:
 
-- [JCAlgTest CAP files — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): the repository acceptance baseline is the supplied **v1.8.4, Java Card Classic 3.0.5 (`jc305`)** CAP, pinned in `tests/fixtures/manifest.json`; run it with the v1.8.5 host client.
+- [JCAlgTest CAP files — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): the repository acceptance baseline is the supplied **v1.8.5, Java Card Classic 3.0.5 (`jc305`)** CAP, pinned in `tests/fixtures/manifest.json`; run it with the v1.8.5 host client.
 - [JCAlgTest PC client — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): use client **v1.8.5** (`AlgTestJClient_v1.8.5.jar`, pinned in `tests/fixtures/external/jcalgtest/1.8.5/client/`). Older clients do not send the card-reset/object-deletion APDU correctly, so long runs exhaust card memory.
 - [GlobalPlatformPro `gp.jar` binary](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar).
 
 1. Download [pico2-jcvm-max_crypto-arm__latest.uf2](https://github.com/mcubench/pico2-jcvm/releases), or build an ARM JCVM **`.uf2`** image below.
 2. Hold **BOOTSEL** while connecting the Pico 2. Copy the image onto the **RPI-RP2** drive; the board reboots as a USB smart-card reader. An **empty-card image erases installed applets and persistent data**.
-3. Install the unchanged upstream JCAlgTest v1.8.4 applet:
+3. Install the unchanged upstream JCAlgTest v1.8.5 applet:
 
    ```sh
    java -jar gp.jar --reader "<Pico reader name>" \
@@ -52,14 +52,13 @@ See the [physical test runbook](docs/jcalgtest-physical-runbook.md) and [Windows
 
 ## 4. Build from source
 
-Build setup is currently manual. Initialize the required submodules and provision the dependencies described in the [toolchain notes](.agent/TOOLCHAIN.md): Pico SDK, ARM and RISC-V toolchains, CMake/Ninja, Rust, Java/Ant/Maven, and Java Card development dependencies.
+Build setup is currently manual. Initialize the required submodules and provision the dependencies described in the [toolchain notes](.agent/TOOLCHAIN.md): Pico SDK, ARM toolchain, CMake/Ninja, Rust, Java/Ant/Maven, and Java Card development dependencies.
 
 From the repository root, use the wrappers:
 
 ```sh
 ./tools/doctor
 ./tools/build arm --profile max_crypto
-./tools/build riscv --profile max_crypto
 ./tools/package-empty-card-uf2
 ```
 
@@ -68,7 +67,7 @@ Outputs:
 - Firmware: `build/arm/pico2_choupi.uf2`
 - Empty-card image: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`
 
-ARM Cortex-M33 runs the complete JCVM firmware. RISC-V currently provides a shared-code build check and smoke image. Build both architectures before flashing.
+ARM Cortex-M33 runs the complete JCVM firmware; RISC-V (Hazard3) is out of scope.
 
 ## 5. Architecture and development
 
@@ -80,29 +79,29 @@ Host application → PC/SC → USB CCID → Card manager / JCRE
                                                       → Flash storage
 ```
 
-The compatibility target is **Java Card Classic 3.0.5**, with the following coverage and limits (updated **2026-11-11**):
+The compatibility target is **Java Card Classic 3.0.5**, with the following coverage and limits (updated **2026-11-20**):
 
 | Feature | Status | Coverage / limits |
 | --- | --- | --- |
 | CAP loading and bytecode interpretation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Imports must resolve to API packages present in the firmware ROM mask. |
 | Applet lifecycle | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Installation, selection, and deletion. |
 | Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
-| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | Flash persistence and host transaction/interruption regressions are implemented. Long-run storage exhaustion remains unresolved; diagnostic reclamation is opt-in (see below). |
-| Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, PIN handling, and implemented `JCSystem` transient-memory and transaction operations; complete per-method coverage is not established. |
-| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | Profile-dependent keys, digests, random numbers, ciphers, signatures/MACs, and key agreement. `max_crypto` declares **159 of 162** capability flags enabled, including AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants. The default profile is `baseline`; profile flags do not establish full algorithm acceptance. |
+| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. |
+| Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, `OwnerPIN` (try counter durable before comparison, validated flag in RAM), and implemented `JCSystem` transient-memory and transaction operations; complete per-method coverage is not established. |
+| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | Profile-dependent keys, digests, random numbers, ciphers, signatures/MACs, and key agreement. `max_crypto` declares **159 of 162** capability flags enabled, including AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants; `InitializedMessageDigest` and all five 3.0.5 `OneShot` classes (RAM-only). The default profile is `baseline`; profile flags do not establish full algorithm acceptance. |
 | GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
 | Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted cross-AID sharing, proxy lifecycle, and firewall tests exist. Coordinated cross-context garbage-collection roots/cycles have host-unit coverage; full isolation semantics and device RAM bounds remain unestablished. |
 | MessageDigest input | ![Partial](https://img.shields.io/badge/partial-yellow) | At most **2,046 cumulative bytes** across `update()` and `doFinal()`. |
 | Extended-length APDUs | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
-| Persistent-object reclamation / `JCSystem.requestObjectDeletion()` | ![Partial](https://img.shields.io/badge/partial-yellow) | **Enabled in the normal build** (`mode=normal`; `PICO2_ENABLE_OBJECT_DELETION=0` gives a diagnostic build without it). It queues deletion for service after the APDU unwinds. VPCD tests preserve live RSA static roots and reclaim dropped objects; host tests cover coordinated heap collection and modeled interruption/retry. Physical long-run, bounded-memory, and power-loss acceptance remain open. |
+| Persistent-object reclamation / `JCSystem.requestObjectDeletion()` | ![Partial](https://img.shields.io/badge/partial-yellow) | **Enabled in the normal build** (`mode=normal`; `PICO2_ENABLE_OBJECT_DELETION=0` gives a diagnostic build without it). It queues deletion for service after the APDU unwinds. JCAlgTest performance (option 2) passes on hardware with storage below 15 %; the all-algorithms run (option 1) no longer runs out of RAM but has not yet completed in one run. Power-loss acceptance remains open. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | RSA/RSA-CRT 4096-bit key-pair generation | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Excluded from `max_crypto`. |
 
 Supported marks the listed implemented path, not full specification conformance. Exact cryptographic capability flags are in [the profile configuration](config/javacard-support.json); these declarations do not prove that every API method or workload passes.
 
-Full specification conformance and complete per-method coverage are not established. The JCAlgTest **1.8.5 / jc305 CAP with the 1.8.5 host client** is the acceptance baseline; full acceptance remains open, including persistent-storage exhaustion, diagnostic object deletion, and completion of the physical all-algorithms and performance campaigns. Partial campaign results are not suite passes. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
+Full specification conformance and complete per-method coverage are not established. The JCAlgTest **1.8.5 / jc305 CAP with the 1.8.5 host client** is the acceptance baseline; the unchanged-client VPCD run and the physical performance campaign (option 2) pass; the physical all-algorithms campaign (option 1) and power-loss acceptance remain open. Partial campaign results are not suite passes. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)
