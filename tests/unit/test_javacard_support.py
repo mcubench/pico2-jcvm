@@ -47,7 +47,7 @@ class JavaCardSupportTests(unittest.TestCase):
                 rows = list(csv.reader(source, delimiter=";"))
             # One row per enabled capability, plus the OneShot rows derived
             # from them (choupi/src/native_oneshot.cpp).
-            plain = [row for row in rows[1:] if ".OneShot" not in row[0]]
+            plain = [row for row in rows[1:] if ".OneShot" not in row[0] and "InitializedMessageDigest" not in row[0]]
             self.assertEqual(len(plain), 15)
             self.assertEqual(sum(CONFIG.values()), 15)
             self.assertIn("#define JC_SUPPORT_SHA256 1", (out / "javacard-support.h").read_text())
@@ -155,7 +155,7 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertIn("profile=base", result.stdout)
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 rows = list(csv.reader(source, delimiter=";"))
-            self.assertEqual({tuple(row) for row in rows[1:] if ".OneShot" not in row[0]}, {
+            self.assertEqual({tuple(row) for row in rows[1:] if ".OneShot" not in row[0] and "InitializedMessageDigest" not in row[0]}, {
                 ("javacard.framework.OwnerPINBuilder", "OWNER_PIN"),
                 ("javacard.framework.OwnerPINBuilder", "OWNER_PIN_X"),
                 ("javacard.framework.OwnerPINBuilder", "OWNER_PIN_X_WITH_PREDECREMENT"),
@@ -264,7 +264,7 @@ class JavaCardSupportTests(unittest.TestCase):
                 "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
                 "CIPHER_AES_CTR PAD_NOPAD",
             ), rows)
-            self.assertEqual(len({row for row in rows if ".OneShot" not in row[0]}), 48)
+            self.assertEqual(len({row for row in rows if ".OneShot" not in row[0] and "InitializedMessageDigest" not in row[0]}), 48)
             self.assertIn((
                 "javacardx.crypto.Cipher.OneShot.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
                 "CIPHER_AES_CTR PAD_NOPAD",

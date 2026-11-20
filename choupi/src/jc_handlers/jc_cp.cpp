@@ -318,6 +318,10 @@ uint8_t remap_imported_virtual_method_token(
       0, 4, 8, 1, 2, 10, 9, 12, 3, 11, 13, 5, 6, 7, 17};
   static constexpr uint8_t security_digest_oneshot_virtual_methods[] = {
       0, 3, 1, 2, 5, 4, 6};
+  static constexpr uint8_t security_initialized_digest_virtual_methods[] = {
+      0, 3, 1, 2, 5, 4, 6};
+  static constexpr uint8_t security_initialized_digest_oneshot_virtual_methods[] = {
+      0, 3, 1, 2, 5, 4, 6, 7};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
@@ -338,6 +342,20 @@ uint8_t remap_imported_virtual_method_token(
       class_token == 30 &&
       method_token < sizeof(security_digest_oneshot_virtual_methods)) {
     return security_digest_oneshot_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 26 &&
+      method_token < sizeof(security_initialized_digest_virtual_methods)) {
+    return security_initialized_digest_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 31 &&
+      method_token < sizeof(security_initialized_digest_oneshot_virtual_methods)) {
+    return security_initialized_digest_oneshot_virtual_methods[method_token];
   }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,

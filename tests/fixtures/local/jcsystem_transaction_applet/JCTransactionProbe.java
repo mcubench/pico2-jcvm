@@ -47,6 +47,10 @@ public final class JCTransactionProbe extends Applet {
   // 1: open OneShots in select() and again in the selecting process();
   // 2: both succeeded; 3: process() got NO_RESOURCE.
   private byte oneShotSelectProbe;
+  private InitializedMessageDigest initializedDigest;
+  // SHA-256 intermediate state after 64 bytes of 0x61 (cases 119/120).
+  private static final byte[] SHA256_STATE_AFTER_64A = {
+      (byte)0xDF, (byte)0x5B, (byte)0xB8, (byte)0x1C, (byte)0xE8, (byte)0x1E, (byte)0x06, (byte)0x26, (byte)0xFB, (byte)0x45, (byte)0xA8, (byte)0x94, (byte)0x4F, (byte)0xD4, (byte)0x0F, (byte)0x31, (byte)0xB2, (byte)0x5E, (byte)0x68, (byte)0x16, (byte)0xD6, (byte)0xD4, (byte)0x99, (byte)0xC1, (byte)0xAB, (byte)0x90, (byte)0x49, (byte)0x29, (byte)0x00, (byte)0x63, (byte)0x5E, (byte)0x66};
   private short[] memoryProbeWords;
   private byte value = 0x11;
   private byte selectCount;
@@ -306,7 +310,8 @@ public final class JCTransactionProbe extends Applet {
       }
       case 11:
         try {
-          InitializedMessageDigest.OneShot.open(MessageDigest.ALG_SHA);
+          // MD5 is not a MessageDigest algorithm in any profile.
+          InitializedMessageDigest.OneShot.open(MessageDigest.ALG_MD5);
           buffer[0] = 0;
         } catch (CryptoException e) {
           buffer[0] = (byte)e.getReason();
@@ -1485,6 +1490,64 @@ public final class JCTransactionProbe extends Applet {
           buffer[1] = (byte) e.getReason();
         }
         length = 2;
+        break;
+      }
+      case 119: {
+        // InitializedMessageDigest continues SHA-256 from an intermediate state:
+        // state(64 x 'a') + "abc" must equal SHA-256(64 x 'a' || "abc").
+        if (initializedDigest == null) {
+          initializedDigest = MessageDigest.getInitializedMessageDigestInstance(
+              MessageDigest.ALG_SHA_256, false);
+        }
+        Util.arrayCopyNonAtomic(SHA256_STATE_AFTER_64A, (short) 0, buffer,
+                                (short) 64, (short) 32);
+        buffer[100] = 0x40;
+        initializedDigest.setInitialDigest(buffer, (short) 64, (short) 32,
+                                           buffer, (short) 100, (short) 1);
+        buffer[104] = 0x61;
+        buffer[105] = 0x62;
+        buffer[106] = 0x63;
+        length = initializedDigest.doFinal(buffer, (short) 104, (short) 3,
+                                           buffer, (short) 0);
+        break;
+      }
+      case 120: {
+        // InitializedMessageDigest.OneShot: update() is ILLEGAL_USE, a digested
+        // length that is not a block multiple is ILLEGAL_VALUE.
+        InitializedMessageDigest.OneShot digest =
+            InitializedMessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+        byte update = 0;
+        byte value = 0;
+        try {
+          try {
+            digest.update(buffer, (short) 0, (short) 1);
+          } catch (CryptoException e) {
+            update = (byte) e.getReason();
+          }
+          Util.arrayCopyNonAtomic(SHA256_STATE_AFTER_64A, (short) 0, buffer,
+                                  (short) 64, (short) 32);
+          buffer[100] = 0x3F;
+          try {
+            digest.setInitialDigest(buffer, (short) 64, (short) 32, buffer,
+                                    (short) 100, (short) 1);
+          } catch (CryptoException e) {
+            value = (byte) e.getReason();
+          }
+          buffer[100] = 0x40;
+          digest.setInitialDigest(buffer, (short) 64, (short) 32, buffer,
+                                  (short) 100, (short) 1);
+          buffer[104] = 0x61;
+          buffer[105] = 0x62;
+          buffer[106] = 0x63;
+          digest.doFinal(buffer, (short) 104, (short) 3, buffer, (short) 8);
+        } finally {
+          digest.close();
+          digest = null;
+        }
+        buffer[0] = update;
+        buffer[1] = value;
+        Util.arrayCopyNonAtomic(buffer, (short) 8, buffer, (short) 2, (short) 4);
+        length = 6;
         break;
       }
       case 117: {

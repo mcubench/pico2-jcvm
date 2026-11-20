@@ -385,8 +385,7 @@ def load_config(path: Path, requested_profile: str | None = None) -> tuple[str, 
 # Java Card 3.0.5 OneShot rows (JCAlgTest sections). OneShot.open() creates
 # its algorithm object with the same native factory as getInstance(), so a
 # OneShot row is supported exactly when one of the listed capabilities is
-# (choupi/src/native_oneshot.cpp). InitializedMessageDigest has no supported
-# algorithm in any profile, so its OneShot section has no rows.
+# (choupi/src/native_oneshot.cpp).
 ONESHOT_CIPHER_SECTION = (
     "javacardx.crypto.Cipher.OneShot.getInstance(byte cipherAlgorithm, "
     "byte paddingAlgorithm, boolean externalAccess)")
@@ -461,6 +460,19 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("sha512",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_512"),
     (("sha224",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_224"),
     (("secure_random",), "javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
+    # MessageDigest.getInitializedMessageDigestInstance() and its OneShot use
+    # the same SHA-1/SHA-2 engines as MessageDigest
+    # (choupi/src/native_message_digest.cpp).
+    (("sha1",), "javacard.security.InitializedMessageDigest", "ALG_SHA"),
+    (("sha256",), "javacard.security.InitializedMessageDigest", "ALG_SHA_256"),
+    (("sha384",), "javacard.security.InitializedMessageDigest", "ALG_SHA_384"),
+    (("sha512",), "javacard.security.InitializedMessageDigest", "ALG_SHA_512"),
+    (("sha224",), "javacard.security.InitializedMessageDigest", "ALG_SHA_224"),
+    (("sha1",), "javacard.security.InitializedMessageDigest.OneShot", "ALG_SHA"),
+    (("sha256",), "javacard.security.InitializedMessageDigest.OneShot", "ALG_SHA_256"),
+    (("sha384",), "javacard.security.InitializedMessageDigest.OneShot", "ALG_SHA_384"),
+    (("sha512",), "javacard.security.InitializedMessageDigest.OneShot", "ALG_SHA_512"),
+    (("sha224",), "javacard.security.InitializedMessageDigest.OneShot", "ALG_SHA_224"),
 )
 
 
@@ -532,6 +544,8 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|MessageDigest|MessageDigest/doFinal([BSS[BS)S|instance",
             "javacard/security|MessageDigest|MessageDigest/update([BSS)V|instance",
             "javacard/security|MessageDigest|MessageDigest/reset()V|instance",
+            "javacard/security|MessageDigest|MessageDigest/getInitializedMessageDigestInstance(BZ)Ljavacard/security/InitializedMessageDigest;|static",
+            "javacard/security|InitializedMessageDigest|InitializedMessageDigest/setInitialDigest([BSS[BSS)V|instance",
             "javacard/security|Signature|Signature/getInstance(BZ)Ljavacard/security/Signature;|static",
             "javacard/security|Signature|Signature/getInstance(BBBZ)Ljavacard/security/Signature;|static",
             "javacard/security|Signature|Signature/init(Ljavacard/security/Key;B)V|instance",

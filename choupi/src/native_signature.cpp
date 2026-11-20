@@ -953,6 +953,15 @@ std::vector<unsigned char> runMac(
 
 } // namespace
 
+std::vector<unsigned char> continueDigestFromInitialState(
+    const uint8_t algorithm, const std::vector<unsigned char> &state,
+    const uint64_t digestedLow, const uint64_t digestedHigh,
+    const std::vector<unsigned char> &message) {
+  return continueDigestFromState(algorithm, state,
+                                 DigestByteLength{digestedLow, digestedHigh},
+                                 message);
+}
+
 std::shared_ptr<JC_Array> signatureBufferIfAllocated(JC_Instance &signature,
                                                      uint16_t field) {
   const jref_t reference = signature.getField_Reference(field);

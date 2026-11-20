@@ -32642,3 +32642,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `c28d9906dba9ae477fed12ea1109165c4e618d651fd781fc5f81146205b62784` (2,961,408 B), ZIP SHA-256 `dc3e196b1708fd53d04670ed7eb6836b8fbc2254767de658c7fed68a56478f65` (18,233,738 B), end 0x100696dc, headroom 616,740 B, CPLC `0x655DFA44FEB5DEF1`.
 - Decision: smoke-test the UF2 on 07E7 after the option-1 run, together with the ONESHOT-01 hardware checks.
 - Artifacts/logs: `artifacts/results/windows-package-655dfa44/`
+
+## 2026-11-20 Implement InitializedMessageDigest and InitializedMessageDigest.OneShot 14
+
+- Step-Id: `20261120-1128-initialized-digest`
+- Task: ONESHOT-01 follow-up (user approved adding InitializedMessageDigest)
+- When: '2026-11-20 11:14' - '2026-11-20 11:28'
+- Model: `claude-opus-5-5`
+- Change: `MessageDigest.getInitializedMessageDigestInstance()` and `InitializedMessageDigest.setInitialDigest()` are native (`choupi/src/native_message_digest.cpp`): same SHA-1/SHA-2 engines and input buffering as MessageDigest; a private transient `initialState` array (javacard-api `22917c9`) holds the intermediate hash value and digested length; `setInitialDigest` throws ILLEGAL_VALUE for a wrong state length or a digested length that is zero, not a block multiple or over the algorithm limit; `doFinal` continues through `continueDigestFromInitialState()` (exported from `native_signature.cpp`, shared with `Signature.setInitialDigest`); `doFinal`/`reset` return to the construction state. `InitializedMessageDigest.OneShot` is OneShot kind 5. JC305 token tables for official class tokens 26 and 31 (`jc_cp.cpp`). Generator: two native-method entries and manifest rows for `InitializedMessageDigest` and its OneShot (same SHA capabilities). Probe case 11 now checks an unsupported algorithm (MD5) instead of ALG_SHA; cases 119/120 added. Found during testing: ROM field indexes are class-local, so the native code must add MessageDigest's instance size (it first aliased the input buffer).
+- Validation: `tools/test-jcsystem-transaction-applet` 113/113 on the PC and RP2350-overlay builds (case 119: state after 64 x 'a' + "abc" = `18917C88…A64275` = Python `hashlib.sha256`; case 120: `05 01` + digest prefix). `tools/test-javacard-support.py` 15/15, `test-jcarray`, `test-persistent-transaction`, `test-rp2350-fs-overlay` pass. ARM max_crypto rc=0, no warnings. `tools/test-jcalgtest-support-vpcd` ALG_SUPPORT_BASIC: `JCALGTEST_VPCD:PASS`, InitializedMessageDigest 5 and InitializedMessageDigest.OneShot 5 "yes" rows match the manifest, HEADROOM:PASS 15.48 %. Hardware not run (07E7 busy).
+- Result: all five Java Card 3.0.5 OneShot classes and InitializedMessageDigest are implemented on the emulator.
+- Decision: hardware validation together with the other ONESHOT-01 checks; next Windows package can include this.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T102026Z/`

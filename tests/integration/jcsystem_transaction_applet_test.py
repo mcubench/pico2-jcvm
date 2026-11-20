@@ -212,7 +212,7 @@ def main() -> int:
                         None,
                         "JCSystem scalar/extended memory overloads and commit capacity",
                     ),
-                    (11, b"\x03", "unsupported initialized digest reports NO_SUCH_ALGORITHM"),
+                    (11, b"\x03", "unsupported initialized digest algorithm (MD5) reports NO_SUCH_ALGORITHM"),
                     (12, b"\x32", "50 CryptoException throws reuse one instance and update reason"),
                     (
                         13,
@@ -315,6 +315,8 @@ def main() -> int:
                     (115, bytes((1, 5)), "OneShot instances were released when process() returned"),
                     (117, b"\x01", "arm OneShot use in select()"),
                     (118, b"\x02", "OneShot instances opened in select() are released before process()"),
+                    (119, bytes.fromhex("18917c887594f95a0a81701c589533ff21c74b1fb567e4521272f37815a64275"), "InitializedMessageDigest SHA-256 continues from an intermediate state"),
+                    (120, bytes.fromhex("050118917c88"), "InitializedMessageDigest.OneShot: update ILLEGAL_USE, bad length ILLEGAL_VALUE, digest"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

@@ -44,6 +44,8 @@ jref_t javacard_security_Signature_getInstance(jbyte_t digest, jbyte_t cipher,
                                                jbool_t externalAccess);
 jref_t javacard_security_MessageDigest_getInstance(jbyte_t algorithm,
                                                    jbool_t externalAccess);
+jref_t javacard_security_MessageDigest_getInitializedMessageDigestInstance(
+    jbyte_t algorithm, jbool_t externalAccess);
 #if JC_SUPPORT_SECURE_RANDOM
 void fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
     std::shared_ptr<JC_Array> buffer, jshort_t offset, jshort_t length);
@@ -56,8 +58,9 @@ enum Kind : uint8_t {
   kSignature = 2,
   kMessageDigest = 3,
   kRandomData = 4,
+  kInitializedMessageDigest = 5,
 };
-constexpr uint8_t kKinds = 4;
+constexpr uint8_t kKinds = 5;
 constexpr size_t kSlotsPerKind = 2;
 constexpr uint8_t kAlgSecureRandom = 2; // RandomData.ALG_SECURE_RANDOM
 
@@ -95,6 +98,12 @@ jref_t newOneShotInstance(const uint8_t kind) {
     class_index = classOffset(
         package,
         ROM_CLASS_EXPORT_TOKEN_JAVACARD_SECURITY_MESSAGEDIGEST_ONESHOT);
+    break;
+  case kInitializedMessageDigest:
+    package = ROM_PACKAGE_INDEX_JAVACARD_SECURITY;
+    class_index = classOffset(
+        package,
+        ROM_CLASS_EXPORT_TOKEN_JAVACARD_SECURITY_INITIALIZEDMESSAGEDIGEST_ONESHOT);
     break;
   default:
     package = ROM_PACKAGE_INDEX_JAVACARD_SECURITY;
@@ -155,7 +164,7 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotOpen(
     const jbyte_t kind_value, const jbyte_t first, const jbyte_t second,
     const jbyte_t third) {
   const uint8_t kind = static_cast<uint8_t>(kind_value);
-  if (kind < kCipher || kind > kRandomData) {
+  if (kind < kCipher || kind > kInitializedMessageDigest) {
     throw Exceptions::SecurityException;
   }
   Context &context = Context::getActiveContext();
@@ -174,6 +183,10 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotOpen(
     break;
   case kMessageDigest:
     delegate = javacard_security_MessageDigest_getInstance(first, FALSE);
+    break;
+  case kInitializedMessageDigest:
+    delegate = javacard_security_MessageDigest_getInitializedMessageDigestInstance(
+        first, FALSE);
     break;
   default:
 #if JC_SUPPORT_SECURE_RANDOM
