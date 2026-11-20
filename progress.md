@@ -32630,3 +32630,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: OneShot release now happens at every applet entry-point return (select, deselect, process, install), as the API requires.
 - Decision: remaining ONESHOT-01 items: hardware run with zero-write check, cross-context test.
 - Artifacts/logs: none new beyond the emulator logs
+
+## 2026-11-20 Package Windows test 655dfa44 (OOM fix and OneShot) 3
+
+- Step-Id: `20261120-1114-win-package-655dfa44`
+- Task: external Windows test package refresh (user request)
+- When: '2026-11-20 11:11' - '2026-11-20 11:14'
+- Model: `claude-opus-5-5`
+- Change: built normal max_crypto from HEAD `655dfa44` and packaged it with `./tools/package-maxcrypto-windows-test`. `WIN-MAXCRYPTO-ONESHOT-655DFA44` replaces `WIN-MAXCRYPTO-OOMFIX-981CDE78` in `.agent/EXT_REQUESTS.md`; TODO images table updated.
+- Validation: build rc=0, 0 warnings, mode=normal (tree state "dirty" only from untracked files); `PACKAGE:PASS`; package `applet.cap` SHA-256 `fa64582e…b48fb`. Not done: physical smoke of this UF2 (07E7 is still in the option-1 rerun; F42D is not in PC/SC).
+- Result: UF2 SHA-256 `c28d9906dba9ae477fed12ea1109165c4e618d651fd781fc5f81146205b62784` (2,961,408 B), ZIP SHA-256 `dc3e196b1708fd53d04670ed7eb6836b8fbc2254767de658c7fed68a56478f65` (18,233,738 B), end 0x100696dc, headroom 616,740 B, CPLC `0x655DFA44FEB5DEF1`.
+- Decision: smoke-test the UF2 on 07E7 after the option-1 run, together with the ONESHOT-01 hardware checks.
+- Artifacts/logs: `artifacts/results/windows-package-655dfa44/`
