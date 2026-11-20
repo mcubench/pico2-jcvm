@@ -32558,3 +32558,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: heap per 64 live objects, baseline -> new: `byte[16]` 176 -> 144 B, two-field instance 153 -> 105 B, instance+array pair 355 -> 271 B; idle free heap after probe setup 163,656 -> 173,656 B. Projected to the option-1 failure point (405 arrays, 144 instances) that is about 20 KB more free besides the idle gain. Case 111: 103 transient 1 KB arrays allocated, then `NO_RESOURCE` (reason 5) with 16,336 B free; the next APDUs succeeded and freeing returned the heap to 131,912 B. Not measured yet: the full option-1 suite on this image.
 - Decision: next, package an empty-card image of this build, wipe 07E7 and rerun option 1 as the end-to-end check (bound 8 h; stop on FAULT/PANIC/TEST:FAIL). Correction: the previous record's end time is 04:02–04:03 (its commit time), not 04:08.
 - Artifacts/logs: `artifacts/results/ram-per-object-20261120/07E74C5D7A038DEC/` (`probe-baseline.txt`, `probe-smallobj.txt`, `probe-reserve.txt`, cycle and install logs)
+
+## 2026-11-20 Assess TODO state and reprioritise after the OOM fix and VPCD restore (start not captured)
+
+- Step-Id: `20261120-0748-todo-assessment`
+- Task: backlog maintenance (user request: analyse TODO.md, assess the project, update tasks)
+- When: start not captured (after the 07:3x run check) - '2026-11-20 07:48'
+- Model: `claude-opus-5-5`
+- Change: `TODO.md`: new dated state assessment and work order under the priorities; new TOOL-VPCD-01 (stale/plain-FS emulator footgun in the VPCD runner); "Current images" table now names the `a1639b68` image and empty-card UF2 and marks the a266b836 Windows package as pre-OOM-fix; MEM-01 T7 status (VPCD restored, first run invalid, overlay run live); LONGOP-01 T7 and T9 closed (mechanism explained and fixed), T4 narrowed; PERF-20261110-07 closed by FLASH-01; PERF-20261110-05 annotated as a RAM item. `.agent/EXT_REQUESTS.md`: HOST-VPCD-PCSC-01 removed (fulfilled by the user), Windows request annotated as superseded for option 1. `.agent/QKB.md`: pcscd restart by the VPCD install and its recovery; overlay requirement for VPCD deletion runs. HANDOFF: live runs.
+- Validation: inspection only (no build or hardware change in this step). Counts at the time: 100 open and 22 closed checkbox items in `TODO.md` before the edit.
+- Result: open work, in order: the two live runs (physical option 1 after the OOM fix, VPCD T7); then T8/T10 acceptance on two tokens; new Windows package; TOOL-VPCD-01; PERF-20261110-05; then the untouched P1 security backlog (CAPIN-01..06, RV-20261103-11/12/28, RV-20261106-*).
+- Decision: keep MEM-01 the only P0 until T7/T8 pass.
+- Artifacts/logs: none new

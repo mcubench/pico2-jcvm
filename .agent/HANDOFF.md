@@ -1,13 +1,15 @@
 # Handoff — next steps only
 
-Updated: 2026-11-20 04:08 CET.
+Updated: 2026-11-20 04:21 CET.
 
 ## Current state
-- **No live run.** Option 1 on 07E7 (a266b836 image) ended 2026-11-20 04:00 CET with `*** PANIC *** / Out of memory` at RSA-3072 CRT NOPAD `doFinal` after 505 methods, the same point as the 2026-11-18 run; see progress `20261120-0408-option1-a266b836-oom` and TODO OOM T9. Option 2 on the same image passed (exit 0, 26 min). 07E7 re-enumerated on USB after the panic; its storage holds the campaign state (wipe before any acceptance run).
+- **Live:** option-1 rerun on 07E7 with the a1639b68 image (smaller handles + 16 KB Java allocation reserve, OOM T9), started 04:21 CET 2026-11-20, bound 28,800 s; `artifacts/results/option1-a1639b68-20261120T0320Z/07E74C5D7A038DEC/`. Do not restart pcscd or use this reader until it ends. The previous option-1 run (a266b836) ended in Out of memory at RSA-3072 CRT (progress `20261120-0408-option1-a266b836-oom`).
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work
 - Waiting on `WIN-MAXCRYPTO-FLASH-A266B836` (`.agent/EXT_REQUESTS.md`).
-- Next engineering item: heap OOM in option 1 (TODO OOM T9 (a)–(d)); do not rerun option 1 before a fix lands.
-- F42D (2026-11-18): empty-card external-test UF2 `a0b46b33…`; was not visible through PC/SC. T7 remains blocked on missing `Virtual PCD 00 00` (`HOST-VPCD-PCSC-01`); keep T7/T8/T10 open.
+- OOM T9 fix committed (`20261120-0419-oom-small-handles-reserve`); the live run is its end-to-end check.
+- **Live:** MEM-01 T7 VPCD run (RP2350 overlay, current tree, unchanged 1.8.5 client, ALG_PERFORMANCE_STATIC) in `artifacts/results/jcalgtest-support-vpcd-20261120T062332Z/`; VPCD readers `Virtual PCD 00 00/01` exist since 2026-11-20 (user install). Physical option 1 on 07E7 was resumed after a pcscd restart; its reader name is now `... (07E74C5D7A038DEC) 01 00`, logs `client-resume.log`/`serial-resume.log`.
+- F42D is visible in PC/SC (`... (F42DD9D07D6D2B07) 00 00`); usable as the second token for T8.
+- Priorities and the state assessment are at the top of `TODO.md`.
 - Preserve `.agent/code_review_instructions_memory_20261117.md`, `inbox/`, and the pre-existing root `*_already_measured.list` files.

@@ -1731,3 +1731,26 @@ without the change passed.
 
 **Viable fix:** always append new natives after the last existing method.
 Run the full `tools/test-jcsystem-transaction-applet` after any ROM API change.
+
+## Installing a host VPCD driver restarts pcscd and drops live physical sessions (2026-11-20)
+
+The user installed a virtual card (VPCD) driver during the live option-1 run on
+07E7; pcscd restarted at 06:20:18 CET and the client failed with
+`SCARD_F_COMM_ERROR` mid-APDU. The token stayed alive (serial counters
+unchanged, no panic) but was absent from PC/SC afterwards, even after
+`sudo -n /usr/local/sbin/pico2-pcsc-reader`. **Viable fix:** `tools/cycle
+choupi` of the same build (storage preserved) re-enumerated it; the reader name
+then ended in `01 00` instead of `00 00`, so confirm the exact name with
+`tools/list-readers` before resuming. Resume JCAlgTest without `-fresh`, same
+`-cardname`, and add `y` to `JCALGTEST_STDIN_LINES` for "use already measured
+list? (y/n)". The VPCD readers are now `Virtual PCD 00 00` and `00 01`
+(HOST-VPCD-PCSC-01 fulfilled).
+
+## VPCD JCAlgTest runner: deletion runs need the RP2350 overlay (2026-11-20)
+
+`JCALGTEST_OBJECT_DELETION=1` alone runs `build/choupi-pc/choupi` as found
+(possibly stale) on the plain PC filesystem, which emits no
+`OBJECT_DELETION:PRE_CLEANUP`, so the headroom gate fails after the whole run.
+**Viable fix:** also set `JCALGTEST_RP2350_OVERLAY=1` (rebuilds
+`build/choupi-pc-rp2350-overlay` from the current tree). Tracked as TODO
+TOOL-VPCD-01.

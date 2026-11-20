@@ -2,6 +2,8 @@
 
 ## WIN-MAXCRYPTO-FLASH-A266B836 — JCAlgTest 1.8.5 run with minimal flash writes and native OwnerPIN
 
+**Update 2026-11-20:** option 1 on this image panics with Out of memory at RSA-3072 CRT (fixed in `a1639b68`). Option-2 (`$mode = 'symmetric'`) results on a266b836 remain useful; a full option-1 run on it is expected to fail the same way. A replacement package will follow once the `a1639b68` campaigns pass.
+
 Created 2026-11-19 23:15 CET. This replaces `WIN-MAXCRYPTO-BASELINE-5A537513`. A run already in
 progress on 5a537513 may be finished and returned; it stays valid evidence for that image.
 
@@ -54,16 +56,3 @@ Key questions:
   the end of `serial-capture-console.txt` PASS? How many `FS_APDU … synced=1` lines are there?
 - Does `all` reach the end with no `*** PANIC ***`, `FAULT` or reader loss?
 - Do the RSA NOPAD Cipher methods complete without `F105`?
-
-## HOST-VPCD-PCSC-01 — Restore the host VPCD PC/SC reader
-
-Created 2026-11-18 17:38 CET. This is the current blocker for MEM-01 T7's unchanged-client VPCD run; the full evidence and prior checks are in `.agent/QKB.md` under “PC/SC helper refresh interrupts a live JCAlgTest run; VPCD reader is unavailable.”
-
-Please restore or install a VPCD PC/SC service on this host so the PC/VPCD JCVM emulator is published through PC/SC as exactly `Virtual PCD 00 00`. The emulator wrapper cannot publish this reader on its own, and the current host has no `vpcd`/`vicc` executable in PATH or `/usr/lib/pcsc`.
-
-After restoring it, provide:
-- `./tools/list-readers` output showing `Virtual PCD 00 00` (use the required host-access path if this performs PC/SC access);
-- the service/driver name and version, plus any configuration or startup command needed to keep it available;
-- confirmation that a SmartcardIO client can open that reader.
-
-Do not restart `pcscd` while the physical option-1 campaign is live; its client is currently running on token `07E74C5D7A038DEC`. Once a safe maintenance window is available, notify the agent so it can check reader publication and resume T7 using the pinned 1.8.5 client.
