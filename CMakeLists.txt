@@ -232,6 +232,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     choupi/src/main.cpp
     src/choupi_pico2.cpp
     src/cxx_terminate.cpp
+    src/recoverable_allocation.cpp
     src/pico_filesystem.cpp
     src/ccid_device.cpp
     src/reader_led.cpp

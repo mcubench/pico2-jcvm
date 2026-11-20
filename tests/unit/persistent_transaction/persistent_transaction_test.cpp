@@ -42,7 +42,42 @@ extern bool dynamic_cap_present[8];
 }
 extern uint16_t persistent_transaction_test_pending_reason;
 
+namespace persistent_transaction_test {
+// Allocation fault injection: when >= 0, that many further scalar or array
+// operator new calls succeed and the next one throws std::bad_alloc.
+long allocations_before_failure = -1;
+bool allocation_failure_injected = false;
+
+bool take_injected_allocation_failure() {
+  if (allocations_before_failure < 0) return false;
+  if (allocations_before_failure == 0) {
+    allocations_before_failure = -1;
+    allocation_failure_injected = true;
+    return true;
+  }
+  --allocations_before_failure;
+  return false;
+}
+} // namespace persistent_transaction_test
+
+void *operator new(const std::size_t size) {
+  if (persistent_transaction_test::take_injected_allocation_failure()) {
+    throw std::bad_alloc();
+  }
+  if (void *memory = std::malloc(size == 0 ? 1 : size)) return memory;
+  throw std::bad_alloc();
+}
+
+void operator delete(void *memory) noexcept { std::free(memory); }
+
+void operator delete(void *memory, std::size_t) noexcept {
+  std::free(memory);
+}
+
 void *operator new[](const std::size_t size) {
+  if (persistent_transaction_test::take_injected_allocation_failure()) {
+    throw std::bad_alloc();
+  }
   if (void *memory = std::malloc(size == 0 ? 1 : size)) {
     if (persistent_transaction_test::track_array_allocations)
       ++persistent_transaction_test::tracked_array_allocations;
@@ -2404,6 +2439,91 @@ int main() {
                read(static_tag_bytes, sizeof(static_tag_bytes)) ==
                    byte_record(0x06),
            "reclaimer_deletes_only_unreachable_owner_tags_and_preserves_subtrees");
+  }
+
+  {
+    // An allocation failure at any point of an object-deletion pass must not
+    // erase a reachable record (the firmware lets this pass throw
+    // std::bad_alloc instead of panicking). Sweep the failure over every
+    // allocation of the pass until a pass completes without one.
+    constexpr uint8_t owner = 0x46;
+    constexpr uint8_t package_id = 0xf6;
+    const uint8_t root_tag_bytes[] = {0x03, owner, 0x10, 0x01};
+    const uint8_t body_tag_bytes[] = {0x03, owner, 0x10, 0x01, 0xff, 0xff};
+    const uint8_t nested_tag_bytes[] = {0x03, owner, 0x10, 0x01, 0x00, 0x01};
+    const uint8_t orphan_tag_bytes[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t other_owner_tag_bytes[] = {0x03, 0x47, 0x20, 0x09};
+    bool reachable_preserved = true;
+    bool failure_seen = false;
+    bool completed = false;
+    unsigned failing_points = 0;
+    for (long point = 0; point < 4096 && !completed; ++point) {
+      seed(root_tag_bytes, sizeof(root_tag_bytes), byte_record(0x01));
+      seed(body_tag_bytes, sizeof(body_tag_bytes), byte_record(0x02));
+      seed(nested_tag_bytes, sizeof(nested_tag_bytes), byte_record(0x03));
+      seed(orphan_tag_bytes, sizeof(orphan_tag_bytes), byte_record(0x04));
+      seed(other_owner_tag_bytes, sizeof(other_owner_tag_bytes),
+           byte_record(0x05));
+      jcvm::Heap heap(owner);
+      const jcvm::jref_t root = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      jcvm::fs::Tag root_tag{};
+      root_tag.len = sizeof(root_tag_bytes);
+      std::memcpy(root_tag.value, root_tag_bytes, sizeof(root_tag_bytes));
+      heap.getArray(root)->setPersistentTag(root_tag);
+      const std::vector<jcvm::jref_t> root_references{root};
+      RootVectorContext roots{&root_references};
+
+      persistent_transaction_test::allocation_failure_injected = false;
+      persistent_transaction_test::allocations_before_failure = point;
+      jcvm::PersistentReclaimer::ObjectDeletionBatchResult result;
+      bool threw = false;
+      try {
+        result =
+            jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
+                owner, package_id, heap, enumerate_root_vector, &roots, 64);
+      } catch (const std::bad_alloc &) {
+        threw = true;
+      }
+      persistent_transaction_test::allocations_before_failure = -1;
+      const bool injected =
+          persistent_transaction_test::allocation_failure_injected;
+      if (injected) {
+        failure_seen = true;
+        ++failing_points;
+      }
+      reachable_preserved =
+          reachable_preserved &&
+          read(root_tag_bytes, sizeof(root_tag_bytes)) == byte_record(0x01) &&
+          read(body_tag_bytes, sizeof(body_tag_bytes)) == byte_record(0x02) &&
+          read(nested_tag_bytes, sizeof(nested_tag_bytes)) ==
+              byte_record(0x03) &&
+          read(other_owner_tag_bytes, sizeof(other_owner_tag_bytes)) ==
+              byte_record(0x05);
+      if (!injected && !threw) {
+        completed = result.complete() &&
+                    read(orphan_tag_bytes, sizeof(orphan_tag_bytes)).empty();
+      }
+    }
+    seed(orphan_tag_bytes, sizeof(orphan_tag_bytes), byte_record(0x04));
+    jcvm::fs::Tag cleanup{};
+    for (const auto &bytes :
+         {std::vector<uint8_t>(root_tag_bytes, std::end(root_tag_bytes)),
+          std::vector<uint8_t>(body_tag_bytes, std::end(body_tag_bytes)),
+          std::vector<uint8_t>(nested_tag_bytes, std::end(nested_tag_bytes)),
+          std::vector<uint8_t>(orphan_tag_bytes, std::end(orphan_tag_bytes)),
+          std::vector<uint8_t>(other_owner_tag_bytes,
+                               std::end(other_owner_tag_bytes))}) {
+      cleanup.len = static_cast<uint8_t>(bytes.size());
+      std::memcpy(cleanup.value, bytes.data(), bytes.size());
+      (void)jcvm::FlashMemory_Handler::erasePersistentTag(cleanup);
+    }
+    // Leave the per-pass statistics as the next test expects them.
+    (void)jcvm::Heap::takeReusedTraceCount();
+    (void)jcvm::Heap::takeReachableTagIndexPeakBytes(nullptr);
+    std::printf("TEST:INFO reclaimer_allocation_failure_points=%u\n",
+                failing_points);
+    expect(failure_seen && completed && reachable_preserved,
+           "reclaimer_allocation_failure_never_erases_reachable_records");
   }
 
   {

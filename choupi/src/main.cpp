@@ -50,6 +50,7 @@
 #include "../../src/object_deletion_policy.hpp"
 #include "native_oneshot.hpp"
 #include "native_owner_pin.hpp"
+#include "recoverable_allocation.hpp"
 
 #include <cerrno>
 #include <chrono>
@@ -60,6 +61,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <new>
 #include <utility>
 #include <vector>
 #if defined(PC_VERSION) && defined(__GLIBC__) && \
@@ -78,6 +80,7 @@ extern "C" void choupi_persistent_memory_usage(uint32_t *files_used,
 extern "C" uint8_t choupi_compact_persistent_memory(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes);
+extern "C" uint32_t choupi_available_transient_memory_bytes(void);
 #endif
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
@@ -575,6 +578,8 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
   }
 
   const uint32_t roots_done_us = choupi_time_us_32();
+  const uint32_t ram_before_reclaim = choupi_available_transient_memory_bytes();
+  bool reclaim_allocation_failed = false;
   const auto deletion_batch =
       [&]() {
         uint32_t files_used = 0;
@@ -583,27 +588,54 @@ void service_physical_object_deletion_request(jcvm::Context &context) {
         choupi_persistent_memory_usage(&files_used, &bytes_used,
                                       &byte_capacity);
         std::printf("OBJECT_DELETION:PRE_CLEANUP package=%u owner=%u "
-                    "reason=%s available=%lu files=%lu bytes=%lu/%lu\r\n",
+                    "reason=%s available=%lu files=%lu bytes=%lu/%lu "
+                    "ram=%lu\r\n",
                     static_cast<unsigned>(context.getAppletPackageID()),
                     static_cast<unsigned>(owner),
                     automatic_deletion_pending[owner] ? "automatic" : "applet",
                     static_cast<unsigned long>(available_before_reclaim),
                     static_cast<unsigned long>(files_used),
                     static_cast<unsigned long>(bytes_used),
-                    static_cast<unsigned long>(byte_capacity));
+                    static_cast<unsigned long>(byte_capacity),
+                    static_cast<unsigned long>(ram_before_reclaim));
         std::fflush(stdout);
         // Drain the request within this pass where possible, so leftover
         // work is not serviced after (and charged to) the next APDU.
         const jcvm::PersistentReclaimer::ObjectDeletionDeadline deadline{
             choupi_time_us_32, choupi_time_us_32(),
             jcvm::PersistentReclaimer::kObjectDeletionReclaimBudgetUs};
-        return jcvm::PersistentReclaimer::reclaimUnreachableObjectDeletionBatch(
-            static_cast<uint8_t>(context.getAppletID()),
-            context.getAppletPackageID(), context.getHeap(),
-            enumerate_physical_object_deletion_roots, &roots,
-            jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu,
-            &deadline);
+        // The reclaim scans fail closed on std::bad_alloc (an incomplete
+        // trace keeps every candidate), and each erase is one complete
+        // filesystem operation. Running out of RAM while searching for
+        // garbage therefore only defers the request; outside this scope a
+        // failed allocation still panics (see recoverable_allocation.hpp).
+        try {
+          const jcvm::RecoverableAllocationScope allocation_scope;
+          return jcvm::PersistentReclaimer::
+              reclaimUnreachableObjectDeletionBatch(
+                  static_cast<uint8_t>(context.getAppletID()),
+                  context.getAppletPackageID(), context.getHeap(),
+                  enumerate_physical_object_deletion_roots, &roots,
+                  jcvm::PersistentReclaimer::kObjectDeletionMaxRecordsPerApdu,
+                  &deadline);
+        } catch (const std::bad_alloc &) {
+          reclaim_allocation_failed = true;
+          return jcvm::PersistentReclaimer::ObjectDeletionBatchResult{};
+        }
       }();
+  if (reclaim_allocation_failed) {
+    std::printf("OBJECT_DELETION:SKIP package=%u owner=%u "
+                "reason=allocation_failed ram_before=%lu ram_after=%lu "
+                "failures=%lu request_retained=1\r\n",
+                static_cast<unsigned>(context.getAppletPackageID()),
+                static_cast<unsigned>(owner),
+                static_cast<unsigned long>(ram_before_reclaim),
+                static_cast<unsigned long>(
+                    choupi_available_transient_memory_bytes()),
+                static_cast<unsigned long>(
+                    choupi_recoverable_allocation_failures()));
+    return;
+  }
   const uint32_t reclaim_done_us = choupi_time_us_32();
   const uint32_t prefix_queries = jcvm::Heap::takeReachablePrefixQueryCount();
   uint32_t traces_us = 0;
