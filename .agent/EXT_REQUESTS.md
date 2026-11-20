@@ -38,8 +38,9 @@ preinstalled applet.
   `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
 - Validation here: build exit 0, no warnings; `PACKAGE:PASS`. Same firmware source on the emulator:
   JCSystem/OneShot probe suite 113/113, JCAlgTest `ALG_SUPPORT_BASIC` over VPCD with OneShot and
-  InitializedMessageDigest rows matching the manifest exactly, MEM-01 T7 VPCD pass (on a1639b68). A physical smoke test of this exact UF2
-  follows when token 07E7 finishes its current option-1 run. The PowerShell block has not been run
+  InitializedMessageDigest rows matching the manifest exactly, MEM-01 T7 VPCD pass (on a1639b68). Physical smoke of this exact UF2 on
+  07E74C5D7A038DEC (empty card): package CAP and a probe applet installed, OneShot and
+  InitializedMessageDigest probe cases match the emulator, those APDUs write nothing to flash. The PowerShell block has not been run
   (no PowerShell here).
 
 Steps:

@@ -32678,3 +32678,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 375 + 822 methods measured, CSV 8,145 lines; 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL in both serial captures. At the old failure point (405 arrays / 144 instances live) free heap at RSA `B043` start was 61,416 B (old image ~11.6 KB); lowest `RSA_MEMORY min_free` 51,008 B. HEADROOM:PASS (first segment peak 40.78 %, resumed segment 1,774 files / 72,879 B = 74.14 %). Full snapshots: 9 of 5,050 `FS_APDU` and 26 of 7,977. Resumed segment: 4 deletion passes `pending=1`. The suite did not complete within 8 h: the reflash after the pcscd restart cost about 10 minutes and RSA-CRT signature tests are slow; a complete option 1 needs a longer bound.
 - Decision: the option-1 OOM is fixed on the physical token for the workload that failed twice. Remaining for T8: an uninterrupted option-1 run with a longer bound (e.g. 12 h) on a wiped card.
 - Artifacts/logs: `artifacts/results/option1-a1639b68-20261120T0320Z/07E74C5D7A038DEC/` (`client.log`, `client-resume*.log`, `serial.log`, `serial-resume.log`, `client-output/`)
+
+## 2026-11-20 Hardware check of OneShot/InitializedMessageDigest and smoke of the d7e90a18 package image 10
+
+- Step-Id: `20261120-1436-oneshot-hw`
+- Task: ONESHOT-01 (a); smoke of `WIN-MAXCRYPTO-ONESHOT-D7E90A18`
+- When: '2026-11-20 14:26' - '2026-11-20 14:36'
+- Model: `claude-opus-5-5`
+- Change: none to source.
+- Validation: 07E74C5D7A038DEC: `tools/flash` of the package empty-card UF2 `6a49614f…2ec1ff` (FLASH:PASS, storage wiped), GPPro list empty, package `applet.cap` (JCAlgTest 1.8.5/jc305) installed, transaction probe installed; serial captured. Probe cases via ApduTimer: 112 `0D010101` (twice), 113 `050520BA03`, 114 `0101010C`, 115 `0105` (twice, release at APDU end), 119 `18917C88…A64275` (= hashlib), 120 `050118917C88`, 117/118 `01`/`02` (release after select()), 11 `03` — all equal to the emulator. Per-case runs (SELECT + case) of 112, 112, 113, 114, 115, 119, 120: each case APDU logs `CHOUPI:FS_APDU writes=0 write_bytes=0 synced=0 journaled=0 journal_bytes=0`. No PANIC/FAULT.
+- Result: OneShot and InitializedMessageDigest behave on the token as on the emulator and keep all their state in RAM (no flash writes). Note: a mistyped loop first sent probe cases 96–99/103/104 (harmless test cases on this test card); the reader name changed (`01 00` ↔ `00 00`) during the session, so exact names must be re-read after any re-enumeration.
+- Decision: ONESHOT-01 remaining: cross-context (SIO) test. The d7e90a18 package is smoke-tested.
+- Artifacts/logs: `artifacts/results/windows-package-smoke-d7e90a18-20261120T1324Z/07E74C5D7A038DEC/` (`serial.log`, `probe-cases.txt`, install logs)
