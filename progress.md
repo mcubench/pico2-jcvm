@@ -32882,3 +32882,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: cyclic or malformed internal class hierarchies are refused before execution; the package record itself is still stored at LOAD (CAPIN-01 scope).
 - Decision: run the pcscd-dependent suites after the 07E7 campaign; continue CAPIN-07 with Export class_offset and table bounds.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-superclass-{self-cycle,mid-record}-vpcd-20261106.log`
+
+## 2026-11-20 CAPIN-07 Export class_offset must hit a record start 6
+
+- Step-Id: `20261120-2137-capin07-export-class-offset`
+- Task: CAPIN-07
+- When: '2026-11-20 21:31 CET' - '2026-11-20 21:37 CET'
+- Model: `claude-opus-5-5`
+- Change: `src/cap_load.cpp` `validate_internal_class_references` (stage-9 INSTALL validation) now rejects an Export component whose `class_offset` is not a class or interface record start of the package, using the record-start bitmap; Export record lengths are already checked by `validate_cap_import_independent`.
+- Validation: `./tools/build-pc --profile max_crypto`; test-pc-vpcd-applet 30/30, test-rmi-arrays-vpcd 3/3, test-rmi-client-vpcd and test-dup-x-vpcd rc=0; malformed superclass-self-cycle, superclass-mid-record, impdep1, unknown-component-tag rc=0; `./tools/build arm --profile max_crypto` BUILD:PASS, 0 C/C++ warnings. Static check: the samecap fixture's Export class offsets ([0]) are among its Descriptor class refs ([0,3,15,25]), i.e. the same base the validator uses. test-jcsystem-transaction-applet failed once (case 115, uncaught CryptoException from a native call; QKB entry) and then passed 10 consecutive runs 113/113; the change only affects INSTALL of packages with an Export component, which that probe CAP install also passed. Not run: Export-bearing CAP installs (same-cap-siblings, SIO), which need the wedged pcscd VPCD reader.
+- Result: Export cannot point into the middle of a class record or outside the Class component.
+- Decision: run the pcscd-dependent suites after the 07E7 campaign before claiming positive Export coverage; add an Export-mutation fixture then.
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261120T203414Z.log` (intermittent failure)

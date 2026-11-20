@@ -1778,3 +1778,5 @@ is not a VM regression. Most likely the pcscd VPCD driver is wedged by many
 emulator connect/disconnect cycles. **Workaround:** restart pcscd
 (`sudo -n /usr/local/sbin/pico2-pcsc-reader`) only when no physical campaign
 is live; until then do not interpret VPCD install failures as VM evidence.
+
+**Intermittent probe case 115 failure (2026-11-20 21:34, open).** One `./tools/test-jcsystem-transaction-applet` run failed `two Signature.OneShot instances, a third is NO_RESOURCE` with `SW=6F00`: the VM log shows an uncaught CryptoException (exception id 14) from a native call (`opcode=FE operand=68`) and the suite stopped there (`artifacts/logs/jcsystem-transaction-apdu-vpcd-20261120T203414Z.log`). The next 10 runs of the same binary passed 113/113. `Signature.getInstance(SHA-256, HMAC, PAD_NULL)` is deterministic, so the cause is not identified. If it recurs, capture the native reason (`CHOUPI_VM_TRACE_EXCEPTIONS=1`) before changing code.

@@ -652,6 +652,29 @@ bool validate_internal_class_references(
     offset += class_info->getSize();
   }
 
+  // CAPIN-07: each Export class_offset must name a class or interface record
+  // start of this package (validate_cap_import_independent has already
+  // checked the Export record lengths and member offsets).
+  if (const auto *exports = cap.getExport(); exports != nullptr) {
+    const uint8_t *payload =
+        reinterpret_cast<const uint8_t *>(&exports->class_count);
+    const std::size_t payload_size = NTOHS(exports->size);
+    std::size_t export_offset = 1;
+    for (uint8_t class_index = 0; class_index < exports->class_count;
+         ++class_index) {
+      if (export_offset > payload_size || payload_size - export_offset < 4) {
+        return false;
+      }
+      const std::size_t exported_class_offset =
+          (static_cast<std::size_t>(payload[export_offset]) << 8) |
+          payload[export_offset + 1];
+      if (!is_record_start(exported_class_offset)) return false;
+      export_offset += 4 + 2u * (static_cast<std::size_t>(
+                                     payload[export_offset + 2]) +
+                                 payload[export_offset + 3]);
+    }
+  }
+
   for (std::size_t index = 0; index < count; ++index) {
     const uint8_t *entry = entries + index * 4;
     if (entry[0] < JC_CP_TAG_CONSTANT_CLASSREF ||
