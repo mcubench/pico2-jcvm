@@ -835,22 +835,40 @@ int main() {
   persistentTag.value[0] = 0xa0;
   persistentTag.value[1] = 0x42;
   persistentParent->setPersistentTag(persistentTag);
+  // A failed persistent edge read only allows a partial sweep (6cd370b0):
+  // RAM-only handles cannot be reached through flash edges and are
+  // reclaimed, while every handle with a persistent identity is kept.
   const auto persistentUnvisitedRef =
       heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+  heap.getArray(persistentUnvisitedRef)->setPersistentTag([] {
+    jcvm::fs::Tag tag{};
+    tag.len = 2;
+    tag.value[0] = 0xa0;
+    tag.value[1] = 0x43;
+    return tag;
+  }());
+  const auto volatileUnvisitedRef = heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
   const std::vector<jcvm::jref_t> persistentRoots{persistentParentRef};
   jcarray_test_fixture::fail_persistent_reference_read = true;
   const auto persistentCollection =
       heap.collectUnreachableFrom(persistentRoots);
   jcarray_test_fixture::fail_persistent_reference_read = false;
-  if (persistentCollection.complete ||
+  bool volatile_unvisited_reclaimed = false;
+  try {
+    volatile_unvisited_reclaimed = !heap.getArray(volatileUnvisitedRef);
+  } catch (const jcvm::Exceptions &) {
+    volatile_unvisited_reclaimed = true;
+  }
+  if (persistentCollection.complete || !persistentCollection.partial_sweep ||
       persistentCollection.edge_load_failures != 1 ||
-      persistentCollection.arrays_reclaimed != 0 ||
       !heap.getArray(persistentParentRef) ||
-      !heap.getArray(persistentUnvisitedRef)) {
+      !heap.getArray(persistentUnvisitedRef) ||
+      !volatile_unvisited_reclaimed) {
     std::cerr << "persistent edge read failure authorized reclamation\n";
     return 1;
   }
 
+  std::cout << "TEST:PASS gc_partial_sweep_keeps_persistent_handles\n";
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_traces_reference_array_child\n";
   std::cout << "TEST:PASS gc_traces_instance_field_child\n";

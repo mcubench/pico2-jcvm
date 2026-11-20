@@ -136,6 +136,16 @@ extern "C" uint32_t choupi_available_transient_memory_bytes(void) {
                                 : static_cast<uint32_t>(available);
 }
 
+// Fast path for the Java allocation reserve: the never-used space between
+// the program break and the stack limit is enough on most allocations, so
+// the allocator statistics walk runs only when the heap is nearly full.
+extern "C" bool choupi_transient_memory_at_least(uint32_t bytes) {
+  const uintptr_t heap_end = reinterpret_cast<uintptr_t>(sbrk(0));
+  const uintptr_t heap_limit = reinterpret_cast<uintptr_t>(&__StackLimit);
+  if (heap_end < heap_limit && heap_limit - heap_end >= bytes) return true;
+  return choupi_available_transient_memory_bytes() >= bytes;
+}
+
 namespace {
 choupi::MemoryLowWater rsa_apdu_memory_low_water;
 uint32_t rsa_apdu_memory_started_us = 0;

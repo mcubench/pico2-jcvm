@@ -31,6 +31,7 @@
 #include "../jc_config.h"
 #include "../jc_handlers/flashmemory.hpp"
 #include "../jcvm_types/jcvmarray.hpp"
+#include "../jcvm_types/small_bytes.hpp"
 #include "../types.hpp"
 #include "jc_array_type.hpp"
 #include "jc_object.hpp"
@@ -55,6 +56,9 @@ enum ClearEvent : uint8_t {
 
 class JC_Array : public JC_Object {
 private:
+  // Member order packs the small fields together: every live array keeps
+  // this object in RAM, so its size bounds how many persistent objects an
+  // applet can keep reachable (OOM T9).
   /// Is a transient array?
   const bool isTransient;
   /// Array type elements.
@@ -65,35 +69,35 @@ private:
    * cp_offset is a 2-byte offset in the constant pool component.
    */
   const jc_cp_offset_t reference_type;
-  /// Data
-  JCVMArray<uint8_t> array;
-  /// Canonical flash identity once this array is serialized persistently.
-  /// Stored at its exact length: a full fs::Tag is 129 bytes, while typical
-  /// identities are 7-25 bytes and every live array carries one.
-  std::vector<uint8_t> persistent_tag;
+  mutable uint16_t persistent_metadata_length = 0;
+  /// When to clear data
+  ClearEvent clear;
   bool has_persistent_tag = false;
   bool has_live_data_for_recovery = true;
-  mutable uint32_t persistent_rollback_generation = 0;
   mutable bool recovering_after_rollback = false;
   mutable bool persistent_metadata_valid = false;
-  mutable uint32_t persistent_metadata_generation = 0;
   mutable jc_array_type persistent_metadata_array_type =
       jc_array_type::JAVA_ARRAY_T_BYTE;
   mutable FieldType persistent_metadata_field_type =
       FieldType::FIELD_TYPE_UNINITIALIZED;
-  mutable uint16_t persistent_metadata_length = 0;
+  /// Data
+  JCVMArray<uint8_t> array;
+  mutable uint32_t persistent_rollback_generation = 0;
+  mutable uint32_t persistent_metadata_generation = 0;
   // The cached metadata needs no tag copy: the identity never changes once
   // set, and setPersistentTag() invalidates the cache.
-  /// When to clear data
-  ClearEvent clear;
+  /// Canonical flash identity once this array is serialized persistently,
+  /// stored at its exact length (a full fs::Tag is 129 bytes, while typical
+  /// identities are 7-25 bytes).
+  SmallBytes persistent_tag;
   /// Applet package owning each non-global reference stored in a JCRE global
   /// Object[]. 0xFF means the slot is empty; 0xFE denotes a JCRE global
   /// instance which may be shared across contexts.
-  std::vector<jpackage_ID_t> global_reference_owners;
+  SmallBytes global_reference_owners;
   /// Provenance for opaque foreign references retained by applet-owned
   /// reference arrays. Empty slots and references local to this package use
   /// 0xFF; global-array ownership continues to use the vector above.
-  std::vector<jpackage_ID_t> reference_value_owners;
+  SmallBytes reference_value_owners;
 
   ///  Get an entry size from the size type.
   static const uint16_t getEntrySize(const jc_array_type type);

@@ -47,10 +47,34 @@
 #include <new>
 #include <utility>
 
+#ifndef PC_VERSION
+extern "C" bool choupi_transient_memory_at_least(uint32_t bytes);
+#endif
+
 namespace jcvm {
 
 namespace {
 constexpr uint16_t kMaximumLocalArrayHandles = 0x3fff;
+
+// RAM kept free for native work (mbedTLS bignums, digest and cipher state,
+// the reachable-tag index) when an applet allocates a new object. Every live
+// Java object holds a RAM handle, so without this an applet that keeps many
+// objects reachable exhausts the heap inside a later crypto call, where the
+// SDK allocator panics. Refusing the Java allocation instead raises
+// SystemException.NO_RESOURCE, which the applet can observe (OOM T9). The
+// largest native need measured is about 5.4 KB for an RSA-3072 CRT private
+// operation; 16 KB also covers RSA-4096 and key generation.
+constexpr uint32_t kJavaAllocationReserveBytes = 16u * 1024u;
+
+void ensureJavaAllocationReserve() {
+#ifndef PC_VERSION
+  if (!choupi_transient_memory_at_least(kJavaAllocationReserveBytes)) {
+    Context::getActiveContext().setPendingSystemExceptionReason(
+        5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
+  }
+#endif
+}
 
 struct VectorRootContext {
   const std::vector<jref_t> *roots;
@@ -815,6 +839,7 @@ bool Heap::describeGlobalAIDObject(const jref_t reference, uint8_t aid[16],
  */
 jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type) {
   noteReachabilityChange();
+  ensureJavaAllocationReserve();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -851,6 +876,7 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type) {
 jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
                       const jc_cp_offset_t reference_type) {
   noteReachabilityChange();
+  ensureJavaAllocationReserve();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -901,7 +927,10 @@ jref_t Heap::addTransientArray(const uint16_t nb_entry,
 jref_t Heap::addArray(JC_Array array) {
   // An array reloaded from flash keeps its tag; only a new one changes
   // reachability.
-  if (!array.hasPersistentTag()) noteReachabilityChange();
+  if (!array.hasPersistentTag()) {
+    noteReachabilityChange();
+    ensureJavaAllocationReserve();
+  }
   jref_t ref;
 
   uint16_t offset = 0;
@@ -929,6 +958,7 @@ jref_t Heap::addArray(JC_Array array) {
 
 jref_t Heap::addTransientArrayResult(const JC_Array &array) {
   noteReachabilityChange();
+  ensureJavaAllocationReserve();
   jref_t ref;
   try {
     uint16_t offset = 0;
@@ -990,6 +1020,7 @@ void Heap::clearTransientArrays(const ClearEvent event) {
 jref_t Heap::addInstance(const jpackage_ID_t packageID,
                          const jclass_index_t instantiated_class) {
   noteReachabilityChange();
+  ensureJavaAllocationReserve();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -1987,10 +2018,15 @@ struct ReachableTagIndex {
 ReachableTagIndex reachable_tag_index;
 
 // The index is transient RAM taken during a deletion pass, when no crypto
-// operation runs. Keep it well below the free heap seen at that point.
+// operation runs. Keep it well below the free heap seen at that point. The
+// margin covers the trace work lists built during the same pass; it is
+// smaller than the Java allocation reserve (16 KB), so a pass under memory
+// pressure can still use the index and complete within its time budget
+// (OOM T9: with a 16 KB margin every pass near the reserve fell back to the
+// slow scan and stayed incomplete).
 constexpr std::size_t kReachableTagIndexMaxBytes = 24u * 1024u;
 #ifndef PC_VERSION
-constexpr uint32_t kReachableTagIndexHeapMarginBytes = 16u * 1024u;
+constexpr uint32_t kReachableTagIndexHeapMarginBytes = 8u * 1024u;
 #endif
 
 constexpr uint8_t kTagDigestExact = 0x45;
@@ -2027,6 +2063,10 @@ extern "C" uint32_t choupi_available_transient_memory_bytes(void);
 extern "C" __attribute__((weak)) uint32_t
 choupi_available_transient_memory_bytes(void) {
   return UINT32_MAX;
+}
+extern "C" __attribute__((weak)) bool
+choupi_transient_memory_at_least(uint32_t) {
+  return true;
 }
 extern "C" __attribute__((weak)) uint32_t choupi_time_us_32(void) {
   return 0;

@@ -31,6 +31,9 @@ public final class JCTransactionProbe extends Applet {
   private Object globalArrayInstanceReference;
   private OwnerPIN persistentPin;
   private OwnerPINxWithPredecrement persistentPinX;
+  // RAM cost probe (cases 107-110): objects kept reachable from a static.
+  private static Object[] memoryProbe;
+  private short[] memoryProbeWords;
   private byte value = 0x11;
   private byte selectCount;
   private byte deselectCount;
@@ -160,6 +163,14 @@ public final class JCTransactionProbe extends Applet {
     deselectSawAppletActive =
         JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
     selectingAppletProbeFlags |= selectingApplet() ? (byte)4 : (byte)8;
+  }
+
+  private short appendHeapFree(byte[] output, short offset) {
+    JCSystem.getAvailableMemory(memoryProbeWords, (short)0,
+        JCSystem.MEMORY_TYPE_TRANSIENT_RESET);
+    Util.setShort(output, offset, memoryProbeWords[0]);
+    Util.setShort(output, (short)(offset + 2), memoryProbeWords[1]);
+    return (short)(offset + 4);
   }
 
   private static short appendMemory(byte[] output, short offset, byte type) {
@@ -1317,6 +1328,61 @@ public final class JCTransactionProbe extends Applet {
           buffer[1] = persistentPin.getTriesRemaining();
         }
         length = 2;
+        break;
+      }
+      case 107: {
+        // Set up the RAM cost probe: container and result words first, so
+        // the following measurements see only the probe objects.
+        memoryProbe = new Object[64];
+        if (memoryProbeWords == null) {
+          memoryProbeWords =
+              JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_RESET);
+        }
+        length = appendHeapFree(buffer, (short)0);
+        break;
+      }
+      case 108: {
+        // P2=0: 64 byte[16]; P2=1: 64 holders each with a byte[16];
+        // P2=2: 64 holders without arrays.
+        byte mode = buffer[ISO7816.OFFSET_P2];
+        for (short index = 0; index < (short)64; index++) {
+          if (mode == 0) {
+            memoryProbe[index] = new byte[16];
+          } else {
+            memoryProbe[index] =
+                new SharedArrayHolder(mode == 1 ? new byte[16] : null);
+          }
+        }
+        length = appendHeapFree(buffer, (short)0);
+        break;
+      }
+      case 109: {
+        length = appendHeapFree(buffer, (short)0);
+        break;
+      }
+      case 111: {
+        // Allocate 1 KB transient arrays until the card refuses. Expect
+        // SystemException.NO_RESOURCE with the RAM reserve still free.
+        memoryProbe = new Object[160];
+        short count = 0;
+        short reason = 0;
+        try {
+          for (; count < (short)160; count++) {
+            memoryProbe[count] = JCSystem.makeTransientByteArray(
+                (short)1024, JCSystem.CLEAR_ON_RESET);
+          }
+        } catch (SystemException e) {
+          reason = e.getReason();
+        }
+        Util.setShort(buffer, (short)0, count);
+        Util.setShort(buffer, (short)2, reason);
+        length = appendHeapFree(buffer, (short)4);
+        break;
+      }
+      case 110: {
+        memoryProbe = null;
+        JCSystem.requestObjectDeletion();
+        length = appendHeapFree(buffer, (short)0);
         break;
       }
       case 56: {

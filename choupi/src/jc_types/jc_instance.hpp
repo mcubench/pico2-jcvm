@@ -53,7 +53,10 @@ private:
   jclass_index_t claz;
   uint8_t persistent_tag_length = 0;
   bool persistent_tag_compressed = false;
-  uint8_t persistent_tag_value[68] = {};
+  // Compressed tags are a 5-6 byte root plus about one byte per nesting
+  // level; longer ones use persistent_tag_overflow. Kept small because
+  // every live instance holds this buffer in RAM (OOM T9).
+  uint8_t persistent_tag_value[22] = {};
   uint8_t *persistent_tag_overflow = nullptr;
   bool has_persistent_tag = false;
   mutable bool persistent_fields_loaded = true;

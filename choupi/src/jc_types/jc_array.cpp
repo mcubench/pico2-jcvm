@@ -50,8 +50,8 @@ namespace {
 constexpr jpackage_ID_t kNoGlobalReferenceOwner = 0xff;
 constexpr jpackage_ID_t kJCREGlobalReferenceOwner = 0xfe;
 
-std::vector<uint8_t> compactTag(const fs::Tag &tag) {
-  return std::vector<uint8_t>(tag.value, tag.value + tag.len);
+SmallBytes compactTag(const fs::Tag &tag) {
+  return SmallBytes(tag.value, tag.value + tag.len);
 }
 
 void checkArrayEntryIndex(const JC_Array &array, const uint16_t index) {
@@ -90,10 +90,11 @@ uint16_t JC_Array::checkedBackingLength(const uint16_t size,
 JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
                    const bool isTransientArray, const ClearEvent event)
     : JC_Object(owner, false), isTransient(isTransientArray),
-      type(type), logical_length(size), reference_type(0xFFFF),
-      array(checkedBackingLength(size, type, isTransientArray)), clear(event),
+      type(type), logical_length(size), reference_type(0xFFFF), clear(event),
+      array(checkedBackingLength(size, type, isTransientArray)),
       global_reference_owners(),
-      reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? size : 0,
+      reference_value_owners(
+          static_cast<uint16_t>(type == JAVA_ARRAY_T_REFERENCE ? size : 0),
                              kNoGlobalReferenceOwner) {
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
@@ -124,13 +125,15 @@ JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
                    const bool isTransientArray, const ClearEvent event)
     : JC_Object(owner, false), isTransient(isTransientArray),
       type(type), logical_length(size), reference_type(reference_type),
-      array(checkedBackingLength(size, type, isTransientArray)), clear(event),
+      clear(event),
+      array(checkedBackingLength(size, type, isTransientArray)),
       global_reference_owners(
-          owner.isGlobalHeap() && type == JAVA_ARRAY_T_REFERENCE
-              ? size
-              : 0,
+          static_cast<uint16_t>(
+              owner.isGlobalHeap() && type == JAVA_ARRAY_T_REFERENCE ? size
+                                                                     : 0),
           kNoGlobalReferenceOwner),
-      reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? size : 0,
+      reference_value_owners(
+          static_cast<uint16_t>(type == JAVA_ARRAY_T_REFERENCE ? size : 0),
                              kNoGlobalReferenceOwner) {}
 
 /**
@@ -141,7 +144,7 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                    const bool isTransientArray, const ClearEvent event,
                    const uint16_t length)
     : JC_Object(owner, true), isTransient(isTransientArray), type(type),
-      logical_length(length), reference_type(reference_type),
+      logical_length(length), reference_type(reference_type), clear(event),
       array(restoredArrayBackingLength(
                 tag.len, isTransientArray
                             ? static_cast<uint32_t>(length) *
@@ -153,8 +156,9 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                                   JC_Array::getEntrySize(type)
                             : 0)]{},
             true),
-      clear(event), global_reference_owners(),
-      reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? length : 0,
+      global_reference_owners(),
+      reference_value_owners(
+          static_cast<uint16_t>(type == JAVA_ARRAY_T_REFERENCE ? length : 0),
                              kNoGlobalReferenceOwner) {
   this->persistent_tag = compactTag(tag);
   this->has_persistent_tag = true;
@@ -219,7 +223,7 @@ void JC_Array::releaseCommittedLiveData() {
       !this->has_persistent_tag) {
     return;
   }
-  const std::vector<uint8_t> &tag = this->persistent_tag;
+  const SmallBytes &tag = this->persistent_tag;
   const uint8_t tag_length = static_cast<uint8_t>(tag.size());
   const uint16_t backing_length = restoredArrayBackingLength(tag_length, 0);
   if (this->array.size() == backing_length) return;
