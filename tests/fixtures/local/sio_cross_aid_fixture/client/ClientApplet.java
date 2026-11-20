@@ -400,6 +400,20 @@ public final class ClientApplet extends Applet {
       result = probe.retainForeignReference(global);
       global[0] = null;
       global[1] = null;
+    } else if (buffer[1] == 0x6E) {
+      // The server context must not be able to use the client's OneShot;
+      // the client (owner) still can.
+      javacard.security.MessageDigest.OneShot digest =
+          javacard.security.MessageDigest.OneShot.open(
+              javacard.security.MessageDigest.ALG_SHA_256);
+      short foreign = ((Probe) shareable).inspectForeignOneShot(digest);
+      result = foreign == (short) 0x6A4B &&
+                       digest.getAlgorithm() ==
+                           javacard.security.MessageDigest.ALG_SHA_256
+                   ? (short) 0x6A6E
+                   : foreign;
+      digest.close();
+      digest = null;
     } else if (buffer[1] == 0x4A) {
       result = ((Probe) shareable).clearRetainedForeignReferences();
     } else if (buffer[1] == 0x2E) {

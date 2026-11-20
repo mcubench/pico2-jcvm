@@ -32702,3 +32702,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: ownership check covers same-Context shareable calls by construction; the cross-context behaviour itself is still untested because of SIO-DISPATCH-01.
 - Decision: investigate SIO-DISPATCH-01 next (it may affect any shareable interface with many methods). Correction: the previous record's end time 14:36 was right (UTC clock 13:36); my in-session note calling it wrong was mistaken.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261120T133724Z.log` (trace build, failing attempt)
+
+## 2026-11-20 Cross-context OneShot test passes; SIO-DISPATCH-01 withdrawn 2
+
+- Step-Id: `20261120-1441-oneshot-sio-test`
+- Task: ONESHOT-01 (b)
+- When: '2026-11-20 14:39' - '2026-11-20 14:41'
+- Model: `claude-opus-5-5`
+- Change: SIO fixture: `Probe.inspectForeignOneShot(Object)` (server casts to MessageDigest and calls `getAlgorithm()`), client INS `0x6E` opens a `MessageDigest.OneShot`, passes it to the server and checks that the owner can still use it; `sio_cross_aid_vpcd_test.py` expects `6A6E9000`. SIO-DISPATCH-01 is withdrawn: the earlier attempt reused client INS `0x4B`, which already selects the `isAppletActiveDuringSio` test (hence interface token 1 and `0x6A4C`); the contract export assigns the new method token 46 as expected. No VM dispatch problem.
+- Validation: `PICO2_HOST_USB_ACCESS=1 tools/test-sio-cross-aid-vpcd` 59 PASS (new: "a OneShot is bound to the context that opened it").
+- Result: ONESHOT-01 complete on emulator and hardware (cross-context on the emulator only).
+- Decision: none further for OneShot. Corrections: the previous record (`20261120-1500-oneshot-owner-package`) ended at 14:39 (commit time), not 14:59, and its Step-Id time is therefore also later than the real time.
+- Artifacts/logs: latest `artifacts/logs/sio-cross-aid-vpcd-*.log`

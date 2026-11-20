@@ -2621,6 +2621,17 @@ def main() -> int:
                 )
             print("TEST:PASS instance-field owner provenance rejects service "
                   "array access and the foreign array survives GC")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("806E000000"),
+                "pass a OneShot to the server context"
+            )
+            if response != bytes.fromhex("6A6E9000"):
+                raise RuntimeError(
+                    f"foreign OneShot use {response.hex().upper()}, expected the "
+                    "server call to throw SecurityException and the owner call "
+                    "to work (6A6E9000; 6A4C = server call succeeded)"
+                )
+            print("TEST:PASS a OneShot is bound to the context that opened it")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

@@ -729,6 +729,21 @@ public final class ServiceApplet extends Applet implements Probe {
     return (short)(0x6B40 | failures);
   }
 
+  public short inspectForeignOneShot(Object value) {
+    javacard.security.MessageDigest digest;
+    try {
+      digest = (javacard.security.MessageDigest) value;
+    } catch (ClassCastException e) {
+      return (short) 0x6A4D;
+    }
+    try {
+      digest.getAlgorithm();
+      return (short) 0x6A4C;
+    } catch (SecurityException e) {
+      return (short) 0x6A4B;
+    }
+  }
+
   public short clearRetainedForeignReferences() {
     retainedForeignStatic = null;
     retainedForeignInstance = null;
