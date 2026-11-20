@@ -145,6 +145,24 @@ def applet_class_superclass_ref(class_component: bytes,
     raise ValueError("applet class record not found")
 
 
+def constant_pool_index(constant_pool: bytes, entry: bytes) -> int:
+    """Return the index of an exact 4-byte constant pool entry."""
+    count = int.from_bytes(constant_pool[3:5], "big")
+    for index in range(count):
+        if constant_pool[5 + 4 * index : 9 + 4 * index] == entry:
+            return index
+    raise ValueError(f"constant pool entry {entry.hex().upper()} not found")
+
+
+# CAPIN-05/06 receiver fixtures: the opcode the VM must reject with
+# SecurityException (exception id 29) at the start of process().
+RECEIVER_CHECK_OPCODES = {
+    "invokespecial-global-receiver": 0x8C,
+    "invokevirtual-receiver-mismatch": 0x8B,
+    "invokeinterface-array-receiver": 0x8E,
+}
+
+
 def build_malformed_load_code(mutation: str) -> Path:
     raw_cap = CAP_PATH.read_bytes()
     digest = hashlib.sha256(raw_cap).hexdigest()
@@ -632,8 +650,37 @@ def build_malformed_load_code(mutation: str) -> Path:
         ))
         if process_length < len(replacement):
             raise ValueError("process body is too short for switch fixture")
+    elif mutation == "invokespecial-global-receiver":
+        # CAPIN-05 (3): aload_1 pushes the APDU object (a JCRE entry point,
+        # global instance); invokespecial java.lang.Object.<init> on it from
+        # uploaded code must throw SecurityException. Without the check the
+        # constructor would run and process() would continue.
+        cp_index = constant_pool_index(parts["ConstantPool"],
+                                       bytes((0x06, 0x80, 0x00, 0x00)))
+        mutation_index = code_index
+        replacement = bytes((0x19, 0x8C)) + cp_index.to_bytes(2, "big")
+    elif mutation == "invokevirtual-receiver-mismatch":
+        # CAPIN-06: javacardx.crypto.Cipher.init(Key, byte) (JC305 token 3,
+        # nargs 3) with the APDU object as receiver; the receiver is not a
+        # Cipher, so uploaded code must get SecurityException instead of a
+        # dispatch through the APDU class's method table.
+        cp_index = constant_pool_index(parts["ConstantPool"],
+                                       bytes((0x03, 0x83, 0x01, 0x03)))
+        mutation_index = code_index
+        replacement = (bytes((0x19, 0x19, 0x19, 0x8B)) +
+                       cp_index.to_bytes(2, "big"))
+    elif mutation == "invokeinterface-array-receiver":
+        # CAPIN-06: a new byte[4] as receiver of javacard.security.Key
+        # (class token 0) method 1; arrays implement no interface.
+        cp_index = constant_pool_index(parts["ConstantPool"],
+                                       bytes((0x01, 0x81, 0x00, 0x00)))
+        mutation_index = code_index
+        replacement = (bytes((0x10, 0x04, 0x90, 0x0B, 0x8E, 0x01)) +
+                       cp_index.to_bytes(2, "big") + bytes((0x01,)))
     else:
         raise ValueError(f"unsupported mutation: {mutation}")
+    if mutation in RECEIVER_CHECK_OPCODES and process_length < len(replacement):
+        raise ValueError(f"process body is too short for {mutation} fixture")
     original_bytes = bytes(mutable[mutation_index :
                                    mutation_index + len(replacement)])
     mutable[mutation_index : mutation_index + len(replacement)] = replacement
@@ -672,7 +719,8 @@ def main() -> int:
                                 "itableswitch-into-operand",
                                 "slookupswitch-into-operand",
                                 "ilookupswitch-into-operand",
-                                "switch-into-operand"),
+                                "switch-into-operand",
+                                *RECEIVER_CHECK_OPCODES),
         default="impdep1",
     )
     args = parser.parse_args()
@@ -789,6 +837,21 @@ def main() -> int:
         return 0
     if result.returncode != 0:
         print(f"MALFORMED_CAP:FAIL vpcd_exit={result.returncode}", file=sys.stderr)
+        return result.returncode
+    if args.mutation in RECEIVER_CHECK_OPCODES:
+        # 6F00 alone does not show which check fired: require the VM to
+        # report SecurityException at the crafted invoke opcode.
+        opcode = RECEIVER_CHECK_OPCODES[args.mutation]
+        marker = re.compile(
+            rf"VPCD:APPLET_PROCESS status=6F00 exception=29 opcode={opcode:02X}\b"
+        )
+        run_log = log.read_text(encoding="utf-8", errors="replace")
+        if not marker.search(run_log):
+            print(f"RECEIVER_CHECK:FAIL mutation={args.mutation} "
+                  f"expected exception=29 opcode={opcode:02X}", file=sys.stderr)
+            return 1
+        print(f"RECEIVER_CHECK:PASS mutation={args.mutation} "
+              f"exception=29 opcode={opcode:02X}")
     return result.returncode
 
 

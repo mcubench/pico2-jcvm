@@ -60,6 +60,10 @@ private:
   uint8_t *persistent_tag_overflow = nullptr;
   bool has_persistent_tag = false;
   mutable bool persistent_fields_loaded = true;
+  // RAM only: set by `new` until uploaded code runs the first constructor
+  // on this object (CAPIN-05). Not persisted: a restored object counts as
+  // initialized, which fails closed.
+  bool constructor_pending = false;
   mutable uint32_t persistent_rollback_generation = 0;
 
   /**
@@ -108,6 +112,14 @@ public:
   void setPackageID(const jpackage_ID_t packageID) noexcept;
   /// Set class index
   void setClassIndex(const jclass_index_t class_index) noexcept;
+  /// Mark an object just created by `new` as awaiting its constructor.
+  void markConstructorPending() noexcept { constructor_pending = true; }
+  /// Consume the pending-constructor mark; true only once after `new`.
+  bool takeConstructorPending() noexcept {
+    const bool pending = constructor_pending;
+    constructor_pending = false;
+    return pending;
+  }
 
   /// Fetch byte or boolean from object.
   const jbyte_t getField_Byte(const uint16_t index);

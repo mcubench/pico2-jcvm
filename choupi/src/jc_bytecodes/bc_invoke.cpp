@@ -773,14 +773,21 @@ void Bytecodes::bc_invokespecial() {
     if (receiver.isGlobalInstance() || receiver.isArray()) {
       throw Exceptions::SecurityException;
     }
+    const auto receiver_instance = context.getHeap().getInstance(receiver);
+    if (!receiver_instance) throw Exceptions::SecurityException;
+    const bool receiver_uploaded = FlashMemory_Handler::isDynamicPackageID(
+        receiver_instance->getPackageID());
     if (FlashMemory_Handler::isDynamicPackageID(
             method_handler.getPackage().getPackageID())) {
-      const auto receiver_instance = context.getHeap().getInstance(receiver);
-      if (!receiver_instance ||
-          !FlashMemory_Handler::isDynamicPackageID(
-              receiver_instance->getPackageID())) {
-        throw Exceptions::SecurityException;
-      }
+      if (!receiver_uploaded) throw Exceptions::SecurityException;
+    } else if (!receiver_uploaded &&
+               !receiver_instance->takeConstructorPending()) {
+      // A ROM method on a ROM-class object: uploaded code may only run the
+      // constructor of an object it has just created with `new`. JCRE-owned
+      // objects in the applet heap (the APDU object, native crypto engines)
+      // and already-constructed objects are rejected. Super calls on the
+      // applet's own `this` have an uploaded-class receiver.
+      throw Exceptions::SecurityException;
     }
   }
 

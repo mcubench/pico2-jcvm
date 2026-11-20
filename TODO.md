@@ -517,7 +517,15 @@ task:
     rejects an external InstanceFieldref whose imported package is a ROM
     package. Item 4 is covered by item 1: AID backing arrays are reachable
     only through ROM-declared fields, which uploaded code can no longer read
-    or write. Remaining: crafted-CAP fixtures for items 1–3.
+    or write. 2026-11-20 (`20261120-2135-capin05-06-receiver-fixtures`):
+    crafted-CAP fixture `invokespecial-global-receiver` (APDU object +
+    `Object.<init>`) found that the per-context APDU object and native crypto
+    engines are not global instances, so item 3 let uploaded code run ROM
+    constructors on them. Fixed: `new` marks a RAM-only constructor-pending
+    flag; uploaded invokespecial of a ROM method on a ROM-class receiver needs
+    and consumes it. Fixture now gets SecurityException at 8C. Remaining:
+    crafted-CAP fixtures for items 1 (needs a ROM InstanceFieldref that item
+    2 now rejects at load, so only a load-rejection fixture) and 2.
   1. `getfield`/`putfield` (all variants) from a dynamic package on a global
      or JCRE-owned instance throws `SecurityException`.
   2. Load-time: reject external InstanceFieldrefs into ROM packages unless a
@@ -538,9 +546,14 @@ task:
   invokevirtual from uploaded code now requires the receiver to be an instance
   of the reference's class or a subclass (arrays only for Object); invokeinterface
   from uploaded code rejects array receivers and a nargs operand that differs
-  from the resolved header (`20261120-1739-capin06-invokeinterface`; applying
-  them to runtime callers broke GPPro list/install, so they are scoped to
-  uploaded packages). Remaining: loader mirror, crafted-CAP fixtures. `invokevirtual`: receiver assignable to
+  from the resolved header (`20261120-1739-capin06-invokeinterface`; scoped
+  to uploaded packages. The earlier note that runtime-caller checks broke
+  GPPro was wrong: the VPCD reader was wedged, see 8838393d). Crafted-CAP
+  fixtures `invokevirtual-receiver-mismatch` (APDU receiver of Cipher.init)
+  and `invokeinterface-array-receiver` (byte[] receiver of Key) both get
+  SecurityException at 8B/8E (`20261120-2135-capin05-06-receiver-fixtures`).
+  Remaining: loader mirror; a nargs-mismatch fixture (needs a receiver that
+  implements an interface, e.g. a KeyBuilder key, built in crafted bytecode). `invokevirtual`: receiver assignable to
   the reference's class (arrays only for `Object`); package tokens resolve only
   while the class's package equals the referencing package.
   `invokeinterface`: operand `nargs` equals the target header `nargs`; reject

@@ -466,6 +466,11 @@ void Bytecodes::bc_new() {
                                      instantiated_class.second)
                                : heap.addInstance(instantiated_class.first,
                                                   instantiated_class.second);
+  if (!is_runtime_crypto_exception) {
+    // CAPIN-05 (3): lets uploaded code run one ROM constructor on this
+    // object through invokespecial, and on no other ROM-class object.
+    heap.getInstance(objectref)->markConstructorPending();
+  }
 #ifndef PC_VERSION
   choupi_install_stage(3);
 #endif
