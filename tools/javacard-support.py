@@ -382,6 +382,88 @@ def load_config(path: Path, requested_profile: str | None = None) -> tuple[str, 
     return profile, validate_capabilities(profiles[profile], path)
 
 
+# Java Card 3.0.5 OneShot rows (JCAlgTest sections). OneShot.open() creates
+# its algorithm object with the same native factory as getInstance(), so a
+# OneShot row is supported exactly when one of the listed capabilities is
+# (choupi/src/native_oneshot.cpp). InitializedMessageDigest has no supported
+# algorithm in any profile, so its OneShot section has no rows.
+ONESHOT_CIPHER_SECTION = (
+    "javacardx.crypto.Cipher.OneShot.getInstance(byte cipherAlgorithm, "
+    "byte paddingAlgorithm, boolean externalAccess)")
+ONESHOT_SIGNATURE_SECTION = (
+    "javacard.crypto.Signature.OneShot.getInstance(byte messageDigestAlgorithm, "
+    "byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)")
+ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
+    # Cipher.OneShot.open(cipherAlgorithm, paddingAlgorithm): mirrors
+    # pairAlgorithmEnabled() in choupi/src/native_cipher.cpp.
+    (("cipher_des_cbc_nopad", "cipher_getinstance_des_cbc_nopad"), ONESHOT_CIPHER_SECTION, "CIPHER_DES_CBC PAD_NOPAD"),
+    (("cipher_des_cbc_iso9797_m1",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_CBC PAD_ISO9797_M1"),
+    (("cipher_des_cbc_iso9797_m2",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_CBC PAD_ISO9797_M2"),
+    (("cipher_des_cbc_pkcs5",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_CBC PAD_PKCS5"),
+    (("cipher_des_ecb_nopad",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_ECB PAD_NOPAD"),
+    (("cipher_des_ecb_iso9797_m1",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_ECB PAD_ISO9797_M1"),
+    (("cipher_des_ecb_iso9797_m2",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_ECB PAD_ISO9797_M2"),
+    (("cipher_des_ecb_pkcs5",), ONESHOT_CIPHER_SECTION, "CIPHER_DES_ECB PAD_PKCS5"),
+    (("cipher_rsa_pkcs1",), ONESHOT_CIPHER_SECTION, "CIPHER_RSA PAD_PKCS1"),
+    (("cipher_rsa_nopad",), ONESHOT_CIPHER_SECTION, "CIPHER_RSA PAD_NOPAD"),
+    (("cipher_rsa_oaep",), ONESHOT_CIPHER_SECTION, "CIPHER_RSA PAD_PKCS1_OAEP"),
+    (("cipher_aes_cbc_nopad", "cipher_getinstance_aes_cbc_nopad"), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_NOPAD"),
+    (("cipher_getinstance_aes_ctr",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CTR PAD_NOPAD"),
+    (("cipher_aes_ecb_nopad",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_NOPAD"),
+    (("cipher_aes_cbc_iso9797_m1",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_ISO9797_M1"),
+    (("cipher_aes_cbc_iso9797_m2",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_ISO9797_M2"),
+    (("cipher_aes_cbc_pkcs5",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_PKCS5"),
+    (("cipher_aes_ecb_iso9797_m1",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_ISO9797_M1"),
+    (("cipher_aes_ecb_iso9797_m2",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_ISO9797_M2"),
+    (("cipher_aes_ecb_pkcs5",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_PKCS5"),
+    # Signature.OneShot.open(digest, cipher, padding): mirrors
+    # tupleForAlgorithm() in choupi/src/native_signature.cpp.
+    (("signature_des_mac8_nopad",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_NOPAD ALG_NULL"),
+    (("signature_des_mac4_iso9797_m1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_ISO9797_M1 ALG_NULL"),
+    (("signature_des_mac8_iso9797_m1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_ISO9797_M1 ALG_NULL"),
+    (("signature_des_mac4_iso9797_m2",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_ISO9797_M2 ALG_NULL"),
+    (("signature_des_mac8_iso9797_m2",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_ISO9797_M2 ALG_NULL"),
+    (("signature_des_mac4_pkcs5",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_PKCS5 ALG_NULL"),
+    (("signature_des_mac8_pkcs5",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_PKCS5 ALG_NULL"),
+    (("signature_aes_mac_128_nopad",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_AES_MAC128 PAD_NOPAD ALG_NULL"),
+    (("signature_des_mac4_iso9797_1_m2_alg3",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_ISO9797_1_M2_ALG3 ALG_NULL"),
+    (("signature_des_mac8_iso9797_1_m2_alg3",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_ISO9797_1_M2_ALG3 ALG_NULL"),
+    (("signature_des_mac4_iso9797_1_m1_alg3",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_ISO9797_1_M1_ALG3 ALG_NULL"),
+    (("signature_des_mac8_iso9797_1_m1_alg3",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_ISO9797_1_M1_ALG3 ALG_NULL"),
+    (("signature_aes_cmac_128",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_AES_CMAC128 PAD_ISO9797_M2 ALG_NULL"),
+    (("signature_hmac_sha1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_HMAC PAD_NULL ALG_SHA"),
+    (("signature_hmac_sha_256",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_HMAC PAD_NULL ALG_SHA_256"),
+    (("signature_hmac_sha_384",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_HMAC PAD_NULL ALG_SHA_384"),
+    (("signature_hmac_sha_512",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_HMAC PAD_NULL ALG_SHA_512"),
+    (("signature_hmac_md5",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_HMAC PAD_NULL ALG_MD5"),
+    (("signature_hmac_ripemd160",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_HMAC PAD_NULL ALG_RIPEMD160"),
+    (("signature_rsa_sha_iso9796",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_ISO9796 ALG_SHA"),
+    (("signature_rsa_sha_iso9796_mr",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_ISO9796_MR ALG_SHA"),
+    (("signature_rsa_sha_pkcs1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA"),
+    (("signature_rsa_sha_224_pkcs1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_224"),
+    (("signature_rsa_sha_256_pkcs1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_256"),
+    (("signature_rsa_sha_384_pkcs1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_384"),
+    (("signature_rsa_sha_512_pkcs1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_512"),
+    (("signature_rsa_sha_pkcs1_pss",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA"),
+    (("signature_rsa_sha_224_pkcs1_pss",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_224"),
+    (("signature_rsa_sha_256_pkcs1_pss",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_256"),
+    (("signature_rsa_sha_384_pkcs1_pss",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_384"),
+    (("signature_rsa_sha_512_pkcs1_pss",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_512"),
+    (("signature_ecdsa_sha",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA"),
+    (("signature_ecdsa_sha_224",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_224"),
+    (("signature_ecdsa_sha_256",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_256"),
+    (("signature_ecdsa_sha_384",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_384"),
+    (("signature_ecdsa_sha_512",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_512"),
+    # MessageDigest.OneShot.open(algorithm) / RandomData.OneShot.open(algorithm)
+    (("sha1",), "javacard.security.MessageDigest.OneShot", "ALG_SHA"),
+    (("sha256",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_256"),
+    (("sha384",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_384"),
+    (("sha512",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_512"),
+    (("sha224",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_224"),
+    (("secure_random",), "javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
+)
+
+
 def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     # Generated Java support is an input tree to the API converter. Remove
@@ -400,6 +482,9 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     for key, row in CAPABILITIES.items():
         if config[key]:
             writer.writerow(row)
+    for keys, section, name in ONESHOT_ROWS:
+        if any(config[key] for key in keys):
+            writer.writerow((section, name))
     write_if_changed(out_dir / "jcalgtest-supported.csv", csv_output.getvalue())
 
     cmake = ["# Generated by tools/javacard-support.py; do not edit.",

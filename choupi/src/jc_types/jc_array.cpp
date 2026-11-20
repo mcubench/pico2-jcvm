@@ -871,8 +871,9 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 {
   Heap::noteReachabilityChange();
   checkArrayEntryIndex(*this, index);
-  if (value.isGlobalArray()) {
-    // A global array cannot be nested in another reference array.
+  if (value.isGlobalArray() || Heap::isTemporaryGlobalInstance(value)) {
+    // A global array or a temporary JCRE Entry Point Object (OneShot) cannot
+    // be stored in an array component.
     throw Exceptions::SecurityException;
   }
 #ifdef JCVM_SECURE_HEAP_ACCESS

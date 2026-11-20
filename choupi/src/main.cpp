@@ -48,6 +48,7 @@
 #include "../../src/vm_applet_context.hpp"
 #include "../../src/vm_diagnostics.h"
 #include "../../src/object_deletion_policy.hpp"
+#include "native_oneshot.hpp"
 #include "native_owner_pin.hpp"
 
 #include <cerrno>
@@ -2038,8 +2039,10 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
   }
 }
 void choupi_vm_clear_selected_applet(void) {
-  // OwnerPIN validated flags are CLEAR_ON_RESET.
+  // OwnerPIN validated flags are CLEAR_ON_RESET; OneShot instances are
+  // released on card reset.
   jcvm::OwnerPinNative::clearValidated();
+  jcvm::OneShotNative::releaseAll();
   // Reader reset implicitly deselects applets without calling deselect().
   // Only abort applet-owned work here; runtime-owned INSTALL transactions are
   // controlled by CapLoadSession and must not be consumed by this guard.
@@ -2084,6 +2087,9 @@ void choupi_vm_forget_deleted_applet_contexts(
   pending_apdu_response.queue(nullptr, 0);
   // A later instance may reuse a deleted applet's object tags.
   jcvm::OwnerPinNative::clearValidated();
+  // A OneShot delegate lives in its owner's heap; release before the
+  // context goes away.
+  jcvm::OneShotNative::releaseAll();
   jcvm::Heap::noteReachabilityChange();
   if (deleting_package != 0) {
     jcvm::Heap::clearGlobalArrayReferencesForPackage(package_id);
@@ -2796,6 +2802,10 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     data_length = 0;
   }
 
+  // Every applet entry point has returned to the JCRE: release OneShot
+  // instances (Java Card 3.0.5) before any heap collection runs.
+  jcvm::OneShotNative::releaseAll();
+
   const bool transaction_left_open =
       jcvm::FlashMemory_Handler::appletWriteTransactionActive();
   if (transaction_left_open) {
@@ -2917,6 +2927,8 @@ uint16_t runtime_install_method(uint8_t id_package, uint8_t applet_owner,
     return 0x6a80;
   }
   const uint16_t status = interpretor.run();
+  // install() is an applet entry point: release its OneShot instances.
+  jcvm::OneShotNative::releaseAll();
   bool applet_persisted = false;
   uint16_t registered_class_index = 0xffff;
   if (status == 0x9000 && interpretor.installAppletRegistered()) {

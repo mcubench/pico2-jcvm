@@ -337,7 +337,7 @@ void Static_Handler::setPersistentRef(const uint16_t index,
                                       Heap &heap) {
   validateStaticSlot(this->package, index, 2, true);
   validateDeclaredStaticType(this->package, index, FieldType::FIELD_TYPE_OBJECT);
-  if (value.isGlobalArray()) {
+  if (value.isGlobalArray() || Heap::isTemporaryGlobalInstance(value)) {
     throw Exceptions::SecurityException;
   }
   const jpackage_ID_t package_id = this->package.getPackageID();

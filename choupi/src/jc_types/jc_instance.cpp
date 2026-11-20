@@ -701,7 +701,10 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  */
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref,
                                      uint8_t reference_owner) {
-  if (ref.isGlobalArray() && !this->getOwner().isGlobalHeap()) {
+  // Temporary JCRE Entry Point Objects (global arrays such as the APDU
+  // buffer, OneShot instances) cannot be stored in instance fields.
+  if ((ref.isGlobalArray() || Heap::isTemporaryGlobalInstance(ref)) &&
+      !this->getOwner().isGlobalHeap()) {
     throw Exceptions::SecurityException;
   }
   if (ref.isNullPointer()) {

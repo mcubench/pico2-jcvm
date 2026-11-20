@@ -309,12 +309,42 @@ uint8_t remap_imported_virtual_method_token(
   // Signature class (and dynamic subclasses overriding these methods).
   static constexpr uint8_t security_signature_virtual_methods[] = {
       0, 4, 8, 1, 2, 10, 9, 12, 3, 11, 13, 5, 6, 7};
+  // The JC 3.0.5 OneShot subclasses keep their superclass's token order and
+  // append close(). Tables derived from the JC305 export files and the
+  // embedded export (Exp2Text) by name and descriptor.
+  static constexpr uint8_t crypto_cipher_oneshot_virtual_methods[] = {
+      0, 6, 3, 1, 2, 7, 4, 5, 8};
+  static constexpr uint8_t security_signature_oneshot_virtual_methods[] = {
+      0, 4, 8, 1, 2, 10, 9, 12, 3, 11, 13, 5, 6, 7, 17};
+  static constexpr uint8_t security_digest_oneshot_virtual_methods[] = {
+      0, 3, 1, 2, 5, 4, 6};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
       class_token == 11 &&
       method_token < sizeof(security_digest_virtual_methods)) {
     return security_digest_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 33 &&
+      method_token < sizeof(security_signature_oneshot_virtual_methods)) {
+    return security_signature_oneshot_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 30 &&
+      method_token < sizeof(security_digest_oneshot_virtual_methods)) {
+    return security_digest_oneshot_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0 &&
+      class_token == 2 &&
+      method_token < sizeof(crypto_cipher_oneshot_virtual_methods)) {
+    return crypto_cipher_oneshot_virtual_methods[method_token];
   }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,

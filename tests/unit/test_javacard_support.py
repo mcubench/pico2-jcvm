@@ -45,7 +45,10 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 rows = list(csv.reader(source, delimiter=";"))
-            self.assertEqual(len(rows) - 1, 15)
+            # One row per enabled capability, plus the OneShot rows derived
+            # from them (choupi/src/native_oneshot.cpp).
+            plain = [row for row in rows[1:] if ".OneShot" not in row[0]]
+            self.assertEqual(len(plain), 15)
             self.assertEqual(sum(CONFIG.values()), 15)
             self.assertIn("#define JC_SUPPORT_SHA256 1", (out / "javacard-support.h").read_text())
             native_methods = (out / "javacard-native-methods.txt").read_text().splitlines()
@@ -152,7 +155,7 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertIn("profile=base", result.stdout)
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 rows = list(csv.reader(source, delimiter=";"))
-            self.assertEqual({tuple(row) for row in rows[1:]}, {
+            self.assertEqual({tuple(row) for row in rows[1:] if ".OneShot" not in row[0]}, {
                 ("javacard.framework.OwnerPINBuilder", "OWNER_PIN"),
                 ("javacard.framework.OwnerPINBuilder", "OWNER_PIN_X"),
                 ("javacard.framework.OwnerPINBuilder", "OWNER_PIN_X_WITH_PREDECREMENT"),
@@ -163,6 +166,11 @@ class JavaCardSupportTests(unittest.TestCase):
                 ("javacardx.crypto.Cipher", "ALG_DES_CBC_NOPAD"),
                 ("javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)", "CIPHER_AES_CBC PAD_NOPAD"),
                 ("javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)", "CIPHER_DES_CBC PAD_NOPAD"),
+            })
+            self.assertEqual({tuple(row) for row in rows[1:] if ".OneShot" in row[0]}, {
+                ("javacardx.crypto.Cipher.OneShot.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)", "CIPHER_AES_CBC PAD_NOPAD"),
+                ("javacardx.crypto.Cipher.OneShot.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)", "CIPHER_DES_CBC PAD_NOPAD"),
+                ("javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
             })
             self.assertEqual((out / "profile.txt").read_text(), "base\n")
 
@@ -256,7 +264,11 @@ class JavaCardSupportTests(unittest.TestCase):
                 "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
                 "CIPHER_AES_CTR PAD_NOPAD",
             ), rows)
-            self.assertEqual(len(rows), 48)
+            self.assertEqual(len({row for row in rows if ".OneShot" not in row[0]}), 48)
+            self.assertIn((
+                "javacardx.crypto.Cipher.OneShot.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+                "CIPHER_AES_CTR PAD_NOPAD",
+            ), rows)
 
     def test_max_crypto_profile_is_union_of_supported_crypto_profiles(self):
         with tempfile.TemporaryDirectory() as temporary:

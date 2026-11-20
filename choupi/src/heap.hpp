@@ -183,6 +183,14 @@ public:
                                   jclass_index_t class_index);
   static std::shared_ptr<JC_Instance> getGlobalInstance(jref_t reference);
   static void releaseGlobalInstance(jref_t reference) noexcept;
+  /// JCRE-owned temporary Entry Point Objects (OneShot instances): Java code
+  /// may hold them in locals only, never in fields, statics or arrays.
+  static void markTemporaryGlobalInstance(jref_t reference);
+  static bool isTemporaryGlobalInstance(jref_t reference) noexcept;
+  /// Zero and free a runtime-private volatile instance (a OneShot delegate)
+  /// together with the transient arrays its fields reference. The caller
+  /// guarantees that nothing else references these objects.
+  void releaseRuntimeDelegate(jref_t reference) noexcept;
   static jref_t findGlobalAIDObject(const uint8_t *aid,
                                     uint8_t aid_length) noexcept;
   static jref_t addGlobalAIDObject(const uint8_t *aid, uint8_t aid_length,

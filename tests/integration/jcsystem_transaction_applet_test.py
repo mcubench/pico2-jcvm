@@ -308,6 +308,11 @@ def main() -> int:
                     (104, bytes((2, 2, 0, 2, 2, 3)), "persistent OwnerPINx: presentation outside, administration inside transactions"),
                     (105, bytes((0, 2)), "record one failed OwnerPIN try"),
                     (106, bytes((0, 2)), "OwnerPIN try counter survives restore; validation cleared"),
+                    (112, bytes((13, 1, 1, 1)), "Cipher.OneShot matches Cipher.getInstance and reports its algorithm"),
+                    (113, bytes((5, 5, 32, 0xBA, 3)), "MessageDigest.OneShot: ILLEGAL_USE after close and on update, SHA-256, NO_SUCH_ALGORITHM"),
+                    (114, bytes((1, 1, 1, 12)), "a OneShot reference cannot be stored in a field, array or static"),
+                    (115, bytes((1, 5)), "two Signature.OneShot instances, a third is NO_RESOURCE"),
+                    (115, bytes((1, 5)), "OneShot instances were released when process() returned"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

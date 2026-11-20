@@ -745,6 +745,83 @@ std::shared_ptr<JC_Instance> Heap::getGlobalInstance(const jref_t reference) {
   return heap.shared_storage->instances.at(static_cast<uint16_t>(index - 1));
 }
 
+namespace {
+// Global instance indexes of JCRE-owned temporary Entry Point Objects. Only
+// OneShot instances are registered (a few per kind), so a linear scan is
+// cheaper than any index.
+constexpr std::size_t kMaximumTemporaryGlobalInstances = 16;
+std::array<uint16_t, kMaximumTemporaryGlobalInstances>
+    temporary_global_instances{};
+std::size_t temporary_global_instance_count = 0;
+} // namespace
+
+void Heap::markTemporaryGlobalInstance(const jref_t reference) {
+  if (!reference.isGlobalInstance()) throw Exceptions::SecurityException;
+  if (isTemporaryGlobalInstance(reference)) return;
+  if (temporary_global_instance_count == temporary_global_instances.size()) {
+    throw Exceptions::RuntimeException;
+  }
+  temporary_global_instances[temporary_global_instance_count++] =
+      reference.getGlobalInstanceIndex();
+}
+
+bool Heap::isTemporaryGlobalInstance(const jref_t reference) noexcept {
+  if (!reference.isGlobalInstance()) return false;
+  const uint16_t index = reference.getGlobalInstanceIndex();
+  for (std::size_t slot = 0; slot < temporary_global_instance_count; ++slot) {
+    if (temporary_global_instances[slot] == index) return true;
+  }
+  return false;
+}
+
+void Heap::releaseRuntimeDelegate(const jref_t reference) noexcept {
+  if (reference.isNullPointer() || reference.isArray() ||
+      reference.isGlobalInstance() || this->global_heap) {
+    return;
+  }
+  try {
+    auto &instances = this->shared_storage->instances;
+    const uint16_t offset = reference.getOffset();
+    if (offset == 0 || offset > instances.size()) return;
+    auto &slot = instances.at(static_cast<uint16_t>(offset - 1));
+    // A delegate is created volatile and never stored in Java-visible state;
+    // anything persistent here is not a delegate, so leave it alone.
+    if (!slot || slot->isPersistent() || slot->hasPersistentTag()) return;
+    auto *fields = slot->getFields();
+    if (fields != nullptr) {
+      auto &arrays = this->shared_storage->arrays;
+      for (uint16_t index = 0; index < fields->size(); ++index) {
+        const jc_field_t field = fields->at(index);
+        if (field.value == 0 ||
+            (field.type != FIELD_TYPE_ARRAY_OBJECT &&
+             field.type != FIELD_TYPE_TRANSIENT_ARRAY_OBJECT &&
+             field.type != FIELD_TYPE_OBJECT)) {
+          continue;
+        }
+        const jref_t child(static_cast<uint16_t>(field.value));
+        if (!child.isArray() || child.isGlobalArray()) continue;
+        const uint16_t child_offset = child.getOffset();
+        if (child_offset == 0 || child_offset > arrays.size()) continue;
+        auto &array = arrays.at(static_cast<uint16_t>(child_offset - 1));
+        // Native crypto objects keep their work buffers (key copies, IVs,
+        // buffered input) in private transient arrays. Wipe them before the
+        // handle is reused.
+        if (!array || !array->isTransientArray() ||
+            array->hasPersistentTag()) {
+          continue;
+        }
+        array->clearTransientData();
+        this->unregisterForeignReferenceArray(array.get());
+        array.reset();
+      }
+    }
+    slot.reset();
+  } catch (...) {
+    // Releasing must not fail the APDU; a leftover handle is reclaimed by
+    // the next heap collection.
+  }
+}
+
 void Heap::releaseGlobalInstance(const jref_t reference) noexcept {
   if (!reference.isGlobalInstance()) return;
   const uint16_t index = reference.getGlobalInstanceIndex();

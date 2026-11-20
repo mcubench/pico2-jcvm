@@ -20,6 +20,11 @@ import javacard.framework.Util;
 import javacard.security.MessageDigest;
 import javacard.security.InitializedMessageDigest;
 import javacard.security.CryptoException;
+import javacard.security.AESKey;
+import javacard.security.KeyBuilder;
+import javacard.security.RandomData;
+import javacard.security.Signature;
+import javacardx.crypto.Cipher;
 
 public final class JCTransactionProbe extends Applet {
   private static Object staticReferenceRoot;
@@ -33,6 +38,12 @@ public final class JCTransactionProbe extends Applet {
   private OwnerPINxWithPredecrement persistentPinX;
   // RAM cost probe (cases 107-110): objects kept reachable from a static.
   private static Object[] memoryProbe;
+  // OneShot probe (cases 112-115): stores that must be refused.
+  private static Object staticOneShot;
+  private Object oneShotField;
+  private Object[] oneShotArray;
+  private AESKey oneShotKey;
+  private Cipher oneShotReference;
   private short[] memoryProbeWords;
   private byte value = 0x11;
   private byte selectCount;
@@ -1326,6 +1337,135 @@ public final class JCTransactionProbe extends Applet {
         } else {
           buffer[0] = (byte)(persistentPin.isValidated() ? 1 : 0);
           buffer[1] = persistentPin.getTriesRemaining();
+        }
+        length = 2;
+        break;
+      }
+      case 112: {
+        // Cipher.OneShot gives the same result as Cipher.getInstance().
+        if (oneShotKey == null) {
+          oneShotKey = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES,
+              KeyBuilder.LENGTH_AES_128, false);
+          Util.arrayFillNonAtomic(buffer, (short) 48, (short) 16, (byte) 0x5A);
+          oneShotKey.setKey(buffer, (short) 48);
+          oneShotReference = Cipher.getInstance(
+              Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+        }
+        Util.arrayFillNonAtomic(buffer, (short) 48, (short) 16, (byte) 0x11);
+        Cipher.OneShot oneShot = null;
+        try {
+          oneShot = Cipher.OneShot.open(Cipher.CIPHER_AES_CBC, Cipher.PAD_NOPAD);
+          oneShot.init(oneShotKey, Cipher.MODE_ENCRYPT);
+          oneShot.doFinal(buffer, (short) 48, (short) 16, buffer, (short) 16);
+          buffer[0] = oneShot.getAlgorithm();
+          buffer[1] = oneShot.getCipherAlgorithm();
+          buffer[2] = oneShot.getPaddingAlgorithm();
+        } finally {
+          if (oneShot != null) {
+            oneShot.close();
+            oneShot = null;
+          }
+        }
+        oneShotReference.init(oneShotKey, Cipher.MODE_ENCRYPT);
+        oneShotReference.doFinal(buffer, (short) 48, (short) 16, buffer,
+                                 (short) 32);
+        buffer[3] = Util.arrayCompare(buffer, (short) 16, buffer, (short) 32,
+                                      (short) 16) == 0 ? (byte) 1 : (byte) 0;
+        length = 4;
+        break;
+      }
+      case 113: {
+        // MessageDigest.OneShot lifecycle: released instances, update(),
+        // unsupported algorithms.
+        MessageDigest.OneShot digest =
+            MessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+        digest.close();
+        digest.close();
+        byte released = 0;
+        try {
+          digest.getAlgorithm();
+        } catch (CryptoException e) {
+          released = (byte) e.getReason();
+        }
+        digest = MessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+        byte update = 0;
+        try {
+          digest.update(buffer, (short) 0, (short) 1);
+        } catch (CryptoException e) {
+          update = (byte) e.getReason();
+        }
+        buffer[64] = 0x61;
+        buffer[65] = 0x62;
+        buffer[66] = 0x63;
+        short digestLength =
+            digest.doFinal(buffer, (short) 64, (short) 3, buffer, (short) 8);
+        digest.close();
+        digest = null;
+        byte unsupported = 0;
+        try {
+          MessageDigest.OneShot.open((byte) 99);
+        } catch (CryptoException e) {
+          unsupported = (byte) e.getReason();
+        }
+        buffer[0] = released;
+        buffer[1] = update;
+        buffer[2] = (byte) digestLength;
+        buffer[3] = buffer[8];
+        buffer[4] = unsupported;
+        length = 5;
+        break;
+      }
+      case 114: {
+        // A OneShot reference cannot be stored in a field, array or static.
+        if (oneShotArray == null) oneShotArray = new Object[1];
+        RandomData.OneShot random =
+            RandomData.OneShot.open(RandomData.ALG_SECURE_RANDOM);
+        byte field = 0;
+        byte array = 0;
+        byte statics = 0;
+        try {
+          oneShotField = random;
+        } catch (SecurityException e) {
+          field = 1;
+        }
+        try {
+          oneShotArray[0] = random;
+        } catch (SecurityException e) {
+          array = 1;
+        }
+        try {
+          staticOneShot = random;
+        } catch (SecurityException e) {
+          statics = 1;
+        }
+        short next = random.nextBytes(buffer, (short) 8, (short) 4);
+        random.close();
+        random = null;
+        buffer[0] = field;
+        buffer[1] = array;
+        buffer[2] = statics;
+        buffer[3] = (byte) next;
+        length = 4;
+        break;
+      }
+      case 115: {
+        // Two Signature.OneShot instances may be open; a third is refused.
+        // Neither is closed: returning from process() releases them, so the
+        // next APDU can open two again.
+        Signature.OneShot first = Signature.OneShot.open(
+            MessageDigest.ALG_SHA_256, Signature.SIG_CIPHER_HMAC,
+            Cipher.PAD_NULL);
+        Signature.OneShot second = Signature.OneShot.open(
+            MessageDigest.ALG_SHA_256, Signature.SIG_CIPHER_HMAC,
+            Cipher.PAD_NULL);
+        buffer[0] = (first != null && second != null && first != second)
+            ? (byte) 1 : (byte) 0;
+        buffer[1] = 0;
+        try {
+          Signature.OneShot.open(MessageDigest.ALG_SHA_256,
+                                 Signature.SIG_CIPHER_HMAC, Cipher.PAD_NULL);
+        } catch (SystemException e) {
+          buffer[1] = (byte) e.getReason();
         }
         length = 2;
         break;
