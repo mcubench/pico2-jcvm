@@ -101,7 +101,7 @@ plus temporary counters, EC384 Signature replay
 |---|---|---|---|
 | Current normal image (`max_crypto`, deletion ON, debug OFF) | `build/arm/pico2_choupi.uf2` (source `a1639b68`) | `4b2fa5f5ac5d9416dfcc3e97e3b202104d997ac5bd6dd862a5a365362e6931ac` | OOM T9 fix (smaller handles, 16 KB Java allocation reserve) on top of the flash journal and native OwnerPIN |
 | Current empty-card image | `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-a1639b68.uf2` | `db90e2813674a69124e9001413dd3648f5d769902b7e4b1d15a473b7eb910d1d` | used for the 2026-11-20 option-1 rerun on 07E7 |
-| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-655dfa44.zip` | `dc3e196b1708fd53d04670ed7eb6836b8fbc2254767de658c7fed68a56478f65` | EXT `WIN-MAXCRYPTO-ONESHOT-655DFA44`; OOM fix + OneShot; empty-card UF2 `c28d9906…62784` |
+| Latest external (Windows) package | `build/external-test/pico2-jcvm-maxcrypto-deletion-d7e90a18.zip` | `4119c1028836f44b7d6000ed12758e6774ac08050ffe8ee05bcfa43502da070e` | EXT `WIN-MAXCRYPTO-ONESHOT-D7E90A18`; OOM fix + OneShot + InitializedMessageDigest; empty-card UF2 `6a49614f…2ec1ff` |
 | Diagnostic | build per task (`mode=diagnostic`); record path and hash in `progress.md` | — | Never acceptance evidence |
 
 ### REF-185-01

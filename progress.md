@@ -32654,3 +32654,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: all five Java Card 3.0.5 OneShot classes and InitializedMessageDigest are implemented on the emulator.
 - Decision: hardware validation together with the other ONESHOT-01 checks; next Windows package can include this.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T102026Z/`
+
+## 2026-11-20 Package Windows test d7e90a18 (adds InitializedMessageDigest) 2
+
+- Step-Id: `20261120-1142-win-package-d7e90a18`
+- Task: external Windows test package refresh (user request)
+- When: '2026-11-20 11:40' - '2026-11-20 11:42'
+- Model: `claude-opus-5-5`
+- Change: built normal max_crypto from HEAD `d7e90a18` and packaged it. `WIN-MAXCRYPTO-ONESHOT-D7E90A18` replaces `WIN-MAXCRYPTO-ONESHOT-655DFA44`; TODO images table updated.
+- Validation: build rc=0, 0 warnings, mode=normal; `PACKAGE:PASS`; package `applet.cap` SHA-256 `fa64582e…b48fb`. Not done: physical smoke (07E7 still in the option-1 rerun; F42D not in PC/SC).
+- Result: UF2 SHA-256 `6a49614f43242bfd6ad546381a7fcfa157abd27a165bb2e787f02535002ec1ff` (2,966,016 B), ZIP SHA-256 `4119c1028836f44b7d6000ed12758e6774ac08050ffe8ee05bcfa43502da070e` (18,235,064 B), end 0x10069f18, headroom 614,632 B, CPLC `0xD7E90A187DA2FB94`.
+- Decision: smoke-test this UF2 on 07E7 after the option-1 run together with the ONESHOT-01 hardware checks.
+- Artifacts/logs: `artifacts/results/windows-package-d7e90a18/`
