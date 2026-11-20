@@ -313,6 +313,8 @@ def main() -> int:
                     (114, bytes((1, 1, 1, 12)), "a OneShot reference cannot be stored in a field, array or static"),
                     (115, bytes((1, 5)), "two Signature.OneShot instances, a third is NO_RESOURCE"),
                     (115, bytes((1, 5)), "OneShot instances were released when process() returned"),
+                    (117, b"\x01", "arm OneShot use in select()"),
+                    (118, b"\x02", "OneShot instances opened in select() are released before process()"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -630,7 +632,7 @@ def main() -> int:
                             )
                         print(f"TEST:PASS {label}")
                         continue
-                    if p1 == 31:
+                    if p1 in (31, 118):
                         exchange(connection, select, "reselect applet for transient lifecycle check")
                     if p1 in (33, 103):
                         send_message(connection, b"\x02")

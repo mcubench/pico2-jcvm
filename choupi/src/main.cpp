@@ -2435,6 +2435,8 @@ uint16_t invoke_selected_applet_method(const uint8_t method_token,
         context, method.second, method.first.getPackageID(),
         initial_references, 1);
     const uint16_t status = interpretor.run();
+    // select()/deselect() returned to the JCRE: release OneShot instances.
+    jcvm::OneShotNative::releaseAll();
     if (status == 0x9000 && return_value != nullptr) {
       const jcvm::Stack &stack = context.getStack();
       if (!stack.hasRootReturnValue()) {

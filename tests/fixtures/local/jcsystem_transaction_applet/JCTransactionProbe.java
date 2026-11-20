@@ -44,6 +44,9 @@ public final class JCTransactionProbe extends Applet {
   private Object[] oneShotArray;
   private AESKey oneShotKey;
   private Cipher oneShotReference;
+  // 1: open OneShots in select() and again in the selecting process();
+  // 2: both succeeded; 3: process() got NO_RESOURCE.
+  private byte oneShotSelectProbe;
   private short[] memoryProbeWords;
   private byte value = 0x11;
   private byte selectCount;
@@ -123,6 +126,11 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    if (oneShotSelectProbe == 1) {
+      // Kept open on purpose: returning from select() must release them.
+      MessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+      MessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+    }
     selectDeselectTransientResult = 0;
     try {
       byte[] transientDuringSelect = JCSystem.makeTransientByteArray(
@@ -199,6 +207,15 @@ public final class JCTransactionProbe extends Applet {
 
   public void process(APDU apdu) throws ISOException {
     if (selectingApplet()) {
+      if (oneShotSelectProbe == 1) {
+        try {
+          MessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+          MessageDigest.OneShot.open(MessageDigest.ALG_SHA_256);
+          oneShotSelectProbe = 2;
+        } catch (SystemException e) {
+          oneShotSelectProbe = 3;
+        }
+      }
       selectingAppletProbeFlags |= 2;
       lastSelectProcessWasReselect = reSelectingApplet() ? (byte)1 : (byte)0;
       return;
@@ -1468,6 +1485,16 @@ public final class JCTransactionProbe extends Applet {
           buffer[1] = (byte) e.getReason();
         }
         length = 2;
+        break;
+      }
+      case 117: {
+        oneShotSelectProbe = 1;
+        buffer[0] = 1;
+        break;
+      }
+      case 118: {
+        buffer[0] = oneShotSelectProbe;
+        oneShotSelectProbe = 0;
         break;
       }
       case 107: {

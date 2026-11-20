@@ -32618,3 +32618,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: OneShot now behaves as specified on the emulator; support reporting stays honest (INV-08: OneShot support equals getInstance support).
 - Decision: hardware validation (probe cases and `FS_APDU` zero-write check) when 07E7 is free; cross-context test and release between `select()` and `process()` remain open under ONESHOT-01.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T091750Z/`; emulator logs `artifacts/logs/jcsystem-transaction-apdu-vpcd-2026112*`
+
+## 2026-11-20 OneShot instances are also released when select()/deselect() return 4
+
+- Step-Id: `20261120-1050-oneshot-select-release`
+- Task: ONESHOT-01 (c)
+- When: '2026-11-20 10:46' - '2026-11-20 10:50'
+- Model: `claude-opus-5-5`
+- Change: `invoke_selected_applet_method` (used for `select()` and `deselect()`) calls `OneShotNative::releaseAll()` after the entry point returns, so a OneShot opened in `select()` is gone before `process()` runs in the same SELECT APDU. Probe cases 117 (arm) and 118 (report): `select()` opens both MessageDigest.OneShot instances without closing; the selecting `process()` must be able to open two again.
+- Validation: `tools/test-jcsystem-transaction-applet` 111/111 on the PC build and on the RP2350-overlay build (case 118 `02` = both opens in `process()` succeeded); ARM max_crypto build rc=0, no warnings. Hardware not run (07E7 busy).
+- Result: OneShot release now happens at every applet entry-point return (select, deselect, process, install), as the API requires.
+- Decision: remaining ONESHOT-01 items: hardware run with zero-write check, cross-context test.
+- Artifacts/logs: none new beyond the emulator logs
