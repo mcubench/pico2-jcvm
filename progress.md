@@ -32798,3 +32798,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: uploaded code can no longer dispatch interface methods on arrays or with a wrong argument count. Not investigated: which runtime call relies on the array branch or a nargs difference (worth a later look).
 - Decision: CAPIN-06 remaining: loader-side mirror of these checks and crafted-CAP fixtures.
 - Artifacts/logs: suite logs under `artifacts/logs/`
+
+## 2026-11-20 VPCD reader wedged during the T8 campaign; correction to the CAPIN-06 invokeinterface record 40
+
+- Step-Id: `20261120-1820-vpcd-wedged-capin06-correction`
+- Task: CAPIN-06 follow-up (which runtime call needs the array/nargs path)
+- When: '2026-11-20 17:40' - '2026-11-20 18:20'
+- Model: `claude-opus-5-5`
+- Change: none kept in source (a trace build of `bc_invoke.cpp` was reverted). QKB entry on the wedged VPCD reader.
+- Validation: four JCAlgTest VPCD runs with a build that only adds stderr traces on the runtime array/nargs paths failed before any APDU reached the emulator (GPPro `--list`/`--install` exit with empty logs); a manual GPPro call reports "Failed to connect". RV-20261103-11/-12 physical tools were not run because they restart pcscd (live T8 run on 07E7).
+- Result: the VPCD reader is unusable until pcscd can be restarted. **Correction** to `20261120-1739-capin06-invokeinterface`: its claim that applying the invokeinterface checks to runtime callers "broke GPPro list/install" is not established — those three failures have the same signature as this wedged-reader problem. The scoped (uploaded-callers-only) checks remain committed; whether runtime callers ever hit the array branch or a nargs mismatch is still unknown.
+- Decision: after T8 option 1 ends: restart pcscd, rerun the trace build to answer the runtime question, then run the RV-11/-12 physical tools on F42D.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T17*`/`18*` (failed attempts)

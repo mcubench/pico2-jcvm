@@ -1765,3 +1765,16 @@ its applet; every later campaign APDU returned `6999`. **Viable fix:** poll
 `tools/list-readers` until the exact `(<CHIPID>)` name appears (bounded loop)
 and abort (`[ -n "$R" ] || exit`) before any GPPro/ApduTimer call; never pass
 an unchecked variable as `--reader`.
+
+## VPCD reader stops working during a long physical campaign (2026-11-20)
+
+While a physical JCAlgTest campaign ran on 07E7 for several hours, repeated
+`tools/test-jcalgtest-support-vpcd` runs started failing more and more often
+and then always: `Virtual PCD 00 00` still reports present
+(`VpcdPresenceProbe`), the emulator logs `VPCD:CONNECTED`, but GPPro `--list`
+or `--install` exits at once with an empty log (no APDU reaches the emulator).
+The same tree and a debug build that only adds prints fail the same way, so it
+is not a VM regression. Most likely the pcscd VPCD driver is wedged by many
+emulator connect/disconnect cycles. **Workaround:** restart pcscd
+(`sudo -n /usr/local/sbin/pico2-pcsc-reader`) only when no physical campaign
+is live; until then do not interpret VPCD install failures as VM evidence.
