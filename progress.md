@@ -32582,3 +32582,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: client `Testing complete`, 1,574 s, 0 `ERROR` lines; CSV 11,343 lines (SHA-256 `38d8b1b0461420651f64656d2d268c5713df8ad738bd5ff4fd9d67d7c45a3e1e`). Emulator: 2,645 deletion passes, 0 `pending=1`, 8,284 answered UNCHANGED, 89 low-watermark compactions, no PANIC/FAULT/NO_RESOURCE/TEST:FAIL/SKIP/INTEGRITY lines. The operation covers symmetric and asymmetric algorithms, a superset of option 2. Two earlier attempts the same morning do not count: one on the stale plain-FS emulator (no `PRE_CLEANUP`, headroom gate failed after a full 2,680 s client run; TOOL-VPCD-01) and one overlay attempt that failed at GPPro INSTALL with an empty log (passed on retry).
 - Decision: MEM-01 T7 closed. T8 acceptance (physical options 1 and 2 on wiped tokens, two boards) may start once the live physical option-1 rerun on 07E7 finishes.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T062332Z/` (invalid attempts: `…20261120T052445Z/`, `…20261120T061342Z/`)
+
+## 2026-11-20 VPCD JCAlgTest runner: object-deletion runs always use the current RP2350 overlay build 6
+
+- Step-Id: `20261120-0757-tool-vpcd-overlay`
+- Task: TOOL-VPCD-01
+- When: '2026-11-20 07:51' - '2026-11-20 07:57'
+- Model: `claude-opus-5-5`
+- Change: `tools/test-jcalgtest-support-vpcd`: `JCALGTEST_OBJECT_DELETION=1` now defaults `JCALGTEST_RP2350_OVERLAY` to 1 and refuses 0 (the plain PC build emits no `PRE_CLEANUP` telemetry and may be stale); each run saves `emulator-identity.sha256` (emulator and ROM mask) and `source-head.txt`.
+- Validation: `bash -n`; with `JCALGTEST_OBJECT_DELETION=1 JCALGTEST_RP2350_OVERLAY=0` the runner stops with the new error before any PC/SC step; `JCALGTEST_OPERATION=ALG_SUPPORT_BASIC JCALGTEST_OBJECT_DELETION=1` (overlay implied) passed: `JCALGTEST_VPCD:PASS`, `HEADROOM:PASS samples=174 peak 15,222/98,304 B (15.48%)`, identity files present.
+- Result: the failure mode that invalidated the first T7 attempt can no longer happen silently.
+- Decision: TOOL-VPCD-01 closed; the one-off GPPro INSTALL failure with an empty log stays noted in TODO.
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261120T065109Z/`

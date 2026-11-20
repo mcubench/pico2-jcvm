@@ -1752,5 +1752,5 @@ list? (y/n)". The VPCD readers are now `Virtual PCD 00 00` and `00 01`
 (possibly stale) on the plain PC filesystem, which emits no
 `OBJECT_DELETION:PRE_CLEANUP`, so the headroom gate fails after the whole run.
 **Viable fix:** also set `JCALGTEST_RP2350_OVERLAY=1` (rebuilds
-`build/choupi-pc-rp2350-overlay` from the current tree). Tracked as TODO
-TOOL-VPCD-01.
+`build/choupi-pc-rp2350-overlay` from the current tree). Fixed by TOOL-VPCD-01: deletion runs now
+default to the overlay and refuse `JCALGTEST_RP2350_OVERLAY=0`.

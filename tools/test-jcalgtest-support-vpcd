@@ -66,7 +66,16 @@ if [[ -n "${resume_dir}" ]]; then
 elif [[ -n "${resume_memory_dir}" ]]; then
   die "JCALGTEST_VPCD_RESUME_MEMORY_DIR requires JCALGTEST_VPCD_RESUME_DIR"
 fi
-rp2350_overlay="${JCALGTEST_RP2350_OVERLAY:-0}"
+# Object-deletion runs need the RP2350 overlay: only it emits the
+# OBJECT_DELETION:PRE_CLEANUP telemetry the headroom gate requires, and it is
+# rebuilt from the current tree here (the plain PC binary may be stale).
+if [[ "${object_deletion}" == 1 ]]; then
+  rp2350_overlay="${JCALGTEST_RP2350_OVERLAY:-1}"
+  [[ "${rp2350_overlay}" == 1 ]] ||
+    die "JCALGTEST_OBJECT_DELETION=1 requires the RP2350 overlay (unset JCALGTEST_RP2350_OVERLAY or set it to 1)"
+else
+  rp2350_overlay="${JCALGTEST_RP2350_OVERLAY:-0}"
+fi
 [[ "${rp2350_overlay}" == 0 || "${rp2350_overlay}" == 1 ]] ||
   die "JCALGTEST_RP2350_OVERLAY must be 0 or 1"
 build_directory="${repo_root}/build/choupi-pc"
@@ -93,6 +102,8 @@ overlay_flash="${JCALGTEST_OVERLAY_FLASH:-${out_dir}/rp2350-overlay.flash}"
 client_log="${out_dir}/client.log"
 emulator_log="${out_dir}/emulator.log"
 cp "${expected}" "${out_dir}/expected-support.csv"
+sha256sum "${emulator}" "${rom_mask}" > "${out_dir}/emulator-identity.sha256"
+git -C "${repo_root}" rev-parse HEAD > "${out_dir}/source-head.txt" 2>/dev/null || true
 if [[ -n "${resume_dir}" ]]; then
   cp "${resume_dir}/rp2350-overlay.flash" "${overlay_flash}"
   cp "${resume_memory_dir}/empty-card.bin" "${memory}"
