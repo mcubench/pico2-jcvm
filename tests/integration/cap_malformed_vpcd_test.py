@@ -276,7 +276,7 @@ def build_malformed_load_code(mutation: str) -> Path:
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
     if mutation in ("external-superclass-import-token-out-of-range",
-                    "superclass-self-cycle"):
+                    "superclass-self-cycle", "superclass-mid-record"):
         class_data = parts["Class"][3:]
         class_offset = 0
         target_superclass = None
@@ -310,6 +310,9 @@ def build_malformed_load_code(mutation: str) -> Path:
         if mutation == "superclass-self-cycle":
             # RV-20261106-07: the applet class names itself as superclass.
             replacement = class_offset.to_bytes(2, "big")
+        elif mutation == "superclass-mid-record":
+            # CAPIN-07: an earlier offset that is not a class record start.
+            replacement = (1).to_bytes(2, "big")
         else:
             replacement = b"\xff\x00"  # external package token 127, class token 0
     elif mutation == "unknown-component-tag":
@@ -751,6 +754,7 @@ def main() -> int:
                                 "ilookupswitch-into-operand",
                                 "switch-into-operand",
                                 "superclass-self-cycle",
+                                "superclass-mid-record",
                                 *RECEIVER_CHECK_OPCODES),
         default="impdep1",
     )
@@ -805,7 +809,8 @@ def main() -> int:
     if args.mutation == "load-header-aid-mismatch":
         commands.extend(("--load-package-aid-override",
                          "4A43416C6754657375"))
-    install_rejection_mutations = ("superclass-self-cycle",)
+    install_rejection_mutations = ("superclass-self-cycle",
+                                   "superclass-mid-record")
     if args.mutation in install_rejection_mutations:
         log.unlink(missing_ok=True)
     if args.mutation not in load_rejection_mutations + install_rejection_mutations:
@@ -833,19 +838,20 @@ def main() -> int:
         [str(ROOT / "tools/test-pc-vpcd-applet"), *commands], **run_kwargs
     )
     if args.mutation in install_rejection_mutations:
-        # RV-20261106-07: every superclass walk is bounded, so a cyclic
-        # hierarchy must make INSTALL fail with SecurityException (6A80)
-        # instead of keeping the interpreter in one handler.
+        # RV-20261106-07 / CAPIN-07: INSTALL-time class-reference validation
+        # (stage 9) rejects a superclass that is not an earlier class record,
+        # before any bytecode of the package runs. (Before that check, the
+        # bounded superclass walks failed `new` with SecurityException.)
         run_log = log.read_text(encoding="utf-8", errors="replace")
-        if not re.search(r"PC applet INSTALL failed stage=\d+ sw=6A80 vm=6F00 "
-                         r"exception=29\b", run_log):
+        if not re.search(r"PC applet INSTALL failed stage=9 sw=6F00 vm=0000 "
+                         r"exception=0\b", run_log):
             if result.stdout:
                 print(result.stdout, file=sys.stderr, end="")
             print(f"HIERARCHY_CYCLE:FAIL mutation={args.mutation}",
                   file=sys.stderr)
             return 1
         print(f"HIERARCHY_CYCLE:PASS mutation={args.mutation} "
-              "install_rejected sw=6A80 exception=29")
+              "install_rejected stage=9 class_reference_validation")
         return 0
     if args.mutation in load_rejection_mutations:
         run_log = log.read_text(encoding="utf-8", errors="replace")

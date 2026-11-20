@@ -606,6 +606,52 @@ bool validate_internal_class_references(
   }
   if (offset != class_size) return false;
 
+  // CAPIN-07: class records name their superclass and implemented
+  // interfaces. An internal superclass must be a class record placed before
+  // the subclass (the CAP orders superclasses first), so the internal
+  // hierarchy is acyclic; an internal implemented interface must be an
+  // interface record. Runtime superclass walks are bounded as well, but a
+  // cyclic package must not be stored in the first place.
+  const auto is_record_start = [&](const std::size_t token) {
+    return token < class_size &&
+           (record_starts[token / 8] &
+            static_cast<uint8_t>(1u << (token & 7))) != 0;
+  };
+  offset = header->minor_version >= 2 ? class_component->classInfoStartOffset()
+                                      : 0;
+  while (offset < class_size) {
+    const uint8_t *record = class_bytes.data() + offset;
+    const bool is_interface = (record[0] & 0x80u) != 0;
+    if (is_interface) {
+      offset += reinterpret_cast<const jcvm::jc_cap_interface_info *>(record)
+                    ->getSize();
+      continue;
+    }
+    const auto *class_info =
+        reinterpret_cast<const jcvm::jc_cap_class_info *>(record);
+    if (!class_info->isObjectClass() &&
+        !class_info->super_class_ref.isExternalClassRef()) {
+      const std::size_t super_offset =
+          NTOHS(class_info->super_class_ref.internal_classref);
+      if (super_offset >= offset || !is_record_start(super_offset) ||
+          (class_bytes.data()[super_offset] & 0x80u) != 0) {
+        return false;
+      }
+    }
+    for (uint8_t interface_index = 0;
+         interface_index < class_info->interface_count; ++interface_index) {
+      const auto &implemented = class_info->interfaces(interface_index);
+      if (implemented.interface.isExternalClassRef()) continue;
+      const std::size_t interface_offset =
+          NTOHS(implemented.interface.internal_classref);
+      if (!is_record_start(interface_offset) ||
+          (class_bytes.data()[interface_offset] & 0x80u) == 0) {
+        return false;
+      }
+    }
+    offset += class_info->getSize();
+  }
+
   for (std::size_t index = 0; index < count; ++index) {
     const uint8_t *entry = entries + index * 4;
     if (entry[0] < JC_CP_TAG_CONSTANT_CLASSREF ||

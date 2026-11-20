@@ -32870,3 +32870,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: a cyclic hierarchy cannot hang the interpreter; the package is still accepted at LOAD.
 - Decision: LOAD-time cycle rejection belongs to CAPIN-07; keep RV-07 open for two-class cycles and physical timing. Correction: the previous record (`20261120-2128-rv06-field-receiver-fixtures`) ended at 21:24 per `date`, not 21:29.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-superclass-self-cycle-vpcd-20261106.log`
+
+## 2026-11-20 CAPIN-07 superclass order and kind checked before INSTALL runs code 6
+
+- Step-Id: `20261120-2131-capin07-superclass-order`
+- Task: CAPIN-07, RV-20261106-07
+- When: '2026-11-20 21:25 CET' - '2026-11-20 21:31 CET'
+- Model: `claude-opus-5-5`
+- Change: `src/cap_load.cpp` `validate_internal_class_references` (the stage-9 INSTALL validator, run before any bytecode of the package) walks the class records with the existing record-start bitmap and rejects a class whose internal superclass is not a class-record start at a lower offset (so internal hierarchies are acyclic, including two-class cycles) or whose internal implemented interface is not an interface-record start. New fixture `superclass-mid-record` (superclass offset 1); `superclass-self-cycle` now expects the stage-9 rejection (`sw=6F00 vm=0000 exception=0`) instead of the earlier SecurityException at `new`.
+- Validation: `./tools/build-pc --profile max_crypto`; regression script: 39 malformed-CAP mutations rc=0 (both superclass fixtures `HIERARCHY_CYCLE:PASS`), test-rmi-arrays-vpcd 3/3 (fixture with internal superclasses installs), test-pc-vpcd-applet 30/30, test-jcsystem-transaction-applet 113/113, rmi-client, dup-x, asymm-crypto, persistent-transaction, jcarray, cap-method-body-deploy-caps (11 API CAPs, 978 methods) pass. Not run: sio-cross-aid, multipackage, same-cap-siblings, gppro-empty-install (need the wedged pcscd VPCD reader); symm-crypto-vpcd (host Python module missing). `./tools/build arm --profile max_crypto` BUILD:PASS, mode=normal, 0 C/C++ warnings.
+- Result: cyclic or malformed internal class hierarchies are refused before execution; the package record itself is still stored at LOAD (CAPIN-01 scope).
+- Decision: run the pcscd-dependent suites after the 07E7 campaign; continue CAPIN-07 with Export class_offset and table bounds.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-superclass-{self-cycle,mid-record}-vpcd-20261106.log`
