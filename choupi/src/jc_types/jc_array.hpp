@@ -216,6 +216,9 @@ public:
 
   /// Get a const pointer to array data
   const uint8_t *getData() const;
+
+  // Borrow byte data until the next filesystem operation or array mutation.
+  const uint8_t *getByteDataView() const;
   /// Copy a byte-array range to native memory with one persistent-record read.
   void copyByteEntriesTo(uint16_t offset, uint16_t length,
                          uint8_t *destination) const;

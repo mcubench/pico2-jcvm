@@ -2575,6 +2575,20 @@ void FlashMemory_Handler::writePersistentField_Array_Byte(
   write_persistent_tag_or_throw(tag, updated.data(), length);
 }
 
+const uint8_t *FlashMemory_Handler::borrowPersistentArrayData(
+    const fs::Tag &tag, const FieldType expected_type,
+    const uint16_t array_length, const uint8_t element_width) {
+  const auto [record_length, record] = getDataInPlaceFromTag(tag);
+  const uint32_t expected_length = 3u +
+      static_cast<uint32_t>(array_length) * element_width;
+  if (!record || record_length != expected_length ||
+      record[0] != static_cast<uint8_t>(expected_type) ||
+      BYTES_TO_SHORT(record[1], record[2]) != array_length) {
+    throw Exceptions::SecurityException;
+  }
+  return record + 3;
+}
+
 void FlashMemory_Handler::readPersistentArrayRange(
     const fs::Tag &tag, const FieldType expected_type,
     const uint16_t array_length, const uint16_t offset, const uint16_t count,
@@ -2585,19 +2599,11 @@ void FlashMemory_Handler::readPersistentArrayRange(
   }
   if (count == 0) return;
 
-  auto [record_length, record] = readPersistentRecord(tag);
-  const uint32_t data_length =
-      static_cast<uint32_t>(array_length) * element_width;
-  const uint32_t expected_length = 3u + data_length;
-  if (!record || record_length != expected_length ||
-      record[0] != static_cast<uint8_t>(expected_type) ||
-      BYTES_TO_SHORT(record[1], record[2]) != array_length) {
-    throw Exceptions::SecurityException;
-  }
-  const uint32_t byte_offset = 3u +
-      static_cast<uint32_t>(offset) * element_width;
+  const auto *data = borrowPersistentArrayData(
+      tag, expected_type, array_length, element_width);
+  const uint32_t byte_offset = static_cast<uint32_t>(offset) * element_width;
   const uint32_t byte_length = static_cast<uint32_t>(count) * element_width;
-  std::memcpy(destination, record.get() + byte_offset, byte_length);
+  std::memcpy(destination, data + byte_offset, byte_length);
 }
 
 void FlashMemory_Handler::writePersistentArrayRange(

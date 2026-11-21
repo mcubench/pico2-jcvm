@@ -253,6 +253,11 @@ public:
       const fs::Tag &tag, const std::vector<uint8_t> &contents);
   /// Read/write a validated range of a persistent primitive array in one
   /// record operation. Non-atomic writes remain outside transaction rollback.
+  // Borrow validated primitive data until the next filesystem operation.
+  static const uint8_t *borrowPersistentArrayData(
+      const fs::Tag &tag, FieldType expected_type, uint16_t array_length,
+      uint8_t element_width);
+
   static void readPersistentArrayRange(
       const fs::Tag &tag, FieldType expected_type, uint16_t array_length,
       uint16_t offset, uint16_t count, uint8_t element_width,

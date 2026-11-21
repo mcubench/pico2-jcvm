@@ -48,6 +48,8 @@ public final class JCTransactionProbe extends Applet {
   // 2: both succeeded; 3: process() got NO_RESOURCE.
   private byte oneShotSelectProbe;
   private InitializedMessageDigest initializedDigest;
+  private MessageDigest streamingDigest;
+  private byte[] streamingInput;
   // SHA-256 intermediate state after 64 bytes of 0x61 (cases 119/120).
   private static final byte[] SHA256_STATE_AFTER_64A = {
       (byte)0xDF, (byte)0x5B, (byte)0xB8, (byte)0x1C, (byte)0xE8, (byte)0x1E, (byte)0x06, (byte)0x26, (byte)0xFB, (byte)0x45, (byte)0xA8, (byte)0x94, (byte)0x4F, (byte)0xD4, (byte)0x0F, (byte)0x31, (byte)0xB2, (byte)0x5E, (byte)0x68, (byte)0x16, (byte)0xD6, (byte)0xD4, (byte)0x99, (byte)0xC1, (byte)0xAB, (byte)0x90, (byte)0x49, (byte)0x29, (byte)0x00, (byte)0x63, (byte)0x5E, (byte)0x66};
@@ -1548,6 +1550,49 @@ public final class JCTransactionProbe extends Applet {
         buffer[1] = value;
         Util.arrayCopyNonAtomic(buffer, (short) 8, buffer, (short) 2, (short) 4);
         length = 6;
+        break;
+      }
+      case 121: {
+        if (streamingInput == null) {
+          streamingInput = new byte[5122];
+          streamingInput[1] = 0x61;
+          streamingInput[5120] = 0x62;
+        }
+        if (streamingDigest == null) {
+          streamingDigest = MessageDigest.getInstance(
+              MessageDigest.ALG_SHA_256, false);
+        }
+        streamingDigest.reset();
+        streamingDigest.update(streamingInput, (short) 1, (short) 5120);
+        buffer[0] = 1;
+        break;
+      }
+      case 122: {
+        for (byte i = 0; i < 6; i++) {
+          streamingDigest.update(streamingInput, (short) 1, (short) 5120);
+        }
+        JCSystem.beginTransaction();
+        streamingDigest.update(streamingInput, (short) 1, (short) 63);
+        JCSystem.abortTransaction();
+        length = streamingDigest.doFinal(buffer, (short) 0, (short) 0,
+                                          buffer, (short) 0);
+        break;
+      }
+      case 123: {
+        length = streamingDigest.doFinal(buffer, (short) 0, (short) 0,
+                                          buffer, (short) 0);
+        break;
+      }
+      case 124: {
+        byte[] algorithms = {MessageDigest.ALG_SHA, MessageDigest.ALG_SHA_224,
+                             MessageDigest.ALG_SHA_256, MessageDigest.ALG_SHA_384,
+                             MessageDigest.ALG_SHA_512};
+        length = 0;
+        for (byte i = 0; i < (byte) algorithms.length; i++) {
+          MessageDigest digest = MessageDigest.getInstance(algorithms[i], false);
+          length += digest.doFinal(streamingInput, (short) 1, (short) 5120,
+                                   buffer, length);
+        }
         break;
       }
       case 117: {

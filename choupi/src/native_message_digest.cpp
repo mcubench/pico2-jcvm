@@ -2,34 +2,26 @@
 #include "exceptions.hpp"
 #include "javacard-rom-metadata.h"
 #include "javacard-support.h"
-#include "jc_handlers/jc_class.hpp"
 #include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/package.hpp"
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
-#include "native_signature_digest.hpp"
+#include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
+#include "mbedtls/sha512.h"
 
 #include <algorithm>
-#include <vector>
+#include <array>
 #include <cstdint>
 #include <memory>
 
 namespace jcvm {
 
-#if JC_SUPPORT_SHA256
-void fr_gouv_ssi_nativeimpl_Sha256NativeBridge_doFinal(
-    std::shared_ptr<JC_Array>, jshort_t, std::shared_ptr<JC_Array>, jshort_t);
-#endif
-
-#if JC_SUPPORT_SHA1 || JC_SUPPORT_SHA224 || JC_SUPPORT_SHA384 || JC_SUPPORT_SHA512
-jbool_t fr_gouv_ssi_nativeimpl_MbedTlsDigestNativeBridge_digest(
-    jbyte_t, std::shared_ptr<JC_Array>, jshort_t,
-    std::shared_ptr<JC_Array>, jshort_t);
-#endif
-
 namespace {
-constexpr uint16_t kMaximumDigestInput = 2046;
+constexpr uint16_t kDigestContextBytes = 1 + std::max({
+    sizeof(mbedtls_sha1_context), sizeof(mbedtls_sha256_context),
+    sizeof(mbedtls_sha512_context)});
 
 jclass_index_t messageDigestClassIndex() {
   const uint16_t classOffset =
@@ -51,8 +43,6 @@ bool isInitializedDigest(const JC_Instance &instance) {
   return instance.getClassIndex() == initializedMessageDigestClassIndex();
 }
 
-// MessageDigest natives accept both runtime classes; InitializedMessageDigest
-// only adds the starting-state array.
 std::shared_ptr<JC_Instance> digestInstance(const jref_t reference) {
   if (reference.isNullPointer()) throw Exceptions::NullPointerException;
   auto instance = Context::getActiveContext().getHeap().getInstance(reference);
@@ -63,47 +53,13 @@ std::shared_ptr<JC_Instance> digestInstance(const jref_t reference) {
   return instance;
 }
 
-// [0] 1 when setInitialDigest() supplied a starting state, [1..64] the
-// intermediate hash value (32 bytes for SHA-1/224/256 state words, 64 for
-// SHA-384/512), [65..80] the digested byte length (big-endian, 128 bits).
-constexpr uint16_t kInitialStateFlag = 0;
-constexpr uint16_t kInitialStateValue = 1;
-constexpr uint16_t kInitialStateLength = 65;
-constexpr uint16_t kInitialStateBytes = 81;
-
-// ROM field indexes are local to the declaring class; the instance stores
-// the superclass (MessageDigest) fields first, as resolveInstanceFieldToken()
-// does for bytecode access.
-uint16_t initialStateField() {
-  return static_cast<uint16_t>(
-      Class_Handler(Package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY))
-          .getInstanceFieldsSize(messageDigestClassIndex()) +
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_INITIALIZEDMESSAGEDIGEST_INITIALIZEDMESSAGEDIGEST_INITIALSTATE);
-}
-
-std::shared_ptr<JC_Array> initialStateArray(JC_Instance &instance) {
-  const jref_t reference = instance.getField_Reference(initialStateField());
-  if (reference.isNullPointer()) throw Exceptions::NullPointerException;
-  auto array = Context::getActiveContext().getHeap().getArray(reference);
-  if (!array || array->getType() != JAVA_ARRAY_T_BYTE ||
-      array->size() < kInitialStateBytes)
-    throw Exceptions::ArrayStoreException;
-  return array;
-}
-
-// Back to the state upon construction (MessageDigest.reset()/doFinal()).
-void clearInitialState(JC_Instance &instance) {
-  if (!isInitializedDigest(instance)) return;
-  auto state = initialStateArray(instance);
-  for (uint16_t i = 0; i < kInitialStateBytes; ++i) state->setByteEntry(i, 0);
-}
-
 std::shared_ptr<JC_Array> digestBuffer(JC_Instance &instance) {
   const jref_t reference = instance.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTBUFFER);
   if (reference.isNullPointer()) throw Exceptions::NullPointerException;
   auto array = Context::getActiveContext().getHeap().getArray(reference);
-  if (!array || array->getType() != JAVA_ARRAY_T_BYTE)
+  if (!array || array->getType() != JAVA_ARRAY_T_BYTE ||
+      !array->isTransientArray() || array->size() < kDigestContextBytes)
     throw Exceptions::ArrayStoreException;
   return array;
 }
@@ -140,51 +96,90 @@ void checkRange(const std::shared_ptr<JC_Array> &array,
     throw Exceptions::ArrayIndexOutOfBoundsException;
 }
 
-void appendInput(JC_Instance &instance,
-                 const std::shared_ptr<JC_Array> &source,
-                 const jshort_t offset, const jshort_t length) {
-  checkRange(source, offset, length);
-  const jbyte_t algorithm = instance.getField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_ALGORITHM);
-  auto destination = digestBuffer(instance);
-  const jshort_t current = instance.getNativeSessionField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH);
-  const uint16_t maximumInput = static_cast<uint8_t>(algorithm) == 4
-                                    ? destination->size()
-                                    : kMaximumDigestInput;
-  if (current < 0 || static_cast<uint32_t>(current) +
-                          static_cast<uint16_t>(length) > maximumInput)
+// Byte zero marks a started context. A card reset clears the transient array,
+// and the existing ROM field also accepts the older, larger transient buffer.
+template <typename State, typename Start, typename Update, typename Finish,
+          typename Operation>
+void withDigestContext(JC_Array &buffer, Start start, Update update,
+                       Finish finish, Operation operation, bool restart) {
+  State state{};
+  if (!restart && buffer.getByteEntry(0) != 0) {
+    buffer.copyByteEntriesTo(1, sizeof(state),
+                             reinterpret_cast<uint8_t *>(&state));
+  } else if (start(&state) != 0) {
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  for (jshort_t i = 0; i < length; ++i)
-    destination->setByteEntry(static_cast<uint16_t>(current + i),
-                              source->getByteEntry(
-                                  static_cast<uint16_t>(offset + i)));
-  instance.setNativeSessionField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH,
-      static_cast<jshort_t>(current + length));
+  }
+  operation(state, update, finish);
+  buffer.copyByteEntriesFrom(1, sizeof(state),
+                             reinterpret_cast<const uint8_t *>(&state));
+  buffer.setByteEntry(0, 1);
+}
+
+template <typename Operation>
+void withDigestContext(JC_Instance &instance, Operation operation,
+                       bool restart = false) {
+  const auto algorithm = static_cast<uint8_t>(instance.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_ALGORITHM));
+  auto buffer = digestBuffer(instance);
+  switch (algorithm) {
+#if JC_SUPPORT_SHA1
+  case 1:
+    return withDigestContext<mbedtls_sha1_context>(
+        *buffer, mbedtls_sha1_starts, mbedtls_sha1_update, mbedtls_sha1_finish,
+        operation, restart);
+#endif
+#if JC_SUPPORT_SHA224 || JC_SUPPORT_SHA256
+#if JC_SUPPORT_SHA256
+  case 4:
+#endif
+#if JC_SUPPORT_SHA224
+  case 7:
+#endif
+    return withDigestContext<mbedtls_sha256_context>(
+        *buffer, [algorithm](auto *state) {
+          return mbedtls_sha256_starts(state, algorithm == 7);
+        }, mbedtls_sha256_update, mbedtls_sha256_finish, operation, restart);
+#endif
+#if JC_SUPPORT_SHA384 || JC_SUPPORT_SHA512
+#if JC_SUPPORT_SHA384
+  case 5:
+#endif
+#if JC_SUPPORT_SHA512
+  case 6:
+#endif
+    return withDigestContext<mbedtls_sha512_context>(
+        *buffer, [algorithm](auto *state) {
+          return mbedtls_sha512_starts(state, algorithm == 5);
+        }, mbedtls_sha512_update, mbedtls_sha512_finish, operation, restart);
+#endif
+  default:
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  }
+}
+
+template <typename State, typename Update>
+void updateDigest(State &state, Update update, const uint8_t *data,
+                  uint16_t length) {
+  const auto &total = state.MBEDTLS_PRIVATE(total);
+  const uint64_t low = total[0];
+  const uint64_t high = total[1];
+  const uint64_t lengthWord = sizeof(total[0]) == 8
+                                  ? high + (low + length < low)
+                                  : ((high << 32) | low) + length;
+  if (lengthWord >= (uint64_t{1} << 61) ||
+      (length != 0 && update(&state, data, length) != 0))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
 }
 
 void clearInput(JC_Instance &instance) {
-  auto buffer = digestBuffer(instance);
-  const jshort_t length = instance.getNativeSessionField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH);
-  if (length < 0 || static_cast<uint16_t>(length) > buffer->size())
-    throw Exceptions::ArrayIndexOutOfBoundsException;
-  for (jshort_t i = 0; i < length; ++i)
-    buffer->setByteEntry(static_cast<uint16_t>(i), 0);
-  instance.setNativeSessionField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH,
-      0);
+  const std::array<uint8_t, kDigestContextBytes> empty{};
+  digestBuffer(instance)->copyByteEntriesFrom(0, empty.size(), empty.data());
 }
-} // namespace
 
-namespace {
 jref_t newDigest(const jbyte_t algorithm, const jbool_t externalAccess,
                  const bool initialized) {
   if (externalAccess) throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-  const uint16_t outputLength = digestLength(algorithm);
-  (void)outputLength;
-  const uint16_t capacity = kMaximumDigestInput;
+  digestLength(algorithm);
   Heap &heap = Context::getActiveContext().getHeap();
   const uint16_t classOffset = initialized
                                    ? initializedMessageDigestClassIndex()
@@ -195,7 +190,7 @@ jref_t newDigest(const jbyte_t algorithm, const jbool_t externalAccess,
   auto instance = heap.getInstance(reference);
   if (!instance) throw Exceptions::RuntimeException;
   const jref_t buffer = heap.addArray(
-      JC_Array(heap, capacity, JAVA_ARRAY_T_BYTE, true,
+      JC_Array(heap, kDigestContextBytes, JAVA_ARRAY_T_BYTE, true,
                ClearEvent::CLEAR_ON_RESET));
   instance->setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_ALGORITHM,
@@ -203,17 +198,6 @@ jref_t newDigest(const jbyte_t algorithm, const jbool_t externalAccess,
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTBUFFER,
       buffer);
-  instance->setNativeSessionField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH,
-      0);
-  if (initialized) {
-    // Transient like the input buffer: the starting state is per-session
-    // data and is never written to flash.
-    instance->setField_Reference(
-        initialStateField(),
-        heap.addArray(JC_Array(heap, kInitialStateBytes, JAVA_ARRAY_T_BYTE,
-                               true, ClearEvent::CLEAR_ON_RESET)));
-  }
   return reference;
 }
 } // namespace
@@ -265,23 +249,18 @@ void javacard_security_InitializedMessageDigest_setInitialDigest(
       (sha512Family ? high >= (uint64_t{1} << 61)
                     : (high != 0 || low >= (uint64_t{1} << 61))))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
-  clearInput(*instance);
-  auto state = initialStateArray(*instance);
-  state->setByteEntry(kInitialStateFlag, 1);
-  for (jshort_t i = 0; i < 64; ++i) {
-    state->setByteEntry(static_cast<uint16_t>(kInitialStateValue + i),
-                        i < initialDigestLength
-                            ? initialDigest->getByteEntry(
-                                  static_cast<uint16_t>(initialDigestOffset + i))
-                            : static_cast<jbyte_t>(0));
-  }
-  for (uint16_t i = 0; i < 8; ++i) {
-    const unsigned shift = static_cast<unsigned>((7 - i) * 8);
-    state->setByteEntry(static_cast<uint16_t>(kInitialStateLength + i),
-                        static_cast<jbyte_t>(high >> shift));
-    state->setByteEntry(static_cast<uint16_t>(kInitialStateLength + 8 + i),
-                        static_cast<jbyte_t>(low >> shift));
-  }
+  withDigestContext(*instance, [&](auto &state, auto, auto) {
+    const auto *bytes = initialDigest->getByteDataView() + initialDigestOffset;
+    auto &words = state.MBEDTLS_PRIVATE(state);
+    auto &total = state.MBEDTLS_PRIVATE(total);
+    for (auto &word : words) {
+      word = 0;
+      for (size_t i = 0; i < sizeof(word); ++i)
+        word = (word << 8) | *bytes++;
+    }
+    total[0] = low;
+    total[1] = sizeof(total[0]) == 8 ? high : low >> 32;
+  }, true);
 }
 
 jbyte_t javacard_security_MessageDigest_getAlgorithm(const jref_t receiver) {
@@ -300,7 +279,12 @@ void javacard_security_MessageDigest_update(
     const jref_t receiver, std::shared_ptr<JC_Array> input,
     const jshort_t inputOffset, const jshort_t inputLength) {
   auto instance = digestInstance(receiver);
-  appendInput(*instance, input, inputOffset, inputLength);
+  checkRange(input, inputOffset, inputLength);
+  if (inputLength == 0) return;
+  withDigestContext(*instance, [&](auto &state, auto update, auto) {
+    updateDigest(state, update, input->getByteDataView() + inputOffset,
+                 inputLength);
+  });
 }
 
 jshort_t javacard_security_MessageDigest_doFinal(
@@ -317,65 +301,20 @@ jshort_t javacard_security_MessageDigest_doFinal(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_ALGORITHM);
   const uint16_t resultLength = digestLength(algorithm);
   checkRange(output, outputOffset, static_cast<jshort_t>(resultLength));
-  appendInput(*instance, input, inputOffset, inputLength);
-  auto buffer = digestBuffer(*instance);
-  bool success = false;
-  if (isInitializedDigest(*instance)) {
-    auto state = initialStateArray(*instance);
-    if (state->getByteEntry(kInitialStateFlag) != 0) {
-      const uint8_t selected = static_cast<uint8_t>(algorithm);
-      const uint16_t stateLength =
-          selected == 1 ? 20 : ((selected == 5 || selected == 6) ? 64 : 32);
-      std::vector<unsigned char> startingState(stateLength);
-      for (uint16_t i = 0; i < stateLength; ++i)
-        startingState[i] = static_cast<uint8_t>(
-            state->getByteEntry(static_cast<uint16_t>(kInitialStateValue + i)));
-      uint64_t high = 0;
-      uint64_t low = 0;
-      for (uint16_t i = 0; i < 8; ++i) {
-        high = (high << 8) | static_cast<uint8_t>(state->getByteEntry(
-                                 static_cast<uint16_t>(kInitialStateLength + i)));
-        low = (low << 8) | static_cast<uint8_t>(state->getByteEntry(
-                               static_cast<uint16_t>(kInitialStateLength + 8 + i)));
-      }
-      const jshort_t messageLength = instance->getNativeSessionField_Short(
-          ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH);
-      std::vector<unsigned char> message(static_cast<uint16_t>(messageLength));
-      for (jshort_t i = 0; i < messageLength; ++i)
-        message[static_cast<uint16_t>(i)] = static_cast<uint8_t>(
-            buffer->getByteEntry(static_cast<uint16_t>(i)));
-      const auto digest = continueDigestFromInitialState(
-          selected, startingState, low, high, message);
-      std::fill(startingState.begin(), startingState.end(), 0);
-      if (digest.size() != resultLength)
-        throwCryptoException(CryptoExceptionReason::IllegalUse);
-      for (uint16_t i = 0; i < resultLength; ++i)
-        output->setByteEntry(static_cast<uint16_t>(outputOffset + i),
-                             static_cast<jbyte_t>(digest[i]));
-      success = true;
-    }
-  }
-#if JC_SUPPORT_SHA256
-  if (!success && static_cast<uint8_t>(algorithm) == 4) {
-    fr_gouv_ssi_nativeimpl_Sha256NativeBridge_doFinal(
-        buffer,
-        instance->getNativeSessionField_Short(
-            ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH),
-        output, outputOffset);
-    success = true;
-  }
-#endif
-#if JC_SUPPORT_SHA1 || JC_SUPPORT_SHA224 || JC_SUPPORT_SHA384 || JC_SUPPORT_SHA512
-  if (!success)
-    success = fr_gouv_ssi_nativeimpl_MbedTlsDigestNativeBridge_digest(
-        algorithm, buffer,
-        instance->getNativeSessionField_Short(
-            ROM_FIELD_INDEX_JAVACARD_SECURITY_MESSAGEDIGEST_MESSAGEDIGEST_INPUTLENGTH),
-        output, outputOffset) != FALSE;
-#endif
-  if (!success) throwCryptoException(CryptoExceptionReason::IllegalUse);
+  checkRange(input, inputOffset, inputLength);
+  uint8_t digest[64];
+  withDigestContext(*instance, [&](auto &state, auto update, auto finish) {
+    const auto *bytes =
+        inputLength == 0 ? nullptr : input->getByteDataView() + inputOffset;
+    updateDigest(state, update, bytes, inputLength);
+    auto finalState = state;
+    if (finish(&finalState, digest) != 0)
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+  });
+  for (uint16_t i = 0; i < resultLength; ++i)
+    output->setByteEntry(static_cast<uint16_t>(outputOffset + i),
+                         static_cast<jbyte_t>(digest[i]));
   clearInput(*instance);
-  clearInitialState(*instance);
   context.setSensitiveResultShort(static_cast<jshort_t>(resultLength));
   return static_cast<jshort_t>(resultLength);
 }
@@ -383,7 +322,6 @@ jshort_t javacard_security_MessageDigest_doFinal(
 void javacard_security_MessageDigest_reset(const jref_t receiver) {
   auto instance = digestInstance(receiver);
   clearInput(*instance);
-  clearInitialState(*instance);
 }
 
 } // namespace jcvm

@@ -46,12 +46,13 @@ by Java Card.
   4096-labelled probes with 64. The applet CAPs (1.8.2 and 1.8.4) pass the
   length through unchanged. This profile does not alter the client or CAP, and
   does not claim those requests as supported.
-- `MessageDigest.update()` currently retains the complete message in a
-  2,046-byte transient buffer. The cumulative bytes passed through `update()`
-  and `doFinal()` must not exceed 2,046; larger inputs fail with
-  `CryptoException.ILLEGAL_USE`. Streaming beyond this limit is not part of the
-  currently declared compatibility contract. Incremental native digest state
-  remains planned, including transaction-abort-safe state handling.
+- `MessageDigest` and `InitializedMessageDigest` stream input directly from
+  applet byte arrays across calls. Per-call offsets and lengths are Java Card
+  `short` values. The cumulative message, including any initialized prefix,
+  must be shorter than 2^64 bits for SHA-1/224/256 or 2^128 bits for
+  SHA-384/512. State lives in a fixed-size transient buffer and clears on
+  `reset()`, successful `doFinal()`, and card reset. Incremental SHA-256
+  uses Mbed TLS so each instance can keep independent state across APDUs.
 
 ## Evidence and remaining work
 

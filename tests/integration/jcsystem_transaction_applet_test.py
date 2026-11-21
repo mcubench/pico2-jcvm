@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import signal
 import socket
@@ -182,6 +183,7 @@ def main() -> int:
                 select = b"\x00\xA4\x04\x00" + bytes((len(AID),)) + AID + b"\x00"
                 exchange(connection, select, "transaction probe SELECT")
 
+                streaming_input = b"a" + bytes(5118) + b"b"
                 cases = (
                     (1, bytes.fromhex("0100"), "begin/depth/commit lifecycle"),
                     (2, b"\x02", "commit without transaction reason"),
@@ -317,6 +319,15 @@ def main() -> int:
                     (118, b"\x02", "OneShot instances opened in select() are released before process()"),
                     (119, bytes.fromhex("18917c887594f95a0a81701c589533ff21c74b1fb567e4521272f37815a64275"), "InitializedMessageDigest SHA-256 continues from an intermediate state"),
                     (120, bytes.fromhex("050118917c88"), "InitializedMessageDigest.OneShot: update ILLEGAL_USE, bad length ILLEGAL_VALUE, digest"),
+                    (121, b"\x01", "MessageDigest update reads 5 KiB from a persistent applet array"),
+                    (122, hashlib.sha256(streaming_input * 7 + streaming_input[:63]).digest(), "MessageDigest streams 35,903 bytes, retaining state across APDUs and transaction abort"),
+                    (123, hashlib.sha256(b"").digest(), "MessageDigest is reusable after doFinal"),
+                    (
+                        124,
+                        b"".join(hashlib.new(name, streaming_input).digest()
+                                 for name in ("sha1", "sha224", "sha256", "sha384", "sha512")),
+                        "All five SHA digests accept 5 KiB in one doFinal",
+                    ),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

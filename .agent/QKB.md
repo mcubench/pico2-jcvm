@@ -1780,3 +1780,13 @@ emulator connect/disconnect cycles. **Workaround:** restart pcscd
 is live; until then do not interpret VPCD install failures as VM evidence.
 
 **Probe case 115 failure after other VPCD suites (2026-11-20 21:34; viable solution found 21:41).** One `./tools/test-jcsystem-transaction-applet` run failed `two Signature.OneShot instances, a third is NO_RESOURCE` with `SW=6F00`: the VM log shows an uncaught CryptoException (exception id 14) from a native call (`opcode=FE operand=68`) and the suite stopped there (`artifacts/logs/jcsystem-transaction-apdu-vpcd-20261120T203414Z.log`). The next 10 runs of the same binary passed 113/113. `Signature.getInstance(SHA-256, HMAC, PAD_NULL)` is deterministic, so the cause is not identified. If it recurs, capture the native reason (`CHOUPI_VM_TRACE_EXCEPTIONS=1`) before changing code. **Cause (21:41):** not intermittent but order-dependent. `test-rmi-client-vpcd` and `test-dup-x-vpcd` rebuild the shared `build/choupi-pc` with the default profile (dup-x with `CHOUPI_JCVM_DEBUG=ON`); `CHOUPI_VM_TRACE_EXCEPTIONS=1` showed `CRYPTO_EXCEPTION reason=3` (NO_SUCH_ALGORITHM) for HMAC-SHA-256. **Viable solution:** `tools/test-jcsystem-transaction-applet` now builds `--profile max_crypto` itself; verified 113/113 directly after test-dup-x-vpcd. Other suites that need a specific profile should do the same; never trust `build/choupi-pc` to hold the profile you built last.
+
+## CHOUPI Rust OS warnings block a warning-free ARM cycle (2026-11-21)
+
+The normal ARM max_crypto build links successfully, but the pinned OS
+`f12c59797c24e86af9419ebdf5b00df4132b749c` reports an unspecified Cargo
+edition and 60 Rust library warnings, including legacy cfgs, missing docs
+and static references. The build also reports a Make jobserver descriptor
+warning. The full log is `artifacts/logs/build-arm-digest-streaming.log`.
+No warning-free build path has been verified. The firmware flash gate
+requires a clean build.

@@ -1095,6 +1095,16 @@ const uint8_t *JC_Array::getData() const {
   return static_cast<const uint8_t *>(this->array.data());
 }
 
+const uint8_t *JC_Array::getByteDataView() const {
+  if (this->type != JAVA_ARRAY_T_BYTE) throw Exceptions::ArrayStoreException;
+  if (!this->isPersistent() || this->isTransientArray()) return this->getData();
+
+  this->recoverMissingPersistentBody();
+  return FlashMemory_Handler::borrowPersistentArrayData(
+      this->computeTag(), FieldType::FIELD_TYPE_ARRAY_BYTE,
+      this->logical_length, 1);
+}
+
 void JC_Array::copyByteEntriesTo(const uint16_t offset,
                                  const uint16_t length,
                                  uint8_t *destination) const {

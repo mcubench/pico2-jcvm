@@ -179,7 +179,11 @@ provenance. Building with `PICO2_ENABLE_OBJECT_DELETION=0` is diagnostic.
 - a 1 MiB firmware window;
 - 8 dynamic package slots (package IDs 56–63);
 - a 96 KiB / 8,192-slot persistent overlay;
-- a cumulative `MessageDigest` input limit of 2,046 bytes.
+- streaming `MessageDigest` input up to the selected algorithm's message-length
+  limit. Each call is bounded by its Java Card array and `short` arguments.
+  Digest workspace is bounded independently of the input length.
+
+The MessageDigest limit was updated by the user on 2026-11-21.
 
 Changing any of these limits is a specification change.
 

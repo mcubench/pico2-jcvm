@@ -61,18 +61,3 @@ Key questions:
 - Does the serial log show any `NO_RESOURCE`, or `OBJECT_DELETION … pending=1` / `tag_index_refused=1`?
 - Is the `HEADROOM:` verdict at the end of `serial-capture-console.txt` PASS? How many
   `FS_APDU … synced=1` lines are there?
-
-## SPEC-MESSAGE-DIGEST-STREAMING — approve removal of the cumulative digest buffer cap
-
-Created 2026-11-21 10:37 CET. Please confirm replacing the 2,046-byte
-cumulative MessageDigest input limit in [SPEC.md](../SPEC.md) INV-28 with
-streaming input up to the selected algorithm's message-length limit, subject
-to the Java Card per-call array and short argument bounds.
-
-The [native implementation](../choupi/src/native_message_digest.cpp) appends
-every chunk to a fixed 2,046-byte CLEAR_ON_RESET array and hashes it at
-doFinal(). After approval, implement bounded per-instance native digest state
-for both MessageDigest and InitializedMessageDigest. Verify the digest of
-more than 2,046 bytes across multiple updates, block boundaries, empty final
-input, reset and instance reuse. No external test or firmware is needed to
-answer this request.

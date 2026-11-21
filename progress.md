@@ -33037,3 +33037,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Each instance allocates a 2,046-byte transient message buffer. update() appends to it and overflow throws CryptoException.ILLEGAL_USE. The cap is specified by INV-28.
 - Decision: Await explicit approval to change INV-28 before implementing incremental native digest state.
 - Artifacts/logs: None. Source inspection only.
+
+## 2026-11-21 Stream native MessageDigest input 5 minutes
+
+- Step-Id: `20261121-1119-digest-streaming`
+- When: '2026-11-21 11:14 CET' - '2026-11-21 11:19 CET'
+- Model: `GPT-6`
+- Change: Updated INV-28 with the user's confirmation and closed SPEC-MESSAGE-DIGEST-STREAMING. MessageDigest and InitializedMessageDigest now keep a fixed-size, CLEAR_ON_RESET Mbed TLS SHA context. They borrow applet input directly, including validated persistent records, and retain the existing ROM field layout for installed instances. Incremental SHA-256 uses Mbed TLS software to keep independent state across APDUs.
+- Validation: `./tools/build arm --profile max_crypto` linked a normal image with 614,728 bytes of firmware-window headroom. The unchanged CHOUPI Rust dependency and Make jobserver emitted warnings. Full host probe passed 117 checks, focused RP2350 overlay probe passed nine, `./tools/test-persistent-transaction` reported fail=0, and fixture verification passed all 85 files. An initial overlay attempt ran the full suite with object deletion enabled and hit its deletion-disabled expectation. The focused overlay rerun and full standard simulator rerun passed.
+- Result: One update read 5,120 bytes from a persistent array at offset 1. SHA-256 matched the reference for 35,903 bytes across APDUs, including a 63-byte update inside an aborted transaction and empty final input. All five SHA algorithms matched on 5,120-byte doFinal input. Existing initialized and OneShot probes passed. ARM flash, serial output, throughput and per-APDU sync_bytes/journal_bytes were not measured because the build emitted warnings.
+- Decision: The implementation and offline checks are complete. Physical validation remains pending under the warning-free flash gate.
+- Artifacts/logs: `artifacts/logs/{build-arm-digest-streaming,test-digest-streaming,test-digest-streaming-overlay,test-persistent-transaction-digest-streaming,fixtures-digest-streaming}.log`. Pre-commit ARM UF2 SHA-256 `6735ec7725ddddc4c54238088c8f356e9ee21ad354f8d08fd2568fbba1121fba`.
