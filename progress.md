@@ -33573,3 +33573,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The tested invalid records are rejected before LOAD publishes them, and valid runtime linkage still works in VPCD. The ARM hardware run and physical flash telemetry remain pending because this session cannot use the required host-access invocation.
 - Decision: Keep CAPIN-01 linkage/recovery and CAPIN-07 physical acceptance open.
 - Artifacts/logs: `artifacts/build-audit/{build-arm-cap-load-class-checks.log,test-cap-export-load-class-checks.log,test-pinned-cap-load-class-checks.log,test-sio-load-class-checks.log}`.
+
+## 2026-11-21 Verify frame-limit recovery and failed frame insertion 3
+
+- Step-Id: `20261121-2201-frame-limit-recovery`
+- Task: CAPIN-04 / RV-20261106-43
+- When: '2026-11-21 21:58 CET' - '2026-11-21 22:01 CET'
+- Model: `gpt-6`
+- Change: Added a recursion boundary case to the local transaction probe. Added host allocator fault injection to the RMI unit suite to test package bookkeeping and the frame-list insertion separately.
+- Validation: VPCD accepted 64 frames with `3F9000`, rejected the 65th with `6F00` and logged StackOverflowException (exception 2 at opcode `8D`). The same connection then accepted 64 frames again. The full transaction suite passed 118 checks. The sanitizer-enabled RMI suite passed. Warning-free normal max_crypto ARM build, 582,692 bytes of firmware-window headroom. Fixture verification passed for 86 files. `git diff --check` passed.
+- Result: Forcing a host allocation failure on frame insertion preserved caller PC, depth, local, argument and running package. The next insertion and package transition succeeded. The test also confirmed that package bookkeeping consumed no allocation. The failure injection is host unit coverage. Physical frame validation and APDU-level allocation injection are open. No firmware flash or traffic measurement was performed.
+- Decision: Retain the boundary and recovery as a regression. Keep physical acceptance and the full-path allocation check open.
+- Artifacts/logs: `artifacts/build-audit/{frame-limit-full-vpcd.log,frame-limit-full-emulator.log,frame-entry-allocation-unit.log,build-arm-frame-limit.log}`.

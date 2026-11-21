@@ -9,7 +9,31 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <new>
 #include <vector>
+
+namespace {
+bool fail_next_allocation = false;
+}
+
+// GNU linker test seam for operator new(size_t) in the separately built VM.
+#if SIZE_MAX == UINT64_MAX
+#define WRAP_OPERATOR_NEW __wrap__Znwm
+#define REAL_OPERATOR_NEW __real__Znwm
+#else
+#define WRAP_OPERATOR_NEW __wrap__Znwj
+#define REAL_OPERATOR_NEW __real__Znwj
+#endif
+extern "C" void *REAL_OPERATOR_NEW(std::size_t size);
+extern "C" void *WRAP_OPERATOR_NEW(std::size_t size) {
+  if (fail_next_allocation) {
+    fail_next_allocation = false;
+    throw std::bad_alloc();
+  }
+  return REAL_OPERATOR_NEW(size);
+}
+#undef WRAP_OPERATOR_NEW
+#undef REAL_OPERATOR_NEW
 
 namespace {
 void push_test_frame(jcvm::Stack &stack, const uint8_t nargs,
@@ -288,6 +312,39 @@ void verify_zero_word_frames_have_a_hard_depth_limit() {
   assert(overflow);
   assert(stack.frameDepth() == 64);
   stack.unwind();
+}
+
+void verify_method_entry_allocation_failure_preserves_caller() {
+  const uint8_t caller_code[] = {0};
+  const uint8_t callee_code[] = {0};
+  jcvm::Context context(91, 10);
+  auto &stack = context.getStack();
+  stack.push_Frame(0, 1, 1, caller_code, caller_code, caller_code + 1);
+  stack.writeLocal_Short(0, 0x1234);
+  stack.push_Short(0x2345);
+
+  fail_next_allocation = true;
+  context.changePackageID(20);
+  assert(fail_next_allocation);  // Package bookkeeping did not allocate.
+  bool allocation_failed = false;
+  try {
+    stack.push_Frame(1, 0, 0, callee_code, callee_code, callee_code + 1);
+  } catch (const std::bad_alloc &) {
+    allocation_failed = true;
+  }
+  assert(allocation_failed && !fail_next_allocation);
+  assert(context.getCurrentPackageID() == 20);
+  assert(stack.frameDepth() == 1);
+  assert(stack.getPC().getValue() == caller_code);
+  assert(stack.readLocal_Short(0) == 0x1234);
+
+  stack.push_Frame(1, 0, 0, callee_code, callee_code, callee_code + 1);
+  context.changePackageID(30);
+  assert(stack.readLocal_Short(0) == 0x2345);
+  assert(context.getCurrentPackageID() == 30);
+  stack.pop_Frame();
+  assert(context.getCurrentPackageID() == 20);
+  std::puts("RMI_REGISTRY:PASS method_entry_allocation_failure caller_preserved=1");
 }
 
 template <typename Operation>
@@ -1910,6 +1967,7 @@ int main() {
   verify_unwind_to_depth_preserves_callers();
   verify_package_id_tracks_unwound_frames();
   verify_zero_word_frames_have_a_hard_depth_limit();
+  verify_method_entry_allocation_failure_preserves_caller();
   verify_local_bounds_before_metadata_access();
   jcvm::Stack argument_stack;
   push_test_frame(argument_stack, 0, 0, 3);

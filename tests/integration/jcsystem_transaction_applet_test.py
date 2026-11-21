@@ -37,10 +37,11 @@ def send_message(connection: socket.socket, value: bytes) -> None:
     connection.sendall(len(value).to_bytes(2, "big") + value)
 
 
-def exchange(connection: socket.socket, apdu: bytes, label: str) -> bytes:
+def exchange(connection: socket.socket, apdu: bytes, label: str,
+             expected_status: bytes = b"\x90\x00") -> bytes:
     send_message(connection, apdu)
     response = receive_message(connection)
-    if response[-2:] != b"\x90\x00":
+    if response[-2:] != expected_status:
         raise RuntimeError(f"{label}: SW={response[-2:].hex().upper()} data={response.hex().upper()}")
     print(f"TEST:APDU {label} response={response.hex().upper()}")
     return response[:-2]
@@ -328,6 +329,7 @@ def main() -> int:
                                  for name in ("sha1", "sha224", "sha256", "sha384", "sha512")),
                         "All five SHA digests accept 5 KiB in one doFinal",
                     ),
+                    (125, b"\x3f", "method-entry frame limit and APDU recovery"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -335,6 +337,19 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 == 125:
+                        # process() consumes one frame. Depth 62 adds 63
+                        # recursive frames, and depth 63 requires one more.
+                        before = exchange(connection, bytes((0x80, 0, p1, 62, 0)),
+                                          "64 frames are usable")
+                        rejected = exchange(connection, bytes((0x80, 0, p1, 63, 0)),
+                                            "65th frame is rejected", b"\x6f\x00")
+                        after = exchange(connection, bytes((0x80, 0, p1, 62, 0)),
+                                         "64 frames are usable after rejection")
+                        if before != expected or rejected or after != expected:
+                            raise RuntimeError(f"{label}: unexpected response data")
+                        print(f"TEST:PASS {label}")
+                        continue
                     if p1 in (85, 86):
                         value_before = exchange(
                             connection,

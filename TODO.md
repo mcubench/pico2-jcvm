@@ -27,7 +27,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### CAPIN-04
 
-- [ ] Verify the implemented 64-frame limit gives a controlled APDU failure and leaves subsequent APDUs usable. Include method-entry failure injection (RV-20261106-43).
+- [x] Verify the 64-frame boundary and following APDU on VPCD. The RMI unit suite also injects frame allocation failure and checks that caller state survives. See `20261121-2201-frame-limit-recovery`.
+- [ ] Verify the frame boundary on hardware and exercise injected method-entry allocation failure through the full APDU path (RV-20261106-43).
 
 ### CAPIN-05
 
@@ -209,7 +210,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-42 — Enforce outgoing API length limits and preserve BAD_LENGTH reasons.** P2; owner: PROFILE-01 / HOST-01. Separate applet capability and chaining limits from the 1,022-byte buffer capacity; test -1/0/252/253/256/257/1022/1023, chaining modes and invalid states. Catch/read reasons rather than asserting only APDU failure; explicitly disclose any supported long-response extension. [R42](docs/archive/review_20261106.md#r42--p2-outgoing-length-validation-follows-buffer-capacity-rather-than-the-declared-apdu-contract)
 
-- [ ] **RV-20261106-43 — Contain allocation failure during package-stack insertion at method entry.** Implemented via CAPIN-03/04 (package list removed; `changePackageID` no longer allocates); **acceptance only** (failure injection and following-APDU check). P1; owner: HARD-01 / CTX-01 / EMU-01. Remove allocating-noexcept termination and make frame/package entry coherent on failure. Inject failure after frame creation, verify retained callers/packages and a following APDU; audit analogous noexcept allocation paths. Measure per-call allocation and method-heavy latency before choosing storage changes. [R43](docs/archive/review_20261106.md#r43--p1-method-entry-package-bookkeeping-can-terminate-on-allocation-failure)
+- [ ] **RV-20261106-43 — Contain allocation failure during package-stack insertion at method entry.** The package list was removed and the RMI unit suite confirmed that `changePackageID` does not allocate. An injected frame-insertion allocation failure preserves caller package, frame, locals and arguments on the host. Exercise the failure through an APDU and audit analogous noexcept allocation paths. Measure per-call allocation and method-heavy latency before choosing storage changes. P1; owner: HARD-01 / CTX-01 / EMU-01. [R43](docs/archive/review_20261106.md#r43--p1-method-entry-package-bookkeeping-can-terminate-on-allocation-failure)
 
 - [ ] **RV-20261106-44 — Preserve recovery state when rollback itself fails.** P1; owner: PERSIST-03 / STORE-01 / HARD-01. Software fix is implemented: rollback retains its journal and active guard after erase/write/sync failure, blocks persistent reads/writes and new commits, and retries recovery before applet APDUs (returns `6581` while recovery still fails). Regression injections cover restore erase/write failure, rollback sync failure, commit plus rollback sync failure, no partial durable publication, successful retry, and simulated cold reset restoring the prior committed state. Remaining acceptance: validate recovery on hardware. [R44](docs/archive/review_20261106.md#r44--p1-failed-rollback-discards-the-recovery-journal-and-reopens-ordinary-writes)
 

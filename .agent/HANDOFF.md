@@ -25,6 +25,9 @@ Updated 2026-11-21. See [TODO.md](../TODO.md) for active work and
   SensitiveResult regression when revisiting the full-record bound in
   `resolveClassref`. Import-dependent virtual method linkage still runs at
   INSTALL so packages can load before their dependencies.
+- Verify the CAPIN-04 frame boundary on hardware. VPCD covers the 64-frame
+  limit and next APDU. Method-entry allocation failure has unit coverage,
+  with APDU-level injection still open (RV-20261106-43).
 - Validate the RAM-pressure collector from `20261121-2154-ram-pressure-reclaim`
   on an empty normal max_crypto EE11 image when the required host access path
   is available. Run the full symmetric KAT through cleanup with serial and

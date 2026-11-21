@@ -211,6 +211,11 @@ public final class JCTransactionProbe extends Applet {
     return offset;
   }
 
+  private static short countFrames(short remaining) {
+    if (remaining == 0) return 1;
+    return (short)(countFrames((short)(remaining - 1)) + 1);
+  }
+
   public void process(APDU apdu) throws ISOException {
     if (selectingApplet()) {
       if (oneShotSelectProbe == 1) {
@@ -1593,6 +1598,10 @@ public final class JCTransactionProbe extends Applet {
           length += digest.doFinal(streamingInput, (short) 1, (short) 5120,
                                    buffer, length);
         }
+        break;
+      }
+      case 125: {
+        buffer[0] = (byte)countFrames(buffer[ISO7816.OFFSET_P2]);
         break;
       }
       case 117: {

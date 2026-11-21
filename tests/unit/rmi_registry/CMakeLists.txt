@@ -23,4 +23,5 @@ target_include_directories(rmi_registry_test PRIVATE
   "${CHOUPI_SOURCE_DIR}"
   "${CMAKE_SOURCE_DIR}/../../../choupi/os/src")
 target_link_options(rmi_registry_test PRIVATE
-  -Wl,--gc-sections -fsanitize=address,undefined)
+  -Wl,--gc-sections -Wl,--wrap=_Znwm -Wl,--wrap=_Znwj
+  -fsanitize=address,undefined)
