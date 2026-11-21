@@ -661,6 +661,7 @@ public final class SymmCryptoProbe extends Applet {
     short offset = 0;
     if (operation != 0) {
       offset = (short)2;
+      if (algorithm == Checksum.ALG_ISO3309_CRC32) offset = (short)4;
       checksum.init(input, (short)0, offset);
       length -= offset;
     }

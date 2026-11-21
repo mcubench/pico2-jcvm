@@ -1,6 +1,6 @@
 # Handoff — next steps only
 
-Updated: 2026-11-21 12:18 CET.
+Updated: 2026-11-21 12:30 CET.
 
 ## Current state
 - **No live campaign** (2026-11-21 12:26). MEM-01 T8 option 1 PASSED on 07E7 (9228c583, 1,901 methods over two segments, `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/`). 07E7 still holds that card state; reader `... (07E74C5D7A038DEC) 00 00`.
@@ -9,7 +9,8 @@ Updated: 2026-11-21 12:18 CET.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work
-- EE11 is the development token for the additional crypto algorithms. Full JCVM cycle passed on the AES-CFB working tree (UF2 SHA-256 `e317c24635e2f29d835de8ad5d18287fcc58da4a4747b17737651cf798e66ae9`). Raw CCID could not open EE11 after reboot. The 07E7 JCAlgTest client is still live, so leave shared PC/SC and its reader list alone until the campaign ends.
+- EE11 is the development token for the additional crypto algorithms. Full JCVM cycle passed on the AES-CFB working tree (UF2 SHA-256 `e317c24635e2f29d835de8ad5d18287fcc58da4a4747b17737651cf798e66ae9`). Raw CCID could not open EE11 after reboot. The subsequent F42D RSA replay is live (confirmed 12:29 CET), so leave shared PC/SC and its reader list alone until that run ends.
+- Remaining requested crypto work: AES-GCM and AES-CCM native AEADCipher, RandomData pseudo/TRNG/preseeded DRBG native behavior, and XDH with Java Card named-curve key compatibility. Deprecated RSA cipher IDs and wider-block AES IDs need matching legacy semantics, vetted backends and vectors. The existing AES 128-bit block CBC/ECB IDs already accept 192- and 256-bit keys.
 - RSA/RSA-CRT 4096 physical validation is pending the same warning-free ARM build gate. On a free identified board, cycle the normal max_crypto JCVM and run the two 4096 cases from the asymmetric probe. Use one short APDU per mode (801A060000 and 801A070000, expect 019000).
 - MessageDigest streaming physical validation is pending. The ARM max_crypto build links, but the pinned CHOUPI Rust OS emits warnings and the warning-free flash gate applies. Once clear, identify a free board and run the full JCVM cycle, then validate the 5 KiB and multipart digest probes with per-APDU flash telemetry. See step `20261121-1119-digest-streaming`.
 - Waiting on `WIN-MAXCRYPTO-FLASH-A266B836` (`.agent/EXT_REQUESTS.md`).

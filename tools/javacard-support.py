@@ -97,6 +97,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
         "javacard.security.KeyAgreement", "ALG_EC_SVDP_DH_PLAIN_XY"
     ),
     "keypair_ec_fp": ("javacard.security.KeyPair", "ALG_EC_FP"),
+    "checksum_crc32": ("javacard.security.Checksum", "ALG_ISO3309_CRC32"),
     "checksum_crc16": ("javacard.security.Checksum", "ALG_ISO3309_CRC16"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (

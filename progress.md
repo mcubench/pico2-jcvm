@@ -33196,3 +33196,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: no regression from the CAPIN changes in the pcscd-dependent suites. EE11 now runs JCVM firmware (not flashed by this session).
 - Decision: the F42D RSA-block replay on HEAD `a9ec9e04` runs in parallel (reader `02 00`).
 - Artifacts/logs: as above.
+
+## 2026-11-21 Add native ISO 3309 CRC32 4 minutes
+
+- Step-Id: `20261121-1230-crc32`
+- When: '2026-11-21 12:27 CET' - '2026-11-21 12:31 CET'
+- Model: `GPT-6`
+- Change: Added the reflected ISO 3309 CRC32 implementation to the existing native Checksum dispatch. Both algorithms reuse native session state and the same ROM object layout.
+- Validation: Profile tests passed 15/15, ARM max_crypto linked, and the symmetric simulator passed 170 vectors. CRC32 support appears in the pinned jCardSim profile. The PKZIP-seeded and default results were checked independently using zlib.
+- Result: `123456789` produces D202D277 with the initial zero state and CBF43926 with the PKZIP seed FFFFFFFF. Finalization resets the state. F42D's RSA replay started after the earlier campaign ended, and a fresh raw CCID check still could not open EE11. No shared reader refresh or hardware algorithm APDUs were run.
+- Artifacts/logs: `artifacts/logs/{build-arm-crc32,test-crc32}.log`.

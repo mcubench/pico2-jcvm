@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import sys
 import time
+import zlib
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -282,11 +283,17 @@ def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
 
 def checksum_vectors() -> list[tuple[bytes, bytes, str]]:
     message = b"123456789"
+    default_crc32 = zlib.crc32(message, 0xffffffff).to_bytes(4, "big")
     return [
         (bytes((0x80, 0x2E, 1, 0, len(message))) + message + b"\x00",
          bytes.fromhex("ce3c9000"), "ISO3309 CRC16 default seed"),
         (bytes((0x80, 0x2E, 1, 1, len(message) + 2)) + b"\xff\xff" + message + b"\x00",
          bytes.fromhex("d64ece3c9000"), "ISO3309 CRC16 custom seed and reset"),
+        (bytes((0x80, 0x2E, 2, 0, len(message))) + message + b"\x00",
+         default_crc32 + b"\x90\x00", "ISO3309 CRC32 default seed"),
+        (bytes((0x80, 0x2E, 2, 1, len(message) + 4)) + b"\xff" * 4 + message + b"\x00",
+         zlib.crc32(message).to_bytes(4, "big") + default_crc32 + b"\x90\x00",
+         "ISO3309 CRC32 PKZIP seed and reset"),
     ]
 
 
