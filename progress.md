@@ -33216,3 +33216,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed 15/15, ARM max_crypto linked and the simulator passed 182 vectors. The 12 GCM vectors used independent AESGCM results for both factories, empty and split AAD, multipart encryption and decryption, and corrupted tag rejection. Corrected the initially observed virtual-token mismatch and reran the complete suite.
 - Result: GCM preserved incremental state and produced matching tags. Device APDU validation remains pending because the EE11 raw path is inaccessible and the F42D replay uses shared PC/SC.
 - Artifacts/logs: `artifacts/logs/{build-arm-aes-gcm-final,test-aes-gcm-final,symm-crypto-kat-vpcd-20261121T113908Z}.log`.
+
+## 2026-11-21 Add native AES-CCM AEADCipher 5 minutes
+
+- Step-Id: `20261121-1244-aes-ccm`
+- When: '2026-11-21 12:40 CET' - '2026-11-21 12:45 CET'
+- Model: `GPT-6`
+- Change: Exposed AES-CCM through both Cipher factories and offline AEADCipher initialization. Retained only pointer-free Mbed TLS state across calls. The implementation checks declared AAD and payload lengths and binds tag retrieval or verification to the configured tag width.
+- Validation: Profile tests passed, ARM max_crypto linked, and the symmetric simulator passed 200 vectors. The 18 CCM cases covered both factories, 8- and 16-byte tags, split AAD and payload, empty plaintext and corrupted tag rejection against independent AESCCM results.
+- Result: CCM outputs matched the reference. Physical algorithm validation remains pending because EE11 cannot be opened directly and the F42D replay uses shared PC/SC.
+- Artifacts/logs: `artifacts/logs/{build-arm-aes-ccm-final,test-aes-ccm,symm-crypto-kat-vpcd-20261121T114420Z}.log`.

@@ -284,7 +284,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/des.c")
   endif()
-  if(JC_SUPPORT_CIPHER_AES_GCM)
+  if(JC_SUPPORT_CIPHER_AES_GCM OR JC_SUPPORT_CIPHER_AES_CCM)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/gcm.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/ccm.c"

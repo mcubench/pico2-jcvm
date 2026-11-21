@@ -15,8 +15,12 @@
 
 #if JC_SUPPORT_CIPHER_AES_GCM
 #include "mbedtls/gcm.h"
+#endif
+#if JC_SUPPORT_CIPHER_AES_CCM
+#include "mbedtls/ccm.h"
+#endif
+#if JC_SUPPORT_CIPHER_AES_GCM || JC_SUPPORT_CIPHER_AES_CCM
 #include <array>
-#include <cstring>
 #endif
 
 #include <algorithm>
@@ -79,6 +83,7 @@ constexpr uint8_t kRsaCrtTransientDeselect = 25;
 constexpr uint8_t kAlgorithmAesCfb = 28; // Java Card 3.1
 constexpr uint8_t kAlgorithmAesXts = 29;
 constexpr uint8_t kAlgorithmAesGcm = 0xF3;
+constexpr uint8_t kAlgorithmAesCcm = 0xF4;
 constexpr jbyte_t kCipherKeyWorkspaceMarker = static_cast<jbyte_t>(0xA5);
 
 struct CipherSpec {
@@ -216,7 +221,7 @@ bool isAesAlgorithm(uint8_t algorithm) {
   return algorithm == 13 || algorithm == 14 ||
          (algorithm >= 22 && algorithm <= 27) ||
          isAesStreamAlgorithm(algorithm) || algorithm == kAlgorithmAesXts ||
-         algorithm == kAlgorithmAesGcm;
+         algorithm == kAlgorithmAesGcm || algorithm == kAlgorithmAesCcm;
 }
 bool isDesAlgorithm(uint8_t algorithm) {
   return algorithm >= 1 && algorithm <= 8;
@@ -241,6 +246,7 @@ bool singleAlgorithmEnabled(uint8_t algorithm) {
   case kAlgorithmAesCfb: return JC_SUPPORT_CIPHER_AES_CFB;
   case kAlgorithmAesXts: return JC_SUPPORT_CIPHER_AES_XTS;
   case kAlgorithmAesGcm: return JC_SUPPORT_CIPHER_AES_GCM;
+  case kAlgorithmAesCcm: return JC_SUPPORT_CIPHER_AES_CCM;
   case 0xF0: return JC_SUPPORT_CIPHER_AES_CTR;
   case 14: return JC_SUPPORT_CIPHER_AES_ECB_NOPAD;
   case 15: return JC_SUPPORT_CIPHER_RSA_OAEP;
@@ -270,6 +276,7 @@ bool pairAlgorithmEnabled(uint8_t algorithm) {
   case kAlgorithmAesCfb: return JC_SUPPORT_CIPHER_AES_CFB;
   case kAlgorithmAesXts: return JC_SUPPORT_CIPHER_AES_XTS;
   case kAlgorithmAesGcm: return JC_SUPPORT_CIPHER_AES_GCM;
+  case kAlgorithmAesCcm: return JC_SUPPORT_CIPHER_AES_CCM;
   case 0xF0: return JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR;
   case 14: return JC_SUPPORT_CIPHER_AES_ECB_NOPAD;
   case 15: return JC_SUPPORT_CIPHER_RSA_OAEP;
@@ -305,6 +312,7 @@ CipherSpec specForAlgorithm(uint8_t algorithm, bool pairFactory) {
   case kAlgorithmAesCfb: return {kAlgorithmAesCfb, 9, 0, true, false, false};
   case kAlgorithmAesXts: return {kAlgorithmAesXts, 10, 0, true, false, false};
   case kAlgorithmAesGcm: return {kAlgorithmAesGcm, 0xF1, 0, true, false, false};
+  case kAlgorithmAesCcm: return {kAlgorithmAesCcm, 0xF2, 0, true, false, false};
   case 14: return {14, 2, 1, true, false, false};
   case 15: return {15, 7, 9, false, false, true};
   case 22: return {22, 1, 2, true, true, false};
@@ -318,7 +326,8 @@ CipherSpec specForAlgorithm(uint8_t algorithm, bool pairFactory) {
 }
 
 uint8_t algorithmForPair(uint8_t cipher, uint8_t padding) {
-  const uint8_t algorithms[] = {1,2,3,4,5,6,7,8,13,14,22,23,24,25,26,27,10,12,15,0xF0,kAlgorithmAesCfb,kAlgorithmAesXts,kAlgorithmAesGcm};
+  const uint8_t algorithms[] = {1,2,3,4,5,6,7,8,13,14,22,23,24,25,26,27,10,12,15,0xF0,kAlgorithmAesCfb,kAlgorithmAesXts,kAlgorithmAesGcm,
+                                kAlgorithmAesCcm};
   for (uint8_t algorithm : algorithms) {
     const CipherSpec spec = specForAlgorithmUnchecked(algorithm);
     if (spec.cipher == cipher && spec.padding == padding &&
@@ -344,6 +353,7 @@ CipherSpec specForAlgorithmUnchecked(uint8_t algorithm) {
   case kAlgorithmAesCfb: return {kAlgorithmAesCfb, 9, 0, true, false, false};
   case kAlgorithmAesXts: return {kAlgorithmAesXts, 10, 0, true, false, false};
   case kAlgorithmAesGcm: return {kAlgorithmAesGcm, 0xF1, 0, true, false, false};
+  case kAlgorithmAesCcm: return {kAlgorithmAesCcm, 0xF2, 0, true, false, false};
   case 14: return {14, 2, 1, true, false, false};
   case 15: return {15, 7, 9, false, false, true};
   case 22: return {22, 1, 2, true, true, false};
@@ -359,7 +369,8 @@ CipherSpec specForAlgorithmUnchecked(uint8_t algorithm) {
 jref_t newCipher(const CipherSpec &spec) {
   Heap &heap = Context::getActiveContext().getHeap();
   const jref_t reference = heap.addInstance(ROM_PACKAGE_INDEX_JAVACARDX_CRYPTO,
-      spec.algorithm == kAlgorithmAesGcm ? aeadCipherClassIndex() : cipherClassIndex());
+      spec.algorithm == kAlgorithmAesGcm || spec.algorithm == kAlgorithmAesCcm
+          ? aeadCipherClassIndex() : cipherClassIndex());
   auto cipher = heap.getInstance(reference);
   if (!cipher) throw Exceptions::RuntimeException;
   cipher->setField_Byte(ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM,
@@ -916,22 +927,47 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
   return static_cast<jshort_t>(resultLength);
 }
 
-#if JC_SUPPORT_CIPHER_AES_GCM
-constexpr auto kGcmState =
+#if JC_SUPPORT_CIPHER_AES_GCM || JC_SUPPORT_CIPHER_AES_CCM
+constexpr auto kAeadState =
     ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS;
-constexpr auto kGcmTag =
+constexpr auto kAeadTag =
     ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT;
-constexpr auto kGcmTagReady =
+constexpr auto kAeadTagReady =
     ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION;
 constexpr auto kModeField =
     ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE;
 
+constexpr size_t kAeadTagSize = 16;
+constexpr auto kCcmAadRemaining =
+    ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH;
+constexpr auto kCcmTagLength =
+    ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH;
+
+void checkAeadResult(int status) {
+  if (status != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
+}
+
+void checkAeadTag(JC_Instance &cipher, uint8_t mode, jshort_t length) {
+  if (cipher.getNativeSessionField_Byte(kAeadTagReady) == 0 ||
+      static_cast<uint8_t>(cipher.getNativeSessionField_Byte(kModeField)) != mode)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  const auto algorithm = static_cast<uint8_t>(cipher.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+  if (algorithm == kAlgorithmAesCcm) {
+    if (length != cipher.getNativeSessionField_Short(kCcmTagLength))
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+  } else if (length != 4 && length != 8 && (length < 12 || length > 16)) {
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  }
+}
+#endif
+
+#if JC_SUPPORT_CIPHER_AES_GCM
 // Only the pointer-free running state is saved. The library cipher context
 // and key schedule are reconstructed from the existing transient key cache.
 constexpr size_t kGcmStateStart = offsetof(mbedtls_gcm_context, MBEDTLS_PRIVATE(len));
 constexpr size_t kGcmStateSize =
     offsetof(mbedtls_gcm_context, MBEDTLS_PRIVATE(acceleration)) - kGcmStateStart;
-constexpr size_t kGcmTagSize = 16;
 
 class GcmContext {
 public:
@@ -946,13 +982,9 @@ public:
   }
 };
 
-void checkGcmResult(int status) {
-  if (status != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
-}
-
 void setGcmKey(JC_Instance &cipher, GcmContext &context) {
   const auto key = symmetricKey(cipher);
-  checkGcmResult(mbedtls_gcm_setkey(&context.value, MBEDTLS_CIPHER_ID_AES,
+  checkAeadResult(mbedtls_gcm_setkey(&context.value, MBEDTLS_CIPHER_ID_AES,
       key.data(), static_cast<unsigned>(key.size() * 8)));
 }
 
@@ -960,7 +992,7 @@ void startGcm(JC_Instance &cipher, GcmContext &context,
               const uint8_t *nonce, size_t nonceLength) {
   const auto mode = cipher.getNativeSessionField_Byte(kModeField) == kModeEncrypt
       ? MBEDTLS_GCM_ENCRYPT : MBEDTLS_GCM_DECRYPT;
-  checkGcmResult(mbedtls_gcm_starts(&context.value, mode, nonce, nonceLength));
+  checkAeadResult(mbedtls_gcm_starts(&context.value, mode, nonce, nonceLength));
 }
 
 void loadGcm(JC_Instance &cipher, GcmContext &context) {
@@ -968,12 +1000,12 @@ void loadGcm(JC_Instance &cipher, GcmContext &context) {
           ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED) == 0)
     throwCryptoException(CryptoExceptionReason::InvalidInit);
   setGcmKey(cipher, context);
-  byteArray(cipher, kGcmState)->copyByteEntriesTo(
+  byteArray(cipher, kAeadState)->copyByteEntriesTo(
       0, kGcmStateSize, context.progress());
 }
 
 void saveGcm(JC_Instance &cipher, GcmContext &context) {
-  byteArray(cipher, kGcmState)->copyByteEntriesFrom(
+  byteArray(cipher, kAeadState)->copyByteEntriesFrom(
       0, kGcmStateSize, context.progress());
 }
 
@@ -988,8 +1020,8 @@ void initializeGcm(JC_Instance &cipher, jref_t key, jbyte_t mode,
   initializeSymmetricCipher(cipher, key, mode, false, nullptr, 0, 0);
   const auto initialized = ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED;
   cipher.setNativeSessionField_Byte(initialized, 0);
-  ensureTransientByteArray(cipher, kGcmState, kGcmStateSize);
-  ensureTransientByteArray(cipher, kGcmTag, kGcmTagSize);
+  ensureTransientByteArray(cipher, kAeadState, kGcmStateSize);
+  ensureTransientByteArray(cipher, kAeadTag, kAeadTagSize);
   GcmContext context;
   setGcmKey(cipher, context);
   const auto *nonceBytes = nonce ? nonce->getByteDataView() + offset : zeroNonce.data();
@@ -1008,14 +1040,14 @@ jshort_t processGcm(JC_Instance &cipher,
   std::vector<uint8_t> result(static_cast<uint16_t>(length));
   const auto *data = length == 0 ? nullptr : input->getByteDataView() + inOffset;
   size_t written = 0;
-  checkGcmResult(mbedtls_gcm_update(&context.value, data, length, result.data(),
+  checkAeadResult(mbedtls_gcm_update(&context.value, data, length, result.data(),
                                    result.size(), &written));
   if (written != result.size()) throwCryptoException(CryptoExceptionReason::IllegalUse);
 
-  std::array<uint8_t, kGcmTagSize> tag{};
+  std::array<uint8_t, kAeadTagSize> tag{};
   if (final) {
     size_t extra = 0;
-    checkGcmResult(mbedtls_gcm_finish(&context.value, nullptr, 0, &extra,
+    checkAeadResult(mbedtls_gcm_finish(&context.value, nullptr, 0, &extra,
                                       tag.data(), tag.size()));
     if (extra != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
     constexpr std::array<uint8_t, 12> zeroNonce{};
@@ -1024,18 +1056,129 @@ jshort_t processGcm(JC_Instance &cipher,
   writeArray(output, outOffset, result, length);
   saveGcm(cipher, context);
   if (final)
-    byteArray(cipher, kGcmTag)->copyByteEntriesFrom(0, tag.size(), tag.data());
+    byteArray(cipher, kAeadTag)->copyByteEntriesFrom(0, tag.size(), tag.data());
   if (final || length != 0)
-    cipher.setNativeSessionField_Byte(kGcmTagReady, final ? 1 : 0);
+    cipher.setNativeSessionField_Byte(kAeadTagReady, final ? 1 : 0);
   return length;
 }
 
-void checkGcmTag(JC_Instance &cipher, uint8_t mode, jshort_t length) {
-  if (cipher.getNativeSessionField_Byte(kGcmTagReady) == 0 ||
-      static_cast<uint8_t>(cipher.getNativeSessionField_Byte(kModeField)) != mode)
-    throwCryptoException(CryptoExceptionReason::IllegalUse);
-  if (length != 4 && length != 8 && (length < 12 || length > 16))
+#endif
+
+#if JC_SUPPORT_CIPHER_AES_CCM
+#if defined(MBEDTLS_BLOCK_CIPHER_C)
+constexpr size_t kCcmPrefixSize =
+    offsetof(mbedtls_ccm_context, MBEDTLS_PRIVATE(block_cipher_ctx));
+#else
+constexpr size_t kCcmPrefixSize =
+    offsetof(mbedtls_ccm_context, MBEDTLS_PRIVATE(cipher_ctx));
+#endif
+
+class CcmContext {
+public:
+  mbedtls_ccm_context value;
+  CcmContext() { mbedtls_ccm_init(&value); }
+  ~CcmContext() { mbedtls_ccm_free(&value); }
+  CcmContext(const CcmContext &) = delete;
+  CcmContext &operator=(const CcmContext &) = delete;
+
+  static constexpr size_t stateSize = kCcmPrefixSize + sizeof(value.MBEDTLS_PRIVATE(state));
+
+  void transferState(JC_Array &workspace, bool save) {
+    // Save the progress fields on either side of the live library cipher.
+    auto *prefix = reinterpret_cast<uint8_t *>(&value);
+    auto *state = reinterpret_cast<uint8_t *>(&value.MBEDTLS_PRIVATE(state));
+    if (save) {
+      workspace.copyByteEntriesFrom(0, kCcmPrefixSize, prefix);
+      workspace.copyByteEntriesFrom(kCcmPrefixSize, sizeof(value.MBEDTLS_PRIVATE(state)), state);
+    } else {
+      workspace.copyByteEntriesTo(0, kCcmPrefixSize, prefix);
+      workspace.copyByteEntriesTo(kCcmPrefixSize, sizeof(value.MBEDTLS_PRIVATE(state)), state);
+    }
+  }
+};
+
+void setCcmKey(JC_Instance &cipher, CcmContext &context) {
+  const auto key = symmetricKey(cipher);
+  checkAeadResult(mbedtls_ccm_setkey(&context.value, MBEDTLS_CIPHER_ID_AES,
+      key.data(), static_cast<unsigned>(key.size() * 8)));
+}
+
+void loadCcm(JC_Instance &cipher, CcmContext &context) {
+  if (cipher.getNativeSessionField_Byte(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED) == 0)
+    throwCryptoException(CryptoExceptionReason::InvalidInit);
+  setCcmKey(cipher, context);
+  context.transferState(*byteArray(cipher, kAeadState), false);
+}
+
+void initializeCcm(JC_Instance &cipher, jref_t key, jbyte_t mode,
+    const std::shared_ptr<JC_Array> &nonce, jshort_t offset, jshort_t length,
+    jshort_t aadLength, jshort_t messageLength, jshort_t tagLength) {
+  if (length < 7 || length > 13 || aadLength < 0 || messageLength < 0 ||
+      tagLength < 4 || tagLength > 16 || (tagLength & 1) != 0)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
+  checkArray(nonce, offset, length);
+  initializeSymmetricCipher(cipher, key, mode, false, nullptr, 0, 0);
+  const auto initialized = ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED;
+  cipher.setNativeSessionField_Byte(initialized, 0);
+  ensureTransientByteArray(cipher, kAeadState, CcmContext::stateSize);
+  ensureTransientByteArray(cipher, kAeadTag, kAeadTagSize);
+  CcmContext context;
+  setCcmKey(cipher, context);
+  checkAeadResult(mbedtls_ccm_starts(&context.value,
+      mode == kModeEncrypt ? MBEDTLS_CCM_ENCRYPT : MBEDTLS_CCM_DECRYPT,
+      nonce->getByteDataView() + offset, length));
+  checkAeadResult(mbedtls_ccm_set_lengths(&context.value,
+      aadLength, messageLength, tagLength));
+  context.transferState(*byteArray(cipher, kAeadState), true);
+  cipher.setNativeSessionField_Short(kCcmAadRemaining, aadLength);
+  cipher.setNativeSessionField_Short(kCcmTagLength, tagLength);
+  cipher.setNativeSessionField_Byte(initialized, 1);
+}
+
+void updateCcmAad(JC_Instance &cipher, const JC_Array &input,
+                  jshort_t offset, jshort_t length) {
+  CcmContext context;
+  loadCcm(cipher, context);
+  const jshort_t remaining = cipher.getNativeSessionField_Short(kCcmAadRemaining);
+  if (length > remaining)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  if (length == 0) return;
+  checkAeadResult(mbedtls_ccm_update_ad(&context.value,
+      input.getByteDataView() + offset, length));
+  context.transferState(*byteArray(cipher, kAeadState), true);
+  cipher.setNativeSessionField_Short(kCcmAadRemaining, remaining - length);
+}
+
+jshort_t processCcm(JC_Instance &cipher,
+    const std::shared_ptr<JC_Array> &input, jshort_t inOffset, jshort_t length,
+    const std::shared_ptr<JC_Array> &output, jshort_t outOffset, bool final) {
+  checkArray(input, inOffset, length);
+  checkRangeForOutput(output, outOffset, length);
+  CcmContext context;
+  loadCcm(cipher, context);
+  if (cipher.getNativeSessionField_Short(kCcmAadRemaining) != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  std::vector<uint8_t> result(static_cast<uint16_t>(length));
+  const auto *data = length == 0 ? nullptr : input->getByteDataView() + inOffset;
+  size_t written = 0;
+  checkAeadResult(mbedtls_ccm_update(&context.value, data, length,
+                                    result.data(), result.size(), &written));
+  if (written != result.size()) throwCryptoException(CryptoExceptionReason::IllegalUse);
+  std::array<uint8_t, kAeadTagSize> tag{};
+  const auto tagLength = cipher.getNativeSessionField_Short(kCcmTagLength);
+  if (final)
+    checkAeadResult(mbedtls_ccm_finish(&context.value, tag.data(), tagLength));
+  writeArray(output, outOffset, result, length);
+  if (final) {
+    byteArray(cipher, kAeadTag)->copyByteEntriesFrom(0, tagLength, tag.data());
+    cipher.setNativeSessionField_Byte(kAeadTagReady, 1);
+    cipher.setNativeSessionField_Byte(
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED, 0);
+  } else {
+    context.transferState(*byteArray(cipher, kAeadState), true);
+  }
+  return length;
 }
 #endif
 
@@ -1061,6 +1204,8 @@ void javacardx_crypto_Cipher_init(jref_t receiver, jref_t key, jbyte_t mode) {
   auto cipher = cipherInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(cipher->getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+  if (algorithm == kAlgorithmAesCcm)
+    throwCryptoException(CryptoExceptionReason::InvalidInit);
 #if JC_SUPPORT_CIPHER_AES_GCM
   if (algorithm == kAlgorithmAesGcm) {
     initializeGcm(*cipher, key, mode, nullptr, 0, 0);
@@ -1084,6 +1229,8 @@ void javacardx_crypto_Cipher_init(jref_t receiver, jref_t key, jbyte_t mode,
   auto cipher = cipherInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(cipher->getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+  if (algorithm == kAlgorithmAesCcm)
+    throwCryptoException(CryptoExceptionReason::InvalidInit);
 #if JC_SUPPORT_CIPHER_AES_GCM
   if (algorithm == kAlgorithmAesGcm) {
     if (!parameters) throw Exceptions::NullPointerException;
@@ -1123,6 +1270,14 @@ jshort_t javacardx_crypto_Cipher_update(jref_t receiver,
   auto cipher = cipherInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(cipher->getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+#if JC_SUPPORT_CIPHER_AES_CCM
+  if (algorithm == kAlgorithmAesCcm) {
+    const auto result = processCcm(*cipher, input, inputOffset, inputLength,
+                                   output, outputOffset, false);
+    context.setSensitiveResultShort(result);
+    return result;
+  }
+#endif
 #if JC_SUPPORT_CIPHER_AES_GCM
   if (algorithm == kAlgorithmAesGcm) {
     const auto result = processGcm(*cipher, input, inputOffset, inputLength, output, outputOffset, false);
@@ -1154,6 +1309,14 @@ jshort_t javacardx_crypto_Cipher_doFinal(jref_t receiver,
   auto cipher = cipherInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(cipher->getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+#if JC_SUPPORT_CIPHER_AES_CCM
+  if (algorithm == kAlgorithmAesCcm) {
+    const auto result = processCcm(*cipher, input, inputOffset, inputLength,
+                                   output, outputOffset, true);
+    context.setSensitiveResultShort(result);
+    return result;
+  }
+#endif
 #if JC_SUPPORT_CIPHER_AES_GCM
   if (algorithm == kAlgorithmAesGcm) {
     const auto result = processGcm(*cipher, input, inputOffset, inputLength, output, outputOffset, true);
@@ -1187,29 +1350,52 @@ void javacardx_crypto_AEADCipher_init(jref_t receiver, jref_t key, jbyte_t mode,
   javacardx_crypto_Cipher_init(receiver, key, mode, nonce, offset, length);
 }
 
-void javacardx_crypto_AEADCipher_init(jref_t, jref_t, jbyte_t,
-    std::shared_ptr<JC_Array>, jshort_t, jshort_t, jshort_t, jshort_t, jshort_t) {
+void javacardx_crypto_AEADCipher_init(jref_t receiver, jref_t key, jbyte_t mode,
+    std::shared_ptr<JC_Array> nonce, jshort_t offset, jshort_t length,
+    jshort_t aadLength, jshort_t messageLength, jshort_t tagLength) {
+#if JC_SUPPORT_CIPHER_AES_CCM
+  auto cipher = aeadCipherInstance(receiver);
+  if (static_cast<uint8_t>(cipher->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM)) == kAlgorithmAesCcm) {
+    initializeCcm(*cipher, key, mode, nonce, offset, length,
+                  aadLength, messageLength, tagLength);
+    return;
+  }
+#else
+  (void)receiver; (void)key; (void)mode; (void)nonce; (void)offset; (void)length;
+  (void)aadLength; (void)messageLength; (void)tagLength;
+#endif
   throwCryptoException(CryptoExceptionReason::InvalidInit);
 }
 
 void javacardx_crypto_AEADCipher_updateAAD(jref_t receiver,
     std::shared_ptr<JC_Array> input, jshort_t offset, jshort_t length) {
-#if JC_SUPPORT_CIPHER_AES_GCM
+#if JC_SUPPORT_CIPHER_AES_GCM || JC_SUPPORT_CIPHER_AES_CCM
   auto cipher = aeadCipherInstance(receiver);
   checkArray(input, offset, length);
+#if JC_SUPPORT_CIPHER_AES_CCM
+  if (static_cast<uint8_t>(cipher->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM)) == kAlgorithmAesCcm) {
+    updateCcmAad(*cipher, *input, offset, length);
+    return;
+  }
+#endif
+#if JC_SUPPORT_CIPHER_AES_GCM
   GcmContext context;
   loadGcm(*cipher, context);
   if (length == 0) return;
   if (context.value.MBEDTLS_PRIVATE(len) != 0)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  checkGcmResult(mbedtls_gcm_update_ad(&context.value,
+  checkAeadResult(mbedtls_gcm_update_ad(&context.value,
       input->getByteDataView() + offset, length));
   saveGcm(*cipher, context);
-  cipher->setNativeSessionField_Byte(kGcmTagReady, 0);
+  cipher->setNativeSessionField_Byte(kAeadTagReady, 0);
+  return;
+#endif
 #else
   (void)receiver; (void)input; (void)offset; (void)length;
-  throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
+  throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 }
 
 jshort_t javacardx_crypto_AEADCipher_update(jref_t receiver,
@@ -1230,13 +1416,13 @@ jshort_t javacardx_crypto_AEADCipher_doFinal(jref_t receiver,
 
 jshort_t javacardx_crypto_AEADCipher_retrieveTag(jref_t receiver,
     std::shared_ptr<JC_Array> output, jshort_t offset, jshort_t length) {
-#if JC_SUPPORT_CIPHER_AES_GCM
+#if JC_SUPPORT_CIPHER_AES_GCM || JC_SUPPORT_CIPHER_AES_CCM
   auto &context = Context::getActiveContext();
   context.resetSensitiveResult();
   auto cipher = aeadCipherInstance(receiver);
-  checkGcmTag(*cipher, kModeEncrypt, length);
+  checkAeadTag(*cipher, kModeEncrypt, length);
   checkArray(output, offset, length);
-  const auto tag = readArray(byteArray(*cipher, kGcmTag), 0, length);
+  const auto tag = readArray(byteArray(*cipher, kAeadTag), 0, length);
   writeArray(output, offset, tag, length);
   context.setSensitiveResultShort(length);
   return length;
@@ -1249,13 +1435,13 @@ jshort_t javacardx_crypto_AEADCipher_retrieveTag(jref_t receiver,
 jbool_t javacardx_crypto_AEADCipher_verifyTag(jref_t receiver,
     std::shared_ptr<JC_Array> input, jshort_t offset, jshort_t receivedLength,
     jshort_t requiredLength) {
-#if JC_SUPPORT_CIPHER_AES_GCM
+#if JC_SUPPORT_CIPHER_AES_GCM || JC_SUPPORT_CIPHER_AES_CCM
   auto &context = Context::getActiveContext();
   context.resetSensitiveResult();
   auto cipher = aeadCipherInstance(receiver);
-  checkGcmTag(*cipher, kModeDecrypt, requiredLength);
+  checkAeadTag(*cipher, kModeDecrypt, requiredLength);
   checkArray(input, offset, receivedLength);
-  const auto expected = readArray(byteArray(*cipher, kGcmTag), 0, requiredLength);
+  const auto expected = readArray(byteArray(*cipher, kAeadTag), 0, requiredLength);
   uint8_t difference = receivedLength < requiredLength;
   if (receivedLength >= requiredLength) {
     const auto *received = input->getByteDataView() + offset;

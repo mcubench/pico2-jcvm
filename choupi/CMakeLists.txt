@@ -424,7 +424,7 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
-  if(JC_SUPPORT_CIPHER_AES_GCM)
+  if(JC_SUPPORT_CIPHER_AES_GCM OR JC_SUPPORT_CIPHER_AES_CCM)
     target_sources(choupi PRIVATE
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/gcm.c"
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/ccm.c"

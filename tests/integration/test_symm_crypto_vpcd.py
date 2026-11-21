@@ -11,7 +11,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.cmac import CMAC
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.ciphers.aead import AESCCM, AESGCM
 try:
     from cryptography.hazmat.decrepit.ciphers.algorithms import TripleDES
 except ImportError:  # cryptography < 43 keeps TripleDES here
@@ -303,6 +303,29 @@ def gcm_vectors() -> list[tuple[bytes, bytes, str]]:
     return results
 
 
+def ccm_vectors() -> list[tuple[bytes, bytes, str]]:
+    results = []
+    for nonce, aad, plain, tag_size in (
+        (bytes(12), b"", bytes(16), 16),
+        (bytes(range(12)), bytes(range(27)), bytes(range(45)), 8),
+        (bytes(range(1, 13)), bytes(range(5)), b"", 8),
+    ):
+        encrypted = AESCCM(bytes(16), tag_length=tag_size).encrypt(nonce, plain, aad)
+        corrupt = encrypted[:-1] + bytes((encrypted[-1] ^ 1,))
+        tag_selector = 8 if tag_size == 8 else 0
+        for factory in (0, 4):
+            for operation, payload, expected in (
+                (0, plain, encrypted), (1, encrypted, plain + b"\x01"),
+                (3, corrupt, b"\x00"),
+            ):
+                data = bytes((len(aad),)) + nonce + aad + payload
+                mode = tag_selector + factory + operation
+                apdu = bytes((0x80, 0x2F, 1, mode, len(data))) + data + b"\x00"
+                results.append((apdu, expected + b"\x90\x00",
+                                f"AES CCM {len(aad)} AAD bytes operation {mode}"))
+    return results
+
+
 def checksum_vectors() -> list[tuple[bytes, bytes, str]]:
     message = b"123456789"
     default_crc32 = zlib.crc32(message, 0xffffffff).to_bytes(4, "big")
@@ -336,7 +359,7 @@ def main() -> int:
     cipher_count = len(cipher_vectors())
     mac_count = len(mac_vectors())
     rsa_component_count = len(rsa_key_component_vectors())
-    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() + checksum_vectors() + gcm_vectors() +
+    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() + checksum_vectors() + gcm_vectors() + ccm_vectors() +
                transient_cipher_lifecycle_vectors() +
                rsa_key_component_vectors())
     timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())

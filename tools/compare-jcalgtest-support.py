@@ -28,6 +28,7 @@ CIPHER_FACTORY_ALGORITHMS = {
     "CIPHER_RSA PAD_PKCS1": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1"),
     "CIPHER_RSA PAD_PKCS1_OAEP": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1_OAEP"),
     "CIPHER_AES_XTS PAD_NULL": ("javacardx.crypto.Cipher", "ALG_AES_XTS"),
+    "CIPHER_AES_CCM PAD_NULL": ("javacardx.crypto.AEADCipher", "CIPHER_AES_CCM"),
     "CIPHER_AES_GCM PAD_NULL": ("javacardx.crypto.AEADCipher", "CIPHER_AES_GCM"),
     "CIPHER_AES_CFB PAD_NULL": ("javacardx.crypto.Cipher", "ALG_AES_CFB"),
     "CIPHER_AES_CBC PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"),

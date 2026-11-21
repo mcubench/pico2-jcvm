@@ -104,6 +104,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
     ),
     "cipher_aes_xts": ("javacardx.crypto.Cipher", "ALG_AES_XTS"),
+    "cipher_aes_ccm": ("javacardx.crypto.AEADCipher", "CIPHER_AES_CCM"),
     "cipher_aes_gcm": ("javacardx.crypto.AEADCipher", "CIPHER_AES_GCM"),
     "cipher_aes_cfb": ("javacardx.crypto.Cipher", "ALG_AES_CFB"),
     "cipher_aes_ctr": ("javacardx.crypto.Cipher", "ALG_AES_CTR"),
@@ -427,6 +428,9 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("cipher_aes_gcm",),
      "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
      "CIPHER_AES_GCM PAD_NULL"),
+    (("cipher_aes_ccm",),
+     "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+     "CIPHER_AES_CCM PAD_NULL"),
     (("cipher_aes_xts",),
      "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
      "CIPHER_AES_XTS PAD_NULL"),

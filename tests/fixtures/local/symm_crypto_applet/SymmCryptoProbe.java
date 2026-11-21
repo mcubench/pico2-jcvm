@@ -132,7 +132,7 @@ public final class SymmCryptoProbe extends Applet {
       }
     } else if (instruction == (byte)0x2f) {
       output = new byte[(short)(inputLength + 16)];
-      outputLength = runGcm(operation, input, inputLength, output);
+      outputLength = runAead(algorithm, operation, input, inputLength, output);
     } else if (instruction == (byte)0x2e) {
       output = new byte[8];
       outputLength = runChecksum(algorithm, operation, input, inputLength, output);
@@ -657,44 +657,50 @@ public final class SymmCryptoProbe extends Applet {
     return aggregate != 0;
   }
 
-  private static short runGcm(byte operation, byte[] input,
-                             short length, byte[] output) {
+  private static short runAead(byte algorithm, byte operation, byte[] input,
+                              short length, byte[] output) {
+    boolean ccm = algorithm == 1;
     boolean decrypt = (operation & 1) != 0;
+    short tagLength = (operation & 8) == 0 ? (short)16 : (short)8;
     AESKey key = (AESKey)KeyBuilder.buildKey(KeyBuilder.TYPE_AES,
         KeyBuilder.LENGTH_AES_128, false);
     key.setKey(new byte[16], (short)0);
+    byte raw = ccm ? AEADCipher.CIPHER_AES_CCM : AEADCipher.CIPHER_AES_GCM;
+    byte legacy = ccm ? AEADCipher.ALG_AES_CCM : AEADCipher.ALG_AES_GCM;
     AEADCipher cipher;
     if ((operation & 4) != 0) {
-      cipher = (AEADCipher)Cipher.getInstance(AEADCipher.CIPHER_AES_GCM,
-          Cipher.PAD_NULL, false);
+      cipher = (AEADCipher)Cipher.getInstance(raw, Cipher.PAD_NULL, false);
     } else {
-      cipher = (AEADCipher)Cipher.getInstance(AEADCipher.ALG_AES_GCM, false);
+      cipher = (AEADCipher)Cipher.getInstance(legacy, false);
     }
-    if (cipher.getAlgorithm() != AEADCipher.ALG_AES_GCM ||
-        cipher.getCipherAlgorithm() != AEADCipher.CIPHER_AES_GCM ||
+    if (cipher.getAlgorithm() != legacy || cipher.getCipherAlgorithm() != raw ||
         cipher.getPaddingAlgorithm() != Cipher.PAD_NULL)
       ISOException.throwIt(ISO7816.SW_DATA_INVALID);
     byte mode = decrypt ? Cipher.MODE_DECRYPT : Cipher.MODE_ENCRYPT;
-    cipher.init(key, mode, input, (short)1, (short)12);
     short aadLength = (short)(input[0] & 0xff);
+    short offset = (short)(13 + aadLength);
+    short payload = (short)(length - offset);
+    if (decrypt) payload -= tagLength;
+    if (ccm) {
+      cipher.init(key, mode, input, (short)1, (short)12, aadLength, payload, tagLength);
+    } else {
+      cipher.init(key, mode, input, (short)1, (short)12);
+    }
     short aadSplit = (short)(aadLength / 2);
     cipher.updateAAD(input, (short)13, aadSplit);
     cipher.updateAAD(input, (short)(13 + aadSplit), (short)(aadLength - aadSplit));
-    short offset = (short)(13 + aadLength);
-    short payload = (short)(length - offset);
-    if (decrypt) payload -= (short)16;
     short split = (short)(payload / 2);
     short written = cipher.update(input, offset, split, output, (short)0);
     written += cipher.doFinal(input, (short)(offset + split),
         (short)(payload - split), output, written);
     if (decrypt) {
-      if (!cipher.verifyTag(input, (short)(offset + payload), (short)16, (short)16)) {
+      if (!cipher.verifyTag(input, (short)(offset + payload), tagLength, tagLength)) {
         output[0] = 0;
         return 1;
       }
       output[written++] = 1;
     } else {
-      written += cipher.retrieveTag(output, written, (short)16);
+      written += cipher.retrieveTag(output, written, tagLength);
     }
     return written;
   }
