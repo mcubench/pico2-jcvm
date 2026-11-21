@@ -3,7 +3,7 @@
 ## 1. Educational project — read first
 
 > [!WARNING]
-> This project is **NOT production-ready. Do not use it for security-critical tasks.** It was almost completely coded by large language models, mostly GPT-6 Sol and Luna.
+> This project is **NOT production-ready. Do not use it for security-critical tasks.** It was almost completely coded by large language models, mostly GPT-6 Sol, GPT-6 Luna, and Claude Opus 5.5.
 >
 > This is a self-educational attempt to understand how to:
 > 1. Perform complex agentic development with real physical hardware.
@@ -24,28 +24,28 @@ The implementation is based on [CHOUPI, an open-source Java Card Virtual Machine
 
 ## 3. Try it
 
-You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these downloads:
+You need a Raspberry Pi Pico 2, a USB data cable, Java, and PC/SC support.
 
-- The [pinned JCAlgTest fixtures](tests/fixtures/manifest.json) contain the unchanged **1.8.5 / jc305 CAP** and the **1.8.5-20261121 host client** used for new runs.
-- [GlobalPlatformPro `gp.jar` binary](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar).
+1. Download the following files.
 
-1. Download [pico2-jcvm-max_crypto-arm__latest.uf2](https://github.com/mcubench/pico2-jcvm/releases), or build an ARM JCVM **`.uf2`** image below.
+   - The ARM firmware `pico2-jcvm-max_crypto-arm__latest.uf2` from the [latest Pico 2 JCVM release](https://github.com/mcubench/pico2-jcvm/releases/latest).
+   - `gp.jar` from the [latest GlobalPlatformPro release](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest).
+   - The Java Card 3.0.5 applet CAP and `AlgTestJClient.jar` from the [latest JCAlgTest release](https://github.com/crocs-muni/JCAlgTest/releases/latest). Save the CAP as `jcalgtest.cap` beside `gp.jar`.
+
 2. Hold **BOOTSEL** while connecting the Pico 2. Copy the image onto the **RPI-RP2** drive; the board reboots as a USB smart-card reader. An **empty-card image erases installed applets and persistent data**.
-3. Install the unchanged upstream JCAlgTest v1.8.5 applet:
+3. Install the latest JCAlgTest applet.
 
-   ```sh
-   java -jar gp.jar --reader "<Pico reader name>" \
-     --install "$(./tools/fixture-path jcalgtest.cap)"
+   ```bash
+   java -jar gp.jar --install jcalgtest.cap
    ```
 
-4. Run the v1.8.5 client and select the Pico reader when prompted:
+4. Run the JCAlgTest client and select the Pico reader when prompted.
 
-   ```sh
-   java -jar "$(./tools/fixture-path jcalgtest.client.1.8.5-20261121)" \
-     -op ALG_SUPPORT_EXTENDED -fresh -outpath results
+   ```bash
+   java -jar AlgTestJClient.jar
    ```
 
-Results are written under `results/`. Unsupported algorithms are expected; a support report does not establish security or full Java Card conformance.
+Unsupported algorithms are expected. A support report does not establish security or full Java Card conformance.
 
 See the [physical test runbook](docs/jcalgtest-physical-runbook.md) and [Windows instructions](docs/windows-asymm-symm-test.md). Agents accessing hardware must follow [AGENTS.md](AGENTS.md).
 
