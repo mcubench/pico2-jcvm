@@ -623,8 +623,21 @@ bool validate_internal_class_references(
     const uint8_t *record = class_bytes.data() + offset;
     const bool is_interface = (record[0] & 0x80u) != 0;
     if (is_interface) {
-      offset += reinterpret_cast<const jcvm::jc_cap_interface_info *>(record)
-                    ->getSize();
+      const auto *interface_info =
+          reinterpret_cast<const jcvm::jc_cap_interface_info *>(record);
+      // CAPIN-07: an internal superinterface must be an interface record.
+      for (uint8_t index = 0; index < interface_info->interface_count;
+           ++index) {
+        const jcvm::jc_cap_class_ref super_ref =
+            interface_info->superinterfaces[index];
+        if (super_ref.isExternalClassRef()) continue;
+        const std::size_t super_offset = NTOHS(super_ref.internal_classref);
+        if (!is_record_start(super_offset) ||
+            (class_bytes.data()[super_offset] & 0x80u) == 0) {
+          return false;
+        }
+      }
+      offset += interface_info->getSize();
       continue;
     }
     const auto *class_info =

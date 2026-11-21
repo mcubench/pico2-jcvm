@@ -33396,3 +33396,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Change: Updated the README for streaming digests, current ARM max_crypto algorithms, hardware versus simulator evidence, current exclusions, and pinned JCAlgTest launch inputs.
 - Validation: Profile tests passed 15/15, all 86 fixtures verified, both fixture aliases resolved, and the scoped diff check passed. Documentation only.
 - Result: Current capability descriptions no longer inherit unsupported results from the historical API run.
+
+## 2026-11-21 CAPIN-07 superinterface check; package tool uses the 1.8.5-20261121 client 20
+
+- Step-Id: `20261121-1540-capin07-superinterfaces`
+- Task: CAPIN-07; external test packaging
+- When: '2026-11-21 15:30 CET' - '2026-11-21 15:26 CET'
+- Model: `claude-opus-5-5`
+- Change: `src/cap_load.cpp` stage-9 validator: an internal superinterface of an interface record must be an interface-record start. A second change, bounding the whole class record (`getSize()`) inside `ConstantPool_Handler::resolveClassref`, made `test-sio-cross-aid-vpcd` fail (`Signature SensitiveResult returned 6F00, expected 6A509000`); the suite passed 35/35 with that hunk removed, so it was reverted (the loader already bounds every uploaded class record against the component). `tools/package-maxcrypto-windows-test` now bundles the 1.8.5-20261121 client (`3cca70cb…`) under the file name the run template expects, labels it in provenance/README, and also requires `debug_fail_reclaim_alloc=OFF`.
+- Validation: `./tools/build-pc --profile max_crypto`; test-sio-cross-aid-vpcd 35/35, test-vpcd-multipackage 48/48, test-pc-vpcd-applet 30/30, test-rmi-arrays-vpcd 3/3, test-cap-export-offset-vpcd PASS, malformed vtable-offset-out-of-range and superclass-self-cycle rc=0; earlier in this step (with both hunks) test-jcsystem-transaction-applet 117/117, test-same-cap-siblings 6/6, rmi-client rc=0.
+- Result: superinterface references are validated; no regression in the suites above.
+- Decision: build and package the external max_crypto test from clean HEAD.
+- Artifacts/logs: none beyond suite logs.

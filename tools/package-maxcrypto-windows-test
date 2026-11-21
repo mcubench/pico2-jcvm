@@ -29,7 +29,7 @@ expected_prefix="$(printf '0x%s' "$(printf '%s' "${head_full:0:8}" | tr 'a-f' 'A
 grep -qx 'profile=max_crypto' "${provenance}" || die "build is not the max_crypto profile"
 grep -qx 'mode=normal' "${provenance}" || die "build is not in normal mode"
 grep -qx 'object_deletion=ON' "${provenance}" || die "object deletion is not ON"
-for flag in debug_heap_gc debug_ccid_applet debug_persistent_gc; do
+for flag in debug_heap_gc debug_ccid_applet debug_persistent_gc debug_fail_reclaim_alloc; do
   grep -qx "${flag}=OFF" "${provenance}" || die "${flag} is not OFF"
 done
 
@@ -41,8 +41,11 @@ uf2_name="pico2-jcvm-max_crypto-object-deletion-on-empty-card-${head_short}.uf2"
 uf2_artifact="${repo_root}/artifacts/firmware/${uf2_name}"
 
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
-client="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
-client_lib="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/lib"
+# User directive 2026-11-21: new runs use the 1.8.5-20261121 client (fewer
+# internal repetitions for asymmetric algorithms). It is staged under the
+# file name the run template expects.
+client="$("${repo_root}/tools/fixture-path" jcalgtest.client.1.8.5-20261121)"
+client_lib="$(dirname "${client}")/lib"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 capture_ps1="${repo_root}/tools/capture-object-deletion.ps1"
 run_template="${repo_root}/tools/templates/maxcrypto-windows-run.ps1.in"
@@ -97,7 +100,7 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
   printf 'telemetry=OBJECT_DELETION:PRE_CLEANUP (serial), 90%% arena gate checked by tools/check-object-deletion-headroom.py\n'
   printf 'jcalgtest_cap=1.8.5_jc305_unchanged\n'
   printf 'jcalgtest_cap_sha256=%s\n' "${cap_sha}"
-  printf 'jcalgtest_client=1.8.5\n'
+  printf 'jcalgtest_client=1.8.5-20261121\n'
   printf 'jcalgtest_client_sha256=%s\n' "${client_sha}"
   printf 'gppro_sha256=%s\n' "${gp_sha}"
   printf 'local_validation=recorded_after_packaging_in_.agent/EXT_REQUESTS.md_and_progress.md_for_this_commit (not asserted at package time)\n'
@@ -123,7 +126,7 @@ This package is prepared for external Windows testing. Validation of this exact 
 - CPLC source identifier: \`${cplc_id}\`
 - Linked firmware end: \`${linked_end_hex}\`; remaining firmware window: ${remaining} bytes
 - CAP: unchanged user-supplied JCAlgTest 1.8.5 / jc305 (\`applet.cap\`), SHA-256 \`${cap_sha}\`
-- Host client: supplied JCAlgTest 1.8.5 (\`tools/AlgTestJClient_v1.8.5.jar\`), SHA-256 \`${client_sha}\`
+- Host client: supplied JCAlgTest 1.8.5-20261121 build (\`tools/AlgTestJClient_v1.8.5.jar\`, fewer internal repetitions for asymmetric algorithms), SHA-256 \`${client_sha}\`
 - GPPro: \`tools/gp.jar\`
 
 ## Run the test from Windows (one block)
