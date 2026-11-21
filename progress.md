@@ -33311,3 +33311,12 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Change: Applied the user directive excluding ALG_AES_BLOCK_192_CBC_NOPAD, ALG_AES_BLOCK_192_ECB_NOPAD, ALG_AES_BLOCK_256_CBC_NOPAD and ALG_AES_BLOCK_256_ECB_NOPAD. Removed those IDs from the external request and removed the downloaded scratch reference.
 - Validation: Checked the tracked native cipher dispatch and support configuration for those IDs.
 - Result: No implementation, dispatch or capability row was added for the excluded cipher IDs. The separately requested MAC IDs remain in scope.
+
+## 2026-11-21 Narrow the requested RSA cipher scope
+
+- Step-Id: `20261121-1513-drop-legacy-rsa-ciphers`
+- When: '2026-11-21 15:13 CET' - '2026-11-21 15:13 CET'
+- Model: `GPT-6`
+- Change: Applied the user directive dropping Cipher.ALG_RSA_ISO14888 and Cipher.ALG_RSA_ISO9796. Removed their request for compatibility inputs.
+- Validation: Inspected the native Cipher dispatch and profile configuration for these legacy IDs.
+- Result: Neither legacy Cipher ID has a newly added implementation. The existing ISO9796-2 Signature algorithms are outside this scope change.

@@ -62,13 +62,9 @@ Key questions:
 - Is the `HEADROOM:` verdict at the end of `serial-capture-console.txt` PASS? How many
   `FS_APDU … synced=1` lines are there?
 
-## CRYPTO-LEGACY-VECTORS-20261121 — Java Card legacy cipher and MAC encodings
+## CRYPTO-LEGACY-VECTORS-20261121 — Java Card legacy MAC encodings
 
-Created 2026-11-21 15:02 CET. Supply the intended card/API version, a vetted
-backend or authoritative encoding definition, and known-answer vectors for
-`Cipher.ALG_RSA_ISO14888` and `Cipher.ALG_RSA_ISO9796`. Include valid
-encrypt/decrypt results and invalid-padding cases. The existing native
-RSA/ISO9796-2 signature implementation uses a different API and encoding.
+Created 2026-11-21 15:02 CET. Updated 15:13 CET.
 
 For `ALG_AES_MAC_192_NOPAD` and `ALG_AES_MAC_256_NOPAD`, provide legacy card
 vectors that establish the expected block size, key size, IV size, tag size
