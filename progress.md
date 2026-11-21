@@ -33375,3 +33375,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: MEM-01 T1–T8 and T10 closed.
 - Decision: MEM-01 acceptance complete; remaining CAPIN-07 fixtures continue under CAPIN-07.
 - Artifacts/logs: none.
+
+## 2026-11-21 CAPIN-07 Export class_offset fixture 6
+
+- Step-Id: `20261121-1531-capin07-export-fixture`
+- Task: CAPIN-07
+- When: '2026-11-21 15:25 CET' - '2026-11-21 15:19 CET'
+- Model: `claude-opus-5-5`
+- Change: new `tests/integration/cap_export_offset_vpcd_test.py` and `tools/test-cap-export-offset-vpcd` (socket VPCD, no pcscd): build copy of the same-CAP sibling fixture load file with the first Export class_offset set to 1; passes if LOAD or INSTALL rejects it and the card manager still answers SELECT.
+- Validation: `./tools/test-cap-export-offset-vpcd` CAP_EXPORT_OFFSET:PASS — LOAD final block `6A80` (the LOAD-time Export/Descriptor cross-check in `valid_export_offsets` already refuses the offset when a Descriptor is present), then SELECT ISD 9000. The INSTALL-time record-start check added in 5355e68c covers Descriptor-free loads (standard GPPro LOAD omits Descriptor).
+- Result: negative evidence for Export class_offset at LOAD; the vtable fixture covers the stage-9 path.
+- Decision: CAPIN-07 remaining: interface index[] fixture, superinterface refs, resolveClassref record bound, LOAD-time move (CAPIN-01).
+- Artifacts/logs: `artifacts/logs/cap-export-offset-vpcd-20261121T141933Z.log`
