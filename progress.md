@@ -33090,3 +33090,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed 15/15 and the full symmetric simulator ran 111 vectors, including DES MAC4 sign, valid verify and altered-MAC rejection. The final ARM max_crypto build linked. Earlier wrapper attempts overlapped edits to the wrappers and were retried.
 - Result: DES MAC4 matches the independently calculated reference. The ARM build emitted dependency warnings and physical validation remains pending. The physical runner now uses the labels maintained with the vectors.
 - Artifacts/logs: `artifacts/logs/{build-arm-des-mac4,test-des-mac4,symm-crypto-kat-vpcd-20261121T110435Z}.log`.
+
+## 2026-11-21 Add native SHA3-224 streaming digest 3 minutes
+
+- Step-Id: `20261121-1207-sha3-224`
+- When: '2026-11-21 12:05 CET' - '2026-11-21 12:08 CET'
+- Model: `GPT-6`
+- Change: Enabled SHA3-224 in max_crypto and routed the MessageDigest and OneShot factories through the Mbed TLS streaming context.
+- Validation: ARM max_crypto linked with 612,376 bytes of firmware-window headroom. Profile unit tests passed and the symmetric simulator suite passed the empty, abc, and split 200-byte vectors against hashlib.
+- Result: SHA3-224 uses fixed-size transient state. Import of an intermediate SHA-3 state was outside the MessageDigest change. Build dependency warnings prevented flashing.
+- Artifacts/logs: `artifacts/logs/{build-arm-sha3-224,test-sha3-224}.log`.

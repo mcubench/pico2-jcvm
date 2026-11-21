@@ -59,11 +59,15 @@ if(TARGET pico_mbedtls_headers)
   target_include_directories(pico_mbedtls_headers SYSTEM INTERFACE
     "${PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
   # Drop Mbed TLS features no native algorithm reaches (unused named curves,
-  # SHA-3, and MD5/RIPEMD-160 unless their HMAC is selected). The definition
+  # SHA-3 and hashes whose matching profile capabilities are disabled). The definition
   # is on the interface target so every firmware translation unit that
   # includes Mbed TLS headers sees the same configuration.
   target_compile_definitions(pico_mbedtls_headers INTERFACE
     "MBEDTLS_USER_CONFIG_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/src/choupi_mbedtls_user_config.h\"")
+  if(JC_SUPPORT_SHA3_224)
+    target_compile_definitions(pico_mbedtls_headers INTERFACE
+      CHOUPI_MBEDTLS_KEEP_SHA3=1)
+  endif()
   if(JC_SUPPORT_SIGNATURE_HMAC_MD5)
     target_compile_definitions(pico_mbedtls_headers INTERFACE
       CHOUPI_MBEDTLS_KEEP_MD5=1)
@@ -321,8 +325,10 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/md.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/md5.c"
-      "${PICO_SDK_PATH}/lib/mbedtls/library/ripemd160.c"
-      "${PICO_SDK_PATH}/lib/mbedtls/library/sha3.c")
+      "${PICO_SDK_PATH}/lib/mbedtls/library/ripemd160.c")
+  endif()
+  if(JC_SUPPORT_SHA3_224)
+    target_sources(pico2_choupi PRIVATE "${PICO_SDK_PATH}/lib/mbedtls/library/sha3.c")
   endif()
   if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY OR
      JC_SUPPORT_SIGNATURE_ECDSA_SHA OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 OR

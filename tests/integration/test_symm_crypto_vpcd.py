@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import sys
 import time
 from pathlib import Path
@@ -255,11 +256,24 @@ def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
     ]
 
 
+def sha3_vectors() -> list[tuple[bytes, bytes, str]]:
+    vectors = []
+    for algorithm, bits in ((8, 224),):
+        for message in (b"", b"abc", bytes(range(200))):
+            apdu = bytes((0x80, 0x12, algorithm, 0, len(message)))
+            if message:
+                apdu += message + b"\x00"
+            digest = hashlib.new(f"sha3_{bits}", message).digest()
+            vectors.append((apdu, digest + b"\x90\x00",
+                            f"SHA3-{bits} {len(message)} bytes"))
+    return vectors
+
+
 def main() -> int:
     cipher_count = len(cipher_vectors())
     mac_count = len(mac_vectors())
     rsa_component_count = len(rsa_key_component_vectors())
-    vectors = (cipher_vectors() + mac_vectors() +
+    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() +
                transient_cipher_lifecycle_vectors() +
                rsa_key_component_vectors())
     timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())

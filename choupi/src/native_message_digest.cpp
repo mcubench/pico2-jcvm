@@ -10,6 +10,10 @@
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
+#if JC_SUPPORT_SHA3_224
+#include "mbedtls/sha3.h"
+#include <type_traits>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -22,6 +26,9 @@ namespace {
 constexpr uint16_t kDigestContextBytes = 1 + std::max({
     sizeof(mbedtls_sha1_context), sizeof(mbedtls_sha256_context),
     sizeof(mbedtls_sha512_context)});
+#if JC_SUPPORT_SHA3_224
+static_assert(sizeof(mbedtls_sha3_context) + 1 <= kDigestContextBytes);
+#endif
 
 jclass_index_t messageDigestClassIndex() {
   const uint16_t classOffset =
@@ -80,6 +87,9 @@ uint16_t digestLength(const jbyte_t algorithm) {
 #endif
 #if JC_SUPPORT_SHA512
   case 6: return 64;
+#endif
+#if JC_SUPPORT_SHA3_224
+  case 8: return 28;
 #endif
   default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
@@ -152,6 +162,15 @@ void withDigestContext(JC_Instance &instance, Operation operation,
           return mbedtls_sha512_starts(state, algorithm == 5);
         }, mbedtls_sha512_update, mbedtls_sha512_finish, operation, restart);
 #endif
+#if JC_SUPPORT_SHA3_224
+  case 8:
+    return withDigestContext<mbedtls_sha3_context>(
+        *buffer, [](auto *state) {
+          return mbedtls_sha3_starts(state, MBEDTLS_SHA3_224);
+        }, mbedtls_sha3_update, [](auto *state, uint8_t *output) {
+          return mbedtls_sha3_finish(state, output, 28);
+        }, operation, restart);
+#endif
   default:
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
@@ -171,6 +190,15 @@ void updateDigest(State &state, Update update, const uint8_t *data,
     throwCryptoException(CryptoExceptionReason::IllegalUse);
 }
 
+#if JC_SUPPORT_SHA3_224
+template <typename Update>
+void updateDigest(mbedtls_sha3_context &state, Update update,
+                  const uint8_t *data, uint16_t length) {
+  if (length != 0 && update(&state, data, length) != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+}
+#endif
+
 void clearInput(JC_Instance &instance) {
   const std::array<uint8_t, kDigestContextBytes> empty{};
   digestBuffer(instance)->copyByteEntriesFrom(0, empty.size(), empty.data());
@@ -180,6 +208,8 @@ jref_t newDigest(const jbyte_t algorithm, const jbool_t externalAccess,
                  const bool initialized) {
   if (externalAccess) throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   digestLength(algorithm);
+  if (initialized && algorithm >= 8)
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   Heap &heap = Context::getActiveContext().getHeap();
   const uint16_t classOffset = initialized
                                    ? initializedMessageDigestClassIndex()
@@ -250,16 +280,23 @@ void javacard_security_InitializedMessageDigest_setInitialDigest(
                     : (high != 0 || low >= (uint64_t{1} << 61))))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   withDigestContext(*instance, [&](auto &state, auto, auto) {
-    const auto *bytes = initialDigest->getByteDataView() + initialDigestOffset;
-    auto &words = state.MBEDTLS_PRIVATE(state);
-    auto &total = state.MBEDTLS_PRIVATE(total);
-    for (auto &word : words) {
-      word = 0;
-      for (size_t i = 0; i < sizeof(word); ++i)
-        word = (word << 8) | *bytes++;
+#if JC_SUPPORT_SHA3_224
+    if constexpr (std::is_same_v<std::decay_t<decltype(state)>, mbedtls_sha3_context>) {
+      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+    } else
+#endif
+    {
+      const auto *bytes = initialDigest->getByteDataView() + initialDigestOffset;
+      auto &words = state.MBEDTLS_PRIVATE(state);
+      auto &total = state.MBEDTLS_PRIVATE(total);
+      for (auto &word : words) {
+        word = 0;
+        for (size_t i = 0; i < sizeof(word); ++i)
+          word = (word << 8) | *bytes++;
+      }
+      total[0] = low;
+      total[1] = sizeof(total[0]) == 8 ? high : low >> 32;
     }
-    total[0] = low;
-    total[1] = sizeof(total[0]) == 8 ? high : low >> 32;
   }, true);
 }
 

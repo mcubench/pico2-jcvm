@@ -8,8 +8,7 @@
 //   secp256r1, secp384r1 and secp521r1 with mbedtls_ecp_group_load(); other
 //   EC field sizes use explicit domain parameters and the generic arithmetic.
 //   The Koblitz, Brainpool and Montgomery curve tables were dead flash.
-// - SHA-3: no Java Card algorithm in any profile maps to an Mbed TLS SHA-3
-//   digest; md.c pulled it in only because the default config enables it.
+// - SHA-3 is retained only when the profile enables a SHA-3 digest.
 // - MD5 and RIPEMD-160 are used only by HMAC_MD5 and HMAC_RIPEMD160. CMake
 //   defines CHOUPI_MBEDTLS_KEEP_MD5 / CHOUPI_MBEDTLS_KEEP_RIPEMD160 when the
 //   selected profile enables those signatures.
@@ -27,7 +26,9 @@
 #undef MBEDTLS_ECP_DP_CURVE25519_ENABLED
 #undef MBEDTLS_ECP_DP_CURVE448_ENABLED
 
+#if !defined(CHOUPI_MBEDTLS_KEEP_SHA3)
 #undef MBEDTLS_SHA3_C
+#endif
 
 #if !defined(CHOUPI_MBEDTLS_KEEP_MD5)
 #undef MBEDTLS_MD5_C
