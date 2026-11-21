@@ -33268,3 +33268,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Inspected installed JC305 API exports and existing native cipher, signature and SDK random implementations.
 - Result: Existing RSA ISO9796-2 signatures and 192/256-bit AES keys are available under their own algorithm IDs. The installed SDK's random public API returns mixed PRNG output. The requested legacy formats, XDH and TRNG remain open.
 - Artifacts/logs: `.agent/EXT_REQUESTS.md`.
+
+## 2026-11-21 Windows RSA-CRT 3072 6f00 does not occur on the current image 7
+
+- Step-Id: `20261121-1508-win-6f00-fixed-on-head`
+- Task: WIN-D7E90A18-6F00, MEM-01
+- When: '2026-11-21 12:28 CET' - '2026-11-21 15:03 CET' (unattended run; about 15 min of work)
+- Model: `claude-opus-5-5`
+- Change: none to source. Hardware confirmation on F42DD9D07D6D2B07, flashed by `tools/cycle choupi` with the build of `a9ec9e04` (normal max_crypto, app UF2 `23745d40…3c46f`, includes 9228c583 recoverable reclaim allocation; card not wiped), client 1.8.5-20261120 `724bda75…` (started before the 1.8.5-20261121 client arrived), same 432-method RSA Cipher block skip list as the d7e90a18 replay that died at method 320.
+- Validation: `Testing complete`, rc=0, 432 methods, 9,400 s, 0 reconnects. CSV: 0 `6f00`, 0 `UNKONWN_ERROR`, 0 SystemException; 6 ILLEGAL_VALUE (RSA-512 OAEP, spec-correct) and 4 ILLEGAL_USE (RSA NOPAD public 3072/4096 and CRT public 768/896 doFinal, input-dependent). Serial: 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL/BOOT/`allocation_failed`; 478 PRE_CLEANUP; min pre-cleanup RAM 50,560 B; peak store 83,538/98,304 B (85.0%, below the 90% gate; this card carries earlier test state).
+- Result: the d7e90a18 Windows failure (RSA-CRT 3072 6f00, reproduced on F42D as a card death in the deletion pass) does not occur on the current image. WIN-D7E90A18-6F00 closed; F42D released in HANDOFF.
+- Decision: the recoverable path was not exercised here (no `allocation_failed`); the deletion pass simply did not run out of memory on this image. Further JCAlgTest runs use the 1.8.5-20261121 client.
+- Artifacts/logs: `artifacts/results/repro-rsablock-head-a9ec9e04-20261121T1047Z/F42DD9D07D6D2B07/`
