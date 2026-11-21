@@ -33561,3 +33561,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The RMI suite exercised the coordinated collector's retained, foreign, and ambiguous-root cases. VPCD exercised shared behavior. The target-only trigger and its effect on the physical cutoff and GP cleanup remain unverified. No flash measurements were taken because the required hardware-access invocation is unavailable in this session.
 - Decision: Verify the trigger with the full physical KAT and cleanup on EE11, retaining the existing persistence telemetry.
 - Artifacts/logs: `artifacts/build-audit/{build-arm-ram-pressure.log,test-rmi-registry-ram-pressure.log,test-symm-vpcd-ram-pressure.log}`.
+
+## 2026-11-21 Validate Class and Export references before CAP LOAD publishes 3
+
+- Step-Id: `20261121-2157-capin07-load-class-checks`
+- Task: CAPIN-01 / CAPIN-07
+- When: '2026-11-21 21:54 CET' - '2026-11-21 21:57 CET'
+- Model: `gpt-6`
+- Change: Run existing internal Class and Export reference checks on the LOAD buffer. Keep inherited virtual method linkage resolution at INSTALL, since it may depend on packages that have yet to load. Updated the existing negative tests to require rejection before package publication, including Export with and without Descriptor.
+- Validation: Warning-free normal max_crypto ARM build, 582,692 bytes of firmware-window headroom. Constant-pool validation passed 61 checks. Superclass self-cycle, mid-record superclass, out-of-range vtable offset and out-of-range interface index were rejected at LOAD in VPCD. Export tests returned `6A80` on both malformed variants and confirmed that GET STATUS was empty. The same connection subsequently loaded the valid Descriptor-free CAP and listed it. The pinned JCAlgTest CAP returned `1.8.5_jc305`, and the SIO lifecycle passed 35 checks. An initial positive smoke invocation used an unsupported instruction and correctly received `6D00`; the rerun used GETVERSION.
+- Result: The tested invalid records are rejected before LOAD publishes them, and valid runtime linkage still works in VPCD. The ARM hardware run and physical flash telemetry remain pending because this session cannot use the required host-access invocation.
+- Decision: Keep CAPIN-01 linkage/recovery and CAPIN-07 physical acceptance open.
+- Artifacts/logs: `artifacts/build-audit/{build-arm-cap-load-class-checks.log,test-cap-export-load-class-checks.log,test-pinned-cap-load-class-checks.log,test-sio-load-class-checks.log}`.

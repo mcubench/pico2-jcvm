@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """CAPIN-07: an implemented-interface index[] value beyond the class's
-public virtual method tokens must be rejected before INSTALL runs code.
+public virtual method tokens must be rejected at LOAD.
 
 Uses a build copy of the RMI array fixture load file (its remote class
-implements an internal interface) and expects the stage-9 class-reference
-validation to reject INSTALL. The fixture CAP is not modified.
+implements an internal interface). The fixture CAP is not modified.
 """
 
 from __future__ import annotations
@@ -74,7 +73,6 @@ def main() -> int:
     started = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     log = ROOT / f"artifacts/logs/cap-interface-index-vpcd-{started}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
-    # The harness reports the emulator's INSTALL failure on its own output.
     result = subprocess.run(
         [str(ROOT / "tools/test-pc-vpcd-applet"), "--passes", "1",
          "--cap-code", str(mutated), "--applet-aid", APPLET_AID,
@@ -84,12 +82,14 @@ def main() -> int:
     text = result.stdout
     if log.exists():
         text += log.read_text(encoding="utf-8", errors="replace")
-    if not re.search(r"PC applet INSTALL failed stage=9 sw=6F00 vm=0000 "
-                     r"exception=0\b", text):
-        print(f"INTERFACE_INDEX:FAIL expected stage-9 INSTALL rejection; log={log}",
+    if (result.returncode == 0 or
+            "ERROR: PC CAP LOAD data rejected" not in text or
+            "ERROR: PC applet INSTALL failed" in text or
+            re.search(r"VPCD:CAP_REGISTRY_SAVED packages=[1-9]\d*", text)):
+        print(f"INTERFACE_INDEX:FAIL expected rejection before CAP storage; log={log}",
               file=sys.stderr)
         return 1
-    print(f"INTERFACE_INDEX:PASS install_rejected stage=9 log={log.relative_to(ROOT)}")
+    print(f"INTERFACE_INDEX:PASS load_rejected log={log.relative_to(ROOT)}")
     return 0
 
 

@@ -3,8 +3,7 @@
 
 Loads a build copy of the same-CAP sibling fixture (it has an Export
 component) with the first Export class_offset set to 1, then expects
-LOAD (Descriptor cross-check) or INSTALL (class-reference validation) to
-reject it and the card manager to keep answering. The fixture CAP file is not modified.
+LOAD to reject it and the card manager to keep answering.
 """
 
 from __future__ import annotations
@@ -20,8 +19,25 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tests/integration"))
 import pc_vpcd_multipackage_test as vpcd  # noqa: E402
 
-WRITER_AID = bytes.fromhex("A00000015100000501")
 EXPORT_TAG = 10
+DESCRIPTOR_TAG = 11
+
+
+def omit_descriptor(code: bytes) -> bytes:
+    """Remove the optional Descriptor and clear its Directory size."""
+    components = []
+    offset = 0
+    while offset < len(code):
+        tag = code[offset]
+        size = int.from_bytes(code[offset + 1:offset + 3], "big")
+        component = bytearray(code[offset:offset + 3 + size])
+        if tag == 2:
+            descriptor_size = 3 + 2 * (DESCRIPTOR_TAG - 1)
+            component[descriptor_size:descriptor_size + 2] = b"\0\0"
+        if tag != DESCRIPTOR_TAG:
+            components.append(component)
+        offset += 3 + size
+    return b"".join(components)
 
 
 def mutate_export_offset(code: bytes) -> bytes:
@@ -46,7 +62,7 @@ def main() -> int:
                    cwd=ROOT, check=True, timeout=180)
     cap_path = ROOT / "build/same-cap-sibling-fixture/cap/samecap/javacard/samecap.cap"
     code, package_aid, _ = vpcd.load_code(cap_path)
-    code = mutate_export_offset(code)
+    without_descriptor = omit_descriptor(code)
 
     emulator = ROOT / "build/choupi-pc/choupi"
     rom_mask = ROOT / "build/choupi-pc/flash"
@@ -91,22 +107,17 @@ def main() -> int:
                 raise RuntimeError("SELECT ISD failed")
             scp = vpcd.Scp03(connection)
             scp.authenticate()
-            # With a Descriptor component, LOAD already cross-checks Export
-            # classes against it (valid_export_offsets) and answers 6A80;
-            # without one, the INSTALL-time class-reference validation
-            # rejects the offset. Either is a pass; acceptance is a failure.
-            try:
-                vpcd.load_package(scp, code, package_aid)
-            except RuntimeError as error:
-                print(f"TEST:PASS LOAD rejected: {error}")
-            else:
-                try:
-                    vpcd.install_applet(scp, package_aid, WRITER_AID, WRITER_AID)
-                except RuntimeError as error:
-                    print(f"TEST:PASS INSTALL rejected: {error}")
-                else:
-                    print("TEST:FAIL a mid-record Export class_offset was accepted")
-                    return 1
+            for case, valid_code in (("with Descriptor", code),
+                                     ("without Descriptor", without_descriptor)):
+                vpcd.load_package(scp, mutate_export_offset(valid_code),
+                                  package_aid, expected_final_statuses=(0x6A80,))
+                if package_aid in vpcd.get_status(scp, 0x20):
+                    raise RuntimeError(f"package published after failed LOAD {case}")
+                print(f"TEST:PASS final LOAD returned 6A80 {case}")
+            vpcd.load_package(scp, without_descriptor, package_aid)
+            if package_aid not in vpcd.get_status(scp, 0x20):
+                raise RuntimeError("valid CAP without Descriptor was not published")
+            print("TEST:PASS valid LOAD without Descriptor after rejection")
             if vpcd.exchange(connection, bytes.fromhex("00A4040000"),
                              "SELECT ISD after rejection")[-2:] != b"\x90\x00":
                 print("TEST:FAIL card manager did not answer after rejection")

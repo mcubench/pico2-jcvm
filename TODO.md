@@ -11,7 +11,7 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 ## Next work
 
 - Review Windows option 1/2 results for `v0.2-rc1` and get user authorization before publishing. See WIN-MAXCRYPTO-RC-V0.2-RC1.
-- Finish CAPIN-01/07 LOAD-time validation and the remaining CAPIN-05/06 negative fixtures.
+- Finish CAPIN-01 linkage and recovery acceptance and the remaining CAPIN-05/06 negative fixtures. Verify the CAPIN-07 LOAD checks on ARM hardware.
 - Verify RAM-pressure heap reclamation on EE11 with the full symmetric KAT and GP cleanup. Capture APDU flash traffic and use the diagnostic heap log if failures recur. See `20261121-2154-ram-pressure-reclaim`.
 - Schedule BOOTSEL and power-loss acceptance when an identified board is available.
 
@@ -39,7 +39,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### CAPIN-07
 
-- [ ] Move class, superclass, superinterface, Export, vtable and interface index checks to LOAD under CAPIN-01. The INSTALL guards and negative fixtures exist through `9840cb02`. Resolve the full-record bound in `resolveClassref` with the SIO SensitiveResult regression covered.
+- [x] Move import-independent Class and Export reference checks to LOAD. Superclass, vtable, interface index, and Export rejection passed in VPCD. A valid Descriptor-free CAP and the SIO lifecycle passed. See `20261121-2157-capin07-load-class-checks`.
+- [ ] Verify physical LOAD rejection and recovery. Resolve the full-record bound in `resolveClassref` with the SIO SensitiveResult regression covered.
 
 ### CAPIN-08
 

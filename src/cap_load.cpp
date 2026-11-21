@@ -559,8 +559,7 @@ enum class CapImportValidation : uint8_t {
 };
 
 bool validate_internal_class_references(
-    const jcvm::Package &package, const jcvm::JC_Cap &cap,
-    const uint8_t *entries, const std::size_t count) {
+    const jcvm::JC_Cap &cap, const uint8_t *entries, const std::size_t count) {
   if (entries == nullptr && count != 0) return false;
   const auto *class_component = cap.getClass();
   const auto *header = cap.getHeader();
@@ -735,38 +734,48 @@ bool validate_internal_class_references(
             token, class_size, record_start, is_interface, requires_class)) {
       return false;
     }
-    if (!requires_class) continue;
+    if (entry[0] != JC_CP_TAG_CONSTANT_INSTANCEFIELDREF) continue;
 
     const auto *class_info =
         reinterpret_cast<const jcvm::jc_cap_class_info *>(
             class_bytes.data() + token);
-    if (entry[0] == JC_CP_TAG_CONSTANT_INSTANCEFIELDREF) {
-      if (!jcvm::cap_constant_pool_validation::valid_instance_field_token(
-              entry[3], class_info->declared_instance_size & 0xffu,
-              class_info->first_reference_token,
-              class_info->reference_count)) {
-        return false;
-      }
+    if (!jcvm::cap_constant_pool_validation::valid_instance_field_token(
+            entry[3], class_info->declared_instance_size & 0xffu,
+            class_info->first_reference_token,
+            class_info->reference_count)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// The caller has validated the class records and CP entries. Resolving an
+// inherited method can require an imported package, which may load later.
+bool validate_internal_virtual_method_links(
+    const jcvm::Package &package, const jcvm::JC_Cap &cap,
+    const uint8_t *entries, const std::size_t count) {
+  for (std::size_t index = 0; index < count; ++index) {
+    const uint8_t *entry = entries + index * 4;
+    if ((entry[0] != JC_CP_TAG_CONSTANT_VIRTUALMETHODREF &&
+         entry[0] != JC_CP_TAG_CONSTANT_SUPERMETHODREF) ||
+        (entry[1] & 0x80u) != 0) {
       continue;
     }
-
+    const std::size_t token =
+        (static_cast<std::size_t>(entry[1]) << 8) | entry[2];
     jcvm::jc_cap_class_ref class_ref{};
     class_ref.internal_classref = HTONS(static_cast<uint16_t>(token));
-    if (entry[0] == JC_CP_TAG_CONSTANT_VIRTUALMETHODREF) {
-      const jcvm::jc_cap_virtual_method_ref_info method_ref{
-          class_ref, entry[3]};
-      jcvm::Class_Handler class_handler(package);
-      (void)class_handler.getMethodOffset(method_ref);
-      continue;
-    }
-
     if (entry[0] == JC_CP_TAG_CONSTANT_SUPERMETHODREF) {
+      const auto class_bytes = cap.getClass()->claz();
+      const auto *class_info =
+          reinterpret_cast<const jcvm::jc_cap_class_info *>(
+              class_bytes.data() + token);
       if (class_info->isObjectClass()) return false;
-      const jcvm::jc_cap_virtual_method_ref_info method_ref{
-          class_info->super_class_ref, entry[3]};
-      jcvm::Class_Handler class_handler(package);
-      (void)class_handler.getMethodOffset(method_ref);
+      class_ref = class_info->super_class_ref;
     }
+    const jcvm::jc_cap_virtual_method_ref_info method_ref{class_ref, entry[3]};
+    jcvm::Class_Handler class_handler(package);
+    (void)class_handler.getMethodOffset(method_ref);
   }
   return true;
 }
@@ -832,7 +841,7 @@ bool validate_cap_import_independent(const jcvm::JC_Cap &cap) {
       return false;
     }
   }
-  return true;
+  return validate_internal_class_references(cap, entries, entry_count);
 }
 
 CapImportValidation validate_cap_imports_single(uint8_t package_id) noexcept {
@@ -846,7 +855,7 @@ CapImportValidation validate_cap_imports_single(uint8_t package_id) noexcept {
     const jcvm::jc_cap_constant_pool_component *constant_pool =
         cap.getConstantPool();
     if (constant_pool != nullptr &&
-        !validate_internal_class_references(
+        !validate_internal_virtual_method_links(
             package, cap,
             reinterpret_cast<const uint8_t *>(constant_pool->constant_pool),
             HTONS(constant_pool->count))) {

@@ -791,6 +791,8 @@ def main() -> int:
         "external-superclass-without-import",
         "missing-static-field-component",
         "external-superclass-import-token-out-of-range",
+        "superclass-self-cycle", "superclass-mid-record",
+        "vtable-offset-out-of-range",
     )
     if args.mutation in load_rejection_mutations:
         log.unlink(missing_ok=True)
@@ -822,12 +824,7 @@ def main() -> int:
     if args.mutation == "load-header-aid-mismatch":
         commands.extend(("--load-package-aid-override",
                          "4A43416C6754657375"))
-    install_rejection_mutations = ("superclass-self-cycle",
-                                   "superclass-mid-record",
-                                   "vtable-offset-out-of-range")
-    if args.mutation in install_rejection_mutations:
-        log.unlink(missing_ok=True)
-    if args.mutation not in load_rejection_mutations + install_rejection_mutations:
+    if args.mutation not in load_rejection_mutations:
         commands.extend((
             "--expect-select-status", select_status,
             "--apdu", "B0E1000000", "--expect-apdu-response", process_status,
@@ -842,7 +839,7 @@ def main() -> int:
             "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
         ))
     run_kwargs = {"cwd": ROOT, "check": False}
-    if args.mutation in load_rejection_mutations + install_rejection_mutations:
+    if args.mutation in load_rejection_mutations:
         # The inner generic VPCD runner correctly reports that no applet can
         # start after LOAD rejection. Capture that expected negative result so
         # the outer acceptance check is the only PASS/FAIL summary shown.
@@ -851,22 +848,6 @@ def main() -> int:
     result = subprocess.run(
         [str(ROOT / "tools/test-pc-vpcd-applet"), *commands], **run_kwargs
     )
-    if args.mutation in install_rejection_mutations:
-        # RV-20261106-07 / CAPIN-07: INSTALL-time class-reference validation
-        # (stage 9) rejects a superclass that is not an earlier class record,
-        # before any bytecode of the package runs. (Before that check, the
-        # bounded superclass walks failed `new` with SecurityException.)
-        run_log = log.read_text(encoding="utf-8", errors="replace")
-        if not re.search(r"PC applet INSTALL failed stage=9 sw=6F00 vm=0000 "
-                         r"exception=0\b", run_log):
-            if result.stdout:
-                print(result.stdout, file=sys.stderr, end="")
-            print(f"HIERARCHY_CYCLE:FAIL mutation={args.mutation}",
-                  file=sys.stderr)
-            return 1
-        print(f"HIERARCHY_CYCLE:PASS mutation={args.mutation} "
-              "install_rejected stage=9 class_reference_validation")
-        return 0
     if args.mutation in load_rejection_mutations:
         run_log = log.read_text(encoding="utf-8", errors="replace")
         load_rejected = "ERROR: PC CAP LOAD data rejected" in run_log
@@ -875,7 +856,7 @@ def main() -> int:
         )
         stored_packages = int(registry_match.group(1)) if registry_match else -1
         registry_empty = stored_packages in (-1, 0)
-        if not load_rejected or not registry_empty or \
+        if result.returncode == 0 or not load_rejected or not registry_empty or \
                 "ERROR: PC applet INSTALL failed" in run_log:
             if args.mutation == "unknown-component-tag" and result.stdout:
                 print(result.stdout, file=sys.stderr, end="")
@@ -893,6 +874,9 @@ def main() -> int:
             reason = "package_aid_header_mismatch"
         elif args.mutation == "external-superclass-import-token-out-of-range":
             reason = "external_superclass_import_token_out_of_range"
+        elif args.mutation in ("superclass-self-cycle", "superclass-mid-record",
+                               "vtable-offset-out-of-range"):
+            reason = args.mutation.replace("-", "_")
         else:
             component_name = {
                 "missing-reference-location": "reference_location",

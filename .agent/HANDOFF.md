@@ -21,8 +21,10 @@ Updated 2026-11-21. See [TODO.md](../TODO.md) for active work and
 
 - Await Windows option 1/2 results for `v0.2-rc1` under
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
-- Move CAPIN-07 checks to LOAD via CAPIN-01. Preserve the SIO SensitiveResult
-  regression when revisiting the full-record bound in `resolveClassref`.
+- Verify CAPIN-07 LOAD rejection and recovery on hardware. Preserve the SIO
+  SensitiveResult regression when revisiting the full-record bound in
+  `resolveClassref`. Import-dependent virtual method linkage still runs at
+  INSTALL so packages can load before their dependencies.
 - Validate the RAM-pressure collector from `20261121-2154-ram-pressure-reclaim`
   on an empty normal max_crypto EE11 image when the required host access path
   is available. Run the full symmetric KAT through cleanup with serial and
