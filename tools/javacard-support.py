@@ -153,7 +153,7 @@ for _family in ("aes", "des"):
         )
 
 for _name in (
-    "DES_MAC8_NOPAD",
+    "DES_MAC4_NOPAD", "DES_MAC8_NOPAD",
     "DES_MAC4_ISO9797_M1", "DES_MAC8_ISO9797_M1",
     "DES_MAC4_ISO9797_M2", "DES_MAC8_ISO9797_M2",
     "DES_MAC4_PKCS5", "DES_MAC8_PKCS5",
@@ -417,6 +417,7 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("cipher_aes_ecb_pkcs5",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_PKCS5"),
     # Signature.OneShot.open(digest, cipher, padding): mirrors
     # tupleForAlgorithm() in choupi/src/native_signature.cpp.
+    (("signature_des_mac4_nopad",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_NOPAD ALG_NULL"),
     (("signature_des_mac8_nopad",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_NOPAD ALG_NULL"),
     (("signature_des_mac4_iso9797_m1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC4 PAD_ISO9797_M1 ALG_NULL"),
     (("signature_des_mac8_iso9797_m1",), ONESHOT_SIGNATURE_SECTION, "SIG_CIPHER_DES_MAC8 PAD_ISO9797_M1 ALG_NULL"),

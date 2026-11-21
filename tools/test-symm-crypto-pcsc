@@ -32,40 +32,8 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 vectors = module.cipher_vectors() + module.mac_vectors()
 with output.open("w", encoding="ascii") as stream:
-    labels = [
-        f"cipher_{algorithm}_{mode}"
-        for algorithm, (_, _, _) in {
-            1: (False, True, "nopad"), 2: (False, True, "m1"),
-            3: (False, True, "m2"), 4: (False, True, "pkcs5"),
-            5: (False, False, "nopad"), 6: (False, False, "m1"),
-            7: (False, False, "m2"), 8: (False, False, "pkcs5"),
-            13: (True, True, "nopad"), 14: (True, False, "nopad"),
-            22: (True, True, "m1"), 23: (True, True, "m2"),
-            24: (True, True, "pkcs5"), 25: (True, False, "m1"),
-            26: (True, False, "m2"), 27: (True, False, "pkcs5"),
-        }.items() for mode in ("encrypt", "decrypt")
-    ]
-    mac_labels = []
-    for algorithm in (2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 47, 48):
-        mac_labels.extend((f"mac_{algorithm}_sign", f"mac_{algorithm}_verify_valid",
-                           f"mac_{algorithm}_verify_invalid"))
-    mac_labels.extend((
-        "mac_3_long_repeated_sign",
-        "mac_3_long_update_then_sign",
-        "mac_49_cmac_sign",
-        "mac_49_cmac_verify_valid",
-        "mac_49_cmac_verify_invalid",
-        "mac_2_iv_sign",
-        "mac_2_iv_verify",
-        "mac_6_iv_sign",
-        "mac_6_iv_verify",
-        "mac_18_iv_sign",
-        "mac_18_iv_verify",
-    ))
-    for (command, expected, _), label in zip(vectors, labels + mac_labels):
+    for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
-if len(vectors) != 79 or len(labels) + len(mac_labels) != len(vectors):
-    raise SystemExit(f"expected 79 labeled vectors, got {len(vectors)}")
 print(f"VECTORS:PASS count={len(vectors)} file={output}")
 PY
 

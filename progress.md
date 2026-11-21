@@ -33080,3 +33080,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile unit tests passed. The normal max_crypto ARM image linked. The RP2350 filesystem simulator returned `019000` for `8016030000`, exercising component round trips, copy and clear. An initial test-app ternary emitted an unsupported int bytecode and returned 6F00. Changing the test selector to a short assignment resolved it.
 - Result: max_crypto selects all 162 existing flags. No new EC key-pair curve was added. The ARM build emitted dependency warnings, so the hardware cycle was skipped.
 - Artifacts/logs: `artifacts/logs/{build-arm-ec112,build-pc-ec112,test-ec112,vpcd-ec112}.log`.
+
+## 2026-11-21 Add native ALG_DES_MAC4_NOPAD 3 minutes
+
+- Step-Id: `20261121-1204-des-mac4-nopad`
+- When: '2026-11-21 12:02 CET' - '2026-11-21 12:05 CET'
+- Model: `GPT-6`
+- Change: Exposed DES MAC4 with no padding through the legacy Signature and parameterized factories in max_crypto. Reused the existing native DES CBC-MAC engine and four-byte truncation. Added profile and OneShot manifest entries and positive and negative vectors.
+- Validation: Profile tests passed 15/15 and the full symmetric simulator ran 111 vectors, including DES MAC4 sign, valid verify and altered-MAC rejection. The final ARM max_crypto build linked. Earlier wrapper attempts overlapped edits to the wrappers and were retried.
+- Result: DES MAC4 matches the independently calculated reference. The ARM build emitted dependency warnings and physical validation remains pending. The physical runner now uses the labels maintained with the vectors.
+- Artifacts/logs: `artifacts/logs/{build-arm-des-mac4,test-des-mac4,symm-crypto-kat-vpcd-20261121T110435Z}.log`.

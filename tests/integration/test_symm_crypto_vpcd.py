@@ -125,6 +125,7 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
     results = []
     message = AES_MAC_MESSAGE
     specs = {
+        1: (False, "nopad", 4, 8, False),
         2: (False, "nopad", 8, 8, False),
         3: (False, "m1", 4, 8, False), 4: (False, "m1", 8, 8, False),
         5: (False, "m2", 4, 8, False), 6: (False, "m2", 8, 8, False),

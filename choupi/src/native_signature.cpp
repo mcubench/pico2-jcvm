@@ -19,7 +19,7 @@
 
 namespace jcvm {
 
-#if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || \
+#if JC_SUPPORT_SIGNATURE_DES_MAC4_NOPAD || JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || \
     JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M1 || \
     JC_SUPPORT_SIGNATURE_DES_MAC8_ISO9797_M1 || \
     JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M2 || \
@@ -476,6 +476,9 @@ bool supportedAlgorithm(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_HMAC_RIPEMD160
   case 29: return true;
 #endif
+#if JC_SUPPORT_SIGNATURE_DES_MAC4_NOPAD
+  case 1: return true;
+#endif
 #if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD
   case 2: return true;
 #endif
@@ -643,6 +646,7 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
   case 38: digest = 6; cipher = 5; padding = 0; break;
 #endif
+  case 1: cipher = kSignatureCipherDesMac4; padding = kPaddingNoPad; break;
   case 2: cipher = kSignatureCipherDesMac8; padding = kPaddingNoPad; break;
   case 3: cipher = kSignatureCipherDesMac4; padding = kPaddingIso9797M1; break;
   case 4: cipher = kSignatureCipherDesMac8; padding = kPaddingIso9797M1; break;
@@ -667,7 +671,7 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
 }
 
 uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
-  for (uint8_t algorithm : {uint8_t(2), uint8_t(3), uint8_t(4), uint8_t(5),
+  for (uint8_t algorithm : {uint8_t(1), uint8_t(2), uint8_t(3), uint8_t(4), uint8_t(5),
                             uint8_t(6), uint8_t(7), uint8_t(8), uint8_t(18),
                             uint8_t(19), uint8_t(20), uint8_t(39), uint8_t(40),
                             uint8_t(41), uint8_t(42), uint8_t(47), uint8_t(48),
@@ -934,7 +938,7 @@ std::vector<unsigned char> runMac(
   if (algorithm >= 24 && algorithm <= 29)
     return computeHmac(algorithm, keyBytes, input);
 #endif
-#if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || \
+#if JC_SUPPORT_SIGNATURE_DES_MAC4_NOPAD || JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || \
     JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M1 || \
     JC_SUPPORT_SIGNATURE_DES_MAC8_ISO9797_M1 || \
     JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M2 || \
