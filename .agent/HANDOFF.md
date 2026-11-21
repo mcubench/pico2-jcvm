@@ -1,6 +1,6 @@
 # Handoff — next steps only
 
-Updated: 2026-11-21 15:03 CET.
+Updated: 2026-11-21 15:14 CET.
 
 ## Current state
 - **No live campaign** (2026-11-21 12:26). MEM-01 T8 option 1 PASSED on 07E7 (9228c583, 1,901 methods over two segments, `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/`). 07E7 still holds that card state; reader `... (07E74C5D7A038DEC) 00 00`.
@@ -9,10 +9,10 @@ Updated: 2026-11-21 15:03 CET.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work
-- 07E7 is in use for focused native crypto development validation. Storage-preserving cycle on the DRBG tree passed (UF2 SHA-256 `7f6ea308a86888580717523cc89faf8070da00fcb1bf66a09274a5bde67706ad`). Use the exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 01 00`. F42D's RSA replay remains live, so avoid any shared PC/SC refresh.
+- 07E7 exhausted its object store during the broad probe, and removal of the temporary probe failed. Development validation switched to EE11. Storage-preserving cycle on the DRBG tree passed (UF2 SHA-256 `7f6ea308a86888580717523cc89faf8070da00fcb1bf66a09274a5bde67706ad`). Use the exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 01 00`. Check current processes and F42D ownership before any shared PC/SC refresh.
 - Native SHA3, DES MAC4, CFB/XTS, GCM/CCM, CRC16/32, pseudo-random and preseeded DRBG commits landed. The max_crypto simulator suite passed 206 vectors. Physical crypto KAT is still in progress.
-- On-card RSA 3072/4096 development runs exercise two keypair types per modulus. See `artifacts/logs/test-rsa3072-hardware.log`. The four-byte physical preflight APDUs initially failed with 6F00. Supplying an explicit Le made the preflight pass end to end.
-- Remaining implementations include TRNG with a vetted physical entropy interface and XDH with the target named-parameter key ABI. The wider AES MAC vectors are requested in `.agent/EXT_REQUESTS.md`. The user removed the 192- and 256-bit block CBC/ECB Cipher IDs and the ISO14888/ISO9796 RSA Cipher IDs from scope. Existing 128-bit AES block and MAC IDs accept 192- and 256-bit AES keys.
+- On-card RSA and RSA-CRT 3072 generation passed on 07E7. The two 4096-bit hardware runs are deferred at user request. See `artifacts/logs/test-rsa3072-hardware.log`. The four-byte physical preflight APDUs initially failed with 6F00. Supplying an explicit Le made the preflight pass end to end.
+- Both TRNG factories passed short physical checks on EE11. XDH still needs the named-parameter key ABI wired into the runtime. The wider AES MAC vectors are requested in `.agent/EXT_REQUESTS.md`. The user removed the 192- and 256-bit block CBC/ECB Cipher IDs and the ISO14888/ISO9796 RSA Cipher IDs from scope. Existing 128-bit AES block and MAC IDs accept 192- and 256-bit AES keys.
 - MessageDigest streaming physical validation is pending. The ARM max_crypto build links, but the pinned CHOUPI Rust OS emits warnings and the warning-free flash gate applies. Once clear, identify a free board and run the full JCVM cycle, then validate the 5 KiB and multipart digest probes with per-APDU flash telemetry. See step `20261121-1119-digest-streaming`.
 - Waiting on `WIN-MAXCRYPTO-FLASH-A266B836` (`.agent/EXT_REQUESTS.md`).
 - OOM T9 fix committed (`20261120-0419-oom-small-handles-reserve`); the live run is its end-to-end check.

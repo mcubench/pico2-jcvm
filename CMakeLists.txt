@@ -21,6 +21,8 @@ option(CHOUPI_DEBUG_PERSISTENT_GC
   "Exercise experimental persistent tag reclamation after each applet APDU" OFF)
 option(CHOUPI_ENABLE_OBJECT_DELETION
   "Enable JCSystem object-deletion requests on the Pico (normal build; SPEC INV-24)" ON)
+option(CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC
+  "Diagnostic: fail one allocation in every fourth recoverable reclaim pass" OFF)
 option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
 option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 set(CHOUPI_DEBUG_SERIAL_WAIT_MS "0" CACHE STRING
@@ -169,6 +171,9 @@ if(CHOUPI_VM_SOURCES)
   target_link_libraries(choupi_vm_core PRIVATE pico_mbedtls_headers)
   if(JC_SUPPORT_SECURE_RANDOM OR JC_SUPPORT_RANDOM_PRESEEDED_DRBG OR JC_SUPPORT_RANDOM_PSEUDO)
     target_link_libraries(choupi_vm_core PRIVATE pico_rand_headers)
+  endif()
+  if(JC_SUPPORT_RANDOM_TRNG)
+    target_link_libraries(choupi_vm_core PRIVATE hardware_sync_headers hardware_timer_headers)
   endif()
   if(JC_SUPPORT_SHA256)
     target_link_libraries(choupi_vm_core PRIVATE pico_sha256_headers)
@@ -325,7 +330,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(JC_SUPPORT_SHA256)
     target_link_libraries(pico2_choupi PRIVATE pico_sha256)
   endif()
-  if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA256 OR
+  if(JC_SUPPORT_RANDOM_TRNG OR JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA256 OR
      JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512 OR
      JC_SUPPORT_SIGNATURE_HMAC_SHA1 OR JC_SUPPORT_SIGNATURE_HMAC_SHA_256 OR
      JC_SUPPORT_SIGNATURE_HMAC_SHA_384 OR JC_SUPPORT_SIGNATURE_HMAC_SHA_512 OR
@@ -387,6 +392,10 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(CHOUPI_DEBUG_CCID_APPLET)
     target_compile_definitions(pico2_choupi PRIVATE
       CHOUPI_DEBUG_CCID_APPLET=1)
+  endif()
+  if(CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC)
+    target_compile_definitions(pico2_choupi PRIVATE
+      CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC=1)
   endif()
   if(CHOUPI_DEBUG_PERSISTENT_GC)
     target_compile_definitions(choupi_vm_core PRIVATE

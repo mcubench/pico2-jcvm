@@ -29,6 +29,10 @@ AES-CTR profiles. Its generated manifest is authoritative for the selected
 JCAlgTest capabilities; it does not imply support for every algorithm defined
 by Java Card.
 
+The RP2350 max_crypto build exposes `RandomData.ALG_TRNG` through both
+RandomData factories. The PC simulator reports this algorithm unavailable
+because it has no RP2350 entropy peripheral.
+
 ## Known exclusions and limits
 
 - Extended-length APDUs and T=1 waiting-time extension are not implemented.

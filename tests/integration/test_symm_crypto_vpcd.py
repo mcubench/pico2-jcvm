@@ -282,11 +282,12 @@ def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
     ]
 
 
-def random_vectors() -> list[tuple[bytes, bytes, str]]:
+def random_vectors(hardware: bool = False) -> list[tuple[bytes, bytes, str]]:
+    algorithms = (1, 2, 3, 4) if hardware else (1, 2, 4)
     return [
         (bytes((0x80, 0x30, algorithm, operation, 0)), b"\x01\x90\x00",
          f"RandomData algorithm {algorithm} operation {operation}")
-        for algorithm in (1, 2, 4) for operation in (0, 1)
+        for algorithm in algorithms for operation in (0, 1)
     ]
 
 

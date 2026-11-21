@@ -4,9 +4,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_host_usb_access
 require_command timeout
-[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-pcsc '<exact PC/SC reader name>'"
+[[ $# -eq 1 || $# -eq 2 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-pcsc '<exact PC/SC reader name>' [label-substring]"
 
 reader_name="$1"
+label_filter="${2:-}"
 build_dir="${repo_root}/build/symm-crypto-probe"
 vectors="${build_dir}/physical-vectors.tsv"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
@@ -20,18 +21,22 @@ timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-120}"
 [[ -f "${build_dir}/output/symm-crypto-probe.cap" ]] || die "probe CAP missing; run ./tools/build-symm-crypto-probe"
 [[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
 
-python3 - "${repo_root}" "${vectors}" <<'PY'
+python3 - "${repo_root}" "${vectors}" "${label_filter}" <<'PY'
 import importlib.util
 import sys
 from pathlib import Path
 
 root, output = Path(sys.argv[1]), Path(sys.argv[2])
+label_filter = sys.argv[3]
 source = root / "tests/integration/test_symm_crypto_vpcd.py"
 spec = importlib.util.spec_from_file_location("symm_crypto_vectors", source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 vectors = (module.cipher_vectors() + module.mac_vectors() + module.sha3_vectors() +
-           module.checksum_vectors() + module.gcm_vectors() + module.ccm_vectors() + module.random_vectors())
+           module.checksum_vectors() + module.gcm_vectors() + module.ccm_vectors() + module.random_vectors(hardware=True))
+vectors = [case for case in vectors if label_filter in case[2]]
+if not vectors:
+    sys.exit(f"No physical vectors match {label_filter!r}")
 with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")

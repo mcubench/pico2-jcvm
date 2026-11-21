@@ -33320,3 +33320,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Change: Applied the user directive dropping Cipher.ALG_RSA_ISO14888 and Cipher.ALG_RSA_ISO9796. Removed their request for compatibility inputs.
 - Validation: Inspected the native Cipher dispatch and profile configuration for these legacy IDs.
 - Result: Neither legacy Cipher ID has a newly added implementation. The existing ISO9796-2 Signature algorithms are outside this scope change.
+
+## 2026-11-21 Implement RP2350 RandomData TRNG
+
+- Step-Id: `20261121-1514-random-trng`
+- When: '2026-11-21 15:03 CET' - '2026-11-21 15:14 CET'
+- Model: `GPT-6`
+- Change: Added ARM max_crypto ALG_TRNG via the RP2350 boot ROM sampling design. Reads fresh oscillator samples under the SDK random lock, conditions them with Mbed TLS SHA-256, rejects stuck and repeated sample blocks, and fails on timeout. The PC simulator returns no such algorithm. Added a filter for focused physical vectors.
+- Validation: ARM max_crypto built without warnings, profile tests passed 15/15, and the simulator passed 206 vectors excluding the hardware-only TRNG. On EE116F37C7E4A04E the full JCVM cycle passed and both TRNG factory probes passed in 41 and 45 ms with cleanup PASS.
+- Result: The initial hardware-health-filter sampling configuration produced 6F00 for TRNG. A broad physical run also failed partway through XTS on 07E74C5D7A038DEC and could not remove its temporary probe. Switched to EE11 for focused validation. On EE11 pseudo, secure and preseeded DRBG both passed on the earlier image. Long hardware validation is deferred per user instruction.
+- Artifacts/logs: UF2 SHA-256 `a7ebc9390c3cac22821359b197c23040882900a791e3b4625a67686d18e0c490`; `artifacts/logs/{build-arm-trng-bootrom,cycle-trng-bootrom-ee11,test-trng-bootrom-ee11,test-trng-simulator,test-trng-hardware,test-random-ee11}.log`.
