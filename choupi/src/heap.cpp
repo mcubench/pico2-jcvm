@@ -32,6 +32,7 @@
 #include "jc_handlers/jc_cp.hpp"
 #include "jc_types/jc_array.hpp"
 #include "../../src/vm_diagnostics.h"
+#include "../../src/object_deletion_policy.hpp"
 
 #include <cstring>
 #include <cstdio>
@@ -64,11 +65,10 @@ constexpr uint16_t kMaximumLocalArrayHandles = 0x3fff;
 // SystemException.NO_RESOURCE, which the applet can observe (OOM T9). The
 // largest native need measured is about 5.4 KB for an RSA-3072 CRT private
 // operation; 16 KB also covers RSA-4096 and key generation.
-constexpr uint32_t kJavaAllocationReserveBytes = 16u * 1024u;
-
 void ensureJavaAllocationReserve() {
 #ifndef PC_VERSION
-  if (!choupi_transient_memory_at_least(kJavaAllocationReserveBytes)) {
+  if (!choupi_transient_memory_at_least(
+          pico2_jcvm::kJavaAllocationReserveBytes)) {
     Context::getActiveContext().setPendingSystemExceptionReason(
         5); // SystemException.NO_RESOURCE
     throw Exceptions::SystemException;

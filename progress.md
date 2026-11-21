@@ -33549,3 +33549,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Hardware first returned `6F00` on AES XTS 512, 31 bytes, operation 1. All later test vectors failed. Overlay usage plateaued at 179 files and 2,983 of 98,304 bytes, with zero sync and journal bytes on the late failures. The serial monitor captured `*** PANIC ***` and `Out of memory` at cleanup after an authenticated DELETE APDU returned `9000`. Cleanup exited 1 with `SCARD_E_NOT_TRANSACTED`. Final GP inventory is unverified.
 - Decision: Investigate runtime heap allocation and reclamation near the cutoff and the cleanup panic. Keep the full physical KAT open.
 - Artifacts/logs: `artifacts/build-audit/{replay-ee11-kat.py,kat-prefix-vpcd.log,kat-prefix-overlay.log,symm-kat-ee11-rerun.log,symm-kat-ee11-rerun-serial.log}`.
+
+## 2026-11-21 Reclaim Java heap handles under runtime RAM pressure 3
+
+- Step-Id: `20261121-2154-ram-pressure-reclaim`
+- Task: PROFILE-01 / EE11 symmetric KAT RAM pressure
+- When: '2026-11-21 21:51 CET' - '2026-11-21 21:54 CET'
+- Model: `gpt-6`
+- Change: At the post-APDU safe point, the normal target can collect unreachable RAM handles when free RAM falls below 24 KiB. This gives the existing 16 KiB Java allocation reserve 8 KiB of headroom. The coordinated collector checks retained roots and defers when a persistent transaction is active. A pass that fails to restore headroom backs off for eight eligible APDU boundaries. This path does not request persistent object deletion.
+- Validation: Normal max_crypto ARM build passed without warnings, with 582,764 bytes of firmware-window headroom. The normal ELF omits the new diagnostic string. Deletion policy tests passed 20 checks, retained-context RMI registry tests passed, and the symmetric VPCD suite passed 206 vectors plus ATR and SELECT. Fixture verification passed for 86 files. `git diff --check` passed.
+- Result: The RMI suite exercised the coordinated collector's retained, foreign, and ambiguous-root cases. VPCD exercised shared behavior. The target-only trigger and its effect on the physical cutoff and GP cleanup remain unverified. No flash measurements were taken because the required hardware-access invocation is unavailable in this session.
+- Decision: Verify the trigger with the full physical KAT and cleanup on EE11, retaining the existing persistence telemetry.
+- Artifacts/logs: `artifacts/build-audit/{build-arm-ram-pressure.log,test-rmi-registry-ram-pressure.log,test-symm-vpcd-ram-pressure.log}`.

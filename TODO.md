@@ -12,7 +12,7 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 - Review Windows option 1/2 results for `v0.2-rc1` and get user authorization before publishing. See WIN-MAXCRYPTO-RC-V0.2-RC1.
 - Finish CAPIN-01/07 LOAD-time validation and the remaining CAPIN-05/06 negative fixtures.
-- Diagnose EE11 runtime RAM exhaustion during the physical symmetric KAT. Instrument the APDU prefix around the XTS cutoff and the cleanup panic, identify retained allocations, then rerun the full sweep. See `20261121-2149-ee11-kat-oom`.
+- Verify RAM-pressure heap reclamation on EE11 with the full symmetric KAT and GP cleanup. Capture APDU flash traffic and use the diagnostic heap log if failures recur. See `20261121-2154-ram-pressure-reclaim`.
 - Schedule BOOTSEL and power-loss acceptance when an identified board is available.
 
 ## CAP and interpreter safety

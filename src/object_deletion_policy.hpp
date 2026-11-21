@@ -4,6 +4,12 @@
 
 namespace pico2_jcvm {
 
+// Keep space for native allocations and reachability tracing. Start reclaiming
+// RAM handles before the Java allocation guard starts rejecting requests.
+inline constexpr uint32_t kJavaAllocationReserveBytes = 16u * 1024u;
+inline constexpr uint32_t kHeapReclaimWatermarkBytes =
+    kJavaAllocationReserveBytes + 8u * 1024u;
+
 // Leave enough headroom for the largest expected persistent-write burst in a
 // single APDU; the collector only runs after the APDU reaches a safe point.
 inline constexpr uint32_t kObjectDeletionLowWatermarkBytes = 20u * 1024u;

@@ -23,10 +23,11 @@ Updated 2026-11-21. See [TODO.md](../TODO.md) for active work and
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
 - Move CAPIN-07 checks to LOAD via CAPIN-01. Preserve the SIO SensitiveResult
   regression when revisiting the full-record bound in `resolveClassref`.
-- Localize EE11 heap pressure before the symmetric KAT cutoff. The overlay
-  simulator passed the same prefix and hardware flash had 95,321 bytes free.
-  Capture heap allocations and reclamation around the first `6F00` and the
-  cleanup panic. See `artifacts/build-audit/symm-kat-ee11-rerun-serial.log`.
-  RSA/RSA-CRT 4096 physical runs remain deferred at user request.
+- Validate the RAM-pressure collector from `20261121-2154-ram-pressure-reclaim`
+  on an empty normal max_crypto EE11 image when the required host access path
+  is available. Run the full symmetric KAT through cleanup with serial and
+  flash telemetry. If the cutoff recurs, use `PICO2_DEBUG_HEAP_GC=1` for the
+  allocation and collection samples. RSA/RSA-CRT 4096 physical runs remain
+  deferred at user request.
 - XDH is waiting on the named-parameter key ABI inputs
   (CRYPTO-XDH-ABI-20261121).

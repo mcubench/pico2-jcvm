@@ -81,6 +81,7 @@ extern "C" uint8_t choupi_compact_persistent_memory(void);
 extern "C" uint32_t choupi_persistent_tombstones_since_compaction(void);
 extern "C" void choupi_fs_erase_journal_ahead(uint32_t bytes);
 extern "C" uint32_t choupi_available_transient_memory_bytes(void);
+extern "C" bool choupi_transient_memory_at_least(uint32_t bytes);
 #endif
 #if defined(PC_VERSION) && defined(CHOUPI_PC_RP2350_FS_OVERLAY)
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
@@ -1438,11 +1439,9 @@ void collect_heap_after_apdu() {
     return;
   }
 
-  // The heap is collected only when the applet asked for it
-  // (JCSystem.requestObjectDeletion). Collecting after every APDU made each
-  // command's duration depend on the live-object count (about 0.9 s late in a
-  // JCAlgTest run). Builds without object deletion keep the per-APDU
-  // collection, their only collector.
+  // Keep reclamation off the hot path until an applet requests deletion or
+  // a resource runs low. The builds without object deletion retain their
+  // per-APDU collector.
 #ifdef CHOUPI_ENABLE_OBJECT_DELETION
   jcvm::Context *const request_context =
       choupi_take_object_deletion_request_context();
@@ -1475,6 +1474,33 @@ void collect_heap_after_apdu() {
 #endif
   if (!collection_requested) {
     (void)jcvm::Heap::reclaimTransientGlobalArrays();
+#ifdef CHOUPI_ENABLE_OBJECT_DELETION
+    static pico2_jcvm::AutomaticObjectDeletionThrottle heap_reclaim_throttle;
+    heap_reclaim_throttle.on_apdu_boundary();
+    if (heap_reclaim_throttle.cooldown_apdus == 0 &&
+        !jcvm::FlashMemory_Handler::persistentWriteTransactionActive() &&
+        !choupi_transient_memory_at_least(
+            pico2_jcvm::kHeapReclaimWatermarkBytes)) {
+      // Trace all retained contexts before dropping handles. This sweep does
+      // not erase persistent records or request Java Card object deletion.
+      try {
+        const jcvm::RecoverableAllocationScope recoverable;
+        const auto summary = jcvm::Context::collectRetainedHeaps();
+        const bool headroom_restored = summary.complete &&
+            choupi_transient_memory_at_least(
+                pico2_jcvm::kHeapReclaimWatermarkBytes);
+        heap_reclaim_throttle.completed(headroom_restored ? 1 : 0);
+#ifdef CHOUPI_DEBUG_HEAP_GC
+        std::printf("CHOUPI:HEAP_GC_PRESSURE complete=%u arrays=%lu "
+                    "instances=%lu\r\n", static_cast<unsigned>(summary.complete),
+                    static_cast<unsigned long>(summary.arrays_reclaimed),
+                    static_cast<unsigned long>(summary.instances_reclaimed));
+#endif
+      } catch (const std::bad_alloc &) {
+        heap_reclaim_throttle.completed(0);
+      }
+    }
+#endif
     return;
   }
 
