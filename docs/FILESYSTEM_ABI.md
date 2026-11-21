@@ -86,17 +86,20 @@ instead of indexing beyond the record.
 
 ## Sync, transactions, and durability
 
-- Pico `fs_write` and erase operations modify the RAM overlay. They are visible
-  to later reads immediately but are not durable until `fs_sync()` returns
-  zero. Sync writes a new copy-on-write snapshot and validates it before
-  switching the active generation. On failure it returns nonzero and the
-  previously committed snapshot remains the recovery source.
-- During a Java Card persistent-write transaction, `fs_sync()` returns zero
-  without committing while the transaction is active. Transaction commit
-  disables that deferral and performs the snapshot sync. Rollback restores the
-  transaction's saved records and syncs the restored state. Therefore the
-  transaction commit result, not an in-transaction `fs_sync()` result, is the
-  durability boundary.
+- Pico writes and erases update the RAM overlay and are immediately visible to
+  reads. Outside a transaction, `fs_sync()` skips flash writes when the overlay
+  is unchanged, normally appends a journal entry for changed records, and
+  falls back to publishing a copy-on-write snapshot in the alternate slot.
+  Recovery restores a validated snapshot and replays its journal.
+- Ordinary `fs_sync()` returns zero without publishing while a persistent-write
+  transaction is active. Commit ends deferral and syncs the pending updates.
+  Rollback restores saved records. Use the transaction result to determine
+  whether the transaction completed.
+- Pico's `fs_commit_tag()` publishes one record or its deletion independently,
+  for operations such as the OwnerPIN try counter. If it cannot append the
+  record to the journal, it can fall back to a full sync outside a transaction.
+  It returns an I/O error inside a transaction rather than publishing other
+  pending changes.
 - The PC emulator's `fs_sync()` shim is a no-op returning zero: OS filesystem
   writes synchronously update the process's emulated flash image. This does
   not checkpoint that image to a host file. Disk checkpointing is enabled by

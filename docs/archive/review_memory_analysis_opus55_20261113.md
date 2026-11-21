@@ -7,9 +7,9 @@ changed, built, flashed or executed for this review.** Status labels below:
 *confirmed (log)* = defect is visible in archived serial output;
 *inferred* = consistent with evidence but not reproduced.
 
-Backlog item: [MEM-01 in TODO.md](../TODO.md#mem-01). Related history:
-[resource-01-implementation-plan.md](archive/resource-01-implementation-plan.md),
-[.agent/QKB.md](../.agent/QKB.md) RESOURCE-01 sections.
+Backlog item: [MEM-01 in TODO.md](../../TODO.md#mem-01). Related history:
+[resource-01-implementation-plan.md](../archive/resource-01-implementation-plan.md),
+[.agent/QKB.md](../../.agent/QKB.md) RESOURCE-01 sections.
 
 ## 1. Summary
 

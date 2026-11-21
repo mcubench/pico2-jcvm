@@ -3,11 +3,11 @@
 Date: 2026-11-10. Reviewer: Claude Fable 5.2. Scope: static review of how
 untrusted inputs are handled in GlobalPlatform LOAD, INSTALL, the runtime CAP
 component resolvers and the bytecode interpreter. The trust boundary is the one
-in [CAP_EXECUTION_TRUST_MODEL.md](CAP_EXECUTION_TRUST_MODEL.md): uploaded CAP
+in [CAP_EXECUTION_TRUST_MODEL.md](../CAP_EXECUTION_TRUST_MODEL.md): uploaded CAP
 bytes (package IDs 56–63) and LOAD/INSTALL APDU fields are hostile even after
 SCP03.
 
-Backlog tasks: [CAPIN-01 … CAPIN-12](../TODO.md#cap-input-handling-review--2026-11-10).
+Backlog tasks: [CAPIN-01 … CAPIN-12](../../TODO.md#cap-input-handling-review--2026-11-10).
 
 ## Method and evidence limits
 

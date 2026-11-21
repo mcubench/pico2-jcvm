@@ -10,6 +10,10 @@ The v4 filesystem payload uses a fixed 1 KiB slot-occupancy bitmap, one compact
 bounded at 96 KiB; at higher index occupancy, a dynamic limit keeps the total
 payload inside the smaller snapshot slot and metadata sector. The v2/v3
 10-byte slot-number records remain readable and are migrated copy-on-write.
+The active snapshot is followed by an append journal. Sync appends dirty
+records when possible and publishes a new snapshot in the alternate slot when
+the journal cannot be used. Boot replays the journal for the selected
+snapshot.
 
 On boot, the firmware first validates snapshots in the new slots. If neither
 can be restored, it checks the old JFS2 slots at `0x100000` and `0x140000`,

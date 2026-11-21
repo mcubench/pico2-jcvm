@@ -3,7 +3,14 @@
 Completed 7 November 2026 under explicit user authorization. No firmware
 runtime, native API implementation, or external CAP/JAR/runner bytes changed.
 
-## Final layout
+For new runs, use the unchanged 1.8.5/jc305 CAP and the
+`jcalgtest.client.1.8.5-20261121` host client. See the
+[fixture catalog](../tests/fixtures/manifest.json) and
+[physical runbook](jcalgtest-physical-runbook.md) for current inputs.
+The inventory and verification below describe the migration and its
+follow-up fixture additions.
+
+## Layout
 
 - `tests/unit/`: native host tests and support-catalog tests.
 - `tests/integration/`: emulator/APDU suites and shared Python helpers.
@@ -30,7 +37,7 @@ runtime, native API implementation, or external CAP/JAR/runner bytes changed.
 
 ## Input provenance and preservation
 
-`tests/fixtures/manifest.json` records 83 files with byte counts and SHA-256
+The migration manifest recorded 83 files with byte counts and SHA-256
 hashes: 78 supplied suite/legacy assets, two simulator references and three
 additional historical reference CSVs. No input was downloaded.
 JCAlgTest 1.8.4 CAP SHA-256 (historical):
@@ -58,7 +65,7 @@ logs are archived under `artifacts/results/testing-data-migration-20261107/`.
 Historical review/progress/archive paths remain historical evidence; active
 tool consumers no longer depend on the former root directory or tools/tests.
 
-## Verification and limits
+## Migration verification and limits
 
 - Fixture verification passes all 81 records, including 48 unchanged API CAPs.
 - Catalog integrity tests pass (2); Java Card support/comparison tests pass (14).

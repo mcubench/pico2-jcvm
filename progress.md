@@ -33501,3 +33501,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Compared algorithm families with the profile configuration and native elliptic-curve dispatch, checked the link target, and ran `git diff --check`.
 - Result: The table documents the ECC operations the runtime implements and identifies ECIES as unavailable.
 - Artifacts/logs: None. No runtime tests were rerun.
+
+## 2026-11-21 Archive reviews and refresh current documentation 2
+
+- Step-Id: `20261121-1905-refresh-docs`
+- Task: Documentation refresh
+- When: '2026-11-21 19:03 CET' - '2026-11-21 19:05 CET'
+- Model: `gpt-6`
+- Change: Moved 13 reviews and dated snapshots into `docs/archive/` and updated active backlog links. Refreshed architecture, CAP trust, filesystem durability, the supported profile and the physical JCAlgTest runbook. Marked old Windows package guides as historical and linked the current request.
+- Validation: Checked moved-document links and backlog anchors, ran `bash -n` on the runbook examples, and ran `git diff --check` and `./tools/fixture-path --verify`.
+- Result: Checks passed. Fixture verification covered 86 records, including 48 API CAPs. No firmware build, flash, PC/SC run or flash measurement was performed for this documentation step.
+- Decision: Use the active runbook for new physical runs and the archived reviews as historical evidence. Physical acceptance status remains in the backlog and progress records.
+- Artifacts/logs: none

@@ -6,7 +6,7 @@
 
 The project turned a legacy Java Card interpreter into an experimental, host-accessible smart-card platform on the Raspberry Pi Pico 2. It now demonstrates CAP installation, applet execution, persistent state, standard tooling access and substantial native cryptography. The remaining work is concentrated in correctness across applet boundaries, durable recovery, resource limits and repeatable acceptance.
 
-The original assignment was narrower: load the supplied JCAlgTest 1.8.2 CAP, run its matching client, produce a truthful algorithm-support CSV and reproduce the result after power removal. Returning “unsupported” was acceptable. The starting interpreter lacked the APDU path, lifecycle, loader, exception handling and API behavior needed even for that modest outcome. Thus, the central challenge was completing a card runtime around an interpreter, rather than simply compiling existing firmware for a new processor. [Original scope and acceptance](../plan.md)
+The original assignment was narrower: load the supplied JCAlgTest 1.8.2 CAP, run its matching client, produce a truthful algorithm-support CSV and reproduce the result after power removal. Returning “unsupported” was acceptable. The starting interpreter lacked the APDU path, lifecycle, loader, exception handling and API behavior needed even for that modest outcome. Thus, the central challenge was completing a card runtime around an interpreter, rather than simply compiling existing firmware for a new processor. [Original scope and acceptance](../../plan.md)
 
 Development subsequently expanded into symmetric and asymmetric cryptography, multi-package management, transactions, garbage collection, inter-applet services, parser hardening, profile generation and Windows delivery. Those additions explain why extensive working functionality coexists with a substantial open backlog.
 
@@ -19,7 +19,7 @@ Development subsequently expanded into symmetric and asymmetric cryptography, mu
 | Is it ready for security-sensitive production use? | The records do not establish that. Isolation, recovery and private-operation hardening remain material gates. |
 | Where should the next investment go? | Close correctness and acceptance gaps before expanding algorithm or platform scope. |
 
-The strongest recent integration result is the complete **466-call Crypto emulator sweep**: 304 OK, 161 expected unsupported and one documented test-key incompatibility; no wrong results, transport errors or missing calls. It took 1:45:54 including upload and cleanup. That establishes useful breadth on the host backend, while leaving hardware-specific storage and transport acceptance open. [Current backlog, EMU-01](../TODO.md#emu-01)
+The strongest recent integration result is the complete **466-call Crypto emulator sweep**: 304 OK, 161 expected unsupported and one documented test-key incompatibility; no wrong results, transport errors or missing calls. It took 1:45:54 including upload and cleanup. That establishes useful breadth on the host backend, while leaving hardware-specific storage and transport acceptance open. [Current backlog, EMU-01](../../TODO.md#emu-01)
 
 The project's status is best described as **a demonstrated experimental platform undergoing consolidation**. Feature count alone would overstate readiness; calling it merely an unfinished port would understate the achieved integration.
 
@@ -43,9 +43,9 @@ The implemented system has these main responsibility areas:
 
 The request path is: **host client → OS PC/SC → CCID or VPCD → card manager/JCRE → interpreter → native APIs**, with storage supporting installation and persistent objects.
 
-A consequential departure from the plan is the platform foundation. The plan described porting the old Rust OS, including Cortex-M33 hardware memory compartments. The current ARM link instead assembles the interpreter with native Pico services; a full isolated Rust kernel port is not established. Software firewall checks should therefore not be presented as proof of hardware-enforced applet isolation. The ARM-only full-runtime target is visible in [CMakeLists.txt](../CMakeLists.txt); common filesystem behavior is documented in the [filesystem contract](FILESYSTEM_ABI.md).
+A consequential departure from the plan is the platform foundation. The plan described porting the old Rust OS, including Cortex-M33 hardware memory compartments. The current ARM link instead assembles the interpreter with native Pico services; a full isolated Rust kernel port is not established. Software firewall checks should therefore not be presented as proof of hardware-enforced applet isolation. The ARM-only full-runtime target is visible in [CMakeLists.txt](../../CMakeLists.txt); common filesystem behavior is documented in the [filesystem contract](../FILESYSTEM_ABI.md).
 
-Another correction concerned API implementation placement. Early crypto work used generated Java providers. A 25 October audit identified that as violating the required native boundary. Subsequent work moved digest, MAC, key and cipher behavior into native dispatch. This was architectural rework, not just algorithm expansion. The lesson is to settle implementation ownership before multiplying features across generated providers and native code. [Audit and migration records](../progress.md)
+Another correction concerned API implementation placement. Early crypto work used generated Java providers. A 25 October audit identified that as violating the required native boundary. Subsequent work moved digest, MAC, key and cipher behavior into native dispatch. This was architectural rework, not just algorithm expansion. The lesson is to settle implementation ownership before multiplying features across generated providers and native code. [Audit and migration records](../../progress.md)
 
 The existing architecture narrative contains historical descriptions of provider paths and older limits. This review gives newer task records and source inspection precedence over those descriptions.
 
@@ -53,7 +53,7 @@ The existing architecture narrative contains historical descriptions of provider
 
 ## Page 3 of 8 — How implementation unfolded
 
-The record covers 9 October–3 November 2026. Its entries are not strictly chronological: later material appears both near the beginning and at the end. The sequence below is reconstructed from dated experiments and outcomes, rather than file order. [Implementation history](../progress.md)
+The record covers 9 October–3 November 2026. Its entries are not strictly chronological: later material appears both near the beginning and at the end. The sequence below is reconstructed from dated experiments and outcomes, rather than file order. [Implementation history](../../progress.md)
 
 | Period | Main engineering focus | What it established |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ The record covers 9 October–3 November 2026. Its entries are not strictly chro
 
 The progression was iterative. A broad client run exposed a symptom; a focused APDU, VM trace or host test narrowed it; a small fix followed; builds and available hardware checks supplied evidence. Source reviews also interrupted this loop to identify structural faults before more feature work accumulated.
 
-The reviews were valuable. On 13 October, findings included a native ABI mismatch, JNI and ROM-mask output from different generations, and incorrect lifecycle tokens. A later review identified overlapping CAP/filesystem regions. These were foundational integration problems that could make unrelated APIs appear broken. [Early review](../artifacts/reviews/code-review-20261013.md), [layout review](../artifacts/reviews/functionality-review-20261021.md)
+The reviews were valuable. On 13 October, findings included a native ABI mismatch, JNI and ROM-mask output from different generations, and incorrect lifecycle tokens. A later review identified overlapping CAP/filesystem regions. These were foundational integration problems that could make unrelated APIs appear broken. [Early review](../../artifacts/reviews/code-review-20261013.md), [layout review](../../artifacts/reviews/functionality-review-20261021.md)
 
 A milestone on 20 October followed a user-reported five-second disconnect/reconnect: the applet remained installed and a complete 4,525-row support report matched its reference identities and declared support. That is real historical AC5 evidence. It does not validate later alias, owner and reclaimer changes.
 
@@ -78,19 +78,19 @@ The original estimate was 22–33 person-weeks, with two engineering streams. Th
 
 The most persistent runtime difficulty was translating between identity systems: imported Java Card class/method tokens, embedded ROM tokens, CAP offsets, applet AIDs and context-local object handles. Small mapping errors produced broad failures.
 
-A recent example is DES `clearKey()`. Three key sizes failed in the static performance suite. The cause was an incomplete JC305 DESKey interface remap: inherited Key methods still followed the wrong token order. Correcting the map made the exact physical measurements pass. Earlier hypotheses about persistent-write cost did not explain this defect. The implication is that API compatibility needs systematic mapping tests, including inherited methods, rather than a sequence of isolated token patches. [API-03 status](../TODO.md#api-03)
+A recent example is DES `clearKey()`. Three key sizes failed in the static performance suite. The cause was an incomplete JC305 DESKey interface remap: inherited Key methods still followed the wrong token order. Correcting the map made the exact physical measurements pass. Earlier hypotheses about persistent-write cost did not explain this defect. The implication is that API compatibility needs systematic mapping tests, including inherited methods, rather than a sequence of isolated token patches. [API-03 status](../../TODO.md#api-03)
 
 Exception handling was equally foundational. JCAlgTest depends on catching Java Card exceptions to report unsupported algorithms. Wrong exception type, incorrect unwinding or a native failure escaping into a generic `6F00` corrupts the report even when unsupported behavior is legitimate. The work therefore added handler dispatch, VM-to-Java exceptions, lifecycle cleanup and tested error paths alongside successful execution.
 
 Memory work progressed from repairing individual leaks and repeated reconstruction to typed root traversal and stable-slot collection. Roots had to cover statics, registered applets, operand/local values, exceptions, native mirrors, RMI and result state. Reclaiming only what one subsystem could see would have endangered objects retained elsewhere.
 
-Multi-applet support revealed an additional design distinction: **package firewall context and applet-instance ownership are different concepts**. Sibling applets from one CAP need shared package state, while selection, transient clearing, service registries and DELETE must preserve instance-specific behavior. Physical tests on two boards demonstrate sibling static sharing, transient reset/deselect behavior and reinstall scenarios. Full ownership/lifecycle acceptance remains open. [CTX-03](../TODO.md#ctx-03)
+Multi-applet support revealed an additional design distinction: **package firewall context and applet-instance ownership are different concepts**. Sibling applets from one CAP need shared package state, while selection, transient clearing, service registries and DELETE must preserve instance-specific behavior. Physical tests on two boards demonstrate sibling static sharing, transient reset/deselect behavior and reinstall scenarios. Full ownership/lifecycle acceptance remains open. [CTX-03](../../TODO.md#ctx-03)
 
 Shareable Interface Objects (SIOs) made provenance unavoidable. Two packages can both use compact handle `0x0002` for different objects. A regression now demonstrates that exact collision and verifies unequal identities through owner tags. Foreign references may sometimes be retained or compared without permitting dereference. Proxies must also become unusable after reset, DELETE and same-AID reinstall.
 
-The current implementation has positive cross-AID calls and several physical firewall checks, but foreign-reference persistence, typed arrays, roots and lifecycle coverage remain incomplete. Rejecting a value safely can still be an API compatibility gap: ordinary foreign references have permitted storage cases that are not all implemented. [CTX-01](../TODO.md#ctx-01)
+The current implementation has positive cross-AID calls and several physical firewall checks, but foreign-reference persistence, typed arrays, roots and lifecycle coverage remain incomplete. Rejecting a value safely can still be an API compatibility gap: ordinary foreign references have permitted storage cases that are not all implemented. [CTX-01](../../TODO.md#ctx-01)
 
-Finally, successful API output does not guarantee correct security-related result state. Recent digest, cipher and signature fixes propagated `SensitiveResult` across SIO calls and cleared stale state on failure. This shows why cross-feature tests matter: an algorithm KAT alone would miss the defect. [CTX-02](../TODO.md#ctx-02)
+Finally, successful API output does not guarantee correct security-related result state. Recent digest, cipher and signature fixes propagated `SensitiveResult` across SIO calls and cleared stale state on failure. This shows why cross-feature tests matter: an algorithm KAT alone would miss the defect. [CTX-02](../../TODO.md#ctx-02)
 
 <div style="page-break-after: always;"></div>
 
@@ -103,13 +103,13 @@ Persistence grew from a bring-up obstacle into a subsystem with snapshots, objec
 - CAP metadata mirrors and an INSTALL journal coordinate package publication with object/registry changes.
 - Reachability tracing determines which object records may safely be deleted.
 
-None substitutes for the others. A valid filesystem can still contain an inconsistent installation, and a consistent installation can still lose a live object through an incomplete root inventory. [Persistence contract](FILESYSTEM_ABI.md), [PERSIST-01–03](../TODO.md#persist-01)
+None substitutes for the others. A valid filesystem can still contain an inconsistent installation, and a consistent installation can still lose a live object through an incomplete root inventory. [Persistence contract](../FILESYSTEM_ABI.md), [PERSIST-01–03](../../TODO.md#persist-01)
 
 Capacity failures also had several distinct causes. Early work reduced excessive SRAM use. Later overlay formats increased usable persistent data without assuming additional flash. Version 4 uses an occupancy bitmap and compact index entries within the existing 160 KiB snapshot slots. Its nominal 96 KiB payload budget shrinks as index occupancy grows; there is also a hard **8,192-record limit**.
 
-The 1 November diagnosis linked nine Crypto `NO_MEMORY` outcomes to nine filesystem write failures. At 8,016 records, the dynamic payload ceiling was 94,592 bytes and only 19 bytes remained. Later, writes failed at the record-count limit even with some byte capacity left. This is strong evidence of overlay exhaustion for those failures, rather than a generic crypto allocation defect. It does not explain every historical memory error. [Capacity diagnosis](../progress.md)
+The 1 November diagnosis linked nine Crypto `NO_MEMORY` outcomes to nine filesystem write failures. At 8,016 records, the dynamic payload ceiling was 94,592 bytes and only 19 bytes remained. Later, writes failed at the record-count limit even with some byte capacity left. This is strong evidence of overlay exhaustion for those failures, rather than a generic crypto allocation defect. It does not explain every historical memory error. [Capacity diagnosis](../../progress.md)
 
-Package-state compaction is implemented. A physical full-index case compacted from 8,192 records to 696 records / 16,749 bytes, after which applet installation succeeded. The remaining question is sustained behavior: repeated install/run/uninstall sweeps must distinguish reclaimable records from a genuinely full live set. [STORE-01](../TODO.md#store-01)
+Package-state compaction is implemented. A physical full-index case compacted from 8,192 records to 696 records / 16,749 bytes, after which applet installation succeeded. The remaining question is sustained behavior: repeated install/run/uninstall sweeps must distinguish reclaimable records from a genuinely full live set. [STORE-01](../../TODO.md#store-01)
 
 Persistent-object reclamation is more sensitive. A bounded primitive and owner-scoped root inventory exist; a test-only physical hook erased exactly one orphan while preserving a rooted object. Normal persistent deletion remains disabled. Required proof still includes multiple owners and actual interrupted reclaimer/power-loss behavior. Simulated 1,000-cut tests establish tested model behavior, not 1,000 physical power interruptions.
 
@@ -121,7 +121,7 @@ The next storage milestone should therefore be **safe, bounded lifecycle recover
 
 ## Page 6 of 8 — Cryptography and transport: breadth with revealing failures
 
-Crypto expanded from truthful unsupported factories and SHA-256 into native symmetric and asymmetric operations: AES/DES modes and MACs, digests, RSA/RSA-CRT key generation and operations, ECDSA, EC agreement, message recovery and precomputed-digest paths. Profiles select subsets through generated capability data. Coverage varies by algorithm, size and API form; this is not complete Java Card crypto support. [Declared profile](supported-profile.md)
+Crypto expanded from truthful unsupported factories and SHA-256 into native symmetric and asymmetric operations: AES/DES modes and MACs, digests, RSA/RSA-CRT key generation and operations, ECDSA, EC agreement, message recovery and precomputed-digest paths. Profiles select subsets through generated capability data. Coverage varies by algorithm, size and API form; this is not complete Java Card crypto support. [Declared profile](../supported-profile.md)
 
 The evidence shows increasing breadth:
 
@@ -132,31 +132,31 @@ The evidence shows increasing breadth:
 | Physical JCAlgTest 1.8.4 BASIC, 3 November | 4,446 yes/no results: 148 yes, 4,298 no | A different upstream version; counts are not directly comparable to 1.8.2 modes |
 | Latest full Crypto VPCD sweep | 304 OK, 161 unsupported, one explained exception across 466 calls | Host backend; current physical equivalent remains open |
 
-These outcomes are recorded in the [completed baseline and active acceptance work](../TODO.md). Counts should always retain their version, mode, profile and image context.
+These outcomes are recorded in the [completed baseline and active acceptance work](../../TODO.md). Counts should always retain their version, mode, profile and image context.
 
 Two upstream-test limitations deserve management attention. JCAlgTest 1.8.2 has RSA/RSA-CRT rows labeled 3072 that actually request 4096. The project preserves the upstream CAP and reports the mismatch instead of enabling an unwanted size. Separately, a SHA-512 PSS vector uses a 1024-bit key too small for its default salt and digest encoding: the required 130 bytes exceed a 128-byte encoded message. Correct rejection should not become a firmware “fix.”
 
 Transport defects repeatedly resembled crypto defects. An undersized response buffer truncated signatures. Exact-packet-size CCID replies needed a terminating zero-length packet. Long operations needed cooperative USB/watchdog service and CCID extensions, while retaining finite applet deadlines.
 
-A particularly strong physical experiment ran RSA-3072 work for approximately 118 seconds while flooding USB control requests. All 4,336 requests started during the APDU succeeded, all 85 time extensions completed, and measured native-progress calls took at most 117 microseconds. That validates a specific instrumented path under load. [ARCH-08](../TODO.md#arch-08)
+A particularly strong physical experiment ran RSA-3072 work for approximately 118 seconds while flooding USB control requests. All 4,336 requests started during the APDU succeeded, all 85 time extensions completed, and measured native-progress calls took at most 117 microseconds. That validates a specific instrumented path under load. [ARCH-08](../../TODO.md#arch-08)
 
 Long interpreted code needed separate attention: servicing progress every 4,096 bytecodes and raising the non-install limit to 120 seconds let the exact software-AES workload finish. The complete static suite on the final combined image still needs rerunning.
 
-Correct results also do not establish side-channel or fault resistance. Input blinding and full RSA-CRT verification remain open hardening work despite existing exponent-blinding and scratch-cleanup efforts. [HARD-01](../TODO.md#hard-01)
+Correct results also do not establish side-channel or fault resistance. Input blinding and full RSA-CRT verification remain open hardening work despite existing exponent-blinding and scratch-cleanup efforts. [HARD-01](../../TODO.md#hard-01)
 
 <div style="page-break-after: always;"></div>
 
 ## Page 7 of 8 — Problems, learning and execution quality
 
-**Layered diagnosis was essential.** “Reader missing,” “USB visible but no PC/SC registration,” “card activation fails” and “APDU returns an exception” require different investigations. Physical access varied across sessions, and alternate identified boards provided failover. The records do not establish one common cause for every reader disappearance. Continued offline work reduced dependence on that unstable test environment. [HOST-01](../TODO.md#host-01), [issue knowledge base](../.agent/QKB.md)
+**Layered diagnosis was essential.** “Reader missing,” “USB visible but no PC/SC registration,” “card activation fails” and “APDU returns an exception” require different investigations. Physical access varied across sessions, and alternate identified boards provided failover. The records do not establish one common cause for every reader disappearance. Continued offline work reduced dependence on that unstable test environment. [HOST-01](../../TODO.md#host-01), [issue knowledge base](../../.agent/QKB.md)
 
-The Windows story illustrates why hypotheses must be revised. Earlier `certutil` MUTE reports suggested an activation problem. Later user-provided GPPro output demonstrated T=1 activation, ATR receipt, ISD SELECT, CPLC and Card Data on two reader slots. A subsequent provider-lookup error is a different integration layer. Basic Windows communication is evidenced; complete packaged-profile workflows remain unverified. That newer evidence supersedes a blanket “Windows transport is broken” assessment. [AC-01](../TODO.md#ac-01)
+The Windows story illustrates why hypotheses must be revised. Earlier `certutil` MUTE reports suggested an activation problem. Later user-provided GPPro output demonstrated T=1 activation, ATR receipt, ISD SELECT, CPLC and Card Data on two reader slots. A subsequent provider-lookup error is a different integration layer. Basic Windows communication is evidenced; complete packaged-profile workflows remain unverified. That newer evidence supersedes a blanket “Windows transport is broken” assessment. [AC-01](../../TODO.md#ac-01)
 
 **Artifact identity became part of correctness.** Early JNI/ROM mismatches and later profile-specific builds showed that a green build or old physical result says little about a different image. Firmware also once exceeded its 1 MiB reserved window by 196 bytes. Size optimization and a build-time overlap gate addressed that class of error. Linked flash usage must be assessed directly; UF2 container size is not the same measurement.
 
 **Long sweeps tested lifetime, not merely coverage.** An isolated API could pass after reboot while a full sweep exhausted records or retained objects. Focused reproductions were useful for identifying fixes; they could not close cumulative-pressure or final combined-image gates. Performance testing was particularly effective at exposing dispatch, persistence and scheduling defects.
 
-**The operating discipline was strong, but expensive to navigate.** Small commits, append-only experiment records, explicit failure classifications, hashes and bounded logs made many conclusions traceable. Reviews found cross-cutting problems; the QKB preserved reusable fixes; handoffs helped sessions continue. Backlog compaction mapped historical unfinished items into stable task owners without discarding evidence. [Continuity rules](../.agent/SESSION_CONTINUITY.md), [backlog migration](../.agent/archive/2026-11-01-todo-pre-compaction/MIGRATION.md)
+**The operating discipline was strong, but expensive to navigate.** Small commits, append-only experiment records, explicit failure classifications, hashes and bounded logs made many conclusions traceable. Reviews found cross-cutting problems; the QKB preserved reusable fixes; handoffs helped sessions continue. Backlog compaction mapped historical unfinished items into stable task owners without discarding evidence. [Continuity rules](../../.agent/SESSION_CONTINUITY.md), [backlog migration](../../.agent/archive/2026-11-01-todo-pre-compaction/MIGRATION.md)
 
 However, `progress.md` exceeds 21,000 lines, with out-of-order records and metadata follow-ups. Handoffs and historical guides sometimes retain superseded claims. The remedy is a compact release/evidence index over the existing history: exact image, profile, upstream versions, backend, tests passed and open gates. The active TODO is currently the best owner of acceptance status.
 

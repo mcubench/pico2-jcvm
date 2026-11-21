@@ -1,103 +1,92 @@
-# JCAlgTest physical profile comparison runbook
+# JCAlgTest physical runbook
 
-Run these commands from the repository root. This is an example workflow, not a
-record of current board state. Identify each board and its installed packages
-before flashing or installing a CAP. Every USB/PCSC command below must use the
-host-access execution path from `AGENTS.md` (elevated sandbox execution plus
-`PICO2_HOST_USB_ACCESS=1`); the marker alone does not grant access. The flash
-wrapper builds the ARM image before flashing the CHOUPI image (RISC-V is out of scope).
+Run commands from the repository root. Read the USB and PC/SC rules in
+[AGENTS.md](../AGENTS.md) and check the [handoff](../.agent/HANDOFF.md)
+before reserving a token.
 
-Replace the example serials and reader names below with the identities from
-that authorized discovery. Keep per-board results separate.
+## Identify the token and verify inputs
 
-`tools/run-jcalgtest` resolves the JCAlgTest 1.8.5 / jc305 CAP through
-`tests/fixtures/manifest.json`. Its default client is still the historical 1.8.4
-one, so **always pass the 1.8.5 client explicitly**:
-`--client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar`.
-Add this to every `run-jcalgtest` command below. The independent API suite
-client must not be substituted. The applet reports 1.8.5_jc305. Output CSVs
-have been seen to report an embedded client version of 1.8.4 even with the
-1.8.5 JAR, so record the JAR SHA-256 as the authoritative client identity.
+Before any PC/SC operation, check for live campaigns and monitors with
+`pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'`.
+Identify cards by chip ID using `PICO2_HOST_USB_ACCESS=1 lsusb -v -d 2e8a:0009`
+with elevated execution. Every hardware command below also requires elevated
+execution and the host-access environment marker as shown. Verify the exact
+PC/SC reader name for the selected chip ID. Use bounded reader listing only
+when necessary. Use the approved PC/SC helper only when a token is present on
+USB, absent from PC/SC, and no campaign is live.
 
 ```sh
-# Verify the pinned CAP, clients, API corpus and simulator reference.
 ./tools/fixture-path --verify
-# `--verify` does not cover the 1.8.5 client; check its hash separately.
-client_jar=tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar
-echo "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3  $client_jar" | sha256sum -c -
-
-# Build and flash CHOUPI with the `base` profile to a Pico 2. It enables the
-# minimum crypto needed by JCAlgTest's eager startup allocations, plus all
-# OwnerPINBuilder variants so disabled capabilities are reported as `no`.
-base_serial='REPLACE_WITH_IDENTIFIED_PICO_SERIAL'
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile base --serial "$base_serial"
-
-# Save the expected support set before building another profile (the wrapper
-# regenerates this file for each selected profile).
-mkdir -p artifacts/results/base-alg-support
-cp build/javacard-support/jcalgtest-supported.csv \
-  artifacts/results/base-alg-support/expected.csv
-
-# Grant pcscd access after USB re-enumeration, then confirm the physical reader.
-# (Run the helper with elevated execution, exactly in this form.)
-sudo -n /usr/local/sbin/pico2-pcsc-reader
-PICO2_HOST_USB_ACCESS=1 ./tools/list-readers --pico-only
-
-# Use the exact Pico reader name printed above.
-reader_name='REPLACE_WITH_EXACT_BASE_PCSC_READER_NAME'
-
-# After a separately performed Pico reboot/power cycle, verify the CAP/applet
-# and JCSystem APDU are available. The script does not initiate or prove USB
-# power removal; its output explicitly leaves that check unverified.
-PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
-
-# Install the supplied JCAlgTest 1.8.5 JC305 CAP (skip if already installed).
-PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
-  --reader "$reader_name" \
-  --install tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap
-
-# Retrieve the extended algorithm support report.
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name" \
-  -op ALG_SUPPORT_EXTENDED -fresh \
-  -outpath artifacts/results/base-alg-support
-
-# Build and flash the all-enabled baseline profile to a second Pico, then run
-# the same JCAlgTest operation there for an apples-to-apples report comparison.
-baseline_serial='REPLACE_WITH_SECOND_IDENTIFIED_PICO_SERIAL'
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile baseline --serial "$baseline_serial"
-mkdir -p artifacts/results/baseline-alg-support
-cp build/javacard-support/jcalgtest-supported.csv \
-  artifacts/results/baseline-alg-support/expected.csv
-reader_name_baseline='REPLACE_WITH_EXACT_BASELINE_PCSC_READER_NAME'
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name_baseline" \
-  -op ALG_SUPPORT_EXTENDED -fresh \
-  -outpath artifacts/results/baseline-alg-support
-
-# Compare each report to the jCardSim reference generated by the supplied 1.8.5
-# host client. The 1.8.4-generated reference remains available as historical data.
-./tools/compare-jcalgtest-support.py \
-  artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
-  tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv \
-  --expected-support artifacts/results/base-alg-support/expected.csv
-./tools/compare-jcalgtest-support.py \
-  artifacts/results/baseline-alg-support/*ALGSUPPORT*.csv \
-  tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv \
-  --expected-support artifacts/results/baseline-alg-support/expected.csv
-
-# Each comparison should end with COMPARE:PASS and no status other than yes/no.
-
-# Show which expected capability rows changed between the two profiles.
-diff -u artifacts/results/base-alg-support/expected.csv \
-  artifacts/results/baseline-alg-support/expected.csv
-
-# Run the static performance suite.
-PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" --reader-name "$reader_name" \
-  -op ALG_PERFORMANCE_STATIC -fresh \
-  -outpath artifacts/results/physical-perf-static
+cap=$(./tools/fixture-path jcalgtest.cap)
+client_jar=$(./tools/fixture-path jcalgtest.client.1.8.5-20261121)
+sha256sum "$cap" "$client_jar"
 ```
 
-Use the provisioned restricted PC/SC helper after each USB
-re-enumeration. If it is unavailable, stop physical work and record the access
-limitation; autonomous sessions must not run an installer with `sudo`. JCAlgTest records unsupported algorithms as
-`NO_SUCH_ALGORITHM`; those rows are expected. Static performance may take
-several minutes; the wrapper's default timeout is 900 seconds.
+| Input | SHA-256 |
+| --- | --- |
+| JCAlgTest 1.8.5/jc305 CAP | `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb` |
+| JCAlgTest 1.8.5-20261121 client | `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703` |
+
+Pass `--client-jar "$client_jar"` explicitly for every run. The wrapper's
+default client and the embedded CSV version are unsuitable for identifying
+the required JAR.
+
+## Prepare a clean card for acceptance
+
+Use a normal `max_crypto` build. The empty-card UF2 clears installed packages
+and persistent objects on the selected token. Confirm that the token is
+available for this use before flashing.
+
+```sh
+./tools/build arm --profile max_crypto
+```
+
+After a warning-free build, verify `mode=normal` in `build/arm/build-provenance.txt`. Set
+`chip_id` to the confirmed 16-hex chip ID and choose a unique `result_dir`
+for that token and campaign. Record both identities in the results.
+
+```sh
+mkdir -p "$result_dir"
+cp build/javacard-support/jcalgtest-supported.csv "$result_dir/expected.csv"
+image="$result_dir/max_crypto-empty-card.uf2"
+./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 "$image"
+sha256sum "$image" "$cap" "$client_jar" > "$result_dir/input-sha256.txt"
+PICO2_HOST_USB_ACCESS=1 ./tools/flash --chipid "$chip_id" "$image"
+PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial "$chip_id" --seconds 8 > "$result_dir/startup.log"
+```
+
+Check the serial startup result for failures, then verify the re-enumerated
+reader and set `reader_name` to its exact PC/SC name. Use GPPro to verify
+only the ISD is present before installing the CAP.
+
+```sh
+PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
+  --reader "$reader_name" --list
+PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
+  --reader "$reader_name" --install "$cap"
+```
+
+## Run and compare results
+
+For a focused support report:
+
+```sh
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --client-jar "$client_jar" \
+  --reader-name "$reader_name" -op ALG_SUPPORT_EXTENDED -fresh -outpath "$result_dir"
+./tools/compare-jcalgtest-support.py "$result_dir"/*ALGSUPPORT*.csv \
+  tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv \
+  --expected-support "$result_dir/expected.csv"
+```
+
+Use a separate result directory and generated CSV for each image in a
+development profile comparison. For long acceptance campaigns, prioritize
+menu option `2 -> PERFORMANCE TEST` with 256-byte data and
+`1 -> All algorithms`. Run the two campaigns on distinct identified tokens
+when possible. Set `JCALGTEST_TIMEOUT_SECONDS` for the campaign because the
+wrapper defaults to 900 seconds. Keep bounded serial telemetry, client logs,
+results and image identity per device. Record the chip ID, exact reader name,
+firmware hash, CAP hash and client JAR hash. Record any timeout, reset or
+disconnect and use an available identified token if a board fails.
+
+For the independent Windows run, use the current max_crypto release package
+and its included capture instructions. [Active Windows request](../.agent/EXT_REQUESTS.md)

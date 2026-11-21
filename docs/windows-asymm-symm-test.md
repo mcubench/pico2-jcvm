@@ -1,5 +1,9 @@
 # Windows Pico 2 profile test
 
+> This guide describes a historical Windows profile package and its bundled
+> client. For new Windows campaigns, use the current max_crypto package and
+> instructions in [the Windows request](../.agent/EXT_REQUESTS.md).
+
 Use the supplied ARM UF2s to compare the `symm_crypto` and `asymm_crypto`
 profiles on a Windows PC. The asymmetric profile contains the symmetric
 profile's enabled capabilities plus the current asymmetric selections.

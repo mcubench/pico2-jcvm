@@ -67,6 +67,13 @@ SuperMethodref cannot target an interface record. Internal InstanceFieldref
 tokens are bounded by declared instance layout; internal VirtualMethodref and
 SuperMethodref tokens resolve through the production class-method resolver.
 
+INSTALL preflight also checks class inheritance references and superclass
+chains, superinterface lists, Export class offsets, and virtual method table
+and interface index entries. Negative CAP fixtures exercise these guards.
+Moving the checks to LOAD is tracked under CAPIN-01 and CAPIN-07 in
+[the backlog](../TODO.md). General applet firewall enforcement remains
+incomplete (INV-19).
+
 There is a compatibility and assurance gap with ordinary CAP loading: the Java
 Card 3.0.5 VM specification makes Descriptor loading optional, and
 GlobalPlatformPro's default CAP load omits Descriptor and Debug. The Method

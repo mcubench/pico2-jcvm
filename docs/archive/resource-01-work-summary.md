@@ -12,7 +12,7 @@ made experimental collection safer, and demonstrated bounded cleanup in selected
 workloads. It has not established production reclamation, a reliable full
 `max_crypto` JCAlgTest run, or the cause of physical resets.
 
-The [backlog](../TODO.md#resource-01) asks for two related outcomes: stop long-run
+The [backlog](../../TODO.md#resource-01) asks for two related outcomes: stop long-run
 `NO_RESOURCE` failures and establish reset causality. The distinction matters.
 The original 7 November unchanged JCAlgTest 1.8.4/jc305 VPCD run reached RSA CRT
 3072, then returned `F205` after 797,682 ms with persistent-reference serialization
@@ -226,7 +226,7 @@ Physical preparation took **23 minutes** across `662aff8c`, `bb3cb62c` and
 helper refusal. The installed helper did not match the repository's Pico-only
 allowlist; an unrelated PacketRF device shared the USB VID/PID. Physical testing
 therefore remained blocked. Prepared firmware and VPCD controls are not on-board
-results; the external action is recorded in [.agent/EXT_REQUESTS.md](../.agent/EXT_REQUESTS.md).
+results; the external action is recorded in [.agent/EXT_REQUESTS.md](../../.agent/EXT_REQUESTS.md).
 
 PERSIST-01 contributed additional safety evidence outside this subtotal: simulated
 interrupted erases, rooted graphs, transaction rollback, and **1,000 simulated
@@ -333,12 +333,12 @@ Physical reset causality remains a separate open question.
 
 ### Evidence and audit notes
 
-Primary sources are [progress.md](../progress.md), the [implementation plan](archive/resource-01-implementation-plan.md),
-[TODO](../TODO.md), [QKB](../.agent/QKB.md), and Git commit contents. Representative
-raw evidence: [initial accumulation](../artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log),
-[package-static control](../artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log),
-[full mixed run](../artifacts/results/jcalgtest-support-vpcd-20261109T132549Z/), and
-[completed batch compaction](../artifacts/logs/object-deletion-vpcd-20261109T173110Z.log).
+Primary sources are [progress.md](../../progress.md), the [implementation plan](../archive/resource-01-implementation-plan.md),
+[TODO](../../TODO.md), [QKB](../../.agent/QKB.md), and Git commit contents. Representative
+raw evidence: [initial accumulation](../../artifacts/logs/jcalgtest-resource-accumulation-10x-rsa1024.log),
+[package-static control](../../artifacts/logs/resource-package-static-reclaim-vpcd-20261108.log),
+[full mixed run](../../artifacts/results/jcalgtest-support-vpcd-20261109T132549Z/), and
+[completed batch compaction](../../artifacts/logs/object-deletion-vpcd-20261109T173110Z.log).
 
 Commit history resolves stale report fields: the early cumulative-key record
 incorrectly names `23318302`, which actually adds periodic sampling; its diagnosis

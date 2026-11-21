@@ -1,5 +1,9 @@
 # Windows test package: `symm_crypto`
 
+> This guide describes a historical Windows profile package and its bundled
+> client. For new Windows campaigns, use the current max_crypto package and
+> instructions in [the Windows request](../.agent/EXT_REQUESTS.md).
+
 This package tests only the `symm_crypto` ARM firmware profile. It contains no
 asymmetric-profile firmware. The CAP is the unchanged user-supplied JCAlgTest 1.8.5
 JC305 artifact.

@@ -1,6 +1,6 @@
 # Pico 2 Java Card VM — CTO progress update
 
-**Review window: 4 November 2026, 05:15 UTC–6 November 2026, 05:15 UTC.** Compared with the [3 November CTO review](CTO_IMPLEMENTATION_REVIEW.md). Evidence comes from dated entries in [progress.md](../progress.md); this is a documentation review, with no new firmware testing. Repeated records are treated as one result, and later diagnoses supersede earlier failures.
+**Review window: 4 November 2026, 05:15 UTC–6 November 2026, 05:15 UTC.** Compared with the [3 November CTO review](CTO_IMPLEMENTATION_REVIEW.md). Evidence comes from dated entries in [progress.md](../../progress.md); this is a documentation review, with no new firmware testing. Repeated records are treated as one result, and later diagnoses supersede earlier failures.
 
 ## Page 1 of 2 — What changed
 
@@ -38,4 +38,4 @@ Physical access remains an execution dependency. Three runtime boards were recen
 
 **Recommended next investment:** nominate one candidate image and evidence manifest, finish the coupled ownership/storage recovery tests, then execute release acceptance without intervening feature changes. Prioritize reproducibility and closed acceptance gates over adding algorithms. The last 48 hours materially strengthen the platform's correctness evidence; they do not yet close the reliability and security gaps identified in the previous review.
 
-*Evidence trail: [progress.md](../progress.md), entries dated 4–6 November, particularly signed branch/SIO physical validation, foreign-array roots/cold restore, CCID recovery, extended headers, malformed exception ranges and SIO profile diagnosis. Prior baseline: [CTO implementation review](CTO_IMPLEMENTATION_REVIEW.md).*
+*Evidence trail: [progress.md](../../progress.md), entries dated 4–6 November, particularly signed branch/SIO physical validation, foreign-array roots/cold restore, CCID recovery, extended headers, malformed exception ranges and SIO profile diagnosis. Prior baseline: [CTO implementation review](CTO_IMPLEMENTATION_REVIEW.md).*
