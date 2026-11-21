@@ -362,9 +362,7 @@ list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
 # build directory when a profile switches CTR off.
 list(REMOVE_ITEM JCVM_CORE_SOURCES_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/src/native_aes_ctr.cpp")
-if(JC_SUPPORT_SECURE_RANDOM)
-  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
-endif()
+list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_cipher.cpp")
 if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_aes_cbc.cpp")
@@ -424,6 +422,9 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
+  if(JC_SUPPORT_RANDOM_PRESEEDED_DRBG)
+    target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/ctr_drbg.c")
+  endif()
   if(JC_SUPPORT_CIPHER_AES_GCM OR JC_SUPPORT_CIPHER_AES_CCM)
     target_sources(choupi PRIVATE
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/gcm.c"

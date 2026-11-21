@@ -1,63 +1,244 @@
+#include "context.hpp"
 #include "exceptions.hpp"
 #include "javacard-support.h"
-#include "jc_types/jc_array.hpp"
+#include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_random.hpp"
+
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
-#ifdef JC_SUPPORT_SECURE_RANDOM
+#include <utility>
+
+#if JC_SUPPORT_SECURE_RANDOM || JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#ifdef PC_VERSION
 #include <random>
-#ifndef PC_VERSION
+#else
 #include "pico/rand.h"
 #endif
 #endif
 
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#include "mbedtls/ctr_drbg.h"
+#endif
+
 namespace jcvm {
+namespace {
+
+constexpr jbyte_t kSecureRandom = 2;
+constexpr jbyte_t kPreseededDrbg = 4;
+constexpr uint16_t kAlgorithmField = 0;
+constexpr uint16_t kStateField = 1;
+
+void checkRange(const std::shared_ptr<JC_Array> &array, jshort_t offset,
+                jshort_t length) {
+  if (!array) throw Exceptions::NullPointerException;
+  if (array->getType() != JAVA_ARRAY_T_BYTE)
+    throw Exceptions::ArrayStoreException;
+  if (offset < 0 || length < 0 ||
+      static_cast<uint32_t>(offset) + length > array->size())
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+}
+
+std::shared_ptr<JC_Instance> randomInstance(jref_t reference) {
+  if (reference.isNullPointer()) throw Exceptions::NullPointerException;
+  if (reference.isArray()) throw Exceptions::SecurityException;
+  auto instance = Context::getActiveContext().getHeap().getInstance(reference);
+  if (!instance || instance->getPackageID() != ROM_PACKAGE_INDEX_JAVACARD_SECURITY ||
+      instance->getClassIndex() != nativeRandomClass())
+    throw Exceptions::SecurityException;
+  return instance;
+}
+
+#if JC_SUPPORT_SECURE_RANDOM || JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+uint32_t entropyWord() {
+#ifdef PC_VERSION
+  static std::random_device randomSource;
+  return randomSource();
+#else
+  return get_rand_32();
+#endif
+}
+#endif
 
 #if JC_SUPPORT_SECURE_RANDOM
-namespace {
-void checkArrayRange(const JC_Array &array, const jshort_t offset,
-                     const jshort_t length) {
-  if (offset < 0 || length < 0 ||
-      static_cast<uint32_t>(offset) + static_cast<uint32_t>(length) >
-          array.size()) {
-    throw Exceptions::ArrayIndexOutOfBoundsException;
+void generateSecure(JC_Array &output, uint16_t offset, uint16_t length) {
+  uint32_t word = 0;
+  for (uint16_t i = 0; i < length; ++i) {
+    if ((i & 3) == 0) word = entropyWord();
+    output.setByteEntry(offset + i, static_cast<jbyte_t>(word >> (8 * (i & 3))));
   }
 }
+#endif
+
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#if defined(MBEDTLS_CTR_DRBG_USE_PSA_CRYPTO) || defined(MBEDTLS_THREADING_C)
+#error Native RandomData requires the pointer-free software CTR_DRBG state
+#endif
+constexpr size_t kDrbgStateBytes =
+    offsetof(mbedtls_ctr_drbg_context, MBEDTLS_PRIVATE(f_entropy));
+
+int entropy(void *, unsigned char *output, size_t length) {
+  uint32_t word = 0;
+  for (size_t i = 0; i < length; ++i) {
+    if ((i & 3) == 0) word = entropyWord();
+    output[i] = static_cast<unsigned char>(word >> (8 * (i & 3)));
+  }
+  return 0;
+}
+
+class Drbg {
+public:
+  mbedtls_ctr_drbg_context value;
+  Drbg() { mbedtls_ctr_drbg_init(&value); }
+  ~Drbg() { mbedtls_ctr_drbg_free(&value); }
+  Drbg(const Drbg &) = delete;
+  Drbg &operator=(const Drbg &) = delete;
+};
+
+void checkDrbg(int status) {
+  if (status != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
+}
+
+std::shared_ptr<JC_Array> drbgState(JC_Instance &instance) {
+  auto state = Context::getActiveContext().getHeap().getArray(
+      instance.getField_Reference(kStateField));
+  if (!state || !state->isTransientArray() || state->getType() != JAVA_ARRAY_T_BYTE ||
+      state->size() != kDrbgStateBytes + 1)
+    throw Exceptions::SecurityException;
+  return state;
+}
+
+void loadDrbg(JC_Array &state, Drbg &drbg) {
+  if (state.getByteEntry(0) == 0) {
+    checkDrbg(mbedtls_ctr_drbg_seed(&drbg.value, entropy, nullptr, nullptr, 0));
+    return;
+  }
+  // The pinned software context stores an inline AES schedule. The entropy
+  // callback is rebound on load so no function or data pointers are stored.
+  state.copyByteEntriesTo(1, kDrbgStateBytes,
+                          reinterpret_cast<uint8_t *>(&drbg.value));
+  drbg.value.MBEDTLS_PRIVATE(f_entropy) = entropy;
+}
+
+void saveDrbg(JC_Array &state, const Drbg &drbg) {
+  state.copyByteEntriesFrom(1, kDrbgStateBytes,
+                            reinterpret_cast<const uint8_t *>(&drbg.value));
+  state.setByteEntry(0, 1);
+}
+
+void generateDrbg(JC_Instance &instance, JC_Array &output, uint16_t offset,
+                   uint16_t length) {
+  auto state = drbgState(instance);
+  Drbg drbg;
+  loadDrbg(*state, drbg);
+  uint8_t chunk[64];
+  while (length != 0) {
+    const uint16_t count = std::min<uint16_t>(length, sizeof(chunk));
+    checkDrbg(mbedtls_ctr_drbg_random(&drbg.value, chunk, count));
+    // Advance before the caller can observe bytes, including a failed write.
+    saveDrbg(*state, drbg);
+    for (uint16_t i = 0; i < count; ++i)
+      output.setByteEntry(offset + i, static_cast<jbyte_t>(chunk[i]));
+    offset += count;
+    length -= count;
+  }
+}
+#endif
+
 } // namespace
 
+#if JC_SUPPORT_SECURE_RANDOM
 void fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
-    std::shared_ptr<JC_Array> buffer, const jshort_t offset,
-    const jshort_t length) {
-  if (buffer == nullptr) {
-    throw Exceptions::NullPointerException;
-  }
-  checkArrayRange(*buffer, offset, length);
-  if (length == 0) {
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
-  }
-  if (buffer->getType() != JAVA_ARRAY_T_BYTE) {
-    throw Exceptions::ArrayStoreException;
-  }
+    std::shared_ptr<JC_Array> output, jshort_t offset, jshort_t length) {
+  checkRange(output, offset, length);
+  if (length == 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
+  generateSecure(*output, offset, length);
+}
+#endif
 
-#ifdef PC_VERSION
-  std::random_device random_source;
-#endif
-  uint32_t random_word = 0;
-  for (jshort_t index = 0; index < length; ++index) {
-    if ((index & 3) == 0) {
-#ifdef PC_VERSION
-      random_word = static_cast<uint32_t>(random_source());
-#else
-      random_word = get_rand_32();
-#endif
-    }
-    const uint8_t random_byte = static_cast<uint8_t>(
-        random_word >> ((index & 3) * 8));
-    buffer->setByteEntry(static_cast<uint16_t>(offset + index),
-                         static_cast<jbyte_t>(random_byte));
+jref_t javacard_security_RandomData_getInstance(jbyte_t algorithm) {
+  if (!(algorithm == kSecureRandom && JC_SUPPORT_SECURE_RANDOM) &&
+      !(algorithm == kPreseededDrbg && JC_SUPPORT_RANDOM_PRESEEDED_DRBG))
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  auto &heap = Context::getActiveContext().getHeap();
+  const auto reference = heap.addInstance(ROM_PACKAGE_INDEX_JAVACARD_SECURITY,
+                                          nativeRandomClass());
+  auto instance = randomInstance(reference);
+  instance->setField_Byte(kAlgorithmField, algorithm);
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+  if (algorithm == kPreseededDrbg) {
+    instance->setField_Reference(kStateField, heap.addTransientArray(
+        kDrbgStateBytes + 1, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+    auto state = drbgState(*instance);
+    Drbg drbg;
+    loadDrbg(*state, drbg);
+    saveDrbg(*state, drbg);
   }
+#endif
+  return reference;
 }
 
-#endif // JC_SUPPORT_SECURE_RANDOM
+jbyte_t javacard_security_RandomData_getAlgorithm(jref_t receiver) {
+  const jbyte_t algorithm = randomInstance(receiver)->getField_Byte(kAlgorithmField);
+  Context::getActiveContext().setSensitiveResultShort(algorithm);
+  return algorithm;
+}
+
+jshort_t javacard_security_RandomData_nextBytes(jref_t receiver,
+    std::shared_ptr<JC_Array> output, jshort_t offset, jshort_t length) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
+  auto instance = randomInstance(receiver);
+  checkRange(output, offset, length);
+  if (length == 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
+  switch (instance->getField_Byte(kAlgorithmField)) {
+#if JC_SUPPORT_SECURE_RANDOM
+  case kSecureRandom:
+    generateSecure(*output, offset, length);
+    break;
+#endif
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+  case kPreseededDrbg:
+    generateDrbg(*instance, *output, offset, length);
+    break;
+#endif
+  default:
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  }
+  const auto result = signedShortFromBits(static_cast<uint16_t>(offset + length));
+  context.setSensitiveResultShort(result);
+  return result;
+}
+
+void javacard_security_RandomData_generateData(jref_t receiver,
+    std::shared_ptr<JC_Array> output, jshort_t offset, jshort_t length) {
+  (void)javacard_security_RandomData_nextBytes(receiver, std::move(output), offset, length);
+}
+
+void javacard_security_RandomData_setSeed(jref_t receiver,
+    std::shared_ptr<JC_Array> input, jshort_t offset, jshort_t length) {
+  auto instance = randomInstance(receiver);
+  checkRange(input, offset, length);
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+  if (instance->getField_Byte(kAlgorithmField) == kPreseededDrbg) {
+    auto state = drbgState(*instance);
+    Drbg drbg;
+    loadDrbg(*state, drbg);
+    const auto *bytes = length == 0 ? nullptr : input->getByteDataView() + offset;
+    // Keep the existing state and mix in the applet input, then reseed from
+    // live platform entropy. Split input to stay within the library bound.
+    while (length != 0) {
+      const auto count = std::min<jshort_t>(length, MBEDTLS_CTR_DRBG_MAX_INPUT);
+      checkDrbg(mbedtls_ctr_drbg_update(&drbg.value, bytes, count));
+      bytes += count;
+      length -= count;
+    }
+    checkDrbg(mbedtls_ctr_drbg_reseed(&drbg.value, nullptr, 0));
+    saveDrbg(*state, drbg);
+  }
+#endif
+}
 
 } // namespace jcvm

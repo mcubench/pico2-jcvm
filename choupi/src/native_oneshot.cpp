@@ -30,6 +30,7 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_export.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_random.hpp"
 
 #include <array>
 #include <cstdint>
@@ -47,10 +48,7 @@ jref_t javacard_security_MessageDigest_getInstance(jbyte_t algorithm,
                                                    jbool_t externalAccess);
 jref_t javacard_security_MessageDigest_getInitializedMessageDigestInstance(
     jbyte_t algorithm, jbool_t externalAccess);
-#if JC_SUPPORT_SECURE_RANDOM
-void fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
-    std::shared_ptr<JC_Array> buffer, jshort_t offset, jshort_t length);
-#endif
+
 
 namespace {
 
@@ -63,7 +61,6 @@ enum Kind : uint8_t {
 };
 constexpr uint8_t kKinds = 5;
 constexpr size_t kSlotsPerKind = 2;
-constexpr uint8_t kAlgSecureRandom = 2; // RandomData.ALG_SECURE_RANDOM
 
 struct Slot {
   jref_t instance;  // runtime-wide temporary global instance, created once
@@ -213,13 +210,7 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotOpen(
         first, FALSE);
     break;
   default:
-#if JC_SUPPORT_SECURE_RANDOM
-    if (static_cast<uint8_t>(first) != kAlgSecureRandom) {
-      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-    }
-#else
-    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-#endif
+    delegate = javacard_security_RandomData_getInstance(first);
     break;
   }
 
@@ -263,16 +254,19 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotClose(
 void fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotRandom(
     const jref_t oneShot, std::shared_ptr<JC_Array> buffer,
     const jshort_t offset, const jshort_t length) {
-  (void)checkedOpenSlot(oneShot);
-#if JC_SUPPORT_SECURE_RANDOM
-  fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
-      std::move(buffer), offset, length);
-#else
-  (void)buffer;
-  (void)offset;
-  (void)length;
-  throwCryptoException(CryptoExceptionReason::IllegalUse);
-#endif
+  const auto &slot = checkedOpenSlot(oneShot);
+  (void)javacard_security_RandomData_nextBytes(
+      slot.delegate, std::move(buffer), offset, length);
+}
+
+jbyte_t javacard_security_RandomData$OneShot_getAlgorithm(jref_t receiver) {
+  return javacard_security_RandomData_getAlgorithm(checkedOpenSlot(receiver).delegate);
+}
+
+void javacard_security_RandomData$OneShot_setSeed(jref_t receiver,
+    std::shared_ptr<JC_Array> input, jshort_t offset, jshort_t length) {
+  javacard_security_RandomData_setSeed(
+      checkedOpenSlot(receiver).delegate, std::move(input), offset, length);
 }
 
 } // namespace jcvm

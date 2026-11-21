@@ -282,6 +282,14 @@ def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
     ]
 
 
+def random_vectors() -> list[tuple[bytes, bytes, str]]:
+    return [
+        (bytes((0x80, 0x30, algorithm, operation, 0)), b"\x01\x90\x00",
+         f"RandomData algorithm {algorithm} operation {operation}")
+        for algorithm in (2, 4) for operation in (0, 1)
+    ]
+
+
 def gcm_vectors() -> list[tuple[bytes, bytes, str]]:
     results = []
     aes_gcm = AESGCM(bytes(16))
@@ -359,7 +367,7 @@ def main() -> int:
     cipher_count = len(cipher_vectors())
     mac_count = len(mac_vectors())
     rsa_component_count = len(rsa_key_component_vectors())
-    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() + checksum_vectors() + gcm_vectors() + ccm_vectors() +
+    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() + checksum_vectors() + gcm_vectors() + ccm_vectors() + random_vectors() +
                transient_cipher_lifecycle_vectors() +
                rsa_key_component_vectors())
     timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())

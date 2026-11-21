@@ -5,6 +5,7 @@ import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
+import javacard.framework.Util;
 import javacard.security.AESKey;
 import javacard.security.DESKey;
 import javacard.security.ECPrivateKey;
@@ -17,6 +18,7 @@ import javacard.security.KeyAgreement;
 import javacard.security.KeyPair;
 import javacard.security.MessageDigest;
 import javacard.security.RSAPrivateCrtKey;
+import javacard.security.RandomData;
 import javacard.security.RSAPrivateKey;
 import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RSAPublicKey;
@@ -130,6 +132,10 @@ public final class SymmCryptoProbe extends Applet {
         output[0] = (byte)0x62;
         outputLength = (short)1;
       }
+    } else if (instruction == (byte)0x30) {
+      output = new byte[1];
+      output[0] = runRandom(algorithm, operation);
+      outputLength = (short)1;
     } else if (instruction == (byte)0x2f) {
       output = new byte[(short)(inputLength + 16)];
       outputLength = runAead(algorithm, operation, input, inputLength, output);
@@ -655,6 +661,35 @@ public final class SymmCryptoProbe extends Applet {
     byte aggregate = 0;
     for (short i = 0; i < value.length; i++) aggregate |= value[i];
     return aggregate != 0;
+  }
+
+  private static byte runRandom(byte algorithm, byte operation) {
+    RandomData.OneShot oneShot = null;
+    RandomData random;
+    if (operation == 0) {
+      random = RandomData.getInstance(algorithm);
+    } else {
+      oneShot = RandomData.OneShot.open(algorithm);
+      random = oneShot;
+    }
+    try {
+      byte[] seed = new byte[16];
+      byte[] area = new byte[132];
+      area[1] = 0x35;
+      area[130] = 0x53;
+      random.setSeed(seed, (short)0, (short)seed.length);
+      if (random.getAlgorithm() != algorithm ||
+          random.nextBytes(area, (short)2, (short)128) != 130 ||
+          area[1] != 0x35 || area[130] != 0x53) return 0;
+      byte[] prior = new byte[16];
+      Util.arrayCopyNonAtomic(area, (short)2, prior, (short)0, (short)16);
+      random.setSeed(seed, (short)0, (short)seed.length);
+      random.generateData(area, (short)2, (short)16);
+      return Util.arrayCompare(area, (short)2, prior, (short)0, (short)16) != 0
+          ? (byte)1 : (byte)0;
+    } finally {
+      if (oneShot != null) oneShot.close();
+    }
   }
 
   private static short runAead(byte algorithm, byte operation, byte[] input,

@@ -33226,3 +33226,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed, ARM max_crypto linked, and the symmetric simulator passed 200 vectors. The 18 CCM cases covered both factories, 8- and 16-byte tags, split AAD and payload, empty plaintext and corrupted tag rejection against independent AESCCM results.
 - Result: CCM outputs matched the reference. Physical algorithm validation remains pending because EE11 cannot be opened directly and the F42D replay uses shared PC/SC.
 - Artifacts/logs: `artifacts/logs/{build-arm-aes-ccm-final,test-aes-ccm,symm-crypto-kat-vpcd-20261121T114420Z}.log`.
+
+## 2026-11-21 Implement native preseeded CTR_DRBG 8 minutes
+
+- Step-Id: `20261121-1253-preseeded-drbg`
+- When: '2026-11-21 12:45 CET' - '2026-11-21 12:53 CET'
+- Model: `GPT-6`
+- Change: Added Mbed TLS CTR_DRBG to max_crypto RandomData and OneShot with per-instance transient state and platform entropy.
+- Validation: ARM max_crypto linked without warnings, profile tests passed 15/15 and simulator vectors passed 204/204. Full development JCVM booted on 07E74C5D7A038DEC with TEST:PASS and CYCLE:PASS.
+- Result: Physical PC/SC selected the probe applet, then returned 6F00 during the transient-array preflight before the algorithm cases. Probe cleanup passed.
+- Artifacts/logs: `artifacts/logs/{build-arm-drbg-final,test-drbg,cycle-crypto-07e7,test-crypto-07e7-exact,symm-crypto-kat-pcsc-20261121T115055Z}.log`.

@@ -99,6 +99,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "keypair_ec_fp": ("javacard.security.KeyPair", "ALG_EC_FP"),
     "checksum_crc32": ("javacard.security.Checksum", "ALG_ISO3309_CRC32"),
     "checksum_crc16": ("javacard.security.Checksum", "ALG_ISO3309_CRC16"),
+    "random_preseeded_drbg": ("javacard.security.RandomData", "ALG_PRESEEDED_DRBG"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -492,6 +493,7 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("sha3_384",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_384"),
     (("sha3_512",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_512"),
     (("secure_random",), "javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
+    (("random_preseeded_drbg",), "javacard.security.RandomData.OneShot", "ALG_PRESEEDED_DRBG"),
     # MessageDigest.getInitializedMessageDigestInstance() and its OneShot use
     # the same SHA-1/SHA-2 engines as MessageDigest
     # (choupi/src/native_message_digest.cpp).
@@ -574,6 +576,13 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     write_if_changed(
         out_dir / "javacard-native-methods.txt",
         "\n".join((
+            "javacard/security|RandomData|RandomData/getInstance(B)Ljavacard/security/RandomData;|static",
+            "javacard/security|RandomData|RandomData/getAlgorithm()B|instance",
+            "javacard/security|RandomData|RandomData/generateData([BSS)V|instance",
+            "javacard/security|RandomData|RandomData/nextBytes([BSS)S|instance",
+            "javacard/security|RandomData|RandomData/setSeed([BSS)V|instance",
+            "javacard/security|RandomData$OneShot|RandomData$OneShot/getAlgorithm()B|instance",
+            "javacard/security|RandomData$OneShot|RandomData$OneShot/setSeed([BSS)V|instance",
             "javacard/security|Checksum|Checksum/getInstance(BZ)Ljavacard/security/Checksum;|static",
             "javacard/security|Checksum|Checksum/getAlgorithm()B|instance",
             "javacard/security|Checksum|Checksum/init([BSS)V|instance",
