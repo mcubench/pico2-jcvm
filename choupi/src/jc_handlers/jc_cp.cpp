@@ -303,6 +303,8 @@ uint8_t remap_imported_virtual_method_token(
   // translate the remaining JC305 tokens to their embedded method tokens.
   static constexpr uint8_t crypto_cipher_virtual_methods[] = {
       0, 6, 3, 1, 2, 7, 4, 5};
+  static constexpr uint8_t crypto_aead_virtual_methods[] = {
+      0, 6, 3, 1, 2, 7, 4, 5, 8, 9, 10, 11};
   // The JC305 Signature export begins with getAlgorithm/getLength, while
   // CHOUPI's embedded API places its init and digest configuration methods
   // first. Translate imported tokens before dispatching against the embedded
@@ -377,6 +379,13 @@ uint8_t remap_imported_virtual_method_token(
       (class_token == 14 || class_token == 32) &&
       method_token < sizeof(security_random_data_virtual_methods)) {
     return security_random_data_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0 &&
+      class_token == 3 &&
+      method_token < sizeof(crypto_aead_virtual_methods)) {
+    return crypto_aead_virtual_methods[method_token];
   }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,

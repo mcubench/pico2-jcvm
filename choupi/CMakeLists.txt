@@ -424,6 +424,21 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
+  if(JC_SUPPORT_CIPHER_AES_GCM)
+    target_sources(choupi PRIVATE
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/gcm.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/ccm.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/cipher.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/cipher_wrap.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aria.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/camellia.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/chacha20.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/chachapoly.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/poly1305.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/nist_kw.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/des.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/constant_time.c")
+  endif()
   # Matches the firmware targets, which already suppress this warning for the
   # packed CAP structures.
   target_compile_options(choupi PRIVATE -Wno-address-of-packed-member)

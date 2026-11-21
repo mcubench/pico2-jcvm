@@ -22,6 +22,7 @@ import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RSAPublicKey;
 import javacard.security.Signature;
 import javacard.security.SignatureMessageRecovery;
+import javacardx.crypto.AEADCipher;
 import javacardx.crypto.Cipher;
 
 /** Test applet that exposes one deterministic cipher or MAC operation per APDU. */
@@ -129,6 +130,9 @@ public final class SymmCryptoProbe extends Applet {
         output[0] = (byte)0x62;
         outputLength = (short)1;
       }
+    } else if (instruction == (byte)0x2f) {
+      output = new byte[(short)(inputLength + 16)];
+      outputLength = runGcm(operation, input, inputLength, output);
     } else if (instruction == (byte)0x2e) {
       output = new byte[8];
       outputLength = runChecksum(algorithm, operation, input, inputLength, output);
@@ -651,6 +655,48 @@ public final class SymmCryptoProbe extends Applet {
     byte aggregate = 0;
     for (short i = 0; i < value.length; i++) aggregate |= value[i];
     return aggregate != 0;
+  }
+
+  private static short runGcm(byte operation, byte[] input,
+                             short length, byte[] output) {
+    boolean decrypt = (operation & 1) != 0;
+    AESKey key = (AESKey)KeyBuilder.buildKey(KeyBuilder.TYPE_AES,
+        KeyBuilder.LENGTH_AES_128, false);
+    key.setKey(new byte[16], (short)0);
+    AEADCipher cipher;
+    if ((operation & 4) != 0) {
+      cipher = (AEADCipher)Cipher.getInstance(AEADCipher.CIPHER_AES_GCM,
+          Cipher.PAD_NULL, false);
+    } else {
+      cipher = (AEADCipher)Cipher.getInstance(AEADCipher.ALG_AES_GCM, false);
+    }
+    if (cipher.getAlgorithm() != AEADCipher.ALG_AES_GCM ||
+        cipher.getCipherAlgorithm() != AEADCipher.CIPHER_AES_GCM ||
+        cipher.getPaddingAlgorithm() != Cipher.PAD_NULL)
+      ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+    byte mode = decrypt ? Cipher.MODE_DECRYPT : Cipher.MODE_ENCRYPT;
+    cipher.init(key, mode, input, (short)1, (short)12);
+    short aadLength = (short)(input[0] & 0xff);
+    short aadSplit = (short)(aadLength / 2);
+    cipher.updateAAD(input, (short)13, aadSplit);
+    cipher.updateAAD(input, (short)(13 + aadSplit), (short)(aadLength - aadSplit));
+    short offset = (short)(13 + aadLength);
+    short payload = (short)(length - offset);
+    if (decrypt) payload -= (short)16;
+    short split = (short)(payload / 2);
+    short written = cipher.update(input, offset, split, output, (short)0);
+    written += cipher.doFinal(input, (short)(offset + split),
+        (short)(payload - split), output, written);
+    if (decrypt) {
+      if (!cipher.verifyTag(input, (short)(offset + payload), (short)16, (short)16)) {
+        output[0] = 0;
+        return 1;
+      }
+      output[written++] = 1;
+    } else {
+      written += cipher.retrieveTag(output, written, (short)16);
+    }
+    return written;
   }
 
   private static short runChecksum(byte algorithm, byte operation, byte[] input,

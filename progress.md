@@ -33206,3 +33206,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed 15/15, ARM max_crypto linked, and the symmetric simulator passed 170 vectors. CRC32 support appears in the pinned jCardSim profile. The PKZIP-seeded and default results were checked independently using zlib.
 - Result: `123456789` produces D202D277 with the initial zero state and CBF43926 with the PKZIP seed FFFFFFFF. Finalization resets the state. F42D's RSA replay started after the earlier campaign ended, and a fresh raw CCID check still could not open EE11. No shared reader refresh or hardware algorithm APDUs were run.
 - Artifacts/logs: `artifacts/logs/{build-arm-crc32,test-crc32}.log`.
+
+## 2026-11-21 Add native AES-GCM AEADCipher 9 minutes
+
+- Step-Id: `20261121-1239-aes-gcm`
+- When: '2026-11-21 12:31 CET' - '2026-11-21 12:40 CET'
+- Model: `GPT-6`
+- Change: Routed AES-GCM through both standard Cipher factories and the native AEADCipher methods. Retained the pointer-free Mbed TLS streaming state in transient workspace. Added the JC305 AEADCipher virtual-token map and parameterized support rows. Cipher.OneShot requires a separate tag-capable interface for AEAD.
+- Validation: Profile tests passed 15/15, ARM max_crypto linked and the simulator passed 182 vectors. The 12 GCM vectors used independent AESGCM results for both factories, empty and split AAD, multipart encryption and decryption, and corrupted tag rejection. Corrected the initially observed virtual-token mismatch and reran the complete suite.
+- Result: GCM preserved incremental state and produced matching tags. Device APDU validation remains pending because the EE11 raw path is inaccessible and the F42D replay uses shared PC/SC.
+- Artifacts/logs: `artifacts/logs/{build-arm-aes-gcm-final,test-aes-gcm-final,symm-crypto-kat-vpcd-20261121T113908Z}.log`.

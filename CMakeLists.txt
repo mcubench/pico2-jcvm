@@ -284,6 +284,21 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/des.c")
   endif()
+  if(JC_SUPPORT_CIPHER_AES_GCM)
+    target_sources(pico2_choupi PRIVATE
+      "${PICO_SDK_PATH}/lib/mbedtls/library/gcm.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/ccm.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/cipher.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/cipher_wrap.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/aria.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/camellia.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/chacha20.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/chachapoly.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/poly1305.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/nist_kw.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/des.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/constant_time.c")
+  endif()
   target_include_directories(pico2_choupi PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"

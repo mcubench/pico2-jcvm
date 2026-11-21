@@ -104,6 +104,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
     ),
     "cipher_aes_xts": ("javacardx.crypto.Cipher", "ALG_AES_XTS"),
+    "cipher_aes_gcm": ("javacardx.crypto.AEADCipher", "CIPHER_AES_GCM"),
     "cipher_aes_cfb": ("javacardx.crypto.Cipher", "ALG_AES_CFB"),
     "cipher_aes_ctr": ("javacardx.crypto.Cipher", "ALG_AES_CTR"),
     "cipher_getinstance_aes_ctr": (
@@ -423,6 +424,9 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
      "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
      "CIPHER_AES_CFB PAD_NULL"),
     (("cipher_aes_cfb",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CFB PAD_NULL"),
+    (("cipher_aes_gcm",),
+     "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+     "CIPHER_AES_GCM PAD_NULL"),
     (("cipher_aes_xts",),
      "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
      "CIPHER_AES_XTS PAD_NULL"),
@@ -654,6 +658,14 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacardx/crypto|Cipher|Cipher/getAlgorithm()B|instance",
             "javacardx/crypto|Cipher|Cipher/getCipherAlgorithm()B|instance",
             "javacardx/crypto|Cipher|Cipher/getPaddingAlgorithm()B|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/init(Ljavacard/security/Key;B)V|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/init(Ljavacard/security/Key;B[BSS)V|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/init(Ljavacard/security/Key;B[BSSSSS)V|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/updateAAD([BSS)V|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/update([BSS[BS)S|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/doFinal([BSS[BS)S|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/retrieveTag([BSS)S|instance",
+            "javacardx/crypto|AEADCipher|AEADCipher/verifyTag([BSSS)Z|instance",
             "javacardx/crypto|Cipher|Cipher/update([BSS[BS)S|instance",
             "javacardx/crypto|Cipher|Cipher/doFinal([BSS[BS)S|instance",
         )) + "\n"

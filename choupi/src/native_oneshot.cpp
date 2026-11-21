@@ -196,6 +196,8 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_oneShotOpen(
   jref_t delegate;
   switch (kind) {
   case kCipher:
+    if (static_cast<uint8_t>(first) == 0xF1)
+      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
     delegate = javacardx_crypto_Cipher_getInstance(first, second, FALSE);
     break;
   case kSignature:
