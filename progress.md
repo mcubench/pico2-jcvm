@@ -32963,3 +32963,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `./tools/fixture-path --verify` passed for 85 files. Checked the package and type lists against the class references in all 11 supplied 3.0.5 CAPs and confirmed the surrounding README text was unchanged. `git diff --check` passed.
 - Result: The table reports historical coverage and includes fixture dependencies.
 - Artifacts/logs: Supplied 3.0.5 CAPs and existing physical run records. No firmware or hardware work was needed.
+
+## 2026-11-21 Name unsupported Java Card API cases 1 minute
+
+- Step-Id: `20261121-0942-readme-api-unsupported-cases`
+- When: '2026-11-21 09:42 CET' - '2026-11-21 09:43 CET'
+- Model: `GPT-6`
+- Change: Named unsupported framework and cipher cases and the disabled max_crypto flags in the README coverage column.
+- Validation: Compared the notes with the recorded physical Core and Crypto results and the profile configuration. Verified that the package and class columns were identical and ran `git diff --check`.
+- Result: The table reports the older object-deletion result separately from current normal-build behavior.
+- Artifacts/logs: Existing October 31 physical API CSVs. No new hardware run.
