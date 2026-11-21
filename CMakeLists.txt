@@ -64,7 +64,7 @@ if(TARGET pico_mbedtls_headers)
   # includes Mbed TLS headers sees the same configuration.
   target_compile_definitions(pico_mbedtls_headers INTERFACE
     "MBEDTLS_USER_CONFIG_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/src/choupi_mbedtls_user_config.h\"")
-  if(JC_SUPPORT_SHA3_224)
+  if(JC_SUPPORT_SHA3_ANY)
     target_compile_definitions(pico_mbedtls_headers INTERFACE
       CHOUPI_MBEDTLS_KEEP_SHA3=1)
   endif()
@@ -327,7 +327,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
       "${PICO_SDK_PATH}/lib/mbedtls/library/md5.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/ripemd160.c")
   endif()
-  if(JC_SUPPORT_SHA3_224)
+  if(JC_SUPPORT_SHA3_ANY)
     target_sources(pico2_choupi PRIVATE "${PICO_SDK_PATH}/lib/mbedtls/library/sha3.c")
   endif()
   if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY OR

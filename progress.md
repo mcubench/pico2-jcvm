@@ -33112,3 +33112,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: ARM builds no longer compile or report the Rust OS.
 - Decision: converter and Maven notices remain; they are toolchain messages about the ROM packages, not firmware code.
 - Artifacts/logs: none beyond build logs.
+
+## 2026-11-21 Add native SHA3-256 streaming digest 2 minutes
+
+- Step-Id: `20261121-1209-sha3-256`
+- When: '2026-11-21 12:08 CET' - '2026-11-21 12:10 CET'
+- Model: `GPT-6`
+- Change: Added SHA3-256 profile and OneShot rows. Selected the Mbed TLS SHA-3 backend whenever a SHA-3 digest capability is enabled.
+- Validation: ARM max_crypto linked. Profile tests passed 15/15. The symmetric simulator passed 117 vectors including SHA3-256 for an empty message, abc and a multipart 200-byte input.
+- Result: SHA3-256 output matched hashlib in all cases. Hardware was not flashed due to build dependency warnings.
+- Artifacts/logs: `artifacts/logs/{build-arm-sha3-256,test-sha3-256}.log`.

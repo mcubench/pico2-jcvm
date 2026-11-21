@@ -30,6 +30,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "sha384": ("javacard.security.MessageDigest", "ALG_SHA_384"),
     "sha512": ("javacard.security.MessageDigest", "ALG_SHA_512"),
     "sha3_224": ("javacard.security.MessageDigest", "ALG_SHA3_224"),
+    "sha3_256": ("javacard.security.MessageDigest", "ALG_SHA3_256"),
     "cipher_rsa_pkcs1": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1"),
     "cipher_rsa_nopad": ("javacardx.crypto.Cipher", "ALG_RSA_NOPAD"),
     "cipher_rsa_oaep": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1_OAEP"),
@@ -462,6 +463,7 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("sha512",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_512"),
     (("sha224",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_224"),
     (("sha3_224",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_224"),
+    (("sha3_256",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_256"),
     (("secure_random",), "javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
     # MessageDigest.getInitializedMessageDigestInstance() and its OneShot use
     # the same SHA-1/SHA-2 engines as MessageDigest
@@ -509,6 +511,10 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     for key, enabled in config.items():
         cmake.append(f"set(JC_SUPPORT_{key.upper()} {'ON' if enabled else 'OFF'})")
         header.append(f"#define JC_SUPPORT_{key.upper()} {1 if enabled else 0}")
+    sha3_enabled = any(enabled for key, enabled in config.items()
+                       if key.startswith("sha3_"))
+    cmake.append(f"set(JC_SUPPORT_SHA3_ANY {'ON' if sha3_enabled else 'OFF'})")
+    header.append(f"#define JC_SUPPORT_SHA3_ANY {1 if sha3_enabled else 0}")
     rsa_signature_enabled = any(config[key] for key in (
         "signature_rsa_sha_iso9796", "signature_rsa_sha_iso9796_mr",
         "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",

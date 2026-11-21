@@ -525,7 +525,7 @@ if(CHOUPI_TARGET_PC)
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/md5.c"
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/ripemd160.c"
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha3.c")
-  elseif(JC_SUPPORT_SHA3_224)
+  elseif(JC_SUPPORT_SHA3_ANY)
     target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha3.c")
   endif()
   if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY OR

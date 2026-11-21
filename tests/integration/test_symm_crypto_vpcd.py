@@ -258,7 +258,7 @@ def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
 
 def sha3_vectors() -> list[tuple[bytes, bytes, str]]:
     vectors = []
-    for algorithm, bits in ((8, 224),):
+    for algorithm, bits in ((8, 224), (9, 256)):
         for message in (b"", b"abc", bytes(range(200))):
             apdu = bytes((0x80, 0x12, algorithm, 0, len(message)))
             if message:
