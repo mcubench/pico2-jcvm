@@ -32973,3 +32973,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Compared the notes with the recorded physical Core and Crypto results and the profile configuration. Verified that the package and class columns were identical and ran `git diff --check`.
 - Result: The table reports the older object-deletion result separately from current normal-build behavior.
 - Artifacts/logs: Existing October 31 physical API CSVs. No new hardware run.
+
+## 2026-11-21 Refresh Java Card API coverage from the external d7e90a18 run 1 minute
+
+- Step-Id: `20261121-0947-readme-api-external-results`
+- When: '2026-11-21 09:46 CET' - '2026-11-21 09:47 CET'
+- Model: `GPT-6`
+- Change: Updated the README coverage notes for object deletion and cipher support using the November 20 external run and the existing hardware record for the same image.
+- Validation: Inspected the inbox support and performance CSVs and verified the client JAR hash `724bda75022756605bdde5f54edc9fece4e0b70a23eed5ddc86645d60e1eabd9`. Confirmed the README edit stayed within the coverage subsection. `git diff --check` passed.
+- Result: Object deletion is reported as supported. External factory results confirm OneShot AES-CBC/ECB without padding and RSA-PKCS1. The supplied external results contain no separate API CAP suite rerun.
+- Artifacts/logs: `inbox/pico2-jcvm-maxcrypto-deletion-d7e90a18_20261120/`. No new hardware tests were run.
