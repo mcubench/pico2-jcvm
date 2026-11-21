@@ -71,7 +71,7 @@ ARM Cortex-M33 runs the complete JCVM firmware; RISC-V (Hazard3) is out of scope
 
 ## 5. Architecture and development
 
-The Pico 2 runs a native C++ Java Card VM derived from CHOUPI. It interprets installed CAP files; Java Card API behavior and cryptography are implemented through native dispatch.
+The Pico 2 runs a native C++ Java Card VM derived from CHOUPI. It interprets installed CAP files and dispatches Java Card APIs and cryptography to native C++ code.
 
 ```text
 Host application → PC/SC → USB CCID → Card manager / JCRE
@@ -79,7 +79,7 @@ Host application → PC/SC → USB CCID → Card manager / JCRE
                                                       → Flash storage
 ```
 
-The compatibility target is **Java Card Classic 3.0.5**, with the following coverage and limits (updated **2026-11-20**):
+The compatibility target is **Java Card Classic 3.0.5**. Full specification conformance remains unverified.
 
 | Feature | Status | Coverage / limits |
 | --- | --- | --- |
@@ -95,13 +95,29 @@ The compatibility target is **Java Card Classic 3.0.5**, with the following cove
 | Extended-length APDUs | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
-| Persistent-object reclamation / `JCSystem.requestObjectDeletion()` | ![Partial](https://img.shields.io/badge/partial-yellow) | **Enabled in the normal build** (`mode=normal`; `PICO2_ENABLE_OBJECT_DELETION=0` gives a diagnostic build without it). It queues deletion for service after the APDU unwinds. JCAlgTest performance (option 2) passes on hardware with storage below 15 %; the all-algorithms run (option 1) no longer runs out of RAM but has not yet completed in one run. Power-loss acceptance remains open. |
+| Persistent-object reclamation / `JCSystem.requestObjectDeletion()` | ![Partial](https://img.shields.io/badge/partial-yellow) | **Enabled in the normal build** (`mode=normal`; `PICO2_ENABLE_OBJECT_DELETION=0` gives a diagnostic build without it). It queues deletion for service after the APDU unwinds. Power-loss acceptance remains open. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | RSA/RSA-CRT 4096-bit key-pair generation | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Excluded from `max_crypto`. |
 
-Supported marks the listed implemented path, not full specification conformance. Exact cryptographic capability flags are in [the profile configuration](config/javacard-support.json); these declarations do not prove that every API method or workload passes.
+### Supplied Java Card API CAP coverage
 
-Full specification conformance and complete per-method coverage are not established. The JCAlgTest **1.8.5 / jc305 CAP with the 1.8.5 host client** is the acceptance baseline; the unchanged-client VPCD run and the physical performance campaign (option 2) pass; the physical all-algorithms campaign (option 1) and power-loss acceptance remain open. Partial campaign results are not suite passes. See the [supported profile](docs/supported-profile.md) and [progress records](progress.md) for detailed limits and validation evidence. A host emulator supports development without physical hardware; emulator results and physical Pico 2 results are recorded separately.
+The matrix lists all 48 [supplied CAPs](tests/fixtures/external/javacard-api/provided-20261107/caps) by family and version suffix. The 3.0.5 column summarizes historical Pico 2 results across firmware builds. Earlier variants are listed as unverified. See the [progress records](progress.md) for profiles, counts, and emulator results.
+
+| CAP family | 2.2.1 (`221`) | 2.2.2 (`222`) | 3.0.3 (`303`) | 3.0.4 (`304`) | 3.0.5 (`305`) |
+| --- | --- | --- | --- | --- | --- |
+| Biometry | Unverified | Unverified | Unverified | Unverified | INSTALL refused |
+| Core | Unverified | Unverified | Unverified | Unverified | Partial. 272 of 291 cases passed in the recorded `max_crypto` run, with four Ext cases unavailable. |
+| Crypto | Unverified | Unverified | Unverified | Unverified | Partial. Native crypto calls passed, with unsupported cases and unexpected errors in full physical sweeps. |
+| Ext | — | Unverified | Unverified | Unverified | INSTALL refused. Extended-length APDUs are unsupported. |
+| Javacardx | Unverified | Unverified | Unverified | Unverified | INSTALL refused |
+| JavacardxExt | — | Unverified | Unverified | Unverified | INSTALL refused |
+| JavacardxInt | — | Unverified | Unverified | Unverified | INSTALL refused |
+| JavacardxSec | — | — | — | — | 84 of 84 cases passed on a tested build. |
+| Multi | Unverified | Unverified | Unverified | Unverified | Two applet instances installed for the Core scenarios. Full scenario coverage remains unverified. |
+| Security | Unverified | Unverified | Unverified | Unverified | Partial. Key API calls passed, with unsupported cases and resource failures in physical sweeps. |
+| Service | Unverified | Unverified | Unverified | Unverified | 124 of 124 cases passed on a tested build. |
+
+A dash indicates that the suite supplied no CAP for that version.
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)

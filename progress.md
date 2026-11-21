@@ -32930,3 +32930,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL, 0 `OBJECT_DELETION:SKIP reason=allocation_failed`, 0 `SW=6999`. Passed method 631 (`TYPE_RSA_CRT_PUBLIC LENGTH_RSA_4096 ALG_RSA_PKCS1_OAEP`), where the d7e90a18 rerun panicked. 1,794 PRE_CLEANUP samples; minimum free RAM before cleanup 22,664 B (during the RSA-CRT private/public 3072–4096 stages); peak store 72,879/98,304 B (74.1%, below the 90% gate); 72 low-watermark compactions; last heap 133 arrays / 38 instances. The recoverable-allocation path was never needed in this run, so it remains validated only by the unit fault-injection test.
 - Decision: resumed at 09:12 CET on the same card with the same `-cardname`, no `-fresh`, stdin `2/1/y` (1,361 already-measured entries). The first resume attempt used the old reader name `... 01 00` and stopped at reader lookup (no APDU); pcscd had renumbered the readers (07E7 now `... 00 00`); serial shows no BOOT, so the card was not reset. The serial capture's own 43,500 s bound ended at 09:13; a second capture continues in `serial-resume.log`. T8 option 1 stays open until the resumed client reports `Testing complete`.
 - Artifacts/logs: `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/` (`client.log`, `serial.log`, `client-resume-attempt0-wrong-reader.log`, `client-resume.log`, `serial-resume.log`, `campaign-identity.txt`)
+
+## 2026-11-21 Document supplied Java Card API CAP coverage 1 minute
+
+- Step-Id: `20261121-0920-readme-api-cap-coverage`
+- When: '2026-11-21 09:19 CET' - '2026-11-21 09:20 CET'
+- Model: `GPT-6`
+- Change: Removed third-party algorithm campaign references from README section 5 and documented the supplied API CAP families, variants, and historical physical outcomes.
+- Validation: `./tools/fixture-path --verify` passed for 84 files including all 48 API CAPs. The matrix matched the CAP inventory exactly, README content outside section 5 matched HEAD, and `git diff --check` passed. Firmware builds and hardware tests were skipped for this documentation change.
+- Result: The matrix distinguishes recorded Java Card API 3.0.5 outcomes from unverified variants.
+- Decision: Keep historical outcomes tied to their recorded firmware builds.
+- Artifacts/logs: Existing physical API run records from 2026-10-25 through 2026-11-01 in this log.
