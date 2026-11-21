@@ -26,8 +26,7 @@ The implementation is based on [CHOUPI, an open-source Java Card Virtual Machine
 
 You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these downloads:
 
-- [JCAlgTest CAP files — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): the repository acceptance baseline is the supplied **v1.8.5, Java Card Classic 3.0.5 (`jc305`)** CAP, pinned in `tests/fixtures/manifest.json`; run it with the v1.8.5 host client.
-- [JCAlgTest PC client — latest release](https://github.com/crocs-muni/JCAlgTest/releases/latest): use client **v1.8.5** (`AlgTestJClient_v1.8.5.jar`, pinned in `tests/fixtures/external/jcalgtest/1.8.5/client/`). Older clients do not send the card-reset/object-deletion APDU correctly, so long runs exhaust card memory.
+- The [pinned JCAlgTest fixtures](tests/fixtures/manifest.json) contain the unchanged **1.8.5 / jc305 CAP** and the **1.8.5-20261121 host client** used for new runs.
 - [GlobalPlatformPro `gp.jar` binary](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest/download/gp.jar).
 
 1. Download [pico2-jcvm-max_crypto-arm__latest.uf2](https://github.com/mcubench/pico2-jcvm/releases), or build an ARM JCVM **`.uf2`** image below.
@@ -36,13 +35,13 @@ You need a Raspberry Pi Pico 2, a USB data cable, Java, PC/SC support, and these
 
    ```sh
    java -jar gp.jar --reader "<Pico reader name>" \
-     --install "<downloaded JC305 CAP file>"
+     --install "$(./tools/fixture-path jcalgtest.cap)"
    ```
 
 4. Run the v1.8.5 client and select the Pico reader when prompted:
 
    ```sh
-   java -jar AlgTestJClient_v1.8.5.jar \
+   java -jar "$(./tools/fixture-path jcalgtest.client.1.8.5-20261121)" \
      -op ALG_SUPPORT_EXTENDED -fresh -outpath results
    ```
 
@@ -88,10 +87,10 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
 | Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. |
 | Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, `OwnerPIN` (try counter durable before comparison, validated flag in RAM), and implemented `JCSystem` transient-memory and transaction operations. See [JavaCard API coverage](#javacard-api-coverage) for detailed results. |
-| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | Profile-dependent keys, digests, random numbers, ciphers, signatures/MACs, and key agreement. `max_crypto` declares **177 of 177** capability flags enabled, including AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants; `InitializedMessageDigest` and all five 3.0.5 `OneShot` classes (RAM-only). The default profile is `baseline`; profile flags do not establish full algorithm acceptance. |
+| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | The default is `baseline`. The ARM `max_crypto` profile enables all **177 configured capabilities**, including `InitializedMessageDigest` and all five Java Card 3.0.5 `OneShot` classes. See the current crypto coverage below. |
 | GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
 | Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted cross-AID sharing, proxy lifecycle, and firewall tests exist. Coordinated cross-context garbage-collection roots/cycles have host-unit coverage; full isolation semantics and device RAM bounds remain unestablished. |
-| MessageDigest input | ![Implemented](https://img.shields.io/badge/implemented-blue) | Streams across `update()` and `doFinal()` up to the selected SHA algorithm’s message-length limit. Each call reads directly from the applet array within Java Card’s array and `short` bounds. |
+| MessageDigest input | ![Implemented](https://img.shields.io/badge/implemented-blue) | Repeated `update()` calls and `doFinal()` stream directly from the applet array with fixed-size digest state. Each call follows Java Card array and `short` bounds. Cumulative input has no 2,046-byte VM cap. |
 | Extended-length APDUs | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
@@ -99,6 +98,18 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | Persistent-object reclamation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Reclaims unreachable persistent objects. Exercised on a Pico 2 in the external Windows run. Hardware power-loss validation remains open. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | RSA/RSA-CRT 4096-bit key-pair generation | ![Implemented](https://img.shields.io/badge/implemented-blue) | Enabled in `asymm_crypto` and `max_crypto`. Physical validation pending. |
+
+### Current crypto coverage
+
+| Area | Implementation and validation |
+| --- | --- |
+| Digests and checksums | Streaming SHA3-224/256/384/512, including `MessageDigest.OneShot`, and ISO 3309 CRC16/CRC32 passed simulator vectors. SHA-1 and SHA-2 state import remain available through `InitializedMessageDigest`. |
+| AES ciphers | AES-CFB128, AES-XTS, AES-CCM, and AES-GCM passed simulator vectors. CCM and GCM use `AEADCipher` for tags and associated data. XTS accepts two AES-128 or two AES-256 keys and buffers one data unit of up to 32,767 bytes. Full physical vector validation remains open. |
+| MACs | DES MAC4 NOPAD passed simulator vectors. The 128-bit-block AES MAC and CMAC accept AES-128/192/256 keys, with physical coverage for all three widths. |
+| RandomData | Pseudo-random, secure random, and preseeded DRBG passed simulator and focused physical API checks. Both TRNG factories passed on the RP2350. TRNG is hardware-only. |
+| EC and RSA keys | `max_crypto` enables 112-bit prime-field EC private key storage. On-card RSA and RSA-CRT 3072-bit generation passed focused physical checks. Both 4096-bit generation modes passed simulator tests. Focused physical 4096-bit generation remains deferred. |
+
+`ALG_XDH` remains unavailable because its Java Card 3.1 named-parameter key API is outside the current ROM ABI. The legacy RSA ISO14888/ISO9796 **Cipher** IDs and the 192-/256-bit-block AES CBC/ECB and MAC NOPAD IDs are excluded. Standard 128-bit-block AES CBC/ECB and MAC support 192- and 256-bit keys.
 
 ### JavaCard API coverage
 
@@ -109,12 +120,12 @@ The table groups the API classes and interfaces referenced by the [supplied 3.0.
 | `java.rmi` | `Remote` | ![Partial](https://img.shields.io/badge/partial-yellow) The Service suite exercised RMI through `Remote`. |
 | `javacard.framework` | `AID`, `APDU`, `APDUException`, `Applet`, `AppletEvent`, `CardException`, `CardRuntimeException`, `ISO7816`, `ISOException`, `JCSystem`, `MultiSelectable`, `OwnerPIN`, `OwnerPINBuilder`, `OwnerPINx`, `OwnerPINxWithPredecrement`, `PIN`, `PINException`, `SensitiveArrays`, `Shareable`, `SystemException`, `TransactionException`, `UserException`, `Util` | ![Partial](https://img.shields.io/badge/partial-yellow) 273 of 291 Core and scenario cases passed, including `isObjectDeletionSupported()` and `requestObjectDeletion()`. Unsupported cases were `SensitiveArrays.makeIntegritySensitiveArray()`, `isIntegritySensitive()`, `assertIntegrity()` and `clearArray()` on integrity-sensitive arrays, and `MultiSelectable.select(boolean)` and `deselect(boolean)` across logical channels. Four extended-length cases were blocked at installation. |
 | `javacard.framework.service` | `BasicService`, `CardRemoteObject`, `Dispatcher`, `RMIService`, `RemoteService`, `SecurityService`, `Service`, `ServiceException` | ![Supported](https://img.shields.io/badge/supported-brightgreen) 124 of 124 Service cases passed. |
-| `javacard.security` | `AESKey`, `Checksum`, `CryptoException`, `DESKey`, `DHKey`, `DHPrivateKey`, `DHPublicKey`, `DSAKey`, `DSAPrivateKey`, `DSAPublicKey`, `ECKey`, `ECPrivateKey`, `ECPublicKey`, `HMACKey`, `InitializedMessageDigest`, `InitializedMessageDigest.OneShot`, `Key`, `KeyAgreement`, `KeyBuilder`, `KeyPair`, `KoreanSEEDKey`, `MessageDigest`, `MessageDigest.OneShot`, `PrivateKey`, `PublicKey`, `RSAPrivateCrtKey`, `RSAPrivateKey`, `RSAPublicKey`, `RandomData`, `RandomData.OneShot`, `SecretKey`, `Signature`, `Signature.OneShot`, `SignatureMessageRecovery` | ![Partial](https://img.shields.io/badge/partial-yellow) 491 of 901 Security cases passed. All tested `KoreanSEEDKey`, DSA key and DH key cases were unsupported. On this revision, 8-byte `HMACKey` set/get and the `ALG_HMAC_RIPEMD160` and SHA-512 RSA-PSS signature probes raised exceptions. |
+| `javacard.security` | `AESKey`, `Checksum`, `CryptoException`, `DESKey`, `DHKey`, `DHPrivateKey`, `DHPublicKey`, `DSAKey`, `DSAPrivateKey`, `DSAPublicKey`, `ECKey`, `ECPrivateKey`, `ECPublicKey`, `HMACKey`, `InitializedMessageDigest`, `InitializedMessageDigest.OneShot`, `Key`, `KeyAgreement`, `KeyBuilder`, `KeyPair`, `KoreanSEEDKey`, `MessageDigest`, `MessageDigest.OneShot`, `PrivateKey`, `PublicKey`, `RSAPrivateCrtKey`, `RSAPrivateKey`, `RSAPublicKey`, `RandomData`, `RandomData.OneShot`, `SecretKey`, `Signature`, `Signature.OneShot`, `SignatureMessageRecovery` | ![Partial](https://img.shields.io/badge/partial-yellow) 491 of 901 Security cases passed. All tested `KoreanSEEDKey`, DSA key and DH key cases were unsupported. On the historical test image, 8-byte `HMACKey` set/get and the `ALG_HMAC_RIPEMD160` and SHA-512 RSA-PSS signature probes raised exceptions. |
 | `javacardx.apdu` | `ExtendedLength` | ![Unsupported](https://img.shields.io/badge/unsupported-red) The extended-length fixture was refused at INSTALL (`6A88`). |
 | `javacardx.apdu.util` | `APDUUtil` | ![Supported](https://img.shields.io/badge/supported-brightgreen) 62 of 62 `APDUUtil` cases passed. |
 | `javacardx.biometry` | `BioBuilder`, `BioException`, `BioTemplate`, `OwnerBioTemplate`, `SharedBioTemplate` | ![Unsupported](https://img.shields.io/badge/unsupported-red) The Biometry fixture was refused at INSTALL (`6A88`). |
 | `javacardx.biometry1ton` | `Bio1toNBuilder`, `Bio1toNException`, `BioMatcher`, `BioTemplateData`, `OwnerBioMatcher`, `OwnerBioTemplateData`, `SharedBioMatcher`, `SharedBioTemplateData` | ![Unsupported](https://img.shields.io/badge/unsupported-red) The Biometry fixture was refused at INSTALL (`6A88`). |
-| `javacardx.crypto` | `AEADCipher`, `Cipher`, `Cipher.OneShot`, `KeyEncryption` | ![Partial](https://img.shields.io/badge/partial-yellow) 110 of 172 cases passed, including all five `Cipher.OneShot` cases. Unsupported cases covered AES-CCM/GCM, Korean SEED CBC/ECB, legacy AES-192/256 CBC/ECB no-padding IDs, AES-CBC with `PAD_NULL`, DES-CBC ISO 9797-1 methods 1/2 algorithm 3 padding, DES-CBC and RSA-PKCS1 with external access, RSA ISO 14888/9796, RSA-PSS, RFC 2409 and OAEP with SHA-224/256/384/512 or SHA-3, and all three `KeyEncryption` cases. `Cipher.doFinal()` without data returned zero where the probe expected an exception. |
+| `javacardx.crypto` | `AEADCipher`, `Cipher`, `Cipher.OneShot`, `KeyEncryption` | ![Partial](https://img.shields.io/badge/partial-yellow) 110 of 172 cases passed, including all five `Cipher.OneShot` cases. On that historical image, unsupported cases covered AES-CCM/GCM, Korean SEED CBC/ECB, legacy AES-192/256 CBC/ECB no-padding IDs, AES-CBC with `PAD_NULL`, DES-CBC ISO 9797-1 methods 1/2 algorithm 3 padding, DES-CBC and RSA-PKCS1 with external access, RSA ISO 14888/9796, RSA-PSS, RFC 2409 and OAEP with SHA-224/256/384/512 or SHA-3, and all three `KeyEncryption` cases. `Cipher.doFinal()` without data returned zero where the probe expected an exception. |
 | `javacardx.external` | `ExternalException`, `Memory`, `MemoryAccess` | ![Unsupported](https://img.shields.io/badge/unsupported-red) The external-memory fixture was refused at INSTALL (`6A88`). |
 | `javacardx.framework` | `ClassicSIOProxy` | ![Partial](https://img.shields.io/badge/partial-yellow) The Core Shareable sub-interface case passed. Full cross-context coverage remains open. |
 | `javacardx.framework.math` | `BCDUtil`, `BigNumber`, `ParityBit` | ![Unsupported](https://img.shields.io/badge/unsupported-red) The full extension fixture was refused at INSTALL (`6A88`). |
@@ -131,4 +142,4 @@ The table groups the API classes and interfaces referenced by the [supplied 3.0.
 
 ## Test organization
 
-See [tests/README.md](tests/README.md) for unit/integration/hardware tests and immutable external fixtures. Verify supplied inputs with `./tools/fixture-path --verify`. JCAlgTest (1.8.5 CAP, 1.8.5 client) and the independent API CAP suite have separate pinned clients; historical 1.8.2 evidence is not current acceptance.
+See [tests/README.md](tests/README.md) for unit/integration/hardware tests and immutable external fixtures. Verify supplied inputs with `./tools/fixture-path --verify`. JCAlgTest (1.8.5/jc305 CAP, 1.8.5-20261121 client) and the independent API CAP suite have separate pinned clients; historical 1.8.2 evidence is not current acceptance.

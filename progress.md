@@ -33387,3 +33387,12 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: negative evidence for Export class_offset at LOAD; the vtable fixture covers the stage-9 path.
 - Decision: CAPIN-07 remaining: interface index[] fixture, superinterface refs, resolveClassref record bound, LOAD-time move (CAPIN-01).
 - Artifacts/logs: `artifacts/logs/cap-export-offset-vpcd-20261121T141933Z.log`
+
+## 2026-11-21 Refresh README support coverage
+
+- Step-Id: `20261121-1522-readme-support`
+- When: '2026-11-21 15:22 CET' - '2026-11-21 15:23 CET'
+- Model: `GPT-6`
+- Change: Updated the README for streaming digests, current ARM max_crypto algorithms, hardware versus simulator evidence, current exclusions, and pinned JCAlgTest launch inputs.
+- Validation: Profile tests passed 15/15, all 86 fixtures verified, both fixture aliases resolved, and the scoped diff check passed. Documentation only.
+- Result: Current capability descriptions no longer inherit unsupported results from the historical API run.
