@@ -100,6 +100,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "checksum_crc32": ("javacard.security.Checksum", "ALG_ISO3309_CRC32"),
     "checksum_crc16": ("javacard.security.Checksum", "ALG_ISO3309_CRC16"),
     "random_preseeded_drbg": ("javacard.security.RandomData", "ALG_PRESEEDED_DRBG"),
+    "random_pseudo": ("javacard.security.RandomData", "ALG_PSEUDO_RANDOM"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -494,6 +495,7 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("sha3_512",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_512"),
     (("secure_random",), "javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
     (("random_preseeded_drbg",), "javacard.security.RandomData.OneShot", "ALG_PRESEEDED_DRBG"),
+    (("random_pseudo",), "javacard.security.RandomData.OneShot", "ALG_PSEUDO_RANDOM"),
     # MessageDigest.getInitializedMessageDigestInstance() and its OneShot use
     # the same SHA-1/SHA-2 engines as MessageDigest
     # (choupi/src/native_message_digest.cpp).

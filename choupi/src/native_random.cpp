@@ -11,7 +11,7 @@
 #include <memory>
 #include <utility>
 
-#if JC_SUPPORT_SECURE_RANDOM || JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#if JC_SUPPORT_SECURE_RANDOM || JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
 #ifdef PC_VERSION
 #include <random>
 #else
@@ -19,13 +19,14 @@
 #endif
 #endif
 
-#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
 #include "mbedtls/ctr_drbg.h"
 #endif
 
 namespace jcvm {
 namespace {
 
+constexpr jbyte_t kPseudoRandom = 1;
 constexpr jbyte_t kSecureRandom = 2;
 constexpr jbyte_t kPreseededDrbg = 4;
 constexpr uint16_t kAlgorithmField = 0;
@@ -51,7 +52,7 @@ std::shared_ptr<JC_Instance> randomInstance(jref_t reference) {
   return instance;
 }
 
-#if JC_SUPPORT_SECURE_RANDOM || JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#if JC_SUPPORT_SECURE_RANDOM || JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
 uint32_t entropyWord() {
 #ifdef PC_VERSION
   static std::random_device randomSource;
@@ -72,7 +73,7 @@ void generateSecure(JC_Array &output, uint16_t offset, uint16_t length) {
 }
 #endif
 
-#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
 #if defined(MBEDTLS_CTR_DRBG_USE_PSA_CRYPTO) || defined(MBEDTLS_THREADING_C)
 #error Native RandomData requires the pointer-free software CTR_DRBG state
 #endif
@@ -160,15 +161,16 @@ void fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
 
 jref_t javacard_security_RandomData_getInstance(jbyte_t algorithm) {
   if (!(algorithm == kSecureRandom && JC_SUPPORT_SECURE_RANDOM) &&
-      !(algorithm == kPreseededDrbg && JC_SUPPORT_RANDOM_PRESEEDED_DRBG))
+      !(algorithm == kPreseededDrbg && JC_SUPPORT_RANDOM_PRESEEDED_DRBG) &&
+      !(algorithm == kPseudoRandom && JC_SUPPORT_RANDOM_PSEUDO))
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   auto &heap = Context::getActiveContext().getHeap();
   const auto reference = heap.addInstance(ROM_PACKAGE_INDEX_JAVACARD_SECURITY,
                                           nativeRandomClass());
   auto instance = randomInstance(reference);
   instance->setField_Byte(kAlgorithmField, algorithm);
-#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
-  if (algorithm == kPreseededDrbg) {
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
+  if (algorithm != kSecureRandom) {
     instance->setField_Reference(kStateField, heap.addTransientArray(
         kDrbgStateBytes + 1, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
     auto state = drbgState(*instance);
@@ -199,8 +201,9 @@ jshort_t javacard_security_RandomData_nextBytes(jref_t receiver,
     generateSecure(*output, offset, length);
     break;
 #endif
-#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
   case kPreseededDrbg:
+  case kPseudoRandom:
     generateDrbg(*instance, *output, offset, length);
     break;
 #endif
@@ -221,8 +224,8 @@ void javacard_security_RandomData_setSeed(jref_t receiver,
     std::shared_ptr<JC_Array> input, jshort_t offset, jshort_t length) {
   auto instance = randomInstance(receiver);
   checkRange(input, offset, length);
-#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG
-  if (instance->getField_Byte(kAlgorithmField) == kPreseededDrbg) {
+#if JC_SUPPORT_RANDOM_PRESEEDED_DRBG || JC_SUPPORT_RANDOM_PSEUDO
+  if (instance->getField_Byte(kAlgorithmField) != kSecureRandom) {
     auto state = drbgState(*instance);
     Drbg drbg;
     loadDrbg(*state, drbg);

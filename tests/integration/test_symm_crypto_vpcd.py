@@ -286,7 +286,7 @@ def random_vectors() -> list[tuple[bytes, bytes, str]]:
     return [
         (bytes((0x80, 0x30, algorithm, operation, 0)), b"\x01\x90\x00",
          f"RandomData algorithm {algorithm} operation {operation}")
-        for algorithm in (2, 4) for operation in (0, 1)
+        for algorithm in (1, 2, 4) for operation in (0, 1)
     ]
 
 

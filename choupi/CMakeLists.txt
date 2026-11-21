@@ -422,7 +422,7 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
-  if(JC_SUPPORT_RANDOM_PRESEEDED_DRBG)
+  if(JC_SUPPORT_RANDOM_PRESEEDED_DRBG OR JC_SUPPORT_RANDOM_PSEUDO)
     target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/ctr_drbg.c")
   endif()
   if(JC_SUPPORT_CIPHER_AES_GCM OR JC_SUPPORT_CIPHER_AES_CCM)

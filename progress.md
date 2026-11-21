@@ -33248,3 +33248,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: new client pinned. The live F42D RSA-block replay (started 12:28 with `724bda75…`) keeps that client.
 - Decision: all subsequent JCAlgTest runs use `3cca70cb…`.
 - Artifacts/logs: simulator smoke output in the session scratchpad only.
+
+## 2026-11-21 Implement native pseudo-random RandomData
+
+- Step-Id: `20261121-1501-random-pseudo`
+- When: '2026-11-21 12:53 CET' - '2026-11-21 15:01 CET' (interrupted)
+- Model: `GPT-6`
+- Change: Exposed ALG_PSEUDO_RANDOM in max_crypto through both RandomData factories, using the vetted per-instance CTR_DRBG rather than keeping another random engine.
+- Validation: ARM max_crypto linked, profile tests passed 15/15, all 85 external fixtures verified and the simulator passed 206 vectors. Restricted VPCD loopback failed with EPERM and passed on the host execution path.
+- Result: Both factories returned the selected algorithm and generated output after seeding. Physical validation remains open.
+- Artifacts/logs: `artifacts/logs/{build-arm-pseudo,test-pseudo-host,symm-crypto-kat-vpcd-20261121T140046Z}.log`.
