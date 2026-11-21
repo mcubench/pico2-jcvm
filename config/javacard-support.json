@@ -1254,7 +1254,7 @@
       "signature_rsa_sha_256_pkcs1_pss": true,
       "signature_rsa_sha_384_pkcs1_pss": true,
       "signature_rsa_sha_512_pkcs1_pss": true,
-      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_112": true,
       "key_ec_fp_private_128": true,
       "key_ec_fp_private_160": true,
       "key_ec_fp_private_192": true,

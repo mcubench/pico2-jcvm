@@ -315,6 +315,7 @@ public final class SymmCryptoProbe extends Applet {
   private static byte runEcKey(byte selector) {
     short length = selector == 0 ? KeyBuilder.LENGTH_EC_FP_256 :
         KeyBuilder.LENGTH_EC_FP_521;
+    if (selector == 3) length = KeyBuilder.LENGTH_EC_FP_112;
     byte type = selector == 1 ? KeyBuilder.TYPE_EC_FP_PRIVATE_TRANSIENT_RESET :
         selector == 2 ? KeyBuilder.TYPE_EC_FP_PRIVATE_TRANSIENT_DESELECT :
         KeyBuilder.TYPE_EC_FP_PRIVATE;
