@@ -33491,3 +33491,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Change: Removed the quick-start runbook note, grouped crypto algorithms by function, described current API support, and listed the four test inputs and test types.
 - Validation: Compared the descriptions with the support configuration and implementation records. Fixture verification passed for 86 files. `git diff --check` passed.
 - Artifacts/logs: None. Documentation only.
+
+## 2026-11-21 Expand the README crypto support inventory 1 minute
+
+- Step-Id: `20261121-1852-readme-crypto-inventory`
+- When: '2026-11-21 18:52 CET' - '2026-11-21 18:53 CET'
+- Model: `GPT-6`
+- Change: Expanded the crypto table with cipher modes and padding, explicit ECDSA and elliptic-curve agreement coverage, and a link to the per-profile inventory.
+- Validation: Compared algorithm families with the profile configuration and native elliptic-curve dispatch, checked the link target, and ran `git diff --check`.
+- Result: The table documents the ECC operations the runtime implements and identifies ECIES as unavailable.
+- Artifacts/logs: None. No runtime tests were rerun.

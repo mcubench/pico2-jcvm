@@ -98,12 +98,16 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 
 | Area | Implemented algorithms |
 | --- | --- |
-| Symmetric ciphers | AES in CBC, ECB, CTR, CFB128 and XTS modes, AES-CCM and AES-GCM through `AEADCipher`, and DES and Triple DES in CBC and ECB modes. |
-| Asymmetric ciphers | RSA with PKCS #1 v1.5 or OAEP padding and raw RSA. |
-| Signatures and MACs | RSA PKCS #1 v1.5, RSA-PSS, RSA ISO 9796, ECDSA, HMAC with SHA, MD5 or RIPEMD-160, AES MAC and CMAC, and DES MACs. |
-| Digests and checksums | SHA-1, SHA-2, SHA-3, and ISO 3309 CRC16 and CRC32. `InitializedMessageDigest` supports SHA-1 and SHA-2 state import. |
-| Keys and agreement | AES, DES, Triple DES and HMAC keys, RSA and RSA-CRT key pairs, prime-field EC key pairs, and elliptic-curve Diffie–Hellman variants. |
+| Symmetric ciphers | AES in CBC, ECB, CTR, CFB128 and XTS modes. AES-CCM and AES-GCM through `AEADCipher`. DES and two-key or three-key Triple DES in CBC and ECB modes. AES and DES-family CBC/ECB support no padding, ISO 9797-1 methods 1 and 2, and PKCS #5 padding. |
+| Asymmetric ciphers | Raw RSA, RSAES-PKCS1-v1_5 and RSAES-OAEP. Elliptic-curve encryption (ECIES) is unavailable. |
+| Digital signatures | Elliptic Curve Digital Signature Algorithm (ECDSA) with SHA-1, SHA-224, SHA-256, SHA-384 or SHA-512. RSA PKCS #1 v1.5 and RSA-PSS with the same SHA variants, plus RSA ISO 9796 with SHA-1, including message recovery. |
+| Message authentication codes | HMAC with SHA-1, SHA-256, SHA-384, SHA-512, MD5 or RIPEMD-160. AES CBC-MAC without padding and AES-CMAC. DES-family 4- and 8-byte MACs with no padding, ISO 9797-1 methods 1 and 2 (including algorithm 3), or PKCS #5 padding. |
+| Digests and checksums | SHA-1, SHA-224/256/384/512, SHA3-224/256/384/512, and ISO 3309 CRC16 and CRC32. `InitializedMessageDigest` supports SHA-1 and SHA-2 state import. |
+| Key management | AES-128/192/256 and paired AES keys for XTS, DES, two-key and three-key Triple DES, and HMAC keys. Key storage and on-card key-pair generation for RSA, RSA-CRT and supported prime-field elliptic curves. |
+| Elliptic-curve key agreement | ECDH and cofactor ECDH with hashed or raw output, ECDH with raw X/Y output, and PACE Generic Mapping. |
 | Random data | Pseudo-random, secure random and preseeded DRBG, plus hardware TRNG on the Pico 2. |
+
+The [build profile configuration](config/javacard-support.json) lists the exact capability selections and key sizes for each image. Key allocation and supported curve operations have distinct limits.
 
 `ALG_XDH` remains unavailable because its Java Card 3.1 named-parameter key API is outside the current ROM ABI. The legacy RSA ISO14888/ISO9796 **Cipher** IDs and the 192-/256-bit-block AES CBC/ECB and MAC NOPAD IDs are excluded. Standard 128-bit-block AES CBC/ECB and MAC support 192- and 256-bit keys.
 
