@@ -33420,3 +33420,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: release candidate ready for external Windows testing.
 - Decision: push the tag (`git push origin v0.2-rc1`) and create the GitHub Release only after the user confirms; publish the UF2 after the Windows results.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-81c7ac5d.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-81c7ac5d.zip`, `artifacts/results/smoke-81c7ac5d-20261121T1428Z/07E74C5D7A038DEC/`
+
+## 2026-11-21 Simplify the README feature table 1 minute
+
+- Step-Id: `20261121-1534-readme-feature-table`
+- When: '2026-11-21 15:34 CET' - '2026-11-21 15:34 CET'
+- Model: `GPT-6`
+- Change: Removed the standalone digest-input and RSA-4096 rows, combined object deletion and reclamation under Garbage collection, and summarized native cryptography with a link to the security API row.
+- Validation: Checked the scoped README diff and link target. `git diff --check` passed.
+- Result: The feature table describes user-visible functionality.
+- Artifacts/logs: None. Documentation only.
