@@ -33408,3 +33408,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: superinterface references are validated; no regression in the suites above.
 - Decision: build and package the external max_crypto test from clean HEAD.
 - Artifacts/logs: none beyond suite logs.
+
+## 2026-11-21 Release candidate v0.2-rc1: external Windows max_crypto package from 81c7ac5d 12
+
+- Step-Id: `20261121-1534-release-candidate-v0.2-rc1`
+- Task: user requests: external Windows test firmware including the other session's changes; firmware for GitHub Releases with a git tag
+- When: '2026-11-21 15:22 CET' - '2026-11-21 15:32 CET'
+- Model: `claude-opus-5-5`
+- Change: `./tools/package-maxcrypto-windows-test` at clean tracked HEAD `81c7ac5d` (includes all commits by the other session up to 81599373/13c9f0d8). Annotated local tag `v0.2-rc1` on `81c7ac5d` (not pushed). `.agent/EXT_REQUESTS.md`: `WIN-MAXCRYPTO-RC-V0.2-RC1` replaces the fulfilled d7e90a18 request.
+- Validation: `./tools/build arm --profile max_crypto` exit 0, 0 C/C++ and 0 Rust warnings, rebuild 0 warnings, mode=normal, object deletion ON, `debug_fail_reclaim_alloc=OFF`; provenance tracked-diff hash is the empty-diff hash. `PACKAGE:PASS`; ZIP `5f69328e…b8ec` (18,260,522 B), `unzip -t` clean; empty-card UF2 `1cbb0494…f9f20` (3,028,992 B); bundled client `3cca70cb…`. Physical smoke on 07E74C5D7A038DEC: `tools/flash` FLASH:PASS, GPPro list empty, unchanged CAP install SELECTABLE, JCAlgTest (bundled client) on the 24 HMAC-key/AES-MAC methods `Testing complete`, 0 6f00, 3 ILLEGAL_VALUE (AES MAC with 512-bit AES keys, expected), serial 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL/BOOT/allocation_failed.
+- Result: release candidate ready for external Windows testing.
+- Decision: push the tag (`git push origin v0.2-rc1`) and create the GitHub Release only after the user confirms; publish the UF2 after the Windows results.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-81c7ac5d.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-81c7ac5d.zip`, `artifacts/results/smoke-81c7ac5d-20261121T1428Z/07E74C5D7A038DEC/`

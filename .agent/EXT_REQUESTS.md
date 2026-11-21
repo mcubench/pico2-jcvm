@@ -1,66 +1,58 @@
 # External validation requests
 
-## WIN-MAXCRYPTO-ONESHOT-D7E90A18 — JCAlgTest 1.8.5 option 1 and 2 with the out-of-memory fix, OneShot and InitializedMessageDigest
+## WIN-MAXCRYPTO-RC-V0.2-RC1 — release candidate v0.2-rc1 (commit 81c7ac5d), JCAlgTest options 1 and 2
 
-Created 2026-11-20 11:41 CET. This replaces `WIN-MAXCRYPTO-ONESHOT-655DFA44` (same content without
-InitializedMessageDigest). A run already in progress on 655dfa44 or 981cde78 may be finished and
-returned; it stays valid evidence for that image.
+Created 2026-11-21 15:33 CET. Replaces `WIN-MAXCRYPTO-ONESHOT-D7E90A18`, whose results were
+returned and analysed (`inbox/pico2-jcvm-maxcrypto-deletion-d7e90a18_20261120/`: 18 ILLEGAL_VALUE
+fixed in c42fab06; RSA-CRT 3072 `6f00` was the pre-9228c583 out-of-memory crash, gone on the current
+image).
 
-Same package layout, CAP (1.8.5/jc305, `applet.cap` SHA-256
-`fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`), client and one-block
-PowerShell run (`README.md` / `run-test.ps1`, `$mode = 'all'` or `'symmetric'`) as before.
-New since 981cde78 (records in `progress.md`, 2026-11-20):
-- Java Card 3.0.5 `Cipher.OneShot`, `Signature.OneShot`, `MessageDigest.OneShot`,
-  `RandomData.OneShot` and `InitializedMessageDigest.OneShot` are implemented (RAM-only, released on
-  close/entry-point return/reset).
-- `MessageDigest.getInitializedMessageDigestInstance()` / `InitializedMessageDigest` (SHA-1/224/256/
-  384/512 with `setInitialDigest`) are implemented; previously unsupported.
-  JCAlgTest therefore reports OneShot support for the same algorithms as `getInstance()`
-  (previously every OneShot row was `no`).
-Also included (new since a266b836):
-- Each live Java object costs less RAM (array handle 84 → 52 B, instance 104 → 56 B; measured
-  176 → 144 B and 153 → 105 B of heap per object). At the old failure point (405 arrays /
-  144 instances live) free heap is ~61 KB instead of ~11 KB.
-- New Java objects are refused with `SystemException.NO_RESOURCE` when less than 16 KB of heap
-  would remain, so native crypto never hits the SDK `Out of memory` panic.
-- Deletion passes under memory pressure keep using the fast tag index (`tag_index_refused=0`).
-- Everything from a266b836 (flash journal, deletion skip, native OwnerPIN) is included.
+This is the firmware intended for GitHub Releases, tagged `v0.2-rc1` (annotated tag on
+`81c7ac5d0d86c9be2f17912ffcdef244a1501390`; local only, not pushed). Normal ARM `max_crypto`
+image: object deletion ON, every debug switch OFF, erased storage region, no preinstalled applet.
 
-Normal ARM `max_crypto` image from commit `d7e90a18` (Arm GNU 14.2.1): object deletion ON, all debug and trace switches OFF, erased storage region, no
-preinstalled applet.
+- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-81c7ac5d.uf2)
+- UF2 SHA-256: `1cbb049426f690d31070e7db3a23f476ec7459ddd7dab3fe7c5b5f5dd12f9f20`; size 3,028,992 bytes.
+- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-81c7ac5d.zip)
+- ZIP SHA-256: `5f69328efa352f1db1529361c8c4e6e10eaa9ff75f2297503f7917d29543b8ec`; size 18,260,522 bytes.
+- CAP: unchanged JCAlgTest 1.8.5/jc305 (`applet.cap`, SHA-256 `fa64582e…48fb`).
+- Client: **1.8.5-20261121** (`tools/AlgTestJClient_v1.8.5.jar`, SHA-256
+  `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`; fewer internal repetitions
+  for asymmetric algorithms, so `all` should finish well under the earlier 6.3 h). Same file name and
+  PowerShell block (`README.md` / `run-test.ps1`, `$mode = 'all'` or `'symmetric'`) as before.
+- CPLC source identifier `0x81C7AC5D0D86C9BE`; linked end `0x10071b00`, 582,912 bytes headroom.
 
-- [Standalone empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-d7e90a18.uf2)
-- UF2 SHA-256: `6a49614f43242bfd6ad546381a7fcfa157abd27a165bb2e787f02535002ec1ff`; size 2,966,016 bytes.
-- [Complete Windows test package](../build/external-test/pico2-jcvm-maxcrypto-deletion-d7e90a18.zip)
-- ZIP SHA-256: `4119c1028836f44b7d6000ed12758e6774ac08050ffe8ee05bcfa43502da070e`; size 18,235,064 bytes.
-- CPLC source identifier `0xD7E90A187DA2FB94`; linked end `0x10069f18`, firmware-window headroom
-  614,632 bytes. Client JAR 1.8.5 SHA-256
-  `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`.
-- Validation here: build exit 0, no warnings; `PACKAGE:PASS`. Same firmware source on the emulator:
-  JCSystem/OneShot probe suite 113/113, JCAlgTest `ALG_SUPPORT_BASIC` over VPCD with OneShot and
-  InitializedMessageDigest rows matching the manifest exactly, MEM-01 T7 VPCD pass (on a1639b68). Physical smoke of this exact UF2 on
-  07E74C5D7A038DEC (empty card): package CAP and a probe applet installed, OneShot and
-  InitializedMessageDigest probe cases match the emulator, those APDUs write nothing to flash. The PowerShell block has not been run
-  (no PowerShell here).
+New since d7e90a18 (details in `progress.md`, 2026-11-20/21):
+- Object-deletion reclaim no longer panics when RAM runs out; it defers the request.
+- HMAC keys accept block-length keys (LENGTH_HMAC_*_BLOCK_n); AES MAC/CMAC accept AES-192/256 keys;
+  JC305 `HMACKey.clearKey/getSize` dispatch fixed.
+- Many native algorithms added by the other development session (SHA3, AES-CFB/XTS/GCM/CCM,
+  CRC16/32, CTR_DRBG, pseudo-random RandomData, RSA-4096 keygen, MessageDigest streaming, ...),
+  so the support CSV will show more `yes` rows than d7e90a18.
+- CAP loader and bytecode hardening (CAPIN-05/06/07).
+
+Validation here: build exit 0, no C/C++ or Rust warnings (rebuild 0 warnings), `PACKAGE:PASS`,
+`unzip -t` clean. Physical smoke of this exact UF2 on 07E74C5D7A038DEC: empty card (GPPro listed
+nothing), unchanged CAP installed and SELECTABLE, JCAlgTest with the bundled client on the 24
+HMAC-key / AES-MAC methods: `Testing complete`, no `6f00`, 3 ILLEGAL_VALUE only for AES MAC with a
+512-bit AES key (expected: 512-bit AES keys now exist for XTS and do not suit AES MAC), serial
+without PANIC/FAULT/NO_RESOURCE. The PowerShell block itself has not been run here.
 
 Steps:
 1. Unzip, open PowerShell in the extracted folder, hold BOOTSEL while connecting the Pico 2.
-2. Set `$mode` (`all` first, if only one run is possible) and paste the README block.
+2. Set `$mode` (`all` first if only one run is possible) and paste the README block.
 3. If the block stops with an error, return the `results\<mode>_<timestamp>` folder as it is.
 
 Return:
-- each `results\<mode>_<timestamp>.zip`: client log/CSV, `serial.log`, GPPro output and `run-identity.txt`;
+- each `results\<mode>_<timestamp>.zip` (client log/CSV, `serial.log`, GPPro output, `run-identity.txt`);
 - any USB/PC/SC errors, resets, stalls or timeouts, with their times.
 
 Key questions:
-- Do the `OneShot` sections of the support CSV report `yes` for the same algorithms as the
-  corresponding `getInstance()` sections, and `InitializedMessageDigest` for SHA-1/SHA-2, with no
-  errors?
-- Does `all` reach the end with no `*** PANIC ***`, `FAULT` or reader loss, in particular through
-  RSA-3072/4096 CRT?
-- Does the serial log show any `NO_RESOURCE`, or `OBJECT_DELETION … pending=1` / `tag_index_refused=1`?
-- Is the `HEADROOM:` verdict at the end of `serial-capture-console.txt` PASS? How many
-  `FS_APDU … synced=1` lines are there?
+- Does `all` reach `Testing complete` with no `*** PANIC ***`, `FAULT`, reader loss or `6f00`
+  (in particular through RSA-3072/4096 CRT)?
+- Are any `ILLEGAL_VALUE` / `ILLEGAL_USE` rows present other than RSA-512 OAEP, RSA NOPAD
+  (input-dependent) and AES MAC with 512-bit AES keys?
+- Is the `HEADROOM:` verdict PASS, and does the serial log show `OBJECT_DELETION:SKIP`?
 
 ## CRYPTO-XDH-ABI-20261121 — Java Card named-parameter XDH
 
