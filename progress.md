@@ -33363,3 +33363,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Change: Removed ALG_AES_MAC_192_NOPAD and ALG_AES_MAC_256_NOPAD from the active requirements and removed the associated external vectors request and scratch reference files.
 - Validation: Verified that native Signature dispatch, the MAC engine, and the max_crypto configuration contain no implementation for either dropped ID. Documentation-only change.
 - Result: ALG_XDH remains the only requested algorithm awaiting implementation.
+
+## 2026-11-21 MEM-01 T10(b): no in-card retry after a failed persistent write 5
+
+- Step-Id: `20261121-1527-t10b-no-retry-policy`
+- Task: MEM-01 T10(b)
+- When: '2026-11-21 15:23 CET' - '2026-11-21 15:18 CET'
+- Model: `claude-opus-5-5`
+- Change: TODO only. Defined the retry policy for persistent-write exhaustion: no in-card replay. OutOfFlash maps to `SystemException.NO_RESOURCE` (`choupi/src/jc_handlers/flashmemory.cpp` `throw_persistent_write_status`), the applet unwinds, transaction rules govern rollback, the post-APDU boundary runs the automatic low-watermark deletion, and the host may resend. The two alternatives named in T10 are rejected: replaying the APDU duplicates volatile side effects; retrying only the write breaks Java Card transaction atomicity (SPEC INV-14 as interpreted in AGENTS.md).
+- Validation: `./tools/test-rp2350-fs-overlay` TEST:SUMMARY fail=0, including `full_overlay_cleanup_reaches_capacity` (OUT_OF_FLASH), `…_reclaims_payload_before_empty_record` and `…_preserves_existing_and_accepts_following_writes`; the same harness's 1,030-cycle automatic-reclaim case passes (recorded earlier). Code read of the NO_RESOURCE mapping.
+- Result: MEM-01 T1–T8 and T10 closed.
+- Decision: MEM-01 acceptance complete; remaining CAPIN-07 fixtures continue under CAPIN-07.
+- Artifacts/logs: none.
