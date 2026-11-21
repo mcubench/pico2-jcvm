@@ -1060,7 +1060,15 @@ public final class SymmCryptoProbe extends Applet {
                               short inputLength, byte[] output) {
     boolean aes = algorithm == Signature.ALG_AES_MAC_128_NOPAD ||
         algorithm == Signature.ALG_AES_CMAC_128;
-    short keyLength = (short)(aes ? KeyBuilder.LENGTH_AES_128 :
+    // AES MAC operations 6/7 (sign/verify) use an AES-256 key and 8/9 an
+    // AES-192 key (NIST SP 800-38B keys): "128" names the block size.
+    short aesKeyLength = KeyBuilder.LENGTH_AES_128;
+    if (aes && operation >= 6 && operation <= 9) {
+      aesKeyLength = operation >= 8 ? KeyBuilder.LENGTH_AES_192
+                                    : KeyBuilder.LENGTH_AES_256;
+      operation = (byte)(operation & 1);
+    }
+    short keyLength = (short)(aes ? aesKeyLength :
         (algorithm == Signature.ALG_DES_MAC4_ISO9797_1_M2_ALG3 ||
          algorithm == Signature.ALG_DES_MAC8_ISO9797_1_M2_ALG3 ||
          algorithm == Signature.ALG_DES_MAC4_ISO9797_1_M1_ALG3 ||
@@ -1068,7 +1076,23 @@ public final class SymmCryptoProbe extends Applet {
              ? KeyBuilder.LENGTH_DES3_2KEY : KeyBuilder.LENGTH_DES));
     Key key = KeyBuilder.buildKey(aes ? KeyBuilder.TYPE_AES : KeyBuilder.TYPE_DES,
                                   keyLength, false);
-    if (aes) {
+    if (aes && aesKeyLength == KeyBuilder.LENGTH_AES_256) {
+      byte[] keyBytes = {
+          (byte)0x60, (byte)0x3d, (byte)0xeb, (byte)0x10, (byte)0x15, (byte)0xca,
+          (byte)0x71, (byte)0xbe, (byte)0x2b, (byte)0x73, (byte)0xae, (byte)0xf0,
+          (byte)0x85, (byte)0x7d, (byte)0x77, (byte)0x81, (byte)0x1f, (byte)0x35,
+          (byte)0x2c, (byte)0x07, (byte)0x3b, (byte)0x61, (byte)0x08, (byte)0xd7,
+          (byte)0x2d, (byte)0x98, (byte)0x10, (byte)0xa3, (byte)0x09, (byte)0x14,
+          (byte)0xdf, (byte)0xf4};
+      ((AESKey)key).setKey(keyBytes, (short)0);
+    } else if (aes && aesKeyLength == KeyBuilder.LENGTH_AES_192) {
+      byte[] keyBytes = {
+          (byte)0x8e, (byte)0x73, (byte)0xb0, (byte)0xf7, (byte)0xda, (byte)0x0e,
+          (byte)0x64, (byte)0x52, (byte)0xc8, (byte)0x10, (byte)0xf3, (byte)0x2b,
+          (byte)0x80, (byte)0x90, (byte)0x79, (byte)0xe5, (byte)0x62, (byte)0xf8,
+          (byte)0xea, (byte)0xd2, (byte)0x52, (byte)0x2c, (byte)0x6b, (byte)0x7b};
+      ((AESKey)key).setKey(keyBytes, (short)0);
+    } else if (aes) {
       byte[] keyBytes = {
           (byte)0x2b, (byte)0x7e, (byte)0x15, (byte)0x16,
           (byte)0x28, (byte)0xae, (byte)0xd2, (byte)0xa6,

@@ -47,9 +47,16 @@ def main() -> int:
         expected_mac = hmac.new(KEY, MESSAGE, digest_name).digest()
         for mode, label in ((0, "one-shot"), (1, "split-update")):
             apdu = bytes((0x80, 0x23, algorithm, mode, len(MESSAGE))) + MESSAGE + b"\x00"
-            expected = expected_mac + b"\x01\x01\x01\x90\x00"
+            expected = expected_mac + b"\x01\x01\x03\x90\x00"
             command.extend(("--apdu", apdu.hex(), "--expect-apdu-response", expected.hex()))
             results += 1
+        # Mode 2: key built with LENGTH_HMAC_SHA_256_BLOCK_64 (64) and a
+        # 64-byte key, as JCAlgTest does; also checks getKey and clearKey.
+        block_mac = hmac.new(bytes((0x0B,)) * 64, MESSAGE, digest_name).digest()
+        apdu = bytes((0x80, 0x23, algorithm, 2, len(MESSAGE))) + MESSAGE + b"\x00"
+        expected = block_mac + b"\x01\x01\x03\x90\x00"
+        command.extend(("--apdu", apdu.hex(), "--expect-apdu-response", expected.hex()))
+        results += 1
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode

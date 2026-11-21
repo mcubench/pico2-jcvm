@@ -9,13 +9,20 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.cmac import CMAC
-from cryptography.hazmat.decrepit.ciphers.algorithms import TripleDES
+try:
+    from cryptography.hazmat.decrepit.ciphers.algorithms import TripleDES
+except ImportError:  # cryptography < 43 keeps TripleDES here
+    from cryptography.hazmat.primitives.ciphers.algorithms import TripleDES
 
 
 ROOT = Path(__file__).resolve().parents[2]
 APPLET_AID = "A00000015100020101"
 AES_KEY = bytes.fromhex("0102030405060708090A0B0C0D0E0F10")
 AES_MAC_KEY = bytes.fromhex("2B7E151628AED2A6ABF7158809CF4F3C")
+AES_192_MAC_KEY = bytes.fromhex(
+    "8E73B0F7DA0E6452C810F32B809079E562F8EAD2522C6B7B")
+AES_256_MAC_KEY = bytes.fromhex(
+    "603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4")
 DES_KEY = bytes.fromhex("133457799BBCDFF1")
 MAC_DES_KEY = bytes.fromhex("0102030405060708")
 MAC3_KEY = bytes.fromhex("0102030405060708090A0B0C0D0E0F10")
@@ -153,6 +160,27 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
     apdu = bytes((0x80, 0x11, 3, 3, len(long_message))) + long_message + b"\x00"
     results.append((apdu, long_mac + b"\x90\x00",
                     "DES MAC M1 buffered update plus direct sign input"))
+
+    # "128" in the AES MAC algorithm names is the block size: AES-256 (probe
+    # operations 6/7) and AES-192 (8/9) keys, NIST SP 800-38B keys.
+    for key, sign_op, label in ((AES_256_MAC_KEY, 6, "AES-256"),
+                                (AES_192_MAC_KEY, 8, "AES-192")):
+        for algorithm in (18, 49):
+            if algorithm == 18:
+                expected = cbc_mac(key, AES_MAC_MESSAGE, 16, False)
+            else:
+                mac = CMAC(algorithms.AES(key))
+                mac.update(AES_MAC_MESSAGE)
+                expected = mac.finalize()
+            apdu = bytes((0x80, 0x11, algorithm, sign_op,
+                          len(AES_MAC_MESSAGE))) + AES_MAC_MESSAGE + b"\x00"
+            results.append((apdu, expected + b"\x90\x00",
+                            f"MAC {algorithm} {label} key"))
+            verify_input = AES_MAC_MESSAGE + expected
+            apdu = bytes((0x80, 0x11, algorithm, sign_op + 1,
+                          len(verify_input))) + verify_input + b"\x00"
+            results.append((apdu, b"\x01\x90\x00",
+                            f"MAC {algorithm} {label} key verify"))
 
     cmac = CMAC(algorithms.AES(AES_MAC_KEY))
     cmac.update(AES_MAC_MESSAGE)

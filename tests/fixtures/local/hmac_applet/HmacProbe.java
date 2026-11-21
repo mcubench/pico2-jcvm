@@ -26,12 +26,16 @@ public final class HmacProbe extends Applet {
     for (short i = 0; i < length; i++)
       message[i] = buffer[(short)(ISO7816.OFFSET_CDATA + i)];
 
-    HMACKey key = (HMACKey)KeyBuilder.buildKey(
-        KeyBuilder.TYPE_HMAC, (short)160, false);
-    byte[] keyBytes = new byte[20];
+    // Mode 2 builds the key the way JCAlgTest does: buildKey length
+    // LENGTH_HMAC_SHA_256_BLOCK_64 (64) and a 64-byte setKey.
+    boolean blockKey = mode == 2;
+    short keySize = blockKey ? (short)64 : (short)20;
+    HMACKey key = (HMACKey)KeyBuilder.buildKey(KeyBuilder.TYPE_HMAC,
+        blockKey ? KeyBuilder.LENGTH_HMAC_SHA_256_BLOCK_64 : (short)160, false);
+    byte[] keyBytes = new byte[keySize];
     for (short i = 0; i < keyBytes.length; i++) keyBytes[i] = (byte)0x0b;
     key.setKey(keyBytes, (short)0, (short)keyBytes.length);
-    byte[] keyReadback = new byte[20];
+    byte[] keyReadback = new byte[keySize];
     byte keyLength = key.getKey(keyReadback, (short)0);
 
     Signature signature = Signature.getInstance(algorithm, false);
@@ -57,9 +61,12 @@ public final class HmacProbe extends Applet {
     for (short i = 0; i < mac.length; i++) result[i] = mac[i];
     result[mac.length] = accepted ? (byte)1 : (byte)0;
     result[(short)(mac.length + 1)] = rejected ? (byte)1 : (byte)0;
-    result[(short)(mac.length + 2)] =
-        keyLength == 20 && keyReadback[0] == (byte)0x0b &&
-        keyReadback[19] == (byte)0x0b ? (byte)1 : (byte)0;
+    boolean keyOk = keyLength == keySize && keyReadback[0] == (byte)0x0b &&
+        keyReadback[(short)(keySize - 1)] == (byte)0x0b;
+    key.clearKey();
+    // Bit 0: getKey returned the key; bit 1: clearKey uninitialized it.
+    result[(short)(mac.length + 2)] = (byte)((keyOk ? 1 : 0) |
+        (key.isInitialized() ? 0 : 2));
     apdu.setOutgoing();
     apdu.setOutgoingLength((short)result.length);
     apdu.sendBytesLong(result, (short)0, (short)result.length);

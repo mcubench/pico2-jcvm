@@ -698,14 +698,31 @@ void javacard_security_NativeKey_setKey(jref_t receiver,
       type != kHmacTransientDeselect)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   if (!source) throw Exceptions::NullPointerException;
-  if (length <= 0)
+  // An HMAC key may have any length (HMACKey). The buildKey length is read
+  // as bits by KeyBuilder and as bytes by LENGTH_HMAC_*_BLOCK_n ("64 bytes
+  // for SHA-1") and JCAlgTest, so accept 1..keyLength bytes.
+  const jshort_t capacity = key->getField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE);
+  if (length <= 0 || length > capacity)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
+  checkInput(source, offset, length);
   auto target = arrayField(*key,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
       JAVA_ARRAY_T_BYTE);
-  if (static_cast<uint16_t>(length) != target->size())
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
-  checkInput(source, offset, length);
+  if (static_cast<uint16_t>(length) != target->size()) {
+    // Resize only when the length changes, so repeated setKey of the same
+    // length writes no new record.
+    Heap &heap = Context::getActiveContext().getHeap();
+    const bool transient = transientType(type);
+    key->setField_Reference(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+        allocateArray(heap, static_cast<uint16_t>(length), JAVA_ARRAY_T_BYTE,
+                      transient,
+                      transient ? clearEvent(type) : ClearEvent::None));
+    target = arrayField(*key,
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+        JAVA_ARRAY_T_BYTE);
+  }
   for (uint16_t i = 0; i < target->size(); ++i)
     target->setByteEntry(i,
         source->getByteEntry(static_cast<uint16_t>(offset + i)));

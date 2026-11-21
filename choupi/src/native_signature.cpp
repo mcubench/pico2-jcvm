@@ -795,7 +795,9 @@ void initializeMac(JC_Instance &signature, jref_t keyReference, uint8_t mode) {
                        keyType == kDesKeyPersistent;
   const bool validKey = hmac
       ? hmacType && bits != 0 && (bits & 7) == 0
-      : (aes ? aesType && bits == 128
+      // "128" in ALG_AES_MAC_128_NOPAD / ALG_AES_CMAC_128 is the AES block
+      // size; AES-192 and AES-256 keys are valid for both.
+      : (aes ? aesType && (bits == 128 || bits == 192 || bits == 256)
              : desType && (bits == 64 || bits == 128 || bits == 192));
   if (!validKey)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
@@ -803,7 +805,8 @@ void initializeMac(JC_Instance &signature, jref_t keyReference, uint8_t mode) {
        algorithm == 48) && bits != 128)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto bytes = keyBytes(*key);
-  if (bytes->size() != bits / 8)
+  // HMAC key data has the length given to setKey (1..keyLength bytes).
+  if (!hmac && bytes->size() != bits / 8)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   signature.setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, keyReference);

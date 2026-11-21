@@ -446,7 +446,8 @@ uint8_t remap_imported_interface_method_token(
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
       (class_token == 0 || class_token == 2 || class_token == 3 ||
        class_token == 4 || class_token == 5 || class_token == 6 ||
-       class_token == 24 || class_token == 28 || class_token == 29) &&
+       class_token == 23 || class_token == 24 || class_token == 28 ||
+       class_token == 29) &&
       method_token < sizeof(security_key_interface_methods)) {
     return security_key_interface_methods[method_token];
   }
