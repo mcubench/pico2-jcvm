@@ -12,7 +12,7 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 - Review Windows option 1/2 results for `v0.2-rc1` and get user authorization before publishing. See WIN-MAXCRYPTO-RC-V0.2-RC1.
 - Finish CAPIN-01/07 LOAD-time validation and the remaining CAPIN-05/06 negative fixtures.
-- Clear the ARM warning gate for the pending crypto KAT and streaming digest checks.
+- Diagnose and rerun the physical symmetric KAT after EE11 returned `6F00` partway through the sweep. The normal ARM build and scoped physical streaming-digest checks passed.
 - Schedule BOOTSEL and power-loss acceptance when an identified board is available.
 
 ## CAP and interpreter safety
@@ -111,7 +111,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### PROFILE-01
 
-- [ ] Audit advertised API capabilities against actual behavior and tests. Finish physical KATs for newly enabled crypto, the 5 KiB/multipart digest checks and deferred RSA/RSA-CRT 4096 validation. See progress for committed implementations and [external requests](.agent/EXT_REQUESTS.md) for XDH ABI inputs.
+- [ ] Audit advertised API capabilities against actual behavior and tests. Finish physical KATs for newly enabled crypto and deferred RSA/RSA-CRT 4096 validation. See progress for committed implementations and [external requests](.agent/EXT_REQUESTS.md) for XDH ABI inputs.
+- [x] Verify the 5 KiB and multipart digest cases and per-APDU flash traffic on a normal physical image. See step `20261121-2138-ee11-streaming-digest`.
 - Extended APDUs, T=1 WTX and logical channels remain excluded under INV-09. PROFILE-02 is deferred unless product scope changes.
 
 ### CTX-01

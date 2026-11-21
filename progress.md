@@ -33525,3 +33525,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: All checks passed. Fixture verification covered 86 records. No firmware build, physical test or flash measurement was performed.
 - Decision: Keep pending physical and cross-context evidence under the existing PERSIST and CTX backlog items.
 - Artifacts/logs: none
+
+## 2026-11-21 Verify streaming digests on EE11 5
+
+- Step-Id: `20261121-2138-ee11-streaming-digest`
+- Task: PROFILE-01 / streaming MessageDigest
+- When: '2026-11-21 21:33 CET' - '2026-11-21 21:38 CET'
+- Model: `gpt-6`
+- Change: Verified the normal max_crypto ARM build and ran the existing transaction probe's digest cases 121–124 in VPCD and on EE116F37C7E4A04E. EE11's PC/SC reader was `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`.
+- Validation: The ARM build had zero warnings and 582,912 bytes of firmware-window headroom. Fixture verification passed for 86 files. The full JCVM cycle passed with a watchdog recovery record in the initial serial capture. VPCD reported 6 passes and zero failures. GPPro confirmed an empty card before the digest probe and ISD-only state after cleanup. The initial trace checker included GPPro's automatic trailing ISD SELECT and exited 1. Command-matched verification of the recorded responses passed.
+- Result: EE11 matched the 35,903-byte SHA-256 stream, empty reuse and all five SHA digests on 5,120-byte input. Case 121 allocated the probe's input and digest handle, writing 49,152 sync bytes and zero journal bytes. Cases 122–124 each wrote zero sync and journal bytes. Serial recorded no faults during the digest run. The separate broad symmetric run before the empty-card flash reported 94 passes and 114 failures, starting with `6F00` at AES XTS 512, 31 bytes, operation 6. Symmetric probe cleanup failed with `SCARD_E_NOT_TRANSACTED`; EE11 was then restored from the empty-card image.
+- Decision: Close the focused streaming-digest check. Investigate the broad symmetric run independently. The local probe establishes scoped hardware evidence and leaves unchanged-client acceptance open.
+- Artifacts/logs: `artifacts/build-audit/` contains the build, cycle, VPCD, APDU and serial logs. Firmware from `90156a6b` had SHA-256 `a61ac8e9841729feb28550b62abf6300f79ee07bb12f852dc898cd68ca1baa32`; the empty-card UF2 had SHA-256 `0a7021ea2a2a9c9486a2a2c01441185360ad7ad24473fe08c9d866ca4579e732`.
