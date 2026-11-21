@@ -33290,3 +33290,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Physical preflight and 3072-bit probe ran on 07E74C5D7A038DEC, storage preserved. All 17 checks passed and temporary probe cleanup passed. F42D's live campaign was untouched.
 - Result: On-card ALG_RSA 3072 generation and sign/verify took 27.043 s. ALG_RSA_CRT 3072 generation and component retrieval took 162.976 s. The original four-byte command failed before generation.
 - Artifacts/logs: `artifacts/logs/test-rsa3072-hardware.log`; firmware identity and serial log in `artifacts/logs/cycle-crypto-07e7.log`.
+
+## 2026-11-21 HMAC key and AES MAC fixes verified on hardware 8
+
+- Step-Id: `20261121-1518-hmac-aesmac-hw`
+- Task: WIN-D7E90A18-ILLEGAL-VALUE (hardware check of c42fab06)
+- When: '2026-11-21 15:10 CET' - '2026-11-21 15:08 CET'
+- Model: `claude-opus-5-5`
+- Change: none to source. JCAlgTest option 1 restricted by an already-measured list to the 24 TYPE_HMAC key and ALG_AES_MAC_128_NOPAD/ALG_AES_CMAC_128 methods of the Windows CSV.
+- Validation: F42DD9D07D6D2B07, a9ec9e04 build (contains c42fab06; normal max_crypto; card not wiped), client 1.8.5-20261121 `3cca70cb…`, unchanged 1.8.5/jc305 CAP; rc=0, 24 methods.
+- Result: all 12 HMACKey setKey/getKey/clearKey (LENGTH_HMAC_64 for SHA-1/SHA-256, LENGTH_HMAC_128 for SHA-384/SHA-512) and all AES MAC with AES-128/192/256 keys measured (about 120–140 ms baselines); 0 ILLEGAL_VALUE, 0 6f00; AES-512 NO_SUCH_ALGORITHM (no such AES key size). The 18 Windows ILLEGAL_VALUE cases are fixed on hardware.
+- Decision: next, CAPIN-07 negative fixtures and a diagnostic fault-injection image to exercise the recoverable reclaim path on hardware.
+- Artifacts/logs: `artifacts/results/hmac-aesmac-check-a9ec9e04-20261121T1404Z/F42DD9D07D6D2B07/`
