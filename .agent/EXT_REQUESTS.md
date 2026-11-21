@@ -62,16 +62,6 @@ Key questions:
 - Is the `HEADROOM:` verdict at the end of `serial-capture-console.txt` PASS? How many
   `FS_APDU … synced=1` lines are there?
 
-## CRYPTO-LEGACY-VECTORS-20261121 — Java Card legacy MAC encodings
-
-Created 2026-11-21 15:02 CET. Updated 15:13 CET.
-
-For `ALG_AES_MAC_192_NOPAD` and `ALG_AES_MAC_256_NOPAD`, provide legacy card
-vectors that establish the expected block size, key size, IV size, tag size
-and API status for invalid inputs. The current 128-bit-block AES IDs already
-accept 192-bit and 256-bit AES keys. If wider Rijndael is intended, supply a
-vetted native backend suitable for the RP2350.
-
 ## CRYPTO-XDH-ABI-20261121 — Java Card named-parameter XDH
 
 Created 2026-11-21 15:02 CET. Supply matching Java Card SDK API sources or

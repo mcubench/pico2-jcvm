@@ -33354,3 +33354,12 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the vtable bound added in d23676b0 now has negative evidence. Interface `index[]` cannot be mutated with the JCAlgTest CAP (no class implements an interface); the Export class_offset mutation needs an exporting CAP through the pcscd-based sibling suite and remains open.
 - Decision: keep CAPIN-07 open for those two fixtures, superinterface refs and the resolveClassref record bound.
 - Artifacts/logs: `artifacts/logs/rv28-malformed-vtable-offset-out-of-range-vpcd-20261106.log`
+
+## 2026-11-21 Drop the wide-block AES MAC requirements
+
+- Step-Id: `20261121-1517-drop-wide-aes-macs`
+- When: '2026-11-21 15:17 CET' - '2026-11-21 15:17 CET'
+- Model: `GPT-6`
+- Change: Removed ALG_AES_MAC_192_NOPAD and ALG_AES_MAC_256_NOPAD from the active requirements and removed the associated external vectors request and scratch reference files.
+- Validation: Verified that native Signature dispatch, the MAC engine, and the max_crypto configuration contain no implementation for either dropped ID. Documentation-only change.
+- Result: ALG_XDH remains the only requested algorithm awaiting implementation.
