@@ -33006,3 +33006,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Deletion-enabled Core: 273 OK, 14 UNSUPPORTED_PER_SPEC, four APPLET_NOT_INSTALLED, with both deletion calls OK. Security: 491 OK, 408 UNSUPPORTED_PER_SPEC, two EXC_CARDRUNTIME (8-byte HMAC key set/get). Crypto: 341 OK, 122 UNSUPPORTED_PER_SPEC, two EXC_CARDRUNTIME (HMAC RIPEMD160 and SHA-512 RSA-PSS) and one WRONG_RESULT (empty Cipher doFinal). Security extension: 84/84 OK. Service: 124/124 OK. Ext, full extension, external-memory, integer-extension and Biometry INSTALLs returned 6A88 and rolled back cleanly.
 - Decision: Report simulator evidence for the tested revision. The later HMAC changes in `c42fab06` were outside this run.
 - Artifacts/logs: `artifacts/results/api305-d7e90a18-vpcd-20261121/`. `api305.csv` SHA-256 `ebca0f701c13fb12f3a5c73131a8ea237b3d3604c88bceb1dc837251e09e1966`. `core-deletion-on/api305.csv` SHA-256 `0a7a89ceeed36c82d7f1a6b90a81236c628323ba1c1297ea954ca9406de15220`. Build, emulator and runner logs and simulator hashes are alongside the CSVs.
+
+## 2026-11-21 Clarify object-deletion API and reclamation coverage 1 minute
+
+- Step-Id: `20261121-1029-readme-object-deletion-support`
+- When: '2026-11-21 10:29 CET' - '2026-11-21 10:29 CET'
+- Model: `GPT-6`
+- Change: Marked `JCSystem.requestObjectDeletion()` supported in the README feature table and retained partial status for persistent-object reclamation.
+- Validation: Checked the deletion-enabled API suite result, SPEC INV-15 and INV-24, and the open MEM-01 T8 and PERSIST-01 hardware gates. `git diff --check` passed.
+- Result: The API passes and queues reclamation. Long-run and physical interruption validation remain open.
+- Artifacts/logs: Existing simulator and physical results. No new hardware tests.

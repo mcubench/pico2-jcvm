@@ -95,7 +95,8 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | Extended-length APDUs | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
-| Persistent-object reclamation / `JCSystem.requestObjectDeletion()` | ![Partial](https://img.shields.io/badge/partial-yellow) | **Enabled in the normal build** (`mode=normal`; `PICO2_ENABLE_OBJECT_DELETION=0` gives a diagnostic build without it). It queues deletion for service after the APDU unwinds. Power-loss acceptance remains open. |
+| `JCSystem.requestObjectDeletion()` | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Enabled in the normal build. Queues a reclamation pass after the APDU unwinds. |
+| Persistent-object reclamation | ![Partial](https://img.shields.io/badge/partial-yellow) | Reclaims unreachable persistent objects. Long-run and power-loss validation on hardware remain open. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | RSA/RSA-CRT 4096-bit key-pair generation | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Excluded from `max_crypto`. |
 
