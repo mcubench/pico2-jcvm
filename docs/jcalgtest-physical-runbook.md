@@ -47,6 +47,7 @@ for that token and campaign. Record both identities in the results.
 
 ```sh
 mkdir -p "$result_dir"
+cp build/arm/build-provenance.txt "$result_dir/build-provenance.txt"
 cp build/javacard-support/jcalgtest-supported.csv "$result_dir/expected.csv"
 image="$result_dir/max_crypto-empty-card.uf2"
 ./tools/package-empty-card-uf2 build/arm/pico2_choupi.uf2 "$image"

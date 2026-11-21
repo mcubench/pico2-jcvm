@@ -125,6 +125,39 @@ instead of indexing beyond the record.
   reliable commit API. Call and check `fs_sync()` explicitly when durability
   matters.
 
+## Java Card atomicity and recovery
+
+The guarantees below describe the product contract under INV-13–16 and the
+persistence rules in [AGENTS.md](../AGENTS.md). The backend sync and recovery
+paths above implement storage publication. The remaining physical evidence
+is tracked under PERSIST-01 through PERSIST-03 in [the backlog](../TODO.md).
+
+| Operation | Required behavior after a tear or abort |
+| --- | --- |
+| Single persistent field, static field or array element write | The element holds its old or new value after a tear. Several independent updates outside a transaction have no group guarantee. |
+| Atomic `Util.arrayCopy`, `Util.arrayFill` or `Util.setShort` | The persistent destination update is all-or-nothing. An enclosing applet transaction governs rollback. |
+| `Util.arrayCopyNonAtomic` or `Util.arrayFillNonAtomic` | A tear can leave a partial update. These writes bypass transaction rollback, even during an applet transaction. |
+| Applet transaction | A durable commit publishes the whole transaction. A tear before publication or an explicit abort rolls it back. References to objects created in an aborted transaction become null. |
+| Transient array write | Its contents stay in RAM, outside the transaction, and clear on the configured lifecycle event. |
+| OwnerPIN check | The try-counter decrement is durable before the comparison result is observable. The try counter, validation flag and blocking state stay outside applet transactions. |
+
+The VM also groups changes to its own metadata to keep object identities,
+references and the filesystem index consistent. CAP slot metadata and tagged
+VM records publish separately. INSTALL records enough identity and state in
+an install journal to finish interrupted instance publication. Lifecycle
+recovery reconciles CAP presence, enabled-package state and instance roots.
+If the recovery path cannot establish consistency, it blocks the affected
+operation. See [CAP installation and recovery](../src/cap_load.cpp)
+and [lifecycle reconciliation](../src/gp_lifecycle_recovery.cpp).
+
+Persistent reclamation depends on complete root enumeration, including
+retained contexts and foreign references as applicable. If enumeration is
+incomplete, the sweep preserves the affected records. Reclaim and compaction
+must leave the published record set and index consistent across a tear. T8
+provides Linux long-run evidence. Mixed-owner reachability and physical
+interruption checks remain open. See [runtime reclamation](../choupi/src/main.cpp)
+and [the overlay](../src/pico_filesystem.cpp).
+
 ## Known backend discrepancies to close
 
 - PC `fs_sync()` only reports that the emulator has no separate flush phase;

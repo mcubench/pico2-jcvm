@@ -33513,3 +33513,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Checks passed. Fixture verification covered 86 records, including 48 API CAPs. No firmware build, flash, PC/SC run or flash measurement was performed for this documentation step.
 - Decision: Use the active runbook for new physical runs and the archived reviews as historical evidence. Physical acceptance status remains in the backlog and progress records.
 - Artifacts/logs: none
+
+## 2026-11-21 Complete architecture boundary documentation 1
+
+- Step-Id: `20261121-1939-architecture-contracts`
+- Task: Architecture documentation
+- When: '2026-11-21 19:38 CET' - '2026-11-21 19:39 CET'
+- Model: `gpt-6`
+- Change: Documented Java Card atomicity and recovery, context and reference lifetime, and build identity through acceptance. Corrected the native progress contract and added provenance capture to the physical runbook.
+- Validation: Checked source behavior, new Markdown links, runbook shell syntax, interpreter budget constants, fixture integrity and `git diff --check`.
+- Result: All checks passed. Fixture verification covered 86 records. No firmware build, physical test or flash measurement was performed.
+- Decision: Keep pending physical and cross-context evidence under the existing PERSIST and CTX backlog items.
+- Artifacts/logs: none

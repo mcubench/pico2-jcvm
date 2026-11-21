@@ -2,8 +2,9 @@
 
 The Pico native crypto progress chain is:
 
-1. `choupi_native_crypto_progress()` refreshes the VM's native-operation
-   deadline, services the watchdog, then asks CCID to maintain USB progress.
+1. `choupi_native_crypto_progress()` records the progress timestamp and checks
+   the existing execution budget. It then services the watchdog and USB and
+   returns whether the operation is still within budget.
 2. `choupi_ccid_native_crypto_progress()` services at most eight queued USB
    events without waiting and may queue one CCID time-extension response when
    the active APDU has run for at least one second.
@@ -26,10 +27,10 @@ transport state or queue APDU work.
 
 Interpreted applet execution also calls `choupi_vm_cooperative_progress()` at
 4,096-bytecode intervals. This services the watchdog and CCID/TinyUSB progress
-without refreshing the applet execution deadline. The non-install APDU budget
-is 120 seconds; the install-method budget remains 5 seconds. Thus a long applet
-loop can return CCID time extensions while the interpreter still has a finite
-per-APDU cutoff.
+using the same deadline. The top-level applet budget is 600 seconds, and the
+INSTALL method budget is 5 seconds. Nested interpreter entries share the
+outer deadline. Watchdog servicing, native progress and CCID time extensions
+leave that deadline fixed.
 
 Two reentry guards enforce the dispatch boundary. The CCID progress guard
 prevents a nested progress callback from pumping TinyUSB recursively. The CCID
@@ -40,9 +41,13 @@ most 100 ms for an already submitted time-extension transfer before submitting
 the APDU result. Each USB service pass in that wait has the same eight-event
 limit.
 
-On the PC backend the Pico watchdog/USB progress callback is not active. On
-2026-10-31, Pico 2 `2BED26ED20556535` ran the ARM `max_crypto` image built from
-the current source and completed RSA-3072 key generation and signature in a
+The PC backend omits the Pico watchdog, USB progress and interpreter deadline
+paths.
+
+## Historical hardware measurements
+
+On 2026-10-31, Pico 2 `2BED26ED20556535` ran the ARM `max_crypto` image built for
+that test and completed RSA-3072 key generation and signature in a
 single 49,184 ms PC/SC APDU, returning `019000`. The 15-second watchdog was
 therefore serviced through the native random-byte progress hook, and the long
 CCID operation reached its final response without a host transport timeout.
@@ -58,5 +63,5 @@ call. Its 169 USB service passes took 1,006 us cumulative and 94 us maximum,
 processed 86 TinyUSB events total with a maximum of two in any pass, and
 completed all 85 submitted CCID time extensions. There was no watchdog
 recovery marker, `TEST:FAIL`, or `FAULT`. The final response arrived and the
-temporary CAP cleanup passed. Logs, image hash, and the test wrapper are in
-`.agent/HANDOFF.md` and the 2026-11-02 progress entry.
+temporary CAP cleanup passed. See the 2026-11-02 entries in [the progress log](../progress.md) for the
+logs, image identity and test wrapper.

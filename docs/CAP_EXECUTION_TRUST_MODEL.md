@@ -88,3 +88,24 @@ separate verifier that can independently establish method boundaries. See
 `.agent/QKB.md` for the Descriptor-free GPPro LOAD findings and the [Java Card
 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf),
 §6.10 and §6.14.
+
+
+## Applet ownership and lifecycle
+
+The VM uses owner-aware references and retained applet contexts. SIO dispatch
+can pass references across contexts, so root enumeration must account for
+references held by other applets as well as local roots. The table describes
+lifecycle boundaries. Complete enforcement of the Java Card firewall and
+hostile multi-applet acceptance remain open under INV-19.
+
+| Event | Callbacks and transient state | Context and reference handling |
+| --- | --- | --- |
+| SELECT | Selecting an applet runs the selection path and delivers the SELECT APDU. Switching can trigger the previous applet's deselect path. | The VM restores or reuses a context for the selected AID. Same-CAP instances can share a context while keeping per-instance ownership. |
+| Deselect | The deselect path handles the applet callback and `CLEAR_ON_DESELECT` state, with same-applet reselection handled separately. | Retained contexts can still hold live references. `CLEAR_ON_RESET` state survives deselection. |
+| Logical reset or reader power-off | Both CCID and VPCD take the reset path without applet deselect callbacks. It clears both transient-array classes. | The VM clears active selection and shareable session state. Persistent objects and installed instances remain. |
+| USB power loss | RAM is lost, including transient contents and pending APDU state. | Boot rebuilds runtime state from validated storage. Only durable persistent state is available for restore. |
+| DELETE | Card management removes the target instance or package. | The VM forgets the affected instance or context. Package deletion also invalidates package-associated foreign references and shareable proxies. Surviving contexts still contribute roots. |
+
+See [runtime lifecycle code](../choupi/src/main.cpp),
+[Pico CCID](../src/ccid_device.cpp), [VPCD](../choupi/src/vpcd_session.cpp),
+and [CTX and PERSIST backlog items](../TODO.md).

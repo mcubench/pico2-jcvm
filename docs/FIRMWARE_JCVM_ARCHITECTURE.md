@@ -56,6 +56,28 @@ Paths below are repository-relative; cited symbols identify architectural anchor
 
 6. **Object deletion.** Normal builds enable request-gated reclamation through `JCSystem.requestObjectDeletion()`. The VM traces persistent roots and skips deletion when it cannot establish complete reachability. The declared overlay budget is 96 KiB and 8,192 slots, with a payload limit that also accounts for index occupancy. See [the flash layout](flash-layout-migration.md).
 
+## Build identity and acceptance evidence
+
+1. `./tools/build arm --profile max_crypto` selects capabilities from
+   `config/javacard-support.json`. The build generates support metadata and the
+   expected JCAlgTest CSV under `build/javacard-support/`. The host generation
+   step produces the trusted ROM-mask image and native dispatch header under
+   `build/choupi-pc/`. The ARM build links those assets and checks the ROM-mask
+   generation hashes.
+2. `build/arm/build-provenance.txt` records the profile, mode, CPLC source ID,
+   support selection hash, ROM-mask hash, native header hash and firmware UF2
+   hash. GET DATA CPLC exposes the first 16 hex digits of the source commit.
+   That prefix identifies the source commit. The UF2 hash distinguishes images
+   built from it with different profile or build settings.
+3. For acceptance, preserve the provenance and expected support CSV from the
+   normal `max_crypto` build. Record the hash of the exact empty-card UF2
+   flashed, along with the chip ID, PC/SC reader name and unchanged CAP and
+   client hashes. The empty-card packaging changes the UF2 hash. Compare the
+   physical support report with the generated CSV and the jCardSim reference.
+
+See [the ARM wrapper](../tools/build), [ROM-mask generation](../tools/build-pc)
+and [the physical runbook](jcalgtest-physical-runbook.md).
+
 ## Key Design & Implementation Decisions
 
 Rationale marked **inferred** is architectural interpretation, not a recorded author statement. Alternatives describe the relevant trade-off rather than prescribe a redesign.
