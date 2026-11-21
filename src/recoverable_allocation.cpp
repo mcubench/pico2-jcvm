@@ -34,12 +34,28 @@ uint32_t recoverable_allocation_depth = 0;
 uint32_t recoverable_allocation_failures = 0;
 } // namespace
 
+#ifdef CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC
+// Diagnostic build only (mode=diagnostic): the first allocation of every
+// fourth outermost scope fails, so the deferral path runs on hardware.
+static uint32_t recoverable_scope_entries = 0;
+static bool inject_recoverable_failure = false;
+#endif
+
 extern "C" void choupi_recoverable_allocation_enter(void) {
+#ifdef CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC
+  if (recoverable_allocation_depth == 0 &&
+      (++recoverable_scope_entries % 4u) == 0) {
+    inject_recoverable_failure = true;
+  }
+#endif
   ++recoverable_allocation_depth;
 }
 
 extern "C" void choupi_recoverable_allocation_exit(void) {
   if (recoverable_allocation_depth != 0) --recoverable_allocation_depth;
+#ifdef CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC
+  if (recoverable_allocation_depth == 0) inject_recoverable_failure = false;
+#endif
 }
 
 extern "C" uint32_t choupi_recoverable_allocation_failures(void) {
@@ -52,6 +68,13 @@ void *operator new(std::size_t size) {
     // Wrapped malloc: panics on failure, as for the rest of the firmware.
     return std::malloc(size);
   }
+#ifdef CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC
+  if (inject_recoverable_failure) {
+    inject_recoverable_failure = false;
+    ++recoverable_allocation_failures;
+    throw std::bad_alloc();
+  }
+#endif
   void *memory = __real_malloc(size);
   if (memory != nullptr &&
       static_cast<char *>(memory) + size > &__StackLimit) {

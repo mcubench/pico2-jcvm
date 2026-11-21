@@ -33330,3 +33330,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: ARM max_crypto built without warnings, profile tests passed 15/15, and the simulator passed 206 vectors excluding the hardware-only TRNG. On EE116F37C7E4A04E the full JCVM cycle passed and both TRNG factory probes passed in 41 and 45 ms with cleanup PASS.
 - Result: The initial hardware-health-filter sampling configuration produced 6F00 for TRNG. A broad physical run also failed partway through XTS on 07E74C5D7A038DEC and could not remove its temporary probe. Switched to EE11 for focused validation. On EE11 pseudo, secure and preseeded DRBG both passed on the earlier image. Long hardware validation is deferred per user instruction.
 - Artifacts/logs: UF2 SHA-256 `a7ebc9390c3cac22821359b197c23040882900a791e3b4625a67686d18e0c490`; `artifacts/logs/{build-arm-trng-bootrom,cycle-trng-bootrom-ee11,test-trng-bootrom-ee11,test-trng-simulator,test-trng-hardware,test-random-ee11}.log`.
+
+## 2026-11-21 Recoverable reclaim deferral exercised on hardware (diagnostic fault injection) 12
+
+- Step-Id: `20261121-1516-reclaim-faultinject-hw`
+- Task: MEM-01 (hardware evidence for 9228c583)
+- When: '2026-11-21 15:04 CET' - '2026-11-21 15:15 CET'
+- Model: `claude-opus-5-5`
+- Change: `PICO2_DEBUG_FAIL_RECLAIM_ALLOC=1` (tools/build → CMake `CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC`, defined on `pico2_choupi` only) makes `src/recoverable_allocation.cpp` fail the first allocation of every fourth outermost `RecoverableAllocationScope`, so the object-deletion deferral path runs on hardware. The switch makes the build `mode=diagnostic` (provenance `debug_fail_reclaim_alloc=ON`); normal builds are unchanged.
+- Validation: diagnostic ARM build of HEAD (0 C/C++ warnings, `mode=diagnostic`, UF2 `ff9dd399…02cbb`) flashed to F42DD9D07D6D2B07 with `tools/flash` (storage preserved); JCAlgTest option 1 restricted to the 24 HMAC-key/AES-MAC methods, client 1.8.5-20261121 `3cca70cb…`: `Testing complete`, rc=0, 0 reconnects, 0 6f00. Serial: 17 `OBJECT_DELETION:SKIP reason=allocation_failed … request_retained=1` (`failures=` counter increments), 54 completed deletion passes between them, 0 PANIC/FAULT/BOOT/`Out of memory`. F42D then restored to the normal image (`./tools/build arm --profile max_crypto` mode=normal, no Rust or C/C++ warnings; the ROM regeneration printed Java Card converter and Maven notices; `tools/cycle choupi` CYCLE:PASS, FLASH:LOAD mode=normal).
+- Result: a failed allocation inside the reclaim pass defers the request instead of panicking, and later passes complete, on real hardware. Side observation: AES MAC with a 512-bit AES key now returns ILLEGAL_VALUE instead of NO_SUCH_ALGORITHM because 379fe36e (another session, AES-XTS) enabled 512-bit AES keys; ILLEGAL_VALUE is the specified result for an unsuitable key.
+- Decision: diagnostic evidence only (not acceptance). Next: CAPIN-07 negative fixtures for vtable/index/Export.
+- Artifacts/logs: `artifacts/results/reclaim-faultinject-diag-20261121T1409Z/F42DD9D07D6D2B07/`, `artifacts/logs/cycle-choupi-20261121T141426Z.log`

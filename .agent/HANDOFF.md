@@ -4,7 +4,7 @@ Updated: 2026-11-21 15:14 CET.
 
 ## Current state
 - **No live campaign** (2026-11-21 12:26). MEM-01 T8 option 1 PASSED on 07E7 (9228c583, 1,901 methods over two segments, `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/`). 07E7 still holds that card state; reader `... (07E74C5D7A038DEC) 00 00`.
-- **F42D in use (claude-opus-5-5, from 2026-11-21 15:10 CET):** short JCAlgTest check of the HMACKey / AES-MAC fixes (c42fab06) on its a9ec9e04 image with client 3cca70cb, then a diagnostic recoverable-reclaim fault-injection image. Do not use F42D until this note is removed.
+- F42D is free again (normal max_crypto build of HEAD after 2026-11-21 15:14, restored with `tools/cycle choupi` after a diagnostic fault-injection run; card not wiped, store about 83 KB of 98.3 KB; reader `... (F42DD9D07D6D2B07) 02 00` at last check).
 - Firmware at HEAD (CAPIN-05/07 changes after 9228c583) has not been flashed; the live campaign uses 9228c583.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
