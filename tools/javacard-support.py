@@ -20,6 +20,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     ),
     "key_aes_128": ("javacard.security.KeyBuilder", "TYPE_AES LENGTH_AES_128"),
     "key_aes_192": ("javacard.security.KeyBuilder", "TYPE_AES LENGTH_AES_192"),
+    "key_aes_512": ("javacard.security.KeyBuilder", "TYPE_AES LENGTH_AES_512"),
     "key_aes_256": ("javacard.security.KeyBuilder", "TYPE_AES LENGTH_AES_256"),
     "key_des": ("javacard.security.KeyBuilder", "TYPE_DES LENGTH_DES"),
     "key_des3_2key": ("javacard.security.KeyBuilder", "TYPE_DES LENGTH_DES3_2KEY"),
@@ -100,6 +101,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
     ),
+    "cipher_aes_xts": ("javacardx.crypto.Cipher", "ALG_AES_XTS"),
     "cipher_aes_cfb": ("javacardx.crypto.Cipher", "ALG_AES_CFB"),
     "cipher_aes_ctr": ("javacardx.crypto.Cipher", "ALG_AES_CTR"),
     "cipher_getinstance_aes_ctr": (
@@ -252,8 +254,8 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
         "key_des", "key_des3_2key", "key_des3_3key",
         "key_des_transient_reset", "key_des_transient_deselect",
     ))
-    aes_cipher = any((key.startswith("cipher_aes_") or
-                      key.startswith("cipher_getinstance_aes_")) and enabled
+    aes_cipher = any(key != "cipher_aes_xts" and enabled and
+                     key.startswith(("cipher_aes_", "cipher_getinstance_aes_"))
                      for key, enabled in value.items())
     des_cipher = any((key.startswith("cipher_des_") or
                       key.startswith("cipher_getinstance_des_")) and enabled
@@ -266,6 +268,8 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
                for key, enabled in value.items())
     hmac_key = any(key.startswith("key_hmac_") and enabled
                    for key, enabled in value.items())
+    if value["cipher_aes_xts"] and not (value["key_aes_256"] or value["key_aes_512"]):
+        raise ValueError(f"{path}: AES XTS requires an enabled 256- or 512-bit AES key")
     if not aes_key and (aes_cipher or aes_mac):
         raise ValueError(f"{path}: AES CBC requires at least one enabled AES key capability")
     if not des_key and (des_cipher or des_mac):
@@ -417,6 +421,10 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
      "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
      "CIPHER_AES_CFB PAD_NULL"),
     (("cipher_aes_cfb",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CFB PAD_NULL"),
+    (("cipher_aes_xts",),
+     "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+     "CIPHER_AES_XTS PAD_NULL"),
+    (("cipher_aes_xts",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_XTS PAD_NULL"),
     (("cipher_aes_ecb_nopad",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_NOPAD"),
     (("cipher_aes_cbc_iso9797_m1",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_ISO9797_M1"),
     (("cipher_aes_cbc_iso9797_m2",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_ISO9797_M2"),

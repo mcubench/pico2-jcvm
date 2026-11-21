@@ -231,6 +231,9 @@ bool supportedSymmetric(uint8_t type, uint16_t bits) {
     case 192: return JC_SUPPORT_KEY_AES_192 &&
         (type == kAesPersistent || (type == kAesTransientReset && JC_SUPPORT_KEY_AES_TRANSIENT_RESET) ||
          (type == kAesTransientDeselect && JC_SUPPORT_KEY_AES_TRANSIENT_DESELECT));
+    case 512: return JC_SUPPORT_KEY_AES_512 &&
+        (type == kAesPersistent || (type == kAesTransientReset && JC_SUPPORT_KEY_AES_TRANSIENT_RESET) ||
+         (type == kAesTransientDeselect && JC_SUPPORT_KEY_AES_TRANSIENT_DESELECT));
     case 256: return JC_SUPPORT_KEY_AES_256 &&
         (type == kAesPersistent || (type == kAesTransientReset && JC_SUPPORT_KEY_AES_TRANSIENT_RESET) ||
          (type == kAesTransientDeselect && JC_SUPPORT_KEY_AES_TRANSIENT_DESELECT));

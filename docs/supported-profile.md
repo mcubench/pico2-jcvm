@@ -44,6 +44,11 @@ by Java Card.
   4096-bit key-pair generation. Historical JCAlgTest runs sent length 4096
   under the 3072 label and length 64 under the 4096 label. Use the actual
   requested key length when interpreting those rows.
+- The max crypto profile selects the Java Card 3.1 AES-CFB and AES-XTS
+  identifiers through the existing Cipher factories. XTS accepts concatenated
+  256- or 512-bit keys and buffers one data unit of 16 to 32,767 bytes for
+  ciphertext stealing at finalization. These modes have simulator vector
+  coverage. Physical algorithm validation is pending.
 - `MessageDigest` and `InitializedMessageDigest` stream input directly from
   applet byte arrays across calls. Per-call offsets and lengths are Java Card
   `short` values. The cumulative message, including any initialized prefix,

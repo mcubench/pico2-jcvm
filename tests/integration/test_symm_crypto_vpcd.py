@@ -112,6 +112,19 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
         data = iv + source
         apdu = bytes((0x80, 0x10, 28, operation, len(data))) + data + b"\x00"
         results.append((apdu, expected + b"\x90\x00", f"AES CFB operation {operation}"))
+    # Independent OpenSSL-backed reference for both XTS key widths,
+    # including a partial final block that requires ciphertext stealing.
+    tweak = bytes(range(16))
+    for key_bytes, selector in ((32, 0), (64, 8)):
+        key = algorithms.AES(bytes(range(1, key_bytes + 1)))
+        for plain in (bytes(range(16)), bytes(range(31))):
+            encrypted = crypt(key, modes.XTS(tweak), plain, True)
+            for operation in range(8):
+                source, expected = (encrypted, plain) if operation & 1 else (plain, encrypted)
+                data = tweak + source
+                apdu = bytes((0x80, 0x10, 29, selector + operation, len(data))) + data + b"\x00"
+                results.append((apdu, expected + b"\x90\x00",
+                                f"AES XTS {key_bytes * 8} {len(plain)} bytes operation {operation}"))
     return results
 
 

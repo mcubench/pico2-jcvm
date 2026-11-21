@@ -954,10 +954,17 @@ public final class SymmCryptoProbe extends Applet {
                                  short inputLength, byte[] output) {
     boolean aes = algorithm == (byte)0xF0 || algorithm == 13 || algorithm == 14 || algorithm >= 22;
     short keyLength = (short)(aes ? KeyBuilder.LENGTH_AES_128 : KeyBuilder.LENGTH_DES);
+    if (algorithm == 29) {
+      keyLength = KeyBuilder.LENGTH_AES_256;
+      if (operation >= 8) {
+        keyLength = (short)512;
+        operation = (byte)(operation - 8);
+      }
+    }
     Key key = KeyBuilder.buildKey(aes ? KeyBuilder.TYPE_AES : KeyBuilder.TYPE_DES,
                                   keyLength, false);
     if (aes) {
-      byte[] keyBytes = new byte[16];
+      byte[] keyBytes = new byte[(short)(keyLength / 8)];
       if (algorithm == (byte)0xF0 || algorithm == 28) {
         byte[] ctrKey = {(byte)0x2b, (byte)0x7e, (byte)0x15, (byte)0x16,
             (byte)0x28, (byte)0xae, (byte)0xd2, (byte)0xa6, (byte)0xab,
@@ -976,7 +983,9 @@ public final class SymmCryptoProbe extends Applet {
     }
     byte operationMode = operation >= 4 ? (byte)(operation - 4) : operation;
     Cipher cipher;
-    if (algorithm == 28 && operation >= 4) {
+    if (algorithm == 29 && operation >= 4) {
+      cipher = Cipher.getInstance((byte)10, Cipher.PAD_NULL, false);
+    } else if (algorithm == 28 && operation >= 4) {
       cipher = Cipher.getInstance((byte)9, Cipher.PAD_NULL, false);
     } else if (algorithm == (byte)0xF0 && operation >= 4) {
       cipher = Cipher.getInstance((byte)8, Cipher.PAD_NOPAD, false);
@@ -985,7 +994,7 @@ public final class SymmCryptoProbe extends Applet {
     }
     byte mode = (operationMode == 1 || operationMode == 3)
         ? Cipher.MODE_DECRYPT : Cipher.MODE_ENCRYPT;
-    if (algorithm == (byte)0xF0 || algorithm == 28) {
+    if (algorithm == (byte)0xF0 || algorithm == 28 || algorithm == 29) {
       if (inputLength < 16) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
       byte[] counter = new byte[16];
       for (short i = 0; i < 16; i++) counter[i] = input[i];
@@ -1059,7 +1068,7 @@ public final class SymmCryptoProbe extends Applet {
 
   private static boolean isNoPadCipher(byte algorithm) {
     return algorithm == 1 || algorithm == 5 || algorithm == 13 || algorithm == 14 ||
-        algorithm == (byte)0xF0 || algorithm == 28;
+        algorithm == (byte)0xF0 || algorithm == 28 || algorithm == 29;
   }
 
   private static boolean isIso9797M1(byte algorithm) {

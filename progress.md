@@ -33152,3 +33152,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed. The final ARM rebuild was warning-free. The simulator passed 134 vectors, including NIST SP 800-38A CFB128 single and split encryption and decryption, a partial final block and IV reset/reinitialization. The first simulator build had captured the source before the IV-reset correction and was rerun.
 - Result: The updated normal firmware passed the full JCVM cycle and finite serial runtime check on EE116F37C7E4A04E. No algorithm APDUs were run physically because direct CCID could not open the spare after reboot and the shared PC/SC campaign was live. Selected EE11 from BOOTSEL because 07E7 and F42D were reserved.
 - Artifacts/logs: `artifacts/logs/{build-arm-aes-cfb-final,test-aes-cfb-final,cycle-aes-cfb-ee11}.log`. Flashed UF2 SHA-256 `e317c24635e2f29d835de8ad5d18287fcc58da4a4747b17737651cf798e66ae9`.
+
+## 2026-11-21 Add native AES-XTS with ciphertext stealing 3 minutes
+
+- Step-Id: `20261121-1221-aes-xts`
+- When: '2026-11-21 12:18 CET' - '2026-11-21 12:22 CET'
+- Model: `GPT-6`
+- Change: Exposed AES-XTS and the corresponding 512-bit AES key size in max_crypto. Both Cipher factories and OneShot use the Mbed TLS XTS engine. The existing transient message workspace accumulates one data unit for ciphertext stealing.
+- Validation: Profile tests passed 15/15 and the normal ARM image linked. All 166 symmetric simulator vectors passed, including 32 OpenSSL-backed XTS cases for both key widths, both factories, aligned and partial data units and split operations.
+- Result: XTS covers data units from 16 to 32,767 bytes, subject to available RAM. ARM ROM-mask dependency warnings and the unavailable EE11 APDU path prevented hardware algorithm validation.
+- Artifacts/logs: `artifacts/logs/{build-arm-aes-xts,test-aes-xts,symm-crypto-kat-vpcd-20261121T112121Z}.log`.
