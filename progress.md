@@ -33442,3 +33442,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: all three CAPIN-07 table/offset checks (vtable, Export class_offset, interface index[]) have negative fixtures.
 - Decision: stop here at the user's request; open items are listed in HANDOFF.
 - Artifacts/logs: `artifacts/logs/cap-interface-index-vpcd-20261121T143550Z.log`
+
+## 2026-11-21 Investigate JCAlgTest AES-512 ECB measurements 4 min
+
+- Step-Id: `20261121-1704-jcalgtest-aes512-ecb`
+- When: '2026-11-21 16:39 CET' - '2026-11-21 17:04 CET' (includes execution approval wait)
+- Model: `gpt6`
+- Change: Traced the two reported JCAlgTest requests. Both supply a 512-bit AES key to ECB with ISO 9797 M2 padding. Oracle defines this length for two AES-256 subkeys as used by XTS. Native symmetric cipher initialization rejects the 64-byte key for ECB with `ILLEGAL_VALUE`.
+- Validation: `./tools/fixture-path --verify` passed (86 files). `./tools/build-pc --profile max_crypto` succeeded with build warnings. Ran an eight-APDU direct VPCD replay on an empty emulator with the pinned unchanged CAP (SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`, GETVERSION `1.8.5_jc305`). Supplied APDU bytes directly, so no host client JAR was executed.
+- Result: Both exact 512-bit configurations returned `01 90 00` on prepare (`B0 31`). Changing only the key-length field from `02 00` to `01 00` yielded `AA 90 00` on prepare and measure (`B0 43`) for both methods. The 256-byte input was held constant.
+- Decision: The benchmark configuration pairs an incompatible key length and cipher. The applet propagates the expected error during setup. Firmware and fixture changes are unnecessary. No physical run or throughput measurement was performed.
+- Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261121T160352Z/replay.log` and `source-client.log` in the same directory.
