@@ -61,3 +61,27 @@ Key questions:
 - Does the serial log show any `NO_RESOURCE`, or `OBJECT_DELETION … pending=1` / `tag_index_refused=1`?
 - Is the `HEADROOM:` verdict at the end of `serial-capture-console.txt` PASS? How many
   `FS_APDU … synced=1` lines are there?
+
+## CRYPTO-LEGACY-VECTORS-20261121 — Java Card legacy cipher and MAC encodings
+
+Created 2026-11-21 15:02 CET. Supply the intended card/API version, a vetted
+backend or authoritative encoding definition, and known-answer vectors for
+`Cipher.ALG_RSA_ISO14888` and `Cipher.ALG_RSA_ISO9796`. Include valid
+encrypt/decrypt results and invalid-padding cases. The existing native
+RSA/ISO9796-2 signature implementation uses a different API and encoding.
+
+For `ALG_AES_BLOCK_192_*_NOPAD`, `ALG_AES_BLOCK_256_*_NOPAD`,
+`ALG_AES_MAC_192_NOPAD`, and `ALG_AES_MAC_256_NOPAD`, provide legacy card
+vectors that establish the expected block size, key size, IV size, tag size
+and API status for invalid inputs. The current 128-bit-block AES IDs already
+accept 192-bit and 256-bit AES keys. If wider Rijndael is intended, supply a
+vetted native backend suitable for the RP2350.
+
+## CRYPTO-XDH-ABI-20261121 — Java Card named-parameter XDH
+
+Created 2026-11-21 15:02 CET. Supply matching Java Card SDK API sources or
+export files for the target XDH API and an unchanged reference CAP that
+exercises named-parameter key import and agreement. Include expected
+X25519/X448 shared-secret outputs and invalid-public-key results for the
+curves the target supports. The current build uses JC305 exports and has no
+named-parameter XDH key ABI.

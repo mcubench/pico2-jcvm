@@ -33258,3 +33258,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: ARM max_crypto linked, profile tests passed 15/15, all 85 external fixtures verified and the simulator passed 206 vectors. Restricted VPCD loopback failed with EPERM and passed on the host execution path.
 - Result: Both factories returned the selected algorithm and generated output after seeding. Physical validation remains open.
 - Artifacts/logs: `artifacts/logs/{build-arm-pseudo,test-pseudo-host,symm-crypto-kat-vpcd-20261121T140046Z}.log`.
+
+## 2026-11-21 Identify external crypto compatibility inputs
+
+- Step-Id: `20261121-1503-crypto-compatibility-inputs`
+- When: '2026-11-21 15:02 CET' - '2026-11-21 15:03 CET'
+- Model: `GPT-6`
+- Change: Recorded the legacy RSA and wider AES/MAC vector requirements and the new Java Card named-parameter export/import ABI needed for XDH. Updated the development validation handoff.
+- Validation: Inspected installed JC305 API exports and existing native cipher, signature and SDK random implementations.
+- Result: Existing RSA ISO9796-2 signatures and 192/256-bit AES keys are available under their own algorithm IDs. The installed SDK's random public API returns mixed PRNG output. The requested legacy formats, XDH and TRNG remain open.
+- Artifacts/logs: `.agent/EXT_REQUESTS.md`.
