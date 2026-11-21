@@ -7,7 +7,6 @@ require_host_usb_access
 require_command timeout
 require_command grep
 require_command stdbuf
-require_command pcsc_scan
 
 "${repo_root}/tools/build-jcalgtest-load-code" >/dev/null
 
@@ -38,7 +37,7 @@ reader_found=false
 for attempt in 1 2 3; do
   inventory_log="${out_dir}/reader-inventory-${attempt}.log"
   timeout --signal=TERM --kill-after=2s 8s \
-    stdbuf -oL -eL "${repo_root}/tools/env" pcsc_scan -r \
+    "${repo_root}/tools/list-readers" --timeout 6 \
     > "${inventory_log}" 2>&1 || true
   if grep -Fq "${reader}" "${inventory_log}"; then
     reader_found=true

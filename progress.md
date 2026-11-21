@@ -33184,3 +33184,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Verified unchanged javacard.security class declarations against the previous ROM build. Profile tests passed and ARM max_crypto linked. The full simulator suite passed 168 vectors, including CRC16 default and explicit seeds, split input and reset after finalization. The pinned jCardSim reference lists CRC16.
 - Result: The vectors returned CE3C from the initial zero state and D64E after initializing to FFFF. Hardware APDUs remain blocked by EE11 access and the live shared campaign.
 - Artifacts/logs: `artifacts/logs/{build-arm-crc16-final,test-crc16-final}.log`.
+
+## 2026-11-21 pcscd restarted; pcscd-dependent VPCD suites pass on HEAD 8
+
+- Step-Id: `20261121-1230-vpcd-suites-after-pcscd`
+- Task: CAPIN-05/07 validation, test tooling
+- When: '2026-11-21 12:25 CET' - '2026-11-21 12:30 CET'
+- Model: `claude-opus-5-5`
+- Change: `tools/test-gppro-empty-install-vpcd` used `pcsc_scan -r` (not installed; AGENTS forbids it) to confirm the VPCD reader; it now uses the bounded `tools/list-readers --timeout 6`. Correction to `20261121-1226-t8-option1-pass`: its end time was 12:25 per `date`, not 12:28.
+- Validation: with nothing live, `sudo -n /usr/local/sbin/pico2-pcsc-reader` (ACCESS_GRANTED count=3); `tools/list-readers --pico-only` now lists EE116F37C7E4A04E `00 00`, 07E74C5D7A038DEC `01 00`, F42DD9D07D6D2B07 `02 00`. With `PICO2_HOST_USB_ACCESS=1`: test-sio-cross-aid-vpcd 35/35, test-vpcd-multipackage 48/48, test-same-cap-siblings 6/6, test-gppro-empty-install-vpcd `GPPRO_EMPTY_INSTALL:PASS` (`artifacts/results/gppro-empty-install-vpcd-20261121T112701Z`). These were the suites deferred from the CAPIN-05 (invokespecial constructor-pending) and CAPIN-07 (superclass order, Export class_offset, vtable/index bounds) steps; they install exporting CAPs and SIO fixtures.
+- Result: no regression from the CAPIN changes in the pcscd-dependent suites. EE11 now runs JCVM firmware (not flashed by this session).
+- Decision: the F42D RSA-block replay on HEAD `a9ec9e04` runs in parallel (reader `02 00`).
+- Artifacts/logs: as above.
