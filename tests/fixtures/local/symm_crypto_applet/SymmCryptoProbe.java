@@ -523,6 +523,8 @@ public final class SymmCryptoProbe extends Applet {
     case 3: algorithm = KeyPair.ALG_RSA_CRT; size = KeyBuilder.LENGTH_RSA_1024; break;
     case 4: algorithm = KeyPair.ALG_RSA; size = KeyBuilder.LENGTH_RSA_3072; break;
     case 5: algorithm = KeyPair.ALG_RSA_CRT; size = KeyBuilder.LENGTH_RSA_3072; break;
+    case 6: algorithm = KeyPair.ALG_RSA; size = KeyBuilder.LENGTH_RSA_4096; break;
+    case 7: algorithm = KeyPair.ALG_RSA_CRT; size = KeyBuilder.LENGTH_RSA_4096; break;
     default: return (byte)0xff;
     }
     KeyPair pair;
@@ -541,7 +543,8 @@ public final class SymmCryptoProbe extends Applet {
       privateKey = (Key)pair.getPrivate();
       if (!publicKey.isInitialized() || !privateKey.isInitialized()) return (byte)0x20;
       byte[] modulus = new byte[(short)(size / 8)];
-      publicKey.getModulus(modulus, (short)0);
+      if (publicKey.getModulus(modulus, (short)0) != modulus.length ||
+          modulus[0] >= 0) return (byte)0x21;
       byte[] exponent = new byte[(short)(size / 8)];
       publicKey.getExponent(exponent, (short)0);
       if (!containsNonzero(modulus) || exponent[(short)(exponent.length - 1)] != 1 ||
@@ -570,7 +573,8 @@ public final class SymmCryptoProbe extends Applet {
             crt.getDP1(part, (short)0) <= 0 || !containsNonzero(part) ||
             crt.getDQ1(part, (short)0) <= 0 || !containsNonzero(part) ||
             crt.getPQ(part, (short)0) <= 0 || !containsNonzero(part)) return (byte)0x24;
-        if (size <= KeyBuilder.LENGTH_RSA_1024) {
+        if (size <= KeyBuilder.LENGTH_RSA_1024 ||
+            size == KeyBuilder.LENGTH_RSA_4096) {
           byte[] message = {(byte)0x43,(byte)0x52,(byte)0x54,(byte)0x21};
           byte[] signed = new byte[(short)(size / 8)];
           Signature signature = Signature.getInstance(

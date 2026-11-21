@@ -1,6 +1,6 @@
 # Handoff — next steps only
 
-Updated: 2026-11-21 11:19 CET.
+Updated: 2026-11-21 11:36 CET.
 
 ## Current state
 - **Live:** MEM-01 T8 option 1 on 07E7 (`9228c583` empty card), RESUMED 2026-11-21 09:12 CET after the first 12 h segment (1,362 methods, clean). Directory `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/`: segment 1 `client.log`/`serial.log`, segment 2 `client-resume.log`/`serial-resume.log`. Reader is now `... (07E74C5D7A038DEC) 00 00` (pcscd renumbered; card did not reboot). Do not touch 07E7 or restart pcscd until it ends; F42D (`... 01 00` now) is free.
@@ -9,6 +9,7 @@ Updated: 2026-11-21 11:19 CET.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work
+- RSA/RSA-CRT 4096 physical validation is pending the same warning-free ARM build gate. On a free identified board, cycle the normal max_crypto JCVM and run the two 4096 cases from the asymmetric probe. Use one short APDU per mode (801A060000 and 801A070000, expect 019000).
 - MessageDigest streaming physical validation is pending. The ARM max_crypto build links, but the pinned CHOUPI Rust OS emits warnings and the warning-free flash gate applies. Once clear, identify a free board and run the full JCVM cycle, then validate the 5 KiB and multipart digest probes with per-APDU flash telemetry. See step `20261121-1119-digest-streaming`.
 - Waiting on `WIN-MAXCRYPTO-FLASH-A266B836` (`.agent/EXT_REQUESTS.md`).
 - OOM T9 fix committed (`20261120-0419-oom-small-handles-reserve`); the live run is its end-to-end check.

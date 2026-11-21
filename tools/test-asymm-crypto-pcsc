@@ -98,10 +98,10 @@ with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
 if (rsa_vectors, ec_vectors, ecdsa_vectors, agreement_vectors,
-        ec_keypair_vectors, rsa_keypair_vectors) != (50, 3, 5, 8, 7, 6):
+        ec_keypair_vectors, rsa_keypair_vectors) != (51, 3, 5, 8, 7, 8):
     raise SystemExit(
-        "expected 50 RSA signature, 3 EC key-storage, 5 ECDSA, "
-        "8 key-agreement, 7 EC key-pair, and 6 RSA key-pair vectors; got "
+        "expected 51 RSA signature, 3 EC key-storage, 5 ECDSA, "
+        "8 key-agreement, 7 EC key-pair, and 8 RSA key-pair vectors; got "
         f"{rsa_vectors} RSA, {ec_vectors} EC storage, {ecdsa_vectors} ECDSA, "
         f"{agreement_vectors} agreement, {ec_keypair_vectors} EC key-pair, "
         f"and {rsa_keypair_vectors} RSA key-pair")
@@ -126,9 +126,8 @@ timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
   die "GPPro install failed; see ${build_dir}/physical-install-${timestamp}.log"
 "${repo_root}/tools/env" javac -d "${client_build}" \
   "${repo_root}/tests/hardware/SymmCryptoPcscProbe.java"
-# RSA-3072 key generation can take over two minutes on the RP2350 (RSA-CRT
-# varies by several minutes depending on random prime candidates). CCID time
-# extensions keep a long APDU alive, so keep a finite but generous host bound.
-timeout --signal=TERM --kill-after=5s 600s "${repo_root}/tools/env" java \
+# RSA-3072/4096 prime generation time varies with the random candidates.
+# Keep a finite bound for the suite, including all four large key pairs.
+timeout --signal=TERM --kill-after=5s 1800s "${repo_root}/tools/env" java \
   -cp "${client_build}" SymmCryptoPcscProbe "${reader_name}" "${vectors}"
 printf 'PHYSICAL:PASS log=%s\n' "${log#${repo_root}/}"

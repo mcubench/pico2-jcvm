@@ -81,7 +81,9 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
             "RSA 1024-bit generation and signature",
             "RSA-CRT 1024-bit generation, signature, and cipher",
             "RSA 3072-bit generation and signature",
-            "RSA-CRT 3072-bit generation and components")):
+            "RSA-CRT 3072-bit generation and components",
+            "RSA 4096-bit generation and signature",
+            "RSA-CRT 4096-bit generation, signature, and cipher")):
         command = bytes((0x80, 0x1a, selector, 0, 0))
         results.append((command, b"\x01\x90\x00", label))
     rsa = _rsa_512_fixture()

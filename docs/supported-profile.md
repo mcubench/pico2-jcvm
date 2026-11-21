@@ -40,12 +40,10 @@ by Java Card.
   claimed as accepted.
 - Optional API packages absent from the ROM mask, including
   `javacardx.external`, are rejected when CAP imports are resolved.
-- The optional `max_crypto` profile does not enable RSA or RSA-CRT 4096-bit
-  key-pair generation. The JCAlgTest host clients (1.8.3–1.8.5) send RSA/RSA-CRT
-  key-pair probes labelled 3072 with length 4096 (0x1000), and their
-  4096-labelled probes with 64. The applet CAPs (1.8.2 and 1.8.4) pass the
-  length through unchanged. This profile does not alter the client or CAP, and
-  does not claim those requests as supported.
+- The asymmetric and maximum crypto profiles enable RSA and RSA-CRT
+  4096-bit key-pair generation. Historical JCAlgTest runs sent length 4096
+  under the 3072 label and length 64 under the 4096 label. Use the actual
+  requested key length when interpreting those rows.
 - `MessageDigest` and `InitializedMessageDigest` stream input directly from
   applet byte arrays across calls. Per-call offsets and lengths are Java Card
   `short` values. The cumulative message, including any initialized prefix,

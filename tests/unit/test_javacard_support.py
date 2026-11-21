@@ -276,7 +276,7 @@ class JavaCardSupportTests(unittest.TestCase):
             result = self.run_named_profile("max_crypto", out)
             self.assertEqual(result.returncode, 0, result.stderr)
             profile = json.loads((out / "javacard-support.json").read_text())
-            self.assertEqual(sum(profile.values()), 159)
+            self.assertEqual(sum(profile.values()), 161)
             for key in (
                 "signature_hmac_sha1", "signature_hmac_sha_256",
                 "signature_hmac_sha_384", "signature_hmac_sha_512",
@@ -291,8 +291,8 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertTrue(profile["signature_ecdsa_sha_512"])
             self.assertTrue(profile["key_rsa_public_4096"])
             self.assertFalse(profile["key_ec_fp_private_112"])
-            self.assertFalse(profile["keypair_rsa_4096"])
-            self.assertFalse(profile["keypair_rsa_crt_4096"])
+            self.assertTrue(profile["keypair_rsa_4096"])
+            self.assertTrue(profile["keypair_rsa_crt_4096"])
 
     def test_ctr_pair_factory_can_be_selected_without_single_factory(self):
         pair_only = {key: False for key in CONFIG}
@@ -320,14 +320,12 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((out / "profile.txt").read_text(), "asymm_crypto\n")
             profile = json.loads((out / "javacard-support.json").read_text())
-            for bits in (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072):
+            for bits in (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072, 4096):
                 self.assertTrue(profile[f"keypair_rsa_{bits}"])
                 self.assertTrue(profile[f"keypair_rsa_crt_{bits}"])
-            self.assertFalse(profile["keypair_rsa_4096"])
-            self.assertFalse(profile["keypair_rsa_crt_4096"])
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 generated = {tuple(row) for row in list(csv.reader(source, delimiter=";"))[1:]}
-            for bits in (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072):
+            for bits in (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072, 4096):
                 self.assertIn(("javacard.security.KeyPair", f"ALG_RSA LENGTH_RSA_{bits}"), generated)
                 self.assertIn(("javacard.security.KeyPair", f"ALG_RSA_CRT LENGTH_RSA_{bits}"), generated)
             self.assertTrue(profile["key_ec_fp_private_transient_reset"])

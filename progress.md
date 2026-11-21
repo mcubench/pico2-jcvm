@@ -33048,3 +33048,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: One update read 5,120 bytes from a persistent array at offset 1. SHA-256 matched the reference for 35,903 bytes across APDUs, including a 63-byte update inside an aborted transaction and empty final input. All five SHA algorithms matched on 5,120-byte doFinal input. Existing initialized and OneShot probes passed. ARM flash, serial output, throughput and per-APDU sync_bytes/journal_bytes were not measured because the build emitted warnings.
 - Decision: The implementation and offline checks are complete. Physical validation remains pending under the warning-free flash gate.
 - Artifacts/logs: `artifacts/logs/{build-arm-digest-streaming,test-digest-streaming,test-digest-streaming-overlay,test-persistent-transaction-digest-streaming,fixtures-digest-streaming}.log`. Pre-commit ARM UF2 SHA-256 `6735ec7725ddddc4c54238088c8f356e9ee21ad354f8d08fd2568fbba1121fba`.
+
+## 2026-11-21 Enable native RSA-4096 and RSA-CRT-4096 generation 4 minutes
+
+- Step-Id: `20261121-1136-rsa4096`
+- When: '2026-11-21 11:32 CET' - '2026-11-21 11:36 CET'
+- Model: `GPT-6`
+- Change: Enabled RSA and RSA-CRT 4096-bit KeyPair flags in asymm_crypto and max_crypto. The existing native generator, component storage, and crypto operations already handle this size. Extended the existing asymmetric probe and updated the profile documentation.
+- Validation: All 15 profile unit tests passed. The generated KeyPair rows matched both pinned jCardSim 1.8.5 reference labels. Fixture verification passed all 85 files. The full asymmetric simulator suite passed 104 vectors. The physical runner generated its vectors offline and filtered to both 4096 cases. The focused max_crypto RP2350 filesystem simulator cases 801A060000 and 801A070000 both returned 019000.
+- Result: Both generated moduli had exactly 4,096 bits. RSA and CRT sign/verify passed, and CRT PKCS#1 encryption/decryption recovered the original message. Focused simulator APDUs took 2.404 s and 3.829 s respectively. Normal max_crypto ARM linked at 0x10069eb8, leaving 614,728 bytes. Build dependency warnings prevented flashing. No physical timing or flash traffic was measured.
+- Decision: Physical validation remains pending under the warning-free build gate. The supplied client and CAP were unchanged.
+- Artifacts/logs: `artifacts/logs/{build-arm-rsa4096,build-pc-rsa4096,test-profile-rsa4096,test-rsa4096,vpcd-rsa4096,test-asymm-rsa4096}.log`. Pre-commit ARM UF2 SHA-256 `51cb72618d4ba676079a3439c49819042c96f24815d50b8d7a0211e9ce1ba5fd`.
