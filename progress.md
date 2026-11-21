@@ -33453,3 +33453,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Both exact 512-bit configurations returned `01 90 00` on prepare (`B0 31`). Changing only the key-length field from `02 00` to `01 00` yielded `AA 90 00` on prepare and measure (`B0 43`) for both methods. The 256-byte input was held constant.
 - Decision: The benchmark configuration pairs an incompatible key length and cipher. The applet propagates the expected error during setup. Firmware and fixture changes are unnecessary. No physical run or throughput measurement was performed.
 - Artifacts/logs: `artifacts/results/resource01-apdu-replay-vpcd-20261121T160352Z/replay.log` and `source-client.log` in the same directory.
+
+## 2026-11-21 Reconcile and compact the active backlog and QKB 8 min
+
+- Step-Id: `20261121-1712-backlog-compaction`
+- When: '2026-11-21 17:04 CET' - '2026-11-21 17:12 CET'
+- Model: `gpt6`
+- Change: Reconciled TODO with Git and progress evidence. Archived MEM-01 T1–T10, completed flash/tooling and scoped review work, and the prior incident records. Updated HANDOFF to remove stale campaign and superseded external-request references.
+- Validation: Compared the two archives byte-for-byte with HEAD, checked live document links and anchors, checked that all 42 open November review IDs remain, and ran `git diff --check`. Docs only, so no build or hardware run.
+- Result: TODO 1,430 to 278 lines and QKB 1,792 to 52 lines. The Windows RC, physical power-cut and crypto gates, CAP validation gaps and unresolved review acceptance remain open. T8 supplies the existing Linux resource campaign evidence.
+- Decision: Use the compact files for current work and the archive for historical scope and evidence.
+- Artifacts/logs: `.agent/archive/2026-11-21-backlog-compaction/`
