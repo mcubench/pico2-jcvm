@@ -12,7 +12,7 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 - Review Windows option 1/2 results for `v0.2-rc1` and get user authorization before publishing. See WIN-MAXCRYPTO-RC-V0.2-RC1.
 - Finish CAPIN-01/07 LOAD-time validation and the remaining CAPIN-05/06 negative fixtures.
-- Diagnose and rerun the physical symmetric KAT after EE11 returned `6F00` partway through the sweep. The normal ARM build and scoped physical streaming-digest checks passed.
+- Diagnose EE11 runtime RAM exhaustion during the physical symmetric KAT. Instrument the APDU prefix around the XTS cutoff and the cleanup panic, identify retained allocations, then rerun the full sweep. See `20261121-2149-ee11-kat-oom`.
 - Schedule BOOTSEL and power-loss acceptance when an identified board is available.
 
 ## CAP and interpreter safety

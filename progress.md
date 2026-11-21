@@ -33537,3 +33537,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: EE11 matched the 35,903-byte SHA-256 stream, empty reuse and all five SHA digests on 5,120-byte input. Case 121 allocated the probe's input and digest handle, writing 49,152 sync bytes and zero journal bytes. Cases 122–124 each wrote zero sync and journal bytes. Serial recorded no faults during the digest run. The separate broad symmetric run before the empty-card flash reported 94 passes and 114 failures, starting with `6F00` at AES XTS 512, 31 bytes, operation 6. Symmetric probe cleanup failed with `SCARD_E_NOT_TRANSACTED`; EE11 was then restored from the empty-card image.
 - Decision: Close the focused streaming-digest check. Investigate the broad symmetric run independently. The local probe establishes scoped hardware evidence and leaves unchanged-client acceptance open.
 - Artifacts/logs: `artifacts/build-audit/` contains the build, cycle, VPCD, APDU and serial logs. Firmware from `90156a6b` had SHA-256 `a61ac8e9841729feb28550b62abf6300f79ee07bb12f852dc898cd68ca1baa32`; the empty-card UF2 had SHA-256 `0a7021ea2a2a9c9486a2a2c01441185360ad7ad24473fe08c9d866ca4579e732`.
+
+## 2026-11-21 Localize the EE11 symmetric KAT failure to runtime memory pressure 11
+
+- Step-Id: `20261121-2149-ee11-kat-oom`
+- Task: PROFILE-01 / physical crypto KAT
+- When: '2026-11-21 21:38 CET' - '2026-11-21 21:49 CET'
+- Model: `gpt-6`
+- Change: Compared the first failing AES-XTS vector in isolation and after its APDU prefix with the max_crypto RP2350-overlay emulator. Repeated the physical sweep on EE116F37C7E4A04E with bounded serial telemetry and an ISD-only starting state.
+- Validation: The emulator passed the isolated APDU and all 101 prefix APDUs. The first replay attempt was corrected to encode the applet AID length as nine bytes. The emulator overlay finished at 2,875 of 98,304 bytes. EE11's rerun failed with 89 passes and 119 failures. Normal image CPLC source ID `90156A6BDD351C79`, empty-card UF2 SHA-256 `0a7021ea2a2a9c9486a2a2c01441185360ad7ad24473fe08c9d866ca4579e732`, PC/SC reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`.
+- Result: Hardware first returned `6F00` on AES XTS 512, 31 bytes, operation 1. All later test vectors failed. Overlay usage plateaued at 179 files and 2,983 of 98,304 bytes, with zero sync and journal bytes on the late failures. The serial monitor captured `*** PANIC ***` and `Out of memory` at cleanup after an authenticated DELETE APDU returned `9000`. Cleanup exited 1 with `SCARD_E_NOT_TRANSACTED`. Final GP inventory is unverified.
+- Decision: Investigate runtime heap allocation and reclamation near the cutoff and the cleanup panic. Keep the full physical KAT open.
+- Artifacts/logs: `artifacts/build-audit/{replay-ee11-kat.py,kat-prefix-vpcd.log,kat-prefix-overlay.log,symm-kat-ee11-rerun.log,symm-kat-ee11-rerun-serial.log}`.
