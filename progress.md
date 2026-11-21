@@ -33026,3 +33026,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Checked the README anchor and scoped diff. `git diff --check` passed.
 - Result: The feature table links to detailed API results and records the remaining hardware power-loss validation.
 - Artifacts/logs: Existing external Windows results. No new tests were run.
+
+## 2026-11-21 Trace the cumulative MessageDigest input cap 2 minutes
+
+- Step-Id: `20261121-1037-digest-streaming-spec-request`
+- When: '2026-11-21 10:36 CET' - '2026-11-21 10:38 CET'
+- Model: `GPT-6`
+- Change: Recorded SPEC-MESSAGE-DIGEST-STREAMING in `.agent/EXT_REQUESTS.md`.
+- Validation: Inspected the native factory, update and doFinal paths and checked SPEC INV-28.
+- Result: Each instance allocates a 2,046-byte transient message buffer. update() appends to it and overflow throws CryptoException.ILLEGAL_USE. The cap is specified by INV-28.
+- Decision: Await explicit approval to change INV-28 before implementing incremental native digest state.
+- Artifacts/logs: None. Source inspection only.
