@@ -29,6 +29,7 @@
 #include "jc_cp.hpp"
 #include "jc_import.hpp"
 #include "flashmemory.hpp"
+#include "../native_checksum.hpp"
 #include "../../../src/vm_diagnostics.h"
 
 #include <cstring>
@@ -710,6 +711,12 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
 #ifndef PC_VERSION
   choupi_install_stage(5);
 #endif
+  // Native Checksum instances use private slots without changing ROM class
+  // offsets or the field layout of applet-defined subclasses.
+  if (this->package.getPackageID() == ROM_PACKAGE_INDEX_JAVACARD_SECURITY &&
+      claz_index == nativeChecksumClass())
+    return kChecksumNativeFieldCount;
+
   auto package = this->package;
   auto claz = ConstantPool_Handler(package).getClassFromClassIndex(claz_index);
 

@@ -33174,3 +33174,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 1,901 methods; result CSVs contain 0 `6f00`, 0 `SystemException`, 0 `UNKONWN_ERROR`, 0 CANT_BE_MEASURED; 12 ILLEGAL_VALUE (HMAC block-length keys and AES MAC 192/256, fixed later in `c42fab06`) and 4 ILLEGAL_USE in segment 1 (RSA NOPAD input ≥ modulus, input-dependent). Serial: 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL/BOOT/`allocation_failed`, 0 `OBJECT_DELETION:SKIP`; 1,794 + 871 PRE_CLEANUP samples; peak store 72,879/98,304 B (74.1%, below the 90% gate); min pre-cleanup free RAM 22,664 B (segment 2: 49,664 B); 72 + 17 low-watermark compactions. The run passed method 631 (RSA-4096 CRT), where the d7e90a18 rerun panicked.
 - Decision: MEM-01 GC acceptance met (T1–T8, T10(a)). Remaining: T10(b) design item; replay the Windows RSA block on the current image on F42D (needs a pcscd restart, now allowed: nothing is live); then the pcscd-dependent VPCD suites.
 - Artifacts/logs: `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/` (`client.log`, `client-resume.log`, `serial.log`, `serial-resume.log`, `client-output/*.csv`, `campaign-identity.txt`)
+
+## 2026-11-21 Add native ISO 3309 CRC16 5 minutes
+
+- Step-Id: `20261121-1226-crc16`
+- When: '2026-11-21 12:22 CET' - '2026-11-21 12:27 CET'
+- Model: `GPT-6`
+- Change: Added native Checksum factory and methods for ISO 3309 CRC16. The exact ROM Checksum class receives private VM slots so state remains transient without changing converted class declarations or applet subclass layouts.
+- Validation: Verified unchanged javacard.security class declarations against the previous ROM build. Profile tests passed and ARM max_crypto linked. The full simulator suite passed 168 vectors, including CRC16 default and explicit seeds, split input and reset after finalization. The pinned jCardSim reference lists CRC16.
+- Result: The vectors returned CE3C from the initial zero state and D64E after initializing to FFFF. Hardware APDUs remain blocked by EE11 access and the live shared campaign.
+- Artifacts/logs: `artifacts/logs/{build-arm-crc16-final,test-crc16-final}.log`.

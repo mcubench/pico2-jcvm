@@ -280,6 +280,16 @@ def rsa_key_component_vectors() -> list[tuple[bytes, bytes, str]]:
     ]
 
 
+def checksum_vectors() -> list[tuple[bytes, bytes, str]]:
+    message = b"123456789"
+    return [
+        (bytes((0x80, 0x2E, 1, 0, len(message))) + message + b"\x00",
+         bytes.fromhex("ce3c9000"), "ISO3309 CRC16 default seed"),
+        (bytes((0x80, 0x2E, 1, 1, len(message) + 2)) + b"\xff\xff" + message + b"\x00",
+         bytes.fromhex("d64ece3c9000"), "ISO3309 CRC16 custom seed and reset"),
+    ]
+
+
 def sha3_vectors() -> list[tuple[bytes, bytes, str]]:
     vectors = []
     for algorithm, bits in ((8, 224), (9, 256), (10, 384), (11, 512)):
@@ -297,7 +307,7 @@ def main() -> int:
     cipher_count = len(cipher_vectors())
     mac_count = len(mac_vectors())
     rsa_component_count = len(rsa_key_component_vectors())
-    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() +
+    vectors = (cipher_vectors() + mac_vectors() + sha3_vectors() + checksum_vectors() +
                transient_cipher_lifecycle_vectors() +
                rsa_key_component_vectors())
     timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())

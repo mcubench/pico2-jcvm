@@ -10,6 +10,7 @@ import javacard.security.DESKey;
 import javacard.security.ECPrivateKey;
 import javacard.security.ECPublicKey;
 import javacard.security.CryptoException;
+import javacard.security.Checksum;
 import javacard.security.Key;
 import javacard.security.KeyBuilder;
 import javacard.security.KeyAgreement;
@@ -128,6 +129,9 @@ public final class SymmCryptoProbe extends Applet {
         output[0] = (byte)0x62;
         outputLength = (short)1;
       }
+    } else if (instruction == (byte)0x2e) {
+      output = new byte[8];
+      outputLength = runChecksum(algorithm, operation, input, inputLength, output);
     } else if (instruction == (byte)0x2d) {
       output = new byte[(short)32];
       outputLength = runIvLifecycle(algorithm, operation, input,
@@ -647,6 +651,26 @@ public final class SymmCryptoProbe extends Applet {
     byte aggregate = 0;
     for (short i = 0; i < value.length; i++) aggregate |= value[i];
     return aggregate != 0;
+  }
+
+  private static short runChecksum(byte algorithm, byte operation, byte[] input,
+                                   short length, byte[] output) {
+    Checksum checksum = Checksum.getInstance(algorithm, false);
+    if (checksum.getAlgorithm() != algorithm)
+      ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+    short offset = 0;
+    if (operation != 0) {
+      offset = (short)2;
+      checksum.init(input, (short)0, offset);
+      length -= offset;
+    }
+    short split = (short)(length / 2);
+    checksum.update(input, offset, split);
+    short result = checksum.doFinal(input, (short)(offset + split),
+        (short)(length - split), output, (short)0);
+    if (operation != 0)
+      result += checksum.doFinal(input, offset, length, output, result);
+    return result;
   }
 
   private static short runDigest(byte algorithm, byte[] input,

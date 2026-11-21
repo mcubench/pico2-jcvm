@@ -97,6 +97,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
         "javacard.security.KeyAgreement", "ALG_EC_SVDP_DH_PLAIN_XY"
     ),
     "keypair_ec_fp": ("javacard.security.KeyPair", "ALG_EC_FP"),
+    "checksum_crc16": ("javacard.security.Checksum", "ALG_ISO3309_CRC16"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -564,6 +565,11 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     write_if_changed(
         out_dir / "javacard-native-methods.txt",
         "\n".join((
+            "javacard/security|Checksum|Checksum/getInstance(BZ)Ljavacard/security/Checksum;|static",
+            "javacard/security|Checksum|Checksum/getAlgorithm()B|instance",
+            "javacard/security|Checksum|Checksum/init([BSS)V|instance",
+            "javacard/security|Checksum|Checksum/update([BSS)V|instance",
+            "javacard/security|Checksum|Checksum/doFinal([BSS[BS)S|instance",
             "javacard/security|MessageDigest|MessageDigest/getInstance(BZ)Ljavacard/security/MessageDigest;|static",
             "javacard/security|MessageDigest|MessageDigest/getAlgorithm()B|instance",
             "javacard/security|MessageDigest|MessageDigest/getLength()B|instance",

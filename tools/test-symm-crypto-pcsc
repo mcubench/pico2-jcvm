@@ -30,7 +30,8 @@ source = root / "tests/integration/test_symm_crypto_vpcd.py"
 spec = importlib.util.spec_from_file_location("symm_crypto_vectors", source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-vectors = module.cipher_vectors() + module.mac_vectors() + module.sha3_vectors()
+vectors = (module.cipher_vectors() + module.mac_vectors() + module.sha3_vectors() +
+           module.checksum_vectors())
 with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
