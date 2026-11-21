@@ -32918,3 +32918,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: out-of-range virtual method offsets and interface token maps are refused before execution.
 - Decision: run the pcscd-dependent suites after the 07E7 campaign; add table-mutation fixtures with CAPIN-07 completion.
 - Artifacts/logs: none beyond the suite logs.
+
+## 2026-11-21 T8 option-1 checkpoint: first 12 h segment clean past the old OOM point 3
+
+- Step-Id: `20261121-0914-t8-option1-segment1`
+- Task: MEM-01 T8 (option 1)
+- When: '2026-11-21 09:10 CET' - '2026-11-21 09:14 CET'
+- Model: `claude-opus-5-5`
+- Change: none to source. Campaign record only.
+- Validation: run on 07E74C5D7A038DEC from an empty card (empty-card UF2 SHA-256 `485c30d3…1145`, app UF2 `72856608…31aa1`, build of 9228c583, mode=normal), unchanged 1.8.5/jc305 CAP `fa64582e…`, 1.8.5 client JAR `b6a753be…`, menu 2 → 1, `-fresh`, started 2026-11-20 21:07 CET. The 43,200 s watchdog ended segment 1 (`JCALGTEST_WATCHDOG:TIMEOUT`, rc=124) after 1,362 methods.
+- Result: 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL, 0 `OBJECT_DELETION:SKIP reason=allocation_failed`, 0 `SW=6999`. Passed method 631 (`TYPE_RSA_CRT_PUBLIC LENGTH_RSA_4096 ALG_RSA_PKCS1_OAEP`), where the d7e90a18 rerun panicked. 1,794 PRE_CLEANUP samples; minimum free RAM before cleanup 22,664 B (during the RSA-CRT private/public 3072–4096 stages); peak store 72,879/98,304 B (74.1%, below the 90% gate); 72 low-watermark compactions; last heap 133 arrays / 38 instances. The recoverable-allocation path was never needed in this run, so it remains validated only by the unit fault-injection test.
+- Decision: resumed at 09:12 CET on the same card with the same `-cardname`, no `-fresh`, stdin `2/1/y` (1,361 already-measured entries). The first resume attempt used the old reader name `... 01 00` and stopped at reader lookup (no APDU); pcscd had renumbered the readers (07E7 now `... 00 00`); serial shows no BOOT, so the card was not reset. The serial capture's own 43,500 s bound ended at 09:13; a second capture continues in `serial-resume.log`. T8 option 1 stays open until the resumed client reports `Testing complete`.
+- Artifacts/logs: `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/` (`client.log`, `serial.log`, `client-resume-attempt0-wrong-reader.log`, `client-resume.log`, `serial-resume.log`, `campaign-identity.txt`)
