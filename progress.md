@@ -33236,3 +33236,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: ARM max_crypto linked without warnings, profile tests passed 15/15 and simulator vectors passed 204/204. Full development JCVM booted on 07E74C5D7A038DEC with TEST:PASS and CYCLE:PASS.
 - Result: Physical PC/SC selected the probe applet, then returned 6F00 during the transient-array preflight before the algorithm cases. Probe cleanup passed.
 - Artifacts/logs: `artifacts/logs/{build-arm-drbg-final,test-drbg,cycle-crypto-07e7,test-crypto-07e7-exact,symm-crypto-kat-pcsc-20261121T115055Z}.log`.
+
+## 2026-11-21 Adopt the user-supplied 1.8.5-20261121 JCAlgTest client for new runs 4
+
+- Step-Id: `20261121-1501-jcalgtest-client-20261121`
+- Task: test fixtures (user directive 2026-11-21, second client update)
+- When: '2026-11-21 14:57 CET' - '2026-11-21 14:58 CET'
+- Model: `claude-opus-5-5`
+- Change: The user supplied a new `inbox/AlgTestJClient.jar` (JAR entries dated 2026-11-21 14:50; fewer internal repetitions of the tested method for asymmetric algorithms) and confirmed it is a new build. Copied byte-for-byte to `tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar` with `lib -> ../../1.8.4/client/lib`; pinned as `jcalgtest.client.1.8.5-20261121` (SHA-256 `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`, 164,996 bytes). AGENTS.md and tests/README.md name it as the client for new runs; 1.8.5-20261120 (`724bda75…`) and 1.8.5 (`b6a753be…`) become historical, and a run already started with one may finish with it.
+- Validation: `cmp` against the inbox copy; `./tools/fixture-path --verify` FIXTURES:PASS files=86; simulator `ALG_SUPPORT_BASIC` with the new client rc=0 with a CSV.
+- Result: new client pinned. The live F42D RSA-block replay (started 12:28 with `724bda75…`) keeps that client.
+- Decision: all subsequent JCAlgTest runs use `3cca70cb…`.
+- Artifacts/logs: simulator smoke output in the session scratchpad only.

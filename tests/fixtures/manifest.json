@@ -35,7 +35,8 @@
     "reference.card.j3r180": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv",
     "jcalgtest.reference.1.8.4": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
     "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar",
-    "jcalgtest.client.1.8.5-20261120": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar"
+    "jcalgtest.client.1.8.5-20261120": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar",
+    "jcalgtest.client.1.8.5-20261121": "tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar"
   },
   "files": [
     {
@@ -554,6 +555,13 @@
       "size": 164996,
       "provided_path": "inbox/AlgTestJClient.jar",
       "note": "User-supplied immutable host client (2026-11-21 directive): 1.8.5 line with fewer internal calls for asymmetric operations; embedded version string 1.8.5; uses the 1.8.4/1.8.5 lib set."
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar",
+      "sha256": "3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703",
+      "size": 164996,
+      "provided_path": "inbox/AlgTestJClient.jar",
+      "note": "User-supplied immutable host client (2026-11-21 14:50 build, directive 2026-11-21): fewer internal repetitions of the tested method for asymmetric algorithms; embedded version string 1.8.5; uses the 1.8.4/1.8.5 lib set. Supersedes 1.8.5-20261120 for new runs."
     }
   ]
 }
