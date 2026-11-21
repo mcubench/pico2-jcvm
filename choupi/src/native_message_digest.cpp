@@ -94,6 +94,9 @@ uint16_t digestLength(const jbyte_t algorithm) {
 #if JC_SUPPORT_SHA3_256
   case 9: return 32;
 #endif
+#if JC_SUPPORT_SHA3_384
+  case 10: return 48;
+#endif
   default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
 }
@@ -171,6 +174,9 @@ void withDigestContext(JC_Instance &instance, Operation operation,
 #endif
 #if JC_SUPPORT_SHA3_256
   case 9:
+#endif
+#if JC_SUPPORT_SHA3_384
+  case 10:
 #endif
     return withDigestContext<mbedtls_sha3_context>(
         *buffer, [algorithm](auto *state) {

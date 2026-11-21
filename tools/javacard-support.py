@@ -31,6 +31,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "sha512": ("javacard.security.MessageDigest", "ALG_SHA_512"),
     "sha3_224": ("javacard.security.MessageDigest", "ALG_SHA3_224"),
     "sha3_256": ("javacard.security.MessageDigest", "ALG_SHA3_256"),
+    "sha3_384": ("javacard.security.MessageDigest", "ALG_SHA3_384"),
     "cipher_rsa_pkcs1": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1"),
     "cipher_rsa_nopad": ("javacardx.crypto.Cipher", "ALG_RSA_NOPAD"),
     "cipher_rsa_oaep": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1_OAEP"),
@@ -464,6 +465,7 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("sha224",), "javacard.security.MessageDigest.OneShot", "ALG_SHA_224"),
     (("sha3_224",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_224"),
     (("sha3_256",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_256"),
+    (("sha3_384",), "javacard.security.MessageDigest.OneShot", "ALG_SHA3_384"),
     (("secure_random",), "javacard.security.RandomData.OneShot", "ALG_SECURE_RANDOM"),
     # MessageDigest.getInitializedMessageDigestInstance() and its OneShot use
     # the same SHA-1/SHA-2 engines as MessageDigest
