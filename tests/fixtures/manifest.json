@@ -34,7 +34,8 @@
     "reference.card.noecc": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv",
     "reference.card.j3r180": "tests/fixtures/reference/cards/provided-20261107/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv",
     "jcalgtest.reference.1.8.4": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
-    "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
+    "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar",
+    "jcalgtest.client.1.8.5-20261120": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar"
   },
   "files": [
     {
@@ -546,6 +547,13 @@
       "sha256": "8a8b7d75f77dbb77707dafdb6d100ac27c920a986c8509b8e7a6df09b6552746",
       "generated_by": "tools/run-jcalgtest --client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar --simulator -op ALG_SUPPORT_EXTENDED -fresh -cardname jcardsim_jcalgtest_184; 2026-11-15",
       "note": "Applet is unchanged 1.8.4_jc305. Client JAR SHA-256 b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3; CSV self-reports client version 1.8.4. Support yes/no identities match the prior simulator run; timing values are run-specific."
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar",
+      "sha256": "724bda75022756605bdde5f54edc9fece4e0b70a23eed5ddc86645d60e1eabd9",
+      "size": 164996,
+      "provided_path": "inbox/AlgTestJClient.jar",
+      "note": "User-supplied immutable host client (2026-11-21 directive): 1.8.5 line with fewer internal calls for asymmetric operations; embedded version string 1.8.5; uses the 1.8.4/1.8.5 lib set."
     }
   ]
 }

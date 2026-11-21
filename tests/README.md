@@ -9,8 +9,9 @@ Repository-owned applet/fixture sources live in `fixtures/local/`.
 - JCAlgTest **1.8.5** CAP (`external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap`,
   Java Card Classic 3.0.5, user-supplied 2026-11-18), the only CAP to use for new runs;
   the historical 1.8.4 CAP and 1.8.4 client (evidence only),
-  and the supplied **1.8.5 host client**, which is the only client to use for new runs
-  (see "Worker instruction" below).
+  the earlier supplied 1.8.5 host client (`b6a753be…`), and the updated
+  **1.8.5-20261120 host client** (`jcalgtest.client.1.8.5-20261120`, SHA-256
+  `724bda75…eabd9`, user-supplied 2026-11-21), the client for new runs.
 - The independent Java Card API validation suite, snapshot
   `provided-20261107`, including all 48 CAPs and its own client/runner.
 

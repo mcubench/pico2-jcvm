@@ -32941,3 +32941,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The matrix distinguishes recorded Java Card API 3.0.5 outcomes from unverified variants.
 - Decision: Keep historical outcomes tied to their recorded firmware builds.
 - Artifacts/logs: Existing physical API run records from 2026-10-25 through 2026-11-01 in this log.
+
+## 2026-11-21 Adopt the user-supplied 1.8.5-20261120 JCAlgTest client for new runs 5
+
+- Step-Id: `20261121-0918-jcalgtest-client-20261120`
+- Task: test fixtures (user directive 2026-11-21)
+- When: '2026-11-21 09:18 CET' - '2026-11-21 09:23 CET'
+- Model: `claude-opus-5-5`
+- Change: The user supplied `inbox/AlgTestJClient.jar` (fewer internal calls for asymmetric operations, faster performance runs). Copied byte-for-byte to `tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar` (inbox left unchanged) with `lib -> ../../1.8.4/client/lib`, the same Class-Path set as the earlier 1.8.5 client. Pinned in `tests/fixtures/manifest.json` (asset `jcalgtest.client.1.8.5-20261120`, SHA-256 `724bda75022756605bdde5f54edc9fece4e0b70a23eed5ddc86645d60e1eabd9`, 164,996 bytes). AGENTS.md and tests/README.md now name it as the client for new runs; a run already started with the earlier client may finish with it, never mixing clients in one run.
+- Validation: `cmp` against the inbox copy; `./tools/fixture-path --verify` FIXTURES:PASS files=85; `tools/run-jcalgtest --client-jar <new> --simulator -op ALG_SUPPORT_BASIC -fresh` rc=0 with a CSV. The embedded version string is 1.8.5, so the hash is the identity.
+- Result: new client available and pinned. The live 07E7 T8 option-1 resume keeps the earlier client (`b6a753be…`) so that run uses one client end to end.
+- Decision: use the new client for the next campaigns (T8 option 2 rerun, post-campaign VPCD runs, future option-1 runs).
+- Artifacts/logs: simulator smoke output in the session scratchpad only (not evidence).
