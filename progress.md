@@ -33464,3 +33464,12 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: TODO 1,430 to 278 lines and QKB 1,792 to 52 lines. The Windows RC, physical power-cut and crypto gates, CAP validation gaps and unresolved review acceptance remain open. T8 supplies the existing Linux resource campaign evidence.
 - Decision: Use the compact files for current work and the archive for historical scope and evidence.
 - Artifacts/logs: `.agent/archive/2026-11-21-backlog-compaction/`
+
+## 2026-11-21 Reorder README architecture support 1 minute
+
+- Step-Id: `20261121-1753-readme-architecture-order`
+- When: '2026-11-21 17:53 CET' - '2026-11-21 17:53 CET'
+- Model: `GPT-6`
+- Change: Reordered the 13 architecture support rows as requested.
+- Validation: Checked that the requested order accounts for every row and that each row retained its original text. `git diff --check` passed.
+- Artifacts/logs: None. Documentation only.

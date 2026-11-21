@@ -84,17 +84,17 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | --- | --- | --- |
 | CAP loading and bytecode interpretation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Imports must resolve to API packages present in the firmware ROM mask. |
 | Applet lifecycle | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Installation, selection, and deletion. |
-| Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
-| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. |
+| GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
 | Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, `OwnerPIN` (try counter durable before comparison, validated flag in RAM), and implemented `JCSystem` transient-memory and transaction operations. See [JavaCard API coverage](#javacard-api-coverage) for detailed results. |
 | Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | AES, DES and RSA ciphers, SHA digests, checksums, random number generation, MACs, digital signatures, and elliptic-curve key agreement. See [JavaCard API coverage for `javacard.security`](#javacard-security-coverage). |
-| GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
+| Garbage collection | ![Supported](https://img.shields.io/badge/supported-brightgreen) | `JCSystem.requestObjectDeletion()` queues reclamation of unreachable persistent objects after the APDU unwinds. Tested on Pico 2 in the external Windows run. Hardware power-loss validation remains open. |
+| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. |
 | Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted cross-AID sharing, proxy lifecycle, and firewall tests exist. Coordinated cross-context garbage-collection roots/cycles have host-unit coverage; full isolation semantics and device RAM bounds remain unestablished. |
+| Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
+| Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
+| Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
 | Extended-length APDUs | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
-| Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
-| Garbage collection | ![Supported](https://img.shields.io/badge/supported-brightgreen) | `JCSystem.requestObjectDeletion()` queues reclamation of unreachable persistent objects after the APDU unwinds. Tested on Pico 2 in the external Windows run. Hardware power-loss validation remains open. |
-| Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 
 ### Current crypto coverage
 
