@@ -33482,3 +33482,12 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Change: Added Claude Opus 5.5 to the model credit and updated the quick start with release links and standalone install and launch commands.
 - Validation: Inspected the upstream tool documentation and release pages and checked the scoped README diff. The firmware release assets could not be verified from this environment. `git diff --check` passed.
 - Artifacts/logs: None. No hardware run.
+
+## 2026-11-21 Refresh README crypto coverage and test organization 1 minute
+
+- Step-Id: `20261121-1837-readme-coverage-and-tests`
+- When: '2026-11-21 18:36 CET' - '2026-11-21 18:37 CET'
+- Model: `GPT-6`
+- Change: Removed the quick-start runbook note, grouped crypto algorithms by function, described current API support, and listed the four test inputs and test types.
+- Validation: Compared the descriptions with the support configuration and implementation records. Fixture verification passed for 86 files. `git diff --check` passed.
+- Artifacts/logs: None. Documentation only.
