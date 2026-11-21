@@ -9,6 +9,7 @@ Updated: 2026-11-21 15:17 CET.
 - Integration check passed: JCAlgTest 1.8.5 `ALG_SUPPORT_BASIC` on 07E7, `artifacts/results/integration-support-basic-c44967d9-20261119/07E74C5D7A038DEC/`.
 
 ## Next work
+- Stopped at user request 2026-11-21 15:37 CET. Open: GitHub Release of `v0.2-rc1` (tag local, push only after user confirmation and Windows results, `WIN-MAXCRYPTO-RC-V0.2-RC1`); CAPIN-07 LOAD-time move (CAPIN-01) and resolveClassref record bound (reverted attempt broke SIO SensitiveResult); remaining P1 backlog in TODO.md.
 - 07E7 exhausted its object store during the broad probe, and removal of the temporary probe failed. Development validation switched to EE11. Storage-preserving cycle on the DRBG tree passed (UF2 SHA-256 `7f6ea308a86888580717523cc89faf8070da00fcb1bf66a09274a5bde67706ad`). Use the exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (07E74C5D7A038DEC) 01 00`. Check current processes and F42D ownership before any shared PC/SC refresh.
 - Native SHA3, DES MAC4, CFB/XTS, GCM/CCM, CRC16/32, pseudo-random and preseeded DRBG commits landed. The max_crypto simulator suite passed 206 vectors. Physical crypto KAT is still in progress.
 - On-card RSA and RSA-CRT 3072 generation passed on 07E7. The two 4096-bit hardware runs are deferred at user request. See `artifacts/logs/test-rsa3072-hardware.log`. The four-byte physical preflight APDUs initially failed with 6F00. Supplying an explicit Le made the preflight pass end to end.

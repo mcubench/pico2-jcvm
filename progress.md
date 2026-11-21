@@ -33430,3 +33430,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Checked the scoped README diff and link target. `git diff --check` passed.
 - Result: The feature table describes user-visible functionality.
 - Artifacts/logs: None. Documentation only.
+
+## 2026-11-21 CAPIN-07 interface index[] fixture 6
+
+- Step-Id: `20261121-1536-capin07-index-fixture`
+- Task: CAPIN-07
+- When: '2026-11-21 15:31 CET' - '2026-11-21 15:36 CET'
+- Model: `claude-opus-5-5`
+- Change: new `tests/integration/cap_interface_index_vpcd_test.py` and `tools/test-cap-interface-index-vpcd`: build copy of the RMI array fixture load file with the first implemented-interface index[] byte of its remote class (public tokens 1..27, limit 28) set to 0x7F; expects the stage-9 INSTALL rejection. The harness prints the emulator's INSTALL failure on stdout, so the test reads its captured output. HANDOFF records the stop point requested by the user.
+- Validation: `./tools/test-cap-interface-index-vpcd` INTERFACE_INDEX:PASS (byte 0x1E4, 0x01 → 0x7F, `PC applet INSTALL failed stage=9 sw=6F00 vm=0000 exception=0`); unmutated control `./tools/test-rmi-arrays-vpcd` 3/3.
+- Result: all three CAPIN-07 table/offset checks (vtable, Export class_offset, interface index[]) have negative fixtures.
+- Decision: stop here at the user's request; open items are listed in HANDOFF.
+- Artifacts/logs: `artifacts/logs/cap-interface-index-vpcd-20261121T143550Z.log`
