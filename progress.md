@@ -33280,3 +33280,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the d7e90a18 Windows failure (RSA-CRT 3072 6f00, reproduced on F42D as a card death in the deletion pass) does not occur on the current image. WIN-D7E90A18-6F00 closed; F42D released in HANDOFF.
 - Decision: the recoverable path was not exercised here (no `allocation_failed`); the deletion pass simply did not run out of memory on this image. Further JCAlgTest runs use the 1.8.5-20261121 client.
 - Artifacts/logs: `artifacts/results/repro-rsablock-head-a9ec9e04-20261121T1047Z/F42DD9D07D6D2B07/`
+
+## 2026-11-21 Fix explicit Le in physical crypto probes
+
+- Step-Id: `20261121-1506-physical-crypto-le`
+- When: '2026-11-21 15:00 CET' - '2026-11-21 15:06 CET'
+- Model: `GPT-6`
+- Change: Match the working simulator APDU encoding in the physical client's zero-input preflight and lifecycle checks by supplying an explicit Le.
+- Validation: Physical preflight and 3072-bit probe ran on 07E74C5D7A038DEC, storage preserved. All 17 checks passed and temporary probe cleanup passed. F42D's live campaign was untouched.
+- Result: On-card ALG_RSA 3072 generation and sign/verify took 27.043 s. ALG_RSA_CRT 3072 generation and component retrieval took 162.976 s. The original four-byte command failed before generation.
+- Artifacts/logs: `artifacts/logs/test-rsa3072-hardware.log`; firmware identity and serial log in `artifacts/logs/cycle-crypto-07e7.log`.

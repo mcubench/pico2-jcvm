@@ -67,14 +67,14 @@ public final class SymmCryptoPcscProbe {
       System.out.printf("APDU:SELECT response=%s%n", hex(select.getBytes()));
       if (select.getSW() != 0x9000) throw new IllegalStateException("probe applet SELECT failed");
 
-      expect(channel, new CommandAPDU(0x80, 0x21, 0, 0, 0),
+      expect(channel, new CommandAPDU(0x80, 0x21, 0, 0, 256),
           "019000", "JCSystem transient byte array allocation");
       passed++;
-      expect(channel, new CommandAPDU(0x80, 0x22, 0, 0, 0),
+      expect(channel, new CommandAPDU(0x80, 0x22, 0, 0, 256),
           "019000", "KeyBuilder transient AES allocation");
       passed++;
       for (int stage = 1; stage <= 4; stage++) {
-        expect(channel, new CommandAPDU(0x80, 0x1C + stage, 0, 0, 0),
+        expect(channel, new CommandAPDU(0x80, 0x1C + stage, 0, 0, 256),
             "019000", "AES transient setup stage " + stage);
         passed++;
       }
@@ -83,13 +83,13 @@ public final class SymmCryptoPcscProbe {
       if (manager.getSW() != 0x9000)
         throw new IllegalStateException("card manager SELECT failed: " + hex(manager.getBytes()));
       channel = selectApplet(channel);
-      expect(channel, new CommandAPDU(0x80, 0x1C, 0, 0, 0),
+      expect(channel, new CommandAPDU(0x80, 0x1C, 0, 0, 256),
           "019000", "AES staged Cipher rejects deselected transient key");
       passed++;
 
       for (int selector = 0; selector < 2; selector++) {
         String label = selector == 0 ? "AES" : "RSA";
-        expect(channel, new CommandAPDU(0x80, 0x1B, selector, 0, 0),
+        expect(channel, new CommandAPDU(0x80, 0x1B, selector, 0, 256),
             "019000", label + " transient Cipher init for deselect");
         passed++;
         ResponseAPDU managerSelect = channel.transmit(new CommandAPDU(
@@ -97,18 +97,18 @@ public final class SymmCryptoPcscProbe {
         if (managerSelect.getSW() != 0x9000)
           throw new IllegalStateException("card manager SELECT failed: " + hex(managerSelect.getBytes()));
         channel = selectApplet(channel);
-        expect(channel, new CommandAPDU(0x80, 0x1C, selector, 0, 0),
+        expect(channel, new CommandAPDU(0x80, 0x1C, selector, 0, 256),
             "019000", label + " Cipher rejects deselected transient key");
         passed++;
 
-        expect(channel, new CommandAPDU(0x80, 0x1B, selector, 0, 0),
+        expect(channel, new CommandAPDU(0x80, 0x1B, selector, 0, 256),
             "019000", label + " transient Cipher init for reader reset");
         passed++;
         card.disconnect(true);
         card = target.connect("*");
         channel = card.getBasicChannel();
         channel = selectApplet(channel);
-        expect(channel, new CommandAPDU(0x80, 0x1C, selector, 0, 0),
+        expect(channel, new CommandAPDU(0x80, 0x1C, selector, 0, 256),
             "019000", label + " Cipher rejects reset-cleared transient key");
         passed++;
       }
