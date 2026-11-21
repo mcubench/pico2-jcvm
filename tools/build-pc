@@ -4,6 +4,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 support_profile=baseline
 rp2350_overlay=OFF
+# --rommask-only: generate the ROM mask without the PC emulator (and its
+# Rust OS), for firmware builds that only embed the ROM mask.
+rommask_only=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --profile)
@@ -15,7 +18,11 @@ while [[ $# -gt 0 ]]; do
       rp2350_overlay=ON
       shift
       ;;
-    *) die "usage: ./tools/build-pc [--profile PROFILE] [--rp2350-overlay]" ;;
+    --rommask-only)
+      rommask_only=true
+      shift
+      ;;
+    *) die "usage: ./tools/build-pc [--profile PROFILE] [--rp2350-overlay] [--rommask-only]" ;;
   esac
 done
 
@@ -72,7 +79,15 @@ python3 "${repo_root}/tools/javacard-class-tokens.py" \
   --source-root "${repo_root}/choupi/javacard-sdk/javacard-api/sdks/jc305u1_kit/api_export_files" \
   --target-root "${build_dir}/javacard-api" \
   --output "${support_dir}/javacard-class-token-map.h"
-"${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask choupi -j2
+if [[ "${rommask_only}" == true ]]; then
+  "${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask -j2
+  # The emulator was built against the previous ROM mask; remove it so a
+  # VPCD test fails loudly or tools/build-pc relinks it, instead of running
+  # a binary with a stale native-method table.
+  rm -f "${build_dir}/choupi"
+else
+  "${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask choupi -j2
+fi
 
 rom_image="${build_dir}/flash"
 generated_header="${build_dir}/jni.hpp"

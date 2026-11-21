@@ -112,7 +112,7 @@ if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
      "${current_rommask_hash}" == "${recorded_rommask_hash}" ]] && generation_current=true
 fi
 if [[ "${generation_current}" != true ]]; then
-  "${repo_root}/tools/build-pc" --profile "${support_profile}"
+  "${repo_root}/tools/build-pc" --profile "${support_profile}" --rommask-only
 fi
 python3 "${repo_root}/tools/javacard-support.py" \
   --config "${repo_root}/config/javacard-support.json" \

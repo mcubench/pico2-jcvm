@@ -33100,3 +33100,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: ARM max_crypto linked with 612,376 bytes of firmware-window headroom. Profile unit tests passed and the symmetric simulator suite passed the empty, abc, and split 200-byte vectors against hashlib.
 - Result: SHA3-224 uses fixed-size transient state. Import of an intermediate SHA-3 state was outside the MessageDigest change. Build dependency warnings prevented flashing.
 - Artifacts/logs: `artifacts/logs/{build-arm-sha3-224,test-sha3-224}.log`.
+
+## 2026-11-21 Firmware builds generate the ROM mask without the Rust OS 12
+
+- Step-Id: `20261121-1207-rommask-only-arm-build`
+- Task: build tooling (user request: smallest fix for Rust OS warnings in ARM builds)
+- When: '2026-11-21 11:57 CET' - '2026-11-21 12:08 CET'
+- Model: `claude-opus-5-5`
+- Change: The firmware never links the CHOUPI Rust OS (`choupi/os`, no `javacard_os` symbols in `pico2_choupi.elf.map`); only the PC/VPCD emulator does. `tools/build` regenerated the ROM mask through `tools/build-pc`, which built the `rommask` and `choupi` (emulator, cargo) targets, so every ARM build that regenerated the ROM printed the Rust OS warnings. `tools/build-pc --rommask-only` now builds only `rommask` (the ROM mask is produced by `rommask.jar`) and deletes the emulator binary, which was built against the previous ROM mask, so VPCD tests cannot silently run it with a stale native-method table; `tools/build` uses `--rommask-only`. `tools/build-pc` without the flag is unchanged.
+- Validation: `tools/build-pc --profile max_crypto --rommask-only` ROMMASK:PASS, no cargo invocation, 0 Rust warnings, emulator removed, ROM image unchanged; full `tools/build-pc --profile max_crypto` relinked the emulator. Forced regeneration (`rm build/choupi-pc/rommask-source.sha256`) then `./tools/build arm --profile max_crypto`: BUILD:PASS, ROM regenerated, 0 Rust warnings (previously about 40); the remaining "warning" lines are Java Card converter notices for the ROM packages (export file of previous minor version, int support) and a Maven plugin notice. Emulator restored afterwards. The other session's concurrent `tools/build arm` used the new path successfully.
+- Result: ARM builds no longer compile or report the Rust OS.
+- Decision: converter and Maven notices remain; they are toolchain messages about the ROM packages, not firmware code.
+- Artifacts/logs: none beyond build logs.
