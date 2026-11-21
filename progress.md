@@ -33142,3 +33142,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed 15/15 and ARM max_crypto linked. The symmetric simulator passed 123 vectors, including SHA3-512 for empty, short and split 200-byte inputs.
 - Result: SHA3-512 matched hashlib. Physical validation remains pending under the warning-free flash gate.
 - Artifacts/logs: `artifacts/logs/{build-arm-sha3-512,test-sha3-512}.log`.
+
+## 2026-11-21 Add native AES-CFB128 5 minutes
+
+- Step-Id: `20261121-1218-aes-cfb`
+- When: '2026-11-21 12:13 CET' - '2026-11-21 12:18 CET'
+- Model: `GPT-6`
+- Change: Exposed Java Card 3.1 AES-CFB through both Cipher factories and OneShot in max_crypto. Mbed TLS processes CFB128 with a transient IV and byte offset.
+- Validation: Profile tests passed. The final ARM rebuild was warning-free. The simulator passed 134 vectors, including NIST SP 800-38A CFB128 single and split encryption and decryption, a partial final block and IV reset/reinitialization. The first simulator build had captured the source before the IV-reset correction and was rerun.
+- Result: The updated normal firmware passed the full JCVM cycle and finite serial runtime check on EE116F37C7E4A04E. No algorithm APDUs were run physically because direct CCID could not open the spare after reboot and the shared PC/SC campaign was live. Selected EE11 from BOOTSEL because 07E7 and F42D were reserved.
+- Artifacts/logs: `artifacts/logs/{build-arm-aes-cfb-final,test-aes-cfb-final,cycle-aes-cfb-ee11}.log`. Flashed UF2 SHA-256 `e317c24635e2f29d835de8ad5d18287fcc58da4a4747b17737651cf798e66ae9`.

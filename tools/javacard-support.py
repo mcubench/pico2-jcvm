@@ -100,6 +100,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
     ),
+    "cipher_aes_cfb": ("javacardx.crypto.Cipher", "ALG_AES_CFB"),
     "cipher_aes_ctr": ("javacardx.crypto.Cipher", "ALG_AES_CTR"),
     "cipher_getinstance_aes_ctr": (
         "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
@@ -412,6 +413,10 @@ ONESHOT_ROWS: tuple[tuple[tuple[str, ...], str, str], ...] = (
     (("cipher_rsa_oaep",), ONESHOT_CIPHER_SECTION, "CIPHER_RSA PAD_PKCS1_OAEP"),
     (("cipher_aes_cbc_nopad", "cipher_getinstance_aes_cbc_nopad"), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_NOPAD"),
     (("cipher_getinstance_aes_ctr",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CTR PAD_NOPAD"),
+    (("cipher_aes_cfb",),
+     "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+     "CIPHER_AES_CFB PAD_NULL"),
+    (("cipher_aes_cfb",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CFB PAD_NULL"),
     (("cipher_aes_ecb_nopad",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_ECB PAD_NOPAD"),
     (("cipher_aes_cbc_iso9797_m1",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_ISO9797_M1"),
     (("cipher_aes_cbc_iso9797_m2",), ONESHOT_CIPHER_SECTION, "CIPHER_AES_CBC PAD_ISO9797_M2"),

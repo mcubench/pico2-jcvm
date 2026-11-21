@@ -9,6 +9,10 @@
 #include "native_crypto_exception.hpp"
 #include "native_rsa_cipher.hpp"
 
+#if JC_SUPPORT_CIPHER_AES_CFB
+#include "mbedtls/aes.h"
+#endif
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -66,6 +70,7 @@ constexpr uint8_t kRsaPrivateTransientReset = 22;
 constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kRsaCrtTransientReset = 24;
 constexpr uint8_t kRsaCrtTransientDeselect = 25;
+constexpr uint8_t kAlgorithmAesCfb = 28; // Java Card 3.1
 constexpr jbyte_t kCipherKeyWorkspaceMarker = static_cast<jbyte_t>(0xA5);
 
 struct CipherSpec {
@@ -182,9 +187,13 @@ void writeArray(const std::shared_ptr<JC_Array> &array, uint16_t offset,
     array->setByteEntry(offset + i, static_cast<jbyte_t>(bytes[i]));
 }
 
+bool isAesStreamAlgorithm(uint8_t algorithm) {
+  return algorithm == 0xF0 || algorithm == kAlgorithmAesCfb;
+}
+
 bool isAesAlgorithm(uint8_t algorithm) {
   return algorithm == 13 || algorithm == 14 ||
-         (algorithm >= 22 && algorithm <= 27) || algorithm == 0xF0;
+         (algorithm >= 22 && algorithm <= 27) || isAesStreamAlgorithm(algorithm);
 }
 bool isDesAlgorithm(uint8_t algorithm) {
   return algorithm >= 1 && algorithm <= 8;
@@ -206,6 +215,7 @@ bool singleAlgorithmEnabled(uint8_t algorithm) {
   case 10: return JC_SUPPORT_CIPHER_RSA_PKCS1;
   case 12: return JC_SUPPORT_CIPHER_RSA_NOPAD;
   case 13: return JC_SUPPORT_CIPHER_AES_CBC_NOPAD;
+  case kAlgorithmAesCfb: return JC_SUPPORT_CIPHER_AES_CFB;
   case 0xF0: return JC_SUPPORT_CIPHER_AES_CTR;
   case 14: return JC_SUPPORT_CIPHER_AES_ECB_NOPAD;
   case 15: return JC_SUPPORT_CIPHER_RSA_OAEP;
@@ -232,6 +242,7 @@ bool pairAlgorithmEnabled(uint8_t algorithm) {
   case 10: return JC_SUPPORT_CIPHER_RSA_PKCS1;
   case 12: return JC_SUPPORT_CIPHER_RSA_NOPAD;
   case 13: return JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD;
+  case kAlgorithmAesCfb: return JC_SUPPORT_CIPHER_AES_CFB;
   case 0xF0: return JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR;
   case 14: return JC_SUPPORT_CIPHER_AES_ECB_NOPAD;
   case 15: return JC_SUPPORT_CIPHER_RSA_OAEP;
@@ -264,6 +275,7 @@ CipherSpec specForAlgorithm(uint8_t algorithm, bool pairFactory) {
   case 12: return {12, 7, 1, false, false, true};
   case 13: return {13, 1, 1, true, true, false};
   case 0xF0: return {0xF0, 8, 1, true, false, false};
+  case kAlgorithmAesCfb: return {kAlgorithmAesCfb, 9, 0, true, false, false};
   case 14: return {14, 2, 1, true, false, false};
   case 15: return {15, 7, 9, false, false, true};
   case 22: return {22, 1, 2, true, true, false};
@@ -277,7 +289,7 @@ CipherSpec specForAlgorithm(uint8_t algorithm, bool pairFactory) {
 }
 
 uint8_t algorithmForPair(uint8_t cipher, uint8_t padding) {
-  const uint8_t algorithms[] = {1,2,3,4,5,6,7,8,13,14,22,23,24,25,26,27,10,12,15,0xF0};
+  const uint8_t algorithms[] = {1,2,3,4,5,6,7,8,13,14,22,23,24,25,26,27,10,12,15,0xF0,kAlgorithmAesCfb};
   for (uint8_t algorithm : algorithms) {
     const CipherSpec spec = specForAlgorithmUnchecked(algorithm);
     if (spec.cipher == cipher && spec.padding == padding &&
@@ -300,6 +312,7 @@ CipherSpec specForAlgorithmUnchecked(uint8_t algorithm) {
   case 12: return {12, 7, 1, false, false, true};
   case 13: return {13, 1, 1, true, true, false};
   case 0xF0: return {0xF0, 8, 1, true, false, false};
+  case kAlgorithmAesCfb: return {kAlgorithmAesCfb, 9, 0, true, false, false};
   case 14: return {14, 2, 1, true, false, false};
   case 15: return {15, 7, 9, false, false, true};
   case 22: return {22, 1, 2, true, true, false};
@@ -467,6 +480,27 @@ std::vector<unsigned char> transformSymmetric(JC_Instance &cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   int result = -1;
   if (aes) {
+#if JC_SUPPORT_CIPHER_AES_CFB
+    if (algorithm == kAlgorithmAesCfb) {
+      const auto offsetField =
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH;
+      size_t offset = static_cast<uint16_t>(cipher.getNativeSessionField_Short(offsetField));
+      if (offset > 15) throwCryptoException(CryptoExceptionReason::IllegalUse);
+      mbedtls_aes_context context;
+      mbedtls_aes_init(&context);
+      result = mbedtls_aes_setkey_enc(&context, key.data(),
+                                      static_cast<unsigned>(key.size() * 8));
+      if (result == 0)
+        result = mbedtls_aes_crypt_cfb128(
+            &context, encrypt ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT,
+            length, &offset, iv.data(), input.data(), output.data());
+      mbedtls_aes_free(&context);
+      if (result != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
+      saveIv(cipher, iv);
+      cipher.setNativeSessionField_Short(offsetField, static_cast<jshort_t>(offset));
+      return output;
+    }
+#endif
 #if JC_SUPPORT_CIPHER_AES_CTR || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR
     if (algorithm == 0xF0) {
       auto streamArray = byteArray(cipher,
@@ -522,13 +556,16 @@ void restoreInitialIv(JC_Instance &cipher) {
   const bool cbc = (algorithm >= 1 && algorithm <= 4) || algorithm == 13 ||
                    (algorithm >= 22 && algorithm <= 24);
   for (uint16_t i = 0; i < current->size(); ++i) {
-    current->setByteEntry(i, cbc ? 0 : initial->getByteEntry(i));
+    current->setByteEntry(i, cbc || algorithm == kAlgorithmAesCfb
+                                 ? 0 : initial->getByteEntry(i));
   }
   if (algorithm == 0xF0) {
     auto stream = byteArray(cipher,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
     for (uint16_t i = 0; i < stream->size(); ++i)
       stream->setByteEntry(i, 0);
+  }
+  if (isAesStreamAlgorithm(algorithm)) {
     cipher.setNativeSessionField_Short(
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
   }
@@ -605,7 +642,7 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
   const bool cbc = (algorithm >= 1 && algorithm <= 4) ||
                    algorithm == 13 || (algorithm >= 22 && algorithm <= 24);
   if (withParameters) {
-    if ((!cbc && !ctr) || !parameters || offset < 0 || length != blockSize)
+    if ((!cbc && !isAesStreamAlgorithm(algorithm)) || !parameters || offset < 0 || length != blockSize)
       throwCryptoException(CryptoExceptionReason::IllegalValue);
     checkArray(parameters, offset, length);
   }
@@ -621,6 +658,8 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
     for (uint16_t i = 0; i < stream->size(); ++i)
       stream->setByteEntry(i, 0);
+  }
+  if (isAesStreamAlgorithm(algorithm)) {
     cipher.setNativeSessionField_Short(
         ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
   }
@@ -660,15 +699,15 @@ jshort_t updateSymmetric(JC_Instance &cipher,
                                static_cast<uint16_t>(inputLength);
   if (totalLength > 32767)
     throw Exceptions::ArrayIndexOutOfBoundsException;
-  const bool ctr = algorithm == 0xF0;
+  const bool stream = isAesStreamAlgorithm(algorithm);
   const uint8_t padding = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM));
   const bool encrypt = cipher.getNativeSessionField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
-  uint16_t expectedOutput = ctr
+  uint16_t expectedOutput = stream
       ? static_cast<uint16_t>(totalLength)
       : static_cast<uint16_t>(totalLength - totalLength % blockSize);
-  if (!ctr && !encrypt && padding != 1 && expectedOutput != 0)
+  if (!stream && !encrypt && padding != 1 && expectedOutput != 0)
     expectedOutput = static_cast<uint16_t>(expectedOutput - blockSize);
   checkRangeForOutput(output, outputOffset, expectedOutput);
 
@@ -701,10 +740,10 @@ jshort_t updateSymmetric(JC_Instance &cipher,
     const uint16_t currentLength = static_cast<uint16_t>(
         cipher.getNativeSessionField_Short(
             ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
-    uint16_t processLength = ctr
+    uint16_t processLength = stream
         ? currentLength
         : static_cast<uint16_t>(currentLength - currentLength % blockSize);
-    if (!ctr && !encrypt && padding != 1 && processLength != 0)
+    if (!stream && !encrypt && padding != 1 && processLength != 0)
       processLength = static_cast<uint16_t>(processLength - blockSize);
     if (processLength != 0) {
       if (static_cast<uint32_t>(produced) + processLength > expectedOutput)
@@ -767,7 +806,7 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   uint16_t dataLength = static_cast<uint16_t>(cipher.getNativeSessionField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
-  if (algorithm == 0xF0) {
+  if (isAesStreamAlgorithm(algorithm)) {
     checkRangeForOutput(output, outputOffset, dataLength);
     if (dataLength != 0) {
       const auto result = transformSymmetric(cipher, dataLength);

@@ -78,29 +78,40 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
         decrypted = padded if padding == "m1" else plaintext
         results.append((encoded, decrypted + b"\x90\x00", f"cipher {algorithm} decrypt"))
 
-    for algorithm, aes, block, key_bytes, iv in (
-        (13, True, 16, AES_KEY, bytes.fromhex("00112233445566778899aabbccddeeff")),
-        (1, False, 8, DES_KEY, bytes.fromhex("0102030405060708")),
+    for algorithm, aes, block, key_bytes, iv, mode in (
+        (13, True, 16, AES_KEY, bytes.fromhex("00112233445566778899aabbccddeeff"), modes.CBC),
+        (28, True, 16, AES_KEY, bytes.fromhex("00112233445566778899aabbccddeeff"), modes.CFB),
+        (1, False, 8, DES_KEY, bytes.fromhex("0102030405060708"), modes.CBC),
     ):
         first = bytes(range(block))
         second = bytes((0x30 + index) & 0xFF for index in range(block))
         primitive = algorithms.AES(key_bytes) if aes else TripleDES(key_bytes)
-        expected_first = crypt(primitive, modes.CBC(iv), first, True)
-        expected_zero_iv = crypt(primitive, modes.CBC(bytes(block)), second, True)
-        expected_supplied_iv = crypt(primitive, modes.CBC(iv), second, True)
+        expected_first = crypt(primitive, mode(iv), first, True)
+        expected_zero_iv = crypt(primitive, mode(bytes(block)), second, True)
+        expected_supplied_iv = crypt(primitive, mode(iv), second, True)
 
         def lifecycle_apdu(operation: int, data: bytes) -> bytes:
             return bytes((0x80, 0x2D, algorithm, operation, len(data))) + data + b"\x00"
 
         results.append((lifecycle_apdu(0, iv + first),
                         expected_first + b"\x90\x00",
-                        f"CBC {algorithm} first doFinal uses supplied IV"))
+                        f"IV lifecycle {algorithm} first doFinal uses supplied IV"))
         results.append((lifecycle_apdu(1, second),
                         expected_zero_iv + b"\x90\x00",
-                        f"CBC {algorithm} reused doFinal starts with zero IV"))
+                        f"IV lifecycle {algorithm} reused doFinal starts with zero IV"))
         results.append((lifecycle_apdu(2, iv + second),
                         expected_supplied_iv + b"\x90\x00",
-                        f"CBC {algorithm} explicit init restores supplied IV"))
+                        f"IV lifecycle {algorithm} explicit init restores supplied IV"))
+    # NIST SP 800-38A F.3.13. Truncate the second block to exercise
+    # byte-granular CFB and split after 19 bytes for update/final.
+    iv = bytes(range(16))
+    plain = bytes.fromhex("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac")
+    encrypted = bytes.fromhex("3b3fd92eb72dad20333449f8e83cfb4ac8a64537a0b3a9")
+    for operation in range(8):
+        source, expected = (encrypted, plain) if operation & 1 else (plain, encrypted)
+        data = iv + source
+        apdu = bytes((0x80, 0x10, 28, operation, len(data))) + data + b"\x00"
+        results.append((apdu, expected + b"\x90\x00", f"AES CFB operation {operation}"))
     return results
 
 
@@ -301,7 +312,7 @@ def main() -> int:
     if completed.returncode:
         return completed.returncode
     print(f"TEST:SUMMARY cipher_vectors={cipher_count} mac_vectors={mac_count} "
-          f"iv_vectors=6 transient_lifecycle=16 reset_after={len(reset_after_indices)} "
+          f"iv_vectors=9 transient_lifecycle=16 reset_after={len(reset_after_indices)} "
           f"rsa_component_cases={rsa_component_count} "
           f"total={len(vectors)} fail=0")
     print(f"TEST:LOG {log}")
