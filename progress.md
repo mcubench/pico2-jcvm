@@ -33132,3 +33132,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed 15/15, ARM max_crypto linked, and the symmetric simulator passed 120 vectors.
 - Result: SHA3-384 matched hashlib for empty, short and split 200-byte inputs. Build dependency warnings prevented hardware validation.
 - Artifacts/logs: `artifacts/logs/{build-arm-sha3-384,test-sha3-384}.log`.
+
+## 2026-11-21 Add native SHA3-512 streaming digest 2 minutes
+
+- Step-Id: `20261121-1212-sha3-512`
+- When: '2026-11-21 12:11 CET' - '2026-11-21 12:13 CET'
+- Model: `GPT-6`
+- Change: Enabled SHA3-512 in max_crypto for MessageDigest and OneShot, completing the four fixed-output SHA-3 variants.
+- Validation: Profile tests passed 15/15 and ARM max_crypto linked. The symmetric simulator passed 123 vectors, including SHA3-512 for empty, short and split 200-byte inputs.
+- Result: SHA3-512 matched hashlib. Physical validation remains pending under the warning-free flash gate.
+- Artifacts/logs: `artifacts/logs/{build-arm-sha3-512,test-sha3-512}.log`.
