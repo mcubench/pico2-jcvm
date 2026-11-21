@@ -32995,3 +32995,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the 18 Windows ILLEGAL_VALUE cases are fixed in source; the 6 RSA-512 OAEP CryptoException_ILLEGAL_VALUE are spec-correct. The Windows CSV also shows 20 `6f00` at RSA-CRT 3072 and 3 RSA NOPAD ILLEGAL_USE, opened as WIN-D7E90A18-6F00.
 - Decision: reproduce the RSA-CRT 3072 6F00 on F42D with the new client after its exploratory run ends.
 - Artifacts/logs: `artifacts/logs/hmac-kat-vpcd-*.log` (latest), external CSVs in `inbox/pico2-jcvm-maxcrypto-deletion-d7e90a18_20261120/` (not committed: inbox is user-owned)
+
+## 2026-11-21 Rerun the supplied Java Card 3.0.5 API suite on d7e90a18
+
+- Step-Id: `20261121-1000-api305-d7e90a18-simulator`
+- When: '2026-11-21 09:49 CET' - '2026-11-21 10:00 CET'
+- Model: `GPT-6`
+- Change: Ran the supplied API suite against an isolated `d7e90a18` max_crypto build and refreshed the README coverage notes.
+- Validation: `./tools/fixture-path --verify` passed (85 files). Built from a private checkout at the external run's revision. The full API runner exercised all nine areas and the two Core companion CAPs on a fresh VPCD card. A private PC/SC socket and network namespace kept the run off the shared daemon, USB and other checkout's build outputs. Focused probes and the external algorithm CSV could not cover all package installs and method outcomes, so the full run used five hours per area and a seven-hour overall bound, with CSV test and cleanup stages checked after exit. The initial plain simulator Core showed deletion disabled, so Core was repeated on the RP2350 overlay with `PICO2_TEST_OBJECT_DELETION=1`. Both runs exited 0 and their cleanup stages passed. No hardware was retested.
+- Result: Deletion-enabled Core: 273 OK, 14 UNSUPPORTED_PER_SPEC, four APPLET_NOT_INSTALLED, with both deletion calls OK. Security: 491 OK, 408 UNSUPPORTED_PER_SPEC, two EXC_CARDRUNTIME (8-byte HMAC key set/get). Crypto: 341 OK, 122 UNSUPPORTED_PER_SPEC, two EXC_CARDRUNTIME (HMAC RIPEMD160 and SHA-512 RSA-PSS) and one WRONG_RESULT (empty Cipher doFinal). Security extension: 84/84 OK. Service: 124/124 OK. Ext, full extension, external-memory, integer-extension and Biometry INSTALLs returned 6A88 and rolled back cleanly.
+- Decision: Report simulator evidence for the tested revision. The later HMAC changes in `c42fab06` were outside this run.
+- Artifacts/logs: `artifacts/results/api305-d7e90a18-vpcd-20261121/`. `api305.csv` SHA-256 `ebca0f701c13fb12f3a5c73131a8ea237b3d3604c88bceb1dc837251e09e1966`. `core-deletion-on/api305.csv` SHA-256 `0a7a89ceeed36c82d7f1a6b90a81236c628323ba1c1297ea954ca9406de15220`. Build, emulator and runner logs and simulator hashes are alongside the CSVs.
