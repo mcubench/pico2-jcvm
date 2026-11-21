@@ -101,23 +101,27 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 
 ### Supplied Java Card API CAP coverage
 
-The matrix lists all 48 [supplied CAPs](tests/fixtures/external/javacard-api/provided-20261107/caps) by family and version suffix. The 3.0.5 column summarizes historical Pico 2 results across firmware builds. Earlier variants are listed as unverified. See the [progress records](progress.md) for profiles, counts, and emulator results.
+The table groups the API classes and interfaces referenced by the [supplied 3.0.5 CAPs](tests/fixtures/external/javacard-api/provided-20261107/caps). Badges summarize historical Pico 2 coverage across tested builds. Class lists include fixture dependencies. See the [progress records](progress.md) for run details.
 
-| CAP family | 2.2.1 (`221`) | 2.2.2 (`222`) | 3.0.3 (`303`) | 3.0.4 (`304`) | 3.0.5 (`305`) |
-| --- | --- | --- | --- | --- | --- |
-| Biometry | Unverified | Unverified | Unverified | Unverified | INSTALL refused |
-| Core | Unverified | Unverified | Unverified | Unverified | Partial. 272 of 291 cases passed in the recorded `max_crypto` run, with four Ext cases unavailable. |
-| Crypto | Unverified | Unverified | Unverified | Unverified | Partial. Native crypto calls passed, with unsupported cases and unexpected errors in full physical sweeps. |
-| Ext | — | Unverified | Unverified | Unverified | INSTALL refused. Extended-length APDUs are unsupported. |
-| Javacardx | Unverified | Unverified | Unverified | Unverified | INSTALL refused |
-| JavacardxExt | — | Unverified | Unverified | Unverified | INSTALL refused |
-| JavacardxInt | — | Unverified | Unverified | Unverified | INSTALL refused |
-| JavacardxSec | — | — | — | — | 84 of 84 cases passed on a tested build. |
-| Multi | Unverified | Unverified | Unverified | Unverified | Two applet instances installed for the Core scenarios. Full scenario coverage remains unverified. |
-| Security | Unverified | Unverified | Unverified | Unverified | Partial. Key API calls passed, with unsupported cases and resource failures in physical sweeps. |
-| Service | Unverified | Unverified | Unverified | Unverified | 124 of 124 cases passed on a tested build. |
-
-A dash indicates that the suite supplied no CAP for that version.
+| API package | Included classes and interfaces | 3.0.5 coverage |
+| --- | --- | --- |
+| `java.rmi` | `Remote` | ![Partial](https://img.shields.io/badge/partial-yellow) RMI dependency exercised by the Service cases. |
+| `javacard.framework` | `AID`, `APDU`, `APDUException`, `Applet`, `AppletEvent`, `CardException`, `CardRuntimeException`, `ISO7816`, `ISOException`, `JCSystem`, `MultiSelectable`, `OwnerPIN`, `OwnerPINBuilder`, `OwnerPINx`, `OwnerPINxWithPredecrement`, `PIN`, `PINException`, `SensitiveArrays`, `Shareable`, `SystemException`, `TransactionException`, `UserException`, `Util` | ![Partial](https://img.shields.io/badge/partial-yellow) Core and Multi scenarios ran. Some framework cases remain unsupported. |
+| `javacard.framework.service` | `BasicService`, `CardRemoteObject`, `Dispatcher`, `RMIService`, `RemoteService`, `SecurityService`, `Service`, `ServiceException` | ![Supported](https://img.shields.io/badge/supported-brightgreen) 124 of 124 Service cases passed on a tested build. |
+| `javacard.security` | `AESKey`, `Checksum`, `CryptoException`, `DESKey`, `DHKey`, `DHPrivateKey`, `DHPublicKey`, `DSAKey`, `DSAPrivateKey`, `DSAPublicKey`, `ECKey`, `ECPrivateKey`, `ECPublicKey`, `HMACKey`, `InitializedMessageDigest`, `InitializedMessageDigest.OneShot`, `Key`, `KeyAgreement`, `KeyBuilder`, `KeyPair`, `KoreanSEEDKey`, `MessageDigest`, `MessageDigest.OneShot`, `PrivateKey`, `PublicKey`, `RSAPrivateCrtKey`, `RSAPrivateKey`, `RSAPublicKey`, `RandomData`, `RandomData.OneShot`, `SecretKey`, `Signature`, `Signature.OneShot`, `SignatureMessageRecovery` | ![Partial](https://img.shields.io/badge/partial-yellow) Supported algorithms depend on the build profile. Physical sweeps recorded resource failures. |
+| `javacardx.apdu` | `ExtendedLength` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Extended-length APDUs are unavailable. |
+| `javacardx.apdu.util` | `APDUUtil` | ![Supported](https://img.shields.io/badge/supported-brightgreen) Covered by the passing 84-case security-extension run. |
+| `javacardx.biometry` | `BioBuilder`, `BioException`, `BioTemplate`, `OwnerBioTemplate`, `SharedBioTemplate` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Biometry CAP installation was refused. |
+| `javacardx.biometry1ton` | `Bio1toNBuilder`, `Bio1toNException`, `BioMatcher`, `BioTemplateData`, `OwnerBioMatcher`, `OwnerBioTemplateData`, `SharedBioMatcher`, `SharedBioTemplateData` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Biometry CAP installation was refused. |
+| `javacardx.crypto` | `AEADCipher`, `Cipher`, `Cipher.OneShot`, `KeyEncryption` | ![Partial](https://img.shields.io/badge/partial-yellow) Physical sweeps recorded unsupported cases and unexpected errors. |
+| `javacardx.external` | `ExternalException`, `Memory`, `MemoryAccess` | ![Unsupported](https://img.shields.io/badge/unsupported-red) External-memory CAP installation was refused. |
+| `javacardx.framework` | `ClassicSIOProxy` | ![Partial](https://img.shields.io/badge/partial-yellow) Targeted Shareable scenarios passed. Full cross-context coverage remains open. |
+| `javacardx.framework.math` | `BCDUtil`, `BigNumber`, `ParityBit` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Full extension CAP installation was refused. |
+| `javacardx.framework.string` | `StringException`, `StringUtil` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Full extension CAP installation was refused. |
+| `javacardx.framework.tlv` | `BERTLV`, `BERTag`, `ConstructedBERTLV`, `ConstructedBERTag`, `PrimitiveBERTLV`, `PrimitiveBERTag`, `TLVException` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Full extension CAP installation was refused. |
+| `javacardx.framework.util` | `ArrayLogic`, `UtilException` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Full extension CAP installation was refused. |
+| `javacardx.framework.util.intx` | `JCint` | ![Unsupported](https://img.shields.io/badge/unsupported-red) Integer extension CAP installation was refused. |
+| `javacardx.security` | `SensitiveResult` | ![Supported](https://img.shields.io/badge/supported-brightgreen) Covered by the passing 84-case security-extension run. |
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)

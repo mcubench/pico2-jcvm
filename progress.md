@@ -32953,3 +32953,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: new client available and pinned. The live 07E7 T8 option-1 resume keeps the earlier client (`b6a753be…`) so that run uses one client end to end.
 - Decision: use the new client for the next campaigns (T8 option 2 rerun, post-campaign VPCD runs, future option-1 runs).
 - Artifacts/logs: simulator smoke output in the session scratchpad only (not evidence).
+
+## 2026-11-21 List Java Card 3.0.5 API classes by package 1 minute
+
+- Step-Id: `20261121-0930-readme-api-package-coverage`
+- When: '2026-11-21 09:29 CET' - '2026-11-21 09:30 CET'
+- Model: `GPT-6`
+- Change: Limited the README CAP coverage table to 3.0.5 and grouped API classes and interfaces by package with the existing status badges.
+- Validation: `./tools/fixture-path --verify` passed for 85 files. Checked the package and type lists against the class references in all 11 supplied 3.0.5 CAPs and confirmed the surrounding README text was unchanged. `git diff --check` passed.
+- Result: The table reports historical coverage and includes fixture dependencies.
+- Artifacts/logs: Supplied 3.0.5 CAPs and existing physical run records. No firmware or hardware work was needed.
