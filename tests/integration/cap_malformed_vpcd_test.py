@@ -276,7 +276,8 @@ def build_malformed_load_code(mutation: str) -> Path:
     if mutable[code_index] != method_component[bytecode_index]:
         raise ValueError("assembled Method component offset mismatch")
     if mutation in ("external-superclass-import-token-out-of-range",
-                    "superclass-self-cycle", "superclass-mid-record"):
+                    "superclass-self-cycle", "superclass-mid-record",
+                    "vtable-offset-out-of-range"):
         class_data = parts["Class"][3:]
         class_offset = 0
         target_superclass = None
@@ -313,6 +314,17 @@ def build_malformed_load_code(mutation: str) -> Path:
         elif mutation == "superclass-mid-record":
             # CAPIN-07: an earlier offset that is not a class record start.
             replacement = (1).to_bytes(2, "big")
+        elif mutation == "vtable-offset-out-of-range":
+            # CAPIN-07: a public virtual method table entry beyond the
+            # Method component (0xFFFF would mean "inherited").
+            public_count = class_data[class_offset + 7]
+            if public_count == 0:
+                raise ValueError("applet class has no public vtable entries")
+            mutation_index = (
+                sum(len(parts[name]) for name, _ in COMPONENTS[:5])
+                + 3 + class_offset + 10
+            )
+            replacement = b"\xff\xf0"
         else:
             replacement = b"\xff\x00"  # external package token 127, class token 0
     elif mutation == "unknown-component-tag":
@@ -755,6 +767,7 @@ def main() -> int:
                                 "switch-into-operand",
                                 "superclass-self-cycle",
                                 "superclass-mid-record",
+                                "vtable-offset-out-of-range",
                                 *RECEIVER_CHECK_OPCODES),
         default="impdep1",
     )
@@ -810,7 +823,8 @@ def main() -> int:
         commands.extend(("--load-package-aid-override",
                          "4A43416C6754657375"))
     install_rejection_mutations = ("superclass-self-cycle",
-                                   "superclass-mid-record")
+                                   "superclass-mid-record",
+                                   "vtable-offset-out-of-range")
     if args.mutation in install_rejection_mutations:
         log.unlink(missing_ok=True)
     if args.mutation not in load_rejection_mutations + install_rejection_mutations:

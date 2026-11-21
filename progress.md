@@ -33342,3 +33342,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: a failed allocation inside the reclaim pass defers the request instead of panicking, and later passes complete, on real hardware. Side observation: AES MAC with a 512-bit AES key now returns ILLEGAL_VALUE instead of NO_SUCH_ALGORITHM because 379fe36e (another session, AES-XTS) enabled 512-bit AES keys; ILLEGAL_VALUE is the specified result for an unsuitable key.
 - Decision: diagnostic evidence only (not acceptance). Next: CAPIN-07 negative fixtures for vtable/index/Export.
 - Artifacts/logs: `artifacts/results/reclaim-faultinject-diag-20261121T1409Z/F42DD9D07D6D2B07/`, `artifacts/logs/cycle-choupi-20261121T141426Z.log`
+
+## 2026-11-21 CAPIN-07 vtable out-of-range fixture 5
+
+- Step-Id: `20261121-1523-capin07-vtable-fixture`
+- Task: CAPIN-07
+- When: '2026-11-21 15:17 CET' - '2026-11-21 15:16 CET'
+- Model: `claude-opus-5-5`
+- Change: `tests/integration/cap_malformed_vpcd_test.py` mutation `vtable-offset-out-of-range`: sets the first public virtual method table entry of the JCAlgTest applet class (Class offset 0x0094 + 10) to 0xFFF0 in a build copy of the unchanged CAP; expected stage-9 INSTALL rejection.
+- Validation: `./tools/build-pc --profile max_crypto` (the preceding ARM build had regenerated the ROM and, as designed, removed the stale emulator); `vtable-offset-out-of-range`, `superclass-self-cycle`, `superclass-mid-record` all `HIERARCHY_CYCLE:PASS … install_rejected stage=9`; impdep1 rc=0.
+- Result: the vtable bound added in d23676b0 now has negative evidence. Interface `index[]` cannot be mutated with the JCAlgTest CAP (no class implements an interface); the Export class_offset mutation needs an exporting CAP through the pcscd-based sibling suite and remains open.
+- Decision: keep CAPIN-07 open for those two fixtures, superinterface refs and the resolveClassref record bound.
+- Artifacts/logs: `artifacts/logs/rv28-malformed-vtable-offset-out-of-range-vpcd-20261106.log`
