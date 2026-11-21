@@ -87,7 +87,7 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | Applet lifecycle | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Installation, selection, and deletion. |
 | Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
 | Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. |
-| Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, `OwnerPIN` (try counter durable before comparison, validated flag in RAM), and implemented `JCSystem` transient-memory and transaction operations; complete per-method coverage is not established. |
+| Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, `OwnerPIN` (try counter durable before comparison, validated flag in RAM), and implemented `JCSystem` transient-memory and transaction operations. See [JavaCard API coverage](#javacard-api-coverage) for detailed results. |
 | Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | Profile-dependent keys, digests, random numbers, ciphers, signatures/MACs, and key agreement. `max_crypto` declares **159 of 162** capability flags enabled, including AES, DES/3DES, RSA, elliptic-curve operations, SHA digests, and HMAC variants; `InitializedMessageDigest` and all five 3.0.5 `OneShot` classes (RAM-only). The default profile is `baseline`; profile flags do not establish full algorithm acceptance. |
 | GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication, LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET STATUS flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
 | Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted cross-AID sharing, proxy lifecycle, and firewall tests exist. Coordinated cross-context garbage-collection roots/cycles have host-unit coverage; full isolation semantics and device RAM bounds remain unestablished. |
@@ -96,11 +96,11 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | `JCSystem.requestObjectDeletion()` | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Enabled in the normal build. Queues a reclamation pass after the APDU unwinds. |
-| Persistent-object reclamation | ![Partial](https://img.shields.io/badge/partial-yellow) | Reclaims unreachable persistent objects. Long-run and power-loss validation on hardware remain open. |
+| Persistent-object reclamation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Reclaims unreachable persistent objects. Exercised on a Pico 2 in the external Windows run. Hardware power-loss validation remains open. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | RSA/RSA-CRT 4096-bit key-pair generation | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Excluded from `max_crypto`. |
 
-### Supplied Java Card API CAP coverage
+### JavaCard API coverage
 
 The table groups the API classes and interfaces referenced by the [supplied 3.0.5 CAPs](tests/fixtures/external/javacard-api/provided-20261107/caps). Badges reflect the November 21 `d7e90a18` `max_crypto` VM simulator rerun. Core results use the Pico 2 flash overlay with object deletion enabled. Class lists include fixture dependencies. See the [progress records](progress.md#2026-11-21-rerun-the-supplied-java-card-305-api-suite-on-d7e90a18) for case-level results.
 

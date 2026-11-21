@@ -33016,3 +33016,13 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Checked the deletion-enabled API suite result, SPEC INV-15 and INV-24, and the open MEM-01 T8 and PERSIST-01 hardware gates. `git diff --check` passed.
 - Result: The API passes and queues reclamation. Long-run and physical interruption validation remain open.
 - Artifacts/logs: Existing simulator and physical results. No new hardware tests.
+
+## 2026-11-21 Link framework coverage and document Windows reclamation testing 1 minute
+
+- Step-Id: `20261121-1034-readme-framework-coverage-link`
+- When: '2026-11-21 10:34 CET' - '2026-11-21 10:34 CET'
+- Model: `GPT-6`
+- Change: Renamed the README coverage subsection and linked it from Framework APIs. Marked reclamation supported based on the implemented runtime and the user-confirmed external Windows testing.
+- Validation: Checked the README anchor and scoped diff. `git diff --check` passed.
+- Result: The feature table links to detailed API results and records the remaining hardware power-loss validation.
+- Artifacts/logs: Existing external Windows results. No new tests were run.
