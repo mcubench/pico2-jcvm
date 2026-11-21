@@ -33162,3 +33162,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Profile tests passed 15/15 and the normal ARM image linked. All 166 symmetric simulator vectors passed, including 32 OpenSSL-backed XTS cases for both key widths, both factories, aligned and partial data units and split operations.
 - Result: XTS covers data units from 16 to 32,767 bytes, subject to available RAM. ARM ROM-mask dependency warnings and the unavailable EE11 APDU path prevented hardware algorithm validation.
 - Artifacts/logs: `artifacts/logs/{build-arm-aes-xts,test-aes-xts,symm-crypto-kat-vpcd-20261121T112121Z}.log`.
+
+## 2026-11-21 MEM-01 T8 option 1 PASSED on 07E7 (9228c583) 4
+
+- Step-Id: `20261121-1226-t8-option1-pass`
+- Task: MEM-01 T8, T10(a)
+- When: '2026-11-21 12:24 CET' - '2026-11-21 12:28 CET'
+- Model: `claude-opus-5-5`
+- Change: none to source. Campaign record; TODO MEM-01 T8 closed, T10(a) closed, MEM-01 priority line updated; HANDOFF shows no live campaign. Correction to `20261121-1154-win-6f00-repro`: its end time was 11:52 per `date`, not 11:54.
+- Validation: 07E74C5D7A038DEC, empty card wiped with the 9228c583 empty-card UF2 (`485c30d3…1145`, app UF2 `72856608…31aa1`, mode=normal, object deletion ON), unchanged 1.8.5/jc305 CAP `fa64582e…`, client JAR `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3` (the run began before the 1.8.5-20261120 client directive and was kept on one client), option 1 (menu 2 → 1). Segment 1 (2026-11-20 21:07 – 2026-11-21 09:07 CET) 1,362 methods, watchdog bound; segment 2 resumed on the same card with the already-measured list (09:12 – 12:24 CET) 539 methods, `Testing complete`, rc=0, 11,578 s, 0 human interventions, 0 reconnects.
+- Result: 1,901 methods; result CSVs contain 0 `6f00`, 0 `SystemException`, 0 `UNKONWN_ERROR`, 0 CANT_BE_MEASURED; 12 ILLEGAL_VALUE (HMAC block-length keys and AES MAC 192/256, fixed later in `c42fab06`) and 4 ILLEGAL_USE in segment 1 (RSA NOPAD input ≥ modulus, input-dependent). Serial: 0 PANIC/FAULT/NO_RESOURCE/TEST:FAIL/BOOT/`allocation_failed`, 0 `OBJECT_DELETION:SKIP`; 1,794 + 871 PRE_CLEANUP samples; peak store 72,879/98,304 B (74.1%, below the 90% gate); min pre-cleanup free RAM 22,664 B (segment 2: 49,664 B); 72 + 17 low-watermark compactions. The run passed method 631 (RSA-4096 CRT), where the d7e90a18 rerun panicked.
+- Decision: MEM-01 GC acceptance met (T1–T8, T10(a)). Remaining: T10(b) design item; replay the Windows RSA block on the current image on F42D (needs a pcscd restart, now allowed: nothing is live); then the pcscd-dependent VPCD suites.
+- Artifacts/logs: `artifacts/results/t8-option1-9228c583-20261120T2006Z/07E74C5D7A038DEC/` (`client.log`, `client-resume.log`, `serial.log`, `serial-resume.log`, `client-output/*.csv`, `campaign-identity.txt`)
