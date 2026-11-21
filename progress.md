@@ -33302,3 +33302,12 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: all 12 HMACKey setKey/getKey/clearKey (LENGTH_HMAC_64 for SHA-1/SHA-256, LENGTH_HMAC_128 for SHA-384/SHA-512) and all AES MAC with AES-128/192/256 keys measured (about 120–140 ms baselines); 0 ILLEGAL_VALUE, 0 6f00; AES-512 NO_SUCH_ALGORITHM (no such AES key size). The 18 Windows ILLEGAL_VALUE cases are fixed on hardware.
 - Decision: next, CAPIN-07 negative fixtures and a diagnostic fault-injection image to exercise the recoverable reclaim path on hardware.
 - Artifacts/logs: `artifacts/results/hmac-aesmac-check-a9ec9e04-20261121T1404Z/F42DD9D07D6D2B07/`
+
+## 2026-11-21 Narrow the requested AES cipher scope
+
+- Step-Id: `20261121-1511-drop-wide-aes-ciphers`
+- When: '2026-11-21 15:10 CET' - '2026-11-21 15:11 CET'
+- Model: `GPT-6`
+- Change: Applied the user directive excluding ALG_AES_BLOCK_192_CBC_NOPAD, ALG_AES_BLOCK_192_ECB_NOPAD, ALG_AES_BLOCK_256_CBC_NOPAD and ALG_AES_BLOCK_256_ECB_NOPAD. Removed those IDs from the external request and removed the downloaded scratch reference.
+- Validation: Checked the tracked native cipher dispatch and support configuration for those IDs.
+- Result: No implementation, dispatch or capability row was added for the excluded cipher IDs. The separately requested MAC IDs remain in scope.

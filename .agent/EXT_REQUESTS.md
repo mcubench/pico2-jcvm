@@ -70,8 +70,7 @@ backend or authoritative encoding definition, and known-answer vectors for
 encrypt/decrypt results and invalid-padding cases. The existing native
 RSA/ISO9796-2 signature implementation uses a different API and encoding.
 
-For `ALG_AES_BLOCK_192_*_NOPAD`, `ALG_AES_BLOCK_256_*_NOPAD`,
-`ALG_AES_MAC_192_NOPAD`, and `ALG_AES_MAC_256_NOPAD`, provide legacy card
+For `ALG_AES_MAC_192_NOPAD` and `ALG_AES_MAC_256_NOPAD`, provide legacy card
 vectors that establish the expected block size, key size, IV size, tag size
 and API status for invalid inputs. The current 128-bit-block AES IDs already
 accept 192-bit and 256-bit AES keys. If wider Rijndael is intended, supply a
