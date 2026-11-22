@@ -12,6 +12,36 @@ dispatch an applet-supplied native method index. The VM therefore rejects
 `impdep1` and `impdep2` while the current executing package is dynamically
 allocated.
 
+## When validation runs
+
+The VM validates an uploaded CAP during LOAD and INSTALL, during restore,
+and again when runtime code asks for a CAP view.
+
+| Stage | Checks |
+| --- | --- |
+| Final GP LOAD block | The loader validates the assembled CAP before persisting it. It checks component framing and payloads, required components, and references that can be checked without resolving dependencies. The CAP package AID must match the AID in the LOAD request. Earlier blocks are checked for sequence and size as they arrive. [LOAD code](../src/cap_load.cpp#L1288) |
+| GP INSTALL | The loader reads the stored CAP and reruns the LOAD-stage CAP checks. It then resolves declared imports and checks linkage against installed packages, walking the reachable uploaded dependencies before running the applet's install method. [INSTALL code](../src/cap_load.cpp#L1405) · [Dependency preflight](../src/cap_load.cpp#L1022) |
+| Storage initialization and applet restore | Storage initialization checks slot metadata and the code CRC before making the stored bytes available. Applet restore on reader power-on or SELECT by AID runs the structural and import-independent CAP checks for the package being restored. [Slot initialization](../src/cap_store.cpp#L380) · [Applet restore](../src/cap_load.cpp#L1833) · [Reader power-on](../src/ccid_device.cpp#L610) · [SELECT](../src/ccid_device.cpp#L1009) |
+| Runtime metadata lookup | Each `Package::getCap()` call constructs a fresh `JC_Cap` over the stored bytes. For an uploaded package, the constructor rebuilds the component views and revalidates component payloads and cross-component structure. The store caches the code address and length. There is no cache for the parsed, validated view. Trusted ROM-mask package lookups check framing and skip uploaded-payload validation. [CAP lookup](../choupi/src/jc_handlers/flashmemory.cpp#L3045) · [CAP constructor](../choupi/src/jc_handlers/jc_cap.cpp#L719) |
+
+Revalidation follows metadata lookups. One field access can fetch the
+constant pool, declaring class and receiver class, among other metadata, and
+trigger several CAP parses. An arithmetic instruction can execute without
+fetching a CAP view. The host SWALGS profile observed six uploaded-package
+CAP lookups per sampled `getfield_a_this` instruction. That host replay
+included Descriptor. The standard GlobalPlatformPro load used for the Pico 2
+comparison omitted it, so the measured host share for Descriptor validation
+does not establish the share of runtime on the Pico 2. [Field resolution](../choupi/src/jc_bytecodes/bc_object_field.cpp#L144) · [Benchmark](review_VMperf_20261122.md) · [Host load-code extraction](../tests/integration/cap_load_code.py)
+
+## Checks during execution
+
+The VM also checks method bounds, bytecode fetches and branch targets, and
+applies instruction-specific reference type and ownership checks where
+implemented. These checks depend on runtime state. A future cache of the
+structurally validated CAP view would need to preserve these checks and
+invalidate the view when the stored package changes, including when a
+package slot is reused.
+
 Runtime method lookup checks that the normal or extended method header fits
 inside the Method component before reading it. The Descriptor component's
 method offset and bytecode count define each frame's bytecode body, capped at
@@ -34,8 +64,8 @@ The loader rejects ConstantPool entries whose tags are outside the six defined
 CAP 2.1/2.2 reference kinds, in addition to checking the component entry count
 and size. This is structural screening only: it does not prove that each
 class, import, field, or method reference resolves to a compatible target.
-Install preflight also rejects external ConstantPool package tokens that do
-not identify an entry in the source CAP's Import component. It confirms every
+LOAD rejects external ConstantPool package tokens that do not identify an
+entry in the source CAP's Import component. INSTALL preflight confirms every
 declared import resolves to an installed package, and checks that external
 class tokens resolve within the imported package's Export table after JC305
 compatibility mapping. For ambiguous `CONSTANT_Classref` entries it accepts a
@@ -67,12 +97,12 @@ SuperMethodref cannot target an interface record. Internal InstanceFieldref
 tokens are bounded by declared instance layout; internal VirtualMethodref and
 SuperMethodref tokens resolve through the production class-method resolver.
 
-INSTALL preflight also checks class inheritance references and superclass
-chains, superinterface lists, Export class offsets, and virtual method table
-and interface index entries. Negative CAP fixtures exercise these guards.
-Moving the checks to LOAD is tracked under CAPIN-01 and CAPIN-07 in
-[the backlog](../TODO.md). General applet firewall enforcement remains
-incomplete (INV-19).
+LOAD checks import-independent Class and Export references, including
+internal superclass chains, superinterface lists, Export class offsets, and
+internal virtual table offsets and interface indexes. INSTALL repeats the
+import-independent checks and runs virtual method linkage checks that can
+require resolving imports. Negative CAP fixtures exercise these guards.
+General applet firewall enforcement remains incomplete (INV-19).
 
 There is a compatibility and assurance gap with ordinary CAP loading: the Java
 Card 3.0.5 VM specification makes Descriptor loading optional, and

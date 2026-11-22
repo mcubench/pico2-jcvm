@@ -33619,3 +33619,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: `cmp` confirmed the reports are byte-for-byte identical.
 - Result: The requested review contains the baseline measurements, bottleneck attribution, and ranked speedup candidates.
 - Artifacts/logs: `docs/review_VMperf_20261122.md`.
+
+## 2026-11-22 Document the CAP validation lifecycle 1
+
+- Step-Id: `20261122-0756-cap-validation-lifecycle-docs`
+- Task: Document the current validation behavior in the CAP execution trust model.
+- When: '2026-11-22 07:56 +0100' - '2026-11-22 07:57 +0100'
+- Model: `gpt-6`
+- Change: Documented GP LOAD, INSTALL, storage initialization, applet restore, and repeated runtime CAP validation. Corrected the obsolete INSTALL-only description of import-independent Class and Export checks. Linked the SWALGS profile and clarified the host-versus-Pico Descriptor difference.
+- Validation: Checked the description against the loader, CAP store, CCID, and interpreter source. Verified local documentation links and line anchors and ran `git diff --check`.
+- Result: The trust model now distinguishes repeated structural validation from runtime instruction checks. No build or flash was required for this documentation step.
+- Artifacts/logs: `docs/CAP_EXECUTION_TRUST_MODEL.md`.
