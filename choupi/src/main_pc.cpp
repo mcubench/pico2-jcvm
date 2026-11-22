@@ -136,6 +136,7 @@ struct VpcdRestoreApplet {
 // backend equivalent so independent CAP LOAD commands in one process can
 // coexist rather than replacing the last package that was loaded.
 std::vector<HostCapPackage> host_cap_packages;
+CapStoreRevision host_cap_store_revision;
 
 HostCapPackage *host_package(uint8_t package_id) noexcept {
   for (auto &package : host_cap_packages)
@@ -165,11 +166,12 @@ extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {
 }
 
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
-    uint8_t package_id, uint32_t *length) {
+    uint8_t package_id, uint32_t *length, uint32_t *revision) {
   const HostCapPackage *package = host_package_read(package_id);
   if (length == nullptr || package == nullptr || package->code.empty())
     return nullptr;
   *length = static_cast<uint32_t>(package->code.size());
+  if (revision != nullptr) *revision = host_cap_store_revision.value();
   return package->code.data();
 }
 
@@ -200,6 +202,7 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
         std::memcmp(stored->package_aid.data(), package_aid,
                     package_aid_length) != 0)
       return 1;
+    host_cap_store_revision.invalidate();
     stored->code.assign(data, data + length);
     return 0;
   }
@@ -207,6 +210,7 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
   package.package_id = package_id;
   package.package_aid.assign(package_aid, package_aid + package_aid_length);
   package.code.assign(data, data + length);
+  host_cap_store_revision.invalidate();
   host_cap_packages.push_back(std::move(package));
   return 0;
 }
@@ -345,6 +349,7 @@ bool cap_store_delete_package(uint8_t package_id) noexcept {
                                     return item.package_id == package_id;
                                   });
   if (found == host_cap_packages.end()) return false;
+  host_cap_store_revision.invalidate();
   host_cap_packages.erase(found);
   if (package_id == vpcd_package_id) {
     vpcd_package_loaded = false;
@@ -358,8 +363,9 @@ bool cap_store_delete_package(uint8_t package_id) noexcept {
 }
 
 const uint8_t *cap_store_data_for_package(uint8_t package_id,
-                                          uint32_t *length) noexcept {
-  return choupi_cap_store_data_for_package(package_id, length);
+                                          uint32_t *length,
+                                          uint32_t *revision) noexcept {
+  return choupi_cap_store_data_for_package(package_id, length, revision);
 }
 
 bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,

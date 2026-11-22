@@ -2948,6 +2948,46 @@ int main(const int argc, char **argv) {
   expect(cap_codes_survive_fs_sync,
          "filesystem_snapshots_preserve_all_cap_slots");
 
+  // A replacement can keep both the old XIP address and the old length.
+  constexpr uint8_t replacement_code[] = {0xca, 0xfe, 0x02, 0x01};
+  constexpr uint8_t first_slot_aid[] = {0xa0, 0x00, 0x00, 0x00, 56};
+  uint32_t original_length = 0;
+  uint32_t original_revision = 0;
+  uint32_t repeated_revision = 0;
+  const uint8_t *original_code =
+      cap_store_data_for_package(56, &original_length, &original_revision);
+  expect(original_code != nullptr && original_revision != 0 &&
+             cap_store_data_for_package(56, &original_length,
+                                        &repeated_revision) == original_code &&
+             repeated_revision == original_revision,
+         "cap_code_revision_is_stable_between_reads");
+
+  uint32_t replacement_length = 0;
+  uint32_t replacement_revision = 0;
+  const bool replaced = cap_store_delete_package(56) &&
+      cap_store_data_for_package(56, &replacement_length) == nullptr &&
+      cap_store_write_package(56, first_slot_aid, sizeof(first_slot_aid),
+                              replacement_code, sizeof(replacement_code));
+  const uint8_t *replacement = cap_store_data_for_package(
+      56, &replacement_length, &replacement_revision);
+  expect(replaced && replacement != nullptr && replacement == original_code &&
+             replacement_length == original_length &&
+             replacement_revision != 0 &&
+             replacement_revision != original_revision &&
+             std::memcmp(replacement, replacement_code,
+                         sizeof(replacement_code)) == 0,
+         "cap_code_revision_changes_when_same_address_and_length_are_reused");
+
+  if (replacement != nullptr) {
+    fake_flash[replacement - fake_flash.data()] ^= 1;
+  }
+  expect(cap_store_initialize() &&
+             cap_store_data_for_package(56, &replacement_length) == nullptr,
+         "cap_code_with_invalid_crc_is_unpublished_after_rescan");
+  expect(cap_store_write_package(56, first_slot_aid, sizeof(first_slot_aid),
+                                 cap_code, sizeof(cap_code)),
+         "cap_code_slot_can_be_restored_after_crc_failure");
+
   auto *legacy_header = reinterpret_cast<LegacyCapSlotHeaderV3 *>(
       fake_flash.data() + flash_layout::cap_offset +
       7 * flash_layout::cap_slot_size);

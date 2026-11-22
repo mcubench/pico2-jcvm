@@ -3503,8 +3503,8 @@ extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {
 }
 
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
-    uint8_t package_id, uint32_t *length) {
-  return cap_store_data_for_package(package_id, length);
+    uint8_t package_id, uint32_t *length, uint32_t *revision) {
+  return cap_store_data_for_package(package_id, length, revision);
 }
 #endif
 

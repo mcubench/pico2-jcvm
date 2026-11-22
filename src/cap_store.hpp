@@ -14,6 +14,19 @@ enum class CapInstancePreflightResult : uint8_t {
   package_full,
 };
 
+// A volatile identity for the currently published code views. Zero disables
+// reuse after wrap, so an old validated view can never become current again.
+class CapStoreRevision {
+public:
+  uint32_t value() const noexcept { return revision_; }
+  void invalidate() noexcept {
+    if (revision_ != 0) ++revision_;
+  }
+
+private:
+  uint32_t revision_ = 1;
+};
+
 bool cap_store_initialize() noexcept;
 bool cap_store_find_package(const uint8_t *package_aid,
                             uint8_t package_aid_length,
@@ -23,7 +36,8 @@ bool cap_store_write_package(uint8_t package_id, const uint8_t *package_aid,
                              size_t length) noexcept;
 bool cap_store_delete_package(uint8_t package_id) noexcept;
 const uint8_t *cap_store_data_for_package(uint8_t package_id,
-                                          uint32_t *length) noexcept;
+                                          uint32_t *length,
+                                          uint32_t *revision = nullptr) noexcept;
 bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,
                            uint8_t &aid_length) noexcept;
 bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept;
@@ -91,7 +105,8 @@ uint8_t choupi_store_cap_instance(uint8_t package_id,
                                   uint8_t owner_id);
 const uint8_t *choupi_cap_store_data(uint32_t *length);
 const uint8_t *choupi_cap_store_data_for_package(uint8_t package_id,
-                                                uint32_t *length);
+                                                uint32_t *length,
+                                                uint32_t *revision = nullptr);
 #ifdef PC_VERSION
 const uint8_t *choupi_pc_rom_package_data(uint8_t package_id,
                                           uint32_t *length);

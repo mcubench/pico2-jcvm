@@ -116,6 +116,13 @@ const uint8_t *cached_codes[kSlotCount]{};
 uint32_t cached_lengths[kSlotCount]{};
 bool cached_header_is_mirror[kSlotCount]{};
 const AppletOwnerMap *cached_owner_maps[kSlotCount]{};
+CapStoreRevision cap_store_revision;
+bool cap_store_ready = false;
+
+void unpublish_code_views() noexcept {
+  cap_store_ready = false;
+  cap_store_revision.invalidate();
+}
 
 uint32_t crc32(const uint8_t *data, size_t length) noexcept {
   uint32_t crc = 0xffffffffu;
@@ -371,13 +378,16 @@ bool write_metadata(uint8_t slot, CapSlotHeader &header,
   context.image.owner_map.count = header.instance_count;
   context.image.owner_map.crc32 =
       owner_map_crc(context.image.owner_map);
+  unpublish_code_views();
   const int status = flash_safe_execute(write_metadata_callback, &context, 5000);
-  return status == PICO_OK && context.success && cap_store_initialize();
+  const bool restored = cap_store_initialize();
+  return status == PICO_OK && context.success && restored;
 }
 
 } // namespace
 
 bool cap_store_initialize() noexcept {
+  unpublish_code_views();
   if (!slot_is_inside_reserved_flash()) return false;
   for (uint8_t slot = 0; slot < kSlotCount; ++slot) {
     cached_headers[slot] = nullptr;
@@ -437,6 +447,7 @@ bool cap_store_initialize() noexcept {
       if (owner_id != 0) globally_used_owners[owner_id] = true;
     }
   }
+  cap_store_ready = true;
   return true;
 }
 
@@ -487,8 +498,12 @@ bool cap_store_write_package(uint8_t package_id, const uint8_t *package_aid,
   context.length = length;
   context.image.header = header;
   context.image.owner_map = owner_map;
+  unpublish_code_views();
   const int status = flash_safe_execute(write_slot_callback, &context, 5000);
-  if (status != PICO_OK || !context.success || !cap_store_initialize() ||
+  // Even a failed write can leave the slot changed. Publish only after the
+  // store has checked the surviving headers and code CRCs.
+  const bool restored = cap_store_initialize();
+  if (status != PICO_OK || !context.success || !restored ||
       cached_headers[slot] == nullptr || cached_lengths[slot] != length ||
       std::memcmp(cached_codes[slot], data, length) != 0) {
     return false;
@@ -501,18 +516,21 @@ bool cap_store_delete_package(uint8_t package_id) noexcept {
       !slot_is_inside_reserved_flash()) return false;
   const uint8_t slot = static_cast<uint8_t>(package_id - kFirstPackageId);
   DeleteContext context{slot, false};
+  unpublish_code_views();
   const int status = flash_safe_execute(delete_slot_callback, &context, 5000);
-  if (status != PICO_OK || !context.success) return false;
-  return cap_store_initialize();
+  const bool restored = cap_store_initialize();
+  return status == PICO_OK && context.success && restored;
 }
 
 const uint8_t *cap_store_data_for_package(uint8_t package_id,
-                                          uint32_t *length) noexcept {
-  if (length == nullptr || package_id < kFirstPackageId ||
+                                          uint32_t *length,
+                                          uint32_t *revision) noexcept {
+  if (!cap_store_ready || length == nullptr || package_id < kFirstPackageId ||
       package_id >= kFirstPackageId + kSlotCount) return nullptr;
   const uint8_t slot = static_cast<uint8_t>(package_id - kFirstPackageId);
   if (cached_codes[slot] == nullptr) return nullptr;
   *length = cached_lengths[slot];
+  if (revision != nullptr) *revision = cap_store_revision.value();
   return cached_codes[slot];
 }
 

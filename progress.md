@@ -33642,3 +33642,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Host, 50 repeats with GPPro component set, net APDU XOR 4.403 → 0.758 ms (5.81×), software AES 298.673 → 82.859 ms (3.60×). With Descriptor, XOR 84.801 → 0.876 ms (96.8×), software AES 5,061.511 → 87.555 ms (57.8×). Native AES controls passed. ARM cache and scope use 452 bytes of static RAM. Physical speed and flash traffic were not measured. The change adds no persistent writes.
 - Decision: Verify generation-aware retention and slot invalidation offline before extending cache lifetime.
 - Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/`.
+
+## 2026-11-22 Retain validated CAP views across applet APDUs 4
+
+- Step-Id: `20261122-0811-cap-view-store-revision`
+- Task: Extend CAP view reuse across APDUs with storage invalidation.
+- When: '2026-11-22 08:11 +0100' - '2026-11-22 08:15 +0100'
+- Model: `gpt-6`
+- Change: Cache one fully validated view per dynamic slot and bind entries to the published storage revision. Invalidate before code or metadata changes, including slot reuse. The hardware store rechecks metadata and CRC before republishing after flash operations, including failures. Runtime instruction checks are unchanged.
+- Validation: Clean ARM max_crypto build, both host component-set replays, overlay and transaction unit tests, CAP upgrade, same-CAP delete/reinstall, and malformed-CAP VPCD checks passed. Overlay regressions covered stable revisions, replacement at the same address and length, and a CRC failure on rescan.
+- Result: Standard GPPro component-set repetition gave net XOR 0.793 ms and software AES 82.258 ms per 50 iterations, comparable to 0.758 and 82.446 ms with APDU-scoped caching. Cache entries, revision, and publication flag use 485 bytes of static ARM RAM. Warm host profiling attributes 40.5% of AES handler time and 78.5% of XOR handler time to `getfield_a_this`. Hardware speed and flash traffic are unmeasured. No flash mutation was added.
+- Decision: Measure bounded caching of the checked field offset for that opcode. Hardware comparison is blocked by the host-access execution requirement.
+- Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/`.

@@ -91,7 +91,8 @@ extern "C" void path_package_list(uint8_t (*tag)[128], uint8_t *length) {
 }
 
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
-    uint8_t package_id, uint32_t *length) {
+    uint8_t package_id, uint32_t *length, uint32_t *revision) {
+  if (revision != nullptr) *revision = 0;
   if (length == nullptr || package_id < 56 || package_id > 63 ||
       !persistent_transaction_test::dynamic_cap_present[package_id - 56]) {
     return nullptr;

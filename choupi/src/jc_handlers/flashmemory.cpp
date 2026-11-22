@@ -57,13 +57,13 @@ namespace {
 
 struct CachedCapView {
   const uint8_t *data = nullptr;
+  uint32_t revision = 0;
   uint16_t length = 0;
   std::optional<JC_Cap> view;
 };
 
 std::array<CachedCapView, cap_execution_policy::kDynamicPackageCount>
     cap_views;
-unsigned cap_view_scope_depth = 0;
 
 constexpr uint8_t kPersistentObjectAlias = 0xFE;
 constexpr uint8_t kPersistentArrayAlias = 0xFD;
@@ -3055,30 +3055,24 @@ bool FlashMemory_Handler::findAppletByAID(
  * @param[packageID] Package ID where the CAP file is located.
  * @return the read CAP file.
  */
-FlashMemory_Handler::CapViewScope::CapViewScope() noexcept {
-  ++cap_view_scope_depth;
-}
-
-FlashMemory_Handler::CapViewScope::~CapViewScope() {
-  if (--cap_view_scope_depth == 0) {
-    for (auto &entry : cap_views) entry = {};
-  }
-}
-
 JC_Cap FlashMemory_Handler::getCap(const jpackage_ID_t packageID) {
   if (FlashMemory_Handler::isDynamicPackageID(packageID)) {
     uint32_t cap_length = 0;
+    uint32_t revision = 0;
     const uint8_t *cap_data =
-        choupi_cap_store_data_for_package(packageID, &cap_length);
+        choupi_cap_store_data_for_package(packageID, &cap_length, &revision);
     if (cap_data != nullptr && cap_length != 0 && cap_length <= UINT16_MAX) {
       const auto length = static_cast<uint16_t>(cap_length);
-      if (cap_view_scope_depth == 0) return JC_Cap(length, cap_data);
+      if (revision == 0) return JC_Cap(length, cap_data);
 
-      // Applet processing cannot dispatch GlobalPlatform package mutations.
-      // Nested Java calls share the view for this APDU.
-      auto &entry = cap_views[packageID - cap_execution_policy::kFirstDynamicPackageId];
-      if (!entry.view || entry.data != cap_data || entry.length != length) {
+      // A slot may be reused with the same address and length. Only reuse a
+      // view within the same storage revision, after full validation.
+      auto &entry =
+          cap_views[packageID - cap_execution_policy::kFirstDynamicPackageId];
+      if (!entry.view || entry.revision != revision || entry.data != cap_data ||
+          entry.length != length) {
         entry.view.emplace(length, cap_data);
+        entry.revision = revision;
         entry.data = cap_data;
         entry.length = length;
       }
