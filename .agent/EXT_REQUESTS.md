@@ -1,5 +1,26 @@
 # External validation requests
 
+## WIN-VM-ARRAY-READS-20261122 — Pico 2 primitive-array read firmware
+
+Created 2026-11-22 09:44 CET. Use a dedicated test Pico 2. This normal ARM
+max_crypto image erases applet storage during flashing. Object deletion is on
+and debug switches are off.
+
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-be737f0e.uf2)
+- UF2 SHA-256 `dcaf8616a825c5ba50b3f8aa1b4b4d544bb22b035d688e0d8e4875201de34f13`, 3,030,016 bytes.
+- CPLC source ID `BE737F0EDEF8A050`.
+- Use the unchanged JCAlgTest 1.8.5/jc305 [CAP](../tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap)
+  (SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`)
+  and the [1.8.5-20261121 client](../tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar)
+  (SHA-256 `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`).
+
+1. Hold BOOTSEL while connecting the Pico 2 and copy the UF2 to the boot drive.
+2. Install the CAP using GlobalPlatformPro, then run JCAlgTest option 2
+   (PERFORMANCE TEST, 256-byte data) and option 1 (All algorithms) as needed.
+   Use separate identified boards for long parallel runs.
+3. Return CSVs and client and serial logs with the Pico 2 chip ID, reader name,
+   UF2 and JAR hashes, and any timeout, unexpected status word, or reset.
+
 ## WIN-MAXCRYPTO-RC-V0.2-RC1 — release candidate v0.2-rc1 (commit 81c7ac5d), JCAlgTest options 1 and 2
 
 Created 2026-11-21 15:33 CET. Replaces `WIN-MAXCRYPTO-ONESHOT-D7E90A18`, whose results were

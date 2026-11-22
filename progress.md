@@ -33713,3 +33713,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: On `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`, all 35 prepare and workload APDUs per image returned `AA9000`. The 16-byte software AES 50-repeat APDU fell from 21,313 to 15,691 ms (425.06 to 312.74 net ms/op, 1.36×). Native-backed AES improved from 3.26 to 2.88 net ms/op. Software XOR slowed from 1.48 to 2.00 net ms/op. The replay preserved installed storage, which grew between runs. Software AES serial VM time fell from 21,301,289 to 15,686,592 µs, with 25 writes, 72 logical write bytes, 768 journal bytes and 0 sync bytes in both measured APDUs. Baseline CPLC was `a2a69d952c309690`; the candidate was built from the working tree over `67a0e8a54250c696` and identified by UF2 hash.
 - Decision: Keep the single-record read for the measured AES gain and track the XOR slowdown. No dispatch, watchdog, branch, or CAP validation change. Hardware evidence is a focused replay. Per-opcode ARM attribution and full empty-card acceptance were not run.
 - Artifacts/logs: `artifacts/build-audit/primitive-array-reads-20261122/` contains the replay arguments, baseline and candidate APDU and serial logs, and build and cycle logs. Baseline UF2 SHA-256 `cf1ea6b55d560c9a053a8dd706b284f3f3abd87865089dc0140a51372af385d7`. Candidate UF2 SHA-256 `fa0f3c77b0c38cefdaf5817dc01b6860bec4f6988e03ece0de5f87b989ae2170`. Unchanged CAP SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`. The direct APDU replay used ApduTimer. The RC's pinned 1.8.5-20261121 client JAR was verified (SHA-256 `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`) and was not invoked.
+
+## 2026-11-22 Package primitive-array-read firmware for external testing 2
+
+- Step-Id: `20261122-0944-vm-array-external-uf2`
+- When: '2026-11-22 09:43 +0100' - '2026-11-22 09:45 +0100'
+- Model: `gpt-6`
+- Change: Packaged the normal ARM max_crypto build from be737f0e with erased applet storage for external testing. Recorded the flash procedure and pinned test inputs in WIN-VM-ARRAY-READS-20261122.
+- Validation: ARM build exited 0 with no warnings. Verified 86 pinned fixture files, CPLC source ID `BE737F0EDEF8A050`, object deletion on, and debug switches off. Independently checked that all firmware payloads matched the build and all 4,096 storage blocks contained only FF bytes.
+- Result: Empty-card UF2 is 3,030,016 bytes, SHA-256 `dcaf8616a825c5ba50b3f8aa1b4b4d544bb22b035d688e0d8e4875201de34f13`.
+- Decision: Prepared for external testing. This exact empty-card UF2 was not flashed locally.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-be737f0e.uf2`, `artifacts/logs/external-be737f0e-build.log`.
