@@ -33678,3 +33678,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: For 50 repeats, baseline-subtracted times per operation fell from 34.86 to 1.46 ms for XOR (23.88×), 2,518.08 to 425.68 ms for software AES (5.92×), and 7.80 to 3.24 ms for the native-backed AES API control (2.41×). The 50-repeat software AES APDU took 126.029 and 21.344 s end to end. Serial VM time was 126.022295 and 21.338876 s, with 3.280 and 3.519 ms in flash sync. Both software AES batches journaled 768 bytes and wrote zero snapshot bytes.
 - Decision: Combined CAP view and reference-field offset speedups are verified on hardware. The optimized normal firmware and installed applet remain on EE11. No separate ARM cycle attribution for remaining interpreter costs was performed.
 - Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/ee11-{before,after}-{apdus,serial}.log`, `ee11-candidate-cycle.log`, and `physical-summary.txt`. Before UF2 SHA-256 `effccdec0c2b3319d02db2955a94451e07aa8e396c5ccf9d6514a693603acda6`. After UF2 SHA-256 `cf1ea6b55d560c9a053a8dd706b284f3f3abd87865089dc0140a51372af385d7`.
+
+## 2026-11-22 Document the measured CAP-cache fix and security boundary 2
+
+- Step-Id: `20261122-0844-cap-cache-security-docs`
+- Task: Summarize the implemented performance fix and clarify CAP security coverage.
+- When: '2026-11-22 08:44 +0100' - '2026-11-22 08:46 +0100'
+- Model: `gpt-6`
+- Change: Put the two caches and physical A/B results at the top of `docs/review_VMperf_20261122.md`. In the CAP trust model, documented cache matching and invalidation, surviving runtime checks, covered CAP attack classes, and open assurance gaps under INV-18, INV-19, and INV-22.
+- Validation: Checked the descriptions against the CAP store, field cache, interpreter guards, test logs, and physical timing summary. Verified local links and headings and ran `git diff --check`. No build or flash was run for the documentation change.
+- Result: The review leads with the measured 23.9× XOR and 5.92× software AES speedups. The trust model explains which checks the caches reuse and which protections and limits still apply.
+- Artifacts/logs: `docs/review_VMperf_20261122.md`, `docs/CAP_EXECUTION_TRUST_MODEL.md`, and `artifacts/build-audit/cap-view-cache-20261122/physical-summary.txt`.

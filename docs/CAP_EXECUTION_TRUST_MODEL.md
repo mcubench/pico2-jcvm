@@ -14,8 +14,10 @@ allocated.
 
 ## When validation runs
 
-The VM validates an uploaded CAP during LOAD and INSTALL, during restore,
-and again when runtime code asks for a CAP view.
+The VM validates an uploaded CAP during LOAD, INSTALL, and applet restore.
+During execution it reuses the structural result within the current CAP
+store revision. The VM continues to enforce checks that depend on the
+instruction and its live operands.
 
 | Stage | Checks |
 | --- | --- |
@@ -23,6 +25,17 @@ and again when runtime code asks for a CAP view.
 | GP INSTALL | The loader reads the stored CAP and reruns the LOAD-stage CAP checks. It then resolves declared imports and checks linkage against installed packages, walking the reachable uploaded dependencies before running the applet's install method. [INSTALL code](../src/cap_load.cpp#L1405) · [Dependency preflight](../src/cap_load.cpp#L1022) |
 | Storage initialization and applet restore | Storage initialization checks slot metadata and the code CRC before making the stored bytes available. Applet restore on reader power-on or SELECT by AID runs the structural and import-independent CAP checks for the package being restored. [Slot initialization](../src/cap_store.cpp#L380) · [Applet restore](../src/cap_load.cpp#L1833) · [Reader power-on](../src/ccid_device.cpp#L610) · [SELECT](../src/ccid_device.cpp#L1009) |
 | Runtime metadata lookup | The first `Package::getCap()` call for an uploaded package in the current CAP store revision validates component payloads and cross-component structure. Later calls can reuse that view. The fixed cache has one entry per dynamic package slot. The store withdraws its code views before flash changes and publishes them after checking the surviving slot metadata and code CRCs. A revision change invalidates the views even if replacement code has the same address and length. Trusted ROM-mask lookups check framing and skip uploaded-payload validation. [CAP lookup](../choupi/src/jc_handlers/flashmemory.cpp) · [CAP constructor](../choupi/src/jc_handlers/jc_cap.cpp#L719) · [CAP store](../src/cap_store.cpp) |
+
+The CAP store revision is global, so updates conservatively expire views
+for all dynamic slots. A hit requires the published revision, code address,
+and length to match. A missing or unpublished slot fails the lookup. A
+revision value of zero disables reuse, including after counter wrap.
+The store rescans after successful or failed flash mutations and publishes
+code only after the integrity checks succeed. The code CRC detects
+corruption at publication and rescan. Continuous integrity of the mapped
+bytes and authentication against deliberate flash modification are outside
+that guarantee. A logical reader reset can reuse the same published
+revision, while the restore path still runs its own checks. [Revision lifecycle](../src/cap_store.cpp) · [Wrap handling](../src/cap_store.hpp)
 
 One field access can fetch the constant pool, declaring class, receiver
 class, and other metadata. Before CAP view reuse, the host SWALGS profile
@@ -47,7 +60,11 @@ receiver's concrete package and class. On a miss, the VM runs the full
 field resolver. Each access still reads and checks the live reference and
 field value and propagates its owner. A new APDU starts with an empty field
 cache, so changes in package or import availability are checked at the next
-use. [Field offset cache](../choupi/src/jc_bytecodes/bc_object_field.cpp)
+use. Each hit compares the full key against the live receiver class. A
+table collision or a different receiver class triggers resolution again.
+The cache stores only the offset and its key. Live reference decoding,
+heap lookup, proxy rejection, and field value/type handling still run
+before the reference and its owner reach the operand stack. [Field offset cache](../choupi/src/jc_bytecodes/bc_object_field.cpp)
 
 Runtime method lookup checks that the normal or extended method header fits
 inside the Method component before reading it. The Descriptor component's
@@ -125,6 +142,28 @@ separate verifier that can independently establish method boundaries. See
 `.agent/QKB.md` for the Descriptor-free GPPro LOAD findings and the [Java Card
 3.0.5 VM specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf),
 §6.10 and §6.14.
+
+## CAP attack coverage and remaining gaps
+
+The caches preserve the existing upload trust boundary. They address
+reuse of stale validation and linkage results, while the loader and
+interpreter guards handle malformed CAPs and forbidden operations.
+
+| Attempt | Current protection | Remaining exposure or assurance gap |
+| --- | --- | --- |
+| Submit malformed component framing, tables, or references | LOAD rejects malformed required components and covered import-independent Class, ConstantPool, and Export references. INSTALL checks the reachable import closure and covered linkage before it runs applet installation code. | **INV-18.** Full on-card static verification of types, access kinds, operand-stack state, and linkage is still incomplete. Structurally valid CAPs can reach invalid instruction sequences that are detected only during execution. |
+| Use a reserved opcode to invoke native code directly | Dispatch rejects `impdep1` and `impdep2` using the executing package ID. Uploaded code can invoke exposed APIs through the normal checked linkage and ROM paths. | **INV-18.** Reachable Java Card API and native implementations still process applet-controlled inputs. The reserved-opcode guard covers direct entry through those instructions. |
+| Fetch beyond a method or branch into an operand | The VM checks method header and body bounds and rejects taken branches outside the body or off a decoded instruction boundary. | **INV-18.** Branches are checked when taken. Without Descriptor, inferred boundaries do not independently prove all private/internal static entry points. Complete validation of all bytecode paths remains open. |
+| Reuse a field offset for an unrelated receiver, access a disallowed ROM instance field, or bypass applet isolation | Field resolution checks receiver compatibility and the ROM-field restriction. A cached offset requires a matching calling package, constant-pool entry, and concrete receiver class. Existing live-reference and shareable-proxy checks still apply. | **INV-19.** General firewall enforcement and multi-applet context semantics are incomplete. Cross-applet isolation is established only for the covered paths. |
+| Reuse a validated view after package deletion, replacement, or an interrupted flash update | The store withdraws publication before mutation. Code with a bad CRC stays unpublished on rescan. The next view lookup validates against the new revision even if the address and length are reused. Linkage derived for `getfield_a_this` expires at the APDU boundary. | This relies on the managed store owning writes to the published code. Physical modification or faults outside that lifecycle can evade an in-memory view's current checks. |
+| Trigger a fault, abort, or loss of service with hostile input | Bounds and resource limits, execution budgets, and exception recovery contain covered cases. The CAP and field-offset caches have fixed sizes. | **INV-22.** Malformed-input recovery still needs broader coverage, including remaining hardware cases. An uploaded applet can consume time and applet-accessible resources within the enforced limits. |
+
+Tests cover same-address and same-length slot replacement and bad-CRC
+rejection in the fake-flash backend, and CAP upgrade, malformed CAP
+recovery, method PC bounds, and selected cross-applet proxy lifecycles
+offline. The Pico 2 A/B run verified successful execution and measured
+performance with the unchanged JCAlgTest workload. The outstanding
+security cases and hardware coverage are tracked in the backlog. [Validation record](../progress.md) · [CAP and interpreter safety backlog](../TODO.md#cap-and-interpreter-safety)
 
 
 ## Applet ownership and lifecycle
