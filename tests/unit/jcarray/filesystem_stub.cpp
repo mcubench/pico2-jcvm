@@ -207,9 +207,9 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceStrict(
   return jref_t{};
 }
 
-const jbyte_t FlashMemory_Handler::getPersistentField_Array_Byte(
-    const fs::Tag &, const uint16_t, Heap &) {
-  return 0;
+const uint8_t *FlashMemory_Handler::borrowPersistentArrayData(
+    const fs::Tag &, FieldType, uint16_t, uint8_t) {
+  throw Exceptions::IOException;
 }
 
 void FlashMemory_Handler::setPersistentField_Array_Byte(
@@ -218,20 +218,10 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(
 void FlashMemory_Handler::setPersistentField_Array_ByteNonAtomic(
     const fs::Tag &, const uint16_t, const jbyte_t, Heap &) {}
 
-const jshort_t FlashMemory_Handler::getPersistentField_Array_Short(
-    const fs::Tag &, const uint16_t, Heap &) {
-  return 0;
-}
-
 void FlashMemory_Handler::setPersistentField_Array_Short(
     const fs::Tag &, const uint16_t, const jshort_t, Heap &) {}
 
 #ifdef JCVM_INT_SUPPORTED
-const jint_t FlashMemory_Handler::getPersistentField_Array_Int(
-    const fs::Tag &, const uint16_t, Heap &) {
-  return 0;
-}
-
 void FlashMemory_Handler::setPersistentField_Array_Int(
     const fs::Tag &, const uint16_t, const jint_t, Heap &) {}
 #endif

@@ -2473,43 +2473,6 @@ FlashMemory_Handler::getPersistentField_Array(const fs::Tag &tag, Heap &heap) {
 }
 
 /*
- * Get array data store value in flash memory at a specific index.
- *
- * @param[tag] Associated tag value.
- * @param[index] data index
- *
- * @return indexed data value
- */
-const jbyte_t
-FlashMemory_Handler::getPersistentField_Array_Byte(const fs::Tag &tag,
-                                                   const uint16_t index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                   ,
-                                                   Heap &heap
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-) {
-  uint8_t value;
-
-#ifdef JCVM_SECURE_HEAP_ACCESS
-  auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
-
-  if (array->isTransientArray() ||
-      (array->getType() != JAVA_ARRAY_T_BYTE &&
-       array->getType() != JAVA_ARRAY_T_BOOLEAN) ||
-      array->size() <= index) {
-    throw Exceptions::SecurityException;
-  }
-
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-
-  if (fs_read_1b_at(&(tag.value[0]), tag.len, 3u + index, &value)) {
-    throw Exceptions::IOException;
-  }
-
-  return static_cast<const jbyte_t>(value);
-}
-
-/*
  * Set array data store value in flash memory at a specific index.
  *
  * @param[tag] Associated tag value.
@@ -2658,43 +2621,6 @@ void FlashMemory_Handler::writePersistentArrayRange(
 }
 
 /*
- * Get array data store value in flash memory at a specific index.
- *
- * @param[tag] Associated tag value.
- * @param[index] data index
- *
- * @return indexed data value
- */
-const jshort_t
-FlashMemory_Handler::getPersistentField_Array_Short(const fs::Tag &tag,
-                                                    const uint16_t index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                    ,
-                                                    Heap &heap
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-) {
-  uint8_t value_high = 0;
-  uint8_t value_low = 0;
-
-#ifdef JCVM_SECURE_HEAP_ACCESS
-  auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
-
-  if (array->size() <= index) {
-    throw Exceptions::SecurityException;
-  }
-
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-
-  const uint32_t byte_offset = 3u + 2u * index;
-  if (fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset, &value_high) ||
-      fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset + 1, &value_low)) {
-    throw Exceptions::IOException;
-  }
-
-  return signedShortFromBits(BYTES_TO_SHORT(value_high, value_low));
-}
-
-/*
  * Set array data store value in flash memory at a specific index.
  *
  * @param[tag] Associated tag value.
@@ -2745,48 +2671,6 @@ void FlashMemory_Handler::setPersistentField_Array_Short(const fs::Tag &tag,
 }
 
 #ifdef JCVM_INT_SUPPORTED
-
-/*
- * Get array data store value in flash memory at a specific index.
- *
- * @param[tag] Associated tag value.
- * @param[index] data index
- *
- * @return indexed data value
- */
-const jint_t
-FlashMemory_Handler::getPersistentField_Array_Int(const fs::Tag &tag,
-                                                  const uint16_t index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                  ,
-                                                  Heap &heap
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-) {
-  uint8_t value_bytes[4]{};
-
-#ifdef JCVM_SECURE_HEAP_ACCESS
-  auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
-
-  if (array->size() <= index) {
-    throw Exceptions::SecurityException;
-  }
-
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-
-  const uint32_t byte_offset = 3u + 4u * index;
-  for (uint32_t byte_index = 0; byte_index < sizeof(value_bytes); ++byte_index) {
-    if (fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset + byte_index,
-                      &value_bytes[byte_index])) {
-      throw Exceptions::IOException;
-    }
-  }
-
-  const uint32_t value = (static_cast<uint32_t>(value_bytes[0]) << 24) |
-                         (static_cast<uint32_t>(value_bytes[1]) << 16) |
-                         (static_cast<uint32_t>(value_bytes[2]) << 8) |
-                         value_bytes[3];
-  return static_cast<const jint_t>(value);
-}
 
 /*
  * Set array data store value in flash memory at a specific index.

@@ -403,6 +403,17 @@ void JC_Array::recoverMissingPersistentBody() const {
   }
 }
 
+const uint8_t *JC_Array::readPersistentPrimitiveEntry(
+    const FieldType field_type, const uint16_t index, const uint8_t width) const {
+  this->recoverMissingPersistentBody();
+  const auto *data = FlashMemory_Handler::borrowPersistentArrayData(
+      this->computeTag(), field_type, this->logical_length, width);
+  if (index >= this->logical_length) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  return data + static_cast<uint32_t>(index) * width;
+}
+
 /**
  * Fetch a byte or a boolean element from an array.
  *
@@ -414,7 +425,6 @@ jbyte_t JC_Array::getByteEntry(const uint16_t index)
     const noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
-  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   switch (type) {
@@ -430,21 +440,22 @@ jbyte_t JC_Array::getByteEntry(const uint16_t index)
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  if (this->isPersistent() && !this->isTransientArray()) {
+    const FieldType field_type = this->type == JAVA_ARRAY_T_BOOLEAN
+        ? FIELD_TYPE_ARRAY_BOOLEAN : FIELD_TYPE_ARRAY_BYTE;
+    return static_cast<jbyte_t>(*this->readPersistentPrimitiveEntry(
+        field_type, index, 1));
+  }
+  if (index >= this->logical_length) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+
   if (this->isPersistent()) {
     auto tag = this->computeTag();
 
-    if (this->isTransientArray()) {
-      const uint16_t offset = (uint16_t)(index * sizeof(jbyte_t));
+    const uint16_t offset = (uint16_t)(index * sizeof(jbyte_t));
 
-      return this->array[tag.len + sizeof(tag.len) + offset];
-    } else {
-      return FlashMemory_Handler::getPersistentField_Array_Byte(tag, index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                                ,
-                                                                this->getOwner()
-#endif /* JCVM_SECURE_HEAP_ACESS */
-      );
-    }
+    return this->array[tag.len + sizeof(tag.len) + offset];
   } else {
     const uint16_t offset = (uint16_t)(index * sizeof(jbyte_t));
 
@@ -463,7 +474,6 @@ jshort_t JC_Array::getShortEntry(const uint16_t index)
     const noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
-  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_SHORT) {
@@ -472,24 +482,23 @@ jshort_t JC_Array::getShortEntry(const uint16_t index)
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  if (this->isPersistent() && !this->isTransientArray()) {
+    const auto *data = this->readPersistentPrimitiveEntry(
+        FIELD_TYPE_ARRAY_SHORT, index, 2);
+    return signedShortFromBits(BYTES_TO_SHORT(data[0], data[1]));
+  }
+  if (index >= this->logical_length) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+
   if (this->isPersistent()) {
     auto tag = this->computeTag();
 
-    if (this->isTransientArray()) {
-      const uint16_t offset = (uint16_t)(index * sizeof(jshort_t));
+    const uint16_t offset = (uint16_t)(index * sizeof(jshort_t));
 
-      return signedShortFromBits(BYTES_TO_SHORT(
-          this->array[tag.len + sizeof(tag.len) + offset],
-          this->array[tag.len + sizeof(tag.len) + offset + 1]));
-    } else {
-      return FlashMemory_Handler::getPersistentField_Array_Short(
-          tag, index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-          ,
-          this->getOwner()
-#endif /* JCVM_SECURE_HEAP_ACESS */
-      );
-    }
+    return signedShortFromBits(BYTES_TO_SHORT(
+        this->array[tag.len + sizeof(tag.len) + offset],
+        this->array[tag.len + sizeof(tag.len) + offset + 1]));
   } else {
     const uint16_t offset = (uint16_t)(index * sizeof(jshort_t));
 
@@ -510,8 +519,6 @@ jint_t JC_Array::getIntEntry(const uint16_t index)
     const noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
-  checkArrayEntryIndex(*this, index);
-
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_INT) {
@@ -520,24 +527,24 @@ jint_t JC_Array::getIntEntry(const uint16_t index)
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  if (this->isPersistent() && !this->isTransientArray()) {
+    const auto *data = this->readPersistentPrimitiveEntry(
+        FIELD_TYPE_ARRAY_INT, index, 4);
+    return signedIntFromBits(BYTES_TO_INT(data[0], data[1], data[2], data[3]));
+  }
+  if (index >= this->logical_length) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+
   if (this->isPersistent()) {
     auto tag = this->computeTag();
 
-    if (this->isTransientArray()) {
-      const uint16_t offset = (uint16_t)(index * sizeof(jint_t));
+    const uint16_t offset = (uint16_t)(index * sizeof(jint_t));
 
-      return signedIntFromBits(BYTES_TO_INT(this->array[tag.len + sizeof(tag.len) + offset],
-                          this->array[tag.len + sizeof(tag.len) + offset + 1],
-                          this->array[tag.len + sizeof(tag.len) + offset + 2],
-                          this->array[tag.len + sizeof(tag.len) + offset + 3]));
-    } else {
-      return FlashMemory_Handler::getPersistentField_Array_Int(tag, index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                               ,
-                                                               this->getOwner()
-#endif /* JCVM_SECURE_HEAP_ACESS */
-      );
-    }
+    return signedIntFromBits(BYTES_TO_INT(this->array[tag.len + sizeof(tag.len) + offset],
+                        this->array[tag.len + sizeof(tag.len) + offset + 1],
+                        this->array[tag.len + sizeof(tag.len) + offset + 2],
+                        this->array[tag.len + sizeof(tag.len) + offset + 3]));
   } else {
     const uint16_t offset = (uint16_t)(index * sizeof(jint_t));
 

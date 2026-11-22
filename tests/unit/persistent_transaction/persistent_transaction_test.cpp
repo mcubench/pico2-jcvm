@@ -4172,23 +4172,100 @@ int main() {
     seed(legacy_source_tag.value, legacy_source_tag.len, record);
     seed(legacy_destination_tag.value, legacy_destination_tag.len, record);
     jcvm::Heap legacy_heap(7);
+    jcvm::JC_Array source(legacy_heap, jcvm::JAVA_ARRAY_T_BYTE, 0,
+                          legacy_source_tag, false, jcvm::None, array_length);
+    persistent_transaction_test::reset_counted_fs_calls();
+    expect(source.getByteEntry(array_length - 1) == array_length - 1 &&
+               persistent_transaction_test::counted_fs_call_count() == 1,
+           "persistent_byte_scalar_uses_one_lookup");
     persistent_transaction_test::reset_counted_fs_calls();
     for (uint16_t index = 0; index < array_length; ++index) {
-      const auto value = jcvm::FlashMemory_Handler::getPersistentField_Array_Byte(
-          legacy_source_tag, index, legacy_heap);
+      const auto value = source.getByteEntry(index);
       jcvm::FlashMemory_Handler::setPersistentField_Array_Byte(
           legacy_destination_tag, index, value, legacy_heap);
     }
     const unsigned int scalar_copy_calls =
         persistent_transaction_test::counted_fs_call_count();
     const unsigned int range_copy_calls = read_calls + write_calls;
-    expect(scalar_copy_calls == 768 && range_copy_calls == 3,
-           "persistent_array_copy_fs_calls_reduced_from_1024_to_768_and_3");
+    expect(scalar_copy_calls == 512 && range_copy_calls == 3,
+           "persistent_array_copy_fs_calls_reduced_from_768_to_512_and_3");
     std::printf("BENCHMARK:PERSISTENT_ARRAY_COPY bytes=%u "
-                "baseline_fs_calls=1024 cached_scalar_fs_calls=%u "
+                "baseline_fs_calls=768 scalar_fs_calls=%u "
                 "range_fs_calls=%u\n",
                 static_cast<unsigned>(array_length), scalar_copy_calls,
                 range_copy_calls);
+  }
+
+  {
+    using namespace jcvm;
+    const auto tag = make_tag(0xf8);
+    Heap heap(7);
+    const uint8_t short_type = FIELD_TYPE_ARRAY_SHORT;
+    const uint8_t boolean_type = FIELD_TYPE_ARRAY_BOOLEAN;
+    const std::vector<uint8_t> shorts{short_type, 0, 2, 0x12, 0x34, 0xff, 0xfe};
+    seed(tag.value, tag.len, shorts);
+    JC_Array array(heap, JAVA_ARRAY_T_SHORT, 0, tag, false, None, 2);
+    JC_Array alias(heap, JAVA_ARRAY_T_SHORT, 0, tag, false, None, 2);
+    persistent_transaction_test::reset_counted_fs_calls();
+    expect(array.getShortEntry(1) == -2 &&
+               persistent_transaction_test::counted_fs_call_count() == 1,
+           "persistent_short_scalar_uses_one_lookup");
+
+    expect(FlashMemory_Handler::beginPersistentWriteTransaction(false),
+           "persistent_short_scalar_begin_rollback");
+    array.setShortEntry(1, 123);
+    expect(alias.getShortEntry(1) == 123,
+           "persistent_short_scalar_alias_sees_current_record");
+    expect(FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+               alias.getShortEntry(1) == -2,
+           "persistent_short_scalar_alias_sees_rolled_back_record");
+
+    auto rejects_short = [&](const std::vector<uint8_t> &record) {
+      seed(tag.value, tag.len, record);
+      try {
+        array.getShortEntry(1);
+      } catch (Exceptions error) {
+        return error == Exceptions::SecurityException;
+      }
+      return false;
+    };
+    expect(rejects_short({short_type, 0, 2, 0x12, 0x34, 0xff}) &&
+               rejects_short({short_type, 0, 1, 0x12, 0x34}) &&
+               rejects_short({boolean_type, 0, 2, 0x12, 0x34, 0xff, 0xfe}),
+           "persistent_short_scalar_rejects_truncated_wrong_size_or_wrong_type");
+    expect(FlashMemory_Handler::erasePersistentTag(tag),
+           "persistent_short_scalar_erase_missing_body");
+    bool missing_rejected = false;
+    try {
+      array.getShortEntry(0);
+    } catch (Exceptions error) {
+      missing_rejected = error == Exceptions::IOException;
+    }
+    expect(missing_rejected, "persistent_short_scalar_rejects_missing_body");
+
+    seed(tag.value, tag.len, {boolean_type, 0, 1, 1});
+    JC_Array boolean(heap, JAVA_ARRAY_T_BOOLEAN, 0, tag, false, None, 1);
+    persistent_transaction_test::reset_counted_fs_calls();
+    expect(boolean.getByteEntry(0) == 1 &&
+               persistent_transaction_test::counted_fs_call_count() == 1,
+           "persistent_boolean_scalar_uses_one_lookup");
+    seed(tag.value, tag.len, {boolean_type, 0, 0});
+    JC_Array empty(heap, JAVA_ARRAY_T_BOOLEAN, 0, tag, false, None, 0);
+    bool zero_rejected = false;
+    try {
+      empty.getByteEntry(0);
+    } catch (Exceptions error) {
+      zero_rejected = error == Exceptions::ArrayIndexOutOfBoundsException;
+    }
+    expect(zero_rejected, "persistent_scalar_rejects_index_into_empty_array");
+#ifdef JCVM_INT_SUPPORTED
+    seed(tag.value, tag.len, {FIELD_TYPE_ARRAY_INT, 0, 1, 0xff, 0x80, 0x01, 0x02});
+    JC_Array ints(heap, JAVA_ARRAY_T_INT, 0, tag, false, None, 1);
+    persistent_transaction_test::reset_counted_fs_calls();
+    expect(ints.getIntEntry(0) == -8388350 &&
+               persistent_transaction_test::counted_fs_call_count() == 1,
+           "persistent_int_scalar_uses_one_lookup");
+#endif
   }
 
   {

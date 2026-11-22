@@ -112,12 +112,12 @@ def add_array_probe(out):
     replace(path, metadata, metadata + "\n"
             "  const vm_perf::HandlerPhase vm_timing(&vm_perf::Opcode::array_metadata_us,\n"
             "                                        &vm_perf::Opcode::array_metadata_calls);")
-    for read in (
-        "  if (fs_read_1b_at(&(tag.value[0]), tag.len, 3u + index, &value)) {",
-        "  if (fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset, &value_high) ||",
-    ):
-        replace(path, read, "  const vm_perf::HandlerPhase vm_timing(\n"
-                "      &vm_perf::Opcode::array_payload_us);\n" + read)
+    array = out / "choupi/src/jc_types/jc_array.cpp"
+    replace(array, '#include "jc_array.hpp"',
+            '#include "jc_array.hpp"\n#include "../vm_perf_profile.hpp"')
+    read = "    const FieldType field_type, const uint16_t index, const uint8_t width) const {"
+    replace(array, read, read + "\n"
+            "  const vm_perf::HandlerPhase vm_timing(&vm_perf::Opcode::array_payload_us);")
 
 
 def main():

@@ -109,6 +109,9 @@ private:
   /// Compute tag value
   fs::Tag computeTag() const noexcept;
   void recoverMissingPersistentBody() const;
+  const uint8_t *readPersistentPrimitiveEntry(FieldType field_type,
+                                               uint16_t index,
+                                               uint8_t width) const;
 
 public:
   /// Get an entry size from the size type.

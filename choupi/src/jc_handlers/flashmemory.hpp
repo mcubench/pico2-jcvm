@@ -219,14 +219,6 @@ public:
                                             uint8_t owner_package,
                                             Heap &owner_heap);
 
-  /// Get array data store value in flash memory at a specific index.
-  static const jbyte_t getPersistentField_Array_Byte(const fs::Tag &tag,
-                                                     const uint16_t index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                     ,
-                                                     Heap &heap
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-  );
   /// Set array data store in flash memory at a specific index.
   static void setPersistentField_Array_Byte(const fs::Tag &tag,
                                             const uint16_t index,
@@ -266,14 +258,6 @@ public:
       const fs::Tag &tag, FieldType expected_type, uint16_t array_length,
       uint16_t offset, uint16_t count, uint8_t element_width,
       const uint8_t *source, bool atomic);
-  /// Get array data store in flash memory at a specific index.
-  static const jshort_t getPersistentField_Array_Short(const fs::Tag &tag,
-                                                       const uint16_t index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                       ,
-                                                       Heap &heap
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-  );
   /// Set array data store in flash memory at a specific index.
   static void setPersistentField_Array_Short(const fs::Tag &tag,
                                              const uint16_t index,
@@ -284,14 +268,6 @@ public:
 #endif /* JCVM_SECURE_HEAP_ACCESS */
   );
 #ifdef JCVM_INT_SUPPORTED
-  /// Get array data store in flash memory at a specific index.
-  static const jint_t getPersistentField_Array_Int(const fs::Tag &tag,
-                                                   const uint16_t index
-#ifdef JCVM_SECURE_HEAP_ACCESS
-                                                   ,
-                                                   Heap &heap
-#endif /* JCVM_SECURE_HEAP_ACCESS */
-  );
   /// Set array data store in flash memory at a specific index.
   static void setPersistentField_Array_Int(const fs::Tag &tag,
                                            const uint16_t index,

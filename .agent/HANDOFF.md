@@ -13,16 +13,16 @@ Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
 - F42D was restored to a normal max_crypto image after reclaim fault injection,
   with about 83 KB of 98.3 KB used. Its last recorded reader suffix was
   `02 00`. Use the [QKB roster](QKB.md#physical-token-roster) for full chip IDs.
-- EE11 runs normal max_crypto from `a2a69d95` (UF2 `cf1ea6b5…85d7`).
-  Its unchanged JCAlgTest 1.8.5/jc305 applet responded on reader suffix
-  `00 00`. Use EE11 for further development while available.
+- EE11 runs the normal max_crypto primitive-array-read candidate
+  (UF2 `fa0f3c77…2170`). Its unchanged JCAlgTest 1.8.5/jc305 applet
+  responded on reader suffix `00 00`. Use EE11 for further development
+  while available.
 
 ## Next work
 
-- The [second performance pass](../docs/review_VMperf_second_pass_20261122.md)
-  prioritizes a single checked read for persistent primitive array elements.
-  Prototype only when requested. EE11 was restored to the exact normal
-  image after the diagnostic runs.
+- If continuing VM performance work, reprofile the XOR control and the
+  interpreter fetch/decode phases before changing dispatch or branch checks.
+  See the primitive-array-read step in [progress.md](../progress.md).
 - Await Windows option 1/2 results for `v0.2-rc1` under
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
 - Verify CAPIN-07 LOAD rejection and recovery on hardware. Preserve the SIO
