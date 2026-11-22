@@ -157,3 +157,42 @@ sampling diffs are under
 `artifacts/build-audit/bytecode-performance-20261122/`. The unmodified
 host timing is in `host-timing.log`. The physical APDU and serial timing
 are in `hardware-ee11.log` and `serial-ee11.log`.
+
+## Physical A/B after CAP caching
+
+The comparison used the same Pico 2, EE116F37C7E4A04E, and the same
+installed JCAlgTest 1.8.5/jc305 applet. Both were normal ARM `max_crypto`
+images. Each run began with a reader reset and used the same prepare and
+measurement APDUs. The standard GlobalPlatformPro install omitted the
+Descriptor component. The development flash preserved card storage.
+
+| Workload, 16 bytes | Before net ms/op | After net ms/op | Speedup |
+| --- | ---: | ---: | ---: |
+| Software XOR | 34.86 | 1.46 | 23.9× |
+| Software AES | 2,518.08 | 425.68 | 5.92× |
+| Native-backed AES-128 ECB `Cipher.doFinal()` | 7.80 | 3.24 | 2.41× |
+
+Net time is the difference between the 50-repeat APDU and the median
+zero-repeat APDU, divided by 50. XOR and native AES had three 50-repeat
+samples per image. Software AES had one, plus three single-repeat samples
+and one five-repeat sample per image. The optimized software AES net time
+was 429.0 ms/op at one repeat and 425.8 ms/op at five repeats.
+
+The full software AES APDU fell from 126.029 s to 21.344 s. Serial
+telemetry measured 126.022295 s and 21.338876 s inside the VM, with
+3.280 and 3.519 ms in flash sync. Each APDU journaled 768 bytes and wrote
+no full snapshot. The native-backed measurement includes the applet loop,
+Java Card API dispatch and buffer handling, and the Mbed TLS operation.
+
+CPLC identified the baseline as `0cf976ddba5b8a3f` and the candidate as
+`a2a69d952c309690`. The baseline UF2 SHA-256 was
+`effccdec0c2b3319d02db2955a94451e07aa8e396c5ccf9d6514a693603acda6`.
+The candidate UF2 SHA-256 was
+`cf1ea6b55d560c9a053a8dd706b284f3f3abd87865089dc0140a51372af385d7`.
+The full JCVM flash and runtime cycle passed. Both runs used reader
+`Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`.
+All 35 workload and prepare APDUs on each image returned `AA9000`.
+The timings measure the combined CAP-view and field-offset caches.
+
+The APDU logs, serial captures, and checked timing summary are in
+`artifacts/build-audit/cap-view-cache-20261122/`.

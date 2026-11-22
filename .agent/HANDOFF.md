@@ -13,18 +13,15 @@ Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
 - F42D was restored to a normal max_crypto image after reclaim fault injection,
   with about 83 KB of 98.3 KB used. Its last recorded reader suffix was
   `02 00`. Use the [QKB roster](QKB.md#physical-token-roster) for full chip IDs.
-- EE11 runs normal max_crypto from `0cf976dd` (UF2 `effccdec…da6`).
-  The JCVM cycle preserved storage. The unchanged JCAlgTest 1.8.5/jc305
-  applet is installed and responded on reader suffix `00 00`. The focused
-  bytecode benchmark ended and its serial monitor exited.
+- EE11 runs normal max_crypto from `a2a69d95` (UF2 `cf1ea6b5…85d7`).
+  Its unchanged JCAlgTest 1.8.5/jc305 applet responded on reader suffix
+  `00 00`. Use EE11 for further development while available.
 
 ## Next work
 
-- Run the normal ARM CAP-cache build on EE11 when the required host-access
-  path is available. Use the pinned CAP and identical SWALGS and native AES
-  APDUs before and after. See [VMPERF-PICO2-AB-20261122](EXT_REQUESTS.md#vmperf-pico2-ab-20261122--physical-bytecode-timing)
-  for artifacts and the bounded replay. Measure remaining RP2350 costs before
-  changing watchdog cadence, branches, or interpreter dispatch.
+- The [physical CAP-cache comparison](../docs/review_VMperf_20261122.md#physical-ab-after-cap-caching)
+  is complete. Measure remaining RP2350 costs before changing watchdog
+  cadence, branch validation, or interpreter dispatch.
 - Await Windows option 1/2 results for `v0.2-rc1` under
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
 - Verify CAPIN-07 LOAD rejection and recovery on hardware. Preserve the SIO

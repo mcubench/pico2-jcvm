@@ -1,45 +1,5 @@
 # External validation requests
 
-## VMPERF-PICO2-AB-20261122 — physical bytecode timing
-
-Created 2026-11-22 08:18 CET. The agent execution profile forbids the
-escalation flag required by repository USB and PC/SC rules. Run this
-comparison on a host with the required access. The host VPCD measurements
-and ARM build are complete.
-
-- Firmware and provenance are in
-  [the CAP-cache benchmark artifact directory](../artifacts/build-audit/cap-view-cache-20261122/),
-  as `pico2_choupi-cap-cache.uf2` and `arm-final-provenance.txt`.
-  Use the normal max_crypto firmware. The baseline is `0cf976dd`, with UF2
-  SHA-256 `effccdec0c2b3319d02db2955a94451e07aa8e396c5ccf9d6514a693603acda6`.
-- Compare on one identified Pico 2, EE116F37C7E4A04E if available. Before
-  flashing the candidate, confirm the CPLC and capture a baseline replay
-  if that board still runs the baseline. If reproducing on another board,
-  use the same chip ID for both runs. Archive the exact image hashes and
-  preserve separate raw files for the two builds.
-- Use standard GlobalPlatformPro LOAD for the unchanged [JCAlgTest
-  1.8.5/jc305 CAP](../tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap)
-  on both runs. Its fixture SHA-256 is `fa64582e…b48fb`. Confirm
-  `GETVERSION=1.8.5_jc305`. Use identical card preparation and CAP
-  components for both builds. The [previous baseline](../artifacts/build-audit/bytecode-performance-20261122/hardware-ee11.log)
-  contains the timings if the original firmware can no longer be replayed.
-- For each run, capture bounded serial output with `tools/monitor` by chip
-  ID while running [ApduTimer](../tests/hardware/ApduTimer.java) on the exact
-  reader. The artifact directory contains the ordered arguments,
-  one per line, in `physical-apdu-args.txt`. For example, after loading
-  those arguments with Bash `mapfile -t apdus < physical-apdu-args.txt`,
-  run `PICO2_HOST_USB_ACCESS=1 timeout 240 ./tools/env java tests/hardware/ApduTimer.java "$reader" "${apdus[@]}"`
-  from the repository root with the required host access.
-  Allow up to 240 seconds for the baseline and use the same limit for the
-  candidate. Verify CPLC, GETVERSION and every status word. The workload
-  responses should all be `AA9000`.
-- Return each build's APDU and serial logs, CPLC, UF2 SHA-256, chip ID,
-  exact reader name, and sample medians. For net latency, subtract the
-  zero-repeat median from each batch and divide by the repetition count.
-  Include the first measured commands after power-on separately from the
-  repeated commands. Check serial output for `FAULT`, `PANIC` and
-  `TEST:FAIL`, and retain the `CHOUPI:FS_APDU` records.
-
 ## WIN-MAXCRYPTO-RC-V0.2-RC1 — release candidate v0.2-rc1 (commit 81c7ac5d), JCAlgTest options 1 and 2
 
 Created 2026-11-21 15:33 CET. Replaces `WIN-MAXCRYPTO-ONESHOT-D7E90A18`, whose results were

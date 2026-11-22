@@ -33666,3 +33666,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: With standard GPPro components, net host batch time at 50 repeats was XOR 0.258 ms versus 4.403 ms baseline (17.1×) and software AES 53.232 ms versus 298.673 ms (5.61×). The preceding structural-cache-only batches were 0.740 and 82.741 ms. With Descriptor, the final batches were 0.325 and 54.169 ms. The field cache adds 260 bytes of static ARM RAM. Both caches and store revision state together use 745 bytes. No persistent writes were added. Physical speed and flash telemetry were not measured.
 - Decision: The required USB and PC/SC access path is unavailable because the current execution profile disallows the escalation flag. Record the physical A/B replay as VMPERF-PICO2-AB-20261122. Leave method/branch and dispatch changes gated on measurement.
 - Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/`, with component-set replay logs, ARM firmware/provenance, and physical APDU arguments.
+
+## 2026-11-22 Verify the CAP-cache speedup on Pico 2 7
+
+- Step-Id: `20261122-0824-cap-cache-physical-ab`
+- Task: Run the before/after bytecode benchmark on real hardware.
+- When: '2026-11-22 08:24 +0100' - '2026-11-22 08:31 +0100'
+- Model: `gpt-6`
+- Change: Measured both normal ARM max_crypto images on EE116F37C7E4A04E with the same installed JCAlgTest 1.8.5/jc305 CAP, standard GPPro component set, reader reset, and 16-byte APDU workloads. Recorded the physical result in the review and closed the external request.
+- Validation: Fixture integrity passed. On exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`, CPLC confirmed `0cf976ddba5b8a3f` before and `a2a69d952c309690` after. `tools/cycle choupi --profile max_crypto --chipid EE116F37C7E4A04E` passed the full flash and runtime check after the wrapper recovered the rejected runtime load through CDC BOOTSEL. Both APDU replays and finite serial captures exited 0. All 35 prepare and workload APDUs per build returned `AA9000`. No `FAULT`, `PANIC` or `TEST:FAIL`.
+- Result: For 50 repeats, baseline-subtracted times per operation fell from 34.86 to 1.46 ms for XOR (23.88×), 2,518.08 to 425.68 ms for software AES (5.92×), and 7.80 to 3.24 ms for the native-backed AES API control (2.41×). The 50-repeat software AES APDU took 126.029 and 21.344 s end to end. Serial VM time was 126.022295 and 21.338876 s, with 3.280 and 3.519 ms in flash sync. Both software AES batches journaled 768 bytes and wrote zero snapshot bytes.
+- Decision: Combined CAP view and reference-field offset speedups are verified on hardware. The optimized normal firmware and installed applet remain on EE11. No separate ARM cycle attribution for remaining interpreter costs was performed.
+- Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/ee11-{before,after}-{apdus,serial}.log`, `ee11-candidate-cycle.log`, and `physical-summary.txt`. Before UF2 SHA-256 `effccdec0c2b3319d02db2955a94451e07aa8e396c5ccf9d6514a693603acda6`. After UF2 SHA-256 `cf1ea6b55d560c9a053a8dd706b284f3f3abd87865089dc0140a51372af385d7`.
