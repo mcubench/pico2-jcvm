@@ -33585,3 +33585,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Forcing a host allocation failure on frame insertion preserved caller PC, depth, local, argument and running package. The next insertion and package transition succeeded. The test also confirmed that package bookkeeping consumed no allocation. The failure injection is host unit coverage. Physical frame validation and APDU-level allocation injection are open. No firmware flash or traffic measurement was performed.
 - Decision: Retain the boundary and recovery as a regression. Keep physical acceptance and the full-path allocation check open.
 - Artifacts/logs: `artifacts/build-audit/{frame-limit-full-vpcd.log,frame-limit-full-emulator.log,frame-entry-allocation-unit.log,build-arm-frame-limit.log}`.
+
+## 2026-11-22 Analyze physical RSA key generation timings 4
+
+- Step-Id: `20261122-0635-rsa-keygen-timing-analysis`
+- When: '2026-11-22 06:31 CET' - '2026-11-22 06:35 CET'
+- Model: `gpt-6`
+- Change: Traced Java Card RSA and RSA-CRT key generation through the installed Mbed TLS 3.6.6 sources and checked the compiled ARM arithmetic path. Recomputed statistics for 50 user-supplied samples at each key size.
+- Validation: Inspected the normal max_crypto ARM ELF and Ninja flags. The compiled limb multiply-add uses Cortex-M33 `umaal`, runs from XIP flash, and is built with effective `-Os`. Verified that the native call uses prime generation flags 0 and derives CRT parameters for both key formats. No source, build, or card changes. No new hardware timing or flash-traffic measurement.
+- Result: At RSA-1984, 2048, and 3072 respectively, the median was 18.869, 17.847, and 58.657 s. The nearest-rank p95 was 47.546, 40.829, and 167.488 s. Baseline averaged about 0.123 s. Miller–Rabin is the likely dominant CPU cost. Trial division through 997 leaves an estimated 115 candidates reaching Miller–Rabin across both RSA-2048 prime searches. The estimate uses the prime number theorem and independent small-factor probabilities. It is not a hardware counter.
+- Decision: For an optimization experiment, measure prime search, entropy callbacks and progress servicing, private/CRT derivation, component publication and APDU sync independently. Compare a scoped speed build of the Mbed TLS MPI sources and consider a wider window if the per-round time justifies its RAM cost. Use aggregate timings and preserve the existing progress hooks.
+- Artifacts/logs: User-supplied timing rows in the request. Inspected `build/arm/{build-provenance.txt,build.ninja,pico2_choupi.elf}`. The cached ELF was identified as source `a90b6388` and was not attributed to the supplied samples.
