@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-11-21. See [TODO.md](../TODO.md) for active work and
+Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
 [EXT_REQUESTS.md](EXT_REQUESTS.md) for external dependencies.
 
 ## Last observed physical state
@@ -13,12 +13,17 @@ Updated 2026-11-21. See [TODO.md](../TODO.md) for active work and
 - F42D was restored to a normal max_crypto image after reclaim fault injection,
   with about 83 KB of 98.3 KB used. Its last recorded reader suffix was
   `02 00`. Use the [QKB roster](QKB.md#physical-token-roster) for full chip IDs.
-- EE11 runs normal max_crypto from `90156a6b`. The symmetric KAT rerun
-  panicked during probe cleanup. Package deletion and current accessibility
-  are unverified. Its reader at test time ended in `00 00`.
+- EE11 runs normal max_crypto from `0cf976dd` (UF2 `effccdec…da6`).
+  The JCVM cycle preserved storage. The unchanged JCAlgTest 1.8.5/jc305
+  applet is installed and responded on reader suffix `00 00`. The focused
+  bytecode benchmark ended and its serial monitor exited.
 
 ## Next work
 
+- For the next authorized bytecode performance experiment, start with
+  APDU-scoped reuse of validated CAP views and reproduce the SWALGS and
+  native AES controls in [the benchmark report](../docs/jcvm-bytecode-performance-20261122.md).
+  The production interpreter has no performance changes.
 - Await Windows option 1/2 results for `v0.2-rc1` under
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
 - Verify CAPIN-07 LOAD rejection and recovery on hardware. Preserve the SIO
