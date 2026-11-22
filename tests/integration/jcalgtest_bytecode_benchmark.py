@@ -69,20 +69,29 @@ def benchmark(connection, profile_capture):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out_dir", type=Path)
-    parser.add_argument("--profile-emulator", type=Path,
-                        help="use an instrumented binary for one 50-repeat APDU per case")
+    emulator_options = parser.add_mutually_exclusive_group()
+    emulator_options.add_argument("--emulator", type=Path,
+                                  help="run all samples using an alternate build")
+    emulator_options.add_argument("--profile-emulator", type=Path,
+                                  help="use an instrumented binary for one 50-repeat APDU per case")
+    parser.add_argument("--omit-descriptor", action="store_true",
+                        help="use the same component set as standard GPPro LOAD")
     args = parser.parse_args()
     out = args.out_dir.resolve()
     out.mkdir(parents=True, exist_ok=False)
     root = replay.ROOT
     build = root / "build/choupi-pc-rp2350-overlay"
-    executable = (args.profile_emulator or build / "choupi").resolve()
+    executable = (args.emulator or args.profile_emulator or build / "choupi").resolve()
     cap_path = fixture_path("jcalgtest.cap")
     code_path = replay.ensure_algtest_load_code(root)
     code, package_aid, applets = vpcd.load_code(cap_path)
     if code != code_path.read_bytes() or replay.APPLET_AID not in applets:
         raise RuntimeError("CAP load image or applet identity mismatch")
-    for path in (executable, build / "flash", cap_path,
+    if args.omit_descriptor:
+        code, _, _ = vpcd.load_code(cap_path, include_descriptor=False)
+    code_path = out / "load-code.bin"
+    code_path.write_bytes(code)
+    for path in (executable, build / "flash", cap_path, code_path,
                  fixture_path("jcalgtest.client.1.8.5-20261121")):
         print(f"SHA256 {replay.sha256_file(path)} {path}", flush=True)
 

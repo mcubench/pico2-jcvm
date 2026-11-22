@@ -2591,6 +2591,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                                  uint8_t *response,
                                  uint16_t response_capacity,
                                  uint16_t *response_length) {
+  const jcvm::FlashMemory_Handler::CapViewScope cap_view_scope;
 #ifdef PC_VERSION
   const char *apdu_trace_setting = std::getenv("CHOUPI_VM_TRACE_APDU");
   const bool apdu_trace = apdu_trace_setting != nullptr &&

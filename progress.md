@@ -33630,3 +33630,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Checked the description against the loader, CAP store, CCID, and interpreter source. Verified local documentation links and line anchors and ran `git diff --check`.
 - Result: The trust model now distinguishes repeated structural validation from runtime instruction checks. No build or flash was required for this documentation step.
 - Artifacts/logs: `docs/CAP_EXECUTION_TRUST_MODEL.md`.
+
+## 2026-11-22 Cache validated CAP views within applet APDUs 8
+
+- Step-Id: `20261122-0803-apdu-cap-view-cache`
+- Task: First bytecode performance experiment.
+- When: '2026-11-22 08:03 +0100' - '2026-11-22 08:11 +0100'
+- Model: `gpt-6`
+- Change: Reuse a fully validated dynamic CAP view within an applet process APDU. Preserve separate validation at lifecycle entry points and all bytecode execution checks. Added alternate host binary and standard GPPro component-set options to the existing benchmark runner.
+- Validation: Fixture integrity, both host replay pairs, ARM max_crypto build without warnings, malformed CAP VPCD smoke, native opcode policy and instruction-boundary checks passed. Hardware work is blocked by the execution profile forbidding the escalation flag required by AGENTS.md for USB and PC/SC.
+- Result: Host, 50 repeats with GPPro component set, net APDU XOR 4.403 → 0.758 ms (5.81×), software AES 298.673 → 82.859 ms (3.60×). With Descriptor, XOR 84.801 → 0.876 ms (96.8×), software AES 5,061.511 → 87.555 ms (57.8×). Native AES controls passed. ARM cache and scope use 452 bytes of static RAM. Physical speed and flash traffic were not measured. The change adds no persistent writes.
+- Decision: Verify generation-aware retention and slot invalidation offline before extending cache lifetime.
+- Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/`.

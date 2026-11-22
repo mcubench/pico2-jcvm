@@ -206,7 +206,8 @@ def lv(value: bytes) -> bytes:
     return bytes((len(value),)) + value
 
 
-def load_code(cap_path: Path) -> tuple[bytes, bytes, list[bytes]]:
+def load_code(cap_path: Path, *,
+              include_descriptor: bool = True) -> tuple[bytes, bytes, list[bytes]]:
     with ZipFile(cap_path) as cap:
         header_name = next(name for name in cap.namelist()
                            if name.endswith("/Header.cap"))
@@ -215,6 +216,8 @@ def load_code(cap_path: Path) -> tuple[bytes, bytes, list[bytes]]:
         folder = header_name.rsplit("/", 1)[0]
         chunks = []
         for component in COMPONENTS:
+            if component == "Descriptor" and not include_descriptor:
+                continue
             name = f"{folder}/{component}.cap"
             if name in cap.namelist():
                 chunks.append(cap.read(name))

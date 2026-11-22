@@ -324,6 +324,15 @@ public:
   static bool findAppletByAID(const uint8_t *aid, const uint8_t aid_length,
                               jpackage_ID_t &package_id,
                               uint16_t &install_method_offset);
+  // Cache validated dynamic CAP views for the duration of applet processing.
+  class CapViewScope {
+  public:
+    CapViewScope() noexcept;
+    ~CapViewScope();
+    CapViewScope(const CapViewScope &) = delete;
+    CapViewScope &operator=(const CapViewScope &) = delete;
+  };
+
   /// Get a CAP file from a package ID.
   static JC_Cap getCap(const jpackage_ID_t packageID);
 };
