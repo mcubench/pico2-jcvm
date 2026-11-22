@@ -33724,3 +33724,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Empty-card UF2 is 3,030,016 bytes, SHA-256 `dcaf8616a825c5ba50b3f8aa1b4b4d544bb22b035d688e0d8e4875201de34f13`.
 - Decision: Prepared for external testing. This exact empty-card UF2 was not flashed locally.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-be737f0e.uf2`, `artifacts/logs/external-be737f0e-build.log`.
+
+## 2026-11-22 Assemble the VM array-read Windows test package 1
+
+- Step-Id: `20261122-0946-vm-array-external-zip`
+- When: '2026-11-22 09:46 +0100' - '2026-11-22 09:47 +0100'
+- Model: `gpt-6`
+- Change: Ran the existing Windows packager with an isolated worktree at the firmware source commit, be737f0e, to reuse the validated ARM build and bundle the matching test inputs and runner. Added the ZIP to WIN-VM-ARRAY-READS-20261122.
+- Validation: ZIP integrity and every archived manifest checksum passed. Compared the packaged UF2 byte-for-byte with the previously verified standalone image.
+- Result: ZIP is 18,260,673 bytes, SHA-256 `99c1e1ccc5e099d1d93e15a073b549c2c89ffef6e0c005912466d7269d21c420`.
+- Decision: Package ready for Windows testing. The Windows runner was not executed locally.
+- Artifacts/logs: `build/external-test/pico2-jcvm-maxcrypto-deletion-be737f0e.zip`.

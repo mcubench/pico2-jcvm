@@ -9,10 +9,16 @@ and debug switches are off.
 - [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-be737f0e.uf2)
 - UF2 SHA-256 `dcaf8616a825c5ba50b3f8aa1b4b4d544bb22b035d688e0d8e4875201de34f13`, 3,030,016 bytes.
 - CPLC source ID `BE737F0EDEF8A050`.
+- [Complete Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-be737f0e.zip)
+  with PowerShell runner, GPPro, the pinned CAP and client, serial capture, and checksums.
+  ZIP SHA-256 `99c1e1ccc5e099d1d93e15a073b549c2c89ffef6e0c005912466d7269d21c420`.
 - Use the unchanged JCAlgTest 1.8.5/jc305 [CAP](../tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap)
   (SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`)
   and the [1.8.5-20261121 client](../tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar)
   (SHA-256 `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`).
+
+For the ZIP, extract it and follow the included README to run the Windows
+workflow. For a manual run with the standalone firmware:
 
 1. Hold BOOTSEL while connecting the Pico 2 and copy the UF2 to the boot drive.
 2. Install the CAP using GlobalPlatformPro, then run JCAlgTest option 2
