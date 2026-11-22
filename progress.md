@@ -33689,3 +33689,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Checked the descriptions against the CAP store, field cache, interpreter guards, test logs, and physical timing summary. Verified local links and headings and ran `git diff --check`. No build or flash was run for the documentation change.
 - Result: The review leads with the measured 23.9× XOR and 5.92× software AES speedups. The trust model explains which checks the caches reuse and which protections and limits still apply.
 - Artifacts/logs: `docs/review_VMperf_20261122.md`, `docs/CAP_EXECUTION_TRUST_MODEL.md`, and `artifacts/build-audit/cap-view-cache-20261122/physical-summary.txt`.
+
+## 2026-11-22 Profile remaining CAP and bytecode costs on Pico 2 14
+
+- Step-Id: `20261122-0851-bytecode-second-pass`
+- Task: Second-pass performance analysis with benchmark-only code.
+- When: '2026-11-22 08:51 +0100' - '2026-11-22 09:05 +0100'
+- Model: `gpt-6`
+- Change: Added an isolated ARM profiler and summary parser. The profiler samples instruction phases, CAP lookups, branch checks and persistent array reads in a copied source tree. Production code is unchanged. Added a decision report and documented confirmed BOOTSEL recovery.
+- Validation: Fixture verification and warning-free ARM builds passed. Normal and two diagnostic 0/1/5/50-repeat replays on reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00` each returned 35 expected `AA9000` responses. Both diagnostic cycles passed after retrying from confirmed BOOTSEL when USB identity lookup raced re-enumeration. Verified matching serial/APDU profiles and byte-for-byte fresh probe source generation. Restored the exact normal image `a2a69d95` and verified serial runtime pass, CPLC, SELECT and GETVERSION. Diagnostic measurements support attribution only.
+- Result: Normal 50-repeat software AES took 21.128 s (421.36 net ms/op). ARM profiles put byte and short loads at 31.4–35.0% of sampled time, branch-boundary scans at 6.4–9.1%, and CAP view lookups at 0.6–1.3%. In the detailed profile, persistent array metadata reconstruction consumed 43.013 of 330.555 sampled ms (13.0%) and payload reads another 14.590 ms (4.4%). Discrete CAP structural/local validation during reset/SELECT was 0.558–0.714 ms for 26,743 bytes. Both diagnostic images used CPLC `65ba03b3eb12b9f5`. UF2 SHA-256 values were `e8eb7018f24ea76132dde2b5814b35c0647d348bcc14fc310f80334385cd64a6` and `e874adcc64bf87fe76ffd99b96afd49cc24ae281c7c519950197142ab60980fa`. Normal UF2 SHA-256 `cf1ea6b55d560c9a053a8dd706b284f3f3abd87865089dc0140a51372af385d7`.
+- Decision: Prioritize one checked persistent primitive-array read. Keep CAP revision invalidation and runtime checks. No optimization was implemented.
+- Artifacts/logs: `docs/review_VMperf_second_pass_20261122.md`, `artifacts/build-audit/bytecode-second-pass-20261122/`.

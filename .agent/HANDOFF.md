@@ -19,9 +19,10 @@ Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
 
 ## Next work
 
-- The [physical CAP-cache comparison](../docs/review_VMperf_20261122.md#physical-ab-after-cap-caching)
-  is complete. Measure remaining RP2350 costs before changing watchdog
-  cadence, branch validation, or interpreter dispatch.
+- The [second performance pass](../docs/review_VMperf_second_pass_20261122.md)
+  prioritizes a single checked read for persistent primitive array elements.
+  Prototype only when requested. EE11 was restored to the exact normal
+  image after the diagnostic runs.
 - Await Windows option 1/2 results for `v0.2-rc1` under
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
 - Verify CAPIN-07 LOAD rejection and recovery on hardware. Preserve the SIO

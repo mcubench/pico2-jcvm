@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Build the diagnostic ARM bytecode sampler in a fresh directory under build/."""
+
+import argparse
+import os
+from pathlib import Path
+import shutil
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def replace(path, before, after):
+    data = path.read_bytes()
+    before, after = before.encode(), after.encode()
+    if b"\r\n" in data and before.replace(b"\n", b"\r\n") in data:
+        before = before.replace(b"\n", b"\r\n")
+        after = after.replace(b"\n", b"\r\n")
+    if data.count(before) != 1:
+        raise ValueError(f"unexpected benchmark insertion point in {path}")
+    path.write_bytes(data.replace(before, after))
+
+
+def copy_workspace(out):
+    out.mkdir(parents=True, exist_ok=False)
+    for name in (".git", ".local-toolchain", "tests"):
+        (out / name).symlink_to(ROOT / name, target_is_directory=True)
+    for name in ("tools", "src", "config"):
+        shutil.copytree(ROOT / name, out / name, symlinks=True)
+    shutil.copy2(ROOT / "CMakeLists.txt", out)
+    shutil.copytree(
+        ROOT / "choupi", out / "choupi", symlinks=True,
+        ignore=lambda path, _: {"os", "javacard-sdk"}
+        if Path(path) == ROOT / "choupi" else set(),
+    )
+    for name in ("os", "javacard-sdk"):
+        (out / "choupi" / name).symlink_to(ROOT / "choupi" / name,
+                                         target_is_directory=True)
+    for name in ("build", "build-pc"):
+        replace(out / "tools" / name, "--ignore-submodules=none",
+                "--ignore-submodules=all")
+
+
+def add_probe(out):
+    vm = out / "choupi/src"
+    shutil.copy2(ROOT / "tests/hardware/vm_perf_profile.hpp", vm)
+    process = vm / "main.cpp"
+    replace(process, '#include "interpretor.hpp"',
+            '#include "interpretor.hpp"\n#include "vm_perf_profile.hpp"')
+    replace(process, "  const jcvm::Bytecodes::FieldResolutionScope field_resolution_scope;",
+            "  const vm_perf::Apdu vm_timing(command && command_length > 1 ? command[1] : 0);\n"
+            "  const jcvm::Bytecodes::FieldResolutionScope field_resolution_scope;")
+
+    interpreter = vm / "interpretor.cpp"
+    replace(interpreter, '#include "execution_budget.hpp"',
+            '#include "execution_budget.hpp"\n#include "vm_perf_profile.hpp"')
+    replace(interpreter, "  while (stack.frameDepth() > this->entryFrameDepth) {",
+            "  while (stack.frameDepth() > this->entryFrameDepth) {\n"
+            "    vm_perf::Instruction vm_timing;")
+    replace(interpreter, "    const uint8_t *instruction_pc = nullptr;",
+            "    vm_timing.phase(vm_perf::profile.watchdog_us);\n"
+            "    const uint8_t *instruction_pc = nullptr;")
+    replace(interpreter, "    ++instruction_count;",
+            "    vm_timing.phase(vm_perf::profile.fetch_us);\n"
+            "    ++instruction_count;")
+    replace(interpreter, "    // bytecodes interface",
+            "    vm_timing.phase(vm_perf::profile.bookkeeping_us);\n"
+            "    // bytecodes interface")
+    replace(interpreter, "      auto bc = bytecodes.decode(bytecode);",
+            "      auto bc = bytecodes.decode(bytecode);\n"
+            "      vm_timing.phase(vm_perf::profile.decode_us);\n"
+            "      vm_timing.begin_handler(bytecode);")
+    replace(interpreter, "      (bytecodes.*bc)();",
+            "      (bytecodes.*bc)();\n      vm_timing.end_handler();")
+
+    pc = vm / "jcvm_types/pc_t.hpp"
+    replace(pc, "    if (require_instruction_start) {",
+            "    if (require_instruction_start) {\n"
+            "      const vm_perf::HandlerPhase vm_timing(&vm_perf::Opcode::branch_us);")
+    # Declare the phase before the inline branch helper is parsed.
+    text = pc.read_bytes()
+    eol = b"\r\n" if b"\r\n" in text else b"\n"
+    pc.write_bytes(b'#include "../vm_perf_profile.hpp"' + eol + text)
+
+    cap = vm / "jc_handlers/flashmemory.cpp"
+    replace(cap, '#include "flashmemory.hpp"',
+            '#include "flashmemory.hpp"\n#include "../vm_perf_profile.hpp"')
+    replace(cap, "JC_Cap FlashMemory_Handler::getCap(const jpackage_ID_t packageID) {",
+            "JC_Cap FlashMemory_Handler::getCap(const jpackage_ID_t packageID) {\n"
+            "  const vm_perf::HandlerPhase vm_timing(\n"
+            "      isDynamicPackageID(packageID) ? &vm_perf::Opcode::dynamic_cap_us\n"
+            "                                    : &vm_perf::Opcode::rom_cap_us);")
+
+
+def add_lifecycle_probe(out):
+    for name, kind, signature, size in (
+        ("cap_load.cpp", "structural_and_local",
+         "uint8_t &applet_aid_length) noexcept {\n  if (code == nullptr || length == 0 || length > UINT16_MAX) return false;",
+         "length"),
+        ("cap_store.cpp", "store_rescan", "bool cap_store_initialize() noexcept {", "0"),
+    ):
+        path = out / "src" / name
+        header = path.read_bytes()
+        path.write_bytes(b'#include "../choupi/src/vm_perf_profile.hpp"\n' + header)
+        replace(path, signature, signature + "\n"
+                f'  const vm_perf::Validation vm_timing("{kind}", {size});')
+
+
+def add_array_probe(out):
+    path = out / "choupi/src/jc_handlers/flashmemory.cpp"
+    metadata = "FlashMemory_Handler::getPersistentField_Array(const fs::Tag &tag, Heap &heap) {"
+    replace(path, metadata, metadata + "\n"
+            "  const vm_perf::HandlerPhase vm_timing(&vm_perf::Opcode::array_metadata_us,\n"
+            "                                        &vm_perf::Opcode::array_metadata_calls);")
+    for read in (
+        "  if (fs_read_1b_at(&(tag.value[0]), tag.len, 3u + index, &value)) {",
+        "  if (fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset, &value_high) ||",
+    ):
+        replace(path, read, "  const vm_perf::HandlerPhase vm_timing(\n"
+                "      &vm_perf::Opcode::array_payload_us);\n" + read)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("directory", type=Path, help="fresh directory under build/")
+    args = parser.parse_args()
+    out = args.directory.resolve()
+    if ROOT / "build" not in out.parents:
+        parser.error("the profiling directory must be under build/")
+    copy_workspace(out)
+    add_probe(out)
+    add_lifecycle_probe(out)
+    add_array_probe(out)
+    env = {**os.environ, "PICO2_DEBUG_CCID_APPLET": "1"}
+    subprocess.run([out / "tools/build", "arm", "--profile", "max_crypto"],
+                   cwd=out, env=env, check=True)
+
+
+if __name__ == "__main__":
+    main()
