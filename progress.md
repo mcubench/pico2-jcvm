@@ -33608,3 +33608,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: For 16 bytes and 50 repeats, net costs were software XOR 34.86 ms/op, software AES 2,523.58 ms/op, and native-backed AES-128 ECB doFinal 7.80 ms/op. Software AES VM time was 126.291 s with 3.292 ms in flash sync. Host counts were 149, 25,935.12 and 22 net bytecodes/op. Host sampling attributed 99.4% of XOR and 93.2% of AES handler time to `getfield_a_this`. Each sampled call rebuilt six dynamic and six ROM CAP views. Dynamic lookups took 98.7–98.8% of sampled field-handler time. Descriptor validation took 92.6% of dynamic lookup time. Host percentages are diagnostic and ARM component-cycle attribution was not measured.
 - Decision: Benchmark a validated CAP view cache first in any follow-on implementation. Preserve versioned package identity and runtime checks. Measure field resolution and the ARM per-bytecode watchdog and dispatch overhead after that experiment.
 - Artifacts/logs: `docs/jcvm-bytecode-performance-20261122.md`, `artifacts/build-audit/bytecode-performance-20261122/`. Normal UF2 SHA-256 `effccdec0c2b3319d02db2955a94451e07aa8e396c5ccf9d6514a693603acda6` from `0cf976dd`.
+
+## 2026-11-22 Save bytecode performance review at requested path <1
+
+- Step-Id: `20261122-0750-save-vmperf-review`
+- Task: Save the existing Java Card bytecode performance analysis at the user-requested path.
+- When: '2026-11-22 07:50 +0100' - '2026-11-22 07:50 +0100'
+- Model: `gpt-6`
+- Change: Copied the complete benchmark report to `docs/review_VMperf_20261122.md` and retained the original report for existing links.
+- Validation: `cmp` confirmed the reports are byte-for-byte identical.
+- Result: The requested review contains the baseline measurements, bottleneck attribution, and ranked speedup candidates.
+- Artifacts/logs: `docs/review_VMperf_20261122.md`.
