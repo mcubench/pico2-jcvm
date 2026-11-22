@@ -48,6 +48,15 @@ public:
       : context(context), exception_boundary_depth(exceptionBoundaryDepth),
         enforce_exception_boundary(enforceExceptionBoundary) {};
 
+  // Bound checked field offset reuse to applet processing.
+  class FieldResolutionScope {
+  public:
+    FieldResolutionScope() noexcept;
+    ~FieldResolutionScope();
+    FieldResolutionScope(const FieldResolutionScope &) = delete;
+    FieldResolutionScope &operator=(const FieldResolutionScope &) = delete;
+  };
+
   // decode a bytecode
   auto decode(const uint8_t value) -> void (Bytecodes::*)();
 

@@ -34,6 +34,7 @@
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 
+#include <array>
 #include <cstdio>
 
 namespace jcvm {
@@ -199,7 +200,58 @@ uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index,
   }
   throw Exceptions::SecurityException;
 }
+
+struct ReferenceFieldOffset {
+  jclass_index_t receiver_class = 0;
+  uint16_t offset = 0;
+  jpackage_ID_t calling_package = 0;
+  jpackage_ID_t receiver_package = 0;
+  uint8_t cp_index = 0;
+  bool valid = false;
+};
+
+std::array<ReferenceFieldOffset, 32> reference_field_offsets;
+unsigned field_resolution_scope_depth = 0;
+
+uint16_t resolveThisReferenceField(Context &context, const uint8_t cp_index,
+                                   const JC_Instance &receiver) {
+  const auto calling_package = context.getCurrentPackageID();
+  if (field_resolution_scope_depth == 0 ||
+      !FlashMemory_Handler::isDynamicPackageID(calling_package)) {
+    return resolveInstanceFieldToken(context, cp_index,
+                                     FieldType::FIELD_TYPE_OBJECT, receiver);
+  }
+
+  // The receiver's concrete class is part of the key. The entry only stores
+  // a checked reference field offset, so the handler still reads and checks
+  // the current object's field value and owner.
+  const auto receiver_class = receiver.getClassIndex();
+  const auto receiver_package = receiver.getPackageID();
+  const auto slot = (receiver_class ^ (calling_package << 2) ^
+                     (receiver_package << 1) ^ cp_index) %
+                    reference_field_offsets.size();
+  auto &entry = reference_field_offsets[slot];
+  if (!entry.valid || entry.calling_package != calling_package ||
+      entry.cp_index != cp_index || entry.receiver_package != receiver_package ||
+      entry.receiver_class != receiver_class) {
+    const uint16_t offset = resolveInstanceFieldToken(
+        context, cp_index, FieldType::FIELD_TYPE_OBJECT, receiver);
+    entry = {receiver_class, offset, calling_package, receiver_package,
+             cp_index, true};
+  }
+  return entry.offset;
+}
 } // namespace
+
+Bytecodes::FieldResolutionScope::FieldResolutionScope() noexcept {
+  // Package and import availability can change between APDUs. Applet
+  // processing serializes against GlobalPlatform package management.
+  if (field_resolution_scope_depth++ == 0) reference_field_offsets.fill({});
+}
+
+Bytecodes::FieldResolutionScope::~FieldResolutionScope() {
+  --field_resolution_scope_depth;
+}
 
 /**
  * Fetch reference from object
@@ -1251,7 +1303,8 @@ void Bytecodes::bc_getfield_a_this() {
   objectref = stack.readLocal_Reference(0);
   rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
-  const auto field_token = resolveInstanceFieldToken(this->context, index, FieldType::FIELD_TYPE_OBJECT, *instance);
+  const auto field_token =
+      resolveThisReferenceField(this->context, index, *instance);
   const auto value = instance->getField_ReferenceWithOwner(field_token);
   ref = value.first;
   TRACE_JCVM_DEBUG("GETFIELD_A_THIS value=0x%04X",

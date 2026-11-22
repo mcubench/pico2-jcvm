@@ -28,10 +28,10 @@ One field access can fetch the constant pool, declaring class, receiver
 class, and other metadata. Before CAP view reuse, the host SWALGS profile
 observed six uploaded-package CAP parses per sampled `getfield_a_this`
 instruction. An arithmetic instruction can execute without fetching a CAP
-view. That host replay
-included Descriptor. The standard GlobalPlatformPro load used for the Pico 2
-comparison omitted it, so the measured host share for Descriptor validation
-does not establish the share of runtime on the Pico 2. [Field resolution](../choupi/src/jc_bytecodes/bc_object_field.cpp#L144) · [Benchmark](review_VMperf_20261122.md) · [Host load-code extraction](../tests/integration/cap_load_code.py)
+view. The host replay included Descriptor. The standard GlobalPlatformPro
+load used for the Pico 2 comparison omitted it, so the measured host share
+for Descriptor validation does not establish the share of runtime on the
+Pico 2. [Field resolution](../choupi/src/jc_bytecodes/bc_object_field.cpp#L144) · [Benchmark](review_VMperf_20261122.md) · [Host load-code extraction](../tests/integration/cap_load_code.py)
 
 ## Checks during execution
 
@@ -39,6 +39,15 @@ The VM also checks method bounds, bytecode fetches and branch targets, and
 applies instruction-specific reference type and ownership checks where
 implemented. These checks depend on runtime state. The CAP view cache
 holds structural metadata and leaves the instruction checks in place.
+
+For uploaded `getfield_a_this` instructions, a separate 32-entry cache
+holds checked reference field offsets during applet processing of one APDU.
+The key includes the calling package, constant-pool index, and the live
+receiver's concrete package and class. On a miss, the VM runs the full
+field resolver. Each access still reads and checks the live reference and
+field value and propagates its owner. A new APDU starts with an empty field
+cache, so changes in package or import availability are checked at the next
+use. [Field offset cache](../choupi/src/jc_bytecodes/bc_object_field.cpp)
 
 Runtime method lookup checks that the normal or extended method header fits
 inside the Method component before reading it. The Descriptor component's

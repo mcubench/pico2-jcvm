@@ -20,10 +20,11 @@ Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
 
 ## Next work
 
-- For the next authorized bytecode performance experiment, start with
-  APDU-scoped reuse of validated CAP views and reproduce the SWALGS and
-  native AES controls in [the benchmark report](../docs/jcvm-bytecode-performance-20261122.md).
-  The production interpreter has no performance changes.
+- Run the normal ARM CAP-cache build on EE11 when the required host-access
+  path is available. Use the pinned CAP and identical SWALGS and native AES
+  APDUs before and after. See [VMPERF-PICO2-AB-20261122](EXT_REQUESTS.md#vmperf-pico2-ab-20261122--physical-bytecode-timing)
+  for artifacts and the bounded replay. Measure remaining RP2350 costs before
+  changing watchdog cadence, branches, or interpreter dispatch.
 - Await Windows option 1/2 results for `v0.2-rc1` under
   WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local. Publish only with user authorization.
 - Verify CAPIN-07 LOAD rejection and recovery on hardware. Preserve the SIO

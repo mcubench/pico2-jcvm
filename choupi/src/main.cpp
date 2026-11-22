@@ -27,6 +27,7 @@
 
 #include "debug.hpp"
 #include "interpretor.hpp"
+#include "jc_bytecodes/bytecodes.hpp"
 #include "context.hpp"
 #include "context_registry.hpp"
 #include "jc_config.h"
@@ -2591,6 +2592,7 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                                  uint8_t *response,
                                  uint16_t response_capacity,
                                  uint16_t *response_length) {
+  const jcvm::Bytecodes::FieldResolutionScope field_resolution_scope;
 #ifdef PC_VERSION
   const char *apdu_trace_setting = std::getenv("CHOUPI_VM_TRACE_APDU");
   const bool apdu_trace = apdu_trace_setting != nullptr &&

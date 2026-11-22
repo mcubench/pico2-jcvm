@@ -33654,3 +33654,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Standard GPPro component-set repetition gave net XOR 0.793 ms and software AES 82.258 ms per 50 iterations, comparable to 0.758 and 82.446 ms with APDU-scoped caching. Cache entries, revision, and publication flag use 485 bytes of static ARM RAM. Warm host profiling attributes 40.5% of AES handler time and 78.5% of XOR handler time to `getfield_a_this`. Hardware speed and flash traffic are unmeasured. No flash mutation was added.
 - Decision: Measure bounded caching of the checked field offset for that opcode. Hardware comparison is blocked by the host-access execution requirement.
 - Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/`.
+
+## 2026-11-22 Cache checked reference field offsets within applet APDUs 4
+
+- Step-Id: `20261122-0815-reference-field-offset-cache`
+- Task: Reduce the remaining measured field resolution cost and prepare the hardware comparison.
+- When: '2026-11-22 08:15 +0100' - '2026-11-22 08:19 +0100'
+- Model: `gpt-6`
+- Change: Added a 32-entry APDU-scoped cache for uploaded `getfield_a_this` field offsets, keyed by calling package, constant-pool index, and concrete receiver package/class. Cache hits still read the current field and owner and perform the existing reference and proxy checks. Using an APDU scope also limits reuse to one set of available imports.
+- Validation: Warning-free normal ARM max_crypto build. Both host component-set replays and controls passed. VPCD CAP upgrade, same-CAP delete/reinstall (9), malformed CAP (7), SIO (35), multipackage (48), and PC bounds (24) passed.
+- Result: With standard GPPro components, net host batch time at 50 repeats was XOR 0.258 ms versus 4.403 ms baseline (17.1×) and software AES 53.232 ms versus 298.673 ms (5.61×). The preceding structural-cache-only batches were 0.740 and 82.741 ms. With Descriptor, the final batches were 0.325 and 54.169 ms. The field cache adds 260 bytes of static ARM RAM. Both caches and store revision state together use 745 bytes. No persistent writes were added. Physical speed and flash telemetry were not measured.
+- Decision: The required USB and PC/SC access path is unavailable because the current execution profile disallows the escalation flag. Record the physical A/B replay as VMPERF-PICO2-AB-20261122. Leave method/branch and dispatch changes gated on measurement.
+- Artifacts/logs: `artifacts/build-audit/cap-view-cache-20261122/`, with component-set replay logs, ARM firmware/provenance, and physical APDU arguments.
