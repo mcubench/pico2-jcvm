@@ -1095,9 +1095,10 @@ void Heap::clearTransientArrays(const ClearEvent event) {
  * @param[instantiated_class] instance type to add.
  */
 jref_t Heap::addInstance(const jpackage_ID_t packageID,
-                         const jclass_index_t instantiated_class) {
+                         const jclass_index_t instantiated_class,
+                         const bool enforce_reserve) {
   noteReachabilityChange();
-  ensureJavaAllocationReserve();
+  if (enforce_reserve) ensureJavaAllocationReserve();
   jref_t ref;
 
   uint16_t offset = 0;
@@ -1184,7 +1185,7 @@ jref_t Heap::addRuntimeCryptoException(const jpackage_ID_t packageID,
   jref_t &root = packageID == 0 ? this->runtime_crypto_exception_rom
                                 : this->runtime_crypto_exception_imported;
   if (root.isNullPointer()) {
-    root = this->addInstance(packageID, classIndex);
+    root = this->addInstance(packageID, classIndex, false);
   }
   return root;
 }
@@ -1201,7 +1202,10 @@ jref_t Heap::addRuntimeException(const jpackage_ID_t packageID,
   // memory pressure, no exception instance is left behind without a root.
   this->shared_storage->runtime_exception_roots.reserve(this->shared_storage->runtime_exception_roots.size() +
                                         1);
-  const jref_t reference = this->addInstance(packageID, classIndex);
+  // Skip the Java allocation reserve: the reserve itself raises
+  // SystemException.NO_RESOURCE, and refusing the instance that carries it
+  // turned every first NO_RESOURCE into an uncatchable 6F00.
+  const jref_t reference = this->addInstance(packageID, classIndex, false);
   this->shared_storage->runtime_exception_roots.push_back(
       RuntimeExceptionRoot{packageID, classIndex, reference});
   return reference;

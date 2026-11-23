@@ -223,8 +223,11 @@ public:
   /// Clear transient arrays associated with a lifecycle event.
   void clearTransientArrays(ClearEvent event);
   /// Adding new instance in the transient heap.
+  /// enforce_reserve=false only for runtime-owned exception instances, which
+  /// must be creatable while the Java allocation reserve is refusing others.
   jref_t addInstance(const jpackage_ID_t packageID,
-                     const jclass_index_t instantiated_class);
+                     const jclass_index_t instantiated_class,
+                     bool enforce_reserve = true);
   /// Adding an instance in in the transient heap.
   jref_t addInstance(JC_Instance &&instance);
   /// Get the per-context JCRE-owned CryptoException instance.
