@@ -244,6 +244,37 @@ void fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
   if (length == 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
   generateSecure(*output, offset, length);
 }
+
+void javacard_security_SecureRandomData_init(jref_t) {}
+
+jbyte_t javacard_security_SecureRandomData_getAlgorithm(jref_t) {
+  Context::getActiveContext().setSensitiveResultShort(kSecureRandom);
+  return kSecureRandom;
+}
+
+jshort_t javacard_security_SecureRandomData_nextBytes(
+    jref_t, std::shared_ptr<JC_Array> output, jshort_t offset, jshort_t length) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
+  fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
+      std::move(output), offset, length);
+  const auto end = signedShortFromBits(static_cast<uint16_t>(offset + length));
+  context.setSensitiveResultShort(end);
+  return end;
+}
+
+void javacard_security_SecureRandomData_generateData(
+    jref_t receiver, std::shared_ptr<JC_Array> output, jshort_t offset,
+    jshort_t length) {
+  (void)javacard_security_SecureRandomData_nextBytes(
+      receiver, std::move(output), offset, length);
+}
+
+void javacard_security_SecureRandomData_setSeed(
+    jref_t, std::shared_ptr<JC_Array> input, jshort_t offset, jshort_t length) {
+  checkRange(input, offset, length);
+}
+
 #endif
 
 jref_t javacard_security_RandomData_getInstance(jbyte_t algorithm) {

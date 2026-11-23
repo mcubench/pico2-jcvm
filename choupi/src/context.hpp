@@ -109,6 +109,7 @@ private:
   uint16_t pending_system_exception_reason = 1;
   /// Reason code for the next VM-raised CryptoException.
   uint16_t pending_crypto_exception_reason = 1;
+  uint16_t pending_pin_exception_reason = 1;
   /// Reason code for the next VM-raised TransactionException.
   uint16_t pending_transaction_exception_reason = 4;
   // SensitiveResult is VM-wide and survives Java Card context switches.
@@ -271,6 +272,14 @@ public:
   uint16_t consumePendingSystemExceptionReason() noexcept;
   void setPendingCryptoExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingCryptoExceptionReason() noexcept;
+  void setPendingPINExceptionReason(uint16_t reason) noexcept {
+    pending_pin_exception_reason = reason;
+  }
+  uint16_t consumePendingPINExceptionReason() noexcept {
+    const auto reason = pending_pin_exception_reason;
+    pending_pin_exception_reason = 1;
+    return reason;
+  }
   void setPendingTransactionExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingTransactionExceptionReason() noexcept;
   uint16_t pendingSystemExceptionReason() const noexcept {

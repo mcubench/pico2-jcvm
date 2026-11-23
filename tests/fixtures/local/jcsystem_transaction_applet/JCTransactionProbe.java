@@ -123,7 +123,10 @@ public final class JCTransactionProbe extends Applet {
   public static void install(byte[] bArray, short bOffset, byte bLength) {
     if (bLength == 10) {
       new JCTransactionProbe(bArray, bOffset, bLength);
-    } else if (bLength == 1 && bArray[bOffset] == (byte)0x7f) {
+    } else if ((bLength == 1 && bArray[bOffset] == (byte)0x7f) ||
+               (bLength == 3 && bArray[bOffset] == (byte)0xc9 &&
+                bArray[(short)(bOffset + 1)] == (byte)1 &&
+                bArray[(short)(bOffset + 2)] == (byte)0x7f)) {
       new JCTransactionProbe(null, (short)0, (byte)0, false, false);
     } else {
       new JCTransactionProbe();
@@ -398,6 +401,23 @@ public final class JCTransactionProbe extends Applet {
         predecrement.reset();
         buffer[14] = predecrement.getTriesRemaining();
         buffer[15] = (byte)(predecrement.isValidated() ? 1 : 0);
+        predecrement.decrementTriesRemaining();
+        try {
+          predecrement.check(null, (short)0, (byte)4);
+          ISOException.throwIt((short)0x6F01);
+        } catch (NullPointerException expected) {
+          if (predecrement.getTriesRemaining() != (byte)2) {
+            ISOException.throwIt((short)0x6F02);
+          }
+        }
+        try {
+          predecrement.check(correct, (short)0, (byte)4);
+          ISOException.throwIt((short)0x6F03);
+        } catch (PINException expected) {
+          if (expected.getReason() != PINException.ILLEGAL_STATE) {
+            ISOException.throwIt((short)0x6F04);
+          }
+        }
         length = 16;
         break;
       }

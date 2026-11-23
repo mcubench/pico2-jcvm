@@ -33759,3 +33759,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the 20 `6f00` rows no longer occur on hardware. RAM growth per cached key is unchanged.
 - Decision: needs a new Windows package for acceptance.
 - Artifacts/logs: `artifacts/results/win-be737f0e-6f00-repro-EE116F37C7E4A04E-20261123T0916Z/`, `artifacts/results/sysexc-reserve-fix-EE116F37C7E4A04E-20261123T1103Z/`
+
+## 2026-11-23 Native ROM methods for OwnerPINx predecrement and legacy SecureRandomData
+
+- Step-Id: `20261123-1403-native-pin-random`
+- Task: INV-03 and OwnerPINx retry-durability follow-up
+- When: '2026-11-23' (exact active minutes not logged)
+- Model: `gpt-6`
+- Change: Bind the two classes' method bodies to C++ through ROM native overrides and retain their class and field layout. OwnerPINx check consumes the transient predecrement flag, compares without refunding the durable try, and restores the limit only on success. PINException dispatch uses the ROM export offset. The test probe covers null PIN handling and accepts the GP application-parameter wrapper for a light physical install. ROM-mask generator commit `1af5fda` passes raw PIN references so native code controls validation order.
+- Validation: `./tools/fixture-path --verify` passed for 86 files. Generated native dispatch inspected. ARM `max_crypto` normal build and full storage-preserving cycle passed on EE116F37C7E4A04E. VPCD cases 13 and 104 passed, and RP2350-overlay cases 13, 104 and 114 passed. Physical reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`: probe install passed after adjusting the light-install parameters and SELECT plus all three probe APDUs returned `9000`. Physical responses were `03030200010000020200020103010300`, `020200020203`, and `0101010C`.
+- Result: Persistent PIN case 104 took 51 ms and recorded `sync_bytes=0 journal_bytes=1024 journaled=3 journal_erase_bytes=0`, including creation and administration. Case 13 had `sync_bytes=0 journal_bytes=0`. Case 114 had `sync_bytes=0 journal_bytes=256`; this tests the public native RandomData path. Legacy stored SecureRandomData receivers were checked through generated dispatch inspection. The cycled UF2 SHA-256 was `f980ddff179b4e6b79991f0002e636e2ff9c38dcb9e13e8e542a6f9b9c539e60`.
+- Decision: The two named class implementations now dispatch to C++. Other ROM API Java bodies remain an INV-03 gap. Physical supply interruption and storage-preserving downgrade were not tested.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261123T130532Z.log`, `artifacts/logs/native-rom-pin-{vpcd,overlay,apdu,apdu-serial,gp-install}.log`

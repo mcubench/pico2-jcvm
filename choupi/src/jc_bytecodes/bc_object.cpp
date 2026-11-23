@@ -357,6 +357,19 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
     this->doThrow(reference);
     return true;
   }
+  case Exceptions::PINException: {
+    constexpr auto package_id = ROM_PACKAGE_INDEX_JAVACARD_FRAMEWORK;
+    const auto class_index = HTONS(Export_Handler(Package(package_id))
+        .getExportedClassOffset(
+            ROM_CLASS_EXPORT_TOKEN_JAVACARD_FRAMEWORK_PINEXCEPTION));
+    const auto reference = this->context.getHeap().addRuntimeException(
+        package_id, class_index);
+    const auto reason = this->context.consumePendingPINExceptionReason();
+    this->context.getHeap().getInstance(reference)->setField_Short(
+        0, static_cast<jshort_t>(reason));
+    this->doThrow(reference);
+    return true;
+  }
   case Exceptions::APDUException:
     exception_package_aid = javacard_framework_aid;
     exception_package_aid_length = sizeof(javacard_framework_aid);

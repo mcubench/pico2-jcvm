@@ -131,4 +131,140 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_ownerPinCompare(
   return difference == 0 ? TRUE : FALSE;
 }
 
+#if defined(ROM_CLASS_INDEX_JAVACARD_FRAMEWORK_OWNERPINXWITHPREDECREMENTIMPL)
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+    jref_t source, jshort_t source_offset, jshort_t length, jref_t destination,
+    jshort_t destination_offset);
+
+namespace {
+constexpr auto kPinValue = ROM_FIELD_INDEX_JAVACARD_FRAMEWORK_OWNERPIN_OWNERPIN_PINVALUE;
+constexpr auto kTryLimit = ROM_FIELD_INDEX_JAVACARD_FRAMEWORK_OWNERPIN_OWNERPIN_TRYLIMIT;
+constexpr auto kMaxPinSize = ROM_FIELD_INDEX_JAVACARD_FRAMEWORK_OWNERPIN_OWNERPIN_MAXPINSIZE;
+constexpr auto kPinSize = ROM_FIELD_INDEX_JAVACARD_FRAMEWORK_OWNERPIN_OWNERPIN_PINSIZE;
+constexpr auto kTriesLeft = ROM_FIELD_INDEX_JAVACARD_FRAMEWORK_OWNERPIN_OWNERPIN_TRIESLEFT;
+// OwnerPINxBase has no fields. Predecremented follows OwnerPIN's six fields.
+constexpr auto kPredecremented = kTriesLeft + 1 +
+    ROM_FIELD_INDEX_JAVACARD_FRAMEWORK_OWNERPINXWITHPREDECREMENTIMPL_OWNERPINXWITHPREDECREMENTIMPL_PREDECREMENTED;
+
+[[noreturn]] void throwPinException(uint16_t reason) {
+  Context::getActiveContext().setPendingPINExceptionReason(reason);
+  throw Exceptions::PINException;
+}
+
+std::shared_ptr<JC_Array> predecrementFlag(JC_Instance &instance) {
+  return Context::getActiveContext().getHeap().getArray(
+      instance.getField_Reference(kPredecremented));
+}
+
+void clearValidated(jref_t pin) {
+  fr_gouv_ssi_nativeimpl_NativeImplementation_ownerPinSetValidated(pin, FALSE);
+}
+} // namespace
+
+void javacard_framework_OwnerPINxWithPredecrementImpl_init(
+    jref_t pin, jbyte_t try_limit, jbyte_t max_pin_size) {
+  if (try_limit < 1 || max_pin_size < 1) throwPinException(1);
+  auto instance = owner_pin_instance(pin);
+  auto &heap = Context::getActiveContext().getHeap();
+  instance->setField_Reference(kPinValue,
+      heap.addArray(max_pin_size, JAVA_ARRAY_T_BYTE));
+  instance->setField_Byte(kPinSize, max_pin_size);
+  instance->setField_Byte(kMaxPinSize, max_pin_size);
+  instance->setField_Byte(kTryLimit, try_limit);
+  instance->setField_Byte(kTriesLeft, try_limit);
+  instance->setField_Reference(kPredecremented, heap.addTransientArray(
+      1, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+}
+
+jbyte_t javacard_framework_OwnerPINxWithPredecrementImpl_decrementTriesRemaining(
+    jref_t pin) {
+  auto instance = owner_pin_instance(pin);
+  clearValidated(pin);
+  auto remaining = instance->getField_Byte(kTriesLeft);
+  if (remaining > 0) instance->setField_ByteDurable(kTriesLeft, --remaining);
+  predecrementFlag(*instance)->setByteEntry(0, 1);
+  return remaining;
+}
+
+jbool_t javacard_framework_OwnerPINxWithPredecrementImpl_check(
+    jref_t pin, jref_t input, jshort_t offset, jbyte_t length) {
+  auto instance = owner_pin_instance(pin);
+  auto flag = predecrementFlag(*instance);
+  if (flag->getByteEntry(0) == 0) throwPinException(2);
+  flag->setByteEntry(0, 0);
+  clearValidated(pin);
+
+  auto &heap = Context::getActiveContext().getHeap();
+  auto supplied = heap.getArray(input);
+  if (supplied->getType() != JAVA_ARRAY_T_BYTE) throw Exceptions::SecurityException;
+  if (offset < 0 || length < 0 || static_cast<size_t>(offset + length) > supplied->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (instance->getField_Byte(kTriesLeft) == 0 ||
+      length != instance->getField_Byte(kPinSize)) {
+    return FALSE;
+  }
+
+  auto value = heap.getArray(instance->getField_Reference(kPinValue));
+  if (fr_gouv_ssi_nativeimpl_NativeImplementation_ownerPinCompare(
+          supplied, offset, value, length) == FALSE) {
+    return FALSE;
+  }
+  // The predecrement was already durable. Only a successful comparison
+  // restores the counter, so a tear cannot refund a failed presentation.
+  instance->setField_ByteDurable(kTriesLeft, instance->getField_Byte(kTryLimit));
+  fr_gouv_ssi_nativeimpl_NativeImplementation_ownerPinSetValidated(pin, TRUE);
+  return TRUE;
+}
+
+void javacard_framework_OwnerPINxWithPredecrementImpl_update(
+    jref_t pin, jref_t input, jshort_t offset, jbyte_t length) {
+  auto instance = owner_pin_instance(pin);
+  predecrementFlag(*instance)->setByteEntry(0, 0);
+  if (length > instance->getField_Byte(kMaxPinSize)) throwPinException(1);
+  auto supplied = Context::getActiveContext().getHeap().getArray(input);
+  if (supplied->getType() != JAVA_ARRAY_T_BYTE) throw Exceptions::SecurityException;
+  (void)fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+      input, offset, length, instance->getField_Reference(kPinValue), 0);
+  instance->setField_Byte(kPinSize, length);
+  instance->setField_Byte(kTriesLeft, instance->getField_Byte(kTryLimit));
+  clearValidated(pin);
+}
+
+void javacard_framework_OwnerPINxWithPredecrementImpl_setTryLimit(
+    jref_t pin, jbyte_t limit) {
+  auto instance = owner_pin_instance(pin);
+  predecrementFlag(*instance)->setByteEntry(0, 0);
+  if (limit < 1) throwPinException(1);
+  instance->setField_Byte(kTryLimit, limit);
+  instance->setField_Byte(kTriesLeft, limit);
+  clearValidated(pin);
+}
+
+void javacard_framework_OwnerPINxWithPredecrementImpl_setTriesRemaining(
+    jref_t pin, jbyte_t remaining) {
+  auto instance = owner_pin_instance(pin);
+  predecrementFlag(*instance)->setByteEntry(0, 0);
+  if (remaining < 0 || remaining > instance->getField_Byte(kTryLimit)) {
+    throwPinException(1);
+  }
+  instance->setField_Byte(kTriesLeft, remaining);
+  clearValidated(pin);
+}
+
+void javacard_framework_OwnerPINxWithPredecrementImpl_resetAndUnblock(jref_t pin) {
+  auto instance = owner_pin_instance(pin);
+  predecrementFlag(*instance)->setByteEntry(0, 0);
+  instance->setField_ByteDurable(kTriesLeft, instance->getField_Byte(kTryLimit));
+  clearValidated(pin);
+}
+
+void javacard_framework_OwnerPINxWithPredecrementImpl_reset(jref_t pin) {
+  predecrementFlag(*owner_pin_instance(pin))->setByteEntry(0, 0);
+  if (fr_gouv_ssi_nativeimpl_NativeImplementation_ownerPinGetValidated(pin) == TRUE) {
+    javacard_framework_OwnerPINxWithPredecrementImpl_resetAndUnblock(pin);
+  }
+}
+#endif
+
 } // namespace jcvm

@@ -685,7 +685,21 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacardx/crypto|AEADCipher|AEADCipher/verifyTag([BSSS)Z|instance",
             "javacardx/crypto|Cipher|Cipher/update([BSS[BS)S|instance",
             "javacardx/crypto|Cipher|Cipher/doFinal([BSS[BS)S|instance",
-        )) + "\n"
+        ) + ((
+            "javacard/security|SecureRandomData|SecureRandomData/<init>()V|instance",
+            "javacard/security|SecureRandomData|SecureRandomData/generateData([BSS)V|instance",
+            "javacard/security|SecureRandomData|SecureRandomData/nextBytes([BSS)S|instance",
+            "javacard/security|SecureRandomData|SecureRandomData/setSeed([BSS)V|instance",
+            "javacard/security|SecureRandomData|SecureRandomData/getAlgorithm()B|instance",
+        ) if config["secure_random"] else ()) + (tuple(
+            "javacard/framework|OwnerPINxWithPredecrementImpl|"
+            f"OwnerPINxWithPredecrementImpl/{signature}|instance"
+            for signature in (
+                "<init>(BB)V", "decrementTriesRemaining()B", "check([BSB)Z",
+                "update([BSB)V", "setTryLimit(B)V", "setTriesRemaining(B)V",
+                "reset()V", "resetAndUnblock()V",
+            )
+        ) if config["owner_pin_x_with_predecrement"] else ())) + "\n"
     )
     write_if_changed(out_dir / "profile.txt", profile + "\n")
     java_dir = out_dir / "java/javacard/security"
