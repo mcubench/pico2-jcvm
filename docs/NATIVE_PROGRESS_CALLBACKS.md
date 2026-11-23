@@ -27,7 +27,7 @@ transport state or queue APDU work.
 
 Interpreted applet execution also calls `choupi_vm_cooperative_progress()` at
 4,096-bytecode intervals. This services the watchdog and CCID/TinyUSB progress
-using the same deadline. The top-level applet budget is 600 seconds, and the
+using the same deadline. The top-level applet budget is 3,600 seconds, and the
 INSTALL method budget is 5 seconds. Nested interpreter entries share the
 outer deadline. Watchdog servicing, native progress and CCID time extensions
 leave that deadline fixed.

@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
+Updated 2026-11-23. See [TODO.md](../TODO.md) for active work and
 [EXT_REQUESTS.md](EXT_REQUESTS.md) for external dependencies.
 
 ## Last observed physical state
@@ -19,6 +19,13 @@ Updated 2026-11-22. See [TODO.md](../TODO.md) for active work and
   while available.
 
 ## Next work
+
+- WIN-BE737F0E-6F00: the Windows be737f0e option-1 run reported 20 `6f00` in
+  the RSA-CRT-4096 Cipher block (uncaught non-Crypto exception in JCAlgTest
+  `prepare_Key`, likely SystemException twice). Needs the Windows CSV and
+  serial log; the 2 RSA-CRT-4096 `ILLEGAL_USE` rows were the 600 s deadline,
+  fixed in step `20261123-0620-rsa4096-exec-deadline`.
+- EE11 now runs HEAD+deadline fix (app UF2 `1d4ae821…7a76`), storage kept.
 
 - If continuing VM performance work, reprofile the XOR control and the
   interpreter fetch/decode phases before changing dispatch or branch checks.

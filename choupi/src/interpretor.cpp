@@ -45,7 +45,10 @@ extern "C" void choupi_watchdog_update(void);
 extern "C" void choupi_vm_cooperative_progress(void);
 extern "C" uint32_t choupi_time_us_32(void);
 static jcvm::ExecutionBudget applet_execution_budget;
-static constexpr uint32_t kAppletExecutionBudgetUs = 600000000u;
+// One APDU may generate several RSA-4096 key pairs (JCAlgTest prepares two,
+// plus a retry each); one took up to 356 s on hardware, so 600 s expired
+// mid-generation. Stays below the 4,295 s wrap of the 32-bit us clock.
+static constexpr uint32_t kAppletExecutionBudgetUs = 3600000000u;
 
 extern "C" bool choupi_vm_native_progress(void) {
   const uint32_t now_us = choupi_time_us_32();
@@ -426,7 +429,7 @@ uint16_t Interpretor::run() noexcept {
     // Keep CCID control traffic and reader time extensions alive during long
     // interpreted applet loops (for example, persistent Util copies or
     // software crypto). This callback does not refresh the execution budget:
-    // the 120-second guard still bounds the complete applet operation.
+    // the applet execution budget still bounds the complete operation.
     if ((instruction_count & 0x0fffu) == 0) {
       choupi_vm_cooperative_progress();
     }
