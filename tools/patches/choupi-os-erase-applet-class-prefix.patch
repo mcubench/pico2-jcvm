@@ -1,0 +1,30 @@
+diff --git a/src/syscall/fs.rs b/src/syscall/fs.rs
+index c7ee4e2..79335ae 100644
+--- a/src/syscall/fs.rs
++++ b/src/syscall/fs.rs
+@@ -817,13 +817,19 @@ pub fn syscall_erase(ptr: usize, len: usize, _: usize) -> Option<usize> {
+ pub fn syscall_erase_prefix(ptr: usize, _: usize, _: usize) -> Option<usize> {
+     unsafe {
+         let prefix = retrieve_tag(ptr);
+-        let trusted_static_namespace_prefix = prefix.len() == 2
+-            && prefix[0] == 0x02
+-            && (CURRENT_CONTEXT.ctxid().id() == ContextNumber::Installer as usize
+-                || CURRENT_CONTEXT.ctxid().id()
+-                    == ContextNumber::RuntimeEnvironment as usize);
++        let trusted_context = CURRENT_CONTEXT.ctxid().id()
++            == ContextNumber::Installer as usize
++            || CURRENT_CONTEXT.ctxid().id()
++                == ContextNumber::RuntimeEnvironment as usize;
++        let trusted_static_namespace_prefix =
++            prefix.len() == 2 && prefix[0] == 0x02 && trusted_context;
++        // GP DELETE erases every field of one applet class in one pass:
++        // [AppletField, owner, package, class] without the field byte.
++        let trusted_applet_class_prefix =
++            prefix.len() == 4 && prefix[0] == 0x03 && trusted_context;
+         assert!(filename::can_write(CURRENT_CONTEXT.ctxid(), prefix)
+-            || trusted_static_namespace_prefix);
++            || trusted_static_namespace_prefix
++            || trusted_applet_class_prefix);
+         let result = (*FS).erase_prefix(prefix);
+         Some(match result {
+             Ok(()) => 0,

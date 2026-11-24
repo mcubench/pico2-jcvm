@@ -33817,3 +33817,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Hardware A/B on EE116F37C7E4A04E is in progress. The pre-fix image (HEAD `9ac7e8a3`) has the unchanged 1.8.5/jc305 CAP (`fa64582e…`) installed. A bounded perf run (client `3cca70cb…a703`, menu 2 → 1, `-fresh`) is filling the store. The baseline `gp --uninstall` and the fixed-image uninstall come next. The DELETE time on the fixed image was not measured yet, and flash traffic was not measured (the set of erased records is unchanged).
 - Decision: Package this commit for external tests. Record the EE11 A/B outcome as its own step. Remaining cost: the per-record `erase_overlay_slot` (two 8,192-slot loops plus a buffer memmove) and the unbounded card-manager rollback snapshot. Both are now watchdog-safe, but they still scale with the store.
 - Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261124T203616Z.log` (pass), `artifacts/logs/same-cap-delete-reinstall-vpcd-20261124T203520Z.log` (Rust assertion before the fix), `artifacts/results/delete-watchdog-20261124/EE116F37C7E4A04E/` (A/B in progress)
+
+## 2026-11-24 Keep the GP DELETE Rust change as a choupi/os patch file 5
+
+- Step-Id: `20261124-2150-gp-delete-os-patch`
+- Task: follow-up to `20261124-2120-gp-delete-watchdog`
+- When: '2026-11-24 21:48 CET' - '2026-11-24 21:53 CET'
+- Model: `claude-opus-5-5`
+- Change: `53eb4e90` pointed the `choupi/os` gitlink at a local-only submodule commit (`2ed7b082`). `tools/apply-choupi-os-patches` pins `f12c5979` and keeps local OS fixes as `tools/patches/choupi-os-*.patch`, so `tools/build` refused the revision. The submodule HEAD is reset to `f12c5979` (working tree kept). The same `syscall_erase_prefix` hunk is now `tools/patches/choupi-os-erase-applet-class-prefix.patch`, and the gitlink is back at `f12c5979`. Code behaviour is unchanged from `53eb4e90`.
+- Validation: `./tools/apply-choupi-os-patches` reports both OS patches as already applied. The ARM rebuild and packaging follow in the next step.
+- Result: The build gate is consistent with the pinned submodule again.
+- Decision: Package from this HEAD.
+- Artifacts/logs: `tools/patches/choupi-os-erase-applet-class-prefix.patch`
