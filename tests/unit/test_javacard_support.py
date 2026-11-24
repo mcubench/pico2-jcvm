@@ -276,7 +276,10 @@ class JavaCardSupportTests(unittest.TestCase):
             result = self.run_named_profile("max_crypto", out)
             self.assertEqual(result.returncode, 0, result.stderr)
             profile = json.loads((out / "javacard-support.json").read_text())
-            self.assertEqual(sum(profile.values()), 177)
+            self.assertEqual(sum(profile.values()), 183)
+            for key in ("mlkem_512", "mlkem_768", "mlkem_1024",
+                        "mldsa_44", "mldsa_65", "mldsa_87"):
+                self.assertTrue(profile[key], key)
             self.assertTrue(profile["signature_des_mac4_nopad"])
             self.assertTrue(profile["sha3_224"])
             self.assertTrue(profile["sha3_256"])

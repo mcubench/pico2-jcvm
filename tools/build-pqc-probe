@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Build tests/fixtures/local/pqc_applet with the Java Card SDK 26.1 converter
+# and preview features, as an applet developer would for the 3.2 PQC API.
+# Output: build/pqc-probe/pqc-probe.cap and load-code.bin (GP LOAD order).
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_dir="${repo_root}/tests/fixtures/local/pqc_applet"
+build_dir="${repo_root}/build/pqc-probe"
+kit="$("${repo_root}/tools/fixture-path" toolchain.jc261)"
+java17_home="${JAVA17_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+
+[[ -x "${java17_home}/bin/javac" ]] || {
+  printf 'ERROR: JDK 17 not found: %s (SDK 26.1 requires it)\n' "${java17_home}" >&2
+  exit 1
+}
+[[ -f "${kit}/lib/api_classic-preview.jar" ]] || {
+  printf 'ERROR: Java Card SDK 26.1 not found at %s\n' "${kit}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}/classes" "${build_dir}/output"
+"${java17_home}/bin/javac" -source 8 -target 8 -Xlint:-options \
+  -bootclasspath "${kit}/lib/api_classic-preview.jar" \
+  -classpath "${kit}/lib/api_classic_annotations-preview.jar" \
+  -d "${build_dir}/classes" "${source_dir}/PqcProbe.java" \
+  > "${build_dir}/compile.log" 2>&1
+JAVA_HOME="${java17_home}" bash "${kit}/bin/converter.sh" -nobanner \
+  -enable-preview -classdir "${build_dir}/classes" \
+  -d "${build_dir}/output" -out CAP JCA \
+  -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x03:0x01:0x01 pqctest.PqcProbe \
+  pqctest 0xA0:0x00:0x00:0x01:0x51:0x00:0x03:0x01 1.0 \
+  > "${build_dir}/convert.log" 2>&1 || {
+  cat "${build_dir}/convert.log" >&2
+  exit 1
+}
+cp "${build_dir}/output/pqctest/javacard/pqctest.cap" "${build_dir}/pqc-probe.cap"
+
+python3 - "${build_dir}/pqc-probe.cap" "${build_dir}/load-code.bin" <<'PY'
+import sys
+from zipfile import ZipFile
+
+source, target = sys.argv[1:]
+components = ("Header", "Directory", "Applet", "Import", "ConstantPool",
+              "Class", "Method", "StaticField", "RefLocation", "Descriptor")
+with ZipFile(source) as cap, open(target, "wb") as output:
+    for component in components:
+        output.write(cap.read(f"pqctest/javacard/{component}.cap"))
+header = open(target, "rb").read()[:10]
+print(f"CAP:PASS file={source} load_code={target} "
+      f"cap_format={header[8]}.{header[7]}")
+PY

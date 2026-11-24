@@ -27,6 +27,19 @@ PACKAGES = {
     "javacardx_crypto": "javacardx/crypto/javacard/crypto.jca",
 }
 
+# Java Card 3.2 classes and interfaces the ROM implements beyond JC305, with
+# their export tokens from the SDK 26.1 export files (javacard/security 1.8 and
+# the 17.9 preview share these tokens). Tokens between the JC305 range and these
+# entries map to 0xFF, which the Export lookup rejects, so a 3.2 CAP naming an
+# unimplemented class fails closed instead of aliasing a ROM class.
+JC32_CLASSES = {
+    "javacard_security": {"NamedParameterSpec": 41},
+}
+JC32_INTERFACES = {
+    "javacard_security": {"AlgorithmParameterSpec": 34},
+}
+UNMAPPED_TOKEN = 0xFF
+
 SECURITY_KEY_INTERFACES = (
     "SecretKey",
     "PrivateKey",
@@ -96,6 +109,11 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
         tokens = list(range(max(source_classes.values()) + 1))
         for name, source_token in source_classes.items():
             tokens[source_token] = target_classes[name]
+        for name, source_token in JC32_CLASSES.get(package, {}).items():
+            if name not in target_classes:
+                raise ValueError(f"{relative_path}: embedded API is missing 3.2 class {name}")
+            tokens.extend([UNMAPPED_TOKEN] * (source_token + 1 - len(tokens)))
+            tokens[source_token] = target_classes[name]
         arrays.append(
             f"inline constexpr uint8_t jc305_{package}_class_tokens[] = {{"
         )
@@ -105,7 +123,9 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
         arrays.append("};")
         arrays.append("")
         source_interfaces = read_interfaces(source_root / relative_path)
-        class_tokens = set(source_classes.values())
+        source_interfaces.update(JC32_INTERFACES.get(package, {}))
+        class_tokens = set(source_classes.values()) | set(
+            JC32_CLASSES.get(package, {}).values())
         source_interface_tokens = set(source_interfaces.values())
         overlapping_tokens = sorted(class_tokens & source_interface_tokens)
         if overlapping_tokens:
@@ -121,7 +141,9 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
                 + ", ".join(missing_interfaces)
             )
         interface_mapping = (
-            list(range(max(source_interfaces.values()) + 1))
+            [token if token <= max(read_interfaces(source_root / relative_path).values(), default=-1)
+             else UNMAPPED_TOKEN
+             for token in range(max(source_interfaces.values()) + 1)]
             if source_interfaces
             else []
         )

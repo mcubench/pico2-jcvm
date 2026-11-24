@@ -6,6 +6,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_pqc.hpp"
 #include "native_signature_digest.hpp"
 
 #include "mbedtls/sha1.h"
@@ -747,6 +748,45 @@ jref_t createSignature(uint8_t algorithm, uint8_t digest, uint8_t cipher,
   return reference;
 }
 
+// Signature.getInstance(ALG_NULL, SIG_CIPHER_ML_DSA*, PAD_NULL, false). The
+// 3.2 API defines no ALG_* byte for ML-DSA, so getAlgorithm() reports 0.
+jref_t createMlDsaSignature(uint8_t digest, uint8_t cipher, uint8_t padding,
+                            jbool_t externalAccess) {
+  if (externalAccess || digest != 0 || padding != 0 || !JC_SUPPORT_MLDSA_ANY)
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  Heap &heap = Context::getActiveContext().getHeap();
+  const jref_t reference = heap.addInstance(
+      ROM_PACKAGE_INDEX_JAVACARD_SECURITY, signatureClassIndex());
+  auto instance = heap.getInstance(reference);
+  if (!instance) throw Exceptions::RuntimeException;
+  instance->setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM, 0);
+  instance->setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM,
+      0);
+  instance->setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_CIPHERALGORITHM,
+      static_cast<jbyte_t>(cipher));
+  instance->setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_PADDINGALGORITHM, 0);
+  instance->setNativeSessionField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALIZED, 0);
+  instance->setNativeSessionField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE, 0);
+  instance->setNativeSessionField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
+  instance->setField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, jref_t());
+  instance->setNativeSessionField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
+  return reference;
+}
+
+bool isMlDsaSignature(JC_Instance &signature) {
+  return isMlDsaCipher(static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_CIPHERALGORITHM)));
+}
+
 std::shared_ptr<JC_Instance> keyInstance(jref_t keyReference) {
   if (keyReference.isNullPointer() || keyReference.isArray())
     throw Exceptions::NullPointerException;
@@ -1043,6 +1083,10 @@ jref_t javacard_security_Signature_getInstance(jbyte_t algorithm,
 
 jref_t javacard_security_Signature_getInstance(
     jbyte_t digest, jbyte_t cipher, jbyte_t padding, jbool_t externalAccess) {
+  if (isMlDsaCipher(static_cast<uint8_t>(cipher)))
+    return createMlDsaSignature(static_cast<uint8_t>(digest),
+                                static_cast<uint8_t>(cipher),
+                                static_cast<uint8_t>(padding), externalAccess);
   const uint8_t selected = algorithmForTuple(static_cast<uint8_t>(digest),
       static_cast<uint8_t>(cipher), static_cast<uint8_t>(padding));
   return createSignature(selected, static_cast<uint8_t>(digest),
@@ -1052,6 +1096,11 @@ jref_t javacard_security_Signature_getInstance(
 void javacard_security_Signature_init(jref_t receiver, jref_t key,
                                       jbyte_t mode) {
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature)) {
+    mldsaSignatureInit(*signature, key, static_cast<uint8_t>(mode), nullptr, 0,
+                       0);
+    return;
+  }
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
@@ -1077,6 +1126,11 @@ void javacard_security_Signature_init(
     std::shared_ptr<JC_Array> parameters, jshort_t offset, jshort_t length) {
   auto signature = signatureInstance(receiver);
   if (!parameters) throw Exceptions::NullPointerException;
+  if (isMlDsaSignature(*signature)) {
+    mldsaSignatureInit(*signature, key, static_cast<uint8_t>(mode), parameters,
+                       offset, length);
+    return;
+  }
   const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
   if (isMessageRecoverySignature(*signature))
@@ -1136,6 +1190,7 @@ jbyte_t javacard_security_Signature_getPaddingAlgorithm(jref_t receiver) {
 }
 jshort_t javacard_security_Signature_getLength(jref_t receiver) {
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature)) return mldsaSignatureLength(*signature);
   requireInitialized(*signature);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
@@ -1160,6 +1215,8 @@ void javacard_security_Signature_setInitialDigest(
     jshort_t digestLength, std::shared_ptr<JC_Array> messageLength,
     jshort_t messageLengthOffset, jshort_t messageLengthLength) {
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   requireInitialized(*signature);
   [[maybe_unused]] const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
@@ -1232,6 +1289,10 @@ void javacard_security_Signature_update(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
     jshort_t length) {
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature)) {
+    mldsaSignatureUpdate(*signature, input, offset, length);
+    return;
+  }
   requireInitialized(*signature);
   if (isMessageRecoverySignature(*signature)) {
     const uint8_t state = static_cast<uint8_t>(signature->getNativeSessionField_Byte(
@@ -1295,6 +1356,12 @@ jshort_t javacard_security_Signature_sign(
   auto &context = Context::getActiveContext();
   context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature)) {
+    const jshort_t result = mldsaSignatureSign(*signature, input, offset,
+                                               length, output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
+  }
   requireInitialized(*signature, kModeSign);
   if (isMessageRecoverySignature(*signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
@@ -1364,6 +1431,8 @@ jshort_t javacard_security_Signature_signPreComputedHash(
   auto &context = Context::getActiveContext();
   context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   requireInitialized(*signature, kModeSign);
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
@@ -1402,6 +1471,13 @@ jbool_t javacard_security_Signature_verify(
   auto &context = Context::getActiveContext();
   context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature)) {
+    const jbool_t result =
+        mldsaSignatureVerify(*signature, input, offset, length, expected,
+                             expectedOffset, expectedLength);
+    context.setSensitiveResultBoolean(result != FALSE);
+    return result;
+  }
   requireInitialized(*signature, kModeVerify);
   if (isMessageRecoverySignature(*signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
@@ -1490,6 +1566,8 @@ jbool_t javacard_security_Signature_verifyPreComputedHash(
   auto &context = Context::getActiveContext();
   context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
+  if (isMlDsaSignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   requireInitialized(*signature, kModeVerify);
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(

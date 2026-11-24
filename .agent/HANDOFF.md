@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-11-23. See [TODO.md](../TODO.md) for active work and
+Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
 [EXT_REQUESTS.md](EXT_REQUESTS.md) for external dependencies.
 
 ## Last observed physical state
@@ -30,11 +30,15 @@ Updated 2026-11-23. See [TODO.md](../TODO.md) for active work and
 - GP DELETE after a perf run (uninstall OOM panic / reader drop) is fixed and
   hardware-validated on EE11 (`20261124-2205-gp-delete-no-snapshot`). Windows
   confirmation: WIN-GP-DELETE-WATCHDOG-20261124 (package `6d3bb526`).
-- 2026-11-24 21:29: `main` was reset from `9ac7e8a3` to `c8984baf` (stash
-  "Before release"), not by the GP DELETE session. The PQC commits `5a72ae68`,
-  `3d700468`, `9ac7e8a3` and `a40cf4e6` are now reachable only via reflog.
-  User decision 2026-11-24: keep the PQC work dropped; the user will add it
-  later. Do not restore those commits.
+- WIN-BE737F0E-6F00: fixed in `d65eb278` (runtime exception instances bypass the
+  Java allocation reserve); validated on EE11, needs a new Windows package for
+  acceptance. Open: ALGSUPPORT RSA 4096 KeyPair "no" rows not investigated.
+- EE11 was wiped (empty card) on 2026-11-24 and runs the PQC max_crypto
+  image (`20261124-1700-pqc-api`); no applets installed. Reinstall JCAlgTest
+  before using it for JCAlgTest work.
+- PQC (JC 3.2 preview ML-KEM/ML-DSA): hardware-validated on EE11. Open:
+  ML-DSA on 07E7/F42D not run; a JCAlgTest-style perf campaign does not cover
+  PQC; `KEM.ALG_DHKEM` and the XDH named-parameter keys are not implemented.
 
 - If continuing VM performance work, reprofile the XOR control and the
   interpreter fetch/decode phases before changing dispatch or branch checks.
@@ -54,5 +58,6 @@ Updated 2026-11-23. See [TODO.md](../TODO.md) for active work and
   flash telemetry. If the cutoff recurs, use `PICO2_DEBUG_HEAP_GC=1` for the
   allocation and collection samples. RSA/RSA-CRT 4096 physical runs remain
   deferred at user request.
-- XDH is waiting on the named-parameter key ABI inputs
-  (CRYPTO-XDH-ABI-20261121).
+- XDH: the SDK 26.1 export files (`toolchain.jc261`, `lib/tools.jar`) now
+  provide the named-parameter key ABI requested in CRYPTO-XDH-ABI-20261121;
+  a reference CAP and expected outputs are still missing.

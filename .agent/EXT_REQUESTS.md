@@ -117,3 +117,8 @@ exercises named-parameter key import and agreement. Include expected
 X25519/X448 shared-secret outputs and invalid-public-key results for the
 curves the target supports. The current build uses JC305 exports and has no
 named-parameter XDH key ABI.
+
+Update 2026-11-24: the user supplied the Java Card SDK 26.1 (export files in
+`.local-toolchain/java-card/provided/jc_26_1/lib/tools.jar`), which covers the
+API/export part. Still needed: an unchanged reference CAP and expected
+X25519/X448 outputs and invalid-public-key results.

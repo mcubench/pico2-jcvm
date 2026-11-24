@@ -37,7 +37,8 @@
     "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar",
     "jcalgtest.client.1.8.5-20261120": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar",
     "jcalgtest.client.1.8.5-20261121": "tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar",
-    "nist-acvp.pqc-subset": "tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json"
+    "nist-acvp.pqc-subset": "tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json",
+    "toolchain.jc261": ".local-toolchain/java-card/provided/jc_26_1"
   },
   "files": [
     {

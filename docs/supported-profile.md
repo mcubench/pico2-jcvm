@@ -36,6 +36,40 @@ The RP2350 max_crypto build exposes `RandomData.ALG_TRNG` through both
 RandomData factories. The PC simulator reports this algorithm unavailable
 because it has no RP2350 entropy peripheral.
 
+### Java Card 3.2 preview post-quantum API
+
+The ROM mask also carries the Java Card 3.2 preview packages
+`javacardx.crypto.kem` (AID `A000000062020101`, version 17.0) and
+`javacardx.security.pqc` (AID `A000000062020505`, version 17.0), with class,
+method and constant layout from the Java Card SDK 26.1 preview export files,
+plus `javacard.security.NamedParameterSpec` and `AlgorithmParameterSpec`. The
+profile keys `mlkem_512/768/1024` and `mldsa_44/65/87` select:
+
+- `PQCKeyFactory.buildKey/generateKeyPair` (fresh and from seed),
+  `MLKEMPublicKey`, `MLKEMPrivateKey` (seed or expanded, `getPublicKey`),
+  `MLDSAPublicKey`, `MLDSAPrivateKey` (seed or expanded), `EncodableKey`
+  import/export with FIPS 203/204 key checks, and `KeyPair(PublicKey,
+  PrivateKey).genKeyPair()` for these keys;
+- `KEM.getInstance(ALG_ML_KEM, ...)` with encapsulation, decapsulation and
+  `MODE_EXPAND`, into byte arrays or AES/DES/HMAC keys;
+- `Signature.getInstance(ALG_NULL, SIG_CIPHER_ML_DSA[_EXTERNAL_MU][_EXPAND_SEED],
+  PAD_NULL, false)`: hedged pure ML-DSA with a 0–255 byte context and streamed
+  `update()`, and external-mu signing/verification.
+
+Not implemented: `KEM.ALG_DHKEM`, HashML-DSA, the other `NamedParameterSpec`
+names (`getInstance` throws `NO_SUCH_ALGORITHM`), and the remaining 3.1/3.2
+API additions. `Key.getSize()` of an ML key reports the FIPS parameter-set
+number (512/768/1024 or 44/65/87). Primitives come from mlkem-native and
+mldsa-native (`third_party/`).
+
+CAPs built with SDK 26.1 `-enable-preview` are CAP format 2.3 and import
+`javacard.framework` 1.9 and `javacard.security` 17.9. The loader accepts
+Compact-format CAP 2.3 when each class's virtual method token mapping equals
+the implicit CAP 2.2 mapping, and accepts those newer imports of the
+JC305-level ROM packages (framework up to 1.9, security up to 1.8 or 17.9,
+javacardx.crypto up to 1.8). References to 3.1/3.2 classes the ROM lacks
+resolve to an invalid token and fail closed.
+
 ## Known exclusions and limits
 
 - Extended-length APDUs and T=1 waiting-time extension are not implemented.

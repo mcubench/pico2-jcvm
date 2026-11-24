@@ -1474,12 +1474,12 @@
       "key_hmac_sha256_block_64": true,
       "key_hmac_sha384_block_64": true,
       "key_hmac_sha512_block_64": true,
-      "mlkem_512": false,
-      "mlkem_768": false,
-      "mlkem_1024": false,
-      "mldsa_44": false,
-      "mldsa_65": false,
-      "mldsa_87": false
+      "mlkem_512": true,
+      "mlkem_768": true,
+      "mlkem_1024": true,
+      "mldsa_44": true,
+      "mldsa_65": true,
+      "mldsa_87": true
     }
   }
 }

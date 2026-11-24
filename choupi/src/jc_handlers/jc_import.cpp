@@ -111,10 +111,46 @@ constexpr PublicApiAid kPublicApiAids[] = {
     {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x08, 0x01}}, // framework/util
     {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x05}}, // javacardx/security
     {6, {0xa0, 0x00, 0x00, 0x01, 0x51, 0x00}}, // org/globalplatform
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x01, 0x01}}, // crypto/kem (3.2)
+    {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x05, 0x05}}, // security/pqc (3.2)
     // CHOUPI resident AID aliases for the public apdu/util and security APIs.
     {10, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x02, 0x08, 0x09, 0x01}},
     {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x02, 0x05}},
 };
+// Newest import versions of the JC305-level ROM API packages that a CAP
+// converted with the Java Card 3.1/3.2 SDK (26.1, including its preview
+// exports) may carry. Those versions keep every JC305 token, so the ROM
+// serves their JC305 subset plus the 3.2 PQC additions; tokens the ROM lacks
+// map to 0xFF (jc_cp.cpp) or exceed a ROM table and fail closed when used.
+// javacard.security 17.9 is the SDK 26.1 preview numbering of 1.8 plus
+// preview constants (same tokens).
+struct NewerApiImport {
+  uint8_t length;
+  uint8_t bytes[7];
+  uint8_t major;
+  uint8_t max_minor;
+};
+constexpr NewerApiImport kNewerApiImports[] = {
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01}, 1, 9},  // framework
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02}, 1, 8},  // security
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02}, 17, 9}, // security preview
+    {7, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x01}, 1, 8},  // javacardx.crypto
+};
+
+bool accepts_newer_api_import(const jc_cap_package_info &imported,
+                              const jc_cap_package_info &resident) {
+  if (imported.AID_length != resident.AID_length ||
+      std::memcmp(imported.AID, resident.AID, imported.AID_length) != 0)
+    return false;
+  for (const NewerApiImport &rule : kNewerApiImports) {
+    if (imported.AID_length == rule.length &&
+        std::memcmp(imported.AID, rule.bytes, rule.length) == 0 &&
+        imported.major_version == rule.major &&
+        imported.minor_version <= rule.max_minor)
+      return true;
+  }
+  return false;
+}
 } // namespace
 
 bool Import_Handler::isPublicApiPackage(
@@ -199,9 +235,12 @@ Import_Handler::getPackageIndex(const jc_cap_package_info *pinfo) {
     // major version and an equal or newer minor version. Exact equality here
     // rejects valid imports such as JC305 javacard.security 1.0 against the
     // embedded compatible 1.6 package.
-    if (pinfo->major_version == pinfo_to_compare.major_version &&
-        pinfo->minor_version <= pinfo_to_compare.minor_version &&
-        imported_aid_matches_resident(*pinfo, pinfo_to_compare)) {
+    const bool resident_api = !FlashMemory_Handler::isDynamicPackageID(index);
+    if ((pinfo->major_version == pinfo_to_compare.major_version &&
+         pinfo->minor_version <= pinfo_to_compare.minor_version &&
+         imported_aid_matches_resident(*pinfo, pinfo_to_compare)) ||
+        (resident_api &&
+         accepts_newer_api_import(*pinfo, pinfo_to_compare))) {
       if (FlashMemory_Handler::isDynamicPackageID(
               this->package.getPackageID()) &&
           !FlashMemory_Handler::isDynamicPackageID(index) &&

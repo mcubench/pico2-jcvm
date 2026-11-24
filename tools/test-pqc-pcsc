@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Physical ML-KEM / ML-DSA test: install the SDK 26.1 preview probe CAP with
+# GPPro on one exact reader, run tests/integration/pqc_vectors.py through
+# PC/SC while capturing that board's serial log (CHOUPI:PQC, CHOUPI:FS_APDU),
+# then delete the probe package again.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+require_command timeout
+[[ $# -eq 2 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-pqc-pcsc '<exact PC/SC reader name>' <CHIPID>"
+
+reader_name="$1"
+chip_id="$2"
+build_dir="${repo_root}/build/pqc-probe"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+cap="${build_dir}/pqc-probe.cap"
+package_aid="A000000151000301"
+applet_aid="A00000015100030101"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+run_dir="${repo_root}/artifacts/logs/pqc-pcsc-${chip_id}-${timestamp}"
+vectors="${run_dir}/vectors.tsv"
+client_build="${build_dir}/physical-client"
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+installed_here=0
+monitor_pid=""
+
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+[[ -s "${cap}" ]] || die "probe CAP missing; run ./tools/build-pqc-probe"
+mkdir -p "${run_dir}" "${client_build}"
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if [[ -n "${monitor_pid}" ]]; then
+    kill "${monitor_pid}" 2>/dev/null || true
+    wait "${monitor_pid}" 2>/dev/null || true
+  fi
+  if (( installed_here )); then
+    if timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" --delete "${package_aid}" -f \
+         >>"${run_dir}/gp-cleanup.log" 2>&1; then
+      printf 'PHYSICAL:CLEANUP_PASS package=%s\n' "${package_aid}"
+    else
+      printf 'PHYSICAL:CLEANUP_FAIL package=%s log=%s\n' "${package_aid}" \
+        "${run_dir}/gp-cleanup.log"
+      status=1
+    fi
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+exec > >(tee -a "${run_dir}/run.log") 2>&1
+printf 'PHYSICAL:START reader=%s chip=%s cap_sha256=%s\n' "${reader_name}" \
+  "${chip_id}" "$(sha256sum "${cap}" | cut -d' ' -f1)"
+pcsc_refresh_if_reader_missing "${reader_name}"
+timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${run_dir}/gp-list.log" 2>&1 || \
+  die "GPPro list failed; see ${run_dir}/gp-list.log"
+if grep -Fq "PKG: ${package_aid} " "${run_dir}/gp-list.log"; then
+  die "probe package ${package_aid} already present; delete it first"
+fi
+
+python3 - "${repo_root}" "${vectors}" <<'PY'
+import sys
+from pathlib import Path
+root, output = Path(sys.argv[1]), Path(sys.argv[2])
+sys.path.insert(0, str(root / "tests/integration"))
+import pqc_vectors
+cases = pqc_vectors.vectors()
+with output.open("w", encoding="ascii") as stream:
+    for command, expected, label in cases:
+        stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
+print(f"VECTORS:PASS total={len(cases)} file={output}")
+PY
+
+installed_here=1
+timeout --signal=TERM --kill-after=5s 120s "${gp[@]}" --install "${cap}" \
+  >"${run_dir}/gp-install.log" 2>&1 || die "GPPro install failed; see ${run_dir}/gp-install.log"
+"${repo_root}/tools/env" javac -d "${client_build}" \
+  "${repo_root}/tests/hardware/ApduVectorRunner.java"
+"${repo_root}/tools/monitor" --serial "${chip_id}" --seconds 3600 \
+  >"${run_dir}/serial.log" 2>&1 &
+monitor_pid=$!
+sleep 2
+timeout --signal=TERM --kill-after=5s 3000s "${repo_root}/tools/env" java \
+  -cp "${client_build}" ApduVectorRunner "${reader_name}" "${applet_aid}" "${vectors}"
+printf 'PHYSICAL:PASS dir=%s\n' "${run_dir#${repo_root}/}"

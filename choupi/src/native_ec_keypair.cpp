@@ -9,6 +9,7 @@
 #include "native_crypto_exception.hpp"
 #include "native_ec_key_store.hpp"
 #include "native_ec_group.hpp"
+#include "native_pqc.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -39,6 +40,9 @@ namespace {
 constexpr uint8_t kAlgorithmEcFp = 5;
 constexpr uint8_t kAlgorithmRsa = 1;
 constexpr uint8_t kAlgorithmRsaCrt = 2;
+// Internal marker for KeyPair(PublicKey, PrivateKey) over ML-KEM / ML-DSA
+// keys; no KeyPair.ALG_* constant uses it.
+constexpr uint8_t kAlgorithmPqc = 0x7F;
 constexpr uint8_t kTypeEcFpPublic = 11;
 constexpr uint8_t kTypeEcFpPrivate = 12;
 constexpr uint8_t kTypeRsaPublic = 4;
@@ -364,7 +368,36 @@ void javacard_security_KeyPair_init(jref_t receiver, jbyte_t algorithm,
 #endif
 }
 
+void javacard_security_KeyPair_init(jref_t receiver, jref_t publicKey,
+                                   jref_t privateKey) {
+  auto pair = keyPairInstance(receiver);
+  // Only Java Card 3.2 PQC key pairs are supported by this constructor.
+  if (!pqcCheckKeyPair(publicKey, privateKey))
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  pair->setField_Byte(ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_ALGORITHM,
+                      static_cast<jbyte_t>(kAlgorithmPqc));
+  pair->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_KEYLENGTH,
+                       0);
+  pair->setField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_PUBLICKEY, publicKey);
+  pair->setField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_PRIVATEKEY, privateKey);
+}
+
 void javacard_security_KeyPair_genKeyPair(jref_t receiver) {
+  {
+    auto pair = keyPairInstance(receiver);
+    if (static_cast<uint8_t>(pair->getField_Byte(
+            ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_ALGORITHM)) ==
+        kAlgorithmPqc) {
+      pqcGenerateKeyPair(
+          pair->getField_Reference(
+              ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_PUBLICKEY),
+          pair->getField_Reference(
+              ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_PRIVATEKEY));
+      return;
+    }
+  }
 #if JC_SUPPORT_KEYPAIR_EC_FP || JC_SUPPORT_KEYPAIR_RSA_ANY
   auto pair = keyPairInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(pair->getField_Byte(

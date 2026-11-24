@@ -253,6 +253,44 @@ for _set in _MLDSA_SETS:
     )
 
 
+# Java Card 3.2 preview PQC API. The ROM always carries these packages; the
+# natives throw NO_SUCH_ALGORITHM for parameter sets the profile excludes.
+_KEM_SECRET = "Ljavacard/security/SecretKey;"
+PQC_NATIVE_METHODS = (
+    "javacard/security|NamedParameterSpec|NamedParameterSpec/getInstance(S)"
+    "Ljavacard/security/NamedParameterSpec;|static",
+    "javacardx/crypto/kem|KEM|KEM/getInstance(SLjavacard/security/"
+    "AlgorithmParameterSpec;S)Ljavacardx/crypto/kem/KEM;|static",
+) + tuple(
+    f"javacardx/crypto/kem|KEMImpl|KEMImpl/{signature}|instance"
+    for signature in (
+        "decapsulate(Ljavacard/security/PrivateKey;[BS[BS)S",
+        f"decapsulate(Ljavacard/security/PrivateKey;[BS{_KEM_SECRET}SS)S",
+        "encapsulate([BSS[BS[BS)S",
+        f"encapsulate([BSS[BS{_KEM_SECRET}SS)S",
+        "encapsulate(Ljavacard/security/PublicKey;[BS[BS)S",
+        f"encapsulate(Ljavacard/security/PublicKey;[BS{_KEM_SECRET}SS)S",
+        "sharedSecretSize()S",
+        "cipherTextSize()S",
+    )
+) + tuple(
+    f"javacardx/security/pqc|PQCKeyFactory|PQCKeyFactory/{signature}|static"
+    for signature in (
+        "buildKey(SS)Ljavacard/security/Key;",
+        "generateKeyPair(Ljavacard/security/PublicKey;Ljavacard/security/PrivateKey;)V",
+        "generateKeyPair(Ljavacard/security/PrivateKey;Ljavacard/security/"
+        "PublicKey;Ljavacard/security/PrivateKey;)V",
+    )
+) + tuple(
+    f"javacardx/security/pqc|PQCKeyImpl|PQCKeyImpl/{signature}|instance"
+    for signature in (
+        "isInitialized()Z", "clearKey()V", "getType()B", "getSize()S",
+        "getParams()Ljavacard/security/NamedParameterSpec;",
+        "getEncodingLength()S", "getEncoded([BS)S", "setEncoded([BSS)V",
+        "getPublicKey([BS)S",
+    )
+)
+
 def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if not isinstance(value, dict):
         raise ValueError(f"{path}: profile must be an object")
@@ -693,6 +731,7 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|KeyAgreement|KeyAgreement/getAlgorithm()B|instance",
             "javacard/security|KeyAgreement|KeyAgreement/generateSecret([BSS[BS)S|instance",
             "javacard/security|KeyPair|KeyPair/<init>(BS)V|instance",
+            "javacard/security|KeyPair|KeyPair/<init>(Ljavacard/security/PublicKey;Ljavacard/security/PrivateKey;)V|instance",
             "javacard/security|KeyPair|KeyPair/genKeyPair()V|instance",
             "javacard/security|KeyPair|KeyPair/getPublic()Ljavacard/security/PublicKey;|instance",
             "javacard/security|KeyPair|KeyPair/getPrivate()Ljavacard/security/PrivateKey;|instance",
@@ -713,7 +752,7 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacardx/crypto|AEADCipher|AEADCipher/verifyTag([BSSS)Z|instance",
             "javacardx/crypto|Cipher|Cipher/update([BSS[BS)S|instance",
             "javacardx/crypto|Cipher|Cipher/doFinal([BSS[BS)S|instance",
-        ) + ((
+        ) + PQC_NATIVE_METHODS + ((
             "javacard/security|SecureRandomData|SecureRandomData/<init>()V|instance",
             "javacard/security|SecureRandomData|SecureRandomData/generateData([BSS)V|instance",
             "javacard/security|SecureRandomData|SecureRandomData/nextBytes([BSS)S|instance",

@@ -9,6 +9,7 @@
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
 #include "native_ec_key_store.hpp"
+#include "native_secret_key.hpp"
 
 #include <algorithm>
 #include <array>
@@ -834,6 +835,61 @@ void javacard_security_NativeKey_copyDomainParametersFrom(jref_t receiver,
   }
   destination->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK,
       from->getField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK));
+}
+
+bool nativeSecretKeyAccepts(jref_t reference, uint16_t length) {
+  if (reference.isNullPointer()) throw Exceptions::NullPointerException;
+  auto key = nativeKey(reference);
+  const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
+  if (rsaType(type) || ecFpType(type)) return false;
+  if (type == kHmacPersistent || type == kHmacTransientReset ||
+      type == kHmacTransientDeselect) {
+    const jshort_t capacity = key->getField_Short(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE);
+    return length > 0 && length <= static_cast<uint16_t>(capacity);
+  }
+  auto data = arrayField(*key,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+      JAVA_ARRAY_T_BYTE);
+  return length == data->size();
+}
+
+void nativeSecretKeySet(jref_t reference, const uint8_t *bytes,
+                        uint16_t length) {
+  if (!nativeSecretKeyAccepts(reference, length))
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  auto key = nativeKey(reference);
+  const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
+  auto target = arrayField(*key,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+      JAVA_ARRAY_T_BYTE);
+  if (length != target->size()) {
+    // HMAC only (nativeSecretKeyAccepts): resize as setKey(byte[],short,short).
+    Heap &heap = Context::getActiveContext().getHeap();
+    const bool transient = transientType(type);
+    key->setField_Reference(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+        allocateArray(heap, length, JAVA_ARRAY_T_BYTE, transient,
+                      transient ? clearEvent(type) : ClearEvent::None));
+    target = arrayField(*key,
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+        JAVA_ARRAY_T_BYTE);
+  }
+  writeKeyBytes(target, std::vector<uint8_t>(bytes, bytes + length));
+  const jref_t transientRef = key->getField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TRANSIENTINITIALIZED);
+  if (!transientRef.isNullPointer()) {
+    auto flag = Context::getActiveContext().getHeap().getArray(transientRef);
+    if (!flag || flag->getType() != JAVA_ARRAY_T_BYTE || flag->size() < 1)
+      throw Exceptions::ArrayStoreException;
+    flag->setByteEntry(0, 1);
+  } else {
+    key->setField_Byte(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PERSISTENTINITIALIZED,
+        1);
+  }
 }
 
 } // namespace jcvm

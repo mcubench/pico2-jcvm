@@ -79,8 +79,13 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
     mapping_size = sizeof(jc305_javacardx_crypto_class_tokens);
   }
 
-  if (mapping == nullptr || token >= mapping_size) {
+  if (mapping == nullptr) {
     return token;
+  }
+  // Newer API versions (3.1/3.2 imports) may name classes the ROM lacks.
+  // 0xFF has no Export entry, so such references fail closed.
+  if (token >= mapping_size) {
+    return 0xFF;
   }
   return mapping[token];
 }
@@ -142,8 +147,11 @@ uint8_t remap_imported_interface_token(
     mapping_size = sizeof(jc305_javacardx_crypto_interface_tokens);
   }
 
-  if (mapping == nullptr || token >= mapping_size) {
+  if (mapping == nullptr) {
     return token;
+  }
+  if (token >= mapping_size) {
+    return 0xFF; // Unimplemented newer-API interface: no Export entry.
   }
   return mapping[token];
 }
@@ -450,6 +458,17 @@ uint8_t remap_imported_interface_method_token(
   // interface that declares that prefix; interfaces with additional methods
   // have their own full maps below.
   static constexpr uint8_t security_key_interface_methods[] = {1, 3, 2, 0};
+  // The Java Card 3.2 javacardx.security.pqc key interfaces (EncodableKey,
+  // ML-DSA/ML-KEM public/private keys: class tokens 0-4) start with the same
+  // inherited Key methods in the JC order; their own methods (tokens 4-8)
+  // match the ROM export.
+  if (package_info.AID_length == 8 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x02\x05\x05", 8) == 0 &&
+      class_token <= 4 &&
+      method_token < sizeof(security_key_interface_methods)) {
+    return security_key_interface_methods[method_token];
+  }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&

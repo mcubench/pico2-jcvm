@@ -79,6 +79,7 @@ python3 "${repo_root}/tools/javacard-class-tokens.py" \
   --source-root "${repo_root}/choupi/javacard-sdk/javacard-api/sdks/jc305u1_kit/api_export_files" \
   --target-root "${build_dir}/javacard-api" \
   --output "${support_dir}/javacard-class-token-map.h"
+python3 "${repo_root}/tools/check-pqc-api-tokens.py" "${build_dir}/javacard-api"
 if [[ "${rommask_only}" == true ]]; then
   "${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask -j2
   # The emulator was built against the previous ROM mask; remove it so a
