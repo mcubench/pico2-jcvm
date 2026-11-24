@@ -33,9 +33,10 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
 - WIN-BE737F0E-6F00: fixed in `d65eb278` (runtime exception instances bypass the
   Java allocation reserve); validated on EE11, needs a new Windows package for
   acceptance. Open: ALGSUPPORT RSA 4096 KeyPair "no" rows not investigated.
-- EE11 was wiped (empty card) on 2026-11-24 and runs the PQC max_crypto
-  image (`20261124-1700-pqc-api`); no applets installed. Reinstall JCAlgTest
-  before using it for JCAlgTest work.
+- EE11 runs the GP PUT KEY image (`20261124-2305-gp-put-key`, UF2
+  `7a24bb70…919e`); no applets installed. It holds a PUT KEY record with the
+  default key value `40..4F` under KVN 1 (default key works). Reinstall
+  JCAlgTest before using it for JCAlgTest work.
 - PQC (JC 3.2 preview ML-KEM/ML-DSA): hardware-validated on EE11. Open:
   ML-DSA on 07E7/F42D not run; a JCAlgTest-style perf campaign does not cover
   PQC; `KEM.ALG_DHKEM` and the XDH named-parameter keys are not implemented.
