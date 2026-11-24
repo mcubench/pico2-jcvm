@@ -828,9 +828,15 @@ void process_message(uint8_t rhport) {
               request.aid, request.aid_length, deleted_package_id);
           (void)choupi_vm_deselect_applet(0);
           get_status_first_seen = false;
-          status = cap_load_session.deleteObject(
-              request.aid, request.aid_length,
-              request.delete_related_objects);
+          {
+            // DELETE scans grow with the persistent store; keep CCID time
+            // extensions flowing while it runs.
+            NativeOperationScope operation(rhport, rx_buffer[6], apdu[0],
+                                           apdu[1], 0);
+            status = cap_load_session.deleteObject(
+                request.aid, request.aid_length,
+                request.delete_related_objects);
+          }
           if (status == 0x9000 ||
               cap_load_session.deletePersistentStateCommitted()) {
             // Persistent DELETE may commit before CAP metadata cleanup. Drop

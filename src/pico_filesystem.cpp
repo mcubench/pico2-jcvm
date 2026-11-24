@@ -14,6 +14,7 @@
 #include "vm_filesystem.h"
 #include "flash_layout.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "long_operation_progress.hpp"
 
 #ifndef RP2350_FS_OVERLAY_PC_VPCD
 extern "C" const uint8_t choupi_rommask_start[];
@@ -2415,6 +2416,7 @@ uint8_t compact_deleted_overlay_records() {
             });
 
   for (size_t index = 0; index < ordered_count; ++index) {
+    jcvm::longOperationProgress();
     const uint16_t slot = erase_bucket_next[index];
     const auto &file = overlay[slot];
     uint8_t tag[kMaxOverlayTagLength]{};
@@ -3113,6 +3115,7 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_length,
   }
 
   for (uint16_t slot = request->bucket; slot < kMaxOverlayFiles; ++slot) {
+    jcvm::longOperationProgress();
     request->bucket = static_cast<uint16_t>(slot + 1);
     const OverlayFile &file = overlay[slot];
     if (!overlay_is_used(file) || !overlay_has_record(file)) continue;
@@ -3376,6 +3379,8 @@ uint8_t erase_overlay_records(Match matches) {
                 (kMaxOverlayTagLength + 1) * 17,
             UINT16_MAX);
   for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    // Prefix erases (GP DELETE) scan the whole store; feed the watchdog/CCID.
+    jcvm::longOperationProgress();
     const OverlayFile &file = overlay[slot];
     if (!overlay_is_used(file) || !overlay_has_record(file)) continue;
     uint8_t tag[kMaxOverlayTagLength]{};
@@ -3399,6 +3404,7 @@ uint8_t erase_overlay_records(Match matches) {
     for (int payload_bucket = 16; payload_bucket >= 0; --payload_bucket) {
       for (uint16_t slot = erase_bucket_head[length][payload_bucket];
            slot != UINT16_MAX; slot = erase_bucket_next[slot]) {
+        jcvm::longOperationProgress();
         uint8_t tag[kMaxOverlayTagLength]{};
         uint8_t tag_length = 0;
         if (!reconstruct_overlay_tag(slot, tag, &tag_length) ||

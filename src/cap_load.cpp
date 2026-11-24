@@ -398,18 +398,19 @@ bool clear_applet_persistent_state(uint8_t applet_owner,
   // Root object and instance fields use the same tag namespace. Any child
   // array/object records become unreachable when these owning fields are
   // erased and are overwritten if the applet is installed again.
-  for (uint16_t field = 0; field <= 0xff; ++field) {
-    const auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
-        applet_owner, package_id, class_index, static_cast<uint8_t>(field));
-    if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(tag)) return false;
-    if (class_index > UINT8_MAX) {
-      const auto legacy_tag =
-          jcvm::FlashMemory_Handler::getLegacyPersistentFieldTag(
-              applet_owner, package_id, class_index,
-              static_cast<uint8_t>(field));
-      if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(legacy_tag))
-        return false;
-    }
+  // The field byte is the last byte of the field tag, so the union of the
+  // 256 per-field prefixes is the field tag without it. One prefix pass
+  // replaces 256 full-store scans (GP DELETE ran past the 15 s watchdog).
+  auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
+      applet_owner, package_id, class_index, 0);
+  --tag.len;
+  if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(tag)) return false;
+  if (class_index > UINT8_MAX) {
+    auto legacy_tag = jcvm::FlashMemory_Handler::getLegacyPersistentFieldTag(
+        applet_owner, package_id, class_index, 0);
+    --legacy_tag.len;
+    if (!jcvm::FlashMemory_Handler::erasePersistentPrefix(legacy_tag))
+      return false;
   }
   return true;
 }
