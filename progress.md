@@ -33904,3 +33904,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Resolves the open question in `20261124-2235-gp-delete-handoff`.
 - Decision: Continue on `main` without PQC.
 - Artifacts/logs: none
+
+## 2026-11-24 Add the agent-introduced bug retrospective
+
+- Step-Id: `20261124-1130-develop-fails-doc`
+- Model: `claude-sonnet-5-5`
+- Change: added `docs/develop_fails_20261124.md`, 16 categories of bugs introduced by agent changes and later fixed, 2 examples each with commit hashes. Built by a subagent from keyword sweeps of this file and `git show` of the fixing commits.
+- Validation: every 8-char commit hash in the document passes `git cat-file -t`; the category 5 snippets were compared with their diffs. Other snippets, and the "fixes seen" counts, were not independently checked.
+- Result: document only, no code change. Five entries have no pinned introducing commit; entry 13b's fix is in the javacard-api submodule and was not verified.
+- Decision: none.
+- Artifacts/logs: `docs/develop_fails_20261124.md`
+
