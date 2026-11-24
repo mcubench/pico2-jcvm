@@ -33794,3 +33794,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Six former Java method bodies now use native dispatch. The ARM max_crypto ROM inventory has 449 remaining concrete Java bodies. Flash traffic was not measured because this step changes dispatch and exception mapping, with the same persistence backend and writes.
 - Decision: INV-03 remains open for the rest of the built-in ROM and is tracked under PROFILE-01.
 - Artifacts/logs: `artifacts/logs/native-jcsystem-{arm,overlay-build,overlay,cycle,cycle-bootsel,apdu}.log`; normal UF2 SHA-256 `98247d75d66391b2c501bbc1f11fa237f86a25cd823770a5772f5ee711e2269a`.
+
+## 2026-11-24 Repackage the 6f00 reserve-fix firmware at HEAD 6b610082
+
+- Step-Id: `20261124-1000-6f00-external-repackage`
+- Task: WIN-BE737F0E-6F00
+- Model: `claude-sonnet-5-5`
+- Change: rebuilt normal max_crypto ARM at `6b610082` (adds the other agent's JCSystem transaction native dispatch on top of `d65eb278`) and repackaged; WIN-6F00-RESERVE-FIX-20261124 now points to this image.
+- Validation: build rc=0, mode=normal, deletion ON, debug OFF, no C++ compiler warnings (only Java Card/Maven notices); PACKAGE:PASS. Not flashed or run locally.
+- Result: UF2 sha256 `16f62e28…f5417` (3,035,136 B), ZIP sha256 `9dd1b003…a8ec`, CPLC `6B610082DEAC282D`. Supersedes the `00b42283` package.
+- Decision: send for Windows validation.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6b610082.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-6b610082.zip`, `artifacts/logs/external-6b610082-build.log`

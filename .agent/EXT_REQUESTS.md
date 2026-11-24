@@ -6,10 +6,10 @@ Created 2026-11-24. Use a dedicated test Pico 2. Normal ARM max_crypto image
 (object deletion on, debug off); flashing erases applet storage. Replaces
 `WIN-VM-ARRAY-READS-20261122`, whose results were returned and analysed.
 
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-00b42283.uf2),
-  SHA-256 `9f618b67cb91b638487df4bb03565487297c9bb441e5264ec90a3e8200c06be2`, 3,035,136 bytes, CPLC source ID `00B42283E3BD6A78`.
-- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-00b42283.zip),
-  SHA-256 `1ce8db3bdce6f0e85656964e8e51f7e9cd980a884f6222b90a88796d07db20d3`.
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6b610082.uf2),
+  SHA-256 `16f62e281dff0e8b321c6ee1d683e0f1838bd16ec6d70da4a4993c9e981f5417`, 3,035,136 bytes, CPLC source ID `6B610082DEAC282D`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-6b610082.zip),
+  SHA-256 `9dd1b0039865e2192490a7449b9baad1306a7d1fd3dea63c6d04076e8c55a8ec`.
 - Unchanged JCAlgTest 1.8.5/jc305 CAP and 1.8.5-20261121 client (SHA-256 `3cca70cb…a703`), both inside the ZIP.
 - Run JCAlgTest option 2 and option 1. Expected: no `SW=6f00`; the 30 methods listed in
   `progress.md` (step `20261124-0900-6f00-external-package`) were `6f00` before.
