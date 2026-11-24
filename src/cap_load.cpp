@@ -1644,7 +1644,7 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
   struct DeleteBackend {
     bool begin() noexcept {
       stage = 1;
-      return jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+      return jcvm::FlashMemory_Handler::beginUnsnapshottedWriteTransaction();
     }
     uint8_t package_id;
     uint8_t applet_owner;

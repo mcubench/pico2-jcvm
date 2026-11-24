@@ -95,6 +95,9 @@ std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
 bool persistent_write_transaction_active = false;
 bool persistent_write_recovery_required = false;
 bool persistent_write_capacity_enforced = false;
+// GP DELETE erases every record of an applet; one RAM snapshot per record
+// exhausted the heap (Out of memory panic) after a JCAlgTest perf run.
+bool persistent_write_snapshots_disabled = false;
 bool persistent_write_transaction_applet_owned = false;
 uint32_t persistent_write_transaction_used_bytes = 0;
 uint32_t persistent_write_rollback_generation = 0;
@@ -141,7 +144,8 @@ void snapshot_persistent_tag(const fs::Tag &tag) {
   if (persistent_write_recovery_required) {
     throw Exceptions::IOException;
   }
-  if (!persistent_write_transaction_active) {
+  if (!persistent_write_transaction_active ||
+      persistent_write_snapshots_disabled) {
     return;
   }
   for (auto &snapshot : persistent_write_snapshots) {
@@ -210,6 +214,7 @@ bool snapshot_matching_persistent_tags(const uint8_t *prefix,
       (prefix_length != 0 && prefix == nullptr)) {
     return false;
   }
+  if (persistent_write_snapshots_disabled) return true;
   try {
     fs_tag_next_request_t request{};
     uint16_t previous_bucket = 0;
@@ -330,6 +335,24 @@ void throw_persistent_write_status(const uint8_t status) {
 
 bool rollback_persistent_writes() noexcept {
   Heap::noteReachabilityChange();
+  if (persistent_write_snapshots_disabled) {
+    // fs_sync is deferred while the transaction is active, so flash still
+    // holds the last committed store: reload it instead of replaying copies.
+    persistent_write_transaction_active = false;
+    persistent_write_snapshots_disabled = false;
+    if (fs_init() != 0) {
+      persistent_write_transaction_active = true;
+      persistent_write_snapshots_disabled = true;
+      persistent_write_recovery_required = true;
+      return false;
+    }
+    ++persistent_write_rollback_generation;
+    persistent_write_capacity_enforced = false;
+    persistent_write_transaction_applet_owned = false;
+    persistent_write_transaction_used_bytes = 0;
+    persistent_write_recovery_required = false;
+    return true;
+  }
   // Keep the journal and transaction guard until every restore and its sync
   // have succeeded. In particular, never publish a partially restored view.
   // Erase transaction-created records first so a nearly full filesystem can
@@ -621,6 +644,7 @@ extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
 #ifdef CHOUPI_PC_RP2350_FS_OVERLAY
 extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void) {
   persistent_write_snapshots.clear();
+  persistent_write_snapshots_disabled = false;
   persistent_write_transaction_active = false;
   persistent_write_recovery_required = false;
   persistent_write_capacity_enforced = false;
@@ -641,11 +665,24 @@ bool FlashMemory_Handler::beginPersistentWriteTransaction(
     return false;
   }
   persistent_write_snapshots.clear();
+  persistent_write_snapshots_disabled = false;
   persistent_write_capacity_enforced = enforce_commit_capacity;
   persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
   persistent_write_transaction_active = true;
   return true;
+}
+
+bool FlashMemory_Handler::beginUnsnapshottedWriteTransaction() noexcept {
+#ifdef PC_VERSION
+  // The host filesystem writes records synchronously; rollback needs copies.
+  return beginPersistentWriteTransaction();
+#else
+  // Flush first so a rollback reload cannot drop earlier unsynced changes.
+  if (fs_sync() != 0 || !beginPersistentWriteTransaction()) return false;
+  persistent_write_snapshots_disabled = true;
+  return true;
+#endif
 }
 
 bool FlashMemory_Handler::beginAppletWriteTransaction() noexcept {
@@ -684,6 +721,7 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
     return false;
   }
   persistent_write_snapshots.clear();
+  persistent_write_snapshots_disabled = false;
   persistent_write_capacity_enforced = false;
   persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;

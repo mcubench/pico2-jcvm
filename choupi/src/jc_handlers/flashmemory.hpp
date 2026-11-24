@@ -148,6 +148,10 @@ public:
   /// restores overwritten values and erases records created by the transaction.
   static bool beginPersistentWriteTransaction(
       bool enforce_commit_capacity = false) noexcept;
+  /// Card-manager transaction that keeps no RAM snapshots. On the RP2350
+  /// overlay nothing reaches flash before commit, so rollback reloads the
+  /// last committed store instead. Host builds fall back to snapshots.
+  static bool beginUnsnapshottedWriteTransaction() noexcept;
   static bool beginAppletWriteTransaction() noexcept;
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;

@@ -1073,6 +1073,31 @@ int main(const int argc, char **argv) {
         found_owner == applet_owner;
     expect(package_partial_failure && package_restored,
            "transactional_package_delete_restores_static_applet_and_lifecycle_records");
+
+    // GP DELETE path: no RAM snapshots; rollback reloads the committed store.
+    const bool unsnapshotted_began =
+        jcvm::FlashMemory_Handler::beginUnsnapshottedWriteTransaction();
+    rp2350_fs_test_fail_bulk_erase_after(1);
+    const bool unsnapshotted_partial = unsnapshotted_began &&
+        !jcvm::FlashMemory_Handler::erasePersistentPackageState(package_id);
+    const bool unsnapshotted_restored = unsnapshotted_partial &&
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+        !jcvm::FlashMemory_Handler::persistentWriteTransactionActive() &&
+        fs_exists(package_static, sizeof(package_static)) != 0 &&
+        fs_exists(package_applet, sizeof(package_applet)) != 0 &&
+        fs_exists(package_lifecycle, sizeof(package_lifecycle)) != 0 &&
+        fs_exists(unrelated_static, sizeof(unrelated_static)) != 0;
+    const bool unsnapshotted_committed = unsnapshotted_restored &&
+        jcvm::FlashMemory_Handler::beginUnsnapshottedWriteTransaction() &&
+        jcvm::FlashMemory_Handler::erasePersistentPackageState(package_id) &&
+        jcvm::FlashMemory_Handler::commitPersistentWriteTransaction() &&
+        fs_init() == 0 &&
+        fs_exists(package_static, sizeof(package_static)) == 0 &&
+        fs_exists(package_applet, sizeof(package_applet)) == 0 &&
+        fs_exists(package_lifecycle, sizeof(package_lifecycle)) == 0 &&
+        fs_exists(unrelated_static, sizeof(unrelated_static)) != 0;
+    expect(unsnapshotted_committed,
+           "unsnapshotted_package_delete_reloads_on_rollback_and_commits");
     (void)cap_store_delete_package(package_id);
     (void)fs_erase_package_state(package_id);
     (void)fs_erase(unrelated_static, sizeof(unrelated_static));
