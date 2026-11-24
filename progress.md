@@ -33880,3 +33880,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 SHA-256 `3600e77c34cfab3fb6935790b59e16991f5209cd45b59b9437e491a1d96c3ef6` (3,040,256 B), ZIP SHA-256 `c8a349890587327cbdd7435929b55d47591739f97eb233dcb6f46570302ed625`, CPLC `6D3BB526B8E93267`, firmware end `0x100730d0` (577,328 B headroom).
 - Decision: Send for Windows validation (option `all` plus a timed uninstall).
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6d3bb526.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-6d3bb526.zip`, `artifacts/logs/external-6d3bb526-build.log`
+
+## 2026-11-24 Handoff for the GP DELETE fix; record the 21:29 main reset 4
+
+- Step-Id: `20261124-2235-gp-delete-handoff`
+- Task: WIN-GP-DELETE-WATCHDOG-20261124
+- When: '2026-11-24 22:31 CET' - '2026-11-24 22:35 CET'
+- Model: `claude-opus-5-5`
+- Change: The HANDOFF edit claimed in `d7af5828` did not apply (stale anchor text). HANDOFF now records EE11's state and the GP DELETE status. New observation: reflog shows `stash push "Before release"` at 21:29:07 and `reset: moving to HEAD~4` at 21:29:33 on `main`, before this session's first commit. The reset moved `main` from `9ac7e8a3` back to `c8984baf`, so the PQC commits `5a72ae68`, `3d700468`, `9ac7e8a3` and `a40cf4e6` are off `main` (reachable via reflog). The GP DELETE commits sit on `c8984baf`. This session did not perform or undo the reset.
+- Validation: `git reflog --date=iso`, `git merge-base --is-ancestor` (all four PQC commits not in `main`). Between `c8984baf` and `9ac7e8a3`, the DELETE-path sources differ only in `cap_load.cpp` CAP 2.3 `getSize` parsing. The EE11 baseline ran on the `9ac7e8a3` PQC image; the `53eb4e90`-only and no-snapshot runs share the `c8984baf` base. The A/B conclusion stands.
+- Result: No code change.
+- Decision: The user must confirm the reset was intended before PQC work continues; the package `6d3bb526` does not contain PQC.
+- Artifacts/logs: none

@@ -25,7 +25,14 @@ Updated 2026-11-23. See [TODO.md](../TODO.md) for active work and
   `prepare_Key`, likely SystemException twice). Needs the Windows CSV and
   serial log; the 2 RSA-CRT-4096 `ILLEGAL_USE` rows were the 600 s deadline,
   fixed in step `20261123-0620-rsa4096-exec-deadline`.
-- EE11 now runs HEAD+deadline fix (app UF2 `1d4ae821…7a76`), storage kept.
+- EE11 runs the GP DELETE no-snapshot build (`93517fb2` code, storage kept).
+  The JCAlgTest 1.8.5/jc305 CAP is installed on an otherwise near-empty store.
+- GP DELETE after a perf run (uninstall OOM panic / reader drop) is fixed and
+  hardware-validated on EE11 (`20261124-2205-gp-delete-no-snapshot`). Windows
+  confirmation: WIN-GP-DELETE-WATCHDOG-20261124 (package `6d3bb526`).
+- 2026-11-24 21:29: `main` was reset from `9ac7e8a3` to `c8984baf` (stash
+  "Before release"), not by the GP DELETE session. The PQC commits `5a72ae68`,
+  `3d700468`, `9ac7e8a3` and `a40cf4e6` are now reachable only via reflog.
 
 - If continuing VM performance work, reprofile the XOR control and the
   interpreter fetch/decode phases before changing dispatch or branch checks.
