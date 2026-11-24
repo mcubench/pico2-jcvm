@@ -33892,3 +33892,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: No code change.
 - Decision: The user must confirm the reset was intended before PQC work continues; the package `6d3bb526` does not contain PQC.
 - Artifacts/logs: none
+
+## 2026-11-24 User directive: keep the PQC work dropped 1
+
+- Step-Id: `20261124-2237-pqc-dropped-directive`
+- Task: none (user directive)
+- When: '2026-11-24 22:36 CET' - '2026-11-24 22:37 CET'
+- Model: `claude-opus-5-5`
+- Change: User: "keep pqc work dropped - I will add it later". HANDOFF records that the 21:29 reset of `main` (PQC commits `5a72ae68`, `3d700468`, `9ac7e8a3`, `a40cf4e6`) is intended and that sessions must not restore it.
+- Validation: none needed.
+- Result: Resolves the open question in `20261124-2235-gp-delete-handoff`.
+- Decision: Continue on `main` without PQC.
+- Artifacts/logs: none

@@ -33,6 +33,8 @@ Updated 2026-11-23. See [TODO.md](../TODO.md) for active work and
 - 2026-11-24 21:29: `main` was reset from `9ac7e8a3` to `c8984baf` (stash
   "Before release"), not by the GP DELETE session. The PQC commits `5a72ae68`,
   `3d700468`, `9ac7e8a3` and `a40cf4e6` are now reachable only via reflog.
+  User decision 2026-11-24: keep the PQC work dropped; the user will add it
+  later. Do not restore those commits.
 
 - If continuing VM performance work, reprofile the XOR control and the
   interpreter fetch/decode phases before changing dispatch or branch checks.
