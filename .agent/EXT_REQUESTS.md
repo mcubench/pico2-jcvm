@@ -1,5 +1,20 @@
 # External validation requests
 
+## WIN-6F00-RESERVE-FIX-20261124 — Pico 2 firmware fixing the RSA-CRT `6f00` rows
+
+Created 2026-11-24. Use a dedicated test Pico 2. Normal ARM max_crypto image
+(object deletion on, debug off); flashing erases applet storage. Replaces
+`WIN-VM-ARRAY-READS-20261122`, whose results were returned and analysed.
+
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-00b42283.uf2),
+  SHA-256 `9f618b67cb91b638487df4bb03565487297c9bb441e5264ec90a3e8200c06be2`, 3,035,136 bytes, CPLC source ID `00B42283E3BD6A78`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-00b42283.zip),
+  SHA-256 `1ce8db3bdce6f0e85656964e8e51f7e9cd980a884f6222b90a88796d07db20d3`.
+- Unchanged JCAlgTest 1.8.5/jc305 CAP and 1.8.5-20261121 client (SHA-256 `3cca70cb…a703`), both inside the ZIP.
+- Run JCAlgTest option 2 and option 1. Expected: no `SW=6f00`; the 30 methods listed in
+  `progress.md` (step `20261124-0900-6f00-external-package`) were `6f00` before.
+- Return CSVs, client log and serial log with chip ID, reader name, UF2 and JAR hashes.
+
 ## WIN-VM-ARRAY-READS-20261122 — Pico 2 primitive-array read firmware
 
 Created 2026-11-22 09:44 CET. Use a dedicated test Pico 2. This normal ARM

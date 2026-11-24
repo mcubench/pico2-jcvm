@@ -33771,3 +33771,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Persistent PIN case 104 took 51 ms and recorded `sync_bytes=0 journal_bytes=1024 journaled=3 journal_erase_bytes=0`, including creation and administration. Case 13 had `sync_bytes=0 journal_bytes=0`. Case 114 had `sync_bytes=0 journal_bytes=256`; this tests the public native RandomData path. Legacy stored SecureRandomData receivers were checked through generated dispatch inspection. The cycled UF2 SHA-256 was `f980ddff179b4e6b79991f0002e636e2ff9c38dcb9e13e8e542a6f9b9c539e60`.
 - Decision: The two named class implementations now dispatch to C++. Other ROM API Java bodies remain an INV-03 gap. Physical supply interruption and storage-preserving downgrade were not tested.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261123T130532Z.log`, `artifacts/logs/native-rom-pin-{vpcd,overlay,apdu,apdu-serial,gp-install}.log`
+
+## 2026-11-24 Package the 6f00 reserve-fix firmware for external testing
+
+- Step-Id: `20261124-0900-6f00-external-package`
+- Task: WIN-BE737F0E-6F00
+- Model: `claude-sonnet-5-5`
+- Change: built HEAD `00b42283` (includes `d65eb278`) as normal max_crypto ARM, ran `tools/package-maxcrypto-windows-test`, added request WIN-6F00-RESERVE-FIX-20261124 and removed the obsolete array-read request.
+- Validation: build rc=0, mode=normal, object deletion ON, debug OFF (the only "warning" lines are Java Card converter/Maven notices, no C++ compiler warnings); packager PACKAGE:PASS. The image was not flashed locally; the same heap fix was hardware-validated earlier on EE11 (`d65eb278` record).
+- Result: UF2 sha256 `9f618b67…06be2` (3,035,136 B), ZIP sha256 `1ce8db3b…20d3`. Methods that ended `SW=6f00` in the Windows be737f0e performance log (30): RSA_CRT_PRIVATE and RSA_CRT_PUBLIC at 3072 (NOPAD init; PKCS1 doFinal+init; PKCS1_OAEP doFinal+init) and at 4096 (ISO14888, ISO9796, NOPAD, PKCS1, PKCS1_OAEP, each doFinal+init).
+- Decision: send for Windows validation.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-00b42283.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-00b42283.zip`, `artifacts/logs/external-head-build.log`
