@@ -33782,3 +33782,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 sha256 `9f618b67…06be2` (3,035,136 B), ZIP sha256 `1ce8db3b…20d3`. Methods that ended `SW=6f00` in the Windows be737f0e performance log (30): RSA_CRT_PRIVATE and RSA_CRT_PUBLIC at 3072 (NOPAD init; PKCS1 doFinal+init; PKCS1_OAEP doFinal+init) and at 4096 (ISO14888, ISO9796, NOPAD, PKCS1, PKCS1_OAEP, each doFinal+init).
 - Decision: send for Windows validation.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-00b42283.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-00b42283.zip`, `artifacts/logs/external-head-build.log`
+
+## 2026-11-24 Native JCSystem transaction entry points 3
+
+- Step-Id: `20261124-0619-native-jcsystem-transactions`
+- Task: PROFILE-01 / INV-03
+- When: '2026-11-24 06:19 CET' - '2026-11-24 06:22 CET'
+- Model: `gpt-6`
+- Change: Bind the six JCSystem transaction lifecycle, depth and commit capacity methods to C++ through the ROM generator. Reuse the existing transaction backend and deliver the existing Java Card exception reasons directly through the framework ROM exception class. CAP method signatures and persistent data formats are unchanged.
+- Validation: Normal ARM max_crypto build passed. The USB-serial cycle hit a BOOTSEL re-enumeration race. Chip-ID retry on EE116F37C7E4A04E passed without build warnings, serial FAULT or TEST:FAIL. RP2350-overlay transaction probe passed 12 checks, including persistent commit/abort, capacity overflow and exception reasons. Physical reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`: SELECT and cases 1–4 returned `9000`, data `0100`, `02`, `02`, `0100`.
+- Result: Six former Java method bodies now use native dispatch. The ARM max_crypto ROM inventory has 449 remaining concrete Java bodies. Flash traffic was not measured because this step changes dispatch and exception mapping, with the same persistence backend and writes.
+- Decision: INV-03 remains open for the rest of the built-in ROM and is tracked under PROFILE-01.
+- Artifacts/logs: `artifacts/logs/native-jcsystem-{arm,overlay-build,overlay,cycle,cycle-bootsel,apdu}.log`; normal UF2 SHA-256 `98247d75d66391b2c501bbc1f11fa237f86a25cd823770a5772f5ee711e2269a`.

@@ -113,6 +113,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### PROFILE-01
 
+- [ ] Remove the remaining built-in Java method bodies under INV-03 while preserving CAP linkage and installed object layouts. The ARM max_crypto ROM inventory after the native JCSystem transaction step has 449 concrete Java method bodies. Convert API behavior to C++ and verify the linked firmware ROM has no executable Java API bodies.
+
 - [ ] Audit advertised API capabilities against actual behavior and tests. Finish physical KATs for newly enabled crypto and deferred RSA/RSA-CRT 4096 validation. See progress for committed implementations and [external requests](.agent/EXT_REQUESTS.md) for XDH ABI inputs.
 - [x] Verify the 5 KiB and multipart digest cases and per-APDU flash traffic on a normal physical image. See step `20261121-2138-ee11-streaming-digest`.
 - Extended APDUs, T=1 WTX and logical channels remain excluded under INV-09. PROFILE-02 is deferred unless product scope changes.

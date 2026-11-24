@@ -1820,6 +1820,46 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getMaxCommitCapacity() {
   return static_cast<jshort_t>(FlashMemory_Handler::maxCommitCapacity());
 }
 
+namespace {
+void checkTransactionStatus(jbyte_t status, uint16_t inactive_reason) {
+  if (status == 0) return;
+  constexpr uint16_t internal_failure = 4;
+  Context::getActiveContext().setPendingTransactionExceptionReason(
+      status == 1 ? inactive_reason : internal_failure);
+  throw Exceptions::TransactionException;
+}
+} // namespace
+
+void javacard_framework_JCSystem_beginTransaction() {
+  constexpr uint16_t in_progress = 1;
+  checkTransactionStatus(
+      fr_gouv_ssi_nativeimpl_NativeImplementation_beginTransaction(), in_progress);
+}
+
+void javacard_framework_JCSystem_abortTransaction() {
+  constexpr uint16_t not_in_progress = 2;
+  checkTransactionStatus(
+      fr_gouv_ssi_nativeimpl_NativeImplementation_abortTransaction(), not_in_progress);
+}
+
+void javacard_framework_JCSystem_commitTransaction() {
+  constexpr uint16_t not_in_progress = 2;
+  checkTransactionStatus(
+      fr_gouv_ssi_nativeimpl_NativeImplementation_commitTransaction(), not_in_progress);
+}
+
+jbyte_t javacard_framework_JCSystem_getTransactionDepth() {
+  return fr_gouv_ssi_nativeimpl_NativeImplementation_getTransactionDepth();
+}
+
+jshort_t javacard_framework_JCSystem_getUnusedCommitCapacity() {
+  return fr_gouv_ssi_nativeimpl_NativeImplementation_getUnusedCommitCapacity();
+}
+
+jshort_t javacard_framework_JCSystem_getMaxCommitCapacity() {
+  return fr_gouv_ssi_nativeimpl_NativeImplementation_getMaxCommitCapacity();
+}
+
 extern "C" void choupi_record_transaction_buffer_full(void) {
   Context::getActiveContext().setPendingTransactionExceptionReason(3);
 }

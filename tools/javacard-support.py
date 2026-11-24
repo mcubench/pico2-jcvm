@@ -580,6 +580,12 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     write_if_changed(
         out_dir / "javacard-native-methods.txt",
         "\n".join((
+            "javacard/framework|JCSystem|JCSystem/beginTransaction()V|static",
+            "javacard/framework|JCSystem|JCSystem/abortTransaction()V|static",
+            "javacard/framework|JCSystem|JCSystem/commitTransaction()V|static",
+            "javacard/framework|JCSystem|JCSystem/getTransactionDepth()B|static",
+            "javacard/framework|JCSystem|JCSystem/getUnusedCommitCapacity()S|static",
+            "javacard/framework|JCSystem|JCSystem/getMaxCommitCapacity()S|static",
             "javacard/security|RandomData|RandomData/getInstance(B)Ljavacard/security/RandomData;|static",
             "javacard/security|RandomData|RandomData/getAlgorithm()B|instance",
             "javacard/security|RandomData|RandomData/generateData([BSS)V|instance",
