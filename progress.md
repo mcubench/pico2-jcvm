@@ -33915,3 +33915,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: none.
 - Artifacts/logs: `docs/develop_fails_20261124.md`
 
+## 2026-11-24 Vendor ML-KEM/ML-DSA backend with host ACVP known-answer test (≈36 min, start not captured exactly)
+
+- Step-Id: `20261124-1556-pqc-backend-acvp`
+- Task: JC 3.2 preview PQC API (user request 2026-11-24), step 1 of N
+- When: '2026-11-24 ~15:20 (session start, inferred from file timestamps)' - '2026-11-24 15:56'
+- Model: `claude-opus-5-5`
+- Change: vendored mlkem-native `438f0da19dc3` and mldsa-native `d2149e63337e` (from `~/projects/pico2-crypto-bench`, benchmark config edit reverted) under `third_party/`. Added `choupi/src/pqc/`: project configs (no randomized API, so randomness comes from the JC layer; ML-DSA reduced-RAM; custom alloc into a per-operation LIFO arena; ML-DSA signing-attempt hook calls `choupi_pqc_progress`), a flat C API (keypair/encaps/decaps/key checks, ML-DSA keygen/pk_from_sk/sign/verify on external mu, streamed mu via incremental SHAKE256), and `pqc_run_on_stack` (Thumb trampoline that runs a call on a private heap stack). Added capability keys `mlkem_{512,768,1024}`, `mldsa_{44,65,87}` (false in every profile until hardware KATs pass, INV-04/INV-08) with `JC_SUPPORT_{MLKEM,MLDSA,PQC}_ANY` aggregates, and gated ARM/PC CMake wiring (`-O2` for the PQC sources). Committed a 555 KB NIST ACVP subset (ACVP-Server `975de31e`) with `tools/pqc-acvp-subset.py`; manifest entry `nist-acvp.pqc-subset`.
+- Validation: `./tools/test-pqc-backend` (ASan+UBSan, `-Werror`): 66/66 ACVP checks pass (ML-KEM keygen/encaps/decaps incl. implicit rejection, ek/dk key checks; ML-DSA keygen, pk_from_sk, pure hedged/deterministic signing with context via streamed mu, external-mu signing, sigVer pass/fail). Temporary local max_crypto flip: `./tools/build arm --profile max_crypto` rc=0, no new warnings (reverted, not committed). `unittest test_javacard_support/test_fixture_catalog` OK; `fixture-path --verify` PASS (87 files).
+- Result: arena peaks equal the library budgets (LIFO free works): ML-KEM decaps 9152/14336/20704 B, ML-DSA keygen 11552/14624/18720 B, pk_from_sk 13152/17056/21984 B, sign 9408/11488/13792 B. ARM `-fstack-usage` shows 3–5 KB of residual stack locals (e.g. `mlkem_poly_rej_uniform_x4` 2960 B, `mldsa65_poly_uniform_eta_4x` 2456 B), above the 4 KiB main stack; hence the private-stack trampoline (MSPLIM is 0 in crt0). Not run on hardware yet.
+- Decision: next, the ROM API: javacard.security 3.2 token layout (NamedParameterSpec, AlgorithmParameterSpec), new packages javacardx.crypto.kem (AID A0000000620201 01, v17.0) and javacardx.security.pqc (A0000000620205 05, v17.0) from the SDK 26.1 preview export files in `~/projects/jc_32_2026/lib/tools.jar` (sha256 `13ef49e5…6269`).
+- Artifacts/logs: `tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json`
+

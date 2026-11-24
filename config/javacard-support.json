@@ -178,7 +178,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "base": {
       "owner_pin": true,
@@ -357,7 +363,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -536,7 +548,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "minimal": {
       "owner_pin": false,
@@ -715,7 +733,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -894,7 +918,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -1073,7 +1103,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "symm_crypto_ctr": {
       "owner_pin": true,
@@ -1252,7 +1288,13 @@
       "key_hmac_sha1_block_64": false,
       "key_hmac_sha256_block_64": false,
       "key_hmac_sha384_block_64": false,
-      "key_hmac_sha512_block_64": false
+      "key_hmac_sha512_block_64": false,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     },
     "max_crypto": {
       "owner_pin": true,
@@ -1431,7 +1473,13 @@
       "key_hmac_sha1_block_64": true,
       "key_hmac_sha256_block_64": true,
       "key_hmac_sha384_block_64": true,
-      "key_hmac_sha512_block_64": true
+      "key_hmac_sha512_block_64": true,
+      "mlkem_512": false,
+      "mlkem_768": false,
+      "mlkem_1024": false,
+      "mldsa_44": false,
+      "mldsa_65": false,
+      "mldsa_87": false
     }
   }
 }

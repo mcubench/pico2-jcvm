@@ -239,6 +239,19 @@ for _bits in _rsa_keypair_lengths:
         "javacard.security.KeyPair", f"ALG_RSA_CRT LENGTH_RSA_{_bits}"
     )
 
+# Java Card 3.2 preview PQC API (javacardx.crypto.kem, javacardx.security.pqc).
+# JCAlgTest 1.8.5 has no rows for them; the sections name the 3.2 API instead.
+_MLKEM_SETS = (512, 768, 1024)
+_MLDSA_SETS = (44, 65, 87)
+for _set in _MLKEM_SETS:
+    CAPABILITIES[f"mlkem_{_set}"] = (
+        "javacardx.crypto.kem.KEM", f"ALG_ML_KEM ML_KEM_{_set}"
+    )
+for _set in _MLDSA_SETS:
+    CAPABILITIES[f"mldsa_{_set}"] = (
+        "javacard.security.Signature", f"SIG_CIPHER_ML_DSA ML_DSA_{_set}"
+    )
+
 
 def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if not isinstance(value, dict):
@@ -573,6 +586,15 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     header.append(
         f"#define JC_SUPPORT_KEYPAIR_RSA_ANY {1 if rsa_keypair_enabled else 0}"
     )
+    for aggregate, keys in (
+        ("MLKEM_ANY", [f"mlkem_{n}" for n in _MLKEM_SETS]),
+        ("MLDSA_ANY", [f"mldsa_{n}" for n in _MLDSA_SETS]),
+        ("PQC_ANY", [f"mlkem_{n}" for n in _MLKEM_SETS]
+         + [f"mldsa_{n}" for n in _MLDSA_SETS]),
+    ):
+        enabled = any(config[key] for key in keys)
+        cmake.append(f"set(JC_SUPPORT_{aggregate} {'ON' if enabled else 'OFF'})")
+        header.append(f"#define JC_SUPPORT_{aggregate} {1 if enabled else 0}")
     write_if_changed(out_dir / "javacard-support.cmake", "\n".join(cmake) + "\n")
     write_if_changed(out_dir / "javacard-support.h", "\n".join(header) + "\n")
     write_if_changed(out_dir / "javacard-support.json",

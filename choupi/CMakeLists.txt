@@ -583,6 +583,16 @@ if(CHOUPI_TARGET_PC)
                   "${JAVACARD_SUPPORT_GENERATED_DIR}"
                   "$ENV{PICO_SDK_PATH}/lib/mbedtls/include"
                   "$ENV{PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
+  if(JC_SUPPORT_PQC_ANY)
+    set(CHOUPI_PQC_SOURCES
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/pqc/pqc_arena.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/pqc/pqc_mlkem.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/pqc/pqc_mldsa.c")
+    target_sources(choupi PRIVATE ${CHOUPI_PQC_SOURCES})
+    set_source_files_properties(${CHOUPI_PQC_SOURCES} PROPERTIES
+      INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/pqc;${CMAKE_CURRENT_SOURCE_DIR}/../third_party/mlkem-native;${CMAKE_CURRENT_SOURCE_DIR}/../third_party/mldsa-native")
+  endif()
   target_compile_definitions(choupi PRIVATE
     MBEDTLS_CONFIG_FILE=\"mbedtls_config_pc.h\"
     CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID=${CHOUPI_CPLC_PERSONALIZER_EQUIPMENT_ID}

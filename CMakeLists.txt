@@ -290,6 +290,19 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(JC_SUPPORT_RANDOM_PRESEEDED_DRBG OR JC_SUPPORT_RANDOM_PSEUDO)
     target_sources(pico2_choupi PRIVATE "${PICO_SDK_PATH}/lib/mbedtls/library/ctr_drbg.c")
   endif()
+  if(JC_SUPPORT_PQC_ANY)
+    # ML-KEM / ML-DSA from the vendored mlkem-native and mldsa-native. -O2: the
+    # lattice arithmetic dominates PQC latency and the image has flash headroom.
+    set(CHOUPI_PQC_SOURCES
+      "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/pqc/pqc_arena.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/pqc/pqc_mlkem.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/pqc/pqc_mldsa.c")
+    target_sources(pico2_choupi PRIVATE ${CHOUPI_PQC_SOURCES})
+    set_source_files_properties(${CHOUPI_PQC_SOURCES} PROPERTIES
+      COMPILE_OPTIONS "-O2"
+      INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/pqc;${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlkem-native;${CMAKE_CURRENT_SOURCE_DIR}/third_party/mldsa-native")
+  endif()
   if(JC_SUPPORT_CIPHER_AES_GCM OR JC_SUPPORT_CIPHER_AES_CCM)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/gcm.c"

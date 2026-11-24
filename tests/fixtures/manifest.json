@@ -36,7 +36,8 @@
     "jcalgtest.reference.1.8.4": "tests/fixtures/reference/jcalgtest/1.8.4/jcardsim-alg-support-extended.csv",
     "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar",
     "jcalgtest.client.1.8.5-20261120": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar",
-    "jcalgtest.client.1.8.5-20261121": "tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar"
+    "jcalgtest.client.1.8.5-20261121": "tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar",
+    "nist-acvp.pqc-subset": "tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json"
   },
   "files": [
     {
@@ -562,6 +563,12 @@
       "size": 164996,
       "provided_path": "inbox/AlgTestJClient.jar",
       "note": "User-supplied immutable host client (2026-11-21 14:50 build, directive 2026-11-21): fewer internal repetitions of the tested method for asymmetric algorithms; embedded version string 1.8.5; uses the 1.8.4/1.8.5 lib set. Supersedes 1.8.5-20261120 for new runs."
+    },
+    {
+      "path": "tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json",
+      "sha256": "623e817f5133eae369af274e3de78ccd5fc36a09d7e09020be8cb408bc902810",
+      "size": 555460,
+      "provided_path": "Derived by tools/pqc-acvp-subset.py from usnistgov/ACVP-Server 975de31eb83d87039ec88934fdc47d8c312b892d gen-val/json-files (source hashes inside the file)"
     }
   ]
 }
