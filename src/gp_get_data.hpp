@@ -129,10 +129,29 @@ inline bool write_get_applications_response(
   return true;
 }
 
+// `key_version` is the stored SCP03 keyset version (0 = default test keys).
 inline bool get_data_object(uint8_t p1, uint8_t p2, const uint8_t *&data,
-                            size_t &length) noexcept {
+                            size_t &length,
+                            uint8_t key_version = 0) noexcept {
   data = nullptr;
   length = 0;
+  if (p1 == 0x00 && p2 == 0xe0) {
+    // Key Information Template: ENC, MAC, DEK (IDs 1-3), AES-128. The
+    // default keys are reported as an empty template, as on a fresh SD, so
+    // GlobalPlatformPro --lock adds KVN 1 instead of "replacing" KVN 0.
+    static uint8_t key_template[20];
+    size_t cursor = 0;
+    key_template[cursor++] = 0xe0;
+    key_template[cursor++] = key_version == 0 ? 0x00 : 0x12;
+    for (uint8_t id = 1; key_version != 0 && id <= 3; ++id) {
+      const uint8_t entry[] = {0xc0, 0x04, id, key_version, 0x88, 0x10};
+      std::memcpy(key_template + cursor, entry, sizeof(entry));
+      cursor += sizeof(entry);
+    }
+    data = key_template;
+    length = cursor;
+    return true;
+  }
   if (p1 == 0x00 && p2 == 0x66) {
     data = kCardRecognitionData;
     length = sizeof(kCardRecognitionData);
@@ -150,13 +169,14 @@ inline bool write_get_data_response(uint8_t p1, uint8_t p2,
                                     uint8_t *response,
                                     size_t response_capacity,
                                     size_t &response_length,
-                                    bool include_tlv = true) noexcept {
+                                    bool include_tlv = true,
+                                    uint8_t key_version = 0) noexcept {
   response_length = 0;
   if (response == nullptr || response_capacity < 2) return false;
 
   const uint8_t *data = nullptr;
   size_t data_length = 0;
-  if (!get_data_object(p1, p2, data, data_length)) {
+  if (!get_data_object(p1, p2, data, data_length, key_version)) {
     response[0] = 0x6a;
     response[1] = 0x88;
     response_length = 2;

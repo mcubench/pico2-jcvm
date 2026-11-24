@@ -1538,7 +1538,8 @@ uint16_t vpcd_process_card_manager(
                    response, response_capacity, output_length)
              : gp::write_get_data_response(command[2], command[3], response,
                                            response_capacity, output_length,
-                                           gp_get_data));
+                                           gp_get_data,
+                                           Scp03Session::keyVersion()));
     if (!written) {
       return status_response(valid_command ? 0x6f00 : 0x6a80);
     }
@@ -1628,6 +1629,16 @@ uint16_t vpcd_process_card_manager(
                                 response, limited_response_capacity,
                                 response_length);
   }
+  if (instruction == 0xd8) {
+    size_t data_length = 0;
+    const uint16_t status = vpcd_secure_channel.putKey(
+        p1, p2, data, command_data_length, response,
+        static_cast<size_t>(response_capacity - 2), data_length);
+    response[data_length++] = static_cast<uint8_t>(status >> 8);
+    response[data_length++] = static_cast<uint8_t>(status);
+    *response_length = static_cast<uint16_t>(data_length);
+    return status;
+  }
   if (instruction == 0xe4) {
     gp::DeleteRequest request;
     if (!gp::parse_delete_request(p1, p2, data, command_data_length,
@@ -1697,7 +1708,8 @@ uint16_t vpcd_process_card_manager(
                    response, response_capacity, output_length)
              : gp::write_get_data_response(p1, p2, response, response_capacity,
                                            output_length,
-                                           instruction == 0xca));
+                                           instruction == 0xca,
+                                           Scp03Session::keyVersion()));
     if (!written) {
       return status_response(valid_command ? 0x6f00 : 0x6a80);
     }

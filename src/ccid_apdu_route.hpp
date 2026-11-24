@@ -64,6 +64,7 @@ inline bool ccid_is_gp_manager_command(const uint8_t *apdu,
   case 0x82: // EXTERNAL AUTHENTICATE
   case 0xca: // GET DATA
   case 0xcb: // GET DATA
+  case 0xd8: // PUT KEY
   case 0xe4: // DELETE
   case 0xe6: // INSTALL
   case 0xe8: // LOAD

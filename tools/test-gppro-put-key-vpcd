@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# GlobalPlatformPro PUT KEY on the VPCD emulator: lock a new SCP03 key, check
+# the default key is refused and the new key works, also after an emulator
+# restart on the same flash image, then lock back to the default key value.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-put-key-vpcd"
+require_host_usb_access
+require_command timeout
+require_command grep
+
+"${repo_root}/tools/build-jcalgtest-load-code" >/dev/null
+
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+load_code="${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin"
+emulator="${repo_root}/build/choupi-pc/choupi"
+rom_mask="${repo_root}/build/choupi-pc/flash"
+reader="Virtual PCD 00 00"
+endpoint="127.0.0.1:35963"
+new_key="00112233445566778899AABBCCDDEEFF"
+default_key="404142434445464748494A4B4C4D4E4F"
+
+for input in "${gp_jar}" "${load_code}" "${emulator}" "${rom_mask}"; do
+  [[ -s "${input}" ]] || die "required input is missing: ${input}"
+done
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+out_dir="${repo_root}/artifacts/results/gppro-put-key-vpcd-${timestamp}"
+mkdir -p "${out_dir}"
+flash_image="${out_dir}/card.bin"
+: > "${flash_image}"
+
+timeout --signal=TERM --kill-after=2s 8s \
+  "${repo_root}/tools/list-readers" --timeout 6 \
+  > "${out_dir}/reader-inventory.log" 2>&1 || true
+grep -Fq "${reader}" "${out_dir}/reader-inventory.log" ||
+  die "VPCD reader not found; see ${out_dir}/reader-inventory.log"
+
+emulator_pid=""
+stop_emulator() {
+  if [[ -n "${emulator_pid}" ]] && kill -0 "${emulator_pid}" 2>/dev/null; then
+    kill -TERM "${emulator_pid}" 2>/dev/null || true
+    wait "${emulator_pid}" 2>/dev/null || true
+  fi
+  emulator_pid=""
+}
+trap stop_emulator EXIT INT TERM
+
+# The emulator saves its flash image only on a clean idle-timeout exit.
+finish_emulator() {
+  local waited=0
+  while kill -0 "${emulator_pid}" 2>/dev/null && (( waited < 30 )); do
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "${emulator_pid}" || die "emulator exited with an error"
+  emulator_pid=""
+  [[ -s "${flash_image}" ]] || die "emulator did not save ${flash_image}"
+}
+
+start_emulator() {
+  "${repo_root}/tools/env" "${emulator}" -m "${flash_image}" -s \
+    --vpcd "${endpoint}" --vpcd-idle-timeout 8 \
+    --applet-aid 4A43416C675465737431 --package-id 63 \
+    --cap-code "${load_code}" --rom-mask "${rom_mask}" \
+    > "${out_dir}/emulator-$1.log" 2>&1 &
+  emulator_pid=$!
+  sleep 1
+  timeout --signal=TERM --kill-after=2s 8s \
+    "${repo_root}/tools/env" java \
+    "${repo_root}/tests/hardware/VpcdPresenceProbe.java" "${reader}" 5000 \
+    --require-present > "${out_dir}/reader-ready-$1.log" 2>&1 ||
+    die "emulator did not make the VPCD card present"
+}
+
+run_gp() {
+  local name="$1"
+  shift
+  timeout --signal=TERM --kill-after=5s 120s \
+    "${repo_root}/tools/env" java -jar "${gp_jar}" \
+    --reader "${reader}" "$@" > "${out_dir}/${name}.log" 2>&1
+}
+expect_ok() {
+  run_gp "$@" || { cat "${out_dir}/$1.log" >&2; die "gp step $1 failed"; }
+}
+expect_refused() {
+  if run_gp "$@"; then
+    cat "${out_dir}/$1.log" >&2
+    die "gp step $1 unexpectedly succeeded"
+  fi
+}
+
+start_emulator first
+expect_ok list-default --list
+expect_ok lock-new --lock "${new_key}"
+expect_refused list-old-key --list
+expect_ok list-new-key --key "${new_key}" --list
+finish_emulator
+
+start_emulator restart
+expect_ok list-new-key-after-restart --key "${new_key}" --list
+expect_ok lock-default --key "${new_key}" --lock "${default_key}"
+expect_ok list-default-again --list
+expect_refused list-replaced-key --key "${new_key}" --list
+stop_emulator
+
+printf 'GPPRO_PUT_KEY:PASS reader=%s artifacts=%s\n' \
+  "${reader}" "${out_dir#${repo_root}/}"

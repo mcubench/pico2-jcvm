@@ -735,7 +735,8 @@ void process_message(uint8_t rhport) {
                      response, sizeof(response), response_length) == 0x9000
                : gp::write_get_data_response(apdu[2], apdu[3], response,
                                              sizeof(response), response_length,
-                                             gp_get_data));
+                                             gp_get_data,
+                                             Scp03Session::keyVersion()));
       if (written && !segment_card_manager_response(
                          apdu, apdu_length, response, sizeof(response),
                          response_length)) {
@@ -811,6 +812,18 @@ void process_message(uint8_t rhport) {
               parsed.expected_response_length, response,
               static_cast<uint16_t>(sizeof(response) - 2), status);
         }
+        response[data_length++] = static_cast<uint8_t>(status >> 8);
+        response[data_length++] = static_cast<uint8_t>(status);
+        response_length = data_length;
+      } else if (instruction == 0xd8) {
+        size_t data_length = 0;
+        const uint16_t status =
+            apdu_length >= 5 && command_data_length <= apdu_length - 5
+                ? secure_channel.putKey(p1, p2, apdu + 5, command_data_length,
+                                        response, sizeof(response) - 2,
+                                        data_length)
+                : 0x6a80;
+        report_fs_apdu(0xd8, 0, 0); // flash traffic of the keyset write
         response[data_length++] = static_cast<uint8_t>(status >> 8);
         response[data_length++] = static_cast<uint8_t>(status);
         response_length = data_length;
@@ -987,7 +1000,8 @@ void process_message(uint8_t rhport) {
                        response, sizeof(response), response_length) == 0x9000
                  : gp::write_get_data_response(p1, p2, response,
                                                sizeof(response), response_length,
-                                               instruction == 0xca));
+                                               instruction == 0xca,
+                                               Scp03Session::keyVersion()));
         if (written && !segment_card_manager_response(
                            apdu, apdu_length, response, sizeof(response),
                            response_length)) {

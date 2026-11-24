@@ -24,7 +24,10 @@ STATUS flows. Package and applet AIDs can be loaded dynamically, subject to
 available storage and supported imports. SCP03 supports S8 with an
 eight-byte challenge and C-MAC security level. Command encryption and
 response MAC are outside this subset. The card manager uses the well-known
-test key. This project is for educational use.
+test key `40..4F` by default. PUT KEY (`gp --lock KEY`) replaces it with one
+AES-128 ENC/MAC/DEK keyset (KVN 1-7F) that persists across power cycles and is
+reported by GET DATA `00E0`; an empty-card wipe restores the default key.
+This project is for educational use.
 
 Cryptographic capabilities are selected by `config/javacard-support.json`.
 The `max_crypto` profile combines the baseline, symmetric, asymmetric, and

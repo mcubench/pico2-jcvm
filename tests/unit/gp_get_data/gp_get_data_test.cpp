@@ -98,6 +98,22 @@ int main() {
                                       response_length),
          "reject_short_response_capacity");
 
+  expect(gp::write_get_data_response(0x00, 0xe0, response.data(),
+                                     response.size(), response_length) &&
+             response_length == 4 && response[0] == 0xe0 &&
+             response[1] == 0x00 && response[2] == 0x90,
+         "default_keys_report_empty_key_template");
+  constexpr std::array<uint8_t, 20> expected_key_template = {
+      0xe0, 0x12, 0xc0, 0x04, 0x01, 0x01, 0x88, 0x10, 0xc0, 0x04,
+      0x02, 0x01, 0x88, 0x10, 0xc0, 0x04, 0x03, 0x01, 0x88, 0x10};
+  expect(gp::write_get_data_response(0x00, 0xe0, response.data(),
+                                     response.size(), response_length, true,
+                                     0x01) &&
+             response_length == expected_key_template.size() + 2 &&
+             std::memcmp(response.data(), expected_key_template.data(),
+                         expected_key_template.size()) == 0,
+         "stored_keyset_reports_enc_mac_dek_template");
+
   constexpr std::array<uint8_t, 10> applet_aid = {
       0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54, 0x65, 0x73, 0x74, 0x31};
   constexpr std::array<uint8_t, 8> second_aid = {

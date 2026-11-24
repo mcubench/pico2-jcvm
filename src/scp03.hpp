@@ -22,6 +22,16 @@ public:
   bool verifyCommand(const uint8_t *apdu, size_t apdu_length,
                      size_t &data_length) noexcept;
 
+  // GlobalPlatform PUT KEY (INS D8) replacing the single SCP03 keyset with
+  // three AES-128 keys wrapped under the current DEK. Returns the status word
+  // and writes KVN || 3 KCVs to the response on success.
+  uint16_t putKey(uint8_t p1, uint8_t p2, const uint8_t *data,
+                  size_t data_length, uint8_t *response,
+                  size_t response_capacity, size_t &response_length) noexcept;
+
+  // Key version of the stored keyset; 0 means the default test keys.
+  static uint8_t keyVersion() noexcept;
+
   bool active() const noexcept { return active_; }
 
 private:

@@ -3,6 +3,8 @@
 #include <array>
 #include <cstring>
 
+#include "ffi.h"
+#include "vm_filesystem.h"
 #include "mbedtls/aes.h"
 #include "mbedtls/platform_util.h"
 #ifdef PC_VERSION
@@ -23,6 +25,33 @@ constexpr uint8_t kStaticKey[16] = {
     0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
     0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
 constexpr size_t kMacLength = 8;
+constexpr size_t kKeyLength = 16;
+// Persistent keyset record set by PUT KEY: KVN || ENC || MAC || DEK. Absent
+// means the default test key (INV-12) under KVN 0. One record, so a torn
+// write leaves either the old or the new keyset.
+constexpr uint8_t kKeysetTag[] = {0x02, 0xfe, 'G', 'P', 'K', 'E', 'Y', 'S'};
+constexpr size_t kKeysetLength = 1 + 3 * kKeyLength;
+constexpr size_t kEncOffset = 1;
+constexpr size_t kMacOffset = kEncOffset + kKeyLength;
+constexpr size_t kDekOffset = kMacOffset + kKeyLength;
+
+// Load the keyset into `record`. A present but malformed record fails closed
+// rather than falling back to the default key.
+bool load_keyset(uint8_t record[kKeysetLength]) noexcept {
+  uint32_t length = 0;
+  const uint8_t status = fs_length(kKeysetTag, sizeof(kKeysetTag), &length);
+  if (status == FS_STATUS_NO_SUCH_TAG) {
+    record[0] = 0x00;
+    for (size_t offset = kEncOffset; offset < kKeysetLength;
+         offset += kKeyLength) {
+      std::memcpy(record + offset, kStaticKey, kKeyLength);
+    }
+    return true;
+  }
+  return status == FS_STATUS_OK && length == kKeysetLength &&
+         fs_read(kKeysetTag, sizeof(kKeysetTag), record, kKeysetLength) ==
+             FS_STATUS_OK;
+}
 
 bool aes_cmac(const uint8_t key[16], const uint8_t *input, size_t input_length,
               uint8_t output[16]) noexcept {
@@ -82,6 +111,19 @@ bool aes_cmac(const uint8_t key[16], const uint8_t *input, size_t input_length,
   return success;
 }
 
+bool aes_block(const uint8_t key[16], int mode, const uint8_t input[16],
+               uint8_t output[16]) noexcept {
+  mbedtls_aes_context aes;
+  mbedtls_aes_init(&aes);
+  const bool success =
+      (mode == MBEDTLS_AES_ENCRYPT ? mbedtls_aes_setkey_enc(&aes, key, 128)
+                                   : mbedtls_aes_setkey_dec(&aes, key, 128)) ==
+          0 &&
+      mbedtls_aes_crypt_ecb(&aes, mode, input, output) == 0;
+  mbedtls_aes_free(&aes);
+  return success;
+}
+
 bool scp03_kdf(const uint8_t key[16], uint8_t constant,
                const uint8_t context[16], size_t output_bits,
                uint8_t output[16]) noexcept {
@@ -133,11 +175,14 @@ bool Scp03Session::initializeUpdate(const uint8_t *apdu, size_t apdu_length,
                                    size_t &response_length) noexcept {
   reset();
   response_length = 0;
-  // Short case-4 INITIALIZE UPDATE, key version 0, key ID 0, S8 challenge.
+  // Short case-4 INITIALIZE UPDATE, key version 0 (any) or the stored
+  // version, key ID 0, S8 challenge.
+  uint8_t keyset[kKeysetLength];
   if (apdu == nullptr || apdu_length != 14 || response == nullptr ||
       response_capacity < 29 || apdu[0] != 0x80 || apdu[1] != 0x50 ||
-      apdu[2] != 0x00 || apdu[3] != 0x00 || apdu[4] != 0x08 ||
-      apdu[13] != 0x00) {
+      apdu[3] != 0x00 || apdu[4] != 0x08 || apdu[13] != 0x00 ||
+      !load_keyset(keyset) || (apdu[2] != 0x00 && apdu[2] != keyset[0])) {
+    mbedtls_platform_zeroize(keyset, sizeof(keyset));
     return false;
   }
   std::memcpy(host_challenge_, apdu + 5, sizeof(host_challenge_));
@@ -164,23 +209,25 @@ bool Scp03Session::initializeUpdate(const uint8_t *apdu, size_t apdu_length,
   uint8_t session_enc_key[16];
   uint8_t session_rmac_key[16];
   uint8_t card_cryptogram[16];
-  const bool derived = scp03_kdf(kStaticKey, 0x04, context, 128,
+  const bool derived = scp03_kdf(keyset + kEncOffset, 0x04, context, 128,
                                  session_enc_key) &&
-                       scp03_kdf(kStaticKey, 0x06, context, 128,
+                       scp03_kdf(keyset + kMacOffset, 0x06, context, 128,
                                  session_mac_key_) &&
-                       scp03_kdf(kStaticKey, 0x07, context, 128,
+                       scp03_kdf(keyset + kMacOffset, 0x07, context, 128,
                                  session_rmac_key) &&
                        scp03_kdf(session_mac_key_, 0x00, context, 64,
                                  card_cryptogram);
   std::memset(session_enc_key, 0, sizeof(session_enc_key));
   std::memset(session_rmac_key, 0, sizeof(session_rmac_key));
+  const uint8_t key_version = keyset[0];
+  mbedtls_platform_zeroize(keyset, sizeof(keyset));
   if (!derived) {
     reset();
     return false;
   }
 
   std::memset(response, 0, 10); // no key diversification data
-  response[10] = 0x00;          // key version number
+  response[10] = key_version;   // key version number
   response[11] = 0x03;          // SCP03
   response[12] = 0x00;          // S8, no pseudorandom challenge / sequence
   std::memcpy(response + 13, card_challenge_, 8);
@@ -255,4 +302,84 @@ bool Scp03Session::verifyCommand(const uint8_t *apdu, size_t apdu_length,
     return false;
   }
   return true;
+}
+
+uint8_t Scp03Session::keyVersion() noexcept {
+  uint8_t version = 0;
+  // A malformed record reads as the default version; INITIALIZE UPDATE still
+  // fails closed on it.
+  return fs_read_1b_at(kKeysetTag, sizeof(kKeysetTag), 0, &version) ==
+                 FS_STATUS_OK
+             ? version
+             : 0x00;
+}
+
+uint16_t Scp03Session::putKey(uint8_t p1, uint8_t p2, const uint8_t *data,
+                              size_t data_length, uint8_t *response,
+                              size_t response_capacity,
+                              size_t &response_length) noexcept {
+  // GPC 2.3 11.8 / Amendment D: new KVN, then ENC, MAC, DEK as
+  // 88 11 10 <AES-CBC(DEK, zero IV) key> 03 <KCV>.
+  constexpr size_t kKeyBlockLength = 3 + kKeyLength + 1 + 3;
+  constexpr size_t kDataLength = 1 + 3 * kKeyBlockLength;
+  response_length = 0;
+  if (!active_) return 0x6982;
+  if (p2 != 0x81) return 0x6a86;
+  if (data == nullptr || data_length != kDataLength || response == nullptr ||
+      response_capacity < 10) {
+    return 0x6a80;
+  }
+  uint8_t current[kKeysetLength];
+  if (!load_keyset(current)) return 0x6581;
+  if (p1 != 0x00 && p1 != current[0]) {
+    mbedtls_platform_zeroize(current, sizeof(current));
+    return 0x6a88;
+  }
+  const uint8_t new_version = data[0];
+  // 0 marks the default keyset and 0x80-0xFF are reserved by GlobalPlatform.
+  if (new_version == 0x00 || new_version > 0x7f) {
+    mbedtls_platform_zeroize(current, sizeof(current));
+    return 0x6a80;
+  }
+
+  uint8_t keyset[kKeysetLength];
+  keyset[0] = new_version;
+  response[0] = new_version;
+  static constexpr uint8_t kKcvInput[16] = {
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint16_t status = 0x9000;
+  for (size_t index = 0; index < 3 && status == 0x9000; ++index) {
+    const uint8_t *block = data + 1 + index * kKeyBlockLength;
+    uint8_t *key = keyset + kEncOffset + index * kKeyLength;
+    uint8_t kcv[16];
+    if (block[0] != 0x88 || block[1] != kKeyLength + 1 ||
+        block[2] != kKeyLength || block[3 + kKeyLength] != 0x03) {
+      status = 0x6a80;
+    } else if (!aes_block(current + kDekOffset, MBEDTLS_AES_DECRYPT,
+                          block + 3, key) ||
+               !aes_block(key, MBEDTLS_AES_ENCRYPT, kKcvInput, kcv)) {
+      status = 0x6f00;
+    } else if (std::memcmp(kcv, block + 4 + kKeyLength, 3) != 0) {
+      status = 0x6a80; // wrong DEK or corrupted key
+    } else {
+      std::memcpy(response + 1 + index * 3, kcv, 3);
+    }
+  }
+  if (status == 0x9000 &&
+      (fs_write(kKeysetTag, sizeof(kKeysetTag), keyset, kKeysetLength) !=
+           FS_STATUS_OK ||
+       fs_commit_tag(kKeysetTag, sizeof(kKeysetTag)) != FS_STATUS_OK)) {
+    // Put the previous keyset back so a later sync cannot apply a key the
+    // host was told failed. Stored versions are never 0, so 0 means default.
+    if (current[0] == 0x00) {
+      (void)fs_erase(kKeysetTag, sizeof(kKeysetTag));
+    } else {
+      (void)fs_write(kKeysetTag, sizeof(kKeysetTag), current, kKeysetLength);
+    }
+    status = 0x6581;
+  }
+  mbedtls_platform_zeroize(current, sizeof(current));
+  mbedtls_platform_zeroize(keyset, sizeof(keyset));
+  if (status == 0x9000) response_length = 10;
+  return status;
 }
