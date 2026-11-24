@@ -33829,3 +33829,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The build gate is consistent with the pinned submodule again.
 - Decision: Package from this HEAD.
 - Artifacts/logs: `tools/patches/choupi-os-erase-applet-class-prefix.patch`
+
+## 2026-11-24 Package the GP DELETE watchdog fix for external tests 8
+
+- Step-Id: `20261124-2158-gp-delete-external-package`
+- Task: WIN-GP-DELETE-WATCHDOG-20261124 (user request "Prepare firmware for external tests")
+- When: '2026-11-24 21:53 CET' - '2026-11-24 22:01 CET'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt normal max_crypto ARM at `c46c1594` (GP DELETE fix `53eb4e90` + OS patch file) and packaged it with `./tools/package-maxcrypto-windows-test`. `WIN-GP-DELETE-WATCHDOG-20261124` replaces `WIN-6F00-RESERVE-FIX-20261124`, because this image also contains the 6f00 fix. The request adds a timed `gp --uninstall` after `ALG_PERFORMANCE_STATIC` (the package's `all` mode), because the ZIP runner does not uninstall.
+- Validation: build rc=0, mode=normal, object deletion ON, debug OFF, 0 C/C++ warnings; `PACKAGE:PASS`; `unzip -t` clean. This exact UF2 was not flashed locally yet.
+- Result: UF2 SHA-256 `faf59ccb95c03482c546ab98e05bd35b73bf5f911f5e6b987d688d04afef839c` (3,040,256 B), ZIP SHA-256 `e756ed44f8718822448dc02c807d9b068f4da1ea031a3d003112b5df3b032f90`, CPLC `C46C1594574C8CB5`, firmware end `0x10073038` (577,480 B headroom).
+- Decision: Send for Windows validation. The local EE11 A/B (pre-fix baseline uninstall, then this image) is still running and is recorded separately.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-c46c1594.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-c46c1594.zip`, `artifacts/logs/external-c46c1594-build.log`

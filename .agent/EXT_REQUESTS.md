@@ -1,19 +1,31 @@
 # External validation requests
 
-## WIN-6F00-RESERVE-FIX-20261124 — Pico 2 firmware fixing the RSA-CRT `6f00` rows
+## WIN-GP-DELETE-WATCHDOG-20261124 — Pico 2 firmware: uninstall after the static perf test, plus the `6f00` fix
 
-Created 2026-11-24. Use a dedicated test Pico 2. Normal ARM max_crypto image
-(object deletion on, debug off); flashing erases applet storage. Replaces
-`WIN-VM-ARRAY-READS-20261122`, whose results were returned and analysed.
+Created 2026-11-24 21:58 CET. Replaces `WIN-6F00-RESERVE-FIX-20261124`; this image contains that fix as well
+(`d65eb278`, `6b610082`). Use a dedicated test Pico 2. Normal ARM max_crypto image (object deletion on, debug off);
+flashing erases applet storage.
 
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6b610082.uf2),
-  SHA-256 `16f62e281dff0e8b321c6ee1d683e0f1838bd16ec6d70da4a4993c9e981f5417`, 3,035,136 bytes, CPLC source ID `6B610082DEAC282D`.
-- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-6b610082.zip),
-  SHA-256 `9dd1b0039865e2192490a7449b9baad1306a7d1fd3dea63c6d04076e8c55a8ec`.
+Fix under test (`53eb4e90`, `c46c1594`): after `ALG_PERFORMANCE_STATIC`, `gp --uninstall` ran a long time and then the
+reader disconnected. GP DELETE scanned the store 512 times with no watchdog refresh or CCID time extension, so the
+15 s watchdog reset the board.
+
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-c46c1594.uf2),
+  SHA-256 `faf59ccb95c03482c546ab98e05bd35b73bf5f911f5e6b987d688d04afef839c`, 3,040,256 bytes, CPLC source ID `C46C1594574C8CB5`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-c46c1594.zip),
+  SHA-256 `e756ed44f8718822448dc02c807d9b068f4da1ea031a3d003112b5df3b032f90`.
 - Unchanged JCAlgTest 1.8.5/jc305 CAP and 1.8.5-20261121 client (SHA-256 `3cca70cb…a703`), both inside the ZIP.
-- Run JCAlgTest option 2 and option 1. Expected: no `SW=6f00`; the 30 methods listed in
-  `progress.md` (step `20261124-0900-6f00-external-package`) were `6f00` before.
-- Return CSVs, client log and serial log with chip ID, reader name, UF2 and JAR hashes.
+
+Steps:
+1. Run the README block with `$mode = 'all'` (`ALG_PERFORMANCE_STATIC`). Expected: no `SW=6f00`; the 30 methods listed in
+   `progress.md` (step `20261124-0900-6f00-external-package`) were `6f00` before.
+2. Right after `DONE`, in the extracted package directory, set `$reader` to the same reader name as in the block,
+   then uninstall and time it:
+   `Measure-Command { & java -jar tools\gp.jar --reader $reader -d --uninstall applet.cap *> uninstall.txt } | Select TotalSeconds`
+   then `& java -jar tools\gp.jar --reader $reader --list`.
+   Expected: DELETE returns `9000`, the reader stays connected (no USB re-enumeration), and `--list` shows only the ISD.
+3. Return the results ZIP, `uninstall.txt`, the uninstall time, the `--list` output, and whether Windows reported a
+   device disconnect/reconnect during the uninstall. Include the chip ID, reader name, and UF2 and JAR hashes.
 
 ## WIN-VM-ARRAY-READS-20261122 — Pico 2 primitive-array read firmware
 
