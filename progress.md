@@ -33868,3 +33868,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: No code change.
 - Decision: Repackage from this HEAD.
 - Artifacts/logs: none
+
+## 2026-11-24 Repackage the GP DELETE fix (no-snapshot) for external tests 6
+
+- Step-Id: `20261124-2230-gp-delete-external-repackage`
+- Task: WIN-GP-DELETE-WATCHDOG-20261124
+- When: '2026-11-24 22:25 CET' - '2026-11-24 22:31 CET'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt normal max_crypto ARM at `6d3bb526` and packaged it. `WIN-GP-DELETE-WATCHDOG-20261124` now points to this package and warns that `c46c1594` lacks the OOM fix. HANDOFF records EE11's state.
+- Validation: build rc=0, mode=normal, object deletion ON, debug OFF, 0 C/C++ warnings; `PACKAGE:PASS`; `unzip -t` clean. This exact UF2 was not flashed. EE11 runs the same code built at `93517fb2` (only bookkeeping and line-ending commits since), where the uninstall passed.
+- Result: UF2 SHA-256 `3600e77c34cfab3fb6935790b59e16991f5209cd45b59b9437e491a1d96c3ef6` (3,040,256 B), ZIP SHA-256 `c8a349890587327cbdd7435929b55d47591739f97eb233dcb6f46570302ed625`, CPLC `6D3BB526B8E93267`, firmware end `0x100730d0` (577,328 B headroom).
+- Decision: Send for Windows validation (option `all` plus a timed uninstall).
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6d3bb526.uf2`, `build/external-test/pico2-jcvm-maxcrypto-deletion-6d3bb526.zip`, `artifacts/logs/external-6d3bb526-build.log`

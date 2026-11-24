@@ -6,14 +6,15 @@ Created 2026-11-24 21:58 CET. Replaces `WIN-6F00-RESERVE-FIX-20261124`; this ima
 (`d65eb278`, `6b610082`). Use a dedicated test Pico 2. Normal ARM max_crypto image (object deletion on, debug off);
 flashing erases applet storage.
 
-Fix under test (`53eb4e90`, `c46c1594`): after `ALG_PERFORMANCE_STATIC`, `gp --uninstall` ran a long time and then the
-reader disconnected. GP DELETE scanned the store 512 times with no watchdog refresh or CCID time extension, so the
-15 s watchdog reset the board.
+Fix under test (`53eb4e90`, `93517fb2`, package at `6d3bb526`): after `ALG_PERFORMANCE_STATIC`, `gp --uninstall` stalled for
+15 s and then the reader disconnected. GP DELETE copied every erased record into RAM, panicked `Out of memory`, and the
+watchdog reset the board. On EE11 with 1,064 records, DELETE now returns `9000` in 2.2 s (before: 15 s, panic).
+The earlier `c46c1594` package does not contain this fix; do not use it.
 
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-c46c1594.uf2),
-  SHA-256 `faf59ccb95c03482c546ab98e05bd35b73bf5f911f5e6b987d688d04afef839c`, 3,040,256 bytes, CPLC source ID `C46C1594574C8CB5`.
-- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-c46c1594.zip),
-  SHA-256 `e756ed44f8718822448dc02c807d9b068f4da1ea031a3d003112b5df3b032f90`.
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6d3bb526.uf2),
+  SHA-256 `3600e77c34cfab3fb6935790b59e16991f5209cd45b59b9437e491a1d96c3ef6`, 3,040,256 bytes, CPLC source ID `6D3BB526B8E93267`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-6d3bb526.zip),
+  SHA-256 `c8a349890587327cbdd7435929b55d47591739f97eb233dcb6f46570302ed625`.
 - Unchanged JCAlgTest 1.8.5/jc305 CAP and 1.8.5-20261121 client (SHA-256 `3cca70cb…a703`), both inside the ZIP.
 
 Steps:
