@@ -378,9 +378,39 @@ void test_class_component_22() {
   expect(!parses(truncated_remote_class.data(), truncated_remote_class.size()),
          "class_component_22_truncated_remote_class_rejected");
 
-  auto unsupported_class_23 = make_cap(minimal_22_class, 2, 3);
-  expect(!parses(unsupported_class_23.data(), unsupported_class_23.size()),
-         "class_component_23_unimplemented_vmmt_rejected");
+  // CAP 2.3 compact: each class record ends with the public virtual method
+  // token mapping (base + count entries) and CAP22_inheritable count. Only
+  // the implicit CAP 2.2 mapping (T or a 0xFF suffix) is accepted.
+  // Record: flags/if, super 0xffff, size, first ref, ref count, public base 2,
+  // public count 0, package base, package count, mapping[2], inheritable.
+  const std::vector<uint8_t> class_23 = {0x00, 0x00, 0x00, 0xff, 0xff, 0x01,
+                                         0xff, 0x00, 0x02, 0x00, 0x00, 0x00,
+                                         0x00, 0x01, 0x02};
+  auto valid_23 = make_cap(class_23, 2, 3);
+  expect(parses(valid_23.data(), valid_23.size()),
+         "class_component_23_identity_token_mapping_parses");
+  auto remapped = class_23;
+  remapped[12] = 0x01; // Token 0 mapped to superclass token 1.
+  auto remapped_23 = make_cap(remapped, 2, 3);
+  expect(!parses(remapped_23.data(), remapped_23.size()),
+         "class_component_23_remapped_token_rejected");
+  auto inherited_after_declared = class_23;
+  inherited_after_declared[12] = 0xff; // Declared, then inherited token 1.
+  auto out_of_order_23 = make_cap(inherited_after_declared, 2, 3);
+  expect(!parses(out_of_order_23.data(), out_of_order_23.size()),
+         "class_component_23_inherited_after_declared_rejected");
+  auto truncated = class_23;
+  truncated.pop_back();
+  auto truncated_23 = make_cap(truncated, 2, 3);
+  expect(!parses(truncated_23.data(), truncated_23.size()),
+         "class_component_23_truncated_mapping_rejected");
+  auto as_22 = make_cap(class_23, 2, 2);
+  expect(!parses(as_22.data(), as_22.size()),
+         "class_component_23_record_rejected_as_22");
+  auto extended_23 = make_cap(class_23, 2, 3);
+  extended_23[3 + 6] = 0x08; // ACC_EXTENDED
+  expect(!parses(extended_23.data(), extended_23.size()),
+         "cap_23_extended_format_rejected");
 
   auto unsupported_major = make_cap(minimal_22_class, 3, 0);
   expect(!parses(unsupported_major.data(), unsupported_major.size()),

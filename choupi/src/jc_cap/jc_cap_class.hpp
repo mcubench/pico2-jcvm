@@ -249,7 +249,22 @@ struct __attribute__((__packed__)) jc_cap_class_info {
   //   */];
   // }
 
-  const uint16_t getSize() const noexcept {
+  // CAP format 2.3 appends public_virtual_method_token_mapping
+  // [public_method_table_base + public_method_table_count] and
+  // CAP22_inheritable_public_method_token_count to every class record.
+  uint16_t cap23TrailerSize() const noexcept {
+    return static_cast<uint16_t>(public_method_table_base +
+                                 public_method_table_count + 1);
+  }
+
+  // Record size in a CAP of format 2.3 (cap23) or 2.1/2.2.
+  const uint16_t getSize(const bool cap23) const noexcept {
+    return static_cast<uint16_t>(getSize22() +
+                                 (cap23 ? cap23TrailerSize() : 0));
+  }
+
+private:
+  const uint16_t getSize22() const noexcept {
     uint16_t size = sizeof(jc_cap_class_info) +
                     (public_method_table_count + package_method_table_count) *
                         sizeof(uint16_t);
@@ -277,6 +292,7 @@ struct __attribute__((__packed__)) jc_cap_class_info {
     return size;
   }
 
+public:
   const jc_cap_remote_interface_info *remoteInterfaceInfo() const noexcept {
     if ((flags & JC_CAP_CLASS_ACC_REMOTE) == 0) {
       return nullptr;

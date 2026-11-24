@@ -78,6 +78,7 @@ bool visit_cap_method_offsets(const JC_Cap &cap, VisitOffset &&visit) {
     std::size_t offset = 0;
     const auto *header = cap.getHeader();
     if (header == nullptr) return false;
+    const bool cap23 = header->minor_version >= 3;
     if (header->minor_version >= 2) {
       if (!class_component->hasValidSignaturePool()) return false;
       offset = class_component->classInfoStartOffset();
@@ -137,9 +138,12 @@ bool visit_cap_method_offsets(const JC_Cap &cap, VisitOffset &&visit) {
         // record. getSize() accounts for its remote method signatures/names.
         const auto *class_info =
             reinterpret_cast<const jc_cap_class_info *>(data + offset);
-        const std::size_t full_size = class_info->getSize();
+        const std::size_t full_size = class_info->getSize(cap23);
         if (full_size < record_size || full_size > size - offset) return false;
         record_size = full_size;
+      } else if (cap23) {
+        // CAP 2.3 token mapping (base + public count) and CAP22 count.
+        record_size += data[offset + 6] + public_count + 1;
       }
       if (record_size == 0 || record_size > size - offset) return false;
       offset += record_size;

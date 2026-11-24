@@ -242,7 +242,7 @@ void Import_Handler::validateRemoteInterfaceReferences() {
       usesJC305CompatibilityTokens(this->package);
   try {
     validateRemoteInterfaceTargets(
-      cap.getClass(), [&resolver, &imported_packages,
+      cap.getClass(), header->minor_version >= 3, [&resolver, &imported_packages,
                        use_jc305_compatibility_tokens](
                           const jc_cap_class_ref reference) {
         const uint8_t import_token =

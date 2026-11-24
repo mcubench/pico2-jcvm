@@ -104,7 +104,7 @@ int main() {
       remote_interface->getSize());
   assert(remote_class->interface_count == 2);
   assert((remote_class->flags & 0x02) != 0);
-  assert(remote_class->getSize() == 49);
+  assert(remote_class->getSize(false) == 49);
   const auto *emitted_remote_info = remote_class->remoteInterfaceInfo();
   assert(emitted_remote_info != nullptr);
   assert(emitted_remote_info->remote_methods_count == 2);
@@ -194,7 +194,7 @@ int main() {
   remote_info[14] = 0x80;   // external class_ref package token
   remote_info[15] = 0x02;   // external class_ref class token
 
-  assert(class_info->getSize() == sizeof(jcvm::jc_cap_class_info) +
+  assert(class_info->getSize(false) == sizeof(jcvm::jc_cap_class_info) +
                                       remote_info_size);
   const auto *parsed = class_info->remoteInterfaceInfo();
   assert(parsed != nullptr);
@@ -229,7 +229,7 @@ int main() {
           external_class_bytes.data());
   bool resolver_called = false;
   jcvm::validateRemoteInterfaceTargets(
-      external_component, [&resolver_called](const jcvm::jc_cap_class_ref ref) {
+      external_component, false, [&resolver_called](const jcvm::jc_cap_class_ref ref) {
         resolver_called = true;
         return ref.isExternalClassRef() &&
                ref.external_classref.package_token == 0x80 &&
@@ -240,7 +240,7 @@ int main() {
   bool rejected_exported_class = false;
   try {
     jcvm::validateRemoteInterfaceTargets(
-        external_component, [](const jcvm::jc_cap_class_ref) { return false; });
+        external_component, false, [](const jcvm::jc_cap_class_ref) { return false; });
   } catch (const jcvm::Exceptions error) {
     rejected_exported_class = error == jcvm::Exceptions::SecurityException;
   }
@@ -249,7 +249,7 @@ int main() {
   bool rejected_missing_export = false;
   try {
     jcvm::validateRemoteInterfaceTargets(
-        external_component, [](const jcvm::jc_cap_class_ref) { return false; });
+        external_component, false, [](const jcvm::jc_cap_class_ref) { return false; });
   } catch (const jcvm::Exceptions error) {
     rejected_missing_export = error == jcvm::Exceptions::SecurityException;
   }
@@ -257,7 +257,7 @@ int main() {
 
   class_info->flags = 0;
   assert(class_info->remoteInterfaceInfo() == nullptr);
-  assert(class_info->getSize() == sizeof(jcvm::jc_cap_class_info));
+  assert(class_info->getSize(false) == sizeof(jcvm::jc_cap_class_info));
   std::puts("RMI_CAP_METADATA:PASS package_name=bounded signature_pool=4 remote_methods=2 interface=Counter class=CounterImpl");
   return 0;
 }

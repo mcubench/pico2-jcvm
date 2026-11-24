@@ -32,7 +32,7 @@ namespace jcvm {
 // makes install-time linking and its host regression test share the same path.
 template <typename ExternalInterfaceResolver>
 void validateRemoteInterfaceTargets(
-    const jc_cap_class_component *component,
+    const jc_cap_class_component *component, const bool cap23,
     ExternalInterfaceResolver &&is_exported_interface) {
   if (component == nullptr) {
     return;
@@ -59,7 +59,7 @@ void validateRemoteInterfaceTargets(
 
     const auto *class_info =
         reinterpret_cast<const jc_cap_class_info *>(record);
-    const uint16_t record_size = class_info->getSize();
+    const uint16_t record_size = class_info->getSize(cap23);
     if (record_size == 0 || record_size > class_bytes.size() - offset) {
       throw Exceptions::SecurityException;
     }

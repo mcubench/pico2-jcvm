@@ -270,7 +270,7 @@ bool validate_internal_remote_interface_refs(
     const uint8_t *payload, const size_t size,
     const size_t signature_pool_length, const uint8_t *signature_start_bits,
     const uint8_t *interface_start_bits,
-    const uint8_t import_count = UINT8_MAX) {
+    const uint8_t import_count = UINT8_MAX, const bool cap23 = false) {
   size_t offset = 2 + signature_pool_length;
   while (offset < size) {
     const uint8_t flags = payload[offset] >> 4;
@@ -314,14 +314,45 @@ bool validate_internal_remote_interface_refs(
             interface_start_bits, import_count)) {
       return false;
     }
+    if (cap23) {
+      // Token mapping and CAP22 count, already checked by the framing pass.
+      const size_t trailer = public_method_base + public_methods + 1;
+      if (trailer > size - offset) return false;
+      offset += trailer;
+    }
   }
   return offset == size;
+}
+
+// CAP 2.3 public_virtual_method_token_mapping: accept only the mapping a CAP
+// 2.2 class implicitly has (entry T maps to the same token T in the
+// superclass, followed only by 0xFF for methods this class declares). The
+// interpreter resolves virtual tokens with CAP 2.2 rules, so any other
+// mapping is rejected instead of being silently misinterpreted.
+bool validate_cap23_token_mapping(const uint8_t *payload, const size_t size,
+                                  size_t &offset, const size_t public_base,
+                                  const size_t public_methods) {
+  const size_t count = public_base + public_methods;
+  if (count + 1 > size - offset) return false;
+  bool declared = false;
+  for (size_t token = 0; token < count; ++token) {
+    const uint8_t mapped = payload[offset + token];
+    if (mapped == 0xFF) {
+      declared = true;
+    } else if (declared || mapped != token) {
+      return false;
+    }
+  }
+  const uint8_t inheritable = payload[offset + count];
+  offset += count + 1;
+  return inheritable <= count;
 }
 
 bool validate_class_component_22(const uint8_t *payload, const size_t size,
                                  const uint8_t import_count = UINT8_MAX,
                                  std::array<uint8_t, 1u << 13>
-                                     *record_start_bits = nullptr) {
+                                     *record_start_bits = nullptr,
+                                 const bool cap23 = false) {
   if (size < 2) return false;
   const size_t signature_pool_length = read_be16(payload);
   // CAP validation runs synchronously in the single-threaded VM loader. Keep
@@ -398,6 +429,11 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size,
               signature_start_bits.data())) {
         return false;
       }
+      if (cap23 && !validate_cap23_token_mapping(payload, size, offset,
+                                                 public_method_base,
+                                                 public_methods)) {
+        return false;
+      }
     }
     ++record_count;
   }
@@ -406,7 +442,7 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size,
          validate_internal_remote_interface_refs(
              payload, size, signature_pool_length,
              signature_start_bits.data(), interface_start_bits.data(),
-             import_count);
+             import_count, cap23);
 }
 
 bool validate_descriptor_type_offsets(const uint8_t *descriptor,
@@ -514,9 +550,14 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
   case 2: { // Directory
     // CAP 2.2 Directory adds the twelfth standard component-size entry
     // (Debug); older 2.1 packages in the supplied corpus use eleven entries.
+    // CAP 2.3 (Java Card 3.1+ compact format) appends a u4 Static Resource
+    // component size after the twelve u2 entries.
     const size_t component_size_count =
         cap_major == 2 && cap_minor >= 2 ? 12 : 11;
-    const size_t fixed_size = component_size_count * sizeof(uint16_t) + 6 + 3;
+    const size_t static_resource_size =
+        cap_major == 2 && cap_minor >= 3 ? sizeof(uint32_t) : 0;
+    const size_t fixed_size = component_size_count * sizeof(uint16_t) +
+                              static_resource_size + 6 + 3;
     if (size < fixed_size) return false;
     const uint8_t custom_count = payload[fixed_size - 1];
     offset = fixed_size;
@@ -566,9 +607,12 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
       return validate_class_component_21(payload, size);
     if (cap_major == 2 && cap_minor == 2)
       return validate_class_component_22(payload, size);
-    // CAP format 2.3 adds VMMT records to this component. The interpreter does
-    // not consume that table, so accepting the layout would silently skip
-    // compatibility metadata and risk incorrect virtual dispatch.
+    // CAP format 2.3 (compact) appends a virtual method token mapping to each
+    // class record; validate_cap23_token_mapping accepts it only when it
+    // equals the implicit CAP 2.2 mapping the interpreter implements.
+    if (cap_major == 2 && cap_minor == 3)
+      return validate_class_component_22(payload, size, UINT8_MAX, nullptr,
+                                         true);
     return false;
   case 7: { // Method: exception handler table precedes method data.
     if (size < 1) return false;
@@ -745,10 +789,12 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
           (static_cast<size_t>(scan[1]) << 8) | scan[2];
       if (payload_size > remaining - 3) throw Exceptions::SecurityException;
       if (scan[0] == CAP_COMPONENT_HEADER) {
-        if (payload_size < 6) throw Exceptions::SecurityException;
+        if (payload_size < 7) throw Exceptions::SecurityException;
         cap_minor = scan[3 + 4];
         cap_major = scan[3 + 5];
-        if (cap_major != 2 || (cap_minor != 1 && cap_minor != 2))
+        // CAP 2.3 is accepted in Compact format only (ACC_EXTENDED clear).
+        if (cap_major != 2 || cap_minor < 1 || cap_minor > 3 ||
+            (cap_minor == 3 && (scan[3 + 6] & 0x08u) != 0))
           throw Exceptions::SecurityException;
         break;
       }
@@ -913,10 +959,10 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
         valid_class = validate_class_component_21(
             this->class_comp->infos, class_size, nullptr, 0, nullptr,
             &class_record_start_bits);
-      } else if (cap_major == 2 && cap_minor == 2) {
+      } else if (cap_major == 2 && (cap_minor == 2 || cap_minor == 3)) {
         valid_class = validate_class_component_22(
             this->class_comp->infos, class_size, import_count,
-            &class_record_start_bits);
+            &class_record_start_bits, cap_minor == 3);
       }
       if (!valid_class) throw Exceptions::SecurityException;
     } else {

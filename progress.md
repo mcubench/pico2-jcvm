@@ -33927,3 +33927,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Decision: next, the ROM API: javacard.security 3.2 token layout (NamedParameterSpec, AlgorithmParameterSpec), new packages javacardx.crypto.kem (AID A0000000620201 01, v17.0) and javacardx.security.pqc (A0000000620205 05, v17.0) from the SDK 26.1 preview export files in `~/projects/jc_32_2026/lib/tools.jar` (sha256 `13ef49e5…6269`).
 - Artifacts/logs: `tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json`
 
+## 2026-11-24 Accept Java Card 3.2 compact CAP format 2.3 (≈25 min, interleaved with the PQC API work)
+
+- Step-Id: `20261124-1638-cap23-compact`
+- Task: JC 3.2 preview PQC API (user request 2026-11-24), prerequisite: CAPs built with SDK 26.1 `-enable-preview` are always CAP format 2.3
+- When: '2026-11-24 ~16:10' - '2026-11-24 16:38' (interleaved, not captured exactly)
+- Model: `claude-opus-5-5`
+- Change: The loader rejected CAP 2.3 (class records carry `public_virtual_method_token_mapping[base+count]` and `CAP22_inheritable_public_method_token_count`). Now accepted in Compact format only (ACC_EXTENDED rejected): Directory validation accounts for the u4 Static Resource size; `validate_class_component_22(..., cap23)` and `validate_internal_remote_interface_refs` skip/validate the class trailer; `jc_cap_class_info::getSize(bool cap23)` replaces `getSize()` at every class-record walker (cap_load, import reference validation, remote-interface validation, method table walk). A 2.3 mapping is accepted only if it equals the implicit CAP 2.2 mapping (entry T == T, then only 0xFF), which is what the interpreter's 2.2 dispatch implements; anything else fails closed.
+- Validation: `tools/test-cap-parser` PASS (4213 checks, 100k fuzz inputs; old `class_component_23_unimplemented_vmmt_rejected` replaced by identity-accepted, remapped-token, inherited-after-declared, truncated, 2.3-record-as-2.2 and ACC_EXTENDED cases); `tools/test-rmi-cap-metadata` PASS; SDK 26.1 preview probe CAP (mapping `00..07`, count 8) installs on the PC emulator and on EE116F37C7E4A04E (next record); `tools/test-asymm-crypto-vpcd` 109/109.
+- Result: Oracle SDK 26.1 compact CAPs load; CAP 2.1/2.2 paths unchanged.
+- Decision: commit separately from the PQC API.
+- Artifacts/logs: none
+

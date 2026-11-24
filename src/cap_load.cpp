@@ -598,7 +598,7 @@ bool validate_internal_class_references(
             ? reinterpret_cast<const jcvm::jc_cap_interface_info *>(record)
                   ->getSize()
             : reinterpret_cast<const jcvm::jc_cap_class_info *>(record)
-                  ->getSize();
+                  ->getSize(header->minor_version >= 3);
     if (record_size == 0 || record_size > class_size - offset) return false;
     record_starts[offset / 8] |=
         static_cast<uint8_t>(1u << (offset & 7));
@@ -690,7 +690,7 @@ bool validate_internal_class_references(
         return false;
       }
     }
-    offset += class_info->getSize();
+    offset += class_info->getSize(header->minor_version >= 3);
   }
 
   // CAPIN-07: each Export class_offset must name a class or interface record

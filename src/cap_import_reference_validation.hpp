@@ -74,7 +74,8 @@ inline bool valid_class_import_tokens(const jcvm::JC_Cap &cap) noexcept {
             import_count)) {
       return false;
     }
-    const std::size_t record_size = class_info->getSize();
+    const std::size_t record_size =
+        class_info->getSize(header->minor_version >= 3);
     if (record_size < sizeof(jcvm::jc_cap_class_info) ||
         record_size > remaining) {
       return false;
