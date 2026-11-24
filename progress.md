@@ -33856,3 +33856,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Uninstall after a perf run works on hardware. The 4-byte prefix pass and watchdog/CCID progress from `53eb4e90` stay in place; they bound the remaining scan time. The first `cycle choupi --serial` hit the known BOOTSEL re-enumeration race; the `--chipid` retry passed. Flash traffic for DELETE was not measured separately: the set of erased records and the single commit sync are unchanged, and only RAM copies were removed.
 - Decision: The external package `c46c1594` still has the OOM bug. Repackage from this commit and replace `WIN-GP-DELETE-WATCHDOG-20261124`. EE11 now has the JCAlgTest CAP reinstalled on an otherwise near-empty store.
 - Artifacts/logs: `artifacts/results/delete-watchdog-20261124/EE116F37C7E4A04E/` (`client.log`, `serial-baseline.log`, `uninstall-baseline.txt`, `serial-fixed.log`, `uninstall-fixed.txt`, `serial-nosnap.log`, `uninstall-nosnap.txt`, `cycle-*.log`), `artifacts/logs/same-cap-delete-reinstall-vpcd-20261124T211813Z.log`
+
+## 2026-11-24 Restore CRLF line endings changed by 93517fb2 3
+
+- Step-Id: `20261124-2225-gp-delete-eol-restore`
+- Task: follow-up to `20261124-2205-gp-delete-no-snapshot`
+- When: '2026-11-24 22:22 CET' - '2026-11-24 22:25 CET'
+- Model: `claude-opus-5-5`
+- Change: A scripted edit in `93517fb2` rewrote `choupi/src/jc_handlers/flashmemory.cpp` (all CRLF) and the mixed-ending `tests/unit/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp` (30 CRLF lines) to LF. This restores the original endings, so the diff against `9578cb63` is only the functional change (+40/−1 and +25 lines).
+- Validation: `git diff 9578cb63 --stat` on both files shows 40+1 and 25 lines; `./tools/test-rp2350-fs-overlay` fail=0.
+- Result: No code change.
+- Decision: Repackage from this HEAD.
+- Artifacts/logs: none
