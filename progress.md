@@ -34087,3 +34087,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result (avg ms/op, EE11): ML-KEM-512/768/1024 keygen 26.1/36.9/48.4, encaps 14.8/18.2/22.9, decaps 16.1/20.0/25.0; ML-DSA-44/65/87 keygen 48.9/72.4/111.4, sign 104/249/245 (min 68/180/118, randomized), verify 22.4/33.2/53.1, init 3.8/4.0/3.7. Seed-only keygen and seed expansion are reported per set in the CSV. Open: ML-DSA-65/87 `expandSeed()` has one slow measurement in three (571/658 ms vs ~72/100 ms) in both EE11 runs. Not investigated.
 - Decision: the 1.8.6 pair now has the PQC performance tests. The Windows package `f3cf5729` is unchanged (support pair only); it needs a repackage if the Windows test should also run the performance tests.
 - Artifacts/logs: CAP `5f19662dfa8c1941299423a6c4dcac44c931bb7c29e631d07abc82647b816f8f` (156883 bytes), client `0e98fd5631d3027bf8c7b8b764b2cd101b473b46338dcbe34668959f336ed6c1` (156762 bytes); `artifacts/results/jcalgtest-pqc-perf-EE116F37C7E4A04E-20261125T174016Z` (final), `...173716Z` (first run, before the baseline fix), `...173951Z` (ABORTED at resume prompt), `artifacts/results/jcalgtest-support-vpcd-20261125T175103Z`
+
+## 2026-11-25 PQC perf: ML-DSA expandSeed outlier is a journal rollover 12
+
+- Step-Id: `20261125-2150-pqc-expandseed-outlier`
+- Task: user request 2026-11-25 (investigate the slow ML-DSA-65/87 `PQCKeyFactory_expandSeed()` measurement)
+- When: '2026-11-25 21:40' - '2026-11-25 21:52'
+- Model: `claude-opus-5-5`
+- Change: none to firmware or fixtures; the 1.8.6 README and HANDOFF now explain the outlier.
+- Validation: EE116F37C7E4A04E (f3cf5729 empty-card UF2 state, jc32 CAP from `build/algtest-jc32-perf`, client `0e98fd56…`), performance option 4 with serial capture: rc 0. Reproduced: ML-DSA-65 expandSeed 74.4/72.4/575.4 ms, ML-DSA-87 137.2/101.2/662.2 ms (third measurement again). 1.8.5/jc305 reinstalled afterwards (SELECTABLE).
+- Result: `CHOUPI:PQC op=dsa_expand set=65` takes 28.0 ms in all three perf APDUs. The slow APDU differs only in its end-of-APDU sync: `synced=1 sync_bytes=40960 sync_us=524714` (full snapshot to the other slot) instead of `journaled=1 journal_bytes=7424 sync_us=21630`. The run had 4 full snapshots (2 in untimed prepare APDUs, 2 in timed expandSeed APDUs, 40960/45056 bytes, 525-589 ms), each after 121-125 KB of journal appends (160 KB slot minus the ~40 KB snapshot; first one 146 KB including pre-run state). ML-DSA-65/87 expandSeed writes ~7.4-9 KB of persistent key per operation, so the rollover lands there; the run is deterministic from the same card state, so it hits the same measurement.
+- Decision: expected amortized cost of persistent key writes (about 30 ms/op for ML-DSA-65 expandSeed averaged over a journal), not a PQC bug. No firmware change. Making the snapshot cheaper or moving it off the APDU path would be a separate persistence task.
+- Artifacts/logs: `artifacts/results/jcalgtest-pqc-perf-serial-EE116F37C7E4A04E-20261125T204706Z` (CSV, `serial.log`, `inputs.sha256`)

@@ -71,7 +71,10 @@ because ML-DSA signing time varies (rejection sampling) and would otherwise
 add noise to the baseline. New applet commands: `INS_PREPARE_TEST_CLASS_KEM`
 (0x3a), `INS_PERF_TEST_CLASS_KEM` (0x4a); `TestSettings.keyType`
 `Consts.KEYTYPE_PQC_PRIVATE` (0x70) with the NamedParameterSpec name in
-`keyClass`. Against the 1.8.5/jc305 CAP these tests should end in card errors
+`keyClass`. Keygen writes persistent keys, so a measurement can include a flash journal
+rollover (full snapshot, about 0.5 s on RP2350 every ~120 KB of journal); on
+EE11 this shows as one slow ML-DSA-65/87 `expandSeed()` measurement. Against
+the 1.8.5/jc305 CAP these tests should end in card errors
 (unknown INS or key type), not results; this was not run.
 
 ## Rebuild
