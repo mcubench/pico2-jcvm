@@ -40,6 +40,12 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
 - PQC (JC 3.2 preview ML-KEM/ML-DSA): hardware-validated on EE11. Open:
   ML-DSA on 07E7/F42D not run; a JCAlgTest-style perf campaign does not cover
   PQC; `KEM.ALG_DHKEM` and the XDH named-parameter keys are not implemented.
+- Windows package `f9e7cf61` (WIN-PQC-SCP03-F9E7CF61-20261125) is out for
+  external testing: modes `pqc` (1.8.6/jc32 support), `all`, `symmetric`.
+  EE11 runs that exact empty-card UF2 (`d46b27b6…1dec`) with 1.8.5/jc305
+  reinstalled. Pending user decision: fix the JCAlgTest client's duplicated
+  last CPLC line (`message +=` after the loop in `CardMngr.PrintCPLCInfo` /
+  `PrintGPInfo`), which would need a 1.8.6 client re-pin and a repackage.
 - JCAlgTest 1.8.6/jc32 (PQC support rows) is pinned under
   `tests/fixtures/external/jcalgtest/1.8.6/` and runs with
   `JCALGTEST_VARIANT=jc32 tools/test-jcalgtest-support-vpcd`; 1.8.5/jc305 stays

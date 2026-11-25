@@ -1,59 +1,45 @@
 # External validation requests
 
-## WIN-GP-DELETE-WATCHDOG-20261124 — Pico 2 firmware: uninstall after the static perf test, plus the `6f00` fix
+## WIN-PQC-SCP03-F9E7CF61-20261125 — Pico 2 firmware with JC 3.2 PQC, SCP03 enc/R-MAC and all fixes since rc1
 
-Created 2026-11-24 21:58 CET. Replaces `WIN-6F00-RESERVE-FIX-20261124`; this image contains that fix as well
-(`d65eb278`, `6b610082`). Use a dedicated test Pico 2. Normal ARM max_crypto image (object deletion on, debug off);
-flashing erases applet storage.
+Created 2026-11-25 14:50 CET. Replaces `WIN-GP-DELETE-WATCHDOG-20261124` (package `6d3bb526`) and
+`WIN-VM-ARRAY-READS-20261122` (package `be737f0e`); this image contains both fixes. Use a dedicated test Pico 2.
+Normal ARM max_crypto image (object deletion on, debug off); flashing erases applet storage.
 
-Fix under test (`53eb4e90`, `93517fb2`, package at `6d3bb526`): after `ALG_PERFORMANCE_STATIC`, `gp --uninstall` stalled for
-15 s and then the reader disconnected. GP DELETE copied every erased record into RAM, panicked `Out of memory`, and the
-watchdog reset the board. On EE11 with 1,064 records, DELETE now returns `9000` in 2.2 s (before: 15 s, panic).
-The earlier `c46c1594` package does not contain this fix; do not use it.
+New since `6d3bb526` (details in `progress.md`, 2026-11-25):
+- Java Card 3.2 preview PQC API, native: ML-KEM-512/768/1024 (`javacardx.crypto.kem`), ML-DSA-44/65/87
+  (`javacardx.security.pqc`, `Signature`), CAP 2.3 loading (`51d27d7e`, `8a56f4e0`).
+- GP PUT KEY for a persistent SCP03 keyset; SCP03 C-ENC, R-MAC, R-ENC (`8b155dc5`, `aeecd243`).
+- SELECT now ends a GP secure channel session (`f9e7cf61`). Before, the PC/SC connection after a GPPro
+  run inherited the session, so JCAlgTest logged "CPLC; failed to obtain CPLC".
 
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-6d3bb526.uf2),
-  SHA-256 `3600e77c34cfab3fb6935790b59e16991f5209cd45b59b9437e491a1d96c3ef6`, 3,040,256 bytes, CPLC source ID `6D3BB526B8E93267`.
-- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-6d3bb526.zip),
-  SHA-256 `c8a349890587327cbdd7435929b55d47591739f97eb233dcb6f46570302ed625`.
-- Unchanged JCAlgTest 1.8.5/jc305 CAP and 1.8.5-20261121 client (SHA-256 `3cca70cb…a703`), both inside the ZIP.
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-f9e7cf61.uf2),
+  SHA-256 `d46b27b6fdeef09bf1a663c8de019fc14f13a442a70dba489b96ac34b2d31dec`, 3,193,344 bytes, CPLC source ID `F9E7CF61F94B9A22`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-f9e7cf61.zip),
+  SHA-256 `6e8cfc8f80b36671f14548123d59dd311d2b97d70362aca9e07602933bcc06d8`.
+- Inside the ZIP: unchanged JCAlgTest 1.8.5/jc305 CAP (`applet.cap`, `fa64582e…48fb`) with the 1.8.5-20261121 client
+  (`3cca70cb…a703`) for modes `all`/`symmetric`; JCAlgTest 1.8.6/jc32 CAP (`applet-jc32.cap`, `98365aae…bfce`) with
+  its client (`tools/AlgTestJClient_v1.8.6_jc32.jar`, `615d7be4…c4f4`) for mode `pqc`.
+
+Validation here (EE116F37C7E4A04E, this exact UF2, empty card): packaged GPPro installed `applet-jc32.cap`, then the
+packaged 1.8.6 client ran `-op ALG_SUPPORT_BASIC -cardname … -fresh -outpath …` (the `pqc` command line): rc 0,
+4506 rows, all 19 PQC rows yes, no NO_RESOURCE/error/6F00 rows, CPLC present. The PowerShell block itself was not run
+(no PowerShell here). Modes `all`/`symmetric` are unchanged from the earlier packages.
 
 Steps:
-1. Run the README block with `$mode = 'all'` (`ALG_PERFORMANCE_STATIC`). Expected: no `SW=6f00`; the 30 methods listed in
-   `progress.md` (step `20261124-0900-6f00-external-package`) were `6f00` before.
-2. Right after `DONE`, in the extracted package directory, set `$reader` to the same reader name as in the block,
-   then uninstall and time it:
+1. Unzip, open PowerShell in the extracted folder, hold BOOTSEL while connecting the Pico 2.
+2. Run the README block with `$mode = 'pqc'` (minutes). Expected: `DONE … client_exit_code=0`; in the CSV, the
+   sections `javacardx.security.pqc.PQCKeyFactory` (12 rows), `javacardx.crypto.kem.KEM ALG_ML_KEM` (3) and
+   `javacard.security.Signature ML-DSA` (4) all `yes`; a `CPLC;` line with data.
+3. Reconnect with BOOTSEL and run `$mode = 'all'` (5–8 hours). Expected: `Testing complete`, no `SW=6f00`, no panic
+   or reader loss in `serial.log`.
+4. Right after the `all` run, in the extracted directory, with `$reader` set as in the block:
    `Measure-Command { & java -jar tools\gp.jar --reader $reader -d --uninstall applet.cap *> uninstall.txt } | Select TotalSeconds`
-   then `& java -jar tools\gp.jar --reader $reader --list`.
-   Expected: DELETE returns `9000`, the reader stays connected (no USB re-enumeration), and `--list` shows only the ISD.
-3. Return the results ZIP, `uninstall.txt`, the uninstall time, the `--list` output, and whether Windows reported a
-   device disconnect/reconnect during the uninstall. Include the chip ID, reader name, and UF2 and JAR hashes.
+   then `& java -jar tools\gp.jar --reader $reader --list`. Expected: DELETE `9000` within a few seconds, no USB
+   re-enumeration, only the ISD listed.
 
-## WIN-VM-ARRAY-READS-20261122 — Pico 2 primitive-array read firmware
-
-Created 2026-11-22 09:44 CET. Use a dedicated test Pico 2. This normal ARM
-max_crypto image erases applet storage during flashing. Object deletion is on
-and debug switches are off.
-
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-be737f0e.uf2)
-- UF2 SHA-256 `dcaf8616a825c5ba50b3f8aa1b4b4d544bb22b035d688e0d8e4875201de34f13`, 3,030,016 bytes.
-- CPLC source ID `BE737F0EDEF8A050`.
-- [Complete Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-be737f0e.zip)
-  with PowerShell runner, GPPro, the pinned CAP and client, serial capture, and checksums.
-  ZIP SHA-256 `99c1e1ccc5e099d1d93e15a073b549c2c89ffef6e0c005912466d7269d21c420`.
-- Use the unchanged JCAlgTest 1.8.5/jc305 [CAP](../tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap)
-  (SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`)
-  and the [1.8.5-20261121 client](../tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar)
-  (SHA-256 `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`).
-
-For the ZIP, extract it and follow the included README to run the Windows
-workflow. For a manual run with the standalone firmware:
-
-1. Hold BOOTSEL while connecting the Pico 2 and copy the UF2 to the boot drive.
-2. Install the CAP using GlobalPlatformPro, then run JCAlgTest option 2
-   (PERFORMANCE TEST, 256-byte data) and option 1 (All algorithms) as needed.
-   Use separate identified boards for long parallel runs.
-3. Return CSVs and client and serial logs with the Pico 2 chip ID, reader name,
-   UF2 and JAR hashes, and any timeout, unexpected status word, or reset.
+Return each `results\<mode>_<timestamp>.zip`, `uninstall.txt`, the uninstall time and `--list` output, and any
+USB/PC/SC disconnects, resets or timeouts. Include the chip ID, reader name, and UF2 and JAR hashes.
 
 ## WIN-MAXCRYPTO-RC-V0.2-RC1 — release candidate v0.2-rc1 (commit 81c7ac5d), JCAlgTest options 1 and 2
 

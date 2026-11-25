@@ -34035,3 +34035,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the earlier package `pqc` run (`0f9dedc4`, 19/19 PQC rows yes, rc 0) lacked only the CPLC rows because of this bug; the `a941e675` run had them, presumably because pcscd power-cycled the card in between.
 - Decision: repackage from this commit for the Windows test.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261125T133516Z.log`, `artifacts/results/gppro-scp03-vpcd-20261125T133620Z`, `artifacts/results/gppro-scp03-select-reset-EE116F37C7E4A04E-20261125T133729Z`, `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T131711Z`
+
+## 2026-11-25 Windows test package f9e7cf61 (PQC, SCP03, session fix) 20
+
+- Step-Id: `20261125-1500-windows-package-f9e7cf61`
+- Task: user request 2026-11-25 (prepare a package for external Windows test)
+- When: '2026-11-25 14:38' - '2026-11-25 14:58'
+- Model: `claude-opus-5-5`
+- Change: Built the normal max_crypto image from `f9e7cf61` and packaged it with `tools/package-maxcrypto-windows-test` (modes `all`, `symmetric`, new `pqc`). New request `WIN-PQC-SCP03-F9E7CF61-20261125` in `.agent/EXT_REQUESTS.md` replaces `WIN-GP-DELETE-WATCHDOG-20261124` and `WIN-VM-ARRAY-READS-20261122`, whose fixes this image contains; the GP uninstall-timing check is carried over. HANDOFF updated.
+- Validation: build rc 0, 0 warnings; PACKAGE:PASS; `fixture-path --verify` passed inside the packager. On EE116F37C7E4A04E with this exact UF2 from an empty card (GPPro listed nothing): packaged GPPro installed `applet-jc32.cap`; the packaged 1.8.6 client with the `pqc` arguments returned rc 0, 4506 rows, PQC_SUPPORT:PASS (19/19), 0 NO_RESOURCE/error/6F00 rows, applet `1.8.6_jc32`, CPLC present. Apart from card name, date and CPLC, rows are identical to the `a941e675` package run. The PowerShell block was not run (no PowerShell here). Afterwards 1.8.5/jc305 was reinstalled on EE11.
+- Result: ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-f9e7cf61.zip` SHA-256 `6e8cfc8f80b36671f14548123d59dd311d2b97d70362aca9e07602933bcc06d8`; UF2 SHA-256 `d46b27b6fdeef09bf1a663c8de019fc14f13a442a70dba489b96ac34b2d31dec` (3,193,344 bytes), CPLC `0xF9E7CF61F94B9A22`, linked end `0x10085b30`, 500,944 bytes headroom. Found, not fixed: the JCAlgTest client repeats the last CPLC field (`ICPersonalizationEquipmentID`) in the CSV because `PrintCPLCInfo` appends `"\r\n"` to the last field's message and writes it again (`PrintGPInfo` has the same tail).
+- Decision: await Windows results. A client CPLC fix needs the user's go-ahead and a repackage.
+- Artifacts/logs: `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T133849Z`
