@@ -173,8 +173,9 @@ bool segment_card_manager_response(const uint8_t *command,
     return false;
   }
   const size_t data_length = response_length - 2;
-  const size_t data_limit = short_apdu_response_data_limit(
-      command, command_length, response_capacity - 2);
+  const size_t data_limit = secure_channel.responseDataLimit(
+      short_apdu_response_data_limit(command, command_length,
+                                     response_capacity - 2));
   if (data_length <= data_limit) return true;
   const size_t remaining = data_length - data_limit;
   if (remaining > pico2_jcvm::ShortApduResponseChain::capacity ||
@@ -785,9 +786,11 @@ void process_message(uint8_t rhport) {
     }
 
     size_t command_data_length = 0;
+    const uint8_t *command_data = nullptr; // plaintext after C-DECRYPTION
     const bool authenticated = secure_channel.active() &&
                               secure_channel.verifyCommand(
-                                  apdu, apdu_length, command_data_length);
+                                  apdu, apdu_length, command_data,
+                                  command_data_length);
     route = pico2_jcvm::authorize_ccid_apdu_route(
         route, secure_channel.active(), authenticated);
     if (route == pico2_jcvm::CcidApduRoute::AuthenticationFailed) {
@@ -819,7 +822,7 @@ void process_message(uint8_t rhport) {
         size_t data_length = 0;
         const uint16_t status =
             apdu_length >= 5 && command_data_length <= apdu_length - 5
-                ? secure_channel.putKey(p1, p2, apdu + 5, command_data_length,
+                ? secure_channel.putKey(p1, p2, command_data, command_data_length,
                                         response, sizeof(response) - 2,
                                         data_length)
                 : 0x6a80;
@@ -832,7 +835,7 @@ void process_message(uint8_t rhport) {
         const bool valid_request =
             apdu_length >= 5 &&
             command_data_length <= apdu_length - 5 &&
-            gp::parse_delete_request(p1, p2, apdu + 5,
+            gp::parse_delete_request(p1, p2, command_data,
                                      command_data_length, request);
         uint16_t status = 0x6a80;
         if (valid_request) {
@@ -863,7 +866,7 @@ void process_message(uint8_t rhport) {
         response[0] = static_cast<uint8_t>(status >> 8);
         response[1] = static_cast<uint8_t>(status);
       } else if (instruction == 0xe6 && p1 == 0x02 && p2 == 0x00 &&
-          cap_load_session.beginInstallForLoad(apdu + 5,
+          cap_load_session.beginInstallForLoad(command_data,
                                                command_data_length)) {
         response[0] = 0x90;
         response[1] = 0x00;
@@ -871,12 +874,12 @@ void process_message(uint8_t rhport) {
         const bool accepted = apdu_length >= 5 &&
                               command_data_length <= apdu_length - 5 &&
                               cap_load_session.addLoadBlock(
-                                  p1, p2, apdu + 5, command_data_length);
+                                  p1, p2, command_data, command_data_length);
         response[0] = accepted ? 0x90 : 0x6a;
         response[1] = accepted ? 0x00 : 0x80;
       } else if (instruction == 0xe6 && p1 == 0x0c && p2 == 0x00) {
         if (cap_load_session.installAndMakeSelectable(
-                apdu + 5, command_data_length)) {
+                command_data, command_data_length)) {
           response[0] = 0x90;
           response[1] = 0x00;
         } else {
@@ -947,10 +950,10 @@ void process_message(uint8_t rhport) {
           uint16_t status = 0x9000;
           if (p2 == 0x03) {
             status = gp::validate_get_status_next(
-                get_status_first_seen, p1, apdu + 5, command_data_length);
+                get_status_first_seen, p1, command_data, command_data_length);
             if (status == 0x9000 && !gp::get_status_query_matches(
                     get_status_p1, get_status_search_data.data(),
-                    get_status_search_length, p1, apdu + 5,
+                    get_status_search_length, p1, command_data,
                     command_data_length)) {
               status = 0x6985;
             }
@@ -963,7 +966,7 @@ void process_message(uint8_t rhport) {
               get_status_p1 = p1;
               get_status_search_length = command_data_length;
               if (command_data_length != 0) {
-                std::memcpy(get_status_search_data.data(), apdu + 5,
+                std::memcpy(get_status_search_data.data(), command_data,
                             command_data_length);
               }
             }
@@ -972,10 +975,11 @@ void process_message(uint8_t rhport) {
           response_length = 0;
           if (status == 0x9000) {
             const size_t response_data_limit =
-                short_apdu_response_data_limit(
-                    apdu, apdu_length, sizeof(response) - 2);
+                secure_channel.responseDataLimit(
+                    short_apdu_response_data_limit(
+                        apdu, apdu_length, sizeof(response) - 2));
             status = build_dynamic_get_status_page(
-                p1, apdu + 5, command_data_length, response,
+                p1, command_data, command_data_length, response,
                 response_data_limit, response_length, more_entries);
             if (more_entries) status = 0x6310;
           }
@@ -992,7 +996,7 @@ void process_message(uint8_t rhport) {
       } else if (instruction == 0xca || instruction == 0xcb) {
         const bool application_list = p1 == 0x2f && p2 == 0x00;
         const bool valid_command = !application_list ||
-            gp::valid_get_applications_tag_list(apdu + 5,
+            gp::valid_get_applications_tag_list(command_data,
                                                 command_data_length);
         const bool written = valid_command &&
             (application_list
@@ -1021,8 +1025,8 @@ void process_message(uint8_t rhport) {
       response[0] = 0x69;
       response[1] = 0x82;
     }
-    if (authenticated &&
-        route == pico2_jcvm::CcidApduRoute::ProtectedCardManager) {
+    if (authenticated) {
+      secure_channel.wrapResponse(response, response_length, sizeof(response));
       send_response(rhport, 0x80, response, response_length);
       break;
     }

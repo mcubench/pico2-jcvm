@@ -1484,8 +1484,8 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
   return status;
 }
 
-uint16_t vpcd_process_card_manager(
-    void *, const uint8_t *command, uint16_t command_length,
+uint16_t vpcd_process_card_manager_plain(
+    const uint8_t *command, uint16_t command_length,
     uint8_t *response, uint16_t response_capacity,
     uint16_t *response_length) {
   if (command == nullptr || response == nullptr || response_length == nullptr ||
@@ -1545,8 +1545,9 @@ uint16_t vpcd_process_card_manager(
     }
     if (written && application_list) {
       const size_t data_length = output_length - 2;
-      const size_t data_limit = short_apdu_response_data_limit(
-          command, command_length, response_capacity - 2);
+      const size_t data_limit = vpcd_secure_channel.responseDataLimit(
+          short_apdu_response_data_limit(command, command_length,
+                                         response_capacity - 2));
       if (data_length > data_limit) {
         const size_t remaining = data_length - data_limit;
         if (remaining > pico2_jcvm::ShortApduResponseChain::capacity ||
@@ -1592,8 +1593,9 @@ uint16_t vpcd_process_card_manager(
   }
 
   size_t command_data_length = 0;
+  const uint8_t *data = nullptr; // plaintext after C-DECRYPTION
   if (!vpcd_secure_channel.active() ||
-      !vpcd_secure_channel.verifyCommand(command, command_length,
+      !vpcd_secure_channel.verifyCommand(command, command_length, data,
                                          command_data_length) ||
       command_length < 5 || command_data_length > command_length - 5) {
     return status_response(0x6982);
@@ -1601,7 +1603,6 @@ uint16_t vpcd_process_card_manager(
   const uint8_t instruction = command[1];
   const uint8_t p1 = command[2];
   const uint8_t p2 = command[3];
-  const uint8_t *data = command + 5;
   if (instruction == 0xc0 && vpcd_pending_card_manager_response.has_pending()) {
     pico2_jcvm::ShortApduCommand parsed{};
     uint16_t status = 0x6a86;
@@ -1621,8 +1622,8 @@ uint16_t vpcd_process_card_manager(
   }
   if (instruction == 0xf2) {
     const size_t response_data_limit =
-        short_apdu_response_data_limit(command, command_length,
-                                       response_capacity - 2);
+        vpcd_secure_channel.responseDataLimit(short_apdu_response_data_limit(
+            command, command_length, response_capacity - 2));
     const auto limited_response_capacity = static_cast<uint16_t>(
         std::min<size_t>(response_capacity, response_data_limit + 2));
     return vpcd_get_status_page(p1, p2, data, command_data_length,
@@ -1715,8 +1716,9 @@ uint16_t vpcd_process_card_manager(
     }
     if (written && application_list) {
       const size_t data_length = output_length - 2;
-      const size_t data_limit = short_apdu_response_data_limit(
-          command, command_length, response_capacity - 2);
+      const size_t data_limit = vpcd_secure_channel.responseDataLimit(
+          short_apdu_response_data_limit(command, command_length,
+                                         response_capacity - 2));
       if (data_length > data_limit) {
         const size_t remaining = data_length - data_limit;
         if (remaining > pico2_jcvm::ShortApduResponseChain::capacity ||
@@ -1760,6 +1762,23 @@ uint16_t vpcd_process_apdu(void *, const uint8_t *command,
   }
 #endif
   return status;
+}
+
+// Card-manager APDU with SCP03 R-MAC / R-ENC applied to the response of a
+// command that passed secure-channel verification.
+uint16_t vpcd_process_card_manager(
+    void *, const uint8_t *command, uint16_t command_length,
+    uint8_t *response, uint16_t response_capacity,
+    uint16_t *response_length) {
+  const uint16_t status = vpcd_process_card_manager_plain(
+      command, command_length, response, response_capacity, response_length);
+  if (response == nullptr || response_length == nullptr) return status;
+  size_t length = *response_length;
+  vpcd_secure_channel.wrapResponse(response, length, response_capacity);
+  *response_length = static_cast<uint16_t>(length);
+  return length >= 2 ? static_cast<uint16_t>((response[length - 2] << 8) |
+                                             response[length - 1])
+                     : status;
 }
 
 int run_vpcd_transport() {

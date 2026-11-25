@@ -836,7 +836,7 @@ def main() -> int:
             "--expect-apdu-response", "6F0A8408A0000001510000009000",
             "--apdu", "80CA006600",
             "--expect-apdu-response",
-            "6618731606072A864886FC6B01640B06092A864886FC6B0403109000",
+            "6618731606072A864886FC6B01640B06092A864886FC6B0403609000",
         ))
     run_kwargs = {"cwd": ROOT, "check": False}
     if args.mutation in load_rejection_mutations:

@@ -14,7 +14,7 @@ public final class GPGetDataApduProbe {
   private static final byte[] STATIC_KEY =
       fromHex("404142434445464748494A4B4C4D4E4F");
   private static final byte[] CARD_DATA =
-      fromHex("6618731606072A864886FC6B01640B06092A864886FC6B040310");
+      fromHex("6618731606072A864886FC6B01640B06092A864886FC6B040360");
   private static final byte[] CPLC_DATA = fromHex(
       "9F7F2A096E23504A43631101016311000000000000096E6311096E6311" +
       "096E631100000000096E631100000000");
@@ -237,7 +237,7 @@ public final class GPGetDataApduProbe {
 
       ResponseAPDU cardData = transmit(channel, "GET_DATA_CARD_RECOGNITION",
           new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256));
-      String expected = "6618731606072A864886FC6B01640B06092A864886FC6B040310";
+      String expected = "6618731606072A864886FC6B01640B06092A864886FC6B040360";
       if (cardData.getSW() != 0x9000 || !expected.equals(hex(cardData.getData()))) {
         throw new IllegalStateException("unexpected Card Recognition Data response");
       }

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# GlobalPlatformPro PUT KEY on the VPCD emulator: lock a new SCP03 key, check
-# the default key is refused and the new key works, also after an emulator
-# restart on the same flash image, then lock back to the default key value.
+# GlobalPlatformPro SCP03 on the VPCD emulator.
+# PUT KEY: lock a new key, check the default key is refused and the new key
+# works, also after an emulator restart, then lock back to the default value.
+# Security levels: install, list and delete JCAlgTest under C-MAC, C-DEC,
+# R-MAC and R-ENC, and run PUT KEY under R-ENC.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -eq 0 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-put-key-vpcd"
+[[ $# -eq 0 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-scp03-vpcd"
 require_host_usb_access
 require_command timeout
 require_command grep
@@ -16,17 +18,18 @@ gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 load_code="${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
+cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 reader="Virtual PCD 00 00"
 endpoint="127.0.0.1:35963"
 new_key="00112233445566778899AABBCCDDEEFF"
 default_key="404142434445464748494A4B4C4D4E4F"
 
-for input in "${gp_jar}" "${load_code}" "${emulator}" "${rom_mask}"; do
+for input in "${gp_jar}" "${cap}" "${load_code}" "${emulator}" "${rom_mask}"; do
   [[ -s "${input}" ]] || die "required input is missing: ${input}"
 done
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-out_dir="${repo_root}/artifacts/results/gppro-put-key-vpcd-${timestamp}"
+out_dir="${repo_root}/artifacts/results/gppro-scp03-vpcd-${timestamp}"
 mkdir -p "${out_dir}"
 flash_image="${out_dir}/card.bin"
 : > "${flash_image}"
@@ -103,7 +106,34 @@ expect_ok list-new-key-after-restart --key "${new_key}" --list
 expect_ok lock-default --key "${new_key}" --lock "${default_key}"
 expect_ok list-default-again --list
 expect_refused list-replaced-key --key "${new_key}" --list
+finish_emulator
+
+# EXTERNAL AUTHENTICATE P1 per gppro mode set: 01, 03, 11, 13, 33.
+expect_level() {
+  grep -Eq "A>> .*8482${2}00 " "${out_dir}/$1.log" || {
+    cat "${out_dir}/$1.log" >&2
+    die "gp step $1 did not authenticate at level ${2}"
+  }
+}
+start_emulator levels
+for mode_set in mac:01 enc:03 rmac:11 enc,rmac:13 renc:33; do
+  modes="${mode_set%%:*}"
+  level="${mode_set##*:}"
+  mode_args=()
+  for mode in ${modes//,/ }; do mode_args+=(--mode "${mode}"); done
+  expect_ok "install-${level}" -d "${mode_args[@]}" --install "${cap}"
+  expect_level "install-${level}" "${level}"
+  expect_ok "list-${level}" -d "${mode_args[@]}" --list
+  grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' \
+    "${out_dir}/list-${level}.log" || die "level ${level} list lacks applet"
+  expect_ok "uninstall-${level}" -d "${mode_args[@]}" --uninstall "${cap}"
+done
+expect_ok lock-renc -d --mode renc --lock "${new_key}"
+expect_level lock-renc 33
+expect_ok list-renc-new-key --mode renc --key "${new_key}" --list
+expect_ok lock-renc-default --mode renc --key "${new_key}" --lock "${default_key}"
+expect_ok list-renc-default --mode renc --list
 stop_emulator
 
-printf 'GPPRO_PUT_KEY:PASS reader=%s artifacts=%s\n' \
+printf 'GPPRO_SCP03:PASS reader=%s artifacts=%s\n' \
   "${reader}" "${out_dir#${repo_root}/}"

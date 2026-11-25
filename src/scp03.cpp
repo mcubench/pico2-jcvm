@@ -124,6 +124,36 @@ bool aes_block(const uint8_t key[16], int mode, const uint8_t input[16],
   return success;
 }
 
+// AES-CBC over whole blocks, in place. SCP03 derives each ICV from the
+// encryption counter, so the caller passes it.
+bool aes_cbc(const uint8_t key[16], int mode, const uint8_t icv[16],
+             uint8_t *data, size_t length) noexcept {
+  if (length % 16 != 0) return false;
+  mbedtls_aes_context aes;
+  mbedtls_aes_init(&aes);
+  bool success = (mode == MBEDTLS_AES_ENCRYPT
+                      ? mbedtls_aes_setkey_enc(&aes, key, 128)
+                      : mbedtls_aes_setkey_dec(&aes, key, 128)) == 0;
+  uint8_t chain[16];
+  std::memcpy(chain, icv, sizeof(chain));
+  for (size_t offset = 0; success && offset < length; offset += 16) {
+    uint8_t *block = data + offset;
+    uint8_t next_chain[16];
+    if (mode == MBEDTLS_AES_ENCRYPT) {
+      for (size_t byte = 0; byte < 16; ++byte) block[byte] ^= chain[byte];
+      success = mbedtls_aes_crypt_ecb(&aes, mode, block, block) == 0;
+      std::memcpy(chain, block, sizeof(chain));
+    } else {
+      std::memcpy(next_chain, block, sizeof(next_chain));
+      success = mbedtls_aes_crypt_ecb(&aes, mode, block, block) == 0;
+      for (size_t byte = 0; byte < 16; ++byte) block[byte] ^= chain[byte];
+      std::memcpy(chain, next_chain, sizeof(chain));
+    }
+  }
+  mbedtls_aes_free(&aes);
+  return success;
+}
+
 bool scp03_kdf(const uint8_t key[16], uint8_t constant,
                const uint8_t context[16], size_t output_bits,
                uint8_t output[16]) noexcept {
@@ -165,8 +195,14 @@ void Scp03Session::reset() noexcept {
   active_ = false;
   std::memset(host_challenge_, 0, sizeof(host_challenge_));
   std::memset(card_challenge_, 0, sizeof(card_challenge_));
-  std::memset(session_mac_key_, 0, sizeof(session_mac_key_));
+  wrap_pending_ = false;
+  security_level_ = 0;
+  mbedtls_platform_zeroize(session_enc_key_, sizeof(session_enc_key_));
+  mbedtls_platform_zeroize(session_mac_key_, sizeof(session_mac_key_));
+  mbedtls_platform_zeroize(session_rmac_key_, sizeof(session_rmac_key_));
   std::memset(chaining_value_, 0, sizeof(chaining_value_));
+  std::memset(encryption_counter_, 0, sizeof(encryption_counter_));
+  mbedtls_platform_zeroize(command_data_, sizeof(command_data_));
 }
 
 bool Scp03Session::initializeUpdate(const uint8_t *apdu, size_t apdu_length,
@@ -206,19 +242,15 @@ bool Scp03Session::initializeUpdate(const uint8_t *apdu, size_t apdu_length,
   uint8_t context[16];
   std::memcpy(context, host_challenge_, 8);
   std::memcpy(context + 8, card_challenge_, 8);
-  uint8_t session_enc_key[16];
-  uint8_t session_rmac_key[16];
   uint8_t card_cryptogram[16];
   const bool derived = scp03_kdf(keyset + kEncOffset, 0x04, context, 128,
-                                 session_enc_key) &&
+                                 session_enc_key_) &&
                        scp03_kdf(keyset + kMacOffset, 0x06, context, 128,
                                  session_mac_key_) &&
                        scp03_kdf(keyset + kMacOffset, 0x07, context, 128,
-                                 session_rmac_key) &&
+                                 session_rmac_key_) &&
                        scp03_kdf(session_mac_key_, 0x00, context, 64,
                                  card_cryptogram);
-  std::memset(session_enc_key, 0, sizeof(session_enc_key));
-  std::memset(session_rmac_key, 0, sizeof(session_rmac_key));
   const uint8_t key_version = keyset[0];
   mbedtls_platform_zeroize(keyset, sizeof(keyset));
   if (!derived) {
@@ -229,7 +261,8 @@ bool Scp03Session::initializeUpdate(const uint8_t *apdu, size_t apdu_length,
   std::memset(response, 0, 10); // no key diversification data
   response[10] = key_version;   // key version number
   response[11] = 0x03;          // SCP03
-  response[12] = 0x00;          // S8, no pseudorandom challenge / sequence
+  // i: S8, random challenge, R-MAC (b6) and R-ENC (b7) supported.
+  response[12] = 0x60;
   std::memcpy(response + 13, card_challenge_, 8);
   std::memcpy(response + 21, card_cryptogram, kMacLength);
   response_length = 29;
@@ -263,9 +296,15 @@ bool Scp03Session::externalAuthenticate(const uint8_t *apdu,
                                        size_t apdu_length) noexcept {
   if (!initialized_ || active_ || apdu == nullptr ||
       (apdu_length != 21 && apdu_length != 22) ||
-      apdu[0] != 0x84 || apdu[1] != 0x82 || apdu[2] != 0x01 ||
-      apdu[3] != 0x00 || apdu[4] != 0x10 ||
+      apdu[0] != 0x84 || apdu[1] != 0x82 || apdu[3] != 0x00 ||
+      apdu[4] != 0x10 ||
       (apdu_length == 22 && apdu[21] != 0x00)) {
+    return false;
+  }
+  // C-MAC, optionally C-DECRYPTION and R-MAC; R-ENC needs both (Amd D 1.1.1+).
+  const uint8_t level = apdu[2];
+  if (level != 0x01 && level != 0x03 && level != 0x11 && level != 0x13 &&
+      level != 0x33) {
     return false;
   }
   uint8_t context[16];
@@ -281,11 +320,16 @@ bool Scp03Session::externalAuthenticate(const uint8_t *apdu,
   }
   active_ = true;
   initialized_ = false;
+  security_level_ = level;
+  std::memset(encryption_counter_, 0, sizeof(encryption_counter_));
   return true;
 }
 
 bool Scp03Session::verifyCommand(const uint8_t *apdu, size_t apdu_length,
-                                size_t &data_length) noexcept {
+                                 const uint8_t *&data,
+                                 size_t &data_length) noexcept {
+  wrap_pending_ = false;
+  data = nullptr;
   data_length = 0;
   if (!active_ || apdu == nullptr || apdu_length < 14 || apdu[0] != 0x84 ||
       apdu[4] < kMacLength) {
@@ -295,13 +339,119 @@ bool Scp03Session::verifyCommand(const uint8_t *apdu, size_t apdu_length,
   if (apdu_length != 5 + lc && apdu_length != 6 + lc) {
     return false;
   }
-  data_length = lc - kMacLength;
+  const size_t body_length = lc - kMacLength;
   if (!verifyAndAdvance(apdu[0], apdu[1], apdu[2], apdu[3], apdu + 5,
-                        data_length, apdu + 5 + data_length)) {
-    data_length = 0;
+                        body_length, apdu + 5 + body_length)) {
     return false;
   }
+  data = apdu + 5;
+  data_length = body_length;
+  if ((security_level_ & 0x02) != 0) {
+    // Amendment D 6.2.6: the counter advances for every command, with or
+    // without data, and seeds the ICV as AES(S-ENC, counter).
+    for (int index = 15; index >= 0 && ++encryption_counter_[index] == 0;
+         --index) {
+    }
+    if (body_length != 0) {
+      uint8_t icv[16];
+      size_t plain_length = body_length;
+      bool decrypted =
+          body_length % 16 == 0 && body_length <= sizeof(command_data_) &&
+          aes_block(session_enc_key_, MBEDTLS_AES_ENCRYPT, encryption_counter_,
+                    icv);
+      if (decrypted) {
+        std::memcpy(command_data_, apdu + 5, body_length);
+        decrypted = aes_cbc(session_enc_key_, MBEDTLS_AES_DECRYPT, icv,
+                            command_data_, body_length);
+      }
+      // Remove ISO/IEC 9797-1 method 2 padding: 80 then zero bytes.
+      while (decrypted && plain_length != 0 &&
+             command_data_[plain_length - 1] == 0x00) {
+        --plain_length;
+      }
+      if (!decrypted || plain_length == 0 ||
+          command_data_[plain_length - 1] != 0x80 ||
+          body_length - plain_length >= 16) {
+        // A MAC-valid command that does not decrypt breaks the session.
+        reset();
+        data = nullptr;
+        data_length = 0;
+        return false;
+      }
+      data = command_data_;
+      data_length = plain_length - 1;
+    }
+  }
+  wrap_pending_ = true;
   return true;
+}
+
+size_t Scp03Session::responseDataLimit(size_t limit) const noexcept {
+  if (!active_ || (security_level_ & 0x10) == 0) return limit;
+  if (limit < kMacLength) return 0;
+  limit -= kMacLength;
+  if ((security_level_ & 0x20) == 0) return limit;
+  // R-ENC always pads with at least 0x80, to whole blocks.
+  return limit < 16 ? 0 : (limit / 16) * 16 - 1;
+}
+
+void Scp03Session::wrapResponse(uint8_t *response, size_t &response_length,
+                                size_t response_capacity) noexcept {
+  const bool pending = wrap_pending_;
+  wrap_pending_ = false;
+  if (!pending || (security_level_ & 0x10) == 0 || response == nullptr ||
+      response_length < 2 || response_length > response_capacity) {
+    return;
+  }
+  const uint8_t sw1 = response[response_length - 2];
+  const uint8_t sw2 = response[response_length - 1];
+  size_t data_length = response_length - 2;
+  // Amendment D 6.2.5: only 9000 and 62xx/63xx warnings are protected.
+  if (!(sw1 == 0x90 && sw2 == 0x00) && sw1 != 0x62 && sw1 != 0x63) {
+    response[0] = sw1;
+    response[1] = sw2;
+    response_length = 2;
+    return;
+  }
+  bool success = true;
+  if ((security_level_ & 0x20) != 0 && data_length != 0) {
+    const size_t padded = (data_length / 16 + 1) * 16;
+    uint8_t icv_input[16];
+    uint8_t icv[16];
+    std::memcpy(icv_input, encryption_counter_, sizeof(icv_input));
+    icv_input[0] = 0x80;
+    success = padded + kMacLength + 2 <= response_capacity &&
+              aes_block(session_enc_key_, MBEDTLS_AES_ENCRYPT, icv_input, icv);
+    if (success) {
+      response[data_length] = 0x80;
+      std::memset(response + data_length + 1, 0, padded - data_length - 1);
+      success = aes_cbc(session_enc_key_, MBEDTLS_AES_ENCRYPT, icv, response,
+                        padded);
+      data_length = padded;
+    }
+  }
+  std::array<uint8_t, 16 + 256 + 2> input{};
+  uint8_t mac[16];
+  success = success && data_length + kMacLength + 2 <= response_capacity &&
+            16 + data_length + 2 <= input.size();
+  if (success) {
+    std::memcpy(input.data(), chaining_value_, 16);
+    std::memcpy(input.data() + 16, response, data_length);
+    input[16 + data_length] = sw1;
+    input[17 + data_length] = sw2;
+    success = aes_cmac(session_rmac_key_, input.data(), 18 + data_length, mac);
+  }
+  if (!success) {
+    // Cannot protect this response: report an error, which SCP03 leaves bare.
+    response[0] = 0x6f;
+    response[1] = 0x00;
+    response_length = 2;
+    return;
+  }
+  std::memcpy(response + data_length, mac, kMacLength);
+  response[data_length + kMacLength] = sw1;
+  response[data_length + kMacLength + 1] = sw2;
+  response_length = data_length + kMacLength + 2;
 }
 
 uint8_t Scp03Session::keyVersion() noexcept {

@@ -22,8 +22,12 @@ and native `javacardx.crypto` operations. GlobalPlatform card management
 supports the tested SCP03, CAP LOAD/INSTALL, SELECT, DELETE, GET DATA, and GET
 STATUS flows. Package and applet AIDs can be loaded dynamically, subject to
 available storage and supported imports. SCP03 supports S8 with an
-eight-byte challenge and C-MAC security level. Command encryption and
-response MAC are outside this subset. The card manager uses the well-known
+eight-byte challenge and security levels C-MAC (`01`), C-MAC+C-DECRYPTION
+(`03`), C-MAC+R-MAC (`11`), C-MAC+C-DECRYPTION+R-MAC (`13`) and
+C-MAC+C-DECRYPTION+R-MAC+R-ENCRYPTION (`33`), i.e. gppro `--mode mac`, `enc`,
+`rmac`, `enc --mode rmac` and `renc`. Responses with error status words
+carry no data and no R-MAC, as Amendment D requires. Long R-MAC responses
+are not chained: GET STATUS pages shrink to fit the MAC and padding. The card manager uses the well-known
 test key `40..4F` by default. PUT KEY (`gp --lock KEY`) replaces it with one
 AES-128 ENC/MAC/DEK keyset (KVN 1-7F) that persists across power cycles and is
 reported by GET DATA `00E0`; an empty-card wipe restores the default key.
