@@ -40,6 +40,11 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
 - PQC (JC 3.2 preview ML-KEM/ML-DSA): hardware-validated on EE11. Open:
   ML-DSA on 07E7/F42D not run; a JCAlgTest-style perf campaign does not cover
   PQC; `KEM.ALG_DHKEM` and the XDH named-parameter keys are not implemented.
+- JCAlgTest 1.8.6/jc32 (PQC support rows) is pinned under
+  `tests/fixtures/external/jcalgtest/1.8.6/` and runs with
+  `JCALGTEST_VARIANT=jc32 tools/test-jcalgtest-support-vpcd`; 1.8.5/jc305 stays
+  the default. EE11 passed both on 2026-11-25 and has 1.8.5/jc305 installed
+  again.
 
 - If continuing VM performance work, reprofile the XOR control and the
   interpreter fetch/decode phases before changing dispatch or branch checks.

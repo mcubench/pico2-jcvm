@@ -17,6 +17,12 @@ JCALGTEST_VPCD_RESUME_MEMORY_DIR to a result directory containing a matching
 empty-card.bin and empty-card.bin.cap-registry pair. Provide client prompt
 answers in JCALGTEST_STDIN_LINES (newline-separated). Full logs and intermediate
 artifacts go under artifacts/results/.
+
+JCALGTEST_VARIANT selects the CAP/client pair: jc305 (default, the unchanged
+JCAlgTest 1.8.5/jc305 CAP with the 1.8.5 client and reference comparison) or
+jc32 (AlgTest_v1.8.6_jc32.cap, CAP 2.3 with the PQC support tests, and its
+1.8.6 client). jc32 replaces the jCardSim reference comparison with a check
+that every PQC support row reports yes.
 USAGE
   exit 0
 fi
@@ -35,7 +41,27 @@ require_command timeout
 require_command grep
 require_command stdbuf
 require_command sha256sum
-"${repo_root}/tools/build-jcalgtest-load-code" >/dev/null
+variant="${JCALGTEST_VARIANT:-jc305}"
+case "${variant}" in
+  jc305)
+    cap_asset=jcalgtest.cap
+    load_code_name=algtest-v184-load-code.bin
+    default_client="${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar"
+    client_sha256=b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3
+    applet_version=1.8.5_jc305
+    ;;
+  jc32)
+    cap_asset=jcalgtest.cap.1.8.6-jc32
+    load_code_name=algtest-v186-jc32-load-code.bin
+    default_client="$("${repo_root}/tools/fixture-path" jcalgtest.client.1.8.6)"
+    client_sha256=c6af938e66a886f14fa2b5f4b130f414159e3b84017a892eac08d202f1b0581c
+    applet_version=1.8.6_jc32
+    ;;
+  *)
+    die "unsupported JCALGTEST_VARIANT '${variant}' (choose jc305 or jc32)"
+    ;;
+esac
+"${repo_root}/tools/build-jcalgtest-load-code" "${cap_asset}" "${load_code_name}" >/dev/null
 
 reader="${JCALGTEST_VPCD_READER:-Virtual PCD 00 00}"
 endpoint="${JCALGTEST_VPCD_ENDPOINT:-127.0.0.1:35963}"
@@ -51,8 +77,8 @@ applet_aid="4A43416C675465737431"
 emulator="${JCALGTEST_VPCD_EMULATOR:-${repo_root}/build/choupi-pc/choupi}"
 rom_mask="${JCALGTEST_VPCD_ROM_MASK:-${repo_root}/build/choupi-pc/flash}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
-client="${JCALGTEST_CLIENT_JAR:-${repo_root}/tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar}"
-cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
+client="${JCALGTEST_CLIENT_JAR:-${default_client}}"
+cap="$("${repo_root}/tools/fixture-path" "${cap_asset}")"
 reference="${repo_root}/tests/fixtures/reference/jcalgtest/1.8.5/jcardsim-alg-support-extended.csv"
 expected="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
 resume_dir="${JCALGTEST_VPCD_RESUME_DIR:-}"
@@ -91,8 +117,8 @@ for input in "${emulator}" "${rom_mask}" "${gp_jar}" "${client}" "${cap}" \
   [[ -s "${input}" ]] || die "required input is missing: ${input}"
 done
 client_hash="$(sha256sum "${client}" | cut -d ' ' -f 1)"
-[[ "${client_hash}" == "b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3" ]] ||
-  die "the supplied JCAlgTest client must be 1.8.5 (expected hash pinned in tests/README.md): ${client_hash}"
+[[ "${client_hash}" == "${client_sha256}" ]] ||
+  die "the JCAlgTest client does not match the ${variant} pin (expected hash pinned in tests/README.md): ${client_hash}"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out_dir="${repo_root}/artifacts/results/jcalgtest-support-vpcd-${timestamp}"
@@ -140,7 +166,7 @@ if [[ -n "${resume_dir}" ]]; then
   emulator_args+=(--resume)
 else
   emulator_args+=(--package-id 63
-    --cap-code "${repo_root}/build/tests/jcalgtest/algtest-v184-load-code.bin")
+    --cap-code "${repo_root}/build/tests/jcalgtest/${load_code_name}")
 fi
 PICO2_RP2350_OVERLAY_FLASH="${overlay_flash}" \
 PICO2_TEST_OBJECT_DELETION="${object_deletion}" \
@@ -248,7 +274,19 @@ mapfile -t result_csvs < <(find "${out_dir}" -maxdepth 1 -type f \
   die "JCAlgTest produced no CSV result; see ${out_dir}"
 }
 
-if [[ "${operation}" == ALG_SUPPORT_EXTENDED ]]; then
+if [[ "${operation}" == ALG_SUPPORT_* ]]; then
+  grep -Fq "AlgTest applet version; ${applet_version}" "${result_csvs[@]}" ||
+    die "result CSV does not report applet version ${applet_version}; see ${out_dir}"
+fi
+if [[ "${variant}" == jc32 && "${operation}" == ALG_SUPPORT_* ]]; then
+  # The 1.8.6 PQC sections have no jCardSim reference; require all 19 PQC rows to be supported.
+  python3 "${repo_root}/tools/check-jcalgtest-pqc-support.py" "${result_csvs[@]}" \
+    > "${out_dir}/pqc-support.log" 2>&1 || {
+    cat "${out_dir}/pqc-support.log" >&2
+    die "JCAlgTest 1.8.6/jc32 PQC support check failed; see ${out_dir}"
+  }
+  cat "${out_dir}/pqc-support.log"
+elif [[ "${operation}" == ALG_SUPPORT_EXTENDED ]]; then
   mapfile -t reports < <(find "${out_dir}" -maxdepth 1 -type f \
     -iname '*ALGSUPPORT*.csv' -print | sort)
   [[ "${#reports[@]}" -eq 1 ]] || {
@@ -263,5 +301,5 @@ if [[ "${operation}" == ALG_SUPPORT_EXTENDED ]]; then
   }
   cat "${out_dir}/comparison.log"
 fi
-printf 'JCALGTEST_VPCD:PASS operation=%s reader=%s artifacts=%s\n' \
-  "${operation}" "${reader}" "${out_dir#${repo_root}/}"
+printf 'JCALGTEST_VPCD:PASS variant=%s operation=%s reader=%s artifacts=%s\n' \
+  "${variant}" "${operation}" "${reader}" "${out_dir#${repo_root}/}"

@@ -20,15 +20,16 @@ COMPONENTS = (
 )
 
 
-def build_algtest_load_code(repo_root: Path) -> Path:
+def build_algtest_load_code(repo_root: Path, asset: str = "jcalgtest.cap",
+                            target_name: str = "algtest-v184-load-code.bin") -> Path:
     """Extract the pinned JCAlgTest CAP (1.8.5_jc305)'s ordered load components.
 
     Preserve the CAP archive unchanged. Descriptor is required because uploaded
     method execution uses its method-body ranges.
     """
     repo_root = repo_root.resolve()
-    source = fixture_path("jcalgtest.cap", repo_root)
-    target = repo_root / "build/tests/jcalgtest/algtest-v184-load-code.bin"
+    source = fixture_path(asset, repo_root)
+    target = repo_root / "build/tests/jcalgtest" / target_name
     target.parent.mkdir(parents=True, exist_ok=True)
 
     with ZipFile(source) as archive:
@@ -71,7 +72,8 @@ def main() -> int:
     import sys
 
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
-    target = build_algtest_load_code(root)
+    # Optional: fixture asset key and output name for another JCAlgTest CAP.
+    target = build_algtest_load_code(root, *sys.argv[2:4])
     import hashlib
 
     data = target.read_bytes()

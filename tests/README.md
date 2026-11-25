@@ -12,6 +12,13 @@ Repository-owned applet/fixture sources live in `fixtures/local/`.
   the earlier supplied 1.8.5 host clients (`b6a753be…`, `724bda75…`), and the
   **1.8.5-20261121 host client** (`jcalgtest.client.1.8.5-20261121`, SHA-256
   `3cca70cb…a703`, user-supplied 2026-11-21 14:50), the client for new runs.
+- JCAlgTest **1.8.6/jc32** PQC test pair (`external/jcalgtest/1.8.6/`, user
+  directive 2026-11-25): `AlgTest_v1.8.6_jc32.cap` (`jcalgtest.cap.1.8.6-jc32`,
+  CAP 2.3 built with the SDK 26.1 converter) and its client
+  (`jcalgtest.client.1.8.6`). Built here from the user's AlgTest sources plus
+  `algtest-1.8.6-jc32-pqc.diff`; adds ML-KEM/ML-DSA support tests. Run it in
+  addition to the unchanged 1.8.5/jc305 pair, which stays the default and the
+  acceptance baseline: `JCALGTEST_VARIANT=jc32 ./tools/test-jcalgtest-support-vpcd`.
 - The independent Java Card API validation suite, snapshot
   `provided-20261107`, including all 48 CAPs and its own client/runner.
 

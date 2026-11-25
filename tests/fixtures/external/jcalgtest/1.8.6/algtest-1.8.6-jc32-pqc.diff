@@ -1,0 +1,203 @@
+--- a/AlgTest_JavaCard/jcbuild.xml	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JavaCard/jcbuild.xml	2026-11-25 10:03:49.326744102 +0100
+@@ -7,6 +7,7 @@
+   <property name="JC303" value="ext/java_card_kit-3_0_3"/>
+   <property name="JC304" value="ext/jc304_kit"/>
+   <property name="JC305" value="ext/jc305u3_kit"/>
++  <property name="JC32" value="ext/jc261_kit"/>
+   <property name="OP20" value="ext/visa_openplatform-2_0"/>
+   <property name="GP211" value="ext/globalplatform-2_1_1"/>
+   
+@@ -43,5 +44,12 @@
+         <applet class="algtest.JCAlgTestApplet" aid="4a43416c675465737431"/>
+       </cap>
+     </javacard>
++  </target>
++  <target name="build32" description="Builds the CAP file with JCAlgTest applet (JC 3.2 PQC preview API)">
++    <javacard jckit="${JC32}">
++      <cap output="!uploader/AlgTest_32.cap" sources="src32/AlgTest/" aid="4a43416c6754657374" >
++        <applet class="algtest.JCAlgTestApplet" aid="4a43416c675465737431"/>
++      </cap>
++    </javacard>
+   </target>
+ </project>
+--- a/AlgTest_JavaCard/preprocess_jcapi.py	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JavaCard/preprocess_jcapi.py	2026-11-25 10:03:49.322744018 +0100
+@@ -54,6 +54,8 @@
+     process_api_version('src/', 'src304/', 'build304', {'//jc304': True, '//jc305': False})
+     # JC 3.0.5 API
+     process_api_version('src/', 'src305/', 'build305', {'//jc304': True, '//jc305': True})
++    # JC 3.2 API (PQC preview, needs Java Card SDK 26.1 converter with -enable-preview)
++    process_api_version('src/', 'src32/', 'build32', {'//jc304': True, '//jc305': True, '//jc32': True})
+ 
+ 
+     print('All files processed and converted')
+--- a/AlgTest_JavaCard/src/algtest/AlgSupportTest.java	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JavaCard/src/algtest/AlgSupportTest.java	2026-11-25 10:03:49.314743852 +0100
+@@ -307,6 +307,26 @@
+                catch (CryptoException e) { apdubuf[(short) (ISO7816.OFFSET_CDATA + offset)] = (byte) (e.getReason() + SUPP_ALG_EXCEPTION_CODE_OFFSET);} //jc305
+                break;
+            } 
++           case Consts.CLASS_PQCKEYFACTORY: {
++               // data: NamedParameterSpec name (2B), 0 = expanded private key, 1 = seed private key expanded afterwards
++//               try { //jc32
++//                   short name = Util.makeShort(modular_param1, modular_param2); //jc32
++//                   PublicKey pub = (PublicKey) javacardx.security.pqc.PQCKeyFactory.buildKey(name, KeyBuilder.ATTR_PUBLIC); //jc32
++//                   PrivateKey priv = (PrivateKey) javacardx.security.pqc.PQCKeyFactory.buildKey(name, KeyBuilder.ATTR_PRIVATE); //jc32
++//                   if (modular_param3 == 0) { javacardx.security.pqc.PQCKeyFactory.generateKeyPair(pub, priv); } //jc32
++//                   else { PrivateKey seed = (PrivateKey) javacardx.security.pqc.PQCKeyFactory.buildKey(name, (short) (KeyBuilder.ATTR_PRIVATE | javacardx.security.pqc.PQCKeyFactory.ATTR_SEED)); javacardx.security.pqc.PQCKeyFactory.generateKeyPair(pub, seed); javacardx.security.pqc.PQCKeyFactory.generateKeyPair(seed, null, priv); } //jc32
++//                   m_key1 = priv; //jc32
++//                   apdubuf[(short) (ISO7816.OFFSET_CDATA + offset)] = SUPP_ALG_SUPPORTED; //jc32
++//               } //jc32
++//               catch (CryptoException e) { apdubuf[(short) (ISO7816.OFFSET_CDATA + offset)] = (byte) (e.getReason() + SUPP_ALG_EXCEPTION_CODE_OFFSET);} //jc32
++               break;
++           }
++           case Consts.CLASS_KEM: {
++               // data: NamedParameterSpec name (2B)
++//               try {m_object = javacardx.crypto.kem.KEM.getInstance(javacardx.crypto.kem.KEM.ALG_ML_KEM, NamedParameterSpec.getInstance(Util.makeShort(modular_param1, modular_param2)), (short) (javacardx.crypto.kem.KEM.MODE_ENCAPSULATION | javacardx.crypto.kem.KEM.MODE_DECAPSULATION)); apdubuf[(short) (ISO7816.OFFSET_CDATA + offset)] = SUPP_ALG_SUPPORTED;} //jc32
++//               catch (CryptoException e) { apdubuf[(short) (ISO7816.OFFSET_CDATA + offset)] = (byte) (e.getReason() + SUPP_ALG_EXCEPTION_CODE_OFFSET);} //jc32
++               break;
++           }
+            default:
+                ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
+         }
+--- a/AlgTest_JavaCard/src/algtest/Consts.java	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JavaCard/src/algtest/Consts.java	2026-11-25 10:03:49.298743518 +0100
+@@ -98,6 +98,8 @@
+     public static final byte CLASS_RANDOMDATA_ONESHOT          = (byte) 0x2b;      
+     public static final byte CLASS_INITIALIZEDMESSAGEDIGEST    = (byte) 0x2c;      
+     public static final byte CLASS_INITIALIZEDMESSAGEDIGEST_ONESHOT    = (byte) 0x2d;      
++    public static final byte CLASS_PQCKEYFACTORY               = (byte) 0x2e;      
++    public static final byte CLASS_KEM                         = (byte) 0x2f;      
+     
+     
+     public static final byte UNUSED    = (byte) -1;     
+--- a/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java	2026-11-25 10:03:49.310743768 +0100
+@@ -61,6 +61,7 @@
+     final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC222[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x32, (byte) 0x32, (byte) 0x32};
+     final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC304[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x34}; //jc304
+     final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC305[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x35}; //jc305
++//    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC32[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x32}; //jc32
+     /**
+      * Version 1.8.4 (29.09.2026)
+      */
+@@ -258,6 +259,7 @@
+         ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC222;
+         ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC304; //jc304
+         ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC305; //jc305
++//        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_6__JC32; //jc32
+ 
+         // data offset is used for application specific parameter.
+         // initialization with default offset (AID offset).
+--- a/AlgTest_JavaCard/src/algtest/JCConsts.java	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JavaCard/src/algtest/JCConsts.java	2026-11-25 10:03:49.302743601 +0100
+@@ -76,6 +76,11 @@
+     public static final byte Signature_SIG_CIPHER_SM4_MAC128                        = 12;   
+     public static final byte Signature_SIG_CIPHER_EDDSA                             = 13;  
+     public static final byte Signature_SIG_CIPHER_EDDSAPH                           = 14;  
++    //3.2
++    public static final byte Signature_SIG_CIPHER_ML_DSA                            = 21;  
++    public static final byte Signature_SIG_CIPHER_ML_DSA_EXTERNAL_MU                = 22;  
++    public static final byte Signature_SIG_CIPHER_ML_DSA_EXPAND_SEED                = 23;  
++    public static final byte Signature_SIG_CIPHER_ML_DSA_EXTERNAL_MU_EXPAND_SEED    = 24;  
+ 
+     
+     
+@@ -665,6 +670,13 @@
+     public static final short NamedParameterSpec_SM2                                = 768;  
+     public static final short NamedParameterSpec_X25519                             = 259;  
+     public static final short NamedParameterSpec_X448                               = 516;   
++    //3.2 (used by PQCKeyFactory and KEM tests)
++    public static final short NamedParameterSpec_ML_KEM_512                         = 1281;  
++    public static final short NamedParameterSpec_ML_KEM_768                         = 1282;  
++    public static final short NamedParameterSpec_ML_KEM_1024                        = 1283;  
++    public static final short NamedParameterSpec_ML_DSA_44                          = 1793;  
++    public static final short NamedParameterSpec_ML_DSA_65                          = 1794;  
++    public static final short NamedParameterSpec_ML_DSA_87                          = 1795;  
+     
+     // javacard.security.PrimalityTestParamSpec  
+     public static final short PrimalityTestParamSpec_MILLER_RABIN_TEST              = 1;   
+--- a/AlgTest_JClient/src/algtestjclient/SingleModeTest.java	2026-11-25 10:03:49.290743350 +0100
++++ b/AlgTest_JClient/src/algtestjclient/SingleModeTest.java	2026-11-25 10:03:49.330744185 +0100
+@@ -1729,6 +1729,70 @@
+     }        
+     
+     /**
++     * Tests post-quantum algorithms from JC 3.2 (preview): key pair generation via
++     * 'javacardx.security.pqc.PQCKeyFactory', 'javacardx.crypto.kem.KEM' instances
++     * and ML-DSA 'javacard.security.Signature' (modular getInstance).
++     * @param file FileOutputStream object containing output file.
++     * @throws Exception
++     */
++    public static void TestClassPQCKeyFactory(FileOutputStream file) throws Exception {
++        String message = "\n" + "javacardx.security.pqc.PQCKeyFactory" + "\r\n";
++        m_SystemOutLogger.println(message);
++        file.write(message.getBytes());
++        ArrayList<Pair<ArrayList<Byte>, String>> algsToTest = new ArrayList<>();
++        for (int i = 0; i < PQC_NAMES.length; i++) {
++            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 0, PQC_NAMES_STR[i] + "#3.2"));
++            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 1, PQC_NAMES_STR[i] + " ATTR_SEED#3.2"));
++        }
++        executeTestsArray(pqcApdu(Consts.CLASS_PQCKEYFACTORY, 3), algsToTest, file);
++    }
++    public static void TestClassKEM(FileOutputStream file) throws Exception {
++        String message = "\n" + "javacardx.crypto.kem.KEM ALG_ML_KEM" + "\r\n";
++        m_SystemOutLogger.println(message);
++        file.write(message.getBytes());
++        ArrayList<Pair<ArrayList<Byte>, String>> algsToTest = new ArrayList<>();
++        for (int i = 0; i < 3; i++) { // ML-KEM names only
++            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 0, PQC_NAMES_STR[i] + "#3.2"));
++        }
++        executeTestsArray(pqcApdu(Consts.CLASS_KEM, 3), algsToTest, file);
++    }
++    public static void TestClassSignatureMLDSA(FileOutputStream file) throws Exception {
++        String message = "\n" + "javacard.security.Signature ML-DSA" + "\r\n";
++        m_SystemOutLogger.println(message);
++        file.write(message.getBytes());
++        byte[] ciphers = {JCConsts.Signature_SIG_CIPHER_ML_DSA, JCConsts.Signature_SIG_CIPHER_ML_DSA_EXTERNAL_MU, JCConsts.Signature_SIG_CIPHER_ML_DSA_EXPAND_SEED, JCConsts.Signature_SIG_CIPHER_ML_DSA_EXTERNAL_MU_EXPAND_SEED};
++        String[] names = {"SIG_CIPHER_ML_DSA", "SIG_CIPHER_ML_DSA_EXTERNAL_MU", "SIG_CIPHER_ML_DSA_EXPAND_SEED", "SIG_CIPHER_ML_DSA_EXTERNAL_MU_EXPAND_SEED"};
++        ArrayList<Pair<ArrayList<Byte>, String>> algsToTest = new ArrayList<>();
++        for (int i = 0; i < ciphers.length; i++) {
++            ArrayList<Byte> params = new ArrayList<>();
++            params.add(JCConsts.MessageDigest_ALG_NULL);
++            params.add(ciphers[i]);
++            params.add(JCConsts.Cipher_PAD_NULL);
++            algsToTest.add(new Pair(params, names[i] + " PAD_NULL ALG_NULL#3.2"));
++        }
++        executeTestsArray(pqcApdu(Consts.CLASS_SIGNATURE_MODULAR, 3), algsToTest, file);
++    }
++    static final short[] PQC_NAMES = {JCConsts.NamedParameterSpec_ML_KEM_512, JCConsts.NamedParameterSpec_ML_KEM_768, JCConsts.NamedParameterSpec_ML_KEM_1024,
++        JCConsts.NamedParameterSpec_ML_DSA_44, JCConsts.NamedParameterSpec_ML_DSA_65, JCConsts.NamedParameterSpec_ML_DSA_87};
++    static final String[] PQC_NAMES_STR = {"ML_KEM_512", "ML_KEM_768", "ML_KEM_1024", "ML_DSA_44", "ML_DSA_65", "ML_DSA_87"};
++    private static Pair<ArrayList<Byte>, String> pqcParams(short name, byte extra, String label) {
++        ArrayList<Byte> params = new ArrayList<>();
++        params.add((byte) (name >> 8));
++        params.add((byte) name);
++        params.add(extra);
++        return new Pair(params, label);
++    }
++    private static byte[] pqcApdu(byte testClass, int dataLen) {
++        byte[] apdu = new byte[5 + dataLen];
++        apdu[OFFSET_CLA] = Consts.CLA_CARD_ALGTEST;  // for AlgTest applet
++        apdu[OFFSET_INS] = Consts.INS_CARD_TESTSUPPORTEDMODES_SINGLE;  // for AlgTest applet switch to 'TestSupportedModeSingle'
++        apdu[OFFSET_P1] = testClass;
++        apdu[OFFSET_P2] = (byte) 0x00;
++        apdu[OFFSET_LC] = (byte) dataLen;
++        return apdu;
++    }
++
++    /**
+      * Method that will test all algorithms in SingleModeTest class.
+      * @param file FileOutputStream object containing file for output data.
+      * @throws Exception
+@@ -1751,6 +1815,9 @@
+         //TestClassAEADCipher_viaCipher(file);
+         TestClassOwnerPINBuilder(file);
+         TestClassInitializedMessageDigest(file);
++        TestClassPQCKeyFactory(file);
++        TestClassKEM(file);
++        TestClassSignatureMLDSA(file);
+ 
+         // OneShot versions of objects
+         TestClassCipherOneShot(file);

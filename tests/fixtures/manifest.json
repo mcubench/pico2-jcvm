@@ -37,6 +37,8 @@
     "jcalgtest.client.1.8.5": "tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar",
     "jcalgtest.client.1.8.5-20261120": "tests/fixtures/external/jcalgtest/1.8.5-20261120/client/AlgTestJClient.jar",
     "jcalgtest.client.1.8.5-20261121": "tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar",
+    "jcalgtest.cap.1.8.6-jc32": "tests/fixtures/external/jcalgtest/1.8.6/AlgTest_v1.8.6_jc32.cap",
+    "jcalgtest.client.1.8.6": "tests/fixtures/external/jcalgtest/1.8.6/client/AlgTestJClient.jar",
     "nist-acvp.pqc-subset": "tests/fixtures/external/nist-acvp/975de31e/pqc-subset.json",
     "toolchain.jc261": ".local-toolchain/java-card/provided/jc_26_1"
   },
@@ -570,6 +572,20 @@
       "sha256": "623e817f5133eae369af274e3de78ccd5fc36a09d7e09020be8cb408bc902810",
       "size": 555460,
       "provided_path": "Derived by tools/pqc-acvp-subset.py from usnistgov/ACVP-Server 975de31eb83d87039ec88934fdc47d8c312b892d gen-val/json-files (source hashes inside the file)"
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.6/AlgTest_v1.8.6_jc32.cap",
+      "sha256": "b6940d26501bd0818d581d3bf8359f6cb498386006bd6388ced05285052847da",
+      "size": 149969,
+      "provided_path": "Built 2026-11-25 from ~/projects/algtest (1.8.5 sources + algtest-1.8.6-jc32-pqc.diff, src32 variant) with the Java Card SDK 26.1 converter (-enable-preview); see 1.8.6/README.md",
+      "note": "JCAlgTest applet 1.8.6_jc32 (CAP 2.3 compact): adds PQC support tests (PQCKeyFactory, KEM ML-KEM, ML-DSA Signature). Not the acceptance baseline; the unchanged 1.8.5/jc305 CAP stays active."
+    },
+    {
+      "path": "tests/fixtures/external/jcalgtest/1.8.6/client/AlgTestJClient.jar",
+      "sha256": "c6af938e66a886f14fa2b5f4b130f414159e3b84017a892eac08d202f1b0581c",
+      "size": 165537,
+      "provided_path": "ant jar in ~/projects/algtest/AlgTest_JClient (1.8.5 sources + algtest-1.8.6-jc32-pqc.diff), 2026-11-25",
+      "note": "Host client with the PQC support tests; embedded version string 1.8.5; uses the 1.8.4/1.8.5 lib set. Pair only with AlgTest_v1.8.6_jc32.cap."
     }
   ]
 }
