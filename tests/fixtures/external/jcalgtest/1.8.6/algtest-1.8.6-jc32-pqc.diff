@@ -140,6 +140,26 @@
      
      // javacard.security.PrimalityTestParamSpec  
      public static final short PrimalityTestParamSpec_MILLER_RABIN_TEST              = 1;   
+--- a/AlgTest_JClient/src/algtestjclient/CardMngr.java
++++ b/AlgTest_JClient/src/algtestjclient/CardMngr.java
+@@ -929,7 +929,7 @@
+             pValue.append(message);            
+         }            
+ 
+-        message += "\r\n";
++        message = "\r\n";
+ 
+         pFile.write(message.getBytes());
+         pValue.append(message);
+@@ -978,7 +978,7 @@
+             pValue.append(message);            
+         }            
+ 
+-        message += "\r\n";
++        message = "\r\n";
+ 
+         pFile.write(message.getBytes());
+         pValue.append(message);
 --- a/AlgTest_JClient/src/algtestjclient/SingleModeTest.java
 +++ b/AlgTest_JClient/src/algtestjclient/SingleModeTest.java
 @@ -242,6 +242,21 @@

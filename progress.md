@@ -34047,3 +34047,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-f9e7cf61.zip` SHA-256 `6e8cfc8f80b36671f14548123d59dd311d2b97d70362aca9e07602933bcc06d8`; UF2 SHA-256 `d46b27b6fdeef09bf1a663c8de019fc14f13a442a70dba489b96ac34b2d31dec` (3,193,344 bytes), CPLC `0xF9E7CF61F94B9A22`, linked end `0x10085b30`, 500,944 bytes headroom. Found, not fixed: the JCAlgTest client repeats the last CPLC field (`ICPersonalizationEquipmentID`) in the CSV because `PrintCPLCInfo` appends `"\r\n"` to the last field's message and writes it again (`PrintGPInfo` has the same tail).
 - Decision: await Windows results. A client CPLC fix needs the user's go-ahead and a repackage.
 - Artifacts/logs: `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T133849Z`
+
+## 2026-11-25 JCAlgTest 1.8.6 client: duplicated CPLC line fixed 5
+
+- Step-Id: `20261125-1510-jcalgtest-186-client-cplc-dup`
+- Task: user request 2026-11-25 (fix the CPLC duplicate and repackage)
+- When: '2026-11-25 15:05' - '2026-11-25 15:10'
+- Model: `claude-opus-5-5`
+- Change: In the user's AlgTest client (`~/projects/algtest`, not committed), `CardMngr.PrintCPLCInfo` and `PrintGPInfo` ended with `message += "\r\n"` and wrote `message` again, so the last field (`CPLC.ICPersonalizationEquipmentID`) appeared twice in the CSV. Both now set `message = "\r\n"`. Re-pinned the client (`ant clean jar`), added `CardMngr.java` to the source diff, noted the fix in the fixture README, updated the hash in the manifest and `tools/test-jcalgtest-support-vpcd`.
+- Validation: `ant clean jar` BUILD SUCCESSFUL; `./tools/fixture-path --verify` FIXTURES:PASS files=89. Hardware check of the CSV follows in the packaging step.
+- Result: client sha256 `6f650d1fc0c4559f55a092b75c081d1a92850fc65624d256ccc576064fba1819` (154813 bytes).
+- Decision: repackage from this commit.
+- Artifacts/logs: none

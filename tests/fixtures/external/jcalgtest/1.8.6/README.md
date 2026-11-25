@@ -10,7 +10,7 @@ upstream releases.
 | File | SHA-256 | Bytes |
 |---|---|---|
 | `AlgTest_v1.8.6_jc32.cap` | `98365aae5fca57cf722a65137dffa572167015ebd9ed5e81c07df6791991bfce` | 149969 |
-| `client/AlgTestJClient.jar` | `615d7be48c9a0c566f74afb6992cbf637664766e6cbc7131552149438ce4c6f4` | 154818 |
+| `client/AlgTestJClient.jar` | `6f650d1fc0c4559f55a092b75c081d1a92850fc65624d256ccc576064fba1819` | 154813 |
 
 - GETVERSION returns `1.8.6_jc32`; the client still embeds version string
   `1.8.5`. Identify both by hash.
@@ -19,6 +19,9 @@ upstream releases.
   them in the constructor, so a jc305 build of these sources would report
   `1.8.6_jc305` without PQC tests. Only the jc32 CAP is pinned; the unchanged
   1.8.5/jc305 CAP stays the baseline.
+- The client also fixes a duplicated CSV line: `CardMngr.PrintCPLCInfo` and
+  `PrintGPInfo` wrote their last field (`CPLC.ICPersonalizationEquipmentID`)
+  twice; they now end with a plain line break.
 - Package AID `4A43416C6754657374`, applet AID `4A43416C675465737431` (same as
   1.8.5, so only one of the two CAPs can be installed at a time).
 - CAP format 2.3 (compact). Imports the 3.2 preview packages
