@@ -684,6 +684,9 @@ void process_message(uint8_t rhport) {
       const bool selecting_isd =
           route == pico2_jcvm::CcidApduRoute::SelectIsd;
       if (is_select_by_aid(apdu, apdu_length) || selecting_isd) {
+        // GP: deselecting the ISD (or reselecting it) ends its secure channel
+        // session; PC/SC reconnects without a power cycle must not inherit it.
+        secure_channel.reset();
         get_status_first_seen = false;
         (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
       }

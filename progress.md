@@ -34022,3 +34022,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: client sha256 `615d7be48c9a0c566f74afb6992cbf637664766e6cbc7131552149438ce4c6f4` (154818 bytes). An EE11 run with the previous client (`4089409b…9412`) was stopped mid-run and marked ABORTED (`artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T131119Z`); it is not evidence.
 - Decision: repackage from this commit and run `pqc` on EE11.
 - Artifacts/logs: none
+
+## 2026-11-25 SELECT ends the GP secure channel session (CPLC 6982 after gp) 20
+
+- Step-Id: `20261125-1440-scp-session-ends-on-select`
+- Task: Windows package preparation (found during the package `pqc` run)
+- When: '2026-11-25 14:20' - '2026-11-25 14:40'
+- Model: `claude-opus-5-5`
+- Change: `src/ccid_device.cpp` now resets the SCP03 session on every plain SELECT by AID / ISD select. Before, only reader power-on/off reset it, so after an authenticated GPPro run the next PC/SC connection (no power cycle) inherited the session and the unauthenticated JCAlgTest `80 CA 9F 7F` (CPLC) got `6982` ("CPLC; failed to obtain CPLC"). GP ends a secure channel session when its application is deselected.
+- Correction: the end times of the two previous records were written ahead of the clock. The package step actually ended at 14:08 (`20261125-1415-jcalgtest-186-all-variants`) and the client re-pin at 14:16 (`20261125-1425-jcalgtest-186-client-str-arrays`).
+- Validation: ARM max_crypto build rc 0, 0 warnings; `./tools/cycle choupi --serial EE116F37C7E4A04E` CYCLE:PASS. Reproduction (gp `--list`, then a new gp connection sending SELECT ISD + GET DATA 9F7F): before 3/3 `6982`, after 3/3 CPLC `9000`. `./tools/test-gppro-scp03-vpcd` GPPRO_SCP03:PASS. On EE11, levels 01/03/11/13/33: install (EXTERNAL AUTHENTICATE at the expected P1), list, CPLC after the session, uninstall, all passed with the unchanged 1.8.5/jc305 CAP. JCAlgTest 1.8.5/jc305 is installed on EE11 again.
+- Result: the earlier package `pqc` run (`0f9dedc4`, 19/19 PQC rows yes, rc 0) lacked only the CPLC rows because of this bug; the `a941e675` run had them, presumably because pcscd power-cycled the card in between.
+- Decision: repackage from this commit for the Windows test.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261125T133516Z.log`, `artifacts/results/gppro-scp03-vpcd-20261125T133620Z`, `artifacts/results/gppro-scp03-select-reset-EE116F37C7E4A04E-20261125T133729Z`, `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T131711Z`
