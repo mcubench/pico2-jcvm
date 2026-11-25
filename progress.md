@@ -34010,3 +34010,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: new CAP sha256 `98365aae5fca57cf722a65137dffa572167015ebd9ed5e81c07df6791991bfce` (149969 bytes); new client sha256 `4089409be58de4f64b519e798dbb8679b67c6e426038a10af438f30418b39412` (165538 bytes). GETVERSION of the jc32 CAP is unchanged (`1.8.6_jc32`).
 - Decision: repackage the Windows test from this commit and rerun `pqc` on hardware with the new pair.
 - Artifacts/logs: `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T124931Z`
+
+## 2026-11-25 JCAlgTest 1.8.6 client: PQC labels moved to static string arrays 10
+
+- Step-Id: `20261125-1425-jcalgtest-186-client-str-arrays`
+- Task: user directive 2026-11-25 (no algorithm strings built inside test methods in `SingleModeTest.java`; follow the `AEADCIPHER_STR` pattern)
+- When: '2026-11-25 14:15' - '2026-11-25 14:25'
+- Model: `claude-opus-5-5`
+- Change: In the user's AlgTest client (`~/projects/algtest`, not committed), the PQC section names and row labels now live in `PQCKEYFACTORY_STR`, `KEM_STR` and `SIGNATURE_MLDSA_STR` beside `AEADCIPHER_STR`; the test methods index them and print `Utils.GetAlgorithmName(X_STR[0])` like the other classes. `PQC_NAMES_STR` and the local ML-DSA name array are gone. Section names and labels are byte-identical to before, so CSVs and `tools/check-jcalgtest-pqc-support.py` are unaffected. Re-pinned the client (built with `ant clean jar`; the earlier incremental jar carried stale classes from older builds, hence 154818 instead of 165538 bytes with the same class list), regenerated the source diff, updated the README rebuild note.
+- Validation: `ant clean jar` BUILD SUCCESSFUL, class files Java 8 (major 52), class list identical to the previous jar. `./tools/fixture-path --verify` FIXTURES:PASS files=89. Hardware run with this client follows in the packaging step.
+- Result: client sha256 `615d7be48c9a0c566f74afb6992cbf637664766e6cbc7131552149438ce4c6f4` (154818 bytes). An EE11 run with the previous client (`4089409b…9412`) was stopped mid-run and marked ABORTED (`artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T131119Z`); it is not evidence.
+- Decision: repackage from this commit and run `pqc` on EE11.
+- Artifacts/logs: none

@@ -10,7 +10,7 @@ upstream releases.
 | File | SHA-256 | Bytes |
 |---|---|---|
 | `AlgTest_v1.8.6_jc32.cap` | `98365aae5fca57cf722a65137dffa572167015ebd9ed5e81c07df6791991bfce` | 149969 |
-| `client/AlgTestJClient.jar` | `4089409be58de4f64b519e798dbb8679b67c6e426038a10af438f30418b39412` | 165538 |
+| `client/AlgTestJClient.jar` | `615d7be48c9a0c566f74afb6992cbf637664766e6cbc7131552149438ce4c6f4` | 154818 |
 
 - GETVERSION returns `1.8.6_jc32`; the client still embeds version string
   `1.8.5`. Identify both by hash.
@@ -58,4 +58,4 @@ existing `//jc305` code, so the client and older applet builds never see them.
 3. Convert with `<jc261>/bin/converter.sh -enable-preview -out CAP JCA -applet
    0x4a:0x43:0x41:0x6c:0x67:0x54:0x65:0x73:0x74:0x31 algtest.JCAlgTestApplet
    algtest 0x4a:0x43:0x41:0x6c:0x67:0x54:0x65:0x73:0x74 1.0` (JDK 17 runtime).
-4. Client: `ant jar` in `~/projects/algtest/AlgTest_JClient`.
+4. Client: `ant clean jar` in `~/projects/algtest/AlgTest_JClient` (without `clean`, stale classes from earlier builds can end up in the jar).

@@ -142,7 +142,29 @@
      public static final short PrimalityTestParamSpec_MILLER_RABIN_TEST              = 1;   
 --- a/AlgTest_JClient/src/algtestjclient/SingleModeTest.java
 +++ b/AlgTest_JClient/src/algtestjclient/SingleModeTest.java
-@@ -1729,6 +1729,70 @@
+@@ -242,6 +242,21 @@
+     public static final String AEADCIPHER_STR[] = {"javacardx.crypto.AEADCipher",
+         //3.0.5
+         "CIPHER_AES_CCM#3.0.5", "CIPHER_AES_GCM#3.0.5", "ALG_AES_CCM#3.0.5", "ALG_AES_GCM#3.0.5"
++    };
++    // Order follows PQC_NAMES: expanded private key, then ATTR_SEED key, for each parameter set
++    public static final String PQCKEYFACTORY_STR[] = {"javacardx.security.pqc.PQCKeyFactory",
++        //3.2
++        "ML_KEM_512#3.2", "ML_KEM_512 ATTR_SEED#3.2", "ML_KEM_768#3.2", "ML_KEM_768 ATTR_SEED#3.2", "ML_KEM_1024#3.2", "ML_KEM_1024 ATTR_SEED#3.2",
++        "ML_DSA_44#3.2", "ML_DSA_44 ATTR_SEED#3.2", "ML_DSA_65#3.2", "ML_DSA_65 ATTR_SEED#3.2", "ML_DSA_87#3.2", "ML_DSA_87 ATTR_SEED#3.2"
++    };
++    public static final String KEM_STR[] = {"javacardx.crypto.kem.KEM ALG_ML_KEM",
++        //3.2
++        "ML_KEM_512#3.2", "ML_KEM_768#3.2", "ML_KEM_1024#3.2"
++    };
++    public static final String SIGNATURE_MLDSA_STR[] = {"javacard.security.Signature ML-DSA",
++        //3.2
++        "SIG_CIPHER_ML_DSA PAD_NULL ALG_NULL#3.2", "SIG_CIPHER_ML_DSA_EXTERNAL_MU PAD_NULL ALG_NULL#3.2",
++        "SIG_CIPHER_ML_DSA_EXPAND_SEED PAD_NULL ALG_NULL#3.2", "SIG_CIPHER_ML_DSA_EXTERNAL_MU_EXPAND_SEED PAD_NULL ALG_NULL#3.2"
+     };    
+     
+     /**
+@@ -1729,6 +1744,68 @@
      }        
      
      /**
@@ -153,45 +175,43 @@
 +     * @throws Exception
 +     */
 +    public static void TestClassPQCKeyFactory(FileOutputStream file) throws Exception {
-+        String message = "\n" + "javacardx.security.pqc.PQCKeyFactory" + "\r\n";
++        String message = "\n" + Utils.GetAlgorithmName(SingleModeTest.PQCKEYFACTORY_STR[0]) + "\r\n";
 +        m_SystemOutLogger.println(message);
 +        file.write(message.getBytes());
 +        ArrayList<Pair<ArrayList<Byte>, String>> algsToTest = new ArrayList<>();
 +        for (int i = 0; i < PQC_NAMES.length; i++) {
-+            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 0, PQC_NAMES_STR[i] + "#3.2"));
-+            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 1, PQC_NAMES_STR[i] + " ATTR_SEED#3.2"));
++            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 0, PQCKEYFACTORY_STR[1 + 2 * i]));
++            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 1, PQCKEYFACTORY_STR[2 + 2 * i]));
 +        }
 +        executeTestsArray(pqcApdu(Consts.CLASS_PQCKEYFACTORY, 3), algsToTest, file);
 +    }
 +    public static void TestClassKEM(FileOutputStream file) throws Exception {
-+        String message = "\n" + "javacardx.crypto.kem.KEM ALG_ML_KEM" + "\r\n";
++        String message = "\n" + Utils.GetAlgorithmName(SingleModeTest.KEM_STR[0]) + "\r\n";
 +        m_SystemOutLogger.println(message);
 +        file.write(message.getBytes());
 +        ArrayList<Pair<ArrayList<Byte>, String>> algsToTest = new ArrayList<>();
 +        for (int i = 0; i < 3; i++) { // ML-KEM names only
-+            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 0, PQC_NAMES_STR[i] + "#3.2"));
++            algsToTest.add(pqcParams(PQC_NAMES[i], (byte) 0, KEM_STR[1 + i]));
 +        }
 +        executeTestsArray(pqcApdu(Consts.CLASS_KEM, 3), algsToTest, file);
 +    }
 +    public static void TestClassSignatureMLDSA(FileOutputStream file) throws Exception {
-+        String message = "\n" + "javacard.security.Signature ML-DSA" + "\r\n";
++        String message = "\n" + Utils.GetAlgorithmName(SingleModeTest.SIGNATURE_MLDSA_STR[0]) + "\r\n";
 +        m_SystemOutLogger.println(message);
 +        file.write(message.getBytes());
 +        byte[] ciphers = {JCConsts.Signature_SIG_CIPHER_ML_DSA, JCConsts.Signature_SIG_CIPHER_ML_DSA_EXTERNAL_MU, JCConsts.Signature_SIG_CIPHER_ML_DSA_EXPAND_SEED, JCConsts.Signature_SIG_CIPHER_ML_DSA_EXTERNAL_MU_EXPAND_SEED};
-+        String[] names = {"SIG_CIPHER_ML_DSA", "SIG_CIPHER_ML_DSA_EXTERNAL_MU", "SIG_CIPHER_ML_DSA_EXPAND_SEED", "SIG_CIPHER_ML_DSA_EXTERNAL_MU_EXPAND_SEED"};
 +        ArrayList<Pair<ArrayList<Byte>, String>> algsToTest = new ArrayList<>();
 +        for (int i = 0; i < ciphers.length; i++) {
 +            ArrayList<Byte> params = new ArrayList<>();
 +            params.add(JCConsts.MessageDigest_ALG_NULL);
 +            params.add(ciphers[i]);
 +            params.add(JCConsts.Cipher_PAD_NULL);
-+            algsToTest.add(new Pair(params, names[i] + " PAD_NULL ALG_NULL#3.2"));
++            algsToTest.add(new Pair(params, SIGNATURE_MLDSA_STR[1 + i]));
 +        }
 +        executeTestsArray(pqcApdu(Consts.CLASS_SIGNATURE_MODULAR, 3), algsToTest, file);
 +    }
 +    static final short[] PQC_NAMES = {JCConsts.NamedParameterSpec_ML_KEM_512, JCConsts.NamedParameterSpec_ML_KEM_768, JCConsts.NamedParameterSpec_ML_KEM_1024,
 +        JCConsts.NamedParameterSpec_ML_DSA_44, JCConsts.NamedParameterSpec_ML_DSA_65, JCConsts.NamedParameterSpec_ML_DSA_87};
-+    static final String[] PQC_NAMES_STR = {"ML_KEM_512", "ML_KEM_768", "ML_KEM_1024", "ML_DSA_44", "ML_DSA_65", "ML_DSA_87"};
 +    private static Pair<ArrayList<Byte>, String> pqcParams(short name, byte extra, String label) {
 +        ArrayList<Byte> params = new ArrayList<>();
 +        params.add((byte) (name >> 8));
@@ -213,7 +233,7 @@
       * Method that will test all algorithms in SingleModeTest class.
       * @param file FileOutputStream object containing file for output data.
       * @throws Exception
-@@ -1751,6 +1815,9 @@
+@@ -1751,6 +1828,9 @@
          //TestClassAEADCipher_viaCipher(file);
          TestClassOwnerPINBuilder(file);
          TestClassInitializedMessageDigest(file);
