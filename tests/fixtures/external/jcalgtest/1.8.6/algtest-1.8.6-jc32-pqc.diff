@@ -1,5 +1,5 @@
---- a/AlgTest_JavaCard/jcbuild.xml	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JavaCard/jcbuild.xml	2026-11-25 10:03:49.326744102 +0100
+--- a/AlgTest_JavaCard/jcbuild.xml
++++ b/AlgTest_JavaCard/jcbuild.xml
 @@ -7,6 +7,7 @@
    <property name="JC303" value="ext/java_card_kit-3_0_3"/>
    <property name="JC304" value="ext/jc304_kit"/>
@@ -21,8 +21,8 @@
 +    </javacard>
    </target>
  </project>
---- a/AlgTest_JavaCard/preprocess_jcapi.py	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JavaCard/preprocess_jcapi.py	2026-11-25 10:03:49.322744018 +0100
+--- a/AlgTest_JavaCard/preprocess_jcapi.py
++++ b/AlgTest_JavaCard/preprocess_jcapi.py
 @@ -54,6 +54,8 @@
      process_api_version('src/', 'src304/', 'build304', {'//jc304': True, '//jc305': False})
      # JC 3.0.5 API
@@ -32,8 +32,8 @@
  
  
      print('All files processed and converted')
---- a/AlgTest_JavaCard/src/algtest/AlgSupportTest.java	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JavaCard/src/algtest/AlgSupportTest.java	2026-11-25 10:03:49.314743852 +0100
+--- a/AlgTest_JavaCard/src/algtest/AlgSupportTest.java
++++ b/AlgTest_JavaCard/src/algtest/AlgSupportTest.java
 @@ -307,6 +307,26 @@
                 catch (CryptoException e) { apdubuf[(short) (ISO7816.OFFSET_CDATA + offset)] = (byte) (e.getReason() + SUPP_ALG_EXCEPTION_CODE_OFFSET);} //jc305
                 break;
@@ -61,8 +61,8 @@
             default:
                 ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
          }
---- a/AlgTest_JavaCard/src/algtest/Consts.java	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JavaCard/src/algtest/Consts.java	2026-11-25 10:03:49.298743518 +0100
+--- a/AlgTest_JavaCard/src/algtest/Consts.java
++++ b/AlgTest_JavaCard/src/algtest/Consts.java
 @@ -98,6 +98,8 @@
      public static final byte CLASS_RANDOMDATA_ONESHOT          = (byte) 0x2b;      
      public static final byte CLASS_INITIALIZEDMESSAGEDIGEST    = (byte) 0x2c;      
@@ -72,26 +72,48 @@
      
      
      public static final byte UNUSED    = (byte) -1;     
---- a/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java	2026-11-25 10:03:49.310743768 +0100
-@@ -61,6 +61,7 @@
-     final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC222[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x32, (byte) 0x32, (byte) 0x32};
-     final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC304[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x34}; //jc304
-     final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC305[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x35}; //jc305
+--- a/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java
++++ b/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java
+@@ -55,12 +55,20 @@
+ {
+     // NOTE: when incrementing version, don't forget to update ALGTEST_JAVACARD_VERSION_CURRENT value
+     /**
++     * Version 1.8.6 (25.11.2026)
++     * + added Java Card 3.2 PQC support tests (PQCKeyFactory, KEM ML-KEM, Signature ML-DSA), jc32 build only
++     */
++    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC222[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x32, (byte) 0x32, (byte) 0x32};
++    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC304[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x34}; //jc304
++    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC305[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x35}; //jc305
 +//    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC32[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x32}; //jc32
++    /**
+      * Version 1.8.5 (18.11.2026)
+      * - fixed bug causing some fraction of RSA_NOPAD operations to fail due to too large value to encrypt
+      */
+-    final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC222[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x32, (byte) 0x32, (byte) 0x32};
+-    final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC304[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x34}; //jc304
+-    final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC305[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x35}; //jc305
++    //final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC222[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x32, (byte) 0x32, (byte) 0x32};
++    //final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC304[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x34}; //jc304
++    //final static byte ALGTEST_JAVACARD_VERSION_1_8_5__JC305[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x35, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x35}; //jc305
      /**
       * Version 1.8.4 (29.09.2026)
       */
-@@ -258,6 +259,7 @@
-         ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC222;
-         ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC304; //jc304
-         ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC305; //jc305
+@@ -255,9 +263,10 @@
+     boolean m_bLargeAuxArraysAvailable = false;
+ 
+     protected JCAlgTestApplet(byte[] buffer, short offset, byte length) {
+-        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC222;
+-        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC304; //jc304
+-        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_5__JC305; //jc305
++        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_6__JC222;
++        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_6__JC304; //jc304
++        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_6__JC305; //jc305
 +//        ALGTEST_JAVACARD_VERSION_CURRENT = ALGTEST_JAVACARD_VERSION_1_8_6__JC32; //jc32
  
          // data offset is used for application specific parameter.
          // initialization with default offset (AID offset).
---- a/AlgTest_JavaCard/src/algtest/JCConsts.java	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JavaCard/src/algtest/JCConsts.java	2026-11-25 10:03:49.302743601 +0100
+--- a/AlgTest_JavaCard/src/algtest/JCConsts.java
++++ b/AlgTest_JavaCard/src/algtest/JCConsts.java
 @@ -76,6 +76,11 @@
      public static final byte Signature_SIG_CIPHER_SM4_MAC128                        = 12;   
      public static final byte Signature_SIG_CIPHER_EDDSA                             = 13;  
@@ -118,8 +140,8 @@
      
      // javacard.security.PrimalityTestParamSpec  
      public static final short PrimalityTestParamSpec_MILLER_RABIN_TEST              = 1;   
---- a/AlgTest_JClient/src/algtestjclient/SingleModeTest.java	2026-11-25 10:03:49.290743350 +0100
-+++ b/AlgTest_JClient/src/algtestjclient/SingleModeTest.java	2026-11-25 10:03:49.330744185 +0100
+--- a/AlgTest_JClient/src/algtestjclient/SingleModeTest.java
++++ b/AlgTest_JClient/src/algtestjclient/SingleModeTest.java
 @@ -1729,6 +1729,70 @@
      }        
      

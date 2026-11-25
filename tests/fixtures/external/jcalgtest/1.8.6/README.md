@@ -9,11 +9,16 @@ upstream releases.
 
 | File | SHA-256 | Bytes |
 |---|---|---|
-| `AlgTest_v1.8.6_jc32.cap` | `b6940d26501bd0818d581d3bf8359f6cb498386006bd6388ced05285052847da` | 149969 |
-| `client/AlgTestJClient.jar` | `c6af938e66a886f14fa2b5f4b130f414159e3b84017a892eac08d202f1b0581c` | 165537 |
+| `AlgTest_v1.8.6_jc32.cap` | `98365aae5fca57cf722a65137dffa572167015ebd9ed5e81c07df6791991bfce` | 149969 |
+| `client/AlgTestJClient.jar` | `4089409be58de4f64b519e798dbb8679b67c6e426038a10af438f30418b39412` | 165538 |
 
 - GETVERSION returns `1.8.6_jc32`; the client still embeds version string
   `1.8.5`. Identify both by hash.
+- The applet version is 1.8.6 for every API variant (user directive
+  2026-11-25): the sources define `1_8_6__JC222/JC304/JC305/JC32` and assign
+  them in the constructor, so a jc305 build of these sources would report
+  `1.8.6_jc305` without PQC tests. Only the jc32 CAP is pinned; the unchanged
+  1.8.5/jc305 CAP stays the baseline.
 - Package AID `4A43416C6754657374`, applet AID `4A43416C675465737431` (same as
   1.8.5, so only one of the two CAPs can be installed at a time).
 - CAP format 2.3 (compact). Imports the 3.2 preview packages

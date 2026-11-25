@@ -33998,3 +33998,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: none measured yet.
 - Decision: build max_crypto from this commit and package it.
 - Artifacts/logs: none
+
+## 2026-11-25 JCAlgTest 1.8.6 version for every API variant; jc32 pair re-pinned 15
+
+- Step-Id: `20261125-1415-jcalgtest-186-all-variants`
+- Task: user directive 2026-11-25 (applet version 1.8.6 for all Java Card API variants, assigned in the constructor; 3.0.5 builds report 1.8.6 too despite no PQC)
+- When: '2026-11-25 14:00' - '2026-11-25 14:15'
+- Model: `claude-opus-5-5`
+- Change: In the user's AlgTest sources (`~/projects/algtest`, not committed), `JCAlgTestApplet.java` now defines `ALGTEST_JAVACARD_VERSION_1_8_6__JC222/JC304/JC305` plus the `//jc32` `JC32` array, assigns them in the constructor, and comments out the 1.8.5 arrays as was done for 1.8.4. The jc32-only 1.8.6 constant is gone. Rebuilt the jc32 CAP and the client (it embeds the applet classes), re-pinned both in `tests/fixtures/external/jcalgtest/1.8.6/` and the manifest, updated the client hash in `tools/test-jcalgtest-support-vpcd`, regenerated the source diff and noted the directive in the fixture README.
+- Validation: `./tools/fixture-path --verify` FIXTURES:PASS files=89. Generated jc305 sources (`//jc304`, `//jc305` on) compile with JDK 8 javac against the JC 3.0.5u3 API. jc32 conversion: 0 errors. The client jar's `JCAlgTestApplet.class` holds the 1.8.6 constants. Before the rebuild, the a941e675 package (old jc32 CAP `b6940d26…47da`, applet `1.8.6_jc32`) ran its `pqc` client command on EE116F37C7E4A04E from the empty card: rc=0, 4506 rows, PQC_SUPPORT:PASS, 0 NO_RESOURCE/error/6F00 rows.
+- Result: new CAP sha256 `98365aae5fca57cf722a65137dffa572167015ebd9ed5e81c07df6791991bfce` (149969 bytes); new client sha256 `4089409be58de4f64b519e798dbb8679b67c6e426038a10af438f30418b39412` (165538 bytes). GETVERSION of the jc32 CAP is unchanged (`1.8.6_jc32`).
+- Decision: repackage the Windows test from this commit and rerun `pqc` on hardware with the new pair.
+- Artifacts/logs: `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T124931Z`

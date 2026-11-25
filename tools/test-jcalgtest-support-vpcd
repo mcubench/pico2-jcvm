@@ -54,7 +54,7 @@ case "${variant}" in
     cap_asset=jcalgtest.cap.1.8.6-jc32
     load_code_name=algtest-v186-jc32-load-code.bin
     default_client="$("${repo_root}/tools/fixture-path" jcalgtest.client.1.8.6)"
-    client_sha256=c6af938e66a886f14fa2b5f4b130f414159e3b84017a892eac08d202f1b0581c
+    client_sha256=4089409be58de4f64b519e798dbb8679b67c6e426038a10af438f30418b39412
     applet_version=1.8.6_jc32
     ;;
   *)
