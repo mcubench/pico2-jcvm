@@ -10,10 +10,15 @@ upstream releases.
 | File | SHA-256 | Bytes |
 |---|---|---|
 | `AlgTest_v1.8.6_jc32.cap` | `5f19662dfa8c1941299423a6c4dcac44c931bb7c29e631d07abc82647b816f8f` | 156883 |
-| `client/AlgTestJClient.jar` | `0e98fd5631d3027bf8c7b8b764b2cd101b473b46338dcbe34668959f336ed6c1` | 156762 |
+| `client/AlgTestJClient.jar` | `a90fe5bbd137f34d355ba1cb94c4c9b603614c46713b4552ab4c3a192abc14fd` | 156762 |
 
-- GETVERSION returns `1.8.6_jc32`; the client still embeds version string
-  `1.8.5`. Identify both by hash.
+- GETVERSION returns `1.8.6_jc32`; the client reports version `1.8.6`
+  (`ALGTEST_JCLIENT_VERSION`, with a 1.8.6 changelog comment like the earlier
+  versions; user directive 2026-11-25). Identify both by hash.
+- The applet's 1.8.6 changelog comment also lists the performance tests. That
+  edit is comment-only: a rebuild yields byte-identical `.cap` components (only
+  the embedded `JCAlgTestApplet.class` line numbers and the manifest creation
+  time differ), so the pinned CAP was kept.
 - The applet version is 1.8.6 for every API variant (user directive
   2026-11-25): the sources define `1_8_6__JC222/JC304/JC305/JC32` and assign
   them in the constructor, so a jc305 build of these sources would report

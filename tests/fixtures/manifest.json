@@ -582,10 +582,10 @@
     },
     {
       "path": "tests/fixtures/external/jcalgtest/1.8.6/client/AlgTestJClient.jar",
-      "sha256": "0e98fd5631d3027bf8c7b8b764b2cd101b473b46338dcbe34668959f336ed6c1",
+      "sha256": "a90fe5bbd137f34d355ba1cb94c4c9b603614c46713b4552ab4c3a192abc14fd",
       "size": 156762,
       "provided_path": "ant clean jar in ~/projects/algtest/AlgTest_JClient (1.8.5 sources + algtest-1.8.6-jc32-pqc.diff), 2026-11-25",
-      "note": "Host client with the PQC support tests and the PQC performance section (performance menu option 4 runs only PQC); embedded version string 1.8.5; uses the 1.8.4/1.8.5 lib set. Pair only with AlgTest_v1.8.6_jc32.cap."
+      "note": "Host client with the PQC support tests and the PQC performance section (performance menu option 4 runs only PQC); embedded version string 1.8.6 (user directive 2026-11-25, with a 1.8.6 changelog entry); uses the 1.8.4/1.8.5 lib set. Pair only with AlgTest_v1.8.6_jc32.cap."
     }
   ]
 }

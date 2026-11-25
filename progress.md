@@ -34123,3 +34123,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 `9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23` (3,193,344 bytes); ZIP `a2b461c52118799816366af06ac00a4d0395042ea40e79aa5c27203fa91b66b6` (18,535,299 bytes). The package README gives 5–10 minutes for `pqcperf`; measured ~1.5 minutes (left as is, stated in the request).
 - Decision: package ready for the external Windows test; awaiting results.
 - Artifacts/logs: `artifacts/results/windows-pkg-pqcperf-EE116F37C7E4A04E-20261125T205738Z`, `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T205909Z`; invalid first attempt `...-20261125T205608Z` / `...-20261125T205720Z`; `build/arm-build-b4adbe13.log`
+
+## 2026-11-25 JCAlgTest 1.8.6 client reports version 1.8.6 25
+
+- Step-Id: `20261125-2315-jcalgtest-186-client-version`
+- Task: user request 2026-11-25 ("check version string in jcalgtestclient … still outputs 1.8.5. Update it same way as previous version updates were made")
+- When: '2026-11-25 22:50' - '2026-11-25 23:15'
+- Model: `claude-opus-5-5`
+- Change: in the user's AlgTest sources (not committed): `AlgTestJClient.ALGTEST_JCLIENT_VERSION = "1.8.6"` with a `Version 1.8.6 (25.11.2026)` changelog comment (PQC support tests, PQC performance tests and menu option 4, duplicated CPLC/GP line fix, needs applet 1.8.6_jc32); the 1.8.5 line is kept commented out, as for earlier versions. The applet's 1.8.6 changelog comment now also lists the performance tests. Re-pinned the 1.8.6 client (`a90fe5bb…14fd`, 156762 bytes; was `0e98fd56…6c1`) in the fixture, manifest, README and `tools/test-jcalgtest-support-vpcd`; the source diff now covers 11 files (adds `AlgTestJClient.java`; its baseline was rebuilt by reversing this edit).
+- Validation: `ant clean jar` BUILD SUCCESSFUL (same 5 old warnings); the class constant reads `1.8.6`; client lib set unchanged. jc32 CAP rebuilt from the edited sources: every `.cap` component is byte-identical to the pinned CAP (only the embedded `JCAlgTestApplet.class` line numbers and the manifest creation time differ), so the pinned CAP `5f19662d…6f8f` stays. `./tools/fixture-path --verify` FIXTURES:PASS files=89. `JCALGTEST_VARIANT=jc32 JCALGTEST_OBJECT_DELETION=1 ./tools/test-jcalgtest-support-vpcd`: JCALGTEST_VPCD:PASS (ALG_SUPPORT_EXTENDED), PQC_SUPPORT:PASS 19/19, CSV `AlgTestJClient version; 1.8.6`.
+- Result: the 1.8.6 client now identifies itself as 1.8.6 in help text and CSV.
+- Decision: repackage the Windows test with this client (package `b4adbe13` carries the old one).
+- Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261125T221109Z`

@@ -445,12 +445,13 @@
      
 --- a/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java
 +++ b/AlgTest_JavaCard/src/algtest/JCAlgTestApplet.java
-@@ -55,12 +55,20 @@
+@@ -55,12 +55,21 @@
  {
      // NOTE: when incrementing version, don't forget to update ALGTEST_JAVACARD_VERSION_CURRENT value
      /**
 +     * Version 1.8.6 (25.11.2026)
 +     * + added Java Card 3.2 PQC support tests (PQCKeyFactory, KEM ML-KEM, Signature ML-DSA), jc32 build only
++     * + added PQC performance tests (PQCKeyFactory keygen, KEM encapsulate/decapsulate, ML-DSA sign/verify/init), jc32 build only
 +     */
 +    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC222[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x32, (byte) 0x32, (byte) 0x32};
 +    final static byte ALGTEST_JAVACARD_VERSION_1_8_6__JC304[] = {(byte) 0x31, (byte) 0x2e, (byte) 0x38, (byte) 0x2e, (byte) 0x36, (byte) 0x5f, (byte) 0x6a, (byte) 0x63, (byte) 0x33, (byte) 0x30, (byte) 0x34}; //jc304
@@ -469,7 +470,7 @@
      /**
       * Version 1.8.4 (29.09.2026)
       */
-@@ -255,9 +263,10 @@
+@@ -255,9 +264,10 @@
      boolean m_bLargeAuxArraysAvailable = false;
  
      protected JCAlgTestApplet(byte[] buffer, short offset, byte length) {
@@ -483,7 +484,7 @@
  
          // data offset is used for application specific parameter.
          // initialization with default offset (AID offset).
-@@ -378,6 +387,7 @@
+@@ -378,6 +388,7 @@
                          // If required, free also RSA objects cache to free some resources
                          if (m_perfTest != null) {
                              m_perfTest.eraseCachedRSAObjectsExceptSpecifiedTypeLength((byte) -1, (short) -1);                        
@@ -535,6 +536,29 @@
      
      // javacard.security.PrimalityTestParamSpec  
      public static final short PrimalityTestParamSpec_MILLER_RABIN_TEST              = 1;   
+--- a/AlgTest_JClient/src/algtestjclient/AlgTestJClient.java
++++ b/AlgTest_JClient/src/algtestjclient/AlgTestJClient.java
+@@ -54,10 +54,19 @@
+  */
+ public class AlgTestJClient {
+         /**
++     * Version 1.8.6 (25.11.2026)
++     * - Add Java Card 3.2 PQC support tests (PQCKeyFactory, KEM ML-KEM, Signature ML-DSA)
++     * - Add PQC performance tests (ML-KEM/ML-DSA keygen, KEM encapsulate/decapsulate, ML-DSA sign/verify/init)
++     *   with cached key pairs freed per parameter set; new performance menu option 4 (only PQC)
++     * - Fix duplicated last CPLC/GP info line in CSV output
++     * - Requires JCAlgTest applet 1.8.6_jc32 for the PQC tests
++     */
++    public final static String ALGTEST_JCLIENT_VERSION = "1.8.6";
++    /**
+      * Version 1.8.5 (12.11.2026)
+      * - Fix negative length reset APDU which may prevent garbage collection
+      */
+-    public final static String ALGTEST_JCLIENT_VERSION = "1.8.5";
++    //public final static String ALGTEST_JCLIENT_VERSION = "1.8.5";
+     /**
+      * Version 1.8.4 (29.09.2026)
+      * - Improve help and logging
 --- a/AlgTest_JClient/src/algtestjclient/CardMngr.java
 +++ b/AlgTest_JClient/src/algtestjclient/CardMngr.java
 @@ -929,7 +929,7 @@
