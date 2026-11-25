@@ -34059,3 +34059,16 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: client sha256 `6f650d1fc0c4559f55a092b75c081d1a92850fc65624d256ccc576064fba1819` (154813 bytes).
 - Decision: repackage from this commit.
 - Artifacts/logs: none
+
+## 2026-11-25 Windows test package repackaged at f3cf5729 (CPLC line fix) 20
+
+- Step-Id: `20261125-1600-windows-package-f3cf5729`
+- Task: user request 2026-11-25 (fix the CPLC duplicate and repackage)
+- When: '2026-11-25 15:42' - '2026-11-25 16:02'
+- Model: `claude-opus-5-5`
+- Change: Rebuilt max_crypto from `f3cf5729` (firmware code identical to `f9e7cf61`) and repackaged. `WIN-PQC-SCP03-F9E7CF61-20261125` becomes `WIN-PQC-SCP03-F3CF5729-20261125` with the new ZIP, UF2 and client hashes; HANDOFF updated. The `f9e7cf61` package is superseded.
+- Correction: record `20261125-1510-jcalgtest-186-client-cplc-dup` gives 15:05-15:10; that work actually ran 15:40-15:44.
+- Validation: build rc 0, 0 warnings; PACKAGE:PASS. On EE116F37C7E4A04E with this exact UF2 from an empty card: packaged GPPro installed `applet-jc32.cap`; the packaged 1.8.6 client with the `pqc` arguments returned rc 0, 4505 rows, PQC_SUPPORT:PASS (19/19), 0 NO_RESOURCE/error/6F00 rows, applet `1.8.6_jc32`, exactly one `CPLC.ICPersonalizationEquipmentID` line. Apart from card name, date and CPLC, rows are identical to the `f9e7cf61` run. 1.8.5/jc305 reinstalled on EE11 afterwards.
+- Result: ZIP `build/external-test/pico2-jcvm-maxcrypto-deletion-f3cf5729.zip` SHA-256 `4804c6affc72a5a5aa8933638d15d5b3974cf6ac40fb2903e54f3431458edde8`; UF2 SHA-256 `b00c4a60e4456d8919cceda7e460e27c5acc0b7adf85eb6ab65a728730ec9ea1` (3,193,344 bytes), CPLC `0xF3CF5729C5DF991B`.
+- Decision: await Windows results for `WIN-PQC-SCP03-F3CF5729-20261125`.
+- Artifacts/logs: `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T144505Z`

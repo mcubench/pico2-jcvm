@@ -1,8 +1,8 @@
 # External validation requests
 
-## WIN-PQC-SCP03-F9E7CF61-20261125 — Pico 2 firmware with JC 3.2 PQC, SCP03 enc/R-MAC and all fixes since rc1
+## WIN-PQC-SCP03-F3CF5729-20261125 — Pico 2 firmware with JC 3.2 PQC, SCP03 enc/R-MAC and all fixes since rc1
 
-Created 2026-11-25 14:50 CET. Replaces `WIN-GP-DELETE-WATCHDOG-20261124` (package `6d3bb526`) and
+Created 2026-11-25 14:50 CET, repackaged 15:50 at `f3cf5729` (1.8.6 client without the duplicated CPLC line; firmware code unchanged). Replaces `WIN-GP-DELETE-WATCHDOG-20261124` (package `6d3bb526`) and
 `WIN-VM-ARRAY-READS-20261122` (package `be737f0e`); this image contains both fixes. Use a dedicated test Pico 2.
 Normal ARM max_crypto image (object deletion on, debug off); flashing erases applet storage.
 
@@ -13,17 +13,17 @@ New since `6d3bb526` (details in `progress.md`, 2026-11-25):
 - SELECT now ends a GP secure channel session (`f9e7cf61`). Before, the PC/SC connection after a GPPro
   run inherited the session, so JCAlgTest logged "CPLC; failed to obtain CPLC".
 
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-f9e7cf61.uf2),
-  SHA-256 `d46b27b6fdeef09bf1a663c8de019fc14f13a442a70dba489b96ac34b2d31dec`, 3,193,344 bytes, CPLC source ID `F9E7CF61F94B9A22`.
-- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-f9e7cf61.zip),
-  SHA-256 `6e8cfc8f80b36671f14548123d59dd311d2b97d70362aca9e07602933bcc06d8`.
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-f3cf5729.uf2),
+  SHA-256 `b00c4a60e4456d8919cceda7e460e27c5acc0b7adf85eb6ab65a728730ec9ea1`, 3,193,344 bytes, CPLC source ID `F3CF5729C5DF991B`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-f3cf5729.zip),
+  SHA-256 `4804c6affc72a5a5aa8933638d15d5b3974cf6ac40fb2903e54f3431458edde8`.
 - Inside the ZIP: unchanged JCAlgTest 1.8.5/jc305 CAP (`applet.cap`, `fa64582e…48fb`) with the 1.8.5-20261121 client
   (`3cca70cb…a703`) for modes `all`/`symmetric`; JCAlgTest 1.8.6/jc32 CAP (`applet-jc32.cap`, `98365aae…bfce`) with
-  its client (`tools/AlgTestJClient_v1.8.6_jc32.jar`, `615d7be4…c4f4`) for mode `pqc`.
+  its client (`tools/AlgTestJClient_v1.8.6_jc32.jar`, `6f650d1f…1819`) for mode `pqc`.
 
 Validation here (EE116F37C7E4A04E, this exact UF2, empty card): packaged GPPro installed `applet-jc32.cap`, then the
 packaged 1.8.6 client ran `-op ALG_SUPPORT_BASIC -cardname … -fresh -outpath …` (the `pqc` command line): rc 0,
-4506 rows, all 19 PQC rows yes, no NO_RESOURCE/error/6F00 rows, CPLC present. The PowerShell block itself was not run
+4505 rows, all 19 PQC rows yes, one `CPLC.ICPersonalizationEquipmentID` line, no NO_RESOURCE/error/6F00 rows, CPLC present. The PowerShell block itself was not run
 (no PowerShell here). Modes `all`/`symmetric` are unchanged from the earlier packages.
 
 Steps:
