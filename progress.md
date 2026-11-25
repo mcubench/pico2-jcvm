@@ -34099,3 +34099,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: `CHOUPI:PQC op=dsa_expand set=65` takes 28.0 ms in all three perf APDUs. The slow APDU differs only in its end-of-APDU sync: `synced=1 sync_bytes=40960 sync_us=524714` (full snapshot to the other slot) instead of `journaled=1 journal_bytes=7424 sync_us=21630`. The run had 4 full snapshots (2 in untimed prepare APDUs, 2 in timed expandSeed APDUs, 40960/45056 bytes, 525-589 ms), each after 121-125 KB of journal appends (160 KB slot minus the ~40 KB snapshot; first one 146 KB including pre-run state). ML-DSA-65/87 expandSeed writes ~7.4-9 KB of persistent key per operation, so the rollover lands there; the run is deterministic from the same card state, so it hits the same measurement.
 - Decision: expected amortized cost of persistent key writes (about 30 ms/op for ML-DSA-65 expandSeed averaged over a journal), not a PQC bug. No firmware change. Making the snapshot cheaper or moving it off the APDU path would be a separate persistence task.
 - Artifacts/logs: `artifacts/results/jcalgtest-pqc-perf-serial-EE116F37C7E4A04E-20261125T204706Z` (CSV, `serial.log`, `inputs.sha256`)
+
+## 2026-11-25 Windows package: pqcperf mode (JCAlgTest performance option 4) 8
+
+- Step-Id: `20261125-2205-windows-pqcperf-mode`
+- Task: user request 2026-11-25 ("prepare version of firmware for external testing")
+- When: '2026-11-25 21:57' - '2026-11-25 22:05'
+- Model: `claude-opus-5-5`
+- Change: `tools/templates/maxcrypto-windows-run.ps1.in` gains `$mode = 'pqcperf'`: installs `applet-jc32.cap`, starts the 1.8.6 client interactively and answers the menu prompts `2` (performance) and `4` (only post-quantum), reusing the `symmetric` prompt-driving code. `tools/package-maxcrypto-windows-test` README lists the mode with its expected 33 measurements and the expected journal-rollover outlier.
+- Validation: `bash -n` on the packaging script. The prompt strings `CHOOSE test you want to run` and `CHOOSE which type of performance test` match the 1.8.6 client log (`jcalgtest-pqc-perf-serial-EE116F37C7E4A04E-20261125T204706Z`). PowerShell not run here (none available). The package itself is built and validated in the next step.
+- Result: template change only.
+- Decision: build and package at this commit next.
+- Artifacts/logs: none

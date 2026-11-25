@@ -9,17 +9,20 @@
 # 'pqc'       = ALG_SUPPORT_BASIC with the JCAlgTest 1.8.6/jc32 CAP and client
 #               (JC 3.2 ML-KEM/ML-DSA rows; minutes). Installs applet-jc32.cap
 #               instead of the unchanged 1.8.5/jc305 applet.cap.
+# 'pqcperf'   = menu 2 -> PERFORMANCE TEST -> 4 Only post-quantum algorithms, with
+#               the 1.8.6/jc32 CAP and client (ML-KEM/ML-DSA keygen, encaps/decaps,
+#               sign/verify; 5-10 minutes). Answers the prompts like 'symmetric'.
 $mode = 'all'
 $reader = 'Pico2 JCVM CCID 0'
 # -----------------------------------------------------------------------------
-if (@('all', 'symmetric', 'pqc') -notcontains $mode) { throw "mode must be 'all', 'symmetric' or 'pqc'" }
+if (@('all', 'symmetric', 'pqc', 'pqcperf') -notcontains $mode) { throw "mode must be 'all', 'symmetric', 'pqc' or 'pqcperf'" }
 $root = (Get-Location).Path
 $image = Join-Path $root 'firmware\@UF2_NAME@'
 $expected = '@UF2_SHA@'
 $gp = Join-Path $root 'tools\gp.jar'
 $client = Join-Path $root 'tools\AlgTestJClient_v1.8.5.jar'
 $cap = Join-Path $root 'applet.cap'
-if ($mode -eq 'pqc') { $client = Join-Path $root 'tools\AlgTestJClient_v1.8.6_jc32.jar'; $cap = Join-Path $root 'applet-jc32.cap' }
+if ($mode -like 'pqc*') { $client = Join-Path $root 'tools\AlgTestJClient_v1.8.6_jc32.jar'; $cap = Join-Path $root 'applet-jc32.cap' }
 $capture = Join-Path $root 'tools\capture-object-deletion.ps1'
 foreach ($f in @($image, $gp, $client, $cap, $capture)) { if (-not (Test-Path $f)) { throw "Missing $f; run this block in the extracted package directory" } }
 $run = Join-Path $root ('results\' + $mode + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss'))
@@ -54,7 +57,7 @@ $cap_proc = Start-Process -FilePath 'powershell' -ArgumentList "-NoProfile -Exec
 $null = $cap_proc.Handle
 Start-Sleep -Seconds 3
 
-# 4. Install the JCAlgTest CAP (1.8.5/jc305, or 1.8.6/jc32 for 'pqc') on the empty card.
+# 4. Install the JCAlgTest CAP (1.8.5/jc305, or 1.8.6/jc32 for 'pqc'/'pqcperf') on the empty card.
 if ((Invoke-Gp 'gp-install' "--install `"$cap`"") -ne 0) { New-Item -ItemType File -Path $stop | Out-Null; throw "CAP install failed; see $run\gp-install*.txt" }
 Invoke-Gp 'gp-list-after-install' '--list' | Out-Null
 Get-Content (Join-Path $run 'gp-list-after-install.txt')
@@ -62,7 +65,7 @@ Get-Content (Join-Path $run 'gp-list-after-install.txt')
 # 5. Run the JCAlgTest client. Results and the client log go to $run.
 $card = "pico2_maxcrypto_@HEAD_SHORT@_$chip"
 $started = Get-Date
-if ($mode -ne 'symmetric') {
+if (@('all', 'pqc') -contains $mode) {
   $op = if ($mode -eq 'pqc') { 'ALG_SUPPORT_BASIC' } else { 'ALG_PERFORMANCE_STATIC' }
   $client_proc = Start-Process -FilePath 'java' -ArgumentList "-jar `"$client`" -op $op -cardname $card -fresh -outpath `"$run`"" -WorkingDirectory $run -NoNewWindow -Wait -PassThru
   $client_rc = $client_proc.ExitCode
@@ -74,7 +77,8 @@ if ($mode -ne 'symmetric') {
   $psi.UseShellExecute = $false
   $psi.RedirectStandardInput = $true
   $client_proc = [System.Diagnostics.Process]::Start($psi)
-  foreach ($step in @(@('CHOOSE test you want to run', '2'), @('CHOOSE which type of performance test', '2'))) {
+  $perf_choice = if ($mode -eq 'pqcperf') { '4' } else { '2' }
+  foreach ($step in @(@('CHOOSE test you want to run', '2'), @('CHOOSE which type of performance test', $perf_choice))) {
     $wait = (Get-Date).AddSeconds(180)
     while ($true) {
       $log = Get-ChildItem $run -Filter 'ALGTEST_log_*.log' -ErrorAction SilentlyContinue | Select-Object -First 1

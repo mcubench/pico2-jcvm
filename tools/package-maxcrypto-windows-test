@@ -137,8 +137,8 @@ This package is prepared for external Windows testing. Validation of this exact 
 - Linked firmware end: \`${linked_end_hex}\`; remaining firmware window: ${remaining} bytes
 - CAP: unchanged user-supplied JCAlgTest 1.8.5 / jc305 (\`applet.cap\`), SHA-256 \`${cap_sha}\`
 - Host client: supplied JCAlgTest 1.8.5-20261121 build (\`tools/AlgTestJClient_v1.8.5.jar\`, fewer internal repetitions for asymmetric algorithms), SHA-256 \`${client_sha}\`
-- PQC CAP (mode \`pqc\` only): JCAlgTest 1.8.6 / jc32 (\`applet-jc32.cap\`, CAP 2.3, built from the user's AlgTest sources with Java Card 3.2 ML-KEM/ML-DSA support tests), SHA-256 \`${cap_jc32_sha}\`
-- PQC client (mode \`pqc\` only): \`tools/AlgTestJClient_v1.8.6_jc32.jar\`, SHA-256 \`${client_jc32_sha}\`
+- PQC CAP (modes \`pqc\` and \`pqcperf\`): JCAlgTest 1.8.6 / jc32 (\`applet-jc32.cap\`, CAP 2.3, built from the user's AlgTest sources with Java Card 3.2 ML-KEM/ML-DSA support and performance tests), SHA-256 \`${cap_jc32_sha}\`
+- PQC client (modes \`pqc\` and \`pqcperf\`): \`tools/AlgTestJClient_v1.8.6_jc32.jar\`, SHA-256 \`${client_jc32_sha}\`
 - GPPro: \`tools/gp.jar\`
 
 ## Run the test from Windows (one block)
@@ -153,6 +153,7 @@ Requirements: Java 8 or newer on \`PATH\`, Windows PowerShell 5.1 or PowerShell 
 |---|---|---|---|
 | \`all\` | \`2 -> PERFORMANCE TEST\` -> \`1 -> All algorithms\` | 5–8 hours | command line: \`-op ALG_PERFORMANCE_STATIC -cardname <name> -fresh -outpath <dir>\` |
 | \`pqc\` | support test (\`ALG_SUPPORT_BASIC\`) with the 1.8.6/jc32 CAP and client | minutes | command line: \`-op ALG_SUPPORT_BASIC -cardname <name> -fresh -outpath <dir>\`; expected: all 19 rows in the \`PQCKeyFactory\`, \`KEM ALG_ML_KEM\` and \`Signature ML-DSA\` sections report \`yes\` |
+| \`pqcperf\` | \`2 -> PERFORMANCE TEST\` -> \`4 -> Only post-quantum algorithms\` with the 1.8.6/jc32 CAP and client | 5–10 minutes | like \`symmetric\`, but the block types \`2\`, \`4\`; expected: 33 measurements (ML-KEM-512/768/1024 keygen, encapsulate, decapsulate; ML-DSA-44/65/87 keygen, sign, verify, init), no error rows. One slow ML-DSA-65/87 \`expandSeed()\` measurement is a flash journal rollover and is expected |
 | \`symmetric\` | \`2 -> PERFORMANCE TEST\` -> \`2 -> Only algorithms WITHOUT asymmetric cryptography\` | 1–3 hours | the 1.8.5 client has no switch for this; the block starts it with \`-cardname\` and \`-outpath\` and types \`2\`, \`2\` after each prompt appears in the client log |
 
 The block does the following:
