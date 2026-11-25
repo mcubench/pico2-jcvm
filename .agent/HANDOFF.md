@@ -44,10 +44,10 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
   The one slow ML-DSA-65/87 `expandSeed()` measurement (571/658 ms) is a flash
   journal rollover (full ~40 KB snapshot, ~525-590 ms, every ~121-125 KB of
   journal), not PQC code (`20261125-2150-pqc-expandseed-outlier`).
-- Windows package `b4adbe13` (WIN-PQC-PERF-B4ADBE13-20261125) is out for
-  external testing (replaces `f3cf5729`): modes `pqc`, `pqcperf` (1.8.6/jc32
+- Windows package `58b5ec0a` (WIN-PQC-PERF-58B5EC0A-20261125) is out for
+  external testing (replaces `f3cf5729` and `b4adbe13`): modes `pqc`, `pqcperf` (1.8.6/jc32
   PQC-only performance), `all`, `symmetric`. EE11 runs that exact empty-card
-  UF2 (`9373ebfb…ae23`) with 1.8.5/jc305 reinstalled.
+  UF2 (`3209b85c…253b`) with 1.8.5/jc305 reinstalled.
 - JCAlgTest 1.8.6/jc32 (PQC support rows) is pinned under
   `tests/fixtures/external/jcalgtest/1.8.6/` and runs with
   `JCALGTEST_VARIANT=jc32 tools/test-jcalgtest-support-vpcd`; 1.8.5/jc305 stays

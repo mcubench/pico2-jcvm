@@ -34135,3 +34135,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the 1.8.6 client now identifies itself as 1.8.6 in help text and CSV.
 - Decision: repackage the Windows test with this client (package `b4adbe13` carries the old one).
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261125T221109Z`
+
+## 2026-11-25 Repackage the Windows test at 58b5ec0a with the 1.8.6-versioned client 12
+
+- Step-Id: `20261125-2345-windows-package-58b5ec0a`
+- Task: user request 2026-11-25 (client version string; follow-up of "prepare version of firmware for external testing")
+- When: '2026-11-25 23:25' - '2026-11-25 23:47'
+- Model: `claude-opus-5-5`
+- Change: built the normal max_crypto ARM image at `58b5ec0a` (firmware code unchanged since `f9e7cf61`) and packaged it; the ZIP carries the re-pinned 1.8.6 client `a90fe5bb…14fd`. `.agent/EXT_REQUESTS.md`: `WIN-PQC-PERF-58B5EC0A-20261125` replaces `WIN-PQC-PERF-B4ADBE13-20261125`; HANDOFF updated.
+- Validation: build rc 0, 0 warnings/errors, CPLC `0x58B5EC0AC1475F82`; PACKAGE:PASS. EE116F37C7E4A04E flashed with the package UF2 (FLASH:PASS, empty card; the reader came back as `… 02 00` and was looked up after the flash). Packaged GPPro + 1.8.6 client, answers `2`,`4`: rc 0, 33 measurements, 0 error rows, 0 FAULT, `AlgTestJClient version; 1.8.6`. `-op ALG_SUPPORT_BASIC`: rc 0, PQC_SUPPORT:PASS 19/19, `1.8.6_jc32`, `AlgTestJClient version; 1.8.6`, one CPLC equipment-ID line. 1.8.5/jc305 reinstalled (SELECTABLE). PowerShell block not run.
+- Result: UF2 `3209b85c69eb02b39467a9add3d2986965e134aadb1dfd9534d281f54a6f253b` (3,193,344 bytes); ZIP `40f4d757ad530de83be691a7e0ab087c81a2e0552c6fa0315d55de50670ac9e8` (18,535,298 bytes).
+- Decision: package `58b5ec0a` is the one to send; `b4adbe13` is superseded.
+- Artifacts/logs: `artifacts/results/windows-pkg-pqcperf-EE116F37C7E4A04E-20261125T222650Z`, `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T222823Z`, `build/arm-build-58b5ec0a.log`
