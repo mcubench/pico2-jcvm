@@ -46,10 +46,13 @@ cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
 # file name the run template expects.
 client="$("${repo_root}/tools/fixture-path" jcalgtest.client.1.8.5-20261121)"
 client_lib="$(dirname "${client}")/lib"
+# User directive 2026-11-25: the 1.8.6/jc32 PQC pair runs beside, never instead of, 1.8.5/jc305.
+cap_jc32="$("${repo_root}/tools/fixture-path" jcalgtest.cap.1.8.6-jc32)"
+client_jc32="$("${repo_root}/tools/fixture-path" jcalgtest.client.1.8.6)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 capture_ps1="${repo_root}/tools/capture-object-deletion.ps1"
 run_template="${repo_root}/tools/templates/maxcrypto-windows-run.ps1.in"
-for f in "${cap}" "${client}" "${gp_jar}" "${capture_ps1}" "${run_template}"; do
+for f in "${cap}" "${client}" "${cap_jc32}" "${client_jc32}" "${gp_jar}" "${capture_ps1}" "${run_template}"; do
   [[ -s "${f}" ]] || die "missing input: ${f}"
 done
 [[ -d "${client_lib}" ]] || die "missing client lib directory: ${client_lib}"
@@ -62,6 +65,8 @@ mkdir -p "${stage}/firmware" "${stage}/tools/lib"
 cp "${uf2_artifact}" "${stage}/firmware/${uf2_name}"
 cp "${cap}" "${stage}/applet.cap"
 cp "${client}" "${stage}/tools/AlgTestJClient_v1.8.5.jar"
+cp "${cap_jc32}" "${stage}/applet-jc32.cap"
+cp "${client_jc32}" "${stage}/tools/AlgTestJClient_v1.8.6_jc32.jar"
 cp "${gp_jar}" "${stage}/tools/gp.jar"
 cp "${capture_ps1}" "${stage}/tools/capture-object-deletion.ps1"
 cp -L "${client_lib}"/*.jar "${stage}/tools/lib/"
@@ -71,6 +76,8 @@ uf2_sha="$(sha "${stage}/firmware/${uf2_name}")"
 uf2_size="$(stat -c %s "${stage}/firmware/${uf2_name}")"
 cap_sha="$(sha "${stage}/applet.cap")"
 client_sha="$(sha "${stage}/tools/AlgTestJClient_v1.8.5.jar")"
+cap_jc32_sha="$(sha "${stage}/applet-jc32.cap")"
+client_jc32_sha="$(sha "${stage}/tools/AlgTestJClient_v1.8.6_jc32.jar")"
 gp_sha="$(sha "${stage}/tools/gp.jar")"
 fw_build_sha="$(sha "${firmware}")"
 nm_tool="$(command -v arm-none-eabi-nm)"
@@ -102,6 +109,9 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
   printf 'jcalgtest_cap_sha256=%s\n' "${cap_sha}"
   printf 'jcalgtest_client=1.8.5-20261121\n'
   printf 'jcalgtest_client_sha256=%s\n' "${client_sha}"
+  printf 'jcalgtest_pqc_cap=1.8.6_jc32\n'
+  printf 'jcalgtest_pqc_cap_sha256=%s\n' "${cap_jc32_sha}"
+  printf 'jcalgtest_pqc_client_sha256=%s\n' "${client_jc32_sha}"
   printf 'gppro_sha256=%s\n' "${gp_sha}"
   printf 'local_validation=recorded_after_packaging_in_.agent/EXT_REQUESTS.md_and_progress.md_for_this_commit (not asserted at package time)\n'
   printf 'windows_test=not_performed\n'
@@ -127,6 +137,8 @@ This package is prepared for external Windows testing. Validation of this exact 
 - Linked firmware end: \`${linked_end_hex}\`; remaining firmware window: ${remaining} bytes
 - CAP: unchanged user-supplied JCAlgTest 1.8.5 / jc305 (\`applet.cap\`), SHA-256 \`${cap_sha}\`
 - Host client: supplied JCAlgTest 1.8.5-20261121 build (\`tools/AlgTestJClient_v1.8.5.jar\`, fewer internal repetitions for asymmetric algorithms), SHA-256 \`${client_sha}\`
+- PQC CAP (mode \`pqc\` only): JCAlgTest 1.8.6 / jc32 (\`applet-jc32.cap\`, CAP 2.3, built from the user's AlgTest sources with Java Card 3.2 ML-KEM/ML-DSA support tests), SHA-256 \`${cap_jc32_sha}\`
+- PQC client (mode \`pqc\` only): \`tools/AlgTestJClient_v1.8.6_jc32.jar\`, SHA-256 \`${client_jc32_sha}\`
 - GPPro: \`tools/gp.jar\`
 
 ## Run the test from Windows (one block)
@@ -140,6 +152,7 @@ Requirements: Java 8 or newer on \`PATH\`, Windows PowerShell 5.1 or PowerShell 
 | \`\$mode\` | JCAlgTest menu equivalent | Duration | How the client is driven |
 |---|---|---|---|
 | \`all\` | \`2 -> PERFORMANCE TEST\` -> \`1 -> All algorithms\` | 5–8 hours | command line: \`-op ALG_PERFORMANCE_STATIC -cardname <name> -fresh -outpath <dir>\` |
+| \`pqc\` | support test (\`ALG_SUPPORT_BASIC\`) with the 1.8.6/jc32 CAP and client | minutes | command line: \`-op ALG_SUPPORT_BASIC -cardname <name> -fresh -outpath <dir>\`; expected: all 19 rows in the \`PQCKeyFactory\`, \`KEM ALG_ML_KEM\` and \`Signature ML-DSA\` sections report \`yes\` |
 | \`symmetric\` | \`2 -> PERFORMANCE TEST\` -> \`2 -> Only algorithms WITHOUT asymmetric cryptography\` | 1–3 hours | the 1.8.5 client has no switch for this; the block starts it with \`-cardname\` and \`-outpath\` and types \`2\`, \`2\` after each prompt appears in the client log |
 
 The block does the following:

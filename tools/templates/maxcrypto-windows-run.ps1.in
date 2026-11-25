@@ -6,16 +6,20 @@
 #               cryptography (1-3 hours). The 1.8.5 client has no command-line
 #               switch for this choice, so the block answers the two menu prompts
 #               itself after it sees each one in the client log.
+# 'pqc'       = ALG_SUPPORT_BASIC with the JCAlgTest 1.8.6/jc32 CAP and client
+#               (JC 3.2 ML-KEM/ML-DSA rows; minutes). Installs applet-jc32.cap
+#               instead of the unchanged 1.8.5/jc305 applet.cap.
 $mode = 'all'
 $reader = 'Pico2 JCVM CCID 0'
 # -----------------------------------------------------------------------------
-if ($mode -ne 'all' -and $mode -ne 'symmetric') { throw "mode must be 'all' or 'symmetric'" }
+if (@('all', 'symmetric', 'pqc') -notcontains $mode) { throw "mode must be 'all', 'symmetric' or 'pqc'" }
 $root = (Get-Location).Path
 $image = Join-Path $root 'firmware\@UF2_NAME@'
 $expected = '@UF2_SHA@'
 $gp = Join-Path $root 'tools\gp.jar'
 $client = Join-Path $root 'tools\AlgTestJClient_v1.8.5.jar'
 $cap = Join-Path $root 'applet.cap'
+if ($mode -eq 'pqc') { $client = Join-Path $root 'tools\AlgTestJClient_v1.8.6_jc32.jar'; $cap = Join-Path $root 'applet-jc32.cap' }
 $capture = Join-Path $root 'tools\capture-object-deletion.ps1'
 foreach ($f in @($image, $gp, $client, $cap, $capture)) { if (-not (Test-Path $f)) { throw "Missing $f; run this block in the extracted package directory" } }
 $run = Join-Path $root ('results\' + $mode + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss'))
@@ -50,16 +54,17 @@ $cap_proc = Start-Process -FilePath 'powershell' -ArgumentList "-NoProfile -Exec
 $null = $cap_proc.Handle
 Start-Sleep -Seconds 3
 
-# 4. Install the unchanged JCAlgTest 1.8.5/jc305 CAP on the empty card.
+# 4. Install the JCAlgTest CAP (1.8.5/jc305, or 1.8.6/jc32 for 'pqc') on the empty card.
 if ((Invoke-Gp 'gp-install' "--install `"$cap`"") -ne 0) { New-Item -ItemType File -Path $stop | Out-Null; throw "CAP install failed; see $run\gp-install*.txt" }
 Invoke-Gp 'gp-list-after-install' '--list' | Out-Null
 Get-Content (Join-Path $run 'gp-list-after-install.txt')
 
-# 5. Run the JCAlgTest 1.8.5 client. Results and the client log go to $run.
+# 5. Run the JCAlgTest client. Results and the client log go to $run.
 $card = "pico2_maxcrypto_@HEAD_SHORT@_$chip"
 $started = Get-Date
-if ($mode -eq 'all') {
-  $client_proc = Start-Process -FilePath 'java' -ArgumentList "-jar `"$client`" -op ALG_PERFORMANCE_STATIC -cardname $card -fresh -outpath `"$run`"" -WorkingDirectory $run -NoNewWindow -Wait -PassThru
+if ($mode -ne 'symmetric') {
+  $op = if ($mode -eq 'pqc') { 'ALG_SUPPORT_BASIC' } else { 'ALG_PERFORMANCE_STATIC' }
+  $client_proc = Start-Process -FilePath 'java' -ArgumentList "-jar `"$client`" -op $op -cardname $card -fresh -outpath `"$run`"" -WorkingDirectory $run -NoNewWindow -Wait -PassThru
   $client_rc = $client_proc.ExitCode
 } else {
   $psi = New-Object System.Diagnostics.ProcessStartInfo

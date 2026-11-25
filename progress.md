@@ -33986,3 +33986,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: On EE11, all 4467 rows the two runs share are identical; jc32 adds the 19 PQC rows, all yes. Neither CSV has NO_RESOURCE, error or 6F00 rows. PQC rows on hardware take 0.07-0.53 s round trip. The CAP builds only with `rt.jar` after the SDK 26.1 preview API jar on javac's boot classpath, because the preview jar lacks the java.lang boxing classes and existing AlgTest code then fails overload resolution. The `jcbuild.xml` `build32` target was added but not run: ant-javacard and `ext/` are missing here.
 - Decision: 1.8.5/jc305 remains the acceptance baseline; run 1.8.6/jc32 in addition for PQC. EE11 has 1.8.5/jc305 reinstalled. Not done: PQC performance tests; AlgTest_Process report support.
 - Artifacts/logs: `artifacts/results/jcalgtest-support-vpcd-20261125T090554Z`, `artifacts/results/jcalgtest-support-vpcd-20261125T091333Z`, `artifacts/results/jcalgtest-jc305-basic-EE116F37C7E4A04E-20261125T092429Z`, `artifacts/results/jcalgtest-jc32-basic-EE116F37C7E4A04E-20261125T094550Z`; CAP sha256 `b6940d26501bd0818d581d3bf8359f6cb498386006bd6388ced05285052847da`, client sha256 `c6af938e66a886f14fa2b5f4b130f414159e3b84017a892eac08d202f1b0581c`
+
+## 2026-11-25 Windows package gains a 1.8.6/jc32 PQC support mode 10
+
+- Step-Id: `20261125-1350-windows-package-pqc-mode`
+- Task: user request 2026-11-25 (prepare a package for external Windows test)
+- When: '2026-11-25 13:40' - '2026-11-25 13:50'
+- Model: `claude-opus-5-5`
+- Change: `tools/package-maxcrypto-windows-test` now also stages the pinned JCAlgTest 1.8.6/jc32 pair (`applet-jc32.cap`, `tools/AlgTestJClient_v1.8.6_jc32.jar`; hashes in README and BUILD-PROVENANCE). The run template takes `$mode = 'pqc'`: it flashes the empty card, installs the jc32 CAP instead of the unchanged 1.8.5/jc305 CAP and runs `-op ALG_SUPPORT_BASIC -fresh`. Modes `all` and `symmetric` are unchanged and still use 1.8.5/jc305 with the 1.8.5-20261121 client.
+- Validation: `bash -n` on the packager. The package build, the ZIP and a physical run of the `pqc` client command follow in the packaging step.
+- Result: none measured yet.
+- Decision: build max_crypto from this commit and package it.
+- Artifacts/logs: none
