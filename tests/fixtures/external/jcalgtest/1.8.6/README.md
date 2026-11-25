@@ -9,8 +9,8 @@ upstream releases.
 
 | File | SHA-256 | Bytes |
 |---|---|---|
-| `AlgTest_v1.8.6_jc32.cap` | `98365aae5fca57cf722a65137dffa572167015ebd9ed5e81c07df6791991bfce` | 149969 |
-| `client/AlgTestJClient.jar` | `6f650d1fc0c4559f55a092b75c081d1a92850fc65624d256ccc576064fba1819` | 154813 |
+| `AlgTest_v1.8.6_jc32.cap` | `5f19662dfa8c1941299423a6c4dcac44c931bb7c29e631d07abc82647b816f8f` | 156883 |
+| `client/AlgTestJClient.jar` | `0e98fd5631d3027bf8c7b8b764b2cd101b473b46338dcbe34668959f336ed6c1` | 156762 |
 
 - GETVERSION returns `1.8.6_jc32`; the client still embeds version string
   `1.8.5`. Identify both by hash.
@@ -31,6 +31,9 @@ upstream releases.
   client build's `dist/lib` byte for byte).
 - `algtest-1.8.6-jc32-pqc.diff`: the complete source change against the
   user's 1.8.5 sources (applet, client, `preprocess_jcapi.py`, `jcbuild.xml`).
+  The original `PerformanceTesting.java` was not backed up before editing; its
+  diff baseline was rebuilt by reversing the anchored edits, and reapplying
+  them reproduces the current file byte for byte.
 
 ## What the new tests cover (ALG_SUPPORT_BASIC and _EXTENDED)
 
@@ -42,8 +45,34 @@ upstream releases.
 - `javacard.security.Signature ML-DSA`: modular `getInstance` with
   `ALG_NULL`/`PAD_NULL` for the four `SIG_CIPHER_ML_DSA*` constants (4 rows).
 
-No PQC performance tests. `tools/check-jcalgtest-pqc-support.py` requires all
-19 rows to report `yes`.
+`tools/check-jcalgtest-pqc-support.py` requires all 19 rows to report `yes`.
+
+## PQC performance tests (ALG_PERFORMANCE_STATIC)
+
+Run in performance options 1 and 3 (with the asymmetric algorithms), or alone
+with option 4 ("Only post-quantum algorithms"; interactive only, e.g.
+`JCALGTEST_STDIN_LINES=$'2\n4'` without `-op`). For each of ML-KEM-512/768/1024
+and ML-DSA-44/65/87:
+
+- `PQCKeyFactory_generateKeyPair()`, `_generateKeyPair_seed()`,
+  `_expandSeed()` (1 operation per measurement, 3 measurements, freshly built
+  keys).
+- ML-KEM: `KEM_encapsulate()` and `KEM_decapsulate()`; ML-DSA
+  (`SIG_CIPHER_ML_DSA`, `ALG_NULL`/`PAD_NULL`): `Signature_sign()`, `_verify()`
+  and `_init()` (5 operations per measurement, 5 measurements).
+
+Key pairs are cached in the applet the same way as RSA keys
+(`m_cached_keyPair_ML_*_1/_2`, `getPQCKeyPairObject`, other parameter sets
+dropped on out-of-memory). The client sends `INS_CARD_RESET` with
+`P1_CARD_RESET_FREE_CACHE` after each parameter set. Signatures and ciphertexts
+go to a 4627-byte buffer, transient if the card allows it, otherwise
+persistent. The ML-DSA reference signature for verify is computed in prepare
+because ML-DSA signing time varies (rejection sampling) and would otherwise
+add noise to the baseline. New applet commands: `INS_PREPARE_TEST_CLASS_KEM`
+(0x3a), `INS_PERF_TEST_CLASS_KEM` (0x4a); `TestSettings.keyType`
+`Consts.KEYTYPE_PQC_PRIVATE` (0x70) with the NamedParameterSpec name in
+`keyClass`. Against the 1.8.5/jc305 CAP these tests should end in card errors
+(unknown INS or key type), not results; this was not run.
 
 ## Rebuild
 

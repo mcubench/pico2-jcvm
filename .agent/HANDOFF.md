@@ -38,8 +38,12 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
   2026-11-25). Its PUT KEY record holds the default key value `40..4F`
   under KVN 1 (default key works).
 - PQC (JC 3.2 preview ML-KEM/ML-DSA): hardware-validated on EE11. Open:
-  ML-DSA on 07E7/F42D not run; a JCAlgTest-style perf campaign does not cover
-  PQC; `KEM.ALG_DHKEM` and the XDH named-parameter keys are not implemented.
+  ML-DSA on 07E7/F42D not run; `KEM.ALG_DHKEM` and the XDH named-parameter
+  keys are not implemented. The 1.8.6/jc32 pair now has PQC performance tests
+  (performance option 4 = PQC only; `20261125-1900-jcalgtest-186-pqc-perf`).
+  Open finding: ML-DSA-65/87 `PQCKeyFactory_expandSeed()` has one slow
+  measurement in three (571/658 ms vs ~72/100 ms), reproduced in two EE11 runs.
+  The Windows package `f3cf5729` still carries the earlier pair (support only).
 - Windows package `f3cf5729` (WIN-PQC-SCP03-F3CF5729-20261125) is out for
   external testing: modes `pqc` (1.8.6/jc32 support), `all`, `symmetric`.
   EE11 runs that exact empty-card UF2 (`b00c4a60…9ea1`) with 1.8.5/jc305
