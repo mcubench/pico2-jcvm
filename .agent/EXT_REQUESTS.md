@@ -1,39 +1,44 @@
 # External validation requests
 
-## WIN-PQC-SCP03-F3CF5729-20261125 — Pico 2 firmware with JC 3.2 PQC, SCP03 enc/R-MAC and all fixes since rc1
+## WIN-PQC-PERF-B4ADBE13-20261125 — Pico 2 firmware with JC 3.2 PQC (support and performance tests), SCP03 and all fixes since rc1
 
-Created 2026-11-25 14:50 CET, repackaged 15:50 at `f3cf5729` (1.8.6 client without the duplicated CPLC line; firmware code unchanged). Replaces `WIN-GP-DELETE-WATCHDOG-20261124` (package `6d3bb526`) and
-`WIN-VM-ARRAY-READS-20261122` (package `be737f0e`); this image contains both fixes. Use a dedicated test Pico 2.
+Created 2026-11-25 22:18 CET at `b4adbe13`. Replaces `WIN-PQC-SCP03-F3CF5729-20261125` (package `f3cf5729`, not yet
+returned): firmware code is unchanged since `f9e7cf61` (only the CPLC source ID differs); new is the re-pinned
+JCAlgTest 1.8.6/jc32 pair with PQC performance tests and a `pqcperf` mode. Use a dedicated test Pico 2.
 Normal ARM max_crypto image (object deletion on, debug off); flashing erases applet storage.
 
-New since `6d3bb526` (details in `progress.md`, 2026-11-25):
+In the firmware since `6d3bb526` (details in `progress.md`, 2026-11-25):
 - Java Card 3.2 preview PQC API, native: ML-KEM-512/768/1024 (`javacardx.crypto.kem`), ML-DSA-44/65/87
   (`javacardx.security.pqc`, `Signature`), CAP 2.3 loading (`51d27d7e`, `8a56f4e0`).
 - GP PUT KEY for a persistent SCP03 keyset; SCP03 C-ENC, R-MAC, R-ENC (`8b155dc5`, `aeecd243`).
-- SELECT now ends a GP secure channel session (`f9e7cf61`). Before, the PC/SC connection after a GPPro
-  run inherited the session, so JCAlgTest logged "CPLC; failed to obtain CPLC".
+- SELECT ends a GP secure channel session (`f9e7cf61`).
 
-- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-f3cf5729.uf2),
-  SHA-256 `b00c4a60e4456d8919cceda7e460e27c5acc0b7adf85eb6ab65a728730ec9ea1`, 3,193,344 bytes, CPLC source ID `F3CF5729C5DF991B`.
-- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-f3cf5729.zip),
-  SHA-256 `4804c6affc72a5a5aa8933638d15d5b3974cf6ac40fb2903e54f3431458edde8`.
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-max_crypto-object-deletion-on-empty-card-b4adbe13.uf2),
+  SHA-256 `9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23`, 3,193,344 bytes, CPLC source ID `B4ADBE13D4694DF9`.
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-deletion-b4adbe13.zip),
+  SHA-256 `a2b461c52118799816366af06ac00a4d0395042ea40e79aa5c27203fa91b66b6`, 18,535,299 bytes.
 - Inside the ZIP: unchanged JCAlgTest 1.8.5/jc305 CAP (`applet.cap`, `fa64582e…48fb`) with the 1.8.5-20261121 client
-  (`3cca70cb…a703`) for modes `all`/`symmetric`; JCAlgTest 1.8.6/jc32 CAP (`applet-jc32.cap`, `98365aae…bfce`) with
-  its client (`tools/AlgTestJClient_v1.8.6_jc32.jar`, `6f650d1f…1819`) for mode `pqc`.
+  (`3cca70cb…a703`) for modes `all`/`symmetric`; JCAlgTest 1.8.6/jc32 CAP (`applet-jc32.cap`, `5f19662d…6f8f`) with
+  its client (`tools/AlgTestJClient_v1.8.6_jc32.jar`, `0e98fd56…6c1`) for modes `pqc` and `pqcperf`.
 
-Validation here (EE116F37C7E4A04E, this exact UF2, empty card): packaged GPPro installed `applet-jc32.cap`, then the
-packaged 1.8.6 client ran `-op ALG_SUPPORT_BASIC -cardname … -fresh -outpath …` (the `pqc` command line): rc 0,
-4505 rows, all 19 PQC rows yes, one `CPLC.ICPersonalizationEquipmentID` line, no NO_RESOURCE/error/6F00 rows, CPLC present. The PowerShell block itself was not run
-(no PowerShell here). Modes `all`/`symmetric` are unchanged from the earlier packages.
+Validation here (EE116F37C7E4A04E, this exact UF2 flashed, empty card, packaged GPPro and clients; the PowerShell
+block itself was not run, no PowerShell here):
+- `pqcperf` equivalent (client answers `2`, `4`): rc 0, 33 measurements, 0 error rows, about 1.5 minutes (the
+  package README says 5–10 minutes; that is an overestimate), no FAULT in serial.
+- `pqc` (`-op ALG_SUPPORT_BASIC`): rc 0, all 19 PQC rows yes, applet `1.8.6_jc32`, one CPLC equipment-ID line.
+- Modes `all`/`symmetric` are unchanged from the earlier packages.
 
 Steps:
 1. Unzip, open PowerShell in the extracted folder, hold BOOTSEL while connecting the Pico 2.
 2. Run the README block with `$mode = 'pqc'` (minutes). Expected: `DONE … client_exit_code=0`; in the CSV, the
    sections `javacardx.security.pqc.PQCKeyFactory` (12 rows), `javacardx.crypto.kem.KEM ALG_ML_KEM` (3) and
    `javacard.security.Signature ML-DSA` (4) all `yes`; a `CPLC;` line with data.
-3. Reconnect with BOOTSEL and run `$mode = 'all'` (5–8 hours). Expected: `Testing complete`, no `SW=6f00`, no panic
+3. Reconnect with BOOTSEL and run `$mode = 'pqcperf'` (a few minutes). Expected: `DONE … client_exit_code=0`, a
+   `…PQCONLY…csv` with 33 measurements and no error rows. One slow ML-DSA-65/87 `PQCKeyFactory_expandSeed()`
+   measurement (~0.6 s) is a flash journal rollover and is expected.
+4. Reconnect with BOOTSEL and run `$mode = 'all'` (5–8 hours). Expected: `Testing complete`, no `SW=6f00`, no panic
    or reader loss in `serial.log`.
-4. Right after the `all` run, in the extracted directory, with `$reader` set as in the block:
+5. Right after the `all` run, in the extracted directory, with `$reader` set as in the block:
    `Measure-Command { & java -jar tools\gp.jar --reader $reader -d --uninstall applet.cap *> uninstall.txt } | Select TotalSeconds`
    then `& java -jar tools\gp.jar --reader $reader --list`. Expected: DELETE `9000` within a few seconds, no USB
    re-enumeration, only the ISD listed.

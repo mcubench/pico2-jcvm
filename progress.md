@@ -34111,3 +34111,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: template change only.
 - Decision: build and package at this commit next.
 - Artifacts/logs: none
+
+## 2026-11-25 Windows package b4adbe13 with the PQC performance pair 13
+
+- Step-Id: `20261125-2220-windows-package-b4adbe13`
+- Task: user request 2026-11-25 ("prepare version of firmware for external testing")
+- When: '2026-11-25 22:05' - '2026-11-25 22:18'
+- Model: `claude-opus-5-5`
+- Change: built the normal max_crypto ARM image at `b4adbe13` (firmware code unchanged since `f9e7cf61`) and packaged it with `tools/package-maxcrypto-windows-test`. `.agent/EXT_REQUESTS.md`: `WIN-PQC-PERF-B4ADBE13-20261125` replaces `WIN-PQC-SCP03-F3CF5729-20261125` (adds the `pqcperf` step); HANDOFF updated.
+- Validation: `./tools/build arm --profile max_crypto` rc 0, 0 warnings/errors, mode=normal, object_deletion=ON, CPLC `0xB4ADBE13D4694DF9`. Package: PACKAGE:PASS. EE116F37C7E4A04E flashed with the package UF2 (FLASH:PASS, empty card), packaged GPPro installed `applet-jc32.cap`; packaged 1.8.6 client with answers `2`,`4` (the `pqcperf` equivalent): rc 0, 33 measurements, 0 error rows, ~1.5 min, no FAULT in serial (ML-DSA-87 expandSeed 137.2/101.2/652.2 ms, the known journal rollover); `-op ALG_SUPPORT_BASIC`: rc 0, PQC_SUPPORT:PASS 19/19, `1.8.6_jc32`, one CPLC equipment-ID line. 1.8.5/jc305 reinstalled (SELECTABLE). A first attempt after the reflash targeted reader `… 00 00` while pcscd had renamed it `… 02 00`; every PC/SC call missed (marked INVALID). PowerShell block not run (none here).
+- Result: UF2 `9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23` (3,193,344 bytes); ZIP `a2b461c52118799816366af06ac00a4d0395042ea40e79aa5c27203fa91b66b6` (18,535,299 bytes). The package README gives 5–10 minutes for `pqcperf`; measured ~1.5 minutes (left as is, stated in the request).
+- Decision: package ready for the external Windows test; awaiting results.
+- Artifacts/logs: `artifacts/results/windows-pkg-pqcperf-EE116F37C7E4A04E-20261125T205738Z`, `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T205909Z`; invalid first attempt `...-20261125T205608Z` / `...-20261125T205720Z`; `build/arm-build-b4adbe13.log`
