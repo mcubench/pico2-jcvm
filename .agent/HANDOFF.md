@@ -7,9 +7,11 @@ Updated 2026-11-26. See [TODO.md](../TODO.md) for active work and
 
 - Development token `22A9DEAAA3D09795` (reader suffix `03 00`) runs normal
   max_crypto ExtendedLength firmware (UF2 `cebfc623…0897`). ECTester is
-  installed alongside the JCMathLib and KeyPair probes. Five ECTester suites
-  completed. Seven negative suites await explicit authorization. See
-  `artifacts/results/ectester-22A9DEAAA3D09795/suite-summary.tsv`.
+  installed alongside the JCMathLib and KeyPair probes. All 12 ECTester suites
+  exited successfully on this installed image, including the seven negative
+  suites authorized for this token. SELECT and GET INFO both returned `9000`
+  afterwards. See `artifacts/results/ectester-22A9DEAAA3D09795/current-20261126T1635/suite-summary.tsv`
+  for the 123 failed test groups reported by the reader.
   Check live processes and USB identities before hardware or PC/SC work.
 - EE11 holds the RSA key cache from the 2026-11-26 replay. 07E7 previously
   exhausted storage during an API probe. F42D retained ~83 KB of applet

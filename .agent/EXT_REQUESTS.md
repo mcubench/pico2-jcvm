@@ -12,8 +12,10 @@ max_crypto empty-card image clears applet storage and has CPLC source ID
 
 The committed ARM build, archive checksums and erased storage were verified
 locally. The exact empty-card UF2 and Windows instructions await external
-validation. The ECTester package documents five suites. Seven negative
-suites remain pending separate authorization.
+validation. The ECTester package documents five suites. In a separate Linux
+run, all 12 suites completed on development token `22A9DEAAA3D09795` with
+user authorization for its negative suites. See progress step
+`20261126-1635-ectester-full-9795`.
 
 
 ## WIN-KEYPAIR-107D7663-20261126 — Pico 2 Windows regression

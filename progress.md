@@ -34305,3 +34305,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Standalone UF2 SHA-256 `fa15915809869cbdde7d37645a147edf3b00dd35aeb241dc09ddfc2c49ccf2ea`, CPLC `39FD41995AB86A6A`, size 3,197,440 bytes.
 - Decision: External request `WIN-ECTESTER-39FD4199-20261126` records how to run the packages and return results.
 - Artifacts/logs: `build/external-test/pico2-jcvm-{ectester,maxcrypto}-39fd4199_20261126.zip`, `artifacts/logs/ectester-external-{arm,package}.log`.
+
+## 2026-11-26 Full ECTester campaign on the development Pico 2 14 min
+
+- Step-Id: `20261126-1635-ectester-full-9795`
+- Task: Run the supplied ECTester suites on the installed current firmware and investigate crashes.
+- When: '2026-11-26 16:35 CET' - '2026-11-26 16:49 CET'
+- Model: `gpt-6`
+- Change: Ran the unchanged distribution JAR under Java 8 with the explicit Linux PC/SC library path after SmartcardIO failed to load it automatically. Used the installed CAP, exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (22A9DEAAA3D09795) 03 00`, and suite options `--fixed --time-unit nano --cleanup`. The user explicitly authorized the seven negative suites on this token. Ran them with `--yes`.
+- Validation: All 12 client processes exited 0 within their 1,500 s per-suite limits and emitted parseable XML with CPLC source ID `AA65EA940A342D55`. The arm max_crypto normal image from the preceding hardware cycle remained installed, with UF2 SHA-256 `cebfc623b0f76714782da71d259730d6495460a18e1f61c07d752ce94e470897` and the existing development store. Post-campaign ECTester SELECT and GET INFO both returned `9000`.
+- Result: 290 of 413 top-level groups reported SUCCESS. The reports contain 123 group failures, including unsupported operations. No suite timeout, host/transport crash or firmware fault was observed. The two serial captures split the stream from roughly 16:43 to 16:47 before the earlier capture was stopped, so some lines are partial. Both captures and the complete client reports were retained.
+- Decision: No firmware crash reproduced, so no firmware source fix or reflash was needed. The Windows empty-card package remains separate and unverified externally.
+- Artifacts/logs: `artifacts/results/ectester-22A9DEAAA3D09795/current-20261126T1635/`. Reader JAR SHA-256 `6b8281dbfa1967733150da42f8fc9477e00ceb75877f6fdabd6b6e4667106c7c`; CAP SHA-256 `0b4d493607dd9d4ff0234fca344a6d086c606c90670b608fad2906a4afd6d708`.
