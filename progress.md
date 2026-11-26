@@ -34377,3 +34377,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The README identifies the 3.0.5 acceptance baseline and available preview APIs, including the compressed P-224 limitation.
 - Decision: Use the supported profile for detailed API and loader limits.
 - Artifacts/logs: none.
+
+## 2026-11-26 Trim README compatibility notes 1 min
+
+- Step-Id: `20261126-2200-readme-compatibility-trim`
+- Task: Apply the requested README wording removals.
+- When: '2026-11-26 22:00 CET' - '2026-11-26 22:01 CET'
+- Model: `gpt-6`
+- Change: Removed the OwnerPIN parenthetical, the garbage collection and persistence notes specified by the user, and the profile qualifier from the post-quantum row label.
+- Validation: Reviewed the four changed README rows and ran `git diff --check`. Firmware and hardware tests were skipped for this documentation edit.
+- Result: All four requested removals are reflected in the README.
+- Decision: Keep the profile qualifier in the native cryptography overview.
+- Artifacts/logs: none.
