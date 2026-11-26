@@ -34183,3 +34183,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: support: 8,627 rows, 338 yes, all 19 PQC rows yes; identical to VPCD except ALG_TRNG (yes on hardware, as documented). Performance: completed to `PQC - END`, 1,933 methods, 1,028 measured, 1 reconnect; 41 error rows: 19 AES-512 ILLEGAL_VALUE and 6 RSA-512 OAEP ILLEGAL_VALUE (known, spec-correct), 10 RSA NOPAD public ILLEGAL_USE (known input-dependent, more than the earlier 4), and **6 `6f00` on RSA-CRT-2048 private NOPAD/PKCS1/OAEP init+doFinal** (new; run recovered at 3072).
 - Decision: open the RSA-CRT-2048 `6f00` for a local repro with serial telemetry. Tester did not supply a client log, serial log or chip ID.
 - Artifacts/logs: `artifacts/results/windows-maxcrypto-20261126-b4adbe13/` (ALGSUPPORT `f7f11242…40c4`, PERFORMANCE `25fc336d…a1fa`)
+
+## 2026-11-26 Archive and read the Windows b4adbe13 client logs (duration not measured)
+
+- Step-Id: `20261126-1345-windows-logs-b4adbe13`
+- Task: user request 2026-11-26 ("logs are now uploaded"; WIN-PQC-PERF-B4ADBE13-20261125)
+- When: '2026-11-26 13:33' - '2026-11-26 13:34'
+- Model: `claude-opus-5-5`
+- Change: added the two client logs byte for byte to `artifacts/results/windows-maxcrypto-20261126-b4adbe13/`, regenerated `SHA256SUMS`, and corrected the README: the performance CSV is one option-2 / submenu-1 ("All algorithms") run in two client segments, not a separate option-2 run.
+- Validation: `cmp` with the inbox copies; logs read around the error rows and the segment break.
+- Result: segment 1 stopped during the RSA-CRT-4096 Signature_sign prepare (two key pairs) with host `SCARD_E_COMM_DATA_LOST` (0x8010002F), then 0x1b1 and `SCARD_E_SERVICE_STOPPED`; segment 2 resumed, the same prepare passed in 270,666 ms, 0 reconnects, only NO_SUCH_ALGORITHM (184). The six RSA-CRT-2048 `6f00` rows are all the INS 31 prepare (key generation): 2,155 ms then 73 ms on retry, six methods in a row; RSA-CRT 1984 and 3072 prepares pass.
+- Decision: two open items, both need serial telemetry: (1) RSA-CRT-2048 keygen `6f00`; (2) whether the segment-1 drop during RSA-CRT-4096 keygen was a card reset or a host/USB drop. No serial log, chip ID or JAR hash supplied.
+- Artifacts/logs: `ALGTEST_log_1795645670662.log` `43df2eed…7b76`, `ALGTEST_log_1795676295142.log` `fd3d4da9…3c70`
