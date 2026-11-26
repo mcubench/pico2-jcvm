@@ -7,14 +7,17 @@
 
 namespace pico2_jcvm {
 
+constexpr uint16_t kMaxExtendedApduData = 1022;
+
 struct ShortApduCommand {
   uint16_t incoming_length = 0;
   uint16_t expected_response_length = 0;
   bool has_expected_response_length = false;
+  uint8_t data_offset = 5;
+  bool extended = false;
 };
 
-// Parse ISO 7816 short APDU cases 1, 2S, 3S, and 4S. Extended APDUs are not
-// supported by the current CCID bridge and are rejected here.
+// Parse ISO 7816 short APDU cases 1, 2S, 3S, and 4S.
 inline bool parse_short_apdu(const uint8_t *command, const uint16_t length,
                              ShortApduCommand &parsed) noexcept {
   parsed = {};
@@ -32,7 +35,7 @@ inline bool parse_short_apdu(const uint8_t *command, const uint16_t length,
 
   const uint16_t incoming_length = command[4];
   if (incoming_length == 0) {
-    return false; // Extended-length marker; not supported by this bridge.
+    return false;
   }
   if (length == static_cast<uint16_t>(5 + incoming_length)) {
     parsed.incoming_length = incoming_length; // Case 3S
@@ -48,9 +51,40 @@ inline bool parse_short_apdu(const uint8_t *command, const uint16_t length,
   return false;
 }
 
+// Parse the extended cases after ruling out the unambiguous short cases.
+inline bool parse_applet_apdu(const uint8_t *command, uint16_t length,
+                              ShortApduCommand &parsed) noexcept {
+  if (parse_short_apdu(command, length, parsed)) return true;
+  if (command == nullptr || length < 7 || command[4] != 0) return false;
+
+  const uint16_t field =
+      static_cast<uint16_t>((command[5] << 8) | command[6]);
+  parsed.extended = true;
+  parsed.data_offset = 7;
+  if (length == 7) { // Case 2E
+    parsed.has_expected_response_length = true;
+    parsed.expected_response_length =
+        field == 0 || field > 32767 ? 32767 : field;
+    return true;
+  }
+
+  if (field == 0 || field > kMaxExtendedApduData) return false;
+  const unsigned end = 7u + field;
+  if (length != end && length != end + 2) return false;
+  parsed.incoming_length = field;
+  if (length == end + 2) { // Case 4E
+    const uint16_t le =
+        static_cast<uint16_t>((command[end] << 8) | command[end + 1]);
+    parsed.has_expected_response_length = true;
+    parsed.expected_response_length =
+        le == 0 || le > 32767 ? 32767 : le;
+  }
+  return true;
+}
+
 class ShortApduResponseChain {
 public:
-  static constexpr uint16_t capacity = 1022;
+  static constexpr uint16_t capacity = kMaxExtendedApduData;
 
   bool queue(const uint8_t *data, const uint16_t length) noexcept {
     this->length_ = 0;

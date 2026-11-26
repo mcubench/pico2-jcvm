@@ -85,7 +85,10 @@ resolve to an invalid token and fail closed.
 
 ## Known exclusions and limits
 
-- Extended-length APDUs and T=1 waiting-time extension are not implemented.
+- Applets implementing `javacardx.apdu.ExtendedLength` can exchange
+  extended APDUs with up to 1,022 bytes of command data and 1,022 bytes of
+  response data. Each command fits in one CCID XfrBlock.
+- T=1 waiting-time extension is not implemented.
 - Logical channels are out of scope for the current firmware. The runtime
   implements retained applet contexts, owner-aware references and SIO
   dispatch. Focused VPCD and physical probes cover portions of these paths.

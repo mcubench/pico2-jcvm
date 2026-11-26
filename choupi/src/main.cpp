@@ -2587,6 +2587,34 @@ extern "C" uint8_t choupi_vm_is_selecting_applet(void) {
   return selected_applet_is_selecting ? 1 : 0;
 }
 
+// Resolve the marker only in trusted ROM. A dynamically loaded package with
+// the same AID must not grant its applets access to extended APDUs.
+static bool applet_supports_extended_length(
+    jcvm::Package applet_package, jcvm::jclass_index_t class_index) {
+  constexpr uint8_t marker_aid[] = {0xa0, 0x00, 0x00, 0x00,
+                                     0x62, 0x02, 0x09};
+  for (jcvm::jpackage_ID_t id = 0;
+       !jcvm::FlashMemory_Handler::isDynamicPackageID(id); ++id) {
+    if (!jcvm::FlashMemory_Handler::isPackageExist(id)) continue;
+    jcvm::Package marker_package(id);
+    const auto cap = marker_package.getCap();
+    const auto *header = cap.getHeader();
+    if (header == nullptr || header->package.AID_length != sizeof(marker_aid) ||
+        std::memcmp(header->package.AID, marker_aid, sizeof(marker_aid)) != 0) {
+      continue;
+    }
+
+    const auto marker_offset = HTONS(
+        jcvm::Export_Handler(marker_package).getExportedClassOffset(0));
+    const auto *marker = &cap.getClass()->claz().at(marker_offset);
+    jcvm::ConstantPool_Handler pool(applet_package);
+    return jcvm::Class_Handler::docheckcast(
+        pool.resolveClassref(pool.getClassRefFromClassIndex(class_index), false),
+        {marker_package, marker}) != 0;
+  }
+  return false;
+}
+
 uint16_t choupi_vm_process_applet(const uint8_t *command,
                                  uint16_t command_length,
                                  uint8_t *response,
@@ -2650,8 +2678,8 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     jcvm::Context &context = *selected_applet_context;
     jcvm::Heap &heap = context.getHeap();
     pico2_jcvm::ShortApduCommand parsed_command;
-    if (!pico2_jcvm::parse_short_apdu(command, command_length,
-                                      parsed_command)) {
+    if (!pico2_jcvm::parse_applet_apdu(command, command_length,
+                                       parsed_command)) {
       pending_apdu_response.queue(nullptr, 0);
       status = 0x6700;
       throw status;
@@ -2661,7 +2689,8 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     if (get_response) {
       if (command[2] != 0 || command[3] != 0) {
         status = 0x6a86;
-      } else if (!parsed_command.has_expected_response_length) {
+      } else if (!parsed_command.has_expected_response_length ||
+                 parsed_command.incoming_length != 0 || parsed_command.extended) {
         status = 0x6700;
       } else if (!pending_apdu_response.has_pending()) {
         status = 0x6a86;
@@ -2677,37 +2706,57 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     }
     pending_apdu_response.queue(nullptr, 0);
 
-    const uint16_t lc = parsed_command.incoming_length;
-
-    jcvm::jref_t buffer_ref = context.getAPDUBufferRef();
-    auto buffer = context.getAPDUJavaBuffer();
-    if (!buffer && buffer_ref.isNullPointer()) {
-      buffer_ref = heap.addArray(260, jcvm::JAVA_ARRAY_T_BYTE);
+    const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
+    if (applet_ref.isNullPointer() || applet_ref.isArray()) {
+      throw static_cast<uint16_t>(0x6f00);
     }
+    const auto applet = heap.getInstance(applet_ref);
+    jcvm::Package applet_package(applet->getPackageID());
+
+    const uint16_t lc = parsed_command.incoming_length;
+    const uint8_t data_offset = parsed_command.data_offset;
+    constexpr uint16_t extended_buffer_size =
+        7 + pico2_jcvm::kMaxExtendedApduData;
+    jcvm::jref_t buffer_ref = context.getAPDUBufferRef();
+    if (buffer_ref.isNullPointer()) {
+      const bool supports_extended = applet_supports_extended_length(
+          applet_package, applet->getClassIndex());
+      if (parsed_command.extended && !supports_extended) {
+        throw static_cast<uint16_t>(0x6700);
+      }
+      buffer_ref = heap.addArray(supports_extended ? extended_buffer_size : 260,
+                                 jcvm::JAVA_ARRAY_T_BYTE);
+    }
+    auto buffer = context.getAPDUJavaBuffer();
     if (!buffer) {
       buffer = heap.getArray(buffer_ref);
     }
-    if (!buffer || buffer->getType() != jcvm::JAVA_ARRAY_T_BYTE ||
-        buffer->size() < static_cast<uint16_t>(5 + lc)) {
-      status = 0x6f00;
-      throw status;
+    if (!buffer || buffer->getType() != jcvm::JAVA_ARRAY_T_BYTE) {
+      throw static_cast<uint16_t>(0x6f00);
     }
-    for (uint16_t index = 0; index < buffer->size(); ++index) {
-      buffer->setByteEntry(index, 0);
+    const bool supports_extended = buffer->size() == extended_buffer_size;
+    if ((parsed_command.extended && !supports_extended) ||
+        buffer->size() < data_offset + lc) {
+      throw static_cast<uint16_t>(0x6700);
     }
-    for (uint16_t index = 0; index < 4; ++index) {
+    // Copy the APDU header and Lc data, leaving Le out of the Java buffer.
+    const uint16_t copied = command_length < data_offset
+        ? command_length : data_offset + lc;
+    for (uint16_t index = 0; index < copied; ++index) {
       buffer->setByteEntry(index, static_cast<jcvm::jbyte_t>(command[index]));
     }
-    // For case 2S P3 is Le; for case 3S/4S it is Lc.
-    buffer->setByteEntry(
-        4, static_cast<jcvm::jbyte_t>(command_length > 4 ? command[4] : 0));
-    for (uint16_t index = 0; index < lc; ++index) {
-      buffer->setByteEntry(static_cast<uint16_t>(5 + index),
-                           static_cast<jcvm::jbyte_t>(command[5 + index]));
+    for (uint16_t index = copied; index < buffer->size(); ++index) {
+      buffer->setByteEntry(index, 0);
     }
-    context.setAPDUBufferRef(buffer_ref, lc,
-                             parsed_command.expected_response_length,
-                             parsed_command.has_expected_response_length);
+    // Some T=1 clients omit Le on commands that return response data.
+    // Use the transport window for applets that opted into ExtendedLength.
+    const bool implicit_le = supports_extended &&
+                             !parsed_command.has_expected_response_length;
+    context.setAPDUBufferRef(
+        buffer_ref, lc,
+        implicit_le ? pico2_jcvm::kMaxExtendedApduData
+                    : parsed_command.expected_response_length,
+        implicit_le || parsed_command.has_expected_response_length, data_offset);
 #ifdef PC_VERSION
     if (apdu_trace) {
       std::fprintf(stderr, "CHOUPI:APDU_PROCESS stage=buffer_ready\n");
@@ -2716,13 +2765,6 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
 
     jcvm::jref_t apdu_ref = context.getAPDUObjectRef();
     if (apdu_ref.isNullPointer()) {
-      const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
-      if (applet_ref.isNullPointer() || applet_ref.isArray()) {
-        status = 0x6f00;
-        throw status;
-      }
-      const auto applet = heap.getInstance(applet_ref);
-      jcvm::Package applet_package(applet->getPackageID());
       const auto applet_cap = applet_package.getCap();
       const auto *applet_package_info =
           applet_cap.getHeader()->package.AID_length
@@ -2768,9 +2810,6 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
       std::fprintf(stderr, "CHOUPI:APDU_PROCESS stage=method_lookup_done\n");
     }
 #endif
-    const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
-    const auto applet = heap.getInstance(applet_ref);
-    jcvm::Package applet_package(applet->getPackageID());
     jcvm::ConstantPool_Handler cp_handler(applet_package);
     jcvm::jc_cap_virtual_method_ref_info method_ref;
     method_ref.class_ref = cp_handler.getClassRefFromClassIndex(

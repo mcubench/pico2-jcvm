@@ -39,11 +39,10 @@ constexpr uint8_t kResetString = 6;
 constexpr uint8_t kEndpointOut = 0x03;
 constexpr uint8_t kEndpointIn = 0x83;
 constexpr uint16_t kEndpointSize = 64;
-constexpr size_t kMaxMessage = 320;
-constexpr size_t kMaxCcidMessage = 300;
+constexpr size_t kMaxCcidMessage = 10 + 9 + pico2_jcvm::kMaxExtendedApduData;
 // A 4096-bit RSA signature is 512 bytes; include room for the APDU status
 // word and CCID header so valid algorithm responses are not converted to 6F00.
-constexpr size_t kMaxApduResponse = 1024;
+constexpr size_t kMaxApduResponse = pico2_jcvm::kMaxExtendedApduData + 2;
 constexpr size_t kMaxCcidResponse = kMaxApduResponse + 10;
 constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
 constexpr bool response_requires_zlp(size_t transfer_length) noexcept {
@@ -71,11 +70,10 @@ const uint8_t kConfiguration[] = {
     0x80, 0x25, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00, 0x00,
     0xfe, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, // dwMechanical
-    // Fixed-parameter short-APDU exchange: automatic parameter negotiation
-    // (0x42) plus short APDU level exchange (0x00020000). Advertising zero
-    // here selects character-level transport, unlike our raw APDU XfrBlock.
-    0x42, 0x00, 0x02, 0x00, // dwFeatures = 0x00020042
-    0x0f, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    // Automatic parameter negotiation and short/extended APDU level exchange.
+    0x42, 0x00, 0x04, 0x00, // dwFeatures = 0x00040042
+    kMaxCcidMessage & 0xff, (kMaxCcidMessage >> 8) & 0xff, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     7, TUSB_DESC_ENDPOINT, kEndpointOut, TUSB_XFER_BULK, 64, 0, 0,
     7, TUSB_DESC_ENDPOINT, kEndpointIn, TUSB_XFER_BULK, 64, 0, 0,
     TUD_RPI_RESET_DESCRIPTOR(kResetInterface, kResetString),
@@ -83,7 +81,7 @@ const uint8_t kConfiguration[] = {
 static_assert(sizeof(kConfiguration) == kConfigLength,
               "USB configuration descriptor length is inconsistent");
 
-uint8_t rx_buffer[kMaxMessage];
+uint8_t rx_buffer[kMaxCcidMessage];
 uint8_t tx_buffer[kMaxCcidResponse];
 size_t rx_length = 0;
 size_t rx_expected = 0;
@@ -639,6 +637,11 @@ void process_message(uint8_t rhport) {
     break;
   case 0x6f: { // PC_to_RDR_XfrBlock
     ++debug_xfr_block_count;
+    if (rx_buffer[8] != 0 || rx_buffer[9] != 0) {
+      // This bounded implementation takes one complete APDU per XfrBlock.
+      send_response(rhport, 0x80, nullptr, 0, 0x40, 0x08);
+      break;
+    }
     const size_t apdu_length = rx_expected - 10;
     const uint8_t *apdu = rx_buffer + 10;
     pico2_jcvm::CcidApduRoute route =

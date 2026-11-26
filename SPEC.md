@@ -73,9 +73,12 @@ INV-07 was extended by the user on 2026-11-26 to cover the 3.2 preview subset.
 - Support results must match the build profile's generated support manifest,
   cross-checked against a jCardSim reference run.
 
-**INV-09 Known protocol exclusions.** Extended-length APDUs, the T=1
-waiting-time extension and logical channels are not implemented. They are
-declared as exclusions in `docs/supported-profile.md`.
+**INV-09 APDU support and protocol exclusions.** Applets implementing
+`javacardx.apdu.ExtendedLength` can receive extended APDUs. The supported
+payload size and transport limits are declared in `docs/supported-profile.md`.
+The T=1 waiting-time extension and logical channels are excluded.
+
+INV-09 was updated by the user on 2026-11-26 to allow extended APDUs.
 
 ## 3. Card lifecycle, management and storage
 

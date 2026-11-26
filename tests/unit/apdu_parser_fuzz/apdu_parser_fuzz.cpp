@@ -1,5 +1,6 @@
 #include "short_apdu.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -74,6 +75,35 @@ int main() {
            "decoded_lengths_match_reference");
   }
 
-  std::printf("TEST:PASS apdu_parser_fuzz inputs=%u\n", iterations);
+  constexpr unsigned extended_iterations = 4096;
+  constexpr uint16_t maximum = pico2_jcvm::kMaxExtendedApduData;
+  std::uniform_int_distribution<uint16_t> incoming_distribution(1, maximum);
+  std::uniform_int_distribution<uint16_t> outgoing_distribution(0, UINT16_MAX);
+  for (unsigned iteration = 0; iteration < extended_iterations; ++iteration) {
+    const uint16_t incoming = incoming_distribution(generator);
+    const uint16_t outgoing = outgoing_distribution(generator);
+    std::vector<uint8_t> input(7 + incoming);
+    input[5] = static_cast<uint8_t>(incoming >> 8);
+    input[6] = static_cast<uint8_t>(incoming);
+    expect(pico2_jcvm::parse_applet_apdu(input.data(), input.size(), parsed) &&
+               parsed.extended && parsed.data_offset == 7 &&
+               parsed.incoming_length == incoming &&
+               !parsed.has_expected_response_length,
+           "case3e_with_random_lc");
+
+    input.push_back(static_cast<uint8_t>(outgoing >> 8));
+    expect(!pico2_jcvm::parse_applet_apdu(input.data(), input.size(), parsed),
+           "case4e_rejects_one_byte_le");
+    input.push_back(static_cast<uint8_t>(outgoing));
+    const auto expected = outgoing == 0 ? 32767 : std::min<int>(32767, outgoing);
+    expect(pico2_jcvm::parse_applet_apdu(input.data(), input.size(), parsed) &&
+               parsed.incoming_length == incoming &&
+               parsed.has_expected_response_length &&
+               parsed.expected_response_length == expected,
+           "case4e_with_random_lc_and_le");
+  }
+
+  std::printf("TEST:PASS apdu_parser_fuzz short_inputs=%u extended_inputs=%u\n",
+              iterations, extended_iterations * 3);
   return 0;
 }

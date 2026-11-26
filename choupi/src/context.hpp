@@ -118,6 +118,7 @@ private:
   static jshort_t sensitive_result_short;
   static Stack::ReferenceValue sensitive_result_object;
   std::array<uint8_t, 1022> apdu_response_data{};
+  uint8_t apdu_data_offset = 5;
   uint16_t apdu_outgoing_offset = 0;
   uint16_t apdu_outgoing_length = 0;
   /// Current Java Card stack.
@@ -239,7 +240,8 @@ public:
   /// Set and query the APDU buffer and response window for the current command.
   void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
                         uint16_t expected_response_length,
-                        bool has_expected_response_length) noexcept;
+                        bool has_expected_response_length,
+                        uint8_t data_offset = 5) noexcept;
   void setAPDUJavaBuffer(std::shared_ptr<JC_Array> buffer);
   std::shared_ptr<JC_Array> getAPDUJavaBuffer() const noexcept;
   jref_t getAPDUBufferRef() const noexcept;
@@ -248,6 +250,7 @@ public:
   void setAPDUProcessActive(bool active) noexcept;
   bool isAPDUProcessActive() const noexcept;
   uint16_t getAPDUIncomingLength() const noexcept;
+  uint8_t getAPDUDataOffset() const noexcept;
   uint16_t getAPDUExpectedResponseLength() const noexcept;
   uint16_t beginAPDUOutgoing(bool no_chaining);
   void setAPDUOutgoingLength(uint16_t length);

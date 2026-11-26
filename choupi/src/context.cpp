@@ -978,9 +978,11 @@ void Context::releaseShareableObjectRoot(const jref_t reference,
 void Context::setAPDUBufferRef(const jref_t reference,
                                const uint16_t incoming_length,
                                const uint16_t expected_response_length,
-                               const bool has_expected_response_length) noexcept {
+                               const bool has_expected_response_length,
+                               const uint8_t data_offset) noexcept {
   this->apdu_buffer_ref = reference;
   this->apdu_incoming_length = incoming_length;
+  this->apdu_data_offset = data_offset;
   this->apdu_expected_response_length = expected_response_length;
   this->apdu_has_expected_response_length = has_expected_response_length;
   this->apdu_response_declared_length = 0;
@@ -1027,6 +1029,10 @@ bool Context::isAPDUProcessActive() const noexcept {
 
 uint16_t Context::getAPDUIncomingLength() const noexcept {
   return this->apdu_incoming_length;
+}
+
+uint8_t Context::getAPDUDataOffset() const noexcept {
+  return this->apdu_data_offset;
 }
 
 uint16_t Context::getAPDUExpectedResponseLength() const noexcept {

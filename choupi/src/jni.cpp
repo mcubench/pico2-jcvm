@@ -1459,6 +1459,10 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUIncomingLength() {
       Context::getActiveContext().getAPDUIncomingLength());
 }
 
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUDataOffset() {
+  return Context::getActiveContext().getAPDUDataOffset();
+}
+
 jshort_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUExpectedResponseLength() {
   return static_cast<jshort_t>(

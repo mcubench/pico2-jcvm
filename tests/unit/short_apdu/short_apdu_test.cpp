@@ -88,6 +88,26 @@ int main() {
   expect(!parse_short_apdu(case2.data(), 3, parsed), "truncated_rejected");
   expect(!parse_short_apdu(case3.data(), 7, parsed), "bad_lc_rejected");
 
+  expect(pico2_jcvm::parse_applet_apdu(extended.data(), extended.size(), parsed) &&
+             parsed.extended && parsed.incoming_length == 0 &&
+             parsed.expected_response_length == 1,
+         "case2e");
+  std::array<uint8_t, 9 + pico2_jcvm::kMaxExtendedApduData> case4e{
+      0x80, 0x10, 0, 0, 0, 0x03, 0xfe};
+  expect(pico2_jcvm::parse_applet_apdu(case4e.data(), case4e.size(), parsed) &&
+             parsed.extended && parsed.data_offset == 7 &&
+             parsed.incoming_length == pico2_jcvm::kMaxExtendedApduData &&
+             parsed.expected_response_length == 32767,
+         "case4e_max_lc_and_zero_le");
+  expect(pico2_jcvm::parse_applet_apdu(case4e.data(), case4e.size() - 2, parsed) &&
+             !parsed.has_expected_response_length,
+         "case3e");
+  expect(!pico2_jcvm::parse_applet_apdu(case4e.data(), case4e.size() - 1, parsed),
+         "case4e_truncated_le");
+  case4e[6] = 0xff;
+  expect(!pico2_jcvm::parse_applet_apdu(case4e.data(), case4e.size() - 1, parsed),
+         "case3e_over_limit");
+
   std::array<uint8_t, 600> response{};
   for (uint16_t index = 0; index < response.size(); ++index) {
     response[index] = static_cast<uint8_t>(index);

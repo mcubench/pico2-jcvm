@@ -1,27 +1,18 @@
 # Handoff
 
-Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
+Updated 2026-11-26. See [TODO.md](../TODO.md) for active work and
 [EXT_REQUESTS.md](EXT_REQUESTS.md) for external dependencies.
 
 ## Last observed physical state
 
-- Development token `22A9DEAAA3D09795` (reader suffix `03 00`) runs the
-  normal max_crypto existing-key RSA/EC domain candidate (UF2 `9b9dc2a1…9ccf`).
-  The JCMathLib CAP and the repository KeyPair regression probe are installed.
-
-
-- No campaign was recorded live after the 2026-11-21 T8 completion. Check
-  live processes and USB identities again before hardware or PC/SC work.
-- 07E7 retained its campaign state and later exhausted storage during a
-  broad API probe. Temporary probe removal failed. Use EE11 for development
-  while it remains usable. Confirm identities and exact reader names at use.
-- F42D was restored to a normal max_crypto image after reclaim fault injection,
-  with about 83 KB of 98.3 KB used. Its last recorded reader suffix was
-  `02 00`. Use the [QKB roster](QKB.md#physical-token-roster) for full chip IDs.
-- EE11 runs the normal max_crypto primitive-array-read candidate
-  (UF2 `fa0f3c77…2170`). Its unchanged JCAlgTest 1.8.5/jc305 applet
-  responded on reader suffix `00 00`. Use EE11 for further development
-  while available.
+- Development token `22A9DEAAA3D09795` (reader suffix `03 00`) runs normal
+  max_crypto ExtendedLength firmware (UF2 `4477dd87…306c`). ECTester is
+  installed alongside the JCMathLib and KeyPair probes. ECTester results and
+  current campaign status are in `artifacts/results/ectester-22A9DEAAA3D09795/`.
+  Check live processes and USB identities before hardware or PC/SC work.
+- EE11 holds the RSA key cache from the 2026-11-26 replay. 07E7 previously
+  exhausted storage during an API probe. F42D retained ~83 KB of applet
+  storage. Use the [QKB roster](QKB.md#physical-token-roster) for chip IDs.
 
 ## Next work
 
@@ -32,39 +23,16 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
   `prepare_class_Cipher`) on a fuller Windows store. EE11 now holds that
   RSA key cache in its 1.8.5/jc305 applet. See progress `20261126-1615-rsacrt2048-6f00-repro`.
 
-- WIN-BE737F0E-6F00: the Windows be737f0e option-1 run reported 20 `6f00` in
-  the RSA-CRT-4096 Cipher block (uncaught non-Crypto exception in JCAlgTest
-  `prepare_Key`, likely SystemException twice). Needs the Windows CSV and
-  serial log; the 2 RSA-CRT-4096 `ILLEGAL_USE` rows were the 600 s deadline,
-  fixed in step `20261123-0620-rsa4096-exec-deadline`.
-- EE11 runs the GP DELETE no-snapshot build (`93517fb2` code, storage kept).
-  The JCAlgTest 1.8.5/jc305 CAP is installed on an otherwise near-empty store.
-- GP DELETE after a perf run (uninstall OOM panic / reader drop) is fixed and
-  hardware-validated on EE11 (`20261124-2205-gp-delete-no-snapshot`). Windows
-  confirmation: WIN-GP-DELETE-WATCHDOG-20261124 (package `6d3bb526`).
-- WIN-BE737F0E-6F00: fixed in `d65eb278` (runtime exception instances bypass the
-  Java allocation reserve); validated on EE11, needs a new Windows package for
-  acceptance. Open: ALGSUPPORT RSA 4096 KeyPair "no" rows not investigated.
-- EE11 runs the SCP03 enc/R-MAC image (`20261125-0835-scp03-enc-rmac`, UF2
-  `fedbde05…f3dd`) with JCAlgTest 1.8.5/jc305 installed (reinstalled
-  2026-11-25). Its PUT KEY record holds the default key value `40..4F`
-  under KVN 1 (default key works).
-- PQC (JC 3.2 preview ML-KEM/ML-DSA): hardware-validated on EE11. Open:
-  ML-DSA on 07E7/F42D not run; `KEM.ALG_DHKEM` and the XDH named-parameter
-  keys are not implemented. The 1.8.6/jc32 pair now has PQC performance tests
-  (performance option 4 = PQC only; `20261125-1900-jcalgtest-186-pqc-perf`).
-  The one slow ML-DSA-65/87 `expandSeed()` measurement (571/658 ms) is a flash
-  journal rollover (full ~40 KB snapshot, ~525-590 ms, every ~121-125 KB of
-  journal), not PQC code (`20261125-2150-pqc-expandseed-outlier`).
-- Windows package `58b5ec0a` (WIN-PQC-PERF-58B5EC0A-20261125) is out for
-  external testing (replaces `f3cf5729` and `b4adbe13`): modes `pqc`, `pqcperf` (1.8.6/jc32
-  PQC-only performance), `all`, `symmetric`. EE11 runs that exact empty-card
-  UF2 (`3209b85c…253b`) with 1.8.5/jc305 reinstalled.
-- JCAlgTest 1.8.6/jc32 (PQC support rows) is pinned under
-  `tests/fixtures/external/jcalgtest/1.8.6/` and runs with
-  `JCALGTEST_VARIANT=jc32 tools/test-jcalgtest-support-vpcd`; 1.8.5/jc305 stays
-  the default. EE11 passed both on 2026-11-25 and has 1.8.5/jc305 installed
-  again.
+- WIN-BE737F0E-6F00: `d65eb278` fixed the RSA-CRT-4096 watchdog-era
+  `6f00` path by bypassing the Java allocation reserve for runtime exceptions.
+  Windows confirmation and investigation of ALGSUPPORT RSA 4096 KeyPair
+  "no" rows remain open. Earlier deadline fix: `20261123-0620-rsa4096-exec-deadline`.
+- Await Windows GP DELETE confirmation (WIN-GP-DELETE-WATCHDOG-20261124,
+  package `6d3bb526`).
+- PQC: ML-DSA on 07E7/F42D remains open. `KEM.ALG_DHKEM` and the XDH
+  named-parameter keys are unavailable. Use `JCALGTEST_VARIANT=jc32
+  tools/test-jcalgtest-support-vpcd` for the supplemental 1.8.6/jc32 support
+  test. The 1.8.5/jc305 pair stays the baseline.
 
 - If continuing VM performance work, reprofile the XOR control and the
   interpreter fetch/decode phases before changing dispatch or branch checks.
