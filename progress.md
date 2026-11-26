@@ -34353,3 +34353,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 11 suites: 267/390 → 287/390 top-level groups. With the unchanged signature suite (23/23), 12 suites: 290/413 → 310/413.
 - Decision: None.
 - Artifacts/logs: `artifacts/results/ectester-fixes-20261126/suites/`.
+
+## 2026-11-26 Full ECTester campaign on 05fb3d0b firmware (22A9DEAAA3D09795) 18 min
+
+- Step-Id: `20261126-1843-ectester-full-05fb3d0b`
+- Task: Run all 12 ECTester suites on a physical Pico 2 after the EC fixes.
+- When: '2026-11-26 18:25 CET' - '2026-11-26 18:43 CET'
+- Model: `claude-opus-5-5`
+- Change: None to code. On `22A9DEAAA3D09795` (reader `… 03 00`), running the normal max_crypto image from `05fb3d0b` (UF2 `2736e15a…1e81`, CPLC personalization ID `05fb3d0b`, development store preserved), the unchanged ECTester CAP was temporarily instantiated as `ECTester033b`, so reader v0.3.3 (`6b8281db…6c7c`, Java 8) used chunked transport. All 12 suites ran with `--fixed --time-unit nano --cleanup --yes`; the seven negative suites were previously authorized for this token. `ECTester033x` was restored afterwards.
+- Validation: All 12 client processes exited 0 within the 1,500 s per-suite limit (about 13 min in total). The serial capture (2,730 `CHOUPI:FS_APDU` lines) has no `FAULT`.
+- Result: 309/413 top-level groups SUCCESS (previous full campaign on `cebfc623` firmware with direct extended APDUs: 290/413). Per suite: signature 23/23, default 7/13, test-vectors 13/49, compression 13/20, miscellaneous 15/48, invalid 15/23, wrong 26/26, twist 14/22, degenerate 18/21, composite 98/98, cofactor 55/55, edge-cases 12/15. Leaf ECDH/ECDSA UXSUCCESS: 0. The remaining UXSUCCESS entries are setters accepting values that keygen, ECDH or ECDSA then refused. Every failed group is an unimplemented curve, except compression (4), P-224: compressed ECDH is unsupported for p = 1 mod 4, and hybrid outcomes are random because ECTester reads the parity byte past the point. That group passed in `20261126-1830-ectester-rerun-9795` and failed here for that reason.
+- Decision: No incorrect or security-relevant behaviour remains in the ECTester campaign besides compressed P-224. Evidence is from the development store, not an empty-card acceptance run.
+- Artifacts/logs: `artifacts/results/ectester-full-05fb3d0b-9795/` (`*.xml`, `*.log`, `suite-summary.tsv`, `status.tsv`, `serial.log`, GPPro logs). CAP SHA-256 `0b4d493607dd9d4ff0234fca344a6d086c606c90670b608fad2906a4afd6d708`.

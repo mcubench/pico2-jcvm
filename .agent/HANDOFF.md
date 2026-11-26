@@ -7,11 +7,9 @@ Updated 2026-11-26. See [TODO.md](../TODO.md) for active work and
 
 - Development token `22A9DEAAA3D09795` (reader suffix `03 00`) runs normal
   max_crypto firmware from `05fb3d0b` (UF2 `2736e15a…1e81`) with storage
-  preserved. ECTester `ECTester033x` is installed. The 11 affected suites were
-  rerun on 2026-11-26 through the chunked `ECTester033b` path
-  (`artifacts/results/ectester-fixes-20261126/`). The remaining failures are all
-  unimplemented curves. Hybrid and P-224 compressed limits: see the progress step
-  `20261126-1830-ectester-rerun-9795`.
+  preserved. ECTester `ECTester033x` is installed. Full 12-suite campaign
+  (chunked via `ECTester033b`): 309/413, no FAULT, no ECDH/ECDSA UXSUCCESS
+  (`artifacts/results/ectester-full-05fb3d0b-9795/`). Open: compressed P-224.
   Check live processes and USB identities before hardware or PC/SC work.
 - EE11 holds the RSA key cache from the 2026-11-26 replay. 07E7 previously
   exhausted storage during an API probe. F42D retained ~83 KB of applet
