@@ -34341,3 +34341,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Top-level groups improved from 257/368 to 283/368. test-vectors 9→13/49 (p384/p521 DHC vectors and secp384r1/521r1 validation now pass). compression 5→14/20 (all seven compression tests, plus the secp384r1/521r1 non-residue tests). miscellaneous 13→15/48. wrong 24→26/26. edge-cases 9→12/15. default, invalid, twist, degenerate, composite and cofactor are unchanged. ECDH/ECDSA UXSUCCESS: composite 8→0. Every remaining UXSUCCESS is a setter accepting a value that keygen or ECDH then refused. Every remaining failed group is an unimplemented curve (brainpool, Koblitz, secp128r2/160r2, MNT, Curve25519, cofactor curves, F2M, unsupported sizes). Compressed P-224 ECDH still returns `ILLEGAL_VALUE`. Flash: average EC KeyPair allocation writes were 1,001 B (`ins=5A`, n=411), against 922/1,062 B in the 1635 captures. Suite mixes differ, and the layout change adds 1 byte per EC key array.
 - Decision: No security-incorrect behaviour remains in these suites. Compressed P-224 would need a non-(p = 3 mod 4) square root outside Mbed TLS; it is left open.
 - Artifacts/logs: `artifacts/results/ectester-fixes-20261126/` (`suites/*.xml|log`, `suites/serial.log`, `suites/status.tsv`, `compare.py`, GPPro logs, `info.log`). UF2 SHA-256 `2736e15a66a0e9cac8c514d12e1026bd8c1cb02c37b001b2b62db18619fa1e81`.
+
+## 2026-11-26 Correct ECTester rerun group totals 2 min
+
+- Step-Id: `20261126-1836-ectester-rerun-totals`
+- Task: Correct the totals in record `20261126-1830-ectester-rerun-9795`.
+- When: '2026-11-26 18:35 CET' - '2026-11-26 18:37 CET'
+- Model: `claude-opus-5-5`
+- Change: None to code. That record stated "257/368 to 283/368" for the 11 rerun suites. Recounting the XML reports gives 267/390 before and 287/390 after. The per-suite figures in that record are correct.
+- Validation: Counted top-level `SUCCESS` results in both campaigns' XML reports.
+- Result: 11 suites: 267/390 → 287/390 top-level groups. With the unchanged signature suite (23/23), 12 suites: 290/413 → 310/413.
+- Decision: None.
+- Artifacts/logs: `artifacts/results/ectester-fixes-20261126/suites/`.
