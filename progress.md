@@ -34425,3 +34425,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Updated ZIP SHA-256 `fb4a680577919cfb5837195750252ddeb9d34b25d68d9b99ac1a65bd6690f015`.
 - Decision: Use the updated archive for separate ECTester and standard JCAlgTest runs on the same firmware revision.
 - Artifacts/logs: `build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip`.
+
+## 2026-11-26 Add supplemental JCAlgTest 1.8.6/jc32 to external bundle 1 min
+
+- Step-Id: `20261126-2221-bundle-jc32`
+- Task: WIN-ECTESTER-9B03A1E0-20261126
+- When: '2026-11-26 22:21 CET' - '2026-11-26 22:22 CET'
+- Model: `gpt-6`
+- Change: Included the pinned 1.8.6/jc32 CAP and host client alongside the 1.8.5/jc305 baseline. Added Windows instructions for supplemental PQC support and performance.
+- Validation: Verified all 89 pinned fixtures, both JAR manifests' dependency paths, archive integrity and per-file checksums. The UF2 SHA-256 stayed the same. No Windows run or rebuild.
+- Result: Updated ZIP SHA-256 `ad33453b26ad10ae99d461a569a1309aa3e8f42c0166b2582d251e732efaaec7`.
+- Decision: Use separate empty-card runs for the two paired JCAlgTest variants.
+- Artifacts/logs: `build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip`.

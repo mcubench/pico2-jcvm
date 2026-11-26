@@ -9,7 +9,7 @@ EC private-value and compressed/hybrid point changes from `05fb3d0b`.
 Flashing clears applet storage. Use a dedicated Pico 2.
 
 - [Windows ECTester ZIP](../build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip),
-  SHA-256 `fb4a680577919cfb5837195750252ddeb9d34b25d68d9b99ac1a65bd6690f015`.
+  SHA-256 `ad33453b26ad10ae99d461a569a1309aa3e8f42c0166b2582d251e732efaaec7`.
 - [Standalone UF2](../artifacts/firmware/pico2-jcvm-maxcrypto-9b03a1e0_20261126-empty-card.uf2),
   SHA-256 `3851987bb83b2bdf8de8dab208f17aab9623803ce8e1ccdd6b905c8bf68ecbde`.
 
@@ -21,7 +21,8 @@ The exact packaged UF2 and Windows workflow await external validation.
 
 The updated ZIP also contains the standard JCAlgTest 1.8.5/jc305 CAP,
 the pinned 1.8.5-20261121 client, and its libraries. Follow the JCAlgTest
-README section for a separate empty-card run with the same UF2.
+README sections for separate empty-card runs with the same UF2. The ZIP
+also includes the pinned supplemental 1.8.6/jc32 pair for PQC testing.
 
 This supersedes the ECTester portion of WIN-ECTESTER-39FD4199-20261126.
 The [39fd4199 JCAlgTest ZIP](../build/external-test/pico2-jcvm-maxcrypto-39fd4199_20261126.zip)
