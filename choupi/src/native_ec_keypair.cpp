@@ -45,6 +45,10 @@ constexpr uint8_t kAlgorithmRsaCrt = 2;
 constexpr uint8_t kAlgorithmPqc = 0x7F;
 constexpr uint8_t kTypeEcFpPublic = 11;
 constexpr uint8_t kTypeEcFpPrivate = 12;
+#if JC_SUPPORT_KEYPAIR_EC_FP
+constexpr uint8_t kTypeEcFpPrivateTransientReset = 30;
+constexpr uint8_t kTypeEcFpPrivateTransientDeselect = 31;
+#endif
 constexpr uint8_t kTypeRsaPublic = 4;
 constexpr uint8_t kTypeRsaPrivate = 5;
 constexpr uint8_t kTypeRsaCrtPrivate = 6;
@@ -371,13 +375,49 @@ void javacard_security_KeyPair_init(jref_t receiver, jbyte_t algorithm,
 void javacard_security_KeyPair_init(jref_t receiver, jref_t publicKey,
                                    jref_t privateKey) {
   auto pair = keyPairInstance(receiver);
-  // Only Java Card 3.2 PQC key pairs are supported by this constructor.
-  if (!pqcCheckKeyPair(publicKey, privateKey))
+  uint8_t algorithm = kAlgorithmPqc;
+  jshort_t keyLength = 0;
+  if (!pqcCheckKeyPair(publicKey, privateKey)) {
+#if JC_SUPPORT_KEYPAIR_EC_FP
+    if (publicKey.isArray() || privateKey.isArray())
+      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+    auto &heap = Context::getActiveContext().getHeap();
+    const auto publicInstance = heap.getInstance(publicKey);
+    const auto privateInstance = heap.getInstance(privateKey);
+    const uint16_t nativeClass = HTONS(Export_Handler(
+        Package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY)).getExportedClassOffset(
+            ROM_CLASS_EXPORT_TOKEN_JAVACARD_SECURITY_NATIVEKEY));
+    const auto isNativeKey = [nativeClass](const auto &key) {
+      return key && key->getPackageID() == ROM_PACKAGE_INDEX_JAVACARD_SECURITY &&
+             key->getClassIndex() == nativeClass;
+    };
+    if (!isNativeKey(publicInstance) || !isNativeKey(privateInstance))
+      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+
+    constexpr auto typeField = ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE;
+    constexpr auto sizeField = ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE;
+    const uint8_t publicType = publicInstance->getField_Byte(typeField);
+    const uint8_t privateType = privateInstance->getField_Byte(typeField);
+    const bool ecPrivate = privateType == kTypeEcFpPrivate ||
+                           privateType == kTypeEcFpPrivateTransientReset ||
+                           privateType == kTypeEcFpPrivateTransientDeselect;
+    if (publicType != kTypeEcFpPublic && !ecPrivate)
+      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+    keyLength = publicInstance->getField_Short(sizeField);
+    if (publicType != kTypeEcFpPublic || !ecPrivate ||
+        keyLength != privateInstance->getField_Short(sizeField))
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+    if (!native_ec::supportsBits(static_cast<uint16_t>(keyLength)))
+      throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+    algorithm = kAlgorithmEcFp;
+#else
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+#endif
+  }
   pair->setField_Byte(ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_ALGORITHM,
-                      static_cast<jbyte_t>(kAlgorithmPqc));
+                      static_cast<jbyte_t>(algorithm));
   pair->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_KEYLENGTH,
-                       0);
+                       keyLength);
   pair->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPAIR_KEYPAIR_PUBLICKEY, publicKey);
   pair->setField_Reference(
