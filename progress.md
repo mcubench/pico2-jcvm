@@ -34171,3 +34171,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: INV-26 now covers both reference pairs; the 1.8.5/jc305 baseline is unchanged.
 - Decision: none open.
 - Artifacts/logs: none
+
+## 2026-11-26 Check and archive the Windows b4adbe13 JCAlgTest 1.8.6/jc32 results (duration not measured)
+
+- Step-Id: `20261126-1335-windows-results-b4adbe13`
+- Task: user request 2026-11-26 (check and back up `inbox/pico2-jcvm-maxcrypto-deletion-b4adbe13`; WIN-PQC-PERF-B4ADBE13-20261125)
+- When: start not recorded - '2026-11-26 13:32'
+- Model: `claude-opus-5-5`
+- Change: copied the two supplied CSVs byte for byte to `artifacts/results/windows-maxcrypto-20261126-b4adbe13/` with `SHA256SUMS` and a README analysis. The inbox copy is left in place. The user keeps tag `v0.3-rc1` on `b4adbe13` because these long results were measured on it.
+- Validation: `cmp` with the inbox copies; CPLC `0xB4ADBE13D4694DF9`, applet `1.8.6_jc32`, client string 1.8.5 (the pre-re-pin 1.8.6 client in that package; JAR hash not reported by the tester). Support CSV diffed against the local VPCD jc32 run `jcalgtest-support-vpcd-20261125T221109Z`.
+- Result: support: 8,627 rows, 338 yes, all 19 PQC rows yes; identical to VPCD except ALG_TRNG (yes on hardware, as documented). Performance: completed to `PQC - END`, 1,933 methods, 1,028 measured, 1 reconnect; 41 error rows: 19 AES-512 ILLEGAL_VALUE and 6 RSA-512 OAEP ILLEGAL_VALUE (known, spec-correct), 10 RSA NOPAD public ILLEGAL_USE (known input-dependent, more than the earlier 4), and **6 `6f00` on RSA-CRT-2048 private NOPAD/PKCS1/OAEP init+doFinal** (new; run recovered at 3072).
+- Decision: open the RSA-CRT-2048 `6f00` for a local repro with serial telemetry. Tester did not supply a client log, serial log or chip ID.
+- Artifacts/logs: `artifacts/results/windows-maxcrypto-20261126-b4adbe13/` (ALGSUPPORT `f7f11242…40c4`, PERFORMANCE `25fc336d…a1fa`)
